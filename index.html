@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weekly Study Monitor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.3/babel.min.js"></script>
+  <!-- Firebase v10 compat — needed for cloud sync -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body style="margin:0;padding:0;background:#f1f5f9;">
+<div id="root"></div>
+<!-- ══════════════════════════════════════════════════════════════════════════════
+     FIREBASE SETUP — required for cloud sync across devices
+     ══════════════════════════════════════════════════════════════════════════════
+     One-time setup (takes ~10 minutes):
+
+     STEP 1 — Create a free Firebase project
+       → Go to https://console.firebase.google.com
+       → Click "Add project", name it anything (e.g. "Deen Monitor"), click through
+       → Disable Google Analytics when prompted (not needed)
+
+     STEP 2 — Register this app and get your config
+       → In your project, click the </> (Web) icon
+       → Register app with any nickname, click "Register app"
+       → Copy the values from the firebaseConfig object that appears
+       → Paste them into the FIREBASE_CONFIG block below, replacing YOUR_... values
+
+     STEP 3 — Enable Firestore database
+       → In the left sidebar: Build → Firestore Database
+       → Click "Create database" → choose "Start in test mode" → pick any region → Done
+
+     STEP 4 — Paste your config and save this file — that's it!
+       → Open the file in your browser, click the ☁ Sync button, create a Room
+       → On every other device: open the same HTML file, click ☁ Sync, enter the Room Code
+       → All devices stay in sync automatically in real-time
+
+     Security note: "Test mode" Firestore allows anyone with your Room Code to read/write.
+     That's fine for personal family use. Your Room Code has ~21 million combinations.
+     ══════════════════════════════════════════════════════════════════════════════ -->
+<script>
+window.FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyBhDw1Y8CxicjIZ7xG2TZdCOIl5rsfaomg",
+  authDomain:        "study-monitoring.firebaseapp.com",
+  projectId:         "study-monitoring",
+  storageBucket:     "study-monitoring.firebasestorage.app",
+  messagingSenderId: "285011621597",
+  appId:             "1:285011621597:web:46a8f1c5edbc5aa54b4d34",
+};
+// Set to false once you've filled in the config above
+window.FIREBASE_NOT_CONFIGURED = window.FIREBASE_CONFIG.apiKey === "YOUR_API_KEY";
+</script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+// ── localStorage helpers ──────────────────────────────────────
+const lsGet  = key => { try { const v=localStorage.getItem(key); return v!==null?JSON.parse(v):null; } catch(_){return null;} };
+const lsSet  = (key,val) => { try { localStorage.setItem(key,JSON.stringify(val)); } catch(_){} };
+const lsList = prefix => Object.keys(localStorage).filter(k=>k.startsWith(prefix));
+
+// ── constants ─────────────────────────────────────────────────
+const DAYS        = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const BASE_COLORS = [
+  {main:"#1d4ed8",soft:"#dbeafe",mid:"#93c5fd",text:"#1e40af"},
+  {main:"#0f766e",soft:"#ccfbf1",mid:"#5eead4",text:"#0d5249"},
+  {main:"#9333ea",soft:"#f3e8ff",mid:"#d8b4fe",text:"#7e22ce"},
+  {main:"#c2410c",soft:"#fff7ed",mid:"#fdba74",text:"#9a3412"},
+  {main:"#be185d",soft:"#fce7f3",mid:"#f9a8d4",text:"#9d174d"},
+  {main:"#0369a1",soft:"#e0f2fe",mid:"#7dd3fc",text:"#075985"},
+  {main:"#15803d",soft:"#dcfce7",mid:"#86efac",text:"#166534"},
+  {main:"#6d28d9",soft:"#ede9fe",mid:"#c4b5fd",text:"#5b21b6"},
+];
+const gc  = i => BASE_COLORS[i % BASE_COLORS.length];
+const pad = n => String(n).padStart(2,"0");
+
+// ── sections & subjects ──────────────────────────────────────
+const DEFAULT_SECTIONS = ["Quran","Arabic","Islamic Studies","General Studies"];
+const DEFAULT_SUBJECTS = [
+  {name:"Quran Reading",            section:"Quran",            domain:""},
+  {name:"Quran Hifz / Memorising",  section:"Quran",            domain:""},
+  {name:"Quran Listening",          section:"Quran",            domain:""},
+  {name:"Tafsir / Understanding",   section:"Quran",            domain:""},
+  {name:"Arabic Grammar",           section:"Arabic",           domain:""},
+  {name:"Arabic Speaking",          section:"Arabic",           domain:""},
+  {name:"Arabic Vocabulary",        section:"Arabic",           domain:""},
+  {name:"Arabic Writing",           section:"Arabic",           domain:""},
+  {name:"Aqeedah",                  section:"Islamic Studies",  domain:""},
+  {name:"Fiqh",                     section:"Islamic Studies",  domain:""},
+  {name:"Hadith",                   section:"Islamic Studies",  domain:""},
+  {name:"Islamic History",          section:"Islamic Studies",  domain:""},
+  {name:"Mathematics",              section:"General Studies",  domain:""},
+  {name:"English",                  section:"General Studies",  domain:""},
+  {name:"Science",                  section:"General Studies",  domain:""},
+  {name:"Geography",                section:"General Studies",  domain:""},
+];
+// Upgrade old saved configs (flat string subjects, no sections) without losing user data
+const normaliseSubjects = (arr,secs) => {
+  const list=(arr||[]).map(s=>
+    typeof s==="string"
+      ? {name:s, section:"Uncategorized", domain:""}
+      : {name:s.name||"", section:s.section||(secs&&secs[0])||"Uncategorized", domain:s.domain||""}
+  );
+  return list.length ? list : DEFAULT_SUBJECTS.map(s=>({...s}));
+};
+// Make sure every subject's section is represented in the sections list — nothing ever hides
+const reconcileSections = (secs,subs) => {
+  const have=new Set(secs||[]);
+  const extra=[...new Set((subs||[]).map(s=>s.section))].filter(s=>s&&!have.has(s));
+  return [...(secs||[]),...extra];
+};
+// Domains are optional & user-defined — start empty, but absorb any free-text domain
+// values that already exist on subjects (e.g. from before domains became a managed list)
+const DEFAULT_DOMAINS = [];
+const reconcileDomains = (doms,subs) => {
+  const have=new Set(doms||[]);
+  const extra=[...new Set((subs||[]).map(s=>s.domain).filter(Boolean))].filter(d=>!have.has(d));
+  return [...(doms||[]),...extra];
+};
+
+// Each cell = ARRAY of {subject, topic} — supports multiple subjects per day
+const blankEntry = () => ({subject:"",topic:""});
+const makeData   = n => DAYS.map(()=>Array.from({length:n},()=>[blankEntry()]));
+
+// ── date / week helpers ───────────────────────────────────────
+const toStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const monday = date => {
+  const d=new Date(date); d.setHours(0,0,0,0);
+  const day=d.getDay(); d.setDate(d.getDate()-day+(day===0?-6:1)); return toStr(d);
+};
+const weekLabel = key => {
+  const [y,m,d]=key.split("-").map(Number);
+  const mon=new Date(y,m-1,d), sun=new Date(y,m-1,d+6);
+  const f={month:"short",day:"numeric"};
+  return `${mon.toLocaleDateString("en-US",f)} \u2013 ${sun.toLocaleDateString("en-US",{...f,year:"numeric"})}`;
+};
+const weekMonth = key => { const [y,m]=key.split("-").map(Number); return `${MONTH_NAMES[m-1]} ${y}`; };
+const weekNum   = key => {
+  const [y,m,d]=key.split("-").map(Number);
+  const date=new Date(y,m-1,d), jan1=new Date(y,0,1);
+  return Math.ceil(((date-jan1)/86400000+jan1.getDay()+1)/7);
+};
+const shift = (key,n) => { const [y,m,d]=key.split("-").map(Number); return toStr(new Date(y,m-1,d+n*7)); };
+
+// Convert stored data to new format — handles old {subject,topic} single-object format
+const normalise = (wd,n) => DAYS.map((_,di)=>{
+  const raw=(wd[di]||[]).slice();
+  while(raw.length<n) raw.push([blankEntry()]);
+  return raw.slice(0,n).map(slot=>
+    Array.isArray(slot) ? (slot.length>0?slot:[blankEntry()])
+                        : [{subject:slot.subject||"",topic:slot.topic||""}]
+  );
+});
+
+// ── CSV download ──────────────────────────────────────────────
+const dlCSV = (rows,filename) => {
+  const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=Object.assign(document.createElement("a"),{href:URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"})),download:filename});
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+};
+
+// ═════════════════════════════════════════════════════════════
+function StudyTracker() {
+  const TODAY   = monday(new Date());
+  const nowDate = new Date();
+
+  const [students,   setStudents]   = useState(["Student 1","Student 2","Student 3","Student 4"]);
+  const [sections,   setSections]   = useState(DEFAULT_SECTIONS);
+  const [domains,    setDomains]    = useState(DEFAULT_DOMAINS);
+  const [subjects,   setSubjects]   = useState(DEFAULT_SUBJECTS);
+  const [weekKey,    setWeekKey]    = useState(TODAY);
+  const [data,       setData]       = useState(()=>makeData(4));
+  const [panel,      setPanel]      = useState(null);
+  const [saveStatus, setSaveStatus] = useState("");
+  const [loading,    setLoading]    = useState(true);
+  // ── cloud sync state ─────────────────────────────────────────
+  const [syncStatus,  setSyncStatus]  = useState("off");   // off|connecting|connected|synced|error
+  const [syncCode,    setSyncCode]    = useState("");
+  const [showSync,    setShowSync]    = useState(false);
+  const [joinInput,   setJoinInput]   = useState("");
+  const [showWeekReport,  setShowWeekReport]  = useState(false);
+  const [showMonthReport, setShowMonthReport] = useState(false);
+  const [savedWeeks, setSavedWeeks] = useState([]);
+  const [monthYM,    setMonthYM]    = useState({year:nowDate.getFullYear(),month:nowDate.getMonth()+1});
+  const [monthData,  setMonthData]  = useState(null);
+  const [monthLoading, setMonthLoading] = useState(false);
+  const [monthTab,   setMonthTab]   = useState("students");
+
+  const saveTimer  = useRef(null);
+  const weekKeyRef = useRef(weekKey);
+  weekKeyRef.current = weekKey;
+  const sectionsRef = useRef(sections);
+  sectionsRef.current = sections;
+  const domainsRef = useRef(domains);
+  domainsRef.current = domains;
+  const studentsRef = useRef(students);
+  studentsRef.current = students;
+  // ── sync refs ────────────────────────────────────────────────
+  const dbRef        = useRef(null);
+  const unsubRef     = useRef(null);
+  const syncCodeRef  = useRef("");
+  const isSyncingRef = useRef(false);
+  const deviceId     = useRef(
+    lsGet("_deviceId") || (()=>{ const id=Math.random().toString(36).slice(2,12); lsSet("_deviceId",id); return id; })()
+  );
+
+  // ── boot ────────────────────────────────────────────────────
+  useEffect(()=>{
+    let sts=["Student 1","Student 2","Student 3","Student 4"];
+    let secs=[...DEFAULT_SECTIONS];
+    let doms=[...DEFAULT_DOMAINS];
+    let subs=DEFAULT_SUBJECTS.map(s=>({...s}));
+    const cfg=lsGet("config");
+    if(cfg){
+      if(cfg.students) sts=cfg.students;
+      if(cfg.sections) secs=cfg.sections;
+      if(cfg.domains) doms=cfg.domains;
+      if(cfg.subjects) subs=normaliseSubjects(cfg.subjects,secs);
+    }
+    secs=reconcileSections(secs,subs);
+    doms=reconcileDomains(doms,subs);
+    setStudents(sts); setSections(secs); setDomains(doms); setSubjects(subs);
+    const wd=lsGet(`week:${TODAY}`);
+    setData(wd?normalise(wd,sts.length):makeData(sts.length));
+    setLoading(false);
+  },[]);
+
+  useEffect(()=>{
+    if(loading) return;
+    const wd=lsGet(`week:${weekKey}`);
+    setData(wd?normalise(wd,students.length):makeData(students.length));
+  },[weekKey]);
+
+  // ── Firebase init (runs once on mount, after boot effect) ────
+  useEffect(()=>{
+    if(window.FIREBASE_NOT_CONFIGURED) return;
+    try{
+      if(!window.firebase.apps.length) window.firebase.initializeApp(window.FIREBASE_CONFIG);
+      window.firebase.firestore().enablePersistence().catch(()=>{});
+      dbRef.current = window.firebase.firestore();
+      const saved = lsGet("syncCode");
+      if(saved){ syncCodeRef.current=saved; setSyncCode(saved); connectRoom(saved); }
+    }catch(e){ setSyncStatus("error"); }
+  },[]);  // eslint-disable-line
+
+  // ── save (localStorage + Firestore if connected) ─────────────
+  const save = (d,sts,subs) => {
+    if(saveTimer.current) clearTimeout(saveTimer.current);
+    setSaveStatus("saving");
+    saveTimer.current = setTimeout(()=>{
+      lsSet(`week:${weekKeyRef.current}`,d);
+      lsSet("config",{students:sts,subjects:subs,sections:sectionsRef.current,domains:domainsRef.current});
+      setSaveStatus("saved"); setTimeout(()=>setSaveStatus(""),2500);
+      pushToFirestore(d,sts,subs);
+    },700);
+  };
+
+  // ── cloud sync functions ──────────────────────────────────────
+  const ROOM_ADJ  = ["CEDAR","MAPLE","RIVER","CLEAR","SWIFT","BRIGHT","NOBLE","CALM","PURE","WISE"];
+  const ROOM_NOUN = ["MOON","STAR","BOOK","PATH","DAWN","LIGHT","PEARL","LEAF","FAJR","ROSE"];
+  const genCode   = () => `${ROOM_ADJ[Math.random()*ROOM_ADJ.length|0]}-${ROOM_NOUN[Math.random()*ROOM_NOUN.length|0]}-${String(Math.random()*9000+1000|0)}`;
+
+  const connectRoom = (code) => {
+    if(!dbRef.current||!code) return;
+    if(unsubRef.current){ unsubRef.current(); unsubRef.current=null; }
+    setSyncStatus("connecting");
+    const roomRef = dbRef.current.collection("rooms").doc(code);
+    unsubRef.current = roomRef.onSnapshot(doc=>{
+      setSyncStatus("connected");
+      if(!doc.exists||isSyncingRef.current) return;
+      const remote = doc.data();
+      if(remote.deviceId===deviceId.current) return;   // echo — our own write bouncing back
+      // Apply remote config
+      if(remote.config){
+        const {students:s,subjects:sub,sections:sec,domains:dom} = remote.config;
+        if(s)   setStudents(s);
+        if(sec) setSections(sec);
+        if(dom) setDomains(dom);
+        if(sub) setSubjects(normaliseSubjects(sub,sec||[]));
+      }
+      // Write all remote weeks to localStorage, then reload current if present
+      if(remote.weeks){
+        Object.entries(remote.weeks).forEach(([wk,str])=>{ try{ lsSet(`week:${wk}`,JSON.parse(str)); }catch(e){} });
+        if(remote.weeks[weekKeyRef.current]){
+          try{ setData(normalise(JSON.parse(remote.weeks[weekKeyRef.current]),studentsRef.current.length)); }catch(e){}
+        }
+      }
+      setSyncStatus("synced");
+      setTimeout(()=>setSyncStatus("connected"),2200);
+    }, ()=>setSyncStatus("error"));
+  };
+
+  const createRoom = () => {
+    if(!dbRef.current){ setShowSync(true); return; }
+    const code=genCode();
+    syncCodeRef.current=code; setSyncCode(code); lsSet("syncCode",code);
+    connectRoom(code);
+    // Write our current state immediately so the room exists
+    const d=data; pushToFirestoreNow(d,students,subjects,code);
+  };
+
+  const joinRoom = (code) => {
+    const c=(code||joinInput).trim().toUpperCase();
+    if(!c){ return; }
+    syncCodeRef.current=c; setSyncCode(c); lsSet("syncCode",c); setJoinInput("");
+    connectRoom(c);
+  };
+
+  const leaveRoom = () => {
+    if(unsubRef.current){ unsubRef.current(); unsubRef.current=null; }
+    syncCodeRef.current=""; setSyncCode(""); lsSet("syncCode",""); setSyncStatus("off");
+  };
+
+  const pushToFirestoreNow = (d,sts,subs,codeOverride) => {
+    const code=codeOverride||syncCodeRef.current;
+    if(!dbRef.current||!code) return;
+    isSyncingRef.current=true;
+    dbRef.current.collection("rooms").doc(code).set({
+      config:{ students:sts, subjects:subs, sections:sectionsRef.current, domains:domainsRef.current },
+      weeks:{ [weekKeyRef.current]: JSON.stringify(d) },
+      lastUpdated: window.firebase.firestore.FieldValue.serverTimestamp(),
+      deviceId: deviceId.current,
+    },{merge:true})
+    .then(()=>{ isSyncingRef.current=false; })
+    .catch(()=>{ isSyncingRef.current=false; setSyncStatus("error"); });
+  };
+
+  const pushToFirestore = (d,sts,subs) => pushToFirestoreNow(d,sts,subs,null);
+
+  const copySyncCode = () => {
+    navigator.clipboard?.writeText(syncCode).catch(()=>{});
+    setSyncStatus("synced"); setTimeout(()=>setSyncStatus("connected"),1500);
+  };
+
+  // ── entry management (replaces old updateCell) ───────────────
+  const updateEntry = (di,si,ei,field,val) =>
+    setData(prev=>{
+      const next=prev.map((row,ri)=>ri!==di?row:
+        row.map((slot,ci)=>ci!==si?slot:
+          slot.map((e,j)=>j!==ei?e:{...e,[field]:val})));
+      save(next,students,subjects); return next;
+    });
+
+  const addEntry = (di,si) =>
+    setData(prev=>{
+      const next=prev.map((row,ri)=>ri!==di?row:
+        row.map((slot,ci)=>ci!==si?slot:[...slot,blankEntry()]));
+      save(next,students,subjects); return next;
+    });
+
+  const removeEntry = (di,si,ei) =>
+    setData(prev=>{
+      const next=prev.map((row,ri)=>ri!==di?row:
+        row.map((slot,ci)=>{
+          if(ci!==si) return slot;
+          const ns=slot.filter((_,j)=>j!==ei);
+          return ns.length>0?ns:[blankEntry()];
+        }));
+      save(next,students,subjects); return next;
+    });
+
+  // ── student management ───────────────────────────────────────
+  const addStudent = () => {
+    const ns=[...students,`Student ${students.length+1}`];
+    const nd=data.map(r=>[...r,[blankEntry()]]);
+    setStudents(ns); setData(nd); save(nd,ns,subjects);
+  };
+  const removeStudent = si => {
+    if(students.length<=1) return;
+    const ns=students.filter((_,i)=>i!==si);
+    const nd=data.map(r=>r.filter((_,i)=>i!==si));
+    setStudents(ns); setData(nd); save(nd,ns,subjects);
+  };
+  const renameStudent = (si,v) => { const ns=[...students]; ns[si]=v; setStudents(ns); save(data,ns,subjects); };
+
+  // ── subject management ───────────────────────────────────────
+  const addSubject    = (section) => { const sec=section||sections[0]||"Uncategorized"; const ns=[...subjects,{name:"New Subject",section:sec,domain:""}]; setSubjects(ns); save(data,students,ns); };
+  const removeSubject = i  => { if(subjects.length<=1) return; const ns=subjects.filter((_,idx)=>idx!==i); setSubjects(ns); save(data,students,ns); };
+  const renameSubject = (i,v) => { const ns=[...subjects]; ns[i]={...ns[i],name:v}; setSubjects(ns); save(data,students,ns); };
+  const setSubjectDomain   = (i,v)   => { const ns=[...subjects]; ns[i]={...ns[i],domain:v}; setSubjects(ns); save(data,students,ns); };
+  const moveSubjectSection = (i,sec) => { const ns=[...subjects]; ns[i]={...ns[i],section:sec}; setSubjects(ns); save(data,students,ns); };
+
+  // ── section management ──────────────────────────────────────
+  const addSection = () => {
+    let n=sections.length+1, name=`New Section ${n}`;
+    while(sections.includes(name)){ n++; name=`New Section ${n}`; }
+    setSections([...sections,name]); save(data,students,subjects);
+  };
+  const renameSection = (i,v) => {
+    const old=sections[i], val=v.trim()||old;
+    const ns=[...sections]; ns[i]=val; setSections(ns);
+    const nsubs=subjects.map(s=>s.section===old?{...s,section:val}:s);
+    setSubjects(nsubs); save(data,students,nsubs);
+  };
+  const removeSection = i => {
+    if(sections.length<=1) return;
+    const name=sections[i];
+    const count=subjects.filter(s=>s.section===name).length;
+    if(count>0 && !confirm(`Delete "${name}" and its ${count} subject(s)?`)) return;
+    const ns=sections.filter((_,idx)=>idx!==i);
+    let nsubs=subjects.filter(s=>s.section!==name);
+    if(nsubs.length===0) nsubs=[{name:"Subject 1",section:ns[0]||"Uncategorized",domain:""}];
+    setSections(ns); setSubjects(nsubs); save(data,students,nsubs);
+  };
+
+  // ── domain management (optional cross-cutting tag, e.g. Ritual, Aqeedah) ──
+  const addDomain = () => {
+    let n=domains.length+1, name=`New Domain ${n}`;
+    while(domains.includes(name)){ n++; name=`New Domain ${n}`; }
+    setDomains([...domains,name]); save(data,students,subjects);
+  };
+  const renameDomain = (i,v) => {
+    const old=domains[i], val=v.trim()||old;
+    const nd=[...domains]; nd[i]=val; setDomains(nd);
+    const nsubs=subjects.map(s=>s.domain===old?{...s,domain:val}:s);
+    setSubjects(nsubs); save(data,students,nsubs);
+  };
+  const removeDomain = i => {
+    const name=domains[i];
+    const count=subjects.filter(s=>s.domain===name).length;
+    if(count>0 && !confirm(`Remove "${name}"? ${count} subject(s) using it will become unassigned.`)) return;
+    const nd=domains.filter((_,idx)=>idx!==i);
+    const nsubs=subjects.map(s=>s.domain===name?{...s,domain:""}:s);
+    setDomains(nd); setSubjects(nsubs); save(data,students,nsubs);
+  };
+
+  // ── stats ────────────────────────────────────────────────────
+  // days where student has at least one filled subject
+  const daysStudied  = si => data.filter(r=>(r[si]||[]).some(e=>e.subject)).length;
+  // total filled entries across the whole week
+  const totalEntries = data.reduce((a,r)=>a+r.reduce((b,slot)=>b+slot.filter(e=>e.subject).length,0),0);
+  // per-student entry count this week
+  const studentEntries = si => data.reduce((a,r)=>a+(r[si]||[]).filter(e=>e.subject).length,0);
+  // subject frequency for a student (this week)
+  const getFreq = si => {
+    const f={};
+    data.forEach(r=>{ (r[si]||[]).forEach(e=>{ if(e.subject) f[e.subject]=(f[e.subject]||0)+1; }); });
+    return Object.entries(f).sort((a,b)=>b[1]-a[1]);
+  };
+  const clearWeek = () => { const nd=makeData(students.length); setData(nd); save(nd,students,subjects); };
+
+  // ── open weekly report ───────────────────────────────────────
+  const openWeekReport = () => {
+    setSavedWeeks(lsList("week:").map(k=>k.replace("week:","")).sort().reverse());
+    setShowWeekReport(true);
+  };
+
+  // ── monthly report ───────────────────────────────────────────
+  const loadMonthData = (year,month) => {
+    setMonthLoading(true); setMonthData(null);
+    const allKeys=lsList("week:").map(k=>k.replace("week:",""));
+    const monthKeys=allKeys.filter(key=>{ const [y,m]=key.split("-").map(Number); return y===year&&m===month; }).sort();
+    const entries=[];
+    monthKeys.forEach(key=>{
+      const wd=lsGet(`week:${key}`); if(!wd) return;
+      DAYS.forEach((day,di)=>{
+        students.forEach((student,si)=>{
+          const rawSlot=wd[di]?.[si];
+          const slot=Array.isArray(rawSlot)?rawSlot:(rawSlot?[rawSlot]:[]);
+          slot.forEach(cell=>{
+            if(cell?.subject) entries.push({weekKey:key,weekRange:weekLabel(key),wNum:weekNum(key),day,dayIdx:di,student,studentIdx:si,subject:cell.subject,topic:cell.topic||""});
+          });
+        });
+      });
+    });
+    const studentSummary={};
+    students.forEach((name,si)=>{ studentSummary[si]={name,daySet:new Set(),subjects:{},entries:[]}; });
+    entries.forEach(e=>{ const ss=studentSummary[e.studentIdx]; if(!ss) return; ss.daySet.add(`${e.weekKey}-${e.day}`); ss.subjects[e.subject]=(ss.subjects[e.subject]||0)+1; ss.entries.push(e); });
+    Object.values(studentSummary).forEach(ss=>{ ss.dayCount=ss.daySet.size; ss.subjectList=Object.entries(ss.subjects).sort((a,b)=>b[1]-a[1]); delete ss.daySet; });
+    const subjectMap={};
+    entries.forEach(e=>{ if(!subjectMap[e.subject]) subjectMap[e.subject]={total:0,students:{},entries:[],topicSet:new Set()}; subjectMap[e.subject].total++; subjectMap[e.subject].students[e.student]=(subjectMap[e.subject].students[e.student]||0)+1; subjectMap[e.subject].entries.push(e); if(e.topic) subjectMap[e.subject].topicSet.add(e.topic); });
+    const subjMeta = name => subjects.find(s=>s.name===name) || {section:"",domain:""};
+    const subjectList=Object.entries(subjectMap).sort((a,b)=>b[1].total-a[1].total).map(([name,d])=>({name,...d,topics:[...d.topicSet],...subjMeta(name)}));
+    setMonthData({year,month,weeks:monthKeys,entries,studentSummary,subjectList});
+    setMonthLoading(false);
+  };
+  const openMonthReport = () => { setShowMonthReport(true); loadMonthData(monthYM.year,monthYM.month); };
+  const shiftMonth = n => { let {year,month}=monthYM; month+=n; if(month>12){month=1;year++;} if(month<1){month=12;year--;} const next={year,month}; setMonthYM(next); loadMonthData(year,month); };
+
+  // ── print ────────────────────────────────────────────────────
+  const doPrint = () => {
+    const el=document.querySelector('.report-box');
+    if(!el){window.print();return;}
+    const win=window.open('','_blank','width=1050,height=780');
+    if(!win){alert('Print pop-up blocked.\n\nClick "Allow pop-ups" in your browser address bar, then try again.');return;}
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Study Report</title><style>
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Segoe UI',system-ui,sans-serif;padding:24px;background:white;color:#0f172a;font-size:12px}
+      .no-print{display:none!important} .rscroll{max-height:none!important;overflow:visible!important;padding:0!important}
+      table{border-collapse:collapse;width:100%} tr{page-break-inside:avoid} @page{margin:1.5cm}
+    </style></head><body>${el.innerHTML}</body></html>`);
+    win.document.close(); win.focus();
+    setTimeout(()=>{ try{win.print();}catch(e){} setTimeout(()=>{try{win.close();}catch(e){}},1500); },600);
+  };
+
+  // ── CSV exports ──────────────────────────────────────────────
+  const subjMetaFor = name => subjects.find(s=>s.name===name) || {section:"",domain:""};
+  const exportWeekCSV = () => {
+    const rows=[["Week","Day","Student","Entry #","Subject","Section","Domain","Topic Studied"]];
+    DAYS.forEach((day,di)=>students.forEach((student,si)=>{
+      const slot=data[di][si]||[];
+      const filled=slot.filter(e=>e.subject);
+      if(filled.length>0) filled.forEach((e,n)=>{ const m=subjMetaFor(e.subject); rows.push([weekLabel(weekKey),day,student,n+1,e.subject,m.section,m.domain,e.topic||""]); });
+      else rows.push([weekLabel(weekKey),day,student,"","(none)","","",""]);
+    }));
+    dlCSV(rows,`study-week-${weekKey}.csv`);
+  };
+  const exportMonthCSV = () => {
+    if(!monthData) return;
+    const rows=[["Month","Week No.","Week Dates","Day","Student","Subject","Section","Domain","Topic"]];
+    monthData.entries.forEach(e=>{ const m=subjMetaFor(e.subject); rows.push([`${MONTH_NAMES[monthData.month-1]} ${monthData.year}`,`W${e.wNum}`,e.weekRange,e.day,e.student,e.subject,m.section,m.domain,e.topic]); });
+    dlCSV(rows,`study-month-${monthData.year}-${pad(monthData.month)}.csv`);
+  };
+
+  const TabBtn = ({id,label,active,onClick}) => (
+    <button onClick={onClick} style={{padding:"7px 14px",background:active?"#0f172a":"transparent",border:"1px solid",borderColor:active?"#0f172a":"#e2e8f0",borderRadius:"7px",color:active?"white":"#64748b",fontSize:"12px",fontWeight:active?"700":"500",cursor:"pointer"}}>
+      {label}
+    </button>
+  );
+
+  if(loading) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",fontFamily:"system-ui",color:"#64748b"}}>&#x23F3; Loading&hellip;</div>;
+
+  return (
+    <>
+      <style>{`
+        *{box-sizing:border-box} body{margin:0} select,input{font-family:inherit}
+        select:focus,input:focus{outline:2px solid #6366f1;outline-offset:1px}
+        .pill{transition:opacity .15s,transform .1s} .pill:hover{opacity:.85;transform:translateY(-1px)}
+        .wk-btn{transition:background .15s} .wk-btn:hover{background:rgba(255,255,255,.2) !important}
+        .entry-row:hover .remove-btn{opacity:1 !important}
+        ::-webkit-scrollbar{height:6px;width:6px} ::-webkit-scrollbar-track{background:#f1f5f9} ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+        @media print{ .report-overlay{display:none !important} }
+      `}</style>
+
+      {/* ═══ MONTHLY REPORT ═══════════════════════════════════ */}
+      {showMonthReport&&(
+        <div className="report-overlay" style={{position:"fixed",inset:0,background:"rgba(15,23,42,.68)",zIndex:1100,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"20px",overflowY:"auto"}}>
+          <div className="report-box" style={{background:"white",borderRadius:"16px",width:"100%",maxWidth:"980px",boxShadow:"0 24px 64px rgba(0,0,0,.4)",marginTop:"8px"}}>
+            <div style={{background:"linear-gradient(135deg,#0f172a,#1e293b)",borderRadius:"16px 16px 0 0",padding:"18px 24px",color:"white"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"10px",marginBottom:"12px"}}>
+                <div><h2 style={{margin:0,fontSize:"18px",fontWeight:"800"}}>&#x1F4C5; Monthly Study Report</h2><p style={{margin:"3px 0 0",color:"#94a3b8",fontSize:"12px"}}>{monthData?`${MONTH_NAMES[monthData.month-1]} ${monthData.year} \u00b7 ${monthData.weeks.length} week${monthData.weeks.length!==1?"s":""} \u00b7 ${monthData.entries.length} entries`:"Loading\u2026"}</p></div>
+                <div className="no-print" style={{display:"flex",gap:"8px"}}>
+                  <button onClick={exportMonthCSV} disabled={!monthData||monthData.entries.length===0} className="pill" style={{padding:"7px 13px",background:"rgba(34,197,94,.2)",border:"1px solid rgba(34,197,94,.4)",borderRadius:"8px",color:"#86efac",fontSize:"12px",fontWeight:"600",cursor:"pointer",opacity:monthData&&monthData.entries.length>0?1:.5}}>&#x1F4E5; CSV</button>
+                  <button onClick={doPrint} className="pill" style={{padding:"7px 13px",background:"rgba(99,102,241,.2)",border:"1px solid rgba(99,102,241,.4)",borderRadius:"8px",color:"#a5b4fc",fontSize:"12px",fontWeight:"600",cursor:"pointer"}}>&#x1F5A8; Print Report</button>
+                  <button onClick={()=>setShowMonthReport(false)} style={{padding:"7px 12px",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.15)",borderRadius:"8px",color:"white",fontSize:"16px",lineHeight:1,cursor:"pointer"}}>&#x00D7;</button>
+                </div>
+              </div>
+              <div style={{display:"flex",alignItems:"center",gap:"10px",background:"rgba(0,0,0,.22)",borderRadius:"8px",padding:"9px 14px"}}>
+                <button className="wk-btn" onClick={()=>shiftMonth(-1)} style={{padding:"5px 12px",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.15)",borderRadius:"6px",color:"white",fontSize:"14px",cursor:"pointer"}}>&#x2190;</button>
+                <div style={{flex:1,textAlign:"center"}}><div style={{fontWeight:"800",fontSize:"16px"}}>{MONTH_NAMES[monthYM.month-1]} {monthYM.year}</div><div style={{fontSize:"10px",color:"#94a3b8",marginTop:"2px"}}>&#x2190; &#x2192; to switch months</div></div>
+                <button className="wk-btn" onClick={()=>shiftMonth(1)} style={{padding:"5px 12px",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.15)",borderRadius:"6px",color:"white",fontSize:"14px",cursor:"pointer"}}>&#x2192;</button>
+              </div>
+            </div>
+            <div style={{padding:"14px 24px 0",display:"flex",gap:"8px",borderBottom:"1px solid #e2e8f0"}}>
+              {[["students","&#x1F464; By Student"],["subjects","&#x1F4D6; By Subject"],["weeks","&#x1F4C5; By Week"]].map(([id,label])=>(
+                <TabBtn key={id} id={id} label={<span dangerouslySetInnerHTML={{__html:label}} />} active={monthTab===id} onClick={()=>setMonthTab(id)} />
+              ))}
+            </div>
+            <div className="rscroll" style={{padding:"20px 24px",maxHeight:"60vh",overflowY:"auto"}}>
+              {monthLoading&&<div style={{textAlign:"center",padding:"50px",color:"#94a3b8"}}>&#x23F3; Loading&hellip;</div>}
+              {!monthLoading&&monthData&&monthData.entries.length===0&&(
+                <div style={{textAlign:"center",padding:"50px",color:"#94a3b8"}}>
+                  <div style={{fontSize:"36px",marginBottom:"10px"}}>&#x1F4ED;</div>
+                  <div style={{fontSize:"14px",fontWeight:"700"}}>No data for {MONTH_NAMES[monthData.month-1]} {monthData.year}</div>
+                  <div style={{fontSize:"12px",marginTop:"6px"}}>No study entries were recorded in weeks starting this month.</div>
+                </div>
+              )}
+
+              {/* BY STUDENT */}
+              {!monthLoading&&monthData&&monthData.entries.length>0&&monthTab==="students"&&(
+                <div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(148px,1fr))",gap:"10px",marginBottom:"24px"}}>
+                    {students.map((name,si)=>{ const ss=monthData.studentSummary[si],p=gc(si); return (
+                      <div key={si} style={{border:`1.5px solid ${p.mid}`,borderRadius:"10px",padding:"13px",background:p.soft}}>
+                        <div style={{fontSize:"10px",fontWeight:"800",color:p.text,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"5px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
+                        <div style={{fontSize:"22px",fontWeight:"900",color:"#0f172a",lineHeight:1}}>{ss?.dayCount||0}<span style={{fontSize:"11px",color:"#64748b",fontWeight:"400"}}> days</span></div>
+                        <div style={{fontSize:"11px",color:p.text,fontWeight:"600",marginTop:"5px"}}>{ss?.entries?.length||0} total entries</div>
+                        {ss?.subjectList?.[0]&&<div style={{fontSize:"9px",color:"#64748b",marginTop:"3px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Top: {ss.subjectList[0][0]}</div>}
+                      </div>
+                    );})}
+                  </div>
+                  {students.map((name,si)=>{ const ss=monthData.studentSummary[si],p=gc(si);
+                    if(!ss||ss.entries.length===0) return <div key={si} style={{marginBottom:"14px"}}><div style={{display:"flex",alignItems:"center",gap:"7px",marginBottom:"6px"}}><span style={{width:"10px",height:"10px",borderRadius:"50%",background:p.main,display:"inline-block"}} /><span style={{fontSize:"13px",fontWeight:"700",color:"#0f172a"}}>{name}</span></div><div style={{padding:"9px 14px",background:"#f8fafc",borderRadius:"8px",fontSize:"12px",color:"#94a3b8",border:"1px dashed #e2e8f0"}}>No entries this month.</div></div>;
+                    return (
+                      <div key={si} style={{marginBottom:"22px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px",flexWrap:"wrap"}}>
+                          <span style={{width:"10px",height:"10px",borderRadius:"50%",background:p.main,display:"inline-block"}} />
+                          <span style={{fontSize:"13px",fontWeight:"700",color:"#0f172a"}}>{name}</span>
+                          <span style={{fontSize:"11px",color:"#94a3b8"}}>&#x2014; {ss.dayCount} days &middot; {ss.entries.length} entries</span>
+                          <div style={{marginLeft:"auto",display:"flex",gap:"5px",flexWrap:"wrap",justifyContent:"flex-end"}}>
+                            {ss.subjectList.slice(0,5).map(([subj,count])=>(<span key={subj} style={{background:p.soft,color:p.text,padding:"2px 8px",borderRadius:"99px",fontSize:"10px",fontWeight:"600"}}>{subj} &times;{count}</span>))}
+                          </div>
+                        </div>
+                        <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
+                          <thead><tr style={{background:p.soft}}>{["Week No.","Date Range","Day","Subject","Topic"].map((h,i)=>(<th key={i} style={{padding:"6px 10px",textAlign:"left",fontWeight:"800",color:p.text,fontSize:"10px",textTransform:"uppercase",letterSpacing:"0.06em",width:i===0?"70px":i===1?"130px":i===2?"65px":i===3?"28%":"auto"}}>{h}</th>))}</tr></thead>
+                          <tbody>{ss.entries.map((e,i)=>(<tr key={i} style={{borderBottom:"1px solid #f1f5f9",background:i%2===0?"white":"#fafafa"}}><td style={{padding:"6px 10px",fontWeight:"700",color:"#64748b"}}>W{e.wNum}</td><td style={{padding:"6px 10px",color:"#94a3b8",fontSize:"11px"}}>{e.weekRange}</td><td style={{padding:"6px 10px",fontWeight:"600",color:"#334155"}}>{e.day.slice(0,3)}</td><td style={{padding:"6px 10px"}}><span style={{background:p.soft,color:p.text,padding:"2px 8px",borderRadius:"99px",fontSize:"11px",fontWeight:"600"}}>{e.subject}</span></td><td style={{padding:"6px 10px",color:e.topic?"#1e293b":"#94a3b8",fontStyle:e.topic?"normal":"italic"}}>{e.topic||"&#x2014;"}</td></tr>))}</tbody>
+                        </table>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* BY SUBJECT */}
+              {!monthLoading&&monthData&&monthData.entries.length>0&&monthTab==="subjects"&&(
+                <div>
+                  <div style={{marginBottom:"22px"}}>
+                    <div style={{fontSize:"11px",fontWeight:"800",color:"#64748b",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:"12px"}}>Subject Frequency &#x2014; {MONTH_NAMES[monthYM.month-1]} {monthYM.year}</div>
+                    {[...sections,"Other"].map(sec=>{
+                      const secList = sec==="Other"
+                        ? monthData.subjectList.filter(s=>!sections.includes(s.section))
+                        : monthData.subjectList.filter(s=>s.section===sec);
+                      if(!secList.length) return null;
+                      const maxT=monthData.subjectList[0]?.total||1;
+                      return (
+                        <div key={sec} style={{marginBottom:"14px"}}>
+                          <div style={{fontSize:"10px",fontWeight:"800",color:"#94a3b8",letterSpacing:"0.06em",marginBottom:"6px"}}>{sec.toUpperCase()}</div>
+                          {secList.map((s,i)=>{ const pct=(s.total/maxT)*100; return (
+                            <div key={s.name} style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"6px"}}>
+                              <div style={{width:"130px",fontSize:"11px",fontWeight:"600",color:"#1e293b",textAlign:"right",flexShrink:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name}</div>
+                              <div style={{flex:1,height:"22px",background:"#f1f5f9",borderRadius:"5px",overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:`hsl(${230+i*18},70%,55%)`,borderRadius:"5px",display:"flex",alignItems:"center",paddingLeft:"8px"}}>{pct>15&&<span style={{fontSize:"11px",color:"white",fontWeight:"700"}}>{s.total}&times;</span>}</div></div>
+                              {pct<=15&&<div style={{fontSize:"11px",color:"#64748b",fontWeight:"600",width:"28px"}}>{s.total}&times;</div>}
+                            </div>
+                          );})}
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {domains.length>0&&(
+                    <div style={{marginBottom:"22px"}}>
+                      <div style={{fontSize:"11px",fontWeight:"800",color:"#0f766e",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:"12px"}}>Domain Frequency &#x2014; {MONTH_NAMES[monthYM.month-1]} {monthYM.year}</div>
+                      {[...domains,"Unassigned"].map(dom=>{
+                        const domList = dom==="Unassigned"
+                          ? monthData.subjectList.filter(s=>!s.domain)
+                          : monthData.subjectList.filter(s=>s.domain===dom);
+                        if(!domList.length) return null;
+                        const maxT=monthData.subjectList[0]?.total||1;
+                        return (
+                          <div key={dom} style={{marginBottom:"14px"}}>
+                            <div style={{fontSize:"10px",fontWeight:"800",color:dom==="Unassigned"?"#94a3b8":"#0f766e",letterSpacing:"0.06em",marginBottom:"6px"}}>{dom.toUpperCase()}</div>
+                            {domList.map((s,i)=>{ const pct=(s.total/maxT)*100; return (
+                              <div key={s.name} style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"6px"}}>
+                                <div style={{width:"130px",fontSize:"11px",fontWeight:"600",color:"#1e293b",textAlign:"right",flexShrink:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.name}</div>
+                                <div style={{flex:1,height:"22px",background:"#f1f5f9",borderRadius:"5px",overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:`hsl(${170+i*14},65%,42%)`,borderRadius:"5px",display:"flex",alignItems:"center",paddingLeft:"8px"}}>{pct>15&&<span style={{fontSize:"11px",color:"white",fontWeight:"700"}}>{s.total}&times;</span>}</div></div>
+                                {pct<=15&&<div style={{fontSize:"11px",color:"#64748b",fontWeight:"600",width:"28px"}}>{s.total}&times;</div>}
+                              </div>
+                            );})}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {monthData.subjectList.map((s,i)=>(
+                    <div key={i} style={{marginBottom:"12px",background:"#f8fafc",borderRadius:"10px",padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:"8px",marginBottom:s.topics.length>0?"10px":"0"}}>
+                        <div>
+                          <div style={{display:"flex",alignItems:"center",gap:"7px",flexWrap:"wrap"}}>
+                            <div style={{fontSize:"14px",fontWeight:"800",color:"#0f172a"}}>{s.name}</div>
+                            {s.section&&<span style={{background:"#e2e8f0",color:"#475569",padding:"2px 8px",borderRadius:"99px",fontSize:"10px",fontWeight:"700"}}>{s.section}</span>}
+                            {s.domain&&<span style={{background:"#ccfbf1",color:"#0f766e",padding:"2px 8px",borderRadius:"99px",fontSize:"10px",fontWeight:"700"}}>{s.domain}</span>}
+                          </div>
+                          <div style={{fontSize:"11px",color:"#64748b",marginTop:"2px"}}>Studied <strong>{s.total}</strong> time{s.total!==1?"s":""} &middot; {Object.keys(s.students).length} student{Object.keys(s.students).length!==1?"s":""}</div>
+                        </div>
+                        <div style={{display:"flex",gap:"5px",flexWrap:"wrap"}}>{Object.entries(s.students).sort((a,b)=>b[1]-a[1]).map(([student,count],j)=>{ const si=students.indexOf(student),p=gc(si>=0?si:j); return <span key={student} style={{background:p.soft,color:p.text,padding:"3px 9px",borderRadius:"99px",fontSize:"11px",fontWeight:"600"}}>{student} &times;{count}</span>; })}</div>
+                      </div>
+                      {s.topics.length>0&&(<div><div style={{fontSize:"10px",fontWeight:"700",color:"#64748b",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"6px"}}>Topics covered:</div><div style={{display:"flex",gap:"5px",flexWrap:"wrap"}}>{s.topics.map((t,i)=>(<span key={i} style={{background:"white",border:"1px solid #e2e8f0",color:"#475569",padding:"3px 9px",borderRadius:"6px",fontSize:"11px"}}>{t}</span>))}</div></div>)}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* BY WEEK */}
+              {!monthLoading&&monthData&&monthTab==="weeks"&&(
+                <div>
+                  {monthData.weeks.length===0
+                    ?<div style={{textAlign:"center",padding:"40px",color:"#94a3b8"}}>No weeks with data this month.</div>
+                    :(<div>
+                        <div style={{display:"flex",gap:"8px",marginBottom:"16px",flexWrap:"wrap"}}>
+                          {monthData.weeks.map(wk=>{ const wE=monthData.entries.filter(e=>e.weekKey===wk); return (<div key={wk} style={{background:"white",border:"1px solid #e2e8f0",borderRadius:"8px",padding:"10px 14px",minWidth:"155px",flex:1}}><div style={{fontSize:"16px",fontWeight:"900",color:"#0f172a"}}>W{weekNum(wk)}</div><div style={{fontSize:"11px",color:"#64748b",margin:"2px 0 4px"}}>{weekLabel(wk)}</div><div style={{fontSize:"11px",fontWeight:"700",color:"#22c55e"}}>{wE.length} entries</div></div>); })}
+                        </div>
+                        <div style={{fontSize:"11px",color:"#94a3b8",marginBottom:"14px"}}>W = Week number of the year (W1&#x2013;W52)</div>
+                        {monthData.weeks.map(wk=>{ const wE=monthData.entries.filter(e=>e.weekKey===wk); return (
+                          <div key={wk} style={{marginBottom:"14px",border:"1px solid #e2e8f0",borderRadius:"10px",overflow:"hidden"}}>
+                            <div style={{background:"#0f172a",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:"8px"}}>
+                              <div><span style={{color:"white",fontWeight:"800",fontSize:"14px"}}>Week {weekNum(wk)}</span><span style={{color:"#94a3b8",fontSize:"12px",marginLeft:"8px"}}>{weekLabel(wk)}</span></div>
+                              <div style={{display:"flex",alignItems:"center",gap:"10px"}}><span style={{color:"#86efac",fontSize:"11px",fontWeight:"600"}}>{wE.length} entries</span><button className="no-print" onClick={()=>{setShowMonthReport(false);setWeekKey(wk);}} style={{padding:"4px 10px",background:"rgba(99,102,241,.3)",border:"1px solid rgba(99,102,241,.5)",borderRadius:"5px",color:"#a5b4fc",fontSize:"11px",fontWeight:"600",cursor:"pointer"}}>Open Week &#x2192;</button></div>
+                            </div>
+                            {wE.length===0?<div style={{padding:"10px 16px",color:"#94a3b8",fontSize:"12px"}}>No entries.</div>
+                              :<table style={{width:"100%",borderCollapse:"collapse",fontSize:"11px"}}><thead><tr style={{background:"#f8fafc"}}>{["Day","Student","Subject","Topic"].map((h,i)=>(<th key={i} style={{padding:"6px 12px",textAlign:"left",fontWeight:"700",color:"#64748b",fontSize:"10px",textTransform:"uppercase",letterSpacing:"0.06em",width:i===0?"80px":i===1?"22%":i===2?"28%":"auto"}}>{h}</th>))}</tr></thead><tbody>{wE.map((e,i)=>{ const si=students.indexOf(e.student),p=gc(si>=0?si:0); return (<tr key={i} style={{borderTop:"1px solid #f1f5f9",background:i%2===0?"white":"#fafafa"}}><td style={{padding:"6px 12px",fontWeight:"600",color:"#334155"}}>{e.day.slice(0,3)}</td><td style={{padding:"6px 12px",color:p.text,fontWeight:"600",fontSize:"11px"}}>{e.student}</td><td style={{padding:"6px 12px"}}><span style={{background:p.soft,color:p.text,padding:"2px 7px",borderRadius:"99px",fontSize:"10px",fontWeight:"600"}}>{e.subject}</span></td><td style={{padding:"6px 12px",color:e.topic?"#475569":"#cbd5e1",fontStyle:e.topic?"normal":"italic"}}>{e.topic||"&#x2014;"}</td></tr>); })}</tbody></table>
+                            }
+                          </div>
+                        ); })}
+                      </div>)
+                  }
+                </div>
+              )}
+            </div>
+            <div className="no-print" style={{padding:"12px 24px",borderTop:"1px solid #e2e8f0",background:"#f8fafc",borderRadius:"0 0 16px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"8px"}}>
+              <span style={{fontSize:"11px",color:"#94a3b8"}}>A week belongs to the month its Monday falls in &middot; W = week number of the year</span>
+              <button onClick={()=>setShowMonthReport(false)} style={{padding:"8px 20px",background:"#0f172a",color:"white",border:"none",borderRadius:"8px",fontSize:"12px",fontWeight:"700",cursor:"pointer"}}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ WEEKLY REPORT ════════════════════════════════════ */}
+      {showWeekReport&&(
+        <div className="report-overlay" style={{position:"fixed",inset:0,background:"rgba(15,23,42,.65)",zIndex:1000,display:"flex",alignItems:"flex-start",justifyContent:"center",padding:"20px",overflowY:"auto"}}>
+          <div className="report-box" style={{background:"white",borderRadius:"16px",width:"100%",maxWidth:"900px",boxShadow:"0 24px 64px rgba(0,0,0,.35)",marginTop:"8px"}}>
+            <div style={{background:"linear-gradient(135deg,#0f172a,#1e293b)",borderRadius:"16px 16px 0 0",padding:"18px 24px",color:"white",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"10px"}}>
+              <div><h2 style={{margin:0,fontSize:"18px",fontWeight:"800"}}>&#x1F4CA; Week Report &#x2014; W{weekNum(weekKey)}</h2><p style={{margin:"3px 0 0",color:"#94a3b8",fontSize:"12px"}}>{weekLabel(weekKey)} &middot; {totalEntries} entries</p></div>
+              <div className="no-print" style={{display:"flex",gap:"8px"}}>
+                <button onClick={exportWeekCSV} className="pill" style={{padding:"7px 13px",background:"rgba(34,197,94,.2)",border:"1px solid rgba(34,197,94,.4)",borderRadius:"8px",color:"#86efac",fontSize:"12px",fontWeight:"600",cursor:"pointer"}}>&#x1F4E5; CSV</button>
+                <button onClick={doPrint} className="pill" style={{padding:"7px 13px",background:"rgba(99,102,241,.2)",border:"1px solid rgba(99,102,241,.4)",borderRadius:"8px",color:"#a5b4fc",fontSize:"12px",fontWeight:"600",cursor:"pointer"}}>&#x1F5A8; Print Report</button>
+                <button onClick={()=>setShowWeekReport(false)} style={{padding:"7px 12px",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.15)",borderRadius:"8px",color:"white",fontSize:"16px",lineHeight:1,cursor:"pointer"}}>&#x00D7;</button>
+              </div>
+            </div>
+            <div className="rscroll" style={{padding:"22px",maxHeight:"72vh",overflowY:"auto"}}>
+              {savedWeeks.length>0&&(
+                <div style={{marginBottom:"20px",background:"#f8fafc",borderRadius:"10px",padding:"14px 16px",border:"1px solid #e2e8f0"}}>
+                  <div style={{fontSize:"11px",fontWeight:"800",color:"#64748b",textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:"10px"}}>All Saved Weeks ({savedWeeks.length})</div>
+                  <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>{savedWeeks.map(wk=>(<button key={wk} onClick={()=>{setShowWeekReport(false);setWeekKey(wk);}} style={{padding:"5px 11px",background:wk===weekKey?"#0f172a":"white",border:`1px solid ${wk===weekKey?"#0f172a":"#e2e8f0"}`,borderRadius:"7px",color:wk===weekKey?"white":"#475569",fontSize:"11px",fontWeight:wk===weekKey?"700":"500",cursor:"pointer"}}><strong>W{weekNum(wk)}</strong> &middot; {weekLabel(wk)}{wk===weekKey?" \u2605":""}</button>))}</div>
+                </div>
+              )}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(148px,1fr))",gap:"10px",marginBottom:"22px"}}>
+                {students.map((name,si)=>{ const count=daysStudied(si),freq=getFreq(si),p=gc(si),ent=studentEntries(si); return (
+                  <div key={si} style={{border:`1.5px solid ${p.mid}`,borderRadius:"10px",padding:"13px",background:p.soft}}>
+                    <div style={{fontSize:"10px",fontWeight:"800",color:p.text,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"5px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>
+                    <div style={{fontSize:"22px",fontWeight:"900",color:"#0f172a",lineHeight:1}}>{count}<span style={{fontSize:"11px",color:"#64748b",fontWeight:"400"}}>/7 days</span></div>
+                    <div style={{fontSize:"11px",color:p.text,fontWeight:"600",margin:"4px 0"}}>{ent} entr{ent!==1?"ies":"y"}</div>
+                    <div style={{height:"4px",background:"rgba(0,0,0,.08)",borderRadius:"99px",margin:"4px 0"}}><div style={{height:"100%",width:`${(count/7)*100}%`,background:p.main,borderRadius:"99px"}} /></div>
+                    {freq[0]?<div style={{fontSize:"10px",color:p.text,fontWeight:"600",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Top: {freq[0][0]}</div>:<div style={{fontSize:"10px",color:"#94a3b8"}}>No entries</div>}
+                  </div>
+                );})}
+              </div>
+              {students.map((name,si)=>{ const p=gc(si);
+                const entries=[];
+                data.forEach((row,di)=>{ (row[si]||[]).forEach(e=>{ if(e.subject) entries.push({day:DAYS[di],...e}); }); });
+                return (
+                  <div key={si} style={{marginBottom:"20px"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:"7px",marginBottom:"7px"}}><span style={{width:"10px",height:"10px",borderRadius:"50%",background:p.main,display:"inline-block"}} /><span style={{fontSize:"13px",fontWeight:"700",color:"#0f172a"}}>{name}</span><span style={{fontSize:"11px",color:"#94a3b8"}}>&#x2014; {daysStudied(si)} days &middot; {entries.length} entries</span></div>
+                    {entries.length===0
+                      ?<div style={{padding:"9px 14px",background:"#f8fafc",borderRadius:"8px",fontSize:"12px",color:"#94a3b8",border:"1px dashed #e2e8f0"}}>No entries this week.</div>
+                      :<table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
+                          <thead><tr style={{background:p.soft}}>{["Day","Subject","Topic Studied"].map((h,i)=>(<th key={i} style={{padding:"7px 11px",textAlign:"left",fontWeight:"800",color:p.text,fontSize:"10px",textTransform:"uppercase",letterSpacing:"0.07em",width:i===0?"100px":i===1?"36%":"auto"}}>{h}</th>))}</tr></thead>
+                          <tbody>{entries.map((e,i)=>(<tr key={i} style={{borderBottom:"1px solid #f1f5f9",background:i%2===0?"white":"#fafafa"}}><td style={{padding:"7px 11px",fontWeight:"600",color:"#334155"}}>{e.day}</td><td style={{padding:"7px 11px"}}><span style={{background:p.soft,color:p.text,padding:"2px 9px",borderRadius:"99px",fontSize:"11px",fontWeight:"600"}}>{e.subject}</span></td><td style={{padding:"7px 11px",color:e.topic?"#1e293b":"#94a3b8",fontStyle:e.topic?"normal":"italic"}}>{e.topic||"&#x2014;"}</td></tr>))}</tbody>
+                        </table>
+                    }
+                  </div>
+                );
+              })}
+            </div>
+            <div className="no-print" style={{padding:"12px 24px",borderTop:"1px solid #e2e8f0",background:"#f8fafc",borderRadius:"0 0 16px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <span style={{fontSize:"11px",color:"#94a3b8"}}>W{weekNum(weekKey)} = Week {weekNum(weekKey)} of {weekMonth(weekKey)}</span>
+              <button onClick={()=>setShowWeekReport(false)} style={{padding:"8px 20px",background:"#0f172a",color:"white",border:"none",borderRadius:"8px",fontSize:"12px",fontWeight:"700",cursor:"pointer"}}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ MAIN TRACKER ═════════════════════════════════════ */}
+      <div id="main-tracker" style={{fontFamily:"'Segoe UI',system-ui,-apple-system,sans-serif",background:"#f1f5f9",minHeight:"100vh",padding:"20px"}}>
+        <div style={{maxWidth:"1500px",margin:"0 auto"}}>
+
+          {/* header */}
+          <div style={{background:"linear-gradient(135deg,#0f172a 0%,#1a2744 60%,#0c1a3a 100%)",borderRadius:"16px",padding:"20px 24px",marginBottom:"14px",color:"white",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:"-30px",right:"-20px",width:"140px",height:"140px",background:"rgba(99,102,241,.1)",borderRadius:"50%",pointerEvents:"none"}} />
+            <div style={{position:"relative"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:"12px",marginBottom:"14px"}}>
+                <div>
+                  <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"4px"}}><span style={{fontSize:"26px"}}>&#x1F4DA;</span><h1 style={{margin:0,fontSize:"20px",fontWeight:"800",letterSpacing:"-0.4px"}}>Weekly Study Monitor</h1></div>
+                  <p style={{margin:0,color:"#94a3b8",fontSize:"12px"}}>{students.length} Students &middot; {subjects.length} Subjects &middot; Multiple subjects per student per day &middot; Auto-saved
+                    {syncStatus!=="off"&&<span style={{marginLeft:"8px",color:syncStatus==="connected"?"#86efac":syncStatus==="synced"?"#a78bfa":syncStatus==="connecting"?"#fcd34d":"#fca5a5"}}>
+                      {syncStatus==="connected"&&"&#x2601; Synced"}
+                      {syncStatus==="synced"&&"&#x2601; &#x2713; Just synced"}
+                      {syncStatus==="connecting"&&"&#x2601; Connecting\u2026"}
+                      {syncStatus==="error"&&"&#x2601; Sync error"}
+                    </span>}
+                  </p>
+                </div>
+                <div style={{display:"flex",gap:"7px",flexWrap:"wrap"}}>
+                  {[{id:"students",icon:"&#x1F465;",label:"Students"},{id:"subjects",icon:"&#x1F4D6;",label:"Subjects"}].map(btn=>(<button key={btn.id} className="pill" onClick={()=>setPanel(p=>p===btn.id?null:btn.id)} style={{padding:"7px 12px",background:panel===btn.id?"rgba(99,102,241,.55)":"rgba(255,255,255,.07)",border:"1px solid",borderColor:panel===btn.id?"rgba(99,102,241,.9)":"rgba(255,255,255,.15)",borderRadius:"8px",color:"white",fontSize:"12px",fontWeight:"600",cursor:"pointer"}}><span dangerouslySetInnerHTML={{__html:`${btn.icon} ${btn.label}`}} /></button>))}
+                  <button className="pill" onClick={()=>setShowSync(s=>!s)} style={{padding:"7px 12px",background:showSync?"rgba(99,102,241,.55)":syncStatus==="connected"||syncStatus==="synced"?"rgba(16,185,129,.22)":syncStatus==="connecting"?"rgba(245,158,11,.22)":"rgba(255,255,255,.07)",border:"1px solid",borderColor:showSync?"rgba(99,102,241,.9)":syncStatus==="connected"||syncStatus==="synced"?"rgba(16,185,129,.5)":syncStatus==="connecting"?"rgba(245,158,11,.5)":"rgba(255,255,255,.15)",borderRadius:"8px",color:"white",fontSize:"12px",fontWeight:"600",cursor:"pointer"}}>
+                    &#x2601; Sync{syncStatus==="connected"||syncStatus==="synced"?" \u2713":syncStatus==="connecting"?"\u2026":""}
+                  </button>
+                  <button className="pill" onClick={openWeekReport}  style={{padding:"7px 12px",background:"rgba(34,197,94,.18)",border:"1px solid rgba(34,197,94,.35)",borderRadius:"8px",color:"#86efac",fontSize:"12px",fontWeight:"700",cursor:"pointer"}}>&#x1F4CA; Week</button>
+                  <button className="pill" onClick={openMonthReport} style={{padding:"7px 12px",background:"rgba(251,191,36,.18)",border:"1px solid rgba(251,191,36,.35)",borderRadius:"8px",color:"#fcd34d",fontSize:"12px",fontWeight:"700",cursor:"pointer"}}>&#x1F4C5; Monthly</button>
+                  <button className="pill" onClick={clearWeek}       style={{padding:"7px 12px",background:"rgba(239,68,68,.12)",border:"1px solid rgba(239,68,68,.25)",borderRadius:"8px",color:"#fca5a5",fontSize:"12px",fontWeight:"600",cursor:"pointer"}}>&#x1F5D1; Clear</button>
+                </div>
+              </div>
+              {/* week nav */}
+              <div style={{display:"flex",alignItems:"center",gap:"10px",background:"rgba(0,0,0,.22)",borderRadius:"10px",padding:"10px 14px"}}>
+                <button className="wk-btn" onClick={()=>setWeekKey(shift(weekKey,-1))} style={{padding:"5px 11px",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.15)",borderRadius:"6px",color:"white",fontSize:"13px",cursor:"pointer"}}>&#x2190; Prev</button>
+                <div style={{flex:1,textAlign:"center"}}>
+                  <div style={{fontWeight:"800",fontSize:"14px"}}><span style={{background:"rgba(99,102,241,.4)",padding:"2px 8px",borderRadius:"5px",fontSize:"12px",marginRight:"8px",fontWeight:"700"}}>W{weekNum(weekKey)}</span>{weekLabel(weekKey)}</div>
+                  <div style={{fontSize:"10px",marginTop:"2px",color:weekKey===TODAY?"#86efac":"#f59e0b"}}>{weekKey===TODAY?"&#x2713; Current week":`${weekMonth(weekKey)} \u2014 not current week`}</div>
+                </div>
+                <button className="wk-btn" onClick={()=>setWeekKey(TODAY)} disabled={weekKey===TODAY} style={{padding:"5px 10px",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.15)",borderRadius:"6px",color:"white",fontSize:"11px",fontWeight:"600",cursor:weekKey===TODAY?"default":"pointer",opacity:weekKey===TODAY?.6:1}}>Today</button>
+                <button className="wk-btn" onClick={()=>setWeekKey(shift(weekKey,1))}  style={{padding:"5px 11px",background:"rgba(255,255,255,.1)",border:"1px solid rgba(255,255,255,.15)",borderRadius:"6px",color:"white",fontSize:"13px",cursor:"pointer"}}>Next &#x2192;</button>
+                <div style={{fontSize:"11px",minWidth:"72px",textAlign:"right",fontWeight:"600",color:saveStatus==="saved"?"#86efac":"#94a3b8"}}>{saveStatus==="saving"?"&#x1F4BE; Saving\u2026":saveStatus==="saved"?"\u2713 Saved":""}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── sync panel ─────────────────────────────────── */}
+          {showSync&&(
+            <div style={{background:"white",borderRadius:"12px",padding:"18px 22px",marginBottom:"12px",boxShadow:"0 2px 8px rgba(0,0,0,.06)",border:"1px solid #e2e8f0"}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}>
+                <h3 style={{margin:0,fontSize:"13px",fontWeight:"700",color:"#0f172a"}}>&#x2601; Cloud Sync</h3>
+                <button onClick={()=>setShowSync(false)} style={{background:"none",border:"none",color:"#94a3b8",fontSize:"18px",cursor:"pointer"}}>&#x00D7;</button>
+              </div>
+
+              {window.FIREBASE_NOT_CONFIGURED&&(
+                <div style={{background:"#fffbeb",border:"1px solid #fde68a",borderRadius:"8px",padding:"12px 14px"}}>
+                  <div style={{fontWeight:"700",color:"#92400e",fontSize:"12px",marginBottom:"4px"}}>&#x26A0; Firebase not configured yet</div>
+                  <div style={{fontSize:"11px",color:"#78350f",lineHeight:"1.6"}}>
+                    Open this HTML file in a text editor and follow the setup instructions in the comment block just before the React code.<br/>
+                    It takes about 10 minutes — create a free Firebase project, paste 6 config values, and you're done.
+                  </div>
+                </div>
+              )}
+
+              {!window.FIREBASE_NOT_CONFIGURED&&(
+                <>
+                  {/* status bar */}
+                  <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"14px",padding:"8px 12px",background:"#f8fafc",borderRadius:"8px",border:"1px solid #e2e8f0"}}>
+                    <span style={{width:"8px",height:"8px",borderRadius:"50%",background:syncStatus==="connected"||syncStatus==="synced"?"#10b981":syncStatus==="connecting"?"#f59e0b":"#94a3b8",flexShrink:0,display:"inline-block"}} />
+                    <span style={{fontSize:"12px",fontWeight:"600",color:"#374151"}}>
+                      {syncStatus==="off"&&"Not connected to a sync room"}
+                      {syncStatus==="connecting"&&"Connecting\u2026"}
+                      {syncStatus==="connected"&&`Connected \u2014 Room: `}
+                      {syncStatus==="synced"&&`Just synced \u2713 \u2014 Room: `}
+                      {syncStatus==="error"&&"Connection error \u2014 check your Firebase config or internet connection"}
+                      {(syncStatus==="connected"||syncStatus==="synced")&&<strong>{syncCode}</strong>}
+                    </span>
+                    {syncCode&&(
+                      <button onClick={leaveRoom} style={{marginLeft:"auto",padding:"3px 10px",background:"#fee2e2",border:"1px solid #fecaca",borderRadius:"6px",color:"#ef4444",fontSize:"11px",fontWeight:"700",cursor:"pointer",flexShrink:0}}>Leave Room</button>
+                    )}
+                  </div>
+
+                  {!syncCode&&(
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px"}}>
+                      {/* create */}
+                      <div style={{border:"1.5px dashed #a5b4fc",borderRadius:"10px",padding:"14px 16px",background:"#eef2ff"}}>
+                        <div style={{fontWeight:"700",fontSize:"12px",color:"#3730a3",marginBottom:"4px"}}>Start a new sync room</div>
+                        <div style={{fontSize:"11px",color:"#4338ca",marginBottom:"12px",lineHeight:"1.5"}}>Creates a unique Room Code that all your devices can join. Do this once on your first device.</div>
+                        <button onClick={createRoom} style={{width:"100%",padding:"8px",background:"linear-gradient(135deg,#6366f1,#4338ca)",border:"none",borderRadius:"7px",color:"white",fontSize:"12px",fontWeight:"700",cursor:"pointer"}}>&#x2728; Create Room</button>
+                      </div>
+                      {/* join */}
+                      <div style={{border:"1.5px dashed #86efac",borderRadius:"10px",padding:"14px 16px",background:"#f0fdf4"}}>
+                        <div style={{fontWeight:"700",fontSize:"12px",color:"#14532d",marginBottom:"4px"}}>Join an existing room</div>
+                        <div style={{fontSize:"11px",color:"#166534",marginBottom:"12px",lineHeight:"1.5"}}>Enter the Room Code from your first device. All data will sync automatically.</div>
+                        <div style={{display:"flex",gap:"6px"}}>
+                          <input value={joinInput} onChange={e=>setJoinInput(e.target.value.toUpperCase())}
+                            onKeyDown={e=>e.key==="Enter"&&joinRoom()}
+                            placeholder="e.g. CEDAR-MOON-2847"
+                            style={{flex:1,padding:"7px 10px",border:"1.5px solid #86efac",borderRadius:"7px",fontSize:"11px",fontWeight:"600",letterSpacing:"0.06em",minWidth:0}}
+                          />
+                          <button onClick={()=>joinRoom()} style={{padding:"7px 12px",background:"#16a34a",border:"none",borderRadius:"7px",color:"white",fontSize:"12px",fontWeight:"700",cursor:"pointer",flexShrink:0}}>Join</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {syncCode&&(
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px"}}>
+                      {/* room code to share */}
+                      <div style={{border:"1.5px solid #e2e8f0",borderRadius:"10px",padding:"14px 16px",background:"#f8fafc"}}>
+                        <div style={{fontWeight:"700",fontSize:"11px",color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"6px"}}>Your Room Code</div>
+                        <div style={{fontSize:"16px",fontWeight:"900",color:"#0f172a",letterSpacing:"0.04em",fontFamily:"monospace",marginBottom:"10px"}}>{syncCode}</div>
+                        <div style={{fontSize:"11px",color:"#64748b",marginBottom:"10px",lineHeight:"1.5"}}>Share this with family members — enter it on each device to sync automatically.</div>
+                        <button onClick={copySyncCode} style={{width:"100%",padding:"7px",background:"white",border:"1.5px solid #e2e8f0",borderRadius:"7px",color:"#374151",fontSize:"12px",fontWeight:"600",cursor:"pointer"}}>&#x1F4CB; Copy Code</button>
+                      </div>
+                      {/* join a different room */}
+                      <div style={{border:"1.5px dashed #e2e8f0",borderRadius:"10px",padding:"14px 16px"}}>
+                        <div style={{fontWeight:"700",fontSize:"11px",color:"#94a3b8",textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:"6px"}}>Join a Different Room</div>
+                        <div style={{fontSize:"11px",color:"#64748b",marginBottom:"10px",lineHeight:"1.5"}}>Switch to a different sync room by entering another Room Code.</div>
+                        <div style={{display:"flex",gap:"6px"}}>
+                          <input value={joinInput} onChange={e=>setJoinInput(e.target.value.toUpperCase())}
+                            onKeyDown={e=>e.key==="Enter"&&joinRoom()}
+                            placeholder="Room code"
+                            style={{flex:1,padding:"7px 10px",border:"1.5px solid #e2e8f0",borderRadius:"7px",fontSize:"11px",fontWeight:"600",letterSpacing:"0.06em",minWidth:0}}
+                          />
+                          <button onClick={()=>joinRoom()} style={{padding:"7px 12px",background:"#6366f1",border:"none",borderRadius:"7px",color:"white",fontSize:"12px",fontWeight:"700",cursor:"pointer",flexShrink:0}}>Join</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {/* setup panel */}
+          {panel&&(<div style={{background:"white",borderRadius:"12px",padding:"18px 22px",marginBottom:"12px",boxShadow:"0 2px 8px rgba(0,0,0,.06)",border:"1px solid #e2e8f0"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"14px"}}><h3 style={{margin:0,fontSize:"13px",fontWeight:"700",color:"#0f172a"}}>{panel==="students"?`Manage Students (${students.length})`:`Manage Subjects (${subjects.length})`}</h3><button onClick={()=>setPanel(null)} style={{background:"none",border:"none",color:"#94a3b8",fontSize:"18px",cursor:"pointer"}}>&#x00D7;</button></div>
+            {panel==="students"&&(<><div style={{display:"flex",flexDirection:"column",gap:"7px",marginBottom:"10px"}}>{students.map((val,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:"10px"}}><span style={{width:"10px",height:"10px",borderRadius:"50%",background:gc(i).main,flexShrink:0}} /><span style={{fontSize:"10px",fontWeight:"700",color:"#64748b",width:"62px",flexShrink:0}}>Student {i+1}</span><input value={val} onChange={e=>renameStudent(i,e.target.value)} style={{flex:1,padding:"7px 10px",border:"1.5px solid #e2e8f0",borderRadius:"7px",fontSize:"13px"}} /><button onClick={()=>removeStudent(i)} disabled={students.length<=1} style={{padding:"6px 10px",background:students.length<=1?"#f8fafc":"#fee2e2",border:"1px solid",borderColor:students.length<=1?"#e2e8f0":"#fecaca",borderRadius:"7px",color:students.length<=1?"#cbd5e1":"#ef4444",fontSize:"14px",fontWeight:"800",cursor:students.length<=1?"not-allowed":"pointer",flexShrink:0,lineHeight:1}}>&#x00D7;</button></div>))}</div><button onClick={addStudent} style={{padding:"8px 16px",background:"#eff6ff",border:"1.5px dashed #93c5fd",borderRadius:"8px",color:"#1d4ed8",fontSize:"13px",fontWeight:"700",cursor:"pointer",width:"100%"}}>+ Add Student</button></>)}
+            {panel==="subjects"&&(
+              <>
+                {sections.map((sec,si)=>{
+                  const secSubjects=subjects.map((s,i)=>({...s,_i:i})).filter(s=>s.section===sec);
+                  return (
+                    <div key={sec} style={{marginBottom:"14px",border:"1px solid #e2e8f0",borderRadius:"10px",overflow:"hidden"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",background:"#f8fafc",borderBottom:"1px solid #e2e8f0"}}>
+                        <input value={sec} onChange={e=>renameSection(si,e.target.value)} placeholder="Section name"
+                          style={{flex:1,padding:"5px 8px",border:"1.5px solid #e2e8f0",borderRadius:"6px",fontSize:"12px",fontWeight:"800",color:"#0f172a",background:"white",minWidth:0}} />
+                        <span style={{fontSize:"10px",color:"#94a3b8",fontWeight:"600",flexShrink:0,whiteSpace:"nowrap"}}>{secSubjects.length} subject{secSubjects.length!==1?"s":""}</span>
+                        <button onClick={()=>removeSection(si)} disabled={sections.length<=1}
+                          style={{padding:"4px 8px",background:sections.length<=1?"#f1f5f9":"#fee2e2",border:"1px solid",borderColor:sections.length<=1?"#e2e8f0":"#fecaca",borderRadius:"6px",color:sections.length<=1?"#cbd5e1":"#ef4444",fontSize:"12px",fontWeight:"800",cursor:sections.length<=1?"not-allowed":"pointer",flexShrink:0,lineHeight:1}}>&#x00D7;</button>
+                      </div>
+                      <div style={{padding:"9px 10px",display:"flex",flexDirection:"column",gap:"6px"}}>
+                        {secSubjects.length===0&&<div style={{fontSize:"11px",color:"#94a3b8",fontStyle:"italic",padding:"3px 2px"}}>No subjects yet.</div>}
+                        {secSubjects.map(s=>(
+                          <div key={s._i} style={{display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap"}}>
+                            <input value={s.name} onChange={e=>renameSubject(s._i,e.target.value)} placeholder="Subject name"
+                              style={{flex:"1 1 160px",minWidth:0,padding:"7px 10px",border:"1.5px solid #e2e8f0",borderRadius:"7px",fontSize:"12px"}} />
+                            <select value={s.domain} onChange={e=>setSubjectDomain(s._i,e.target.value)} title="Domain / Category (optional)"
+                              style={{flex:"1 1 150px",minWidth:0,padding:"7px 10px",border:"1.5px solid #99d6c8",borderRadius:"7px",fontSize:"11px",fontWeight:"600",color:"#0f766e",background:"#f0fdfa",cursor:"pointer"}}>
+                              <option value="">&#x2014; No domain &#x2014;</option>
+                              {domains.map(d=>(<option key={d} value={d}>{d}</option>))}
+                            </select>
+                            <select value={s.section} onChange={e=>moveSubjectSection(s._i,e.target.value)} title="Move to a different section"
+                              style={{flex:"0 0 120px",padding:"7px 6px",border:"1.5px solid #e2e8f0",borderRadius:"7px",fontSize:"11px",background:"white",cursor:"pointer"}}>
+                              {sections.map(sc=>(<option key={sc} value={sc}>{sc}</option>))}
+                            </select>
+                            <button onClick={()=>removeSubject(s._i)} disabled={subjects.length<=1}
+                              style={{padding:"5px 8px",background:subjects.length<=1?"#f8fafc":"#fee2e2",border:"1px solid",borderColor:subjects.length<=1?"#e2e8f0":"#fecaca",borderRadius:"6px",color:subjects.length<=1?"#cbd5e1":"#ef4444",fontSize:"13px",fontWeight:"800",cursor:subjects.length<=1?"not-allowed":"pointer",flexShrink:0,lineHeight:1}}>&#x00D7;</button>
+                          </div>
+                        ))}
+                        <button onClick={()=>addSubject(sec)} style={{padding:"6px 12px",background:"#f0fdf4",border:"1.5px dashed #86efac",borderRadius:"7px",color:"#15803d",fontSize:"12px",fontWeight:"700",cursor:"pointer",marginTop:"2px"}}>+ Add Subject to {sec}</button>
+                      </div>
+                    </div>
+                  );
+                })}
+                <button onClick={addSection} style={{padding:"8px 16px",background:"#eef2ff",border:"1.5px dashed #a5b4fc",borderRadius:"8px",color:"#4338ca",fontSize:"13px",fontWeight:"700",cursor:"pointer",width:"100%"}}>+ Add Section</button>
+
+                <div style={{marginTop:"16px",border:"1px solid #99d6c8",borderRadius:"10px",overflow:"hidden",background:"#f0fdfa"}}>
+                  <div style={{padding:"9px 10px",borderBottom:domains.length?"1px solid #99d6c8":"none"}}>
+                    <div style={{fontSize:"11px",fontWeight:"800",color:"#0f766e",textTransform:"uppercase",letterSpacing:"0.06em"}}>Domains</div>
+                    <div style={{fontSize:"10px",color:"#0f766e",opacity:0.75,marginTop:"2px"}}>Optional cross-cutting tags &#x2014; e.g. "Ritual" can group Salat across different sections</div>
+                  </div>
+                  {domains.length>0&&(
+                    <div style={{padding:"9px 10px",display:"flex",flexDirection:"column",gap:"6px"}}>
+                      {domains.map((d,i)=>{
+                        const count=subjects.filter(s=>s.domain===d).length;
+                        return (
+                          <div key={i} style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                            <input value={d} onChange={e=>renameDomain(i,e.target.value)} placeholder="Domain name"
+                              style={{flex:1,padding:"7px 10px",border:"1.5px solid #99d6c8",borderRadius:"7px",fontSize:"12px",background:"white",minWidth:0}} />
+                            <span style={{fontSize:"10px",color:"#0f766e",fontWeight:"600",flexShrink:0,whiteSpace:"nowrap"}}>{count} subject{count!==1?"s":""}</span>
+                            <button onClick={()=>removeDomain(i)}
+                              style={{padding:"5px 8px",background:"#fee2e2",border:"1px solid #fecaca",borderRadius:"6px",color:"#ef4444",fontSize:"13px",fontWeight:"800",cursor:"pointer",flexShrink:0,lineHeight:1}}>&#x00D7;</button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div style={{padding:domains.length?"0 10px 10px":"10px"}}>
+                    <button onClick={addDomain} style={{padding:"6px 12px",background:"white",border:"1.5px dashed #5eead4",borderRadius:"7px",color:"#0f766e",fontSize:"12px",fontWeight:"700",cursor:"pointer",width:"100%"}}>+ Add Domain</button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>)}
+
+          {/* progress cards */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(158px,1fr))",gap:"10px",marginBottom:"12px"}}>
+            {students.map((name,si)=>{ const count=daysStudied(si),p=gc(si),freq=getFreq(si),ent=studentEntries(si); return (
+              <div key={si} style={{background:"white",borderRadius:"10px",padding:"13px 15px",boxShadow:"0 1px 3px rgba(0,0,0,.06)",borderLeft:`4px solid ${p.main}`}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{fontSize:"10px",fontWeight:"800",color:p.text,textTransform:"uppercase",letterSpacing:"0.05em",maxWidth:"78%",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div><div style={{fontSize:"10px",color:"#94a3b8",fontWeight:"600"}}>{count}/7</div></div>
+                <div style={{fontSize:"22px",fontWeight:"900",color:"#0f172a",margin:"5px 0 1px",lineHeight:1}}>{count}<span style={{fontSize:"11px",color:"#94a3b8",fontWeight:"400"}}> days</span></div>
+                <div style={{fontSize:"11px",color:p.text,fontWeight:"700",marginBottom:"6px"}}>{ent} entr{ent!==1?"ies":"y"}</div>
+                <div style={{height:"4px",background:"#f1f5f9",borderRadius:"999px"}}><div style={{height:"100%",width:`${(count/7)*100}%`,background:p.main,borderRadius:"999px",transition:"width .4s"}} /></div>
+                {freq[0]&&<div style={{fontSize:"9px",color:"#94a3b8",marginTop:"4px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Top: {freq[0][0]}</div>}
+              </div>
+            );})}
+          </div>
+
+          {/* main table — one column per student, each cell holds multiple entries */}
+          <div style={{background:"white",borderRadius:"12px",boxShadow:"0 2px 8px rgba(0,0,0,.06)",overflow:"hidden",border:"1px solid #e2e8f0"}}>
+            <div style={{overflowX:"auto"}}>
+              <table style={{width:"100%",borderCollapse:"collapse",minWidth:`${100+students.length*330}px`}}>
+                <thead>
+                  <tr>
+                    <th rowSpan={2} style={{background:"#0f172a",color:"#64748b",padding:"0 10px",fontSize:"10px",fontWeight:"800",letterSpacing:"0.12em",textAlign:"center",width:"84px",verticalAlign:"middle",textTransform:"uppercase"}}>DAY</th>
+                    {students.map((name,si)=>(<th key={si} style={{background:gc(si).main,color:"white",padding:"11px 14px",textAlign:"center",fontSize:"12px",fontWeight:"700",borderLeft:"3px solid white"}}>{name}</th>))}
+                  </tr>
+                  <tr>
+                    {students.map((_,si)=>{ const p=gc(si); return (
+                      <th key={si} style={{background:p.soft,color:p.text,padding:"5px 10px",fontSize:"9px",fontWeight:"800",letterSpacing:"0.09em",textAlign:"center",textTransform:"uppercase",borderLeft:`3px solid ${p.mid}`,borderBottom:`2px solid ${p.mid}`}}>
+                        Subject &amp; Topic &nbsp;&#x2022;&nbsp; + Add for more
+                      </th>
+                    );})}
+                  </tr>
+                </thead>
+                <tbody>
+                  {DAYS.map((day,di)=>{
+                    const isWE=di>=5, dayCellBg=isWE?"#fef3c7":(di%2===0?"#f8fafc":"#f1f5f9");
+                    const rowBg=isWE?"#fffbf0":(di%2===0?"white":"#f9fafb");
+                    return (
+                      <tr key={di}>
+                        <td style={{padding:"10px",borderBottom:"1px solid #f1f5f9",background:dayCellBg,textAlign:"center",borderRight:"1px solid #e2e8f0",verticalAlign:"top",whiteSpace:"nowrap"}}>
+                          <div style={{fontWeight:"900",fontSize:"13px",color:isWE?"#92400e":"#1e293b",letterSpacing:"0.06em"}}>{day.slice(0,3).toUpperCase()}</div>
+                          <div style={{fontSize:"9px",fontWeight:"600",color:isWE?"#b45309":"#94a3b8",marginTop:"2px",textTransform:"uppercase"}}>{isWE?"Weekend":`Day ${di+1}`}</div>
+                        </td>
+                        {students.map((_,si)=>{
+                          const entries=data[di][si]||[], p=gc(si);
+                          return (
+                            <td key={si} style={{padding:"7px 8px",borderBottom:"1px solid #f1f5f9",borderLeft:`3px solid ${p.mid}`,background:rowBg,verticalAlign:"top",minWidth:"300px"}}>
+                              {entries.map((entry,ei)=>(
+                                <div key={ei} className="entry-row" style={{display:"flex",gap:"4px",marginBottom:"4px",alignItems:"center"}}>
+                                  {/* entry number badge */}
+                                  {entries.length>1&&(
+                                    <span style={{fontSize:"9px",fontWeight:"800",color:p.text,background:p.soft,border:`1px solid ${p.mid}`,borderRadius:"4px",padding:"2px 4px",flexShrink:0,lineHeight:1,marginTop:"1px"}}>{ei+1}</span>
+                                  )}
+                                  <select
+                                    value={entry.subject}
+                                    onChange={e=>updateEntry(di,si,ei,"subject",e.target.value)}
+                                    style={{flex:"0 0 42%",padding:"5px 6px",border:`1.5px solid ${entry.subject?p.main:"#e2e8f0"}`,borderRadius:"6px",fontSize:"11px",fontWeight:entry.subject?"600":"400",background:entry.subject?p.soft:"white",color:entry.subject?p.text:"#9ca3af",cursor:"pointer",minWidth:0}}
+                                  >
+                                    <option value="">&#x2014; Subject &#x2014;</option>
+                                    {sections.map(sec=>{
+                                      const opts=subjects.filter(sj=>sj.section===sec);
+                                      if(!opts.length) return null;
+                                      return (<optgroup key={sec} label={sec}>{opts.map((sj,i2)=>(<option key={sec+i2} value={sj.name}>{sj.name}</option>))}</optgroup>);
+                                    })}
+                                  </select>
+                                  <input
+                                    value={entry.topic}
+                                    onChange={e=>updateEntry(di,si,ei,"topic",e.target.value)}
+                                    placeholder="Topic studied&#x2026;"
+                                    style={{flex:1,padding:"5px 7px",border:`1.5px solid ${entry.topic?"#a7f3d0":"#e2e8f0"}`,borderRadius:"6px",fontSize:"11px",background:entry.topic?"#f0fdf4":"white",color:"#1e293b",minWidth:0}}
+                                  />
+                                  {entries.length>1&&(
+                                    <button
+                                      className="remove-btn"
+                                      onClick={()=>removeEntry(di,si,ei)}
+                                      title="Remove this entry"
+                                      style={{padding:"3px 6px",background:"#fee2e2",border:"1px solid #fecaca",borderRadius:"5px",color:"#ef4444",fontSize:"12px",fontWeight:"800",cursor:"pointer",flexShrink:0,lineHeight:1,opacity:0.7,transition:"opacity .15s"}}
+                                    >&#x00D7;</button>
+                                  )}
+                                </div>
+                              ))}
+                              {/* Add subject button */}
+                              <button
+                                onClick={()=>addEntry(di,si)}
+                                style={{padding:"3px 0",background:"transparent",border:`1px dashed ${p.mid}`,borderRadius:"5px",color:p.text,fontSize:"10px",fontWeight:"700",cursor:"pointer",width:"100%",marginTop:"2px",opacity:0.7}}
+                                onMouseOver={e=>e.currentTarget.style.opacity=1}
+                                onMouseOut={e=>e.currentTarget.style.opacity=0.7}
+                              >+ Add subject</button>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <div style={{padding:"10px 18px",background:"#f8fafc",borderTop:"1px solid #e2e8f0",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"8px"}}>
+              <span style={{fontSize:"12px",color:"#64748b"}}><span style={{fontWeight:"700",color:"#0f172a"}}>{totalEntries}</span> subject entr{totalEntries!==1?"ies":"y"} recorded this week &middot; W{weekNum(weekKey)} &middot; {weekMonth(weekKey)}</span>
+              <div style={{display:"flex",gap:"7px"}}>
+                <button onClick={openWeekReport}  className="pill" style={{padding:"7px 14px",background:"#4ade80",border:"none",borderRadius:"8px",color:"#052e16",fontSize:"12px",fontWeight:"700",cursor:"pointer"}}>&#x1F4CA; Week Report</button>
+                <button onClick={openMonthReport} className="pill" style={{padding:"7px 14px",background:"#fbbf24",border:"none",borderRadius:"8px",color:"#451a03",fontSize:"12px",fontWeight:"700",cursor:"pointer"}}>&#x1F4C5; Monthly Report</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<StudyTracker />);
+</script>
+</body>
+</html>
