@@ -345,7 +345,7 @@
   }
 
   /* ======= FIXED EDIT BAR ======= */
-  .edit-bar{position:fixed;top:0;left:0;right:0;height:46px;z-index:400;background:#0d1526;border-bottom:2px solid rgba(201,162,75,0.15);display:flex;align-items:center;padding:0 20px;gap:8px;font-family:'Inter',sans-serif;transition:border-color .2s;}
+  .edit-bar{position:fixed;top:0;left:0;right:0;height:46px;z-index:6000;background:#0d1526;border-bottom:2px solid rgba(201,162,75,0.15);display:flex;align-items:center;padding:0 20px;gap:8px;font-family:'Inter',sans-serif;transition:border-color .2s;}
   .edit-bar.active{border-bottom-color:var(--gold);background:#101e35;}
   .eb-idle{font-size:11px;color:rgba(201,162,75,0.38);letter-spacing:.07em;user-select:none;}
   .eb-controls{display:none;align-items:center;gap:7px;width:100%;}
@@ -2263,6 +2263,13 @@ ReactDOM.createRoot(document.getElementById('root')).render(<StudyTracker />);
 </script>
 <script type="application/x-lazy-js" id="mm-quran-src">
 /* ---------- Data model ---------- */
+// Bumped whenever the built-in ways/domains taxonomy is structurally
+// restructured (v04.00's 30-Ways/7-domain curriculum = version 4). Synced
+// taxonomy documents carrying an OLDER version are superseded — without this
+// gate, a cloud doc saved under the old structure re-overwrites the new
+// default on every boot, and the restructure can never take effect on any
+// device that syncs (the exact bug this fixed).
+const WAYS_TAXONOMY_VERSION = 4;
 const WAYS_DEFAULT = [
   // Section 01 — Building Foundation / Learning Tools
   {id:1,  group:'Building Foundation / Learning Tools', name:'Reading (with Tajweed)', gloss:'Recite with precision and rule', resources:[]},
@@ -2607,6 +2614,14 @@ if(!state.ayahs[state.currentAyahKey]){
 }
 if(state.tajweedMode === undefined) state.tajweedMode = false; // migration safety
 if(!state.themeColors) state.themeColors = {}; // migration safety (Colour Step 3)
+// Taxonomy upgrade (30-Ways/7-domains): a locally-cached ways list from
+// before v04.00 is replaced outright — Smahk confirmed at v04.00 that no
+// pre-restructure ways/progress needed preserving. Progress records
+// themselves are NOT touched here; only the ways/domains list is upgraded.
+if((state.waysVersion || 0) < WAYS_TAXONOMY_VERSION){
+  state.ways = JSON.parse(JSON.stringify(WAYS_DEFAULT));
+  state.waysVersion = WAYS_TAXONOMY_VERSION;
+}
 if(state.audioLoop  === undefined) state.audioLoop  = false; // migration safety
 
 // ═══════════════════════════════════════════════════════════════
@@ -2640,13 +2655,16 @@ async function mmHydrateFromFirestore(){
   try{
     const taxonomy = await mmLoadTeacherTaxonomy(mmOwnTeacherId);
     if(taxonomy){
-      if(taxonomy.ways && taxonomy.ways.length) state.ways = taxonomy.ways;
+      // Only accept the cloud ways list if it carries the current taxonomy
+      // version — an older doc is superseded by the local (already-migrated)
+      // list, and the next save upgrades the doc for everyone.
+      if(taxonomy.ways && taxonomy.ways.length && (taxonomy.waysVersion||0) >= WAYS_TAXONOMY_VERSION) state.ways = taxonomy.ways;
       if(taxonomy.ayahs && Object.keys(taxonomy.ayahs).length) state.ayahs = {...state.ayahs, ...taxonomy.ayahs};
       if(taxonomy.textStyles) state.textStyles = {...state.textStyles, ...taxonomy.textStyles};
       ensureWaySubjectRegisteredForList(state.ways);
     }
     mmTaxonomyUnsub = mmSubscribeTeacherTaxonomy(mmOwnTeacherId, data=>{
-      if(data.ways && data.ways.length) state.ways = data.ways;
+      if(data.ways && data.ways.length && (data.waysVersion||0) >= WAYS_TAXONOMY_VERSION) state.ways = data.ways;
       if(data.ayahs) state.ayahs = {...state.ayahs, ...data.ayahs};
       if(data.textStyles) state.textStyles = {...state.textStyles, ...data.textStyles};
       renderAll();
@@ -2758,7 +2776,7 @@ function scheduleSave(){
       }
       const canWriteTaxonomy = mmCurrentRole && (mmCurrentRole.role==='admin' || mmOwnTeacherId===mmCurrentUser.uid);
       if(canWriteTaxonomy && typeof mmSaveTeacherTaxonomy === 'function'){
-        mmSaveTeacherTaxonomy(mmOwnTeacherId, {ways: state.ways, ayahs: state.ayahs, textStyles: state.textStyles});
+        mmSaveTeacherTaxonomy(mmOwnTeacherId, {ways: state.ways, waysVersion: state.waysVersion || WAYS_TAXONOMY_VERSION, ayahs: state.ayahs, textStyles: state.textStyles});
       }
       // Theme colour prefs are personal — every signed-in user (any role)
       // may always write their own, regardless of taxonomy permissions.
@@ -5429,6 +5447,7 @@ async function mmLoadTeacherTaxonomy(teacherId, allowCreate){
 
   const fresh = {
     ways: (typeof WAYS_DEFAULT !== 'undefined' ? WAYS_DEFAULT : []).map(w=>({...w})),
+    waysVersion: (typeof WAYS_TAXONOMY_VERSION !== 'undefined' ? WAYS_TAXONOMY_VERSION : 0),
     ayahs: {}, // Study's own freshState() seeds a default ayah locally if this is empty
     textStyles: {},
   };
