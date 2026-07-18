@@ -61,7 +61,7 @@
   }
   .wrap{max-width:1180px;margin:0 auto;padding:66px 20px 80px;}
 
-  header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:22px;border-bottom:1px solid rgba(201,162,75,0.25);padding-bottom:18px;}
+  header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:22px;border-bottom:1px solid color-mix(in srgb, var(--gold) 25%, transparent);padding-bottom:18px;}
   .title-block .eyebrow{font-family:'Inter';letter-spacing:.18em;text-transform:uppercase;font-size:11px;color:var(--gold);margin-bottom:6px;}
   .title-block h1{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:34px;margin:0;color:var(--parchment);}
   .title-block .sub{font-size:13px;color:#b9c2d4;margin-top:4px;}
@@ -2050,7 +2050,7 @@ function StudyTracker() {
               <span><strong>{reviewWeeks.length} week{reviewWeeks.length!==1?"s":""}</strong> had a different number of students saved than today's roster, so entries couldn't be safely auto-matched to people. Nothing was deleted — open {reviewWeeks.length===1?"it":"them"} to check: {reviewWeeks.map(wk=>weekLabel(wk)).join(", ")}.</span>
             </div>
           )}
-          <div style={{background:"linear-gradient(135deg,#0f172a 0%,#1a2744 60%,#0c1a3a 100%)",borderRadius:"16px",padding:"20px 24px",marginBottom:"14px",color:"white",position:"relative",overflow:"hidden"}}>
+          <div style={{background:"linear-gradient(135deg,var(--mon-banner-1,#0f172a) 0%,var(--mon-banner-2,#1a2744) 60%,var(--mon-banner-3,#0c1a3a) 100%)",borderRadius:"16px",padding:"20px 24px",marginBottom:"14px",color:"white",position:"relative",overflow:"hidden"}}>
             <div style={{position:"absolute",top:"-30px",right:"-20px",width:"140px",height:"140px",background:"rgba(99,102,241,.1)",borderRadius:"50%",pointerEvents:"none"}} />
             <div style={{position:"relative"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:"12px",marginBottom:"14px"}}>
@@ -2330,9 +2330,15 @@ const DEFAULT_THEME_COLORS = {
   '--ink':'#1B2A41', '--parchment':'#F2E8D5', '--parchment-dim':'#E8DCC2',
   '--gold':'#C9A24B', '--gold-dim':'#A4823A', '--teal':'#3D6B6B', '--maroon':'#7A2E2E',
   '--line':'#cdbf9c', '--bg-start':'#2a3a57', '--bg-end':'#121b2c',
+  '--mon-banner-1':'#0f172a', '--mon-banner-2':'#1a2744', '--mon-banner-3':'#0c1a3a',
   '--tj-silent':'#9aa3b5', '--tj-madd-ghunnah':'#FF7E1E', '--tj-madd-oblig':'#e04040',
   '--tj-madd-permissible':'#4d7dff', '--tj-ikhfa':'#c651c6', '--tj-iqlab':'#26bffd', '--tj-idgham':'#1fa87a'
 };
+
+// Monitor-banner vars must be visible OUTSIDE .mm-quran-scope (Monitor is a
+// separate React tree) — these are written on <html> itself; all other theme
+// vars stay scoped to Study so they can never bleed into Monitor's styling.
+const GLOBAL_THEME_KEYS = ['--mon-banner-1','--mon-banner-2','--mon-banner-3'];
 
 // Reads a domain's colour through any personal override, falling back to the
 // built-in GROUP_COLOR default. Every place that used to read GROUP_COLOR[x]
@@ -2351,7 +2357,9 @@ function applyThemeColors(){
   const target = document.querySelector('.mm-quran-scope') || document.documentElement;
   const overrides = (state.themeColors && state.themeColors.vars) || {};
   Object.keys(DEFAULT_THEME_COLORS).forEach(k=>{
-    target.style.setProperty(k, overrides[k] || DEFAULT_THEME_COLORS[k]);
+    const val = overrides[k] || DEFAULT_THEME_COLORS[k];
+    if(GLOBAL_THEME_KEYS.includes(k)){ document.documentElement.style.setProperty(k, val); }
+    else{ target.style.setProperty(k, val); }
   });
 }
 
@@ -2377,6 +2385,11 @@ const THEME_FIELD_GROUPS = [
     {key:'--bg-start', label:'Backdrop — outer edge'},
     {key:'--ink', label:'Backdrop — centre / base ink'},
     {key:'--bg-end', label:'Backdrop — corners'},
+  ]},
+  { title: 'Monitor Banner', fields: [
+    {key:'--mon-banner-1', label:'Banner gradient — start'},
+    {key:'--mon-banner-2', label:'Banner gradient — middle'},
+    {key:'--mon-banner-3', label:'Banner gradient — end'},
   ]},
   { title: 'Core Palette', fields: [
     {key:'--parchment', label:'Main text'},
@@ -3183,6 +3196,7 @@ function openWayModal(wayId){
   activeWayOriginalStatus = prog.status;
   document.getElementById('wayTitle').textContent = `${wayId}. ${w.name}`;
   document.getElementById('wayGroup').textContent = w.group;
+  document.getElementById('wayGroup').style.color = groupColor(w.group);
   document.getElementById('wayGloss').textContent = w.gloss || '';
   document.getElementById('wayGloss').style.display = w.gloss ? 'block' : 'none';
   document.getElementById('wayNotes').value = prog.notes || '';
@@ -4967,6 +4981,26 @@ function mmActivateTab(name){
 // not ES modules.
 // ═══════════════════════════════════════════════════════════════
 let mmFirebaseReady = false;
+
+// ── Colour Step 3: eager Monitor-banner theming ──
+// Monitor is the default tab, but the full theme engine lives in the lazily-
+// loaded Quran script (only evaluated when Study is first opened). So at boot
+// we cheaply apply just the Monitor-banner vars from the offline-first
+// localStorage copy of state — banner colours appear instantly, and the full
+// engine takes over (same values, then live Firestore-fresh ones) as soon as
+// Study loads. First boot on a brand-new device shows defaults until Study
+// has been opened once (localStorage not yet populated) — by design.
+(function mmEagerMonitorBannerVars(){
+  const defaults = { '--mon-banner-1':'#0f172a', '--mon-banner-2':'#1a2744', '--mon-banner-3':'#0c1a3a' };
+  let overrides = {};
+  try{
+    const st = JSON.parse(localStorage.getItem('q20w_state') || 'null');
+    overrides = (st && st.themeColors && st.themeColors.vars) || {};
+  }catch(e){ /* corrupt/absent local copy — just use defaults */ }
+  Object.keys(defaults).forEach(k=>{
+    document.documentElement.style.setProperty(k, overrides[k] || defaults[k]);
+  });
+})();
 let mmCurrentUser = null;   // {uid, email, displayName}
 let mmCurrentRole = null;   // {role, name, personId, teacherId, studentIds}
 
