@@ -41,6 +41,8 @@
     --reflection:#3D6B6B;
     --application:#7A2E2E;
     --line:#cdbf9c;
+    --bg-start:#2a3a57;
+    --bg-end:#121b2c;
     --tj-silent:#9aa3b5;
     --tj-madd-ghunnah:#FF7E1E;
     --tj-madd-oblig:#e04040;
@@ -52,7 +54,7 @@
   .mm-quran-scope, .mm-quran-scope *{box-sizing:border-box;}
   .mm-quran-scope{
     margin:0;
-    background:radial-gradient(ellipse at top, #2a3a57 0%, var(--ink) 55%, #121b2c 100%);
+    background:radial-gradient(ellipse at top, var(--bg-start) 0%, var(--ink) 55%, var(--bg-end) 100%);
     color:var(--parchment);
     font-family:'Inter',sans-serif;
     min-height:100vh;
@@ -233,6 +235,32 @@
   .btn-close{background:transparent;border:1px solid rgba(255,255,255,0.2);color:#cdd5e3;}
   .btn-save{background:var(--gold);border:none;color:#241a06;font-weight:700;}
 
+  /* Theme Panel (Colour Step 3) */
+  .theme-modal{width:520px;max-width:94vw;}
+  .theme-panel-body{max-height:60vh;overflow-y:auto;padding-right:4px;}
+  .theme-section{margin-bottom:18px;}
+  .theme-section:last-child{margin-bottom:0;}
+  .theme-section-title{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);font-weight:700;margin-bottom:8px;border-bottom:1px solid rgba(201,162,75,0.2);padding-bottom:4px;}
+  .theme-row{display:flex;align-items:center;gap:10px;padding:5px 0;}
+  .theme-row-label{flex:1;font-size:12.5px;color:#dde3ee;}
+  .theme-swatch-input{width:30px;height:30px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);cursor:pointer;padding:1px;background:transparent;flex-shrink:0;}
+  .theme-row-reset{background:transparent;border:none;color:rgba(242,232,213,0.4);font-size:15px;cursor:pointer;line-height:1;padding:2px 4px;flex-shrink:0;}
+  .theme-row-reset:hover{color:#e07070;}
+  .theme-row-reset:disabled{opacity:0;cursor:default;pointer-events:none;}
+
+  /* Touch / small-screen polish (Colour Step 3 Phase 4) */
+  @media (max-width:600px){
+    /* Comfortable touch targets for colour editing on phones/tablets */
+    .theme-swatch-input{width:40px;height:40px;}
+    .theme-row{padding:7px 0;}
+    .theme-row-reset{font-size:18px;padding:6px 8px;}
+    .theme-panel-body{max-height:56vh;}
+    /* Edit Bar: many controls on a 46px-high fixed bar — let it scroll
+       sideways rather than wrap (wrapping would cover page content) */
+    .edit-bar{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;}
+    .eb-controls{width:max-content;min-width:100%;}
+  }
+
   /* add person modal */
   .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin-bottom:14px;}
   .emoji-grid button{font-size:18px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:6px 0;cursor:pointer;}
@@ -391,6 +419,7 @@
       <div class="save-state"><span class="dot"></span><span id="saveLabel">Saved</span></div>
       <button class="ghost" id="printBtn">🖨 Print Report</button>
       <button class="ghost" id="exportBtn">Export Snapshot</button>
+      <button class="ghost" id="themeBtn" title="Personalise colours — only you see this">🎨 Theme</button>
     </div>
   </header>
 
@@ -429,7 +458,7 @@
       <button class="picker-load-btn" id="unitApplyBtn">Set Study Unit</button>
     </div>
     <div class="ayah-picker-status" id="unitPickerStatus"></div>
-    <div class="ayah-picker-source" id="unitPickerHint">A Range/Surah/Page's progress is tracked as its own independent record &mdash; it never overrides or is inferred from the individual ayahs inside it.</div>
+    <div class="ayah-picker-source editable" data-ekey="picker-hint-unit" id="unitPickerHint" contenteditable="true">A Range/Surah/Page's progress is tracked as its own independent record &mdash; it never overrides or is inferred from the individual ayahs inside it.</div>
   </div>
 
   <div class="ayah-picker-bar">
@@ -458,7 +487,7 @@
       <button class="picker-load-btn" id="pickerLoadBtn">Load Ayah</button>
     </div>
     <div class="ayah-picker-status" id="pickerStatus"></div>
-    <div class="ayah-picker-source">Text &amp; translations fetched live from quran.com</div>
+    <div class="ayah-picker-source editable" data-ekey="picker-hint-source" contenteditable="true">Text &amp; translations fetched live from quran.com</div>
   </div>
 
   <div class="ayah-picker-bar">
@@ -467,16 +496,16 @@
   </div>
   <div class="ayah-picker tajweed-legend" id="tajweedLegend">
     <div class="tajweed-legend-grid">
-      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-silent)"></span>Silent — hamzat al-wasl, laam shamsiyah, silent letters</div>
-      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-madd-ghunnah)"></span>Madd (natural) &amp; Ghunnah — elongation / nasal sound</div>
-      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-madd-oblig)"></span>Madd (obligatory) &amp; Qalqalah — required elongation / echo bounce</div>
-      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-madd-permissible)"></span>Madd (permissible) — reciter's choice of length</div>
-      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-ikhfa)"></span>Ikhfa — sound partially concealed</div>
-      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-iqlab)"></span>Iqlab — noon/tanween converted to a meem sound</div>
-      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-idgham)"></span>Idghaam — merged into the following letter</div>
-      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--gold)"></span>Ayah-end marker</div>
+      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-silent)"></span><span class="editable" data-ekey="tj-legend-0" contenteditable="true">Silent — hamzat al-wasl, laam shamsiyah, silent letters</span></div>
+      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-madd-ghunnah)"></span><span class="editable" data-ekey="tj-legend-1" contenteditable="true">Madd (natural) &amp; Ghunnah — elongation / nasal sound</span></div>
+      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-madd-oblig)"></span><span class="editable" data-ekey="tj-legend-2" contenteditable="true">Madd (obligatory) &amp; Qalqalah — required elongation / echo bounce</span></div>
+      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-madd-permissible)"></span><span class="editable" data-ekey="tj-legend-3" contenteditable="true">Madd (permissible) — reciter's choice of length</span></div>
+      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-ikhfa)"></span><span class="editable" data-ekey="tj-legend-4" contenteditable="true">Ikhfa — sound partially concealed</span></div>
+      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-iqlab)"></span><span class="editable" data-ekey="tj-legend-5" contenteditable="true">Iqlab — noon/tanween converted to a meem sound</span></div>
+      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--tj-idgham)"></span><span class="editable" data-ekey="tj-legend-6" contenteditable="true">Idghaam — merged into the following letter</span></div>
+      <div class="tajweed-legend-item"><span class="tajweed-legend-swatch" style="background:var(--gold)"></span><span class="editable" data-ekey="tj-legend-7" contenteditable="true">Ayah-end marker</span></div>
     </div>
-    <div class="ayah-picker-source">Standard Tajweed colour convention — always double-check against your qualified teacher / qira'ah source.</div>
+    <div class="ayah-picker-source editable" data-ekey="tj-hint" contenteditable="true">Standard Tajweed colour convention — always double-check against your qualified teacher / qira'ah source.</div>
   </div>
 
   <div class="ayah-card">
@@ -487,7 +516,7 @@
       <div class="ayah-meta editable" id="ayahMeta" data-ekey="ayah-meta" contenteditable="true" data-edit-attached="1"><span style="color: rgb(39, 39, 39); font-family: Figtree, &quot;Helvetica Neue&quot;, Helvetica, Arial; font-size: 20px; background-color: rgb(255, 255, 255);">All praise and thanks is for Allah—The RABB of the Universes</span></div>
       <div class="ayah-bangla" id="ayahBangla"></div>
       <div class="ayah-audio-wrap" id="ayahAudioWrap">
-        <div class="ayah-audio-label">🔊 Abdullah Basfar</div>
+        <div class="ayah-audio-label editable" data-ekey="audio-label" contenteditable="true">🔊 Abdullah Basfar</div>
         <div class="ayah-audio-row">
           <audio id="ayahAudio" controls preload="none"></audio>
           <button class="audio-loop-btn" id="audioLoopBtn" title="Loop this ayah">🔁</button>
@@ -496,7 +525,7 @@
     </div>
     <div class="progress-pill">
       <div class="num" id="progressNum">30%</div>
-      <div class="lbl">complete</div>
+      <div class="lbl editable" data-ekey="progress-lbl" contenteditable="true">complete</div>
     </div>
   </div>
 
@@ -526,7 +555,7 @@
   <div class="main-grid">
     <div class="wheel-box">
       <svg id="wheel" width="480" height="480" viewBox="0 0 500 500"><path d="M 250 30 A 220 220 0 0 1 317.98373876248843 40.76756641506623 L 283.9918693812442 145.3837832075331 A 110 110 0 0 0 250 140 Z" class="segment" fill="#2C3E63" opacity="1"><title>1. Reading (with Tajweed) — Mastered</title></path><text x="275.8116867316381" y="91.03142380180228" text-anchor="middle" class="seg-num" style="pointer-events: none;">1</text><path d="M 317.98373876248843 40.76756641506623 A 220 220 0 0 1 379.31275550434407 72.01626123751157 L 314.65637775217203 161.00813061875579 A 110 110 0 0 0 283.9918693812442 145.3837832075331 Z" class="segment" fill="#2C3E63" opacity="0.13"><title>2. Hifz / Memorising — Not Started</title></path><text x="324.90843245702524" y="106.9839235089193" text-anchor="middle" class="seg-num" style="pointer-events: none;">2</text><path d="M 379.31275550434407 72.01626123751157 A 220 220 0 0 1 427.98373876248843 120.6872444956559 L 338.9918693812442 185.34362224782797 A 110 110 0 0 0 314.65637775217203 161.00813061875579 Z" class="segment" fill="#2C3E63" opacity="0.13"><title>3. Arabic Writing — Not Started</title></path><text x="366.6726188957804" y="137.32738110421968" text-anchor="middle" class="seg-num" style="pointer-events: none;">3</text><path d="M 427.98373876248843 120.6872444956559 A 220 220 0 0 1 459.2324335849338 182.01626123751157 L 354.6162167924669 216.00813061875579 A 110 110 0 0 0 338.9918693812442 185.34362224782797 Z" class="segment" fill="#2C3E63" opacity="0.13"><title>4. Language Learning (Basic Grammar) — Not Started</title></path><text x="397.0160764910807" y="179.0915675429748" text-anchor="middle" class="seg-num" style="pointer-events: none;">4</text><path d="M 459.2324335849338 182.01626123751157 A 220 220 0 0 1 470 250 L 360 250 A 110 110 0 0 0 354.6162167924669 216.00813061875579 Z" class="segment" fill="#C9A24B" opacity="1"><title>5. Reading (with Meaning) — Mastered</title></path><text x="412.96857619819775" y="228.1883132683619" text-anchor="middle" class="seg-num" style="pointer-events: none;">5</text><path d="M 470 250 A 220 220 0 0 1 459.2324335849338 317.98373876248843 L 354.6162167924669 283.9918693812442 A 110 110 0 0 0 360 250 Z" class="segment" fill="#C9A24B" opacity="1"><title>6. Word by Word Meaning — Mastered</title></path><text x="412.96857619819775" y="279.8116867316381" text-anchor="middle" class="seg-num" style="pointer-events: none;">6</text><path d="M 459.2324335849338 317.98373876248843 A 220 220 0 0 1 427.98373876248843 379.31275550434407 L 338.9918693812442 314.65637775217203 A 110 110 0 0 0 354.6162167924669 283.9918693812442 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>7. Listening Attentively (Arabic only) — Not Started</title></path><text x="397.0160764910807" y="328.90843245702524" text-anchor="middle" class="seg-num" style="pointer-events: none;">7</text><path d="M 427.98373876248843 379.31275550434407 A 220 220 0 0 1 379.31275550434407 427.98373876248843 L 314.65637775217203 338.9918693812442 A 110 110 0 0 0 338.9918693812442 314.65637775217203 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>8. Listening Attentively (with meaning) — Not Started</title></path><text x="366.6726188957804" y="370.6726188957803" text-anchor="middle" class="seg-num" style="pointer-events: none;">8</text><path d="M 379.31275550434407 427.98373876248843 A 220 220 0 0 1 317.98373876248843 459.2324335849338 L 283.9918693812442 354.6162167924669 A 110 110 0 0 0 314.65637775217203 338.9918693812442 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>9. Story Learning — Not Started</title></path><text x="324.90843245702524" y="401.0160764910807" text-anchor="middle" class="seg-num" style="pointer-events: none;">9</text><path d="M 317.98373876248843 459.2324335849338 A 220 220 0 0 1 250 470 L 250 360 A 110 110 0 0 0 283.9918693812442 354.6162167924669 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>10. Knowing Prophets — Not Started</title></path><text x="275.8116867316381" y="416.96857619819775" text-anchor="middle" class="seg-num" style="pointer-events: none;">10</text><path d="M 250 470 A 220 220 0 0 1 182.01626123751157 459.2324335849338 L 216.00813061875579 354.6162167924669 A 110 110 0 0 0 250 360 Z" class="segment" fill="#C9A24B" opacity="1"><title>11. Ruqyah Listening — Mastered</title></path><text x="224.18831326836187" y="416.96857619819775" text-anchor="middle" class="seg-num" style="pointer-events: none;">11</text><path d="M 182.01626123751157 459.2324335849338 A 220 220 0 0 1 120.68724449565593 427.98373876248843 L 185.34362224782797 338.9918693812442 A 110 110 0 0 0 216.00813061875579 354.6162167924669 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>12. Calligraphy — Not Started</title></path><text x="175.09156754297481" y="401.0160764910807" text-anchor="middle" class="seg-num" style="pointer-events: none;">12</text><path d="M 120.68724449565593 427.98373876248843 A 220 220 0 0 1 72.01626123751157 379.3127555043441 L 161.00813061875579 314.65637775217203 A 110 110 0 0 0 185.34362224782797 338.9918693812442 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>13. Group / Class Discussion — Not Started</title></path><text x="133.32738110421968" y="370.6726188957804" text-anchor="middle" class="seg-num" style="pointer-events: none;">13</text><path d="M 72.01626123751157 379.3127555043441 A 220 220 0 0 1 40.76756641506623 317.98373876248843 L 145.3837832075331 283.9918693812442 A 110 110 0 0 0 161.00813061875579 314.65637775217203 Z" class="segment" fill="#3D6B6B" opacity="0.13"><title>14. Journaling — Not Started</title></path><text x="102.9839235089193" y="328.90843245702524" text-anchor="middle" class="seg-num" style="pointer-events: none;">14</text><path d="M 40.76756641506623 317.98373876248843 A 220 220 0 0 1 30 250.00000000000003 L 140 250 A 110 110 0 0 0 145.3837832075331 283.9918693812442 Z" class="segment" fill="#3D6B6B" opacity="1"><title>15. Dua Learning — Mastered</title></path><text x="87.03142380180228" y="279.81168673163813" text-anchor="middle" class="seg-num" style="pointer-events: none;">15</text><path d="M 30 250.00000000000003 A 220 220 0 0 1 40.76756641506623 182.01626123751151 L 145.3837832075331 216.00813061875576 A 110 110 0 0 0 140 250 Z" class="segment" fill="#3D6B6B" opacity="0.13"><title>16. Names &amp; Attributes of Allah — Not Started</title></path><text x="87.03142380180228" y="228.18831326836192" text-anchor="middle" class="seg-num" style="pointer-events: none;">16</text><path d="M 40.76756641506623 182.01626123751151 A 220 220 0 0 1 72.01626123751154 120.68724449565593 L 161.00813061875579 185.34362224782797 A 110 110 0 0 0 145.3837832075331 216.00813061875576 Z" class="segment" fill="#3D6B6B" opacity="0.13"><title>17. Reflecting / Critical Reasoning — Not Started</title></path><text x="102.98392350891925" y="179.09156754297487" text-anchor="middle" class="seg-num" style="pointer-events: none;">17</text><path d="M 72.01626123751154 120.68724449565593 A 220 220 0 0 1 120.68724449565588 72.01626123751157 L 185.34362224782794 161.00813061875579 A 110 110 0 0 0 161.00813061875579 185.34362224782797 Z" class="segment" fill="#3D6B6B" opacity="0.13"><title>18. Reflecting on the Miracles — Not Started</title></path><text x="133.32738110421963" y="137.32738110421968" text-anchor="middle" class="seg-num" style="pointer-events: none;">18</text><path d="M 120.68724449565588 72.01626123751157 A 220 220 0 0 1 182.01626123751154 40.76756641506623 L 216.00813061875579 145.3837832075331 A 110 110 0 0 0 185.34362224782794 161.00813061875579 Z" class="segment" fill="#7A2E2E" opacity="1"><title>19. Teaching Others — Mastered</title></path><text x="175.09156754297476" y="106.9839235089193" text-anchor="middle" class="seg-num" style="pointer-events: none;">19</text><path d="M 182.01626123751154 40.76756641506623 A 220 220 0 0 1 249.99999999999997 30 L 249.99999999999997 140 A 110 110 0 0 0 216.00813061875579 145.3837832075331 Z" class="segment" fill="#7A2E2E" opacity="0.13"><title>20. Living by it (Self-Assessment) — Not Started</title></path><text x="224.18831326836187" y="91.03142380180228" text-anchor="middle" class="seg-num" style="pointer-events: none;">20</text><circle cx="250" cy="250" r="106" fill="#13192a" stroke="#C9A24B" stroke-width="1.5"></circle><text x="250" y="244" class="center-text" font-size="22" direction="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</text><text x="250" y="272" text-anchor="middle" font-family="Inter" font-size="10" fill="#8fa0c2">AYAH 1:1</text></svg>
-      <div class="legend">
+      <div class="legend" id="wheelLegend">
         <div class="legend-item"><span class="swatch" style="background:var(--foundation)"></span>Foundation</div>
         <div class="legend-item"><span class="swatch" style="background:var(--engagement)"></span>Engagement</div>
         <div class="legend-item"><span class="swatch" style="background:var(--reflection)"></span>Reflection</div>
@@ -846,7 +875,7 @@
     <div class="way-gloss" id="wayGloss">Let the recitation heal</div>
 
     <div class="way-accordion-section">
-      <button class="way-accordion-header active" id="wayTabTrackBtn"><span>Track This Unit</span><span class="way-accordion-chevron">&#x25BE;</span></button>
+      <button class="way-accordion-header active" id="wayTabTrackBtn"><span class="editable" data-ekey="acc-track" contenteditable="true">Track This Unit</span><span class="way-accordion-chevron">&#x25BE;</span></button>
       <div class="way-accordion-panel active" id="wayTabTrack">
         <div class="status-btns" id="statusBtns"><button class="">Not Started</button><button>Learning</button><button>Practicing</button><button class="active">Mastered</button></div>
         <label>Notes</label>
@@ -855,7 +884,7 @@
     </div>
 
     <div class="way-accordion-section">
-      <button class="way-accordion-header" id="wayTabGuideBtn"><span>Guide &amp; Resources</span><span class="way-accordion-chevron">&#x25BE;</span></button>
+      <button class="way-accordion-header" id="wayTabGuideBtn"><span class="editable" data-ekey="acc-guide" contenteditable="true">Guide &amp; Resources</span><span class="way-accordion-chevron">&#x25BE;</span></button>
       <div class="way-accordion-panel" id="wayTabGuide">
         <div id="wayResourceList" class="way-resource-list"></div>
         <div class="way-resource-add">
@@ -863,12 +892,12 @@
           <input type="url" id="wayResourceUrl" placeholder="https://...">
           <button class="picker-load-btn" id="wayResourceAddBtn">Add Link</button>
         </div>
-        <div class="ayah-picker-source">Links only — no file uploads (keeps the app fast to load). Point to a video, article, or document hosted elsewhere.</div>
+        <div class="ayah-picker-source editable" data-ekey="guide-hint" contenteditable="true">Links only — no file uploads (keeps the app fast to load). Point to a video, article, or document hosted elsewhere.</div>
       </div>
     </div>
 
     <div class="way-accordion-section">
-      <button class="way-accordion-header" id="wayTabBreakdownBtn"><span>Status Breakdown</span><span class="way-accordion-chevron">&#x25BE;</span></button>
+      <button class="way-accordion-header" id="wayTabBreakdownBtn"><span class="editable" data-ekey="acc-breakdown" contenteditable="true">Status Breakdown</span><span class="way-accordion-chevron">&#x25BE;</span></button>
       <div class="way-accordion-panel" id="wayTabBreakdown">
         <div class="way-scope-row">
           <select id="breakdownScopeType">
@@ -883,7 +912,7 @@
       </div>
     </div>
     <div class="way-accordion-section">
-      <button class="way-accordion-header" id="wayTabCoverageBtn"><span>Coverage</span><span class="way-accordion-chevron">&#x25BE;</span></button>
+      <button class="way-accordion-header" id="wayTabCoverageBtn"><span class="editable" data-ekey="acc-coverage" contenteditable="true">Coverage</span><span class="way-accordion-chevron">&#x25BE;</span></button>
       <div class="way-accordion-panel" id="wayTabCoverage">
         <div class="way-scope-row">
           <select id="coverageScopeType">
@@ -917,6 +946,19 @@
     <div class="modal-actions">
       <button class="btn-close" id="personClose">Cancel</button>
       <button class="btn-save" id="personSave">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Theme (Colour Step 3) modal — personal, per-user, synced via Firestore -->
+<div class="overlay" id="themeOverlay">
+  <div class="modal theme-modal">
+    <h3>🎨 Personalise Colours</h3>
+    <div class="modal-sub">Only you see this — it never changes anyone else's view</div>
+    <div id="themePanelBody" class="theme-panel-body"></div>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="btn-close" id="themeResetAll" style="color:#e07070;border-color:rgba(224,112,112,0.4);">Reset All to Default</button>
+      <button class="btn-save" id="themeDone">Done</button>
     </div>
   </div>
 </div>
@@ -2272,6 +2314,173 @@ const GROUP_COLOR = {
 const STATUS_LABELS = ['Not Started','Learning','Practicing','Mastered'];
 const STATUS_OPACITY = [0.13, 0.42, 0.7, 1];
 
+// ═══════════════════════════════════════════════════════════════
+// Colour Step 3 (Study side) — Phase 1: theme colour data model
+// Two independent pieces, both personal to the SIGNED-IN USER (not shared
+// class-wide, not tied to whichever student's progress is being viewed):
+//   1. state.themeColors.vars         → overrides for the :root CSS custom
+//                                        properties (background/ink/gold/etc,
+//                                        Tajweed swatch colours)
+//   2. state.themeColors.domainColors → overrides for GROUP_COLOR (the 7
+//                                        domain/wheel-segment colours)
+// Only OVERRIDDEN keys are ever stored (sparse object) — defaults below are
+// the fallback, so an untouched install stores/syncs nothing extra at all.
+// ═══════════════════════════════════════════════════════════════
+const DEFAULT_THEME_COLORS = {
+  '--ink':'#1B2A41', '--parchment':'#F2E8D5', '--parchment-dim':'#E8DCC2',
+  '--gold':'#C9A24B', '--gold-dim':'#A4823A', '--teal':'#3D6B6B', '--maroon':'#7A2E2E',
+  '--line':'#cdbf9c', '--bg-start':'#2a3a57', '--bg-end':'#121b2c',
+  '--tj-silent':'#9aa3b5', '--tj-madd-ghunnah':'#FF7E1E', '--tj-madd-oblig':'#e04040',
+  '--tj-madd-permissible':'#4d7dff', '--tj-ikhfa':'#c651c6', '--tj-iqlab':'#26bffd', '--tj-idgham':'#1fa87a'
+};
+
+// Reads a domain's colour through any personal override, falling back to the
+// built-in GROUP_COLOR default. Every place that used to read GROUP_COLOR[x]
+// directly now goes through this, so an override applies everywhere at once
+// (wheel segments, list badges, group-label text) without extra wiring.
+function groupColor(groupKey){
+  const overrides = (state.themeColors && state.themeColors.domainColors) || {};
+  return overrides[groupKey] || GROUP_COLOR[groupKey];
+}
+
+// Pushes the current theme (defaults + personal overrides) onto the
+// .mm-quran-scope element as real CSS custom properties. Scoped to that
+// element (not :root) so it can never leak into Monitor's separate styling.
+// Cheap (15 property writes) — safe to call on every renderAll().
+function applyThemeColors(){
+  const target = document.querySelector('.mm-quran-scope') || document.documentElement;
+  const overrides = (state.themeColors && state.themeColors.vars) || {};
+  Object.keys(DEFAULT_THEME_COLORS).forEach(k=>{
+    target.style.setProperty(k, overrides[k] || DEFAULT_THEME_COLORS[k]);
+  });
+}
+
+// Mutator used by the Theme Panel UI (Phase 2). kind is 'vars' or
+// 'domainColors'; value===null clears that single override back to default.
+function setThemeColor(kind, key, value){
+  if(!state.themeColors) state.themeColors = {};
+  if(!state.themeColors[kind]) state.themeColors[kind] = {};
+  if(value){ state.themeColors[kind][key] = value; }
+  else{ delete state.themeColors[kind][key]; }
+  applyThemeColors();
+  renderWheel(); renderList(); // domain-colour overrides affect these directly (inline JS-set fill/background)
+  scheduleSave();
+}
+
+// ── Phase 2: Theme Panel UI ──
+// Grouped, human-friendly metadata for every CSS-var-backed field. Domain
+// colours are NOT listed here — they're built dynamically from state.ways,
+// so a custom domain added later (via addWay) automatically gets a swatch
+// without this list needing to be touched.
+const THEME_FIELD_GROUPS = [
+  { title: 'Background', fields: [
+    {key:'--bg-start', label:'Backdrop — outer edge'},
+    {key:'--ink', label:'Backdrop — centre / base ink'},
+    {key:'--bg-end', label:'Backdrop — corners'},
+  ]},
+  { title: 'Core Palette', fields: [
+    {key:'--parchment', label:'Main text'},
+    {key:'--parchment-dim', label:'Muted text'},
+    {key:'--gold', label:'Accent · Mastered status'},
+    {key:'--gold-dim', label:'Accent (dim)'},
+    {key:'--teal', label:'Secondary accent'},
+    {key:'--maroon', label:'Tertiary accent'},
+    {key:'--line', label:'Divider lines'},
+  ]},
+  { title: 'Tajweed Legend', fields: [
+    {key:'--tj-silent', label:'Silent'},
+    {key:'--tj-madd-ghunnah', label:'Madd (natural) & Ghunnah'},
+    {key:'--tj-madd-oblig', label:'Madd (obligatory) & Qalqalah'},
+    {key:'--tj-madd-permissible', label:'Madd (permissible)'},
+    {key:'--tj-ikhfa', label:'Ikhfa'},
+    {key:'--tj-iqlab', label:'Iqlab'},
+    {key:'--tj-idgham', label:'Idghaam'},
+  ]},
+];
+
+// Builds one swatch row: label + colour input + a reset-to-default button
+// that only appears once that field actually has an override in place.
+function buildThemeRow(label, currentValue, defaultValue, onChange, onReset){
+  const row = document.createElement('div');
+  row.className = 'theme-row';
+  const lbl = document.createElement('div');
+  lbl.className = 'theme-row-label';
+  lbl.textContent = label;
+  const input = document.createElement('input');
+  input.type = 'color';
+  input.className = 'theme-swatch-input';
+  input.value = currentValue;
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'theme-row-reset';
+  resetBtn.textContent = '↺';
+  resetBtn.title = 'Reset to default';
+  resetBtn.disabled = (currentValue.toLowerCase() === defaultValue.toLowerCase());
+  input.oninput = ()=>{ onChange(input.value); resetBtn.disabled = false; };
+  resetBtn.onclick = ()=>{ onReset(); input.value = defaultValue; resetBtn.disabled = true; };
+  row.appendChild(lbl); row.appendChild(input); row.appendChild(resetBtn);
+  return row;
+}
+
+function renderThemePanel(){
+  const body = document.getElementById('themePanelBody');
+  body.innerHTML = '';
+  const varOverrides = (state.themeColors && state.themeColors.vars) || {};
+
+  THEME_FIELD_GROUPS.forEach(group=>{
+    const section = document.createElement('div');
+    section.className = 'theme-section';
+    const title = document.createElement('div');
+    title.className = 'theme-section-title';
+    title.textContent = group.title;
+    section.appendChild(title);
+    group.fields.forEach(f=>{
+      const current = varOverrides[f.key] || DEFAULT_THEME_COLORS[f.key];
+      const row = buildThemeRow(f.label, current, DEFAULT_THEME_COLORS[f.key],
+        val => setThemeColor('vars', f.key, val),
+        ()  => setThemeColor('vars', f.key, null));
+      section.appendChild(row);
+    });
+    body.appendChild(section);
+  });
+
+  // Domain / wheel-segment colours — built from whatever domains actually
+  // exist right now, so custom domains (added via "+ Add a way in...") get
+  // a swatch automatically without this code needing to change.
+  const domainSection = document.createElement('div');
+  domainSection.className = 'theme-section';
+  const domainTitle = document.createElement('div');
+  domainTitle.className = 'theme-section-title';
+  domainTitle.textContent = 'Wheel & Domain Colours';
+  domainSection.appendChild(domainTitle);
+  const domains = [...new Set(state.ways.map(w=>w.group))];
+  const domainOverrides = (state.themeColors && state.themeColors.domainColors) || {};
+  domains.forEach(domainKey=>{
+    const current = domainOverrides[domainKey] || GROUP_COLOR[domainKey] || '#C9A24B';
+    const defaultVal = GROUP_COLOR[domainKey] || '#C9A24B';
+    const row = buildThemeRow(domainKey, current, defaultVal,
+      val => setThemeColor('domainColors', domainKey, val),
+      ()  => setThemeColor('domainColors', domainKey, null));
+    domainSection.appendChild(row);
+  });
+  body.appendChild(domainSection);
+}
+
+function openThemeModal(){
+  renderThemePanel();
+  document.getElementById('themeOverlay').classList.add('show');
+}
+function closeThemeModal(){
+  document.getElementById('themeOverlay').classList.remove('show');
+}
+function resetAllThemeColors(){
+  if(!confirm('Reset ALL your personal colour choices back to the defaults? This only affects your own view.')) return;
+  state.themeColors = {};
+  applyThemeColors();
+  renderWheel(); renderList();
+  scheduleSave();
+  renderThemePanel();
+}
+
 // DEFAULT_PEOPLE now lives in shared-core.js (loaded once, shared with Study Monitor)
 const EMOJIS = ['🧑‍🎓','👧','🧑','👩','🧒','👦','🧕','🕌','📖','✨','🌙','⭐'];
 
@@ -2384,6 +2593,7 @@ if(!state.ayahs[state.currentAyahKey]){
   };
 }
 if(state.tajweedMode === undefined) state.tajweedMode = false; // migration safety
+if(!state.themeColors) state.themeColors = {}; // migration safety (Colour Step 3)
 if(state.audioLoop  === undefined) state.audioLoop  = false; // migration safety
 
 // ═══════════════════════════════════════════════════════════════
@@ -2396,6 +2606,7 @@ if(state.audioLoop  === undefined) state.audioLoop  = false; // migration safety
 let mmOwnTeacherId = null;       // the teacher whose taxonomy this session uses
 let mmProgressUnsub = null;      // live listener for the currently-active person
 let mmTaxonomyUnsub = null;      // live listener for the shared taxonomy
+let mmPrefsUnsub = null;         // live listener for this signed-in user's own theme prefs
 
 async function mmHydrateFromFirestore(){
   if(typeof mmCurrentUser === 'undefined' || !mmCurrentUser || !mmCurrentRole) return; // no auth layer present (e.g. older test contexts)
@@ -2428,6 +2639,14 @@ async function mmHydrateFromFirestore(){
       renderAll();
     });
   }catch(err){ console.error('Could not load teacher taxonomy (staying on local copy):', err); }
+
+  try{
+    const prefs = await mmLoadUserPrefs(mmCurrentUser.uid);
+    if(prefs && prefs.themeColors) state.themeColors = prefs.themeColors;
+    mmPrefsUnsub = mmSubscribeUserPrefs(mmCurrentUser.uid, data=>{
+      if(data.themeColors){ state.themeColors = data.themeColors; renderAll(); }
+    });
+  }catch(err){ console.error('Could not load theme prefs (staying on local copy):', err); }
 
   await mmSwitchActivePersonSync(state.activePersonId);
   renderAll();
@@ -2528,6 +2747,11 @@ function scheduleSave(){
       if(canWriteTaxonomy && typeof mmSaveTeacherTaxonomy === 'function'){
         mmSaveTeacherTaxonomy(mmOwnTeacherId, {ways: state.ways, ayahs: state.ayahs, textStyles: state.textStyles});
       }
+      // Theme colour prefs are personal — every signed-in user (any role)
+      // may always write their own, regardless of taxonomy permissions.
+      if(typeof mmSaveUserPrefs === 'function'){
+        mmSaveUserPrefs(mmCurrentUser.uid, state.themeColors);
+      }
     }
   }, 500);
 }
@@ -2596,7 +2820,7 @@ function renderWheel(){
 
   state.ways.forEach((w,i)=>{
     const a1 = i*segAngle, a2 = (i+1)*segAngle;
-    const color = GROUP_COLOR[w.group];
+    const color = groupColor(w.group);
     const status = prog[w.id].status;
     const path = document.createElementNS('http://www.w3.org/2000/svg','path');
     path.setAttribute('d', arcPath(cx,cy,rOuter,rInner,a1,a2));
@@ -2662,7 +2886,7 @@ function renderList(){
     gl.contentEditable = 'true';
     const gs = state.textStyles[gKey] || {};
     gl.textContent = gs.content || group.key;
-    gl.style.color = gs.color || GROUP_COLOR[group.key];
+    gl.style.color = gs.color || groupColor(group.key);
     if(gs.fontSize) gl.style.fontSize = gs.fontSize + 'px';
     attachElEdit(gl, gKey);
     list.appendChild(gl);
@@ -2675,7 +2899,7 @@ function renderList(){
 
       const badge = document.createElement('span');
       badge.className = 'badge';
-      badge.style.background = GROUP_COLOR[w.group];
+      badge.style.background = groupColor(w.group);
       badge.textContent = w.id;
 
       const name = document.createElement('span');
@@ -2780,8 +3004,17 @@ let activeEditEl = null, activeEditKey = null, ebBlurTimer = null;
 
 function getEditStyle(key){ return state.textStyles[key] || {}; }
 
+// Every statically-marked-up editable key. Dynamic elements (way names,
+// group labels, person names, legend labels) are styled at their own render
+// time instead — this list is only for elements that exist in the HTML itself.
+const STATIC_EDIT_KEYS = [
+  'title-eyebrow','title-h1','title-sub','ayah-ref','ayah-arabic','ayah-meta',
+  'audio-label','progress-lbl','picker-hint-unit','picker-hint-source','tj-hint','guide-hint',
+  'acc-track','acc-guide','acc-breakdown','acc-coverage',
+  'tj-legend-0','tj-legend-1','tj-legend-2','tj-legend-3','tj-legend-4','tj-legend-5','tj-legend-6','tj-legend-7'
+];
 function applyStaticStyles(loadContent){
-  ['title-eyebrow','title-h1','title-sub','ayah-ref','ayah-arabic','ayah-meta'].forEach(key=>{
+  STATIC_EDIT_KEYS.forEach(key=>{
     const el = document.querySelector(`[data-ekey="${key}"]`);
     if(!el) return;
     const s = state.textStyles[key] || {};
@@ -2861,9 +3094,15 @@ function ebAdjustSize(delta){
 }
 
 function friendlyLabel(key){
-  if(key.startsWith('person-')) return 'Student name';
-  if(key.startsWith('way-'))    return 'Way ' + key.slice(4);
-  if(key.startsWith('grp-'))    return 'Group label';
+  if(key.startsWith('person-'))    return 'Student name';
+  if(key.startsWith('way-'))       return 'Way ' + key.slice(4);
+  if(key.startsWith('grp-'))       return 'Group label';
+  if(key.startsWith('legend-'))    return 'Legend label';
+  if(key.startsWith('tj-legend-')) return 'Tajweed legend';
+  if(key.startsWith('acc-'))       return 'Section heading';
+  if(key.endsWith('-hint') || key.startsWith('picker-hint')) return 'Hint text';
+  if(key==='audio-label')          return 'Reciter label';
+  if(key==='progress-lbl')         return 'Progress label';
   return key.replace(/[-_]/g,' ');
 }
 
@@ -2916,6 +3155,14 @@ function attachStaticEdits(){
     if(!el.dataset.editAttached){
       el.dataset.editAttached='1';
       attachElEdit(el, el.dataset.ekey);
+      // Editable text sitting INSIDE a clickable control (the way-modal
+      // accordion header buttons): clicking the text should start editing,
+      // not fire the parent control — same pattern as way-row names.
+      // Clicking the chevron / button padding still toggles as normal.
+      if(el.closest('button')){
+        el.addEventListener('mousedown', e=> e.stopPropagation());
+        el.addEventListener('click',     e=> e.stopPropagation());
+      }
     }
   });
 }
@@ -3296,6 +3543,9 @@ function openPersonModal(){
   document.getElementById('personOverlay').classList.add('show');
 }
 document.getElementById('personClose').onclick = ()=> document.getElementById('personOverlay').classList.remove('show');
+document.getElementById('themeBtn').onclick = openThemeModal;
+document.getElementById('themeDone').onclick = closeThemeModal;
+document.getElementById('themeResetAll').onclick = resetAllThemeColors;
 document.getElementById('personSave').onclick = ()=>{
   const name = document.getElementById('personName').value.trim();
   if(!name) return;
@@ -3389,13 +3639,13 @@ document.getElementById('exportBtn').onclick = ()=>{
 
 /* ---------- Print Report ---------- */
 const GROUP_META_BASE = [
-  {key:'Building Foundation / Learning Tools', color:'#2C3E63', bg:'#edf0f7'},
-  {key:'Engagement / Attachment',              color:'#6B8F71', bg:'#eef4ef'},
-  {key:"Critical Reasoning — Nazar / 'Aql",    color:'#D9B563', bg:'#faf3e3'},
-  {key:'Critical Reasoning — Applied Threads', color:'#C9A24B', bg:'#fdf6e3'},
-  {key:'Critical Reasoning — Tafakkur / Tadabbur', color:'#A67C2E', bg:'#f7f0e2'},
-  {key:'Critical Reasoning — Judgement / Authority', color:'#1C1B18', bg:'#ececec'},
-  {key:"A'mal / Application",                  color:'#7A2E2E', bg:'#f7eded'},
+  {key:'Building Foundation / Learning Tools', short:'Foundation', color:'#2C3E63', bg:'#edf0f7'},
+  {key:'Engagement / Attachment',              short:'Engagement', color:'#6B8F71', bg:'#eef4ef'},
+  {key:"Critical Reasoning — Nazar / 'Aql",    short:"Nazar / 'Aql", color:'#D9B563', bg:'#faf3e3'},
+  {key:'Critical Reasoning — Applied Threads', short:'Applied Threads', color:'#C9A24B', bg:'#fdf6e3'},
+  {key:'Critical Reasoning — Tafakkur / Tadabbur', short:'Tafakkur / Tadabbur', color:'#A67C2E', bg:'#f7f0e2'},
+  {key:'Critical Reasoning — Judgement / Authority', short:'Judgement / Authority', color:'#1C1B18', bg:'#ececec'},
+  {key:"A'mal / Application",                  short:"A'mal", color:'#7A2E2E', bg:'#f7eded'},
 ];
 // Derives each group's current way-id membership from state.ways (not a fixed
 // list) — so adding, renaming, or deleting a way is reflected correctly here too.
@@ -3544,9 +3794,43 @@ document.getElementById('printClose').onclick = ()=> document.getElementById('pr
 document.getElementById('printGo').onclick = ()=> window.print();
 
 /* ---------- Render all ---------- */
+/* ---------- Wheel legend (dynamic — Colour Step 3 Phase 3) ----------
+   Previously hardcoded to the OLD four domains (Foundation/Engagement/
+   Reflection/Application) — stale since the 30-Ways/7-domain restructure.
+   Now rebuilt from GROUP_META_BASE so it always matches the real domains,
+   picks up personal domain-colour overrides via groupColor(), and each
+   label is Edit-Bar editable (key: legend-<slug>, shared-taxonomy-synced
+   like every other Edit Bar text). */
+function renderLegend(){
+  const legend = document.getElementById('wheelLegend');
+  if(!legend) return;
+  legend.innerHTML = '';
+  GROUP_META_BASE.forEach(group=>{
+    const lKey = 'legend-' + group.key.replace(/\W+/g,'_').toLowerCase();
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    const sw = document.createElement('span');
+    sw.className = 'swatch';
+    sw.style.background = groupColor(group.key);
+    const label = document.createElement('span');
+    label.className = 'editable';
+    label.dataset.ekey = lKey;
+    label.contentEditable = 'true';
+    const ls = state.textStyles[lKey] || {};
+    label.textContent = ls.content || group.short || group.key;
+    if(ls.color)    label.style.color    = ls.color;
+    if(ls.fontSize) label.style.fontSize = ls.fontSize + 'px';
+    attachElEdit(label, lKey);
+    item.appendChild(sw); item.appendChild(label);
+    legend.appendChild(item);
+  });
+}
+
 function renderAll(){
+  applyThemeColors();
   renderPeople();
   renderWheel();
+  renderLegend();
   renderList();
   renderProgress();
   renderUnitContent();
@@ -5174,6 +5458,31 @@ async function mmSavePersonWeek(personId, weekKey, days){
     await firebase.firestore().collection('monitorWeeks').doc(personId)
       .collection('weeks').doc(weekKey).set({days}, {merge:true});
   }catch(err){ console.error('Failed to save week to Firestore (kept locally):', err); }
+}
+
+// ── Colour Step 3 (Study side): per-user theme colour preferences ──
+// Scoped by the SIGNED-IN USER's uid, not personId — colour choices are
+// about how THIS person's own screen looks, independent of which student's
+// progress they happen to be viewing (a Teacher/Admin switches the active
+// person tab constantly; their own theme shouldn't switch along with it).
+// Requires a new Firestore collection `userPrefs`, with security rules
+// granting each uid read/write only to userPrefs/{that same uid} — this
+// still needs to be added in the Firebase Console (Firestore Rules), it
+// is not something this file can set for you.
+async function mmLoadUserPrefs(uid){
+  const snap = await firebase.firestore().collection('userPrefs').doc(uid).get();
+  return snap.exists ? snap.data() : null;
+}
+
+function mmSubscribeUserPrefs(uid, onChange){
+  return firebase.firestore().collection('userPrefs').doc(uid)
+    .onSnapshot(snap=>{ if(snap.exists) onChange(snap.data()); }, err=>console.error('User prefs sync error:', err));
+}
+
+async function mmSaveUserPrefs(uid, themeColors){
+  try{
+    await firebase.firestore().collection('userPrefs').doc(uid).set({themeColors}, {merge:true});
+  }catch(err){ console.error('Failed to save theme prefs to Firestore (kept locally):', err); }
 }
 
 </script>
