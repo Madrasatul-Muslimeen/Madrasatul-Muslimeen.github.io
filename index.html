@@ -411,9 +411,9 @@
 <div class="wrap">
   <header>
     <div class="title-block">
-      <div class="eyebrow editable" data-ekey="title-eyebrow" contenteditable="true" data-edit-attached="1">Pioneer · Quran Study System</div>
-      <h1 class="editable" data-ekey="title-h1" contenteditable="true" data-edit-attached="1">Quran Study - Approaching the Quran in 20 Ways — Ayah Mastery Wheel</h1>
-      <div class="sub editable" data-ekey="title-sub" contenteditable="true" data-edit-attached="1">Track how deeply each student has engaged with an ayah, across all 20 methods.</div>
+      <div class="eyebrow editable" data-ekey="title-eyebrow" contenteditable="true">Pioneer · Quran Study System</div>
+      <h1 class="editable" data-ekey="title-h1" contenteditable="true">Quran Study - Approaching the Quran in 30 Ways — Ayah Mastery Wheel</h1>
+      <div class="sub editable" data-ekey="title-sub" contenteditable="true">Track how deeply each student has engaged with an ayah, across all 30 methods.</div>
     </div>
     <div style="display:flex;gap:10px;align-items:center;">
       <div class="save-state"><span class="dot"></span><span id="saveLabel">Saved</span></div>
@@ -510,10 +510,10 @@
 
   <div class="ayah-card">
     <div>
-      <div class="ayah-ref editable" id="ayahRef" data-ekey="ayah-ref" contenteditable="true" data-edit-attached="1">Surah Al-Fatihah · Ayah 1</div>
-      <div class="ayah-arabic editable" id="ayahArabic" data-ekey="ayah-arabic" contenteditable="true" data-edit-attached="1">ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ ٢</div>
+      <div class="ayah-ref editable" id="ayahRef" data-ekey="ayah-ref" contenteditable="true">Surah Al-Fatihah · Ayah 1</div>
+      <div class="ayah-arabic editable" id="ayahArabic" data-ekey="ayah-arabic" contenteditable="true">ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ ٢</div>
       <div class="ayah-arabic" id="ayahArabicTajweed" dir="rtl" style="display:none;"></div>
-      <div class="ayah-meta editable" id="ayahMeta" data-ekey="ayah-meta" contenteditable="true" data-edit-attached="1"><span style="color: rgb(39, 39, 39); font-family: Figtree, &quot;Helvetica Neue&quot;, Helvetica, Arial; font-size: 20px; background-color: rgb(255, 255, 255);">All praise and thanks is for Allah—The RABB of the Universes</span></div>
+      <div class="ayah-meta editable" id="ayahMeta" data-ekey="ayah-meta" contenteditable="true"><span style="color: rgb(39, 39, 39); font-family: Figtree, &quot;Helvetica Neue&quot;, Helvetica, Arial; font-size: 20px; background-color: rgb(255, 255, 255);">All praise and thanks is for Allah—The RABB of the Universes</span></div>
       <div class="ayah-bangla" id="ayahBangla"></div>
       <div class="ayah-audio-wrap" id="ayahAudioWrap">
         <div class="ayah-audio-label editable" data-ekey="audio-label" contenteditable="true">🔊 Abdullah Basfar</div>
@@ -585,7 +585,7 @@
     <div class="rpt-header">
       <div>
         <div class="rpt-brand">Pioneer · Quran Study System</div>
-        <div class="rpt-title">Quran Study - Approaching the Quran in 20 Ways — Ayah Mastery Wheel</div>
+        <div class="rpt-title">Quran Study - Approaching the Quran in 30 Ways — Ayah Mastery Wheel</div>
       </div>
       <div class="rpt-student-block">
         <div class="rpt-student-name">🧑‍🎓 Abdullah Ahsan</div>
@@ -636,7 +636,7 @@
       <div class="gc-mini-bar"><div class="gc-mini-fill" style="width:0%;background:#7A2E2E"></div></div>
     </div></div>
 
-    <div class="rpt-ways-title">All 20 Ways — Detail</div>
+    <div class="rpt-ways-title">All 30 Ways — Detail</div>
     <div class="rpt-ways-grid">
       <div class="rpt-way-row">
         <span class="rpt-way-num" style="background:#2C3E63">1</span>
@@ -3181,10 +3181,19 @@ function initEditBar(){
   document.getElementById('editBar').addEventListener('mousedown', e=> e.preventDefault());
 }
 
+// Tracks which elements already have edit listeners. Deliberately a WeakSet
+// (JS memory) rather than a data- attribute on the element: a DOM attribute
+// gets captured into any saved/exported HTML snapshot, and a shipped file
+// carrying baked "already attached" flags silently prevents listeners from
+// ever attaching on real boots — edits then LOOK like they work (the element
+// is still contenteditable) but are never saved. That exact bug shipped once;
+// the WeakSet makes it structurally impossible to recur.
+const editAttachedEls = new WeakSet();
 function attachStaticEdits(){
   document.querySelectorAll('.editable[data-ekey]').forEach(el=>{
-    if(!el.dataset.editAttached){
-      el.dataset.editAttached='1';
+    if(!editAttachedEls.has(el)){
+      editAttachedEls.add(el);
+      delete el.dataset.editAttached; // scrub any stale baked flag from old snapshots
       attachElEdit(el, el.dataset.ekey);
       // Editable text sitting INSIDE a clickable control (the way-modal
       // accordion header buttons): clicking the text should start editing,
@@ -3760,7 +3769,7 @@ function buildReport(withTajweed){
   }).join('');
 
   const rptBrand = (state.textStyles['title-eyebrow']||{}).content || 'Pioneer · Quran Study System';
-  const rptTitle = (state.textStyles['title-h1']||{}).content    || '20 Ways — Ayah Mastery Wheel';
+  const rptTitle = (state.textStyles['title-h1']||{}).content    || '30 Ways — Ayah Mastery Wheel';
 
   return `
     <div class="rpt-header">
@@ -3794,7 +3803,7 @@ function buildReport(withTajweed){
 
     <div class="rpt-groups">${groupCardsHTML}</div>
 
-    <div class="rpt-ways-title">All 20 Ways — Detail</div>
+    <div class="rpt-ways-title">All 30 Ways — Detail</div>
     <div class="rpt-ways-grid">${waysHTML}</div>
 
     <div class="rpt-footer">
