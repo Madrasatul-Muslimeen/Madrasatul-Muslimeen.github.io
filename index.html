@@ -255,6 +255,7 @@
   .uan-btn:not(:disabled):hover{background:rgba(201,162,75,0.25);}
   #uanSelect{background:#131c30;color:var(--parchment);border:1px solid rgba(201,162,75,0.35);border-radius:8px;height:34px;padding:0 8px;font-size:13px;max-width:220px;}
   .uan-count{font-size:12px;color:#8fa0c2;}
+  .wbw-unit-ayah-hd{width:100%;flex-basis:100%;font-family:'Inter',sans-serif;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold);border-bottom:1px solid rgba(201,162,75,0.25);padding:10px 0 4px;margin-bottom:6px;}
   @media (max-width:600px){ .uan-btn{min-width:44px;height:40px;} #uanSelect{height:40px;} }
 
   /* Touch / small-screen polish (Colour Step 3 Phase 4) */
@@ -4362,6 +4363,56 @@ function bracketTajweedToQuranComFormat(text){
   return out;
 }
 
+/* ── Combined (whole-unit) Tajweed ──
+   Session-memory cache of the unit's ayah-joined Tajweed markup. Deliberately
+   NOT stored in state.ayahs: that object syncs inside the 1 MiB Firestore
+   taxonomy document, and a fully-marked-up long Surah would blow it. One
+   fetch per unit per session is the safe trade. */
+const UNIT_TAJWEED_CACHE = {};
+const UNIT_TAJWEED_INFLIGHT = {};
+
+async function fetchUnitTajweed(type, key){
+  if(UNIT_TAJWEED_CACHE[key]) return UNIT_TAJWEED_CACHE[key];
+  if(UNIT_TAJWEED_INFLIGHT[key]) return UNIT_TAJWEED_INFLIGHT[key];
+  const p = (async ()=>{
+    const u = parseUnitKey(key);
+    let raws = [];
+    try{
+      if(type === 'range'){
+        for(let a = u.start; a <= u.end; a++){
+          const d = await quranFetch(`/verses/by_key/${u.surah}:${a}?fields=text_uthmani_tajweed`);
+          raws.push((d.verse && d.verse.text_uthmani_tajweed) || '');
+        }
+      } else if(type === 'surah'){
+        const verses = await quranFetchAllPages(`/verses/by_chapter/${u.surah}?fields=text_uthmani_tajweed`, 50);
+        raws = verses.map(v=>v.text_uthmani_tajweed || '');
+      } else if(type === 'page'){
+        const verses = await quranFetchAllPages(`/verses/by_page/${u.page}?fields=text_uthmani_tajweed`, 50);
+        raws = verses.map(v=>v.text_uthmani_tajweed || '');
+      }
+    }catch(v4Err){
+      console.warn('unit tajweed: v4 unavailable, using alquran.cloud:', v4Err);
+      if(type === 'page'){
+        const d = await alquranFetch(`/page/${u.page}/quran-tajweed`);
+        raws = ((d && d.ayahs) || []).map(a=>bracketTajweedToQuranComFormat(a.text));
+      } else {
+        // One surah fetch covers both whole-Surah AND Range (slice by ayah number)
+        const d = await alquranFetch(`/surah/${u.surah}/quran-tajweed`);
+        const ayahs = (d && d.ayahs) || [];
+        const wanted = (type === 'range') ? ayahs.filter(a=>a.numberInSurah >= u.start && a.numberInSurah <= u.end) : ayahs;
+        raws = wanted.map(a=>bracketTajweedToQuranComFormat(a.text));
+      }
+    }
+    raws = raws.filter(Boolean);
+    if(!raws.length) throw new Error('no tajweed content');
+    const joined = raws.join('  \u06DD  ');
+    UNIT_TAJWEED_CACHE[key] = joined;
+    return joined;
+  })();
+  UNIT_TAJWEED_INFLIGHT[key] = p;
+  try{ return await p; } finally{ delete UNIT_TAJWEED_INFLIGHT[key]; }
+}
+
 function tajweedRawToSafeHtml(raw){
   if(!raw) return '';
   const escaped = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -4378,7 +4429,14 @@ function tajweedRawToSafeHtml(raw){
 // marker — which we drop here since it isn't one of the real words.
 function splitTajweedIntoWordTokens(raw){
   if(!raw) return null;
-  const tokens = raw.trim().split(/\s+/);
+  // Word boundaries are whitespace OUTSIDE markup tags. A plain split broke
+  // on the space inside every '<tajweed class=...>' tag (both quran.com's
+  // original format and the converted fallback format carry that space), so
+  // per-word colour alignment could never match. Shield in-tag spaces with a
+  // sentinel, split, then restore.
+  const SENTINEL = '\u0001';
+  const shielded = raw.replace(/<[^>]*>/g, m => m.replace(/ /g, SENTINEL));
+  const tokens = shielded.trim().split(/\s+/).map(t => t.replace(new RegExp(SENTINEL, 'g'), ' '));
   if(tokens.length && /^<span class=end>/.test(tokens[tokens.length-1])) tokens.pop();
   return tokens;
 }
@@ -4398,8 +4456,37 @@ function renderAyahArabicMode(){
   const combinedView = state.currentUnitType !== 'ayah' &&
     (typeof viewingSingleAyahInUnit !== 'function' || !viewingSingleAyahInUnit());
   if(combinedView){
-    stdEl.style.display = '';
-    tajEl.style.display = 'none';
+    // Whole-unit Tajweed (explicit requirement): when Tajweed mode is on, the
+    // combined view shows the ENTIRE unit's colour-marked Arabic. Cached per
+    // session; fetched on first toggle with a quiet in-flight guard.
+    if(!state.tajweedMode){
+      stdEl.style.display = '';
+      tajEl.style.display = 'none';
+      return;
+    }
+    const uKey = state.currentUnitKey;
+    const cached = UNIT_TAJWEED_CACHE[uKey];
+    if(cached){
+      tajEl.innerHTML = tajweedRawToSafeHtml(cached);
+      tajEl.style.display = '';
+      stdEl.style.display = 'none';
+    } else {
+      stdEl.style.display = '';
+      tajEl.style.display = 'none';
+      fetchUnitTajweed(state.currentUnitType, uKey).then(()=>{
+        const stillHere = state.currentUnitKey === uKey && state.tajweedMode &&
+          state.currentUnitType !== 'ayah' && !viewingSingleAyahInUnit();
+        if(stillHere) renderAyahArabicMode();
+        if(stillHere && typeof wbwOpen !== 'undefined' && wbwOpen) loadUnitWordByWord(); // per-word colouring can now upgrade too
+      }).catch(err=>{
+        console.warn('whole-unit tajweed unavailable:', err);
+        const statusEl = document.getElementById('pickerStatus');
+        if(statusEl && state.currentUnitKey === uKey && state.tajweedMode){
+          statusEl.textContent = "Couldn't load whole-unit Tajweed colours (" + (err.message || 'network error') + ') \u2014 showing standard script.';
+          statusEl.classList.add('error');
+        }
+      });
+    }
     return;
   }
   if(!state.tajweedMode){
@@ -4576,9 +4663,12 @@ function viewingSingleAyahInUnit(){
 // combined "All" view hides tools that only make sense for one ayah.
 function updateAyahToolsVisibility(){
   const single = state.currentUnitType === 'ayah' || viewingSingleAyahInUnit();
+  // Tajweed and Word-by-Word are available in EVERY view — including the
+  // Combined ("All") view of a Range/Surah/Page (explicit requirement:
+  // whole-unit Tajweed text and whole-unit WBW, not only per-ayah).
   ['tajweedLegendBtn','tajweedToggle','wbwToggle'].forEach(id=>{
     const el = document.getElementById(id);
-    if(el) el.style.display = single ? '' : 'none';
+    if(el) el.style.display = '';
   });
   // Audio stays visible in every view — combined views play the whole
   // Surah (single CDN file) or the Range/Page as a sequential playlist.
@@ -4586,15 +4676,6 @@ function updateAyahToolsVisibility(){
   if(audioWrap) audioWrap.style.display = '';
   const bangla = document.getElementById('ayahBangla');
   if(bangla) bangla.style.display = single ? '' : 'none';
-  if(!single){
-    const wbwPanel = document.getElementById('wbwPanel');
-    if(wbwPanel && wbwPanel.classList.contains('show')){
-      wbwPanel.classList.remove('show');
-      if(typeof wbwOpen !== 'undefined') wbwOpen = false;
-      const arrow = document.getElementById('wbwToggleArrow');
-      if(arrow) arrow.textContent = '▾';
-    }
-  }
   const pickerBtn = document.getElementById('pickerToggle');
   if(pickerBtn) pickerBtn.style.display = (state.currentUnitType === 'ayah') ? '' : 'none';
   if(state.currentUnitType !== 'ayah'){
@@ -5063,23 +5144,22 @@ function morphHtmlForWord(wordKey){
 
 let CURRENT_WBW_WORDS = []; // index -> {wordKey, arabic, translit, translation} for the zoom modal
 
-function renderWbwWords(words, ayahKey){
-  const grid = document.getElementById('wbwGrid');
-  if(!words || !words.length){ grid.innerHTML = ''; CURRENT_WBW_WORDS = []; return; }
+// Builds the word-chip HTML for one ayah's words and appends their entries
+// to CURRENT_WBW_WORDS. Shared verbatim by the single-ayah view AND the
+// combined whole-unit view — one pipeline, no divergence.
+function wbwChipsHtml(words, ayahKey){
   const realWords = words.filter(w=> w.char_type_name === 'word');
-  CURRENT_WBW_WORDS = [];
-
   // If Tajweed mode is on, try to reuse the verse-level colour markup already
   // cached for this ayah (no extra request) by splitting it into per-word chunks.
   // Falls back silently to plain script per-word if the split doesn't line up.
   let tajweedTokens = null;
   if(state.tajweedMode){
-    const raw = state.ayahs[ayahKey] && state.ayahs[ayahKey].tajweedRaw;
+    let raw = state.ayahs[ayahKey] && state.ayahs[ayahKey].tajweedRaw;
+    if(!raw && typeof unitTajweedRawForAyah === 'function') raw = unitTajweedRawForAyah(ayahKey);
     const tokens = raw ? splitTajweedIntoWordTokens(raw) : null;
     if(tokens && tokens.length === realWords.length) tajweedTokens = tokens;
   }
-
-  grid.innerHTML = realWords.map((w,i)=>{
+  return realWords.map((w,i)=>{
     const arabic        = w.text_uthmani || w.text || '';
     const arabicDisplay = tajweedTokens ? tajweedRawToSafeHtml(tajweedTokens[i]) : arabic;
     const wordKey      = (showMorphology || showDerivatives) ? resolveWordKey(ayahKey, arabic, i+1) : `${ayahKey}:${i+1}`;
@@ -5087,13 +5167,100 @@ function renderWbwWords(words, ayahKey){
     const translation     = (w.translation && w.translation.text) ? w.translation.text.replace(/<[^>]*>/g,'') : '';
     const morphHtml    = showMorphology ? morphHtmlForWord(wordKey) : '';
     CURRENT_WBW_WORDS.push({ wordKey, arabic, translit, translation });
-    return `<div class="wbw-word" data-loc="${wordKey}" data-idx="${i}">
+    return `<div class="wbw-word" data-loc="${wordKey}" data-idx="${CURRENT_WBW_WORDS.length-1}">
       <div class="wbw-arabic">${arabicDisplay}</div>
       ${translit ? `<div class="wbw-translit">${translit}</div>` : ''}
       ${translation ? `<div class="wbw-translation">${translation}</div>` : ''}
       ${morphHtml}
     </div>`;
   }).join('');
+}
+
+function renderWbwWords(words, ayahKey){
+  const grid = document.getElementById('wbwGrid');
+  if(!words || !words.length){ grid.innerHTML = ''; CURRENT_WBW_WORDS = []; return; }
+  CURRENT_WBW_WORDS = [];
+  grid.innerHTML = wbwChipsHtml(words, ayahKey);
+  if(showDerivatives){
+    [...grid.querySelectorAll('.wbw-word')].forEach(el=>
+      el.classList.toggle('selected', el.dataset.loc === selectedDerivWordKey));
+  }
+}
+
+/* ── Combined (whole-unit) Word-by-Word ──
+   Renders EVERY ayah of the current Range/Surah/Page as its own labelled
+   section inside the same #wbwGrid, reusing wbwChipsHtml — so Tajweed
+   per-word colouring, Roots, Derivatives and Morphology all work exactly as
+   in single-ayah view (the grid's click delegation is untouched).
+   Word data per ayah: full cached WBW data when available; otherwise the
+   ayah's own Arabic split into word tokens (from state.ayahs or from the
+   unit's combined text). Rendered in requestAnimationFrame batches so even
+   a 286-ayah Surah never freezes the page. */
+let unitWbwRenderToken = 0;
+
+// Per-ayah Tajweed raw for unit ayahs, sliced from the session-cached joined
+// unit markup (memory-only — never written into synced state.ayahs).
+function unitTajweedRawForAyah(ayahKey){
+  const joined = UNIT_TAJWEED_CACHE[state.currentUnitKey];
+  if(!joined) return null;
+  const keys = currentUnitAyahKeys();
+  const idx = keys.indexOf(ayahKey);
+  if(idx < 0) return null;
+  const parts = joined.split('\u06DD').map(s=>s.trim()).filter(Boolean);
+  return parts[idx] || null;
+}
+
+function ayahArabicForKey(k, unitRec, idx){
+  if(state.ayahs[k] && state.ayahs[k].arabic) return state.ayahs[k].arabic;
+  if(unitRec && unitRec.arabic){
+    const parts = unitRec.arabic.split('\u06DD').map(s=>s.trim()).filter(Boolean);
+    if(parts[idx]) return parts[idx];
+  }
+  return null;
+}
+
+async function loadUnitWordByWord(){
+  const statusEl = document.getElementById('wbwStatus');
+  const grid = document.getElementById('wbwGrid');
+  const keys = currentUnitAyahKeys();
+  const unitRec = state.units[state.currentUnitKey];
+  const myToken = ++unitWbwRenderToken;
+  statusEl.classList.remove('error');
+  if(!keys.length){
+    statusEl.textContent = 'This unit\u2019s ayah list isn\u2019t available yet \u2014 reselect the unit to fetch it.';
+    return;
+  }
+  statusEl.textContent = 'Building word-by-word for ' + keys.length + ' ayah' + (keys.length===1?'':'s') + '\u2026';
+  grid.innerHTML = '';
+  CURRENT_WBW_WORDS = [];
+
+  let anyDegraded = false;
+  const BATCH = 8;
+  for(let start = 0; start < keys.length; start += BATCH){
+    if(myToken !== unitWbwRenderToken) return; // user navigated / retoggled — abandon quietly
+    const frag = [];
+    for(let i = start; i < Math.min(start + BATCH, keys.length); i++){
+      const k = keys[i];
+      let words = WBW_CACHE[k];
+      if(!words){
+        const arabicText = ayahArabicForKey(k, unitRec, i);
+        if(!arabicText){ anyDegraded = true; continue; }
+        words = arabicText.trim().split(/\s+/).map(tok=>({
+          char_type_name:'word', text_uthmani: tok, transliteration: null, translation: null
+        }));
+        anyDegraded = true;
+      }
+      frag.push('<div class="wbw-unit-ayah-hd">Ayah ' + k + '</div>');
+      frag.push(wbwChipsHtml(words, k));
+    }
+    grid.insertAdjacentHTML('beforeend', frag.join(''));
+    statusEl.textContent = 'Building word-by-word\u2026 ' + Math.min(start + BATCH, keys.length) + ' / ' + keys.length;
+    await new Promise(r=>requestAnimationFrame(r));
+  }
+  if(myToken !== unitWbwRenderToken) return;
+  statusEl.textContent = anyDegraded
+    ? 'Per-word translation is temporarily unavailable for some ayahs \u2014 Arabic words, Tajweed colouring, Roots & Derivatives all work.'
+    : '';
   if(showDerivatives){
     [...grid.querySelectorAll('.wbw-word')].forEach(el=>
       el.classList.toggle('selected', el.dataset.loc === selectedDerivWordKey));
@@ -5162,7 +5329,10 @@ document.getElementById('wbwToggle').onclick = ()=>{
   const panel = document.getElementById('wbwPanel');
   wbwOpen = panel.classList.toggle('show');
   document.getElementById('wbwToggleArrow').textContent = wbwOpen ? '▴' : '▾';
-  if(wbwOpen) loadWordByWord(state.currentAyahKey);
+  if(!wbwOpen) return;
+  const combinedView = state.currentUnitType !== 'ayah' && !viewingSingleAyahInUnit();
+  if(combinedView) loadUnitWordByWord();
+  else loadWordByWord(state.currentAyahKey);
 };
 
 document.getElementById('morphToggle').addEventListener('change', async e=>{
