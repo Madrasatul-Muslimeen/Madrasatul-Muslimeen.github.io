@@ -2756,11 +2756,17 @@ function renderAudio(){
     (typeof viewingSingleAyahInUnit !== 'function' || !viewingSingleAyahInUnit());
 
   if(!combinedView){
-    // Single-ayah playback — exactly the original behaviour.
+    // Single-ayah playback — original behaviour, but signature-guarded like
+    // the other branches so switching unit→ayah→unit always reloads the
+    // right source (an unguarded branch here left stale signatures behind).
     audioPlaylist = null; audioPlaylistSig = null;
     const url = buildAudioUrl(state.currentAyahKey);
-    if(url){ audio.src = url; wrap.classList.add('loaded'); }
-    else{ audio.removeAttribute('src'); wrap.classList.remove('loaded'); }
+    const sig = 'ayah:' + state.currentAyahKey;
+    if(url){
+      if(audio.dataset.sig !== sig){ audio.src = url; audio.dataset.sig = sig; }
+      wrap.classList.add('loaded');
+    }
+    else{ audio.removeAttribute('src'); delete audio.dataset.sig; wrap.classList.remove('loaded'); }
     audio.loop = !!state.audioLoop;
   } else if(state.currentUnitType === 'surah'){
     // Whole Surah — one continuous file, same reciter.
@@ -4432,21 +4438,31 @@ function refreshTajweedDisplays(){
 async function fetchTajweedForCurrentAyah(){
   const key = state.currentAyahKey;
   const statusEl = document.getElementById('pickerStatus');
+  let raw = null;
   try{
     const data = await quranFetch(`/verses/by_key/${key}?fields=text_uthmani_tajweed`);
-    const raw = data.verse && data.verse.text_uthmani_tajweed;
-    if(!raw) return;
-    if(!state.ayahs[key]) return;
-    state.ayahs[key].tajweedRaw = raw;
-    scheduleSave();
-    if(state.tajweedMode && state.currentAyahKey === key) refreshTajweedDisplays();
-  }catch(e){
-    console.warn('fetchTajweedForCurrentAyah failed:', e);
-    if(state.tajweedMode && state.currentAyahKey === key && statusEl){
-      statusEl.textContent = `Couldn't load Tajweed colours (${e.message || 'network error'}) — showing standard script.`;
-      statusEl.classList.add('error');
+    raw = data.verse && data.verse.text_uthmani_tajweed;
+  }catch(v4Err){
+    // Same AlQuran Cloud fallback as everywhere else (this function was
+    // missed in the original v04.08 sweep — every ayah cached before then
+    // has tajweedRaw:null and depends on exactly this background fetch).
+    try{
+      const tj = await alquranFetch(`/ayah/${key}/quran-tajweed`);
+      if(tj && tj.text) raw = bracketTajweedToQuranComFormat(tj.text);
+    }catch(fbErr){
+      console.warn('fetchTajweedForCurrentAyah failed on all sources:', v4Err, fbErr);
+      if(state.tajweedMode && state.currentAyahKey === key && statusEl){
+        statusEl.textContent = `Couldn't load Tajweed colours (${fbErr.message || 'network error'}) — showing standard script.`;
+        statusEl.classList.add('error');
+      }
+      return;
     }
   }
+  if(!raw) return;
+  if(!state.ayahs[key]) return;
+  state.ayahs[key].tajweedRaw = raw;
+  scheduleSave();
+  if(state.tajweedMode && state.currentAyahKey === key) refreshTajweedDisplays();
 }
 
 document.getElementById('tajweedToggle').onclick = ()=>{
@@ -4645,6 +4661,7 @@ function unitNavGo(key){
   if(key === 'all'){
     renderUnitContent();
     updateAyahToolsVisibility();
+    renderAudio(); // back to the whole-unit recitation (surah file / sequence)
   } else {
     showAyahWithinUnit(key);
   }
@@ -4746,6 +4763,19 @@ function setStudyUnit(type, key){
   if(typeof unitNavKey !== 'undefined') unitNavKey = 'all';
   renderWheel(); renderList(); renderProgress(); renderUnitContent();
   if(typeof updateAyahToolsVisibility === 'function') updateAyahToolsVisibility();
+  renderAudio(); // the audio source must follow the unit switch (whole-Surah file / Range sequence / ayah)
+  if(type === 'surah'){
+    // Surah ayah lists come from chapter metadata — make sure the navigator
+    // appears even if chapters weren't loaded yet when we rendered above.
+    ensureChaptersLoaded().then(()=>{ renderUnitAyahNav(); renderAudio(); }).catch(()=>{});
+  }
+  if(type !== 'ayah'){
+    const hint = document.getElementById('unitPickerStatus');
+    if(hint && !hint.textContent){
+      hint.textContent = 'Tip: use the ◀ ▾ ▶ navigator above to open any single ayah — Tajweed, Word-by-Word and Roots live there.';
+      hint.style.color = '#8fa0c2';
+    }
+  }
   scheduleSave();
 
   // Live-fetch content for a brand-new Range/Surah/Page unit (Ayah units already
@@ -4763,7 +4793,8 @@ function setStudyUnit(type, key){
       state.units[key].ayahKeys = content.ayahKeys || [];
       renderUnitContent();
       scheduleSave();
-      if(status){ status.textContent = 'Loaded ' + content.ayahCount + ' ayah' + (content.ayahCount===1?'':'s') + ' from quran.com.'; status.style.color = '#8fd19e'; }
+      renderAudio(); // ayahKeys may only now exist — Range/Page sequences depend on them
+      if(status){ status.textContent = 'Loaded ' + content.ayahCount + ' ayah' + (content.ayahCount===1?'':'s') + '.'; status.style.color = '#8fd19e'; }
     }).catch(err=>{
       console.error('fetchUnitContentFromQuranCom failed:', err);
       if(status){ status.textContent = 'Could not fetch automatically (' + (err.message||'network error') + ') — you can type the content in manually below.'; status.style.color = '#e0a458'; }
