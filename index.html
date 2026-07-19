@@ -2734,23 +2734,75 @@ function buildAudioUrl(ayahKey){
   return `https://everyayah.com/data/Abdullah_Basfar_192kbps/${surah}${ayah}.mp3`;
 }
 
+// Whole-Surah recitations by the SAME reciter (Abdullah Basfar) are served
+// as single files by the Islamic Network CDN — verified present for all 114
+// surahs at 128kbps. Ranges/Pages have no single file anywhere, so they play
+// as a sequential playlist of the existing per-ayah files instead.
+function buildSurahAudioUrl(surahNum){
+  return `https://cdn.islamic.network/quran/audio-surah/128/ar.abdullahbasfar/${surahNum}.mp3`;
+}
+
+let audioPlaylist = null;      // array of per-ayah URLs when playing a Range/Page sequence
+let audioPlaylistIdx = 0;
+let audioPlaylistSig = null;   // which unit/view the playlist belongs to
+
 function renderAudio(){
   const wrap  = document.getElementById('ayahAudioWrap');
   const audio = document.getElementById('ayahAudio');
   const btn   = document.getElementById('audioLoopBtn');
   if(!wrap || !audio) return;
-  const url = buildAudioUrl(state.currentAyahKey);
-  if(url){
-    audio.src = url;
+
+  const combinedView = state.currentUnitType !== 'ayah' &&
+    (typeof viewingSingleAyahInUnit !== 'function' || !viewingSingleAyahInUnit());
+
+  if(!combinedView){
+    // Single-ayah playback — exactly the original behaviour.
+    audioPlaylist = null; audioPlaylistSig = null;
+    const url = buildAudioUrl(state.currentAyahKey);
+    if(url){ audio.src = url; wrap.classList.add('loaded'); }
+    else{ audio.removeAttribute('src'); wrap.classList.remove('loaded'); }
+    audio.loop = !!state.audioLoop;
+  } else if(state.currentUnitType === 'surah'){
+    // Whole Surah — one continuous file, same reciter.
+    audioPlaylist = null; audioPlaylistSig = null;
+    const u = parseUnitKey(state.currentUnitKey);
+    const sig = 'surah:' + u.surah;
+    if(audio.dataset.sig !== sig){ audio.src = buildSurahAudioUrl(u.surah); audio.dataset.sig = sig; }
     wrap.classList.add('loaded');
-  }else{
-    audio.removeAttribute('src');
-    wrap.classList.remove('loaded');
+    audio.loop = !!state.audioLoop;
+  } else {
+    // Range/Page combined — sequential playlist of the unit's ayah files.
+    const keys = (typeof currentUnitAyahKeys === 'function') ? currentUnitAyahKeys() : [];
+    if(!keys.length){ audio.removeAttribute('src'); wrap.classList.remove('loaded'); return; }
+    const sig = state.currentUnitKey + '|seq';
+    if(audioPlaylistSig !== sig){
+      audioPlaylist = keys.map(k=>buildAudioUrl(k)).filter(Boolean);
+      audioPlaylistIdx = 0;
+      audioPlaylistSig = sig;
+      audio.src = audioPlaylist[0];
+      audio.dataset.sig = sig;
+    }
+    wrap.classList.add('loaded');
+    audio.loop = false; // looping a SEQUENCE is handled on 'ended', not natively
   }
-  // Restore loop state (persisted in state.audioLoop)
-  audio.loop = !!state.audioLoop;
   if(btn) btn.classList.toggle('active', !!state.audioLoop);
 }
+
+// One persistent 'ended' handler advances Range/Page playlists; wraps to the
+// start when Loop is on. Harmless for single files (audioPlaylist is null).
+document.getElementById('ayahAudio').addEventListener('ended', ()=>{
+  if(!audioPlaylist || !audioPlaylist.length) return;
+  const audio = document.getElementById('ayahAudio');
+  if(audioPlaylistIdx < audioPlaylist.length - 1){
+    audioPlaylistIdx++;
+  } else if(state.audioLoop){
+    audioPlaylistIdx = 0;
+  } else {
+    return; // sequence finished, loop off
+  }
+  audio.src = audioPlaylist[audioPlaylistIdx];
+  audio.play().catch(()=>{}); // continuation of user-initiated playback
+});
 
 document.getElementById('audioLoopBtn').onclick = ()=>{
   state.audioLoop = !state.audioLoop;
@@ -4333,6 +4385,17 @@ function renderAyahArabicMode(){
   const tajEl = document.getElementById('ayahArabicTajweed');
   const btn   = document.getElementById('tajweedToggle');
   if(!stdEl || !tajEl) return;
+  // Combined ("All") view of a Range/Surah/Page shows the unit's own joined
+  // Arabic — the per-ayah Tajweed element must never replace it (it would
+  // paint ONE stale ayah over the whole unit's text). Tajweed stays a
+  // navigated-ayah / Ayah-unit feature.
+  const combinedView = state.currentUnitType !== 'ayah' &&
+    (typeof viewingSingleAyahInUnit !== 'function' || !viewingSingleAyahInUnit());
+  if(combinedView){
+    stdEl.style.display = '';
+    tajEl.style.display = 'none';
+    return;
+  }
   if(!state.tajweedMode){
     stdEl.style.display = '';
     tajEl.style.display = 'none';
@@ -4501,8 +4564,10 @@ function updateAyahToolsVisibility(){
     const el = document.getElementById(id);
     if(el) el.style.display = single ? '' : 'none';
   });
+  // Audio stays visible in every view — combined views play the whole
+  // Surah (single CDN file) or the Range/Page as a sequential playlist.
   const audioWrap = document.getElementById('ayahAudioWrap');
-  if(audioWrap) audioWrap.style.display = single ? '' : 'none';
+  if(audioWrap) audioWrap.style.display = '';
   const bangla = document.getElementById('ayahBangla');
   if(bangla) bangla.style.display = single ? '' : 'none';
   if(!single){
@@ -4669,6 +4734,12 @@ function setStudyUnit(type, key){
   if(isNewUnit){
     state.units[key] = { type, label: unitLabel(key), arabic: '', text: '' };
   }
+  // Self-heal: units created while quran.com was unreachable (pre-v04.08)
+  // were stored with empty content and — because only brand-new units ever
+  // fetched — stayed empty forever. Any multi-ayah unit still missing its
+  // Arabic or its ayah list refetches now that working fallbacks exist.
+  const needsRefetch = type!=='ayah' && !isNewUnit &&
+    (!state.units[key].arabic || !(state.units[key].ayahKeys && state.units[key].ayahKeys.length));
   document.getElementById('unitPickerCurrentLabel').textContent = unitLabel(key);
   // Fresh unit — navigation restarts at the combined view; the navigator and
   // the single-ayah toolset visibility are managed centrally.
@@ -4681,9 +4752,9 @@ function setStudyUnit(type, key){
   // get this via the "Choose Ayah" picker). Never blocks the UI — if this fails
   // (network, rate limit, etc.), the unit simply stays available for manual entry,
   // exactly like ayah content did before quran.com fetching existed at all.
-  if(isNewUnit){
+  if(isNewUnit || needsRefetch){
     const status = document.getElementById('unitPickerStatus');
-    if(status){ status.textContent = 'Fetching ' + unitLabel(key) + ' from quran.com…'; status.style.color = '#8fa0c2'; }
+    if(status){ status.textContent = 'Fetching ' + unitLabel(key) + '…'; status.style.color = '#8fa0c2'; }
     fetchUnitContentFromQuranCom(type, key, selectedTranslationId || 20).then(content=>{
       if(state.currentUnitKey !== key) return; // user already moved on — don't overwrite what they're now looking at
       state.units[key].label  = content.label;
@@ -5297,6 +5368,23 @@ if(typeof renderUnitAyahNav === 'function'){
   // navigator once that loads (harmless no-op for other unit types).
   if(state.currentUnitType === 'surah'){
     ensureChaptersLoaded().then(()=> renderUnitAyahNav()).catch(()=>{});
+  }
+}
+// Boot-time self-heal: if the restored session's current unit is missing its
+// content (created during the API outage) or its ayah list, refetch it now.
+if(state.currentUnitType !== 'ayah'){
+  const rec = state.units[state.currentUnitKey];
+  if(rec && (!rec.arabic || !(rec.ayahKeys && rec.ayahKeys.length))){
+    fetchUnitContentFromQuranCom(state.currentUnitType, state.currentUnitKey, selectedTranslationId || 20).then(content=>{
+      if(state.currentUnitKey in state.units){
+        const u = state.units[state.currentUnitKey];
+        if(!u.arabic) u.arabic = content.arabic;
+        if(!u.text)   u.text   = content.text;
+        u.label = u.label || content.label;
+        u.ayahKeys = content.ayahKeys || [];
+        renderUnitContent(); renderAudio(); scheduleSave();
+      }
+    }).catch(err=> console.warn('boot-time unit self-heal failed (will retry on next unit switch):', err));
   }
 }
 </script>
