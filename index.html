@@ -3902,19 +3902,54 @@ async function fetchUnitContentFromQuranCom(type, key, translationId){
   const fields = 'text_uthmani';
   let verses = [];
 
+  // Normalises one AlQuran Cloud multi-edition response (array of edition
+  // objects, each with .ayahs[] in matching order) into the same verses[]
+  // shape the v4 code below produces — so everything downstream is shared.
+  function alquranEditionsToVerses(editions){
+    const arabicAyahs = (editions && editions[0] && editions[0].ayahs) || [];
+    const enAyahs     = (editions && editions[1] && editions[1].ayahs) || [];
+    return arabicAyahs.map((a, i)=>({
+      verse_key: `${(a.surah && a.surah.number) || parseUnitKey(key).surah}:${a.numberInSurah}`,
+      text_uthmani: a.text,
+      translations: (enAyahs[i] && enAyahs[i].text) ? [{text: enAyahs[i].text}] : []
+    }));
+  }
+
+  try{
   if(type==='range'){
-    const {surah, start, end} = parseUnitKey(key);
-    if(end - start > 50) throw new Error('Ranges over 50 ayahs are better studied as a whole Surah — pick "Whole Surah" instead.');
-    for(let a=start; a<=end; a++){
-      const data = await quranFetch(`/verses/by_key/${surah}:${a}?language=en&words=false&fields=${fields}&translations=${translationId}`);
-      if(data.verse) verses.push(data.verse);
+      const {surah, start, end} = parseUnitKey(key);
+      if(end - start > 50) throw new Error('Ranges over 50 ayahs are better studied as a whole Surah — pick "Whole Surah" instead.');
+      for(let a=start; a<=end; a++){
+        const data = await quranFetch(`/verses/by_key/${surah}:${a}?language=en&words=false&fields=${fields}&translations=${translationId}`);
+        if(data.verse) verses.push(data.verse);
+      }
+    } else if(type==='surah'){
+      const {surah} = parseUnitKey(key);
+      verses = await quranFetchAllPages(`/verses/by_chapter/${surah}?language=en&words=false&fields=${fields}&translations=${translationId}`, 50);
+    } else if(type==='page'){
+      const {page} = parseUnitKey(key);
+      verses = await quranFetchAllPages(`/verses/by_page/${page}?language=en&words=false&fields=${fields}&translations=${translationId}`, 50);
     }
-  } else if(type==='surah'){
-    const {surah} = parseUnitKey(key);
-    verses = await quranFetchAllPages(`/verses/by_chapter/${surah}?language=en&words=false&fields=${fields}&translations=${translationId}`, 50);
-  } else if(type==='page'){
-    const {page} = parseUnitKey(key);
-    verses = await quranFetchAllPages(`/verses/by_page/${page}?language=en&words=false&fields=${fields}&translations=${translationId}`, 50);
+  }catch(v4Err){
+    if(type==='range' && /better studied as a whole Surah/.test(v4Err.message || '')) throw v4Err; // user-facing rule, not a network failure
+    console.warn('quran.com v4 unavailable for unit', key, '- using alquran.cloud:', v4Err);
+    verses = [];
+    if(type==='range'){
+      const {surah, start, end} = parseUnitKey(key);
+      for(let a=start; a<=end; a++){
+        const editions = await alquranFetch(`/ayah/${surah}:${a}/editions/quran-uthmani,en.sahih`);
+        if(editions && editions[0] && editions[0].text){
+          verses.push({ verse_key: `${surah}:${a}`, text_uthmani: editions[0].text,
+                        translations: (editions[1] && editions[1].text) ? [{text: editions[1].text}] : [] });
+        }
+      }
+    } else if(type==='surah'){
+      const {surah} = parseUnitKey(key);
+      verses = alquranEditionsToVerses(await alquranFetch(`/surah/${surah}/editions/quran-uthmani,en.sahih`));
+    } else if(type==='page'){
+      const {page} = parseUnitKey(key);
+      verses = alquranEditionsToVerses(await alquranFetch(`/page/${page}/editions/quran-uthmani,en.sahih`));
+    }
   }
 
   if(!verses.length) throw new Error('No ayahs found for this unit.');
@@ -3931,28 +3966,45 @@ async function fetchUnitContentFromQuranCom(type, key, translationId){
 
 /* ---------- Ayah Picker (live from quran.com) ---------- */
 const QURAN_API = 'https://api.quran.com/api/v4';
+// July 2026: quran.com's public v4 API moved behind the Quran Foundation
+// OAuth2 gateway (client-secret auth — impossible to embed safely in a
+// public single-file app). api.qurancdn.com historically mirrors the same
+// v4 paths, so it's tried second at zero risk; when the whole v4 family
+// fails, feature-level fallbacks below switch to AlQuran Cloud
+// (api.alquran.cloud — free, keyless, CORS-enabled, stable since 2014).
+const QURAN_API_BASES = [QURAN_API, 'https://api.qurancdn.com/api/v4'];
+const ALQURAN_API = 'https://api.alquran.cloud/v1';
 const CORS_PROXY = 'https://corsproxy.io/?url=';
 
-async function quranFetch(path){
-  const directUrl = QURAN_API + path;
+async function fetchJsonWithProxy(directUrl, label){
   try{
     const res = await fetch(directUrl);
-    if(!res.ok) throw new Error('HTTP ' + res.status + ' from quran.com');
+    if(!res.ok) throw new Error('HTTP ' + res.status + ' from ' + label);
     return await res.json();
   }catch(directErr){
-    console.warn('Direct quran.com call failed, trying CORS proxy:', directErr);
-    try{
-      const res2 = await fetch(CORS_PROXY + encodeURIComponent(directUrl));
-      if(!res2.ok) throw new Error('HTTP ' + res2.status + ' via proxy');
-      return await res2.json();
-    }catch(proxyErr){
-      console.error('Proxy call also failed:', proxyErr);
-      const err = new Error(directErr.message || 'network error');
-      err.original = directErr;
-      err.proxyError = proxyErr;
-      throw err;
-    }
+    console.warn('Direct ' + label + ' call failed, trying CORS proxy:', directErr);
+    const res2 = await fetch(CORS_PROXY + encodeURIComponent(directUrl));
+    if(!res2.ok) throw new Error('HTTP ' + res2.status + ' via proxy (' + label + ')');
+    return await res2.json();
   }
+}
+
+async function quranFetch(path){
+  let lastErr = null;
+  for(const base of QURAN_API_BASES){
+    try{ return await fetchJsonWithProxy(base + path, base.includes('qurancdn') ? 'qurancdn' : 'quran.com'); }
+    catch(err){ lastErr = err; }
+  }
+  console.error('All quran.com v4 sources failed for', path, lastErr);
+  throw lastErr || new Error('network error');
+}
+
+// AlQuran Cloud (api.alquran.cloud) — response envelope is {code,status,data}.
+// Returns the unwrapped .data. Throws on any non-200 code.
+async function alquranFetch(path){
+  const json = await fetchJsonWithProxy(ALQURAN_API + path, 'alquran.cloud');
+  if(!json || json.code !== 200 || json.data === undefined) throw new Error('alquran.cloud: ' + (json && json.status || 'bad response'));
+  return json.data;
 }
 const DEFAULT_TRANSLATION_NAME = 'Saheeh International';
 const BANGLA_TRANSLATION_ID = 161; // Muhiuddin Khan — most widely used Bangla Quran translation
@@ -3977,8 +4029,21 @@ function ensureChaptersLoaded(){
   chaptersLoadPromise = quranFetch('/chapters?language=en').then(data=>{
     CHAPTERS = data.chapters || [];
     return CHAPTERS;
-  }).catch(err=>{
-    console.error('ensureChaptersLoaded failed:', err);
+  }).catch(()=>
+    // v4 family down — same list from AlQuran Cloud, adapted to the
+    // exact field names every consumer of CHAPTERS already reads.
+    alquranFetch('/surah').then(list=>{
+      CHAPTERS = (list || []).map(s=>({
+        id: s.number,
+        name_simple: s.englishName,
+        verses_count: s.numberOfAyahs,
+        translated_name: { name: s.englishNameTranslation || '' }
+      }));
+      if(!CHAPTERS.length) throw new Error('empty chapter list');
+      return CHAPTERS;
+    })
+  ).catch(err=>{
+    console.error('ensureChaptersLoaded failed on all sources:', err);
     chaptersLoadPromise = null; // allow retry on next call
     throw err;
   });
@@ -4004,8 +4069,35 @@ function ensureJuzsLoaded(){
   juzsLoadPromise = quranFetch('/juzs').then(data=>{
     JUZS = data.juzs || [];
     return JUZS;
-  }).catch(err=>{
-    console.error('ensureJuzsLoaded failed:', err);
+  }).catch(()=>
+    // v4 down — rebuild the same {juz_number, verse_mapping} records from
+    // AlQuran Cloud's /meta juz start-references plus the chapter ayah
+    // counts (chapters are loaded first for exactly that reason).
+    ensureChaptersLoaded().then(()=> alquranFetch('/meta')).then(meta=>{
+      const refs = meta && meta.juzs && meta.juzs.references;
+      if(!Array.isArray(refs) || refs.length !== 30) throw new Error('unexpected /meta juz shape');
+      const built = refs.map((ref, i)=>{
+        const startS = ref.surah, startA = ref.ayah;
+        const next = refs[i+1];
+        // A juz ends one ayah before the next juz starts; Juz 30 ends at 114:last.
+        let endS, endA;
+        if(next){
+          if(next.ayah > 1){ endS = next.surah; endA = next.ayah - 1; }
+          else { endS = next.surah - 1; endA = Number(getAyahCountForSurah(next.surah - 1)) || 1; }
+        } else { endS = 114; endA = Number(getAyahCountForSurah(114)) || 6; }
+        const mapping = {};
+        for(let s = startS; s <= endS; s++){
+          const from = (s === startS) ? startA : 1;
+          const to   = (s === endS) ? endA : (Number(getAyahCountForSurah(s)) || from);
+          mapping[String(s)] = `${from}-${to}`;
+        }
+        return { juz_number: i + 1, verse_mapping: mapping };
+      });
+      JUZS = built;
+      return JUZS;
+    })
+  ).catch(err=>{
+    console.error('ensureJuzsLoaded failed on all sources:', err);
     juzsLoadPromise = null;
     throw err;
   });
@@ -4108,30 +4200,80 @@ async function loadTranslationsList(){
 async function fetchAyahFromQuranCom(surahNum, ayahNum, translationId){
   const key = `${surahNum}:${ayahNum}`;
   // Fetch English + Bangla translations in a single request — zero extra network cost
-  const data = await quranFetch(`/verses/by_key/${key}?language=en&words=false&fields=text_uthmani,text_uthmani_tajweed&translations=${translationId},${BANGLA_TRANSLATION_ID}`);
-  const verse = data.verse;
-  if(!verse || !verse.text_uthmani) throw new Error('Verse not found');
   const chapter = CHAPTERS.find(c=>String(c.id)===String(surahNum));
   const surahName = chapter ? chapter.name_simple : `Surah ${surahNum}`;
-  const translationText = (verse.translations && verse.translations[0])
-    ? stripTranslationHtml(verse.translations[0].text) : '';
-  // Bangla is the second translation in the response array
-  const banglaText = (verse.translations && verse.translations[1])
-    ? stripTranslationHtml(verse.translations[1].text) : '';
-  return {
-    key,
-    ref: `Surah ${surahName} · Ayah ${ayahNum}`,
-    arabic: verse.text_uthmani,
-    tajweedRaw: verse.text_uthmani_tajweed || null,
-    meta: translationText,
-    metaBangla: banglaText
-  };
+  const ref = `Surah ${surahName} · Ayah ${ayahNum}`;
+  try{
+    const data = await quranFetch(`/verses/by_key/${key}?language=en&words=false&fields=text_uthmani,text_uthmani_tajweed&translations=${translationId},${BANGLA_TRANSLATION_ID}`);
+    const verse = data.verse;
+    if(!verse || !verse.text_uthmani) throw new Error('Verse not found');
+    const translationText = (verse.translations && verse.translations[0])
+      ? stripTranslationHtml(verse.translations[0].text) : '';
+    // Bangla is the second translation in the response array
+    const banglaText = (verse.translations && verse.translations[1])
+      ? stripTranslationHtml(verse.translations[1].text) : '';
+    return {
+      key,
+      ref,
+      arabic: verse.text_uthmani,
+      tajweedRaw: verse.text_uthmani_tajweed || null,
+      meta: translationText,
+      metaBangla: banglaText
+    };
+  }catch(v4Err){
+    // v4 family down — AlQuran Cloud fallback. Three text editions in one
+    // call (order in the response array matches the request order), plus a
+    // best-effort separate tajweed call (its failure never blocks the text).
+    console.warn('quran.com v4 unavailable for', key, '- using alquran.cloud:', v4Err);
+    const editions = await alquranFetch(`/ayah/${key}/editions/quran-uthmani,en.sahih,bn.bengali`);
+    if(!Array.isArray(editions) || !editions[0] || !editions[0].text) throw new Error('Verse not found');
+    let tajweedRaw = null;
+    try{
+      const tj = await alquranFetch(`/ayah/${key}/quran-tajweed`);
+      if(tj && tj.text) tajweedRaw = bracketTajweedToQuranComFormat(tj.text);
+    }catch(tjErr){ console.warn('tajweed fallback fetch failed (text still shown):', tjErr); }
+    return {
+      key,
+      ref,
+      arabic: editions[0].text,
+      tajweedRaw,
+      meta: (editions[1] && editions[1].text) ? stripTranslationHtml(editions[1].text) : '',
+      metaBangla: (editions[2] && editions[2].text) ? stripTranslationHtml(editions[2].text) : ''
+    };
+  }
 }
 
 /* ---------- Tajweed colour-coded script ---------- */
 // Converts quran.com's `<tajweed class=xyz>…</tajweed>` markup into safe, styled
 // <span class="tajweed-xyz"> HTML. Escapes everything first, then whitelists only
 // the two known tag shapes returned by the API — so this can never inject arbitrary HTML.
+// AlQuran Cloud's quran-tajweed edition marks rules as `[x:ref[letters]`
+// (x = one of 17 rule letters). This converts that bracket markup into the
+// exact `<tajweed class=...>` format quran.com used, so the entire existing
+// pipeline (tajweedRawToSafeHtml, splitTajweedIntoWordTokens, state.ayahs
+// storage) works on it unchanged. Letter map taken from the official
+// alquran-tools parser (verified against the maintained source, not memory).
+const ALQURAN_TAJWEED_CLASS = {
+  h:'ham_wasl', s:'slnt', l:'laam_shamsiyah', n:'madda_normal',
+  p:'madda_permissible', m:'madda_necessary', q:'qalaqah', o:'madda_obligatory',
+  c:'ikhafa_shafawi', f:'ikhafa', w:'idgham_shafawi', i:'iqlab',
+  a:'idgham_ghunnah', u:'idgham_wo_ghunnah', d:'idgham_mutajanisayn',
+  b:'idgham_mutaqaribayn', g:'ghunnah'
+};
+function bracketTajweedToQuranComFormat(text){
+  if(!text) return text;
+  let out = String(text), guard = 0;
+  const re = /\[([a-z])(?::(\d+))?\[([^\[\]]*)\]/g;
+  while(re.test(out) && guard < 50){
+    out = out.replace(re, (m, letter, ref, inner)=>{
+      const cls = ALQURAN_TAJWEED_CLASS[letter];
+      return cls ? ('<tajweed class=' + cls + '>' + inner + '</tajweed>') : inner;
+    });
+    guard++;
+  }
+  return out;
+}
+
 function tajweedRawToSafeHtml(raw){
   if(!raw) return '';
   const escaped = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -4230,8 +4372,13 @@ async function applyAyahSelection(surahNum, ayahNum, translationId){
   const statusEl = document.getElementById('pickerStatus');
   const btn = document.getElementById('pickerLoadBtn');
   statusEl.classList.remove('error');
-  statusEl.textContent = 'Loading from quran.com…';
+  statusEl.textContent = 'Loading ayah…';
   btn.disabled = true;
+  // Audio is served directly from everyayah.com (no API involved) — wire it
+  // up for the selected ayah immediately, so recitation still plays even if
+  // the text/translation fetch below fails.
+  state.currentAyahKey = `${surahNum}:${ayahNum}`;
+  renderAudio();
   try{
     const ayahData = await fetchAyahFromQuranCom(surahNum, ayahNum, translationId);
     state.currentAyahKey = ayahData.key;
@@ -4689,7 +4836,7 @@ async function loadWordByWord(ayahKey){
     return;
   }
   statusEl.classList.remove('error');
-  statusEl.textContent = 'Loading words from quran.com…';
+  statusEl.textContent = 'Loading words…';
   grid.innerHTML = '';
   try{
     const data = await quranFetch(`/verses/by_key/${ayahKey}?language=en&words=true&word_fields=text_uthmani,transliteration,translation,location`);
@@ -4702,9 +4849,35 @@ async function loadWordByWord(ayahKey){
       if(key) selectDerivWord(key);
     }
   }catch(e){
-    console.error('loadWordByWord failed:', e);
-    statusEl.textContent = `Couldn't load word-by-word (${e.message || 'network error'}).`;
-    statusEl.classList.add('error');
+    console.error('loadWordByWord v4 failed, building degraded word list:', e);
+    // quran.com's per-word translation/transliteration has no keyless
+    // replacement — but the Arabic words themselves and the corpus-based
+    // Root/Derivatives panels don't need it. Build the word list from the
+    // ayah's own Arabic text (cached, or fetched from AlQuran Cloud) so
+    // those still work; per-word translation shows again automatically
+    // whenever quran.com becomes reachable (degraded lists aren't cached).
+    try{
+      let arabicText = state.ayahs[ayahKey] && state.ayahs[ayahKey].arabic;
+      if(!arabicText){
+        const editions = await alquranFetch(`/ayah/${ayahKey}/editions/quran-uthmani`);
+        arabicText = editions && editions[0] && editions[0].text;
+      }
+      if(!arabicText) throw new Error('no Arabic text available');
+      const words = arabicText.trim().split(/\s+/).map(tok=>({
+        char_type_name: 'word', text_uthmani: tok, transliteration: null, translation: null
+      }));
+      renderWbwWords(words, ayahKey);
+      statusEl.classList.remove('error');
+      statusEl.textContent = 'Per-word translation is temporarily unavailable — showing Arabic words (Root & Derivatives still work).';
+      if(showDerivatives){
+        const key = firstWordKeyOf(words, ayahKey);
+        if(key) selectDerivWord(key);
+      }
+    }catch(fallbackErr){
+      console.error('degraded word list also failed:', fallbackErr);
+      statusEl.textContent = `Couldn't load word-by-word (${e.message || 'network error'}).`;
+      statusEl.classList.add('error');
+    }
   }
 }
 
