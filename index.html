@@ -88,6 +88,10 @@
   .ayah-audio-wrap{margin-top:8px;border-top:1px solid rgba(201,162,75,0.15);padding-top:8px;display:none;}
   .ayah-audio-wrap.loaded{display:block;}
   .ayah-audio-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(201,162,75,0.7);margin-bottom:4px;}
+  .reciter-tabs{display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;}
+  .reciter-tab{background:transparent;border:1px solid rgba(201,162,75,0.3);color:rgba(201,162,75,0.75);padding:4px 10px;border-radius:6px;font-size:10.5px;cursor:pointer;font-family:'Inter';transition:background .15s,color .15s,border-color .15s;}
+  .reciter-tab:hover{background:rgba(201,162,75,0.1);}
+  .reciter-tab.active{background:var(--gold);color:#241a06;border-color:var(--gold);font-weight:600;}
   .ayah-audio-row{display:flex;align-items:center;gap:8px;}
   .ayah-audio-wrap audio{flex:1;min-width:0;height:36px;border-radius:6px;outline:none;}
   .audio-loop-btn{flex:0 0 auto;background:transparent;border:1px solid rgba(201,162,75,0.35);color:rgba(201,162,75,0.7);border-radius:6px;padding:0 10px;height:36px;font-size:16px;cursor:pointer;line-height:1;transition:background .15s,color .15s,border-color .15s;}
@@ -532,7 +536,10 @@
       <div class="ayah-meta editable" id="ayahMeta" data-ekey="ayah-meta" contenteditable="true"><span style="color: rgb(39, 39, 39); font-family: Figtree, &quot;Helvetica Neue&quot;, Helvetica, Arial; font-size: 20px; background-color: rgb(255, 255, 255);">All praise and thanks is for Allah—The RABB of the Universes</span></div>
       <div class="ayah-bangla" id="ayahBangla"></div>
       <div class="ayah-audio-wrap" id="ayahAudioWrap">
-        <div class="ayah-audio-label editable" data-ekey="audio-label" contenteditable="true">🔊 Abdullah Basfar</div>
+        <div class="reciter-tabs" id="reciterTabs">
+          <button class="reciter-tab" id="reciterTabAr" data-reciter="ar">🔊 Abdullah Basfar (Arabic)</button>
+          <button class="reciter-tab" id="reciterTabEn" data-reciter="en">🔊 Ibrahim Walk (English)</button>
+        </div>
         <div class="ayah-audio-row">
           <audio id="ayahAudio" controls preload="none"></audio>
           <button class="audio-loop-btn" id="audioLoopBtn" title="Loop this ayah">🔁</button>
@@ -2639,6 +2646,7 @@ if((state.waysVersion || 0) < WAYS_TAXONOMY_VERSION){
   state.waysVersion = WAYS_TAXONOMY_VERSION;
 }
 if(state.audioLoop  === undefined) state.audioLoop  = false; // migration safety
+if(!state.selectedReciter || !['ar','en','bn'].includes(state.selectedReciter)) state.selectedReciter = 'ar'; // migration safety (Feature 11)
 
 // ═══════════════════════════════════════════════════════════════
 // Firestore hydration (Phase B, Slice 1): the app has already booted
@@ -2724,28 +2732,63 @@ function renderBangla(){
   el.classList.toggle('loaded', !!bangla);
 }
 
-// Builds the everyayah.com per-ayah MP3 URL — no API call or auth needed.
-// Format: https://everyayah.com/data/Abdullah_Basfar_192kbps/SSSAAA.mp3
-// where SSS = surah zero-padded to 3 digits, AAA = ayah zero-padded to 3 digits.
-function buildAudioUrl(ayahKey){
+// ---------- Reciters (Feature 11) ----------
+// Two live reciters today; a Bangla slot is reserved (base:null) so adding it
+// later is a one-line config change, not a rewrite of the audio system.
+// Both Arabic (Basfar) and English (Ibrahim Walk) use the SAME everyayah.com
+// per-ayah naming convention — SSSAAA.mp3 (surah + ayah, each zero-padded to
+// 3 digits) — confirmed directly against the live English directory listing
+// before wiring this in, so this isn't a guess at a parallel folder existing.
+const RECITERS = {
+  ar: {
+    id: 'ar', label: '🔊 Abdullah Basfar (Arabic)',
+    base: 'https://everyayah.com/data/Abdullah_Basfar_192kbps/',
+    // Whole-Surah files exist for Basfar on the Islamic Network CDN (single
+    // continuous file per surah) — verified present for all 114 surahs.
+    surahBase: 'https://cdn.islamic.network/quran/audio-surah/128/ar.abdullahbasfar/',
+    surahExt: '.mp3'
+  },
+  en: {
+    id: 'en', label: '🔊 Ibrahim Walk (English)',
+    base: 'https://everyayah.com/data/English/Sahih_Intnl_Ibrahim_Walk_192kbps/',
+    // No reliable whole-surah file exists for this reciter (everyayah's own
+    // "merged" folder names files by surah NAME, not number, inconsistently —
+    // not safe to hardcode for all 114 surahs). Surah view instead falls back
+    // to the same sequential-playlist approach already used for Range/Page.
+    surahBase: null,
+    surahExt: null
+  },
+  bn: {
+    id: 'bn', label: '🔊 Bangla (reserved)',
+    base: null,   // reserved — no confirmed public per-ayah source yet (Feature 12)
+    surahBase: null,
+    surahExt: null
+  }
+};
+
+// Builds a reciter's per-ayah MP3 URL — no API call or auth needed.
+// Format: {reciterBase}SSSAAA.mp3 where SSS/AAA are zero-padded to 3 digits.
+function buildAudioUrl(ayahKey, reciterId){
+  const reciter = RECITERS[reciterId || state.selectedReciter || 'ar'];
+  if(!reciter || !reciter.base) return '';
   const [s, a] = (ayahKey || '').split(':');
   if(!s || !a) return '';
   const surah = String(s).padStart(3, '0');
   const ayah  = String(a).padStart(3, '0');
-  return `https://everyayah.com/data/Abdullah_Basfar_192kbps/${surah}${ayah}.mp3`;
+  return `${reciter.base}${surah}${ayah}.mp3`;
 }
 
-// Whole-Surah recitations by the SAME reciter (Abdullah Basfar) are served
-// as single files by the Islamic Network CDN — verified present for all 114
-// surahs at 128kbps. Ranges/Pages have no single file anywhere, so they play
-// as a sequential playlist of the existing per-ayah files instead.
-function buildSurahAudioUrl(surahNum){
-  return `https://cdn.islamic.network/quran/audio-surah/128/ar.abdullahbasfar/${surahNum}.mp3`;
+// Whole-Surah single file — only some reciters have one (see RECITERS above).
+// Returns '' when unavailable so callers can fall back to a playlist.
+function buildSurahAudioUrl(surahNum, reciterId){
+  const reciter = RECITERS[reciterId || state.selectedReciter || 'ar'];
+  if(!reciter || !reciter.surahBase) return '';
+  return `${reciter.surahBase}${surahNum}${reciter.surahExt}`;
 }
 
-let audioPlaylist = null;      // array of per-ayah URLs when playing a Range/Page sequence
+let audioPlaylist = null;      // array of per-ayah URLs when playing a Range/Page/Surah-fallback sequence
 let audioPlaylistIdx = 0;
-let audioPlaylistSig = null;   // which unit/view the playlist belongs to
+let audioPlaylistSig = null;   // which unit/view/reciter the playlist belongs to
 
 function renderAudio(){
   const wrap  = document.getElementById('ayahAudioWrap');
@@ -2753,37 +2796,62 @@ function renderAudio(){
   const btn   = document.getElementById('audioLoopBtn');
   if(!wrap || !audio) return;
 
+  const reciterId = state.selectedReciter || 'ar';
+  const reciter = RECITERS[reciterId];
+
+  // Keep the reciter tabs' active state in sync on every render, not just on
+  // click — renderAudio() is called from many places (unit switches, ayah
+  // navigation) and the tabs must always reflect the truth.
+  document.querySelectorAll('.reciter-tab').forEach(t=>{
+    t.classList.toggle('active', t.dataset.reciter === reciterId);
+  });
+
+  if(!reciter || !reciter.base){
+    // Reserved reciter with no source yet (e.g. Bangla) — show clearly
+    // unloaded rather than silently keeping a stale previous-reciter source.
+    audioPlaylist = null; audioPlaylistSig = null;
+    audio.removeAttribute('src'); delete audio.dataset.sig;
+    wrap.classList.remove('loaded');
+    if(btn) btn.classList.toggle('active', !!state.audioLoop);
+    return;
+  }
+
   const combinedView = state.currentUnitType !== 'ayah' &&
     (typeof viewingSingleAyahInUnit !== 'function' || !viewingSingleAyahInUnit());
 
   if(!combinedView){
-    // Single-ayah playback — original behaviour, but signature-guarded like
-    // the other branches so switching unit→ayah→unit always reloads the
-    // right source (an unguarded branch here left stale signatures behind).
+    // Single-ayah playback — signature-guarded (now including the reciter,
+    // so switching reciters on the same ayah correctly reloads the source
+    // instead of silently keeping the previous reciter's audio playing).
     audioPlaylist = null; audioPlaylistSig = null;
-    const url = buildAudioUrl(state.currentAyahKey);
-    const sig = 'ayah:' + state.currentAyahKey;
+    const url = buildAudioUrl(state.currentAyahKey, reciterId);
+    const sig = 'ayah:' + reciterId + ':' + state.currentAyahKey;
     if(url){
       if(audio.dataset.sig !== sig){ audio.src = url; audio.dataset.sig = sig; }
       wrap.classList.add('loaded');
     }
     else{ audio.removeAttribute('src'); delete audio.dataset.sig; wrap.classList.remove('loaded'); }
     audio.loop = !!state.audioLoop;
-  } else if(state.currentUnitType === 'surah'){
-    // Whole Surah — one continuous file, same reciter.
+  } else if(state.currentUnitType === 'surah' && reciter.surahBase){
+    // Whole Surah — one continuous file, same reciter (only when this
+    // reciter actually has whole-surah files — see RECITERS above).
     audioPlaylist = null; audioPlaylistSig = null;
     const u = parseUnitKey(state.currentUnitKey);
-    const sig = 'surah:' + u.surah;
-    if(audio.dataset.sig !== sig){ audio.src = buildSurahAudioUrl(u.surah); audio.dataset.sig = sig; }
+    const sig = 'surah:' + reciterId + ':' + u.surah;
+    if(audio.dataset.sig !== sig){ audio.src = buildSurahAudioUrl(u.surah, reciterId); audio.dataset.sig = sig; }
     wrap.classList.add('loaded');
     audio.loop = !!state.audioLoop;
   } else {
-    // Range/Page combined — sequential playlist of the unit's ayah files.
+    // Range/Page combined, OR Surah combined for a reciter with no whole-file
+    // source (e.g. English) — sequential playlist of the unit's ayah files.
     const keys = (typeof currentUnitAyahKeys === 'function') ? currentUnitAyahKeys() : [];
-    if(!keys.length){ audio.removeAttribute('src'); wrap.classList.remove('loaded'); return; }
-    const sig = state.currentUnitKey + '|seq';
+    const resolvedKeys = (state.currentUnitType === 'surah' && !keys.length)
+      ? (typeof getAllAyahKeysForSurah === 'function' ? getAllAyahKeysForSurah(parseUnitKey(state.currentUnitKey).surah) : [])
+      : keys;
+    if(!resolvedKeys.length){ audio.removeAttribute('src'); wrap.classList.remove('loaded'); return; }
+    const sig = reciterId + ':' + state.currentUnitKey + '|seq';
     if(audioPlaylistSig !== sig){
-      audioPlaylist = keys.map(k=>buildAudioUrl(k)).filter(Boolean);
+      audioPlaylist = resolvedKeys.map(k=>buildAudioUrl(k, reciterId)).filter(Boolean);
       audioPlaylistIdx = 0;
       audioPlaylistSig = sig;
       audio.src = audioPlaylist[0];
@@ -2794,6 +2862,25 @@ function renderAudio(){
   }
   if(btn) btn.classList.toggle('active', !!state.audioLoop);
 }
+
+// Reciter tab clicks — persist the choice and re-render through the same
+// renderAudio() path everything else uses, so signature-guarding and the
+// Surah-fallback-to-playlist logic apply uniformly here too.
+document.querySelectorAll('.reciter-tab').forEach(tabEl=>{
+  tabEl.onclick = ()=>{
+    const id = tabEl.dataset.reciter;
+    if(!RECITERS[id] || !RECITERS[id].base){
+      // Reserved/unavailable reciter (Bangla) — surface why, don't switch silently.
+      const status = document.getElementById('unitPickerStatus');
+      if(status){ status.textContent = RECITERS[id].label + ' audio is not available yet.'; status.style.color = '#e0a458'; }
+      return;
+    }
+    if(state.selectedReciter === id) return;
+    state.selectedReciter = id;
+    renderAudio();
+    scheduleSave();
+  };
+});
 
 // One persistent 'ended' handler advances Range/Page playlists; wraps to the
 // start when Loop is on. Harmless for single files (audioPlaylist is null).
