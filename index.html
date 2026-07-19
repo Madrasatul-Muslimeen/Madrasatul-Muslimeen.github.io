@@ -248,6 +248,15 @@
   .theme-row-reset:hover{color:#e07070;}
   .theme-row-reset:disabled{opacity:0;cursor:default;pointer-events:none;}
 
+  /* Unit Ayah Navigator (Range/Surah/Page — step through the unit's ayahs) */
+  .unit-ayah-nav{display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-family:'Inter',sans-serif;}
+  .uan-btn{background:rgba(201,162,75,0.12);border:1px solid rgba(201,162,75,0.35);color:var(--gold);border-radius:8px;min-width:38px;height:34px;font-size:13px;cursor:pointer;}
+  .uan-btn:disabled{opacity:0.3;cursor:default;}
+  .uan-btn:not(:disabled):hover{background:rgba(201,162,75,0.25);}
+  #uanSelect{background:#131c30;color:var(--parchment);border:1px solid rgba(201,162,75,0.35);border-radius:8px;height:34px;padding:0 8px;font-size:13px;max-width:220px;}
+  .uan-count{font-size:12px;color:#8fa0c2;}
+  @media (max-width:600px){ .uan-btn{min-width:44px;height:40px;} #uanSelect{height:40px;} }
+
   /* Touch / small-screen polish (Colour Step 3 Phase 4) */
   @media (max-width:600px){
     /* Comfortable touch targets for colour editing on phones/tablets */
@@ -462,6 +471,12 @@
   </div>
 
   <div class="ayah-picker-bar">
+    <div class="unit-ayah-nav" id="unitAyahNav" style="display:none">
+      <button class="uan-btn" id="uanPrev" title="Previous ayah">◀</button>
+      <select id="uanSelect" title="Jump to an ayah in this unit"></select>
+      <span class="uan-count" id="uanCount"></span>
+      <button class="uan-btn" id="uanNext" title="Next ayah">▶</button>
+    </div>
     <button class="picker-toggle" id="pickerToggle">📖 Choose Ayah <span id="pickerToggleArrow">▾</span></button>
   </div>
 
@@ -3060,11 +3075,21 @@ function applyStaticStyles(loadContent){
 // source is ever mutated by displaying the other; this only decides what's PAINTED.
 function renderUnitContent(){
   ['ayah-ref','ayah-arabic','ayah-meta'].forEach(k=>{ if(!state.textStyles[k]) state.textStyles[k] = {}; });
-  if(state.currentUnitType==='ayah'){
+  const singleView = state.currentUnitType==='ayah' ||
+    (typeof viewingSingleAyahInUnit === 'function' && viewingSingleAyahInUnit());
+  if(singleView){
     const ayah = state.ayahs[state.currentAyahKey] || {};
-    state.textStyles['ayah-ref'].content    = ayah.ref    || '';
+    const refPrefix = (state.currentUnitType!=='ayah')
+      ? ((state.units[state.currentUnitKey] && state.units[state.currentUnitKey].label) || unitLabel(state.currentUnitKey)) + ' — '
+      : '';
+    state.textStyles['ayah-ref'].content    = refPrefix + (ayah.ref || ('Ayah ' + state.currentAyahKey));
     state.textStyles['ayah-arabic'].content = ayah.arabic || '';
     state.textStyles['ayah-meta'].content   = ayah.meta   || '';
+    const banglaEl = document.getElementById('ayahBangla');
+    if(banglaEl){
+      banglaEl.textContent = ayah.metaBangla || '';
+      banglaEl.classList.toggle('loaded', !!ayah.metaBangla);
+    }
   } else {
     const u = state.units[state.currentUnitKey] || {};
     state.textStyles['ayah-ref'].content    = u.label  || unitLabel(state.currentUnitKey);
@@ -3072,6 +3097,7 @@ function renderUnitContent(){
     state.textStyles['ayah-meta'].content   = u.text   || '';
   }
   applyStaticStyles(true);
+  if(typeof renderUnitAyahNav === 'function') renderUnitAyahNav();
 }
 
 function saveEditContent(el, key){
@@ -3079,13 +3105,16 @@ function saveEditContent(el, key){
   if(!state.textStyles[key]) state.textStyles[key] = {};
   state.textStyles[key].content = text;
   const isAyahContentKey = (key==='ayah-ref' || key==='ayah-arabic' || key==='ayah-meta');
-  if(isAyahContentKey && state.currentUnitType==='ayah'){
+  const editingSingleAyah = state.currentUnitType==='ayah' ||
+    (typeof viewingSingleAyahInUnit === 'function' && viewingSingleAyahInUnit());
+  if(isAyahContentKey && editingSingleAyah){
+    if(!state.ayahs[state.currentAyahKey]) state.ayahs[state.currentAyahKey] = {};
     if(key==='ayah-ref')    state.ayahs[state.currentAyahKey].ref    = text;
     if(key==='ayah-arabic') state.ayahs[state.currentAyahKey].arabic = text;
     if(key==='ayah-meta')   state.ayahs[state.currentAyahKey].meta   = text;
   } else if(isAyahContentKey){
-    // Editing a Range/Surah/Page's own displayed content — stays entirely
-    // within state.units, never touches any ayah's own record.
+    // Editing a Range/Surah/Page's combined ("All") displayed content — stays
+    // entirely within state.units, never touches any ayah's own record.
     if(!state.units[state.currentUnitKey]) state.units[state.currentUnitKey] = { type: state.currentUnitType, label: unitLabel(state.currentUnitKey) };
     const u = state.units[state.currentUnitKey];
     if(key==='ayah-ref')    u.label  = text;
@@ -3960,7 +3989,8 @@ async function fetchUnitContentFromQuranCom(type, key, translationId){
     .filter(Boolean)
     .join(' ');
 
-  return { label: unitLabel(key), arabic, text, ayahCount: verses.length };
+  return { label: unitLabel(key), arabic, text, ayahCount: verses.length,
+           ayahKeys: verses.map(v=>v.verse_key).filter(Boolean) };
 }
 
 
@@ -4425,6 +4455,149 @@ document.getElementById('pickerToggle').onclick = ()=>{
   if(isShowing && TRANSLATIONS.length === 0) loadTranslationsList();
 };
 
+/* ---------- Unit Ayah Navigator (Range / Surah / Page) ----------
+   The "Choose Ayah" picker is redundant once the study unit itself defines
+   which ayahs are in play — so for multi-ayah units it's hidden, replaced by
+   this navigator: ◀ [All ▾] ▶ stepping through the unit's own ayahs. "All"
+   shows the combined unit text (the previous behaviour); picking an ayah
+   shows that ayah with the FULL single-ayah toolset — Bangla, audio, Tajweed,
+   Word-by-Word, Root & Derivatives — exactly as an Ayah unit would.
+   CRITICAL (independence principle): navigation is a VIEW change only. It
+   never touches state.currentUnitKey, so all progress tracking stays firmly
+   on the Range/Surah/Page unit itself. Navigation choice is deliberately
+   memory-only (not saved/synced) — it's a reading position, not data. */
+let unitNavKey = 'all';
+
+function currentUnitAyahKeys(){
+  const type = state.currentUnitType;
+  if(type === 'ayah') return [];
+  const u = parseUnitKey(state.currentUnitKey);
+  if(type === 'range'){
+    const keys = [];
+    for(let a = u.start; a <= u.end; a++) keys.push(`${u.surah}:${a}`);
+    return keys;
+  }
+  if(type === 'surah'){
+    const derived = getAllAyahKeysForSurah(u.surah);
+    if(derived.length) return derived;
+  }
+  // Page units (and Surah before chapters load): use the keys captured when
+  // the unit's content was fetched. Older units saved before this feature
+  // may lack them — the navigator then shows only "All" until a refetch.
+  const rec = state.units[state.currentUnitKey];
+  return (rec && rec.ayahKeys) || [];
+}
+
+function viewingSingleAyahInUnit(){
+  return state.currentUnitType !== 'ayah' && unitNavKey !== 'all';
+}
+
+// One place decides which ayah-level tools are visible. Single-ayah view
+// (Ayah unit, or a navigated ayah inside a unit) shows everything; the
+// combined "All" view hides tools that only make sense for one ayah.
+function updateAyahToolsVisibility(){
+  const single = state.currentUnitType === 'ayah' || viewingSingleAyahInUnit();
+  ['tajweedLegendBtn','tajweedToggle','wbwToggle'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.style.display = single ? '' : 'none';
+  });
+  const audioWrap = document.getElementById('ayahAudioWrap');
+  if(audioWrap) audioWrap.style.display = single ? '' : 'none';
+  const bangla = document.getElementById('ayahBangla');
+  if(bangla) bangla.style.display = single ? '' : 'none';
+  if(!single){
+    const wbwPanel = document.getElementById('wbwPanel');
+    if(wbwPanel && wbwPanel.classList.contains('show')){
+      wbwPanel.classList.remove('show');
+      if(typeof wbwOpen !== 'undefined') wbwOpen = false;
+      const arrow = document.getElementById('wbwToggleArrow');
+      if(arrow) arrow.textContent = '▾';
+    }
+  }
+  const pickerBtn = document.getElementById('pickerToggle');
+  if(pickerBtn) pickerBtn.style.display = (state.currentUnitType === 'ayah') ? '' : 'none';
+  if(state.currentUnitType !== 'ayah'){
+    const pickerPanel = document.getElementById('ayahPicker');
+    if(pickerPanel && pickerPanel.classList.contains('show')){
+      pickerPanel.classList.remove('show');
+      const arrow = document.getElementById('pickerToggleArrow');
+      if(arrow) arrow.textContent = '▾';
+    }
+  }
+}
+
+// Shows one ayah of the current unit in the main display, with the full
+// per-ayah toolset. Uses the ayah cache when possible; fetches otherwise.
+async function showAyahWithinUnit(key){
+  const [s, a] = key.split(':').map(Number);
+  state.currentAyahKey = key;
+  renderAudio(); // audio never waits for text (everyayah.com, no API)
+  let ayah = state.ayahs[key];
+  if(!ayah || !ayah.arabic){
+    const status = document.getElementById('unitPickerStatus');
+    if(status){ status.textContent = 'Loading Ayah ' + key + '…'; status.style.color = '#8fa0c2'; }
+    try{
+      const d = await fetchAyahFromQuranCom(s, a, selectedTranslationId || 20);
+      if(state.currentAyahKey !== key) return; // user already navigated on
+      state.ayahs[key] = { ref: d.ref, arabic: d.arabic, tajweedRaw: d.tajweedRaw, meta: d.meta, metaBangla: d.metaBangla };
+      ayah = state.ayahs[key];
+      scheduleSave();
+      if(status){ status.textContent = ''; }
+    }catch(err){
+      console.error('showAyahWithinUnit fetch failed:', err);
+      if(status){ status.textContent = "Couldn't load Ayah " + key + ' (' + (err.message || 'network error') + ').'; status.style.color = '#e07070'; }
+      return;
+    }
+  }
+  renderUnitContent();
+  renderAyahArabicMode();
+  updateAyahToolsVisibility();
+  if(typeof wbwOpen !== 'undefined' && wbwOpen) loadWordByWord(key);
+}
+
+function renderUnitAyahNav(){
+  const nav = document.getElementById('unitAyahNav');
+  if(!nav) return;
+  const keys = currentUnitAyahKeys();
+  const multi = state.currentUnitType !== 'ayah';
+  nav.style.display = (multi && keys.length) ? 'flex' : 'none';
+  if(!multi || !keys.length) return;
+  const sel = document.getElementById('uanSelect');
+  const options = ['<option value="all">All (combined)</option>']
+    .concat(keys.map(k=>`<option value="${k}">Ayah ${k}</option>`)).join('');
+  if(sel.innerHTML !== options) sel.innerHTML = options;
+  sel.value = unitNavKey;
+  const idx = keys.indexOf(unitNavKey);
+  document.getElementById('uanCount').textContent =
+    unitNavKey === 'all' ? `${keys.length} ayahs` : `${idx + 1} / ${keys.length}`;
+  document.getElementById('uanPrev').disabled = (unitNavKey === 'all');
+  document.getElementById('uanNext').disabled = (idx === keys.length - 1);
+}
+
+function unitNavGo(key){
+  unitNavKey = key;
+  renderUnitAyahNav();
+  if(key === 'all'){
+    renderUnitContent();
+    updateAyahToolsVisibility();
+  } else {
+    showAyahWithinUnit(key);
+  }
+}
+
+document.getElementById('uanSelect').onchange = e => unitNavGo(e.target.value);
+document.getElementById('uanPrev').onclick = ()=>{
+  const keys = currentUnitAyahKeys();
+  const idx = keys.indexOf(unitNavKey);
+  unitNavGo(idx <= 0 ? 'all' : keys[idx - 1]);
+};
+document.getElementById('uanNext').onclick = ()=>{
+  const keys = currentUnitAyahKeys();
+  if(unitNavKey === 'all'){ if(keys.length) unitNavGo(keys[0]); return; }
+  const idx = keys.indexOf(unitNavKey);
+  if(idx < keys.length - 1) unitNavGo(keys[idx + 1]);
+};
+
 /* ---------- Study Unit picker (Phase 1a: Ayah / Range / Surah / Page) ---------- */
 document.getElementById('unitPickerToggle').onclick = ()=>{
   const panel = document.getElementById('unitPicker');
@@ -4497,10 +4670,11 @@ function setStudyUnit(type, key){
     state.units[key] = { type, label: unitLabel(key), arabic: '', text: '' };
   }
   document.getElementById('unitPickerCurrentLabel').textContent = unitLabel(key);
-  // Ayah-specific tools (Tajweed, word-by-word) only make sense for a single ayah.
-  const ayahOnlyBars = document.querySelectorAll('#tajweedLegendBtn, #tajweedToggle');
-  ayahOnlyBars.forEach(el=>{ el.style.display = (type==='ayah') ? '' : 'none'; });
+  // Fresh unit — navigation restarts at the combined view; the navigator and
+  // the single-ayah toolset visibility are managed centrally.
+  if(typeof unitNavKey !== 'undefined') unitNavKey = 'all';
   renderWheel(); renderList(); renderProgress(); renderUnitContent();
+  if(typeof updateAyahToolsVisibility === 'function') updateAyahToolsVisibility();
   scheduleSave();
 
   // Live-fetch content for a brand-new Range/Surah/Page unit (Ayah units already
@@ -4515,6 +4689,7 @@ function setStudyUnit(type, key){
       state.units[key].label  = content.label;
       state.units[key].arabic = content.arabic;
       state.units[key].text   = content.text;
+      state.units[key].ayahKeys = content.ayahKeys || [];
       renderUnitContent();
       scheduleSave();
       if(status){ status.textContent = 'Loaded ' + content.ayahCount + ' ayah' + (content.ayahCount===1?'':'s') + ' from quran.com.'; status.style.color = '#8fd19e'; }
@@ -5113,6 +5288,17 @@ attachStaticEdits();
 renderAyahArabicMode();
 renderBangla();
 renderAudio();
+// Boot-time: if the restored session was already on a Range/Surah/Page unit,
+// the navigator and tool visibility must reflect that from the first paint.
+if(typeof updateAyahToolsVisibility === 'function') updateAyahToolsVisibility();
+if(typeof renderUnitAyahNav === 'function'){
+  renderUnitAyahNav();
+  // Surah units derive their ayah list from chapter metadata — refresh the
+  // navigator once that loads (harmless no-op for other unit types).
+  if(state.currentUnitType === 'surah'){
+    ensureChaptersLoaded().then(()=> renderUnitAyahNav()).catch(()=>{});
+  }
+}
 </script>
 
 <script>
