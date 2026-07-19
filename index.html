@@ -2813,9 +2813,14 @@ document.getElementById('ayahAudio').addEventListener('ended', ()=>{
 
 document.getElementById('audioLoopBtn').onclick = ()=>{
   state.audioLoop = !state.audioLoop;
-  const audio = document.getElementById('ayahAudio');
-  if(audio) audio.loop = state.audioLoop;
-  document.getElementById('audioLoopBtn').classList.toggle('active', state.audioLoop);
+  // Delegate to renderAudio() rather than setting audio.loop directly here —
+  // it already knows the correct behaviour per mode: native HTML5 loop for a
+  // single Ayah or a whole Surah file, but audio.loop must stay FALSE for a
+  // Range/Page sequence (looping there is driven by the 'ended' handler, one
+  // track at a time). Setting native loop=true directly on a Range's current
+  // per-ayah file — as this used to do — silently traps playback on whichever
+  // single ayah happened to be playing, since native loop suppresses 'ended'.
+  renderAudio();
   scheduleSave();
 };
 
