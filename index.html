@@ -5277,6 +5277,42 @@ document.getElementById('repeatCountToggle').onclick = ()=>{
   });
 })();
 
+// Reported issue: on some mobile browsers the bottom-sheet CSS (position:fixed
+// via the max-width:680px media query) wasn't taking effect — the panel
+// rendered off past the bottom of the visible screen instead of pinned to
+// it, only reachable by scrolling. Rather than guess at the exact cascade
+// cause, this reinforces the same fixed-to-viewport positioning directly via
+// inline styles (highest specificity, unambiguous) any time one of these
+// five panels' open/closed state changes, on narrow screens only. Desktop is
+// untouched — inline overrides are cleared there, leaving the CSS floating
+// dropdown exactly as before.
+(function reinforceMobileBottomSheets(){
+  const panelIds = ['unitPicker', 'textLangPicker', 'reciterMultiPicker', 'repeatCountPicker', 'ayahPicker'];
+  const mq = window.matchMedia('(max-width:680px)');
+  function apply(panel){
+    if(mq.matches && panel.classList.contains('show')){
+      panel.style.position = 'fixed';
+      panel.style.left = '0';
+      panel.style.right = '0';
+      panel.style.bottom = '0';
+      panel.style.top = 'auto';
+    } else {
+      panel.style.position = '';
+      panel.style.left = '';
+      panel.style.right = '';
+      panel.style.bottom = '';
+      panel.style.top = '';
+    }
+  }
+  const panels = panelIds.map(id => document.getElementById(id)).filter(Boolean);
+  panels.forEach(panel=>{
+    apply(panel);
+    new MutationObserver(()=> apply(panel)).observe(panel, {attributes:true, attributeFilter:['class']});
+  });
+  const onResize = ()=> panels.forEach(apply);
+  if(mq.addEventListener) mq.addEventListener('change', onResize); else window.addEventListener('resize', onResize);
+})();
+
 async function applyAyahSelection(surahNum, ayahNum, translationId){
   const statusEl = document.getElementById('pickerStatus');
   const btn = document.getElementById('pickerLoadBtn');
