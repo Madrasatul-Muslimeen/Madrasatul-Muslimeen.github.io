@@ -504,6 +504,14 @@
   <div class="ayah-picker-bar">
     <button class="picker-toggle" id="unitPickerToggle">&#x1F3AF; Study Unit: <span id="unitPickerCurrentLabel">Ayah</span> <span id="unitPickerToggleArrow">&#x25BE;</span></button>
   </div>
+  <div class="ayah-picker-bar" id="unitAyahNavBar">
+    <div class="unit-ayah-nav" id="unitAyahNav" style="display:none">
+      <button class="uan-btn" id="uanPrev" title="Previous ayah">◀</button>
+      <select id="uanSelect" title="Jump to an ayah in this unit"></select>
+      <span class="uan-count" id="uanCount"></span>
+      <button class="uan-btn" id="uanNext" title="Next ayah">▶</button>
+    </div>
+  </div>
   <div class="ayah-picker" id="unitPicker">
     <div class="ayah-picker-row">
       <div class="ayah-picker-field">
@@ -538,12 +546,6 @@
   </div>
 
   <div class="ayah-picker-bar">
-    <div class="unit-ayah-nav" id="unitAyahNav" style="display:none">
-      <button class="uan-btn" id="uanPrev" title="Previous ayah">◀</button>
-      <select id="uanSelect" title="Jump to an ayah in this unit"></select>
-      <span class="uan-count" id="uanCount"></span>
-      <button class="uan-btn" id="uanNext" title="Next ayah">▶</button>
-    </div>
     <button class="picker-toggle" id="pickerToggle">📖 Choose Ayah <span id="pickerToggleArrow">▾</span></button>
   </div>
 
@@ -5194,6 +5196,11 @@ document.getElementById('unitApplyBtn').onclick = ()=>{
   setStudyUnit(type, key);
   status.textContent = 'Now studying: ' + unitLabel(key);
   status.style.color = '#8fd19e';
+  // Phase 2 fix: the panel used to stay open after a successful apply — close
+  // it now, same as any other completed step in the Study configuration flow.
+  const panel = document.getElementById('unitPicker');
+  panel.classList.remove('show');
+  document.getElementById('unitPickerToggleArrow').textContent = '▾';
 };
 
 // Switches the active study unit and refreshes everything that depends on it
