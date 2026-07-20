@@ -2724,15 +2724,6 @@ async function mmSwitchActivePersonSync(personId){
 
 mmHydrateFromFirestore();
 
-// Paints cached Bangla translation from state on page load / ayah switch
-function renderBangla(){
-  const el = document.getElementById('ayahBangla');
-  if(!el) return;
-  const bangla = (state.ayahs[state.currentAyahKey] || {}).metaBangla || '';
-  el.textContent = bangla;
-  el.classList.toggle('loaded', !!bangla);
-}
-
 // ---------- Reciters (Feature 11 + Feature 12) ----------
 // Three live reciters. Arabic (Basfar) and English (Ibrahim Walk) use
 // everyayah.com's per-ayah naming convention — SSSAAA.mp3 (surah + ayah,
@@ -5878,7 +5869,6 @@ applyStaticStyles(true);
 renderAll();
 attachStaticEdits();
 renderAyahArabicMode();
-renderBangla();
 renderAudio();
 // Boot-time: if the restored session was already on a Range/Surah/Page unit,
 // the navigator and tool visibility must reflect that from the first paint.
