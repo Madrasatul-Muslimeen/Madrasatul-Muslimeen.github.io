@@ -3455,6 +3455,11 @@ function renderUnitContent(){
     state.textStyles['ayah-ref'].content    = u.label  || unitLabel(state.currentUnitKey);
     state.textStyles['ayah-arabic'].content = u.arabic || '';
     state.textStyles['ayah-meta'].content   = u.text   || '';
+    const banglaEl = document.getElementById('ayahBangla');
+    if(banglaEl){
+      banglaEl.textContent = u.textBangla || '';
+      banglaEl.classList.toggle('loaded', !!u.textBangla);
+    }
   }
   applyStaticStyles(true);
   if(typeof renderUnitAyahNav === 'function') renderUnitAyahNav();
@@ -4294,13 +4299,17 @@ async function fetchUnitContentFromQuranCom(type, key, translationId){
   // Normalises one AlQuran Cloud multi-edition response (array of edition
   // objects, each with .ayahs[] in matching order) into the same verses[]
   // shape the v4 code below produces — so everything downstream is shared.
+  // Third edition (Bangla) is optional — callers that don't request it just
+  // won't see a [2] array member.
   function alquranEditionsToVerses(editions){
-    const arabicAyahs = (editions && editions[0] && editions[0].ayahs) || [];
-    const enAyahs     = (editions && editions[1] && editions[1].ayahs) || [];
+    const arabicAyahs  = (editions && editions[0] && editions[0].ayahs) || [];
+    const enAyahs      = (editions && editions[1] && editions[1].ayahs) || [];
+    const banglaAyahs  = (editions && editions[2] && editions[2].ayahs) || [];
     return arabicAyahs.map((a, i)=>({
       verse_key: `${(a.surah && a.surah.number) || parseUnitKey(key).surah}:${a.numberInSurah}`,
       text_uthmani: a.text,
-      translations: (enAyahs[i] && enAyahs[i].text) ? [{text: enAyahs[i].text}] : []
+      translations: (enAyahs[i] && enAyahs[i].text) ? [{text: enAyahs[i].text}] : [],
+      translationsBangla: (banglaAyahs[i] && banglaAyahs[i].text) ? [{text: banglaAyahs[i].text}] : []
     }));
   }
 
@@ -4309,15 +4318,15 @@ async function fetchUnitContentFromQuranCom(type, key, translationId){
       const {surah, start, end} = parseUnitKey(key);
       if(end - start > 50) throw new Error('Ranges over 50 ayahs are better studied as a whole Surah — pick "Whole Surah" instead.');
       for(let a=start; a<=end; a++){
-        const data = await quranFetch(`/verses/by_key/${surah}:${a}?language=en&words=false&fields=${fields}&translations=${translationId}`);
+        const data = await quranFetch(`/verses/by_key/${surah}:${a}?language=en&words=false&fields=${fields}&translations=${translationId},${BANGLA_TRANSLATION_ID}`);
         if(data.verse) verses.push(data.verse);
       }
     } else if(type==='surah'){
       const {surah} = parseUnitKey(key);
-      verses = await quranFetchAllPages(`/verses/by_chapter/${surah}?language=en&words=false&fields=${fields}&translations=${translationId}`, 50);
+      verses = await quranFetchAllPages(`/verses/by_chapter/${surah}?language=en&words=false&fields=${fields}&translations=${translationId},${BANGLA_TRANSLATION_ID}`, 50);
     } else if(type==='page'){
       const {page} = parseUnitKey(key);
-      verses = await quranFetchAllPages(`/verses/by_page/${page}?language=en&words=false&fields=${fields}&translations=${translationId}`, 50);
+      verses = await quranFetchAllPages(`/verses/by_page/${page}?language=en&words=false&fields=${fields}&translations=${translationId},${BANGLA_TRANSLATION_ID}`, 50);
     }
   }catch(v4Err){
     if(type==='range' && /better studied as a whole Surah/.test(v4Err.message || '')) throw v4Err; // user-facing rule, not a network failure
@@ -4326,18 +4335,19 @@ async function fetchUnitContentFromQuranCom(type, key, translationId){
     if(type==='range'){
       const {surah, start, end} = parseUnitKey(key);
       for(let a=start; a<=end; a++){
-        const editions = await alquranFetch(`/ayah/${surah}:${a}/editions/quran-uthmani,en.sahih`);
+        const editions = await alquranFetch(`/ayah/${surah}:${a}/editions/quran-uthmani,en.sahih,bn.bengali`);
         if(editions && editions[0] && editions[0].text){
           verses.push({ verse_key: `${surah}:${a}`, text_uthmani: editions[0].text,
-                        translations: (editions[1] && editions[1].text) ? [{text: editions[1].text}] : [] });
+                        translations: (editions[1] && editions[1].text) ? [{text: editions[1].text}] : [],
+                        translationsBangla: (editions[2] && editions[2].text) ? [{text: editions[2].text}] : [] });
         }
       }
     } else if(type==='surah'){
       const {surah} = parseUnitKey(key);
-      verses = alquranEditionsToVerses(await alquranFetch(`/surah/${surah}/editions/quran-uthmani,en.sahih`));
+      verses = alquranEditionsToVerses(await alquranFetch(`/surah/${surah}/editions/quran-uthmani,en.sahih,bn.bengali`));
     } else if(type==='page'){
       const {page} = parseUnitKey(key);
-      verses = alquranEditionsToVerses(await alquranFetch(`/page/${page}/editions/quran-uthmani,en.sahih`));
+      verses = alquranEditionsToVerses(await alquranFetch(`/page/${page}/editions/quran-uthmani,en.sahih,bn.bengali`));
     }
   }
 
@@ -4348,8 +4358,12 @@ async function fetchUnitContentFromQuranCom(type, key, translationId){
     .map(v => (v.translations && v.translations[0]) ? stripTranslationHtml(v.translations[0].text) : '')
     .filter(Boolean)
     .join(' ');
+  const textBangla = verses
+    .map(v => (v.translationsBangla && v.translationsBangla[0]) ? stripTranslationHtml(v.translationsBangla[0].text) : '')
+    .filter(Boolean)
+    .join(' ');
 
-  return { label: unitLabel(key), arabic, text, ayahCount: verses.length,
+  return { label: unitLabel(key), arabic, text, textBangla, ayahCount: verses.length,
            ayahKeys: verses.map(v=>v.verse_key).filter(Boolean) };
 }
 
@@ -4975,8 +4989,11 @@ function updateAyahToolsVisibility(){
   // Surah (single CDN file) or the Range/Page as a sequential playlist.
   const audioWrap = document.getElementById('ayahAudioWrap');
   if(audioWrap) audioWrap.style.display = '';
+  // Bangla translation stays visible in every view now — combined ("All")
+  // view shows the whole-unit Bangla text painted by renderUnitContent(),
+  // same treatment as Tajweed and Word-by-Word getting whole-unit content.
   const bangla = document.getElementById('ayahBangla');
-  if(bangla) bangla.style.display = single ? '' : 'none';
+  if(bangla) bangla.style.display = '';
   const pickerBtn = document.getElementById('pickerToggle');
   if(pickerBtn) pickerBtn.style.display = (state.currentUnitType === 'ayah') ? '' : 'none';
   if(state.currentUnitType !== 'ayah'){
@@ -5136,9 +5153,10 @@ function setStudyUnit(type, key){
   // Self-heal: units created while quran.com was unreachable (pre-v04.08)
   // were stored with empty content and — because only brand-new units ever
   // fetched — stayed empty forever. Any multi-ayah unit still missing its
-  // Arabic or its ayah list refetches now that working fallbacks exist.
+  // Arabic, its ayah list, or its Bangla translation (pre-v04.16 units never
+  // fetched Bangla at the unit level at all) refetches now.
   const needsRefetch = type!=='ayah' && !isNewUnit &&
-    (!state.units[key].arabic || !(state.units[key].ayahKeys && state.units[key].ayahKeys.length));
+    (!state.units[key].arabic || !(state.units[key].ayahKeys && state.units[key].ayahKeys.length) || !state.units[key].textBangla);
   document.getElementById('unitPickerCurrentLabel').textContent = unitLabel(key);
   // Fresh unit — navigation restarts at the combined view; the navigator and
   // the single-ayah toolset visibility are managed centrally.
@@ -5172,6 +5190,7 @@ function setStudyUnit(type, key){
       state.units[key].label  = content.label;
       state.units[key].arabic = content.arabic;
       state.units[key].text   = content.text;
+      state.units[key].textBangla = content.textBangla;
       state.units[key].ayahKeys = content.ayahKeys || [];
       renderUnitContent();
       scheduleSave();
@@ -5876,12 +5895,13 @@ if(typeof renderUnitAyahNav === 'function'){
 // content (created during the API outage) or its ayah list, refetch it now.
 if(state.currentUnitType !== 'ayah'){
   const rec = state.units[state.currentUnitKey];
-  if(rec && (!rec.arabic || !(rec.ayahKeys && rec.ayahKeys.length))){
+  if(rec && (!rec.arabic || !(rec.ayahKeys && rec.ayahKeys.length) || !rec.textBangla)){
     fetchUnitContentFromQuranCom(state.currentUnitType, state.currentUnitKey, selectedTranslationId || 20).then(content=>{
       if(state.currentUnitKey in state.units){
         const u = state.units[state.currentUnitKey];
         if(!u.arabic) u.arabic = content.arabic;
         if(!u.text)   u.text   = content.text;
+        if(!u.textBangla) u.textBangla = content.textBangla;
         u.label = u.label || content.label;
         u.ayahKeys = content.ayahKeys || [];
         renderUnitContent(); renderAudio(); scheduleSave();
