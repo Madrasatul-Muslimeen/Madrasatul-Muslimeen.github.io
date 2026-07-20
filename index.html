@@ -3043,9 +3043,14 @@ function advanceReciterQueueOrStop(){
   const goTo = idx=>{
     reciterQueueIdx = idx;
     state.selectedReciter = reciterQueue[idx];
-    renderAudio();
-    const tryPlay = ()=> audio.play().catch(()=>{}); // continuation of user-initiated playback
-    if(audio.readyState >= 1) tryPlay(); else audio.addEventListener('loadedmetadata', tryPlay, {once:true});
+    renderAudio(); // sets audio.src (and, for Bangla, its own loadedmetadata seek-to-tFrom listener)
+    // The audio element is paused at this point (we got here from 'ended' /
+    // a boundary stop) and <audio preload="none"> never fires loadedmetadata
+    // on a paused element just from assigning .src — waiting for it here
+    // would deadlock forever. Calling play() directly is what actually
+    // triggers the browser to load; any per-reciter seek listener set up by
+    // renderAudio() above still runs before audible playback starts.
+    audio.play().catch(()=>{}); // continuation of user-initiated playback
   };
   if(reciterQueueIdx < reciterQueue.length - 1){
     goTo(reciterQueueIdx + 1);
