@@ -420,12 +420,12 @@
   .textlang-option input{width:16px;height:16px;accent-color:#C9A24B;cursor:pointer;}
 
   /* ===== Study control bar: Study Unit / Text Language / Reciter / Repeat / Choose Ayah, one row ===== */
-  .mm-studybar{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;margin-bottom:14px;}
+  .mm-studybar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;}
   .sb-group{position:relative;}
   .sb-group .picker-toggle{white-space:nowrap;}
   .sb-group:has(.ayah-picker.show) .picker-toggle{background:rgba(201,162,75,0.18);border-color:var(--gold);}
-  .mm-studybar .ayah-picker{position:absolute;top:calc(100% + 6px);left:0;z-index:4600;min-width:300px;margin-bottom:0;}
-  .mm-studybar .unit-ayah-nav{display:flex;}
+  .mm-studybar .ayah-picker{position:absolute;top:calc(100% + 6px);left:0;z-index:4600;min-width:300px;margin-bottom:0;background:#1b2338;box-shadow:0 10px 30px rgba(0,0,0,.45);}
+  .mm-studybar .unit-ayah-nav{display:flex;margin:0;}
   @media (max-width:680px){
     .mm-studybar .ayah-picker.show{position:fixed;left:0;right:0;bottom:0;top:auto;border-radius:16px 16px 0 0;min-width:0;width:100%;max-height:70vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.5);}
     .mm-studybar .ayah-picker.show::before{content:"";display:block;width:40px;height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin:0 auto 12px;}
