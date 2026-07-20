@@ -4349,8 +4349,19 @@ async function fetchUnitContentFromQuranCom(type, key, translationId){
     .map(v => (v.translations && v.translations[0]) ? stripTranslationHtml(v.translations[0].text) : '')
     .filter(Boolean)
     .join(' ');
+  // v4 quran.com/qurancdn verses carry BOTH requested translations in the
+  // SAME array (request order: translationId, then BANGLA_TRANSLATION_ID) —
+  // so Bangla is translations[1], not a separate field. The AlQuran Cloud
+  // fallback normalizer above genuinely does produce a separate
+  // translationsBangla field (its source data is structurally different,
+  // one whole edition-object per language) — this line correctly reads
+  // whichever shape the actual verses[] came from.
   const textBangla = verses
-    .map(v => (v.translationsBangla && v.translationsBangla[0]) ? stripTranslationHtml(v.translationsBangla[0].text) : '')
+    .map(v => {
+      if(v.translationsBangla && v.translationsBangla[0]) return stripTranslationHtml(v.translationsBangla[0].text);
+      if(v.translations && v.translations[1]) return stripTranslationHtml(v.translations[1].text);
+      return '';
+    })
     .filter(Boolean)
     .join(' ');
 
