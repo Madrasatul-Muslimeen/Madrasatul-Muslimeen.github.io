@@ -539,6 +539,7 @@
         <div class="reciter-tabs" id="reciterTabs">
           <button class="reciter-tab" id="reciterTabAr" data-reciter="ar">🔊 Abdullah Basfar (Arabic)</button>
           <button class="reciter-tab" id="reciterTabEn" data-reciter="en">🔊 Ibrahim Walk (English)</button>
+          <button class="reciter-tab" id="reciterTabBn" data-reciter="bn">🔊 Sharif Bayzid (Bangla)</button>
         </div>
         <div class="ayah-audio-row">
           <audio id="ayahAudio" controls preload="none"></audio>
@@ -2732,13 +2733,21 @@ function renderBangla(){
   el.classList.toggle('loaded', !!bangla);
 }
 
-// ---------- Reciters (Feature 11) ----------
-// Two live reciters today; a Bangla slot is reserved (base:null) so adding it
-// later is a one-line config change, not a rewrite of the audio system.
-// Both Arabic (Basfar) and English (Ibrahim Walk) use the SAME everyayah.com
-// per-ayah naming convention — SSSAAA.mp3 (surah + ayah, each zero-padded to
-// 3 digits) — confirmed directly against the live English directory listing
-// before wiring this in, so this isn't a guess at a parallel folder existing.
+// ---------- Reciters (Feature 11 + Feature 12) ----------
+// Three live reciters. Arabic (Basfar) and English (Ibrahim Walk) use
+// everyayah.com's per-ayah naming convention — SSSAAA.mp3 (surah + ayah,
+// each zero-padded to 3 digits) — confirmed directly against the live
+// English directory listing before wiring this in, so this isn't a guess
+// at a parallel folder existing.
+//
+// Bangla (Sharif Bayzid) is structurally different: GTAF hosts ONE
+// continuous file per Surah (no per-ayah files exist), with ayah
+// boundaries defined by a separate millisecond-accurate timestamp map
+// (segmented:true below). This needs the dedicated segment-player system
+// (bnTimestamps/bnLookupSegment/bnSegQueue) further down, not the simple
+// file-per-ayah playlist used for Arabic/English. Verified: the file
+// naming (SSS.mp3, zero-padded) and the timestamp data were both
+// confirmed directly against GTAF's live app/API before wiring this in.
 const RECITERS = {
   ar: {
     id: 'ar', label: '🔊 Abdullah Basfar (Arabic)',
@@ -2759,10 +2768,18 @@ const RECITERS = {
     surahExt: null
   },
   bn: {
-    id: 'bn', label: '🔊 Bangla (reserved)',
-    base: null,   // reserved — no confirmed public per-ayah source yet (Feature 12)
-    surahBase: null,
-    surahExt: null
+    id: 'bn', label: '🔊 Sharif Bayzid (Bangla)',
+    // No per-ayah files (base intentionally null — buildAudioUrl() must
+    // never be used for this reciter; use bnLookupSegment() instead).
+    base: null,
+    // One file per Surah, zero-padded 3-digit (008.mp3, 114.mp3...) —
+    // reused for BOTH whole-Surah playback (plays straight through, same
+    // as any other surahBase reciter) AND as the underlying file that
+    // single-ayah / Range / Page playback seeks WITHIN via timestamps.
+    surahBase: 'https://static.gtaf.org/files/v1/audio/quran/sharif_bayzid_gtaf/',
+    surahExt: '.mp3',
+    padSurah: true,   // GTAF filenames are zero-padded; Basfar's CDN above is not
+    segmented: true   // marks: needs bnTimestamps + segment player, not a per-ayah playlist
   }
 };
 
@@ -2783,7 +2800,113 @@ function buildAudioUrl(ayahKey, reciterId){
 function buildSurahAudioUrl(surahNum, reciterId){
   const reciter = RECITERS[reciterId || state.selectedReciter || 'ar'];
   if(!reciter || !reciter.surahBase) return '';
-  return `${reciter.surahBase}${surahNum}${reciter.surahExt}`;
+  const num = reciter.padSurah ? String(surahNum).padStart(3, '0') : surahNum;
+  return `${reciter.surahBase}${num}${reciter.surahExt}`;
+}
+
+// ---------- Bangla segment player (Feature 12) ----------
+// GTAF's Bangla recitation is ONE file per Surah with ayah boundaries given
+// as millisecond timestamps (sourced from GTAF's own public ayah-timing API,
+// cross-verified against real audio-file durations before being trusted).
+// This data is lazy-fetched — never on boot, only the first time someone
+// actually selects the Bangla tab — and cached for the rest of the session,
+// same pattern as UNIT_TAJWEED_CACHE elsewhere in this file.
+let bnTimestamps = null;
+let bnTimestampsPromise = null;
+const BN_TIMESTAMPS_URL = 'https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/refs/heads/main/gtaf_bangla_timestamps.json';
+
+function ensureBnTimestamps(){
+  if(bnTimestamps) return Promise.resolve(bnTimestamps);
+  if(bnTimestampsPromise) return bnTimestampsPromise;
+  bnTimestampsPromise = fetch(BN_TIMESTAMPS_URL).then(r=>{
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(data=>{
+    bnTimestamps = data;
+    return data;
+  }).catch(err=>{
+    bnTimestampsPromise = null; // allow retry on next attempt rather than caching a permanent failure
+    throw err;
+  });
+  return bnTimestampsPromise;
+}
+
+// Looks up one ayah's {surah, url, tFrom, tTo} (seconds) within its Surah's
+// whole-file recording. Returns null if data isn't loaded yet, or if the
+// ayah genuinely isn't found — callers must handle both, never assume.
+function bnLookupSegment(ayahKey){
+  if(!bnTimestamps) return null;
+  const [s, a] = (ayahKey || '').split(':');
+  if(!s || !a) return null;
+  const surahNum = Number(s), ayahNum = Number(a);
+  const list = bnTimestamps[String(surahNum)];
+  if(!list) return null;
+  const v = list[ayahNum - 1];
+  // Defensive check against the actual verse_key, not just array position —
+  // never trust index alignment blindly even though it's been validated.
+  if(!v || v.verse_key !== `${surahNum}:${ayahNum}`) return null;
+  return {
+    surah: surahNum,
+    url: buildSurahAudioUrl(surahNum, 'bn'),
+    tFrom: v.timestamp_from / 1000,
+    tTo: v.timestamp_to / 1000
+  };
+}
+
+// Segment queue state — separate from audioPlaylist (ar/en's file-per-ayah
+// system) since Bangla plays by SEEKING within one or more whole-Surah
+// files, not by advancing through separate per-ayah URLs.
+let bnSegQueue = null;     // array of {surah, url, tFrom, tTo}
+let bnSegIdx = 0;
+let bnSegQueueSig = null;  // which unit this queue was built for
+let bnSegMode = null;      // 'single' (stop/loop one ayah) or 'sequence' (Range/Page)
+
+// Moves the audio element to a segment, switching the file first if it
+// belongs to a different Surah (a Page/Range crossing a Surah boundary).
+function bnGoToSegment(audio, seg, autoplay){
+  if(audio.dataset.bnUrl !== seg.url){
+    audio.src = seg.url;
+    audio.dataset.bnUrl = seg.url;
+    const onReady = ()=>{
+      audio.currentTime = seg.tFrom;
+      if(autoplay) audio.play().catch(()=>{}); // continuation of user-initiated playback
+      audio.removeEventListener('loadedmetadata', onReady);
+    };
+    audio.addEventListener('loadedmetadata', onReady);
+  } else {
+    audio.currentTime = seg.tFrom;
+    if(autoplay) audio.play().catch(()=>{});
+  }
+}
+
+// Boundary watcher — the ONLY place that stops/advances Bangla segment
+// playback. Guarded so it's a no-op unless Bangla is the active reciter
+// AND a segment queue exists; never interferes with ar/en's 'ended' logic.
+function bnBoundaryCheck(){
+  if(state.selectedReciter !== 'bn' || !bnSegQueue || !bnSegQueue.length) return;
+  const audio = document.getElementById('ayahAudio');
+  const seg = bnSegQueue[bnSegIdx];
+  if(!seg || audio.currentTime < seg.tTo - 0.08) return; // small epsilon before the true boundary
+
+  if(bnSegMode === 'single'){
+    if(state.audioLoop){
+      audio.currentTime = seg.tFrom; // natural loop of just this one ayah
+    } else {
+      audio.pause();
+      audio.currentTime = seg.tFrom; // reset to the start, ready for a manual replay
+    }
+    return;
+  }
+  // sequence mode (Range/Page)
+  if(bnSegIdx < bnSegQueue.length - 1){
+    bnSegIdx++;
+    bnGoToSegment(audio, bnSegQueue[bnSegIdx], true);
+  } else if(state.audioLoop){
+    bnSegIdx = 0;
+    bnGoToSegment(audio, bnSegQueue[0], true);
+  } else {
+    audio.pause();
+  }
 }
 
 let audioPlaylist = null;      // array of per-ayah URLs when playing a Range/Page/Surah-fallback sequence
@@ -2806,10 +2929,15 @@ function renderAudio(){
     t.classList.toggle('active', t.dataset.reciter === reciterId);
   });
 
-  if(!reciter || !reciter.base){
-    // Reserved reciter with no source yet (e.g. Bangla) — show clearly
-    // unloaded rather than silently keeping a stale previous-reciter source.
+  // A reciter is "available" if it has EITHER a per-ayah base (ar/en) OR a
+  // surahBase (bn's segment player uses surahBase only — base stays null on
+  // purpose so buildAudioUrl() is never accidentally called for Bangla).
+  const reciterAvailable = reciter && (reciter.base || reciter.surahBase);
+  if(!reciterAvailable){
+    // Reserved reciter with no source yet — show clearly unloaded rather
+    // than silently keeping a stale previous-reciter source.
     audioPlaylist = null; audioPlaylistSig = null;
+    bnSegQueue = null; bnSegQueueSig = null;
     audio.removeAttribute('src'); delete audio.dataset.sig;
     wrap.classList.remove('loaded');
     if(btn) btn.classList.toggle('active', !!state.audioLoop);
@@ -2819,11 +2947,46 @@ function renderAudio(){
   const combinedView = state.currentUnitType !== 'ayah' &&
     (typeof viewingSingleAyahInUnit !== 'function' || !viewingSingleAyahInUnit());
 
-  if(!combinedView){
+  if(!combinedView && reciter.segmented){
+    // Bangla single-ayah — seek WITHIN the whole-Surah file to this ayah's
+    // timestamp range, rather than loading a per-ayah file (none exist).
+    audioPlaylist = null; audioPlaylistSig = null;
+    const seg = bnLookupSegment(state.currentAyahKey);
+    const sig = 'bn-ayah:' + state.currentAyahKey;
+    if(!seg){
+      bnSegQueue = null; bnSegQueueSig = null;
+      audio.removeAttribute('src'); delete audio.dataset.sig; delete audio.dataset.bnUrl;
+      wrap.classList.remove('loaded');
+      const status = document.getElementById('unitPickerStatus');
+      if(bnTimestamps){
+        // Data IS loaded but this specific ayah wasn't found — a genuine data
+        // gap, not a loading race. Show it directly; retrying would just loop
+        // forever re-fetching data we already have.
+        if(status){ status.textContent = 'Bangla audio isn\u2019t available for this ayah.'; status.style.color = '#e0a458'; }
+      } else {
+        ensureBnTimestamps().then(()=>{
+          if(state.selectedReciter === 'bn') renderAudio();
+        }).catch(()=>{
+          if(status){ status.textContent = 'Bangla audio data failed to load. Check your connection and try again.'; status.style.color = '#e0a458'; }
+        });
+      }
+      if(btn) btn.classList.toggle('active', !!state.audioLoop);
+      return;
+    }
+    bnSegQueue = [seg]; bnSegIdx = 0; bnSegMode = 'single'; bnSegQueueSig = sig;
+    if(audio.dataset.sig !== sig){
+      audio.src = seg.url; audio.dataset.sig = sig; audio.dataset.bnUrl = seg.url;
+      const onReady = ()=>{ audio.currentTime = seg.tFrom; audio.removeEventListener('loadedmetadata', onReady); };
+      audio.addEventListener('loadedmetadata', onReady);
+    }
+    wrap.classList.add('loaded');
+    audio.loop = false; // looping one segment is handled by bnBoundaryCheck(), not natively
+  } else if(!combinedView){
     // Single-ayah playback — signature-guarded (now including the reciter,
     // so switching reciters on the same ayah correctly reloads the source
     // instead of silently keeping the previous reciter's audio playing).
     audioPlaylist = null; audioPlaylistSig = null;
+    bnSegQueue = null; bnSegQueueSig = null;
     const url = buildAudioUrl(state.currentAyahKey, reciterId);
     const sig = 'ayah:' + reciterId + ':' + state.currentAyahKey;
     if(url){
@@ -2834,16 +2997,55 @@ function renderAudio(){
     audio.loop = !!state.audioLoop;
   } else if(state.currentUnitType === 'surah' && reciter.surahBase){
     // Whole Surah — one continuous file, same reciter (only when this
-    // reciter actually has whole-surah files — see RECITERS above).
+    // reciter actually has whole-surah files — see RECITERS above). Bangla
+    // reaches this same branch and needs no special handling: it plays
+    // straight through just like Basfar, no segment boundaries involved.
     audioPlaylist = null; audioPlaylistSig = null;
+    bnSegQueue = null; bnSegQueueSig = null;
     const u = parseUnitKey(state.currentUnitKey);
     const sig = 'surah:' + reciterId + ':' + u.surah;
-    if(audio.dataset.sig !== sig){ audio.src = buildSurahAudioUrl(u.surah, reciterId); audio.dataset.sig = sig; }
+    if(audio.dataset.sig !== sig){ audio.src = buildSurahAudioUrl(u.surah, reciterId); audio.dataset.sig = sig; delete audio.dataset.bnUrl; }
     wrap.classList.add('loaded');
     audio.loop = !!state.audioLoop;
+  } else if(reciter.segmented){
+    // Bangla Range/Page combined — segment queue across the unit's ayahs,
+    // switching the underlying Surah file when a Page/Range crosses a
+    // Surah boundary (currentUnitAyahKeys() already returns keys in the
+    // correct cross-Surah order, so no extra sorting is needed here).
+    const keys = (typeof currentUnitAyahKeys === 'function') ? currentUnitAyahKeys() : [];
+    if(!keys.length){ audio.removeAttribute('src'); wrap.classList.remove('loaded'); bnSegQueue = null; bnSegQueueSig = null; return; }
+    const sig = 'bn:' + state.currentUnitKey + '|seq';
+    if(!bnTimestamps){
+      audio.removeAttribute('src'); delete audio.dataset.sig; delete audio.dataset.bnUrl;
+      wrap.classList.remove('loaded');
+      bnSegQueue = null; bnSegQueueSig = null;
+      const status = document.getElementById('unitPickerStatus');
+      ensureBnTimestamps().then(()=>{
+        if(state.selectedReciter === 'bn') renderAudio();
+      }).catch(()=>{
+        if(status){ status.textContent = 'Bangla audio data failed to load. Check your connection and try again.'; status.style.color = '#e0a458'; }
+      });
+      if(btn) btn.classList.toggle('active', !!state.audioLoop);
+      return;
+    }
+    if(bnSegQueueSig !== sig){
+      const built = keys.map(k=>bnLookupSegment(k)).filter(Boolean);
+      bnSegQueue = built; bnSegIdx = 0; bnSegQueueSig = sig; bnSegMode = 'sequence';
+      if(built.length){
+        audio.src = built[0].url; audio.dataset.sig = sig; audio.dataset.bnUrl = built[0].url;
+        const onReady = ()=>{ audio.currentTime = built[0].tFrom; audio.removeEventListener('loadedmetadata', onReady); };
+        audio.addEventListener('loadedmetadata', onReady);
+      } else {
+        const status = document.getElementById('unitPickerStatus');
+        if(status){ status.textContent = 'Bangla audio isn\u2019t available for this unit.'; status.style.color = '#e0a458'; }
+      }
+    }
+    wrap.classList.add('loaded');
+    audio.loop = false; // looping a SEQUENCE is handled by bnBoundaryCheck(), not natively
   } else {
     // Range/Page combined, OR Surah combined for a reciter with no whole-file
     // source (e.g. English) — sequential playlist of the unit's ayah files.
+    bnSegQueue = null; bnSegQueueSig = null;
     const keys = (typeof currentUnitAyahKeys === 'function') ? currentUnitAyahKeys() : [];
     const resolvedKeys = (state.currentUnitType === 'surah' && !keys.length)
       ? (typeof getAllAyahKeysForSurah === 'function' ? getAllAyahKeysForSurah(parseUnitKey(state.currentUnitKey).surah) : [])
@@ -2863,16 +3065,23 @@ function renderAudio(){
   if(btn) btn.classList.toggle('active', !!state.audioLoop);
 }
 
+// One persistent timeupdate handler drives Bangla's segment boundaries
+// (stop/loop a single ayah, or advance/switch-file through a Range/Page
+// sequence). No-ops instantly unless Bangla is active with a live queue —
+// see bnBoundaryCheck()'s own guard — so this never affects ar/en.
+document.getElementById('ayahAudio').addEventListener('timeupdate', bnBoundaryCheck);
+
 // Reciter tab clicks — persist the choice and re-render through the same
 // renderAudio() path everything else uses, so signature-guarding and the
 // Surah-fallback-to-playlist logic apply uniformly here too.
 document.querySelectorAll('.reciter-tab').forEach(tabEl=>{
   tabEl.onclick = ()=>{
     const id = tabEl.dataset.reciter;
-    if(!RECITERS[id] || !RECITERS[id].base){
-      // Reserved/unavailable reciter (Bangla) — surface why, don't switch silently.
+    const r = RECITERS[id];
+    if(!r || !(r.base || r.surahBase)){
+      // Reserved/unavailable reciter — surface why, don't switch silently.
       const status = document.getElementById('unitPickerStatus');
-      if(status){ status.textContent = RECITERS[id].label + ' audio is not available yet.'; status.style.color = '#e0a458'; }
+      if(status){ status.textContent = (r ? r.label : id) + ' audio is not available yet.'; status.style.color = '#e0a458'; }
       return;
     }
     if(state.selectedReciter === id) return;
