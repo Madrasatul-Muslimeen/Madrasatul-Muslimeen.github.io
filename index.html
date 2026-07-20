@@ -92,6 +92,7 @@
   .reciter-tab{background:transparent;border:1px solid rgba(201,162,75,0.3);color:rgba(201,162,75,0.75);padding:4px 10px;border-radius:6px;font-size:10.5px;cursor:pointer;font-family:'Inter';transition:background .15s,color .15s,border-color .15s;}
   .reciter-tab:hover{background:rgba(201,162,75,0.1);}
   .reciter-tab.active{background:var(--gold);color:#241a06;border-color:var(--gold);font-weight:600;}
+  .reciter-tab.queued{background:rgba(201,162,75,0.18);border-color:rgba(201,162,75,0.55);color:var(--gold);}
   .ayah-audio-row{display:flex;align-items:center;gap:8px;}
   .ayah-audio-wrap audio{flex:1;min-width:0;height:36px;border-radius:6px;outline:none;}
   .audio-loop-btn{flex:0 0 auto;background:transparent;border:1px solid rgba(201,162,75,0.35);color:rgba(201,162,75,0.7);border-radius:6px;padding:0 10px;height:36px;font-size:16px;cursor:pointer;line-height:1;transition:background .15s,color .15s,border-color .15s;}
@@ -561,6 +562,16 @@
     <label class="textlang-option"><input type="checkbox" id="textLangEn" checked> English (Translation)</label>
     <label class="textlang-option"><input type="checkbox" id="textLangBn" checked> Bangla (Translation)</label>
     <div class="ayah-picker-source" style="margin-top:6px;">Pick any combination — at least one stays on.</div>
+  </div>
+
+  <div class="ayah-picker-bar">
+    <button class="picker-toggle" id="reciterMultiToggle">&#x1F50A; Reciter <span id="reciterMultiToggleArrow">&#x25BE;</span></button>
+  </div>
+  <div class="ayah-picker" id="reciterMultiPicker">
+    <label class="textlang-option"><input type="checkbox" id="reciterMultiAr"> Abdullah Basfar (Arabic)</label>
+    <label class="textlang-option"><input type="checkbox" id="reciterMultiEn"> Ibrahim Walk (English)</label>
+    <label class="textlang-option"><input type="checkbox" id="reciterMultiBn"> Sharif Bayzid (Bangla)</label>
+    <div class="ayah-picker-source" style="margin-top:6px;">Pick any combination — selected reciters play back-to-back in sequence. At least one stays on.</div>
   </div>
 
   <div class="ayah-picker-bar">
@@ -2727,6 +2738,11 @@ if((state.waysVersion || 0) < WAYS_TAXONOMY_VERSION){
 }
 if(state.audioLoop  === undefined) state.audioLoop  = false; // migration safety
 if(!state.selectedReciter || !['ar','en','bn'].includes(state.selectedReciter)) state.selectedReciter = 'ar'; // migration safety (Feature 11)
+if(!Array.isArray(state.selectedReciters) || !state.selectedReciters.length){
+  state.selectedReciters = [state.selectedReciter]; // Phase 4 migration: single-reciter users keep their exact prior reciter, unchanged
+}
+state.selectedReciters = state.selectedReciters.filter(id => ['ar','en','bn'].includes(id));
+if(!state.selectedReciters.length) state.selectedReciters = ['ar'];
 
 // ═══════════════════════════════════════════════════════════════
 // Firestore hydration (Phase B, Slice 1): the app has already booted
@@ -2959,11 +2975,12 @@ function bnBoundaryCheck(){
   if(!seg || audio.currentTime < seg.tTo - 0.08) return; // small epsilon before the true boundary
 
   if(bnSegMode === 'single'){
-    if(state.audioLoop){
+    if(state.audioLoop && !inReciterQueueMode()){
       audio.currentTime = seg.tFrom; // natural loop of just this one ayah
     } else {
       audio.pause();
       audio.currentTime = seg.tFrom; // reset to the start, ready for a manual replay
+      advanceReciterQueueOrStop(); // Phase 4: hand off to the next selected reciter, if any
     }
     return;
   }
@@ -2971,11 +2988,12 @@ function bnBoundaryCheck(){
   if(bnSegIdx < bnSegQueue.length - 1){
     bnSegIdx++;
     bnGoToSegment(audio, bnSegQueue[bnSegIdx], true);
-  } else if(state.audioLoop){
+  } else if(state.audioLoop && !inReciterQueueMode()){
     bnSegIdx = 0;
     bnGoToSegment(audio, bnSegQueue[0], true);
   } else {
     audio.pause();
+    advanceReciterQueueOrStop(); // Phase 4: hand off to the next selected reciter, if any
   }
 }
 
@@ -2983,20 +3001,81 @@ let audioPlaylist = null;      // array of per-ayah URLs when playing a Range/Pa
 let audioPlaylistIdx = 0;
 let audioPlaylistSig = null;   // which unit/view/reciter the playlist belongs to
 
+// ---------- Multi-reciter sequential playback (Phase 4) ----------
+// Deliberately a thin layer ON TOP of the existing single-reciter engine
+// above, not a rewrite of it. state.selectedReciter still means exactly what
+// it always did — "the one reciter renderAudio() is currently sourcing
+// audio for" — every branch above (ar/en playlists, Bangla segments, whole
+// Surah files) is completely untouched. This layer only decides WHICH
+// reciter that pointer holds, and advances it once a reciter's own playback
+// has genuinely finished (not paused, not mid-loop) — same principle
+// Smahk asked for: real engineering here, not just relabelling a UI.
+let reciterQueue = [];         // ordered list of reciter ids for THIS playback run
+let reciterQueueIdx = 0;
+let reciterQueueActive = false; // true only while 2+ reciters are queued and mid-run
+
+function inReciterQueueMode(){
+  return reciterQueueActive && reciterQueue.length > 1;
+}
+
+// Rebuilds the queue from the current multi-select and points selectedReciter
+// at its first entry. Called at the top of renderAudio() so every existing
+// branch below just sees a normal single active reciter, as always.
+function primeReciterQueue(){
+  const list = (state.selectedReciters && state.selectedReciters.length) ? state.selectedReciters : [state.selectedReciter || 'ar'];
+  reciterQueue = list.slice();
+  reciterQueueActive = reciterQueue.length > 1;
+  if(!reciterQueue.includes(state.selectedReciter)){
+    reciterQueueIdx = 0;
+    state.selectedReciter = reciterQueue[0];
+  } else if(!reciterQueueActive){
+    reciterQueueIdx = 0;
+  }
+}
+
+// The ONLY function that hands playback from one queued reciter to the next
+// (or stops/loops the whole queue). Called from the genuine "nothing left to
+// play" points in the existing ended/boundary handlers below — never from
+// anywhere that might still have more of the CURRENT reciter left to play.
+function advanceReciterQueueOrStop(){
+  if(!reciterQueueActive) return;
+  const audio = document.getElementById('ayahAudio');
+  const goTo = idx=>{
+    reciterQueueIdx = idx;
+    state.selectedReciter = reciterQueue[idx];
+    renderAudio();
+    const tryPlay = ()=> audio.play().catch(()=>{}); // continuation of user-initiated playback
+    if(audio.readyState >= 1) tryPlay(); else audio.addEventListener('loadedmetadata', tryPlay, {once:true});
+  };
+  if(reciterQueueIdx < reciterQueue.length - 1){
+    goTo(reciterQueueIdx + 1);
+  } else if(state.audioLoop){
+    goTo(0); // whole multi-reciter cycle loops, not any single reciter within it
+  } else {
+    reciterQueueActive = false; // run complete — back to normal single-reciter state
+  }
+}
+
 function renderAudio(){
   const wrap  = document.getElementById('ayahAudioWrap');
   const audio = document.getElementById('ayahAudio');
   const btn   = document.getElementById('audioLoopBtn');
   if(!wrap || !audio) return;
 
+  primeReciterQueue(); // Phase 4: decides which reciter selectedReciter points to right now
+
   const reciterId = state.selectedReciter || 'ar';
   const reciter = RECITERS[reciterId];
 
   // Keep the reciter tabs' active state in sync on every render, not just on
   // click — renderAudio() is called from many places (unit switches, ayah
-  // navigation) and the tabs must always reflect the truth.
+  // navigation) and the tabs must always reflect the truth. "active" = the
+  // one actually sourcing audio right now; "queued" = selected to play but
+  // waiting its turn in a multi-reciter run (Phase 4).
   document.querySelectorAll('.reciter-tab').forEach(t=>{
-    t.classList.toggle('active', t.dataset.reciter === reciterId);
+    const id = t.dataset.reciter;
+    t.classList.toggle('active', id === reciterId);
+    t.classList.toggle('queued', inReciterQueueMode() && id !== reciterId && state.selectedReciters.includes(id));
   });
 
   // A reciter is "available" if it has EITHER a per-ayah base (ar/en) OR a
@@ -3064,7 +3143,7 @@ function renderAudio(){
       wrap.classList.add('loaded');
     }
     else{ audio.removeAttribute('src'); delete audio.dataset.sig; wrap.classList.remove('loaded'); }
-    audio.loop = !!state.audioLoop;
+    audio.loop = !!state.audioLoop && !inReciterQueueMode();
   } else if(state.currentUnitType === 'surah' && reciter.surahBase){
     // Whole Surah — one continuous file, same reciter (only when this
     // reciter actually has whole-surah files — see RECITERS above). Bangla
@@ -3076,7 +3155,7 @@ function renderAudio(){
     const sig = 'surah:' + reciterId + ':' + u.surah;
     if(audio.dataset.sig !== sig){ audio.src = buildSurahAudioUrl(u.surah, reciterId); audio.dataset.sig = sig; delete audio.dataset.bnUrl; }
     wrap.classList.add('loaded');
-    audio.loop = !!state.audioLoop;
+    audio.loop = !!state.audioLoop && !inReciterQueueMode();
   } else if(reciter.segmented){
     // Bangla Range/Page combined — segment queue across the unit's ayahs,
     // switching the underlying Surah file when a Page/Range crosses a
@@ -3141,9 +3220,10 @@ function renderAudio(){
 // see bnBoundaryCheck()'s own guard — so this never affects ar/en.
 document.getElementById('ayahAudio').addEventListener('timeupdate', bnBoundaryCheck);
 
-// Reciter tab clicks — persist the choice and re-render through the same
-// renderAudio() path everything else uses, so signature-guarding and the
-// Surah-fallback-to-playlist logic apply uniformly here too.
+// Reciter tab clicks — a quick "just this one" shortcut. Collapses any
+// multi-reciter selection back to a single reciter and re-renders through
+// the same renderAudio() path everything else uses, so signature-guarding
+// and the Surah-fallback-to-playlist logic apply uniformly here too.
 document.querySelectorAll('.reciter-tab').forEach(tabEl=>{
   tabEl.onclick = ()=>{
     const id = tabEl.dataset.reciter;
@@ -3154,8 +3234,10 @@ document.querySelectorAll('.reciter-tab').forEach(tabEl=>{
       if(status){ status.textContent = (r ? r.label : id) + ' audio is not available yet.'; status.style.color = '#e0a458'; }
       return;
     }
-    if(state.selectedReciter === id) return;
+    reciterQueueActive = false; // a direct tab click always means "just this one", not a queued run
     state.selectedReciter = id;
+    state.selectedReciters = [id];
+    if(typeof syncReciterMultiCheckboxes === 'function') syncReciterMultiCheckboxes();
     renderAudio();
     scheduleSave();
   };
@@ -3164,13 +3246,17 @@ document.querySelectorAll('.reciter-tab').forEach(tabEl=>{
 // One persistent 'ended' handler advances Range/Page playlists; wraps to the
 // start when Loop is on. Harmless for single files (audioPlaylist is null).
 document.getElementById('ayahAudio').addEventListener('ended', ()=>{
-  if(!audioPlaylist || !audioPlaylist.length) return;
+  if(!audioPlaylist || !audioPlaylist.length){
+    advanceReciterQueueOrStop(); // Phase 4: single ayah / whole-Surah file genuinely finished
+    return;
+  }
   const audio = document.getElementById('ayahAudio');
   if(audioPlaylistIdx < audioPlaylist.length - 1){
     audioPlaylistIdx++;
-  } else if(state.audioLoop){
+  } else if(state.audioLoop && !inReciterQueueMode()){
     audioPlaylistIdx = 0;
   } else {
+    advanceReciterQueueOrStop(); // Phase 4: this reciter's playlist genuinely finished
     return; // sequence finished, loop off
   }
   audio.src = audioPlaylist[audioPlaylistIdx];
@@ -5005,6 +5091,56 @@ document.getElementById('textLangToggle').onclick = ()=>{
     });
   });
   applyTextLangVisibility();
+})();
+
+/* ---------- Reciter multi-select (Phase 4) ---------- */
+document.getElementById('reciterMultiToggle').onclick = ()=>{
+  const panel = document.getElementById('reciterMultiPicker');
+  const isShowing = panel.classList.toggle('show');
+  document.getElementById('reciterMultiToggleArrow').textContent = isShowing ? '▴' : '▾';
+};
+
+// Keeps the dropdown's checkboxes showing the truth after a tab click (or
+// any other code) changes state.selectedReciters out from under it.
+function syncReciterMultiCheckboxes(){
+  const map = { reciterMultiAr: 'ar', reciterMultiEn: 'en', reciterMultiBn: 'bn' };
+  Object.keys(map).forEach(id=>{
+    const box = document.getElementById(id);
+    if(box) box.checked = state.selectedReciters.includes(map[id]);
+  });
+}
+
+(function wireReciterMultiCheckboxes(){
+  const map = { reciterMultiAr: 'ar', reciterMultiEn: 'en', reciterMultiBn: 'bn' };
+  syncReciterMultiCheckboxes();
+  Object.keys(map).forEach(id=>{
+    const box = document.getElementById(id);
+    if(!box) return;
+    box.addEventListener('change', ()=>{
+      const reciterId = map[id];
+      const r = RECITERS[reciterId];
+      if(box.checked && (!r || !(r.base || r.surahBase))){
+        // Reserved/unavailable reciter — surface why, don't add it to the queue.
+        box.checked = false;
+        const status = document.getElementById('unitPickerStatus');
+        if(status){ status.textContent = (r ? r.label : reciterId) + ' audio is not available yet.'; status.style.color = '#e0a458'; }
+        return;
+      }
+      const nextSelected = Object.keys(map)
+        .filter(otherId => otherId === id ? box.checked : document.getElementById(otherId).checked)
+        .map(otherId => map[otherId]);
+      if(!nextSelected.length){
+        // At least one reciter must always stay selected — same principle as
+        // the Text Language guard: never leave the sequence with nothing to play.
+        box.checked = true;
+        return;
+      }
+      state.selectedReciters = nextSelected;
+      reciterQueueActive = false; // any manual change to the selection starts a fresh run, not mid-sequence
+      renderAudio();
+      scheduleSave();
+    });
+  });
 })();
 
 async function applyAyahSelection(surahNum, ayahNum, translationId){
