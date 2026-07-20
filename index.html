@@ -419,6 +419,18 @@
   .textlang-option:hover{background:rgba(255,255,255,0.06);}
   .textlang-option input{width:16px;height:16px;accent-color:#C9A24B;cursor:pointer;}
 
+  /* ===== Study control bar: Study Unit / Text Language / Reciter / Repeat / Choose Ayah, one row ===== */
+  .mm-studybar{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;margin-bottom:14px;}
+  .sb-group{position:relative;}
+  .sb-group .picker-toggle{white-space:nowrap;}
+  .sb-group:has(.ayah-picker.show) .picker-toggle{background:rgba(201,162,75,0.18);border-color:var(--gold);}
+  .mm-studybar .ayah-picker{position:absolute;top:calc(100% + 6px);left:0;z-index:4600;min-width:300px;margin-bottom:0;}
+  .mm-studybar .unit-ayah-nav{display:flex;}
+  @media (max-width:680px){
+    .mm-studybar .ayah-picker.show{position:fixed;left:0;right:0;bottom:0;top:auto;border-radius:16px 16px 0 0;min-width:0;width:100%;max-height:70vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.5);}
+    .mm-studybar .ayah-picker.show::before{content:"";display:block;width:40px;height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin:0 auto 12px;}
+  }
+
 </style>
 </head>
 <body>
@@ -510,95 +522,94 @@
     </div>
   </header>
 
-  <div class="ayah-picker-bar">
+<div class="mm-studybar" id="mmStudyBar">
+  <div class="sb-group" id="sbUnit">
     <button class="picker-toggle" id="unitPickerToggle">&#x1F3AF; Study Unit: <span id="unitPickerCurrentLabel">Ayah</span> <span id="unitPickerToggleArrow">&#x25BE;</span></button>
-  </div>
-  <div class="ayah-picker-bar" id="unitAyahNavBar">
-    <div class="unit-ayah-nav" id="unitAyahNav" style="display:none">
-      <button class="uan-btn" id="uanPrev" title="Previous ayah">◀</button>
-      <select id="uanSelect" title="Jump to an ayah in this unit"></select>
-      <span class="uan-count" id="uanCount"></span>
-      <button class="uan-btn" id="uanNext" title="Next ayah">▶</button>
+    <div class="ayah-picker" id="unitPicker">
+      <div class="ayah-picker-row">
+        <div class="ayah-picker-field">
+          <label for="unitTypeSelect">Study as</label>
+          <select id="unitTypeSelect">
+            <option value="ayah">Single Ayah</option>
+            <option value="range">Range of Ayahs</option>
+            <option value="surah">Whole Surah</option>
+            <option value="page">Page</option>
+          </select>
+        </div>
+        <div class="ayah-picker-field" id="unitSurahField" style="display:none;">
+          <label for="unitSurahSelect">Surah</label>
+          <select id="unitSurahSelect"><option>Loading&hellip;</option></select>
+        </div>
+        <div class="ayah-picker-field" id="unitRangeStartField" style="display:none;">
+          <label for="unitRangeStart">From Ayah</label>
+          <input type="number" id="unitRangeStart" min="1" value="1">
+        </div>
+        <div class="ayah-picker-field" id="unitRangeEndField" style="display:none;">
+          <label for="unitRangeEnd">To Ayah</label>
+          <input type="number" id="unitRangeEnd" min="1" value="1">
+        </div>
+        <div class="ayah-picker-field" id="unitPageField" style="display:none;">
+          <label for="unitPageNum">Page (1&ndash;604)</label>
+          <input type="number" id="unitPageNum" min="1" max="604" value="1">
+        </div>
+        <button class="picker-load-btn" id="unitApplyBtn">Set Study Unit</button>
+      </div>
+      <div class="ayah-picker-status" id="unitPickerStatus"></div>
+      <div class="ayah-picker-source editable" data-ekey="picker-hint-unit" id="unitPickerHint" contenteditable="true">A Range/Surah/Page's progress is tracked as its own independent record &mdash; it never overrides or is inferred from the individual ayahs inside it.</div>
     </div>
-  </div>
-  <div class="ayah-picker" id="unitPicker">
-    <div class="ayah-picker-row">
-      <div class="ayah-picker-field">
-        <label for="unitTypeSelect">Study as</label>
-        <select id="unitTypeSelect">
-          <option value="ayah">Single Ayah</option>
-          <option value="range">Range of Ayahs</option>
-          <option value="surah">Whole Surah</option>
-          <option value="page">Page</option>
-        </select>
-      </div>
-      <div class="ayah-picker-field" id="unitSurahField" style="display:none;">
-        <label for="unitSurahSelect">Surah</label>
-        <select id="unitSurahSelect"><option>Loading&hellip;</option></select>
-      </div>
-      <div class="ayah-picker-field" id="unitRangeStartField" style="display:none;">
-        <label for="unitRangeStart">From Ayah</label>
-        <input type="number" id="unitRangeStart" min="1" value="1">
-      </div>
-      <div class="ayah-picker-field" id="unitRangeEndField" style="display:none;">
-        <label for="unitRangeEnd">To Ayah</label>
-        <input type="number" id="unitRangeEnd" min="1" value="1">
-      </div>
-      <div class="ayah-picker-field" id="unitPageField" style="display:none;">
-        <label for="unitPageNum">Page (1&ndash;604)</label>
-        <input type="number" id="unitPageNum" min="1" max="604" value="1">
-      </div>
-      <button class="picker-load-btn" id="unitApplyBtn">Set Study Unit</button>
-    </div>
-    <div class="ayah-picker-status" id="unitPickerStatus"></div>
-    <div class="ayah-picker-source editable" data-ekey="picker-hint-unit" id="unitPickerHint" contenteditable="true">A Range/Surah/Page's progress is tracked as its own independent record &mdash; it never overrides or is inferred from the individual ayahs inside it.</div>
   </div>
 
-  <div class="ayah-picker-bar">
+  <div class="unit-ayah-nav" id="unitAyahNav" style="display:none">
+    <button class="uan-btn" id="uanPrev" title="Previous ayah">◀</button>
+    <select id="uanSelect" title="Jump to an ayah in this unit"></select>
+    <span class="uan-count" id="uanCount"></span>
+    <button class="uan-btn" id="uanNext" title="Next ayah">▶</button>
+  </div>
+
+  <div class="sb-group" id="sbTextLang">
     <button class="picker-toggle" id="textLangToggle">&#x1F524; Text Language <span id="textLangToggleArrow">&#x25BE;</span></button>
-  </div>
-  <div class="ayah-picker" id="textLangPicker">
-    <label class="textlang-option"><input type="checkbox" id="textLangAr" checked> Arabic</label>
-    <label class="textlang-option"><input type="checkbox" id="textLangEn" checked> English (Translation)</label>
-    <label class="textlang-option"><input type="checkbox" id="textLangBn" checked> Bangla (Translation)</label>
-    <div class="ayah-picker-source" style="margin-top:6px;">Pick any combination — at least one stays on.</div>
-  </div>
-
-  <div class="ayah-picker-bar">
-    <button class="picker-toggle" id="reciterMultiToggle">&#x1F50A; Reciter <span id="reciterMultiToggleArrow">&#x25BE;</span></button>
-  </div>
-  <div class="ayah-picker" id="reciterMultiPicker">
-    <label class="textlang-option"><input type="checkbox" id="reciterMultiAr"> Abdullah Basfar (Arabic)</label>
-    <label class="textlang-option"><input type="checkbox" id="reciterMultiEn"> Ibrahim Walk (English)</label>
-    <label class="textlang-option"><input type="checkbox" id="reciterMultiBn"> Sharif Bayzid (Bangla)</label>
-    <div class="ayah-picker-source" style="margin-top:6px;">Pick any combination — selected reciters play back-to-back in sequence. At least one stays on.</div>
-  </div>
-
-  <div class="ayah-picker-bar">
-    <button class="picker-toggle" id="repeatCountToggle">&#x1F501; Repeat: <span id="repeatCountLabel">1&#215;</span> <span id="repeatCountToggleArrow">&#x25BE;</span></button>
-  </div>
-  <div class="ayah-picker" id="repeatCountPicker">
-    <div class="ayah-picker-row">
-      <div class="ayah-picker-field">
-        <label for="repeatCountSelect">Each selected reciter repeats</label>
-        <select id="repeatCountSelect">
-          <option value="1">1&#215; (no repeat)</option>
-          <option value="2">2&#215;</option>
-          <option value="3">3&#215;</option>
-          <option value="5">5&#215;</option>
-          <option value="10">10&#215;</option>
-        </select>
-      </div>
+    <div class="ayah-picker" id="textLangPicker">
+      <label class="textlang-option"><input type="checkbox" id="textLangAr" checked> Arabic</label>
+      <label class="textlang-option"><input type="checkbox" id="textLangEn" checked> English (Translation)</label>
+      <label class="textlang-option"><input type="checkbox" id="textLangBn" checked> Bangla (Translation)</label>
+      <div class="ayah-picker-source" style="margin-top:6px;">Pick any combination — at least one stays on.</div>
     </div>
-    <div class="ayah-picker-source" style="margin-top:6px;">Applies to every selected reciter equally — each one finishes its repeats before the next reciter's turn.</div>
   </div>
 
-  <div class="ayah-picker-bar">
+  <div class="sb-group" id="sbReciter">
+    <button class="picker-toggle" id="reciterMultiToggle">&#x1F50A; Reciter <span id="reciterMultiToggleArrow">&#x25BE;</span></button>
+    <div class="ayah-picker" id="reciterMultiPicker">
+      <label class="textlang-option"><input type="checkbox" id="reciterMultiAr"> Abdullah Basfar (Arabic)</label>
+      <label class="textlang-option"><input type="checkbox" id="reciterMultiEn"> Ibrahim Walk (English)</label>
+      <label class="textlang-option"><input type="checkbox" id="reciterMultiBn"> Sharif Bayzid (Bangla)</label>
+      <div class="ayah-picker-source" style="margin-top:6px;">Pick any combination — selected reciters play back-to-back in sequence. At least one stays on.</div>
+    </div>
+  </div>
+
+  <div class="sb-group" id="sbRepeat">
+    <button class="picker-toggle" id="repeatCountToggle">&#x1F501; Repeat: <span id="repeatCountLabel">1&#215;</span> <span id="repeatCountToggleArrow">&#x25BE;</span></button>
+    <div class="ayah-picker" id="repeatCountPicker">
+      <div class="ayah-picker-row">
+        <div class="ayah-picker-field">
+          <label for="repeatCountSelect">Each selected reciter repeats</label>
+          <select id="repeatCountSelect">
+            <option value="1">1&#215; (no repeat)</option>
+            <option value="2">2&#215;</option>
+            <option value="3">3&#215;</option>
+            <option value="5">5&#215;</option>
+            <option value="10">10&#215;</option>
+          </select>
+        </div>
+      </div>
+      <div class="ayah-picker-source" style="margin-top:6px;">Applies to every selected reciter equally — each one finishes its repeats before the next reciter's turn.</div>
+    </div>
+  </div>
+
+  <div class="sb-group" id="sbChooseAyah">
     <button class="picker-toggle" id="pickerToggle">📖 Choose Ayah <span id="pickerToggleArrow">▾</span></button>
-  </div>
 
-  <div class="ayah-picker" id="ayahPicker">
-    <div class="ayah-picker-row">
+    <div class="ayah-picker" id="ayahPicker">
+      <div class="ayah-picker-row">
       <div class="ayah-picker-field">
         <label for="pickerSurah">Surah</label>
         <select id="pickerSurah"><option>Loading…</option></select>
@@ -621,6 +632,8 @@
     <div class="ayah-picker-status" id="pickerStatus"></div>
     <div class="ayah-picker-source editable" data-ekey="picker-hint-source" contenteditable="true">Text &amp; translations fetched live from quran.com</div>
   </div>
+  </div>
+</div>
 
   <div class="ayah-picker tajweed-legend" id="tajweedLegend">
     <div class="tajweed-legend-grid">
@@ -5223,6 +5236,44 @@ document.getElementById('repeatCountToggle').onclick = ()=>{
     reciterQueueActive = false; // and starts a fresh run, not mid-sequence — same principle as changing reciters
     renderAudio();
     scheduleSave();
+  });
+})();
+
+// Now that Study Unit / Text Language / Reciter / Repeat / Choose Ayah all
+// live in one horizontal bar, opening one should close any other that's
+// still open — each button's own onclick (defined elsewhere, unchanged)
+// still owns toggling its own panel; this only ever closes the OTHER four.
+(function unifyStudyBarDropdowns(){
+  const pairs = [
+    ['unitPickerToggle', 'unitPicker', 'unitPickerToggleArrow'],
+    ['textLangToggle', 'textLangPicker', 'textLangToggleArrow'],
+    ['reciterMultiToggle', 'reciterMultiPicker', 'reciterMultiToggleArrow'],
+    ['repeatCountToggle', 'repeatCountPicker', 'repeatCountToggleArrow'],
+    ['pickerToggle', 'ayahPicker', 'pickerToggleArrow']
+  ];
+  pairs.forEach(([btnId, panelId])=>{
+    const btn = document.getElementById(btnId);
+    if(!btn) return;
+    btn.addEventListener('click', ()=>{
+      pairs.forEach(([, otherPanelId, otherArrowId])=>{
+        if(otherPanelId === panelId) return;
+        const otherPanel = document.getElementById(otherPanelId);
+        const otherArrow = document.getElementById(otherArrowId);
+        if(otherPanel) otherPanel.classList.remove('show');
+        if(otherArrow) otherArrow.textContent = '▾';
+      });
+    });
+  });
+  document.addEventListener('click', e=>{
+    const bar = document.getElementById('mmStudyBar');
+    if(bar && !bar.contains(e.target)){
+      pairs.forEach(([, panelId, arrowId])=>{
+        const panel = document.getElementById(panelId);
+        const arrow = document.getElementById(arrowId);
+        if(panel) panel.classList.remove('show');
+        if(arrow) arrow.textContent = '▾';
+      });
+    }
   });
 })();
 
