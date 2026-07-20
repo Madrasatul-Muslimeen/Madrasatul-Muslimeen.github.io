@@ -410,6 +410,14 @@
   .mm-tb-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:4550;}
   .mm-tb-backdrop.show{display:block;}
 
+  /* ===== Phase 3: text-language multi-select ===== */
+  .ayah-card.hide-ar #ayahArabic, .ayah-card.hide-ar #ayahArabicTajweed{display:none !important;}
+  .ayah-card.hide-en #ayahMeta{display:none !important;}
+  .ayah-card.hide-bn #ayahBangla{display:none !important;}
+  .textlang-option{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:14px;color:var(--parchment,#e8ecf5);}
+  .textlang-option:hover{background:rgba(255,255,255,0.06);}
+  .textlang-option input{width:16px;height:16px;accent-color:#C9A24B;cursor:pointer;}
+
 </style>
 </head>
 <body>
@@ -543,6 +551,16 @@
     </div>
     <div class="ayah-picker-status" id="unitPickerStatus"></div>
     <div class="ayah-picker-source editable" data-ekey="picker-hint-unit" id="unitPickerHint" contenteditable="true">A Range/Surah/Page's progress is tracked as its own independent record &mdash; it never overrides or is inferred from the individual ayahs inside it.</div>
+  </div>
+
+  <div class="ayah-picker-bar">
+    <button class="picker-toggle" id="textLangToggle">&#x1F524; Text Language <span id="textLangToggleArrow">&#x25BE;</span></button>
+  </div>
+  <div class="ayah-picker" id="textLangPicker">
+    <label class="textlang-option"><input type="checkbox" id="textLangAr" checked> Arabic</label>
+    <label class="textlang-option"><input type="checkbox" id="textLangEn" checked> English (Translation)</label>
+    <label class="textlang-option"><input type="checkbox" id="textLangBn" checked> Bangla (Translation)</label>
+    <div class="ayah-picker-source" style="margin-top:6px;">Pick any combination — at least one stays on.</div>
   </div>
 
   <div class="ayah-picker-bar">
@@ -2671,6 +2689,7 @@ if(!state.ways || !state.ways.length) state.ways = WAYS_DEFAULT.map(w=>({...w}))
 if(!state.currentUnitType) state.currentUnitType = 'ayah'; // migration safety (Phase 1a)
 if(!state.currentUnitKey) state.currentUnitKey = state.currentAyahKey || DEFAULT_AYAH_KEY;
 if(!state.units) state.units = {};
+if(!state.textLangs) state.textLangs = {ar:true, en:true, bn:true}; // Phase 3: text-language display selection (default: show all, matches pre-Phase-3 behaviour)
 state.ways.forEach(w=>{ if(!w.resources) w.resources = []; if(w.gloss===undefined) w.gloss = ''; }); // migration safety (Wheel-by-Topic Phase 1; 30-Ways gloss field)
 // Use the shared MM roster if one already exists (e.g. Study Monitor has been
 // opened before) — this is what makes "Abdullah/Zahra/Ahsan/Mahmuda" the SAME
@@ -4940,6 +4959,53 @@ document.getElementById('tajweedLegendBtn').onclick = ()=>{
   const isShowing = panel.classList.toggle('show');
   document.getElementById('tajweedLegendBtn').classList.toggle('active', isShowing);
 };
+
+/* ---------- Text Language multi-select (Phase 3) ---------- */
+// Pure display-layer toggle: the ayah-card gets a hide-ar/hide-en/hide-bn
+// class and CSS (!important) hides the matching element. This never touches
+// renderUnitContent()/renderAyahArabicMode()'s own logic for WHAT content is
+// painted — only whether it's shown — so it's safe to call from anywhere,
+// any number of times, regardless of unit type or Tajweed/combined state.
+function applyTextLangVisibility(){
+  if(!state.textLangs) state.textLangs = {ar:true, en:true, bn:true};
+  const card = document.querySelector('.ayah-card');
+  if(!card) return;
+  card.classList.toggle('hide-ar', !state.textLangs.ar);
+  card.classList.toggle('hide-en', !state.textLangs.en);
+  card.classList.toggle('hide-bn', !state.textLangs.bn);
+}
+
+document.getElementById('textLangToggle').onclick = ()=>{
+  const panel = document.getElementById('textLangPicker');
+  const isShowing = panel.classList.toggle('show');
+  document.getElementById('textLangToggleArrow').textContent = isShowing ? '▴' : '▾';
+};
+
+(function wireTextLangCheckboxes(){
+  const map = { textLangAr: 'ar', textLangEn: 'en', textLangBn: 'bn' };
+  Object.keys(map).forEach(id=>{
+    const box = document.getElementById(id);
+    if(!box) return;
+    box.checked = !!(state.textLangs && state.textLangs[map[id]]);
+    box.addEventListener('change', ()=>{
+      if(!state.textLangs) state.textLangs = {ar:true, en:true, bn:true};
+      // At least one language must always stay visible — refuse to switch
+      // the last remaining one off rather than leaving an empty ayah card.
+      const wouldAllBeOff = Object.keys(map).every(otherId=>{
+        const key = map[otherId];
+        return otherId === id ? !box.checked : !state.textLangs[key];
+      });
+      if(wouldAllBeOff){
+        box.checked = true;
+        return;
+      }
+      state.textLangs[map[id]] = box.checked;
+      applyTextLangVisibility();
+      scheduleSave();
+    });
+  });
+  applyTextLangVisibility();
+})();
 
 async function applyAyahSelection(surahNum, ayahNum, translationId){
   const statusEl = document.getElementById('pickerStatus');
