@@ -537,6 +537,8 @@
             <option value="range">Range of Ayahs</option>
             <option value="surah">Whole Surah</option>
             <option value="page">Page</option>
+            <option value="ruku">Ruku'</option>
+            <option value="juz">Juz</option>
           </select>
         </div>
         <div class="ayah-picker-field" id="unitSurahField" style="display:none;">
@@ -554,6 +556,14 @@
         <div class="ayah-picker-field" id="unitPageField" style="display:none;">
           <label for="unitPageNum">Page (1&ndash;604)</label>
           <input type="number" id="unitPageNum" min="1" max="604" value="1">
+        </div>
+        <div class="ayah-picker-field" id="unitRukuNumField" style="display:none;">
+          <label for="unitRukuNumSelect">Ruku'</label>
+          <select id="unitRukuNumSelect"><option>Choose a Surah first&hellip;</option></select>
+        </div>
+        <div class="ayah-picker-field" id="unitJuzField" style="display:none;">
+          <label for="unitJuzSelect">Juz</label>
+          <select id="unitJuzSelect"></select>
         </div>
         <button class="picker-load-btn" id="unitApplyBtn">Set Study Unit</button>
       </div>
@@ -2678,12 +2688,21 @@ function buildUnitKey(type, p){
   if(type==='range') return `${p.surah}:${p.start}-${p.end}`;
   if(type==='surah') return `${p.surah}:surah`;
   if(type==='page')  return `page:${p.page}`;
+  // Ruku' key is surah-local (e.g. "2:ruku5" = the 5th ruku' of Surah 2) — mirrors how
+  // students actually think/talk about rukus, matching the Range/Surah pattern of
+  // "surah first". rukuIndex is 1-based, positional within that surah (NOT the
+  // global 1-556 ruku number used internally to detect boundaries).
+  if(type==='ruku')  return `${p.surah}:ruku${p.rukuIndex}`;
+  // Juz key is global (1-30), like Page — a Juz doesn't belong to one surah.
+  if(type==='juz')   return `juz:${p.juz}`;
   throw new Error('Unknown unit type: '+type);
 }
 function parseUnitKey(key){
   if(key.startsWith('page:')) return { type:'page', page: Number(key.slice(5)) };
+  if(key.startsWith('juz:'))  return { type:'juz', juz: Number(key.slice(4)) };
   const [surahPart, rest] = key.split(':');
   if(rest === 'surah') return { type:'surah', surah: Number(surahPart) };
+  if(rest && rest.startsWith('ruku')) return { type:'ruku', surah: Number(surahPart), rukuIndex: Number(rest.slice(4)) };
   if(rest && rest.includes('-')){
     const [start,end] = rest.split('-').map(Number);
     return { type:'range', surah: Number(surahPart), start, end };
@@ -2702,6 +2721,11 @@ function unitLabel(key){
   if(u.type==='range') return `${surahName(u.surah)}, Ayahs ${u.start}\u2013${u.end}`;
   if(u.type==='surah') return `${surahName(u.surah)} (whole)`;
   if(u.type==='page')  return `Page ${u.page}`;
+  if(u.type==='ruku'){
+    const range = (typeof getRukuAyahRange==='function') ? getRukuAyahRange(u.surah, u.rukuIndex) : null;
+    return range ? `${surahName(u.surah)}, Ruku' ${u.rukuIndex} (Ayahs ${range.start}\u2013${range.end})` : `${surahName(u.surah)}, Ruku' ${u.rukuIndex}`;
+  }
+  if(u.type==='juz')   return `Juz ${u.juz}`;
   return key;
 }
 
@@ -2719,7 +2743,7 @@ function freshState(){
     },
     progress: {}, // progress[personId][unitKey][wayId] = {status, notes, date} — unitKey generalizes ayahKey (see buildUnitKey)
     currentAyahKey: DEFAULT_AYAH_KEY,
-    currentUnitType: 'ayah',   // 'ayah' | 'range' | 'surah' | 'page'
+    currentUnitType: 'ayah',   // 'ayah' | 'range' | 'surah' | 'page' | 'ruku' | 'juz'
     currentUnitKey: DEFAULT_AYAH_KEY, // == currentAyahKey while type is 'ayah'
     units: {} // units[unitKey] = {type, label, text?} — content for range/surah/page units (ayah content stays in `ayahs` above, unchanged)
   };
@@ -4539,6 +4563,21 @@ async function fetchUnitContentFromQuranCom(type, key, translationId){
   const fields = 'text_uthmani';
   let verses = [];
 
+  // Ruku' content is just a contiguous ayah span within one surah — once we
+  // know that span (from the boundary detection above), fetching it is
+  // IDENTICAL to fetching a Range, so we resolve to that span here and reuse
+  // the proven 'range' code paths below rather than duplicating them. The
+  // picker flow (below) only lets a Ruku' be applied once its surah's
+  // boundaries are already loaded, so this should always resolve — if it
+  // somehow doesn't, fail clearly rather than silently fetching nothing.
+  let fetchType = type, fetchSurah = null, fetchStart = null, fetchEnd = null;
+  if(type === 'ruku'){
+    const u = parseUnitKey(key);
+    const range = getRukuAyahRange(u.surah, u.rukuIndex);
+    if(!range) throw new Error("Ruku' boundaries not loaded for this surah yet.");
+    fetchType = 'range'; fetchSurah = u.surah; fetchStart = range.start; fetchEnd = range.end;
+  }
+
   // Normalises one AlQuran Cloud multi-edition response (array of edition
   // objects, each with .ayahs[] in matching order) into the same verses[]
   // shape the v4 code below produces — so everything downstream is shared.
@@ -4557,9 +4596,11 @@ async function fetchUnitContentFromQuranCom(type, key, translationId){
   }
 
   try{
-  if(type==='range'){
-      const {surah, start, end} = parseUnitKey(key);
-      if(end - start > 50) throw new Error('Ranges over 50 ayahs are better studied as a whole Surah — pick "Whole Surah" instead.');
+  if(fetchType==='range'){
+      const surah = fetchSurah !== null ? fetchSurah : parseUnitKey(key).surah;
+      const start = fetchStart !== null ? fetchStart : parseUnitKey(key).start;
+      const end   = fetchEnd   !== null ? fetchEnd   : parseUnitKey(key).end;
+      if(type==='range' && end - start > 50) throw new Error('Ranges over 50 ayahs are better studied as a whole Surah — pick "Whole Surah" instead.');
       for(let a=start; a<=end; a++){
         const data = await quranFetch(`/verses/by_key/${surah}:${a}?language=en&words=false&fields=${fields}&translations=${translationId},${BANGLA_TRANSLATION_ID}`);
         if(data.verse) verses.push(data.verse);
@@ -4570,13 +4611,18 @@ async function fetchUnitContentFromQuranCom(type, key, translationId){
     } else if(type==='page'){
       const {page} = parseUnitKey(key);
       verses = await quranFetchAllPages(`/verses/by_page/${page}?language=en&words=false&fields=${fields}&translations=${translationId},${BANGLA_TRANSLATION_ID}`, 50);
+    } else if(type==='juz'){
+      const {juz} = parseUnitKey(key);
+      verses = await quranFetchAllPages(`/verses/by_juz/${juz}?language=en&words=false&fields=${fields}&translations=${translationId},${BANGLA_TRANSLATION_ID}`, 50);
     }
   }catch(v4Err){
     if(type==='range' && /better studied as a whole Surah/.test(v4Err.message || '')) throw v4Err; // user-facing rule, not a network failure
     console.warn('quran.com v4 unavailable for unit', key, '- using alquran.cloud:', v4Err);
     verses = [];
-    if(type==='range'){
-      const {surah, start, end} = parseUnitKey(key);
+    if(fetchType==='range'){
+      const surah = fetchSurah !== null ? fetchSurah : parseUnitKey(key).surah;
+      const start = fetchStart !== null ? fetchStart : parseUnitKey(key).start;
+      const end   = fetchEnd   !== null ? fetchEnd   : parseUnitKey(key).end;
       for(let a=start; a<=end; a++){
         const editions = await alquranFetch(`/ayah/${surah}:${a}/editions/quran-uthmani,en.sahih,bn.bengali`);
         if(editions && editions[0] && editions[0].text){
@@ -4591,6 +4637,14 @@ async function fetchUnitContentFromQuranCom(type, key, translationId){
     } else if(type==='page'){
       const {page} = parseUnitKey(key);
       verses = alquranEditionsToVerses(await alquranFetch(`/page/${page}/editions/quran-uthmani,en.sahih,bn.bengali`));
+    } else if(type==='juz'){
+      const {juz} = parseUnitKey(key);
+      // AlQuran Cloud's /juz/{n}/editions/... follows the exact same multi-edition
+      // convention already proven working for /surah and /page above — same
+      // normalizer reused. First real live use of this specific path; if it
+      // doesn't match that convention, this throws clearly rather than silently
+      // returning wrong content.
+      verses = alquranEditionsToVerses(await alquranFetch(`/juz/${juz}/editions/quran-uthmani,en.sahih,bn.bengali`));
     }
   }
 
@@ -4797,6 +4851,77 @@ function getAllAyahKeysForJuz(juzNum){
   return keys;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Ruku' boundaries — Phase 1 of the 5-Wheel Overhaul.
+// Unlike Juz, AlQuran Cloud's /meta endpoint does NOT include Ruku'
+// references, and hitting /ruku/{globalNumber}/{edition} once per ruku
+// would mean ~556 live calls to map the whole Quran — a non-starter
+// against the loading-speed rule. Instead: fetch a surah's own ayahs
+// once (lazy, only when that surah's Ruku' picker is actually opened,
+// session-cached like everything else here), and derive boundaries from
+// the per-ayah `ruku` field every ayah object already carries alongside
+// juz/page/hizbQuarter — the same metadata family the existing Juz code
+// already trusts from this API. Never baked into the file.
+//
+// Self-verifying by design: if the `ruku` field is ever missing or not a
+// number on the fetched ayahs, this throws a clear error rather than
+// silently building wrong boundaries — the real live check for whether
+// this assumption holds, the first time any surah's Ruku' data loads.
+// ═══════════════════════════════════════════════════════════════
+const RUKUS_BY_SURAH = {};      // surahNum -> [{index, startAyah, endAyah}, ...] (index is 1-based, local to that surah)
+let rukuLoadPromises = {};      // surahNum -> in-flight Promise, so a second simultaneous request doesn't double-fetch
+
+function ensureRukusLoadedForSurah(surahNum){
+  surahNum = Number(surahNum);
+  if(RUKUS_BY_SURAH[surahNum]) return Promise.resolve(RUKUS_BY_SURAH[surahNum]);
+  if(rukuLoadPromises[surahNum]) return rukuLoadPromises[surahNum];
+  rukuLoadPromises[surahNum] = alquranFetch(`/surah/${surahNum}/quran-uthmani`).then(data=>{
+    const ayahs = (data && data.ayahs) || [];
+    if(!ayahs.length) throw new Error('empty ayah list for surah '+surahNum);
+    // Self-check: the very first ayah must carry a numeric `ruku` field, or this
+    // whole approach is wrong for this data source and must fail loudly, not guess.
+    if(typeof ayahs[0].ruku !== 'number' || !Number.isFinite(ayahs[0].ruku)){
+      console.error('ensureRukusLoadedForSurah: ayah objects have no numeric `ruku` field — AlQuran Cloud schema assumption is WRONG. First ayah:', ayahs[0]);
+      throw new Error("AlQuran Cloud response has no per-ayah 'ruku' field — cannot derive Ruku' boundaries this way.");
+    }
+    const groups = [];
+    ayahs.forEach(a=>{
+      const last = groups[groups.length-1];
+      if(last && last.globalRuku === a.ruku){
+        last.endAyah = a.numberInSurah;
+      } else {
+        groups.push({ index: groups.length+1, startAyah: a.numberInSurah, endAyah: a.numberInSurah, globalRuku: a.ruku });
+      }
+    });
+    RUKUS_BY_SURAH[surahNum] = groups;
+    return groups;
+  }).catch(err=>{
+    console.error('ensureRukusLoadedForSurah failed for surah', surahNum, err);
+    delete rukuLoadPromises[surahNum]; // allow retry on next call
+    throw err;
+  });
+  return rukuLoadPromises[surahNum];
+}
+
+// Sync getter — returns [] if not loaded yet (caller decides whether to
+// trigger ensureRukusLoadedForSurah() first; mirrors getAllAyahKeysForSurah's
+// graceful-degradation pattern used throughout this file).
+function getRukusForSurah(surahNum){
+  return RUKUS_BY_SURAH[Number(surahNum)] || [];
+}
+function getRukuAyahRange(surahNum, rukuIndex){
+  const list = getRukusForSurah(surahNum);
+  const g = list.find(r=>r.index===Number(rukuIndex));
+  return g ? { start: g.startAyah, end: g.endAyah } : null;
+}
+function getAllAyahKeysForRuku(surahNum, rukuIndex){
+  const range = getRukuAyahRange(surahNum, rukuIndex);
+  if(!range) return [];
+  const keys = [];
+  for(let a=range.start; a<=range.end; a++) keys.push(`${surahNum}:${a}`);
+  return keys;
+}
+
 
 let TRANSLATIONS = [];
 let selectedTranslationId = 20; // Saheeh International — used as fallback if the live list fails to load
@@ -4945,10 +5070,22 @@ async function fetchUnitTajweed(type, key){
   if(UNIT_TAJWEED_INFLIGHT[key]) return UNIT_TAJWEED_INFLIGHT[key];
   const p = (async ()=>{
     const u = parseUnitKey(key);
+    // Ruku' is a contiguous ayah span within one surah — resolve it once here
+    // and reuse the exact same range-fetch/slice logic as 'range' below.
+    let rukuRange = null;
+    if(type === 'ruku'){
+      rukuRange = getRukuAyahRange(u.surah, u.rukuIndex);
+      if(!rukuRange) throw new Error("Ruku' boundaries not loaded for this surah yet.");
+    }
     let raws = [];
     try{
       if(type === 'range'){
         for(let a = u.start; a <= u.end; a++){
+          const d = await quranFetch(`/verses/by_key/${u.surah}:${a}?fields=text_uthmani_tajweed`);
+          raws.push((d.verse && d.verse.text_uthmani_tajweed) || '');
+        }
+      } else if(type === 'ruku'){
+        for(let a = rukuRange.start; a <= rukuRange.end; a++){
           const d = await quranFetch(`/verses/by_key/${u.surah}:${a}?fields=text_uthmani_tajweed`);
           raws.push((d.verse && d.verse.text_uthmani_tajweed) || '');
         }
@@ -4958,17 +5095,26 @@ async function fetchUnitTajweed(type, key){
       } else if(type === 'page'){
         const verses = await quranFetchAllPages(`/verses/by_page/${u.page}?fields=text_uthmani_tajweed`, 50);
         raws = verses.map(v=>v.text_uthmani_tajweed || '');
+      } else if(type === 'juz'){
+        const verses = await quranFetchAllPages(`/verses/by_juz/${u.juz}?fields=text_uthmani_tajweed`, 50);
+        raws = verses.map(v=>v.text_uthmani_tajweed || '');
       }
     }catch(v4Err){
       console.warn('unit tajweed: v4 unavailable, using alquran.cloud:', v4Err);
       if(type === 'page'){
         const d = await alquranFetch(`/page/${u.page}/quran-tajweed`);
         raws = ((d && d.ayahs) || []).map(a=>bracketTajweedToQuranComFormat(a.text));
+      } else if(type === 'juz'){
+        // Same convention already proven for /surah and /page quran-tajweed fallbacks.
+        const d = await alquranFetch(`/juz/${u.juz}/quran-tajweed`);
+        raws = ((d && d.ayahs) || []).map(a=>bracketTajweedToQuranComFormat(a.text));
       } else {
-        // One surah fetch covers both whole-Surah AND Range (slice by ayah number)
+        // One surah fetch covers whole-Surah, Range AND Ruku' (slice by ayah number)
         const d = await alquranFetch(`/surah/${u.surah}/quran-tajweed`);
         const ayahs = (d && d.ayahs) || [];
-        const wanted = (type === 'range') ? ayahs.filter(a=>a.numberInSurah >= u.start && a.numberInSurah <= u.end) : ayahs;
+        const sliceStart = type === 'range' ? u.start : (type === 'ruku' ? rukuRange.start : null);
+        const sliceEnd   = type === 'range' ? u.end   : (type === 'ruku' ? rukuRange.end   : null);
+        const wanted = (sliceStart !== null) ? ayahs.filter(a=>a.numberInSurah >= sliceStart && a.numberInSurah <= sliceEnd) : ayahs;
         raws = wanted.map(a=>bracketTajweedToQuranComFormat(a.text));
       }
     }
@@ -5411,9 +5557,18 @@ function currentUnitAyahKeys(){
     const derived = getAllAyahKeysForSurah(u.surah);
     if(derived.length) return derived;
   }
-  // Page units (and Surah before chapters load): use the keys captured when
-  // the unit's content was fetched. Older units saved before this feature
-  // may lack them — the navigator then shows only "All" until a refetch.
+  if(type === 'ruku'){
+    const derived = getAllAyahKeysForRuku(u.surah, u.rukuIndex);
+    if(derived.length) return derived;
+  }
+  if(type === 'juz'){
+    const derived = getAllAyahKeysForJuz(u.juz);
+    if(derived.length) return derived;
+  }
+  // Page units (and Surah/Ruku'/Juz before their boundary data loads): use the
+  // keys captured when the unit's content was fetched. Older units saved
+  // before this feature may lack them — the navigator then shows only "All"
+  // until a refetch.
   const rec = state.units[state.currentUnitKey];
   return (rec && rec.ayahKeys) || [];
 }
@@ -5544,18 +5699,56 @@ function populateUnitSurahSelect(){
   sel.dataset.populated = '1';
 }
 
+function populateUnitJuzSelect(){
+  const sel = document.getElementById('unitJuzSelect');
+  if(sel.dataset.populated) return;
+  sel.innerHTML = Array.from({length:30},(_,i)=>i+1).map(n=>`<option value="${n}">Juz ${n}</option>`).join('');
+  sel.dataset.populated = '1';
+}
+
+// Populates the Ruku' number dropdown for whichever surah is currently chosen
+// in unitSurahSelect. Lazy-fetches that surah's boundaries the first time
+// (self-verifying — see ensureRukusLoadedForSurah), then lists each ruku'
+// with its ayah range as a hint (e.g. "Ruku' 1 (Ayahs 1–7)").
+async function refreshUnitRukuNumSelect(){
+  const surahSel = document.getElementById('unitSurahSelect');
+  const rukuSel = document.getElementById('unitRukuNumSelect');
+  const status = document.getElementById('unitPickerStatus');
+  const surah = Number(surahSel.value);
+  if(!surah){ rukuSel.innerHTML = '<option>Choose a Surah first&hellip;</option>'; return; }
+  rukuSel.innerHTML = '<option>Loading Ruku\u2019 boundaries&hellip;</option>';
+  if(status){ status.textContent = ''; }
+  try{
+    const list = await ensureRukusLoadedForSurah(surah);
+    rukuSel.innerHTML = list.map(r=>`<option value="${r.index}">Ruku' ${r.index} (Ayahs ${r.startAyah}\u2013${r.endAyah})</option>`).join('');
+  }catch(e){
+    rukuSel.innerHTML = '<option value="">Couldn\u2019t load Ruku\u2019 data</option>';
+    if(status){ status.textContent = 'Couldn\u2019t load Ruku\u2019 boundaries (' + (e.message||'network error') + ') \u2014 try choosing the Surah again.'; status.style.color = '#e0a458'; }
+  }
+}
+
 document.getElementById('unitTypeSelect').addEventListener('change', e=>{
   const type = e.target.value;
-  document.getElementById('unitSurahField').style.display = (type==='range'||type==='surah') ? 'flex' : 'none';
+  document.getElementById('unitSurahField').style.display = (type==='range'||type==='surah'||type==='ruku') ? 'flex' : 'none';
   document.getElementById('unitRangeStartField').style.display = type==='range' ? 'flex' : 'none';
   document.getElementById('unitRangeEndField').style.display = type==='range' ? 'flex' : 'none';
   document.getElementById('unitPageField').style.display = type==='page' ? 'flex' : 'none';
+  document.getElementById('unitRukuNumField').style.display = type==='ruku' ? 'flex' : 'none';
+  document.getElementById('unitJuzField').style.display = type==='juz' ? 'flex' : 'none';
   if(type==='ayah'){
     document.getElementById('unitPickerStatus').textContent = 'Use the "Choose Ayah" panel below to pick which ayah.';
   } else {
     document.getElementById('unitPickerStatus').textContent = '';
     if(CHAPTERS.length && !document.getElementById('unitSurahSelect').dataset.populated) populateUnitSurahSelect();
   }
+  if(type==='ruku') refreshUnitRukuNumSelect();
+  if(type==='juz') populateUnitJuzSelect();
+});
+
+// When the Surah changes while "Ruku'" is the active Study Unit type, the
+// Ruku' number list must refresh to match — it's specific to that surah.
+document.getElementById('unitSurahSelect').addEventListener('change', ()=>{
+  if(document.getElementById('unitTypeSelect').value==='ruku') refreshUnitRukuNumSelect();
 });
 
 document.getElementById('unitApplyBtn').onclick = ()=>{
@@ -5579,6 +5772,16 @@ document.getElementById('unitApplyBtn').onclick = ()=>{
     const page = Number(document.getElementById('unitPageNum').value);
     if(!page || page<1 || page>604){ status.textContent = 'Enter a page from 1 to 604.'; status.style.color = '#e0a458'; return; }
     key = buildUnitKey('page', {page});
+  } else if(type==='ruku'){
+    const surah = Number(document.getElementById('unitSurahSelect').value);
+    const rukuIndex = Number(document.getElementById('unitRukuNumSelect').value);
+    if(!surah){ status.textContent = 'Choose a Surah first.'; status.style.color = '#e0a458'; return; }
+    if(!rukuIndex){ status.textContent = 'Choose a Ruku\u2019 (boundaries may still be loading \u2014 wait a moment and try again).'; status.style.color = '#e0a458'; return; }
+    key = buildUnitKey('ruku', {surah, rukuIndex});
+  } else if(type==='juz'){
+    const juz = Number(document.getElementById('unitJuzSelect').value);
+    if(!juz){ status.textContent = 'Choose a Juz.'; status.style.color = '#e0a458'; return; }
+    key = buildUnitKey('juz', {juz});
   }
   setStudyUnit(type, key);
   status.textContent = 'Now studying: ' + unitLabel(key);
@@ -5622,6 +5825,14 @@ function setStudyUnit(type, key){
     // Surah ayah lists come from chapter metadata — make sure the navigator
     // appears even if chapters weren't loaded yet when we rendered above.
     ensureChaptersLoaded().then(()=>{ renderUnitAyahNav(); renderAudio(); }).catch(()=>{});
+  }
+  if(type === 'ruku'){
+    // Belt-and-braces: the Ruku' picker only lets you apply once boundaries
+    // are loaded, but this covers any other path that might reach here first.
+    ensureRukusLoadedForSurah(parseUnitKey(key).surah).then(()=>{ renderUnitAyahNav(); renderAudio(); }).catch(()=>{});
+  }
+  if(type === 'juz'){
+    ensureJuzsLoaded().then(()=>{ renderUnitAyahNav(); renderAudio(); }).catch(()=>{});
   }
   if(type !== 'ayah'){
     const hint = document.getElementById('unitPickerStatus');
