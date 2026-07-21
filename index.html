@@ -3431,11 +3431,20 @@ function renderAudio(){
     }
     else{ audio.removeAttribute('src'); delete audio.dataset.sig; wrap.classList.remove('loaded'); }
     audio.loop = !!state.audioLoop && !inReciterQueueMode();
-  } else if(state.currentUnitType === 'surah' && reciter.surahBase){
+  } else if(state.currentUnitType === 'surah' && reciter.surahBase && !(reciterQueueActive && state.reciterRepeatMode === 'ayah')){
     // Whole Surah — one continuous file, same reciter (only when this
     // reciter actually has whole-surah files — see RECITERS above). Bangla
     // reaches this same branch and needs no special handling: it plays
     // straight through just like Basfar, no segment boundaries involved.
+    //
+    // Bug fix (22 Jul 2026): a continuous file has no ayah boundaries at
+    // all, so Each-Ayah drilling mode (which needs to stop and hand off to
+    // the next reciter after every single ayah) is IMPOSSIBLE on this
+    // branch — it was silently behaving like Whole-Unit mode instead (the
+    // reported bug). Excluded here so drilling instead falls through to the
+    // per-ayah branches below: Arabic gets a real per-ayah file playlist,
+    // Bangla gets its existing per-ayah segment-sequence mechanism (already
+    // built for Range/Page — 'surah' just never reached it before).
     audioPlaylist = null; audioPlaylistSig = null;
     bnSegQueue = null; bnSegQueueSig = null;
     const u = parseUnitKey(state.currentUnitKey);
