@@ -200,6 +200,11 @@
   .segment{cursor:pointer;stroke:#0c1320;stroke-width:1.5;transition:opacity .15s;}
   .segment:hover{stroke:var(--parchment);stroke-width:2;}
   .seg-num{font-family:'Inter';font-size:13px;font-weight:600;fill:var(--parchment);pointer-events:none;}
+  /* Phase 3 (5-Wheel Overhaul) — Progress-ring wheel style */
+  .ring-segment{cursor:pointer;stroke:#0c1320;stroke-width:1;transition:opacity .15s;}
+  .ring-segment:hover{stroke:var(--parchment);stroke-width:1.5;}
+  .ring-seg-num{font-family:'Inter';font-size:8px;font-weight:600;fill:var(--parchment);pointer-events:none;}
+  .ring-center-label{font-family:'Cormorant Garamond',serif;fill:var(--parchment);}
   .center-text{font-family:'Amiri',serif;fill:var(--parchment);text-anchor:middle;}
 
   .legend{display:flex;gap:18px;margin-top:18px;flex-wrap:wrap;justify-content:center;}
@@ -616,6 +621,10 @@
       </div>
       <div class="ayah-picker-source" style="margin-top:6px;">Applies to every selected reciter equally — each one finishes its repeats before the next reciter's turn.</div>
     </div>
+  </div>
+
+  <div class="sb-group" id="sbExplore">
+    <button class="picker-toggle" id="exploreOpenBtn">&#x1F9ED; Explore</button>
   </div>
 
   <div class="sb-group" id="sbChooseAyah">
@@ -1105,6 +1114,40 @@
       <button class="btn-close" id="personClose">Cancel</button>
       <button class="btn-save" id="personSave">Add</button>
     </div>
+  </div>
+</div>
+
+<!-- Explore space (Phase 4, 5-Wheel Overhaul) — drill-down + direct-jump
+     navigation across Quran/Juz/Surah/Ruku' wheels. Ayah-wheel is untouched,
+     still embedded in the Study page — this is the "new area" the other 4
+     wheels live in, per the confirmed navigation structure. -->
+<div class="overlay" id="exploreOverlay">
+  <div class="modal" style="width:600px;max-width:96vw;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <h3 style="margin:0;">&#x1F9ED; Explore</h3>
+      <button class="btn-close" id="exploreClose" style="padding:5px 12px;">Close</button>
+    </div>
+    <div class="ayah-picker-source" id="exploreBreadcrumb" style="margin-bottom:12px;font-size:12px;"></div>
+    <div class="ayah-picker-row" style="margin-bottom:12px;align-items:flex-end;">
+      <div class="ayah-picker-field">
+        <label for="exploreJumpType">Jump to</label>
+        <select id="exploreJumpType">
+          <option value="quran">Entire Quran</option>
+          <option value="juz">Juz</option>
+          <option value="surah">Surah</option>
+        </select>
+      </div>
+      <div class="ayah-picker-field" id="exploreJumpNumField" style="display:none;">
+        <label for="exploreJumpNum">Number</label>
+        <select id="exploreJumpNum"></select>
+      </div>
+      <button class="picker-load-btn" id="exploreJumpGoBtn">Go</button>
+      <button class="picker-toggle" id="exploreBackBtn" style="display:none;">&#x25C0; Back</button>
+    </div>
+    <div class="wheel-box">
+      <svg id="exploreWheel" width="480" height="480" viewBox="0 0 500 500"></svg>
+    </div>
+    <div class="ayah-picker-status" id="exploreStatus"></div>
   </div>
 </div>
 
@@ -2742,6 +2785,14 @@ function freshState(){
       }
     },
     progress: {}, // progress[personId][unitKey][wayId] = {status, notes, date} — unitKey generalizes ayahKey (see buildUnitKey)
+    // Phase 2 (5-Wheel Overhaul): precomputed structural-lens aggregates, kept
+    // separate from `progress` above (own Firestore docs — avoids write
+    // contention/size bloat on the main progress doc). Nudged incrementally on
+    // every single-Ayah way-save; NEVER re-derived by live-scanning `progress`
+    // except via the explicit recompute*Summary() repair functions.
+    rukuSummary: {}, // rukuSummary[personId]["surah_rukuIndex"] = {statusSum, applicableCount}
+    juzSummaryAyah: {}, // juzSummaryAyah[personId]["juz"] = {statusSum, applicableCount} — pooled from ayah-level records
+    juzSummaryPage: {}, // juzSummaryPage[personId]["juz"] = {statusSum, applicableCount} — pooled from the juz's own Page-unit records (Smahk's preferred basis; kept alongside Ayah for now)
     currentAyahKey: DEFAULT_AYAH_KEY,
     currentUnitType: 'ayah',   // 'ayah' | 'range' | 'surah' | 'page' | 'ruku' | 'juz'
     currentUnitKey: DEFAULT_AYAH_KEY, // == currentAyahKey while type is 'ayah'
@@ -2775,6 +2826,13 @@ state.ways.forEach(w=>{ if(!w.resources) w.resources = []; if(w.gloss===undefine
 })();
 // migration safety
 if(!state.progress) state.progress = {};
+if(!state.rukuSummary) state.rukuSummary = {}; // Phase 2 (5-Wheel Overhaul) migration safety
+// Phase 2 renamed juzSummary -> juzSummaryAyah when Page-basis pooling was added
+// alongside it — migrate any pre-rename saved data forward rather than losing it.
+if(state.juzSummary && !state.juzSummaryAyah) state.juzSummaryAyah = state.juzSummary;
+delete state.juzSummary;
+if(!state.juzSummaryAyah) state.juzSummaryAyah = {};
+if(!state.juzSummaryPage) state.juzSummaryPage = {};
 ensureWaySubjectRegisteredForList(state.ways); // safety net: covers custom ways from a restored snapshot
 if(!state.currentAyahKey) state.currentAyahKey = DEFAULT_AYAH_KEY;
 if(!state.ayahs) state.ayahs = {};
@@ -2813,6 +2871,9 @@ if(!state.reciterRepeatCount || state.reciterRepeatCount < 1) state.reciterRepea
 // ═══════════════════════════════════════════════════════════════
 let mmOwnTeacherId = null;       // the teacher whose taxonomy this session uses
 let mmProgressUnsub = null;      // live listener for the currently-active person
+let mmRukuSummaryUnsub = null;   // Phase 2 (5-Wheel Overhaul) — live listener for Ruku' summaries
+let mmJuzSummaryAyahUnsub = null; // Phase 2 (5-Wheel Overhaul) — live listener for Juz summaries (Ayah-basis)
+let mmJuzSummaryPageUnsub = null; // Phase 2 (5-Wheel Overhaul) — live listener for Juz summaries (Page-basis)
 let mmTaxonomyUnsub = null;      // live listener for the shared taxonomy
 let mmPrefsUnsub = null;         // live listener for this signed-in user's own theme prefs
 
@@ -2868,12 +2929,38 @@ async function mmHydrateFromFirestore(){
 // Teacher/Admin clicks a different person in the people-row.
 async function mmSwitchActivePersonSync(personId){
   if(mmProgressUnsub){ mmProgressUnsub(); mmProgressUnsub = null; }
+  if(mmRukuSummaryUnsub){ mmRukuSummaryUnsub(); mmRukuSummaryUnsub = null; }
+  if(mmJuzSummaryAyahUnsub){ mmJuzSummaryAyahUnsub(); mmJuzSummaryAyahUnsub = null; }
+  if(mmJuzSummaryPageUnsub){ mmJuzSummaryPageUnsub(); mmJuzSummaryPageUnsub = null; }
   try{
     const remote = await mmLoadPersonProgress(personId);
     if(remote && remote.progress) state.progress[personId] = {...(state.progress[personId]||{}), ...remote.progress};
   }catch(err){ console.error('Could not load progress for', personId, err); }
   mmProgressUnsub = mmSubscribePersonProgress(personId, data=>{
     if(data.progress){ state.progress[personId] = data.progress; if(state.activePersonId===personId) renderAll(); }
+  });
+  // Phase 2 (5-Wheel Overhaul) — same load-then-subscribe pattern for the
+  // Ruku'/Juz structural summaries, from their own separate collections.
+  try{
+    const remoteRuku = await mmLoadPersonRukuSummary(personId);
+    if(remoteRuku && remoteRuku.rukuSummary) state.rukuSummary[personId] = {...(state.rukuSummary[personId]||{}), ...remoteRuku.rukuSummary};
+  }catch(err){ console.error("Could not load Ruku' summary for", personId, err); }
+  mmRukuSummaryUnsub = mmSubscribePersonRukuSummary(personId, data=>{
+    if(data.rukuSummary){ state.rukuSummary[personId] = data.rukuSummary; }
+  });
+  try{
+    const remoteJuz = await mmLoadPersonJuzSummaryAyah(personId);
+    if(remoteJuz && remoteJuz.juzSummary) state.juzSummaryAyah[personId] = {...(state.juzSummaryAyah[personId]||{}), ...remoteJuz.juzSummary};
+  }catch(err){ console.error('Could not load Juz summary (Ayah-basis) for', personId, err); }
+  mmJuzSummaryAyahUnsub = mmSubscribePersonJuzSummaryAyah(personId, data=>{
+    if(data.juzSummary){ state.juzSummaryAyah[personId] = data.juzSummary; }
+  });
+  try{
+    const remoteJuzPage = await mmLoadPersonJuzSummaryPage(personId);
+    if(remoteJuzPage && remoteJuzPage.juzSummaryPage) state.juzSummaryPage[personId] = {...(state.juzSummaryPage[personId]||{}), ...remoteJuzPage.juzSummaryPage};
+  }catch(err){ console.error('Could not load Juz summary (Page-basis) for', personId, err); }
+  mmJuzSummaryPageUnsub = mmSubscribePersonJuzSummaryPage(personId, data=>{
+    if(data.juzSummaryPage){ state.juzSummaryPage[personId] = data.juzSummaryPage; }
   });
 }
 
@@ -3404,6 +3491,16 @@ function scheduleSave(){
       if(typeof mmSavePersonProgress === 'function' && state.progress[state.activePersonId]){
         mmSavePersonProgress(state.activePersonId, state.progress[state.activePersonId]);
       }
+      // Phase 2 (5-Wheel Overhaul) — push structural summaries alongside progress.
+      if(typeof mmSavePersonRukuSummary === 'function' && state.rukuSummary[state.activePersonId]){
+        mmSavePersonRukuSummary(state.activePersonId, state.rukuSummary[state.activePersonId]);
+      }
+      if(typeof mmSavePersonJuzSummaryAyah === 'function' && state.juzSummaryAyah[state.activePersonId]){
+        mmSavePersonJuzSummaryAyah(state.activePersonId, state.juzSummaryAyah[state.activePersonId]);
+      }
+      if(typeof mmSavePersonJuzSummaryPage === 'function' && state.juzSummaryPage[state.activePersonId]){
+        mmSavePersonJuzSummaryPage(state.activePersonId, state.juzSummaryPage[state.activePersonId]);
+      }
       const canWriteTaxonomy = mmCurrentRole && (mmCurrentRole.role==='admin' || mmOwnTeacherId===mmCurrentUser.uid);
       if(canWriteTaxonomy && typeof mmSaveTeacherTaxonomy === 'function'){
         mmSaveTeacherTaxonomy(mmOwnTeacherId, {ways: state.ways, waysVersion: state.waysVersion || WAYS_TAXONOMY_VERSION, ayahs: state.ayahs, textStyles: state.textStyles});
@@ -3472,25 +3569,44 @@ function arcPath(cx,cy,rOuter,rInner,a1,a2){
   return `M ${p1.x} ${p1.y} A ${rOuter} ${rOuter} 0 ${large} 1 ${p2.x} ${p2.y} L ${p3.x} ${p3.y} A ${rInner} ${rInner} 0 ${large} 0 ${p4.x} ${p4.y} Z`;
 }
 
-function renderWheel(){
-  const svg = document.getElementById('wheel');
-  svg.innerHTML = '';
-  const cx=250, cy=250, rOuter=220, rInner=110;
-  const segAngle = 360/state.ways.length;
-  const prog = ensureProgress(state.activePersonId, state.currentUnitKey);
+// ═══════════════════════════════════════════════════════════════
+// Phase 3 (5-Wheel Overhaul) — reusable wheel visual components.
+// Two styles, built once, reused by every wheel Phase 4 wires up: Labeled
+// (every slice individually named/numbered — Ayah-wheel, Ruku'-wheel, and
+// short Surahs) and Progress-ring (colour-intensity fill + compact radial
+// numbers — long Surahs, Juz-wheel, Quran-wheel). Neither function knows
+// anything about ways/ayahs/rukus specifically — callers build a generic
+// `slices` array and hand it in, so wiring a new wheel in Phase 4 means
+// writing new data-shaping code, never new drawing code.
+// ═══════════════════════════════════════════════════════════════
 
-  state.ways.forEach((w,i)=>{
+// Labeled wheel — a direct generalisation of the wheel already live on the
+// Study page: same geometry, same visual language, just parameterised.
+// slices: [{color, opacity(0-1), numberText, tooltip, onClick}]. Centre
+// content (circle + two lines of text) is optional — pass centerArabic to
+// show it (matches today's Ayah-wheel exactly); omit it for scopes with no
+// single ayah to display there (Ruku'-wheel, short-Surah Surah-wheel).
+function renderLabeledWheel(svgId, slices, opts){
+  opts = opts || {};
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  svg.innerHTML = '';
+  const cx = opts.cx || 250, cy = opts.cy || 250;
+  const rOuter = opts.rOuter || 220, rInner = opts.rInner || 110;
+  const n = slices.length;
+  if(!n) return;
+  const segAngle = 360/n;
+
+  slices.forEach((s,i)=>{
     const a1 = i*segAngle, a2 = (i+1)*segAngle;
-    const status = prog[w.id].status;
-    const color = status===4 ? '#4a5468' : groupColor(w.group);
     const path = document.createElementNS('http://www.w3.org/2000/svg','path');
     path.setAttribute('d', arcPath(cx,cy,rOuter,rInner,a1,a2));
     path.setAttribute('class','segment');
-    path.setAttribute('fill', color);
-    path.setAttribute('opacity', STATUS_OPACITY[status]);
-    path.onclick = ()=> openWayModal(w.id);
+    path.setAttribute('fill', s.color);
+    path.setAttribute('opacity', s.opacity!=null ? s.opacity : 1);
+    if(typeof s.onClick === 'function') path.onclick = s.onClick;
     const t = document.createElementNS('http://www.w3.org/2000/svg','title');
-    t.textContent = `${w.id}. ${w.name} — ${STATUS_LABELS[status]}`;
+    t.textContent = s.tooltip || '';
     path.appendChild(t);
     svg.appendChild(path);
 
@@ -3501,36 +3617,147 @@ function renderWheel(){
     num.setAttribute('text-anchor','middle');
     num.setAttribute('class','seg-num');
     num.style.pointerEvents = 'none';
-    num.textContent = w.id;
+    num.textContent = s.numberText;
     svg.appendChild(num);
   });
 
-  // center circle
-  const centerCircle = document.createElementNS('http://www.w3.org/2000/svg','circle');
-  centerCircle.setAttribute('cx',cx); centerCircle.setAttribute('cy',cy);
-  centerCircle.setAttribute('r', rInner-4);
-  centerCircle.setAttribute('fill', '#13192a');
-  centerCircle.setAttribute('stroke', '#C9A24B');
-  centerCircle.setAttribute('stroke-width','1.5');
-  svg.appendChild(centerCircle);
+  if(opts.centerArabic !== undefined){
+    const centerCircle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    centerCircle.setAttribute('cx',cx); centerCircle.setAttribute('cy',cy);
+    centerCircle.setAttribute('r', rInner-4);
+    centerCircle.setAttribute('fill', '#13192a');
+    centerCircle.setAttribute('stroke', '#C9A24B');
+    centerCircle.setAttribute('stroke-width','1.5');
+    svg.appendChild(centerCircle);
 
+    const arabicText = document.createElementNS('http://www.w3.org/2000/svg','text');
+    arabicText.setAttribute('x',cx); arabicText.setAttribute('y',cy-6);
+    arabicText.setAttribute('class','center-text');
+    arabicText.setAttribute('font-size','22');
+    arabicText.setAttribute('direction','rtl');
+    arabicText.textContent = opts.centerArabic;
+    svg.appendChild(arabicText);
+
+    const refText = document.createElementNS('http://www.w3.org/2000/svg','text');
+    refText.setAttribute('x',cx); refText.setAttribute('y',cy+22);
+    refText.setAttribute('text-anchor','middle');
+    refText.setAttribute('font-family','Inter');
+    refText.setAttribute('font-size','10');
+    refText.setAttribute('fill','#8fa0c2');
+    refText.textContent = opts.centerRef || '';
+    svg.appendChild(refText);
+  }
+}
+
+// Progress-ring wheel — new style for zoomed-out scopes. Every item still
+// gets its own segment (nothing hidden); communicates via colour/fill
+// intensity (light→dark = 0%→100%) rather than a full readable label, same
+// visual language as a GitHub contribution heatmap, plus a compact number
+// just outside each segment's outer edge, rotated to run radially (like a
+// spoke) so even 3-digit numbers fit in a thin segment without colliding
+// with neighbours. slices: [{number, pct(0-100), tooltip, onClick}].
+//
+// Rotation formula confirmed against the live interactive prototype in the
+// design discussion (re-derived here, not copied blind, but matches):
+// rot = clockAngle - 90, normalised to 0–360; segments on the left half
+// (90°–270°) get +180° so their number reads right-side-up instead of
+// upside-down.
+function ringNumberRotation(clockAngle){
+  let rot = clockAngle - 90;
+  rot = ((rot % 360) + 360) % 360;
+  if(rot >= 90 && rot <= 270) rot += 180;
+  return rot;
+}
+
+// Light→dark single-hue interpolation (0% = near-parchment tint, 100% =
+// the app's gold accent), matching the app's existing colour language
+// rather than introducing a new palette.
+function ringIntensityColor(pct, hueHex){
+  const base = hueHex || '#C9A24B';
+  const h = base.replace('#','');
+  const r = parseInt(h.substring(0,2),16), g = parseInt(h.substring(2,4),16), b = parseInt(h.substring(4,6),16);
+  const lightR=232, lightG=220, lightB=194; // #E8DCC2 — the app's existing --parchment-dim light tint
+  const amt = Math.max(0, Math.min(100, pct)) / 100;
+  const mix = (c1,c2)=> Math.round(c1 + (c2-c1)*amt);
+  const toHex = v=>v.toString(16).padStart(2,'0');
+  return `#${toHex(mix(lightR,r))}${toHex(mix(lightG,g))}${toHex(mix(lightB,b))}`;
+}
+
+function renderProgressRingWheel(svgId, slices, opts){
+  opts = opts || {};
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  svg.innerHTML = '';
+  const cx = opts.cx || 250, cy = opts.cy || 250;
+  const rOuter = opts.rOuter || 220, rInner = opts.rInner || 110;
+  const labelOffset = opts.labelOffset || 14;
+  const n = slices.length;
+  if(!n) return;
+  const segAngle = 360/n;
+
+  slices.forEach((s,i)=>{
+    const a1 = i*segAngle, a2 = (i+1)*segAngle;
+    const pct = Math.max(0, Math.min(100, s.pct||0));
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', arcPath(cx,cy,rOuter,rInner,a1,a2));
+    path.setAttribute('class','segment ring-segment');
+    path.setAttribute('fill', ringIntensityColor(pct, opts.hue));
+    if(typeof s.onClick === 'function') path.onclick = s.onClick;
+    const t = document.createElementNS('http://www.w3.org/2000/svg','title');
+    t.textContent = s.tooltip || `${s.number} \u2014 ${Math.round(pct)}% complete`;
+    path.appendChild(t);
+    svg.appendChild(path);
+
+    const mid = (a1+a2)/2;
+    const lp = polar(cx,cy, rOuter + labelOffset, mid);
+    const num = document.createElementNS('http://www.w3.org/2000/svg','text');
+    num.setAttribute('x', lp.x); num.setAttribute('y', lp.y);
+    num.setAttribute('text-anchor','middle');
+    num.setAttribute('class','ring-seg-num');
+    num.setAttribute('transform', `rotate(${ringNumberRotation(mid)} ${lp.x} ${lp.y})`);
+    num.style.pointerEvents = 'none';
+    num.textContent = s.number;
+    svg.appendChild(num);
+  });
+
+  if(opts.centerLabel !== undefined){
+    // Phase 4 addition (discovered wiring the first real ring wheel): a
+    // background circle so the label reads cleanly against many thin
+    // segments behind it — same treatment the Labeled wheel already gets.
+    const centerCircle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    centerCircle.setAttribute('cx',cx); centerCircle.setAttribute('cy',cy);
+    centerCircle.setAttribute('r', rInner-4);
+    centerCircle.setAttribute('fill', '#13192a');
+    centerCircle.setAttribute('stroke', '#C9A24B');
+    centerCircle.setAttribute('stroke-width','1.5');
+    svg.appendChild(centerCircle);
+
+    const centerText = document.createElementNS('http://www.w3.org/2000/svg','text');
+    centerText.setAttribute('x', cx); centerText.setAttribute('y', cy);
+    centerText.setAttribute('text-anchor','middle');
+    centerText.setAttribute('class','ring-center-label');
+    centerText.textContent = opts.centerLabel;
+    svg.appendChild(centerText);
+  }
+}
+
+function renderWheel(){
+  const prog = ensureProgress(state.activePersonId, state.currentUnitKey);
+  const slices = state.ways.map(w=>{
+    const status = prog[w.id].status;
+    return {
+      color: status===4 ? '#4a5468' : groupColor(w.group),
+      opacity: STATUS_OPACITY[status],
+      numberText: w.id,
+      tooltip: `${w.id}. ${w.name} \u2014 ${STATUS_LABELS[status]}`,
+      onClick: ()=> openWayModal(w.id)
+    };
+  });
   const ayah = state.ayahs[state.currentAyahKey];
-  const arabicText = document.createElementNS('http://www.w3.org/2000/svg','text');
-  arabicText.setAttribute('x',cx); arabicText.setAttribute('y',cy-6);
-  arabicText.setAttribute('class','center-text');
-  arabicText.setAttribute('font-size','22');
-  arabicText.setAttribute('direction','rtl');
-  arabicText.textContent = ayah.arabic;
-  svg.appendChild(arabicText);
-
-  const refText = document.createElementNS('http://www.w3.org/2000/svg','text');
-  refText.setAttribute('x',cx); refText.setAttribute('y',cy+22);
-  refText.setAttribute('text-anchor','middle');
-  refText.setAttribute('font-family','Inter');
-  refText.setAttribute('font-size','10');
-  refText.setAttribute('fill','#8fa0c2');
-  refText.textContent = unitLabel(state.currentUnitKey).toUpperCase();
-  svg.appendChild(refText);
+  renderLabeledWheel('wheel', slices, {
+    centerArabic: ayah.arabic,
+    centerRef: unitLabel(state.currentUnitKey).toUpperCase()
+  });
 }
 
 /* ---------- List panel (editable) ---------- */
@@ -3657,6 +3884,297 @@ function renderProgress(){
   const pct = total > 0 ? Math.round((sum/total)*100) : 0;
   document.getElementById('progressNum').textContent = pct + '%';
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 4 (5-Wheel Overhaul) — Explore space: wiring up Ruku'/Surah/Juz/
+// Quran wheels with drill-down + direct-jump navigation, per the confirmed
+// structural diagram. Ayah-wheel itself (renderWheel, above) is untouched —
+// its own % already matched the Phase 0 formula exactly before this phase
+// even started (same sum/(applicableCount*3) shape as renderProgress
+// above), so there was nothing to change there, only to confirm.
+// ═══════════════════════════════════════════════════════════════
+
+const SURAH_WHEEL_THRESHOLD = 30; // confirmed with Smahk, Phase 3
+
+// Read-only version of ensureProgress's default-status logic — Explore
+// space is browsing, not tracking, so looking at a wheel must never create
+// or mutate a progress record the way opening a way modal deliberately does.
+function peekUnitPct(personId, unitKey){
+  const rec = (state.progress[personId] && state.progress[personId][unitKey]) || null;
+  let statusSum=0, applicableCount=0;
+  state.ways.forEach(w=>{
+    const status = (rec && rec[w.id]) ? rec[w.id].status : 0;
+    if(status !== 4){ statusSum += status; applicableCount++; }
+  });
+  return applicableCount ? Math.round((statusSum/(applicableCount*3))*100) : 0;
+}
+// Same formula, applied to an already-precomputed Ruku'/Juz summary object
+// instead of a live scan — this is exactly why Phase 2 exists.
+function summaryPct(summaryObj){
+  if(!summaryObj || !summaryObj.applicableCount) return 0;
+  return Math.round((summaryObj.statusSum/(summaryObj.applicableCount*3))*100);
+}
+function surahNameFor(num){
+  const c = (typeof CHAPTERS!=='undefined' ? CHAPTERS : []).find(c=>Number(c.id)===Number(num));
+  return c ? c.name_simple : ('Surah '+num);
+}
+
+// Which surah a given Mushaf page belongs to (its first ayah's surah — same
+// "wherever it starts" convention the app already uses elsewhere). Separate,
+// independently-cached lookup from ensurePageJuz (Phase 2) — costs one extra
+// lazy fetch per page the first time, kept independent to avoid touching
+// Phase 2's already-verified code.
+const PAGE_SURAH_CACHE = {};
+let pageSurahLoadPromises = {};
+function ensurePageSurah(pageNum){
+  pageNum = Number(pageNum);
+  if(PAGE_SURAH_CACHE[pageNum] !== undefined) return Promise.resolve(PAGE_SURAH_CACHE[pageNum]);
+  if(pageSurahLoadPromises[pageNum]) return pageSurahLoadPromises[pageNum];
+  pageSurahLoadPromises[pageNum] = alquranFetch(`/page/${pageNum}/quran-uthmani`).then(data=>{
+    const ayahs = (data && data.ayahs) || [];
+    if(!ayahs.length) throw new Error('empty ayah list for page '+pageNum);
+    const surahNum = ayahs[0].surah && ayahs[0].surah.number;
+    if(typeof surahNum !== 'number') throw new Error("AlQuran Cloud response has no numeric 'surah.number' field for page lookup.");
+    PAGE_SURAH_CACHE[pageNum] = surahNum;
+    return surahNum;
+  }).catch(err=>{
+    console.error('ensurePageSurah failed for page', pageNum, err);
+    delete pageSurahLoadPromises[pageNum];
+    throw err;
+  });
+  return pageSurahLoadPromises[pageNum];
+}
+
+// ---- Drill-down state ----
+let exploreLevel = { type: 'quran' };
+let exploreHistory = [];
+
+function exploreBreadcrumbLabel(level){
+  if(level.type==='quran') return 'Quran';
+  if(level.type==='juz') return `Juz ${level.juz}`;
+  if(level.type==='surah') return `Surah ${level.surah}`;
+  if(level.type==='ruku') return `Ruku' ${level.rukuIndex}`;
+  return '';
+}
+function exploreGoTo(level){
+  exploreHistory.push(exploreLevel);
+  exploreLevel = level;
+  renderExplore();
+}
+function exploreBack(){
+  if(!exploreHistory.length) return;
+  exploreLevel = exploreHistory.pop();
+  renderExplore();
+}
+// Drilling all the way down hands off out of Explore space into the normal
+// Study page for that ayah — the seam between the two areas, not a dead end.
+function exploreOpenAyah(surah, ayah){
+  const key = buildUnitKey('ayah', {surah, ayah});
+  setStudyUnit('ayah', key);
+  document.getElementById('exploreOverlay').classList.remove('show');
+}
+
+async function renderExplore(){
+  const status = document.getElementById('exploreStatus');
+  document.getElementById('exploreBackBtn').style.display = exploreHistory.length ? '' : 'none';
+  status.textContent = 'Loading\u2026'; status.style.color = '#8fa0c2';
+
+  const chain = [...exploreHistory, exploreLevel];
+  document.getElementById('exploreBreadcrumb').innerHTML = chain.map((lvl,i)=>
+    `<span class="explore-crumb" data-idx="${i}" style="cursor:pointer;text-decoration:underline;">${exploreBreadcrumbLabel(lvl)}</span>`
+  ).join(' <span style="opacity:.5">\u203a</span> ');
+  [...document.querySelectorAll('.explore-crumb')].forEach(el=>{
+    el.onclick = ()=>{
+      const idx = Number(el.dataset.idx);
+      exploreLevel = chain[idx];
+      exploreHistory = chain.slice(0, idx);
+      renderExplore();
+    };
+  });
+
+  try{
+    if(exploreLevel.type === 'quran') await renderQuranWheelExplore();
+    else if(exploreLevel.type === 'juz') await renderJuzWheelExplore(exploreLevel.juz);
+    else if(exploreLevel.type === 'surah') await renderSurahWheelExplore(exploreLevel.surah);
+    else if(exploreLevel.type === 'ruku') await renderRukuWheelExplore(exploreLevel.surah, exploreLevel.rukuIndex);
+    status.textContent = '';
+  }catch(e){
+    console.error('renderExplore failed:', e);
+    status.textContent = 'Could not load this wheel (' + (e.message||'network error') + ') \u2014 try again.';
+    status.style.color = '#e0a458';
+  }
+}
+
+// ---- Quran-wheel: 30 juz slices, Progress-ring, from Phase 2's juzSummaryPage ----
+async function renderQuranWheelExplore(){
+  const personId = state.activePersonId;
+  const slices = [];
+  for(let j=1; j<=30; j++){
+    const summary = state.juzSummaryPage[personId] && state.juzSummaryPage[personId][String(j)];
+    const pct = summaryPct(summary);
+    slices.push({
+      number: j, pct,
+      tooltip: `Juz ${j} \u2014 ${pct}% complete`,
+      onClick: ()=> exploreGoTo({type:'juz', juz:j})
+    });
+  }
+  renderProgressRingWheel('exploreWheel', slices, { centerLabel: 'QURAN' });
+}
+
+// ---- Juz-wheel: page slices (direct records, cheap — the one exception to
+// the aggregation risk), surah-name overlay + divider ticks between pages
+// belonging to different surahs, per the confirmed (not open for redesign) design ----
+async function renderJuzWheelExplore(juzNum){
+  await ensureJuzPageRange(juzNum);
+  const pages = getPagesForJuz(juzNum);
+  if(!pages.length) throw new Error("No page data for this Juz yet.");
+  const personId = state.activePersonId;
+  await ensureChaptersLoaded();
+  const surahByPage = {};
+  await Promise.all(pages.map(async p=>{ surahByPage[p] = await ensurePageSurah(p); }));
+
+  const slices = pages.map(p=>{
+    const pct = peekUnitPct(personId, `page:${p}`);
+    return {
+      number: p, pct,
+      tooltip: `Page ${p} (${surahNameFor(surahByPage[p])}) \u2014 ${pct}% complete`,
+      onClick: ()=> exploreGoTo({type:'surah', surah: surahByPage[p]})
+    };
+  });
+  renderProgressRingWheel('exploreWheel', slices, { centerLabel: `JUZ ${juzNum}` });
+  addJuzSurahOverlay(pages, surahByPage);
+}
+// Purely additive overlay drawn on top of the already-rendered Juz-wheel —
+// never touches renderProgressRingWheel's own output. Divider ticks sit
+// right at each page-slice boundary where the surah changes; surah names
+// sit further out than the page numbers (rOuter+32 vs +14) so the two
+// label rings never collide.
+function addJuzSurahOverlay(pages, surahByPage){
+  const svg = document.getElementById('exploreWheel');
+  if(!svg) return;
+  const cx=250, cy=250, rOuter=220, rInner=110;
+  const n = pages.length;
+  const segAngle = 360/n;
+  let groupStart = 0;
+  for(let i=1; i<=n; i++){
+    const boundary = (i===n) || (surahByPage[pages[i]] !== surahByPage[pages[groupStart]]);
+    if(!boundary) continue;
+    if(i < n){
+      const tickAngle = i*segAngle;
+      const p1 = polar(cx,cy,rInner,tickAngle), p2 = polar(cx,cy,rOuter,tickAngle);
+      const tick = document.createElementNS('http://www.w3.org/2000/svg','line');
+      tick.setAttribute('x1',p1.x); tick.setAttribute('y1',p1.y);
+      tick.setAttribute('x2',p2.x); tick.setAttribute('y2',p2.y);
+      tick.setAttribute('stroke','#0c1320'); tick.setAttribute('stroke-width','2.5');
+      tick.style.pointerEvents = 'none';
+      svg.appendChild(tick);
+    }
+    const midAngle = (groupStart*segAngle + i*segAngle)/2;
+    const lp = polar(cx,cy, rOuter+32, midAngle);
+    const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+    label.setAttribute('x', lp.x); label.setAttribute('y', lp.y);
+    label.setAttribute('text-anchor','middle');
+    label.setAttribute('class','ring-seg-num');
+    label.setAttribute('transform', `rotate(${ringNumberRotation(midAngle)} ${lp.x} ${lp.y})`);
+    label.style.pointerEvents = 'none';
+    label.textContent = surahNameFor(surahByPage[pages[groupStart]]);
+    svg.appendChild(label);
+    groupStart = i;
+  }
+}
+
+// ---- Surah-wheel: dual-mode per the confirmed ~30-slice threshold ----
+async function renderSurahWheelExplore(surahNum){
+  await ensureChaptersLoaded();
+  const ayahCount = getAyahCountForSurah(surahNum) || 0;
+  const personId = state.activePersonId;
+  if(ayahCount && ayahCount <= SURAH_WHEEL_THRESHOLD){
+    // Short surah — Labeled, ayah slices (every ayah gets its own direct record)
+    const slices = [];
+    for(let a=1; a<=ayahCount; a++){
+      const pct = peekUnitPct(personId, `${surahNum}:${a}`);
+      slices.push({
+        color: '#C9A24B',
+        opacity: Math.max(0.13, pct/100),
+        numberText: a,
+        tooltip: `Ayah ${a} \u2014 ${pct}% complete`,
+        onClick: ()=> exploreOpenAyah(surahNum, a)
+      });
+    }
+    renderLabeledWheel('exploreWheel', slices, { centerRef: surahNameFor(surahNum).toUpperCase() });
+  } else {
+    // Long surah — Progress-ring, ruku' slices, from Phase 2's rukuSummary
+    await ensureRukusLoadedForSurah(surahNum);
+    const rukus = getRukusForSurah(surahNum);
+    if(!rukus.length) throw new Error("Ruku' boundaries not available for this surah yet.");
+    const slices = rukus.map(r=>{
+      const summary = state.rukuSummary[personId] && state.rukuSummary[personId][rukuSummaryKey(surahNum, r.index)];
+      const pct = summaryPct(summary);
+      return {
+        number: r.index, pct,
+        tooltip: `Ruku' ${r.index} (Ayahs ${r.startAyah}\u2013${r.endAyah}) \u2014 ${pct}% complete`,
+        onClick: ()=> exploreGoTo({type:'ruku', surah:surahNum, rukuIndex:r.index})
+      };
+    });
+    renderProgressRingWheel('exploreWheel', slices, { centerLabel: surahNameFor(surahNum).toUpperCase() });
+  }
+}
+
+// ---- Ruku'-wheel: always Labeled, ayah slices, hands off into Study page ----
+async function renderRukuWheelExplore(surahNum, rukuIndex){
+  await ensureRukusLoadedForSurah(surahNum);
+  const range = getRukuAyahRange(surahNum, rukuIndex);
+  if(!range) throw new Error("Ruku' boundaries not available.");
+  const personId = state.activePersonId;
+  const slices = [];
+  for(let a=range.start; a<=range.end; a++){
+    const pct = peekUnitPct(personId, `${surahNum}:${a}`);
+    slices.push({
+      color: '#C9A24B',
+      opacity: Math.max(0.13, pct/100),
+      numberText: a,
+      tooltip: `Ayah ${a} \u2014 ${pct}% complete`,
+      onClick: ()=> exploreOpenAyah(surahNum, a)
+    });
+  }
+  renderLabeledWheel('exploreWheel', slices, { centerRef: `${surahNameFor(surahNum).toUpperCase()} \u00b7 RUKU' ${rukuIndex}` });
+}
+
+// ---- Open/close + direct-jump menu wiring ----
+document.getElementById('exploreOpenBtn').onclick = ()=>{
+  exploreLevel = {type:'quran'};
+  exploreHistory = [];
+  document.getElementById('exploreOverlay').classList.add('show');
+  renderExplore();
+};
+document.getElementById('exploreClose').onclick = ()=> document.getElementById('exploreOverlay').classList.remove('show');
+document.getElementById('exploreBackBtn').onclick = exploreBack;
+
+document.getElementById('exploreJumpType').addEventListener('change', async e=>{
+  const type = e.target.value;
+  const numField = document.getElementById('exploreJumpNumField');
+  const numSel = document.getElementById('exploreJumpNum');
+  if(type==='quran'){ numField.style.display='none'; return; }
+  numField.style.display='flex';
+  if(type==='juz'){
+    numSel.innerHTML = Array.from({length:30},(_,i)=>i+1).map(n=>`<option value="${n}">Juz ${n}</option>`).join('');
+  } else if(type==='surah'){
+    await ensureChaptersLoaded();
+    numSel.innerHTML = CHAPTERS.map(c=>`<option value="${c.id}">${c.id}. ${c.name_simple}</option>`).join('');
+  }
+});
+// A direct jump is its own navigation style, independent of drilling — it
+// resets the drill-down chain rather than pushing onto it, per the confirmed
+// "both navigation styles required, not one or the other" design.
+document.getElementById('exploreJumpGoBtn').onclick = ()=>{
+  const type = document.getElementById('exploreJumpType').value;
+  exploreHistory = [];
+  if(type==='quran') exploreLevel = {type:'quran'};
+  else if(type==='juz') exploreLevel = {type:'juz', juz: Number(document.getElementById('exploreJumpNum').value)};
+  else if(type==='surah') exploreLevel = {type:'surah', surah: Number(document.getElementById('exploreJumpNum').value)};
+  else return;
+  renderExplore();
+};
 
 /* ========== TEXT EDITING SYSTEM ========== */
 if(!state.textStyles) state.textStyles = {};
@@ -4218,6 +4736,18 @@ document.getElementById('waySave').onclick = ()=>{
     const ayah = state.ayahs[state.currentAyahKey];
     const refForSync = state.currentUnitType==='ayah' ? (ayah ? ayah.ref : state.currentAyahKey) : unitLabel(state.currentUnitKey);
     syncWayToTracker(state.activePersonId, w.name, STATUS_LABELS[prog.status], prog.date, refForSync);
+    // Phase 2 (5-Wheel Overhaul): single-Ayah saves feed the Ruku' and Juz
+    // (Ayah-basis) structural summaries; single-Page saves feed the Juz
+    // (Page-basis) summary. Range/Surah/Ruku'/Juz-unit saves don't feed
+    // either (Range routing into these is the deferred Phase 6 sub-choice).
+    // Never blocks this save if a nudge fails — see the nudge functions.
+    if(state.currentUnitType === 'ayah'){
+      const u = parseUnitKey(state.currentUnitKey);
+      nudgeStructuralSummariesForAyahSave(state.activePersonId, u.surah, u.ayah, activeWayOriginalStatus, prog.status);
+    } else if(state.currentUnitType === 'page'){
+      const u = parseUnitKey(state.currentUnitKey);
+      nudgeJuzSummaryPageForPageSave(state.activePersonId, u.page, activeWayOriginalStatus, prog.status);
+    }
   }
 };
 
@@ -4920,6 +5450,260 @@ function getAllAyahKeysForRuku(surahNum, rukuIndex){
   const keys = [];
   for(let a=range.start; a<=range.end; a++) keys.push(`${surahNum}:${a}`);
   return keys;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Phase 2 (5-Wheel Overhaul) — Aggregation & caching layer.
+// Design confirmed with Smahk: ruku'-level + juz-level precomputed summaries
+// only (not surah-level — Quran-wheel slices by Juz, not Surah, per the
+// "always slice by next-smaller unit" rule, so a surah-level summary isn't
+// needed); nudge on every save, full recompute only as a manual repair
+// action; summaries live in their own Firestore docs, separate from the
+// main progress doc.
+//
+// Basis: both Ruku' and Juz summaries pool ayah-level data (reusing Phase
+// 1's getAllAyahKeysForRuku/getAllAyahKeysForJuz) rather than Juz pooling
+// page-level data — simpler, reuses proven Phase 1 code, and internally
+// consistent between the two. Flagged in the delivery notes as the one
+// assumption in this phase worth Smahk's explicit confirmation, since the
+// original risk-box wording could also be read as page-based for Juz.
+//
+// Formula matches Phase 0 exactly (pooled across every ayah's every way):
+// % = statusSum / (applicableCount * 3), where N/A ways are excluded from
+// both sides — same rule as the single-ayah wheel, just summed across many
+// ayahs instead of one.
+//
+// Untouched-ayah convention: an ayah nobody has opened yet is NOT skipped —
+// it counts as all 30 ways "Not Started" (status 0, applicable), matching
+// the exact convention already used by the shipped Status Breakdown tab's
+// computeStatusBreakdown() (`: 0` default). This is why a brand-new summary
+// is initialised to a "status 0, all applicable" BASELINE for every ayah in
+// scope (not to empty/zero) — otherwise incremental nudges (which only ever
+// touch ayahs someone actually opens) and a full recompute would disagree.
+// ═══════════════════════════════════════════════════════════════
+
+function rukuSummaryKey(surah, rukuIndex){ return `${surah}_${rukuIndex}`; }
+
+function ensureRukuSummary(personId, surah, rukuIndex, ayahCountForBaseline){
+  if(!state.rukuSummary[personId]) state.rukuSummary[personId] = {};
+  const k = rukuSummaryKey(surah, rukuIndex);
+  if(!state.rukuSummary[personId][k]){
+    const n = ayahCountForBaseline || 0;
+    state.rukuSummary[personId][k] = { statusSum: 0, applicableCount: n * state.ways.length };
+  }
+  return state.rukuSummary[personId][k];
+}
+function ensureJuzSummaryAyah(personId, juz, ayahCountForBaseline){
+  if(!state.juzSummaryAyah[personId]) state.juzSummaryAyah[personId] = {};
+  const k = String(juz);
+  if(!state.juzSummaryAyah[personId][k]){
+    const n = ayahCountForBaseline || 0;
+    state.juzSummaryAyah[personId][k] = { statusSum: 0, applicableCount: n * state.ways.length };
+  }
+  return state.juzSummaryAyah[personId][k];
+}
+
+// ── Page-basis Juz summary (Smahk's preferred basis, kept alongside Ayah) ──
+// Two lookups, each independently cached, since they run in opposite
+// directions: which JUZ does a given PAGE belong to (needed to nudge on a
+// Page-unit save), and which PAGES make up a given JUZ (needed for the
+// baseline/recompute). Both self-verify the same way as Phase 1's Ruku'
+// boundary detection — fail loudly if the expected field is missing, never
+// guess.
+const PAGE_JUZ_CACHE = {};
+let pageJuzLoadPromises = {};
+function ensurePageJuz(pageNum){
+  pageNum = Number(pageNum);
+  if(PAGE_JUZ_CACHE[pageNum] !== undefined) return Promise.resolve(PAGE_JUZ_CACHE[pageNum]);
+  if(pageJuzLoadPromises[pageNum]) return pageJuzLoadPromises[pageNum];
+  pageJuzLoadPromises[pageNum] = alquranFetch(`/page/${pageNum}/quran-uthmani`).then(data=>{
+    const ayahs = (data && data.ayahs) || [];
+    if(!ayahs.length) throw new Error('empty ayah list for page '+pageNum);
+    if(typeof ayahs[0].juz !== 'number') throw new Error("AlQuran Cloud response has no numeric 'juz' field — cannot map page to Juz.");
+    PAGE_JUZ_CACHE[pageNum] = ayahs[0].juz;
+    return ayahs[0].juz;
+  }).catch(err=>{
+    console.error('ensurePageJuz failed for page', pageNum, err);
+    delete pageJuzLoadPromises[pageNum];
+    throw err;
+  });
+  return pageJuzLoadPromises[pageNum];
+}
+
+const JUZ_PAGE_RANGE_CACHE = {};
+let juzPageRangeLoadPromises = {};
+function ensureJuzPageRange(juzNum){
+  juzNum = Number(juzNum);
+  if(JUZ_PAGE_RANGE_CACHE[juzNum]) return Promise.resolve(JUZ_PAGE_RANGE_CACHE[juzNum]);
+  if(juzPageRangeLoadPromises[juzNum]) return juzPageRangeLoadPromises[juzNum];
+  juzPageRangeLoadPromises[juzNum] = (async ()=>{
+    await ensureJuzsLoaded();
+    const ranges = getJuzSurahRanges(juzNum);
+    if(!ranges.length) throw new Error('no surah ranges for juz '+juzNum);
+    const first = ranges[0], last = ranges[ranges.length-1];
+    // A page never straddles a Juz boundary (per the DECIDED slicing rule),
+    // so the juz's own first and last ayah's page numbers bound its full page range.
+    const [startData, endData] = await Promise.all([
+      alquranFetch(`/ayah/${first.surah}:${first.startAyah}/quran-uthmani`),
+      alquranFetch(`/ayah/${last.surah}:${last.endAyah}/quran-uthmani`)
+    ]);
+    if(typeof startData.page !== 'number' || typeof endData.page !== 'number'){
+      throw new Error("AlQuran Cloud ayah response has no numeric 'page' field — cannot derive Juz page range.");
+    }
+    const result = { startPage: startData.page, endPage: endData.page };
+    JUZ_PAGE_RANGE_CACHE[juzNum] = result;
+    return result;
+  })().catch(err=>{
+    console.error('ensureJuzPageRange failed for juz', juzNum, err);
+    delete juzPageRangeLoadPromises[juzNum];
+    throw err;
+  });
+  return juzPageRangeLoadPromises[juzNum];
+}
+function getPagesForJuz(juzNum){
+  const r = JUZ_PAGE_RANGE_CACHE[Number(juzNum)];
+  if(!r) return [];
+  const pages = [];
+  for(let p=r.startPage; p<=r.endPage; p++) pages.push(p);
+  return pages;
+}
+
+function ensureJuzSummaryPage(personId, juz, pageCountForBaseline){
+  if(!state.juzSummaryPage[personId]) state.juzSummaryPage[personId] = {};
+  const k = String(juz);
+  if(!state.juzSummaryPage[personId][k]){
+    const n = pageCountForBaseline || 0;
+    state.juzSummaryPage[personId][k] = { statusSum: 0, applicableCount: n * state.ways.length };
+  }
+  return state.juzSummaryPage[personId][k];
+}
+
+// Applies one way's old→new status change to an already-initialised summary
+// counter. Never re-derives from scratch — pure O(1) delta.
+function nudgeSummaryCounter(summary, oldStatus, newStatus){
+  const oldApplicable = oldStatus !== 4;
+  const newApplicable = newStatus !== 4;
+  summary.applicableCount += (newApplicable?1:0) - (oldApplicable?1:0);
+  summary.statusSum += (newApplicable?newStatus:0) - (oldApplicable?oldStatus:0);
+  // Safety floor — should never trigger if baselines/deltas are correct, but
+  // a negative count would silently corrupt the percentage, so guard it.
+  if(summary.applicableCount < 0) summary.applicableCount = 0;
+  if(summary.statusSum < 0) summary.statusSum = 0;
+}
+
+// Reverse lookup: which Juz (1–30) contains a given surah:ayah. Requires
+// ensureJuzsLoaded() to have resolved first; returns null (not a guess) if
+// juz data isn't loaded or no match is found.
+function getJuzForAyah(surah, ayahNum){
+  for(let j=1;j<=30;j++){
+    const ranges = getJuzSurahRanges(j);
+    if(ranges.some(r=>r.surah===Number(surah) && ayahNum>=r.startAyah && ayahNum<=r.endAyah)) return j;
+  }
+  return null;
+}
+
+// The actual nudge trigger — called once from the "Save" button on a way
+// modal, ONLY when the unit being tracked is a single Ayah (type 'ayah').
+// Range/Surah/Page/Ruku'/Juz-level saves don't feed these summaries (that's
+// the deferred Range-routing sub-choice, Phase 6). Never blocks or fails the
+// actual way-save it's attached to — a summary left stale on error is
+// recoverable via the repair functions below; the student's real progress
+// data (already saved by the caller before this runs) is not at risk.
+async function nudgeStructuralSummariesForAyahSave(personId, surah, ayahNum, oldStatus, newStatus){
+  try{
+    await ensureRukusLoadedForSurah(surah);
+    const group = getRukusForSurah(surah).find(r=>ayahNum>=r.startAyah && ayahNum<=r.endAyah);
+    if(group){
+      const summary = ensureRukuSummary(personId, surah, group.index, group.endAyah - group.startAyah + 1);
+      nudgeSummaryCounter(summary, oldStatus, newStatus);
+    }
+  }catch(e){ console.error("Ruku' summary nudge failed (left stale — use recomputeRukuSummary to repair):", e); }
+  try{
+    await ensureJuzsLoaded();
+    const juz = getJuzForAyah(surah, ayahNum);
+    if(juz){
+      const summary = ensureJuzSummaryAyah(personId, juz, getAllAyahKeysForJuz(juz).length);
+      nudgeSummaryCounter(summary, oldStatus, newStatus);
+    }
+  }catch(e){ console.error('Juz summary (Ayah-basis) nudge failed (left stale — use recomputeJuzSummaryAyah to repair):', e); }
+  scheduleSave();
+}
+
+// Page-basis Juz nudge — called from the "Save" button ONLY when the unit
+// being tracked is a single Page (a Page already has its own direct 30-ways
+// record, per the Independence principle — this just pools those direct
+// records across the pages in one juz, no ayah-level guessing involved).
+async function nudgeJuzSummaryPageForPageSave(personId, pageNum, oldStatus, newStatus){
+  try{
+    const juz = await ensurePageJuz(pageNum);
+    await ensureJuzPageRange(juz);
+    const summary = ensureJuzSummaryPage(personId, juz, getPagesForJuz(juz).length);
+    nudgeSummaryCounter(summary, oldStatus, newStatus);
+    scheduleSave();
+  }catch(e){ console.error('Juz summary (Page-basis) nudge failed (left stale — use recomputeJuzSummaryPage to repair):', e); }
+}
+
+// Manual repair action (per the agreed design — NOT auto-triggered on every
+// open): full live re-scan of one Ruku's ayahs, overwriting its summary from
+// scratch. For now callable directly (e.g. from the console) since no wheel
+// yet exists to surface a "Repair" button from — Phase 3/4 wiring will add
+// that visible entry point once there's somewhere for it to live.
+async function recomputeRukuSummary(personId, surah, rukuIndex){
+  await ensureRukusLoadedForSurah(surah);
+  const range = getRukuAyahRange(surah, rukuIndex);
+  if(!range) throw new Error("recomputeRukuSummary: unknown Ruku' — boundaries not available.");
+  let statusSum = 0, applicableCount = 0;
+  const personProgress = state.progress[personId] || {};
+  for(let a=range.start; a<=range.end; a++){
+    const rec = personProgress[`${surah}:${a}`];
+    state.ways.forEach(w=>{
+      const status = (rec && rec[w.id]) ? rec[w.id].status : 0; // untouched = Not Started, applicable
+      if(status !== 4){ statusSum += status; applicableCount++; }
+    });
+  }
+  if(!state.rukuSummary[personId]) state.rukuSummary[personId] = {};
+  state.rukuSummary[personId][rukuSummaryKey(surah, rukuIndex)] = { statusSum, applicableCount };
+  scheduleSave();
+  return { statusSum, applicableCount };
+}
+async function recomputeJuzSummaryAyah(personId, juz){
+  await ensureJuzsLoaded();
+  const keys = getAllAyahKeysForJuz(juz);
+  if(!keys.length) throw new Error('recomputeJuzSummaryAyah: unknown Juz — boundaries not available.');
+  let statusSum = 0, applicableCount = 0;
+  const personProgress = state.progress[personId] || {};
+  keys.forEach(key=>{
+    const rec = personProgress[key];
+    state.ways.forEach(w=>{
+      const status = (rec && rec[w.id]) ? rec[w.id].status : 0;
+      if(status !== 4){ statusSum += status; applicableCount++; }
+    });
+  });
+  if(!state.juzSummaryAyah[personId]) state.juzSummaryAyah[personId] = {};
+  state.juzSummaryAyah[personId][String(juz)] = { statusSum, applicableCount };
+  scheduleSave();
+  return { statusSum, applicableCount };
+}
+// Page-basis repair — sums each Page unit's own direct 30-ways record
+// across every page in the juz (Page:15's record is state.progress["page:15"],
+// same store, same key format used everywhere else in the app already).
+async function recomputeJuzSummaryPage(personId, juz){
+  await ensureJuzPageRange(juz);
+  const pages = getPagesForJuz(juz);
+  if(!pages.length) throw new Error('recomputeJuzSummaryPage: unknown Juz — page range not available.');
+  let statusSum = 0, applicableCount = 0;
+  const personProgress = state.progress[personId] || {};
+  pages.forEach(p=>{
+    const rec = personProgress[`page:${p}`];
+    state.ways.forEach(w=>{
+      const status = (rec && rec[w.id]) ? rec[w.id].status : 0;
+      if(status !== 4){ statusSum += status; applicableCount++; }
+    });
+  });
+  if(!state.juzSummaryPage[personId]) state.juzSummaryPage[personId] = {};
+  state.juzSummaryPage[personId][String(juz)] = { statusSum, applicableCount };
+  scheduleSave();
+  return { statusSum, applicableCount };
 }
 
 
@@ -7122,6 +7906,52 @@ async function mmSavePersonProgress(personId, progressData){
   try{
     await firebase.firestore().collection('studyProgress').doc(personId).set({progress: progressData}, {merge:true});
   }catch(err){ console.error('Failed to save progress to Firestore (kept locally):', err); }
+}
+
+// Phase 2 (5-Wheel Overhaul) — Ruku'/Juz structural summaries. Deliberately
+// separate collections/docs from 'studyProgress' (per the agreed design:
+// avoids write contention/size bloat on the main progress doc), but the
+// same per-person doc shape and load/subscribe/save pattern as above.
+async function mmLoadPersonRukuSummary(personId){
+  const snap = await firebase.firestore().collection('rukuSummaries').doc(personId).get();
+  return snap.exists ? snap.data() : null;
+}
+function mmSubscribePersonRukuSummary(personId, onChange){
+  return firebase.firestore().collection('rukuSummaries').doc(personId)
+    .onSnapshot(snap=>{ if(snap.exists) onChange(snap.data()); }, err=>console.error("Ruku' summary sync error:", err));
+}
+async function mmSavePersonRukuSummary(personId, summaryData){
+  try{
+    await firebase.firestore().collection('rukuSummaries').doc(personId).set({rukuSummary: summaryData}, {merge:true});
+  }catch(err){ console.error("Failed to save Ruku' summary to Firestore (kept locally):", err); }
+}
+async function mmLoadPersonJuzSummaryAyah(personId){
+  const snap = await firebase.firestore().collection('juzSummaries').doc(personId).get();
+  return snap.exists ? snap.data() : null;
+}
+function mmSubscribePersonJuzSummaryAyah(personId, onChange){
+  return firebase.firestore().collection('juzSummaries').doc(personId)
+    .onSnapshot(snap=>{ if(snap.exists) onChange(snap.data()); }, err=>console.error('Juz summary (Ayah-basis) sync error:', err));
+}
+async function mmSavePersonJuzSummaryAyah(personId, summaryData){
+  try{
+    await firebase.firestore().collection('juzSummaries').doc(personId).set({juzSummary: summaryData}, {merge:true});
+  }catch(err){ console.error('Failed to save Juz summary (Ayah-basis) to Firestore (kept locally):', err); }
+}
+// Page-basis — separate collection, since it's a genuinely different summary
+// kept alongside the Ayah-basis one (Smahk: "keep both if possible").
+async function mmLoadPersonJuzSummaryPage(personId){
+  const snap = await firebase.firestore().collection('juzSummariesPage').doc(personId).get();
+  return snap.exists ? snap.data() : null;
+}
+function mmSubscribePersonJuzSummaryPage(personId, onChange){
+  return firebase.firestore().collection('juzSummariesPage').doc(personId)
+    .onSnapshot(snap=>{ if(snap.exists) onChange(snap.data()); }, err=>console.error('Juz summary (Page-basis) sync error:', err));
+}
+async function mmSavePersonJuzSummaryPage(personId, summaryData){
+  try{
+    await firebase.firestore().collection('juzSummariesPage').doc(personId).set({juzSummaryPage: summaryData}, {merge:true});
+  }catch(err){ console.error('Failed to save Juz summary (Page-basis) to Firestore (kept locally):', err); }
 }
 
 async function mmSavePersonProfile(personId, data){
