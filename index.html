@@ -609,7 +609,7 @@
     <div class="ayah-picker" id="repeatCountPicker">
       <div class="ayah-picker-row">
         <div class="ayah-picker-field">
-          <label for="repeatCountSelect">Each selected reciter repeats</label>
+          <label for="repeatCountSelect">Repeat count</label>
           <select id="repeatCountSelect">
             <option value="1">1&#215; (no repeat)</option>
             <option value="2">2&#215;</option>
@@ -618,8 +618,15 @@
             <option value="10">10&#215;</option>
           </select>
         </div>
+        <div class="ayah-picker-field">
+          <label for="repeatModeSelect">Repeat mode</label>
+          <select id="repeatModeSelect">
+            <option value="ayah">Each Ayah (drill one ayah before moving on)</option>
+            <option value="unit">Whole Unit (repeat the entire selection)</option>
+          </select>
+        </div>
       </div>
-      <div class="ayah-picker-source" style="margin-top:6px;">Applies to every selected reciter equally — each one finishes its repeats before the next reciter's turn.</div>
+      <div class="ayah-picker-source" id="repeatModeHint" style="margin-top:6px;">Every selected reciter plays once, in order, per round — that whole round is what repeats.</div>
     </div>
   </div>
 
@@ -2861,6 +2868,10 @@ if(!Array.isArray(state.selectedReciters) || !state.selectedReciters.length){
 state.selectedReciters = state.selectedReciters.filter(id => ['ar','en','bn'].includes(id));
 if(!state.selectedReciters.length) state.selectedReciters = ['ar'];
 if(!state.reciterRepeatCount || state.reciterRepeatCount < 1) state.reciterRepeatCount = 1; // Phase 5 migration safety
+// Repeat-mode fix (22 Jul 2026): 'ayah' drills one ayah before moving on;
+// 'unit' plays the whole selection through, then repeats that whole pass.
+// Default 'ayah' per Smahk's decision — most people repeating audio are drilling one ayah at a time.
+if(state.reciterRepeatMode !== 'ayah' && state.reciterRepeatMode !== 'unit') state.reciterRepeatMode = 'ayah';
 
 // ═══════════════════════════════════════════════════════════════
 // Firestore hydration (Phase B, Slice 1): the app has already booted
@@ -3160,6 +3171,14 @@ function bnBoundaryCheck(){
     return;
   }
   // sequence mode (Range/Page)
+  // Fix (22 Jul 2026): same principle as the ar/en 'ended' handler above —
+  // in Each-Ayah repeat mode every segment boundary is a sequencer hand-off
+  // point, not a silent auto-advance to the next ayah.
+  if(reciterQueueActive && state.reciterRepeatMode === 'ayah' && bnSegQueue.length > 1){
+    audio.pause();
+    advanceReciterQueueOrStop();
+    return;
+  }
   if(bnSegIdx < bnSegQueue.length - 1){
     bnSegIdx++;
     bnGoToSegment(audio, bnSegQueue[bnSegIdx], true);
@@ -3188,7 +3207,7 @@ let audioPlaylistSig = null;   // which unit/view/reciter the playlist belongs t
 let reciterQueue = [];         // ordered list of reciter ids for THIS playback run
 let reciterQueueIdx = 0;
 let reciterQueueActive = false; // true whenever the sequencer (2+ reciters, and/or a repeat count > 1) should be driving playback instead of native looping
-let reciterRepeatsDone = 0;    // how many times the CURRENT queue entry has played so far, this pass (Phase 5: repeat count)
+let repeatCyclesDone = 0;      // full rounds completed so far, at whatever scope state.reciterRepeatMode applies (Fix, 22 Jul 2026)
 
 function currentRepeatTarget(){
   const n = Math.round(state.reciterRepeatCount || 1);
@@ -3202,8 +3221,8 @@ function inReciterQueueMode(){
 // Rebuilds the queue from the current multi-select and points selectedReciter
 // at its first entry. Called at the top of renderAudio() so every existing
 // branch below just sees a normal single active reciter, as always. Must be
-// safe to call repeatedly mid-repeat (restartCurrentReciterPlayback() below
-// calls back into renderAudio(), i.e. back into here) without disturbing an
+// safe to call repeatedly mid-repeat (advanceReciterQueueOrStop() below calls
+// back into renderAudio(), i.e. back into here) without disturbing an
 // in-progress repeat count — it only resets state when the SELECTION itself
 // has genuinely changed, never just because it ran again.
 function primeReciterQueue(){
@@ -3213,61 +3232,115 @@ function primeReciterQueue(){
   if(!reciterQueue.includes(state.selectedReciter)){
     reciterQueueIdx = 0;
     state.selectedReciter = reciterQueue[0];
-    reciterRepeatsDone = 0;
+    repeatCyclesDone = 0;
   } else if(reciterQueue.length <= 1){
     reciterQueueIdx = 0;
   }
   reciterQueueActive = needsSequencer;
 }
 
-// Restarts the CURRENT reciter from the beginning of this ayah/unit — used
-// for a repeat, as opposed to goTo() below which moves to a DIFFERENT
-// reciter. Reuses renderAudio()'s own per-mode logic (ar/en playlist reset
-// to its first file, Bangla segment queue rebuilt, whole-Surah file
-// re-sourced) by clearing the signature guards that would otherwise skip a
-// reload — no per-mode logic duplicated here.
-function restartCurrentReciterPlayback(){
-  const audio = document.getElementById('ayahAudio');
-  delete audio.dataset.sig;
-  if(typeof bnSegQueueSig !== 'undefined') bnSegQueueSig = null;
-  if(typeof audioPlaylistSig !== 'undefined') audioPlaylistSig = null;
-  renderAudio();
-  audio.play().catch(()=>{}); // continuation of user-initiated playback — see note in advanceReciterQueueOrStop()
-}
-
-// The ONLY function that hands playback from one repeat/reciter to the next
-// (or stops/loops the whole run). Called from the genuine "nothing left to
-// play" points in the existing ended/boundary handlers below — never from
-// anywhere that might still have more of the CURRENT reciter left to play.
+// The ONLY function that hands playback from one reciter/ayah/repeat to the
+// next (or stops/loops the whole run). Called from the genuine "nothing left
+// to play right now" points in the ended/boundary handlers below.
+//
+// Two repeat modes (Fix, 22 Jul 2026 — replaces the old per-reciter-block
+// behaviour, which played Ar×N, then En×N, then Bn×N):
+//   'unit' — every selected reciter plays the ENTIRE unit once, in order;
+//            that whole round is what repeats N times. Reciters are the
+//            inner loop, repeats the outer loop — exactly flipped from the
+//            old behaviour. For a single ayah this is already what "Each
+//            Ayah" produces too, since a single ayah IS the whole unit.
+//   'ayah' — for multi-ayah units, drills ONE ayah (every reciter, N
+//            rounds) before moving to the next ayah. Needs the ended/
+//            boundary handlers below to treat every ayah boundary as a
+//            "hand off to the sequencer" point, not just the end of the
+//            whole playlist — see their reciterQueueActive + ayah-mode
+//            checks.
 function advanceReciterQueueOrStop(){
   if(!reciterQueueActive) return;
   const audio = document.getElementById('ayahAudio');
   const repeatTarget = currentRepeatTarget();
-  reciterRepeatsDone++;
-  if(reciterRepeatsDone < repeatTarget){
-    restartCurrentReciterPlayback();
-    return;
-  }
-  reciterRepeatsDone = 0;
-  const goTo = idx=>{
-    reciterQueueIdx = idx;
-    state.selectedReciter = reciterQueue[idx];
-    renderAudio(); // sets audio.src (and, for Bangla, its own loadedmetadata seek-to-tFrom listener)
+  const ayahMode = state.reciterRepeatMode === 'ayah';
+  const multiAyah = (audioPlaylist && audioPlaylist.length > 1) || (bnSegQueue && bnSegMode === 'sequence' && bnSegQueue.length > 1);
+  // Snapshot the ayah position we were just at — renderAudio() below rebuilds
+  // audioPlaylist/bnSegQueue from scratch and resets their index to 0, so
+  // this is the only chance to remember where "this ayah" actually was.
+  const savedAyahIdx = audioPlaylist ? audioPlaylistIdx : (bnSegQueue ? bnSegIdx : 0);
+
+  // Moves to `reciterIdx`, resuming at `ayahIdx` (only meaningful in ayah
+  // mode with a multi-ayah unit — ignored otherwise, since renderAudio()
+  // already starts any fresh reciter at ayah 0, which is correct for unit
+  // mode / a single ayah).
+  const resumeAt = (reciterIdx, ayahIdx)=>{
+    reciterQueueIdx = reciterIdx;
+    state.selectedReciter = reciterQueue[reciterIdx];
+    delete audio.dataset.sig;
+    bnSegQueueSig = null;
+    audioPlaylistSig = null;
+    renderAudio(); // rebuilds this reciter's playlist/segment queue fresh, from ayah 0
+    if(ayahMode && multiAyah && ayahIdx > 0 && audioPlaylist && ayahIdx < audioPlaylist.length){
+      audioPlaylistIdx = ayahIdx;
+      audio.src = audioPlaylist[audioPlaylistIdx];
+      audio.play().catch(()=>{}); // continuation of user-initiated playback
+      return;
+    }
+    if(ayahMode && multiAyah && ayahIdx > 0 && bnSegQueue && ayahIdx < bnSegQueue.length){
+      bnSegIdx = ayahIdx;
+      // autoplay:true — bnGoToSegment seeks then plays itself once its
+      // loadedmetadata listener fires; calling audio.play() separately here
+      // would race a src change that hasn't finished loading yet.
+      bnGoToSegment(audio, bnSegQueue[bnSegIdx], true);
+      return;
+    }
+    // Unit mode / single ayah / already at ayah 0 — renderAudio() above
+    // already primed audio.src (and, for Bangla, its own seek listener).
     // The audio element is paused at this point (we got here from 'ended' /
     // a boundary stop) and <audio preload="none"> never fires loadedmetadata
     // on a paused element just from assigning .src — waiting for it here
     // would deadlock forever. Calling play() directly is what actually
-    // triggers the browser to load; any per-reciter seek listener set up by
-    // renderAudio() above still runs before audible playback starts.
+    // triggers the browser to load.
     audio.play().catch(()=>{}); // continuation of user-initiated playback
   };
-  if(reciterQueueIdx < reciterQueue.length - 1){
-    goTo(reciterQueueIdx + 1);
-  } else if(state.audioLoop){
-    goTo(0); // whole run (all reciters, all repeats) loops, not any single reciter within it
-  } else {
-    reciterQueueActive = false; // run complete — back to normal single-reciter state
+
+  if(ayahMode && multiAyah){
+    // Drilling: cycle every reciter (with repeats) at THIS ayah before ever
+    // moving to the next one.
+    if(reciterQueueIdx < reciterQueue.length - 1){
+      resumeAt(reciterQueueIdx + 1, savedAyahIdx);
+      return;
+    }
+    // Last reciter in the queue just finished this ayah — one round done.
+    repeatCyclesDone++;
+    if(repeatCyclesDone < repeatTarget){
+      resumeAt(0, savedAyahIdx); // same ayah, next round from reciter[0]
+      return;
+    }
+    repeatCyclesDone = 0;
+    const totalAyahs = audioPlaylist ? audioPlaylist.length : (bnSegQueue ? bnSegQueue.length : 1);
+    if(savedAyahIdx < totalAyahs - 1){
+      resumeAt(0, savedAyahIdx + 1); // next ayah, reciters from the top
+      return;
+    }
+    // Whole unit fully drilled, ayah by ayah.
+    if(state.audioLoop) resumeAt(0, 0);
+    else reciterQueueActive = false;
+    return;
   }
+
+  // Whole-Unit mode (or a single ayah, where the two modes are identical):
+  // each reciter plays the ENTIRE unit before the next reciter's turn.
+  if(reciterQueueIdx < reciterQueue.length - 1){
+    resumeAt(reciterQueueIdx + 1, 0);
+    return;
+  }
+  repeatCyclesDone++;
+  if(repeatCyclesDone < repeatTarget){
+    resumeAt(0, 0); // whole round (every reciter, whole unit) repeats
+    return;
+  }
+  repeatCyclesDone = 0;
+  if(state.audioLoop) resumeAt(0, 0);
+  else reciterQueueActive = false; // run complete — back to normal single-reciter state
 }
 
 function renderAudio(){
@@ -3465,12 +3538,20 @@ document.getElementById('ayahAudio').addEventListener('ended', ()=>{
     return;
   }
   const audio = document.getElementById('ayahAudio');
+  // Fix (22 Jul 2026): in Each-Ayah repeat mode, every ayah boundary is a
+  // hand-off point for the sequencer (same ayah, next reciter/round — or
+  // the next ayah once every reciter's had its turn) — the playlist must
+  // NOT silently auto-advance past an ayah on its own here.
+  if(reciterQueueActive && state.reciterRepeatMode === 'ayah' && audioPlaylist.length > 1){
+    advanceReciterQueueOrStop();
+    return;
+  }
   if(audioPlaylistIdx < audioPlaylist.length - 1){
     audioPlaylistIdx++;
   } else if(state.audioLoop && !inReciterQueueMode()){
     audioPlaylistIdx = 0;
   } else {
-    advanceReciterQueueOrStop(); // Phase 4: this reciter's playlist genuinely finished
+    advanceReciterQueueOrStop(); // Phase 4: this reciter's playlist genuinely finished (Whole-Unit mode)
     return; // sequence finished, loop off
   }
   audio.src = audioPlaylist[audioPlaylistIdx];
@@ -5760,13 +5841,30 @@ function populateAyahNumbers(){
 async function loadChapters(){
   const sel = document.getElementById('pickerSurah');
   try{
+    // Bug fix (22 Jul 2026): this used to fetch CHAPTERS itself, guarded by
+    // callers checking `CHAPTERS.length === 0`. Since Phase 1/3/4 added other
+    // independent callers of ensureChaptersLoaded() (the Study Unit picker,
+    // Explore space), CHAPTERS could already be populated by one of THOSE
+    // before this "Choose Ayah" panel was ever opened — which meant the old
+    // guard skipped this function entirely and left pickerSurah/pickerAyahNum
+    // stuck on their placeholder text forever ("Loading…" / "—"). Fix: always
+    // (re)populate this panel's own DOM here, sourced from the same shared
+    // ensureChaptersLoaded() everything else already uses — one fetch, no
+    // duplicated fallback logic, and this function no longer silently
+    // no-ops just because something else loaded the data first.
     await ensureChaptersLoaded();
     sel.innerHTML = CHAPTERS.map(c=>
       `<option value="${c.id}">${c.id}. ${c.name_simple} — ${c.translated_name ? c.translated_name.name : ''}</option>`
     ).join('');
+    sel.dataset.populated = '1';
     const currentSurah = (state.currentAyahKey || DEFAULT_AYAH_KEY).split(':')[0];
     sel.value = currentSurah;
     populateAyahNumbers();
+    // Same root cause, same fix: if the Study Unit picker's Surah field was
+    // opened before CHAPTERS finished loading, it would have no-opped and
+    // never been told to try again. Safe to call unconditionally — it
+    // already no-ops if already populated.
+    if(typeof populateUnitSurahSelect === 'function') populateUnitSurahSelect();
   }catch(e){
     console.error('loadChapters failed:', e);
     sel.innerHTML = `<option>Couldn't reach quran.com (${(e.message||'network error')}) — click 📖 Choose Ayah again to retry</option>`;
@@ -6205,8 +6303,30 @@ document.getElementById('repeatCountToggle').onclick = ()=>{
     const n = Math.max(1, Math.min(20, Number(sel.value) || 1));
     state.reciterRepeatCount = n;
     label.textContent = n + '×';
-    reciterRepeatsDone = 0; // a manual change always starts the count fresh
+    repeatCyclesDone = 0; // a manual change always starts the count fresh
     reciterQueueActive = false; // and starts a fresh run, not mid-sequence — same principle as changing reciters
+    renderAudio();
+    scheduleSave();
+  });
+})();
+
+// Repeat Mode (Fix, 22 Jul 2026): Each Ayah (drill) vs Whole Unit — see
+// advanceReciterQueueOrStop() for what each actually does during playback.
+(function wireRepeatModeSelect(){
+  const sel = document.getElementById('repeatModeSelect');
+  const hint = document.getElementById('repeatModeHint');
+  if(!sel) return;
+  const hints = {
+    ayah: 'Every selected reciter plays one ayah, in order, then repeats \u2014 before moving to the next ayah.',
+    unit: 'Every selected reciter plays once, through the whole selection, in order \u2014 that whole round is what repeats.'
+  };
+  sel.value = state.reciterRepeatMode || 'ayah';
+  hint.textContent = hints[sel.value] || hints.ayah;
+  sel.addEventListener('change', ()=>{
+    state.reciterRepeatMode = (sel.value === 'unit') ? 'unit' : 'ayah';
+    hint.textContent = hints[state.reciterRepeatMode];
+    repeatCyclesDone = 0; // a manual change always starts the count fresh
+    reciterQueueActive = false; // and starts a fresh run, not mid-sequence — same principle as changing reciters/repeat count
     renderAudio();
     scheduleSave();
   });
@@ -6339,7 +6459,11 @@ document.getElementById('pickerToggle').onclick = ()=>{
   const panel = document.getElementById('ayahPicker');
   const isShowing = panel.classList.toggle('show');
   document.getElementById('pickerToggleArrow').textContent = isShowing ? '▴' : '▾';
-  if(isShowing && CHAPTERS.length === 0) loadChapters();
+  // Bug fix (22 Jul 2026): was gated on `CHAPTERS.length === 0`, which other
+  // independent loaders (Study Unit picker, Explore space) could satisfy
+  // without ever populating THIS panel's own pickerSurah dropdown — see
+  // loadChapters() above.
+  if(isShowing && !document.getElementById('pickerSurah').dataset.populated) loadChapters();
   if(isShowing && TRANSLATIONS.length === 0) loadTranslationsList();
 };
 
@@ -6500,7 +6624,9 @@ document.getElementById('unitPickerToggle').onclick = ()=>{
   const panel = document.getElementById('unitPicker');
   const isShowing = panel.classList.toggle('show');
   document.getElementById('unitPickerToggleArrow').textContent = isShowing ? '▴' : '▾';
-  if(isShowing && CHAPTERS.length === 0) loadChapters();
+  // Same fix as pickerToggle above — gate on this panel's own DOM state,
+  // not the shared CHAPTERS array (which other loaders can populate first).
+  if(isShowing && !document.getElementById('pickerSurah').dataset.populated) loadChapters();
   if(isShowing) populateUnitSurahSelect();
 };
 
