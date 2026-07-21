@@ -223,6 +223,7 @@
   .chip-1{background:rgba(201,162,75,0.18);color:var(--gold);}
   .chip-2{background:rgba(201,162,75,0.4);color:#fff0cf;}
   .chip-3{background:var(--gold);color:#241a06;}
+  .chip-4{background:rgba(255,255,255,0.03);color:#6b7688;border:1px dashed rgba(255,255,255,0.18);}
 
   /* modal */
   .overlay{position:fixed;inset:0;background:rgba(10,14,24,0.7);display:none;align-items:center;justify-content:center;z-index:50;}
@@ -230,7 +231,9 @@
   .modal{background:#1c2942;border:1px solid rgba(201,162,75,0.3);border-radius:16px;padding:26px;width:420px;max-width:92vw;}
   .modal h3{font-family:'Cormorant Garamond',serif;font-size:24px;margin:0 0 4px;color:var(--parchment);}
   .modal .modal-sub{font-size:12px;color:var(--gold);text-transform:uppercase;letter-spacing:.1em;margin-bottom:18px;}
-  .status-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-bottom:16px;}
+  .status-btns{display:grid;grid-template-columns:repeat(auto-fit,minmax(74px,1fr));gap:7px;margin-bottom:16px;}
+  .status-btns button.status-na{border-style:dashed;color:#8a93a3;}
+  .status-btns button.status-na.active{background:#4a5468;color:#e8ecf5;border-color:#4a5468;}
   .status-btns button{padding:9px 4px;border-radius:8px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:#cdd5e3;font-size:11px;cursor:pointer;font-family:'Inter';}
   .status-btns button.active{background:var(--gold);color:#241a06;border-color:var(--gold);font-weight:700;}
   .modal label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#8fa0c2;display:block;margin-bottom:6px;}
@@ -2463,8 +2466,8 @@ const GROUP_COLOR = {
   'Critical Reasoning — Judgement / Authority':'#1C1B18',
   "A'mal / Application":'#7A2E2E'
 };
-const STATUS_LABELS = ['Not Started','Learning','Practicing','Mastered'];
-const STATUS_OPACITY = [0.13, 0.42, 0.7, 1];
+const STATUS_LABELS = ['Not Started','Learning','Practicing','Mastered','Not Applicable'];
+const STATUS_OPACITY = [0.13, 0.42, 0.7, 1, 0.35];
 
 // ═══════════════════════════════════════════════════════════════
 // Colour Step 3 (Study side) — Phase 1: theme colour data model
@@ -3454,8 +3457,8 @@ function renderWheel(){
 
   state.ways.forEach((w,i)=>{
     const a1 = i*segAngle, a2 = (i+1)*segAngle;
-    const color = groupColor(w.group);
     const status = prog[w.id].status;
+    const color = status===4 ? '#4a5468' : groupColor(w.group);
     const path = document.createElementNS('http://www.w3.org/2000/svg','path');
     path.setAttribute('d', arcPath(cx,cy,rOuter,rInner,a1,a2));
     path.setAttribute('class','segment');
@@ -3619,10 +3622,15 @@ function removeWay(wayId){
 /* ---------- Progress summary ---------- */
 function renderProgress(){
   const prog = ensureProgress(state.activePersonId, state.currentUnitKey);
-  const total = state.ways.length * 3;
-  let sum = 0;
-  state.ways.forEach(w => sum += prog[w.id].status);
-  const pct = Math.round((sum/total)*100);
+  let sum = 0, applicableCount = 0;
+  state.ways.forEach(w => {
+    const status = prog[w.id].status;
+    if(status===4) return; // Not Applicable — excluded from both sides of the percentage, not just treated as 0
+    sum += status;
+    applicableCount++;
+  });
+  const total = applicableCount * 3;
+  const pct = total > 0 ? Math.round((sum/total)*100) : 0;
   document.getElementById('progressNum').textContent = pct + '%';
 }
 
@@ -3855,6 +3863,7 @@ function openWayModal(wayId){
   STATUS_LABELS.forEach((label, idx)=>{
     const b = document.createElement('button');
     b.textContent = label;
+    if(idx===4) b.classList.add('status-na');
     if(idx===prog.status) b.classList.add('active');
     b.onclick = ()=>{
       prog.status = idx;
@@ -3998,7 +4007,7 @@ function computeStatusBreakdown(personId, wayId, scopeType, scopeParam){
   } else if(scopeType==='quran'){
     CHAPTERS.forEach(c=>{ ayahKeys = ayahKeys.concat(getAllAyahKeysForSurah(c.id)); });
   }
-  const counts = {0:0, 1:0, 2:0, 3:0};
+  const counts = {0:0, 1:0, 2:0, 3:0, 4:0};
   const personProgress = (state.progress[personId]) || {};
   ayahKeys.forEach(key=>{
     const status = (personProgress[key] && personProgress[key][wayId]) ? personProgress[key][wayId].status : 0;
@@ -4032,10 +4041,11 @@ async function renderBreakdownResults(){
     return;
   }
   const rows = [
-    { label: 'Mastered',   idx: 3, color: 'var(--gold)' },
-    { label: 'Practicing', idx: 2, color: 'rgba(201,162,75,0.7)' },
-    { label: 'Learning',   idx: 1, color: 'rgba(201,162,75,0.4)' },
-    { label: 'Not Started',idx: 0, color: 'rgba(255,255,255,0.15)' },
+    { label: 'Mastered',       idx: 3, color: 'var(--gold)' },
+    { label: 'Practicing',     idx: 2, color: 'rgba(201,162,75,0.7)' },
+    { label: 'Learning',       idx: 1, color: 'rgba(201,162,75,0.4)' },
+    { label: 'Not Started',    idx: 0, color: 'rgba(255,255,255,0.15)' },
+    { label: 'Not Applicable', idx: 4, color: '#4a5468' },
   ];
   results.innerHTML = buildBreakdownDonutSVG(counts, total, rows) + rows.map(r=>{
     const count = counts[r.idx] || 0;
@@ -4138,14 +4148,16 @@ async function renderCoverageResults(){
     results.innerHTML = '<div class="way-resource-empty">No ayah data available for this scope yet.</div>';
     return;
   }
+  const notApplicable = counts[4]||0;
+  const applicableTotal = total - notApplicable;
   const completed = (counts[2]||0) + (counts[3]||0); // Practicing + Mastered
-  const pct = Math.round((completed/total)*100);
+  const pct = applicableTotal > 0 ? Math.round((completed/applicableTotal)*100) : 0;
   results.innerHTML = `
     ${buildProgressRingSVG(pct)}
     <div class="way-coverage-pct">${pct}%</div>
-    <div class="way-coverage-fraction">${completed} of ${total} ayah${total!==1?'s':''} complete</div>
+    <div class="way-coverage-fraction">${completed} of ${applicableTotal} applicable ayah${applicableTotal!==1?'s':''} complete</div>
     <div class="way-coverage-bar-track"><div class="way-coverage-bar-fill" style="width:${pct}%;"></div></div>
-    <div class="way-coverage-note">"Complete" = Practicing or Mastered</div>
+    <div class="way-coverage-note">"Complete" = Practicing or Mastered${notApplicable ? ' · ' + notApplicable + ' marked not applicable, excluded' : ''}</div>
   `;
 }
 
@@ -4315,7 +4327,7 @@ const GROUP_META_BASE = [
 function currentGroupMeta(){
   return GROUP_META_BASE.map(gm => ({...gm, ways: state.ways.filter(w=>w.group===gm.key).map(w=>w.id)}));
 }
-const STATUS_LABELS_SHORT = ['—','Learning','Practicing','Mastered'];
+const STATUS_LABELS_SHORT = ['—','Learning','Practicing','Mastered','N/A'];
 
 function buildReport(withTajweed){
   const person = state.people.find(p=>p.id===state.activePersonId) || state.people[0];
@@ -4336,19 +4348,20 @@ function buildReport(withTajweed){
     Always verify rules with a qualified teacher — colour alone does not substitute proper oral transmission (talaqqi).
   </div>` : '';
 
-  // overall %
-  const total = state.ways.length * 3;
-  let sum = 0; state.ways.forEach(w=>sum+=prog[w.id].status);
-  const pct = Math.round((sum/total)*100);
+  // overall % — Not Applicable ways are excluded from both sides, same rule as the wheel itself
+  const applicableWays = state.ways.filter(w=>prog[w.id].status!==4);
+  const total = applicableWays.length * 3;
+  let sum = 0; applicableWays.forEach(w=>sum+=prog[w.id].status);
+  const pct = total > 0 ? Math.round((sum/total)*100) : 0;
 
   // group scores
   const GROUP_META = currentGroupMeta();
   const groupRows = GROUP_META.map(gm=>{
-    const wayObjs = gm.ways.map(id=>state.ways.find(w=>w.id===id));
-    const gMax = wayObjs.length * 3;
-    let gSum = 0; gm.ways.forEach(id=>gSum+=prog[id].status);
+    const applicableGroupWays = gm.ways.filter(id=>prog[id].status!==4);
+    const gMax = applicableGroupWays.length * 3;
+    let gSum = 0; applicableGroupWays.forEach(id=>gSum+=prog[id].status);
     const mastered = gm.ways.filter(id=>prog[id].status===3).length;
-    return {...gm, gMax, gSum, mastered, total:wayObjs.length, pct:Math.round((gSum/gMax)*100)};
+    return {...gm, gMax, gSum, mastered, total:applicableGroupWays.length, pct: gMax>0 ? Math.round((gSum/gMax)*100) : 0};
   });
 
   const groupCardsHTML = groupRows.map(gm=>{
@@ -4369,11 +4382,13 @@ function buildReport(withTajweed){
     const s    = wProg.status;
     const wayName = (state.textStyles['way-'+w.id]||{}).content || w.name;
     const gKey = 'grp-' + gm.key.replace(/\W+/g,'_').toLowerCase();
-    const dots = [0,1,2,3].map(lvl=>{
-      const filled = lvl < s;
-      const isCurrent = lvl === s-1;
-      return `<span class="rpt-dot" style="background:${filled?gm.color:'transparent'};border-color:${filled?gm.color:'#ccc'};${isCurrent?'box-shadow:0 0 0 1.5px '+gm.color:''};"></span>`;
-    }).join('');
+    const dots = s===4
+      ? `<span class="rpt-dot" style="background:transparent;border-color:#ccc;border-style:dashed;"></span><span class="rpt-dot" style="background:transparent;border-color:#ccc;border-style:dashed;"></span><span class="rpt-dot" style="background:transparent;border-color:#ccc;border-style:dashed;"></span><span class="rpt-dot" style="background:transparent;border-color:#ccc;border-style:dashed;"></span>`
+      : [0,1,2,3].map(lvl=>{
+        const filled = lvl < s;
+        const isCurrent = lvl === s-1;
+        return `<span class="rpt-dot" style="background:${filled?gm.color:'transparent'};border-color:${filled?gm.color:'#ccc'};${isCurrent?'box-shadow:0 0 0 1.5px '+gm.color:''};"></span>`;
+      }).join('');
     const noteHTML = wProg.notes ? `<div class="rpt-way-notes">${wProg.notes}</div>`:'';
     const dateHTML = wProg.date ? `<div style="font-size:8px;color:#c0bab0;margin-top:1px;">${wProg.date}</div>`:'';
     return `
@@ -4385,7 +4400,7 @@ function buildReport(withTajweed){
         </div>
         <div class="rpt-status-col">
           <div class="rpt-dots">${dots}</div>
-          <div class="rpt-status-lbl" style="color:${s>0?gm.color:'#ccc'}">${s===0?'Not started':STATUS_LABELS_SHORT[s]}</div>
+          <div class="rpt-status-lbl" style="color:${s>0 && s!==4?gm.color:'#ccc'}">${s===0?'Not started':STATUS_LABELS_SHORT[s]}</div>
         </div>
       </div>`;
   }).join('');
@@ -4419,7 +4434,7 @@ function buildReport(withTajweed){
       </div>
       <div style="flex:1">
         <div class="rpt-bar-wrap"><div class="rpt-bar-fill" style="width:${pct}%"></div></div>
-        <div style="font-size:9px;color:#9aabb8;margin-top:4px;">${sum} of ${total} points · ${state.ways.filter(w=>prog[w.id].status===3).length} of ${state.ways.length} ways mastered</div>
+        <div style="font-size:9px;color:#9aabb8;margin-top:4px;">${sum} of ${total} points · ${applicableWays.filter(w=>prog[w.id].status===3).length} of ${applicableWays.length} ways mastered</div>
       </div>
     </div>
 
