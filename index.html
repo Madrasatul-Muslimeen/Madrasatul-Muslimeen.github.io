@@ -558,6 +558,17 @@
           <label for="unitRangeEnd">To Ayah</label>
           <input type="number" id="unitRangeEnd" min="1" value="1">
         </div>
+        <div class="ayah-picker-field" id="unitRangeIntentField" style="display:none;">
+          <label>This range is</label>
+          <div style="display:flex;gap:14px;align-items:center;font-size:12.5px;color:var(--parchment);">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:400;">
+              <input type="radio" name="unitRangeIntent" id="unitRangeIntentCombined" value="combined" checked> one combined ayah
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-weight:400;">
+              <input type="radio" name="unitRangeIntent" id="unitRangeIntentSection" value="section"> a section within the Surah
+            </label>
+          </div>
+        </div>
         <div class="ayah-picker-field" id="unitPageField" style="display:none;">
           <label for="unitPageNum">Page (1&ndash;604)</label>
           <input type="number" id="unitPageNum" min="1" max="604" value="1">
@@ -4005,13 +4016,15 @@ async function renderExplore(){
   }
 }
 
-// ---- Quran-wheel: 30 juz slices, Progress-ring, from Phase 2's juzSummaryPage ----
+// ---- Quran-wheel: 30 juz slices, Progress-ring, pooled from all three
+// structural summary sources (Ayah/Page/Surah-basis) via combinedJuzPct ----
 async function renderQuranWheelExplore(){
+  await ensureJuzsLoaded();
+  await ensureChaptersLoaded();
   const personId = state.activePersonId;
   const slices = [];
   for(let j=1; j<=30; j++){
-    const summary = state.juzSummaryPage[personId] && state.juzSummaryPage[personId][String(j)];
-    const pct = summaryPct(summary);
+    const pct = combinedJuzPct(personId, j);
     slices.push({
       number: j, pct,
       tooltip: `Juz ${j} \u2014 ${pct}% complete`,
@@ -4046,9 +4059,16 @@ async function renderJuzWheelExplore(juzNum){
 }
 // Purely additive overlay drawn on top of the already-rendered Juz-wheel —
 // never touches renderProgressRingWheel's own output. Divider ticks sit
-// right at each page-slice boundary where the surah changes; surah names
-// sit further out than the page numbers (rOuter+32 vs +14) so the two
-// label rings never collide.
+// right at each page-slice boundary where the surah changes (always drawn,
+// every boundary); surah names sit further out than the page numbers
+// (rOuter+32 vs +14) so the two label rings never collide.
+// A single-page-wide group (common in Juz 30, which has far more surahs per
+// page than most Juz) doesn't get enough arc length to fit readable text
+// without bleeding into its neighbours' labels — found via live testing, not
+// guessed. Those groups keep their divider tick (the boundary is still
+// visible) but skip the text label; the page-slice's own hover tooltip
+// already names its surah, so the information isn't lost, just not crammed
+// in permanently. 2+ page groups (the common case) are unaffected.
 function addJuzSurahOverlay(pages, surahByPage){
   const svg = document.getElementById('exploreWheel');
   if(!svg) return;
@@ -4069,16 +4089,19 @@ function addJuzSurahOverlay(pages, surahByPage){
       tick.style.pointerEvents = 'none';
       svg.appendChild(tick);
     }
-    const midAngle = (groupStart*segAngle + i*segAngle)/2;
-    const lp = polar(cx,cy, rOuter+32, midAngle);
-    const label = document.createElementNS('http://www.w3.org/2000/svg','text');
-    label.setAttribute('x', lp.x); label.setAttribute('y', lp.y);
-    label.setAttribute('text-anchor','middle');
-    label.setAttribute('class','ring-seg-num');
-    label.setAttribute('transform', `rotate(${ringNumberRotation(midAngle)} ${lp.x} ${lp.y})`);
-    label.style.pointerEvents = 'none';
-    label.textContent = surahNameFor(surahByPage[pages[groupStart]]);
-    svg.appendChild(label);
+    const groupSpanPages = i - groupStart;
+    if(groupSpanPages >= 2){
+      const midAngle = (groupStart*segAngle + i*segAngle)/2;
+      const lp = polar(cx,cy, rOuter+32, midAngle);
+      const label = document.createElementNS('http://www.w3.org/2000/svg','text');
+      label.setAttribute('x', lp.x); label.setAttribute('y', lp.y);
+      label.setAttribute('text-anchor','middle');
+      label.setAttribute('class','ring-seg-num');
+      label.setAttribute('transform', `rotate(${ringNumberRotation(midAngle)} ${lp.x} ${lp.y})`);
+      label.style.pointerEvents = 'none';
+      label.textContent = surahNameFor(surahByPage[pages[groupStart]]);
+      svg.appendChild(label);
+    }
     groupStart = i;
   }
 }
@@ -5578,6 +5601,92 @@ function ensureJuzSummaryPage(personId, juz, pageCountForBaseline){
   return state.juzSummaryPage[personId][k];
 }
 
+// ── Surah-basis contribution to a Juz (pools whole-Surah direct records
+// upward — added after live testing showed the Quran/Juz-wheel reading only
+// Page-basis data left them looking empty even when real Ayah/Surah progress
+// existed; Smahk confirmed both should pool upward). Deliberately live-looked-up
+// at render time, NOT a stored/nudged counter like Ayah-basis and Page-basis
+// above — whole-Surah records are rare (a handful per student, not one per
+// ayah), so checking the 1-4 surahs that overlap THIS one Juz on render is
+// cheap and doesn't carry the live-scan risk the incremental counters exist
+// to avoid. A Surah can span multiple Juz (e.g. Al-Baqarah spans Juz 1-3);
+// its one blanket record is weighted by what fraction of the surah's ayahs
+// fall inside this specific Juz, so it contributes fairly to each.
+// Note: this is deliberately additive, not deduplicated, against Ayah-basis —
+// a student who tracks both an individual ayah AND the whole surah containing
+// it will see both reflected here. Independence principle says these stay
+// separate records; pooling them for a big-picture view doesn't merge the
+// records themselves, only how this one read-only wheel summarises them.
+function juzSurahBasisContribution(personId, juzNum){
+  let statusSum = 0, applicableCount = 0;
+  const ranges = getJuzSurahRanges(juzNum);
+  ranges.forEach(r=>{
+    const rec = state.progress[personId] && state.progress[personId][`${r.surah}:surah`];
+    if(!rec) return;
+    const totalAyahs = getAyahCountForSurah(r.surah) || (r.endAyah - r.startAyah + 1);
+    const ayahsInThisJuz = r.endAyah - r.startAyah + 1;
+    const fraction = totalAyahs ? (ayahsInThisJuz / totalAyahs) : 0;
+    state.ways.forEach(w=>{
+      const status = (rec[w.id]) ? rec[w.id].status : 0;
+      if(status===4) return; // Not Applicable — excluded, same rule as everywhere else
+      statusSum += status * fraction;
+      applicableCount += fraction;
+    });
+  });
+  return { statusSum, applicableCount };
+}
+
+// ── Range-basis contribution to a Juz (Phase 6, 5-Wheel Overhaul) ──
+// Only Range units the student explicitly marked "a section within the
+// Surah" pool upward — a Range marked "one combined ayah" stays isolated on
+// purpose (it's a stand-in for a single ayah, not a structural piece of the
+// Surah, so it never contributes to the Surah/Juz/Quran-wheel picture).
+// Same live-lookup approach as juzSurahBasisContribution and for the same
+// reason: Range units are created rarely enough (a handful per student) that
+// scanning state.units for 'range' type entries at render time is cheap —
+// this is not the frequent-write path the incremental counters exist for.
+function juzRangeBasisContribution(personId, juzNum){
+  let statusSum = 0, applicableCount = 0;
+  const juzSurahRanges = getJuzSurahRanges(juzNum);
+  Object.keys(state.units).forEach(key=>{
+    const unit = state.units[key];
+    if(!unit || unit.type !== 'range' || unit.rangeIntent !== 'section') return;
+    const parsed = parseUnitKey(key);
+    if(!parsed || parsed.type !== 'range') return;
+    const juzRange = juzSurahRanges.find(r=>r.surah === parsed.surah);
+    if(!juzRange) return; // this range's Surah doesn't touch this Juz at all
+    const overlapStart = Math.max(parsed.start, juzRange.startAyah);
+    const overlapEnd = Math.min(parsed.end, juzRange.endAyah);
+    if(overlapEnd < overlapStart) return; // no overlap with this Juz
+    const overlapAyahs = overlapEnd - overlapStart + 1;
+    const rangeTotalAyahs = parsed.end - parsed.start + 1;
+    const fraction = rangeTotalAyahs ? (overlapAyahs / rangeTotalAyahs) : 0;
+    const rec = state.progress[personId] && state.progress[personId][key];
+    if(!rec) return;
+    state.ways.forEach(w=>{
+      const status = (rec[w.id]) ? rec[w.id].status : 0;
+      if(status===4) return;
+      statusSum += status * fraction;
+      applicableCount += fraction;
+    });
+  });
+  return { statusSum, applicableCount };
+}
+
+// Combines all four sources (Ayah-basis + Page-basis + Surah-basis +
+// Range("section")-basis) into one pooled percentage for a Juz.
+function combinedJuzPct(personId, juzNum){
+  const sources = [
+    state.juzSummaryAyah[personId] && state.juzSummaryAyah[personId][String(juzNum)],
+    state.juzSummaryPage[personId] && state.juzSummaryPage[personId][String(juzNum)],
+    juzSurahBasisContribution(personId, juzNum),
+    juzRangeBasisContribution(personId, juzNum)
+  ];
+  let statusSum = 0, applicableCount = 0;
+  sources.forEach(s=>{ if(!s) return; statusSum += s.statusSum; applicableCount += s.applicableCount; });
+  return applicableCount>0 ? Math.round((statusSum/(applicableCount*3))*100) : 0;
+}
+
 // Applies one way's old→new status change to an already-initialised summary
 // counter. Never re-derives from scratch — pure O(1) delta.
 function nudgeSummaryCounter(summary, oldStatus, newStatus){
@@ -6516,6 +6625,7 @@ document.getElementById('unitTypeSelect').addEventListener('change', e=>{
   document.getElementById('unitSurahField').style.display = (type==='range'||type==='surah'||type==='ruku') ? 'flex' : 'none';
   document.getElementById('unitRangeStartField').style.display = type==='range' ? 'flex' : 'none';
   document.getElementById('unitRangeEndField').style.display = type==='range' ? 'flex' : 'none';
+  document.getElementById('unitRangeIntentField').style.display = type==='range' ? 'flex' : 'none';
   document.getElementById('unitPageField').style.display = type==='page' ? 'flex' : 'none';
   document.getElementById('unitRukuNumField').style.display = type==='ruku' ? 'flex' : 'none';
   document.getElementById('unitJuzField').style.display = type==='juz' ? 'flex' : 'none';
@@ -6568,6 +6678,16 @@ document.getElementById('unitApplyBtn').onclick = ()=>{
     key = buildUnitKey('juz', {juz});
   }
   setStudyUnit(type, key);
+  if(type==='range'){
+    // Phase 6 (5-Wheel Overhaul): decides whether this Range's progress pools
+    // upward into its Surah's structural summary (Juz/Quran-wheel) as a
+    // "section" — like a mini whole-Surah record — or stays isolated as a
+    // standalone "combined ayah" that only ever appears on its own. Re-set on
+    // every apply (not just at creation) so changing your mind about an
+    // existing range's intent is a one-click fix, not a re-creation.
+    const intent = document.querySelector('input[name="unitRangeIntent"]:checked').value;
+    if(state.units[key]) state.units[key].rangeIntent = intent;
+  }
   status.textContent = 'Now studying: ' + unitLabel(key);
   status.style.color = '#8fd19e';
   // Phase 2 fix: the panel used to stay open after a successful apply — close
