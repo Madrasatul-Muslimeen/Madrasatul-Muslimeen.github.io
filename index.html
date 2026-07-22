@@ -435,7 +435,7 @@
   .hifz-status{font-size:12px;color:#8fa0c2;margin-bottom:8px;min-height:14px;}
   .hifz-page{background:#fbf6e9;color:#1b1b16;border-radius:10px;padding:18px 16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,.25);}
   .hifz-page-num{font-size:11px;color:#8a7c55;text-align:center;margin-bottom:10px;letter-spacing:.05em;}
-  .hifz-line{display:flex;flex-wrap:nowrap;direction:rtl;gap:.28em;overflow-x:auto;padding:.15em 0;font-size:clamp(17px,3.6vw,26px);line-height:2.05;}
+  .hifz-line{display:flex;flex-wrap:nowrap;direction:rtl;gap:.12em;overflow-x:auto;padding:.15em 0;font-size:clamp(17px,3.6vw,26px);line-height:2.05;}
   .hifz-line.centered{justify-content:center;}
   .hifz-line:not(.centered){justify-content:flex-start;}
   .hifz-word{white-space:nowrap;}
@@ -5510,6 +5510,12 @@ async function alquranFetch(path){
 const DEFAULT_TRANSLATION_NAME = 'Saheeh International';
 const BANGLA_TRANSLATION_ID = 161; // Muhiuddin Khan — most widely used Bangla Quran translation
 let CHAPTERS = [];
+// Static Arabic surah names (1-114), independent of CHAPTERS/API shape —
+// used by Hifz mode's surah header so it never depends on which chapter
+// data source happened to load (quran.com's name_arabic field is NOT
+// present when the AlQuran Cloud fallback populated CHAPTERS instead,
+// which is what actually caused the "سورة 3" fallback bug live).
+const SURAH_NAMES_AR = ['الفاتحة','البقرة','آل عمران','النساء','المائدة','الأنعام','الأعراف','الأنفال','التوبة','يونس','هود','يوسف','الرعد','إبراهيم','الحجر','النحل','الإسراء','الكهف','مريم','طه','الأنبياء','الحج','المؤمنون','النور','الفرقان','الشعراء','النمل','القصص','العنكبوت','الروم','لقمان','السجدة','الأحزاب','سبأ','فاطر','يس','الصافات','ص','الزمر','غافر','فصلت','الشورى','الزخرف','الدخان','الجاثية','الأحقاف','محمد','الفتح','الحجرات','ق','الذاريات','الطور','النجم','القمر','الرحمن','الواقعة','الحديد','المجادلة','الحشر','الممتحنة','الصف','الجمعة','المنافقون','التغابن','الطلاق','التحريم','الملك','القلم','الحاقة','المعارج','نوح','الجن','المزمل','المدثر','القيامة','الإنسان','المرسلات','النبأ','النازعات','عبس','التكوير','الإنفطار','المطففين','الإنشقاق','البروج','الطارق','الأعلى','الغاشية','الفجر','البلد','الشمس','الليل','الضحى','الشرح','التين','العلق','القدر','البينة','الزلزلة','العاديات','القارعة','التكاثر','العصر','الهمزة','الفيل','قريش','الماعون','الكوثر','الكافرون','النصر','المسد','الإخلاص','الفلق','الناس'];
 let JUZS = [];
 let chaptersLoadPromise = null;
 let juzsLoadPromise = null;
@@ -6466,8 +6472,7 @@ function renderHifzPage(pageNum, highlight, container){
     lineEl.className = 'hifz-line' + (line.centered ? ' centered' : '');
     if(line.type === 'surah_name'){
       lineEl.classList.add('hifz-surah-header');
-      const ch = (typeof CHAPTERS !== 'undefined' ? CHAPTERS : []).find(c=>c.id===Number(line.surah));
-      lineEl.textContent = (ch && ch.name_arabic) || ('سورة ' + line.surah);
+      lineEl.textContent = SURAH_NAMES_AR[Number(line.surah) - 1] || ('سورة ' + line.surah);
     } else if(line.type === 'basmallah'){
       // The dedicated Basmala glyph font hasn't been sourced yet (separate
       // QUL resource from the per-page QCF V2 fonts) — plain Unicode
