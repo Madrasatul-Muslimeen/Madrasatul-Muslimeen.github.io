@@ -433,19 +433,18 @@
   .hifz-sub-btn:hover{background:rgba(255,255,255,.08);color:#e8ecf5;}
   .hifz-sub-btn.active{background:rgba(201,162,75,.22);color:var(--gold,#C9A24B);}
   .hifz-status{font-size:12px;color:#8fa0c2;margin-bottom:8px;min-height:14px;}
-  .hifz-page{background:#fbf6e9;color:#1b1b16;border-radius:10px;padding:18px 16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,.25);}
+  .hifz-page{background:#fbf6e9;color:#1b1b16;border-radius:10px;padding:18px 16px;width:100%;max-width:560px;margin:0 auto 14px;box-shadow:0 4px 16px rgba(0,0,0,.25);container-type:inline-size;}
   .hifz-page-num{font-size:11px;color:#8a7c55;text-align:center;margin-bottom:10px;letter-spacing:.05em;}
-  .hifz-line{display:flex;flex-wrap:nowrap;direction:rtl;gap:.12em;overflow-x:auto;padding:.15em 0;font-size:clamp(17px,3.6vw,26px);line-height:2.05;}
+  .hifz-line{display:flex;flex-wrap:nowrap;direction:rtl;gap:.12em;padding:.15em 0;font-size:34px;font-size:6.07cqw;line-height:2.05;}
   .hifz-line.centered{justify-content:center;}
-  .hifz-line:not(.centered){justify-content:flex-start;}
+  .hifz-line:not(.centered){width:fit-content;max-width:100%;margin-left:auto;margin-right:0;}
   .hifz-word{white-space:nowrap;}
   .hifz-word.dim{opacity:.32;}
-  .hifz-surah-header{justify-content:center;background:rgba(201,162,75,.14);border:1px solid rgba(201,162,75,.4);border-radius:6px;font-size:clamp(16px,3.2vw,22px);font-family:'Inter',sans-serif;color:#7a5f1e;padding:.3em .6em;}
-  .hifz-basmallah{justify-content:center;font-size:clamp(16px,3.2vw,22px);}
+  .hifz-surah-header{justify-content:center;background:rgba(201,162,75,.14);border:1px solid rgba(201,162,75,.4);border-radius:6px;font-size:16px;font-size:4.5cqw;font-family:'Inter',sans-serif;color:#7a5f1e;padding:.3em .6em;}
+  .hifz-basmallah{justify-content:center;font-size:16px;font-size:4.5cqw;}
   .hifz-line-error{font-size:13px;color:#a33;text-align:center;font-family:'Inter',sans-serif;}
   @media (max-width:680px){
     .hifz-page{padding:14px 10px;}
-    .hifz-line{font-size:clamp(15px,4.4vw,20px);}
   }
 
   /* ===== Display mode toggle: Regular / Hifz / Tajweed (persistent, top bar) ===== */
@@ -569,7 +568,7 @@
   </div>
   <div class="mm-mode-toggle" id="mmModeToggle">
     <button class="mm-mode-btn" id="mmModeRegular" type="button" title="Standard script and layout"><span class="mm-mode-icon">&#x1F4D6;</span><span class="mm-mode-label">Regular</span></button>
-    <button class="mm-mode-btn" id="mmModeHifz" type="button" title="Hifz mushaf mode &mdash; coming in the next phase"><span class="mm-mode-icon">&#x1F54B;</span><span class="mm-mode-label">Hifz</span></button>
+    <button class="mm-mode-btn" id="mmModeHifz" type="button" title="Hifz mushaf mode (Madani)"><span class="mm-mode-icon">&#x1F54B;</span><span class="mm-mode-label">Hifz</span></button>
     <button class="mm-mode-btn" id="tajweedToggle" type="button" title="Toggle Tajweed colour-coded script"><span class="mm-mode-icon">&#x1F3A8;</span><span class="mm-mode-label">Tajweed</span></button>
   </div>
 </div>
@@ -6346,7 +6345,6 @@ const MUSHAF_FONT_BASE = 'https://raw.githubusercontent.com/Madrasatul-Muslimeen
 let MUSHAF_DATA = null;
 let MUSHAF_DATA_PROMISE = null;
 let MUSHAF_AYAH_PAGE_INDEX = null;
-const MUSHAF_FONTS_LOADED = new Set();
 
 function ensureMushafData(){
   if(MUSHAF_DATA) return Promise.resolve(MUSHAF_DATA);
@@ -6386,12 +6384,50 @@ function buildMushafAyahPageIndex(){
   });
 }
 
+const MUSHAF_FONT_PROMISES = new Map();
 function ensureMushafPageFont(pageNum){
-  if(MUSHAF_FONTS_LOADED.has(pageNum)) return;
-  MUSHAF_FONTS_LOADED.add(pageNum);
-  const styleEl = document.createElement('style');
-  styleEl.textContent = `@font-face{font-family:'hifz-p${pageNum}';src:url('${MUSHAF_FONT_BASE}p${pageNum}.woff2') format('woff2');font-display:swap;}`;
-  document.head.appendChild(styleEl);
+  if(MUSHAF_FONT_PROMISES.has(pageNum)) return MUSHAF_FONT_PROMISES.get(pageNum);
+  const family = 'hifz-p' + pageNum;
+  const url = MUSHAF_FONT_BASE + 'p' + pageNum + '.woff2';
+  let promise;
+  if(typeof FontFace === 'function' && document.fonts){
+    const face = new FontFace(family, `url('${url}')`);
+    promise = face.load().then(loaded=>{
+      document.fonts.add(loaded);
+      return true;
+    }).catch(err=>{
+      console.warn('Hifz font load failed for page ' + pageNum + ':', err);
+      return false;
+    });
+  } else {
+    // Older-browser fallback without the FontFace API: inject @font-face
+    // directly. Can't confirm load completion here, so line-justification
+    // (which needs accurate glyph widths) is skipped for this browser.
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `@font-face{font-family:'${family}';src:url('${url}') format('woff2');font-display:swap;}`;
+    document.head.appendChild(styleEl);
+    promise = Promise.resolve(false);
+  }
+  MUSHAF_FONT_PROMISES.set(pageNum, promise);
+  return promise;
+}
+
+// Glyph fonts don't self-justify — each line is measured at its natural
+// (shrink-to-fit) width, then horizontally scaled to exactly span the page,
+// anchored to the right edge (where Arabic lines start reading from).
+// Clamped defensively in case a measurement comes back unreasonable.
+function justifyHifzPageLines(pageEl){
+  const targetWidth = pageEl.clientWidth;
+  if(!targetWidth) return;
+  pageEl.querySelectorAll('.hifz-line:not(.centered)').forEach(lineEl=>{
+    lineEl.style.transform = '';
+    const natural = lineEl.offsetWidth;
+    if(!natural) return;
+    let scale = targetWidth / natural;
+    scale = Math.max(0.8, Math.min(1.5, scale));
+    lineEl.style.transformOrigin = 'right center';
+    lineEl.style.transform = `scaleX(${scale.toFixed(4)})`;
+  });
 }
 
 // Resolves the current Study Unit (Ayah/Range/Surah/Page/Ruku') into which
@@ -6449,8 +6485,8 @@ function renderHifzWord(w, highlight){
   return span;
 }
 
-function renderHifzPage(pageNum, highlight, container){
-  ensureMushafPageFont(pageNum);
+async function renderHifzPage(pageNum, highlight, container){
+  const fontReady = await ensureMushafPageFont(pageNum);
   const pageData = MUSHAF_DATA[String(pageNum)];
   const pageEl = document.createElement('div');
   pageEl.className = 'hifz-page';
@@ -6487,6 +6523,9 @@ function renderHifzPage(pageNum, highlight, container){
     pageEl.appendChild(lineEl);
   });
   container.appendChild(pageEl);
+  // Only justify once the real glyph font is confirmed loaded — measuring
+  // against a fallback font's metrics would produce the wrong scale.
+  if(fontReady) justifyHifzPageLines(pageEl);
 }
 
 function updateHifzSubToggleUI(){
@@ -6523,7 +6562,9 @@ function renderHifzView(){
       return;
     }
     statusEl.textContent = '';
-    target.pages.forEach(p => renderHifzPage(p, target.highlight, pagesEl));
+    (async ()=>{
+      for(const p of target.pages) await renderHifzPage(p, target.highlight, pagesEl);
+    })();
   }).catch(err=>{
     statusEl.textContent = "Couldn't load Hifz mushaf data (" + (err.message || 'network error') + ').';
     console.warn('Hifz mushaf load failed:', err);
