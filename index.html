@@ -192,8 +192,8 @@
   .progress-pill .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#8fa0c2;}
 
   /* main layout */
-  .main-grid{display:grid;grid-template-columns:520px 1fr;gap:36px;align-items:start;}
-  @media (max-width:920px){.main-grid{grid-template-columns:1fr;}}
+  .main-grid{display:grid;grid-template-columns:520px minmax(0,1fr);gap:36px;align-items:start;}
+  @media (max-width:920px){.main-grid{grid-template-columns:minmax(0,1fr);}}
 
   .wheel-box{display:flex;flex-direction:column;align-items:center;}
   .wheel-scroll{width:100%;display:flex;justify-content:safe center;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
