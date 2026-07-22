@@ -60,7 +60,10 @@
     min-height:100vh;
   }
   .wrap{max-width:1180px;margin:0 auto;padding:66px 20px 80px;}
-  @media (max-width:680px){ .wrap{padding-top:14px;} }
+  @media (max-width:680px){
+    .wrap{padding-top:14px;}
+    .header-relocated{padding:14px 20px 0;margin-bottom:14px;}
+  }
 
   header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:22px;border-bottom:1px solid color-mix(in srgb, var(--gold) 25%, transparent);padding-bottom:18px;}
   .title-block .eyebrow{font-family:'Inter';letter-spacing:.18em;text-transform:uppercase;font-size:11px;color:var(--gold);margin-bottom:6px;}
@@ -577,6 +580,7 @@
       <div class="people-row" id="peopleRow"></div>
     </div>
   </div>
+  <span id="displayGroupAnchor" style="display:none;"></span>
   <div class="mm-tb-group mobile-only" id="mmTbDisplay">
     <button class="mm-tb-btn" id="mmTbDisplayBtn" type="button">&#x1F39B;&#xFE0F; Display <span class="mm-tb-arrow">&#x25BE;</span></button>
     <div class="mm-tb-panel">
@@ -610,6 +614,7 @@
 </div>
 
 <div class="wrap">
+  <span id="headerAnchor" style="display:none;"></span>
   <header>
     <div class="title-block">
       <div class="eyebrow editable" data-ekey="title-eyebrow" contenteditable="true">Pioneer · Quran Study System</div>
@@ -6609,15 +6614,37 @@ function syncDisplayControlsLayout(){
   const exploreAnchor = document.getElementById('exploreAnchor');
   const hifzSwitch = document.getElementById('hifzExtrasSwitchWrap');
   const hifzAnchor = document.getElementById('hifzSwitchAnchor');
+  const header = document.querySelector('#quran-body-mount > header, .wrap > header');
+  const headerAnchor = document.getElementById('headerAnchor');
+  const topbar = document.getElementById('mmTopbar');
+  const quranBodyMount = document.getElementById('quran-body-mount');
+  const displayGroup = document.getElementById('mmTbDisplay');
+  const displayAnchor = document.getElementById('displayGroupAnchor');
+  const chooseAyahGroup = document.getElementById('sbChooseAyah');
   if(!slot) return;
   if(isMobile){
     if(modeToggle)  slot.appendChild(modeToggle);
     if(exploreGroup) slot.appendChild(exploreGroup);
     if(hifzSwitch)   slot.appendChild(hifzSwitch);
+    // Banner moves above the sticky top bar (Smahk's request: no longer
+    // sandwiched between two button rows) — same reparenting technique,
+    // just a different destination.
+    if(header && topbar && quranBodyMount && topbar.parentElement === quranBodyMount){
+      header.classList.add('header-relocated');
+      quranBodyMount.insertBefore(header, topbar);
+    }
+    // Display's trigger button moves to sit beside Choose Ayah, since
+    // its panel contents no longer need to live in the top bar itself.
+    if(displayGroup && chooseAyahGroup) chooseAyahGroup.after(displayGroup);
   } else {
     if(modeToggle && modeAnchor)   modeAnchor.after(modeToggle);
     if(exploreGroup && exploreAnchor) exploreAnchor.after(exploreGroup);
     if(hifzSwitch && hifzAnchor)   hifzAnchor.after(hifzSwitch);
+    if(header && headerAnchor){
+      header.classList.remove('header-relocated');
+      headerAnchor.after(header);
+    }
+    if(displayGroup && displayAnchor) displayAnchor.after(displayGroup);
   }
 }
 syncDisplayControlsLayout();
