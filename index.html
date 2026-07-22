@@ -424,6 +424,30 @@
   .mm-tb-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:4550;}
   .mm-tb-backdrop.show{display:block;}
 
+  /* ===== Hifz Mushaf view (Phase 2, Madani QCF V2 glyph rendering) ===== */
+  .ayah-card.hifz-active{display:none;}
+  #hifzView{display:none;margin-bottom:14px;}
+  #hifzView.show{display:block;}
+  .hifz-sub-toggle{display:flex;gap:2px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:2px;width:fit-content;margin-bottom:10px;}
+  .hifz-sub-btn{padding:6px 12px;border:none;border-radius:6px;background:transparent;color:#8fa0c2;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+  .hifz-sub-btn:hover{background:rgba(255,255,255,.08);color:#e8ecf5;}
+  .hifz-sub-btn.active{background:rgba(201,162,75,.22);color:var(--gold,#C9A24B);}
+  .hifz-status{font-size:12px;color:#8fa0c2;margin-bottom:8px;min-height:14px;}
+  .hifz-page{background:#fbf6e9;color:#1b1b16;border-radius:10px;padding:18px 16px;margin-bottom:14px;box-shadow:0 4px 16px rgba(0,0,0,.25);}
+  .hifz-page-num{font-size:11px;color:#8a7c55;text-align:center;margin-bottom:10px;letter-spacing:.05em;}
+  .hifz-line{display:flex;flex-wrap:nowrap;direction:rtl;gap:.5em;overflow-x:auto;padding:.15em 0;font-size:clamp(17px,3.6vw,26px);line-height:2.05;}
+  .hifz-line.centered{justify-content:center;}
+  .hifz-line:not(.centered){justify-content:space-between;}
+  .hifz-word{white-space:nowrap;}
+  .hifz-word.dim{opacity:.32;}
+  .hifz-surah-header{justify-content:center;background:rgba(201,162,75,.14);border:1px solid rgba(201,162,75,.4);border-radius:6px;font-size:clamp(16px,3.2vw,22px);font-family:'Inter',sans-serif;color:#7a5f1e;padding:.3em .6em;}
+  .hifz-basmallah{justify-content:center;font-size:clamp(16px,3.2vw,22px);}
+  .hifz-line-error{font-size:13px;color:#a33;text-align:center;font-family:'Inter',sans-serif;}
+  @media (max-width:680px){
+    .hifz-page{padding:14px 10px;}
+    .hifz-line{font-size:clamp(15px,4.4vw,20px);}
+  }
+
   /* ===== Display mode toggle: Regular / Hifz / Tajweed (persistent, top bar) ===== */
   .mm-mode-toggle{display:flex;gap:2px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:2px;margin-left:auto;}
   .mm-mode-btn{display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:6px;border:none;background:transparent;color:#8fa0c2;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
@@ -759,6 +783,15 @@
       <div class="num" id="progressNum">30%</div>
       <div class="lbl editable" data-ekey="progress-lbl" contenteditable="true">complete</div>
     </div>
+  </div>
+
+  <div id="hifzView">
+    <div class="hifz-sub-toggle">
+      <button class="hifz-sub-btn" id="hifzPureBtn" type="button">Pure mushaf</button>
+      <button class="hifz-sub-btn" id="hifzExtrasBtn" type="button">+ Translation, Tajweed, Ayah no.</button>
+    </div>
+    <div class="hifz-status" id="hifzStatus"></div>
+    <div id="hifzPages"></div>
   </div>
 
   <div class="wbw-bar">
@@ -2898,6 +2931,8 @@ state.ways.forEach(w=>{ if(!w.resources) w.resources = []; if(w.gloss===undefine
 // migration safety
 if(!state.progress) state.progress = {};
 if(!state.rukuSummary) state.rukuSummary = {}; // Phase 2 (5-Wheel Overhaul) migration safety
+if(state.hifzMode === undefined) state.hifzMode = false; // Hifz Mushaf mode migration safety
+if(state.hifzExtras === undefined) state.hifzExtras = false; // Pure mushaf (false) vs +translation/tajweed/ayah-no (true)
 // Phase 2 renamed juzSummary -> juzSummaryAyah when Page-basis pooling was added
 // alongside it — migrate any pre-rename saved data forward rather than losing it.
 if(state.juzSummary && !state.juzSummaryAyah) state.juzSummaryAyah = state.juzSummary;
@@ -4464,6 +4499,7 @@ function renderUnitContent(){
   }
   applyStaticStyles(true);
   if(typeof renderUnitAyahNav === 'function') renderUnitAyahNav();
+  if(state.hifzMode && typeof renderHifzView === 'function') renderHifzView();
 }
 
 function saveEditContent(el, key){
@@ -6229,16 +6265,12 @@ function renderAyahArabicMode(){
     }
     return;
   }
-  const regBtn = document.getElementById('mmModeRegular');
+  if(typeof updateModeToggleActiveStates === 'function') updateModeToggleActiveStates();
   if(!state.tajweedMode){
     stdEl.style.display = '';
     tajEl.style.display = 'none';
-    if(btn) btn.classList.remove('active');
-    if(regBtn) regBtn.classList.add('active');
     return;
   }
-  if(btn) btn.classList.add('active');
-  if(regBtn) regBtn.classList.remove('active');
   const ayah = state.ayahs[state.currentAyahKey];
   const raw = ayah && ayah.tajweedRaw;
   if(raw){
@@ -6295,26 +6327,261 @@ async function fetchTajweedForCurrentAyah(){
   if(state.tajweedMode && state.currentAyahKey === key) refreshTajweedDisplays();
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Hifz Mushaf mode (Phase 2 — Madani/Uthmani, QCF V2 glyph rendering)
+// Data source: 604-page layout + word-glyph JSON, sourced from QUL
+// (qul.tarteel.ai), hosted in this repo at /mushaf/. Font: one QCF V2
+// glyph font per Mushaf page (604 files), also hosted at /mushaf/fonts/.
+// Fetched lazily (once per session) — never bundled in the app file,
+// per the non-negotiable fast-load rule.
+// ═══════════════════════════════════════════════════════════════
+const MUSHAF_JSON_URL = 'https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/mushaf-madani-v2.json';
+const MUSHAF_FONT_BASE = 'https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/fonts/';
+let MUSHAF_DATA = null;
+let MUSHAF_DATA_PROMISE = null;
+let MUSHAF_AYAH_PAGE_INDEX = null;
+const MUSHAF_FONTS_LOADED = new Set();
+
+function ensureMushafData(){
+  if(MUSHAF_DATA) return Promise.resolve(MUSHAF_DATA);
+  if(MUSHAF_DATA_PROMISE) return MUSHAF_DATA_PROMISE;
+  MUSHAF_DATA_PROMISE = fetch(MUSHAF_JSON_URL).then(r=>{
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(data=>{
+    MUSHAF_DATA = data;
+    buildMushafAyahPageIndex();
+    return data;
+  }).catch(err=>{
+    MUSHAF_DATA_PROMISE = null; // allow retry on next attempt rather than sticking on a dead promise
+    throw err;
+  });
+  return MUSHAF_DATA_PROMISE;
+}
+
+// Reverse index: "surah:ayah" -> sorted array of Mushaf page numbers that
+// contain at least one word of that ayah (almost always one page; a small
+// number of ayahs split across a page boundary get both).
+function buildMushafAyahPageIndex(){
+  MUSHAF_AYAH_PAGE_INDEX = {};
+  Object.keys(MUSHAF_DATA).forEach(pageNum=>{
+    MUSHAF_DATA[pageNum].forEach(line=>{
+      if(line.type !== 'ayah' || !line.words) return;
+      line.words.forEach(w=>{
+        const loc = w.loc.split(':'); // "surah:ayah:word"
+        const key = loc[0] + ':' + loc[1];
+        if(!MUSHAF_AYAH_PAGE_INDEX[key]) MUSHAF_AYAH_PAGE_INDEX[key] = new Set();
+        MUSHAF_AYAH_PAGE_INDEX[key].add(Number(pageNum));
+      });
+    });
+  });
+  Object.keys(MUSHAF_AYAH_PAGE_INDEX).forEach(k=>{
+    MUSHAF_AYAH_PAGE_INDEX[k] = Array.from(MUSHAF_AYAH_PAGE_INDEX[k]).sort((a,b)=>a-b);
+  });
+}
+
+function ensureMushafPageFont(pageNum){
+  if(MUSHAF_FONTS_LOADED.has(pageNum)) return;
+  MUSHAF_FONTS_LOADED.add(pageNum);
+  const styleEl = document.createElement('style');
+  styleEl.textContent = `@font-face{font-family:'hifz-p${pageNum}';src:url('${MUSHAF_FONT_BASE}p${pageNum}.woff2') format('woff2');font-display:swap;}`;
+  document.head.appendChild(styleEl);
+}
+
+// Resolves the current Study Unit (Ayah/Range/Surah/Page/Ruku') into which
+// real Mushaf page(s) to render and which ayahs within them should be
+// highlighted (active) vs dimmed (page context only). Page-unit shows the
+// whole page active (it IS the unit). Juz and any future unit types aren't
+// mapped yet — flagged via `unsupported` rather than guessed at.
+function getHifzTargetForCurrentUnit(){
+  const type = state.currentUnitType;
+  if(type === 'page'){
+    const u = parseUnitKey(state.currentUnitKey);
+    return { pages: [u.page], highlight: null };
+  }
+  if(type === 'ayah'){
+    const key = state.currentAyahKey;
+    return { pages: (MUSHAF_AYAH_PAGE_INDEX[key] || []).slice(), highlight: new Set([key]) };
+  }
+  if(type === 'range'){
+    const u = parseUnitKey(state.currentUnitKey);
+    const highlight = new Set();
+    const pageSet = new Set();
+    for(let a = u.start; a <= u.end; a++){
+      const key = u.surah + ':' + a;
+      highlight.add(key);
+      (MUSHAF_AYAH_PAGE_INDEX[key] || []).forEach(p => pageSet.add(p));
+    }
+    return { pages: Array.from(pageSet).sort((a,b)=>a-b), highlight };
+  }
+  if(type === 'surah'){
+    const u = parseUnitKey(state.currentUnitKey);
+    const keys = typeof getAllAyahKeysForSurah === 'function' ? getAllAyahKeysForSurah(u.surah) : [];
+    const highlight = new Set(keys);
+    const pageSet = new Set();
+    keys.forEach(key => (MUSHAF_AYAH_PAGE_INDEX[key] || []).forEach(p => pageSet.add(p)));
+    return { pages: Array.from(pageSet).sort((a,b)=>a-b), highlight };
+  }
+  if(type === 'ruku'){
+    const u = parseUnitKey(state.currentUnitKey);
+    const keys = typeof getAllAyahKeysForRuku === 'function' ? getAllAyahKeysForRuku(u.surah, u.rukuIndex) : [];
+    const highlight = new Set(keys);
+    const pageSet = new Set();
+    keys.forEach(key => (MUSHAF_AYAH_PAGE_INDEX[key] || []).forEach(p => pageSet.add(p)));
+    return { pages: Array.from(pageSet).sort((a,b)=>a-b), highlight };
+  }
+  return { pages: [], highlight: null, unsupported: true };
+}
+
+function renderHifzWord(w, highlight){
+  const span = document.createElement('span');
+  span.className = 'hifz-word';
+  const loc = w.loc.split(':');
+  const ayahKey = loc[0] + ':' + loc[1];
+  if(highlight && !highlight.has(ayahKey)) span.classList.add('dim');
+  span.textContent = w.g;
+  return span;
+}
+
+function renderHifzPage(pageNum, highlight, container){
+  ensureMushafPageFont(pageNum);
+  const pageData = MUSHAF_DATA[String(pageNum)];
+  const pageEl = document.createElement('div');
+  pageEl.className = 'hifz-page';
+  pageEl.style.fontFamily = `'hifz-p${pageNum}'`;
+  const numEl = document.createElement('div');
+  numEl.className = 'hifz-page-num';
+  numEl.textContent = 'Page ' + pageNum;
+  pageEl.appendChild(numEl);
+  if(!pageData){
+    const err = document.createElement('div');
+    err.className = 'hifz-line-error';
+    err.textContent = "Couldn't load this page's data.";
+    pageEl.appendChild(err);
+    container.appendChild(pageEl);
+    return;
+  }
+  pageData.forEach(line=>{
+    const lineEl = document.createElement('div');
+    lineEl.className = 'hifz-line' + (line.centered ? ' centered' : '');
+    if(line.type === 'surah_name'){
+      lineEl.classList.add('hifz-surah-header');
+      const ch = (typeof CHAPTERS !== 'undefined' ? CHAPTERS : []).find(c=>c.id===Number(line.surah));
+      lineEl.textContent = (ch && ch.name_arabic) || ('سورة ' + line.surah);
+    } else if(line.type === 'basmallah'){
+      // The dedicated Basmala glyph font hasn't been sourced yet (separate
+      // QUL resource from the per-page QCF V2 fonts) — plain Unicode
+      // fallback for now, correct and readable, just not pixel-matched.
+      // Flagged as a known fast-follow, not silently guessed at.
+      lineEl.classList.add('hifz-basmallah');
+      lineEl.style.fontFamily = "'Amiri','Traditional Arabic',serif";
+      lineEl.textContent = 'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ';
+    } else {
+      (line.words || []).forEach(w => lineEl.appendChild(renderHifzWord(w, highlight)));
+    }
+    pageEl.appendChild(lineEl);
+  });
+  container.appendChild(pageEl);
+}
+
+function updateHifzSubToggleUI(){
+  const pureBtn = document.getElementById('hifzPureBtn');
+  const extrasBtn = document.getElementById('hifzExtrasBtn');
+  if(pureBtn) pureBtn.classList.toggle('active', !state.hifzExtras);
+  if(extrasBtn) extrasBtn.classList.toggle('active', !!state.hifzExtras);
+}
+
+function renderHifzView(){
+  const view = document.getElementById('hifzView');
+  const pagesEl = document.getElementById('hifzPages');
+  const statusEl = document.getElementById('hifzStatus');
+  const card = document.querySelector('.ayah-card');
+  if(!view || !pagesEl || !statusEl) return;
+  if(!state.hifzMode){
+    view.classList.remove('show');
+    if(card) card.classList.remove('hifz-active');
+    return;
+  }
+  view.classList.add('show');
+  if(card) card.classList.toggle('hifz-active', !state.hifzExtras);
+  updateHifzSubToggleUI();
+  statusEl.textContent = 'Loading Hifz mushaf page\u2026';
+  pagesEl.innerHTML = '';
+  ensureMushafData().then(()=>{
+    const target = getHifzTargetForCurrentUnit();
+    if(target.unsupported){
+      statusEl.textContent = "Hifz view isn't available for this unit type yet.";
+      return;
+    }
+    if(!target.pages.length){
+      statusEl.textContent = "Couldn't find a mushaf page for this selection.";
+      return;
+    }
+    statusEl.textContent = '';
+    target.pages.forEach(p => renderHifzPage(p, target.highlight, pagesEl));
+  }).catch(err=>{
+    statusEl.textContent = "Couldn't load Hifz mushaf data (" + (err.message || 'network error') + ').';
+    console.warn('Hifz mushaf load failed:', err);
+  });
+}
+
+// Single source of truth for which of the three top-bar mode buttons shows
+// as active — called from renderAyahArabicMode (Regular/Tajweed) and from
+// the Hifz handlers below, so the three buttons never disagree with state.
+function updateModeToggleActiveStates(){
+  const reg = document.getElementById('mmModeRegular');
+  const hifz = document.getElementById('mmModeHifz');
+  const taj = document.getElementById('tajweedToggle');
+  if(hifz) hifz.classList.toggle('active', !!state.hifzMode);
+  if(reg) reg.classList.toggle('active', !state.hifzMode && !state.tajweedMode);
+  if(taj) taj.classList.toggle('active', !state.hifzMode && !!state.tajweedMode);
+}
+
 document.getElementById('mmModeRegular').onclick = ()=>{
-  if(!state.tajweedMode) return;
-  state.tajweedMode = false;
-  refreshTajweedDisplays();
+  const wasHifz = state.hifzMode;
+  state.hifzMode = false;
+  if(wasHifz) renderHifzView();
+  updateModeToggleActiveStates();
+  if(state.tajweedMode){
+    state.tajweedMode = false;
+    refreshTajweedDisplays();
+  }
   scheduleSave();
 };
 
 document.getElementById('tajweedToggle').onclick = ()=>{
-  if(state.tajweedMode) return;
-  state.tajweedMode = true;
-  refreshTajweedDisplays();
+  const wasHifz = state.hifzMode;
+  state.hifzMode = false;
+  if(wasHifz) renderHifzView();
+  if(!state.tajweedMode){
+    state.tajweedMode = true;
+    refreshTajweedDisplays();
+  } else {
+    updateModeToggleActiveStates();
+  }
   scheduleSave();
 };
 
 document.getElementById('mmModeHifz').onclick = ()=>{
-  const statusEl = document.getElementById('pickerStatus');
-  if(statusEl){
-    statusEl.textContent = 'Hifz mushaf mode is coming in the next phase, En Shaa Allah \u2014 not built yet.';
-    statusEl.classList.remove('error');
-  }
+  if(state.hifzMode) return;
+  state.hifzMode = true;
+  updateModeToggleActiveStates();
+  renderHifzView();
+  scheduleSave();
+};
+
+document.getElementById('hifzPureBtn').onclick = ()=>{
+  if(!state.hifzExtras) return;
+  state.hifzExtras = false;
+  renderHifzView();
+  scheduleSave();
+};
+
+document.getElementById('hifzExtrasBtn').onclick = ()=>{
+  if(state.hifzExtras) return;
+  state.hifzExtras = true;
+  renderHifzView();
+  scheduleSave();
 };
 
 document.getElementById('tajweedLegendBtn').onclick = ()=>{
