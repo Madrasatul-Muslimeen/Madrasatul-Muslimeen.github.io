@@ -6451,7 +6451,10 @@ function ensureMushafPageFont(pageNum){
 // anchored to the right edge (where Arabic lines start reading from).
 // Clamped defensively in case a measurement comes back unreasonable.
 function justifyHifzPageLines(pageEl){
-  const targetWidth = pageEl.clientWidth;
+  const cs = getComputedStyle(pageEl);
+  const paddingLeft = parseFloat(cs.paddingLeft) || 0;
+  const paddingRight = parseFloat(cs.paddingRight) || 0;
+  const targetWidth = pageEl.clientWidth - paddingLeft - paddingRight;
   if(!targetWidth) return;
   pageEl.querySelectorAll('.hifz-line:not(.centered)').forEach(lineEl=>{
     lineEl.style.transform = '';
