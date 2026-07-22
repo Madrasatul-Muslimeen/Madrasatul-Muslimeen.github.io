@@ -439,6 +439,31 @@
     .mm-studybar .ayah-picker.show::before{content:"";display:block;width:40px;height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin:0 auto 12px;}
   }
 
+  /* ===== Study Settings popup (consolidates Study Unit / Combined / Text /
+     Reciter / Repeat into one click) ===== */
+  .sb-group:has(.study-settings-panel.show) .picker-toggle{background:rgba(201,162,75,0.18);border-color:var(--gold);}
+  .study-settings-panel{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:4600;width:380px;background:#1b2338;border:1px solid rgba(255,255,255,.14);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.45);padding:14px;}
+  .study-settings-panel.show{display:block;}
+  .ss-row-label{font-size:11px;color:#8fa0c2;text-transform:uppercase;letter-spacing:.04em;margin:12px 0 6px;}
+  .ss-row-label:first-child{margin-top:0;}
+  .ss-row-label.ss-disabled{color:#5f5e5a;}
+  .ss-inline-row{display:flex;gap:6px;flex-wrap:wrap;}
+  .ss-inline-row > select, .ss-inline-row > input[type="number"]{flex:1;min-width:100px;}
+  .ss-checks{display:flex;gap:14px;flex-wrap:wrap;}
+  .ss-checks.ss-stack{flex-direction:column;gap:6px;}
+  .ss-combined-row{opacity:1;}
+  .ss-combined-row.ss-disabled{opacity:.4;pointer-events:none;}
+  .ss-footer{display:flex;gap:8px;margin-top:14px;}
+  .ss-footer button{flex:1;height:40px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;}
+  .ss-btn-apply{background:transparent;color:var(--gold);border:1px solid var(--gold);}
+  .ss-btn-play{background:var(--gold);color:#1b2338;border:none;}
+  .ss-status{font-size:12px;margin-top:8px;min-height:14px;}
+  @media (max-width:680px){
+    .study-settings-panel.show{position:fixed;left:0;right:0;bottom:0;top:auto;border-radius:16px 16px 0 0;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.5);padding:16px 16px calc(16px + env(safe-area-inset-bottom));}
+    .study-settings-panel.show::before{content:"";display:block;width:40px;height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin:0 auto 12px;}
+    .ss-footer{flex-direction:column;}
+  }
+
 </style>
 </head>
 <body>
@@ -531,9 +556,11 @@
   </header>
 
 <div class="mm-studybar" id="mmStudyBar">
-  <div class="sb-group" id="sbUnit">
-    <button class="picker-toggle" id="unitPickerToggle">&#x1F3AF; Study Unit: <span id="unitPickerCurrentLabel">Ayah</span> <span id="unitPickerToggleArrow">&#x25BE;</span></button>
-    <div class="ayah-picker" id="unitPicker">
+  <div class="sb-group" id="sbStudySettings">
+    <button class="picker-toggle" id="studySettingsToggle">&#x1F3AF; Study Settings <span id="studySettingsArrow">&#x25BE;</span></button>
+    <div class="study-settings-panel" id="studySettingsPanel">
+
+      <div class="ss-row-label">Study unit</div>
       <div class="ayah-picker-row">
         <div class="ayah-picker-field">
           <label for="unitTypeSelect">Study as</label>
@@ -545,6 +572,14 @@
             <option value="ruku">Ruku'</option>
             <option value="juz">Juz</option>
           </select>
+        </div>
+        <div class="ayah-picker-field" id="ssAyahField" style="display:flex;">
+          <label for="ssAyahSurahSelect">Surah</label>
+          <select id="ssAyahSurahSelect"><option>Loading&hellip;</option></select>
+        </div>
+        <div class="ayah-picker-field" id="ssAyahNumFieldWrap" style="display:flex;">
+          <label for="ssAyahNumSelect">Ayah</label>
+          <select id="ssAyahNumSelect"><option>&mdash;</option></select>
         </div>
         <div class="ayah-picker-field" id="unitSurahField" style="display:none;">
           <label for="unitSurahSelect">Surah</label>
@@ -570,43 +605,30 @@
           <label for="unitJuzSelect">Juz</label>
           <select id="unitJuzSelect"></select>
         </div>
-        <button class="picker-load-btn" id="unitApplyBtn">Set Study Unit</button>
+        <button class="picker-load-btn" id="unitApplyBtn" style="display:none;">Set Study Unit</button>
       </div>
-      <div class="ayah-picker-status" id="unitPickerStatus"></div>
       <div class="ayah-picker-source editable" data-ekey="picker-hint-unit" id="unitPickerHint" contenteditable="true">A Range/Surah/Page's progress is tracked as its own independent record &mdash; it never overrides or is inferred from the individual ayahs inside it.</div>
-    </div>
-  </div>
 
-  <div class="unit-ayah-nav" id="unitAyahNav" style="display:none">
-    <button class="uan-btn" id="uanPrev" title="Previous ayah">◀</button>
-    <select id="uanSelect" title="Jump to an ayah in this unit"></select>
-    <span class="uan-count" id="uanCount"></span>
-    <button class="uan-btn" id="uanNext" title="Next ayah">▶</button>
-  </div>
+      <div class="ss-row-label" id="ssCombinedLabel">Combined view</div>
+      <label class="textlang-option ss-combined-row" id="ssCombinedRow" style="padding:0;">
+        <input type="checkbox" id="ssCombinedCheckbox" checked> Start on all ayahs combined
+      </label>
 
-  <div class="sb-group" id="sbTextLang">
-    <button class="picker-toggle" id="textLangToggle">&#x1F524; Text Language <span id="textLangToggleArrow">&#x25BE;</span></button>
-    <div class="ayah-picker" id="textLangPicker">
-      <label class="textlang-option"><input type="checkbox" id="textLangAr" checked> Arabic</label>
-      <label class="textlang-option"><input type="checkbox" id="textLangEn" checked> English (Translation)</label>
-      <label class="textlang-option"><input type="checkbox" id="textLangBn" checked> Bangla (Translation)</label>
-      <div class="ayah-picker-source" style="margin-top:6px;">Pick any combination — at least one stays on.</div>
-    </div>
-  </div>
+      <div class="ss-row-label">Text</div>
+      <div class="ss-checks">
+        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="textLangAr" checked> Arabic</label>
+        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="textLangEn" checked> English</label>
+        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="textLangBn" checked> Bangla</label>
+      </div>
 
-  <div class="sb-group" id="sbReciter">
-    <button class="picker-toggle" id="reciterMultiToggle">&#x1F50A; Reciter <span id="reciterMultiToggleArrow">&#x25BE;</span></button>
-    <div class="ayah-picker" id="reciterMultiPicker">
-      <label class="textlang-option"><input type="checkbox" id="reciterMultiAr"> Abdullah Basfar (Arabic)</label>
-      <label class="textlang-option"><input type="checkbox" id="reciterMultiEn"> Ibrahim Walk (English)</label>
-      <label class="textlang-option"><input type="checkbox" id="reciterMultiBn"> Sharif Bayzid (Bangla)</label>
-      <div class="ayah-picker-source" style="margin-top:6px;">Pick any combination — selected reciters play back-to-back in sequence. At least one stays on.</div>
-    </div>
-  </div>
+      <div class="ss-row-label">Reciters</div>
+      <div class="ss-checks">
+        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="reciterMultiAr"> Basfar (Arabic)</label>
+        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="reciterMultiEn"> Walk (English)</label>
+        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="reciterMultiBn"> Bayzid (Bangla)</label>
+      </div>
 
-  <div class="sb-group" id="sbRepeat">
-    <button class="picker-toggle" id="repeatCountToggle">&#x1F501; Repeat: <span id="repeatCountLabel">1&#215;</span> <span id="repeatCountToggleArrow">&#x25BE;</span></button>
-    <div class="ayah-picker" id="repeatCountPicker">
+      <div class="ss-row-label">Repeat</div>
       <div class="ayah-picker-row">
         <div class="ayah-picker-field">
           <label for="repeatCountSelect">Repeat count</label>
@@ -626,8 +648,23 @@
           </select>
         </div>
       </div>
-      <div class="ayah-picker-source" id="repeatModeHint" style="margin-top:6px;">Every selected reciter plays once, in order, per round — that whole round is what repeats.</div>
+      <span id="repeatCountLabel" style="display:none;"></span>
+      <div class="ayah-picker-source" id="repeatModeHint">Every selected reciter plays once, in order, per round &mdash; that whole round is what repeats.</div>
+
+      <div class="ss-footer">
+        <button class="ss-btn-apply" id="ssApplyBtn" type="button">Apply</button>
+        <button class="ss-btn-play" id="ssApplyPlayBtn" type="button">Apply and play</button>
+      </div>
+      <div class="ss-status" id="ssStatus"></div>
+      <div class="ayah-picker-status" id="unitPickerStatus"></div>
     </div>
+  </div>
+
+  <div class="unit-ayah-nav" id="unitAyahNav" style="display:none">
+    <button class="uan-btn" id="uanPrev" title="Previous ayah">◀</button>
+    <select id="uanSelect" title="Jump to an ayah in this unit"></select>
+    <span class="uan-count" id="uanCount"></span>
+    <button class="uan-btn" id="uanNext" title="Next ayah">▶</button>
   </div>
 
   <div class="sb-group" id="sbExplore">
@@ -5874,6 +5911,7 @@ async function loadChapters(){
     // never been told to try again. Safe to call unconditionally — it
     // already no-ops if already populated.
     if(typeof populateUnitSurahSelect === 'function') populateUnitSurahSelect();
+    if(typeof populateStudySettingsAyahSurahSelect === 'function') populateStudySettingsAyahSurahSelect();
   }catch(e){
     console.error('loadChapters failed:', e);
     sel.innerHTML = `<option>Couldn't reach quran.com (${(e.message||'network error')}) — click 📖 Choose Ayah again to retry</option>`;
@@ -6213,12 +6251,6 @@ function applyTextLangVisibility(){
   card.classList.toggle('hide-bn', !state.textLangs.bn);
 }
 
-document.getElementById('textLangToggle').onclick = ()=>{
-  const panel = document.getElementById('textLangPicker');
-  const isShowing = panel.classList.toggle('show');
-  document.getElementById('textLangToggleArrow').textContent = isShowing ? '▴' : '▾';
-};
-
 (function wireTextLangCheckboxes(){
   const map = { textLangAr: 'ar', textLangEn: 'en', textLangBn: 'bn' };
   Object.keys(map).forEach(id=>{
@@ -6246,12 +6278,6 @@ document.getElementById('textLangToggle').onclick = ()=>{
 })();
 
 /* ---------- Reciter multi-select (Phase 4) ---------- */
-document.getElementById('reciterMultiToggle').onclick = ()=>{
-  const panel = document.getElementById('reciterMultiPicker');
-  const isShowing = panel.classList.toggle('show');
-  document.getElementById('reciterMultiToggleArrow').textContent = isShowing ? '▴' : '▾';
-};
-
 // Keeps the dropdown's checkboxes showing the truth after a tab click (or
 // any other code) changes state.selectedReciters out from under it.
 function syncReciterMultiCheckboxes(){
@@ -6296,12 +6322,6 @@ function syncReciterMultiCheckboxes(){
 })();
 
 /* ---------- Repeat count (Phase 5) ---------- */
-document.getElementById('repeatCountToggle').onclick = ()=>{
-  const panel = document.getElementById('repeatCountPicker');
-  const isShowing = panel.classList.toggle('show');
-  document.getElementById('repeatCountToggleArrow').textContent = isShowing ? '▴' : '▾';
-};
-
 (function wireRepeatCountSelect(){
   const sel = document.getElementById('repeatCountSelect');
   const label = document.getElementById('repeatCountLabel');
@@ -6341,16 +6361,14 @@ document.getElementById('repeatCountToggle').onclick = ()=>{
   });
 })();
 
-// Now that Study Unit / Text Language / Reciter / Repeat / Choose Ayah all
-// live in one horizontal bar, opening one should close any other that's
-// still open — each button's own onclick (defined elsewhere, unchanged)
-// still owns toggling its own panel; this only ever closes the OTHER four.
+// Study Settings (Study Unit / Combined / Text / Reciter / Repeat, all in
+// one popup) and Choose Ayah live side by side in the study bar — opening
+// one should close the other. Each button's own onclick (defined elsewhere,
+// unchanged) still owns toggling its own panel; this only ever closes the
+// other one.
 (function unifyStudyBarDropdowns(){
   const pairs = [
-    ['unitPickerToggle', 'unitPicker', 'unitPickerToggleArrow'],
-    ['textLangToggle', 'textLangPicker', 'textLangToggleArrow'],
-    ['reciterMultiToggle', 'reciterMultiPicker', 'reciterMultiToggleArrow'],
-    ['repeatCountToggle', 'repeatCountPicker', 'repeatCountToggleArrow'],
+    ['studySettingsToggle', 'studySettingsPanel', 'studySettingsArrow'],
     ['pickerToggle', 'ayahPicker', 'pickerToggleArrow']
   ];
   pairs.forEach(([btnId, panelId])=>{
@@ -6385,11 +6403,11 @@ document.getElementById('repeatCountToggle').onclick = ()=>{
 // it, only reachable by scrolling. Rather than guess at the exact cascade
 // cause, this reinforces the same fixed-to-viewport positioning directly via
 // inline styles (highest specificity, unambiguous) any time one of these
-// five panels' open/closed state changes, on narrow screens only. Desktop is
+// panels' open/closed state changes, on narrow screens only. Desktop is
 // untouched — inline overrides are cleared there, leaving the CSS floating
 // dropdown exactly as before.
 (function reinforceMobileBottomSheets(){
-  const panelIds = ['unitPicker', 'textLangPicker', 'reciterMultiPicker', 'repeatCountPicker', 'ayahPicker'];
+  const panelIds = ['studySettingsPanel', 'ayahPicker'];
   const mq = window.matchMedia('(max-width:680px)');
   function apply(panel){
     if(mq.matches && panel.classList.contains('show')){
@@ -6429,7 +6447,7 @@ async function applyAyahSelection(surahNum, ayahNum, translationId){
   try{
     const ayahData = await fetchAyahFromQuranCom(surahNum, ayahNum, translationId);
     state.currentAyahKey = ayahData.key;
-    if(state.currentUnitType==='ayah'){ state.currentUnitKey = ayahData.key; document.getElementById('unitPickerCurrentLabel').textContent = unitLabel(ayahData.key); }
+    if(state.currentUnitType==='ayah'){ state.currentUnitKey = ayahData.key; const lbl = document.getElementById('unitPickerCurrentLabel'); if(lbl) lbl.textContent = unitLabel(ayahData.key); }
     state.ayahs[ayahData.key] = { ref: ayahData.ref, arabic: ayahData.arabic, tajweedRaw: ayahData.tajweedRaw, meta: ayahData.meta, metaBangla: ayahData.metaBangla };
     if(!state.textStyles) state.textStyles = {};
     ['ayah-ref','ayah-arabic','ayah-meta'].forEach(k=>{ if(!state.textStyles[k]) state.textStyles[k] = {}; });
@@ -6629,15 +6647,88 @@ document.getElementById('uanNext').onclick = ()=>{
 };
 
 /* ---------- Study Unit picker (Phase 1a: Ayah / Range / Surah / Page) ---------- */
-document.getElementById('unitPickerToggle').onclick = ()=>{
-  const panel = document.getElementById('unitPicker');
+/* ---------- Study Settings popup (consolidated Study Unit / Combined /
+   Text / Reciter / Repeat — one click, one popup) ---------- */
+document.getElementById('studySettingsToggle').onclick = ()=>{
+  const panel = document.getElementById('studySettingsPanel');
   const isShowing = panel.classList.toggle('show');
-  document.getElementById('unitPickerToggleArrow').textContent = isShowing ? '▴' : '▾';
+  document.getElementById('studySettingsArrow').textContent = isShowing ? '▴' : '▾';
+  if(!isShowing) return;
   // Same fix as pickerToggle above — gate on this panel's own DOM state,
   // not the shared CHAPTERS array (which other loaders can populate first).
-  if(isShowing && !document.getElementById('pickerSurah').dataset.populated) loadChapters();
-  if(isShowing) populateUnitSurahSelect();
+  if(!document.getElementById('pickerSurah').dataset.populated) loadChapters();
+  populateUnitSurahSelect();
+  populateStudySettingsAyahSurahSelect();
+  populateUnitJuzSelect();
+  if(typeof syncReciterMultiCheckboxes === 'function') syncReciterMultiCheckboxes();
+  const status = document.getElementById('ssStatus');
+  if(status) status.textContent = '';
 };
+
+function populateStudySettingsAyahSurahSelect(){
+  const sel = document.getElementById('ssAyahSurahSelect');
+  if(!CHAPTERS.length || sel.dataset.populated) return;
+  sel.innerHTML = CHAPTERS.map(c=>`<option value="${c.id}">${c.id}. ${c.name_simple}</option>`).join('');
+  sel.dataset.populated = '1';
+  const currentSurah = (state.currentAyahKey || DEFAULT_AYAH_KEY).split(':')[0];
+  sel.value = currentSurah;
+  populateStudySettingsAyahNumSelect();
+}
+
+function populateStudySettingsAyahNumSelect(){
+  const surahSel = document.getElementById('ssAyahSurahSelect');
+  const ayahSel = document.getElementById('ssAyahNumSelect');
+  if(!surahSel || !ayahSel) return;
+  const chapter = CHAPTERS.find(c=>String(c.id)===String(surahSel.value));
+  const count = chapter ? chapter.verses_count : 286;
+  const opts = [];
+  for(let i=1;i<=count;i++) opts.push(`<option value="${i}">${i}</option>`);
+  ayahSel.innerHTML = opts.join('');
+  const parts = (state.currentAyahKey || DEFAULT_AYAH_KEY).split(':');
+  if(String(surahSel.value) === parts[0]) ayahSel.value = parts[1];
+}
+
+document.getElementById('ssAyahSurahSelect').addEventListener('change', populateStudySettingsAyahNumSelect);
+
+// Apply / Apply-and-play — the single exit point for the whole popup. Text,
+// Reciters and Repeat already apply live the moment their own checkbox/select
+// changes (unchanged, existing behaviour) — the only thing that genuinely
+// needs an explicit "commit" step is the Study Unit itself, so that's what
+// these two buttons drive. Ayah selection is handled directly here (via
+// applyAyahSelection, kept in sync with the separate Choose Ayah panel);
+// every other unit type reuses the existing, unchanged unitApplyBtn logic.
+function runStudySettingsApply(thenPlay){
+  const type = document.getElementById('unitTypeSelect').value;
+  const status = document.getElementById('ssStatus');
+  if(type === 'ayah'){
+    const surah = document.getElementById('ssAyahSurahSelect').value;
+    const ayah = document.getElementById('ssAyahNumSelect').value;
+    if(!surah || !ayah){
+      if(status){ status.textContent = 'Choose a Surah and Ayah first.'; status.style.color = '#e0a458'; }
+      return;
+    }
+    applyAyahSelection(surah, ayah, (typeof selectedTranslationId !== 'undefined' && selectedTranslationId) || 20);
+    // Keep the separate "Choose Ayah" panel showing the same ayah.
+    const pSurah = document.getElementById('pickerSurah');
+    const pAyah = document.getElementById('pickerAyahNum');
+    if(pSurah && pSurah.dataset.populated){
+      pSurah.value = surah;
+      if(typeof populateAyahNumbers === 'function') populateAyahNumbers();
+    }
+    if(pAyah) pAyah.value = ayah;
+    if(status){ status.textContent = 'Now studying: Surah ' + surah + ', Ayah ' + ayah + '.'; status.style.color = '#8fd19e'; }
+  } else {
+    document.getElementById('unitApplyBtn').click();
+  }
+  if(thenPlay){
+    const audio = document.getElementById('ayahAudio');
+    if(audio) audio.play().catch(()=>{});
+  }
+  document.getElementById('studySettingsPanel').classList.remove('show');
+  document.getElementById('studySettingsArrow').textContent = '▾';
+}
+document.getElementById('ssApplyBtn').onclick = ()=> runStudySettingsApply(false);
+document.getElementById('ssApplyPlayBtn').onclick = ()=> runStudySettingsApply(true);
 
 function populateUnitSurahSelect(){
   const sel = document.getElementById('unitSurahSelect');
@@ -6676,14 +6767,24 @@ async function refreshUnitRukuNumSelect(){
 
 document.getElementById('unitTypeSelect').addEventListener('change', e=>{
   const type = e.target.value;
+  document.getElementById('ssAyahField').style.display = type==='ayah' ? 'flex' : 'none';
+  document.getElementById('ssAyahNumFieldWrap').style.display = type==='ayah' ? 'flex' : 'none';
   document.getElementById('unitSurahField').style.display = (type==='range'||type==='surah'||type==='ruku') ? 'flex' : 'none';
   document.getElementById('unitRangeStartField').style.display = type==='range' ? 'flex' : 'none';
   document.getElementById('unitRangeEndField').style.display = type==='range' ? 'flex' : 'none';
   document.getElementById('unitPageField').style.display = type==='page' ? 'flex' : 'none';
   document.getElementById('unitRukuNumField').style.display = type==='ruku' ? 'flex' : 'none';
   document.getElementById('unitJuzField').style.display = type==='juz' ? 'flex' : 'none';
+  // Combined ("start on all ayahs") only means anything for a multi-ayah
+  // unit — grey it out for Single Ayah rather than leave a checkbox that
+  // does nothing.
+  const combinedRow = document.getElementById('ssCombinedRow');
+  const combinedLabel = document.getElementById('ssCombinedLabel');
+  if(combinedRow) combinedRow.classList.toggle('ss-disabled', type==='ayah');
+  if(combinedLabel) combinedLabel.classList.toggle('ss-disabled', type==='ayah');
   if(type==='ayah'){
-    document.getElementById('unitPickerStatus').textContent = 'Use the "Choose Ayah" panel below to pick which ayah.';
+    document.getElementById('unitPickerStatus').textContent = '';
+    if(CHAPTERS.length) populateStudySettingsAyahSurahSelect();
   } else {
     document.getElementById('unitPickerStatus').textContent = '';
     if(CHAPTERS.length && !document.getElementById('unitSurahSelect').dataset.populated) populateUnitSurahSelect();
@@ -6730,21 +6831,18 @@ document.getElementById('unitApplyBtn').onclick = ()=>{
     if(!juz){ status.textContent = 'Choose a Juz.'; status.style.color = '#e0a458'; return; }
     key = buildUnitKey('juz', {juz});
   }
-  setStudyUnit(type, key);
+  setStudyUnit(type, key, !document.getElementById('ssCombinedCheckbox').checked);
   status.textContent = 'Now studying: ' + unitLabel(key);
   status.style.color = '#8fd19e';
-  // Phase 2 fix: the panel used to stay open after a successful apply — close
-  // it now, same as any other completed step in the Study configuration flow.
-  const panel = document.getElementById('unitPicker');
-  panel.classList.remove('show');
-  document.getElementById('unitPickerToggleArrow').textContent = '▾';
+  // Closing the Study Settings popup itself is handled by whichever button
+  // (Apply / Apply and play) invoked this — see wireStudySettingsFooter().
 };
 
 // Switches the active study unit and refreshes everything that depends on it
 // (wheel, list, progress summary) — creates a blank placeholder record for
 // Range/Surah/Page units the first time they're used (manual content entry
 // for now; live auto-fetch is a following phase, per the agreed build order).
-function setStudyUnit(type, key){
+function setStudyUnit(type, key, startAtFirst){
   state.currentUnitType = type;
   state.currentUnitKey = key;
   if(type==='ayah'){
@@ -6761,25 +6859,36 @@ function setStudyUnit(type, key){
   // fetched Bangla at the unit level at all) refetches now.
   const needsRefetch = type!=='ayah' && !isNewUnit &&
     (!state.units[key].arabic || !(state.units[key].ayahKeys && state.units[key].ayahKeys.length) || !state.units[key].textBangla);
-  document.getElementById('unitPickerCurrentLabel').textContent = unitLabel(key);
+  const currentLabelEl = document.getElementById('unitPickerCurrentLabel');
+  if(currentLabelEl) currentLabelEl.textContent = unitLabel(key);
   // Fresh unit — navigation restarts at the combined view; the navigator and
-  // the single-ayah toolset visibility are managed centrally.
+  // the single-ayah toolset visibility are managed centrally. If the Study
+  // Settings popup's Combined checkbox was unchecked, jump to the first
+  // ayah instead — done here, once content/keys are actually available,
+  // rather than in the caller (which can't know when an async fetch for a
+  // brand-new unit finishes).
   if(typeof unitNavKey !== 'undefined') unitNavKey = 'all';
+  function maybeStartAtFirst(){
+    if(!startAtFirst || type==='ayah') return;
+    const keys = (typeof currentUnitAyahKeys === 'function') ? currentUnitAyahKeys() : [];
+    if(keys.length) unitNavGo(keys[0]);
+  }
   renderWheel(); renderList(); renderProgress(); renderUnitContent();
   if(typeof updateAyahToolsVisibility === 'function') updateAyahToolsVisibility();
   renderAudio(); // the audio source must follow the unit switch (whole-Surah file / Range sequence / ayah)
+  maybeStartAtFirst(); // covers units whose ayahKeys are already cached
   if(type === 'surah'){
     // Surah ayah lists come from chapter metadata — make sure the navigator
     // appears even if chapters weren't loaded yet when we rendered above.
-    ensureChaptersLoaded().then(()=>{ renderUnitAyahNav(); renderAudio(); }).catch(()=>{});
+    ensureChaptersLoaded().then(()=>{ renderUnitAyahNav(); renderAudio(); maybeStartAtFirst(); }).catch(()=>{});
   }
   if(type === 'ruku'){
     // Belt-and-braces: the Ruku' picker only lets you apply once boundaries
     // are loaded, but this covers any other path that might reach here first.
-    ensureRukusLoadedForSurah(parseUnitKey(key).surah).then(()=>{ renderUnitAyahNav(); renderAudio(); }).catch(()=>{});
+    ensureRukusLoadedForSurah(parseUnitKey(key).surah).then(()=>{ renderUnitAyahNav(); renderAudio(); maybeStartAtFirst(); }).catch(()=>{});
   }
   if(type === 'juz'){
-    ensureJuzsLoaded().then(()=>{ renderUnitAyahNav(); renderAudio(); }).catch(()=>{});
+    ensureJuzsLoaded().then(()=>{ renderUnitAyahNav(); renderAudio(); maybeStartAtFirst(); }).catch(()=>{});
   }
   if(type !== 'ayah'){
     const hint = document.getElementById('unitPickerStatus');
@@ -6807,6 +6916,10 @@ function setStudyUnit(type, key){
       renderUnitContent();
       scheduleSave();
       renderAudio(); // ayahKeys may only now exist — Range/Page sequences depend on them
+      const combinedBox = document.getElementById('ssCombinedCheckbox');
+      if(combinedBox && !combinedBox.checked && unitNavKey === 'all' && content.ayahKeys && content.ayahKeys.length){
+        unitNavGo(content.ayahKeys[0]);
+      }
       if(status){ status.textContent = 'Loaded ' + content.ayahCount + ' ayah' + (content.ayahCount===1?'':'s') + '.'; status.style.color = '#8fd19e'; }
     }).catch(err=>{
       console.error('fetchUnitContentFromQuranCom failed:', err);
