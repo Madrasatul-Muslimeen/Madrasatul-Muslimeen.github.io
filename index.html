@@ -424,6 +424,17 @@
   .mm-tb-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:4550;}
   .mm-tb-backdrop.show{display:block;}
 
+  /* ===== Display mode toggle: Regular / Hifz / Tajweed (persistent, top bar) ===== */
+  .mm-mode-toggle{display:flex;gap:2px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:2px;margin-left:auto;}
+  .mm-mode-btn{display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:6px;border:none;background:transparent;color:#8fa0c2;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+  .mm-mode-btn:hover{background:rgba(255,255,255,.08);color:#e8ecf5;}
+  .mm-mode-btn.active{background:rgba(201,162,75,.22);color:var(--gold,#C9A24B);}
+  @media (max-width:680px){
+    .mm-mode-toggle{width:100%;margin-left:0;justify-content:space-between;}
+    .mm-mode-btn{flex:1;justify-content:center;padding:8px 4px;}
+    .mm-mode-label{display:none;}
+  }
+
   /* ===== Phase 3: text-language multi-select ===== */
   .ayah-card.hide-ar #ayahArabic, .ayah-card.hide-ar #ayahArabicTajweed{display:none !important;}
   .ayah-card.hide-en #ayahMeta{display:none !important;}
@@ -521,8 +532,8 @@
       <div class="ayah-picker-source" style="margin:6px 0 8px;">Tajweed</div>
       <div class="mm-tb-row">
         <button class="picker-toggle mm-tb-item" id="tajweedLegendBtn" title="What do the Tajweed colours mean?" type="button">&#x2753; Tajweed Key</button>
-        <button class="picker-toggle mm-tb-item" id="tajweedToggle" title="Toggle between standard script and Tajweed colour-coded script" type="button">&#x1F3A8; Tajweed Colours</button>
       </div>
+      <div class="ayah-picker-source" style="margin:6px 0 8px;">Tajweed Colours toggle has moved to the top bar &#x1F3A8; icon.</div>
     </div>
   </div>
   <div class="mm-tb-group" id="mmTbStudents">
@@ -531,6 +542,11 @@
       <div class="mm-tb-panel-head"><span>Students</span><button class="mm-tb-close" data-close type="button">&#x2715;</button></div>
       <div class="people-row" id="peopleRow"></div>
     </div>
+  </div>
+  <div class="mm-mode-toggle" id="mmModeToggle">
+    <button class="mm-mode-btn" id="mmModeRegular" type="button" title="Standard script and layout"><span class="mm-mode-icon">&#x1F4D6;</span><span class="mm-mode-label">Regular</span></button>
+    <button class="mm-mode-btn" id="mmModeHifz" type="button" title="Hifz mushaf mode &mdash; coming in the next phase"><span class="mm-mode-icon">&#x1F54B;</span><span class="mm-mode-label">Hifz</span></button>
+    <button class="mm-mode-btn" id="tajweedToggle" type="button" title="Toggle Tajweed colour-coded script"><span class="mm-mode-icon">&#x1F3A8;</span><span class="mm-mode-label">Tajweed</span></button>
   </div>
 </div>
 <div class="mm-tb-backdrop" id="mmTbBackdrop"></div>
@@ -6213,13 +6229,16 @@ function renderAyahArabicMode(){
     }
     return;
   }
+  const regBtn = document.getElementById('mmModeRegular');
   if(!state.tajweedMode){
     stdEl.style.display = '';
     tajEl.style.display = 'none';
     if(btn) btn.classList.remove('active');
+    if(regBtn) regBtn.classList.add('active');
     return;
   }
   if(btn) btn.classList.add('active');
+  if(regBtn) regBtn.classList.remove('active');
   const ayah = state.ayahs[state.currentAyahKey];
   const raw = ayah && ayah.tajweedRaw;
   if(raw){
@@ -6276,10 +6295,26 @@ async function fetchTajweedForCurrentAyah(){
   if(state.tajweedMode && state.currentAyahKey === key) refreshTajweedDisplays();
 }
 
-document.getElementById('tajweedToggle').onclick = ()=>{
-  state.tajweedMode = !state.tajweedMode;
+document.getElementById('mmModeRegular').onclick = ()=>{
+  if(!state.tajweedMode) return;
+  state.tajweedMode = false;
   refreshTajweedDisplays();
   scheduleSave();
+};
+
+document.getElementById('tajweedToggle').onclick = ()=>{
+  if(state.tajweedMode) return;
+  state.tajweedMode = true;
+  refreshTajweedDisplays();
+  scheduleSave();
+};
+
+document.getElementById('mmModeHifz').onclick = ()=>{
+  const statusEl = document.getElementById('pickerStatus');
+  if(statusEl){
+    statusEl.textContent = 'Hifz mushaf mode is coming in the next phase, En Shaa Allah \u2014 not built yet.';
+    statusEl.classList.remove('error');
+  }
 };
 
 document.getElementById('tajweedLegendBtn').onclick = ()=>{
