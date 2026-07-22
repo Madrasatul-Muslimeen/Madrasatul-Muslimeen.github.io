@@ -196,6 +196,11 @@
   @media (max-width:920px){.main-grid{grid-template-columns:1fr;}}
 
   .wheel-box{display:flex;flex-direction:column;align-items:center;}
+  .wheel-scroll{width:100%;display:flex;justify-content:center;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .wheel-scroll::-webkit-scrollbar{display:none;}
+  .wheel-scroll svg{flex-shrink:0;}
+  .wheel-swipe-hint{display:none;align-items:center;justify-content:center;gap:6px;color:#8fa0c2;font-size:11px;margin:6px 0 2px;}
+  .wheel-swipe-hint.show{display:flex;}
   .mm-quran-scope svg{overflow:visible;}
   .segment{cursor:pointer;stroke:#0c1320;stroke-width:1.5;transition:opacity .15s;}
   .segment:hover{stroke:var(--parchment);stroke-width:2;}
@@ -765,7 +770,10 @@
 
   <div class="main-grid">
     <div class="wheel-box">
+      <div class="wheel-scroll" id="wheelScroll">
       <svg id="wheel" width="480" height="480" viewBox="0 0 500 500"><path d="M 250 30 A 220 220 0 0 1 317.98373876248843 40.76756641506623 L 283.9918693812442 145.3837832075331 A 110 110 0 0 0 250 140 Z" class="segment" fill="#2C3E63" opacity="1"><title>1. Reading (with Tajweed) — Mastered</title></path><text x="275.8116867316381" y="91.03142380180228" text-anchor="middle" class="seg-num" style="pointer-events: none;">1</text><path d="M 317.98373876248843 40.76756641506623 A 220 220 0 0 1 379.31275550434407 72.01626123751157 L 314.65637775217203 161.00813061875579 A 110 110 0 0 0 283.9918693812442 145.3837832075331 Z" class="segment" fill="#2C3E63" opacity="0.13"><title>2. Hifz / Memorising — Not Started</title></path><text x="324.90843245702524" y="106.9839235089193" text-anchor="middle" class="seg-num" style="pointer-events: none;">2</text><path d="M 379.31275550434407 72.01626123751157 A 220 220 0 0 1 427.98373876248843 120.6872444956559 L 338.9918693812442 185.34362224782797 A 110 110 0 0 0 314.65637775217203 161.00813061875579 Z" class="segment" fill="#2C3E63" opacity="0.13"><title>3. Arabic Writing — Not Started</title></path><text x="366.6726188957804" y="137.32738110421968" text-anchor="middle" class="seg-num" style="pointer-events: none;">3</text><path d="M 427.98373876248843 120.6872444956559 A 220 220 0 0 1 459.2324335849338 182.01626123751157 L 354.6162167924669 216.00813061875579 A 110 110 0 0 0 338.9918693812442 185.34362224782797 Z" class="segment" fill="#2C3E63" opacity="0.13"><title>4. Language Learning (Basic Grammar) — Not Started</title></path><text x="397.0160764910807" y="179.0915675429748" text-anchor="middle" class="seg-num" style="pointer-events: none;">4</text><path d="M 459.2324335849338 182.01626123751157 A 220 220 0 0 1 470 250 L 360 250 A 110 110 0 0 0 354.6162167924669 216.00813061875579 Z" class="segment" fill="#C9A24B" opacity="1"><title>5. Reading (with Meaning) — Mastered</title></path><text x="412.96857619819775" y="228.1883132683619" text-anchor="middle" class="seg-num" style="pointer-events: none;">5</text><path d="M 470 250 A 220 220 0 0 1 459.2324335849338 317.98373876248843 L 354.6162167924669 283.9918693812442 A 110 110 0 0 0 360 250 Z" class="segment" fill="#C9A24B" opacity="1"><title>6. Word by Word Meaning — Mastered</title></path><text x="412.96857619819775" y="279.8116867316381" text-anchor="middle" class="seg-num" style="pointer-events: none;">6</text><path d="M 459.2324335849338 317.98373876248843 A 220 220 0 0 1 427.98373876248843 379.31275550434407 L 338.9918693812442 314.65637775217203 A 110 110 0 0 0 354.6162167924669 283.9918693812442 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>7. Listening Attentively (Arabic only) — Not Started</title></path><text x="397.0160764910807" y="328.90843245702524" text-anchor="middle" class="seg-num" style="pointer-events: none;">7</text><path d="M 427.98373876248843 379.31275550434407 A 220 220 0 0 1 379.31275550434407 427.98373876248843 L 314.65637775217203 338.9918693812442 A 110 110 0 0 0 338.9918693812442 314.65637775217203 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>8. Listening Attentively (with meaning) — Not Started</title></path><text x="366.6726188957804" y="370.6726188957803" text-anchor="middle" class="seg-num" style="pointer-events: none;">8</text><path d="M 379.31275550434407 427.98373876248843 A 220 220 0 0 1 317.98373876248843 459.2324335849338 L 283.9918693812442 354.6162167924669 A 110 110 0 0 0 314.65637775217203 338.9918693812442 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>9. Story Learning — Not Started</title></path><text x="324.90843245702524" y="401.0160764910807" text-anchor="middle" class="seg-num" style="pointer-events: none;">9</text><path d="M 317.98373876248843 459.2324335849338 A 220 220 0 0 1 250 470 L 250 360 A 110 110 0 0 0 283.9918693812442 354.6162167924669 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>10. Knowing Prophets — Not Started</title></path><text x="275.8116867316381" y="416.96857619819775" text-anchor="middle" class="seg-num" style="pointer-events: none;">10</text><path d="M 250 470 A 220 220 0 0 1 182.01626123751157 459.2324335849338 L 216.00813061875579 354.6162167924669 A 110 110 0 0 0 250 360 Z" class="segment" fill="#C9A24B" opacity="1"><title>11. Ruqyah Listening — Mastered</title></path><text x="224.18831326836187" y="416.96857619819775" text-anchor="middle" class="seg-num" style="pointer-events: none;">11</text><path d="M 182.01626123751157 459.2324335849338 A 220 220 0 0 1 120.68724449565593 427.98373876248843 L 185.34362224782797 338.9918693812442 A 110 110 0 0 0 216.00813061875579 354.6162167924669 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>12. Calligraphy — Not Started</title></path><text x="175.09156754297481" y="401.0160764910807" text-anchor="middle" class="seg-num" style="pointer-events: none;">12</text><path d="M 120.68724449565593 427.98373876248843 A 220 220 0 0 1 72.01626123751157 379.3127555043441 L 161.00813061875579 314.65637775217203 A 110 110 0 0 0 185.34362224782797 338.9918693812442 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>13. Group / Class Discussion — Not Started</title></path><text x="133.32738110421968" y="370.6726188957804" text-anchor="middle" class="seg-num" style="pointer-events: none;">13</text><path d="M 72.01626123751157 379.3127555043441 A 220 220 0 0 1 40.76756641506623 317.98373876248843 L 145.3837832075331 283.9918693812442 A 110 110 0 0 0 161.00813061875579 314.65637775217203 Z" class="segment" fill="#3D6B6B" opacity="0.13"><title>14. Journaling — Not Started</title></path><text x="102.9839235089193" y="328.90843245702524" text-anchor="middle" class="seg-num" style="pointer-events: none;">14</text><path d="M 40.76756641506623 317.98373876248843 A 220 220 0 0 1 30 250.00000000000003 L 140 250 A 110 110 0 0 0 145.3837832075331 283.9918693812442 Z" class="segment" fill="#3D6B6B" opacity="1"><title>15. Dua Learning — Mastered</title></path><text x="87.03142380180228" y="279.81168673163813" text-anchor="middle" class="seg-num" style="pointer-events: none;">15</text><path d="M 30 250.00000000000003 A 220 220 0 0 1 40.76756641506623 182.01626123751151 L 145.3837832075331 216.00813061875576 A 110 110 0 0 0 140 250 Z" class="segment" fill="#3D6B6B" opacity="0.13"><title>16. Names &amp; Attributes of Allah — Not Started</title></path><text x="87.03142380180228" y="228.18831326836192" text-anchor="middle" class="seg-num" style="pointer-events: none;">16</text><path d="M 40.76756641506623 182.01626123751151 A 220 220 0 0 1 72.01626123751154 120.68724449565593 L 161.00813061875579 185.34362224782797 A 110 110 0 0 0 145.3837832075331 216.00813061875576 Z" class="segment" fill="#3D6B6B" opacity="0.13"><title>17. Reflecting / Critical Reasoning — Not Started</title></path><text x="102.98392350891925" y="179.09156754297487" text-anchor="middle" class="seg-num" style="pointer-events: none;">17</text><path d="M 72.01626123751154 120.68724449565593 A 220 220 0 0 1 120.68724449565588 72.01626123751157 L 185.34362224782794 161.00813061875579 A 110 110 0 0 0 161.00813061875579 185.34362224782797 Z" class="segment" fill="#3D6B6B" opacity="0.13"><title>18. Reflecting on the Miracles — Not Started</title></path><text x="133.32738110421963" y="137.32738110421968" text-anchor="middle" class="seg-num" style="pointer-events: none;">18</text><path d="M 120.68724449565588 72.01626123751157 A 220 220 0 0 1 182.01626123751154 40.76756641506623 L 216.00813061875579 145.3837832075331 A 110 110 0 0 0 185.34362224782794 161.00813061875579 Z" class="segment" fill="#7A2E2E" opacity="1"><title>19. Teaching Others — Mastered</title></path><text x="175.09156754297476" y="106.9839235089193" text-anchor="middle" class="seg-num" style="pointer-events: none;">19</text><path d="M 182.01626123751154 40.76756641506623 A 220 220 0 0 1 249.99999999999997 30 L 249.99999999999997 140 A 110 110 0 0 0 216.00813061875579 145.3837832075331 Z" class="segment" fill="#7A2E2E" opacity="0.13"><title>20. Living by it (Self-Assessment) — Not Started</title></path><text x="224.18831326836187" y="91.03142380180228" text-anchor="middle" class="seg-num" style="pointer-events: none;">20</text><circle cx="250" cy="250" r="106" fill="#13192a" stroke="#C9A24B" stroke-width="1.5"></circle><text x="250" y="244" class="center-text" font-size="22" direction="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</text><text x="250" y="272" text-anchor="middle" font-family="Inter" font-size="10" fill="#8fa0c2">AYAH 1:1</text></svg>
+      </div>
+      <div class="wheel-swipe-hint" id="wheelSwipeHint">&#x25C0; swipe to see the full wheel &#x25B6;</div>
       <div class="legend" id="wheelLegend">
         <div class="legend-item"><span class="swatch" style="background:var(--foundation)"></span>Foundation</div>
         <div class="legend-item"><span class="swatch" style="background:var(--engagement)"></span>Engagement</div>
@@ -1189,7 +1197,10 @@
       <button class="picker-toggle" id="exploreBackBtn" style="display:none;">&#x25C0; Back</button>
     </div>
     <div class="wheel-box">
+      <div class="wheel-scroll" id="exploreWheelScroll">
       <svg id="exploreWheel" width="480" height="480" viewBox="0 0 500 500"></svg>
+      </div>
+      <div class="wheel-swipe-hint" id="exploreWheelSwipeHint">&#x25C0; swipe to see the full wheel &#x25B6;</div>
     </div>
     <div class="ayah-picker-status" id="exploreStatus"></div>
   </div>
@@ -3756,6 +3767,30 @@ function arcPath(cx,cy,rOuter,rInner,a1,a2){
 // content (circle + two lines of text) is optional — pass centerArabic to
 // show it (matches today's Ayah-wheel exactly); omit it for scopes with no
 // single ayah to display there (Ruku'-wheel, short-Surah Surah-wheel).
+// The wheel SVG is always its true fixed size (never shrunk to fit a narrow
+// screen — Smahk's explicit call) — on a container narrower than that, it
+// overflows and becomes horizontally scrollable instead. This centers the
+// scroll position so the cut is even on both sides rather than starting
+// pinned to the left edge, and shows the swipe hint only when there's
+// actually something to swipe to (desktop/tablet: no-op, nothing overflows).
+function centerWheelScroll(svgId){
+  const svg = document.getElementById(svgId);
+  if(!svg) return;
+  const wrap = svg.closest('.wheel-scroll');
+  if(!wrap) return;
+  const hint = wrap.parentElement.querySelector('.wheel-swipe-hint');
+  const overflowing = wrap.scrollWidth > wrap.clientWidth + 1;
+  if(hint) hint.classList.toggle('show', overflowing);
+  if(overflowing) wrap.scrollLeft = (wrap.scrollWidth - wrap.clientWidth) / 2;
+}
+(function reWheelScrollOnResize(){
+  let t = null;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(t);
+    t = setTimeout(()=>{ centerWheelScroll('wheel'); centerWheelScroll('exploreWheel'); }, 150);
+  });
+})();
+
 function renderLabeledWheel(svgId, slices, opts){
   opts = opts || {};
   const svg = document.getElementById(svgId);
@@ -3817,6 +3852,7 @@ function renderLabeledWheel(svgId, slices, opts){
     refText.textContent = opts.centerRef || '';
     svg.appendChild(refText);
   }
+  centerWheelScroll(svgId);
 }
 
 // Progress-ring wheel — new style for zoomed-out scopes. Every item still
@@ -3909,6 +3945,7 @@ function renderProgressRingWheel(svgId, slices, opts){
     centerText.textContent = opts.centerLabel;
     svg.appendChild(centerText);
   }
+  centerWheelScroll(svgId);
 }
 
 function renderWheel(){
