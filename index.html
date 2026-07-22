@@ -59,7 +59,8 @@
     font-family:'Inter',sans-serif;
     min-height:100vh;
   }
-  .wrap{max-width:1180px;margin:0 auto;padding:66px 20px 80px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:20px 20px 80px;}
+  .header-relocated{max-width:1180px;margin:0 auto;padding:24px 20px 0;}
   @media (max-width:680px){
     .wrap{padding-top:14px;}
     .header-relocated{padding:14px 20px 0;margin-bottom:14px;}
@@ -6598,12 +6599,27 @@ function renderHifzView(){
   });
 }
 
+// Banner reorder: applies on ALL screen sizes now (Smahk confirmed he wants
+// the same "banner first, buttons grouped together" order on desktop too).
+// Separate from the section below, which stays mobile-only on purpose.
+function syncBannerOrder(){
+  const header = document.querySelector('#quran-body-mount > header, .wrap > header');
+  const topbar = document.getElementById('mmTopbar');
+  const quranBodyMount = document.getElementById('quran-body-mount');
+  if(header && topbar && quranBodyMount && topbar.parentElement === quranBodyMount){
+    header.classList.add('header-relocated');
+    quranBodyMount.insertBefore(header, topbar);
+  }
+}
+syncBannerOrder();
+
 // Mobile-only layout consolidation (Smahk's request): on narrow screens,
 // the mode toggle / Explore / Hifz extras-switch move into one "Display"
 // dropdown in the top bar instead of taking their own separate rows. This
 // physically moves the SAME DOM nodes (not clones) — every existing click
 // handler stays attached exactly as before; only their position changes.
-// Desktop is completely unaffected (these controls simply stay put there).
+// Desktop deliberately keeps these inline (there's room; no need to hide
+// them behind a dropdown click there).
 const mmMobileQuery = window.matchMedia('(max-width:680px)');
 function syncDisplayControlsLayout(){
   const isMobile = mmMobileQuery.matches;
@@ -6614,10 +6630,6 @@ function syncDisplayControlsLayout(){
   const exploreAnchor = document.getElementById('exploreAnchor');
   const hifzSwitch = document.getElementById('hifzExtrasSwitchWrap');
   const hifzAnchor = document.getElementById('hifzSwitchAnchor');
-  const header = document.querySelector('#quran-body-mount > header, .wrap > header');
-  const headerAnchor = document.getElementById('headerAnchor');
-  const topbar = document.getElementById('mmTopbar');
-  const quranBodyMount = document.getElementById('quran-body-mount');
   const displayGroup = document.getElementById('mmTbDisplay');
   const displayAnchor = document.getElementById('displayGroupAnchor');
   const chooseAyahGroup = document.getElementById('sbChooseAyah');
@@ -6626,13 +6638,6 @@ function syncDisplayControlsLayout(){
     if(modeToggle)  slot.appendChild(modeToggle);
     if(exploreGroup) slot.appendChild(exploreGroup);
     if(hifzSwitch)   slot.appendChild(hifzSwitch);
-    // Banner moves above the sticky top bar (Smahk's request: no longer
-    // sandwiched between two button rows) — same reparenting technique,
-    // just a different destination.
-    if(header && topbar && quranBodyMount && topbar.parentElement === quranBodyMount){
-      header.classList.add('header-relocated');
-      quranBodyMount.insertBefore(header, topbar);
-    }
     // Display's trigger button moves to sit beside Choose Ayah, since
     // its panel contents no longer need to live in the top bar itself.
     if(displayGroup && chooseAyahGroup) chooseAyahGroup.after(displayGroup);
@@ -6640,10 +6645,6 @@ function syncDisplayControlsLayout(){
     if(modeToggle && modeAnchor)   modeAnchor.after(modeToggle);
     if(exploreGroup && exploreAnchor) exploreAnchor.after(exploreGroup);
     if(hifzSwitch && hifzAnchor)   hifzAnchor.after(hifzSwitch);
-    if(header && headerAnchor){
-      header.classList.remove('header-relocated');
-      headerAnchor.after(header);
-    }
     if(displayGroup && displayAnchor) displayAnchor.after(displayGroup);
   }
 }
