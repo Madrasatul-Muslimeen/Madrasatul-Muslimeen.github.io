@@ -498,6 +498,8 @@
   .sb-group:has(.study-settings-panel.show) .picker-toggle{background:rgba(201,162,75,0.18);border-color:var(--gold);}
   .study-settings-panel{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:4600;width:380px;background:#1b2338;border:1px solid rgba(255,255,255,.14);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.45);padding:14px;}
   .study-settings-panel.show{display:block;}
+  .ss-close-btn{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.08);border:none;color:#c9d2e3;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .ss-close-btn:hover{background:rgba(255,255,255,.16);color:#fff;}
   .ss-row-label{font-size:11px;color:#8fa0c2;text-transform:uppercase;letter-spacing:.04em;margin:12px 0 6px;}
   .ss-row-label:first-child{margin-top:0;}
   .ss-row-label.ss-disabled{color:#5f5e5a;}
@@ -515,7 +517,7 @@
   @media (max-width:680px){
     .study-settings-panel.show{position:fixed;left:0;right:0;bottom:0;top:auto;border-radius:16px 16px 0 0;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.5);padding:16px 16px calc(16px + env(safe-area-inset-bottom));}
     .study-settings-panel.show::before{content:"";display:block;width:40px;height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin:0 auto 12px;}
-    .ss-footer{flex-direction:column;}
+    .ss-footer button{font-size:12px;padding:0 4px;}
   }
 
 </style>
@@ -628,6 +630,7 @@
   <div class="sb-group" id="sbStudySettings">
     <button class="picker-toggle" id="studySettingsToggle">&#x1F3AF; Study Settings <span id="studySettingsArrow">&#x25BE;</span></button>
     <div class="study-settings-panel" id="studySettingsPanel">
+      <button class="ss-close-btn" id="ssCloseBtn" type="button" aria-label="Close">&#x2715;</button>
 
       <div class="ss-row-label">Study unit</div>
       <div class="ayah-picker-row">
@@ -7135,6 +7138,11 @@ document.getElementById('studySettingsToggle').onclick = ()=>{
   if(typeof syncReciterMultiCheckboxes === 'function') syncReciterMultiCheckboxes();
   const status = document.getElementById('ssStatus');
   if(status) status.textContent = '';
+};
+
+document.getElementById('ssCloseBtn').onclick = ()=>{
+  document.getElementById('studySettingsPanel').classList.remove('show');
+  document.getElementById('studySettingsArrow').textContent = '▾';
 };
 
 function populateStudySettingsAyahSurahSelect(){
