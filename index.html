@@ -3923,7 +3923,7 @@ function renderWheel(){
       onClick: ()=> openWayModal(w.id)
     };
   });
-  const ayah = state.ayahs[state.currentAyahKey];
+  const ayah = state.ayahs[state.currentAyahKey] || {};
   renderLabeledWheel('wheel', slices, {
     centerArabic: ayah.arabic,
     centerRef: unitLabel(state.currentUnitKey).toUpperCase()
@@ -5056,7 +5056,7 @@ const STATUS_LABELS_SHORT = ['—','Learning','Practicing','Mastered','N/A'];
 function buildReport(withTajweed){
   const person = state.people.find(p=>p.id===state.activePersonId) || state.people[0];
   const prog   = ensureProgress(state.activePersonId, state.currentUnitKey);
-  const ayah   = state.ayahs[state.currentAyahKey];
+  const ayah   = state.ayahs[state.currentAyahKey] || {};
   const today  = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
 
   // textStyles is the most reliable source — state.ayahs is the fallback
@@ -6732,6 +6732,13 @@ function runStudySettingsApply(thenPlay){
       if(status){ status.textContent = 'Choose a Surah and Ayah first.'; status.style.color = '#e0a458'; }
       return;
     }
+    // Bug fix (23 Jul 2026): applyAyahSelection() alone does NOT switch
+    // state.currentUnitType/currentUnitKey — it's shared with the separate
+    // "Choose Ayah" quick-jump, which must never change what unit is being
+    // studied. Selecting "Single Ayah" here IS a real unit switch, so it
+    // must go through setStudyUnit() too, or the app silently kept
+    // whatever unit (e.g. a Surah) was active before.
+    setStudyUnit('ayah', surah + ':' + ayah, false);
     applyAyahSelection(surah, ayah, (typeof selectedTranslationId !== 'undefined' && selectedTranslationId) || 20);
     // Keep the separate "Choose Ayah" panel showing the same ayah.
     const pSurah = document.getElementById('pickerSurah');
