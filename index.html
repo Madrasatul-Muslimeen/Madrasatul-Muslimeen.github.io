@@ -60,6 +60,7 @@
     min-height:100vh;
   }
   .wrap{max-width:1180px;margin:0 auto;padding:66px 20px 80px;}
+  @media (max-width:680px){ .wrap{padding-top:14px;} }
 
   header{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:22px;border-bottom:1px solid color-mix(in srgb, var(--gold) 25%, transparent);padding-bottom:18px;}
   .title-block .eyebrow{font-family:'Inter';letter-spacing:.18em;text-transform:uppercase;font-size:11px;color:var(--gold);margin-bottom:6px;}
@@ -428,10 +429,20 @@
   .ayah-card.hifz-active{display:none;}
   #hifzView{display:none;margin-bottom:14px;}
   #hifzView.show{display:block;}
-  .hifz-sub-toggle{display:flex;gap:2px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:2px;width:fit-content;margin-bottom:10px;}
-  .hifz-sub-btn{padding:6px 12px;border:none;border-radius:6px;background:transparent;color:#8fa0c2;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
-  .hifz-sub-btn:hover{background:rgba(255,255,255,.08);color:#e8ecf5;}
-  .hifz-sub-btn.active{background:rgba(201,162,75,.22);color:var(--gold,#C9A24B);}
+  .hifz-extras-switch{display:flex;align-items:center;gap:8px;cursor:pointer;width:fit-content;margin-bottom:10px;user-select:none;}
+  .hifz-extras-switch input{position:absolute;opacity:0;width:0;height:0;}
+  .hifz-switch-track{position:relative;width:34px;height:19px;background:rgba(255,255,255,.15);border-radius:99px;flex-shrink:0;transition:background .15s;}
+  .hifz-switch-thumb{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#8fa0c2;transition:transform .15s,background .15s;}
+  .hifz-extras-switch input:checked + .hifz-switch-track{background:rgba(201,162,75,.4);}
+  .hifz-extras-switch input:checked + .hifz-switch-track .hifz-switch-thumb{transform:translateX(15px);background:var(--gold,#C9A24B);}
+  .hifz-switch-label{font-size:12px;color:#c9d2e3;font-family:'Inter',sans-serif;}
+  .mm-tb-group.mobile-only{display:none;}
+  @media (max-width:680px){
+    .mm-tb-group.mobile-only{display:block;}
+    #mmDisplaySlot{display:flex;flex-direction:column;gap:10px;}
+    #mmDisplaySlot .mm-mode-toggle{margin:0;}
+    #mmDisplaySlot .sb-group{width:100%;}
+  }
   .hifz-status{font-size:12px;color:#8fa0c2;margin-bottom:8px;min-height:14px;}
   .hifz-page{background:#fbf6e9;color:#1b1b16;border-radius:10px;padding:18px 16px;width:100%;max-width:560px;margin:0 auto 14px;box-shadow:0 4px 16px rgba(0,0,0,.25);container-type:inline-size;}
   .hifz-page-num{font-size:11px;color:#8a7c55;text-align:center;margin-bottom:10px;letter-spacing:.05em;}
@@ -566,6 +577,14 @@
       <div class="people-row" id="peopleRow"></div>
     </div>
   </div>
+  <div class="mm-tb-group mobile-only" id="mmTbDisplay">
+    <button class="mm-tb-btn" id="mmTbDisplayBtn" type="button">&#x1F39B;&#xFE0F; Display <span class="mm-tb-arrow">&#x25BE;</span></button>
+    <div class="mm-tb-panel">
+      <div class="mm-tb-panel-head"><span>Display</span><button class="mm-tb-close" data-close type="button">&#x2715;</button></div>
+      <div id="mmDisplaySlot"></div>
+    </div>
+  </div>
+  <span id="mmModeToggleAnchor" style="display:none;"></span>
   <div class="mm-mode-toggle" id="mmModeToggle">
     <button class="mm-mode-btn" id="mmModeRegular" type="button" title="Standard script and layout"><span class="mm-mode-icon">&#x1F4D6;</span><span class="mm-mode-label">Regular</span></button>
     <button class="mm-mode-btn" id="mmModeHifz" type="button" title="Hifz mushaf mode (Madani)"><span class="mm-mode-icon">&#x1F54B;</span><span class="mm-mode-label">Hifz</span></button>
@@ -711,6 +730,7 @@
     <button class="uan-btn" id="uanNext" title="Next ayah">▶</button>
   </div>
 
+  <span id="exploreAnchor" style="display:none;"></span>
   <div class="sb-group" id="sbExplore">
     <button class="picker-toggle" id="exploreOpenBtn">&#x1F9ED; Explore</button>
   </div>
@@ -784,11 +804,13 @@
     </div>
   </div>
 
+  <span id="hifzSwitchAnchor" style="display:none;"></span>
   <div id="hifzView">
-    <div class="hifz-sub-toggle">
-      <button class="hifz-sub-btn" id="hifzPureBtn" type="button">Pure mushaf</button>
-      <button class="hifz-sub-btn" id="hifzExtrasBtn" type="button">+ Translation, Tajweed, Ayah no.</button>
-    </div>
+    <label class="hifz-extras-switch" id="hifzExtrasSwitchWrap">
+      <input type="checkbox" id="hifzExtrasSwitch">
+      <span class="hifz-switch-track"><span class="hifz-switch-thumb"></span></span>
+      <span class="hifz-switch-label">Show translation, Tajweed &amp; ayah no.</span>
+    </label>
     <div class="hifz-status" id="hifzStatus"></div>
     <div id="hifzPages"></div>
   </div>
@@ -6529,10 +6551,10 @@ async function renderHifzPage(pageNum, highlight, container){
 }
 
 function updateHifzSubToggleUI(){
-  const pureBtn = document.getElementById('hifzPureBtn');
-  const extrasBtn = document.getElementById('hifzExtrasBtn');
-  if(pureBtn) pureBtn.classList.toggle('active', !state.hifzExtras);
-  if(extrasBtn) extrasBtn.classList.toggle('active', !!state.hifzExtras);
+  const sw = document.getElementById('hifzExtrasSwitch');
+  const wrap = document.getElementById('hifzExtrasSwitchWrap');
+  if(sw) sw.checked = !!state.hifzExtras;
+  if(wrap) wrap.style.display = state.hifzMode ? 'flex' : 'none';
 }
 
 function renderHifzView(){
@@ -6541,6 +6563,7 @@ function renderHifzView(){
   const statusEl = document.getElementById('hifzStatus');
   const card = document.querySelector('.ayah-card');
   if(!view || !pagesEl || !statusEl) return;
+  updateHifzSubToggleUI();
   if(!state.hifzMode){
     view.classList.remove('show');
     if(card) card.classList.remove('hifz-active');
@@ -6548,7 +6571,6 @@ function renderHifzView(){
   }
   view.classList.add('show');
   if(card) card.classList.toggle('hifz-active', !state.hifzExtras);
-  updateHifzSubToggleUI();
   statusEl.textContent = 'Loading Hifz mushaf page\u2026';
   pagesEl.innerHTML = '';
   ensureMushafData().then(()=>{
@@ -6570,6 +6592,36 @@ function renderHifzView(){
     console.warn('Hifz mushaf load failed:', err);
   });
 }
+
+// Mobile-only layout consolidation (Smahk's request): on narrow screens,
+// the mode toggle / Explore / Hifz extras-switch move into one "Display"
+// dropdown in the top bar instead of taking their own separate rows. This
+// physically moves the SAME DOM nodes (not clones) — every existing click
+// handler stays attached exactly as before; only their position changes.
+// Desktop is completely unaffected (these controls simply stay put there).
+const mmMobileQuery = window.matchMedia('(max-width:680px)');
+function syncDisplayControlsLayout(){
+  const isMobile = mmMobileQuery.matches;
+  const slot = document.getElementById('mmDisplaySlot');
+  const modeToggle = document.getElementById('mmModeToggle');
+  const modeAnchor = document.getElementById('mmModeToggleAnchor');
+  const exploreGroup = document.getElementById('sbExplore');
+  const exploreAnchor = document.getElementById('exploreAnchor');
+  const hifzSwitch = document.getElementById('hifzExtrasSwitchWrap');
+  const hifzAnchor = document.getElementById('hifzSwitchAnchor');
+  if(!slot) return;
+  if(isMobile){
+    if(modeToggle)  slot.appendChild(modeToggle);
+    if(exploreGroup) slot.appendChild(exploreGroup);
+    if(hifzSwitch)   slot.appendChild(hifzSwitch);
+  } else {
+    if(modeToggle && modeAnchor)   modeAnchor.after(modeToggle);
+    if(exploreGroup && exploreAnchor) exploreAnchor.after(exploreGroup);
+    if(hifzSwitch && hifzAnchor)   hifzAnchor.after(hifzSwitch);
+  }
+}
+syncDisplayControlsLayout();
+mmMobileQuery.addEventListener('change', syncDisplayControlsLayout);
 
 // Single source of truth for which of the three top-bar mode buttons shows
 // as active — called from renderAyahArabicMode (Regular/Tajweed) and from
@@ -6616,16 +6668,8 @@ document.getElementById('mmModeHifz').onclick = ()=>{
   scheduleSave();
 };
 
-document.getElementById('hifzPureBtn').onclick = ()=>{
-  if(!state.hifzExtras) return;
-  state.hifzExtras = false;
-  renderHifzView();
-  scheduleSave();
-};
-
-document.getElementById('hifzExtrasBtn').onclick = ()=>{
-  if(state.hifzExtras) return;
-  state.hifzExtras = true;
+document.getElementById('hifzExtrasSwitch').onchange = (e)=>{
+  state.hifzExtras = !!e.target.checked;
   renderHifzView();
   scheduleSave();
 };
