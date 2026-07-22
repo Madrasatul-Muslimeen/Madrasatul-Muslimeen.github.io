@@ -404,7 +404,8 @@
   .person-tab .editable:focus{background:rgba(0,0,0,0.15);box-shadow:0 0 0 2px rgba(255,255,255,0.4);}
 
   /* ===== Phase 1: persistent top bar (Home / Settings / Students) ===== */
-  .mm-topbar{position:sticky;top:46px;z-index:4500;display:flex;gap:8px;background:#13192a;padding:8px 14px;box-shadow:0 2px 6px rgba(0,0,0,.25);font-family:'Inter',system-ui,sans-serif;flex-wrap:wrap;}
+  .mm-topbar{position:sticky;top:46px;z-index:4500;background:#13192a;padding:8px 14px;box-shadow:0 2px 6px rgba(0,0,0,.25);font-family:'Inter',system-ui,sans-serif;}
+  .mm-topbar-inner{display:flex;gap:8px;flex-wrap:wrap;align-items:center;max-width:1180px;margin:0 auto;}
   .mm-tb-group{position:relative;}
   .mm-tb-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:#e8ecf5;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:'Inter',sans-serif;}
   .mm-tb-btn:hover{background:rgba(255,255,255,.12);}
@@ -543,6 +544,7 @@
   <div id="quran-body-mount" style="display:none;">
 
 <div class="mm-topbar" id="mmTopbar">
+<div class="mm-topbar-inner">
   <div class="mm-tb-group" id="mmTbHome">
     <button class="mm-tb-btn" id="mmTbHomeBtn" type="button">&#x1F3E0; Home <span class="mm-tb-arrow">&#x25BE;</span></button>
     <div class="mm-tb-panel">
@@ -597,6 +599,7 @@
     <button class="mm-mode-btn" id="mmModeHifz" type="button" title="Hifz mushaf mode (Madani)"><span class="mm-mode-icon">&#x1F54B;</span><span class="mm-mode-label">Hifz</span></button>
     <button class="mm-mode-btn" id="tajweedToggle" type="button" title="Toggle Tajweed colour-coded script"><span class="mm-mode-icon">&#x1F3A8;</span><span class="mm-mode-label">Tajweed</span></button>
   </div>
+</div>
 </div>
 <div class="mm-tb-backdrop" id="mmTbBackdrop"></div>
 
