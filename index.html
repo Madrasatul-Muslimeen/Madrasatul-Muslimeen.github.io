@@ -3315,13 +3315,20 @@ function advanceReciterQueueOrStop(){
     bnSegQueueSig = null;
     audioPlaylistSig = null;
     renderAudio(); // rebuilds this reciter's playlist/segment queue fresh, from ayah 0
-    if(ayahMode && multiAyah && ayahIdx > 0 && audioPlaylist && ayahIdx < audioPlaylist.length){
+    // Bug fix (23 Jul 2026): pick the structure by which reciter we're
+    // actually resuming to, not "whichever of audioPlaylist/bnSegQueue
+    // happens to be non-null" — a stale leftover array from the PREVIOUS
+    // reciter's turn could otherwise be mistaken for the new one's queue
+    // (this is what caused Bangla's turn to silently play an ar/en file).
+    const resumingReciter = RECITERS[state.selectedReciter];
+    const resumingIsSegmented = !!(resumingReciter && resumingReciter.segmented);
+    if(!resumingIsSegmented && ayahMode && multiAyah && ayahIdx > 0 && audioPlaylist && ayahIdx < audioPlaylist.length){
       audioPlaylistIdx = ayahIdx;
       audio.src = audioPlaylist[audioPlaylistIdx];
       audio.play().catch(()=>{}); // continuation of user-initiated playback
       return;
     }
-    if(ayahMode && multiAyah && ayahIdx > 0 && bnSegQueue && ayahIdx < bnSegQueue.length){
+    if(resumingIsSegmented && ayahMode && multiAyah && ayahIdx > 0 && bnSegQueue && ayahIdx < bnSegQueue.length){
       bnSegIdx = ayahIdx;
       // autoplay:true — bnGoToSegment seeks then plays itself once its
       // loadedmetadata listener fires; calling audio.play() separately here
@@ -3494,6 +3501,14 @@ function renderAudio(){
     // switching the underlying Surah file when a Page/Range crosses a
     // Surah boundary (currentUnitAyahKeys() already returns keys in the
     // correct cross-Surah order, so no extra sorting is needed here).
+    // Bug fix (23 Jul 2026): this branch built bnSegQueue correctly but
+    // never cleared audioPlaylist left over from the PREVIOUS reciter's
+    // turn (ar/en) — resumeAt() checks audioPlaylist before bnSegQueue, so
+    // handing off to Bangla mid-drill (any ayah past the first) could
+    // silently resume playing a stale ar/en URL while the UI still showed
+    // Bangla as active. Clearing it here restores the mutual exclusivity
+    // every other branch already keeps.
+    audioPlaylist = null; audioPlaylistSig = null;
     const keys = (typeof currentUnitAyahKeys === 'function') ? currentUnitAyahKeys() : [];
     if(!keys.length){ audio.removeAttribute('src'); wrap.classList.remove('loaded'); bnSegQueue = null; bnSegQueueSig = null; return; }
     const sig = 'bn:' + state.currentUnitKey + '|seq';
@@ -6700,9 +6715,19 @@ document.getElementById('ssAyahSurahSelect').addEventListener('change', populate
 function runStudySettingsApply(thenPlay){
   const type = document.getElementById('unitTypeSelect').value;
   const status = document.getElementById('ssStatus');
+  let ok = true;
   if(type === 'ayah'){
-    const surah = document.getElementById('ssAyahSurahSelect').value;
-    const ayah = document.getElementById('ssAyahNumSelect').value;
+    const surahSel = document.getElementById('ssAyahSurahSelect');
+    const ayahSel = document.getElementById('ssAyahNumSelect');
+    if(!surahSel.dataset.populated){
+      if(status){ status.textContent = 'Still loading the Surah list \u2014 try Apply again in a moment.'; status.style.color = '#8fa0c2'; }
+      ensureChaptersLoaded().then(()=>{ populateStudySettingsAyahSurahSelect(); }).catch(()=>{
+        if(status){ status.textContent = 'Couldn\u2019t reach quran.com for the Surah list \u2014 check your connection and try again.'; status.style.color = '#e0a458'; }
+      });
+      return;
+    }
+    const surah = surahSel.value;
+    const ayah = ayahSel.value;
     if(!surah || !ayah){
       if(status){ status.textContent = 'Choose a Surah and Ayah first.'; status.style.color = '#e0a458'; }
       return;
@@ -6718,8 +6743,9 @@ function runStudySettingsApply(thenPlay){
     if(pAyah) pAyah.value = ayah;
     if(status){ status.textContent = 'Now studying: Surah ' + surah + ', Ayah ' + ayah + '.'; status.style.color = '#8fd19e'; }
   } else {
-    document.getElementById('unitApplyBtn').click();
+    ok = applyUnitFromPicker();
   }
+  if(!ok) return; // validation failed / still loading — leave the popup open so the message is visible
   if(thenPlay){
     const audio = document.getElementById('ayahAudio');
     if(audio) audio.play().catch(()=>{});
@@ -6799,44 +6825,57 @@ document.getElementById('unitSurahSelect').addEventListener('change', ()=>{
   if(document.getElementById('unitTypeSelect').value==='ruku') refreshUnitRukuNumSelect();
 });
 
-document.getElementById('unitApplyBtn').onclick = ()=>{
+function applyUnitFromPicker(){
   const type = document.getElementById('unitTypeSelect').value;
   const status = document.getElementById('unitPickerStatus');
+  const surahSel = document.getElementById('unitSurahSelect');
+  const surahStillLoading = (type==='range'||type==='surah'||type==='ruku') && !surahSel.dataset.populated;
+  if(surahStillLoading){
+    status.textContent = 'Still loading the Surah list \u2014 try Apply again in a moment.';
+    status.style.color = '#8fa0c2';
+    ensureChaptersLoaded().then(()=>{ populateUnitSurahSelect(); }).catch(()=>{
+      status.textContent = 'Couldn\u2019t reach quran.com for the Surah list \u2014 check your connection and try again.';
+      status.style.color = '#e0a458';
+    });
+    return false;
+  }
   let key;
   if(type==='ayah'){
     key = state.currentAyahKey; // delegate to the existing ayah picker entirely
   } else if(type==='range'){
-    const surah = Number(document.getElementById('unitSurahSelect').value);
+    const surah = Number(surahSel.value);
     const start = Number(document.getElementById('unitRangeStart').value);
     const end   = Number(document.getElementById('unitRangeEnd').value);
-    if(!surah){ status.textContent = 'Choose a Surah first.'; status.style.color = '#e0a458'; return; }
-    if(!start || !end || end < start){ status.textContent = '"To Ayah" must be the same as or after "From Ayah".'; status.style.color = '#e0a458'; return; }
+    if(!surah){ status.textContent = 'Choose a Surah first.'; status.style.color = '#e0a458'; return false; }
+    if(!start || !end || end < start){ status.textContent = '"To Ayah" must be the same as or after "From Ayah".'; status.style.color = '#e0a458'; return false; }
     key = buildUnitKey('range', {surah, start, end});
   } else if(type==='surah'){
-    const surah = Number(document.getElementById('unitSurahSelect').value);
-    if(!surah){ status.textContent = 'Choose a Surah first.'; status.style.color = '#e0a458'; return; }
+    const surah = Number(surahSel.value);
+    if(!surah){ status.textContent = 'Choose a Surah first.'; status.style.color = '#e0a458'; return false; }
     key = buildUnitKey('surah', {surah});
   } else if(type==='page'){
     const page = Number(document.getElementById('unitPageNum').value);
-    if(!page || page<1 || page>604){ status.textContent = 'Enter a page from 1 to 604.'; status.style.color = '#e0a458'; return; }
+    if(!page || page<1 || page>604){ status.textContent = 'Enter a page from 1 to 604.'; status.style.color = '#e0a458'; return false; }
     key = buildUnitKey('page', {page});
   } else if(type==='ruku'){
-    const surah = Number(document.getElementById('unitSurahSelect').value);
+    const surah = Number(surahSel.value);
     const rukuIndex = Number(document.getElementById('unitRukuNumSelect').value);
-    if(!surah){ status.textContent = 'Choose a Surah first.'; status.style.color = '#e0a458'; return; }
-    if(!rukuIndex){ status.textContent = 'Choose a Ruku\u2019 (boundaries may still be loading \u2014 wait a moment and try again).'; status.style.color = '#e0a458'; return; }
+    if(!surah){ status.textContent = 'Choose a Surah first.'; status.style.color = '#e0a458'; return false; }
+    if(!rukuIndex){ status.textContent = 'Choose a Ruku\u2019 (boundaries may still be loading \u2014 wait a moment and try again).'; status.style.color = '#e0a458'; return false; }
     key = buildUnitKey('ruku', {surah, rukuIndex});
   } else if(type==='juz'){
     const juz = Number(document.getElementById('unitJuzSelect').value);
-    if(!juz){ status.textContent = 'Choose a Juz.'; status.style.color = '#e0a458'; return; }
+    if(!juz){ status.textContent = 'Choose a Juz.'; status.style.color = '#e0a458'; return false; }
     key = buildUnitKey('juz', {juz});
   }
   setStudyUnit(type, key, !document.getElementById('ssCombinedCheckbox').checked);
   status.textContent = 'Now studying: ' + unitLabel(key);
   status.style.color = '#8fd19e';
   // Closing the Study Settings popup itself is handled by whichever button
-  // (Apply / Apply and play) invoked this — see wireStudySettingsFooter().
-};
+  // (Apply / Apply and play) invoked this — see runStudySettingsApply().
+  return true;
+}
+document.getElementById('unitApplyBtn').onclick = applyUnitFromPicker;
 
 // Switches the active study unit and refreshes everything that depends on it
 // (wheel, list, progress summary) — creates a blank placeholder record for
