@@ -457,6 +457,7 @@
   .hifz-word{white-space:nowrap;}
   .hifz-word.dim{opacity:.32;}
   .hifz-surah-header{justify-content:center;background:rgba(201,162,75,.14);border:1px solid rgba(201,162,75,.4);border-radius:6px;font-size:16px;font-size:4.5cqw;font-family:'Inter',sans-serif;color:#7a5f1e;padding:.3em .6em;}
+  .hifz-surah-header.glyph-loaded{background:none;border:none;padding:.2em 0;font-size:20px;font-size:6cqw;}
   .hifz-basmallah{justify-content:center;font-size:16px;font-size:4.5cqw;}
   .hifz-line-error{font-size:13px;color:#a33;text-align:center;font-family:'Inter',sans-serif;}
   @media (max-width:680px){
@@ -6376,6 +6377,12 @@ async function fetchTajweedForCurrentAyah(){
 // ═══════════════════════════════════════════════════════════════
 const MUSHAF_JSON_URL = 'https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/mushaf-madani-v2.json';
 const MUSHAF_FONT_BASE = 'https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/fonts/';
+const SURAH_HEADER_FONT_URL = 'https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/QCF_SurahHeader_COLOR-Regular.woff2';
+// One ligature character per surah (1-114), sourced verbatim from QUL's own
+// "Surah header font" documentation table — each renders the full ornamental
+// print banner (border + surah name) when displayed in the 'surah-header'
+// font, a single COLOR font covering all 114 surahs (no per-page files).
+const SURAH_HEADER_GLYPHS = ['ﱅ','ﱆ','ﱇ','ﱊ','ﱋ','ﱎ','ﱏ','ﱑ','ﱒ','ﱓ','ﱕ','ﱖ','ﱘ','ﱚ','ﱛ','ﱜ','ﱝ','ﱞ','ﱡ','ﱢ','ﱤ','ﭑ','ﭒ','ﭔ','ﭕ','ﭗ','ﭘ','ﭚ','ﭛ','ﭝ','ﭞ','ﭠ','ﭡ','ﭣ','ﭤ','ﭦ','ﭧ','ﭩ','ﭪ','ﭬ','ﭭ','ﭯ','ﭰ','ﭲ','ﭳ','ﭵ','ﭶ','ﭸ','ﭹ','ﭻ','ﭼ','ﭾ','ﭿ','ﮁ','ﮂ','ﮄ','ﮅ','ﮇ','ﮈ','ﮊ','ﮋ','ﮍ','ﮎ','ﮐ','ﮑ','ﮓ','ﮔ','ﮖ','ﮗ','ﮙ','ﮚ','ﮜ','ﮝ','ﮟ','ﮠ','ﮢ','ﮣ','ﮥ','ﮦ','ﮨ','ﮩ','ﮫ','ﮬ','ﮮ','ﮯ','ﮱ','﮲','﮴','﮵','﮷','﮸','﮺','﮻','﮽','﮾','﯀','﯁','ﯓ','ﯔ','ﯖ','ﯗ','ﯙ','ﯚ','ﯜ','ﯝ','ﯟ','ﯠ','ﯢ','ﯣ','ﯥ','ﯦ','ﯨ','ﯩ','ﯫ'];
 let MUSHAF_DATA = null;
 let MUSHAF_DATA_PROMISE = null;
 let MUSHAF_AYAH_PAGE_INDEX = null;
@@ -6419,6 +6426,27 @@ function buildMushafAyahPageIndex(){
 }
 
 const MUSHAF_FONT_PROMISES = new Map();
+let surahHeaderFontPromise = null;
+function ensureSurahHeaderFont(){
+  if(surahHeaderFontPromise) return surahHeaderFontPromise;
+  if(typeof FontFace === 'function' && document.fonts){
+    const face = new FontFace('surah-header', `url('${SURAH_HEADER_FONT_URL}')`);
+    surahHeaderFontPromise = face.load().then(loaded=>{
+      document.fonts.add(loaded);
+      return true;
+    }).catch(err=>{
+      console.warn('Surah header font load failed:', err);
+      return false;
+    });
+  } else {
+    const styleEl = document.createElement('style');
+    styleEl.textContent = `@font-face{font-family:'surah-header';src:url('${SURAH_HEADER_FONT_URL}') format('woff2');font-display:swap;}`;
+    document.head.appendChild(styleEl);
+    surahHeaderFontPromise = Promise.resolve(false);
+  }
+  return surahHeaderFontPromise;
+}
+
 function ensureMushafPageFont(pageNum){
   if(MUSHAF_FONT_PROMISES.has(pageNum)) return MUSHAF_FONT_PROMISES.get(pageNum);
   const family = 'hifz-p' + pageNum;
@@ -6509,6 +6537,14 @@ function getHifzTargetForCurrentUnit(){
     keys.forEach(key => (MUSHAF_AYAH_PAGE_INDEX[key] || []).forEach(p => pageSet.add(p)));
     return { pages: Array.from(pageSet).sort((a,b)=>a-b), highlight };
   }
+  if(type === 'juz'){
+    const u = parseUnitKey(state.currentUnitKey);
+    const keys = typeof getAllAyahKeysForJuz === 'function' ? getAllAyahKeysForJuz(u.juz) : [];
+    const highlight = new Set(keys);
+    const pageSet = new Set();
+    keys.forEach(key => (MUSHAF_AYAH_PAGE_INDEX[key] || []).forEach(p => pageSet.add(p)));
+    return { pages: Array.from(pageSet).sort((a,b)=>a-b), highlight };
+  }
   return { pages: [], highlight: null, unsupported: true };
 }
 
@@ -6525,6 +6561,8 @@ function renderHifzWord(w, highlight){
 async function renderHifzPage(pageNum, highlight, container){
   const fontReady = await ensureMushafPageFont(pageNum);
   const pageData = MUSHAF_DATA[String(pageNum)];
+  const needsSurahHeaderFont = pageData && pageData.some(l => l.type === 'surah_name');
+  const surahHeaderFontReady = needsSurahHeaderFont ? await ensureSurahHeaderFont() : false;
   const pageEl = document.createElement('div');
   pageEl.className = 'hifz-page';
   pageEl.style.fontFamily = `'hifz-p${pageNum}'`;
@@ -6545,7 +6583,16 @@ async function renderHifzPage(pageNum, highlight, container){
     lineEl.className = 'hifz-line' + (line.centered ? ' centered' : '');
     if(line.type === 'surah_name'){
       lineEl.classList.add('hifz-surah-header');
-      lineEl.textContent = SURAH_NAMES_AR[Number(line.surah) - 1] || ('سورة ' + line.surah);
+      const surahName = SURAH_NAMES_AR[Number(line.surah) - 1] || ('سورة ' + line.surah);
+      lineEl.setAttribute('aria-label', surahName);
+      if(surahHeaderFontReady){
+        lineEl.classList.add('glyph-loaded');
+        lineEl.style.fontFamily = "'surah-header'";
+        lineEl.textContent = SURAH_HEADER_GLYPHS[Number(line.surah) - 1] || surahName;
+      } else {
+        // Real print glyph didn't load — plain name, still correct and readable.
+        lineEl.textContent = surahName;
+      }
     } else if(line.type === 'basmallah'){
       // The dedicated Basmala glyph font hasn't been sourced yet (separate
       // QUL resource from the per-page QCF V2 fonts) — plain Unicode
@@ -6588,7 +6635,8 @@ function renderHifzView(){
   if(card) card.classList.toggle('hifz-active', !state.hifzExtras);
   statusEl.textContent = 'Loading Hifz mushaf page\u2026';
   pagesEl.innerHTML = '';
-  ensureMushafData().then(()=>{
+  const unitMetaReady = ensureUnitMetaLoadedForHifz();
+  Promise.all([ensureMushafData(), unitMetaReady]).then(()=>{
     const target = getHifzTargetForCurrentUnit();
     if(target.unsupported){
       statusEl.textContent = "Hifz view isn't available for this unit type yet.";
@@ -6606,6 +6654,23 @@ function renderHifzView(){
     statusEl.textContent = "Couldn't load Hifz mushaf data (" + (err.message || 'network error') + ').';
     console.warn('Hifz mushaf load failed:', err);
   });
+}
+
+// Ruku'/Juz boundary data loads asynchronously and independently of Hifz
+// mode (shared with the regular ayah-card view). getHifzTargetForCurrentUnit()
+// is synchronous and needs that data already present — this ensures it,
+// so switching straight into Hifz mode on a Ruku'/Juz unit can't silently
+// return an empty result just because the other view hadn't loaded it yet.
+function ensureUnitMetaLoadedForHifz(){
+  const type = state.currentUnitType;
+  if(type === 'ruku'){
+    const u = parseUnitKey(state.currentUnitKey);
+    return ensureRukusLoadedForSurah(u.surah);
+  }
+  if(type === 'juz'){
+    return ensureJuzsLoaded();
+  }
+  return Promise.resolve();
 }
 
 // Banner reorder: applies on ALL screen sizes now (Smahk confirmed he wants
