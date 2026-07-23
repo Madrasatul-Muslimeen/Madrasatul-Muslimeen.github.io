@@ -3795,7 +3795,7 @@ function renderPeople(){
     const nameSpan = document.createElement('span');
     nameSpan.className = 'editable';
     nameSpan.dataset.ekey = 'person-' + p.id;
-    nameSpan.contentEditable = 'true';
+    nameSpan.contentEditable = mmCanEdit() ? 'true' : 'false';
     nameSpan.textContent = p.name;
     // stop tab-switch click bubbling when typing the name
     nameSpan.addEventListener('mousedown', e=> e.stopPropagation());
@@ -4063,7 +4063,7 @@ function renderList(){
     const gl = document.createElement('div');
     gl.className = 'group-label editable';
     gl.dataset.ekey = gKey;
-    gl.contentEditable = 'true';
+    gl.contentEditable = mmCanEdit() ? 'true' : 'false';
     const gs = state.textStyles[gKey] || {};
     gl.textContent = gs.content || group.key;
     gl.style.color = gs.color || groupColor(group.key);
@@ -4085,7 +4085,7 @@ function renderList(){
       const name = document.createElement('span');
       name.className = 'name editable';
       name.dataset.ekey = wKey;
-      name.contentEditable = 'true';
+      name.contentEditable = mmCanEdit() ? 'true' : 'false';
       const ws = state.textStyles[wKey] || {};
       name.textContent = ws.content || w.name;
       if(ws.color)    name.style.color    = ws.color;
@@ -5340,7 +5340,7 @@ function renderLegend(){
     const label = document.createElement('span');
     label.className = 'editable';
     label.dataset.ekey = lKey;
-    label.contentEditable = 'true';
+    label.contentEditable = mmCanEdit() ? 'true' : 'false';
     const ls = state.textStyles[lKey] || {};
     label.textContent = ls.content || group.short || group.key;
     if(ls.color)    label.style.color    = ls.color;
@@ -8490,10 +8490,27 @@ async function mmInitAuth(){
   });
 }
 
+// Single source of truth for "is inline text-editing allowed right now" —
+// used both by the static-element pass below and by every dynamically
+// created editable label (person names, group/way labels on the wheel),
+// so newly (re-)rendered elements can't silently revert to editable.
+function mmCanEdit(){
+  return !!(mmCurrentRole && mmCurrentRole.role === 'admin');
+}
+
 // Show/hide role-restricted UI (e.g. the Admin tab) based on mmCurrentRole.
 function mmApplyRoleVisibility(){
   const adminBtn = document.getElementById('mm-tab-btn-admin');
   if(adminBtn) adminBtn.style.display = (mmCurrentRole && (mmCurrentRole.role==='admin' || mmCurrentRole.role==='teacher')) ? 'inline-block' : 'none';
+
+  // Inline text-editing (click-any-text-to-edit) is Admin-only. Teachers
+  // and students should never see the hint bar or be able to trigger it.
+  const isAdmin = mmCanEdit();
+  const editBar = document.getElementById('editBar');
+  if(editBar) editBar.style.display = isAdmin ? '' : 'none';
+  document.querySelectorAll('[contenteditable="true"]').forEach(el=>{
+    el.setAttribute('contenteditable', isAdmin ? 'true' : 'false');
+  });
 }
 
 </script>
