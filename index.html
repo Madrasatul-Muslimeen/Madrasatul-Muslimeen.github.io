@@ -273,6 +273,7 @@
 
   /* Unit Ayah Navigator (Range/Surah/Page — step through the unit's ayahs) */
   .unit-ayah-nav{display:flex;align-items:center;gap:8px;margin:10px 0 4px;font-family:'Inter',sans-serif;}
+  .mm-topbar-inner .unit-ayah-nav{margin:0;}
   .uan-btn{background:rgba(201,162,75,0.12);border:1px solid rgba(201,162,75,0.35);color:var(--gold);border-radius:8px;min-width:38px;height:34px;font-size:13px;cursor:pointer;}
   .uan-btn:disabled{opacity:0.3;cursor:default;}
   .uan-btn:not(:disabled):hover{background:rgba(201,162,75,0.25);}
@@ -441,13 +442,9 @@
   .hifz-extras-switch input:checked + .hifz-switch-track{background:rgba(201,162,75,.4);}
   .hifz-extras-switch input:checked + .hifz-switch-track .hifz-switch-thumb{transform:translateX(15px);background:var(--gold,#C9A24B);}
   .hifz-switch-label{font-size:12px;color:#c9d2e3;font-family:'Inter',sans-serif;}
-  .mm-tb-group.mobile-only{display:none;}
-  @media (max-width:680px){
-    .mm-tb-group.mobile-only{display:block;}
-    #mmDisplaySlot{display:flex;flex-direction:column;gap:10px;}
-    #mmDisplaySlot .mm-mode-toggle{margin:0;}
-    #mmDisplaySlot .sb-group{width:100%;}
-  }
+  #mmDisplaySlot{display:flex;flex-direction:column;gap:10px;}
+  #mmDisplaySlot .mm-mode-toggle{margin:0;}
+  #mmDisplaySlot .sb-group{width:100%;}
   .hifz-status{font-size:12px;color:#8fa0c2;margin-bottom:8px;min-height:14px;}
   .hifz-page{background:#fbf6e9;color:#1b1b16;border-radius:10px;padding:18px 16px;width:100%;max-width:560px;margin:0 auto 14px;box-shadow:0 4px 16px rgba(0,0,0,.25);container-type:inline-size;}
   .hifz-page-num{font-size:11px;color:#8a7c55;text-align:center;margin-bottom:10px;letter-spacing:.05em;}
@@ -483,19 +480,14 @@
   .textlang-option:hover{background:rgba(255,255,255,0.06);}
   .textlang-option input{width:16px;height:16px;accent-color:#C9A24B;cursor:pointer;}
 
-  /* ===== Study control bar: Study Unit / Text Language / Reciter / Repeat / Choose Ayah, one row ===== */
-  .mm-studybar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;position:sticky;top:calc(46px + var(--topbar-h, 48px));z-index:4400;background:#151b2e;padding:8px 20px;margin-left:-20px;margin-right:-20px;box-shadow:0 2px 6px rgba(0,0,0,.2);}
+  /* ===== Study control bar — now empty (all content relocated into the
+     top bar's Display dropdown); hidden rather than deleted from HTML to
+     minimise the size/risk of this edit. ===== */
   .sb-group{position:relative;}
   .sb-group .picker-toggle{white-space:nowrap;}
-  .sb-group:has(.ayah-picker.show) .picker-toggle{background:rgba(201,162,75,0.18);border-color:var(--gold);}
-  .mm-studybar .ayah-picker{position:absolute;top:calc(100% + 6px);left:0;z-index:4600;min-width:300px;margin-bottom:0;background:#1b2338;box-shadow:0 10px 30px rgba(0,0,0,.45);}
-  .mm-studybar .unit-ayah-nav{display:flex;margin:0;}
-  @media (max-width:680px){
-    .mm-studybar{padding:6px 14px;gap:6px;margin-left:-14px;margin-right:-14px;}
-    .mm-studybar .picker-toggle{padding:5px 9px;font-size:11px;}
-    .mm-studybar .ayah-picker.show{position:fixed;left:0;right:0;bottom:0;top:auto;border-radius:16px 16px 0 0;min-width:0;width:100%;max-height:70vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.5);}
-    .mm-studybar .ayah-picker.show::before{content:"";display:block;width:40px;height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin:0 auto 12px;}
-  }
+  #mmDisplaySlot .ayah-picker{display:block;margin-bottom:0;position:static;box-shadow:none;background:transparent;border:none;padding:0;}
+  #mmDisplaySlot .sb-group{margin-bottom:0;}
+  .mm-studybar{display:none;}
 
   /* ===== Study Settings popup (consolidates Study Unit / Combined / Text /
      Reciter / Repeat into one click) ===== */
@@ -566,13 +558,7 @@
       </div>
       <div class="ayah-picker-source" style="margin:6px 0 8px;">Students</div>
       <div class="people-row" id="peopleRow"></div>
-    </div>
-  </div>
-  <div class="mm-tb-group" id="mmTbSettings">
-    <button class="mm-tb-btn" id="mmTbSettingsBtn" type="button">&#x2699;&#xFE0F; Settings <span class="mm-tb-arrow">&#x25BE;</span></button>
-    <div class="mm-tb-panel">
-      <div class="mm-tb-panel-head"><span>Settings</span><button class="mm-tb-close" data-close type="button">&#x2715;</button></div>
-      <div class="ayah-picker-source" style="margin:2px 0 8px;">Appearance</div>
+      <div class="ayah-picker-source" style="margin:6px 0 8px;">Appearance</div>
       <div class="mm-tb-row">
         <button class="ghost mm-tb-item" id="themeBtn" title="Personalise colours — only you see this" type="button">&#x1F3A8; Appearance / Theme</button>
       </div>
@@ -580,54 +566,9 @@
       <div class="mm-tb-row">
         <button class="picker-toggle mm-tb-item" id="tajweedLegendBtn" title="What do the Tajweed colours mean?" type="button">&#x2753; Tajweed Key</button>
       </div>
-      <div class="ayah-picker-source" style="margin:6px 0 8px;">Tajweed Colours toggle has moved to the top bar &#x1F3A8; icon.</div>
     </div>
   </div>
-  <span id="displayGroupAnchor" style="display:none;"></span>
-  <div class="mm-tb-group mobile-only" id="mmTbDisplay">
-    <button class="mm-tb-btn" id="mmTbDisplayBtn" type="button">&#x1F39B;&#xFE0F; Display <span class="mm-tb-arrow">&#x25BE;</span></button>
-    <div class="mm-tb-panel">
-      <div class="mm-tb-panel-head"><span>Display</span><button class="mm-tb-close" data-close type="button">&#x2715;</button></div>
-      <div id="mmDisplaySlot"></div>
-    </div>
-  </div>
-  <span id="mmModeToggleAnchor" style="display:none;"></span>
-  <div class="mm-mode-toggle" id="mmModeToggle">
-    <button class="mm-mode-btn" id="mmModeRegular" type="button" title="Standard script and layout"><span class="mm-mode-icon">&#x1F4D6;</span><span class="mm-mode-label">Regular</span></button>
-    <button class="mm-mode-btn" id="mmModeHifz" type="button" title="Hifz mushaf mode (Madani)"><span class="mm-mode-icon">&#x1F54B;</span><span class="mm-mode-label">Hifz</span></button>
-    <button class="mm-mode-btn" id="tajweedToggle" type="button" title="Toggle Tajweed colour-coded script"><span class="mm-mode-icon">&#x1F3A8;</span><span class="mm-mode-label">Tajweed</span></button>
-  </div>
-</div>
-</div>
-<div class="mm-tb-backdrop" id="mmTbBackdrop"></div>
-
-<div class="edit-bar" id="editBar">
-  <div class="eb-idle">✏️ &nbsp;Click any text to edit — use the bar above to recolour or resize</div>
-  <div class="eb-controls">
-    <span class="eb-field" id="ebField">Student name</span>
-    <div class="eb-colors" id="ebColors"><span class="eb-swatch" data-color="#F2E8D5" title="#F2E8D5" style="background: rgb(242, 232, 213);"></span><span class="eb-swatch" data-color="#ffffff" title="#ffffff" style="background: rgb(255, 255, 255);"></span><span class="eb-swatch" data-color="#C9A24B" title="#C9A24B" style="background: rgb(201, 162, 75);"></span><span class="eb-swatch" data-color="#A4823A" title="#A4823A" style="background: rgb(164, 130, 58);"></span><span class="eb-swatch" data-color="#2C3E63" title="#2C3E63" style="background: rgb(44, 62, 99);"></span><span class="eb-swatch" data-color="#3D6B6B" title="#3D6B6B" style="background: rgb(61, 107, 107);"></span><span class="eb-swatch" data-color="#7A2E2E" title="#7A2E2E" style="background: rgb(122, 46, 46);"></span><span class="eb-swatch" data-color="#8fa0c2" title="#8fa0c2" style="background: rgb(143, 160, 194);"></span><span class="eb-swatch" data-color="#b9c2d4" title="#b9c2d4" style="background: rgb(185, 194, 212);"></span><span class="eb-swatch" data-color="#8a6fb0" title="#8a6fb0" style="background: rgb(138, 111, 176);"></span><span class="eb-swatch" data-color="#5fae73" title="#5fae73" style="background: rgb(95, 174, 115);"></span><span class="eb-swatch" data-color="#e07070" title="#e07070" style="background: rgb(224, 112, 112);"></span></div>
-    <input type="color" class="eb-color-input" id="ebColorPicker" title="Custom colour">
-    <div class="eb-divider"></div>
-    <div class="eb-size">
-      <button class="eb-sz-btn" id="ebMinus">−</button>
-      <span class="eb-sz-display" id="ebSzDisplay">13px</span>
-      <button class="eb-sz-btn" id="ebPlus">+</button>
-    </div>
-    <button class="eb-done" id="ebDone">✓ Done</button>
-  </div>
-</div>
-
-<div class="wrap">
-  <span id="headerAnchor" style="display:none;"></span>
-  <header>
-    <div class="title-block">
-      <div class="eyebrow editable" data-ekey="title-eyebrow" contenteditable="true">Pioneer · Quran Study System</div>
-      <h1 class="editable" data-ekey="title-h1" contenteditable="true">Quran Study - Approaching the Quran in 30 Ways — Ayah Mastery Wheel</h1>
-      <div class="sub editable" data-ekey="title-sub" contenteditable="true">Track how deeply each student has engaged with an ayah, across all 30 methods.</div>
-    </div>
-  </header>
-
-<div class="mm-studybar" id="mmStudyBar">
+  <!-- Study Settings (relocated to top bar) -->
   <div class="sb-group" id="sbStudySettings">
     <button class="picker-toggle" id="studySettingsToggle">&#x1F3AF; Study Settings <span id="studySettingsArrow">&#x25BE;</span></button>
     <div class="study-settings-panel" id="studySettingsPanel">
@@ -732,15 +673,56 @@
       <div class="ayah-picker-status" id="unitPickerStatus"></div>
     </div>
   </div>
-
   <div class="unit-ayah-nav" id="unitAyahNav" style="display:none">
     <button class="uan-btn" id="uanPrev" title="Previous ayah">◀</button>
     <select id="uanSelect" title="Jump to an ayah in this unit"></select>
     <span class="uan-count" id="uanCount"></span>
     <button class="uan-btn" id="uanNext" title="Next ayah">▶</button>
   </div>
+  <div class="mm-tb-group" id="mmTbDisplay">
+    <button class="mm-tb-btn" id="mmTbDisplayBtn" type="button">&#x1F39B;&#xFE0F; Display <span class="mm-tb-arrow">&#x25BE;</span></button>
+    <div class="mm-tb-panel mm-tb-panel-wide">
+      <div class="mm-tb-panel-head"><span>Display</span><button class="mm-tb-close" data-close type="button">&#x2715;</button></div>
+      <div id="mmDisplaySlot"></div>
+    </div>
+  </div>
+  <div class="mm-mode-toggle" id="mmModeToggle">
+    <button class="mm-mode-btn" id="mmModeRegular" type="button" title="Standard script and layout"><span class="mm-mode-icon">&#x1F4D6;</span><span class="mm-mode-label">Regular</span></button>
+    <button class="mm-mode-btn" id="mmModeHifz" type="button" title="Hifz mushaf mode (Madani)"><span class="mm-mode-icon">&#x1F54B;</span><span class="mm-mode-label">Hifz</span></button>
+    <button class="mm-mode-btn" id="tajweedToggle" type="button" title="Toggle Tajweed colour-coded script"><span class="mm-mode-icon">&#x1F3A8;</span><span class="mm-mode-label">Tajweed</span></button>
+  </div>
+</div>
+</div>
+<div class="mm-tb-backdrop" id="mmTbBackdrop"></div>
 
-  <span id="exploreAnchor" style="display:none;"></span>
+<div class="edit-bar" id="editBar">
+  <div class="eb-idle">✏️ &nbsp;Click any text to edit — use the bar above to recolour or resize</div>
+  <div class="eb-controls">
+    <span class="eb-field" id="ebField">Student name</span>
+    <div class="eb-colors" id="ebColors"><span class="eb-swatch" data-color="#F2E8D5" title="#F2E8D5" style="background: rgb(242, 232, 213);"></span><span class="eb-swatch" data-color="#ffffff" title="#ffffff" style="background: rgb(255, 255, 255);"></span><span class="eb-swatch" data-color="#C9A24B" title="#C9A24B" style="background: rgb(201, 162, 75);"></span><span class="eb-swatch" data-color="#A4823A" title="#A4823A" style="background: rgb(164, 130, 58);"></span><span class="eb-swatch" data-color="#2C3E63" title="#2C3E63" style="background: rgb(44, 62, 99);"></span><span class="eb-swatch" data-color="#3D6B6B" title="#3D6B6B" style="background: rgb(61, 107, 107);"></span><span class="eb-swatch" data-color="#7A2E2E" title="#7A2E2E" style="background: rgb(122, 46, 46);"></span><span class="eb-swatch" data-color="#8fa0c2" title="#8fa0c2" style="background: rgb(143, 160, 194);"></span><span class="eb-swatch" data-color="#b9c2d4" title="#b9c2d4" style="background: rgb(185, 194, 212);"></span><span class="eb-swatch" data-color="#8a6fb0" title="#8a6fb0" style="background: rgb(138, 111, 176);"></span><span class="eb-swatch" data-color="#5fae73" title="#5fae73" style="background: rgb(95, 174, 115);"></span><span class="eb-swatch" data-color="#e07070" title="#e07070" style="background: rgb(224, 112, 112);"></span></div>
+    <input type="color" class="eb-color-input" id="ebColorPicker" title="Custom colour">
+    <div class="eb-divider"></div>
+    <div class="eb-size">
+      <button class="eb-sz-btn" id="ebMinus">−</button>
+      <span class="eb-sz-display" id="ebSzDisplay">13px</span>
+      <button class="eb-sz-btn" id="ebPlus">+</button>
+    </div>
+    <button class="eb-done" id="ebDone">✓ Done</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <span id="headerAnchor" style="display:none;"></span>
+  <header>
+    <div class="title-block">
+      <div class="eyebrow editable" data-ekey="title-eyebrow" contenteditable="true">Pioneer · Quran Study System</div>
+      <h1 class="editable" data-ekey="title-h1" contenteditable="true">Quran Study - Approaching the Quran in 30 Ways — Ayah Mastery Wheel</h1>
+      <div class="sub editable" data-ekey="title-sub" contenteditable="true">Track how deeply each student has engaged with an ayah, across all 30 methods.</div>
+    </div>
+  </header>
+
+<div class="mm-studybar" id="mmStudyBar">
+
   <div class="sb-group" id="sbExplore">
     <button class="picker-toggle" id="exploreOpenBtn">&#x1F9ED; Explore</button>
   </div>
@@ -814,7 +796,6 @@
     </div>
   </div>
 
-  <span id="hifzSwitchAnchor" style="display:none;"></span>
   <div id="hifzView">
     <label class="hifz-extras-switch" id="hifzExtrasSwitchWrap">
       <input type="checkbox" id="hifzExtrasSwitch">
@@ -6676,9 +6657,8 @@ function ensureUnitMetaLoadedForHifz(){
   return Promise.resolve();
 }
 
-// Banner reorder: applies on ALL screen sizes now (Smahk confirmed he wants
+// Banner reorder: applies on ALL screen sizes (Smahk confirmed he wants
 // the same "banner first, buttons grouped together" order on desktop too).
-// Separate from the section below, which stays mobile-only on purpose.
 function syncBannerOrder(){
   const header = document.querySelector('#quran-body-mount > header, .wrap > header');
   const topbar = document.getElementById('mmTopbar');
@@ -6690,61 +6670,33 @@ function syncBannerOrder(){
 }
 syncBannerOrder();
 
-// Mobile-only layout consolidation (Smahk's request): on narrow screens,
-// the mode toggle / Explore / Hifz extras-switch move into one "Display"
-// dropdown in the top bar instead of taking their own separate rows. This
-// physically moves the SAME DOM nodes (not clones) — every existing click
-// handler stays attached exactly as before; only their position changes.
-// Desktop deliberately keeps these inline (there's room; no need to hide
-// them behind a dropdown click there).
-const mmMobileQuery = window.matchMedia('(max-width:680px)');
-function syncDisplayControlsLayout(){
-  const isMobile = mmMobileQuery.matches;
+// Full consolidation into the top bar (Smahk's request, both screen sizes
+// now — not mobile-only): the mode toggle, Explore, the Hifz extras-switch,
+// and the Choose Ayah picker all move permanently into the Display
+// dropdown's slot. This physically moves the SAME DOM nodes (not clones),
+// so every existing click handler stays attached exactly as before — only
+// their position changes. One-time move, not breakpoint-conditional,
+// since Display now behaves identically on desktop and mobile.
+function consolidateIntoDisplay(){
   const slot = document.getElementById('mmDisplaySlot');
-  const modeToggle = document.getElementById('mmModeToggle');
-  const modeAnchor = document.getElementById('mmModeToggleAnchor');
-  const exploreGroup = document.getElementById('sbExplore');
-  const exploreAnchor = document.getElementById('exploreAnchor');
-  const hifzSwitch = document.getElementById('hifzExtrasSwitchWrap');
-  const hifzAnchor = document.getElementById('hifzSwitchAnchor');
-  const displayGroup = document.getElementById('mmTbDisplay');
-  const displayAnchor = document.getElementById('displayGroupAnchor');
-  const chooseAyahGroup = document.getElementById('sbChooseAyah');
   if(!slot) return;
-  if(isMobile){
-    if(modeToggle)  slot.appendChild(modeToggle);
-    if(exploreGroup) slot.appendChild(exploreGroup);
-    if(hifzSwitch)   slot.appendChild(hifzSwitch);
-    // Display's trigger button moves to sit beside Choose Ayah, since
-    // its panel contents no longer need to live in the top bar itself.
-    if(displayGroup && chooseAyahGroup) chooseAyahGroup.after(displayGroup);
-  } else {
-    if(modeToggle && modeAnchor)   modeAnchor.after(modeToggle);
-    if(exploreGroup && exploreAnchor) exploreAnchor.after(exploreGroup);
-    if(hifzSwitch && hifzAnchor)   hifzAnchor.after(hifzSwitch);
-    if(displayGroup && displayAnchor) displayAnchor.after(displayGroup);
-  }
+  const modeToggle = document.getElementById('mmModeToggle');
+  const exploreGroup = document.getElementById('sbExplore');
+  const hifzSwitch = document.getElementById('hifzExtrasSwitchWrap');
+  const ayahPicker = document.getElementById('ayahPicker');
+  const label = (text, first)=>{
+    const d = document.createElement('div');
+    d.className = 'ayah-picker-source';
+    d.style.cssText = first ? 'margin:2px 0 6px;' : 'margin:12px 0 6px;';
+    d.textContent = text;
+    return d;
+  };
+  if(modeToggle){ slot.appendChild(label('Display Mode', true)); slot.appendChild(modeToggle); }
+  if(ayahPicker){ slot.appendChild(label('Choose Ayah')); slot.appendChild(ayahPicker); }
+  if(exploreGroup){ slot.appendChild(label('Explore')); slot.appendChild(exploreGroup); }
+  if(hifzSwitch)   slot.appendChild(hifzSwitch);
 }
-syncDisplayControlsLayout();
-mmMobileQuery.addEventListener('change', syncDisplayControlsLayout);
-
-// Keeps the sticky studybar (Study Settings / ayah navigator / Display)
-// flush against the bottom of the top bar. The top bar's own height isn't
-// fixed — it wraps to more rows on narrow screens — so a hardcoded CSS
-// offset would drift; this measures the real height and exposes it as a
-// CSS variable the studybar's `top` reads from.
-function updateTopbarHeightVar(){
-  const topbar = document.getElementById('mmTopbar');
-  if(!topbar) return;
-  document.documentElement.style.setProperty('--topbar-h', topbar.offsetHeight + 'px');
-}
-updateTopbarHeightVar();
-mmMobileQuery.addEventListener('change', ()=> setTimeout(updateTopbarHeightVar, 0));
-let topbarHeightResizeTimer = null;
-window.addEventListener('resize', ()=>{
-  clearTimeout(topbarHeightResizeTimer);
-  topbarHeightResizeTimer = setTimeout(updateTopbarHeightVar, 120);
-});
+consolidateIntoDisplay();
 
 // Single source of truth for which of the three top-bar mode buttons shows
 // as active — called from renderAyahArabicMode (Regular/Tajweed) and from
