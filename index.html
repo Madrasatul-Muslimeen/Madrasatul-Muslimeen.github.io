@@ -6880,39 +6880,18 @@ function syncReciterMultiCheckboxes(){
   });
 })();
 
-// Study Settings (Study Unit / Combined / Text / Reciter / Repeat, all in
-// one popup) and Choose Ayah live side by side in the study bar — opening
-// one should close the other. Each button's own onclick (defined elsewhere,
-// unchanged) still owns toggling its own panel; this only ever closes the
-// other one.
-(function unifyStudyBarDropdowns(){
-  const pairs = [
-    ['studySettingsToggle', 'studySettingsPanel', 'studySettingsArrow'],
-    ['pickerToggle', 'ayahPicker', 'pickerToggleArrow']
-  ];
-  pairs.forEach(([btnId, panelId])=>{
-    const btn = document.getElementById(btnId);
-    if(!btn) return;
-    btn.addEventListener('click', ()=>{
-      pairs.forEach(([, otherPanelId, otherArrowId])=>{
-        if(otherPanelId === panelId) return;
-        const otherPanel = document.getElementById(otherPanelId);
-        const otherArrow = document.getElementById(otherArrowId);
-        if(otherPanel) otherPanel.classList.remove('show');
-        if(otherArrow) otherArrow.textContent = '▾';
-      });
-    });
-  });
+// Study Settings closes when clicking outside it. (Previously paired with
+// Choose Ayah's old standalone dropdown, but Choose Ayah is now fully
+// absorbed into Display's own panel — it isn't a separate toggle anymore,
+// so that half of this logic no longer applies.)
+(function closeStudySettingsOnOutsideClick(){
   document.addEventListener('click', e=>{
-    const bar = document.getElementById('mmStudyBar');
-    if(bar && !bar.contains(e.target)){
-      pairs.forEach(([, panelId, arrowId])=>{
-        const panel = document.getElementById(panelId);
-        const arrow = document.getElementById(arrowId);
-        if(panel) panel.classList.remove('show');
-        if(arrow) arrow.textContent = '▾';
-      });
-    }
+    const group = document.getElementById('sbStudySettings');
+    if(!group || group.contains(e.target)) return;
+    const panel = document.getElementById('studySettingsPanel');
+    const arrow = document.getElementById('studySettingsArrow');
+    if(panel) panel.classList.remove('show');
+    if(arrow) arrow.textContent = '▾';
   });
 })();
 
