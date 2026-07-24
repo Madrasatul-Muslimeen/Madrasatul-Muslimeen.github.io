@@ -1691,8 +1691,11 @@ const { useState, useEffect, useRef } = React;
 // Renameable header/button text. Click to edit; Enter or blur saves; Escape
 // cancels. Shows a subtle pencil affordance on hover so it's discoverable
 // without cluttering the UI. Empty text on save reverts to the default.
+// Admin-only: non-admins get plain, non-interactive text (mirrors the
+// Study department's inline-editing restriction via the same mmCanEdit()).
 function EditableLabel({ id, text, editingLabel, setEditingLabel, onRename, style, className }) {
-  const isEditing = editingLabel === id;
+  const canEdit = typeof mmCanEdit === 'function' ? mmCanEdit() : true;
+  const isEditing = canEdit && editingLabel === id;
   const [draft, setDraft] = React.useState(text);
   React.useEffect(()=>{ if(isEditing) setDraft(text); }, [isEditing]);
   if (isEditing) {
@@ -1709,6 +1712,9 @@ function EditableLabel({ id, text, editingLabel, setEditingLabel, onRename, styl
         style={{...style, background:"rgba(255,255,255,.15)", border:"1.5px dashed currentColor", borderRadius:"5px", padding:"1px 5px", font:"inherit", color:"inherit", outline:"none"}}
       />
     );
+  }
+  if (!canEdit) {
+    return <span className={className} style={style}>{text}</span>;
   }
   return (
     <span
@@ -2398,7 +2404,7 @@ function StudyTracker() {
                   <p style={{margin:0,color:"#94a3b8",fontSize:"12px"}}>{people.length} Students &middot; {subjects.length} Subjects &middot; Multiple subjects per student per day &middot; Auto-saved</p>
                 </div>
                 <div style={{display:"flex",gap:"7px",flexWrap:"wrap"}}>
-                  {[{id:"students",icon:"&#x1F465;",label:"Students"},{id:"subjects",icon:"&#x1F4D6;",label:"Subjects"}].map(btn=>(<button key={btn.id} className="pill" onClick={()=>setPanel(p=>p===btn.id?null:btn.id)} style={{padding:"7px 12px",background:panel===btn.id?"rgba(99,102,241,.55)":"rgba(255,255,255,.07)",border:"1px solid",borderColor:panel===btn.id?"rgba(99,102,241,.9)":"rgba(255,255,255,.15)",borderRadius:"8px",color:"white",fontSize:"12px",fontWeight:"600",cursor:"pointer"}}><span dangerouslySetInnerHTML={{__html:`${btn.icon} ${btn.label}`}} /></button>))}
+                  {((typeof mmCanEdit === 'function' ? mmCanEdit() : true) ? [{id:"students",icon:"&#x1F465;",label:"Students"},{id:"subjects",icon:"&#x1F4D6;",label:"Subjects"}] : []).map(btn=>(<button key={btn.id} className="pill" onClick={()=>setPanel(p=>p===btn.id?null:btn.id)} style={{padding:"7px 12px",background:panel===btn.id?"rgba(99,102,241,.55)":"rgba(255,255,255,.07)",border:"1px solid",borderColor:panel===btn.id?"rgba(99,102,241,.9)":"rgba(255,255,255,.15)",borderRadius:"8px",color:"white",fontSize:"12px",fontWeight:"600",cursor:"pointer"}}><span dangerouslySetInnerHTML={{__html:`${btn.icon} ${btn.label}`}} /></button>))}
                   <button className="pill" onClick={openWeekReport}  style={{padding:"7px 12px",background:"rgba(34,197,94,.18)",border:"1px solid rgba(34,197,94,.35)",borderRadius:"8px",color:"#86efac",fontSize:"12px",fontWeight:"700",cursor:"pointer"}}>&#x1F4CA; Week</button>
                   <button className="pill" onClick={openMonthReport} style={{padding:"7px 12px",background:"rgba(251,191,36,.18)",border:"1px solid rgba(251,191,36,.35)",borderRadius:"8px",color:"#fcd34d",fontSize:"12px",fontWeight:"700",cursor:"pointer"}}>&#x1F4C5; Monthly</button>
                   <button className="pill" onClick={clearWeek}       style={{padding:"7px 12px",background:"rgba(239,68,68,.12)",border:"1px solid rgba(239,68,68,.25)",borderRadius:"8px",color:"#fca5a5",fontSize:"12px",fontWeight:"600",cursor:"pointer"}}>&#x1F5D1; <EditableLabel id="btn-clear" text={labels["btn-clear"]||"Clear"} editingLabel={editingLabel} setEditingLabel={setEditingLabel} onRename={renameLabel} /></button>
