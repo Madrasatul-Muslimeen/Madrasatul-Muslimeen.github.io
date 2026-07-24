@@ -484,13 +484,15 @@
   .textlang-option input{width:16px;height:16px;accent-color:#C9A24B;cursor:pointer;}
 
   /* ===== Study control bar: Study Unit / Text Language / Reciter / Repeat / Choose Ayah, one row ===== */
-  .mm-studybar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;}
+  .mm-studybar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;position:sticky;top:calc(46px + var(--topbar-h, 48px));z-index:4400;background:#151b2e;padding:8px 20px;margin-left:-20px;margin-right:-20px;box-shadow:0 2px 6px rgba(0,0,0,.2);}
   .sb-group{position:relative;}
   .sb-group .picker-toggle{white-space:nowrap;}
   .sb-group:has(.ayah-picker.show) .picker-toggle{background:rgba(201,162,75,0.18);border-color:var(--gold);}
   .mm-studybar .ayah-picker{position:absolute;top:calc(100% + 6px);left:0;z-index:4600;min-width:300px;margin-bottom:0;background:#1b2338;box-shadow:0 10px 30px rgba(0,0,0,.45);}
   .mm-studybar .unit-ayah-nav{display:flex;margin:0;}
   @media (max-width:680px){
+    .mm-studybar{padding:6px 14px;gap:6px;margin-left:-14px;margin-right:-14px;}
+    .mm-studybar .picker-toggle{padding:5px 9px;font-size:11px;}
     .mm-studybar .ayah-picker.show{position:fixed;left:0;right:0;bottom:0;top:auto;border-radius:16px 16px 0 0;min-width:0;width:100%;max-height:70vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.5);}
     .mm-studybar .ayah-picker.show::before{content:"";display:block;width:40px;height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin:0 auto 12px;}
   }
@@ -548,7 +550,7 @@
 <div class="mm-topbar-inner">
   <div class="mm-tb-group" id="mmTbHome">
     <button class="mm-tb-btn" id="mmTbHomeBtn" type="button">&#x1F3E0; Home <span class="mm-tb-arrow">&#x25BE;</span></button>
-    <div class="mm-tb-panel">
+    <div class="mm-tb-panel mm-tb-panel-wide">
       <div class="mm-tb-panel-head"><span>Home</span><button class="mm-tb-close" data-close type="button">&#x2715;</button></div>
       <div class="mm-tb-row">
         <button class="mm-tb-item" id="mmTbGoStudy" type="button">&#x1F3AF; Study</button>
@@ -562,6 +564,8 @@
         <button class="ghost mm-tb-item" id="printBtn" type="button">&#x1F5A8; Print Report</button>
         <button class="ghost mm-tb-item" id="exportBtn" type="button">Export Snapshot</button>
       </div>
+      <div class="ayah-picker-source" style="margin:6px 0 8px;">Students</div>
+      <div class="people-row" id="peopleRow"></div>
     </div>
   </div>
   <div class="mm-tb-group" id="mmTbSettings">
@@ -577,13 +581,6 @@
         <button class="picker-toggle mm-tb-item" id="tajweedLegendBtn" title="What do the Tajweed colours mean?" type="button">&#x2753; Tajweed Key</button>
       </div>
       <div class="ayah-picker-source" style="margin:6px 0 8px;">Tajweed Colours toggle has moved to the top bar &#x1F3A8; icon.</div>
-    </div>
-  </div>
-  <div class="mm-tb-group" id="mmTbStudents">
-    <button class="mm-tb-btn" id="mmTbStudentsBtn" type="button">&#x1F465; Students <span class="mm-tb-arrow">&#x25BE;</span></button>
-    <div class="mm-tb-panel mm-tb-panel-wide">
-      <div class="mm-tb-panel-head"><span>Students</span><button class="mm-tb-close" data-close type="button">&#x2715;</button></div>
-      <div class="people-row" id="peopleRow"></div>
     </div>
   </div>
   <span id="displayGroupAnchor" style="display:none;"></span>
@@ -6730,6 +6727,24 @@ function syncDisplayControlsLayout(){
 }
 syncDisplayControlsLayout();
 mmMobileQuery.addEventListener('change', syncDisplayControlsLayout);
+
+// Keeps the sticky studybar (Study Settings / ayah navigator / Display)
+// flush against the bottom of the top bar. The top bar's own height isn't
+// fixed — it wraps to more rows on narrow screens — so a hardcoded CSS
+// offset would drift; this measures the real height and exposes it as a
+// CSS variable the studybar's `top` reads from.
+function updateTopbarHeightVar(){
+  const topbar = document.getElementById('mmTopbar');
+  if(!topbar) return;
+  document.documentElement.style.setProperty('--topbar-h', topbar.offsetHeight + 'px');
+}
+updateTopbarHeightVar();
+mmMobileQuery.addEventListener('change', ()=> setTimeout(updateTopbarHeightVar, 0));
+let topbarHeightResizeTimer = null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(topbarHeightResizeTimer);
+  topbarHeightResizeTimer = setTimeout(updateTopbarHeightVar, 120);
+});
 
 // Single source of truth for which of the three top-bar mode buttons shows
 // as active — called from renderAyahArabicMode (Regular/Tajweed) and from
