@@ -408,7 +408,8 @@
   }
 
   /* ======= FIXED EDIT BAR ======= */
-  .edit-bar{position:fixed;top:44px;left:0;right:0;height:46px;z-index:5900;background:#0d1526;border-bottom:2px solid rgba(201,162,75,0.15);display:flex;align-items:center;padding:0 20px;gap:8px;font-family:'Inter',sans-serif;transition:border-color .2s;}
+  .edit-bar{position:fixed;top:44px;left:0;right:0;height:46px;z-index:5900;background:#0d1526;border-bottom:2px solid rgba(201,162,75,0.15);display:none;align-items:center;padding:0 20px;gap:8px;font-family:'Inter',sans-serif;transition:border-color .2s;}
+  .edit-bar.active{display:flex;}
   .edit-bar.active{border-bottom-color:var(--gold);background:#101e35;}
   .eb-idle{font-size:11px;color:rgba(201,162,75,0.38);letter-spacing:.07em;user-select:none;}
   .eb-controls{display:none;align-items:center;gap:7px;width:100%;}
@@ -4713,12 +4714,14 @@ function showEditBar(el, key){
   [...document.getElementById('ebColors').children].forEach(sw=>
     sw.classList.toggle('active', !!col && sw.dataset.color===col));
   document.getElementById('editBar').classList.add('active');
+  if(typeof mmSyncTopbarPosition === 'function') mmSyncTopbarPosition();
 }
 
 function hideEditBar(){
   document.getElementById('editBar').classList.remove('active');
   if(activeEditEl) saveEditContent(activeEditEl, activeEditKey);
   activeEditEl = activeEditKey = null;
+  if(typeof mmSyncTopbarPosition === 'function') mmSyncTopbarPosition();
 }
 
 function attachElEdit(el, key){
@@ -9166,6 +9169,7 @@ mmInitAuth();
       if(eb) eb.style.top = tbH + 'px';
       topbar.style.top = (tbH + ebH) + 'px';
     }
+    window.mmSyncTopbarPosition = syncTop;
     syncTop();
     window.addEventListener('resize', syncTop);
     [300, 800, 1600, 3000].forEach(function(ms){ setTimeout(syncTop, ms); });
