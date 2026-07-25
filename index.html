@@ -85,10 +85,11 @@
 
   /* ayah card */
   .ayah-card{background:rgba(255,255,255,0.035);border:1px solid rgba(201,162,75,0.18);border-radius:14px;padding:18px 24px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;}
+  .ayah-card .ayah-body{min-width:0;flex:1 1 260px;max-width:100%;}
   .ayah-ref{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
-  .ayah-arabic{font-family:'Amiri',serif;font-size:30px;direction:rtl;color:#fbf3df;}
-  .ayah-meta{font-size:13px;color:#aab4c8;margin-top:6px;}
-  .ayah-bangla{font-family:'Noto Sans Bengali',sans-serif;font-size:13px;color:#8fa0c2;margin-top:5px;line-height:1.6;border-top:1px solid rgba(201,162,75,0.15);padding-top:5px;display:none;}
+  .ayah-arabic{font-family:'Amiri',serif;font-size:30px;direction:rtl;color:#fbf3df;overflow-wrap:break-word;word-break:break-word;}
+  .ayah-meta{font-size:13px;color:#aab4c8;margin-top:6px;overflow-wrap:break-word;}
+  .ayah-bangla{font-family:'Noto Sans Bengali',sans-serif;font-size:13px;color:#8fa0c2;margin-top:5px;line-height:1.6;border-top:1px solid rgba(201,162,75,0.15);padding-top:5px;display:none;overflow-wrap:break-word;}
   .ayah-bangla.loaded{display:block;}
   .ayah-audio-wrap{margin-top:8px;border-top:1px solid rgba(201,162,75,0.15);padding-top:8px;display:none;}
   .ayah-audio-wrap.loaded{display:block;}
@@ -146,6 +147,7 @@
   .ayah-picker-status{font-size:11px;color:#8fa0c2;margin-top:8px;min-height:14px;}
   .ayah-picker-status.error{color:#e07070;}
   .ayah-picker-source{font-size:10px;color:#66738f;margin-top:2px;}
+  .ayah-picker-source.error{color:#e07070;}
 
   /* word by word */
   .wbw-bar{display:flex;justify-content:flex-end;margin-bottom:10px;}
@@ -406,7 +408,7 @@
   .person-tab .editable:focus{background:rgba(0,0,0,0.15);box-shadow:0 0 0 2px rgba(255,255,255,0.4);}
 
   /* ===== Phase 1: persistent top bar (Home / Settings / Students) ===== */
-  .mm-topbar{position:sticky;top:46px;z-index:4500;background:#13192a;padding:8px 14px;box-shadow:0 2px 6px rgba(0,0,0,.25);font-family:'Inter',system-ui,sans-serif;}
+  .mm-topbar{position:sticky;top:46px;z-index:4650;background:#13192a;padding:8px 14px;box-shadow:0 2px 6px rgba(0,0,0,.25);font-family:'Inter',system-ui,sans-serif;}
   .mm-topbar-inner{display:flex;gap:8px;flex-wrap:wrap;align-items:center;max-width:1180px;margin:0 auto;}
   .mm-tb-group{position:relative;}
   .mm-tb-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15);color:#e8ecf5;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:'Inter',sans-serif;}
@@ -617,6 +619,10 @@
           <label for="unitPageNum">Page (1&ndash;604)</label>
           <input type="number" id="unitPageNum" min="1" max="604" value="1">
         </div>
+        <div class="ayah-picker-field" id="unitPageSurahField" style="display:none;">
+          <label for="unitPageSurahSelect">Surah</label>
+          <select id="unitPageSurahSelect"><option>Loading&hellip;</option></select>
+        </div>
         <div class="ayah-picker-field" id="unitRukuNumField" style="display:none;">
           <label for="unitRukuNumSelect">Ruku'</label>
           <select id="unitRukuNumSelect"><option>Choose a Surah first&hellip;</option></select>
@@ -628,6 +634,7 @@
         <button class="picker-load-btn" id="unitApplyBtn" style="display:none;">Set Study Unit</button>
       </div>
       <div class="ayah-picker-source editable" data-ekey="picker-hint-unit" id="unitPickerHint" contenteditable="true">A Range/Surah/Page's progress is tracked as its own independent record &mdash; it never overrides or is inferred from the individual ayahs inside it.</div>
+      <div class="ayah-picker-source" id="unitPageSurahHint" style="display:none;"></div>
 
       <div class="ss-row-label" id="ssCombinedLabel">Combined view</div>
       <label class="textlang-option ss-combined-row" id="ssCombinedRow" style="padding:0;">
@@ -778,7 +785,7 @@
   </div>
 
   <div class="ayah-card">
-    <div>
+    <div class="ayah-body">
       <div class="ayah-ref editable" id="ayahRef" data-ekey="ayah-ref" contenteditable="true">Surah Al-Fatihah · Ayah 1</div>
       <div class="ayah-arabic editable" id="ayahArabic" data-ekey="ayah-arabic" contenteditable="true">ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَـٰلَمِينَ ٢</div>
       <div class="ayah-arabic" id="ayahArabicTajweed" dir="rtl" style="display:none;"></div>
@@ -3037,12 +3044,18 @@ async function mmHydrateFromFirestore(){
       if(taxonomy.ayahs && Object.keys(taxonomy.ayahs).length) state.ayahs = {...state.ayahs, ...taxonomy.ayahs};
       if(taxonomy.textStyles) state.textStyles = {...state.textStyles, ...taxonomy.textStyles};
       ensureWaySubjectRegisteredForList(state.ways);
+      // renderAll()'s applyStaticStyles(false) intentionally skips repainting text
+      // (so it never clobbers someone actively typing) — but that means content
+      // synced down from Firestore (e.g. a Teacher/Admin's banner edit) needs an
+      // explicit applyStaticStyles(true) here, or it never reaches the DOM at all.
+      if(typeof applyStaticStyles === 'function') applyStaticStyles(true);
     }
     mmTaxonomyUnsub = mmSubscribeTeacherTaxonomy(mmOwnTeacherId, data=>{
       if(data.ways && data.ways.length && (data.waysVersion||0) >= WAYS_TAXONOMY_VERSION) state.ways = data.ways;
       if(data.ayahs) state.ayahs = {...state.ayahs, ...data.ayahs};
       if(data.textStyles) state.textStyles = {...state.textStyles, ...data.textStyles};
       renderAll();
+      if(data.textStyles && typeof applyStaticStyles === 'function') applyStaticStyles(true);
     });
   }catch(err){ console.error('Could not load teacher taxonomy (staying on local copy):', err); }
 
@@ -4225,6 +4238,33 @@ function ensurePageSurah(pageNum){
     throw err;
   });
   return pageSurahLoadPromises[pageNum];
+}
+
+// Reverse of ensurePageSurah: given a Surah, which Mushaf page(s) does it
+// span? Reads the "page" field AlQuran Cloud already includes on every ayah
+// (same 604-page numbering ensurePageSurah relies on), rather than loading
+// the full Mushaf word-level JSON (~604 pages) just to answer this — one
+// light fetch of a single surah's ayah list instead.
+const SURAH_PAGE_RANGE_CACHE = {};
+let surahPageRangeLoadPromises = {};
+function ensureSurahPageRange(surahNum){
+  surahNum = Number(surahNum);
+  if(SURAH_PAGE_RANGE_CACHE[surahNum]) return Promise.resolve(SURAH_PAGE_RANGE_CACHE[surahNum]);
+  if(surahPageRangeLoadPromises[surahNum]) return surahPageRangeLoadPromises[surahNum];
+  surahPageRangeLoadPromises[surahNum] = alquranFetch(`/surah/${surahNum}/quran-uthmani`).then(data=>{
+    const ayahs = (data && data.ayahs) || [];
+    if(!ayahs.length) throw new Error('empty ayah list for surah '+surahNum);
+    const pages = ayahs.map(a=>a.page).filter(p=>typeof p==='number');
+    if(!pages.length) throw new Error("AlQuran Cloud response has no numeric 'page' field for surah lookup.");
+    const range = { start: Math.min.apply(null, pages), end: Math.max.apply(null, pages) };
+    SURAH_PAGE_RANGE_CACHE[surahNum] = range;
+    return range;
+  }).catch(err=>{
+    console.error('ensureSurahPageRange failed for surah', surahNum, err);
+    delete surahPageRangeLoadPromises[surahNum];
+    throw err;
+  });
+  return surahPageRangeLoadPromises[surahNum];
 }
 
 // ---- Drill-down state ----
@@ -6045,6 +6085,7 @@ async function loadChapters(){
     // never been told to try again. Safe to call unconditionally — it
     // already no-ops if already populated.
     if(typeof populateUnitSurahSelect === 'function') populateUnitSurahSelect();
+    if(typeof populateUnitPageSurahSelect === 'function') populateUnitPageSurahSelect();
     if(typeof populateStudySettingsAyahSurahSelect === 'function') populateStudySettingsAyahSurahSelect();
   }catch(e){
     console.error('loadChapters failed:', e);
@@ -7214,8 +7255,10 @@ document.getElementById('studySettingsToggle').onclick = ()=>{
   // not the shared CHAPTERS array (which other loaders can populate first).
   if(!document.getElementById('pickerSurah').dataset.populated) loadChapters();
   populateUnitSurahSelect();
+  populateUnitPageSurahSelect();
   populateStudySettingsAyahSurahSelect();
   populateUnitJuzSelect();
+  if(document.getElementById('unitTypeSelect').value==='page') syncPageSurahHintFromPage();
   if(typeof syncReciterMultiCheckboxes === 'function') syncReciterMultiCheckboxes();
   const status = document.getElementById('ssStatus');
   if(status) status.textContent = '';
@@ -7316,6 +7359,70 @@ function populateUnitSurahSelect(){
   sel.dataset.populated = '1';
 }
 
+function populateUnitPageSurahSelect(){
+  const sel = document.getElementById('unitPageSurahSelect');
+  if(!CHAPTERS.length || sel.dataset.populated) return;
+  sel.innerHTML = CHAPTERS.map(c=>`<option value="${c.id}">${c.id}. ${c.name_simple}</option>`).join('');
+  sel.dataset.populated = '1';
+}
+
+// Cross-links the Page-mode Page-number input with its companion Surah
+// select: entering a page shows (and selects) which Surah it's in; choosing
+// a Surah jumps the page number to where that Surah starts. Each direction
+// only ever writes the OTHER control, and a monotonically-increasing token
+// guards against a slow earlier lookup overwriting a newer one.
+let pageSurahHintToken = 0;
+async function syncPageSurahHintFromPage(){
+  const pageInput = document.getElementById('unitPageNum');
+  const hint = document.getElementById('unitPageSurahHint');
+  const sel = document.getElementById('unitPageSurahSelect');
+  if(!pageInput || !hint) return;
+  const page = Number(pageInput.value);
+  if(!page || page<1 || page>604){ hint.textContent = ''; return; }
+  const token = ++pageSurahHintToken;
+  hint.classList.remove('error');
+  hint.textContent = 'Looking up the Surah for page ' + page + '\u2026';
+  try{
+    const surahNum = await ensurePageSurah(page);
+    if(token !== pageSurahHintToken) return; // superseded by a newer lookup
+    hint.textContent = 'Page ' + page + ' is in Surah ' + surahNameFor(surahNum) + '.';
+    if(sel && sel.dataset.populated) sel.value = String(surahNum);
+  }catch(e){
+    if(token !== pageSurahHintToken) return;
+    hint.textContent = 'Couldn\u2019t look up the Surah for that page (' + (e.message||'network error') + ').';
+    hint.classList.add('error');
+  }
+}
+async function syncPageFromSurahSelect(){
+  const sel = document.getElementById('unitPageSurahSelect');
+  const pageInput = document.getElementById('unitPageNum');
+  const hint = document.getElementById('unitPageSurahHint');
+  if(!sel || !pageInput || !hint) return;
+  const surahNum = Number(sel.value);
+  if(!surahNum) return;
+  const token = ++pageSurahHintToken;
+  hint.classList.remove('error');
+  hint.textContent = 'Looking up pages for ' + surahNameFor(surahNum) + '\u2026';
+  try{
+    const range = await ensureSurahPageRange(surahNum);
+    if(token !== pageSurahHintToken) return;
+    pageInput.value = range.start;
+    hint.textContent = range.start===range.end
+      ? surahNameFor(surahNum) + ' is on page ' + range.start + '.'
+      : surahNameFor(surahNum) + ' spans pages ' + range.start + '\u2013' + range.end + ' (page set to the first page).';
+  }catch(e){
+    if(token !== pageSurahHintToken) return;
+    hint.textContent = 'Couldn\u2019t look up pages for that Surah (' + (e.message||'network error') + ').';
+    hint.classList.add('error');
+  }
+}
+let pageSurahDebounceTimer = null;
+document.getElementById('unitPageNum').addEventListener('input', ()=>{
+  clearTimeout(pageSurahDebounceTimer);
+  pageSurahDebounceTimer = setTimeout(syncPageSurahHintFromPage, 450);
+});
+document.getElementById('unitPageSurahSelect').addEventListener('change', syncPageFromSurahSelect);
+
 function populateUnitJuzSelect(){
   const sel = document.getElementById('unitJuzSelect');
   if(sel.dataset.populated) return;
@@ -7352,6 +7459,8 @@ document.getElementById('unitTypeSelect').addEventListener('change', e=>{
   document.getElementById('unitRangeStartField').style.display = type==='range' ? 'flex' : 'none';
   document.getElementById('unitRangeEndField').style.display = type==='range' ? 'flex' : 'none';
   document.getElementById('unitPageField').style.display = type==='page' ? 'flex' : 'none';
+  document.getElementById('unitPageSurahField').style.display = type==='page' ? 'flex' : 'none';
+  document.getElementById('unitPageSurahHint').style.display = type==='page' ? 'block' : 'none';
   document.getElementById('unitRukuNumField').style.display = type==='ruku' ? 'flex' : 'none';
   document.getElementById('unitJuzField').style.display = type==='juz' ? 'flex' : 'none';
   // Combined ("start on all ayahs") only means anything for a multi-ayah
@@ -7370,6 +7479,10 @@ document.getElementById('unitTypeSelect').addEventListener('change', e=>{
   }
   if(type==='ruku') refreshUnitRukuNumSelect();
   if(type==='juz') populateUnitJuzSelect();
+  if(type==='page'){
+    if(CHAPTERS.length) populateUnitPageSurahSelect();
+    syncPageSurahHintFromPage();
+  }
 });
 
 // When the Surah changes while "Ruku'" is the active Study Unit type, the
