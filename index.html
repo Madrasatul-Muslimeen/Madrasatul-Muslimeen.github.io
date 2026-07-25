@@ -8596,7 +8596,44 @@ mmActivateTab = function(name){
   }
 };
 
+var MM_QS_PREF_KEY = 'mm_qs_splash_pref';   // 'always' | 'daily' | 'weekly'
+var MM_QS_LAST_KEY = 'mm_qs_splash_last_date';
+
+function mmQsPad2(n){ return n < 10 ? '0'+n : ''+n; }
+function mmQsTodayStr(){
+  var d = new Date();
+  return d.getFullYear()+'-'+mmQsPad2(d.getMonth()+1)+'-'+mmQsPad2(d.getDate());
+}
+function mmQsGetPref(){
+  try{ return localStorage.getItem(MM_QS_PREF_KEY) || 'always'; }catch(_){ return 'always'; }
+}
+function mmQsSetPref(v){
+  try{ localStorage.setItem(MM_QS_PREF_KEY, v); }catch(_){}
+}
+function mmQsShouldShow(){
+  var pref = mmQsGetPref();
+  if(pref === 'daily' || pref === 'weekly'){
+    var last = null;
+    try{ last = localStorage.getItem(MM_QS_LAST_KEY); }catch(_){}
+    if(last){
+      var lastDate = new Date(last + 'T00:00:00');
+      var nowDate = new Date(mmQsTodayStr() + 'T00:00:00');
+      if(!isNaN(lastDate.getTime())){
+        var daysSinceLast = Math.round((nowDate - lastDate) / 86400000);
+        if(pref === 'daily' && daysSinceLast < 1) return false;
+        if(pref === 'weekly' && daysSinceLast < 7) return false;
+      }
+    }
+  }
+  return true;
+}
+function mmQsMarkShownToday(){
+  try{ localStorage.setItem(MM_QS_LAST_KEY, mmQsTodayStr()); }catch(_){}
+}
+
 function mmShowQuranSplash(onDone){
+  if(!mmQsShouldShow()){ if(typeof onDone === 'function') onDone(); return; }
+
   var overlay = document.createElement('div');
   overlay.id = 'mm-quran-splash-overlay';
   overlay.innerHTML =
@@ -8621,24 +8658,56 @@ function mmShowQuranSplash(onDone){
       'color:#c7cfe0;line-height:1.5;margin:0 auto 28px;max-width:480px;}' +
     '.mmqs-motto{font-family:"Inter",sans-serif;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;' +
       'color:var(--gold-dim,#A4823A);}' +
+    '.mmqs-gear{position:absolute;top:18px;right:18px;width:34px;height:34px;border-radius:50%;' +
+      'background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);color:#e2e8f0;font-size:16px;' +
+      'display:flex;align-items:center;justify-content:center;cursor:pointer;}' +
+    '.mmqs-gear:hover{background:rgba(255,255,255,.16);}' +
+    '.mmqs-panel{display:none;position:absolute;top:60px;right:18px;width:230px;background:#13192a;' +
+      'border:1px solid rgba(201,162,75,.3);border-radius:10px;padding:14px;text-align:left;box-shadow:0 10px 30px rgba(0,0,0,.4);}' +
+    '.mmqs-panel.open{display:block;}' +
+    '.mmqs-panel h4{margin:0 0 10px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gold,#C9A24B);}' +
+    '.mmqs-panel label{display:block;font-size:13px;color:#e2e8f0;margin-bottom:8px;cursor:pointer;}' +
+    '.mmqs-panel input{margin-right:8px;}' +
     '</style>' +
+    '<div class="mmqs-gear" id="mmqsGear" title="Opener settings">&#9881;&#65039;</div>' +
+    '<div class="mmqs-panel" id="mmqsPanel">' +
+      '<h4>Show this opener</h4>' +
+      '<label><input type="radio" name="mmqsPref" value="always"> Every time</label>' +
+      '<label><input type="radio" name="mmqsPref" value="daily"> Once a day</label>' +
+      '<label><input type="radio" name="mmqsPref" value="weekly"> Once a week</label>' +
+    '</div>' +
     '<div class="mmqs-wrap">' +
       '<div class="mmqs-item mmqs-title" style="animation-delay:.2s">Quran Revival</div>' +
       '<div class="mmqs-item mmqs-tagline1" style="animation-delay:2.0s">Reviving the Quran, abandoned.</div>' +
       '<div class="mmqs-item mmqs-divider" style="animation-delay:3.7s"></div>' +
       '<div class="mmqs-item mmqs-project" style="animation-delay:5.1s">A project of Madrasatul Muslimeen</div>' +
       '<div class="mmqs-item mmqs-tagline2" style="animation-delay:8.7s">Building Muslim-Mindset, reviving the Quran, reviving the Ummah!</div>' +
-      '<div class="mmqs-item mmqs-motto" style="animation-delay:10.5s">Akhlaq &bull; Ilm &bull; Tawheed &bull; Dawah &bull; Hukm</div>' +
+      '<div class="mmqs-item mmqs-motto" style="animation-delay:11.5s">Akhlaq &bull; Ilm &bull; Tawheed &bull; Dawah &bull; Hukm</div>' +
     '</div>';
   document.body.appendChild(overlay);
+
+  var gear = document.getElementById('mmqsGear');
+  var panel = document.getElementById('mmqsPanel');
+  gear.addEventListener('click', function(e){
+    e.stopPropagation();
+    panel.classList.toggle('open');
+    var checked = overlay.querySelector('input[value="'+mmQsGetPref()+'"]');
+    if(checked) checked.checked = true;
+  });
+  panel.addEventListener('click', function(e){ e.stopPropagation(); });
+  Array.prototype.forEach.call(panel.querySelectorAll('input'), function(inp){
+    inp.addEventListener('change', function(){ mmQsSetPref(inp.value); });
+  });
+
   setTimeout(function(){
     overlay.style.transition = 'opacity .5s ease';
     overlay.style.opacity = '0';
     setTimeout(function(){
       if(overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      mmQsMarkShownToday();
       if(typeof onDone === 'function') onDone();
     }, 500);
-  }, 12000);
+  }, 14000);
 }
 
 // Persistent Home dropdown (always-loaded, lives above the lazy Study/Monitor
