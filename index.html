@@ -133,6 +133,7 @@
   .picker-toggle.active{background:var(--gold);color:#241a06;border-color:var(--gold);font-weight:600;}
   .ayah-picker{background:rgba(255,255,255,0.035);border:1px solid rgba(201,162,75,0.18);border-radius:14px;padding:16px 20px;margin-bottom:14px;display:none;}
   .ayah-picker.show{display:block;}
+  #sbChooseAyah .ayah-picker{position:absolute;top:calc(100% + 6px);left:0;z-index:4600;width:380px;background:#1b2338;border:1px solid rgba(255,255,255,.14);box-shadow:0 10px 30px rgba(0,0,0,.45);}
   .ayah-picker-row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;}
   .ayah-picker-field{display:flex;flex-direction:column;gap:4px;}
   .ayah-picker-field label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:#8fa0c2;}
@@ -488,6 +489,10 @@
   #mmDisplaySlot .ayah-picker{display:block;margin-bottom:0;position:static;box-shadow:none;background:transparent;border:none;padding:0;}
   #mmDisplaySlot .sb-group{margin-bottom:0;}
   .mm-studybar{display:none;}
+  @media (max-width:680px){
+    .mm-studybar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;position:sticky;top:calc(46px + var(--topbar-h, 48px));z-index:4400;background:#151b2e;padding:8px 20px;margin:0 -20px 14px;box-shadow:0 2px 6px rgba(0,0,0,.2);}
+    .mm-studybar.mm-studybar-empty{display:none;}
+  }
 
   /* ===== Study Settings popup (consolidates Study Unit / Combined / Text /
      Reciter / Repeat into one click) ===== */
@@ -512,6 +517,7 @@
   .ss-status{font-size:12px;margin-top:8px;min-height:14px;}
   @media (max-width:680px){
     .study-settings-panel.show{position:fixed;left:0;right:0;bottom:0;top:auto;border-radius:16px 16px 0 0;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.5);padding:16px 16px calc(16px + env(safe-area-inset-bottom));}
+    #sbChooseAyah .ayah-picker.show{position:fixed;left:0;right:0;bottom:0;top:auto;border-radius:16px 16px 0 0;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 -8px 30px rgba(0,0,0,.5);}
     .study-settings-panel.show::before{content:"";display:block;width:40px;height:4px;background:rgba(255,255,255,.25);border-radius:2px;margin:0 auto 12px;}
     .ss-footer button{font-size:12px;padding:0 4px;}
   }
@@ -680,6 +686,34 @@
       <div id="mmDisplaySlot"></div>
     </div>
   </div>
+  <span id="chooseAyahAnchor" style="display:none;"></span>
+  <div class="sb-group" id="sbChooseAyah">
+    <button class="picker-toggle" id="pickerToggle">&#x1F4D6; Choose Ayah <span id="pickerToggleArrow">&#x25BE;</span></button>
+    <div class="ayah-picker" id="ayahPicker">
+      <div class="ayah-picker-row">
+      <div class="ayah-picker-field">
+        <label for="pickerSurah">Surah</label>
+        <select id="pickerSurah"><option>Loading…</option></select>
+      </div>
+      <div class="ayah-picker-field">
+        <label for="pickerAyahNum">Ayah</label>
+        <select id="pickerAyahNum"><option>—</option></select>
+      </div>
+      <div class="ayah-picker-field">
+        <label for="pickerTranslation">Translation</label>
+        <select id="pickerTranslation"><option>Loading…</option></select>
+      </div>
+      <div class="ayah-picker-divider"></div>
+      <div class="ayah-picker-field">
+        <label for="pickerSearch">Or type e.g. 2:255</label>
+        <input type="text" id="pickerSearch" placeholder="surah:ayah">
+      </div>
+      <button class="picker-load-btn" id="pickerLoadBtn">Load Ayah</button>
+    </div>
+    <div class="ayah-picker-status" id="pickerStatus"></div>
+    <div class="ayah-picker-source editable" data-ekey="picker-hint-source" contenteditable="true">Text &amp; translations fetched live from quran.com</div>
+  </div>
+  </div>
   <div class="unit-ayah-nav" id="unitAyahNav" style="display:none">
     <button class="uan-btn" id="uanPrev" title="Previous ayah">◀</button>
     <select id="uanSelect" title="Jump to an ayah in this unit"></select>
@@ -727,34 +761,6 @@
     <button class="picker-toggle" id="exploreOpenBtn">&#x1F9ED; Explore</button>
   </div>
 
-  <div class="sb-group" id="sbChooseAyah">
-    <button class="picker-toggle" id="pickerToggle">📖 Choose Ayah <span id="pickerToggleArrow">▾</span></button>
-
-    <div class="ayah-picker" id="ayahPicker">
-      <div class="ayah-picker-row">
-      <div class="ayah-picker-field">
-        <label for="pickerSurah">Surah</label>
-        <select id="pickerSurah"><option>Loading…</option></select>
-      </div>
-      <div class="ayah-picker-field">
-        <label for="pickerAyahNum">Ayah</label>
-        <select id="pickerAyahNum"><option>—</option></select>
-      </div>
-      <div class="ayah-picker-field">
-        <label for="pickerTranslation">Translation</label>
-        <select id="pickerTranslation"><option>Loading…</option></select>
-      </div>
-      <div class="ayah-picker-divider"></div>
-      <div class="ayah-picker-field">
-        <label for="pickerSearch">Or type e.g. 2:255</label>
-        <input type="text" id="pickerSearch" placeholder="surah:ayah">
-      </div>
-      <button class="picker-load-btn" id="pickerLoadBtn">Load Ayah</button>
-    </div>
-    <div class="ayah-picker-status" id="pickerStatus"></div>
-    <div class="ayah-picker-source editable" data-ekey="picker-hint-source" contenteditable="true">Text &amp; translations fetched live from quran.com</div>
-  </div>
-  </div>
 </div>
 
   <div class="ayah-picker tajweed-legend" id="tajweedLegend">
@@ -6683,7 +6689,6 @@ function consolidateIntoDisplay(){
   const modeToggle = document.getElementById('mmModeToggle');
   const exploreGroup = document.getElementById('sbExplore');
   const hifzSwitch = document.getElementById('hifzExtrasSwitchWrap');
-  const ayahPicker = document.getElementById('ayahPicker');
   const label = (text, first)=>{
     const d = document.createElement('div');
     d.className = 'ayah-picker-source';
@@ -6692,11 +6697,46 @@ function consolidateIntoDisplay(){
     return d;
   };
   if(modeToggle){ slot.appendChild(label('Display Mode', true)); slot.appendChild(modeToggle); }
-  if(ayahPicker){ slot.appendChild(label('Choose Ayah')); slot.appendChild(ayahPicker); }
   if(exploreGroup){ slot.appendChild(label('Explore')); slot.appendChild(exploreGroup); }
   if(hifzSwitch)   slot.appendChild(hifzSwitch);
 }
 consolidateIntoDisplay();
+
+// Choose Ayah placement differs by screen size (Smahk's request): desktop/
+// tablet keeps it inline in the top bar, after Display — there's room.
+// Mobile moves it into its own sticky bar below the top bar instead, since
+// a phone-width row has no space left for it alongside Home/Study Settings.
+const mmChooseAyahQuery = window.matchMedia('(max-width:680px)');
+function syncChooseAyahPlacement(){
+  const group = document.getElementById('sbChooseAyah');
+  const anchor = document.getElementById('chooseAyahAnchor');
+  const mobileBar = document.getElementById('mmStudyBar');
+  if(!group || !anchor || !mobileBar) return;
+  if(mmChooseAyahQuery.matches){
+    mobileBar.appendChild(group);
+  } else {
+    anchor.after(group);
+  }
+}
+syncChooseAyahPlacement();
+mmChooseAyahQuery.addEventListener('change', syncChooseAyahPlacement);
+
+// Keeps the sticky mobile Choose-Ayah bar flush against the bottom of the
+// top bar. The top bar's height isn't fixed (wraps to more rows on narrow
+// screens), so a hardcoded offset would drift — this measures the real
+// height and exposes it as a CSS variable the bar's `top` reads from.
+function updateTopbarHeightVar(){
+  const topbar = document.getElementById('mmTopbar');
+  if(!topbar) return;
+  document.documentElement.style.setProperty('--topbar-h', topbar.offsetHeight + 'px');
+}
+updateTopbarHeightVar();
+mmChooseAyahQuery.addEventListener('change', ()=> setTimeout(updateTopbarHeightVar, 0));
+let topbarHeightResizeTimer = null;
+window.addEventListener('resize', ()=>{
+  clearTimeout(topbarHeightResizeTimer);
+  topbarHeightResizeTimer = setTimeout(updateTopbarHeightVar, 120);
+});
 
 // Single source of truth for which of the three top-bar mode buttons shows
 // as active — called from renderAyahArabicMode (Regular/Tajweed) and from
@@ -6880,10 +6920,7 @@ function syncReciterMultiCheckboxes(){
   });
 })();
 
-// Study Settings closes when clicking outside it. (Previously paired with
-// Choose Ayah's old standalone dropdown, but Choose Ayah is now fully
-// absorbed into Display's own panel — it isn't a separate toggle anymore,
-// so that half of this logic no longer applies.)
+// Study Settings closes when clicking outside it.
 (function closeStudySettingsOnOutsideClick(){
   document.addEventListener('click', e=>{
     const group = document.getElementById('sbStudySettings');
@@ -6894,6 +6931,23 @@ function syncReciterMultiCheckboxes(){
     if(arrow) arrow.textContent = '▾';
   });
 })();
+
+// Choose Ayah closes when clicking outside it. Same pattern as Study
+// Settings above — checks containment against its own current group,
+// not a fixed/stale container, so it stays correct regardless of which
+// of the two locations (top bar on desktop, sticky mobile bar) it's
+// currently living in.
+(function closeChooseAyahOnOutsideClick(){
+  document.addEventListener('click', e=>{
+    const group = document.getElementById('sbChooseAyah');
+    if(!group || group.contains(e.target)) return;
+    const panel = document.getElementById('ayahPicker');
+    const arrow = document.getElementById('pickerToggleArrow');
+    if(panel) panel.classList.remove('show');
+    if(arrow) arrow.textContent = '▾';
+  });
+})();
+
 
 // Reported issue: on some mobile browsers the bottom-sheet CSS (position:fixed
 // via the max-width:680px media query) wasn't taking effect — the panel
@@ -7061,6 +7115,10 @@ function updateAyahToolsVisibility(){
   if(bangla) bangla.style.display = '';
   const pickerBtn = document.getElementById('pickerToggle');
   if(pickerBtn) pickerBtn.style.display = (state.currentUnitType === 'ayah') ? '' : 'none';
+  // The mobile sticky bar Choose Ayah lives in should only take up screen
+  // space when it actually has something visible in it.
+  const mobileBar = document.getElementById('mmStudyBar');
+  if(mobileBar) mobileBar.classList.toggle('mm-studybar-empty', state.currentUnitType !== 'ayah');
   if(state.currentUnitType !== 'ayah'){
     const pickerPanel = document.getElementById('ayahPicker');
     if(pickerPanel && pickerPanel.classList.contains('show')){
