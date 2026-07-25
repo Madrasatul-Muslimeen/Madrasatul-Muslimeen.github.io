@@ -13,7 +13,7 @@
     font-family:system-ui,-apple-system,sans-serif;
   }
   #mm-tabbar{
-    display:none; gap:0; background:#0f172a; padding:6px 12px; position:sticky; top:0; z-index:5000;
+    display:none; gap:0; background:#0f172a; padding:6px 12px; position:sticky; top:0; z-index:5650;
     box-shadow:0 2px 8px rgba(0,0,0,.25); font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
   }
   .mm-home-group{ position:relative; display:inline-block; }
@@ -565,10 +565,6 @@
       <button id="mm-tab-btn-admin" onclick="mmOpenAdminPanel()" style="display:none;">&#x2699;&#xFE0F; Admin</button>
       <button id="mm-signout-btn-bar" onclick="firebase.auth().signOut()">Sign Out</button>
       <div id="mmHomeExtra">
-        <div class="mm-tb-row">
-          <button class="mm-tb-item" id="mmTbGoStudy" type="button">&#x1F3AF; Quran Study</button>
-          <button class="mm-tb-item" id="mmTbGoMonitor" type="button">&#x1F4DA; Monitor</button>
-        </div>
         <div class="ayah-picker-source" style="margin:2px 0 8px;">Save</div>
         <div class="mm-tb-row">
           <div class="save-state"><span class="dot"></span><span id="saveLabel">Saved</span></div>
