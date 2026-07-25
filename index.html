@@ -13,7 +13,7 @@
     font-family:system-ui,-apple-system,sans-serif;
   }
   #mm-tabbar{
-    display:none; gap:0; background:#0f172a; padding:6px 12px; position:sticky; top:0; z-index:5650;
+    display:none; gap:0; background:#0f172a; padding:6px 12px; position:sticky; top:0; z-index:6100;
     box-shadow:0 2px 8px rgba(0,0,0,.25); font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
   }
   .mm-home-group{ position:relative; display:inline-block; }
@@ -408,7 +408,7 @@
   }
 
   /* ======= FIXED EDIT BAR ======= */
-  .edit-bar{position:fixed;top:0;left:0;right:0;height:46px;z-index:6000;background:#0d1526;border-bottom:2px solid rgba(201,162,75,0.15);display:flex;align-items:center;padding:0 20px;gap:8px;font-family:'Inter',sans-serif;transition:border-color .2s;}
+  .edit-bar{position:fixed;top:44px;left:0;right:0;height:46px;z-index:5900;background:#0d1526;border-bottom:2px solid rgba(201,162,75,0.15);display:flex;align-items:center;padding:0 20px;gap:8px;font-family:'Inter',sans-serif;transition:border-color .2s;}
   .edit-bar.active{border-bottom-color:var(--gold);background:#101e35;}
   .eb-idle{font-size:11px;color:rgba(201,162,75,0.38);letter-spacing:.07em;user-select:none;}
   .eb-controls{display:none;align-items:center;gap:7px;width:100%;}
@@ -9158,7 +9158,13 @@ mmInitAuth();
     // while mm-tabbar is still display:none pre-auth, when offsetHeight would read 0)
     function syncTop(){
       var tb = document.getElementById('mm-tabbar');
-      if(tb && tb.offsetHeight > 0) topbar.style.top = tb.offsetHeight + 'px';
+      if(!tb || tb.offsetHeight === 0) return;
+      var tbH = tb.offsetHeight;
+      var eb = document.getElementById('editBar');
+      var ebVisible = eb && getComputedStyle(eb).display !== 'none';
+      var ebH = ebVisible ? eb.offsetHeight : 0;
+      if(eb) eb.style.top = tbH + 'px';
+      topbar.style.top = (tbH + ebH) + 'px';
     }
     syncTop();
     window.addEventListener('resize', syncTop);
