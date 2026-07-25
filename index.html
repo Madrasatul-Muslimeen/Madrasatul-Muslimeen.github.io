@@ -13,8 +13,34 @@
     font-family:system-ui,-apple-system,sans-serif;
   }
   #mm-tabbar{
-    display:none; gap:0; background:#0f172a; padding:0 12px; position:sticky; top:0; z-index:5000;
+    display:none; gap:0; background:#0f172a; padding:6px 12px; position:sticky; top:0; z-index:5000;
     box-shadow:0 2px 8px rgba(0,0,0,.25); font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  }
+  .mm-home-group{ position:relative; display:inline-block; }
+  .mm-home-btn{
+    background:transparent; border:1px solid rgba(255,255,255,.15); color:#e2e8f0; padding:8px 14px;
+    font-size:13px; font-weight:700; border-radius:7px; cursor:pointer; font-family:inherit;
+  }
+  .mm-home-btn:hover{ background:rgba(255,255,255,.08); }
+  .mm-home-arrow{ font-size:10px; margin-left:2px; }
+  .mm-home-group.open .mm-home-arrow{ transform:rotate(180deg); display:inline-block; }
+  .mm-home-panel{
+    display:none; position:absolute; top:calc(100% + 6px); left:0; min-width:230px; max-width:90vw;
+    background:#13192a; border:1px solid rgba(201,162,75,.25); border-radius:10px; padding:8px;
+    box-shadow:0 10px 30px rgba(0,0,0,.4); z-index:5600; max-height:80vh; overflow-y:auto;
+  }
+  .mm-home-group.open .mm-home-panel{ display:block; }
+  .mm-home-panel button{
+    display:block; width:100%; text-align:left; background:transparent; border:none; color:#e2e8f0;
+    padding:9px 10px; font-size:13px; font-weight:600; border-radius:6px; cursor:pointer;
+    border-bottom:none !important; font-family:inherit;
+  }
+  .mm-home-panel button:hover{ background:rgba(255,255,255,.08); }
+  .mm-home-panel button.active{ color:var(--gold,#C9A24B); }
+  .mm-home-backdrop{ display:none; position:fixed; inset:0; z-index:5550; background:transparent; }
+  .mm-home-backdrop.show{ display:block; }
+  @media (max-width:680px){
+    .mm-home-panel{ position:fixed; left:0; right:0; bottom:0; top:auto; width:100%; max-width:100%; border-radius:14px 14px 0 0; max-height:75vh; }
   }
   #mm-tabbar button{
     background:transparent; border:none; color:#94a3b8; padding:13px 18px; font-size:13px; font-weight:700;
@@ -531,11 +557,41 @@
 <div id="mm-auth-overlay"></div>
 
 <div id="mm-tabbar">
-  <button id="mm-tab-btn-tracker" class="active" onclick="mmActivateTab('tracker')">&#x1F4DA; Monitor</button>
-  <button id="mm-tab-btn-quran" onclick="mmActivateTab('quran')">&#x1F3AF; Study</button>
-  <button id="mm-tab-btn-admin" onclick="mmOpenAdminPanel()" style="display:none;">&#x2699;&#xFE0F; Admin</button>
-  <button id="mm-signout-btn-bar" onclick="firebase.auth().signOut()" style="margin-left:auto;color:#64748b;">Sign Out</button>
+  <div class="mm-home-group" id="mmHomeGroup">
+    <button class="mm-home-btn" id="mmHomeBtn" type="button">&#x1F3E0; Home <span class="mm-home-arrow">&#x25BE;</span></button>
+    <div class="mm-home-panel" id="mmHomePanel">
+      <button id="mm-tab-btn-tracker" class="active" onclick="mmActivateTab('tracker')">&#x1F4DA; Monitor</button>
+      <button id="mm-tab-btn-quran" onclick="mmActivateTab('quran')">&#x1F3AF; Quran Study</button>
+      <button id="mm-tab-btn-admin" onclick="mmOpenAdminPanel()" style="display:none;">&#x2699;&#xFE0F; Admin</button>
+      <button id="mm-signout-btn-bar" onclick="firebase.auth().signOut()">Sign Out</button>
+      <div id="mmHomeExtra">
+        <div class="mm-tb-row">
+          <button class="mm-tb-item" id="mmTbGoStudy" type="button">&#x1F3AF; Quran Study</button>
+          <button class="mm-tb-item" id="mmTbGoMonitor" type="button">&#x1F4DA; Monitor</button>
+        </div>
+        <div class="ayah-picker-source" style="margin:2px 0 8px;">Save</div>
+        <div class="mm-tb-row">
+          <div class="save-state"><span class="dot"></span><span id="saveLabel">Saved</span></div>
+        </div>
+        <div class="mm-tb-row">
+          <button class="ghost mm-tb-item" id="printBtn" type="button">&#x1F5A8; Print Report</button>
+          <button class="ghost mm-tb-item" id="exportBtn" type="button">Export Snapshot</button>
+        </div>
+        <div class="ayah-picker-source" style="margin:6px 0 8px;">Students</div>
+        <div class="people-row" id="peopleRow"></div>
+        <div class="ayah-picker-source" style="margin:6px 0 8px;">Appearance</div>
+        <div class="mm-tb-row">
+          <button class="ghost mm-tb-item" id="themeBtn" title="Personalise colours — only you see this" type="button">&#x1F3A8; Appearance / Theme</button>
+        </div>
+        <div class="ayah-picker-source" style="margin:6px 0 8px;">Tajweed</div>
+        <div class="mm-tb-row">
+          <button class="picker-toggle mm-tb-item" id="tajweedLegendBtn" title="What do the Tajweed colours mean?" type="button">&#x2753; Tajweed Key</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
+<div class="mm-home-backdrop" id="mmHomeBackdrop"></div>
 
 <div id="tab-tracker" class="mm-tab-pane active">
   <div id="root"></div>
@@ -543,39 +599,11 @@
 </div>
 
 <div id="tab-quran" class="mm-tab-pane mm-quran-scope">
-  <div id="mm-loading-quran"><div class="mm-loading-msg">Loading Study&hellip;</div></div>
+  <div id="mm-loading-quran"><div class="mm-loading-msg">Loading Quran Study&hellip;</div></div>
   <div id="quran-body-mount" style="display:none;">
 
 <div class="mm-topbar" id="mmTopbar">
 <div class="mm-topbar-inner">
-  <div class="mm-tb-group" id="mmTbHome">
-    <button class="mm-tb-btn" id="mmTbHomeBtn" type="button">&#x1F3E0; Home <span class="mm-tb-arrow">&#x25BE;</span></button>
-    <div class="mm-tb-panel mm-tb-panel-wide">
-      <div class="mm-tb-panel-head"><span>Home</span><button class="mm-tb-close" data-close type="button">&#x2715;</button></div>
-      <div class="mm-tb-row">
-        <button class="mm-tb-item" id="mmTbGoStudy" type="button">&#x1F3AF; Study</button>
-        <button class="mm-tb-item" id="mmTbGoMonitor" type="button">&#x1F4DA; Monitor</button>
-      </div>
-      <div class="ayah-picker-source" style="margin:2px 0 8px;">Save</div>
-      <div class="mm-tb-row">
-        <div class="save-state"><span class="dot"></span><span id="saveLabel">Saved</span></div>
-      </div>
-      <div class="mm-tb-row">
-        <button class="ghost mm-tb-item" id="printBtn" type="button">&#x1F5A8; Print Report</button>
-        <button class="ghost mm-tb-item" id="exportBtn" type="button">Export Snapshot</button>
-      </div>
-      <div class="ayah-picker-source" style="margin:6px 0 8px;">Students</div>
-      <div class="people-row" id="peopleRow"></div>
-      <div class="ayah-picker-source" style="margin:6px 0 8px;">Appearance</div>
-      <div class="mm-tb-row">
-        <button class="ghost mm-tb-item" id="themeBtn" title="Personalise colours — only you see this" type="button">&#x1F3A8; Appearance / Theme</button>
-      </div>
-      <div class="ayah-picker-source" style="margin:6px 0 8px;">Tajweed</div>
-      <div class="mm-tb-row">
-        <button class="picker-toggle mm-tb-item" id="tajweedLegendBtn" title="What do the Tajweed colours mean?" type="button">&#x2753; Tajweed Key</button>
-      </div>
-    </div>
-  </div>
   <!-- Study Settings (relocated to top bar) -->
   <div class="sb-group" id="sbStudySettings">
     <button class="picker-toggle" id="studySettingsToggle">&#x1F3AF; Study Settings <span id="studySettingsArrow">&#x25BE;</span></button>
@@ -678,6 +706,9 @@
       <span id="repeatCountLabel" style="display:none;"></span>
       <div class="ayah-picker-source" id="repeatModeHint">Every selected reciter plays once, in order, per round &mdash; that whole round is what repeats.</div>
 
+      <div class="ss-row-label">Display</div>
+      <div id="mmDisplaySlot"></div>
+
       <div class="ss-footer">
         <button class="ss-btn-apply" id="ssApplyBtn" type="button">Apply</button>
         <button class="ss-btn-play" id="ssApplyPlayBtn" type="button">Apply and play</button>
@@ -686,12 +717,8 @@
       <div class="ayah-picker-status" id="unitPickerStatus"></div>
     </div>
   </div>
-  <div class="mm-tb-group" id="mmTbDisplay">
-    <button class="mm-tb-btn" id="mmTbDisplayBtn" type="button">&#x1F39B;&#xFE0F; Display <span class="mm-tb-arrow">&#x25BE;</span></button>
-    <div class="mm-tb-panel mm-tb-panel-wide">
-      <div class="mm-tb-panel-head"><span>Display</span><button class="mm-tb-close" data-close type="button">&#x2715;</button></div>
-      <div id="mmDisplaySlot"></div>
-    </div>
+  <div class="sb-group" id="sbExplore">
+    <button class="picker-toggle" id="exploreOpenBtn">&#x1F9ED; Explore</button>
   </div>
   <span id="chooseAyahAnchor" style="display:none;"></span>
   <div class="sb-group" id="sbChooseAyah">
@@ -763,11 +790,6 @@
   </header>
 
 <div class="mm-studybar" id="mmStudyBar">
-
-  <div class="sb-group" id="sbExplore">
-    <button class="picker-toggle" id="exploreOpenBtn">&#x1F9ED; Explore</button>
-  </div>
-
 </div>
 
   <div class="ayah-picker tajweed-legend" id="tajweedLegend">
@@ -3017,6 +3039,35 @@ let mmJuzSummaryAyahUnsub = null; // Phase 2 (5-Wheel Overhaul) — live listene
 let mmJuzSummaryPageUnsub = null; // Phase 2 (5-Wheel Overhaul) — live listener for Juz summaries (Page-basis)
 let mmTaxonomyUnsub = null;      // live listener for the shared taxonomy
 let mmPrefsUnsub = null;         // live listener for this signed-in user's own theme prefs
+let mmGlobalBannerUnsub = null;  // live listener for the one shared, app-wide banner (below)
+
+// The banner (title-eyebrow/title-h1/title-sub) is deliberately ONE value for
+// the whole app — every Teacher and every Student sees the same text — unlike
+// the rest of textStyles, which is scoped per-teacher. It lives in its own
+// Firestore doc (appSettings/global) instead of inside any teachers/{id} doc,
+// specifically so it's never tied to (or lost inside) any one teacher's
+// account. Only an Admin can edit it (mmCanEdit() already gates the
+// contentEditable itself to admin-only); these keys are filtered OUT of the
+// per-teacher taxonomy load/save below so a stale per-teacher copy can never
+// overwrite the real, shared value.
+const GLOBAL_BANNER_KEYS = ['title-eyebrow','title-h1','title-sub'];
+function stripGlobalBannerKeys(styles){
+  const copy = {...(styles||{})};
+  GLOBAL_BANNER_KEYS.forEach(k=>{ delete copy[k]; });
+  return copy;
+}
+function globalBannerDocRef(){ return firebase.firestore().collection('appSettings').doc('global'); }
+async function mmLoadGlobalBanner(){
+  const snap = await globalBannerDocRef().get();
+  return snap.exists ? snap.data() : null;
+}
+function mmSubscribeGlobalBanner(onChange){
+  return globalBannerDocRef().onSnapshot(snap=>{ if(snap.exists) onChange(snap.data()); }, err=>console.error('Global banner sync error:', err));
+}
+async function mmSaveGlobalBanner(data){
+  try{ await globalBannerDocRef().set(data, {merge:true}); }
+  catch(err){ console.error('Failed to save global banner (kept locally):', err); }
+}
 
 async function mmHydrateFromFirestore(){
   if(typeof mmCurrentUser === 'undefined' || !mmCurrentUser || !mmCurrentRole) return; // no auth layer present (e.g. older test contexts)
@@ -3042,7 +3093,7 @@ async function mmHydrateFromFirestore(){
       // list, and the next save upgrades the doc for everyone.
       if(taxonomy.ways && taxonomy.ways.length && (taxonomy.waysVersion||0) >= WAYS_TAXONOMY_VERSION) state.ways = taxonomy.ways;
       if(taxonomy.ayahs && Object.keys(taxonomy.ayahs).length) state.ayahs = {...state.ayahs, ...taxonomy.ayahs};
-      if(taxonomy.textStyles) state.textStyles = {...state.textStyles, ...taxonomy.textStyles};
+      if(taxonomy.textStyles) state.textStyles = {...state.textStyles, ...stripGlobalBannerKeys(taxonomy.textStyles)};
       ensureWaySubjectRegisteredForList(state.ways);
       // renderAll()'s applyStaticStyles(false) intentionally skips repainting text
       // (so it never clobbers someone actively typing) — but that means content
@@ -3053,11 +3104,28 @@ async function mmHydrateFromFirestore(){
     mmTaxonomyUnsub = mmSubscribeTeacherTaxonomy(mmOwnTeacherId, data=>{
       if(data.ways && data.ways.length && (data.waysVersion||0) >= WAYS_TAXONOMY_VERSION) state.ways = data.ways;
       if(data.ayahs) state.ayahs = {...state.ayahs, ...data.ayahs};
-      if(data.textStyles) state.textStyles = {...state.textStyles, ...data.textStyles};
+      if(data.textStyles) state.textStyles = {...state.textStyles, ...stripGlobalBannerKeys(data.textStyles)};
       renderAll();
       if(data.textStyles && typeof applyStaticStyles === 'function') applyStaticStyles(true);
     });
   }catch(err){ console.error('Could not load teacher taxonomy (staying on local copy):', err); }
+
+  // The one shared, app-wide banner — same doc, same value, for every role
+  // and every teacher's students. Loaded/subscribed independently of
+  // mmOwnTeacherId above (it is NOT scoped to any one teacher).
+  try{
+    const globalDoc = await mmLoadGlobalBanner();
+    if(globalDoc && globalDoc.textStyles){
+      GLOBAL_BANNER_KEYS.forEach(k=>{ if(globalDoc.textStyles[k]) state.textStyles[k] = globalDoc.textStyles[k]; });
+      if(typeof applyStaticStyles === 'function') applyStaticStyles(true);
+    }
+    mmGlobalBannerUnsub = mmSubscribeGlobalBanner(data=>{
+      if(data && data.textStyles){
+        GLOBAL_BANNER_KEYS.forEach(k=>{ if(data.textStyles[k]) state.textStyles[k] = data.textStyles[k]; });
+        if(typeof applyStaticStyles === 'function') applyStaticStyles(true);
+      }
+    });
+  }catch(err){ console.error('Could not load global banner (staying on local copy):', err); }
 
   try{
     const prefs = await mmLoadUserPrefs(mmCurrentUser.uid);
@@ -3772,7 +3840,7 @@ function scheduleSave(){
       }
       const canWriteTaxonomy = mmCurrentRole && (mmCurrentRole.role==='admin' || mmOwnTeacherId===mmCurrentUser.uid);
       if(canWriteTaxonomy && typeof mmSaveTeacherTaxonomy === 'function'){
-        mmSaveTeacherTaxonomy(mmOwnTeacherId, {ways: state.ways, waysVersion: state.waysVersion || WAYS_TAXONOMY_VERSION, ayahs: state.ayahs, textStyles: state.textStyles});
+        mmSaveTeacherTaxonomy(mmOwnTeacherId, {ways: state.ways, waysVersion: state.waysVersion || WAYS_TAXONOMY_VERSION, ayahs: state.ayahs, textStyles: stripGlobalBannerKeys(state.textStyles)});
       }
       // Theme colour prefs are personal — every signed-in user (any role)
       // may always write their own, regardless of taxonomy permissions.
@@ -4592,12 +4660,18 @@ function saveEditContent(el, key){
     const person = state.people.find(x=>x.id===pid);
     if(person){ person.name = text; saveSharedPeople(state.people); }
   }
+  if(typeof GLOBAL_BANNER_KEYS !== 'undefined' && GLOBAL_BANNER_KEYS.includes(key) && typeof mmSaveGlobalBanner === 'function'){
+    mmSaveGlobalBanner({ textStyles: { [key]: state.textStyles[key] } });
+  }
   scheduleSave();
 }
 
 function saveEditStyle(key, prop, val){
   if(!state.textStyles[key]) state.textStyles[key] = {};
   state.textStyles[key][prop] = val;
+  if(typeof GLOBAL_BANNER_KEYS !== 'undefined' && GLOBAL_BANNER_KEYS.includes(key) && typeof mmSaveGlobalBanner === 'function'){
+    mmSaveGlobalBanner({ textStyles: { [key]: state.textStyles[key] } });
+  }
   scheduleSave();
 }
 
@@ -6728,7 +6802,6 @@ function consolidateIntoDisplay(){
   const slot = document.getElementById('mmDisplaySlot');
   if(!slot) return;
   const modeToggle = document.getElementById('mmModeToggle');
-  const exploreGroup = document.getElementById('sbExplore');
   const hifzSwitch = document.getElementById('hifzExtrasSwitchWrap');
   const label = (text, first)=>{
     const d = document.createElement('div');
@@ -6738,7 +6811,6 @@ function consolidateIntoDisplay(){
     return d;
   };
   if(modeToggle){ slot.appendChild(label('Display Mode', true)); slot.appendChild(modeToggle); }
-  if(exploreGroup){ slot.appendChild(label('Explore')); slot.appendChild(exploreGroup); }
   if(hifzSwitch)   slot.appendChild(hifzSwitch);
 }
 consolidateIntoDisplay();
@@ -8394,7 +8466,33 @@ function mmActivateTab(name){
   document.getElementById('tab-admin').classList.remove('active');
   if(name==='tracker') mmLoadTracker();
   if(name==='quran') mmLoadQuran();
+  if(typeof mmCloseHomeMenu === 'function') mmCloseHomeMenu();
 }
+
+// Persistent Home dropdown (always-loaded, lives above the lazy Study/Monitor
+// bundles) — houses Study/Monitor switching, Admin, Sign Out. Opening it also
+// eagerly triggers mmLoadQuran() (harmless no-op if already loaded) so that
+// once Study's own script has appended its extra items into #mmHomeExtra
+// (Print/Export/Students/Theme/Tajweed Key), they're wired and clickable
+// immediately rather than sitting inert until Study is actually visited.
+function mmOpenHomeMenu(){
+  document.getElementById('mmHomeGroup').classList.add('open');
+  document.getElementById('mmHomeBackdrop').classList.add('show');
+  if(typeof mmLoadQuran === 'function') mmLoadQuran();
+}
+function mmCloseHomeMenu(){
+  document.getElementById('mmHomeGroup').classList.remove('open');
+  document.getElementById('mmHomeBackdrop').classList.remove('show');
+}
+document.getElementById('mmHomeBtn').addEventListener('click', function(e){
+  e.stopPropagation();
+  document.getElementById('mmHomeGroup').classList.contains('open') ? mmCloseHomeMenu() : mmOpenHomeMenu();
+});
+document.getElementById('mmHomeBackdrop').addEventListener('click', mmCloseHomeMenu);
+document.getElementById('mmHomePanel').addEventListener('click', function(e){
+  // Auto-close after any actual menu item click (not clicks on the panel's own padding)
+  if(e.target.closest('button')) setTimeout(mmCloseHomeMenu, 60);
+});
 </script>
 
 <script>
