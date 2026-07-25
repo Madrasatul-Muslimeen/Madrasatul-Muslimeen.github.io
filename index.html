@@ -37,6 +37,7 @@
   }
   .mm-home-panel button:hover{ background:rgba(255,255,255,.08); }
   .mm-home-panel button.active{ color:var(--gold,#C9A24B); }
+  .mm-version-tag{ font-size:11px; font-weight:400; color:rgba(201,162,75,.55); }
   .mm-home-backdrop{ display:none; position:fixed; inset:0; z-index:5550; background:transparent; }
   .mm-home-backdrop.show{ display:block; }
   @media (max-width:680px){
@@ -678,7 +679,7 @@
     <button class="mm-home-btn" id="mmHomeBtn" type="button">&#x1F3E0; Home <span class="mm-home-arrow">&#x25BE;</span></button>
     <div class="mm-home-panel" id="mmHomePanel">
       <button id="mm-tab-btn-tracker" class="active" onclick="mmActivateTab('tracker')">&#x1F4DA; Monitor</button>
-      <button id="mm-tab-btn-quran" onclick="mmActivateTab('quran')">&#x1F3AF; Quran Study</button>
+      <button id="mm-tab-btn-quran" onclick="mmActivateTab('quran')">&#x1F3AF; Quran Study <span class="mm-version-tag" id="quranVersionTag"></span></button>
       <button id="mm-tab-btn-admin" onclick="mmOpenAdminPanel()" style="display:none;">&#x2699;&#xFE0F; Admin</button>
       <button id="mm-signout-btn-bar" onclick="firebase.auth().signOut()">Sign Out</button>
       <div id="mmHomeExtra">
@@ -705,6 +706,22 @@
   </div>
 </div>
 <div class="mm-home-backdrop" id="mmHomeBackdrop"></div>
+<script>
+  // App version shown in the Home ▾ menu, next to "Quran Study" — e.g. "v06.20".
+  // Update these two values on every deploy to GitHub (match the file-naming
+  // convention's version/date). Placed as its own small script right after the
+  // Home menu markup, rather than inside the lazy-loaded Quran Study module,
+  // because this button lives in the persistent shell and is on the page
+  // immediately — no need to wait for the Quran Study tab to load.
+  const APP_VERSION = 'v06.20';
+  const APP_BUILD_DATE = '20 Jul 2026';
+  (function initVersionTag(){
+    const tag = document.getElementById('quranVersionTag');
+    if(!tag) return;
+    tag.textContent = '- ' + APP_VERSION;
+    tag.title = 'Build: ' + APP_BUILD_DATE;
+  })();
+</script>
 
 <div id="tab-tracker" class="mm-tab-pane active">
   <div id="root"></div>
