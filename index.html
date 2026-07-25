@@ -8584,6 +8584,63 @@ function mmActivateTab(name){
   if(typeof mmCloseHomeMenu === 'function') mmCloseHomeMenu();
 }
 
+// Brand splash shown each time the Quran Study module is entered — wraps the
+// real tab-switch above so it fires for every caller (Home-menu button, the
+// "Go to Study" button, etc.) without needing to touch each call site.
+var mmActivateTabCore = mmActivateTab;
+mmActivateTab = function(name){
+  if(name === 'quran'){
+    mmShowQuranSplash(function(){ mmActivateTabCore('quran'); });
+  } else {
+    mmActivateTabCore(name);
+  }
+};
+
+function mmShowQuranSplash(onDone){
+  var overlay = document.createElement('div');
+  overlay.id = 'mm-quran-splash-overlay';
+  overlay.innerHTML =
+    '<style>' +
+    '#mm-quran-splash-overlay{position:fixed;inset:0;z-index:20000;display:flex;align-items:center;justify-content:center;' +
+      'background:radial-gradient(ellipse at top, var(--bg-start,#2a3a57) 0%, var(--ink,#1B2A41) 55%, var(--bg-end,#121b2c) 100%);' +
+      'font-family:"Inter",system-ui,sans-serif;}' +
+    '.mmqs-wrap{max-width:640px;padding:40px 28px;text-align:center;}' +
+    '.mmqs-item{opacity:0;transform:translateY(10px);animation:mmqsFade .9s ease forwards;}' +
+    '@keyframes mmqsFade{to{opacity:1;transform:translateY(0);}}' +
+    '.mmqs-title{font-family:"Cormorant Garamond",serif;font-weight:600;font-size:clamp(36px,6vw,58px);' +
+      'color:var(--gold,#C9A24B);letter-spacing:.01em;margin:0 0 12px;}' +
+    '.mmqs-tagline1{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:clamp(16px,2.4vw,21px);' +
+      'color:var(--parchment,#F2E8D5);margin:0 0 30px;}' +
+    '.mmqs-divider{width:70px;height:1px;background:linear-gradient(to right, transparent, var(--gold,#C9A24B), transparent);' +
+      'margin:0 auto 30px;position:relative;}' +
+    '.mmqs-divider:after{content:"";position:absolute;left:50%;top:-3px;width:6px;height:6px;' +
+      'background:var(--gold,#C9A24B);transform:translateX(-50%) rotate(45deg);}' +
+    '.mmqs-project{font-family:"Inter",sans-serif;text-transform:uppercase;letter-spacing:.16em;' +
+      'font-size:12px;color:#b9c2d4;margin:0 0 14px;}' +
+    '.mmqs-tagline2{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:clamp(14px,1.8vw,17px);' +
+      'color:#c7cfe0;line-height:1.5;margin:0 auto 28px;max-width:480px;}' +
+    '.mmqs-motto{font-family:"Inter",sans-serif;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;' +
+      'color:var(--gold-dim,#A4823A);}' +
+    '</style>' +
+    '<div class="mmqs-wrap">' +
+      '<div class="mmqs-item mmqs-title" style="animation-delay:.2s">Quran Revival</div>' +
+      '<div class="mmqs-item mmqs-tagline1" style="animation-delay:1.0s">Reviving the Quran, abandoned.</div>' +
+      '<div class="mmqs-item mmqs-divider" style="animation-delay:1.7s"></div>' +
+      '<div class="mmqs-item mmqs-project" style="animation-delay:2.1s">A project of Madrasatul Muslimeen</div>' +
+      '<div class="mmqs-item mmqs-tagline2" style="animation-delay:2.7s">Building Muslim-Mindset, reviving the Quran, reviving the Ummah!</div>' +
+      '<div class="mmqs-item mmqs-motto" style="animation-delay:3.5s">Akhlaq &bull; Ilm &bull; Tawheed &bull; Dawah &bull; Hukm</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  setTimeout(function(){
+    overlay.style.transition = 'opacity .5s ease';
+    overlay.style.opacity = '0';
+    setTimeout(function(){
+      if(overlay.parentNode) overlay.parentNode.removeChild(overlay);
+      if(typeof onDone === 'function') onDone();
+    }, 500);
+  }, 5000);
+}
+
 // Persistent Home dropdown (always-loaded, lives above the lazy Study/Monitor
 // bundles) — houses Study/Monitor switching, Admin, Sign Out. Opening it also
 // eagerly triggers mmLoadQuran() (harmless no-op if already loaded) so that
