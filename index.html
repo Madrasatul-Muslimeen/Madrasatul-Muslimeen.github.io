@@ -717,8 +717,8 @@
   // Home menu markup, rather than inside the lazy-loaded Quran Study module,
   // because this button lives in the persistent shell and is on the page
   // immediately — no need to wait for the Quran Study tab to load.
-  const APP_VERSION = 'v06.22';
-  const APP_BUILD_DATE = '25 Jul 2026';
+  const APP_VERSION = 'v06.24';
+  const APP_BUILD_DATE = '26 Jul 2026';
   (function initVersionTag(){
     const tag = document.getElementById('quranVersionTag');
     if(!tag) return;
@@ -1049,9 +1049,9 @@
 <div class="print-overlay" id="printOverlay">
   <div style="display:flex;flex-direction:column;align-items:center;width:210mm;max-width:100%;">
     <div class="print-close-bar">
-      <button class="btn-print-close" id="printClose">✕ Close</button>
-      <button class="btn-print-tajweed picker-toggle" id="printTajweedBtn" title="Toggle Tajweed colour-coding in the printed report">🎨 Tajweed Colours</button>
-      <button class="btn-print-go" id="printGo">🖨 Print / Save PDF</button>
+      <button class="btn-print-close" id="printClose">✕ <span data-i18n="printReport.close">Close</span></button>
+      <button class="btn-print-tajweed picker-toggle" id="printTajweedBtn" title="Toggle Tajweed colour-coding in the printed report" data-i18n-title="printReport.tajweedToggleTitle">🎨 <span data-i18n="printReport.tajweedColours">Tajweed Colours</span></button>
+      <button class="btn-print-go" id="printGo">🖨 <span data-i18n="printReport.printSavePdf">Print / Save PDF</span></button>
     </div>
     <div class="a4-page" id="a4Page">
     <div class="rpt-header">
@@ -1350,8 +1350,8 @@
       <button class="way-accordion-header active" id="wayTabTrackBtn"><span class="editable" data-ekey="acc-track" contenteditable="true">Track This Unit</span><span class="way-accordion-chevron">&#x25BE;</span></button>
       <div class="way-accordion-panel active" id="wayTabTrack">
         <div class="status-btns" id="statusBtns"><button class="">Not Started</button><button>Learning</button><button>Practicing</button><button class="active">Mastered</button></div>
-        <label>Notes</label>
-        <textarea id="wayNotes" placeholder="What did the student do? Observations, quotes, next steps..."></textarea>
+        <label data-i18n="wayModal.notes">Notes</label>
+        <textarea id="wayNotes" placeholder="What did the student do? Observations, quotes, next steps..." data-i18n-placeholder="wayModal.notesPlaceholder"></textarea>
       </div>
     </div>
 
@@ -1360,9 +1360,9 @@
       <div class="way-accordion-panel" id="wayTabGuide">
         <div id="wayResourceList" class="way-resource-list"></div>
         <div class="way-resource-add">
-          <input type="text" id="wayResourceLabel" placeholder="Label (e.g. 'Intro video')">
+          <input type="text" id="wayResourceLabel" placeholder="Label (e.g. 'Intro video')" data-i18n-placeholder="wayModal.resourceLabelPlaceholder">
           <input type="url" id="wayResourceUrl" placeholder="https://...">
-          <button class="picker-load-btn" id="wayResourceAddBtn">Add Link</button>
+          <button class="picker-load-btn" id="wayResourceAddBtn" data-i18n="wayModal.addLink">Add Link</button>
         </div>
         <div class="ayah-picker-source editable" data-ekey="guide-hint" contenteditable="true">Links only — no file uploads (keeps the app fast to load). Point to a video, article, or document hosted elsewhere.</div>
       </div>
@@ -1373,14 +1373,14 @@
       <div class="way-accordion-panel" id="wayTabBreakdown">
         <div class="way-scope-row">
           <select id="breakdownScopeType">
-            <option value="surah">This Surah</option>
-            <option value="juz">This Juz</option>
-            <option value="quran">Entire Quran</option>
+            <option value="surah" data-i18n="wayModal.thisSurah">This Surah</option>
+            <option value="juz" data-i18n="wayModal.thisJuz">This Juz</option>
+            <option value="quran" data-i18n="wayModal.entireQuran">Entire Quran</option>
           </select>
-          <select id="breakdownScopeSurah"><option>Loading&hellip;</option></select>
+          <select id="breakdownScopeSurah"><option data-i18n="common.loading">Loading&hellip;</option></select>
           <select id="breakdownScopeJuz" style="display:none;"></select>
         </div>
-        <div id="breakdownResults" class="way-breakdown-results"><div class="way-resource-empty">Choose a scope above to see this way's status across it.</div></div>
+        <div id="breakdownResults" class="way-breakdown-results"><div class="way-resource-empty" data-i18n="wayModal.breakdownEmpty">Choose a scope above to see this way's status across it.</div></div>
       </div>
     </div>
     <div class="way-accordion-section">
@@ -1388,20 +1388,20 @@
       <div class="way-accordion-panel" id="wayTabCoverage">
         <div class="way-scope-row">
           <select id="coverageScopeType">
-            <option value="surah">This Surah</option>
-            <option value="juz">This Juz</option>
-            <option value="quran">Entire Quran</option>
+            <option value="surah" data-i18n="wayModal.thisSurah">This Surah</option>
+            <option value="juz" data-i18n="wayModal.thisJuz">This Juz</option>
+            <option value="quran" data-i18n="wayModal.entireQuran">Entire Quran</option>
           </select>
-          <select id="coverageScopeSurah"><option>Loading&hellip;</option></select>
+          <select id="coverageScopeSurah"><option data-i18n="common.loading">Loading&hellip;</option></select>
           <select id="coverageScopeJuz" style="display:none;"></select>
         </div>
-        <div id="coverageResults" class="way-coverage-results"><div class="way-resource-empty">Choose a scope above to see how much of it is complete.</div></div>
+        <div id="coverageResults" class="way-coverage-results"><div class="way-resource-empty" data-i18n="wayModal.coverageEmpty">Choose a scope above to see how much of it is complete.</div></div>
       </div>
     </div>
 
     <div class="modal-actions">
-      <button class="btn-close" id="wayClose">Close</button>
-      <button class="btn-save" id="waySave">Save</button>
+      <button class="btn-close" id="wayClose" data-i18n="wayModal.close">Close</button>
+      <button class="btn-save" id="waySave" data-i18n="wayModal.save">Save</button>
     </div>
   </div>
 </div>
@@ -1409,15 +1409,15 @@
 <!-- Add person modal -->
 <div class="overlay" id="personOverlay">
   <div class="modal">
-    <h3>Add Student</h3>
-    <div class="modal-sub">New profile</div>
-    <label>Name</label>
-    <input type="text" id="personName" placeholder="e.g. Abdullah">
-    <label>Emoji</label>
+    <h3 data-i18n="personModal.title">Add Student</h3>
+    <div class="modal-sub" data-i18n="personModal.newProfile">New profile</div>
+    <label data-i18n="personModal.name">Name</label>
+    <input type="text" id="personName" placeholder="e.g. Abdullah" data-i18n-placeholder="personModal.namePlaceholder">
+    <label data-i18n="personModal.emoji">Emoji</label>
     <div class="emoji-grid" id="emojiGrid"></div>
     <div class="modal-actions">
-      <button class="btn-close" id="personClose">Cancel</button>
-      <button class="btn-save" id="personSave">Add</button>
+      <button class="btn-close" id="personClose" data-i18n="personModal.cancel">Cancel</button>
+      <button class="btn-save" id="personSave" data-i18n="personModal.add">Add</button>
     </div>
   </div>
 </div>
@@ -1462,12 +1462,12 @@
 <!-- Theme (Colour Step 3) modal — personal, per-user, synced via Firestore -->
 <div class="overlay" id="themeOverlay">
   <div class="modal theme-modal">
-    <h3>🎨 Personalise Colours</h3>
-    <div class="modal-sub">Only you see this — it never changes anyone else's view</div>
+    <h3>🎨 <span data-i18n="theme.modalTitle">Personalise Colours</span></h3>
+    <div class="modal-sub" data-i18n="theme.modalSub">Only you see this — it never changes anyone else's view</div>
     <div id="themePanelBody" class="theme-panel-body"></div>
     <div class="modal-actions" style="justify-content:space-between;">
-      <button class="btn-close" id="themeResetAll" style="color:#e07070;border-color:rgba(224,112,112,0.4);">Reset All to Default</button>
-      <button class="btn-save" id="themeDone">Done</button>
+      <button class="btn-close" id="themeResetAll" style="color:#e07070;border-color:rgba(224,112,112,0.4);" data-i18n="theme.resetAllBtn">Reset All to Default</button>
+      <button class="btn-save" id="themeDone" data-i18n="theme.doneBtn">Done</button>
     </div>
   </div>
 </div>
@@ -1600,6 +1600,88 @@ const I18N_STRINGS = {
     'mode.prevAyah': 'Previous ayah',
     'mode.jumpAyah': 'Jump to an ayah in this unit',
     'mode.nextAyah': 'Next ayah',
+
+    // Common / shared
+    'common.loading': 'Loading\u2026',
+
+    // Status labels (display-only — see STATUS_LABEL_KEYS comment; the raw
+    // English STATUS_LABELS array stays untranslated for persisted data)
+    'status.notStarted': 'Not Started',
+    'status.learning': 'Learning',
+    'status.practicing': 'Practicing',
+    'status.mastered': 'Mastered',
+    'status.notApplicable': 'Not Applicable',
+
+    // Way modal (session 3) — accordion header text stays on the existing
+    // contenteditable/data-ekey system, not converted here; see handoff notes
+    'wayModal.notes': 'Notes',
+    'wayModal.notesPlaceholder': 'What did the student do? Observations, quotes, next steps...',
+    'wayModal.addLink': 'Add Link',
+    'wayModal.resourceLabelPlaceholder': "Label (e.g. 'Intro video')",
+    'wayModal.thisSurah': 'This Surah',
+    'wayModal.thisJuz': 'This Juz',
+    'wayModal.entireQuran': 'Entire Quran',
+    'wayModal.breakdownEmpty': "Choose a scope above to see this way's status across it.",
+    'wayModal.coverageEmpty': 'Choose a scope above to see how much of it is complete.',
+    'wayModal.close': 'Close',
+    'wayModal.save': 'Save',
+
+    // Add Student (person) modal
+    'personModal.title': 'Add Student',
+    'personModal.newProfile': 'New profile',
+    'personModal.name': 'Name',
+    'personModal.namePlaceholder': 'e.g. Abdullah',
+    'personModal.emoji': 'Emoji',
+    'personModal.cancel': 'Cancel',
+    'personModal.add': 'Add',
+
+    // Theme / Appearance modal
+    'theme.modalTitle': 'Personalise Colours',
+    'theme.modalSub': 'Only you see this — it never changes anyone else\'s view',
+    'theme.resetAllBtn': 'Reset All to Default',
+    'theme.doneBtn': 'Done',
+    'theme.resetToDefaultTitle': 'Reset to default',
+    'theme.resetAllConfirm': 'Reset ALL your personal colour choices back to the defaults? This only affects your own view.',
+    'theme.groupBackground': 'Background',
+    'theme.groupMonitorBanner': 'Monitor Banner',
+    'theme.groupCorePalette': 'Core Palette',
+    'theme.groupTajweedLegend': 'Tajweed Legend',
+    'theme.groupWheelDomain': 'Wheel & Domain Colours',
+    'theme.bgOuter': 'Backdrop — outer edge',
+    'theme.bgCenter': 'Backdrop — centre / base ink',
+    'theme.bgCorners': 'Backdrop — corners',
+    'theme.bannerStart': 'Banner gradient — start',
+    'theme.bannerMiddle': 'Banner gradient — middle',
+    'theme.bannerEnd': 'Banner gradient — end',
+    'theme.mainText': 'Main text',
+    'theme.mutedText': 'Muted text',
+    'theme.accentMastered': 'Accent \u00b7 Mastered status',
+    'theme.accentDim': 'Accent (dim)',
+    'theme.secondaryAccent': 'Secondary accent',
+    'theme.tertiaryAccent': 'Tertiary accent',
+    'theme.dividerLines': 'Divider lines',
+    'theme.tjSilent': 'Silent',
+    'theme.tjMaddGhunnah': 'Madd (natural) & Ghunnah',
+    'theme.tjMaddOblig': 'Madd (obligatory) & Qalqalah',
+    'theme.tjMaddPermissible': 'Madd (permissible)',
+    'theme.tjIkhfa': 'Ikhfa',
+    'theme.tjIqlab': 'Iqlab',
+    'theme.tjIdgham': 'Idghaam',
+
+    // Print report
+    'printReport.close': 'Close',
+    'printReport.tajweedColours': 'Tajweed Colours',
+    'printReport.tajweedToggleTitle': 'Toggle Tajweed colour-coding in the printed report',
+    'printReport.printSavePdf': 'Print / Save PDF',
+    'printReport.tajweedDisclaimer': 'Tajweed colour-coding shown for study reference only. Colours may vary or not appear on monochrome printers. Always verify rules with a qualified teacher — colour alone does not substitute proper oral transmission (talaqqi).',
+    'printReport.masteredPct': 'mastered \u00b7 {pct}%',
+    'printReport.notStarted': 'Not started',
+    'printReport.naShort': 'N/A',
+    'printReport.generated': 'Generated {date}',
+    'printReport.overallMastery': 'Overall Mastery',
+    'printReport.pointsSummary': '{sum} of {total} points \u00b7 {mastered} of {count} ways mastered',
+    'printReport.allWaysDetail': 'All 30 Ways \u2014 Detail',
+    'printReport.masteryReportFooter': 'Mastery Report',
   }
 };
 
@@ -1625,6 +1707,18 @@ function t(key){
   const lang = mmGetLang();
   const dict = I18N_STRINGS[lang] || I18N_STRINGS.en;
   return (dict && dict[key]) || I18N_STRINGS.en[key] || key;
+}
+
+// tf(key, vars) — like t(), but substitutes {varName} tokens in the
+// translated string with values from `vars`. Used where a string has
+// numbers baked into it (e.g. the print report's "12 of 30 points…"),
+// since those can't be represented as a plain textContent data-i18n swap.
+function tf(key, vars){
+  let s = t(key);
+  Object.keys(vars || {}).forEach(k => {
+    s = s.split('{' + k + '}').join(vars[k]);
+  });
+  return s;
 }
 
 // applyI18n() walks a DOM subtree and fills in every element tagged with
@@ -2988,6 +3082,15 @@ const GROUP_COLOR = {
   "A'mal / Application":'#7A2E2E'
 };
 const STATUS_LABELS = ['Not Started','Learning','Practicing','Mastered','Not Applicable'];
+// Feature 12 Phase A: STATUS_LABELS itself stays raw English on purpose —
+// it's written into persisted records (syncWayToTracker's `topic` string,
+// saved into Monitor week data / CSV export) and mixing languages into
+// historical saved data would be a real bug, not a nicety. Anywhere the
+// status is only being *displayed* (wheel tooltip, list chip, modal status
+// buttons), use tStatusLabel(idx) instead so it responds to the language
+// switcher; anywhere it's being *written/synced*, keep STATUS_LABELS[idx].
+const STATUS_LABEL_KEYS = ['status.notStarted','status.learning','status.practicing','status.mastered','status.notApplicable'];
+function tStatusLabel(idx){ return t(STATUS_LABEL_KEYS[idx]); }
 const STATUS_OPACITY = [0.13, 0.42, 0.7, 1, 0.35];
 
 // ═══════════════════════════════════════════════════════════════
@@ -3057,33 +3160,33 @@ function setThemeColor(kind, key, value){
 // so a custom domain added later (via addWay) automatically gets a swatch
 // without this list needing to be touched.
 const THEME_FIELD_GROUPS = [
-  { title: 'Background', fields: [
-    {key:'--bg-start', label:'Backdrop — outer edge'},
-    {key:'--ink', label:'Backdrop — centre / base ink'},
-    {key:'--bg-end', label:'Backdrop — corners'},
+  { title: 'Background', titleKey: 'theme.groupBackground', fields: [
+    {key:'--bg-start', label:'Backdrop — outer edge', labelKey:'theme.bgOuter'},
+    {key:'--ink', label:'Backdrop — centre / base ink', labelKey:'theme.bgCenter'},
+    {key:'--bg-end', label:'Backdrop — corners', labelKey:'theme.bgCorners'},
   ]},
-  { title: 'Monitor Banner', fields: [
-    {key:'--mon-banner-1', label:'Banner gradient — start'},
-    {key:'--mon-banner-2', label:'Banner gradient — middle'},
-    {key:'--mon-banner-3', label:'Banner gradient — end'},
+  { title: 'Monitor Banner', titleKey: 'theme.groupMonitorBanner', fields: [
+    {key:'--mon-banner-1', label:'Banner gradient — start', labelKey:'theme.bannerStart'},
+    {key:'--mon-banner-2', label:'Banner gradient — middle', labelKey:'theme.bannerMiddle'},
+    {key:'--mon-banner-3', label:'Banner gradient — end', labelKey:'theme.bannerEnd'},
   ]},
-  { title: 'Core Palette', fields: [
-    {key:'--parchment', label:'Main text'},
-    {key:'--parchment-dim', label:'Muted text'},
-    {key:'--gold', label:'Accent · Mastered status'},
-    {key:'--gold-dim', label:'Accent (dim)'},
-    {key:'--teal', label:'Secondary accent'},
-    {key:'--maroon', label:'Tertiary accent'},
-    {key:'--line', label:'Divider lines'},
+  { title: 'Core Palette', titleKey: 'theme.groupCorePalette', fields: [
+    {key:'--parchment', label:'Main text', labelKey:'theme.mainText'},
+    {key:'--parchment-dim', label:'Muted text', labelKey:'theme.mutedText'},
+    {key:'--gold', label:'Accent · Mastered status', labelKey:'theme.accentMastered'},
+    {key:'--gold-dim', label:'Accent (dim)', labelKey:'theme.accentDim'},
+    {key:'--teal', label:'Secondary accent', labelKey:'theme.secondaryAccent'},
+    {key:'--maroon', label:'Tertiary accent', labelKey:'theme.tertiaryAccent'},
+    {key:'--line', label:'Divider lines', labelKey:'theme.dividerLines'},
   ]},
-  { title: 'Tajweed Legend', fields: [
-    {key:'--tj-silent', label:'Silent'},
-    {key:'--tj-madd-ghunnah', label:'Madd (natural) & Ghunnah'},
-    {key:'--tj-madd-oblig', label:'Madd (obligatory) & Qalqalah'},
-    {key:'--tj-madd-permissible', label:'Madd (permissible)'},
-    {key:'--tj-ikhfa', label:'Ikhfa'},
-    {key:'--tj-iqlab', label:'Iqlab'},
-    {key:'--tj-idgham', label:'Idghaam'},
+  { title: 'Tajweed Legend', titleKey: 'theme.groupTajweedLegend', fields: [
+    {key:'--tj-silent', label:'Silent', labelKey:'theme.tjSilent'},
+    {key:'--tj-madd-ghunnah', label:'Madd (natural) & Ghunnah', labelKey:'theme.tjMaddGhunnah'},
+    {key:'--tj-madd-oblig', label:'Madd (obligatory) & Qalqalah', labelKey:'theme.tjMaddOblig'},
+    {key:'--tj-madd-permissible', label:'Madd (permissible)', labelKey:'theme.tjMaddPermissible'},
+    {key:'--tj-ikhfa', label:'Ikhfa', labelKey:'theme.tjIkhfa'},
+    {key:'--tj-iqlab', label:'Iqlab', labelKey:'theme.tjIqlab'},
+    {key:'--tj-idgham', label:'Idghaam', labelKey:'theme.tjIdgham'},
   ]},
 ];
 
@@ -3102,7 +3205,7 @@ function buildThemeRow(label, currentValue, defaultValue, onChange, onReset){
   const resetBtn = document.createElement('button');
   resetBtn.className = 'theme-row-reset';
   resetBtn.textContent = '↺';
-  resetBtn.title = 'Reset to default';
+  resetBtn.title = t('theme.resetToDefaultTitle');
   resetBtn.disabled = (currentValue.toLowerCase() === defaultValue.toLowerCase());
   input.oninput = ()=>{ onChange(input.value); resetBtn.disabled = false; };
   resetBtn.onclick = ()=>{ onReset(); input.value = defaultValue; resetBtn.disabled = true; };
@@ -3120,11 +3223,11 @@ function renderThemePanel(){
     section.className = 'theme-section';
     const title = document.createElement('div');
     title.className = 'theme-section-title';
-    title.textContent = group.title;
+    title.textContent = t(group.titleKey);
     section.appendChild(title);
     group.fields.forEach(f=>{
       const current = varOverrides[f.key] || DEFAULT_THEME_COLORS[f.key];
-      const row = buildThemeRow(f.label, current, DEFAULT_THEME_COLORS[f.key],
+      const row = buildThemeRow(t(f.labelKey), current, DEFAULT_THEME_COLORS[f.key],
         val => setThemeColor('vars', f.key, val),
         ()  => setThemeColor('vars', f.key, null));
       section.appendChild(row);
@@ -3139,7 +3242,7 @@ function renderThemePanel(){
   domainSection.className = 'theme-section';
   const domainTitle = document.createElement('div');
   domainTitle.className = 'theme-section-title';
-  domainTitle.textContent = 'Wheel & Domain Colours';
+  domainTitle.textContent = t('theme.groupWheelDomain');
   domainSection.appendChild(domainTitle);
   const domains = [...new Set(state.ways.map(w=>w.group))];
   const domainOverrides = (state.themeColors && state.themeColors.domainColors) || {};
@@ -3162,7 +3265,7 @@ function closeThemeModal(){
   document.getElementById('themeOverlay').classList.remove('show');
 }
 function resetAllThemeColors(){
-  if(!confirm('Reset ALL your personal colour choices back to the defaults? This only affects your own view.')) return;
+  if(!confirm(t('theme.resetAllConfirm'))) return;
   state.themeColors = {};
   applyThemeColors();
   renderWheel(); renderList();
@@ -4423,7 +4526,7 @@ function renderWheel(){
       color: status===4 ? '#4a5468' : groupColor(w.group),
       opacity: STATUS_OPACITY[status],
       numberText: w.id,
-      tooltip: `${w.id}. ${w.name} \u2014 ${STATUS_LABELS[status]}`,
+      tooltip: `${w.id}. ${w.name} \u2014 ${tStatusLabel(status)}`,
       onClick: ()=> openWayModal(w.id)
     };
   });
@@ -4478,7 +4581,7 @@ function renderList(){
 
       const chip = document.createElement('span');
       chip.className = 'status-chip chip-' + status;
-      chip.textContent = STATUS_LABELS[status];
+      chip.textContent = tStatusLabel(status);
 
       const del = document.createElement('span');
       del.className = 'way-delete';
@@ -5114,7 +5217,7 @@ function openWayModal(wayId){
   btnRow.innerHTML = '';
   STATUS_LABELS.forEach((label, idx)=>{
     const b = document.createElement('button');
-    b.textContent = label;
+    b.textContent = tStatusLabel(idx);
     if(idx===4) b.classList.add('status-na');
     if(idx===prog.status) b.classList.add('active');
     b.onclick = ()=>{
@@ -5592,6 +5695,9 @@ function currentGroupMeta(){
   return GROUP_META_BASE.map(gm => ({...gm, ways: state.ways.filter(w=>w.group===gm.key).map(w=>w.id)}));
 }
 const STATUS_LABELS_SHORT = ['—','Learning','Practicing','Mastered','N/A'];
+// Display-only, same "don't translate persisted data" rule as tStatusLabel.
+const STATUS_LABEL_SHORT_KEYS = [null,'status.learning','status.practicing','status.mastered','printReport.naShort'];
+function tStatusLabelShort(idx){ return t(STATUS_LABEL_SHORT_KEYS[idx]); }
 
 function buildReport(withTajweed){
   const person = state.people.find(p=>p.id===state.activePersonId) || state.people[0];
@@ -5608,8 +5714,7 @@ function buildReport(withTajweed){
   const tajRaw = withTajweed && ayah && ayah.tajweedRaw;
   const arabicHtml = tajRaw ? tajweedRawToSafeHtml(tajRaw) : rptArabic;
   const disclaimerHtml = withTajweed ? `<div class="rpt-tajweed-disclaimer">
-    ⚠ Tajweed colour-coding shown for study reference only. Colours may vary or not appear on monochrome printers.
-    Always verify rules with a qualified teacher — colour alone does not substitute proper oral transmission (talaqqi).
+    ⚠ ${t('printReport.tajweedDisclaimer')}
   </div>` : '';
 
   // overall % — Not Applicable ways are excluded from both sides, same rule as the wheel itself
@@ -5635,7 +5740,7 @@ function buildReport(withTajweed){
     <div class="rpt-group-card" style="background:${gm.bg};border-left-color:${gm.color};">
       <div class="gc-label" style="color:${gm.color}">${grpLabel}</div>
       <div class="gc-score" style="color:${gm.color}">${gm.mastered}<span style="font-size:11px;color:#9aabb8"> / ${gm.total}</span></div>
-      <div class="gc-sub">mastered · ${gm.pct}%</div>
+      <div class="gc-sub">${tf('printReport.masteredPct', {pct: gm.pct})}</div>
       <div class="gc-mini-bar"><div class="gc-mini-fill" style="width:${gm.pct}%;background:${gm.color}"></div></div>
     </div>`;
   }).join('');
@@ -5664,7 +5769,7 @@ function buildReport(withTajweed){
         </div>
         <div class="rpt-status-col">
           <div class="rpt-dots">${dots}</div>
-          <div class="rpt-status-lbl" style="color:${s>0 && s!==4?gm.color:'#ccc'}">${s===0?'Not started':STATUS_LABELS_SHORT[s]}</div>
+          <div class="rpt-status-lbl" style="color:${s>0 && s!==4?gm.color:'#ccc'}">${s===0?t('printReport.notStarted'):tStatusLabelShort(s)}</div>
         </div>
       </div>`;
   }).join('');
@@ -5680,7 +5785,7 @@ function buildReport(withTajweed){
       </div>
       <div class="rpt-student-block">
         <div class="rpt-student-name">${person.emoji} ${person.name}</div>
-        <div class="rpt-date">Generated ${today}</div>
+        <div class="rpt-date">${tf('printReport.generated', {date: today})}</div>
       </div>
     </div>
 
@@ -5694,21 +5799,21 @@ function buildReport(withTajweed){
     <div class="rpt-overall">
       <div>
         <div class="rpt-pct">${pct}%</div>
-        <div class="rpt-pct-lbl">Overall Mastery</div>
+        <div class="rpt-pct-lbl">${t('printReport.overallMastery')}</div>
       </div>
       <div style="flex:1">
         <div class="rpt-bar-wrap"><div class="rpt-bar-fill" style="width:${pct}%"></div></div>
-        <div style="font-size:9px;color:#9aabb8;margin-top:4px;">${sum} of ${total} points · ${applicableWays.filter(w=>prog[w.id].status===3).length} of ${applicableWays.length} ways mastered</div>
+        <div style="font-size:9px;color:#9aabb8;margin-top:4px;">${tf('printReport.pointsSummary', {sum, total, mastered: applicableWays.filter(w=>prog[w.id].status===3).length, count: applicableWays.length})}</div>
       </div>
     </div>
 
     <div class="rpt-groups">${groupCardsHTML}</div>
 
-    <div class="rpt-ways-title">All 30 Ways — Detail</div>
+    <div class="rpt-ways-title">${t('printReport.allWaysDetail')}</div>
     <div class="rpt-ways-grid">${waysHTML}</div>
 
     <div class="rpt-footer">
-      <span>${rptBrand} · Mastery Report</span>
+      <span>${rptBrand} · ${t('printReport.masteryReportFooter')}</span>
       <span>${rptRef} · ${today}</span>
     </div>
   `;
