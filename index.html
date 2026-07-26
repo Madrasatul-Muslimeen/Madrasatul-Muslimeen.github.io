@@ -717,13 +717,13 @@
   // Home menu markup, rather than inside the lazy-loaded Quran Study module,
   // because this button lives in the persistent shell and is on the page
   // immediately — no need to wait for the Quran Study tab to load.
-  const APP_VERSION = 'v06.25';
+  const APP_VERSION = 'v06.29';
   const APP_BUILD_DATE = '26 Jul 2026';
   (function initVersionTag(){
     const tag = document.getElementById('quranVersionTag');
     if(!tag) return;
     tag.textContent = '- ' + APP_VERSION;
-    tag.title = 'Build: ' + APP_BUILD_DATE;
+    tag.title = tf('common.buildLabel', {date: APP_BUILD_DATE});
   })();
 
   // Feature 12 Phase A — populate the language switcher from I18N_LANGS,
@@ -972,13 +972,13 @@
       <div class="ayah-bangla" id="ayahBangla"></div>
       <div class="ayah-audio-wrap" id="ayahAudioWrap">
         <div class="reciter-tabs" id="reciterTabs">
-          <button class="reciter-tab" id="reciterTabAr" data-reciter="ar">🔊 Abdullah Basfar (Arabic)</button>
-          <button class="reciter-tab" id="reciterTabEn" data-reciter="en">🔊 Ibrahim Walk (English)</button>
-          <button class="reciter-tab" id="reciterTabBn" data-reciter="bn">🔊 Sharif Bayzid (Bangla)</button>
+          <button class="reciter-tab" id="reciterTabAr" data-reciter="ar">🔊 <span data-i18n="audio.reciterTabAr">Abdullah Basfar (Arabic)</span></button>
+          <button class="reciter-tab" id="reciterTabEn" data-reciter="en">🔊 <span data-i18n="audio.reciterTabEn">Ibrahim Walk (English)</span></button>
+          <button class="reciter-tab" id="reciterTabBn" data-reciter="bn">🔊 <span data-i18n="audio.reciterTabBn">Sharif Bayzid (Bangla)</span></button>
         </div>
         <div class="ayah-audio-row">
           <audio id="ayahAudio" controls preload="none"></audio>
-          <button class="audio-loop-btn" id="audioLoopBtn" title="Loop this ayah">🔁</button>
+          <button class="audio-loop-btn" id="audioLoopBtn" title="Loop this ayah" data-i18n-title="audio.loopThisAyah">🔁</button>
         </div>
       </div>
     </div>
@@ -992,26 +992,26 @@
     <label class="hifz-extras-switch" id="hifzExtrasSwitchWrap">
       <input type="checkbox" id="hifzExtrasSwitch">
       <span class="hifz-switch-track"><span class="hifz-switch-thumb"></span></span>
-      <span class="hifz-switch-label">Show translation, Tajweed &amp; ayah no.</span>
+      <span class="hifz-switch-label" data-i18n="hifz.showExtras">Show translation, Tajweed &amp; ayah no.</span>
     </label>
     <div class="hifz-status" id="hifzStatus"></div>
     <div id="hifzPages"></div>
   </div>
 
   <div class="wbw-bar">
-    <button class="picker-toggle" id="wbwToggle">🔤 Word by Word <span id="wbwToggleArrow">▾</span></button>
+    <button class="picker-toggle" id="wbwToggle">🔤 <span data-i18n="wbw.wordByWord">Word by Word</span> <span id="wbwToggleArrow">▾</span></button>
   </div>
   <div class="wbw-panel" id="wbwPanel">
     <label class="wbw-morph-toggle">
-      <input type="checkbox" id="morphToggle"> Show root &amp; grammar (morphology)
+      <input type="checkbox" id="morphToggle"> <span data-i18n="wbw.showMorphology">Show root &amp; grammar (morphology)</span>
     </label>
     <label class="wbw-morph-toggle">
-      <input type="checkbox" id="derivToggle"> Show derivatives from this root
+      <input type="checkbox" id="derivToggle"> <span data-i18n="wbw.showDerivatives">Show derivatives from this root</span>
     </label>
     <div class="wbw-grid" id="wbwGrid"></div>
     <div class="wbw-deriv-panel" id="derivPanel" style="display:none;"></div>
     <div class="ayah-picker-status" id="wbwStatus"></div>
-    <div class="ayah-picker-source">Per-word text, translation &amp; transliteration fetched live from quran.com. Morphology (root, lemma, part of speech) courtesy of the <a href="https://corpus.quran.com" target="_blank" rel="noopener" style="color:inherit;">Quranic Arabic Corpus</a>, Kais Dukes.</div>
+    <div class="ayah-picker-source"><span data-i18n="wbw.creditPrefix">Per-word text, translation &amp; transliteration fetched live from quran.com. Morphology (root, lemma, part of speech) courtesy of the </span><a href="https://corpus.quran.com" target="_blank" rel="noopener" style="color:inherit;">Quranic Arabic Corpus</a><span data-i18n="wbw.creditSuffix">, Kais Dukes.</span></div>
   </div>
 
   <div class="wbw-word-modal-overlay" id="wbwWordModalOverlay">
@@ -1026,7 +1026,7 @@
       <div class="wheel-scroll" id="wheelScroll">
       <svg id="wheel" width="480" height="480" viewBox="0 0 500 500"><path d="M 250 30 A 220 220 0 0 1 317.98373876248843 40.76756641506623 L 283.9918693812442 145.3837832075331 A 110 110 0 0 0 250 140 Z" class="segment" fill="#2C3E63" opacity="1"><title>1. Reading (with Tajweed) — Mastered</title></path><text x="275.8116867316381" y="91.03142380180228" text-anchor="middle" class="seg-num" style="pointer-events: none;">1</text><path d="M 317.98373876248843 40.76756641506623 A 220 220 0 0 1 379.31275550434407 72.01626123751157 L 314.65637775217203 161.00813061875579 A 110 110 0 0 0 283.9918693812442 145.3837832075331 Z" class="segment" fill="#2C3E63" opacity="0.13"><title>2. Hifz / Memorising — Not Started</title></path><text x="324.90843245702524" y="106.9839235089193" text-anchor="middle" class="seg-num" style="pointer-events: none;">2</text><path d="M 379.31275550434407 72.01626123751157 A 220 220 0 0 1 427.98373876248843 120.6872444956559 L 338.9918693812442 185.34362224782797 A 110 110 0 0 0 314.65637775217203 161.00813061875579 Z" class="segment" fill="#2C3E63" opacity="0.13"><title>3. Arabic Writing — Not Started</title></path><text x="366.6726188957804" y="137.32738110421968" text-anchor="middle" class="seg-num" style="pointer-events: none;">3</text><path d="M 427.98373876248843 120.6872444956559 A 220 220 0 0 1 459.2324335849338 182.01626123751157 L 354.6162167924669 216.00813061875579 A 110 110 0 0 0 338.9918693812442 185.34362224782797 Z" class="segment" fill="#2C3E63" opacity="0.13"><title>4. Language Learning (Basic Grammar) — Not Started</title></path><text x="397.0160764910807" y="179.0915675429748" text-anchor="middle" class="seg-num" style="pointer-events: none;">4</text><path d="M 459.2324335849338 182.01626123751157 A 220 220 0 0 1 470 250 L 360 250 A 110 110 0 0 0 354.6162167924669 216.00813061875579 Z" class="segment" fill="#C9A24B" opacity="1"><title>5. Reading (with Meaning) — Mastered</title></path><text x="412.96857619819775" y="228.1883132683619" text-anchor="middle" class="seg-num" style="pointer-events: none;">5</text><path d="M 470 250 A 220 220 0 0 1 459.2324335849338 317.98373876248843 L 354.6162167924669 283.9918693812442 A 110 110 0 0 0 360 250 Z" class="segment" fill="#C9A24B" opacity="1"><title>6. Word by Word Meaning — Mastered</title></path><text x="412.96857619819775" y="279.8116867316381" text-anchor="middle" class="seg-num" style="pointer-events: none;">6</text><path d="M 459.2324335849338 317.98373876248843 A 220 220 0 0 1 427.98373876248843 379.31275550434407 L 338.9918693812442 314.65637775217203 A 110 110 0 0 0 354.6162167924669 283.9918693812442 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>7. Listening Attentively (Arabic only) — Not Started</title></path><text x="397.0160764910807" y="328.90843245702524" text-anchor="middle" class="seg-num" style="pointer-events: none;">7</text><path d="M 427.98373876248843 379.31275550434407 A 220 220 0 0 1 379.31275550434407 427.98373876248843 L 314.65637775217203 338.9918693812442 A 110 110 0 0 0 338.9918693812442 314.65637775217203 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>8. Listening Attentively (with meaning) — Not Started</title></path><text x="366.6726188957804" y="370.6726188957803" text-anchor="middle" class="seg-num" style="pointer-events: none;">8</text><path d="M 379.31275550434407 427.98373876248843 A 220 220 0 0 1 317.98373876248843 459.2324335849338 L 283.9918693812442 354.6162167924669 A 110 110 0 0 0 314.65637775217203 338.9918693812442 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>9. Story Learning — Not Started</title></path><text x="324.90843245702524" y="401.0160764910807" text-anchor="middle" class="seg-num" style="pointer-events: none;">9</text><path d="M 317.98373876248843 459.2324335849338 A 220 220 0 0 1 250 470 L 250 360 A 110 110 0 0 0 283.9918693812442 354.6162167924669 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>10. Knowing Prophets — Not Started</title></path><text x="275.8116867316381" y="416.96857619819775" text-anchor="middle" class="seg-num" style="pointer-events: none;">10</text><path d="M 250 470 A 220 220 0 0 1 182.01626123751157 459.2324335849338 L 216.00813061875579 354.6162167924669 A 110 110 0 0 0 250 360 Z" class="segment" fill="#C9A24B" opacity="1"><title>11. Ruqyah Listening — Mastered</title></path><text x="224.18831326836187" y="416.96857619819775" text-anchor="middle" class="seg-num" style="pointer-events: none;">11</text><path d="M 182.01626123751157 459.2324335849338 A 220 220 0 0 1 120.68724449565593 427.98373876248843 L 185.34362224782797 338.9918693812442 A 110 110 0 0 0 216.00813061875579 354.6162167924669 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>12. Calligraphy — Not Started</title></path><text x="175.09156754297481" y="401.0160764910807" text-anchor="middle" class="seg-num" style="pointer-events: none;">12</text><path d="M 120.68724449565593 427.98373876248843 A 220 220 0 0 1 72.01626123751157 379.3127555043441 L 161.00813061875579 314.65637775217203 A 110 110 0 0 0 185.34362224782797 338.9918693812442 Z" class="segment" fill="#C9A24B" opacity="0.13"><title>13. Group / Class Discussion — Not Started</title></path><text x="133.32738110421968" y="370.6726188957804" text-anchor="middle" class="seg-num" style="pointer-events: none;">13</text><path d="M 72.01626123751157 379.3127555043441 A 220 220 0 0 1 40.76756641506623 317.98373876248843 L 145.3837832075331 283.9918693812442 A 110 110 0 0 0 161.00813061875579 314.65637775217203 Z" class="segment" fill="#3D6B6B" opacity="0.13"><title>14. Journaling — Not Started</title></path><text x="102.9839235089193" y="328.90843245702524" text-anchor="middle" class="seg-num" style="pointer-events: none;">14</text><path d="M 40.76756641506623 317.98373876248843 A 220 220 0 0 1 30 250.00000000000003 L 140 250 A 110 110 0 0 0 145.3837832075331 283.9918693812442 Z" class="segment" fill="#3D6B6B" opacity="1"><title>15. Dua Learning — Mastered</title></path><text x="87.03142380180228" y="279.81168673163813" text-anchor="middle" class="seg-num" style="pointer-events: none;">15</text><path d="M 30 250.00000000000003 A 220 220 0 0 1 40.76756641506623 182.01626123751151 L 145.3837832075331 216.00813061875576 A 110 110 0 0 0 140 250 Z" class="segment" fill="#3D6B6B" opacity="0.13"><title>16. Names &amp; Attributes of Allah — Not Started</title></path><text x="87.03142380180228" y="228.18831326836192" text-anchor="middle" class="seg-num" style="pointer-events: none;">16</text><path d="M 40.76756641506623 182.01626123751151 A 220 220 0 0 1 72.01626123751154 120.68724449565593 L 161.00813061875579 185.34362224782797 A 110 110 0 0 0 145.3837832075331 216.00813061875576 Z" class="segment" fill="#3D6B6B" opacity="0.13"><title>17. Reflecting / Critical Reasoning — Not Started</title></path><text x="102.98392350891925" y="179.09156754297487" text-anchor="middle" class="seg-num" style="pointer-events: none;">17</text><path d="M 72.01626123751154 120.68724449565593 A 220 220 0 0 1 120.68724449565588 72.01626123751157 L 185.34362224782794 161.00813061875579 A 110 110 0 0 0 161.00813061875579 185.34362224782797 Z" class="segment" fill="#3D6B6B" opacity="0.13"><title>18. Reflecting on the Miracles — Not Started</title></path><text x="133.32738110421963" y="137.32738110421968" text-anchor="middle" class="seg-num" style="pointer-events: none;">18</text><path d="M 120.68724449565588 72.01626123751157 A 220 220 0 0 1 182.01626123751154 40.76756641506623 L 216.00813061875579 145.3837832075331 A 110 110 0 0 0 185.34362224782794 161.00813061875579 Z" class="segment" fill="#7A2E2E" opacity="1"><title>19. Teaching Others — Mastered</title></path><text x="175.09156754297476" y="106.9839235089193" text-anchor="middle" class="seg-num" style="pointer-events: none;">19</text><path d="M 182.01626123751154 40.76756641506623 A 220 220 0 0 1 249.99999999999997 30 L 249.99999999999997 140 A 110 110 0 0 0 216.00813061875579 145.3837832075331 Z" class="segment" fill="#7A2E2E" opacity="0.13"><title>20. Living by it (Self-Assessment) — Not Started</title></path><text x="224.18831326836187" y="91.03142380180228" text-anchor="middle" class="seg-num" style="pointer-events: none;">20</text><circle cx="250" cy="250" r="106" fill="#13192a" stroke="#C9A24B" stroke-width="1.5"></circle><text x="250" y="244" class="center-text" font-size="22" direction="rtl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</text><text x="250" y="272" text-anchor="middle" font-family="Inter" font-size="10" fill="#8fa0c2">AYAH 1:1</text></svg>
       </div>
-      <div class="wheel-swipe-hint" id="wheelSwipeHint">&#x25C0; swipe to see the full wheel &#x25B6;</div>
+      <div class="wheel-swipe-hint" id="wheelSwipeHint">&#x25C0; <span data-i18n="wheel.swipeHint">swipe to see the full wheel</span> &#x25B6;</div>
       <div class="legend" id="wheelLegend">
         <div class="legend-item"><span class="swatch" style="background:var(--foundation)"></span>Foundation</div>
         <div class="legend-item"><span class="swatch" style="background:var(--engagement)"></span>Engagement</div>
@@ -1034,10 +1034,10 @@
         <div class="legend-item"><span class="swatch" style="background:var(--application)"></span>Application</div>
       </div>
       <div class="status-legend">
-        <span><i style="opacity:.15"></i>Not started</span>
-        <span><i style="opacity:.4"></i>Learning</span>
-        <span><i style="opacity:.7"></i>Practicing</span>
-        <span><i style="opacity:1"></i>Mastered</span>
+        <span><i style="opacity:.15"></i><span data-i18n="printReport.notStarted">Not started</span></span>
+        <span><i style="opacity:.4"></i><span data-i18n="status.learning">Learning</span></span>
+        <span><i style="opacity:.7"></i><span data-i18n="status.practicing">Practicing</span></span>
+        <span><i style="opacity:1"></i><span data-i18n="status.mastered">Mastered</span></span>
       </div>
     </div>
 
@@ -1429,31 +1429,31 @@
 <div class="overlay" id="exploreOverlay">
   <div class="modal" style="width:600px;max-width:96vw;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-      <h3 style="margin:0;">&#x1F9ED; Explore</h3>
-      <button class="btn-close" id="exploreClose" style="padding:5px 12px;">Close</button>
+      <h3 style="margin:0;">&#x1F9ED; <span data-i18n="explore.button">Explore</span></h3>
+      <button class="btn-close" id="exploreClose" style="padding:5px 12px;" data-i18n="wayModal.close">Close</button>
     </div>
     <div class="ayah-picker-source" id="exploreBreadcrumb" style="margin-bottom:12px;font-size:12px;"></div>
     <div class="ayah-picker-row" style="margin-bottom:12px;align-items:flex-end;">
       <div class="ayah-picker-field">
-        <label for="exploreJumpType">Jump to</label>
+        <label for="exploreJumpType" data-i18n="explore.jumpTo">Jump to</label>
         <select id="exploreJumpType">
-          <option value="quran">Entire Quran</option>
-          <option value="juz">Juz</option>
-          <option value="surah">Surah</option>
+          <option value="quran" data-i18n="wayModal.entireQuran">Entire Quran</option>
+          <option value="juz" data-i18n="explore.optJuz">Juz</option>
+          <option value="surah" data-i18n="explore.optSurah">Surah</option>
         </select>
       </div>
       <div class="ayah-picker-field" id="exploreJumpNumField" style="display:none;">
-        <label for="exploreJumpNum">Number</label>
+        <label for="exploreJumpNum" data-i18n="explore.number">Number</label>
         <select id="exploreJumpNum"></select>
       </div>
-      <button class="picker-load-btn" id="exploreJumpGoBtn">Go</button>
-      <button class="picker-toggle" id="exploreBackBtn" style="display:none;">&#x25C0; Back</button>
+      <button class="picker-load-btn" id="exploreJumpGoBtn" data-i18n="explore.go">Go</button>
+      <button class="picker-toggle" id="exploreBackBtn" style="display:none;">&#x25C0; <span data-i18n="explore.back">Back</span></button>
     </div>
     <div class="wheel-box">
       <div class="wheel-scroll" id="exploreWheelScroll">
       <svg id="exploreWheel" width="480" height="480" viewBox="0 0 500 500"></svg>
       </div>
-      <div class="wheel-swipe-hint" id="exploreWheelSwipeHint">&#x25C0; swipe to see the full wheel &#x25B6;</div>
+      <div class="wheel-swipe-hint" id="exploreWheelSwipeHint">&#x25C0; <span data-i18n="wheel.swipeHint">swipe to see the full wheel</span> &#x25B6;</div>
     </div>
     <div class="ayah-picker-status" id="exploreStatus"></div>
   </div>
@@ -1710,6 +1710,116 @@ const I18N_STRINGS = {
     'admin.nonePeopleYet': 'None yet.',
     'admin.inviteRowLabel': '{email} \u2014 {role} (not yet signed in)',
     'admin.personRowLabel': '{name} \u2014 {role}',
+
+    // Word-by-word / morphology & root-derivative modals (session 6).
+    // NOTE: grammatical POS terminology (POS_LABELS — Noun, Verb, Active
+    // Participle, etc., ~30 terms) is deliberately NOT converted this pass.
+    // It's specialist Arabic-grammar vocabulary where a wrong or approximate
+    // translation actively misleads a student, so it deserves its own
+    // careful pass (ideally reviewed by you) rather than a mechanical sweep.
+    'wbw.noOtherOccurrences': 'No other occurrences found for this root.',
+    'wbw.noRootOnRecord': 'This word has no root on record (likely a particle/pronoun).',
+    'wbw.derivHeaderSingularOcc': 'Root {root} \u2014 {occ} occurrence across {forms} {formWord}',
+    'wbw.derivHeaderPluralOcc': 'Root {root} \u2014 {occ} occurrences across {forms} {formWord}',
+    'wbw.formSingular': 'form',
+    'wbw.formPlural': 'forms',
+    'wbw.wordModalOccSingular': '{count} occurrence of root {root}',
+    'wbw.wordModalOccPlural': '{count} occurrences of root {root}',
+    'wbw.morphLoading': 'Loading morphology data (~5MB, one-time)\u2026',
+    'wbw.morphLoaded': 'Morphology loaded \u2014 {chapters}/114 chapters, {rows} rows.',
+    'wbw.morphLoadFailed': 'Couldn\'t load morphology data ({err}) \u2014 try checking the box again.',
+    'wbw.networkError': 'network error',
+
+    // Audio / reciter system (session 7, part 1)
+    'audio.reciterTabAr': 'Abdullah Basfar (Arabic)',
+    'audio.reciterTabEn': 'Ibrahim Walk (English)',
+    'audio.reciterTabBn': 'Sharif Bayzid (Bangla)',
+    'audio.loopThisAyah': 'Loop this ayah',
+    'audio.bnNotAvailableAyah': 'Bangla audio isn\u2019t available for this ayah.',
+    'audio.bnLoadFailed': 'Bangla audio data failed to load. Check your connection and try again.',
+    'audio.bnNotAvailableUnit': 'Bangla audio isn\u2019t available for this unit.',
+    'audio.reciterNotAvailable': '{reciter} audio is not available yet.',
+
+    // Hifz mode + Word-by-Word bar
+    'hifz.showExtras': 'Show translation, Tajweed & ayah no.',
+    'wbw.wordByWord': 'Word by Word',
+    'wbw.showMorphology': 'Show root & grammar (morphology)',
+    'wbw.showDerivatives': 'Show derivatives from this root',
+    'wbw.creditPrefix': 'Per-word text, translation & transliteration fetched live from quran.com. Morphology (root, lemma, part of speech) courtesy of the ',
+    'wbw.creditSuffix': ', Kais Dukes.',
+
+    // Wheel
+    'wheel.swipeHint': 'swipe to see the full wheel',
+
+    // Explore overlay (session 7, part 2)
+    'explore.crumbQuran': 'Quran',
+    'explore.crumbJuz': 'Juz {n}',
+    'explore.crumbSurah': 'Surah {n}',
+    'explore.crumbRuku': 'Ruku\' {n}',
+    'explore.couldNotLoadWheel': 'Could not load this wheel ({err}) \u2014 try again.',
+    'explore.jumpTo': 'Jump to',
+    'explore.optJuz': 'Juz',
+    'explore.optSurah': 'Surah',
+    'explore.number': 'Number',
+    'explore.go': 'Go',
+    'explore.back': 'Back',
+
+    // Hifz / Mushaf view
+    'hifz.pageNum': 'Page {n}',
+    'hifz.pageLoadFailed': 'Couldn\'t load this page\'s data.',
+    'hifz.loadingPage': 'Loading Hifz mushaf page\u2026',
+    'hifz.unitTypeUnsupported': 'Hifz view isn\'t available for this unit type yet.',
+    'hifz.pageNotFound': 'Couldn\'t find a mushaf page for this selection.',
+    'hifz.mushafLoadFailed': 'Couldn\'t load Hifz mushaf data ({err}).',
+
+    // Unit navigation / Choose Ayah status messages (the scattered long tail)
+    'unitNav.loadingAyah': 'Loading ayah\u2026',
+    'unitNav.stillLoadingSurahList': 'Still loading the Surah list \u2014 try Apply again in a moment.',
+    'unitNav.couldNotReachSurahList': 'Couldn\u2019t reach quran.com for the Surah list \u2014 check your connection and try again.',
+    'unitNav.chooseSurahAndAyah': 'Choose a Surah and Ayah first.',
+    'unitNav.chooseSurahFirstPeriod': 'Choose a Surah first.',
+    'unitNav.toAyahAfterFromAyah': '"To Ayah" must be the same as or after "From Ayah".',
+    'unitNav.enterPageRange': 'Enter a page from 1 to 604.',
+    'unitNav.chooseRuku': 'Choose a Ruku\u2019 (boundaries may still be loading \u2014 wait a moment and try again).',
+    'unitNav.chooseJuz': 'Choose a Juz.',
+    'unitNav.navigatorTip': 'Tip: use the \u25c0 \u25be \u25b6 navigator above to open any single ayah \u2014 Tajweed, Word-by-Word and Roots live there.',
+    'unitNav.enterSurahAyah': 'Enter as surah:ayah, e.g. 2:255',
+    'unitNav.ayahListUnavailable': 'This unit\u2019s ayah list isn\u2019t available yet \u2014 reselect the unit to fetch it.',
+
+    // WBW loading / fallback states
+    'wbw.loadingWords': 'Loading words\u2026',
+    'wbw.translationUnavailable': 'Per-word translation is temporarily unavailable \u2014 showing Arabic words (Root & Derivatives still work).',
+
+    // Final sweep (session 8) — concatenated status-message call sites that
+    // the earlier per-session grep passes missed because they build the
+    // string via '+' concatenation rather than a single literal.
+    'wayList.addWayIn': '+ Add a way in {group}',
+    'tajweed.loadFailed': 'Couldn\'t load whole-unit Tajweed colours ({err}) \u2014 showing standard script.',
+    'unitNav.loadingAyahKey': 'Loading Ayah {key}\u2026',
+    'unitNav.couldNotLoadAyah': 'Couldn\'t load Ayah {key} ({err}).',
+    'unitNav.nowStudyingSurahAyah': 'Now studying: Surah {surah}, Ayah {ayah}.',
+    'unitNav.lookingUpSurahForPage': 'Looking up the Surah for page {page}\u2026',
+    'unitNav.pageIsInSurah': 'Page {page} is in Surah {surah}.',
+    'unitNav.couldNotLookUpSurahForPage': 'Couldn\u2019t look up the Surah for that page ({err}).',
+    'unitNav.lookingUpPagesForSurah': 'Looking up pages for {surah}\u2026',
+    'unitNav.couldNotLookUpPagesForSurah': 'Couldn\u2019t look up pages for that Surah ({err}).',
+    'unitNav.couldNotLoadRukuData': 'Couldn\u2019t load Ruku\u2019 data',
+    'unitNav.couldNotLoadRukuBoundaries': 'Couldn\u2019t load Ruku\u2019 boundaries ({err}) \u2014 try choosing the Surah again.',
+    'unitNav.nowStudying': 'Now studying: {label}',
+    'unitNav.fetching': 'Fetching {label}\u2026',
+    'unitNav.loadedAyahSingular': 'Loaded {count} ayah.',
+    'unitNav.loadedAyahPlural': 'Loaded {count} ayahs.',
+    'unitNav.couldNotFetchAutomatically': 'Could not fetch automatically ({err}) \u2014 you can type the content in manually below.',
+    'wbw.buildingForSingular': 'Building word-by-word for {count} ayah\u2026',
+    'wbw.buildingForPlural': 'Building word-by-word for {count} ayahs\u2026',
+    'wbw.buildingProgress': 'Building word-by-word\u2026 {done} / {total}',
+
+    // Final sweep, part 2 — a handful of .title tooltips missed by the
+    // textContent-only scan
+    'common.buildLabel': 'Build: {date}',
+    'wayList.removeThisWay': 'Remove this way',
+    'wayModal.removeThisLink': 'Remove this link',
+    'unitNav.loadingRukuBoundaries': 'Loading Ruku\u2019 boundaries\u2026',
   }
 };
 
@@ -4051,12 +4161,12 @@ function renderAudio(){
         // Data IS loaded but this specific ayah wasn't found — a genuine data
         // gap, not a loading race. Show it directly; retrying would just loop
         // forever re-fetching data we already have.
-        if(status){ status.textContent = 'Bangla audio isn\u2019t available for this ayah.'; status.style.color = '#e0a458'; }
+        if(status){ status.textContent = t('audio.bnNotAvailableAyah'); status.style.color = '#e0a458'; }
       } else {
         ensureBnTimestamps().then(()=>{
           if(state.selectedReciter === 'bn') renderAudio();
         }).catch(()=>{
-          if(status){ status.textContent = 'Bangla audio data failed to load. Check your connection and try again.'; status.style.color = '#e0a458'; }
+          if(status){ status.textContent = t('audio.bnLoadFailed'); status.style.color = '#e0a458'; }
         });
       }
       if(btn) btn.classList.toggle('active', !!state.audioLoop);
@@ -4129,7 +4239,7 @@ function renderAudio(){
       ensureBnTimestamps().then(()=>{
         if(state.selectedReciter === 'bn') renderAudio();
       }).catch(()=>{
-        if(status){ status.textContent = 'Bangla audio data failed to load. Check your connection and try again.'; status.style.color = '#e0a458'; }
+        if(status){ status.textContent = t('audio.bnLoadFailed'); status.style.color = '#e0a458'; }
       });
       if(btn) btn.classList.toggle('active', !!state.audioLoop);
       return;
@@ -4143,7 +4253,7 @@ function renderAudio(){
         audio.addEventListener('loadedmetadata', onReady);
       } else {
         const status = document.getElementById('unitPickerStatus');
-        if(status){ status.textContent = 'Bangla audio isn\u2019t available for this unit.'; status.style.color = '#e0a458'; }
+        if(status){ status.textContent = t('audio.bnNotAvailableUnit'); status.style.color = '#e0a458'; }
       }
     }
     wrap.classList.add('loaded');
@@ -4188,7 +4298,7 @@ document.querySelectorAll('.reciter-tab').forEach(tabEl=>{
     if(!r || !(r.base || r.surahBase)){
       // Reserved/unavailable reciter — surface why, don't switch silently.
       const status = document.getElementById('unitPickerStatus');
-      if(status){ status.textContent = (r ? r.label : id) + ' audio is not available yet.'; status.style.color = '#e0a458'; }
+      if(status){ status.textContent = tf('audio.reciterNotAvailable', {reciter: (r ? r.label : id)}); status.style.color = '#e0a458'; }
       return;
     }
     reciterQueueActive = false; // a direct tab click always means "just this one", not a queued run
@@ -4614,7 +4724,7 @@ function renderList(){
       const del = document.createElement('span');
       del.className = 'way-delete';
       del.textContent = '×';
-      del.title = 'Remove this way';
+      del.title = t('wayList.removeThisWay');
       del.style.cssText = 'margin-left:6px;padding:1px 6px;border-radius:4px;font-weight:800;cursor:pointer;color:#c98a8a;opacity:.6;';
       del.onmouseover = ()=>{ del.style.opacity='1'; };
       del.onmouseout  = ()=>{ del.style.opacity='.6'; };
@@ -4630,7 +4740,7 @@ function renderList(){
 
     const addBtn = document.createElement('div');
     addBtn.className = 'way-add-btn';
-    addBtn.textContent = '+ Add a way in ' + group.key;
+    addBtn.textContent = tf('wayList.addWayIn', {group: group.key});
     addBtn.style.cssText = 'margin:4px 0 10px;padding:6px 10px;border:1px dashed rgba(242,232,213,.35);border-radius:6px;font-size:11px;color:rgba(242,232,213,.7);cursor:pointer;text-align:center;';
     addBtn.onmouseover = ()=>{ addBtn.style.opacity='1'; addBtn.style.borderColor='rgba(242,232,213,.6)'; };
     addBtn.onmouseout  = ()=>{ addBtn.style.opacity='.85'; addBtn.style.borderColor='rgba(242,232,213,.35)'; };
@@ -4782,10 +4892,10 @@ let exploreLevel = { type: 'quran' };
 let exploreHistory = [];
 
 function exploreBreadcrumbLabel(level){
-  if(level.type==='quran') return 'Quran';
-  if(level.type==='juz') return `Juz ${level.juz}`;
-  if(level.type==='surah') return `Surah ${level.surah}`;
-  if(level.type==='ruku') return `Ruku' ${level.rukuIndex}`;
+  if(level.type==='quran') return t('explore.crumbQuran');
+  if(level.type==='juz') return tf('explore.crumbJuz', {n: level.juz});
+  if(level.type==='surah') return tf('explore.crumbSurah', {n: level.surah});
+  if(level.type==='ruku') return tf('explore.crumbRuku', {n: level.rukuIndex});
   return '';
 }
 function exploreGoTo(level){
@@ -4809,7 +4919,7 @@ function exploreOpenAyah(surah, ayah){
 async function renderExplore(){
   const status = document.getElementById('exploreStatus');
   document.getElementById('exploreBackBtn').style.display = exploreHistory.length ? '' : 'none';
-  status.textContent = 'Loading\u2026'; status.style.color = '#8fa0c2';
+  status.textContent = t('common.loading'); status.style.color = '#8fa0c2';
 
   const chain = [...exploreHistory, exploreLevel];
   document.getElementById('exploreBreadcrumb').innerHTML = chain.map((lvl,i)=>
@@ -4832,7 +4942,7 @@ async function renderExplore(){
     status.textContent = '';
   }catch(e){
     console.error('renderExplore failed:', e);
-    status.textContent = 'Could not load this wheel (' + (e.message||'network error') + ') \u2014 try again.';
+    status.textContent = tf('explore.couldNotLoadWheel', {err: e.message || t('wbw.networkError')});
     status.style.color = '#e0a458';
   }
 }
@@ -5307,7 +5417,7 @@ function renderWayResources(wayId){
     const rm = document.createElement('button');
     rm.className = 'way-resource-remove';
     rm.textContent = '×';
-    rm.title = 'Remove this link';
+    rm.title = t('wayModal.removeThisLink');
     rm.onclick = ()=>{
       w.resources.splice(idx,1);
       renderWayResources(wayId);
@@ -6849,7 +6959,7 @@ function renderAyahArabicMode(){
         console.warn('whole-unit tajweed unavailable:', err);
         const statusEl = document.getElementById('pickerStatus');
         if(statusEl && state.currentUnitKey === uKey && state.tajweedMode){
-          statusEl.textContent = "Couldn't load whole-unit Tajweed colours (" + (err.message || 'network error') + ') \u2014 showing standard script.';
+          statusEl.textContent = tf('tajweed.loadFailed', {err: err.message || t('wbw.networkError')});
           statusEl.classList.add('error');
         }
       });
@@ -7119,12 +7229,12 @@ async function renderHifzPage(pageNum, highlight, container){
   pageEl.style.fontFamily = `'hifz-p${pageNum}'`;
   const numEl = document.createElement('div');
   numEl.className = 'hifz-page-num';
-  numEl.textContent = 'Page ' + pageNum;
+  numEl.textContent = tf('hifz.pageNum', {n: pageNum});
   pageEl.appendChild(numEl);
   if(!pageData){
     const err = document.createElement('div');
     err.className = 'hifz-line-error';
-    err.textContent = "Couldn't load this page's data.";
+    err.textContent = t('hifz.pageLoadFailed');
     pageEl.appendChild(err);
     container.appendChild(pageEl);
     return;
@@ -7184,17 +7294,17 @@ function renderHifzView(){
   }
   view.classList.add('show');
   if(card) card.classList.toggle('hifz-active', !state.hifzExtras);
-  statusEl.textContent = 'Loading Hifz mushaf page\u2026';
+  statusEl.textContent = t('hifz.loadingPage');
   pagesEl.innerHTML = '';
   const unitMetaReady = ensureUnitMetaLoadedForHifz();
   Promise.all([ensureMushafData(), unitMetaReady]).then(()=>{
     const target = getHifzTargetForCurrentUnit();
     if(target.unsupported){
-      statusEl.textContent = "Hifz view isn't available for this unit type yet.";
+      statusEl.textContent = t('hifz.unitTypeUnsupported');
       return;
     }
     if(!target.pages.length){
-      statusEl.textContent = "Couldn't find a mushaf page for this selection.";
+      statusEl.textContent = t('hifz.pageNotFound');
       return;
     }
     statusEl.textContent = '';
@@ -7202,7 +7312,7 @@ function renderHifzView(){
       for(const p of target.pages) await renderHifzPage(p, target.highlight, pagesEl);
     })();
   }).catch(err=>{
-    statusEl.textContent = "Couldn't load Hifz mushaf data (" + (err.message || 'network error') + ').';
+    statusEl.textContent = tf('hifz.mushafLoadFailed', {err: err.message || t('wbw.networkError')});
     console.warn('Hifz mushaf load failed:', err);
   });
 }
@@ -7548,7 +7658,7 @@ async function applyAyahSelection(surahNum, ayahNum, translationId){
   const statusEl = document.getElementById('pickerStatus');
   const btn = document.getElementById('pickerLoadBtn');
   statusEl.classList.remove('error');
-  statusEl.textContent = 'Loading ayah…';
+  statusEl.textContent = t('unitNav.loadingAyah');
   btn.disabled = true;
   // Audio is served directly from everyayah.com (no API involved) — wire it
   // up for the selected ayah immediately, so recitation still plays even if
@@ -7697,7 +7807,7 @@ async function showAyahWithinUnit(key){
   let ayah = state.ayahs[key];
   if(!ayah || !ayah.arabic){
     const status = document.getElementById('unitPickerStatus');
-    if(status){ status.textContent = 'Loading Ayah ' + key + '…'; status.style.color = '#8fa0c2'; }
+    if(status){ status.textContent = tf('unitNav.loadingAyahKey', {key}); status.style.color = '#8fa0c2'; }
     try{
       const d = await fetchAyahFromQuranCom(s, a, selectedTranslationId || 20);
       if(state.currentAyahKey !== key) return; // user already navigated on
@@ -7707,7 +7817,7 @@ async function showAyahWithinUnit(key){
       if(status){ status.textContent = ''; }
     }catch(err){
       console.error('showAyahWithinUnit fetch failed:', err);
-      if(status){ status.textContent = "Couldn't load Ayah " + key + ' (' + (err.message || 'network error') + ').'; status.style.color = '#e07070'; }
+      if(status){ status.textContent = tf('unitNav.couldNotLoadAyah', {key, err: err.message || t('wbw.networkError')}); status.style.color = '#e07070'; }
       return;
     }
   }
@@ -7827,16 +7937,16 @@ function runStudySettingsApply(thenPlay){
     const surahSel = document.getElementById('ssAyahSurahSelect');
     const ayahSel = document.getElementById('ssAyahNumSelect');
     if(!surahSel.dataset.populated){
-      if(status){ status.textContent = 'Still loading the Surah list \u2014 try Apply again in a moment.'; status.style.color = '#8fa0c2'; }
+      if(status){ status.textContent = t('unitNav.stillLoadingSurahList'); status.style.color = '#8fa0c2'; }
       ensureChaptersLoaded().then(()=>{ populateStudySettingsAyahSurahSelect(); }).catch(()=>{
-        if(status){ status.textContent = 'Couldn\u2019t reach quran.com for the Surah list \u2014 check your connection and try again.'; status.style.color = '#e0a458'; }
+        if(status){ status.textContent = t('unitNav.couldNotReachSurahList'); status.style.color = '#e0a458'; }
       });
       return;
     }
     const surah = surahSel.value;
     const ayah = ayahSel.value;
     if(!surah || !ayah){
-      if(status){ status.textContent = 'Choose a Surah and Ayah first.'; status.style.color = '#e0a458'; }
+      if(status){ status.textContent = t('unitNav.chooseSurahAndAyah'); status.style.color = '#e0a458'; }
       return;
     }
     // Bug fix (23 Jul 2026): applyAyahSelection() alone does NOT switch
@@ -7855,7 +7965,7 @@ function runStudySettingsApply(thenPlay){
       if(typeof populateAyahNumbers === 'function') populateAyahNumbers();
     }
     if(pAyah) pAyah.value = ayah;
-    if(status){ status.textContent = 'Now studying: Surah ' + surah + ', Ayah ' + ayah + '.'; status.style.color = '#8fd19e'; }
+    if(status){ status.textContent = tf('unitNav.nowStudyingSurahAyah', {surah, ayah}); status.style.color = '#8fd19e'; }
   } else {
     ok = applyUnitFromPicker();
   }
@@ -7899,15 +8009,15 @@ async function syncPageSurahHintFromPage(){
   if(!page || page<1 || page>604){ hint.textContent = ''; return; }
   const token = ++pageSurahHintToken;
   hint.classList.remove('error');
-  hint.textContent = 'Looking up the Surah for page ' + page + '\u2026';
+  hint.textContent = tf('unitNav.lookingUpSurahForPage', {page});
   try{
     const surahNum = await ensurePageSurah(page);
     if(token !== pageSurahHintToken) return; // superseded by a newer lookup
-    hint.textContent = 'Page ' + page + ' is in Surah ' + surahNameFor(surahNum) + '.';
+    hint.textContent = tf('unitNav.pageIsInSurah', {page, surah: surahNameFor(surahNum)});
     if(sel && sel.dataset.populated) sel.value = String(surahNum);
   }catch(e){
     if(token !== pageSurahHintToken) return;
-    hint.textContent = 'Couldn\u2019t look up the Surah for that page (' + (e.message||'network error') + ').';
+    hint.textContent = tf('unitNav.couldNotLookUpSurahForPage', {err: e.message || t('wbw.networkError')});
     hint.classList.add('error');
   }
 }
@@ -7920,7 +8030,7 @@ async function syncPageFromSurahSelect(){
   if(!surahNum) return;
   const token = ++pageSurahHintToken;
   hint.classList.remove('error');
-  hint.textContent = 'Looking up pages for ' + surahNameFor(surahNum) + '\u2026';
+  hint.textContent = tf('unitNav.lookingUpPagesForSurah', {surah: surahNameFor(surahNum)});
   try{
     const range = await ensureSurahPageRange(surahNum);
     if(token !== pageSurahHintToken) return;
@@ -7930,7 +8040,7 @@ async function syncPageFromSurahSelect(){
       : surahNameFor(surahNum) + ' spans pages ' + range.start + '\u2013' + range.end + ' (page set to the first page).';
   }catch(e){
     if(token !== pageSurahHintToken) return;
-    hint.textContent = 'Couldn\u2019t look up pages for that Surah (' + (e.message||'network error') + ').';
+    hint.textContent = tf('unitNav.couldNotLookUpPagesForSurah', {err: e.message || t('wbw.networkError')});
     hint.classList.add('error');
   }
 }
@@ -7957,15 +8067,15 @@ async function refreshUnitRukuNumSelect(){
   const rukuSel = document.getElementById('unitRukuNumSelect');
   const status = document.getElementById('unitPickerStatus');
   const surah = Number(surahSel.value);
-  if(!surah){ rukuSel.innerHTML = '<option>Choose a Surah first&hellip;</option>'; return; }
-  rukuSel.innerHTML = '<option>Loading Ruku\u2019 boundaries&hellip;</option>';
+  if(!surah){ rukuSel.innerHTML = '<option>' + t('studySettings.chooseSurahFirst') + '</option>'; return; }
+  rukuSel.innerHTML = '<option>' + t('unitNav.loadingRukuBoundaries') + '</option>';
   if(status){ status.textContent = ''; }
   try{
     const list = await ensureRukusLoadedForSurah(surah);
     rukuSel.innerHTML = list.map(r=>`<option value="${r.index}">Ruku' ${r.index} (Ayahs ${r.startAyah}\u2013${r.endAyah})</option>`).join('');
   }catch(e){
-    rukuSel.innerHTML = '<option value="">Couldn\u2019t load Ruku\u2019 data</option>';
-    if(status){ status.textContent = 'Couldn\u2019t load Ruku\u2019 boundaries (' + (e.message||'network error') + ') \u2014 try choosing the Surah again.'; status.style.color = '#e0a458'; }
+    rukuSel.innerHTML = '<option value="">' + t('unitNav.couldNotLoadRukuData') + '</option>';
+    if(status){ status.textContent = tf('unitNav.couldNotLoadRukuBoundaries', {err: e.message || t('wbw.networkError')}); status.style.color = '#e0a458'; }
   }
 }
 
@@ -8015,10 +8125,10 @@ function applyUnitFromPicker(){
   const surahSel = document.getElementById('unitSurahSelect');
   const surahStillLoading = (type==='range'||type==='surah'||type==='ruku') && !surahSel.dataset.populated;
   if(surahStillLoading){
-    status.textContent = 'Still loading the Surah list \u2014 try Apply again in a moment.';
+    status.textContent = t('unitNav.stillLoadingSurahList');
     status.style.color = '#8fa0c2';
     ensureChaptersLoaded().then(()=>{ populateUnitSurahSelect(); }).catch(()=>{
-      status.textContent = 'Couldn\u2019t reach quran.com for the Surah list \u2014 check your connection and try again.';
+      status.textContent = t('unitNav.couldNotReachSurahList');
       status.style.color = '#e0a458';
     });
     return false;
@@ -8030,30 +8140,30 @@ function applyUnitFromPicker(){
     const surah = Number(surahSel.value);
     const start = Number(document.getElementById('unitRangeStart').value);
     const end   = Number(document.getElementById('unitRangeEnd').value);
-    if(!surah){ status.textContent = 'Choose a Surah first.'; status.style.color = '#e0a458'; return false; }
-    if(!start || !end || end < start){ status.textContent = '"To Ayah" must be the same as or after "From Ayah".'; status.style.color = '#e0a458'; return false; }
+    if(!surah){ status.textContent = t('unitNav.chooseSurahFirstPeriod'); status.style.color = '#e0a458'; return false; }
+    if(!start || !end || end < start){ status.textContent = t('unitNav.toAyahAfterFromAyah'); status.style.color = '#e0a458'; return false; }
     key = buildUnitKey('range', {surah, start, end});
   } else if(type==='surah'){
     const surah = Number(surahSel.value);
-    if(!surah){ status.textContent = 'Choose a Surah first.'; status.style.color = '#e0a458'; return false; }
+    if(!surah){ status.textContent = t('unitNav.chooseSurahFirstPeriod'); status.style.color = '#e0a458'; return false; }
     key = buildUnitKey('surah', {surah});
   } else if(type==='page'){
     const page = Number(document.getElementById('unitPageNum').value);
-    if(!page || page<1 || page>604){ status.textContent = 'Enter a page from 1 to 604.'; status.style.color = '#e0a458'; return false; }
+    if(!page || page<1 || page>604){ status.textContent = t('unitNav.enterPageRange'); status.style.color = '#e0a458'; return false; }
     key = buildUnitKey('page', {page});
   } else if(type==='ruku'){
     const surah = Number(surahSel.value);
     const rukuIndex = Number(document.getElementById('unitRukuNumSelect').value);
-    if(!surah){ status.textContent = 'Choose a Surah first.'; status.style.color = '#e0a458'; return false; }
-    if(!rukuIndex){ status.textContent = 'Choose a Ruku\u2019 (boundaries may still be loading \u2014 wait a moment and try again).'; status.style.color = '#e0a458'; return false; }
+    if(!surah){ status.textContent = t('unitNav.chooseSurahFirstPeriod'); status.style.color = '#e0a458'; return false; }
+    if(!rukuIndex){ status.textContent = t('unitNav.chooseRuku'); status.style.color = '#e0a458'; return false; }
     key = buildUnitKey('ruku', {surah, rukuIndex});
   } else if(type==='juz'){
     const juz = Number(document.getElementById('unitJuzSelect').value);
-    if(!juz){ status.textContent = 'Choose a Juz.'; status.style.color = '#e0a458'; return false; }
+    if(!juz){ status.textContent = t('unitNav.chooseJuz'); status.style.color = '#e0a458'; return false; }
     key = buildUnitKey('juz', {juz});
   }
   setStudyUnit(type, key, !document.getElementById('ssCombinedCheckbox').checked);
-  status.textContent = 'Now studying: ' + unitLabel(key);
+  status.textContent = tf('unitNav.nowStudying', {label: unitLabel(key)});
   status.style.color = '#8fd19e';
   // Closing the Study Settings popup itself is handled by whichever button
   // (Apply / Apply and play) invoked this — see runStudySettingsApply().
@@ -8116,7 +8226,7 @@ function setStudyUnit(type, key, startAtFirst){
   if(type !== 'ayah'){
     const hint = document.getElementById('unitPickerStatus');
     if(hint && !hint.textContent){
-      hint.textContent = 'Tip: use the ◀ ▾ ▶ navigator above to open any single ayah — Tajweed, Word-by-Word and Roots live there.';
+      hint.textContent = t('unitNav.navigatorTip');
       hint.style.color = '#8fa0c2';
     }
   }
@@ -8128,7 +8238,7 @@ function setStudyUnit(type, key, startAtFirst){
   // exactly like ayah content did before quran.com fetching existed at all.
   if(isNewUnit || needsRefetch){
     const status = document.getElementById('unitPickerStatus');
-    if(status){ status.textContent = 'Fetching ' + unitLabel(key) + '…'; status.style.color = '#8fa0c2'; }
+    if(status){ status.textContent = tf('unitNav.fetching', {label: unitLabel(key)}); status.style.color = '#8fa0c2'; }
     fetchUnitContentFromQuranCom(type, key, selectedTranslationId || 20).then(content=>{
       if(state.currentUnitKey !== key) return; // user already moved on — don't overwrite what they're now looking at
       state.units[key].label  = content.label;
@@ -8143,10 +8253,10 @@ function setStudyUnit(type, key, startAtFirst){
       if(combinedBox && !combinedBox.checked && unitNavKey === 'all' && content.ayahKeys && content.ayahKeys.length){
         unitNavGo(content.ayahKeys[0]);
       }
-      if(status){ status.textContent = 'Loaded ' + content.ayahCount + ' ayah' + (content.ayahCount===1?'':'s') + '.'; status.style.color = '#8fd19e'; }
+      if(status){ status.textContent = tf(content.ayahCount===1?'unitNav.loadedAyahSingular':'unitNav.loadedAyahPlural', {count: content.ayahCount}); status.style.color = '#8fd19e'; }
     }).catch(err=>{
       console.error('fetchUnitContentFromQuranCom failed:', err);
-      if(status){ status.textContent = 'Could not fetch automatically (' + (err.message||'network error') + ') — you can type the content in manually below.'; status.style.color = '#e0a458'; }
+      if(status){ status.textContent = tf('unitNav.couldNotFetchAutomatically', {err: err.message || t('wbw.networkError')}); status.style.color = '#e0a458'; }
     });
   }
 }
@@ -8160,7 +8270,7 @@ document.getElementById('pickerLoadBtn').onclick = ()=>{
     const m = searchVal.match(/^(\d{1,3})\s*[:,]\s*(\d{1,3})$/);
     if(!m){
       const statusEl = document.getElementById('pickerStatus');
-      statusEl.textContent = 'Enter as surah:ayah, e.g. 2:255';
+      statusEl.textContent = t('unitNav.enterSurahAyah');
       statusEl.classList.add('error');
       return;
     }
@@ -8495,10 +8605,10 @@ async function loadUnitWordByWord(){
   const myToken = ++unitWbwRenderToken;
   statusEl.classList.remove('error');
   if(!keys.length){
-    statusEl.textContent = 'This unit\u2019s ayah list isn\u2019t available yet \u2014 reselect the unit to fetch it.';
+    statusEl.textContent = t('unitNav.ayahListUnavailable');
     return;
   }
-  statusEl.textContent = 'Building word-by-word for ' + keys.length + ' ayah' + (keys.length===1?'':'s') + '\u2026';
+  statusEl.textContent = tf(keys.length===1?'wbw.buildingForSingular':'wbw.buildingForPlural', {count: keys.length});
   grid.innerHTML = '';
   CURRENT_WBW_WORDS = [];
 
@@ -8522,7 +8632,7 @@ async function loadUnitWordByWord(){
       frag.push(wbwChipsHtml(words, k));
     }
     grid.insertAdjacentHTML('beforeend', frag.join(''));
-    statusEl.textContent = 'Building word-by-word\u2026 ' + Math.min(start + BATCH, keys.length) + ' / ' + keys.length;
+    statusEl.textContent = tf('wbw.buildingProgress', {done: Math.min(start + BATCH, keys.length), total: keys.length});
     await new Promise(r=>requestAnimationFrame(r));
   }
   if(myToken !== unitWbwRenderToken) return;
@@ -8548,7 +8658,7 @@ async function loadWordByWord(ayahKey){
     return;
   }
   statusEl.classList.remove('error');
-  statusEl.textContent = 'Loading words…';
+  statusEl.textContent = t('wbw.loadingWords');
   grid.innerHTML = '';
   try{
     const data = await quranFetch(`/verses/by_key/${ayahKey}?language=en&words=true&word_fields=text_uthmani,transliteration,translation,location`);
@@ -8580,7 +8690,7 @@ async function loadWordByWord(ayahKey){
       }));
       renderWbwWords(words, ayahKey);
       statusEl.classList.remove('error');
-      statusEl.textContent = 'Per-word translation is temporarily unavailable — showing Arabic words (Root & Derivatives still work).';
+      statusEl.textContent = t('wbw.translationUnavailable');
       if(showDerivatives){
         const key = firstWordKeyOf(words, ayahKey);
         if(key) selectDerivWord(key);
@@ -8608,7 +8718,7 @@ document.getElementById('morphToggle').addEventListener('change', async e=>{
   const statusEl = document.getElementById('wbwStatus');
   if(showMorphology){
     statusEl.classList.remove('error');
-    statusEl.textContent = 'Loading morphology data (~5MB, one-time)…';
+    statusEl.textContent = t('wbw.morphLoading');
     try{
       await loadMorphology();
       statusEl.textContent = `Morphology loaded — ${MORPH_CHAPTER_COUNT}/114 chapters, ${MORPH_ROW_COUNT} rows.`;
@@ -8669,7 +8779,7 @@ function renderDerivatives(rootBW){
   const occ = ROOT_INDEX[canonicalRootKey(rootBW)] || [];
   CURRENT_DERIV_GROUPS = [];
   if(!occ.length){
-    panel.innerHTML = `<div class="wbw-deriv-empty">No other occurrences found for this root.</div>`;
+    panel.innerHTML = `<div class="wbw-deriv-empty">${t('wbw.noOtherOccurrences')}</div>`;
     return;
   }
 
@@ -8695,7 +8805,7 @@ function renderDerivatives(rootBW){
   const refCap = 40;
 
   panel.innerHTML = `
-    <div class="wbw-deriv-header">Root <span class="wbw-deriv-root">${arabicRoot}</span> — ${occ.length} occurrence${occ.length===1?'':'s'} across ${sortedKeys.length} form${sortedKeys.length===1?'':'s'}</div>
+    <div class="wbw-deriv-header">${tf(occ.length===1?'wbw.derivHeaderSingularOcc':'wbw.derivHeaderPluralOcc', {root: `<span class="wbw-deriv-root">${arabicRoot}</span>`, occ: occ.length, forms: sortedKeys.length, formWord: t(sortedKeys.length===1?'wbw.formSingular':'wbw.formPlural')})}</div>
     <div class="wbw-deriv-groups">
       ${sortedKeys.map((key,i)=>{
         const g = groups[key];
@@ -8730,7 +8840,7 @@ function selectDerivWord(wordKey){
     el.classList.toggle('selected', el.dataset.loc === wordKey));
   const panel = document.getElementById('derivPanel');
   if(rootBW) renderDerivatives(rootBW);
-  else panel.innerHTML = `<div class="wbw-deriv-empty">This word has no root on record (likely a particle/pronoun).</div>`;
+  else panel.innerHTML = `<div class="wbw-deriv-empty">${t('wbw.noRootOnRecord')}</div>`;
 }
 
 function openWordModal(idx){
@@ -8752,7 +8862,7 @@ function openDerivModal(idx){
   document.getElementById('modalBody').innerHTML = `
     <div class="wbw-word-modal-arabic">${g.formDisplay}</div>
     <div class="wbw-word-modal-translit">${g.cat}</div>
-    <div class="wbw-word-modal-translation">${g.count} occurrence${g.count===1?'':'s'} of root ${g.rootArabic}</div>
+    <div class="wbw-word-modal-translation">${tf(g.count===1?'wbw.wordModalOccSingular':'wbw.wordModalOccPlural', {count: g.count, root: g.rootArabic})}</div>
     <div class="wbw-deriv-modal-refs">${g.refs.join(', ')}</div>
   `;
   document.getElementById('wbwWordModalOverlay').classList.add('show');
@@ -8796,13 +8906,13 @@ document.getElementById('derivToggle').addEventListener('change', async e=>{
     }
     if(!MORPH_INDEX){
       statusEl.classList.remove('error');
-      statusEl.textContent = 'Loading morphology data (~5MB, one-time)…';
+      statusEl.textContent = t('wbw.morphLoading');
       try{
         await loadMorphology();
-        statusEl.textContent = `Morphology loaded — ${MORPH_CHAPTER_COUNT}/114 chapters, ${MORPH_ROW_COUNT} rows.`;
+        statusEl.textContent = tf('wbw.morphLoaded', {chapters: MORPH_CHAPTER_COUNT, rows: MORPH_ROW_COUNT});
       }catch(err){
         console.error('loadMorphology failed:', err);
-        statusEl.textContent = `Couldn't load morphology data (${err.message || 'network error'}) — try checking the box again.`;
+        statusEl.textContent = tf('wbw.morphLoadFailed', {err: err.message || t('wbw.networkError')});
         statusEl.classList.add('error');
         showDerivatives = false;
         e.target.checked = false;
