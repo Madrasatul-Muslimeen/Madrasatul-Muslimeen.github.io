@@ -717,7 +717,7 @@
   // Home menu markup, rather than inside the lazy-loaded Quran Study module,
   // because this button lives in the persistent shell and is on the page
   // immediately — no need to wait for the Quran Study tab to load.
-  const APP_VERSION = 'v06.21';
+  const APP_VERSION = 'v06.22';
   const APP_BUILD_DATE = '25 Jul 2026';
   (function initVersionTag(){
     const tag = document.getElementById('quranVersionTag');
@@ -763,89 +763,89 @@
 <div class="mm-topbar-inner">
   <!-- Study Settings (relocated to top bar) -->
   <div class="sb-group" id="sbStudySettings">
-    <button class="picker-toggle" id="studySettingsToggle">&#x1F3AF; Study Settings <span id="studySettingsArrow">&#x25BE;</span></button>
+    <button class="picker-toggle" id="studySettingsToggle">&#x1F3AF; <span data-i18n="studySettings.title">Study Settings</span> <span id="studySettingsArrow">&#x25BE;</span></button>
     <div class="study-settings-panel" id="studySettingsPanel">
       <button class="ss-close-btn" id="ssCloseBtn" type="button" aria-label="Close">&#x2715;</button>
 
-      <div class="ss-row-label">Study unit</div>
+      <div class="ss-row-label" data-i18n="studySettings.studyUnit">Study unit</div>
       <div class="ayah-picker-row">
         <div class="ayah-picker-field">
-          <label for="unitTypeSelect">Study as</label>
+          <label for="unitTypeSelect" data-i18n="studySettings.studyAs">Study as</label>
           <select id="unitTypeSelect">
-            <option value="ayah">Single Ayah</option>
-            <option value="range">Range of Ayahs</option>
-            <option value="surah">Whole Surah</option>
-            <option value="page">Page</option>
-            <option value="ruku">Ruku'</option>
-            <option value="juz">Juz</option>
+            <option value="ayah" data-i18n="studySettings.unitAyah">Single Ayah</option>
+            <option value="range" data-i18n="studySettings.unitRange">Range of Ayahs</option>
+            <option value="surah" data-i18n="studySettings.unitSurah">Whole Surah</option>
+            <option value="page" data-i18n="studySettings.unitPage">Page</option>
+            <option value="ruku" data-i18n="studySettings.unitRuku">Ruku'</option>
+            <option value="juz" data-i18n="studySettings.unitJuz">Juz</option>
           </select>
         </div>
         <div class="ayah-picker-field" id="ssAyahField" style="display:flex;">
-          <label for="ssAyahSurahSelect">Surah</label>
+          <label for="ssAyahSurahSelect" data-i18n="studySettings.surah">Surah</label>
           <select id="ssAyahSurahSelect"><option>Loading&hellip;</option></select>
         </div>
         <div class="ayah-picker-field" id="ssAyahNumFieldWrap" style="display:flex;">
-          <label for="ssAyahNumSelect">Ayah</label>
+          <label for="ssAyahNumSelect" data-i18n="studySettings.ayah">Ayah</label>
           <select id="ssAyahNumSelect"><option>&mdash;</option></select>
         </div>
         <div class="ayah-picker-field" id="unitSurahField" style="display:none;">
-          <label for="unitSurahSelect">Surah</label>
+          <label for="unitSurahSelect" data-i18n="studySettings.surah">Surah</label>
           <select id="unitSurahSelect"><option>Loading&hellip;</option></select>
         </div>
         <div class="ayah-picker-field" id="unitRangeStartField" style="display:none;">
-          <label for="unitRangeStart">From Ayah</label>
+          <label for="unitRangeStart" data-i18n="studySettings.fromAyah">From Ayah</label>
           <input type="number" id="unitRangeStart" min="1" value="1">
         </div>
         <div class="ayah-picker-field" id="unitRangeEndField" style="display:none;">
-          <label for="unitRangeEnd">To Ayah</label>
+          <label for="unitRangeEnd" data-i18n="studySettings.toAyah">To Ayah</label>
           <input type="number" id="unitRangeEnd" min="1" value="1">
         </div>
         <div class="ayah-picker-field" id="unitPageField" style="display:none;">
-          <label for="unitPageNum">Page (1&ndash;604)</label>
+          <label for="unitPageNum" data-i18n="studySettings.pageRange">Page (1&ndash;604)</label>
           <input type="number" id="unitPageNum" min="1" max="604" value="1">
         </div>
         <div class="ayah-picker-field" id="unitPageSurahField" style="display:none;">
-          <label for="unitPageSurahSelect">Surah</label>
+          <label for="unitPageSurahSelect" data-i18n="studySettings.surah">Surah</label>
           <select id="unitPageSurahSelect"><option>Loading&hellip;</option></select>
         </div>
         <div class="ayah-picker-field" id="unitRukuNumField" style="display:none;">
-          <label for="unitRukuNumSelect">Ruku'</label>
-          <select id="unitRukuNumSelect"><option>Choose a Surah first&hellip;</option></select>
+          <label for="unitRukuNumSelect" data-i18n="studySettings.rukuLabel">Ruku'</label>
+          <select id="unitRukuNumSelect"><option data-i18n="studySettings.chooseSurahFirst">Choose a Surah first&hellip;</option></select>
         </div>
         <div class="ayah-picker-field" id="unitJuzField" style="display:none;">
-          <label for="unitJuzSelect">Juz</label>
+          <label for="unitJuzSelect" data-i18n="studySettings.juzLabel">Juz</label>
           <select id="unitJuzSelect"></select>
         </div>
-        <button class="picker-load-btn" id="unitApplyBtn" style="display:none;">Set Study Unit</button>
+        <button class="picker-load-btn" id="unitApplyBtn" style="display:none;" data-i18n="studySettings.setStudyUnit">Set Study Unit</button>
       </div>
       <div class="ayah-picker-source editable" data-ekey="picker-hint-unit" id="unitPickerHint" contenteditable="true">A Range/Surah/Page's progress is tracked as its own independent record &mdash; it never overrides or is inferred from the individual ayahs inside it.</div>
       <div class="ayah-picker-source" id="unitPageSurahHint" style="display:none;"></div>
 
-      <div class="ss-row-label" id="ssCombinedLabel">Combined view</div>
+      <div class="ss-row-label" id="ssCombinedLabel" data-i18n="studySettings.combinedView">Combined view</div>
       <label class="textlang-option ss-combined-row" id="ssCombinedRow" style="padding:0;">
-        <input type="checkbox" id="ssCombinedCheckbox" checked> Start on all ayahs combined
+        <input type="checkbox" id="ssCombinedCheckbox" checked> <span data-i18n="studySettings.startCombined">Start on all ayahs combined</span>
       </label>
 
-      <div class="ss-row-label">Text</div>
+      <div class="ss-row-label" data-i18n="studySettings.text">Text</div>
       <div class="ss-checks">
-        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="textLangAr" checked> Arabic</label>
-        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="textLangEn" checked> English</label>
-        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="textLangBn" checked> Bangla</label>
+        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="textLangAr" checked> <span data-i18n="studySettings.arabic">Arabic</span></label>
+        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="textLangEn" checked> <span data-i18n="studySettings.english">English</span></label>
+        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="textLangBn" checked> <span data-i18n="studySettings.bangla">Bangla</span></label>
       </div>
 
-      <div class="ss-row-label">Reciters</div>
+      <div class="ss-row-label" data-i18n="studySettings.reciters">Reciters</div>
       <div class="ss-checks">
-        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="reciterMultiAr"> Basfar (Arabic)</label>
-        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="reciterMultiEn"> Walk (English)</label>
-        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="reciterMultiBn"> Bayzid (Bangla)</label>
+        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="reciterMultiAr"> <span data-i18n="studySettings.reciterAr">Basfar (Arabic)</span></label>
+        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="reciterMultiEn"> <span data-i18n="studySettings.reciterEn">Walk (English)</span></label>
+        <label class="textlang-option" style="padding:0;"><input type="checkbox" id="reciterMultiBn"> <span data-i18n="studySettings.reciterBn">Bayzid (Bangla)</span></label>
       </div>
 
-      <div class="ss-row-label">Repeat</div>
+      <div class="ss-row-label" data-i18n="studySettings.repeat">Repeat</div>
       <div class="ayah-picker-row">
         <div class="ayah-picker-field">
-          <label for="repeatCountSelect">Repeat count</label>
+          <label for="repeatCountSelect" data-i18n="studySettings.repeatCount">Repeat count</label>
           <select id="repeatCountSelect">
-            <option value="1">1&#215; (no repeat)</option>
+            <option value="1" data-i18n="studySettings.repeat1x">1&#215; (no repeat)</option>
             <option value="2">2&#215;</option>
             <option value="3">3&#215;</option>
             <option value="5">5&#215;</option>
@@ -853,68 +853,68 @@
           </select>
         </div>
         <div class="ayah-picker-field">
-          <label for="repeatModeSelect">Repeat mode</label>
+          <label for="repeatModeSelect" data-i18n="studySettings.repeatMode">Repeat mode</label>
           <select id="repeatModeSelect">
-            <option value="ayah">Each Ayah (drill one ayah before moving on)</option>
-            <option value="unit">Whole Unit (repeat the entire selection)</option>
+            <option value="ayah" data-i18n="studySettings.repeatModeAyah">Each Ayah (drill one ayah before moving on)</option>
+            <option value="unit" data-i18n="studySettings.repeatModeUnit">Whole Unit (repeat the entire selection)</option>
           </select>
         </div>
       </div>
       <span id="repeatCountLabel" style="display:none;"></span>
-      <div class="ayah-picker-source" id="repeatModeHint">Every selected reciter plays once, in order, per round &mdash; that whole round is what repeats.</div>
+      <div class="ayah-picker-source" id="repeatModeHint" data-i18n="studySettings.repeatModeHint">Every selected reciter plays once, in order, per round &mdash; that whole round is what repeats.</div>
 
-      <div class="ss-row-label">Display</div>
+      <div class="ss-row-label" data-i18n="studySettings.display">Display</div>
       <div id="mmDisplaySlot"></div>
 
       <div class="ss-footer">
-        <button class="ss-btn-apply" id="ssApplyBtn" type="button">Apply</button>
-        <button class="ss-btn-play" id="ssApplyPlayBtn" type="button">Apply and play</button>
+        <button class="ss-btn-apply" id="ssApplyBtn" type="button" data-i18n="studySettings.apply">Apply</button>
+        <button class="ss-btn-play" id="ssApplyPlayBtn" type="button" data-i18n="studySettings.applyAndPlay">Apply and play</button>
       </div>
       <div class="ss-status" id="ssStatus"></div>
       <div class="ayah-picker-status" id="unitPickerStatus"></div>
     </div>
   </div>
   <div class="sb-group" id="sbExplore">
-    <button class="picker-toggle" id="exploreOpenBtn">&#x1F9ED; Explore</button>
+    <button class="picker-toggle" id="exploreOpenBtn">&#x1F9ED; <span data-i18n="explore.button">Explore</span></button>
   </div>
   <span id="chooseAyahAnchor" style="display:none;"></span>
   <div class="sb-group" id="sbChooseAyah">
-    <button class="picker-toggle" id="pickerToggle">&#x1F4D6; Choose Ayah <span id="pickerToggleArrow">&#x25BE;</span></button>
+    <button class="picker-toggle" id="pickerToggle">&#x1F4D6; <span data-i18n="chooseAyah.button">Choose Ayah</span> <span id="pickerToggleArrow">&#x25BE;</span></button>
     <div class="ayah-picker" id="ayahPicker">
       <div class="ayah-picker-row">
       <div class="ayah-picker-field">
-        <label for="pickerSurah">Surah</label>
+        <label for="pickerSurah" data-i18n="studySettings.surah">Surah</label>
         <select id="pickerSurah"><option>Loading…</option></select>
       </div>
       <div class="ayah-picker-field">
-        <label for="pickerAyahNum">Ayah</label>
+        <label for="pickerAyahNum" data-i18n="studySettings.ayah">Ayah</label>
         <select id="pickerAyahNum"><option>—</option></select>
       </div>
       <div class="ayah-picker-field">
-        <label for="pickerTranslation">Translation</label>
+        <label for="pickerTranslation" data-i18n="chooseAyah.translation">Translation</label>
         <select id="pickerTranslation"><option>Loading…</option></select>
       </div>
       <div class="ayah-picker-divider"></div>
       <div class="ayah-picker-field">
-        <label for="pickerSearch">Or type e.g. 2:255</label>
-        <input type="text" id="pickerSearch" placeholder="surah:ayah">
+        <label for="pickerSearch" data-i18n="chooseAyah.orType">Or type e.g. 2:255</label>
+        <input type="text" id="pickerSearch" placeholder="surah:ayah" data-i18n-placeholder="chooseAyah.searchPlaceholder">
       </div>
-      <button class="picker-load-btn" id="pickerLoadBtn">Load Ayah</button>
+      <button class="picker-load-btn" id="pickerLoadBtn" data-i18n="chooseAyah.loadAyah">Load Ayah</button>
     </div>
     <div class="ayah-picker-status" id="pickerStatus"></div>
     <div class="ayah-picker-source editable" data-ekey="picker-hint-source" contenteditable="true">Text &amp; translations fetched live from quran.com</div>
   </div>
   </div>
   <div class="unit-ayah-nav" id="unitAyahNav" style="display:none">
-    <button class="uan-btn" id="uanPrev" title="Previous ayah">◀</button>
-    <select id="uanSelect" title="Jump to an ayah in this unit"></select>
+    <button class="uan-btn" id="uanPrev" title="Previous ayah" data-i18n-title="mode.prevAyah">◀</button>
+    <select id="uanSelect" title="Jump to an ayah in this unit" data-i18n-title="mode.jumpAyah"></select>
     <span class="uan-count" id="uanCount"></span>
-    <button class="uan-btn" id="uanNext" title="Next ayah">▶</button>
+    <button class="uan-btn" id="uanNext" title="Next ayah" data-i18n-title="mode.nextAyah">▶</button>
   </div>
   <div class="mm-mode-toggle" id="mmModeToggle">
-    <button class="mm-mode-btn" id="mmModeRegular" type="button" title="Standard script and layout"><span class="mm-mode-icon">&#x1F4D6;</span><span class="mm-mode-label">Regular</span></button>
-    <button class="mm-mode-btn" id="mmModeHifz" type="button" title="Hifz mushaf mode (Madani)"><span class="mm-mode-icon">&#x1F54B;</span><span class="mm-mode-label">Hifz</span></button>
-    <button class="mm-mode-btn" id="tajweedToggle" type="button" title="Toggle Tajweed colour-coded script"><span class="mm-mode-icon">&#x1F3A8;</span><span class="mm-mode-label">Tajweed</span></button>
+    <button class="mm-mode-btn" id="mmModeRegular" type="button" title="Standard script and layout" data-i18n-title="mode.regularTitle"><span class="mm-mode-icon">&#x1F4D6;</span><span class="mm-mode-label" data-i18n="mode.regular">Regular</span></button>
+    <button class="mm-mode-btn" id="mmModeHifz" type="button" title="Hifz mushaf mode (Madani)" data-i18n-title="mode.hifzTitle"><span class="mm-mode-icon">&#x1F54B;</span><span class="mm-mode-label" data-i18n="mode.hifz">Hifz</span></button>
+    <button class="mm-mode-btn" id="tajweedToggle" type="button" title="Toggle Tajweed colour-coded script" data-i18n-title="mode.tajweedTitle"><span class="mm-mode-icon">&#x1F3A8;</span><span class="mm-mode-label" data-i18n="mode.tajweed">Tajweed</span></button>
   </div>
 </div>
 </div>
@@ -1541,6 +1541,65 @@ const I18N_STRINGS = {
     'home.tajweedKeyBtn': 'Tajweed Key',
     'home.tajweedKeyBtnTitle': 'What do the Tajweed colours mean?',
     'home.languageHeader': 'Language',
+
+    // Study Settings panel (top bar) — Feature 12 Phase A, session 2
+    'studySettings.title': 'Study Settings',
+    'studySettings.studyUnit': 'Study unit',
+    'studySettings.studyAs': 'Study as',
+    'studySettings.unitAyah': 'Single Ayah',
+    'studySettings.unitRange': 'Range of Ayahs',
+    'studySettings.unitSurah': 'Whole Surah',
+    'studySettings.unitPage': 'Page',
+    'studySettings.unitRuku': "Ruku'",
+    'studySettings.unitJuz': 'Juz',
+    'studySettings.surah': 'Surah',
+    'studySettings.ayah': 'Ayah',
+    'studySettings.fromAyah': 'From Ayah',
+    'studySettings.toAyah': 'To Ayah',
+    'studySettings.pageRange': 'Page (1\u2013604)',
+    'studySettings.rukuLabel': "Ruku'",
+    'studySettings.chooseSurahFirst': 'Choose a Surah first\u2026',
+    'studySettings.juzLabel': 'Juz',
+    'studySettings.setStudyUnit': 'Set Study Unit',
+    'studySettings.combinedView': 'Combined view',
+    'studySettings.startCombined': 'Start on all ayahs combined',
+    'studySettings.text': 'Text',
+    'studySettings.arabic': 'Arabic',
+    'studySettings.english': 'English',
+    'studySettings.bangla': 'Bangla',
+    'studySettings.reciters': 'Reciters',
+    'studySettings.reciterAr': 'Basfar (Arabic)',
+    'studySettings.reciterEn': 'Walk (English)',
+    'studySettings.reciterBn': 'Bayzid (Bangla)',
+    'studySettings.repeat': 'Repeat',
+    'studySettings.repeatCount': 'Repeat count',
+    'studySettings.repeat1x': '1\u00d7 (no repeat)',
+    'studySettings.repeatMode': 'Repeat mode',
+    'studySettings.repeatModeAyah': 'Each Ayah (drill one ayah before moving on)',
+    'studySettings.repeatModeUnit': 'Whole Unit (repeat the entire selection)',
+    'studySettings.repeatModeHint': 'Every selected reciter plays once, in order, per round \u2014 that whole round is what repeats.',
+    'studySettings.display': 'Display',
+    'studySettings.apply': 'Apply',
+    'studySettings.applyAndPlay': 'Apply and play',
+
+    // Explore / Choose Ayah bar
+    'explore.button': 'Explore',
+    'chooseAyah.button': 'Choose Ayah',
+    'chooseAyah.translation': 'Translation',
+    'chooseAyah.orType': 'Or type e.g. 2:255',
+    'chooseAyah.searchPlaceholder': 'surah:ayah',
+    'chooseAyah.loadAyah': 'Load Ayah',
+
+    // Regular/Hifz/Tajweed mode toggle + unit ayah nav
+    'mode.regular': 'Regular',
+    'mode.regularTitle': 'Standard script and layout',
+    'mode.hifz': 'Hifz',
+    'mode.hifzTitle': 'Hifz mushaf mode (Madani)',
+    'mode.tajweed': 'Tajweed',
+    'mode.tajweedTitle': 'Toggle Tajweed colour-coded script',
+    'mode.prevAyah': 'Previous ayah',
+    'mode.jumpAyah': 'Jump to an ayah in this unit',
+    'mode.nextAyah': 'Next ayah',
   }
 };
 
