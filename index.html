@@ -717,7 +717,7 @@
   // Home menu markup, rather than inside the lazy-loaded Quran Study module,
   // because this button lives in the persistent shell and is on the page
   // immediately — no need to wait for the Quran Study tab to load.
-  const APP_VERSION = 'v06.24';
+  const APP_VERSION = 'v06.25';
   const APP_BUILD_DATE = '26 Jul 2026';
   (function initVersionTag(){
     const tag = document.getElementById('quranVersionTag');
@@ -1682,6 +1682,34 @@ const I18N_STRINGS = {
     'printReport.pointsSummary': '{sum} of {total} points \u00b7 {mastered} of {count} ways mastered',
     'printReport.allWaysDetail': 'All 30 Ways \u2014 Detail',
     'printReport.masteryReportFooter': 'Mastery Report',
+
+    // Admin panel (session 5) — built entirely via a JS template literal,
+    // no static HTML to attach data-i18n to, so this whole section uses
+    // t()/tf() calls directly inside the template string instead.
+    'admin.panelTitleAdmin': 'Admin Panel',
+    'admin.panelTitleTeacher': 'Teacher Panel',
+    'admin.createInviteDescAdmin': 'Create an invite for a new Teacher or Student by email. Their role activates automatically the first time they sign in with that exact email.',
+    'admin.createInviteDescTeacher': 'Create an invite for a new Student by email. Their role activates automatically the first time they sign in with that exact email.',
+    'admin.noEmailWarning': 'This does <strong>not</strong> send them an email or notification. After creating the invite, copy the message below and send it yourself (WhatsApp, SMS, email \u2014 whatever you\'d normally use).',
+    'admin.roleStudent': 'Student',
+    'admin.roleTeacher': 'Teacher',
+    'admin.chooseTeacherOption': '\u2014 choose a teacher for this student \u2014',
+    'admin.createInviteBtn': 'Create Invite',
+    'admin.pendingInvites': 'Pending Invites',
+    'admin.allPeople': 'All People',
+    'admin.yourPeople': 'Your People',
+    'admin.copyMessageBtn': 'Copy Message',
+    'admin.copyMessageBtnLower': 'Copy message',
+    'admin.copiedStatus': 'Copied!',
+    'admin.enterValidEmail': 'Enter a valid email.',
+    'admin.chooseTeacherRequired': 'Choose a teacher for this student.',
+    'admin.inviteCreatedFor': 'Invite created for {email}. Now send them the message below yourself:',
+    'admin.failedPrefix': 'Failed: ',
+    'admin.inviteMessage': 'You\'re invited to QuranRevival \u2014 please go to {url} and sign in with Google using this exact email: {email}',
+    'admin.noneInvites': 'None.',
+    'admin.nonePeopleYet': 'None yet.',
+    'admin.inviteRowLabel': '{email} \u2014 {role} (not yet signed in)',
+    'admin.personRowLabel': '{name} \u2014 {role}',
   }
 };
 
@@ -9308,30 +9336,30 @@ async function mmRenderAdminPanel(){
   const isAdmin = mmCurrentRole.role === 'admin';
   pane.innerHTML = `
     <div style="max-width:560px;margin:24px auto;padding:0 16px;font-family:system-ui,sans-serif;">
-      <h2 style="font-size:18px;color:#0f172a;margin:0 0 4px;">${isAdmin?'Admin':'Teacher'} Panel</h2>
-      <p style="font-size:12px;color:#64748b;margin:0 0 4px;">Create an invite for a new ${isAdmin?'Teacher or Student':'Student'} by email. Their role activates automatically the first time they sign in with that exact email.</p>
-      <p style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:8px 10px;margin:0 0 20px;">&#x26A0;&#xFE0F; This does <strong>not</strong> send them an email or notification. After creating the invite, copy the message below and send it yourself (WhatsApp, SMS, email — whatever you'd normally use).</p>
+      <h2 style="font-size:18px;color:#0f172a;margin:0 0 4px;">${isAdmin?t('admin.panelTitleAdmin'):t('admin.panelTitleTeacher')}</h2>
+      <p style="font-size:12px;color:#64748b;margin:0 0 4px;">${isAdmin?t('admin.createInviteDescAdmin'):t('admin.createInviteDescTeacher')}</p>
+      <p style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:8px 10px;margin:0 0 20px;">&#x26A0;&#xFE0F; ${t('admin.noEmailWarning')}</p>
       <div style="background:white;border:1px solid #e2e8f0;border-radius:10px;padding:16px;margin-bottom:20px;">
         <input id="mm-invite-email" type="email" placeholder="person@example.com" style="width:100%;padding:9px 11px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:13px;margin-bottom:10px;box-sizing:border-box;">
         ${isAdmin ? `
         <select id="mm-invite-role" style="width:100%;padding:9px 11px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:13px;margin-bottom:10px;box-sizing:border-box;">
-          <option value="student">Student</option>
-          <option value="teacher">Teacher</option>
+          <option value="student">${t('admin.roleStudent')}</option>
+          <option value="teacher">${t('admin.roleTeacher')}</option>
         </select>
         <select id="mm-invite-teacher" style="width:100%;padding:9px 11px;border:1.5px solid #e2e8f0;border-radius:7px;font-size:13px;margin-bottom:10px;box-sizing:border-box;">
-          <option value="">— choose a teacher for this student —</option>
+          <option value="">${t('admin.chooseTeacherOption')}</option>
         </select>` : ''}
-        <button id="mm-invite-send" style="width:100%;padding:10px;background:#0f172a;color:white;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">Create Invite</button>
+        <button id="mm-invite-send" style="width:100%;padding:10px;background:#0f172a;color:white;border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">${t('admin.createInviteBtn')}</button>
         <div id="mm-invite-status" style="font-size:12px;margin-top:8px;"></div>
         <div id="mm-invite-copy-box" style="display:none;margin-top:10px;padding:10px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:7px;">
           <textarea id="mm-invite-copy-text" readonly style="width:100%;height:70px;border:none;background:transparent;font-size:12px;color:#334155;resize:none;box-sizing:border-box;"></textarea>
-          <button id="mm-invite-copy-btn" style="margin-top:6px;padding:7px 14px;background:#0f172a;color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">Copy Message</button>
+          <button id="mm-invite-copy-btn" style="margin-top:6px;padding:7px 14px;background:#0f172a;color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">${t('admin.copyMessageBtn')}</button>
           <span id="mm-invite-copy-status" style="font-size:11px;color:#16a34a;margin-left:8px;"></span>
         </div>
       </div>
-      <h3 style="font-size:13px;color:#0f172a;margin:0 0 8px;">Pending Invites</h3>
-      <div id="mm-invite-list" style="font-size:12px;color:#64748b;margin-bottom:20px;">Loading&hellip;</div>
-      <h3 style="font-size:13px;color:#0f172a;margin:0 0 8px;">${isAdmin?'All':'Your'} People</h3>
+      <h3 style="font-size:13px;color:#0f172a;margin:0 0 8px;">${t('admin.pendingInvites')}</h3>
+      <div id="mm-invite-list" style="font-size:12px;color:#64748b;margin-bottom:20px;">${t('common.loading')}</div>
+      <h3 style="font-size:13px;color:#0f172a;margin:0 0 8px;">${isAdmin?t('admin.allPeople'):t('admin.yourPeople')}</h3>
       <div id="mm-people-list" style="font-size:12px;color:#64748b;"></div>
     </div>
   `;
@@ -9354,7 +9382,7 @@ async function mmRenderAdminPanel(){
 
   function mmInviteMessage(email){
     const url = window.location.origin + window.location.pathname;
-    return `You're invited to QuranRevival — please go to ${url} and sign in with Google using this exact email: ${email}`;
+    return tf('admin.inviteMessage', {url, email});
   }
 
   document.getElementById('mm-invite-send').onclick = async ()=>{
@@ -9362,15 +9390,15 @@ async function mmRenderAdminPanel(){
     const status = document.getElementById('mm-invite-status');
     const copyBox = document.getElementById('mm-invite-copy-box');
     copyBox.style.display = 'none';
-    if(!email || !email.includes('@')){ status.textContent = 'Enter a valid email.'; status.style.color = '#ef4444'; return; }
+    if(!email || !email.includes('@')){ status.textContent = t('admin.enterValidEmail'); status.style.color = '#ef4444'; return; }
     const role = isAdmin ? document.getElementById('mm-invite-role').value : 'student';
     const teacherId = isAdmin ? document.getElementById('mm-invite-teacher').value : mmCurrentUser.uid;
-    if(role === 'student' && !teacherId){ status.textContent = 'Choose a teacher for this student.'; status.style.color = '#ef4444'; return; }
+    if(role === 'student' && !teacherId){ status.textContent = t('admin.chooseTeacherRequired'); status.style.color = '#ef4444'; return; }
     try{
       await db.collection('invites').doc(email).set({
         role, teacherId: role==='student' ? teacherId : null, invitedBy: mmCurrentUser.uid, createdAt: new Date().toISOString()
       });
-      status.textContent = 'Invite created for ' + email + '. Now send them the message below yourself:';
+      status.textContent = tf('admin.inviteCreatedFor', {email});
       status.style.color = '#16a34a';
       document.getElementById('mm-invite-email').value = '';
       const msg = mmInviteMessage(email);
@@ -9380,17 +9408,17 @@ async function mmRenderAdminPanel(){
         const copyStatus = document.getElementById('mm-invite-copy-status');
         try{
           await navigator.clipboard.writeText(msg);
-          copyStatus.textContent = 'Copied!';
+          copyStatus.textContent = t('admin.copiedStatus');
         }catch(e){
           const ta = document.getElementById('mm-invite-copy-text');
           ta.select(); document.execCommand('copy');
-          copyStatus.textContent = 'Copied!';
+          copyStatus.textContent = t('admin.copiedStatus');
         }
         setTimeout(()=>{ copyStatus.textContent=''; }, 2000);
       };
       mmRenderInviteList();
     }catch(err){
-      status.textContent = 'Failed: ' + err.message; status.style.color = '#ef4444';
+      status.textContent = t('admin.failedPrefix') + err.message; status.style.color = '#ef4444';
     }
   };
 
@@ -9405,7 +9433,7 @@ async function mmRenderInviteList(){
   let query = db.collection('invites');
   if(!isAdmin) query = query.where('invitedBy','==', mmCurrentUser.uid);
   const snap = await query.get();
-  if(snap.empty){ el.textContent = 'None.'; return; }
+  if(snap.empty){ el.textContent = t('admin.noneInvites'); return; }
   el.innerHTML = '';
   snap.forEach(doc=>{
     const inv = doc.data();
@@ -9413,21 +9441,21 @@ async function mmRenderInviteList(){
     const row = document.createElement('div');
     row.style.cssText = 'padding:6px 0;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;gap:8px;';
     const label = document.createElement('span');
-    label.textContent = email + ' — ' + inv.role + ' (not yet signed in)';
+    label.textContent = tf('admin.inviteRowLabel', {email, role: inv.role});
     const copyBtn = document.createElement('button');
-    copyBtn.textContent = 'Copy message';
+    copyBtn.textContent = t('admin.copyMessageBtnLower');
     copyBtn.style.cssText = 'padding:4px 9px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font-size:11px;cursor:pointer;flex-shrink:0;';
     copyBtn.onclick = async ()=>{
       const url = window.location.origin + window.location.pathname;
-      const msg = `You're invited to QuranRevival — please go to ${url} and sign in with Google using this exact email: ${email}`;
+      const msg = tf('admin.inviteMessage', {url, email});
       try{ await navigator.clipboard.writeText(msg); }
       catch(e){
         const ta = document.createElement('textarea');
         ta.value = msg; document.body.appendChild(ta); ta.select();
         document.execCommand('copy'); document.body.removeChild(ta);
       }
-      copyBtn.textContent = 'Copied!';
-      setTimeout(()=>{ copyBtn.textContent = 'Copy message'; }, 1500);
+      copyBtn.textContent = t('admin.copiedStatus');
+      setTimeout(()=>{ copyBtn.textContent = t('admin.copyMessageBtnLower'); }, 1500);
     };
     row.appendChild(label);
     row.appendChild(copyBtn);
@@ -9442,13 +9470,13 @@ async function mmRenderPeopleList(){
   let query = db.collection('people');
   if(!isAdmin) query = query.where('teacherId','==', mmCurrentUser.uid);
   const snap = await query.get();
-  if(snap.empty){ el.textContent = 'None yet.'; return; }
+  if(snap.empty){ el.textContent = t('admin.nonePeopleYet'); return; }
   el.innerHTML = '';
   snap.forEach(doc=>{
     const p = doc.data();
     const row = document.createElement('div');
     row.style.cssText = 'padding:6px 0;border-bottom:1px solid #f1f5f9;';
-    row.textContent = `${p.name} — ${p.role}`;
+    row.textContent = tf('admin.personRowLabel', {name: p.name, role: p.role});
     el.appendChild(row);
   });
 }
