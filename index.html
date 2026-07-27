@@ -117,6 +117,29 @@
   .ayah-arabic{font-family:'Amiri',serif;font-size:30px;direction:rtl;color:#fbf3df;overflow-wrap:break-word;word-break:break-word;}
   .ayah-meta{font-size:13px;color:#aab4c8;margin-top:6px;overflow-wrap:break-word;}
   .ayah-bangla{font-family:'Noto Sans Bengali',sans-serif;font-size:13px;color:#8fa0c2;margin-top:5px;line-height:1.6;border-top:1px solid rgba(201,162,75,0.15);padding-top:5px;display:none;overflow-wrap:break-word;}
+
+  /* Feature 12 Phase B (Bangla): most UI chrome elements set their own
+     font-family:'Inter' explicitly (not inherited), so a plain body-level
+     rule wouldn't reach them — an element's own declared font-family always
+     wins over an inherited one, regardless of selector specificity. This
+     list explicitly targets the UI-chrome containers so Bangla text renders
+     with a script that actually supports Bengali glyphs. Deliberately does
+     NOT touch .ayah-arabic / .rpt-ayah-arabic / mushaf/Hifz page elements —
+     those must keep their Arabic-script font regardless of UI language. */
+  html[lang="bn"] body, html[lang="bn"] button, html[lang="bn"] select,
+  html[lang="bn"] input, html[lang="bn"] label, html[lang="bn"] .modal,
+  html[lang="bn"] .modal-sub, html[lang="bn"] h2, html[lang="bn"] h3,
+  html[lang="bn"] .ss-row-label, html[lang="bn"] .ayah-picker-source,
+  html[lang="bn"] .status-legend, html[lang="bn"] .picker-toggle,
+  html[lang="bn"] .reciter-tab, html[lang="bn"] .save-state,
+  html[lang="bn"] .wheel-swipe-hint, html[lang="bn"] .hifz-switch-label,
+  html[lang="bn"] .ayah-picker-status, html[lang="bn"] .legend,
+  html[lang="bn"] .mm-mode-label, html[lang="bn"] .textlang-option,
+  html[lang="bn"] .theme-panel-body, html[lang="bn"] .way-resource-empty,
+  html[lang="bn"] .wbw-deriv-empty, html[lang="bn"] .wbw-word-modal-translation
+  {
+    font-family:'Noto Sans Bengali','Inter',sans-serif;
+  }
   .ayah-bangla.loaded{display:block;}
   .ayah-audio-wrap{margin-top:8px;border-top:1px solid rgba(201,162,75,0.15);padding-top:8px;display:none;}
   .ayah-audio-wrap.loaded{display:block;}
@@ -711,13 +734,652 @@
 </div>
 <div class="mm-home-backdrop" id="mmHomeBackdrop"></div>
 <script>
+// ── localStorage helpers ──────────────────────────────────────
+const lsGet  = key => { try { const v=localStorage.getItem(key); return v!==null?JSON.parse(v):null; } catch(_){return null;} };
+const lsSet  = (key,val) => { try { localStorage.setItem(key,JSON.stringify(val)); } catch(_){} };
+
+// ---------------------------------------------------------------------------
+// Feature 12 — Multilingual UI (Phase A: infrastructure + English scaffold)
+// ---------------------------------------------------------------------------
+// I18N_STRINGS holds one flat key->string dictionary per language. Phase A
+// only ships 'en' — the goal here is proving the plumbing (lookup, DOM
+// application, persistence, RTL flag) end-to-end, not translating anything
+// yet. Phase B adds languages by populating a new top-level key here (plus
+// font/RTL wiring where relevant) — no other code should need to change.
+//
+// Keys are dot-namespaced by UI area (home.*, studySettings.*, ...) so the
+// dictionary stays navigable as it grows past 500 entries. NOT every string
+// in the app has been migrated yet — see the Feature 12 handoff notes for
+// which sections are converted so far. Unconverted areas keep working with
+// their existing hardcoded English text; converting them is additive and
+// won't break anything already on data-i18n.
+const I18N_STRINGS = {
+  en: {
+    'home.monitor': 'Monitor',
+    'home.quranStudy': 'Quran Study',
+    'home.admin': 'Admin',
+    'home.signOut': 'Sign Out',
+    'home.saveHeader': 'Save',
+    'home.saveStateSaving': 'Saving…',
+    'home.saveStateSaved': 'Saved',
+    'home.printReport': 'Print Report',
+    'home.exportSnapshot': 'Export Snapshot',
+    'home.studentsHeader': 'Students',
+    'home.appearanceHeader': 'Appearance',
+    'home.appearanceThemeBtn': 'Appearance / Theme',
+    'home.appearanceThemeBtnTitle': 'Personalise colours — only you see this',
+    'home.tajweedHeader': 'Tajweed',
+    'home.tajweedKeyBtn': 'Tajweed Key',
+    'home.tajweedKeyBtnTitle': 'What do the Tajweed colours mean?',
+    'home.languageHeader': 'Language',
+
+    // Study Settings panel (top bar) — Feature 12 Phase A, session 2
+    'studySettings.title': 'Study Settings',
+    'studySettings.studyUnit': 'Study unit',
+    'studySettings.studyAs': 'Study as',
+    'studySettings.unitAyah': 'Single Ayah',
+    'studySettings.unitRange': 'Range of Ayahs',
+    'studySettings.unitSurah': 'Whole Surah',
+    'studySettings.unitPage': 'Page',
+    'studySettings.unitRuku': "Ruku'",
+    'studySettings.unitJuz': 'Juz',
+    'studySettings.surah': 'Surah',
+    'studySettings.ayah': 'Ayah',
+    'studySettings.fromAyah': 'From Ayah',
+    'studySettings.toAyah': 'To Ayah',
+    'studySettings.pageRange': 'Page (1\u2013604)',
+    'studySettings.rukuLabel': "Ruku'",
+    'studySettings.chooseSurahFirst': 'Choose a Surah first\u2026',
+    'studySettings.juzLabel': 'Juz',
+    'studySettings.setStudyUnit': 'Set Study Unit',
+    'studySettings.combinedView': 'Combined view',
+    'studySettings.startCombined': 'Start on all ayahs combined',
+    'studySettings.text': 'Text',
+    'studySettings.arabic': 'Arabic',
+    'studySettings.english': 'English',
+    'studySettings.bangla': 'Bangla',
+    'studySettings.reciters': 'Reciters',
+    'studySettings.reciterAr': 'Basfar (Arabic)',
+    'studySettings.reciterEn': 'Walk (English)',
+    'studySettings.reciterBn': 'Bayzid (Bangla)',
+    'studySettings.repeat': 'Repeat',
+    'studySettings.repeatCount': 'Repeat count',
+    'studySettings.repeat1x': '1\u00d7 (no repeat)',
+    'studySettings.repeatMode': 'Repeat mode',
+    'studySettings.repeatModeAyah': 'Each Ayah (drill one ayah before moving on)',
+    'studySettings.repeatModeUnit': 'Whole Unit (repeat the entire selection)',
+    'studySettings.repeatModeHint': 'Every selected reciter plays once, in order, per round \u2014 that whole round is what repeats.',
+    'studySettings.display': 'Display',
+    'studySettings.apply': 'Apply',
+    'studySettings.applyAndPlay': 'Apply and play',
+
+    // Explore / Choose Ayah bar
+    'explore.button': 'Explore',
+    'chooseAyah.button': 'Choose Ayah',
+    'chooseAyah.translation': 'Translation',
+    'chooseAyah.orType': 'Or type e.g. 2:255',
+    'chooseAyah.searchPlaceholder': 'surah:ayah',
+    'chooseAyah.loadAyah': 'Load Ayah',
+
+    // Regular/Hifz/Tajweed mode toggle + unit ayah nav
+    'mode.regular': 'Regular',
+    'mode.regularTitle': 'Standard script and layout',
+    'mode.hifz': 'Hifz',
+    'mode.hifzTitle': 'Hifz mushaf mode (Madani)',
+    'mode.tajweed': 'Tajweed',
+    'mode.tajweedTitle': 'Toggle Tajweed colour-coded script',
+    'mode.prevAyah': 'Previous ayah',
+    'mode.jumpAyah': 'Jump to an ayah in this unit',
+    'mode.nextAyah': 'Next ayah',
+
+    // Common / shared
+    'common.loading': 'Loading\u2026',
+
+    // Status labels (display-only — see STATUS_LABEL_KEYS comment; the raw
+    // English STATUS_LABELS array stays untranslated for persisted data)
+    'status.notStarted': 'Not Started',
+    'status.learning': 'Learning',
+    'status.practicing': 'Practicing',
+    'status.mastered': 'Mastered',
+    'status.notApplicable': 'Not Applicable',
+
+    // Way modal (session 3) — accordion header text stays on the existing
+    // contenteditable/data-ekey system, not converted here; see handoff notes
+    'wayModal.notes': 'Notes',
+    'wayModal.notesPlaceholder': 'What did the student do? Observations, quotes, next steps...',
+    'wayModal.addLink': 'Add Link',
+    'wayModal.resourceLabelPlaceholder': "Label (e.g. 'Intro video')",
+    'wayModal.thisSurah': 'This Surah',
+    'wayModal.thisJuz': 'This Juz',
+    'wayModal.entireQuran': 'Entire Quran',
+    'wayModal.breakdownEmpty': "Choose a scope above to see this way's status across it.",
+    'wayModal.coverageEmpty': 'Choose a scope above to see how much of it is complete.',
+    'wayModal.close': 'Close',
+    'wayModal.save': 'Save',
+
+    // Add Student (person) modal
+    'personModal.title': 'Add Student',
+    'personModal.newProfile': 'New profile',
+    'personModal.name': 'Name',
+    'personModal.namePlaceholder': 'e.g. Abdullah',
+    'personModal.emoji': 'Emoji',
+    'personModal.cancel': 'Cancel',
+    'personModal.add': 'Add',
+
+    // Theme / Appearance modal
+    'theme.modalTitle': 'Personalise Colours',
+    'theme.modalSub': 'Only you see this — it never changes anyone else\'s view',
+    'theme.resetAllBtn': 'Reset All to Default',
+    'theme.doneBtn': 'Done',
+    'theme.resetToDefaultTitle': 'Reset to default',
+    'theme.resetAllConfirm': 'Reset ALL your personal colour choices back to the defaults? This only affects your own view.',
+    'theme.groupBackground': 'Background',
+    'theme.groupMonitorBanner': 'Monitor Banner',
+    'theme.groupCorePalette': 'Core Palette',
+    'theme.groupTajweedLegend': 'Tajweed Legend',
+    'theme.groupWheelDomain': 'Wheel & Domain Colours',
+    'theme.bgOuter': 'Backdrop — outer edge',
+    'theme.bgCenter': 'Backdrop — centre / base ink',
+    'theme.bgCorners': 'Backdrop — corners',
+    'theme.bannerStart': 'Banner gradient — start',
+    'theme.bannerMiddle': 'Banner gradient — middle',
+    'theme.bannerEnd': 'Banner gradient — end',
+    'theme.mainText': 'Main text',
+    'theme.mutedText': 'Muted text',
+    'theme.accentMastered': 'Accent \u00b7 Mastered status',
+    'theme.accentDim': 'Accent (dim)',
+    'theme.secondaryAccent': 'Secondary accent',
+    'theme.tertiaryAccent': 'Tertiary accent',
+    'theme.dividerLines': 'Divider lines',
+    'theme.tjSilent': 'Silent',
+    'theme.tjMaddGhunnah': 'Madd (natural) & Ghunnah',
+    'theme.tjMaddOblig': 'Madd (obligatory) & Qalqalah',
+    'theme.tjMaddPermissible': 'Madd (permissible)',
+    'theme.tjIkhfa': 'Ikhfa',
+    'theme.tjIqlab': 'Iqlab',
+    'theme.tjIdgham': 'Idghaam',
+
+    // Print report
+    'printReport.close': 'Close',
+    'printReport.tajweedColours': 'Tajweed Colours',
+    'printReport.tajweedToggleTitle': 'Toggle Tajweed colour-coding in the printed report',
+    'printReport.printSavePdf': 'Print / Save PDF',
+    'printReport.tajweedDisclaimer': 'Tajweed colour-coding shown for study reference only. Colours may vary or not appear on monochrome printers. Always verify rules with a qualified teacher — colour alone does not substitute proper oral transmission (talaqqi).',
+    'printReport.masteredPct': 'mastered \u00b7 {pct}%',
+    'printReport.notStarted': 'Not started',
+    'printReport.naShort': 'N/A',
+    'printReport.generated': 'Generated {date}',
+    'printReport.overallMastery': 'Overall Mastery',
+    'printReport.pointsSummary': '{sum} of {total} points \u00b7 {mastered} of {count} ways mastered',
+    'printReport.allWaysDetail': 'All 30 Ways \u2014 Detail',
+    'printReport.masteryReportFooter': 'Mastery Report',
+
+    // Admin panel (session 5) — built entirely via a JS template literal,
+    // no static HTML to attach data-i18n to, so this whole section uses
+    // t()/tf() calls directly inside the template string instead.
+    'admin.panelTitleAdmin': 'Admin Panel',
+    'admin.panelTitleTeacher': 'Teacher Panel',
+    'admin.createInviteDescAdmin': 'Create an invite for a new Teacher or Student by email. Their role activates automatically the first time they sign in with that exact email.',
+    'admin.createInviteDescTeacher': 'Create an invite for a new Student by email. Their role activates automatically the first time they sign in with that exact email.',
+    'admin.noEmailWarning': 'This does <strong>not</strong> send them an email or notification. After creating the invite, copy the message below and send it yourself (WhatsApp, SMS, email \u2014 whatever you\'d normally use).',
+    'admin.roleStudent': 'Student',
+    'admin.roleTeacher': 'Teacher',
+    'admin.chooseTeacherOption': '\u2014 choose a teacher for this student \u2014',
+    'admin.createInviteBtn': 'Create Invite',
+    'admin.pendingInvites': 'Pending Invites',
+    'admin.allPeople': 'All People',
+    'admin.yourPeople': 'Your People',
+    'admin.copyMessageBtn': 'Copy Message',
+    'admin.copyMessageBtnLower': 'Copy message',
+    'admin.copiedStatus': 'Copied!',
+    'admin.enterValidEmail': 'Enter a valid email.',
+    'admin.chooseTeacherRequired': 'Choose a teacher for this student.',
+    'admin.inviteCreatedFor': 'Invite created for {email}. Now send them the message below yourself:',
+    'admin.failedPrefix': 'Failed: ',
+    'admin.inviteMessage': 'You\'re invited to QuranRevival \u2014 please go to {url} and sign in with Google using this exact email: {email}',
+    'admin.noneInvites': 'None.',
+    'admin.nonePeopleYet': 'None yet.',
+    'admin.inviteRowLabel': '{email} \u2014 {role} (not yet signed in)',
+    'admin.personRowLabel': '{name} \u2014 {role}',
+
+    // Word-by-word / morphology & root-derivative modals (session 6).
+    // NOTE: grammatical POS terminology (POS_LABELS — Noun, Verb, Active
+    // Participle, etc., ~30 terms) is deliberately NOT converted this pass.
+    // It's specialist Arabic-grammar vocabulary where a wrong or approximate
+    // translation actively misleads a student, so it deserves its own
+    // careful pass (ideally reviewed by you) rather than a mechanical sweep.
+    'wbw.noOtherOccurrences': 'No other occurrences found for this root.',
+    'wbw.noRootOnRecord': 'This word has no root on record (likely a particle/pronoun).',
+    'wbw.derivHeaderSingularOcc': 'Root {root} \u2014 {occ} occurrence across {forms} {formWord}',
+    'wbw.derivHeaderPluralOcc': 'Root {root} \u2014 {occ} occurrences across {forms} {formWord}',
+    'wbw.formSingular': 'form',
+    'wbw.formPlural': 'forms',
+    'wbw.wordModalOccSingular': '{count} occurrence of root {root}',
+    'wbw.wordModalOccPlural': '{count} occurrences of root {root}',
+    'wbw.morphLoading': 'Loading morphology data (~5MB, one-time)\u2026',
+    'wbw.morphLoaded': 'Morphology loaded \u2014 {chapters}/114 chapters, {rows} rows.',
+    'wbw.morphLoadFailed': 'Couldn\'t load morphology data ({err}) \u2014 try checking the box again.',
+    'wbw.networkError': 'network error',
+
+    // Audio / reciter system (session 7, part 1)
+    'audio.reciterTabAr': 'Abdullah Basfar (Arabic)',
+    'audio.reciterTabEn': 'Ibrahim Walk (English)',
+    'audio.reciterTabBn': 'Sharif Bayzid (Bangla)',
+    'audio.loopThisAyah': 'Loop this ayah',
+    'audio.bnNotAvailableAyah': 'Bangla audio isn\u2019t available for this ayah.',
+    'audio.bnLoadFailed': 'Bangla audio data failed to load. Check your connection and try again.',
+    'audio.bnNotAvailableUnit': 'Bangla audio isn\u2019t available for this unit.',
+    'audio.reciterNotAvailable': '{reciter} audio is not available yet.',
+
+    // Hifz mode + Word-by-Word bar
+    'hifz.showExtras': 'Show translation, Tajweed & ayah no.',
+    'wbw.wordByWord': 'Word by Word',
+    'wbw.showMorphology': 'Show root & grammar (morphology)',
+    'wbw.showDerivatives': 'Show derivatives from this root',
+    'wbw.creditPrefix': 'Per-word text, translation & transliteration fetched live from quran.com. Morphology (root, lemma, part of speech) courtesy of the ',
+    'wbw.creditSuffix': ', Kais Dukes.',
+
+    // Wheel
+    'wheel.swipeHint': 'swipe to see the full wheel',
+
+    // Explore overlay (session 7, part 2)
+    'explore.crumbQuran': 'Quran',
+    'explore.crumbJuz': 'Juz {n}',
+    'explore.crumbSurah': 'Surah {n}',
+    'explore.crumbRuku': 'Ruku\' {n}',
+    'explore.couldNotLoadWheel': 'Could not load this wheel ({err}) \u2014 try again.',
+    'explore.jumpTo': 'Jump to',
+    'explore.optJuz': 'Juz',
+    'explore.optSurah': 'Surah',
+    'explore.number': 'Number',
+    'explore.go': 'Go',
+    'explore.back': 'Back',
+
+    // Hifz / Mushaf view
+    'hifz.pageNum': 'Page {n}',
+    'hifz.pageLoadFailed': 'Couldn\'t load this page\'s data.',
+    'hifz.loadingPage': 'Loading Hifz mushaf page\u2026',
+    'hifz.unitTypeUnsupported': 'Hifz view isn\'t available for this unit type yet.',
+    'hifz.pageNotFound': 'Couldn\'t find a mushaf page for this selection.',
+    'hifz.mushafLoadFailed': 'Couldn\'t load Hifz mushaf data ({err}).',
+
+    // Unit navigation / Choose Ayah status messages (the scattered long tail)
+    'unitNav.loadingAyah': 'Loading ayah\u2026',
+    'unitNav.stillLoadingSurahList': 'Still loading the Surah list \u2014 try Apply again in a moment.',
+    'unitNav.couldNotReachSurahList': 'Couldn\u2019t reach quran.com for the Surah list \u2014 check your connection and try again.',
+    'unitNav.chooseSurahAndAyah': 'Choose a Surah and Ayah first.',
+    'unitNav.chooseSurahFirstPeriod': 'Choose a Surah first.',
+    'unitNav.toAyahAfterFromAyah': '"To Ayah" must be the same as or after "From Ayah".',
+    'unitNav.enterPageRange': 'Enter a page from 1 to 604.',
+    'unitNav.chooseRuku': 'Choose a Ruku\u2019 (boundaries may still be loading \u2014 wait a moment and try again).',
+    'unitNav.chooseJuz': 'Choose a Juz.',
+    'unitNav.navigatorTip': 'Tip: use the \u25c0 \u25be \u25b6 navigator above to open any single ayah \u2014 Tajweed, Word-by-Word and Roots live there.',
+    'unitNav.enterSurahAyah': 'Enter as surah:ayah, e.g. 2:255',
+    'unitNav.ayahListUnavailable': 'This unit\u2019s ayah list isn\u2019t available yet \u2014 reselect the unit to fetch it.',
+
+    // WBW loading / fallback states
+    'wbw.loadingWords': 'Loading words\u2026',
+    'wbw.translationUnavailable': 'Per-word translation is temporarily unavailable \u2014 showing Arabic words (Root & Derivatives still work).',
+
+    // Final sweep (session 8) — concatenated status-message call sites that
+    // the earlier per-session grep passes missed because they build the
+    // string via '+' concatenation rather than a single literal.
+    'wayList.addWayIn': '+ Add a way in {group}',
+    'tajweed.loadFailed': 'Couldn\'t load whole-unit Tajweed colours ({err}) \u2014 showing standard script.',
+    'unitNav.loadingAyahKey': 'Loading Ayah {key}\u2026',
+    'unitNav.couldNotLoadAyah': 'Couldn\'t load Ayah {key} ({err}).',
+    'unitNav.nowStudyingSurahAyah': 'Now studying: Surah {surah}, Ayah {ayah}.',
+    'unitNav.lookingUpSurahForPage': 'Looking up the Surah for page {page}\u2026',
+    'unitNav.pageIsInSurah': 'Page {page} is in Surah {surah}.',
+    'unitNav.couldNotLookUpSurahForPage': 'Couldn\u2019t look up the Surah for that page ({err}).',
+    'unitNav.lookingUpPagesForSurah': 'Looking up pages for {surah}\u2026',
+    'unitNav.couldNotLookUpPagesForSurah': 'Couldn\u2019t look up pages for that Surah ({err}).',
+    'unitNav.couldNotLoadRukuData': 'Couldn\u2019t load Ruku\u2019 data',
+    'unitNav.couldNotLoadRukuBoundaries': 'Couldn\u2019t load Ruku\u2019 boundaries ({err}) \u2014 try choosing the Surah again.',
+    'unitNav.nowStudying': 'Now studying: {label}',
+    'unitNav.fetching': 'Fetching {label}\u2026',
+    'unitNav.loadedAyahSingular': 'Loaded {count} ayah.',
+    'unitNav.loadedAyahPlural': 'Loaded {count} ayahs.',
+    'unitNav.couldNotFetchAutomatically': 'Could not fetch automatically ({err}) \u2014 you can type the content in manually below.',
+    'wbw.buildingForSingular': 'Building word-by-word for {count} ayah\u2026',
+    'wbw.buildingForPlural': 'Building word-by-word for {count} ayahs\u2026',
+    'wbw.buildingProgress': 'Building word-by-word\u2026 {done} / {total}',
+
+    // Final sweep, part 2 — a handful of .title tooltips missed by the
+    // textContent-only scan
+    'common.buildLabel': 'Build: {date}',
+    'wayList.removeThisWay': 'Remove this way',
+    'wayModal.removeThisLink': 'Remove this link',
+    'unitNav.loadingRukuBoundaries': 'Loading Ruku\u2019 boundaries\u2026',
+  },
+  bn: {
+    'home.monitor': 'মনিটর',
+    'home.quranStudy': 'কুরআন অধ্যয়ন',
+    'home.admin': 'অ্যাডমিন',
+    'home.signOut': 'সাইন আউট',
+    'home.saveHeader': 'সংরক্ষণ',
+    'home.saveStateSaving': 'সংরক্ষণ হচ্ছে…',
+    'home.saveStateSaved': 'সংরক্ষিত হয়েছে',
+    'home.printReport': 'প্রতিবেদন প্রিন্ট করুন',
+    'home.exportSnapshot': 'স্ন্যাপশট এক্সপোর্ট করুন',
+    'home.studentsHeader': 'শিক্ষার্থীরা',
+    'home.appearanceHeader': 'চেহারা',
+    'home.appearanceThemeBtn': 'চেহারা / থিম',
+    'home.appearanceThemeBtnTitle': 'রঙ ব্যক্তিগতকরণ — শুধু আপনি এটি দেখবেন',
+    'home.tajweedHeader': 'তাজবীদ',
+    'home.tajweedKeyBtn': 'তাজবীদ কি (চাবি)',
+    'home.tajweedKeyBtnTitle': 'তাজবীদের রঙগুলোর অর্থ কী?',
+    'home.languageHeader': 'ভাষা',
+    'studySettings.title': 'অধ্যয়ন সেটিংস',
+    'studySettings.studyUnit': 'অধ্যয়ন ইউনিট',
+    'studySettings.studyAs': 'যেভাবে অধ্যয়ন করবেন',
+    'studySettings.unitAyah': 'একক আয়াত',
+    'studySettings.unitRange': 'আয়াতের পরিসর',
+    'studySettings.unitSurah': 'সম্পূর্ণ সূরা',
+    'studySettings.unitPage': 'পৃষ্ঠা',
+    'studySettings.unitRuku': 'রুকু',
+    'studySettings.unitJuz': 'পারা',
+    'studySettings.surah': 'সূরা',
+    'studySettings.ayah': 'আয়াত',
+    'studySettings.fromAyah': 'যে আয়াত থেকে',
+    'studySettings.toAyah': 'যে আয়াত পর্যন্ত',
+    'studySettings.pageRange': 'পৃষ্ঠা (1–604)',
+    'studySettings.rukuLabel': 'রুকু',
+    'studySettings.chooseSurahFirst': 'প্রথমে একটি সূরা বাছাই করুন…',
+    'studySettings.juzLabel': 'পারা',
+    'studySettings.setStudyUnit': 'অধ্যয়ন ইউনিট নির্ধারণ করুন',
+    'studySettings.combinedView': 'সম্মিলিত দৃশ্য',
+    'studySettings.startCombined': 'সব আয়াত একত্রে শুরু করুন',
+    'studySettings.text': 'টেক্সট',
+    'studySettings.arabic': 'আরবি',
+    'studySettings.english': 'ইংরেজি',
+    'studySettings.bangla': 'বাংলা',
+    'studySettings.reciters': 'ক্বারী',
+    'studySettings.reciterAr': 'বাসফার (আরবি)',
+    'studySettings.reciterEn': 'ওয়াক (ইংরেজি)',
+    'studySettings.reciterBn': 'বায়েজিদ (বাংলা)',
+    'studySettings.repeat': 'পুনরাবৃত্তি',
+    'studySettings.repeatCount': 'পুনরাবৃত্তি সংখ্যা',
+    'studySettings.repeat1x': '1× (পুনরাবৃত্তি নেই)',
+    'studySettings.repeatMode': 'পুনরাবৃত্তি মোড',
+    'studySettings.repeatModeAyah': 'প্রতিটি আয়াত (এক আয়াত অনুশীলনের পর পরবর্তীতে যাওয়া)',
+    'studySettings.repeatModeUnit': 'সম্পূর্ণ ইউনিট (পুরো নির্বাচন পুনরাবৃত্তি করা)',
+    'studySettings.repeatModeHint': 'নির্বাচিত প্রতিটি ক্বারী পর্যায়ক্রমে একবার করে পড়বেন — সেই পুরো পর্যায়টিই পুনরাবৃত্তি হয়।',
+    'studySettings.display': 'প্রদর্শন',
+    'studySettings.apply': 'প্রয়োগ করুন',
+    'studySettings.applyAndPlay': 'প্রয়োগ করে চালান',
+    'explore.button': 'অন্বেষণ',
+    'chooseAyah.button': 'আয়াত নির্বাচন করুন',
+    'chooseAyah.translation': 'অনুবাদ',
+    'chooseAyah.orType': 'অথবা টাইপ করুন, যেমন 2:255',
+    'chooseAyah.searchPlaceholder': 'সূরা:আয়াত',
+    'chooseAyah.loadAyah': 'আয়াত লোড করুন',
+    'mode.regular': 'নিয়মিত',
+    'mode.regularTitle': 'সাধারণ লিপি ও লেআউট',
+    'mode.hifz': 'হিফয',
+    'mode.hifzTitle': 'হিফয মুসহাফ মোড (মাদানী)',
+    'mode.tajweed': 'তাজবীদ',
+    'mode.tajweedTitle': 'তাজবীদ রঙ-কোডেড লিপি চালু/বন্ধ করুন',
+    'mode.prevAyah': 'পূর্ববর্তী আয়াত',
+    'mode.jumpAyah': 'এই ইউনিটের একটি আয়াতে যান',
+    'mode.nextAyah': 'পরবর্তী আয়াত',
+    'common.loading': 'লোড হচ্ছে…',
+    'status.notStarted': 'শুরু হয়নি',
+    'status.learning': 'শেখা হচ্ছে',
+    'status.practicing': 'অনুশীলন চলছে',
+    'status.mastered': 'আয়ত্ত হয়েছে',
+    'status.notApplicable': 'প্রযোজ্য নয়',
+    'wayModal.notes': 'নোট',
+    'wayModal.notesPlaceholder': 'শিক্ষার্থী কী করেছে? পর্যবেক্ষণ, উক্তি, পরবর্তী পদক্ষেপ...',
+    'wayModal.addLink': 'লিংক যোগ করুন',
+    'wayModal.resourceLabelPlaceholder': 'লেবেল (যেমন \'পরিচিতিমূলক ভিডিও\')',
+    'wayModal.thisSurah': 'এই সূরা',
+    'wayModal.thisJuz': 'এই পারা',
+    'wayModal.entireQuran': 'সম্পূর্ণ কুরআন',
+    'wayModal.breakdownEmpty': 'এর অবস্থা দেখতে উপরে একটি পরিসর বাছাই করুন।',
+    'wayModal.coverageEmpty': 'কতটুকু সম্পন্ন হয়েছে তা দেখতে উপরে একটি পরিসর বাছাই করুন।',
+    'wayModal.close': 'বন্ধ করুন',
+    'wayModal.save': 'সংরক্ষণ করুন',
+    'wayModal.removeThisLink': 'এই লিংক মুছুন',
+    'personModal.title': 'শিক্ষার্থী যোগ করুন',
+    'personModal.newProfile': 'নতুন প্রোফাইল',
+    'personModal.name': 'নাম',
+    'personModal.namePlaceholder': 'যেমন আব্দুল্লাহ',
+    'personModal.emoji': 'ইমোজি',
+    'personModal.cancel': 'বাতিল',
+    'personModal.add': 'যোগ করুন',
+    'theme.modalTitle': 'রঙ ব্যক্তিগতকরণ করুন',
+    'theme.modalSub': 'শুধু আপনি এটি দেখবেন — এটি অন্য কারো দৃশ্য পরিবর্তন করে না',
+    'theme.resetAllBtn': 'সব ডিফল্টে পুনরায় সেট করুন',
+    'theme.doneBtn': 'সম্পন্ন',
+    'theme.resetToDefaultTitle': 'ডিফল্টে পুনরায় সেট করুন',
+    'theme.resetAllConfirm': 'আপনার সকল ব্যক্তিগত রঙ পছন্দ ডিফল্টে পুনরায় সেট করবেন? এটি শুধু আপনার নিজের দৃশ্যকে প্রভাবিত করবে।',
+    'theme.groupBackground': 'ব্যাকগ্রাউন্ড',
+    'theme.groupMonitorBanner': 'মনিটর ব্যানার',
+    'theme.groupCorePalette': 'মূল প্যালেট',
+    'theme.groupTajweedLegend': 'তাজবীদ সূচি',
+    'theme.groupWheelDomain': 'চাকা ও ডোমেইন রঙ',
+    'theme.bgOuter': 'ব্যাকড্রপ — বাইরের প্রান্ত',
+    'theme.bgCenter': 'ব্যাকড্রপ — কেন্দ্র / মূল কালি',
+    'theme.bgCorners': 'ব্যাকড্রপ — কোণাগুলো',
+    'theme.bannerStart': 'ব্যানার গ্রেডিয়েন্ট — শুরু',
+    'theme.bannerMiddle': 'ব্যানার গ্রেডিয়েন্ট — মধ্য',
+    'theme.bannerEnd': 'ব্যানার গ্রেডিয়েন্ট — শেষ',
+    'theme.mainText': 'মূল টেক্সট',
+    'theme.mutedText': 'নিস্তেজ টেক্সট',
+    'theme.accentMastered': 'অ্যাকসেন্ট · আয়ত্ত অবস্থা',
+    'theme.accentDim': 'অ্যাকসেন্ট (হালকা)',
+    'theme.secondaryAccent': 'দ্বিতীয় অ্যাকসেন্ট',
+    'theme.tertiaryAccent': 'তৃতীয় অ্যাকসেন্ট',
+    'theme.dividerLines': 'বিভাজক রেখা',
+    'theme.tjSilent': 'নীরব (সাকিন)',
+    'theme.tjMaddGhunnah': 'মদ্দ (স্বাভাবিক) ও গুন্নাহ',
+    'theme.tjMaddOblig': 'মদ্দ (আবশ্যিক) ও কালকালাহ',
+    'theme.tjMaddPermissible': 'মদ্দ (ঐচ্ছিক)',
+    'theme.tjIkhfa': 'ইখফা',
+    'theme.tjIqlab': 'ইকলাব',
+    'theme.tjIdgham': 'ইদগাম',
+    'printReport.close': 'বন্ধ করুন',
+    'printReport.tajweedColours': 'তাজবীদ রঙ',
+    'printReport.tajweedToggleTitle': 'প্রিন্ট করা প্রতিবেদনে তাজবীদ রঙ-কোডিং চালু/বন্ধ করুন',
+    'printReport.printSavePdf': 'প্রিন্ট / পিডিএফ সংরক্ষণ',
+    'printReport.tajweedDisclaimer': 'তাজবীদ রঙ-কোডিং শুধুমাত্র অধ্যয়নের সহায়তার জন্য দেখানো হয়েছে। রঙ ভিন্ন হতে পারে বা সাদাকালো প্রিন্টারে নাও দেখা যেতে পারে। সর্বদা একজন যোগ্য শিক্ষকের কাছে নিয়মগুলো যাচাই করুন — রঙ কখনো সঠিক মৌখিক শিক্ষা (তালাক্কী)-র বিকল্প নয়।',
+    'printReport.masteredPct': 'আয়ত্ত হয়েছে · {pct}%',
+    'printReport.notStarted': 'শুরু হয়নি',
+    'printReport.naShort': 'প্রযোজ্য নয়',
+    'printReport.generated': 'তৈরি হয়েছে {date}',
+    'printReport.overallMastery': 'সামগ্রিক আয়ত্ততা',
+    'printReport.pointsSummary': '{total}-এর মধ্যে {sum} পয়েন্ট · {count}-এর মধ্যে {mastered}টি পদ্ধতি আয়ত্ত হয়েছে',
+    'printReport.allWaysDetail': 'সবগুলো ৩০টি পদ্ধতি — বিস্তারিত',
+    'printReport.masteryReportFooter': 'আয়ত্ততা প্রতিবেদন',
+    'admin.panelTitleAdmin': 'অ্যাডমিন প্যানেল',
+    'admin.panelTitleTeacher': 'শিক্ষক প্যানেল',
+    'admin.createInviteDescAdmin': 'ইমেইলের মাধ্যমে একজন নতুন শিক্ষক বা শিক্ষার্থীর জন্য আমন্ত্রণ তৈরি করুন। সেই নির্দিষ্ট ইমেইল দিয়ে প্রথমবার সাইন ইন করার সাথে সাথেই তাদের ভূমিকা সক্রিয় হয়ে যাবে।',
+    'admin.createInviteDescTeacher': 'ইমেইলের মাধ্যমে একজন নতুন শিক্ষার্থীর জন্য আমন্ত্রণ তৈরি করুন। সেই নির্দিষ্ট ইমেইল দিয়ে প্রথমবার সাইন ইন করার সাথে সাথেই তাদের ভূমিকা সক্রিয় হয়ে যাবে।',
+    'admin.noEmailWarning': 'এটি তাদের কোনো ইমেইল বা নোটিফিকেশন পাঠায় <strong>না</strong>। আমন্ত্রণ তৈরির পর, নিচের বার্তাটি কপি করে নিজে পাঠিয়ে দিন (হোয়াটসঅ্যাপ, এসএমএস, ইমেইল — আপনি সাধারণত যা ব্যবহার করেন)।',
+    'admin.roleStudent': 'শিক্ষার্থী',
+    'admin.roleTeacher': 'শিক্ষক',
+    'admin.chooseTeacherOption': '— এই শিক্ষার্থীর জন্য একজন শিক্ষক বাছাই করুন —',
+    'admin.createInviteBtn': 'আমন্ত্রণ তৈরি করুন',
+    'admin.pendingInvites': 'অপেক্ষমাণ আমন্ত্রণ',
+    'admin.allPeople': 'সকল ব্যক্তি',
+    'admin.yourPeople': 'আপনার ব্যক্তিরা',
+    'admin.copyMessageBtn': 'বার্তা কপি করুন',
+    'admin.copyMessageBtnLower': 'বার্তা কপি করুন',
+    'admin.copiedStatus': 'কপি হয়েছে!',
+    'admin.enterValidEmail': 'একটি সঠিক ইমেইল লিখুন।',
+    'admin.chooseTeacherRequired': 'এই শিক্ষার্থীর জন্য একজন শিক্ষক বাছাই করুন।',
+    'admin.inviteCreatedFor': '{email}-এর জন্য আমন্ত্রণ তৈরি হয়েছে। এখন নিজে নিচের বার্তাটি তাদের পাঠান:',
+    'admin.failedPrefix': 'ব্যর্থ: ',
+    'admin.inviteMessage': 'আপনাকে QuranRevival-এ আমন্ত্রণ জানানো হয়েছে — অনুগ্রহ করে {url}-এ যান এবং ঠিক এই ইমেইল ব্যবহার করে Google দিয়ে সাইন ইন করুন: {email}',
+    'admin.noneInvites': 'কিছু নেই।',
+    'admin.nonePeopleYet': 'এখনো কেউ নেই।',
+    'admin.inviteRowLabel': '{email} — {role} (এখনো সাইন ইন করেননি)',
+    'admin.personRowLabel': '{name} — {role}',
+    'wbw.noOtherOccurrences': 'এই মূলের আর কোনো ব্যবহার পাওয়া যায়নি।',
+    'wbw.noRootOnRecord': 'এই শব্দের কোনো নথিভুক্ত মূল নেই (সম্ভবত এটি একটি অব্যয়/সর্বনাম)।',
+    'wbw.derivHeaderSingularOcc': 'মূল {root} — {forms}টি রূপে {occ}বার ব্যবহৃত হয়েছে',
+    'wbw.derivHeaderPluralOcc': 'মূল {root} — {forms}টি রূপে {occ}বার ব্যবহৃত হয়েছে',
+    'wbw.formSingular': 'রূপ',
+    'wbw.formPlural': 'রূপ',
+    'wbw.wordModalOccSingular': '{root} মূলের {count}বার ব্যবহার',
+    'wbw.wordModalOccPlural': '{root} মূলের {count}বার ব্যবহার',
+    'wbw.morphLoading': 'রূপতত্ত্ব তথ্য লোড হচ্ছে (~5MB, একবারের জন্য)…',
+    'wbw.morphLoaded': 'রূপতত্ত্ব লোড হয়েছে — {chapters}/114টি সূরা, {rows}টি সারি।',
+    'wbw.morphLoadFailed': 'রূপতত্ত্ব তথ্য লোড করা যায়নি ({err}) — আবার বক্সটি চেক করার চেষ্টা করুন।',
+    'wbw.networkError': 'নেটওয়ার্ক ত্রুটি',
+    'audio.reciterTabAr': 'আব্দুল্লাহ বাসফার (আরবি)',
+    'audio.reciterTabEn': 'ইব্রাহিম ওয়াক (ইংরেজি)',
+    'audio.reciterTabBn': 'শরীফ বায়েজিদ (বাংলা)',
+    'audio.loopThisAyah': 'এই আয়াত পুনরাবৃত্তি করুন',
+    'audio.bnNotAvailableAyah': 'এই আয়াতের জন্য বাংলা অডিও উপলব্ধ নেই।',
+    'audio.bnLoadFailed': 'বাংলা অডিও তথ্য লোড করতে ব্যর্থ হয়েছে। আপনার সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।',
+    'audio.bnNotAvailableUnit': 'এই ইউনিটের জন্য বাংলা অডিও উপলব্ধ নেই।',
+    'audio.reciterNotAvailable': '{reciter} অডিও এখনো উপলব্ধ নয়।',
+    'hifz.showExtras': 'অনুবাদ, তাজবীদ ও আয়াত নম্বর দেখান',
+    'wbw.wordByWord': 'শব্দভিত্তিক অনুবাদ',
+    'wbw.showMorphology': 'মূল ও ব্যাকরণ দেখান (রূপতত্ত্ব)',
+    'wbw.showDerivatives': 'এই মূল থেকে উদ্ভূত শব্দ দেখান',
+    'wbw.creditPrefix': 'প্রতিটি শব্দের টেক্সট, অনুবাদ ও প্রতিবর্ণীকরণ সরাসরি quran.com থেকে আনা হয়েছে। রূপতত্ত্ব (মূল, লেমা, শব্দের প্রকার) সৌজন্যে ',
+    'wbw.creditSuffix': ', কাইস ডিউকস।',
+    'wheel.swipeHint': 'সম্পূর্ণ চাকাটি দেখতে সোয়াইপ করুন',
+    'explore.crumbQuran': 'কুরআন',
+    'explore.crumbJuz': 'পারা {n}',
+    'explore.crumbSurah': 'সূরা {n}',
+    'explore.crumbRuku': 'রুকু {n}',
+    'explore.couldNotLoadWheel': 'এই চাকাটি লোড করা যায়নি ({err}) — আবার চেষ্টা করুন।',
+    'explore.jumpTo': 'যেখানে যেতে চান',
+    'explore.optJuz': 'পারা',
+    'explore.optSurah': 'সূরা',
+    'explore.number': 'সংখ্যা',
+    'explore.go': 'যান',
+    'explore.back': 'পেছনে',
+    'hifz.pageNum': 'পৃষ্ঠা {n}',
+    'hifz.pageLoadFailed': 'এই পৃষ্ঠার তথ্য লোড করা যায়নি।',
+    'hifz.loadingPage': 'হিফয মুসহাফ পৃষ্ঠা লোড হচ্ছে…',
+    'hifz.unitTypeUnsupported': 'এই ইউনিট প্রকারের জন্য হিফয দৃশ্য এখনো উপলব্ধ নয়।',
+    'hifz.pageNotFound': 'এই নির্বাচনের জন্য কোনো মুসহাফ পৃষ্ঠা পাওয়া যায়নি।',
+    'hifz.mushafLoadFailed': 'হিফয মুসহাফ তথ্য লোড করা যায়নি ({err})।',
+    'unitNav.loadingAyah': 'আয়াত লোড হচ্ছে…',
+    'unitNav.stillLoadingSurahList': 'সূরার তালিকা এখনো লোড হচ্ছে — একটু পরে আবার \'প্রয়োগ করুন\' চাপুন।',
+    'unitNav.couldNotReachSurahList': 'সূরার তালিকার জন্য quran.com-এ পৌঁছানো যায়নি — আপনার সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।',
+    'unitNav.chooseSurahAndAyah': 'প্রথমে একটি সূরা ও আয়াত বাছাই করুন।',
+    'unitNav.chooseSurahFirstPeriod': 'প্রথমে একটি সূরা বাছাই করুন।',
+    'unitNav.toAyahAfterFromAyah': '"যে আয়াত পর্যন্ত" অবশ্যই "যে আয়াত থেকে"-এর সমান বা পরে হতে হবে।',
+    'unitNav.enterPageRange': 'পৃষ্ঠা 1 থেকে 604-এর মধ্যে একটি সংখ্যা লিখুন।',
+    'unitNav.chooseRuku': 'একটি রুকু বাছাই করুন (সীমানা এখনো লোড হচ্ছে হতে পারে — একটু অপেক্ষা করে আবার চেষ্টা করুন)।',
+    'unitNav.chooseJuz': 'একটি পারা বাছাই করুন।',
+    'unitNav.navigatorTip': 'পরামর্শ: উপরের ◀ ▾ ▶ নেভিগেটর ব্যবহার করে যেকোনো একটি আয়াত খুলুন — সেখানে তাজবীদ, শব্দভিত্তিক অনুবাদ ও মূল শব্দ পাওয়া যায়।',
+    'unitNav.enterSurahAyah': 'সূরা:আয়াত আকারে লিখুন, যেমন 2:255',
+    'unitNav.ayahListUnavailable': 'এই ইউনিটের আয়াত তালিকা এখনো উপলব্ধ নয় — তালিকাটি আনতে ইউনিটটি আবার নির্বাচন করুন।',
+    'wbw.loadingWords': 'শব্দ লোড হচ্ছে…',
+    'wbw.translationUnavailable': 'শব্দভিত্তিক অনুবাদ সাময়িকভাবে অনুপলব্ধ — আরবি শব্দ দেখানো হচ্ছে (মূল ও উদ্ভূত শব্দ এখনো কাজ করে)।',
+    'wayList.addWayIn': '+ {group}-এ একটি পদ্ধতি যোগ করুন',
+    'tajweed.loadFailed': 'সম্পূর্ণ ইউনিটের তাজবীদ রঙ লোড করা যায়নি ({err}) — সাধারণ লিপি দেখানো হচ্ছে।',
+    'unitNav.loadingAyahKey': 'আয়াত {key} লোড হচ্ছে…',
+    'unitNav.couldNotLoadAyah': 'আয়াত {key} লোড করা যায়নি ({err})।',
+    'unitNav.nowStudyingSurahAyah': 'এখন অধ্যয়ন করছেন: সূরা {surah}, আয়াত {ayah}।',
+    'unitNav.lookingUpSurahForPage': '{page} পৃষ্ঠার জন্য সূরা খোঁজা হচ্ছে…',
+    'unitNav.pageIsInSurah': '{page} পৃষ্ঠাটি সূরা {surah}-এ আছে।',
+    'unitNav.couldNotLookUpSurahForPage': 'সেই পৃষ্ঠার জন্য সূরা খুঁজে পাওয়া যায়নি ({err})।',
+    'unitNav.lookingUpPagesForSurah': '{surah}-এর পৃষ্ঠা খোঁজা হচ্ছে…',
+    'unitNav.couldNotLookUpPagesForSurah': 'সেই সূরার পৃষ্ঠা খুঁজে পাওয়া যায়নি ({err})।',
+    'unitNav.couldNotLoadRukuData': 'রুকুর তথ্য লোড করা যায়নি',
+    'unitNav.couldNotLoadRukuBoundaries': 'রুকুর সীমানা লোড করা যায়নি ({err}) — আবার সূরা বাছাই করার চেষ্টা করুন।',
+    'unitNav.nowStudying': 'এখন অধ্যয়ন করছেন: {label}',
+    'unitNav.fetching': '{label} আনা হচ্ছে…',
+    'unitNav.loadedAyahSingular': '{count}টি আয়াত লোড হয়েছে।',
+    'unitNav.loadedAyahPlural': '{count}টি আয়াত লোড হয়েছে।',
+    'unitNav.couldNotFetchAutomatically': 'স্বয়ংক্রিয়ভাবে আনা যায়নি ({err}) — আপনি নিচে ম্যানুয়ালি কনটেন্ট টাইপ করতে পারেন।',
+    'wbw.buildingForSingular': '{count}টি আয়াতের জন্য শব্দভিত্তিক অনুবাদ তৈরি হচ্ছে…',
+    'wbw.buildingForPlural': '{count}টি আয়াতের জন্য শব্দভিত্তিক অনুবাদ তৈরি হচ্ছে…',
+    'wbw.buildingProgress': 'শব্দভিত্তিক অনুবাদ তৈরি হচ্ছে… {done} / {total}',
+    'common.buildLabel': 'বিল্ড: {date}',
+    'wayList.removeThisWay': 'এই পদ্ধতি মুছুন',
+    'unitNav.loadingRukuBoundaries': 'রুকুর সীমানা লোড হচ্ছে…',
+  },
+};
+
+// Languages this switcher knows about. Phase A ships only English; Phase B
+// appends entries here as each language is populated (Bangla first, per the
+// agreed rollout order), and I18N_RTL_LANGS below controls the dir flip for
+// Arabic/Urdu when their turn comes. Adding a language is meant to be just:
+// (1) add the code/label here, (2) add its key->string dictionary above.
+const I18N_LANGS = [
+  { code: 'en', label: 'English' },
+  { code: 'bn', label: '\u09ac\u09be\u0982\u09b2\u09be' },
+];
+const I18N_RTL_LANGS = ['ar', 'ur']; // reserved for Phase B; unused while only 'en'/'bn' ship
+
+function mmGetLang(){
+  return lsGet('mm_lang') || 'en';
+}
+
+// t(key) looks up the current language, falling back to English, then to
+// the key itself (visibly-broken-but-harmless, so a missing key never
+// crashes a render — it just shows up as an unmistakable raw key string
+// during QA instead of blank UI).
+function t(key){
+  const lang = mmGetLang();
+  const dict = I18N_STRINGS[lang] || I18N_STRINGS.en;
+  return (dict && dict[key]) || I18N_STRINGS.en[key] || key;
+}
+
+// tf(key, vars) — like t(), but substitutes {varName} tokens in the
+// translated string with values from `vars`. Used where a string has
+// numbers baked into it (e.g. the print report's "12 of 30 points…"),
+// since those can't be represented as a plain textContent data-i18n swap.
+function tf(key, vars){
+  let s = t(key);
+  Object.keys(vars || {}).forEach(k => {
+    s = s.split('{' + k + '}').join(vars[k]);
+  });
+  return s;
+}
+
+// applyI18n() walks a DOM subtree and fills in every element tagged with
+// data-i18n / data-i18n-title / data-i18n-placeholder / data-i18n-aria-label.
+// Call it after (a) initial page load, (b) any dynamically-injected chunk of
+// markup mounts (e.g. mmLoadQuran/mmLoadTracker), and (c) a language switch.
+function applyI18n(root){
+  root = root || document;
+  root.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  root.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.getAttribute('data-i18n-title'));
+  });
+  root.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+  });
+  root.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
+    el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria-label')));
+  });
+}
+
+// mmSetLang() persists the choice, flips dir for RTL languages (Phase B),
+// re-applies the whole document, and lets any listener react (e.g. wheel
+// re-render if a future language needs it) without this function needing to
+// know about Monitor/Quran Study internals.
+function mmSetLang(code){
+  lsSet('mm_lang', code);
+  document.documentElement.setAttribute('lang', code);
+  document.documentElement.setAttribute('dir', I18N_RTL_LANGS.includes(code) ? 'rtl' : 'ltr');
+  applyI18n(document);
+  const sel = document.getElementById('mmLangSelect');
+  if (sel) sel.value = code;
+  if (typeof mmOnLangChange === 'function') mmOnLangChange(code);
+}
+</script>
+
+<script>
   // App version shown in the Home ▾ menu, next to "Quran Study" — e.g. "v06.20".
   // Update these two values on every deploy to GitHub (match the file-naming
   // convention's version/date). Placed as its own small script right after the
   // Home menu markup, rather than inside the lazy-loaded Quran Study module,
   // because this button lives in the persistent shell and is on the page
   // immediately — no need to wait for the Quran Study tab to load.
-  const APP_VERSION = 'v06.29';
+  const APP_VERSION = 'v06.30';
   const APP_BUILD_DATE = '26 Jul 2026';
   (function initVersionTag(){
     const tag = document.getElementById('quranVersionTag');
@@ -1503,395 +2165,6 @@
 </script>
 
 <script>
-// ── localStorage helpers ──────────────────────────────────────
-const lsGet  = key => { try { const v=localStorage.getItem(key); return v!==null?JSON.parse(v):null; } catch(_){return null;} };
-const lsSet  = (key,val) => { try { localStorage.setItem(key,JSON.stringify(val)); } catch(_){} };
-
-// ---------------------------------------------------------------------------
-// Feature 12 — Multilingual UI (Phase A: infrastructure + English scaffold)
-// ---------------------------------------------------------------------------
-// I18N_STRINGS holds one flat key->string dictionary per language. Phase A
-// only ships 'en' — the goal here is proving the plumbing (lookup, DOM
-// application, persistence, RTL flag) end-to-end, not translating anything
-// yet. Phase B adds languages by populating a new top-level key here (plus
-// font/RTL wiring where relevant) — no other code should need to change.
-//
-// Keys are dot-namespaced by UI area (home.*, studySettings.*, ...) so the
-// dictionary stays navigable as it grows past 500 entries. NOT every string
-// in the app has been migrated yet — see the Feature 12 handoff notes for
-// which sections are converted so far. Unconverted areas keep working with
-// their existing hardcoded English text; converting them is additive and
-// won't break anything already on data-i18n.
-const I18N_STRINGS = {
-  en: {
-    'home.monitor': 'Monitor',
-    'home.quranStudy': 'Quran Study',
-    'home.admin': 'Admin',
-    'home.signOut': 'Sign Out',
-    'home.saveHeader': 'Save',
-    'home.saveStateSaving': 'Saving…',
-    'home.saveStateSaved': 'Saved',
-    'home.printReport': 'Print Report',
-    'home.exportSnapshot': 'Export Snapshot',
-    'home.studentsHeader': 'Students',
-    'home.appearanceHeader': 'Appearance',
-    'home.appearanceThemeBtn': 'Appearance / Theme',
-    'home.appearanceThemeBtnTitle': 'Personalise colours — only you see this',
-    'home.tajweedHeader': 'Tajweed',
-    'home.tajweedKeyBtn': 'Tajweed Key',
-    'home.tajweedKeyBtnTitle': 'What do the Tajweed colours mean?',
-    'home.languageHeader': 'Language',
-
-    // Study Settings panel (top bar) — Feature 12 Phase A, session 2
-    'studySettings.title': 'Study Settings',
-    'studySettings.studyUnit': 'Study unit',
-    'studySettings.studyAs': 'Study as',
-    'studySettings.unitAyah': 'Single Ayah',
-    'studySettings.unitRange': 'Range of Ayahs',
-    'studySettings.unitSurah': 'Whole Surah',
-    'studySettings.unitPage': 'Page',
-    'studySettings.unitRuku': "Ruku'",
-    'studySettings.unitJuz': 'Juz',
-    'studySettings.surah': 'Surah',
-    'studySettings.ayah': 'Ayah',
-    'studySettings.fromAyah': 'From Ayah',
-    'studySettings.toAyah': 'To Ayah',
-    'studySettings.pageRange': 'Page (1\u2013604)',
-    'studySettings.rukuLabel': "Ruku'",
-    'studySettings.chooseSurahFirst': 'Choose a Surah first\u2026',
-    'studySettings.juzLabel': 'Juz',
-    'studySettings.setStudyUnit': 'Set Study Unit',
-    'studySettings.combinedView': 'Combined view',
-    'studySettings.startCombined': 'Start on all ayahs combined',
-    'studySettings.text': 'Text',
-    'studySettings.arabic': 'Arabic',
-    'studySettings.english': 'English',
-    'studySettings.bangla': 'Bangla',
-    'studySettings.reciters': 'Reciters',
-    'studySettings.reciterAr': 'Basfar (Arabic)',
-    'studySettings.reciterEn': 'Walk (English)',
-    'studySettings.reciterBn': 'Bayzid (Bangla)',
-    'studySettings.repeat': 'Repeat',
-    'studySettings.repeatCount': 'Repeat count',
-    'studySettings.repeat1x': '1\u00d7 (no repeat)',
-    'studySettings.repeatMode': 'Repeat mode',
-    'studySettings.repeatModeAyah': 'Each Ayah (drill one ayah before moving on)',
-    'studySettings.repeatModeUnit': 'Whole Unit (repeat the entire selection)',
-    'studySettings.repeatModeHint': 'Every selected reciter plays once, in order, per round \u2014 that whole round is what repeats.',
-    'studySettings.display': 'Display',
-    'studySettings.apply': 'Apply',
-    'studySettings.applyAndPlay': 'Apply and play',
-
-    // Explore / Choose Ayah bar
-    'explore.button': 'Explore',
-    'chooseAyah.button': 'Choose Ayah',
-    'chooseAyah.translation': 'Translation',
-    'chooseAyah.orType': 'Or type e.g. 2:255',
-    'chooseAyah.searchPlaceholder': 'surah:ayah',
-    'chooseAyah.loadAyah': 'Load Ayah',
-
-    // Regular/Hifz/Tajweed mode toggle + unit ayah nav
-    'mode.regular': 'Regular',
-    'mode.regularTitle': 'Standard script and layout',
-    'mode.hifz': 'Hifz',
-    'mode.hifzTitle': 'Hifz mushaf mode (Madani)',
-    'mode.tajweed': 'Tajweed',
-    'mode.tajweedTitle': 'Toggle Tajweed colour-coded script',
-    'mode.prevAyah': 'Previous ayah',
-    'mode.jumpAyah': 'Jump to an ayah in this unit',
-    'mode.nextAyah': 'Next ayah',
-
-    // Common / shared
-    'common.loading': 'Loading\u2026',
-
-    // Status labels (display-only — see STATUS_LABEL_KEYS comment; the raw
-    // English STATUS_LABELS array stays untranslated for persisted data)
-    'status.notStarted': 'Not Started',
-    'status.learning': 'Learning',
-    'status.practicing': 'Practicing',
-    'status.mastered': 'Mastered',
-    'status.notApplicable': 'Not Applicable',
-
-    // Way modal (session 3) — accordion header text stays on the existing
-    // contenteditable/data-ekey system, not converted here; see handoff notes
-    'wayModal.notes': 'Notes',
-    'wayModal.notesPlaceholder': 'What did the student do? Observations, quotes, next steps...',
-    'wayModal.addLink': 'Add Link',
-    'wayModal.resourceLabelPlaceholder': "Label (e.g. 'Intro video')",
-    'wayModal.thisSurah': 'This Surah',
-    'wayModal.thisJuz': 'This Juz',
-    'wayModal.entireQuran': 'Entire Quran',
-    'wayModal.breakdownEmpty': "Choose a scope above to see this way's status across it.",
-    'wayModal.coverageEmpty': 'Choose a scope above to see how much of it is complete.',
-    'wayModal.close': 'Close',
-    'wayModal.save': 'Save',
-
-    // Add Student (person) modal
-    'personModal.title': 'Add Student',
-    'personModal.newProfile': 'New profile',
-    'personModal.name': 'Name',
-    'personModal.namePlaceholder': 'e.g. Abdullah',
-    'personModal.emoji': 'Emoji',
-    'personModal.cancel': 'Cancel',
-    'personModal.add': 'Add',
-
-    // Theme / Appearance modal
-    'theme.modalTitle': 'Personalise Colours',
-    'theme.modalSub': 'Only you see this — it never changes anyone else\'s view',
-    'theme.resetAllBtn': 'Reset All to Default',
-    'theme.doneBtn': 'Done',
-    'theme.resetToDefaultTitle': 'Reset to default',
-    'theme.resetAllConfirm': 'Reset ALL your personal colour choices back to the defaults? This only affects your own view.',
-    'theme.groupBackground': 'Background',
-    'theme.groupMonitorBanner': 'Monitor Banner',
-    'theme.groupCorePalette': 'Core Palette',
-    'theme.groupTajweedLegend': 'Tajweed Legend',
-    'theme.groupWheelDomain': 'Wheel & Domain Colours',
-    'theme.bgOuter': 'Backdrop — outer edge',
-    'theme.bgCenter': 'Backdrop — centre / base ink',
-    'theme.bgCorners': 'Backdrop — corners',
-    'theme.bannerStart': 'Banner gradient — start',
-    'theme.bannerMiddle': 'Banner gradient — middle',
-    'theme.bannerEnd': 'Banner gradient — end',
-    'theme.mainText': 'Main text',
-    'theme.mutedText': 'Muted text',
-    'theme.accentMastered': 'Accent \u00b7 Mastered status',
-    'theme.accentDim': 'Accent (dim)',
-    'theme.secondaryAccent': 'Secondary accent',
-    'theme.tertiaryAccent': 'Tertiary accent',
-    'theme.dividerLines': 'Divider lines',
-    'theme.tjSilent': 'Silent',
-    'theme.tjMaddGhunnah': 'Madd (natural) & Ghunnah',
-    'theme.tjMaddOblig': 'Madd (obligatory) & Qalqalah',
-    'theme.tjMaddPermissible': 'Madd (permissible)',
-    'theme.tjIkhfa': 'Ikhfa',
-    'theme.tjIqlab': 'Iqlab',
-    'theme.tjIdgham': 'Idghaam',
-
-    // Print report
-    'printReport.close': 'Close',
-    'printReport.tajweedColours': 'Tajweed Colours',
-    'printReport.tajweedToggleTitle': 'Toggle Tajweed colour-coding in the printed report',
-    'printReport.printSavePdf': 'Print / Save PDF',
-    'printReport.tajweedDisclaimer': 'Tajweed colour-coding shown for study reference only. Colours may vary or not appear on monochrome printers. Always verify rules with a qualified teacher — colour alone does not substitute proper oral transmission (talaqqi).',
-    'printReport.masteredPct': 'mastered \u00b7 {pct}%',
-    'printReport.notStarted': 'Not started',
-    'printReport.naShort': 'N/A',
-    'printReport.generated': 'Generated {date}',
-    'printReport.overallMastery': 'Overall Mastery',
-    'printReport.pointsSummary': '{sum} of {total} points \u00b7 {mastered} of {count} ways mastered',
-    'printReport.allWaysDetail': 'All 30 Ways \u2014 Detail',
-    'printReport.masteryReportFooter': 'Mastery Report',
-
-    // Admin panel (session 5) — built entirely via a JS template literal,
-    // no static HTML to attach data-i18n to, so this whole section uses
-    // t()/tf() calls directly inside the template string instead.
-    'admin.panelTitleAdmin': 'Admin Panel',
-    'admin.panelTitleTeacher': 'Teacher Panel',
-    'admin.createInviteDescAdmin': 'Create an invite for a new Teacher or Student by email. Their role activates automatically the first time they sign in with that exact email.',
-    'admin.createInviteDescTeacher': 'Create an invite for a new Student by email. Their role activates automatically the first time they sign in with that exact email.',
-    'admin.noEmailWarning': 'This does <strong>not</strong> send them an email or notification. After creating the invite, copy the message below and send it yourself (WhatsApp, SMS, email \u2014 whatever you\'d normally use).',
-    'admin.roleStudent': 'Student',
-    'admin.roleTeacher': 'Teacher',
-    'admin.chooseTeacherOption': '\u2014 choose a teacher for this student \u2014',
-    'admin.createInviteBtn': 'Create Invite',
-    'admin.pendingInvites': 'Pending Invites',
-    'admin.allPeople': 'All People',
-    'admin.yourPeople': 'Your People',
-    'admin.copyMessageBtn': 'Copy Message',
-    'admin.copyMessageBtnLower': 'Copy message',
-    'admin.copiedStatus': 'Copied!',
-    'admin.enterValidEmail': 'Enter a valid email.',
-    'admin.chooseTeacherRequired': 'Choose a teacher for this student.',
-    'admin.inviteCreatedFor': 'Invite created for {email}. Now send them the message below yourself:',
-    'admin.failedPrefix': 'Failed: ',
-    'admin.inviteMessage': 'You\'re invited to QuranRevival \u2014 please go to {url} and sign in with Google using this exact email: {email}',
-    'admin.noneInvites': 'None.',
-    'admin.nonePeopleYet': 'None yet.',
-    'admin.inviteRowLabel': '{email} \u2014 {role} (not yet signed in)',
-    'admin.personRowLabel': '{name} \u2014 {role}',
-
-    // Word-by-word / morphology & root-derivative modals (session 6).
-    // NOTE: grammatical POS terminology (POS_LABELS — Noun, Verb, Active
-    // Participle, etc., ~30 terms) is deliberately NOT converted this pass.
-    // It's specialist Arabic-grammar vocabulary where a wrong or approximate
-    // translation actively misleads a student, so it deserves its own
-    // careful pass (ideally reviewed by you) rather than a mechanical sweep.
-    'wbw.noOtherOccurrences': 'No other occurrences found for this root.',
-    'wbw.noRootOnRecord': 'This word has no root on record (likely a particle/pronoun).',
-    'wbw.derivHeaderSingularOcc': 'Root {root} \u2014 {occ} occurrence across {forms} {formWord}',
-    'wbw.derivHeaderPluralOcc': 'Root {root} \u2014 {occ} occurrences across {forms} {formWord}',
-    'wbw.formSingular': 'form',
-    'wbw.formPlural': 'forms',
-    'wbw.wordModalOccSingular': '{count} occurrence of root {root}',
-    'wbw.wordModalOccPlural': '{count} occurrences of root {root}',
-    'wbw.morphLoading': 'Loading morphology data (~5MB, one-time)\u2026',
-    'wbw.morphLoaded': 'Morphology loaded \u2014 {chapters}/114 chapters, {rows} rows.',
-    'wbw.morphLoadFailed': 'Couldn\'t load morphology data ({err}) \u2014 try checking the box again.',
-    'wbw.networkError': 'network error',
-
-    // Audio / reciter system (session 7, part 1)
-    'audio.reciterTabAr': 'Abdullah Basfar (Arabic)',
-    'audio.reciterTabEn': 'Ibrahim Walk (English)',
-    'audio.reciterTabBn': 'Sharif Bayzid (Bangla)',
-    'audio.loopThisAyah': 'Loop this ayah',
-    'audio.bnNotAvailableAyah': 'Bangla audio isn\u2019t available for this ayah.',
-    'audio.bnLoadFailed': 'Bangla audio data failed to load. Check your connection and try again.',
-    'audio.bnNotAvailableUnit': 'Bangla audio isn\u2019t available for this unit.',
-    'audio.reciterNotAvailable': '{reciter} audio is not available yet.',
-
-    // Hifz mode + Word-by-Word bar
-    'hifz.showExtras': 'Show translation, Tajweed & ayah no.',
-    'wbw.wordByWord': 'Word by Word',
-    'wbw.showMorphology': 'Show root & grammar (morphology)',
-    'wbw.showDerivatives': 'Show derivatives from this root',
-    'wbw.creditPrefix': 'Per-word text, translation & transliteration fetched live from quran.com. Morphology (root, lemma, part of speech) courtesy of the ',
-    'wbw.creditSuffix': ', Kais Dukes.',
-
-    // Wheel
-    'wheel.swipeHint': 'swipe to see the full wheel',
-
-    // Explore overlay (session 7, part 2)
-    'explore.crumbQuran': 'Quran',
-    'explore.crumbJuz': 'Juz {n}',
-    'explore.crumbSurah': 'Surah {n}',
-    'explore.crumbRuku': 'Ruku\' {n}',
-    'explore.couldNotLoadWheel': 'Could not load this wheel ({err}) \u2014 try again.',
-    'explore.jumpTo': 'Jump to',
-    'explore.optJuz': 'Juz',
-    'explore.optSurah': 'Surah',
-    'explore.number': 'Number',
-    'explore.go': 'Go',
-    'explore.back': 'Back',
-
-    // Hifz / Mushaf view
-    'hifz.pageNum': 'Page {n}',
-    'hifz.pageLoadFailed': 'Couldn\'t load this page\'s data.',
-    'hifz.loadingPage': 'Loading Hifz mushaf page\u2026',
-    'hifz.unitTypeUnsupported': 'Hifz view isn\'t available for this unit type yet.',
-    'hifz.pageNotFound': 'Couldn\'t find a mushaf page for this selection.',
-    'hifz.mushafLoadFailed': 'Couldn\'t load Hifz mushaf data ({err}).',
-
-    // Unit navigation / Choose Ayah status messages (the scattered long tail)
-    'unitNav.loadingAyah': 'Loading ayah\u2026',
-    'unitNav.stillLoadingSurahList': 'Still loading the Surah list \u2014 try Apply again in a moment.',
-    'unitNav.couldNotReachSurahList': 'Couldn\u2019t reach quran.com for the Surah list \u2014 check your connection and try again.',
-    'unitNav.chooseSurahAndAyah': 'Choose a Surah and Ayah first.',
-    'unitNav.chooseSurahFirstPeriod': 'Choose a Surah first.',
-    'unitNav.toAyahAfterFromAyah': '"To Ayah" must be the same as or after "From Ayah".',
-    'unitNav.enterPageRange': 'Enter a page from 1 to 604.',
-    'unitNav.chooseRuku': 'Choose a Ruku\u2019 (boundaries may still be loading \u2014 wait a moment and try again).',
-    'unitNav.chooseJuz': 'Choose a Juz.',
-    'unitNav.navigatorTip': 'Tip: use the \u25c0 \u25be \u25b6 navigator above to open any single ayah \u2014 Tajweed, Word-by-Word and Roots live there.',
-    'unitNav.enterSurahAyah': 'Enter as surah:ayah, e.g. 2:255',
-    'unitNav.ayahListUnavailable': 'This unit\u2019s ayah list isn\u2019t available yet \u2014 reselect the unit to fetch it.',
-
-    // WBW loading / fallback states
-    'wbw.loadingWords': 'Loading words\u2026',
-    'wbw.translationUnavailable': 'Per-word translation is temporarily unavailable \u2014 showing Arabic words (Root & Derivatives still work).',
-
-    // Final sweep (session 8) — concatenated status-message call sites that
-    // the earlier per-session grep passes missed because they build the
-    // string via '+' concatenation rather than a single literal.
-    'wayList.addWayIn': '+ Add a way in {group}',
-    'tajweed.loadFailed': 'Couldn\'t load whole-unit Tajweed colours ({err}) \u2014 showing standard script.',
-    'unitNav.loadingAyahKey': 'Loading Ayah {key}\u2026',
-    'unitNav.couldNotLoadAyah': 'Couldn\'t load Ayah {key} ({err}).',
-    'unitNav.nowStudyingSurahAyah': 'Now studying: Surah {surah}, Ayah {ayah}.',
-    'unitNav.lookingUpSurahForPage': 'Looking up the Surah for page {page}\u2026',
-    'unitNav.pageIsInSurah': 'Page {page} is in Surah {surah}.',
-    'unitNav.couldNotLookUpSurahForPage': 'Couldn\u2019t look up the Surah for that page ({err}).',
-    'unitNav.lookingUpPagesForSurah': 'Looking up pages for {surah}\u2026',
-    'unitNav.couldNotLookUpPagesForSurah': 'Couldn\u2019t look up pages for that Surah ({err}).',
-    'unitNav.couldNotLoadRukuData': 'Couldn\u2019t load Ruku\u2019 data',
-    'unitNav.couldNotLoadRukuBoundaries': 'Couldn\u2019t load Ruku\u2019 boundaries ({err}) \u2014 try choosing the Surah again.',
-    'unitNav.nowStudying': 'Now studying: {label}',
-    'unitNav.fetching': 'Fetching {label}\u2026',
-    'unitNav.loadedAyahSingular': 'Loaded {count} ayah.',
-    'unitNav.loadedAyahPlural': 'Loaded {count} ayahs.',
-    'unitNav.couldNotFetchAutomatically': 'Could not fetch automatically ({err}) \u2014 you can type the content in manually below.',
-    'wbw.buildingForSingular': 'Building word-by-word for {count} ayah\u2026',
-    'wbw.buildingForPlural': 'Building word-by-word for {count} ayahs\u2026',
-    'wbw.buildingProgress': 'Building word-by-word\u2026 {done} / {total}',
-
-    // Final sweep, part 2 — a handful of .title tooltips missed by the
-    // textContent-only scan
-    'common.buildLabel': 'Build: {date}',
-    'wayList.removeThisWay': 'Remove this way',
-    'wayModal.removeThisLink': 'Remove this link',
-    'unitNav.loadingRukuBoundaries': 'Loading Ruku\u2019 boundaries\u2026',
-  }
-};
-
-// Languages this switcher knows about. Phase A ships only English; Phase B
-// appends entries here as each language is populated (Bangla first, per the
-// agreed rollout order), and I18N_RTL_LANGS below controls the dir flip for
-// Arabic/Urdu when their turn comes. Adding a language is meant to be just:
-// (1) add the code/label here, (2) add its key->string dictionary above.
-const I18N_LANGS = [
-  { code: 'en', label: 'English' },
-];
-const I18N_RTL_LANGS = ['ar', 'ur']; // reserved for Phase B; unused while only 'en' ships
-
-function mmGetLang(){
-  return lsGet('mm_lang') || 'en';
-}
-
-// t(key) looks up the current language, falling back to English, then to
-// the key itself (visibly-broken-but-harmless, so a missing key never
-// crashes a render — it just shows up as an unmistakable raw key string
-// during QA instead of blank UI).
-function t(key){
-  const lang = mmGetLang();
-  const dict = I18N_STRINGS[lang] || I18N_STRINGS.en;
-  return (dict && dict[key]) || I18N_STRINGS.en[key] || key;
-}
-
-// tf(key, vars) — like t(), but substitutes {varName} tokens in the
-// translated string with values from `vars`. Used where a string has
-// numbers baked into it (e.g. the print report's "12 of 30 points…"),
-// since those can't be represented as a plain textContent data-i18n swap.
-function tf(key, vars){
-  let s = t(key);
-  Object.keys(vars || {}).forEach(k => {
-    s = s.split('{' + k + '}').join(vars[k]);
-  });
-  return s;
-}
-
-// applyI18n() walks a DOM subtree and fills in every element tagged with
-// data-i18n / data-i18n-title / data-i18n-placeholder / data-i18n-aria-label.
-// Call it after (a) initial page load, (b) any dynamically-injected chunk of
-// markup mounts (e.g. mmLoadQuran/mmLoadTracker), and (c) a language switch.
-function applyI18n(root){
-  root = root || document;
-  root.querySelectorAll('[data-i18n]').forEach(el => {
-    el.textContent = t(el.getAttribute('data-i18n'));
-  });
-  root.querySelectorAll('[data-i18n-title]').forEach(el => {
-    el.title = t(el.getAttribute('data-i18n-title'));
-  });
-  root.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
-    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
-  });
-  root.querySelectorAll('[data-i18n-aria-label]').forEach(el => {
-    el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria-label')));
-  });
-}
-
-// mmSetLang() persists the choice, flips dir for RTL languages (Phase B),
-// re-applies the whole document, and lets any listener react (e.g. wheel
-// re-render if a future language needs it) without this function needing to
-// know about Monitor/Quran Study internals.
-function mmSetLang(code){
-  lsSet('mm_lang', code);
-  document.documentElement.setAttribute('lang', code);
-  document.documentElement.setAttribute('dir', I18N_RTL_LANGS.includes(code) ? 'rtl' : 'ltr');
-  applyI18n(document);
-  const sel = document.getElementById('mmLangSelect');
-  if (sel) sel.value = code;
-  if (typeof mmOnLangChange === 'function') mmOnLangChange(code);
-}
 const lsList = prefix => Object.keys(localStorage).filter(k=>k.startsWith(prefix));
 
 // ── constants ─────────────────────────────────────────────────
