@@ -170,6 +170,5 @@ modules · 13 Full messaging & extras · 14 Operations · 15+ Reserved.
 is derived from a live audit of `index.html` and signed by the owner — not by
 Claude.
 
-**Current position: Phase 0 complete. Phase 1 (Identity & access) in
-progress — stages 1-3 of 9 built and owner-verified.** See
-`PHASE-0-STATUS.md` and `PHASE-1-STATUS.md`.
+**Current position: Phase 0 and Phase 1 (Identity & access) both complete
+and owner-verified.** See `PHASE-0-STATUS.md` and `PHASE-1-STATUS.md`.
