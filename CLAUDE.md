@@ -25,7 +25,7 @@ decision-oriented. Corrections come promptly when framing drifts.
 | File | Role |
 |---|---|
 | `QuranRevival_Complete_Architecture.html` | **THE source of truth.** Schema, invariants, roles, renderers, unit keys, 15 build phases, load-speed budget. Confirmed by the owner. |
-| `QuranRevival_Subject_Catalogue_v3.md` | 31 subjects, 30 Approaches in 7 sections. **Not yet approved.** Phase 2 input. |
+| `QuranRevival_Subject_Catalogue_v3.md` | 31 subjects, 30 Approaches in 7 sections. **Approved as-is (D11).** Phase 2 input. |
 | `QuranRevival_Parked_Items_Register.html` | 36 deferred items. **Do not build these.** |
 | `index.html` | Current production app. **REFERENCE ONLY — NEVER EDIT.** Live fallback until the Phase 5 parity checklist is signed. |
 
@@ -154,6 +154,7 @@ Ethics (social) and Akhlaq (personal) are **distinct** nodes. Confirmed.
 | D8 | **Admin self-check screen built in Phase 0 as F-008**, before other UI. It is what makes every later phase self-verifying, given the owner cannot check code |
 | D9 | Two small Phase 1 lookup collections not in the original Architecture doc: **`tenantMemberUids`** (uid→role mirror, lets security rules check "does this login hold role X in tenant Y" without a query) and **`inviteTokens`** (opaque link codes, so invite links never carry a raw email in the URL). Neither is ever shown in any screen. *Approved deviation* |
 | D10 | **The Study Mode handover lock (F-016) only ever engages for an explicit "hand this device to a child to study independently" action — never for a guardian/teacher's own recording.** Confirmed by the owner: teaching the same Ayah/Hadith to multiple children (and themselves) in one sitting, then logging each person's progress in turn from a dropdown, is the normal fast workflow and must never be blocked or require "ending a session." Signed-in owner/teacher picking a person from a roster/records dropdown to log something for them is not a device handover and must never touch the lock, no matter how many people are recorded in sequence. Binding on Phase 3 (records/activity) and Phase 4 (the QuranRevival module's actual study screens) when they're built. |
+| D11 | **`QuranRevival_Subject_Catalogue_v3.md` approved as-is**, at the start of Phase 2 (2026-07-31): 6 top-level subject-tree nodes (Quran, Hadith, Arabic Language, Deen Study, General Study, Nature-Life), 31 studiable subjects, 30 Approaches in 7 sections, Hadith kept top-level and mandatory in its own right, Ethics/Akhlaq distinct. One resolved ambiguity: the doc tags Hadith `[QuranRevival / Deen]`, but Part 5 also states no node uses `moduleIds[]` for more than one module, and the Architecture doc's Phase 12 list names Hadith as its own fifth remaining module (alongside Arabic, General Study, Health, Nature-Life). Built as: **Hadith is its own module** (`moduleIds: ["hadith"]`), its bracket tag read as descriptive text about its role, not a literal dual-module assignment. Flagged for the owner to correct if the intent was actually a shared/dual-module node. |
 
 ---
 
@@ -182,5 +183,7 @@ modules · 13 Full messaging & extras · 14 Operations · 15+ Reserved.
 is derived from a live audit of `index.html` and signed by the owner — not by
 Claude.
 
-**Current position: Phase 0 and Phase 1 (Identity & access) both complete
-and owner-verified.** See `PHASE-0-STATUS.md` and `PHASE-1-STATUS.md`.
+**Current position: Phase 0 and Phase 1 (Identity & access) complete and
+owner-verified. Phase 2 (Catalogue) built, awaiting the owner's self-check
+click-through.** See `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`, and
+`PHASE-2-STATUS.md`.

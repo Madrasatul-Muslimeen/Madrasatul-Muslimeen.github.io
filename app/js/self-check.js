@@ -14,8 +14,10 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { LEGACY, TENANT } from "./collections.js";
 import { updateDocument } from "./envelope.js";
-import { safeWrite, getSessionErrorBuffer } from "./errors.js";
+import { safeWrite, getSessionErrorBuffer, reportWriteFailure } from "./errors.js";
 import { getMyMemberships } from "./session-context.js";
+import { listModules } from "./modules.js";
+import { getSubjectTree, getTrackables } from "./catalogue.js";
 
 const TEST_MARKER_ID = "_selfCheckTest";
 
@@ -175,6 +177,72 @@ export async function runSelfCheck(db, uid) {
       status: membershipOutcome.ok ? "ok" : "fail",
       message: membershipOutcome.ok ? "Reachable, test write succeeded." : membershipOutcome.entry.message,
     });
+
+    // 3b. Phase 2 — Layer 1 (catalogue). Real checks against this tenant's
+    // actual seeded catalogue, not synthetic data -- same reasoning as
+    // above: a marker-field merge into an already-owned, real row is both
+    // a truer test and safely repeatable.
+    let modules = [];
+    try {
+      modules = await listModules(db, uid);
+      results.push({
+        label: "modules (platform registry)",
+        status: modules.length === 7 ? "ok" : "fail",
+        message: modules.length === 7
+          ? "Reachable, all 7 modules present."
+          : `Reachable, but found ${modules.length} modules, expected 7 — tell the admin.`,
+      });
+    } catch (err) {
+      results.push({ label: "modules (platform registry)", status: "fail", message: reportWriteFailure(err, { collection: TENANT.MODULES }).message });
+    }
+
+    let subjects = [];
+    try {
+      subjects = await getSubjectTree(db, tenantId);
+      const badAncestors = subjects.filter((n) => !Array.isArray(n.ancestorIds));
+      const enoughNodes = subjects.length >= 41; // >= not ===: a tenant may have added its own custom subjects on top of the 41 platform ones
+      results.push({
+        label: "subjects (your tenant's subject tree)",
+        status: enoughNodes && badAncestors.length === 0 ? "ok" : "fail",
+        message: enoughNodes && badAncestors.length === 0
+          ? `Reachable, ${subjects.length} nodes present with a valid ancestorIds chain on every one.`
+          : `Reachable, but found ${subjects.length} nodes (expected at least 41) and ${badAncestors.length} with a broken ancestorIds field — tell the admin.`,
+      });
+    } catch (err) {
+      results.push({ label: "subjects (your tenant's subject tree)", status: "fail", message: reportWriteFailure(err, { collection: TENANT.SUBJECTS }).message });
+    }
+
+    let trackables = [];
+    try {
+      trackables = await getTrackables(db, tenantId);
+      const groups = new Set(trackables.map((t) => t.group));
+      results.push({
+        label: "trackables (the 30 Approaches)",
+        status: trackables.length === 30 && groups.size === 7 ? "ok" : "fail",
+        message: trackables.length === 30 && groups.size === 7
+          ? "Reachable, all 30 Approaches present across all 7 sections."
+          : `Reachable, but found ${trackables.length} Approaches across ${groups.size} sections (expected 30 across 7) — tell the admin.`,
+      });
+    } catch (err) {
+      results.push({ label: "trackables (the 30 Approaches)", status: "fail", message: reportWriteFailure(err, { collection: TENANT.TRACKABLES }).message });
+    }
+
+    // A real, additive test write against one already-owned Layer 1 row,
+    // same "merge a harmless marker field" pattern as tenants/tenantPeople
+    // above -- proves catalogue WRITE access (owner/prime), not just read.
+    if (subjects.some((n) => n.id === "quran")) {
+      const subjectWriteOutcome = await safeWrite(
+        () => updateDocument(db, TENANT.SUBJECTS, `${tenantId}__quran`, markerField()),
+        { collection: TENANT.SUBJECTS, docId: `${tenantId}__quran` }
+      );
+      results.push({
+        label: "subjects write access (owner/prime only, by design)",
+        status: subjectWriteOutcome.ok ? "ok" : "expected-block",
+        message: subjectWriteOutcome.ok
+          ? "Reachable, test write succeeded — you hold owner or prime in this tenant."
+          : "Blocked, as expected for a role other than owner/prime. Nothing to act on unless you expected write access.",
+      });
+    }
   }
 
   // I10 negative test: trying to grant yourself platformAdmin must ALWAYS

@@ -533,5 +533,109 @@ service cloud.firestore {
       allow create: if isPlatformAdmin();
       // No update, no delete.
     }
+
+    // =====================================================================
+    // Phase 2 — Catalogue (Layer 1: modules, subjects, trackables, ladders)
+    // Version: 2026-07-31
+    //
+    // Two genuinely different content shapes here, matching catalogue.js:
+    //
+    //   - modules/ and subjectTemplates/ are PLATFORM-WIDE, not tenant-
+    //     scoped. Genesis-only writes: create is open to any signed-in user
+    //     (Firestore's create op only ever fires when the doc doesn't exist
+    //     yet), same "first writer wins on fixed, non-sensitive content"
+    //     shape as the tenant-bootstrap fix documented in
+    //     PHASE-1-STATUS.md item 1. After genesis, only platformAdmin may
+    //     correct a row -- no client delete (I4/D6).
+    //
+    //   - subjects/ and trackables/ are tenant-scoped copies. Any tenant
+    //     member may READ (every future module needs this) and may CREATE
+    //     a row that declares a sourceTemplateId (the one-time "copy the
+    //     platform catalogue into my tenant" seed, harmless and identical
+    //     for everyone -- see ensureTenantCatalogueSeeded). Only owner/
+    //     prime/platformAdmin (canAdminCatalogue) may create a genuinely
+    //     new tenant-specific node (sourceTemplateId == null) or UPDATE an
+    //     existing one -- role table: teacher explicitly "Cannot: ...
+    //     catalogue configuration."
+    // =====================================================================
+
+    // owner + prime + platformAdmin configure the catalogue (role table:
+    // owner "configure everything"; prime runs the tenant academically,
+    // including curriculum; teacher explicitly cannot).
+    function canAdminCatalogue(tenantId) { return canAdminIdentity(tenantId); }
+    function anyMemberOf(tenantId) { return myRolesIn(tenantId).size() > 0; }
+
+    // modules/{moduleId} -- platform-wide.
+    match /modules/{moduleId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update: if isPlatformAdmin();
+      // No delete (I4/D6).
+    }
+
+    // subjectTemplates/{templateId} -- platform-wide, platform master list.
+    match /subjectTemplates/{templateId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update: if isPlatformAdmin();
+      // No delete (I4/D6).
+    }
+
+    // subjects/{tenantId}__{nodeId} -- tenant's own copy-on-write tree.
+    match /subjects/{subjectKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow create: if anyMemberOf(request.resource.data.tenantId)
+                    && request.resource.data.sourceTemplateId is string;
+
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- deactivate via status instead.
+    }
+
+    // trackables/{tenantId}__{trackableId} -- the 30 Approaches, tenant copy.
+    match /trackables/{trackableKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow create: if anyMemberOf(request.resource.data.tenantId)
+                    && request.resource.data.sourceTemplateId is string;
+
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6).
+    }
+
+    // ladders/{tenantId}__{ladderId}, levels/{tenantId}__{levelId} --
+    // tenant-authored, no platform-seeded content (Architecture only gives
+    // examples: "e.g. General Grades, Hifz Years").
+    match /ladders/{ladderKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- deactivate via status instead.
+    }
+
+    match /levels/{levelKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6).
+    }
+
+    // personLevels/{tenantId}__{personId}__{ladderId}__{fromDate} -- dated
+    // rows, never overwritten (Architecture). No UI yet (Phase 11 uses
+    // this), rule deployed now so a future phase doesn't hit "no rule =
+    // fully denied" as a surprise, same pattern as tenantInvites in Phase 1.
+    match /personLevels/{personLevelKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      // No update (dated rows are never overwritten -- a correction is a
+      // new row with a new fromDate) and no delete (I4/D6).
+    }
   }
 }

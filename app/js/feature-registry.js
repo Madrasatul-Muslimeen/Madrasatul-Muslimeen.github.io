@@ -39,14 +39,23 @@ export const FEATURES = Object.freeze([
   { id: "F-015", phase: 1, name: "Tenant/role switcher + View as", status: "built" },
   { id: "F-016", phase: 1, name: "Study Mode handover lock", status: "built" },
   { id: "F-017", phase: 1, name: "Self-check extended for Layer 0", status: "built" },
+
+  // Phase 2 — Catalogue. Reserved as a 12-ID range (F-021..F-032) before
+  // planning; turned out to need 7 concrete features. F-028..F-032 are
+  // simply unused, same as F-018..F-020 in Phase 1 -- not a gap.
+  { id: "F-021", phase: 2, name: "Module registry (platform-wide, 7 modules)", status: "built" },
+  { id: "F-022", phase: 2, name: "Subject tree + ancestorIds + subjectTemplates (platform master list)", status: "built" },
+  { id: "F-023", phase: 2, name: "Subject copy-on-write (tenant seeding from templates, edited flag)", status: "built" },
+  { id: "F-024", phase: 2, name: "Trackables — the 30 Approaches in 7 sections, incl. Guide tab + panels", status: "built" },
+  { id: "F-025", phase: 2, name: "Ladders + levels (schema + tenant-authored CRUD)", status: "built" },
+  { id: "F-026", phase: 2, name: "Catalogue admin screen (catalogue.html) + Layer 1 security rules", status: "built" },
+  { id: "F-027", phase: 2, name: "Self-check extended for Layer 1", status: "built" },
 ]);
 
 // Phase-level reservations for everything not yet broken down individually.
 // idRange is inclusive. "delivers" is copied verbatim from the Architecture
 // doc's Build Phases table (section s7) -- not summarized or reinterpreted.
 export const PHASE_RESERVATIONS = Object.freeze([
-  { phase: 2, name: "Catalogue", idRange: [21, 32], status: "planned",
-    delivers: "Module registry, subject tree with ancestors, templates + copy-on-write, 30 approaches as trackables in 7 sections, Guide tab fields, ladders and levels" },
   { phase: 3, name: "Tracking core", idRange: [33, 46], status: "planned",
     delivers: "records (chunked), activity (weekly), 6 statuses, Not-Applicable exclusion, unit keys incl. hizb/rub/manzil, domainIds, confirmation + bulk confirm + return" },
   { phase: 4, name: "QuranRevival module", idRange: [47, 60], status: "planned",
