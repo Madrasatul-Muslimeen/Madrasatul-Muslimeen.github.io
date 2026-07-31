@@ -39,7 +39,7 @@
       signInWithPopup,
       onAuthStateChanged,
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { resolveInviteToken, acceptInvite } from "./js/invites.js";
+    import { peekInviteToken, resolveInviteToken, acceptInvite } from "./js/invites.js";
     import { langText } from "./js/lang.js";
     import { safeWrite } from "./js/errors.js";
 
@@ -50,7 +50,8 @@
     const acceptBtn = document.getElementById("acceptBtn");
 
     const token = new URLSearchParams(location.search).get("token");
-    let invite = null;
+    let peeked = null; // { tenantId, email } -- readable by anyone, signed in or not
+    let invite = null; // full resolution -- only readable once signed in as the invited email
 
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
@@ -66,18 +67,21 @@
         return;
       }
 
-      invite = await resolveInviteToken(db, token);
-      if (!invite) {
+      // Step 1 -- readable before sign-in (inviteTokens' get rule is
+      // unconditional): just enough to tell the visitor which account to
+      // sign in with, without revealing anything about the tenant itself.
+      peeked = await peekInviteToken(db, token);
+      if (!peeked) {
         boxEl.className = "fail";
         boxEl.textContent = "This invite link is no longer valid — it may have already been used.";
         return;
       }
 
-      const tenantName = langText(invite.tenantName, "en", "this account");
       boxEl.className = "info";
-      boxEl.textContent = `You're invited to join ${tenantName} as ${invite.role}. Invited email: ${invite.email}.`;
+      boxEl.textContent = `This invite is for ${peeked.email}. Please sign in with that account to continue.`;
+      signInArea.style.display = "block";
 
-      onAuthStateChanged(auth, (user) => {
+      onAuthStateChanged(auth, async (user) => {
         if (!user) {
           signInArea.style.display = "block";
           acceptArea.style.display = "none";
@@ -85,13 +89,26 @@
         }
         signInArea.style.display = "none";
 
-        if (user.email.toLowerCase() !== invite.email) {
+        if (user.email.toLowerCase() !== peeked.email) {
           boxEl.className = "fail";
-          boxEl.textContent = `This invite was sent to ${invite.email}, but you're signed in as ${user.email}. Please sign out and sign in with the invited email instead.`;
+          boxEl.textContent = `This invite was sent to ${peeked.email}, but you're signed in as ${user.email}. Please sign out and sign in with the invited email instead.`;
           acceptArea.style.display = "none";
           return;
         }
 
+        // Step 2 -- only attempted once signed in as the matching email,
+        // since that's the only case these reads are allowed at all.
+        invite = await resolveInviteToken(db, token);
+        if (!invite) {
+          boxEl.className = "fail";
+          boxEl.textContent = "This invite is no longer valid — it may have already been used.";
+          acceptArea.style.display = "none";
+          return;
+        }
+
+        const tenantName = langText(invite.tenantName, "en", "this account");
+        boxEl.className = "info";
+        boxEl.textContent = `You're invited to join ${tenantName} as ${invite.role}.`;
         acceptArea.style.display = "block";
       });
     }

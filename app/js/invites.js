@@ -71,15 +71,33 @@ export async function listInvitesForTenant(db, tenantId) {
 }
 
 /**
- * Resolves an invite link's opaque token back to the real, still-pending
- * invite. Returns null if the token doesn't exist, the invite it points to
- * is gone, or it's already been consumed -- callers should treat null as
- * "this link doesn't work anymore," not a technical error.
+ * Reads ONLY the token->{tenantId, email} mapping. Deliberately the one
+ * step that works before signing in at all (inviteTokens' get rule is
+ * unconditional -- see the plan notes on why). Use this to tell someone
+ * "this invite is for X@example.com, please sign in with that account"
+ * before asking them to sign in. Returns null if the token itself doesn't
+ * exist.
  */
-export async function resolveInviteToken(db, token) {
+export async function peekInviteToken(db, token) {
   const tokenSnap = await getDoc(doc(db, TENANT.INVITE_TOKENS, token));
   if (!tokenSnap.exists()) return null;
-  const { tenantId, email } = tokenSnap.data();
+  return tokenSnap.data(); // { tenantId, email }
+}
+
+/**
+ * Full resolution of an invite link: tenant name + role, for display right
+ * before accepting. MUST be called only after the caller is signed in with
+ * the SAME email peekInviteToken() returned -- every read here (the invite
+ * itself, and the tenant's name) is gated by "you're signed in as the
+ * invited email," so calling this before sign-in, or with a mismatched
+ * account, gets a permission error rather than a clean null. Callers
+ * should check the email match themselves first (using peekInviteToken)
+ * and only call this once it's confirmed.
+ */
+export async function resolveInviteToken(db, token) {
+  const peeked = await peekInviteToken(db, token);
+  if (!peeked) return null;
+  const { tenantId, email } = peeked;
 
   const inviteSnap = await getDoc(doc(db, TENANT.TENANT_INVITES, `${tenantId}__${email}`));
   if (!inviteSnap.exists() || inviteSnap.data().status !== "pending") return null;

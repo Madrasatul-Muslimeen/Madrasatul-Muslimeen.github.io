@@ -350,6 +350,14 @@ service cloud.firestore {
     match /tenants/{tenantId} {
       allow read: if isPlatformAdmin();
       allow read: if myRolesIn(tenantId).size() > 0; // any member
+      // Stage 6: someone holding a still-pending invite to THIS tenant may
+      // read its name, so accept-invite.html can show "you're invited to
+      // join X" before they've accepted (and therefore before they're a
+      // member). Only the tenant doc itself -- not the roster, not anyone
+      // else's data.
+      allow read: if hasEmail()
+                  && exists(/databases/$(database)/documents/tenantInvites/$(tenantId + '__' + myEmailLower()))
+                  && get(/databases/$(database)/documents/tenantInvites/$(tenantId + '__' + myEmailLower())).data.status == 'pending';
 
       // Self-serve creation: createdByUid is checked directly, not
       // canAdminIdentity() — no membership exists yet at this instant.
