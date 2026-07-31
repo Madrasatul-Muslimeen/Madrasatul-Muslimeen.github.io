@@ -221,18 +221,30 @@
       whoEl.textContent = `Signed in as ${user.email}`;
       signInBtn.style.display = "none";
 
+      // Tags which named step failed onto the error, so the on-screen
+      // message pinpoints the exact read that was denied instead of just
+      // "something failed."
+      async function step(name, fn) {
+        try {
+          return await fn();
+        } catch (err) {
+          err.stepName = name;
+          throw err;
+        }
+      }
+
       try {
-        const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
+        const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-        const context = await initializeActiveContext(db, user.uid, defaultTenantId);
+        const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
         if (!context) {
           whoEl.textContent += " — no account found yet. Create one on onboarding.html first.";
           return;
         }
         activeTenantId = context.tenantId;
 
-        myMemberships = await getMyMemberships(db, user.uid);
+        myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
         tenantSelect.innerHTML = myMemberships
           .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
           .join("");
@@ -243,12 +255,12 @@
         viewAsSelect.value = context.viewAsRole ?? "";
 
         appEl.style.display = "block";
-        await loadRoster();
-        await loadInvites();
+        await step("load roster", loadRoster);
+        await step("load invites", loadInvites);
       } catch (err) {
         // I15: a failure here must never just leave a half-loaded page with
-        // no explanation -- show exactly what went wrong.
-        whoEl.textContent += ` — something failed while loading the page: ${err.code ?? ""} ${err.message}`;
+        // no explanation -- show exactly what went wrong, and where.
+        whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
         console.error(err);
       }
     });
