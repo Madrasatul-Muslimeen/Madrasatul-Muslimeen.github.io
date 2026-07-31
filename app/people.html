@@ -63,6 +63,28 @@
     </fieldset>
 
     <div id="result"></div>
+
+    <fieldset>
+      <legend>Invite someone (they sign in themselves)</legend>
+      <label for="inviteEmail">Their email</label>
+      <input id="inviteEmail" type="text" maxlength="120" />
+
+      <label for="inviteRole">Role</label>
+      <select id="inviteRole">
+        <option value="teacher">Teacher</option>
+        <option value="student">Student</option>
+        <option value="guardian">Guardian</option>
+        <option value="prime">Prime</option>
+      </select>
+
+      <button id="inviteBtn" style="margin-top:1.2rem;">Invite</button>
+      <div id="inviteResult" style="margin-top:0.8rem;"></div>
+
+      <table>
+        <thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Link</th></tr></thead>
+        <tbody id="inviteBody"></tbody>
+      </table>
+    </fieldset>
   </div>
 
   <script type="module">
@@ -82,6 +104,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { addPersonToTenant } from "./js/people.js";
+    import { createInvite, listInvitesForTenant } from "./js/invites.js";
     import { langText } from "./js/lang.js";
     import { safeWrite } from "./js/errors.js";
 
@@ -94,6 +117,11 @@
     const managedBySelect = document.getElementById("managedBy");
     const addBtn = document.getElementById("addBtn");
     const resultEl = document.getElementById("result");
+    const inviteEmailEl = document.getElementById("inviteEmail");
+    const inviteRoleEl = document.getElementById("inviteRole");
+    const inviteBtn = document.getElementById("inviteBtn");
+    const inviteResultEl = document.getElementById("inviteResult");
+    const inviteBody = document.getElementById("inviteBody");
 
     let activeTenantId = null;
     let roster = [];
@@ -128,6 +156,38 @@
         .join("");
     }
 
+    // Invite documents deliberately don't store their own link token (the
+    // token lives only in inviteTokens, one-way, so a leaked invite list
+    // can't be turned back into working links). The link is only known at
+    // the moment an invite is created, so it's cached here for the rest of
+    // this browser session -- reloading the page loses it, same as if you
+    // navigated away before copying it. That's a real limitation of this
+    // stage, not an oversight: a "resend/new link" feature is future work.
+    const linksThisSession = {};
+
+    async function loadInvites() {
+      const invites = await listInvitesForTenant(db, activeTenantId);
+      inviteBody.innerHTML = "";
+      for (const inv of invites) {
+        const link = linksThisSession[inv.email];
+        const linkCell =
+          inv.status === "pending" && link
+            ? `<button data-copy="${link}" class="copyBtn">Copy link</button>`
+            : inv.status === "pending"
+            ? "created earlier — link no longer shown"
+            : "—";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${inv.email}</td><td>${inv.role}</td><td>${inv.status}</td><td>${linkCell}</td>`;
+        inviteBody.appendChild(tr);
+      }
+      inviteBody.querySelectorAll(".copyBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          navigator.clipboard.writeText(btn.dataset.copy);
+          btn.textContent = "Copied!";
+        });
+      });
+    }
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         whoEl.textContent = "Not signed in.";
@@ -148,6 +208,7 @@
 
       appEl.style.display = "block";
       await loadRoster();
+      await loadInvites();
     });
 
     addBtn.addEventListener("click", async () => {
@@ -186,6 +247,31 @@
       }
 
       addBtn.disabled = false;
+    });
+
+    inviteBtn.addEventListener("click", async () => {
+      inviteBtn.disabled = true;
+      inviteResultEl.textContent = "";
+
+      const email = inviteEmailEl.value.trim();
+      const role = inviteRoleEl.value;
+
+      const outcome = await safeWrite(
+        () => createInvite(db, { tenantId: activeTenantId, email, role, uid: auth.currentUser.uid }),
+        { collection: "tenantInvites", action: "createInvite" }
+      );
+
+      if (outcome.ok) {
+        const link = new URL(`accept-invite.html?token=${outcome.result.token}`, location.href).href;
+        linksThisSession[email.toLowerCase()] = link;
+        inviteResultEl.textContent = "Invite created.";
+        inviteEmailEl.value = "";
+        await loadInvites();
+      } else {
+        inviteResultEl.textContent = outcome.entry.message;
+      }
+
+      inviteBtn.disabled = false;
     });
   </script>
 </body>

@@ -22,6 +22,7 @@ const PLAIN_MESSAGES = {
   "deadline-exceeded": "That save took too long and was stopped. Please try again.",
   cancelled: "That save was interrupted before it finished. Please try again.",
   "resource-exhausted": "The server is too busy right now. Please try again in a moment.",
+  "quota-exceeded": "You've used all the invites allowed for this account. Ask the admin to raise the limit if you need more.",
 };
 
 function plainMessageFor(error) {

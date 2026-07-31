@@ -500,7 +500,15 @@ service cloud.firestore {
     // the random token is the same authorization a direct link would have
     // given anyway. Rules deployed now, first used in Stage 5.
     match /inviteTokens/{token} {
-      allow read: if true;
+      // get (fetching a token you already know, e.g. from a link) is fine
+      // for anyone -- the token itself is the credential. list is
+      // deliberately NOT granted here: without this split, "allow read"
+      // would also let anyone query and enumerate the whole collection,
+      // exposing every tenant's pending invite emails at once.
+      allow get: if true;
+      allow list: if canAdminIdentity(resource.data.tenantId);
+      allow list: if isPlatformAdmin();
+
       allow create: if canAdminIdentity(request.resource.data.tenantId);
       allow create: if isPlatformAdmin();
       // No update, no delete.
