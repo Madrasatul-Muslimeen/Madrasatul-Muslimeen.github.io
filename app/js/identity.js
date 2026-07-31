@@ -35,15 +35,6 @@ export function personIdLooksLegacy(id) {
   );
 }
 
-async function findUnusedPersonId(db) {
-  for (let attempt = 0; attempt < PERSON_ID_ATTEMPTS; attempt++) {
-    const candidate = generatePersonId();
-    const snap = await getDoc(doc(db, TENANT.TENANT_PEOPLE, candidate));
-    if (!snap.exists()) return candidate;
-  }
-  throw new Error(`Could not find an unused personId after ${PERSON_ID_ATTEMPTS} attempts.`);
-}
-
 /**
  * Creates a brand-new tenant with its creator as owner. For an
  * 'individual' tenant, the creator is also granted the 'self' role
@@ -53,9 +44,35 @@ async function findUnusedPersonId(db) {
  *
  * Returns { tenantId, personId }.
  */
-export async function createTenantWithOwner(db, { tenantType, name, uid, weekStartsOn, maxInvites, legacyTeacherId }) {
+export async function createTenantWithOwner(db, opts) {
+  let lastError;
+  for (let attempt = 0; attempt < PERSON_ID_ATTEMPTS; attempt++) {
+    try {
+      return await attemptCreateTenantWithOwner(db, opts);
+    } catch (err) {
+      // A collision on the random personId is the only expected reason
+      // this would ever fail on a fresh attempt (Firestore treats the
+      // clash as an update, not a create, and our rules refuse that to a
+      // stranger — a safe, closed failure, not a data problem). At
+      // ~1-in-9-million odds, one retry with a freshly generated id
+      // resolves it; anything still failing after several attempts is a
+      // real problem, not a collision, so it's let through to the caller.
+      lastError = err;
+    }
+  }
+  throw lastError;
+}
+
+async function attemptCreateTenantWithOwner(db, { tenantType, name, uid, weekStartsOn, maxInvites, legacyTeacherId }) {
   const tenantId = doc(collection(db, TENANT.TENANTS)).id;
-  const personId = await findUnusedPersonId(db);
+  // No availability pre-check here on purpose: tenantPeople's read rules
+  // require the caller to already belong to that record's tenant, which
+  // is exactly not yet true for a brand-new signed-up user checking a
+  // not-yet-existing document -- so a getDoc() here would always be
+  // denied, for everyone, every time (this was the actual bug behind the
+  // very first "blocked by a permissions rule" report). A random 7-digit
+  // id is used directly; see the retry loop above for the collision case.
+  const personId = generatePersonId();
   const roles = tenantType === "individual" ? ["owner", "self"] : ["owner"];
 
   const creates = [
