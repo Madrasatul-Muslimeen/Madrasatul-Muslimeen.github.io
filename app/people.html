@@ -221,29 +221,36 @@
       whoEl.textContent = `Signed in as ${user.email}`;
       signInBtn.style.display = "none";
 
-      const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
-      const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+      try {
+        const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-      const context = await initializeActiveContext(db, user.uid, defaultTenantId);
-      if (!context) {
-        whoEl.textContent += " — no account found yet. Create one on onboarding.html first.";
-        return;
+        const context = await initializeActiveContext(db, user.uid, defaultTenantId);
+        if (!context) {
+          whoEl.textContent += " — no account found yet. Create one on onboarding.html first.";
+          return;
+        }
+        activeTenantId = context.tenantId;
+
+        myMemberships = await getMyMemberships(db, user.uid);
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+          .join("");
+
+        const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+        const showViewAs = activeMembership && canUseViewAs(activeMembership.roles);
+        viewAsWrap.style.display = showViewAs ? "inline-block" : "none";
+        viewAsSelect.value = context.viewAsRole ?? "";
+
+        appEl.style.display = "block";
+        await loadRoster();
+        await loadInvites();
+      } catch (err) {
+        // I15: a failure here must never just leave a half-loaded page with
+        // no explanation -- show exactly what went wrong.
+        whoEl.textContent += ` — something failed while loading the page: ${err.code ?? ""} ${err.message}`;
+        console.error(err);
       }
-      activeTenantId = context.tenantId;
-
-      myMemberships = await getMyMemberships(db, user.uid);
-      tenantSelect.innerHTML = myMemberships
-        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
-        .join("");
-
-      const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
-      const showViewAs = activeMembership && canUseViewAs(activeMembership.roles);
-      viewAsWrap.style.display = showViewAs ? "inline-block" : "none";
-      viewAsSelect.value = context.viewAsRole ?? "";
-
-      appEl.style.display = "block";
-      await loadRoster();
-      await loadInvites();
     });
 
     tenantSelect.addEventListener("change", () => {
