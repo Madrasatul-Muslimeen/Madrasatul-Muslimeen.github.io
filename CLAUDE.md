@@ -141,6 +141,7 @@ Ethics (social) and Akhlaq (personal) are **distinct** nodes. Confirmed.
 | D6 | **No client-side delete anywhere**, from day one. Erasure, if ever needed, is an admin-side operation |
 | D7 | `weekStartsOn` added to the tenant document in Phase 0, used from Phase 8 |
 | D8 | **Admin self-check screen built in Phase 0 as F-008**, before other UI. It is what makes every later phase self-verifying, given the owner cannot check code |
+| D9 | Two small Phase 1 lookup collections not in the original Architecture doc: **`tenantMemberUids`** (uid→role mirror, lets security rules check "does this login hold role X in tenant Y" without a query) and **`inviteTokens`** (opaque link codes, so invite links never carry a raw email in the URL). Neither is ever shown in any screen. *Approved deviation* |
 
 ---
 
@@ -169,4 +170,6 @@ modules · 13 Full messaging & extras · 14 Operations · 15+ Reserved.
 is derived from a live audit of `index.html` and signed by the owner — not by
 Claude.
 
-**Current position: Phase 0, not yet started.** See `PHASE-0-STATUS.md`.
+**Current position: Phase 0 complete. Phase 1 (Identity & access) in
+progress — stages 1-3 of 9 built and owner-verified.** See
+`PHASE-0-STATUS.md` and `PHASE-1-STATUS.md`.
