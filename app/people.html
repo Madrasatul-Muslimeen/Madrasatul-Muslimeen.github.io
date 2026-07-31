@@ -98,6 +98,16 @@
         <tbody id="inviteBody"></tbody>
       </table>
     </fieldset>
+
+    <fieldset>
+      <legend>Study Mode (F-016)</legend>
+      <p style="margin-top:0; font-size:0.9rem;">Simulates a shared device: pick a child to "start studying" as. While one is active, switching to a different child is blocked until you end the session.</p>
+      <label for="studyPersonSelect">Child</label>
+      <select id="studyPersonSelect"></select>
+      <button id="startStudyBtn" style="margin-top:1rem;">Start studying</button>
+      <button id="endStudyBtn" style="margin-top:1rem; display:none; background:#666;">End session</button>
+      <div id="studyResult" style="margin-top:0.8rem; font-size:0.92rem;"></div>
+    </fieldset>
   </div>
 
   <script type="module">
@@ -127,6 +137,7 @@
       setActiveContext,
       canUseViewAs,
     } from "./js/session-context.js";
+    import { getStudyLock, acquireStudyLock, releaseStudyLock, canSwitchTo } from "./js/study-lock.js";
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
@@ -145,6 +156,10 @@
     const tenantSelect = document.getElementById("tenantSelect");
     const viewAsWrap = document.getElementById("viewAsWrap");
     const viewAsSelect = document.getElementById("viewAsSelect");
+    const studyPersonSelect = document.getElementById("studyPersonSelect");
+    const startStudyBtn = document.getElementById("startStudyBtn");
+    const endStudyBtn = document.getElementById("endStudyBtn");
+    const studyResultEl = document.getElementById("studyResult");
 
     let activeTenantId = null;
     let roster = [];
@@ -178,6 +193,28 @@
       managedBySelect.innerHTML = roster
         .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
         .join("");
+
+      const children = roster.filter((p) => p.isMinor);
+      studyPersonSelect.innerHTML = children
+        .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+        .join("");
+      renderStudyLockState();
+    }
+
+    function renderStudyLockState() {
+      const lock = getStudyLock();
+      if (lock) {
+        const person = roster.find((p) => p.id === lock.personId);
+        studyResultEl.textContent = `Currently studying as: ${langText(person?.name, "en", lock.personId)}`;
+        startStudyBtn.style.display = "none";
+        endStudyBtn.style.display = "inline-block";
+        studyPersonSelect.disabled = true;
+      } else {
+        studyResultEl.textContent = "";
+        startStudyBtn.style.display = "inline-block";
+        endStudyBtn.style.display = "none";
+        studyPersonSelect.disabled = false;
+      }
     }
 
     // The invite link's token is looked up fresh each time (via
@@ -344,6 +381,26 @@
       }
 
       inviteBtn.disabled = false;
+    });
+
+    startStudyBtn.addEventListener("click", () => {
+      const personId = studyPersonSelect.value;
+      if (!personId) {
+        studyResultEl.textContent = "No child in the roster yet — add one above first.";
+        return;
+      }
+      const check = canSwitchTo(personId);
+      if (!check.allowed) {
+        studyResultEl.textContent = check.reason;
+        return;
+      }
+      acquireStudyLock(personId);
+      renderStudyLockState();
+    });
+
+    endStudyBtn.addEventListener("click", () => {
+      releaseStudyLock();
+      renderStudyLockState();
     });
   </script>
 </body>
