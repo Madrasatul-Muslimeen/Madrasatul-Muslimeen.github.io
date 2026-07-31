@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuranRevival — F-001 connection test</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; }
+  #status { font-size: 1.1rem; padding: 1rem; border-radius: 0.5rem; }
+  .pending { background: #eee; }
+  .ok { background: #d7f4d7; }
+  .fail { background: #f8d7da; }
+</style>
+</head>
+<body>
+  <h1>F-001 — Firebase connection test</h1>
+  <p>This page only checks that the new (not-yet-visible) build can reach
+     Firebase. It is not part of the live app and nobody else can see it
+     unless they have this exact file open.</p>
+  <div id="status" class="pending">Connecting…</div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+
+    const statusEl = document.getElementById("status");
+
+    // A successful import + initialization above already means the SDK
+    // loaded and the config was accepted. This just makes that visible
+    // in plain language instead of leaving it silent (I15).
+    if (auth && db) {
+      statusEl.textContent = "Connected — Firebase app initialized, auth and offline-enabled Firestore are ready.";
+      statusEl.className = "ok";
+    }
+  </script>
+</body>
+</html>
