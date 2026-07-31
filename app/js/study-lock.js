@@ -7,6 +7,18 @@
 // child, or interrupted by someone else jumping in. It is an accident
 // guard, not a security boundary (client-side only, sessionStorage-backed
 // -- matches how the owner described the need, not an adversarial threat).
+//
+// D10 -- IMPORTANT SCOPE NOTE for Phase 3/4 (records/activity, the
+// QuranRevival study screens): this lock must ONLY ever be engaged by an
+// explicit "hand this device to a child to study independently" action.
+// It must NEVER apply to a guardian/teacher recording progress for
+// several people in one sitting (e.g. teaching the same Ayah to two
+// children, then logging it for each of them, then for themselves, all
+// from a simple person-picker). That is normal, fast, expected admin
+// behaviour and must never be blocked or require "ending a session" --
+// confirmed directly by the owner. A records/progress screen's person
+// dropdown should not call acquireStudyLock() at all; only a genuine
+// "start independent study session" action should.
 
 const STORAGE_KEY = "qr.studyLock";
 

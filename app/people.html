@@ -100,8 +100,17 @@
     </fieldset>
 
     <fieldset>
-      <legend>Study Mode (F-016)</legend>
-      <p style="margin-top:0; font-size:0.9rem;">Simulates a shared device: pick a child to "start studying" as. While one is active, switching to a different child is blocked until you end the session.</p>
+      <legend>Study Mode handover lock — test only (F-016)</legend>
+      <p style="margin-top:0; font-size:0.9rem;">
+        This is a throwaway demo of the LOCK MECHANISM only, not how real
+        teaching/recording will work. It simulates a shared device where a
+        child is left to study independently: pick a child to "start
+        studying" as, and switching to a DIFFERENT child is blocked until
+        you end that session. This is deliberately separate from — and
+        will never apply to — quickly logging progress for several
+        people yourself in one sitting (D10), which the real records
+        screen (Phase 3/4) will let you do freely from a simple dropdown.
+      </p>
       <label for="studyPersonSelect">Child</label>
       <select id="studyPersonSelect"></select>
       <button id="startStudyBtn" style="margin-top:1rem;">Start studying</button>
