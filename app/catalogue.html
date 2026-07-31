@@ -57,6 +57,9 @@
     </table>
 
     <h2>Subject tree</h2>
+    <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
+      <input type="checkbox" id="showArchivedSubjects" /> Show archived subjects
+    </label>
     <table>
       <thead><tr><th>Name</th><th>Gloss</th><th>Modules</th><th>Level (parent)</th><th>Status</th><th id="subjActionsHead" style="display:none;">Edit</th></tr></thead>
       <tbody id="subjectsBody"></tbody>
@@ -75,14 +78,20 @@
     </fieldset>
 
     <h2>The 30 Approaches</h2>
+    <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
+      <input type="checkbox" id="showArchivedTrackables" /> Show archived Approaches
+    </label>
     <table>
-      <thead><tr><th>#</th><th>Approach</th><th>Section</th><th>Guide</th><th id="trkActionsHead" style="display:none;">Edit</th></tr></thead>
+      <thead><tr><th>#</th><th>Approach</th><th>Section</th><th>Status</th><th>Guide</th><th id="trkActionsHead" style="display:none;">Edit</th></tr></thead>
       <tbody id="trackablesBody"></tbody>
     </table>
 
     <h2>Ladders &amp; levels</h2>
+    <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
+      <input type="checkbox" id="showArchivedLadders" /> Show archived ladders/levels
+    </label>
     <table>
-      <thead><tr><th>Ladder</th><th>Levels</th></tr></thead>
+      <thead><tr><th>Ladder</th><th>Actions</th><th>Levels</th></tr></thead>
       <tbody id="laddersBody"></tbody>
     </table>
 
@@ -133,6 +142,10 @@
       getTrackables,
       editCatalogueNode,
       reparentSubject,
+      setSubjectStatus,
+      setTrackableStatus,
+      setLadderStatus,
+      setLevelStatus,
       createLadder,
       createLevel,
       listLadders,
@@ -160,11 +173,18 @@
     const addLevelBtn = document.getElementById("addLevelBtn");
     const ladderResult = document.getElementById("ladderResult");
     const readOnlyNote = document.getElementById("readOnlyNote");
+    const showArchivedSubjects = document.getElementById("showArchivedSubjects");
+    const showArchivedTrackables = document.getElementById("showArchivedTrackables");
+    const showArchivedLadders = document.getElementById("showArchivedLadders");
 
     let activeTenantId = null;
     let myMemberships = [];
     let canEdit = false;
     let subjectTree = [];
+
+    showArchivedSubjects.addEventListener("change", renderSubjects);
+    showArchivedTrackables.addEventListener("change", renderTrackables);
+    showArchivedLadders.addEventListener("change", loadLadders);
 
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
@@ -185,10 +205,12 @@
 
     let editingSubjectId = null;
 
-    // Options for a parent-picker, excluding the node itself and anything
-    // beneath it in the tree -- picking one of your own descendants as your
-    // new parent would create a cycle; reparentSubject() also refuses this
-    // server-side, but there's no reason to offer an invalid choice at all.
+    // Options for a parent-picker, excluding the node itself, anything
+    // beneath it in the tree (picking a descendant as your new parent would
+    // create a cycle; reparentSubject() also refuses this server-side, but
+    // there's no reason to offer an invalid choice at all), and anything
+    // archived (nothing new should be filed under a subject that's been
+    // taken out of active use).
     function parentOptionsHtml(selectedParentId, excludeId) {
       const excludeIds = new Set(excludeId ? [excludeId] : []);
       if (excludeId) {
@@ -197,7 +219,7 @@
         }
       }
       const options = subjectTree
-        .filter((n) => !excludeIds.has(n.id))
+        .filter((n) => !excludeIds.has(n.id) && (n.status !== "archived" || n.id === selectedParentId))
         .map((n) => `<option value="${n.id}" ${n.id === selectedParentId ? "selected" : ""}>${"— ".repeat(depthOf(n))}${langText(n.name, "en", n.id)}</option>`)
         .join("");
       return `<option value="" ${!selectedParentId ? "selected" : ""}>(top level)</option>${options}`;
@@ -227,8 +249,11 @@
         </tr>`;
       }
 
+      const archiveBtn = canEdit
+        ? `<button class="small secondary archiveSubjBtn" data-id="${node.id}" data-next="${node.status === "archived" ? "active" : "archived"}">${node.status === "archived" ? "Restore" : "Archive"}</button>`
+        : "";
       const actionCell = canEdit
-        ? `<td><button class="small secondary editSubjBtn" data-id="${node.id}">Edit</button></td>`
+        ? `<td><button class="small secondary editSubjBtn" data-id="${node.id}">Edit</button> ${archiveBtn}</td>`
         : "";
       return `<tr>
         <td class="depth-${depthOf(node)}">${langText(node.name, "en", node.id)}</td>
@@ -247,7 +272,10 @@
     }
 
     function renderSubjects() {
-      subjectsBody.innerHTML = subjectTree.map(subjectRowHtml).join("");
+      const visible = showArchivedSubjects.checked
+        ? subjectTree
+        : subjectTree.filter((n) => n.status !== "archived");
+      subjectsBody.innerHTML = visible.map(subjectRowHtml).join("");
 
       subjectsBody.querySelectorAll(".editSubjBtn").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -260,6 +288,30 @@
         btn.addEventListener("click", () => {
           editingSubjectId = null;
           renderSubjects();
+        });
+      });
+
+      subjectsBody.querySelectorAll(".archiveSubjBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const node = subjectTree.find((n) => n.id === btn.dataset.id);
+          const nextStatus = btn.dataset.next;
+          const childCount = subjectTree.filter((n) => n.parentId === node.id).length;
+          const warning = childCount > 0
+            ? ` It has ${childCount} sub-item(s) underneath it — they'll stay active, just nested under an archived subject.`
+            : "";
+          const label = nextStatus === "archived" ? "Archive" : "Restore";
+          if (!confirm(`${label} "${langText(node.name, "en", node.id)}"?${warning}`)) return;
+
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setSubjectStatus(db, activeTenantId, node.id, nextStatus, auth.currentUser.uid),
+            { collection: "subjects", action: "setStatus", id: node.id }
+          );
+          if (outcome.ok) await loadSubjects();
+          else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
         });
       });
 
@@ -306,13 +358,17 @@
     }
 
     function trackableRowHtml(t) {
+      const archiveBtn = canEdit
+        ? `<button class="small secondary archiveTrkBtn" data-id="${t.id}" data-next="${t.status === "archived" ? "active" : "archived"}">${t.status === "archived" ? "Restore" : "Archive"}</button>`
+        : "";
       const actionCell = canEdit
-        ? `<td><button class="small secondary editTrkBtn" data-id="${t.id}">Edit</button></td>`
+        ? `<td><button class="small secondary editTrkBtn" data-id="${t.id}">Edit</button> ${archiveBtn}</td>`
         : "";
       return `<tr>
         <td>${t.order}</td>
         <td>${langText(t.name, "en", t.id)}</td>
         <td>${langText(t.groupName, "en", `Section ${t.group}`)}</td>
+        <td>${t.status}</td>
         <td>
           <button class="small secondary guideBtn" data-id="${t.id}">Guide</button>
           <div class="guideBox" id="guide-${t.id}" style="display:none;">
@@ -329,7 +385,14 @@
 
     async function loadTrackables() {
       trackableList = await getTrackables(db, activeTenantId);
-      trackablesBody.innerHTML = trackableList.map(trackableRowHtml).join("");
+      renderTrackables();
+    }
+
+    function renderTrackables() {
+      const visible = showArchivedTrackables.checked
+        ? trackableList
+        : trackableList.filter((t) => t.status !== "archived");
+      trackablesBody.innerHTML = visible.map(trackableRowHtml).join("");
 
       trackablesBody.querySelectorAll(".guideBtn").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -351,22 +414,94 @@
           else alert(outcome.entry.message);
         });
       });
+
+      trackablesBody.querySelectorAll(".archiveTrkBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const t = trackableList.find((x) => x.id === btn.dataset.id);
+          const nextStatus = btn.dataset.next;
+          const label = nextStatus === "archived" ? "Archive" : "Restore";
+          if (!confirm(`${label} "${langText(t.name, "en", t.id)}"?`)) return;
+
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setTrackableStatus(db, activeTenantId, t.id, nextStatus, auth.currentUser.uid),
+            { collection: "trackables", action: "setStatus", id: t.id }
+          );
+          if (outcome.ok) await loadTrackables();
+          else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
+        });
+      });
     }
 
     async function loadLadders() {
-      const ladders = await listLadders(db, activeTenantId);
-      const rows = [];
-      levelLadderSelect.innerHTML = ladders
+      const showArchived = showArchivedLadders.checked;
+      const allLadders = await listLadders(db, activeTenantId);
+      const ladders = showArchived ? allLadders : allLadders.filter((l) => l.status !== "archived");
+
+      levelLadderSelect.innerHTML = allLadders
+        .filter((l) => l.status !== "archived")
         .map((l) => `<option value="${l.id}">${langText(l.name, "en", l.id)}</option>`)
         .join("");
+
+      const rows = [];
       for (const ladder of ladders) {
-        const levels = await listLevels(db, activeTenantId, ladder.id);
-        const levelText = levels.length
-          ? levels.map((lv) => langText(lv.name, "en", lv.id)).join(", ")
+        const allLevels = await listLevels(db, activeTenantId, ladder.id);
+        const levels = showArchived ? allLevels : allLevels.filter((lv) => lv.status !== "archived");
+        const levelChips = levels.length
+          ? levels.map((lv) => {
+              const archiveBtn = canEdit
+                ? `<button class="small secondary archiveLevelBtn" data-id="${lv.id}" data-next="${lv.status === "archived" ? "active" : "archived"}">${lv.status === "archived" ? "Restore" : "Archive"}</button>`
+                : "";
+              return `<span style="display:inline-block; margin:0.15rem 0.4rem 0.15rem 0;">${langText(lv.name, "en", lv.id)}${lv.status === "archived" ? " (archived)" : ""} ${archiveBtn}</span>`;
+            }).join("")
           : "(no levels yet)";
-        rows.push(`<tr><td>${langText(ladder.name, "en", ladder.id)}</td><td>${levelText}</td></tr>`);
+        const ladderArchiveBtn = canEdit
+          ? `<button class="small secondary archiveLadderBtn" data-id="${ladder.id}" data-next="${ladder.status === "archived" ? "active" : "archived"}">${ladder.status === "archived" ? "Restore" : "Archive"}</button>`
+          : "";
+        rows.push(`<tr>
+          <td>${langText(ladder.name, "en", ladder.id)}${ladder.status === "archived" ? " (archived)" : ""}</td>
+          <td>${ladderArchiveBtn}</td>
+          <td>${levelChips}</td>
+        </tr>`);
       }
-      laddersBody.innerHTML = rows.join("") || `<tr><td colspan="2">No ladders yet.</td></tr>`;
+      laddersBody.innerHTML = rows.join("") || `<tr><td colspan="3">No ladders yet.</td></tr>`;
+
+      laddersBody.querySelectorAll(".archiveLadderBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const nextStatus = btn.dataset.next;
+          if (!confirm(`${nextStatus === "archived" ? "Archive" : "Restore"} this ladder?`)) return;
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setLadderStatus(db, activeTenantId, btn.dataset.id, nextStatus, auth.currentUser.uid),
+            { collection: "ladders", action: "setStatus", id: btn.dataset.id }
+          );
+          if (outcome.ok) await loadLadders();
+          else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      laddersBody.querySelectorAll(".archiveLevelBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const nextStatus = btn.dataset.next;
+          if (!confirm(`${nextStatus === "archived" ? "Archive" : "Restore"} this level?`)) return;
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setLevelStatus(db, activeTenantId, btn.dataset.id, nextStatus, auth.currentUser.uid),
+            { collection: "levels", action: "setStatus", id: btn.dataset.id }
+          );
+          if (outcome.ok) await loadLadders();
+          else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
+        });
+      });
     }
 
     async function runSeedIfNeeded() {

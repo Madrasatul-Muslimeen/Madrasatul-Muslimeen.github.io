@@ -323,8 +323,31 @@ export async function createLevel(db, tenantId, ladderId, name, order, uid) {
     ladderId,
     name: { en: name },
     order,
+    status: "active",
   }, uid);
   return levelId;
+}
+
+// ---------------------------------------------------------------------------
+// Archive -- the sanctioned stand-in for delete (I4/D6: nothing is ever
+// deleted from the app; a status flip is reversible and never orphans
+// anything that already references this node).
+// ---------------------------------------------------------------------------
+
+export async function setSubjectStatus(db, tenantId, nodeId, status, uid) {
+  return editCatalogueNode(db, TENANT.SUBJECTS, tenantId, nodeId, { status }, uid);
+}
+
+export async function setTrackableStatus(db, tenantId, trackableId, status, uid) {
+  return editCatalogueNode(db, TENANT.TRACKABLES, tenantId, trackableId, { status }, uid);
+}
+
+export async function setLadderStatus(db, tenantId, ladderId, status, uid) {
+  return updateDocument(db, TENANT.LADDERS, `${tenantId}__${ladderId}`, { status });
+}
+
+export async function setLevelStatus(db, tenantId, levelId, status, uid) {
+  return updateDocument(db, TENANT.LEVELS, `${tenantId}__${levelId}`, { status });
 }
 
 export async function listLadders(db, tenantId) {
