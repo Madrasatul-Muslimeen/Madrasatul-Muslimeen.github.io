@@ -89,23 +89,28 @@ just say so.
 
 ## What the owner should check
 
-Everything below needs a real Google sign-in, which only you can do:
+Everything below needs a real Google sign-in, which only you can do. Start
+`Start Local Test Server.bat` first if it isn't already running.
 
-1. Open `admin-self-check.html`, sign in, tap **Run self-check**. Expect
-   all-green except two *deliberately blocked* rows (platformAdmin
-   self-grant, and the catalogue write-access row unless you're
-   owner/prime in your active tenant) — both say "Correctly blocked, as
-   designed" and need no action.
-2. Open `catalogue.html`, sign in. It should auto-seed your tenant's
-   catalogue on first load (a one-line green status message), then show
-   7 modules, the full subject tree, and the 30 Approaches grouped into 7
-   sections. Click **Guide** on a couple of Approaches — is the wording
-   good enough to ship, or does anything read wrong?
-3. If you're owner/prime: try renaming one subject and one Approach
-   (Edit button), and add one custom subject and one ladder+level. If
-   you're only a teacher/guardian/student in your active tenant, confirm
-   you see the same screen but with no Edit buttons and a note explaining
-   why.
+1. **Open `catalogue.html` before self-check, not after** — self-check only
+   reads what's already there, it doesn't create anything. Go to
+   `http://localhost:8080/app/catalogue.html`, sign in. It should auto-seed
+   your tenant's catalogue on first load (a one-line green status message),
+   then show 7 modules, the full subject tree, and the 30 Approaches
+   grouped into 7 sections. Click **Guide** on a couple of Approaches — is
+   the wording good enough to ship, or does anything read wrong?
+2. *Then* open `admin-self-check.html`, sign in, tap **Run self-check**.
+   Expect all-green except a few *deliberately blocked* rows (platformAdmin
+   self-grant, `rooms`, and the catalogue write-access row unless you're
+   owner/prime in your active tenant) — those say "Correctly blocked, as
+   designed" / "Blocked (expected)" and need no action. The "N write
+   failures logged this session" note at the bottom counts those expected
+   blocks too — it's not a sign anything is actually wrong.
+3. If you're owner/prime: on `catalogue.html`, try renaming one subject and
+   one Approach (Edit button), and add one custom subject and one
+   ladder+level. If you're only a teacher/guardian/student in your active
+   tenant, confirm you see the same screen but with no Edit buttons and a
+   note explaining why.
 
 ## Next
 

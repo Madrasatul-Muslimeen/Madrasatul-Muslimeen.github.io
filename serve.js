@@ -43,5 +43,6 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`Serving this project at http://localhost:${PORT}/`);
   console.log(`Admin self-check screen: http://localhost:${PORT}/app/admin-self-check.html`);
+  console.log(`Catalogue screen (Phase 2):  http://localhost:${PORT}/app/catalogue.html`);
   console.log("Leave this window open while testing. Close it (or Ctrl+C) when done.");
 });
