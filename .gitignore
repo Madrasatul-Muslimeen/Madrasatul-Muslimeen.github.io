@@ -1,0 +1,9 @@
+# Machine-local settings, not shared project config
+.claude/settings.local.json
+
+# Installer, not part of the app
+Git-*.exe
+
+# OS clutter
+Thumbs.db
+.DS_Store

@@ -1,0 +1,296 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // QuranRevival — Firestore Security Rules
+    // Version: 2026-07-30   (S4 + S5 + S6 fixes, plus S7 + S8)
+    // Previous: 2026-07-29  (S1 + S2 + S3)
+    //
+    // CHANGES IN THIS VERSION — five, and nothing else:
+    //
+    //   S4  invites/{email} : REMOVED "allow read, delete: if isTeacher();"
+    //                         Any teacher could read AND delete every invite
+    //                         on the platform. Replaced with a read scoped to
+    //                         invites they created themselves.
+    //                         Verified: index.html line 9817 already filters
+    //                         the non-admin invite list by invitedBy == uid,
+    //                         and line 9782 writes invitedBy on every create,
+    //                         so the Admin screen behaves identically.
+    //                         Verified: the invite list renders a label and a
+    //                         copy button only — there is no teacher-facing
+    //                         delete control anywhere in the app.
+    //
+    //   S5  people/{personId} : create previously checked ownerUid but NOT
+    //                         teacherId, so any signed-in user could insert a
+    //                         person into any teacher's roster. Now teacherId
+    //                         must be the caller, or must match the teacherId
+    //                         on that person's own invite.
+    //                         Verified against index.html lines 9617-9621.
+    //
+    //   S6  EMAIL CASING — the real cause of "invite works for some accounts
+    //                         and not others". request.auth.token.email keeps
+    //                         Google's original capitalisation; invite doc ids
+    //                         are lowercased by the client (line 9772,
+    //                         .trim().toLowerCase()). An address with a
+    //                         capital letter therefore matched nothing — which
+    //                         failed the users/ CREATE rule too, blocking
+    //                         registration entirely, not just the invite.
+    //                         Fixed with myEmailLower() below.
+    //                         The previous version avoided .lower() because it
+    //                         caused permission errors in practice. The reason
+    //                         was a missing null guard: calling .lower() on an
+    //                         absent email aborts rule evaluation, which reads
+    //                         as a denial. myEmailLower() checks the type
+    //                         first and returns null instead of erroring, and
+    //                         every call site is guarded by hasEmail().
+    //
+    //   S7  NO CLIENT DELETES on users/ or people/ (invariant I4).
+    //                         people/ previously allowed teacher and admin
+    //                         delete. Beyond violating "never destroy", it was
+    //                         a trap: deleting people/{personId} makes every
+    //                         progress rule below unresolvable, permanently
+    //                         locking that person out of five collections with
+    //                         no error that explains why.
+    //                         Verified: the ONLY .delete() call in the entire
+    //                         app is line 9628 (an invite consuming itself),
+    //                         which is preserved below. Nothing else breaks.
+    //                         Deleting from the Firebase console still works —
+    //                         the console bypasses these rules.
+    //
+    //   S8  MISSING-PERSON ROBUSTNESS. The five progress collections each did
+    //                         get(people/{personId}).data.ownerUid directly.
+    //                         When that document does not exist, the rule does
+    //                         not return false — it ERRORS, which surfaces as
+    //                         a confusing denial. Replaced with exists()-first
+    //                         helpers. Identical security, clean failure.
+    //                         Same document, so still ~1 billed read.
+    //
+    // Everything else is byte-for-byte the previous version.
+    //
+    // NOT CHANGED, DELIBERATELY:
+    //   - rooms/         : still has no rule, so it stays fully denied. The
+    //                      word "rooms" appears ZERO times in index.html.
+    //                      Origin unknown — leaving it locked until identified.
+    //   - S1, S2, S3     : carried forward unchanged.
+    // =====================================================================
+
+    function signedIn() { return request.auth != null; }
+    function myUid() { return request.auth.uid; }
+
+    // --- S6 FIX: email helpers ------------------------------------------
+    // .get('email', null) never errors on an absent claim; the "is string"
+    // check makes .lower() safe. Every use is guarded by hasEmail() first.
+    function myEmail()      { return signedIn() ? request.auth.token.get('email', null) : null; }
+    function myEmailLower() { return (myEmail() is string) ? myEmail().lower() : null; }
+    function hasEmail()     { return myEmailLower() != null; }
+    function myInviteRef()  { return /databases/$(database)/documents/invites/$(myEmailLower()); }
+    function myInviteHeld() { return hasEmail() && exists(myInviteRef()); }
+    function myInvite()     { return get(myInviteRef()).data; }
+    // --------------------------------------------------------------------
+
+    function myUserDocExists() { return signedIn() && exists(/databases/$(database)/documents/users/$(myUid())); }
+    function myUserDoc() { return get(/databases/$(database)/documents/users/$(myUid())).data; }
+    function myRole() { return myUserDocExists() ? myUserDoc().role : null; }
+    function isAdmin() { return myRole() == 'admin'; }
+    function isTeacher() { return myRole() == 'teacher'; }
+    function isStudent() { return myRole() == 'student'; }
+    function myTeacherId() { return myUserDocExists() ? myUserDoc().teacherId : null; }
+    function myStudentIds() { return (myUserDocExists() && myUserDoc().studentIds is list) ? myUserDoc().studentIds : []; }
+
+    // --- S8 FIX: person lookups that cannot error ------------------------
+    // A missing people/{personId} now yields false instead of aborting the
+    // whole rule. This is exactly the condition that made B1 unreadable.
+    function personRef(pid)     { return /databases/$(database)/documents/people/$(pid); }
+    function personHeld(pid)    { return exists(personRef(pid)); }
+    function iOwnPerson(pid)    { return signedIn() && personHeld(pid) && get(personRef(pid)).data.ownerUid == myUid(); }
+    function iTeachPerson(pid)  { return isTeacher() && personHeld(pid) && get(personRef(pid)).data.teacherId == myUid(); }
+    // --------------------------------------------------------------------
+
+    // users/{uid} — role assignment.
+    match /users/{uid} {
+      allow read: if signedIn() && myUid() == uid;
+      allow read: if isAdmin();
+      allow read: if isTeacher() && (uid in myStudentIds());
+
+      // Self-registration on invite acceptance: a signed-in user may create
+      // ONLY their own uid's document, and ONLY if a real invite exists for
+      // their email with a matching role.
+      // S6 FIX: was myEmail() — now case-insensitive.
+      allow create: if signedIn() && myUid() == uid
+                    && myInviteHeld()
+                    && request.resource.data.role == myInvite().role;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+
+      // --- S7 FIX -------------------------------------------------------
+      // REMOVED: allow delete: if isAdmin();
+      // Invariant I4 — never destroy. No code path used it (the app contains
+      // exactly one .delete(), at line 9628, on an invite). Console deletes
+      // are unaffected.
+      // ------------------------------------------------------------------
+
+      // --- S1 FIX (carried forward, unchanged) --------------------------
+      // REMOVED: allow update: if isTeacher() && myUid() == uid;
+      // A teacher could rewrite their own document and set role:'admin'.
+      // ------------------------------------------------------------------
+
+      // --- S2 FIX (carried forward; S6 applied to the email lookups) -----
+      // A newly-registering student (valid invite pointing at THIS teacher)
+      // may add themself to that teacher's studentIds — and nothing else.
+      //   hasOnly(['studentIds'])  — no other field may be touched
+      //   hasAll(existing)         — entries may be added, never removed
+      // ------------------------------------------------------------------
+      allow update: if signedIn()
+                    && myInviteHeld()
+                    && myInvite().role == 'student'
+                    && myInvite().teacherId == uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['studentIds'])
+                    && resource.data.studentIds is list
+                    && request.resource.data.studentIds.hasAll(resource.data.studentIds);
+    }
+
+    // invites/{email} — pending role assignments, keyed by lowercased email.
+    match /invites/{email} {
+      // The invitee reads and consumes their own invite (line 9628).
+      // S6 FIX: compares the lowercased token email against the doc id.
+      allow read, delete: if hasEmail() && myEmailLower() == email;
+
+      allow read, delete: if isAdmin();
+
+      // --- S4 FIX -------------------------------------------------------
+      // REMOVED: allow read, delete: if isTeacher();
+      // Unconditional — every teacher could read and delete every invite on
+      // the platform. A teacher now sees only invites they issued, which is
+      // exactly what the Admin screen already queries (line 9817), and can
+      // delete none (no such control exists in the UI).
+      // ------------------------------------------------------------------
+      allow read: if isTeacher() && resource.data.invitedBy == myUid();
+
+      allow create: if isAdmin();
+      allow create: if isTeacher()
+                    && request.resource.data.role == 'student'
+                    && request.resource.data.teacherId == myUid();
+    }
+
+    // people/{personId} — profile records (name/emoji/color/ownership).
+    match /people/{personId} {
+      allow read: if isAdmin();
+      allow read: if signedIn() && resource.data.ownerUid == myUid();
+      allow read: if isTeacher() && resource.data.teacherId == myUid();
+
+      allow create: if isAdmin();
+      allow create: if isTeacher() && request.resource.data.teacherId == myUid();
+
+      // --- S5 FIX -------------------------------------------------------
+      // WAS: allow create: if signedIn()
+      //                    && request.resource.data.ownerUid == myUid();
+      // ownerUid was checked, teacherId was not — so any signed-in user could
+      // file a person under any teacher. Now the roster must be the caller's
+      // own, or the one their invite actually named.
+      // Verified against index.html lines 9617-9621: a student's people doc
+      // takes teacherId from the invite; a teacher's/admin's takes their own
+      // uid, which the first branch covers.
+      // ------------------------------------------------------------------
+      allow create: if signedIn()
+                    && request.resource.data.ownerUid == myUid()
+                    && (
+                         request.resource.data.teacherId == myUid()
+                         || ( myInviteHeld()
+                              && myInvite().teacherId == request.resource.data.teacherId )
+                       );
+
+      allow update: if isAdmin();
+      allow update: if isTeacher() && resource.data.teacherId == myUid();
+
+      // --- S7 FIX -------------------------------------------------------
+      // REMOVED delete for both admin and teacher.
+      // Deleting people/{personId} silently locks that person out of
+      // studyProgress, rukuSummaries, juzSummaries, juzSummariesPage and
+      // monitorWeeks — permanently, with no message explaining why.
+      // ------------------------------------------------------------------
+    }
+
+    // teachers/{teacherUid} — each teacher's own subjects/sections/domains/ways.
+    // Their students need read access so the app can render using it.
+    match /teachers/{teacherUid} {
+      allow read: if isAdmin();
+      allow read: if signedIn() && myUid() == teacherUid;
+      allow read: if isStudent() && myTeacherId() == teacherUid;
+      allow write: if isAdmin();
+      allow write: if signedIn() && myUid() == teacherUid;
+    }
+
+    // monitorWeeks/{personId}/weeks/{weekKey} — Study Tracker entries.
+    // Write: the OWNING TEACHER (or admin) only — students are view-only on
+    // Monitor by default (per the confirmed design; flip this if that changes).
+    // S8 FIX applied.
+    match /monitorWeeks/{personId}/weeks/{weekKey} {
+      allow read: if isAdmin();
+      allow read: if iOwnPerson(personId);
+      allow read: if iTeachPerson(personId);
+      allow write: if isAdmin();
+      allow write: if iTeachPerson(personId);
+    }
+
+    // studyProgress/{personId} — Quran Wheel progress. S8 FIX applied.
+    match /studyProgress/{personId} {
+      allow read: if isAdmin();
+      allow read: if iOwnPerson(personId);
+      allow read: if iTeachPerson(personId);
+      allow write: if isAdmin();
+      allow write: if iOwnPerson(personId);
+      allow write: if iTeachPerson(personId);
+    }
+
+    // =====================================================================
+    // S3 FIX (carried forward) — these four had NO rules at all, so every
+    // read and write was denied. Access shape is deliberately IDENTICAL to
+    // studyProgress above. S8 FIX now applied to all three per-person ones.
+    // =====================================================================
+
+    // rukuSummaries/{personId} — Ruku'-level Quran summary (5-Wheel Overhaul).
+    match /rukuSummaries/{personId} {
+      allow read: if isAdmin();
+      allow read: if iOwnPerson(personId);
+      allow read: if iTeachPerson(personId);
+      allow write: if isAdmin();
+      allow write: if iOwnPerson(personId);
+      allow write: if iTeachPerson(personId);
+    }
+
+    // juzSummaries/{personId} — Juz summary, Ayah-basis.
+    match /juzSummaries/{personId} {
+      allow read: if isAdmin();
+      allow read: if iOwnPerson(personId);
+      allow read: if iTeachPerson(personId);
+      allow write: if isAdmin();
+      allow write: if iOwnPerson(personId);
+      allow write: if iTeachPerson(personId);
+    }
+
+    // juzSummariesPage/{personId} — Juz summary, Page-basis.
+    match /juzSummariesPage/{personId} {
+      allow read: if isAdmin();
+      allow read: if iOwnPerson(personId);
+      allow read: if iTeachPerson(personId);
+      allow write: if isAdmin();
+      allow write: if iOwnPerson(personId);
+      allow write: if iTeachPerson(personId);
+    }
+
+    // appSettings/{docId} — app-wide settings, currently the global banner
+    // at appSettings/global. Every signed-in user reads it; Admin writes it.
+    match /appSettings/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // userPrefs/{uid} — personal, per-user app preferences (Colour Step 3
+    // theme colours). Keyed by uid, not personId — these are about how THIS
+    // signed-in user's own screen looks, not shared with anyone.
+    match /userPrefs/{uid} {
+      allow read, write: if signedIn() && myUid() == uid;
+    }
+  }
+}
