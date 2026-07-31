@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuranRevival — People (F-012)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  label { display: block; margin: 1rem 0 0.3rem; font-weight: 600; font-size: 0.92rem; }
+  input[type="text"], select { width: 100%; padding: 0.5rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box; }
+  .role-row { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.3rem; }
+  .role-row label, .check-row label { display: flex; align-items: center; gap: 0.35rem; font-weight: 400; margin: 0; }
+  .role-row input, .check-row input { width: auto; }
+  button {
+    font-size: 1rem; padding: 0.5rem 1rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  th, td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid #eee; font-size: 0.92rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  #result { margin-top: 1rem; padding: 0.8rem; border-radius: 0.5rem; font-size: 0.92rem; display: none; }
+  #result.ok { background: #d7f4d7; }
+  #result.fail { background: #f8d7da; }
+  fieldset { border: 1px solid #ddd; border-radius: 0.5rem; margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+  <h1>People (F-012)</h1>
+  <div id="who">Not signed in.</div>
+  <button id="signInBtn">Sign in with Google</button>
+
+  <div id="app" style="display:none;">
+    <table id="rosterTable">
+      <thead><tr><th>Name</th><th>Roles</th><th>Managed by</th></tr></thead>
+      <tbody id="rosterBody"></tbody>
+    </table>
+
+    <fieldset>
+      <legend>Add a person</legend>
+      <label for="name">Name</label>
+      <input id="name" type="text" maxlength="80" />
+
+      <div class="check-row" style="margin-top:0.8rem;">
+        <label><input id="isMinor" type="checkbox" /> This is a child (no login of their own)</label>
+      </div>
+
+      <label>Roles</label>
+      <div class="role-row">
+        <label><input type="checkbox" name="role" value="teacher" /> Teacher</label>
+        <label><input type="checkbox" name="role" value="student" /> Student</label>
+        <label><input type="checkbox" name="role" value="guardian" /> Guardian</label>
+        <label><input type="checkbox" name="role" value="prime" /> Prime</label>
+      </div>
+
+      <div id="managedByWrap" style="display:none;">
+        <label for="managedBy">Managed by</label>
+        <select id="managedBy"></select>
+      </div>
+
+      <button id="addBtn" style="margin-top:1.2rem;">Add person</button>
+    </fieldset>
+
+    <div id="result"></div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider,
+      signInWithPopup,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      doc,
+      getDoc,
+      collection,
+      query,
+      where,
+      getDocs,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { addPersonToTenant } from "./js/people.js";
+    import { langText } from "./js/lang.js";
+    import { safeWrite } from "./js/errors.js";
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const appEl = document.getElementById("app");
+    const rosterBody = document.getElementById("rosterBody");
+    const isMinorEl = document.getElementById("isMinor");
+    const managedByWrap = document.getElementById("managedByWrap");
+    const managedBySelect = document.getElementById("managedBy");
+    const addBtn = document.getElementById("addBtn");
+    const resultEl = document.getElementById("result");
+
+    let activeTenantId = null;
+    let roster = [];
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = `Sign-in failed: ${err.message}`;
+      });
+    });
+
+    isMinorEl.addEventListener("change", () => {
+      managedByWrap.style.display = isMinorEl.checked ? "block" : "none";
+    });
+
+    async function loadRoster() {
+      const q = query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId));
+      const snap = await getDocs(q);
+      roster = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+      rosterBody.innerHTML = "";
+      for (const person of roster) {
+        const tr = document.createElement("tr");
+        const managerName = person.managedByPersonId
+          ? langText(roster.find((p) => p.id === person.managedByPersonId)?.name, "en", "—")
+          : "—";
+        tr.innerHTML = `<td>${langText(person.name, "en", person.id)}</td><td>${person.roles ?? ""}</td><td>${managerName}</td>`;
+        rosterBody.appendChild(tr);
+      }
+
+      managedBySelect.innerHTML = roster
+        .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+        .join("");
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = "Not signed in.";
+        signInBtn.style.display = "inline-block";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = `Signed in as ${user.email}`;
+      signInBtn.style.display = "none";
+
+      const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
+      activeTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+
+      if (!activeTenantId) {
+        whoEl.textContent += " — no account found yet. Create one on onboarding.html first.";
+        return;
+      }
+
+      appEl.style.display = "block";
+      await loadRoster();
+    });
+
+    addBtn.addEventListener("click", async () => {
+      addBtn.disabled = true;
+      resultEl.style.display = "none";
+
+      const name = document.getElementById("name").value.trim();
+      const isMinor = isMinorEl.checked;
+      const managedByPersonId = isMinor ? managedBySelect.value || null : null;
+      const roles = Array.from(document.querySelectorAll('input[name="role"]:checked')).map((el) => el.value);
+
+      const outcome = await safeWrite(
+        () => addPersonToTenant(db, {
+          tenantId: activeTenantId,
+          uid: auth.currentUser.uid,
+          name,
+          isMinor,
+          managedByPersonId,
+          roles,
+        }),
+        { collection: "tenantPeople", action: "addPerson" }
+      );
+
+      resultEl.style.display = "block";
+      if (outcome.ok) {
+        resultEl.className = "ok";
+        resultEl.textContent = `Added. Person ID: ${outcome.result.personId}`;
+        document.getElementById("name").value = "";
+        isMinorEl.checked = false;
+        managedByWrap.style.display = "none";
+        document.querySelectorAll('input[name="role"]').forEach((el) => (el.checked = false));
+        await loadRoster();
+      } else {
+        resultEl.className = "fail";
+        resultEl.textContent = outcome.entry.message;
+      }
+
+      addBtn.disabled = false;
+    });
+  </script>
+</body>
+</html>
