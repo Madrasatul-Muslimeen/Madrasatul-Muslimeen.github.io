@@ -292,5 +292,206 @@ service cloud.firestore {
     match /userPrefs/{uid} {
       allow read, write: if signedIn() && myUid() == uid;
     }
+
+    // =====================================================================
+    // Phase 1 — Identity & access (new-generation / TENANT collections)
+    // Version: 2026-07-31
+    //
+    // Everything above this line is untouched and covers ONLY the live app
+    // (index.html). Everything below is new: tenants, tenantPeople,
+    // memberships, userIndex, tenantMemberUids, tenantInvites, inviteTokens.
+    // None of these collided with anything above — tenantPeople/tenantInvites
+    // are deliberately named apart from the legacy people/invites (D2).
+    //
+    // I13: tenant isolation is enforced HERE, not only in client queries.
+    // memberships/{tenantId}__{personId}__{role} is keyed by personId, not
+    // the signed-in uid, and rules can't query across documents — only
+    // get() an exact path. tenantMemberUids is a small derived mirror (same
+    // spirit as userIndex — "derived + rebuildable"), kept in sync by the
+    // client on every membership write, so a rule can answer "what can THIS
+    // uid do in THIS tenant" in one get(). New in Phase 1, approved (D9).
+    // =====================================================================
+
+    function tenantMemberRef(tenantId) {
+      return /databases/$(database)/documents/tenantMemberUids/$(tenantId + '__' + myUid());
+    }
+    function tenantMemberHeld(tenantId) { return signedIn() && exists(tenantMemberRef(tenantId)); }
+    function tenantMemberDoc(tenantId)  { return get(tenantMemberRef(tenantId)).data; }
+    function myRolesIn(tenantId)        { return tenantMemberHeld(tenantId) ? tenantMemberDoc(tenantId).roles : []; }
+    function hasRoleIn(tenantId, role)  { return role in myRolesIn(tenantId); }
+    function myPersonIdIn(tenantId)     { return tenantMemberHeld(tenantId) ? tenantMemberDoc(tenantId).personId : null; }
+
+    function isPlatformAdmin() {
+      return signedIn()
+          && exists(/databases/$(database)/documents/userIndex/$(myUid()))
+          && get(/databases/$(database)/documents/userIndex/$(myUid())).data.get('platformAdmin', false) == true;
+    }
+
+    function isOwnerIn(tenantId)    { return hasRoleIn(tenantId, 'owner'); }
+    function isPrimeIn(tenantId)    { return hasRoleIn(tenantId, 'prime'); }
+    function isTeacherIn(tenantId)  { return hasRoleIn(tenantId, 'teacher'); }
+    function isGuardianIn(tenantId) { return hasRoleIn(tenantId, 'guardian'); }
+
+    // owner + prime + platformAdmin administer identity docs (role table:
+    // owner "configure everything"; prime "confirm anyone" / runs the
+    // tenant academically).
+    function canAdminIdentity(tenantId) { return isOwnerIn(tenantId) || isPrimeIn(tenantId) || isPlatformAdmin(); }
+
+    function myGuardianMembershipRef(tenantId) {
+      return /databases/$(database)/documents/memberships/$(tenantId + '__' + myPersonIdIn(tenantId) + '__guardian');
+    }
+    function isGuardianOf(tenantId, childPersonId) {
+      return isGuardianIn(tenantId)
+          && exists(myGuardianMembershipRef(tenantId))
+          && childPersonId in get(myGuardianMembershipRef(tenantId)).data.get('guardianOf', []);
+    }
+
+    // tenants/{tenantId}
+    match /tenants/{tenantId} {
+      allow read: if isPlatformAdmin();
+      allow read: if myRolesIn(tenantId).size() > 0; // any member
+
+      // Self-serve creation: createdByUid is checked directly, not
+      // canAdminIdentity() — no membership exists yet at this instant.
+      allow create: if signedIn() && request.resource.data.createdByUid == myUid();
+      allow update: if canAdminIdentity(tenantId);
+      // D6/I4: no client delete, ever.
+    }
+
+    // tenantPeople/{personId}
+    match /tenantPeople/{personId} {
+      allow read: if isPlatformAdmin();
+      allow read: if canAdminIdentity(resource.data.tenantId);
+      allow read: if isTeacherIn(resource.data.tenantId);              // rosters
+      allow read: if signedIn() && resource.data.authUid == myUid();   // own record
+      allow read: if isGuardianOf(resource.data.tenantId, personId);
+
+      allow create: if canAdminIdentity(request.resource.data.tenantId);
+      // Guardians add NEW children only — must name themselves as manager.
+      allow create: if isGuardianIn(request.resource.data.tenantId)
+                    && request.resource.data.isMinor == true
+                    && request.resource.data.managedByPersonId == myPersonIdIn(request.resource.data.tenantId);
+      // Self-registration (Stage 3 bootstrap, Stage 6 invite acceptance):
+      // an adult may create their own record. Managed (child) accounts
+      // never self-register.
+      allow create: if signedIn()
+                    && request.resource.data.authUid == myUid()
+                    && request.resource.data.isMinor == false;
+
+      allow update: if canAdminIdentity(resource.data.tenantId);
+      allow update: if isGuardianOf(resource.data.tenantId, personId)
+                    && request.resource.data.tenantId == resource.data.tenantId;
+      allow update: if signedIn() && resource.data.authUid == myUid()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['timezone', 'updatedAt']);
+      // No delete (I4/D6).
+    }
+
+    // memberships/{tenantId}__{personId}__{role}
+    match /memberships/{membershipId} {
+      function idParts()   { return membershipId.split('__'); }
+      function idMatches() {
+        return request.resource.data.tenantId == idParts()[0]
+            && request.resource.data.personId == idParts()[1]
+            && request.resource.data.role == idParts()[2];
+      }
+      function inviteRefFor(tenantId) { return /databases/$(database)/documents/tenantInvites/$(tenantId + '__' + myEmailLower()); }
+      function myPendingInviteMatches(tenantId, role) {
+        return hasEmail() && exists(inviteRefFor(tenantId))
+            && get(inviteRefFor(tenantId)).data.status == 'pending'
+            && get(inviteRefFor(tenantId)).data.role == role;
+      }
+
+      allow read: if isPlatformAdmin();
+      allow read: if canAdminIdentity(resource.data.tenantId);
+      allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) == resource.data.personId;
+
+      allow create: if idMatches() && canAdminIdentity(request.resource.data.tenantId);
+      // Invite acceptance (Stage 6, second write): the tenantPeople doc
+      // must already exist and belong to the caller, and a matching
+      // pending invite must exist.
+      allow create: if idMatches()
+                    && myPendingInviteMatches(request.resource.data.tenantId, request.resource.data.role)
+                    && get(/databases/$(database)/documents/tenantPeople/$(request.resource.data.personId)).data.authUid == myUid();
+
+      allow update: if canAdminIdentity(resource.data.tenantId);
+      // No delete (I4/D6) — Phase 1 only creates 'active' rows; revoke/
+      // return logic is out of scope here.
+    }
+
+    // userIndex/{uid}
+    match /userIndex/{uid} {
+      allow read: if isPlatformAdmin();
+      allow read: if signedIn() && myUid() == uid;
+
+      // I10: platformAdmin can NEVER be set true by a client write.
+      allow create: if signedIn() && myUid() == uid
+                    && request.resource.data.get('platformAdmin', false) == false;
+      allow update: if signedIn() && myUid() == uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tenantIds', 'defaultTenantId', 'updatedAt'])
+                    && request.resource.data.get('platformAdmin', false) == resource.data.get('platformAdmin', false);
+      allow update: if isPlatformAdmin();
+      // Only the Firebase console, or a future admin-only server-side
+      // path, may ever flip platformAdmin. No client rule does.
+    }
+
+    // tenantMemberUids/{tenantId}__{uid} — rules-support mirror. Never
+    // shown in any UI. See helper block comment above.
+    match /tenantMemberUids/{tenantUidKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if signedIn() && tenantUidKey == (resource.data.tenantId + '__' + myUid());
+
+      allow create: if canAdminIdentity(request.resource.data.tenantId);
+      allow create: if isPlatformAdmin();
+      // Bootstrap: creating your own brand-new tenant (Stage 3) writes
+      // your own first owner row before any membership exists to check
+      // against.
+      allow create: if signedIn()
+                    && request.resource.data.uid == myUid()
+                    && 'owner' in request.resource.data.roles;
+      // Invite acceptance (Stage 6): same shape as the membership create rule.
+      allow create: if signedIn() && request.resource.data.uid == myUid()
+                    && hasEmail()
+                    && exists(/databases/$(database)/documents/tenantInvites/$(request.resource.data.tenantId + '__' + myEmailLower()))
+                    && get(/databases/$(database)/documents/tenantInvites/$(request.resource.data.tenantId + '__' + myEmailLower())).data.status == 'pending';
+
+      allow update: if canAdminIdentity(resource.data.tenantId);
+      allow update: if isPlatformAdmin();
+    }
+
+    // tenantInvites/{tenantId}__{email} — rules deployed now, first used
+    // in Stage 5 once the invite-creation UI exists.
+    match /tenantInvites/{inviteId} {
+      allow read: if isPlatformAdmin();
+      allow read: if canAdminIdentity(resource.data.tenantId);
+      allow read: if hasEmail() && inviteId == (resource.data.tenantId + '__' + myEmailLower());
+
+      allow create: if canAdminIdentity(request.resource.data.tenantId)
+                    && request.resource.data.status == 'pending';
+      allow create: if isPlatformAdmin();
+      // maxInvites quota is a soft, UI-level check — rules cannot count
+      // documents. See Stage 5.
+
+      allow update: if hasEmail()
+                    && inviteId == (resource.data.tenantId + '__' + myEmailLower())
+                    && resource.data.status == 'pending'
+                    && request.resource.data.status == 'consumed'
+                    && request.resource.data.consumedByUid == myUid()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'consumedAt', 'consumedByUid', 'updatedAt']);
+      allow update: if canAdminIdentity(resource.data.tenantId);
+      allow update: if isPlatformAdmin();
+      // No delete, ever (I4/D6 — overrides the legacy app's
+      // delete-on-consume pattern; this record is kept forever).
+    }
+
+    // inviteTokens/{token} — resolves an invite link's opaque code to the
+    // real invite, so raw email addresses never appear in a URL. Knowing
+    // the random token is the same authorization a direct link would have
+    // given anyway. Rules deployed now, first used in Stage 5.
+    match /inviteTokens/{token} {
+      allow read: if true;
+      allow create: if canAdminIdentity(request.resource.data.tenantId);
+      allow create: if isPlatformAdmin();
+      // No update, no delete.
+    }
   }
 }

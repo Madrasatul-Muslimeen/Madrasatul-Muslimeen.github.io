@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuranRevival — Create your account (F-011)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  label { display: block; margin: 1rem 0 0.3rem; font-weight: 600; font-size: 0.92rem; }
+  input, select { width: 100%; padding: 0.5rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box; }
+  .radio-row { display: flex; gap: 1rem; margin-top: 0.3rem; }
+  .radio-row label { display: flex; align-items: center; gap: 0.4rem; font-weight: 400; margin: 0; }
+  .radio-row input { width: auto; }
+  button {
+    font-size: 1rem; padding: 0.6rem 1.2rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer; margin-top: 1.5rem;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  #result { margin-top: 1.5rem; padding: 1rem; border-radius: 0.5rem; font-size: 0.95rem; display: none; }
+  #result.ok { background: #d7f4d7; }
+  #result.fail { background: #f8d7da; }
+</style>
+</head>
+<body>
+  <h1>Create your account (F-011)</h1>
+  <p>Sets up a brand-new account: your account, your own person record, and
+     your owner role, all created together. Nothing existing is touched.</p>
+
+  <div id="who">Not signed in.</div>
+  <button id="signInBtn">Sign in with Google</button>
+
+  <form id="onboardForm" style="display:none;">
+    <label>What is this account for?</label>
+    <div class="radio-row">
+      <label><input type="radio" name="tenantType" value="individual" checked /> My own learning</label>
+      <label><input type="radio" name="tenantType" value="family" /> My family</label>
+      <label><input type="radio" name="tenantType" value="tuition_provider" /> A madrasah / tuition group</label>
+    </div>
+
+    <label for="name">Your name</label>
+    <input id="name" type="text" required maxlength="80" />
+
+    <label for="weekStartsOn">Week starts on</label>
+    <select id="weekStartsOn">
+      <option value="0">Sunday</option>
+      <option value="1">Monday</option>
+      <option value="6" selected>Saturday</option>
+    </select>
+
+    <label for="maxInvites">How many people can you invite?</label>
+    <input id="maxInvites" type="number" min="0" max="500" value="20" />
+
+    <button id="createBtn" type="submit">Create</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider,
+      signInWithPopup,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { createTenantWithOwner, upsertUserIndex } from "./js/identity.js";
+    import { safeWrite } from "./js/errors.js";
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const form = document.getElementById("onboardForm");
+    const createBtn = document.getElementById("createBtn");
+    const resultEl = document.getElementById("result");
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = `Sign-in failed: ${err.message}`;
+      });
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        whoEl.textContent = `Signed in as ${user.email}`;
+        signInBtn.style.display = "none";
+        form.style.display = "block";
+      } else {
+        whoEl.textContent = "Not signed in.";
+        signInBtn.style.display = "inline-block";
+        form.style.display = "none";
+      }
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      createBtn.disabled = true;
+      createBtn.textContent = "Creating…";
+      resultEl.style.display = "none";
+
+      const uid = auth.currentUser.uid;
+      const tenantType = form.querySelector('input[name="tenantType"]:checked').value;
+      const name = document.getElementById("name").value.trim();
+      const weekStartsOn = Number(document.getElementById("weekStartsOn").value);
+      const maxInvites = Number(document.getElementById("maxInvites").value);
+
+      const outcome = await safeWrite(
+        () => createTenantWithOwner(db, { tenantType, name, uid, weekStartsOn, maxInvites }),
+        { collection: "tenants", action: "onboarding" }
+      );
+
+      resultEl.style.display = "block";
+      if (outcome.ok) {
+        const { tenantId, personId } = outcome.result;
+        // userIndex is best-effort (derived/rebuildable) -- doesn't block
+        // showing success even if this second step fails.
+        await upsertUserIndex(db, uid, { addTenantId: tenantId, makeDefault: true }).catch(() => {});
+        resultEl.className = "ok";
+        resultEl.innerHTML = `Account created.<br>Account ID: <code>${tenantId}</code><br>Your person ID: <code>${personId}</code><br>Write these down. Now run the self-check screen again to confirm everything is reachable.`;
+      } else {
+        resultEl.className = "fail";
+        resultEl.textContent = outcome.entry.message;
+      }
+
+      createBtn.disabled = false;
+      createBtn.textContent = "Create";
+    });
+  </script>
+</body>
+</html>
