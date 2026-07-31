@@ -33,6 +33,35 @@ import { TENANT } from "./collections.js";
 import { createDocument, commitEnvelopeBatch, updateDocument } from "./envelope.js";
 import { SUBJECT_TEMPLATES, APPROACH_TEMPLATES } from "./catalogue-data.js";
 
+/**
+ * Orders a flat {id, parentId, order} list for DISPLAY as a tree: top-level
+ * nodes first (by their own order), each immediately followed by its
+ * children (by their order), recursively. `order` is only ever a sibling
+ * rank -- every group of children restarts at 1 -- so sorting the flat list
+ * by `order` alone (as getSubjectTree used to) interleaves unrelated
+ * branches that happen to share a rank, e.g. Agro-Farming (order 2, a
+ * child of Nature-Life) floating up next to Quran (order 1, top-level).
+ */
+export function orderForDisplay(nodes) {
+  const byParent = new Map();
+  for (const n of nodes) {
+    const key = n.parentId ?? null;
+    if (!byParent.has(key)) byParent.set(key, []);
+    byParent.get(key).push(n);
+  }
+  for (const list of byParent.values()) list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  const out = [];
+  function visit(parentId) {
+    for (const n of byParent.get(parentId) ?? []) {
+      out.push(n);
+      visit(n.id);
+    }
+  }
+  visit(null);
+  return out;
+}
+
 /** Given a flat {id, parentId} list, returns Map(id -> ancestorIds[] from top to nearest parent). */
 export function computeAncestorIds(nodes) {
   const byId = new Map(nodes.map((n) => [n.id, n]));
@@ -177,9 +206,8 @@ export async function ensureTenantCatalogueSeeded(db, tenantId, uid) {
 export async function getSubjectTree(db, tenantId) {
   const q = query(collection(db, TENANT.SUBJECTS), where("tenantId", "==", tenantId));
   const snap = await getDocs(q);
-  return snap.docs
-    .map((d) => ({ id: d.id.replace(`${tenantId}__`, ""), ...d.data() }))
-    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const nodes = snap.docs.map((d) => ({ id: d.id.replace(`${tenantId}__`, ""), ...d.data() }));
+  return orderForDisplay(nodes);
 }
 
 export async function getTrackables(db, tenantId) {
