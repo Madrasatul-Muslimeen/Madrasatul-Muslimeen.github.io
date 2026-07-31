@@ -32,6 +32,19 @@
   <button id="signInBtn">Sign in with Google</button>
 
   <div id="app" style="display:none;">
+    <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem; font-size:0.9rem;">
+      <label style="margin:0;">Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label id="viewAsWrap" style="margin:0; display:none;">View as
+        <select id="viewAsSelect" style="width:auto;">
+          <option value="">(your real role)</option>
+          <option value="teacher">Teacher</option>
+          <option value="student">Student</option>
+        </select>
+      </label>
+    </div>
+
     <table id="rosterTable">
       <thead><tr><th>Name</th><th>Roles</th><th>Managed by</th></tr></thead>
       <tbody id="rosterBody"></tbody>
@@ -107,6 +120,13 @@
     import { createInvite, listInvitesForTenant, getTokenForPendingInvite } from "./js/invites.js";
     import { langText } from "./js/lang.js";
     import { safeWrite } from "./js/errors.js";
+    import {
+      getMyMemberships,
+      initializeActiveContext,
+      getActiveContext,
+      setActiveContext,
+      canUseViewAs,
+    } from "./js/session-context.js";
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
@@ -122,9 +142,13 @@
     const inviteBtn = document.getElementById("inviteBtn");
     const inviteResultEl = document.getElementById("inviteResult");
     const inviteBody = document.getElementById("inviteBody");
+    const tenantSelect = document.getElementById("tenantSelect");
+    const viewAsWrap = document.getElementById("viewAsWrap");
+    const viewAsSelect = document.getElementById("viewAsSelect");
 
     let activeTenantId = null;
     let roster = [];
+    let myMemberships = [];
 
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
@@ -198,16 +222,48 @@
       signInBtn.style.display = "none";
 
       const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
-      activeTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+      const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-      if (!activeTenantId) {
+      const context = await initializeActiveContext(db, user.uid, defaultTenantId);
+      if (!context) {
         whoEl.textContent += " — no account found yet. Create one on onboarding.html first.";
         return;
       }
+      activeTenantId = context.tenantId;
+
+      myMemberships = await getMyMemberships(db, user.uid);
+      tenantSelect.innerHTML = myMemberships
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+        .join("");
+
+      const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      const showViewAs = activeMembership && canUseViewAs(activeMembership.roles);
+      viewAsWrap.style.display = showViewAs ? "inline-block" : "none";
+      viewAsSelect.value = context.viewAsRole ?? "";
 
       appEl.style.display = "block";
       await loadRoster();
       await loadInvites();
+    });
+
+    tenantSelect.addEventListener("change", () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      viewAsWrap.style.display = canUseViewAs(chosen.roles) ? "inline-block" : "none";
+      viewAsSelect.value = "";
+      loadRoster();
+      loadInvites();
+    });
+
+    viewAsSelect.addEventListener("change", () => {
+      const context = getActiveContext();
+      if (!context) return;
+      setActiveContext({ ...context, viewAsRole: viewAsSelect.value || null });
+      // Stage 7 only wires the control itself -- later phases' screens are
+      // what actually read viewAsRole from getActiveContext() to change
+      // what they render. Nothing on this page changes yet.
     });
 
     addBtn.addEventListener("click", async () => {
