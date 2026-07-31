@@ -71,6 +71,24 @@ export async function listInvitesForTenant(db, tenantId) {
 }
 
 /**
+ * Looks up the link token for a still-pending invite, any time -- not just
+ * in the browser session it was created in. Tenant admins can list
+ * inviteTokens scoped to their own tenant (see firestore.rules), so a lost
+ * link is always recoverable, not just a one-time reveal. Returns null if
+ * no token is on file for that email (shouldn't happen for a genuinely
+ * pending invite, but handled defensively).
+ */
+export async function getTokenForPendingInvite(db, tenantId, email) {
+  const q = query(
+    collection(db, TENANT.INVITE_TOKENS),
+    where("tenantId", "==", tenantId),
+    where("email", "==", email.toLowerCase())
+  );
+  const snap = await getDocs(q);
+  return snap.empty ? null : snap.docs[0].id; // the token IS the document id
+}
+
+/**
  * Reads ONLY the token->{tenantId, email} mapping. Deliberately the one
  * step that works before signing in at all (inviteTokens' get rule is
  * unconditional -- see the plan notes on why). Use this to tell someone

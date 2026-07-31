@@ -104,7 +104,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { addPersonToTenant } from "./js/people.js";
-    import { createInvite, listInvitesForTenant } from "./js/invites.js";
+    import { createInvite, listInvitesForTenant, getTokenForPendingInvite } from "./js/invites.js";
     import { langText } from "./js/lang.js";
     import { safeWrite } from "./js/errors.js";
 
@@ -156,34 +156,33 @@
         .join("");
     }
 
-    // Invite documents deliberately don't store their own link token (the
-    // token lives only in inviteTokens, one-way, so a leaked invite list
-    // can't be turned back into working links). The link is only known at
-    // the moment an invite is created, so it's cached here for the rest of
-    // this browser session -- reloading the page loses it, same as if you
-    // navigated away before copying it. That's a real limitation of this
-    // stage, not an oversight: a "resend/new link" feature is future work.
-    const linksThisSession = {};
-
+    // The invite link's token is looked up fresh each time (via
+    // getTokenForPendingInvite -- tenant admins can look up any of their
+    // own tenant's still-pending invite tokens, any time, not just in the
+    // browser session an invite was created in). Fetched on click rather
+    // than for every row up front, to avoid an extra read per invite on
+    // every page load.
     async function loadInvites() {
       const invites = await listInvitesForTenant(db, activeTenantId);
       inviteBody.innerHTML = "";
       for (const inv of invites) {
-        const link = linksThisSession[inv.email];
-        const linkCell =
-          inv.status === "pending" && link
-            ? `<button data-copy="${link}" class="copyBtn">Copy link</button>`
-            : inv.status === "pending"
-            ? "created earlier — link no longer shown"
-            : "—";
+        const linkCell = inv.status === "pending" ? `<button data-email="${inv.email}" class="getLinkBtn">Copy link</button>` : "—";
         const tr = document.createElement("tr");
         tr.innerHTML = `<td>${inv.email}</td><td>${inv.role}</td><td>${inv.status}</td><td>${linkCell}</td>`;
         inviteBody.appendChild(tr);
       }
-      inviteBody.querySelectorAll(".copyBtn").forEach((btn) => {
-        btn.addEventListener("click", () => {
-          navigator.clipboard.writeText(btn.dataset.copy);
+      inviteBody.querySelectorAll(".getLinkBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          const token = await getTokenForPendingInvite(db, activeTenantId, btn.dataset.email);
+          if (!token) {
+            btn.textContent = "Link not found";
+            return;
+          }
+          const link = new URL(`accept-invite.html?token=${token}`, location.href).href;
+          await navigator.clipboard.writeText(link);
           btn.textContent = "Copied!";
+          btn.disabled = false;
         });
       });
     }
@@ -262,9 +261,7 @@
       );
 
       if (outcome.ok) {
-        const link = new URL(`accept-invite.html?token=${outcome.result.token}`, location.href).href;
-        linksThisSession[email.toLowerCase()] = link;
-        inviteResultEl.textContent = "Invite created.";
+        inviteResultEl.textContent = "Invite created — click \"Copy link\" below to get it.";
         inviteEmailEl.value = "";
         await loadInvites();
       } else {
