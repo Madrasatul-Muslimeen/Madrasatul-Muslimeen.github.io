@@ -7,13 +7,15 @@ Read alongside `CLAUDE.md`.
 
 ## Position
 
-**Phase 2 built — all 7 features (F-021..F-027) in place, deployed, not yet
+**Phase 2 complete — all 9 features (F-021..F-029) built, deployed, and
 owner-verified.** `QuranRevival_Subject_Catalogue_v3.md` was approved as-is
 at the start of this phase (D11 in CLAUDE.md) and is now the live content:
 7 modules, a 41-node subject tree (6 top-level, 10 grouping, 31 studiable
 subjects), and the 30 Approaches across their 7 sections, all seeded from
 one platform master list into any tenant that opens the new catalogue
-screen.
+screen. The owner ran it for real (tenant "Ahsan", owner role), found two
+real bugs and asked for two real gaps to be closed — all fixed and built,
+see below.
 
 `app/` now has, beyond Phase 1's files: `catalogue.html`, and
 `js/catalogue-data.js`, `js/catalogue.js`, `js/modules.js`. `firestore.rules`
@@ -73,6 +75,46 @@ verify all of it against the caller's real tenant.
   every one, all 30 Approaches are present across all 7 sections, and a
   real write to your own tenant's `subjects/quran` row succeeds only if
   you hold owner or prime (an *expected block* otherwise, not a failure).
+- **Subject re-parenting** (F-028) — the Edit control on a subject now
+  changes its "Level (parent)" as well as its name. This isn't a single
+  -field edit: moving a node recomputes `ancestorIds` for it and every
+  descendant (I12 -- a stale chain silently breaks roll-ups), and flips the
+  old/new parent's `isTrackable` if the move changes whether either still
+  has children. Refuses a move that would nest a node under its own child;
+  the parent-picker also never offers an invalid target in the first place.
+- **Archive/Restore** (F-029) — the owner asked for delete; I4/D6 are
+  explicit and binding ("nothing is ever deleted... no client-side delete
+  anywhere") so this became a reversible status flip instead, confirmed
+  with the owner as the right substitute. Archive/Restore now sits next to
+  Edit on subjects, Approaches, ladders, and each individual level; each
+  table has a "Show archived" toggle, off by default. Archived subjects
+  drop out of parent-picker dropdowns so nothing new gets filed under a
+  retired branch.
+
+## Real bugs found and fixed along the way
+
+Same discipline as Phase 1: caught by the owner actually running it against
+production, not by review.
+
+1. **Seed batch hit Firestore's rules-evaluation ceiling, not the write
+   limit.** The first `catalogue.html` visit seeds 41 subjects + 30
+   trackables in one batch. That's nowhere near the 500-write batch limit,
+   but Firestore separately caps the total `get()`/`exists()` calls a
+   single transaction or batched write may spend evaluating security rules
+   at 20 -- shared across the *whole* commit. Every one of those 71 creates
+   needs an owner/prime lookup (`get()`+`exists()` on `tenantMemberUids`),
+   so one batch blew straight through that ceiling and Firestore denied the
+   entire commit with a bare `permission-denied`. Fixed by chunking the
+   seed into small batched commits (5 docs each) and making the seed diff
+   against what's actually already in the tenant, so a partial run repairs
+   itself on the next visit instead of silently appearing "done."
+2. **Subject tree displayed out of order.** `getSubjectTree` sorted the
+   whole flat 41-node list by `order` globally, but `order` is only ever a
+   per-sibling rank (each group of children restarts at 1) -- so unrelated
+   branches sharing a rank interleaved instead of nesting, and Agro-Farming
+   visually floated up next to Quran. The `parentId`/`ancestorIds` data was
+   always correct; only the display order was wrong. Fixed with a proper
+   depth-first walk (`orderForDisplay`).
 
 ## One design decision made without stopping to ask, flagged for review
 
@@ -87,33 +129,16 @@ recorded as part of D11 in CLAUDE.md. If the real intent was a genuinely
 shared QuranRevival/Deen node, it's a one-field data fix, not a rebuild —
 just say so.
 
-## What the owner should check
+## Owner verification — done
 
-Everything below needs a real Google sign-in, which only you can do. Start
-`Start Local Test Server.bat` first if it isn't already running.
-
-1. **Open `catalogue.html` before self-check, not after** — self-check only
-   reads what's already there, it doesn't create anything. Go to
-   `http://localhost:8080/app/catalogue.html`, sign in. It should auto-seed
-   your tenant's catalogue on first load (a one-line green status message),
-   then show 7 modules, the full subject tree, and the 30 Approaches
-   grouped into 7 sections. Click **Guide** on a couple of Approaches — is
-   the wording good enough to ship, or does anything read wrong?
-2. *Then* open `admin-self-check.html`, sign in, tap **Run self-check**.
-   Expect all-green except a few *deliberately blocked* rows (platformAdmin
-   self-grant, `rooms`, and the catalogue write-access row unless you're
-   owner/prime in your active tenant) — those say "Correctly blocked, as
-   designed" / "Blocked (expected)" and need no action. The "N write
-   failures logged this session" note at the bottom counts those expected
-   blocks too — it's not a sign anything is actually wrong.
-3. If you're owner/prime: on `catalogue.html`, try renaming one subject and
-   one Approach (Edit button), and add one custom subject and one
-   ladder+level. If you're only a teacher/guardian/student in your active
-   tenant, confirm you see the same screen but with no Edit buttons and a
-   note explaining why.
+Confirmed working end-to-end against production by the owner (tenant
+"Ahsan", owner role): catalogue seeds cleanly, self-check all-green except
+the deliberately-blocked rows, subject tree displays correctly nested,
+rename + re-parent + Archive/Restore all exercised successfully.
 
 ## Next
 
-Ready to start Phase 3 (Tracking core — records, activity, the 6 statuses,
-confirmation) whenever you'd like, once the above is checked — or pause
-here.
+**Phase 2 is closed.** Ready to start Phase 3 (Tracking core — records
+chunked per surah/subject, activity per week, the 6 statuses, Not-
+Applicable exclusion, unit keys incl. hizb/rub/manzil, domainIds,
+confirmation + bulk confirm + return) whenever you'd like.

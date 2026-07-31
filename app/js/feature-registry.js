@@ -41,8 +41,10 @@ export const FEATURES = Object.freeze([
   { id: "F-017", phase: 1, name: "Self-check extended for Layer 0", status: "built" },
 
   // Phase 2 — Catalogue. Reserved as a 12-ID range (F-021..F-032) before
-  // planning; turned out to need 7 concrete features. F-028..F-032 are
-  // simply unused, same as F-018..F-020 in Phase 1 -- not a gap.
+  // planning; turned out to need 9 concrete features -- 7 from the initial
+  // build plus 2 the owner asked for while verifying it (re-parenting and
+  // archive). F-030..F-032 are simply unused, same as F-018..F-020 in
+  // Phase 1 -- not a gap.
   { id: "F-021", phase: 2, name: "Module registry (platform-wide, 7 modules)", status: "built" },
   { id: "F-022", phase: 2, name: "Subject tree + ancestorIds + subjectTemplates (platform master list)", status: "built" },
   { id: "F-023", phase: 2, name: "Subject copy-on-write (tenant seeding from templates, edited flag)", status: "built" },
@@ -50,6 +52,8 @@ export const FEATURES = Object.freeze([
   { id: "F-025", phase: 2, name: "Ladders + levels (schema + tenant-authored CRUD)", status: "built" },
   { id: "F-026", phase: 2, name: "Catalogue admin screen (catalogue.html) + Layer 1 security rules", status: "built" },
   { id: "F-027", phase: 2, name: "Self-check extended for Layer 1", status: "built" },
+  { id: "F-028", phase: 2, name: "Subject re-parenting (move a node's level, cascades ancestorIds)", status: "built" },
+  { id: "F-029", phase: 2, name: "Archive/Restore for subjects, trackables, ladders, levels (I4/D6 stand-in for delete)", status: "built" },
 ]);
 
 // Phase-level reservations for everything not yet broken down individually.
