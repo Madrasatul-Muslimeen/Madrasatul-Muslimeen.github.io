@@ -228,7 +228,7 @@
         try {
           return await fn();
         } catch (err) {
-          err.stepName = name;
+          err.stepName = err.stepName ?? name; // keep a more specific inner tag if one was already set
           throw err;
         }
       }

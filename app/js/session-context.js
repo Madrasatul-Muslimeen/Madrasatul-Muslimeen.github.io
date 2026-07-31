@@ -38,13 +38,25 @@ export function clearActiveContext() {
 
 /** Every tenant this login belongs to, with the roles held in each and that tenant's display name. */
 export async function getMyMemberships(db, uid) {
-  const q = query(collection(db, TENANT.TENANT_MEMBER_UIDS), where("uid", "==", uid));
-  const snap = await getDocs(q);
+  let snap;
+  try {
+    const q = query(collection(db, TENANT.TENANT_MEMBER_UIDS), where("uid", "==", uid));
+    snap = await getDocs(q);
+  } catch (err) {
+    err.stepName = "query tenantMemberUids by uid";
+    throw err;
+  }
   const memberships = snap.docs.map((d) => d.data()); // { tenantId, uid, personId, roles }
 
   return Promise.all(
     memberships.map(async (m) => {
-      const tenantSnap = await getDoc(doc(db, TENANT.TENANTS, m.tenantId));
+      let tenantSnap;
+      try {
+        tenantSnap = await getDoc(doc(db, TENANT.TENANTS, m.tenantId));
+      } catch (err) {
+        err.stepName = `read tenants/${m.tenantId}`;
+        throw err;
+      }
       return {
         tenantId: m.tenantId,
         personId: m.personId,
