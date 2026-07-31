@@ -87,6 +87,17 @@ export async function createTenantWithOwner(db, { tenantType, name, uid, weekSta
         legacy: { teacherId: null, ownerUid: null },
       },
     },
+  ];
+
+  // Two sequential commits, not one: the membership/tenantMemberUids rules
+  // below need to read the tenant and person records back with get() to
+  // confirm the caller is entitled to bootstrap them, and a security rule
+  // evaluating one write in a batch cannot see another write from the SAME
+  // batch -- only what's already truly committed. So step one lands first,
+  // and only once it's confirmed do the role rows get created.
+  await commitEnvelopeBatch(db, { creates }, uid);
+
+  const roleCreates = [
     ...roles.map((role) => ({
       collectionName: TENANT.MEMBERSHIPS,
       docId: `${tenantId}__${personId}__${role}`,
@@ -98,8 +109,8 @@ export async function createTenantWithOwner(db, { tenantType, name, uid, weekSta
       data: { tenantId, uid, personId, roles },
     },
   ];
+  await commitEnvelopeBatch(db, { creates: roleCreates }, uid);
 
-  await commitEnvelopeBatch(db, { creates }, uid);
   return { tenantId, personId };
 }
 

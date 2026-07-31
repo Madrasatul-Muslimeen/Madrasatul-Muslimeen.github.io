@@ -406,6 +406,18 @@ service cloud.firestore {
       allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) == resource.data.personId;
 
       allow create: if idMatches() && canAdminIdentity(request.resource.data.tenantId);
+      // Bootstrap (Stage 3, second write of a two-step commit): the very
+      // first membership row a brand-new tenant ever gets. canAdminIdentity()
+      // can't be used here — it depends on tenantMemberUids, which doesn't
+      // exist until this same step finishes. Instead this checks the two
+      // documents created in the FIRST step (tenants, tenantPeople), which
+      // by now are genuinely committed: only the person who created this
+      // exact tenant, naming their own person record, can grant themselves
+      // owner/self this way -- and only those two roles, never any other.
+      allow create: if idMatches()
+                    && (request.resource.data.role == 'owner' || request.resource.data.role == 'self')
+                    && get(/databases/$(database)/documents/tenants/$(idParts()[0])).data.createdByUid == myUid()
+                    && get(/databases/$(database)/documents/tenantPeople/$(idParts()[1])).data.authUid == myUid();
       // Invite acceptance (Stage 6, second write): the tenantPeople doc
       // must already exist and belong to the caller, and a matching
       // pending invite must exist.
