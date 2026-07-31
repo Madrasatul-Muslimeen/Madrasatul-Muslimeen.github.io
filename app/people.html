@@ -202,18 +202,19 @@
     }
 
     function renderStudyLockState() {
+      // The dropdown and "Start studying" button stay enabled even while
+      // locked -- on purpose. The lock is enforced when you actually TRY to
+      // switch (the button's click handler below), not by hiding the
+      // controls, otherwise there'd be no way to even attempt (and see
+      // refused) a switch to a different child.
       const lock = getStudyLock();
       if (lock) {
         const person = roster.find((p) => p.id === lock.personId);
-        studyResultEl.textContent = `Currently studying as: ${langText(person?.name, "en", lock.personId)}`;
-        startStudyBtn.style.display = "none";
+        studyResultEl.textContent = `Currently studying as: ${langText(person?.name, "en", lock.personId)}. Pick someone else and click "Start studying" to see the block, or "End session" to release it.`;
         endStudyBtn.style.display = "inline-block";
-        studyPersonSelect.disabled = true;
       } else {
         studyResultEl.textContent = "";
-        startStudyBtn.style.display = "inline-block";
         endStudyBtn.style.display = "none";
-        studyPersonSelect.disabled = false;
       }
     }
 
