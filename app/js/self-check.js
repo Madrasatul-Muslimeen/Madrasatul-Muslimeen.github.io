@@ -13,8 +13,9 @@ import {
   waitForPendingWrites,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { LEGACY, TENANT } from "./collections.js";
-import { createDocument } from "./envelope.js";
+import { updateDocument } from "./envelope.js";
 import { safeWrite, getSessionErrorBuffer } from "./errors.js";
+import { getMyMemberships } from "./session-context.js";
 
 const TEST_MARKER_ID = "_selfCheckTest";
 
@@ -127,25 +128,70 @@ export async function runSelfCheck(db, uid) {
     message: "Not write-tested on purpose — a test write would create a real stray invite or teacher record.",
   });
 
-  // 3. New-generation (TENANT) collections — rules for these (F-003) haven't
-  //    been published yet, so a permission-denied here is the EXPECTED
-  //    result right now, not a health problem. Only one representative
-  //    collection is probed: all 26 would fail identically for the same
-  //    documented reason, so testing all of them adds noise, not information.
+  // 3. New-generation (TENANT / Layer 0) collections — real checks against
+  //    the caller's own actual tenant, not a synthetic test tenant. A fake
+  //    tenant would only be creatable once (the second self-check run
+  //    would hit it as an update, which the caller has no membership to
+  //    authorize) -- merging a harmless marker field into real, already-
+  //    owned records is both a truer test and safely repeatable, same
+  //    pattern as the legacy probes above.
+  const memberships = await getMyMemberships(db, uid);
+  if (memberships.length === 0) {
+    results.push({
+      label: "tenants / tenantPeople / memberships (Layer 0)",
+      status: "skipped",
+      message: "You haven't created an account yet (onboarding.html) — nothing to check here until you do.",
+    });
+  } else {
+    const { tenantId, personId, roles } = memberships[0];
+
+    const tenantOutcome = await safeWrite(
+      () => updateDocument(db, TENANT.TENANTS, tenantId, markerField()),
+      { collection: TENANT.TENANTS, docId: tenantId }
+    );
+    results.push({
+      label: "tenants (your real account)",
+      status: tenantOutcome.ok ? "ok" : "fail",
+      message: tenantOutcome.ok ? "Reachable, test write succeeded." : tenantOutcome.entry.message,
+    });
+
+    const personOutcome = await safeWrite(
+      () => updateDocument(db, TENANT.TENANT_PEOPLE, personId, markerField()),
+      { collection: TENANT.TENANT_PEOPLE, docId: personId }
+    );
+    results.push({
+      label: "tenantPeople (your own person record)",
+      status: personOutcome.ok ? "ok" : "fail",
+      message: personOutcome.ok ? "Reachable, test write succeeded." : personOutcome.entry.message,
+    });
+
+    const membershipId = `${tenantId}__${personId}__${roles[0]}`;
+    const membershipOutcome = await safeWrite(
+      () => updateDocument(db, TENANT.MEMBERSHIPS, membershipId, markerField()),
+      { collection: TENANT.MEMBERSHIPS, docId: membershipId }
+    );
+    results.push({
+      label: `memberships (your ${roles[0]} role)`,
+      status: membershipOutcome.ok ? "ok" : "fail",
+      message: membershipOutcome.ok ? "Reachable, test write succeeded." : membershipOutcome.entry.message,
+    });
+  }
+
+  // I10 negative test: trying to grant yourself platformAdmin must ALWAYS
+  // be refused. This is the single most convincing proof-of-safety on this
+  // whole screen -- if this ever shows "ok" (succeeded), that is a real,
+  // urgent security problem, not a self-check failure to shrug off.
   {
     const outcome = await safeWrite(
-      () => createDocument(db, TENANT.TENANTS, TEST_MARKER_ID, { note: "self-check probe" }, uid),
-      { collection: TENANT.TENANTS, docId: TEST_MARKER_ID }
+      () => updateDocument(db, TENANT.USER_INDEX, uid, { platformAdmin: true }),
+      { collection: TENANT.USER_INDEX, docId: uid }
     );
-    const blockedAsExpected = !outcome.ok && outcome.entry.code === "permission-denied";
     results.push({
-      label: "tenants (new-generation, representative probe)",
-      status: outcome.ok ? "ok" : blockedAsExpected ? "expected-block" : "fail",
+      label: "Cannot self-grant platformAdmin (I10)",
+      status: outcome.ok ? "fail" : "expected-block",
       message: outcome.ok
-        ? "Reachable and writable — F-003 rules must already be published."
-        : blockedAsExpected
-        ? "Blocked as expected — F-003 (rules for new collections) hasn't been published yet."
-        : outcome.entry.message,
+        ? "URGENT: this succeeded. Your account may now incorrectly have platform-admin access — tell the admin immediately, this needs fixing in the Firebase console."
+        : "Correctly blocked, as designed. Nothing to act on.",
     });
   }
 

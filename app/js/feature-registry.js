@@ -5,32 +5,46 @@
 // never "done" in words only -- if it isn't in here as built, the app will
 // say so.
 //
-// Phase 0 features are listed individually below, with real status, because
-// QuranRevival_Complete_Architecture.html and CLAUDE.md name each one.
-// Phases 1-14 are reserved at the ID-range level only: the source document
-// describes what each of those phases delivers as a whole, not a per-ID
-// breakdown yet. Inventing individual F-009...F-175 descriptions now would
-// be guessing, not reading the architecture -- each phase gets broken down
-// into real, individually named features when that phase is actually
-// planned (CLAUDE.md: "one phase at a time").
+// Phase 0 and Phase 1 features are listed individually below, with real
+// status, since both have actually been planned and built. Phases 2-14 are
+// still reserved at the ID-range level only: the source document describes
+// what each of those phases delivers as a whole, not a per-ID breakdown
+// yet. Inventing individual feature descriptions now would be guessing,
+// not reading the architecture -- each phase gets broken down into real,
+// individually named features when that phase is actually planned
+// (CLAUDE.md: "one phase at a time").
 
 export const FEATURES = Object.freeze([
   { id: "F-001", phase: 0, name: "Firebase bootstrap", status: "built" },
   { id: "F-002", phase: 0, name: "Collection map", status: "built" },
-  { id: "F-003", phase: 0, name: "Merged security rules (both generations)", status: "planned" },
+  { id: "F-003", phase: 0, name: "Merged security rules (both generations)", status: "built" },
   { id: "F-004", phase: 0, name: "Document envelope", status: "built" },
   { id: "F-005", phase: 0, name: "Language-key helpers", status: "built" },
   { id: "F-006", phase: 0, name: "Feature registry", status: "built" },
   { id: "F-007", phase: 0, name: "Write-failure surface", status: "built" },
   { id: "F-008", phase: 0, name: "Admin self-check screen", status: "built" },
+
+  // Phase 1 — Identity & access. Originally estimated as a 12-ID range
+  // (F-009..F-020) before this phase was actually planned in detail; it
+  // turned out to need 9 concrete features, not 12 ("managed accounts"
+  // folded into F-012 rather than needing its own). F-018..F-020 are
+  // simply unused, not a gap -- a phase consuming fewer IDs than first
+  // guessed isn't a discrepancy to fix.
+  { id: "F-009", phase: 1, name: "Batched envelope writes", status: "built" },
+  { id: "F-010", phase: 1, name: "Identity module (tenant + owner bootstrap)", status: "built" },
+  { id: "F-011", phase: 1, name: "Onboarding screen + Layer-0 security rules", status: "built" },
+  { id: "F-012", phase: 1, name: "Owner adds people (incl. managed/child accounts)", status: "built" },
+  { id: "F-013", phase: 1, name: "Invites with quota", status: "built" },
+  { id: "F-014", phase: 1, name: "Invite acceptance", status: "built" },
+  { id: "F-015", phase: 1, name: "Tenant/role switcher + View as", status: "built" },
+  { id: "F-016", phase: 1, name: "Study Mode handover lock", status: "built" },
+  { id: "F-017", phase: 1, name: "Self-check extended for Layer 0", status: "built" },
 ]);
 
 // Phase-level reservations for everything not yet broken down individually.
 // idRange is inclusive. "delivers" is copied verbatim from the Architecture
 // doc's Build Phases table (section s7) -- not summarized or reinterpreted.
 export const PHASE_RESERVATIONS = Object.freeze([
-  { phase: 1, name: "Identity & access", idRange: [9, 20], status: "planned",
-    delivers: "tenants, people, memberships, userIndex, invites with quota, role switching, tenant switcher, View as, managed accounts, Study Mode handover lock" },
   { phase: 2, name: "Catalogue", idRange: [21, 32], status: "planned",
     delivers: "Module registry, subject tree with ancestors, templates + copy-on-write, 30 approaches as trackables in 7 sections, Guide tab fields, ladders and levels" },
   { phase: 3, name: "Tracking core", idRange: [33, 46], status: "planned",
