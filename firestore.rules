@@ -457,8 +457,20 @@ service cloud.firestore {
     // tenantMemberUids/{tenantId}__{uid} — rules-support mirror. Never
     // shown in any UI. See helper block comment above.
     match /tenantMemberUids/{tenantUidKey} {
-      allow read: if isPlatformAdmin();
-      allow read: if signedIn() && tenantUidKey == (resource.data.tenantId + '__' + myUid());
+      // Split into get/list on purpose. Firestore can only allow a LIST
+      // (query) request if it can prove, from the query's own filters
+      // alone, that every possible result satisfies the rule -- it will
+      // not reason about how the app constructs a document id. The get
+      // rule below (tenantUidKey reconstruction) is exactly right for
+      // fetching ONE known document, but as a list rule it made Firestore
+      // deny the whole query outright, since resource.data.tenantId isn't
+      // constrained by the query itself. The list rule instead mirrors the
+      // query's own filter directly (where uid == myUid()), which
+      // Firestore CAN verify -- the standard "list your own docs" pattern.
+      allow get: if isPlatformAdmin();
+      allow get: if signedIn() && tenantUidKey == (resource.data.tenantId + '__' + myUid());
+      allow list: if isPlatformAdmin();
+      allow list: if signedIn() && resource.data.uid == myUid();
 
       allow create: if canAdminIdentity(request.resource.data.tenantId);
       allow create: if isPlatformAdmin();
