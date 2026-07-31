@@ -25,7 +25,6 @@
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
   query,
   where,
@@ -85,10 +84,21 @@ export async function ensureSubjectTemplatesSeeded(db, uid) {
 // Per-tenant subjects + trackables -- copy-on-write from the platform lists.
 // ---------------------------------------------------------------------------
 
-/** True once this tenant has its own catalogue copy (checked via the one always-present node, "quran"). */
-export async function tenantCatalogueSeeded(db, tenantId) {
-  const snap = await getDoc(doc(db, TENANT.SUBJECTS, `${tenantId}__quran`));
-  return snap.exists();
+// Firestore caps the total get()/exists() calls a single transaction or
+// batched write may make evaluating security rules at 20 (vs. 10 for a
+// single-document request) -- NOT the same thing as the 500-write batch
+// size limit. canAdminCatalogue()/anyMemberOf() each call exists()+get()
+// on tenantMemberUids, and that rule runs once per document in the batch,
+// so one batch of all 71 rows blew straight through the 20-call ceiling
+// and Firestore denied the whole commit with a bare "permission-denied" --
+// nothing to do with roles or the rules' logic being wrong. Chunking to a
+// handful of documents per commit keeps each commit's total well under 20.
+const SEED_CHUNK_SIZE = 5;
+
+async function commitInChunks(db, creates, uid) {
+  for (let i = 0; i < creates.length; i += SEED_CHUNK_SIZE) {
+    await commitEnvelopeBatch(db, { creates: creates.slice(i, i + SEED_CHUNK_SIZE) }, uid);
+  }
 }
 
 /**
@@ -96,9 +106,25 @@ export async function tenantCatalogueSeeded(db, tenantId) {
  * tenant's own subjects/trackables rows, if not already done. Explicit
  * admin action (catalogue.html), not part of app startup (load-speed
  * contract: nothing beyond userIndex/enrolments/bookmarks after first paint).
+ *
+ * Diffs against what's already there (not just a single "quran exists?"
+ * flag) so a run that only got partway -- whether from the chunk-size bug
+ * above or a dropped connection -- repairs itself next time, the same
+ * "create only what's missing" shape as ensureModulesSeeded.
  */
 export async function ensureTenantCatalogueSeeded(db, tenantId, uid) {
-  if (await tenantCatalogueSeeded(db, tenantId)) return { seeded: false };
+  const [existingSubjects, existingTrackables] = await Promise.all([
+    getSubjectTree(db, tenantId),
+    getTrackables(db, tenantId),
+  ]);
+  const existingSubjectIds = new Set(existingSubjects.map((n) => n.id));
+  const existingTrackableIds = new Set(existingTrackables.map((t) => t.id));
+
+  const missingSubjects = SUBJECT_TEMPLATES.filter((n) => !existingSubjectIds.has(n.id));
+  const missingTrackables = APPROACH_TEMPLATES.filter((t) => !existingTrackableIds.has(t.id));
+  if (missingSubjects.length === 0 && missingTrackables.length === 0) {
+    return { seeded: false };
+  }
 
   const childCount = new Map();
   for (const n of SUBJECT_TEMPLATES) {
@@ -106,7 +132,7 @@ export async function ensureTenantCatalogueSeeded(db, tenantId, uid) {
   }
   const ancestorMap = computeAncestorIds(SUBJECT_TEMPLATES);
 
-  const subjectCreates = SUBJECT_TEMPLATES.map((n) => ({
+  const subjectCreates = missingSubjects.map((n) => ({
     collectionName: TENANT.SUBJECTS,
     docId: `${tenantId}__${n.id}`,
     data: {
@@ -124,7 +150,7 @@ export async function ensureTenantCatalogueSeeded(db, tenantId, uid) {
     },
   }));
 
-  const trackableCreates = APPROACH_TEMPLATES.map((t) => ({
+  const trackableCreates = missingTrackables.map((t) => ({
     collectionName: TENANT.TRACKABLES,
     docId: `${tenantId}__${t.id}`,
     data: {
@@ -143,10 +169,8 @@ export async function ensureTenantCatalogueSeeded(db, tenantId, uid) {
     },
   }));
 
-  // 41 subjects + 30 trackables = 71 creates, well under the 500-op batch
-  // limit -- one atomic commit, so a tenant's catalogue is never left
-  // half-seeded by a dropped connection partway through.
-  await commitEnvelopeBatch(db, { creates: [...subjectCreates, ...trackableCreates] }, uid);
+  await commitInChunks(db, subjectCreates, uid);
+  await commitInChunks(db, trackableCreates, uid);
   return { seeded: true, subjectCount: subjectCreates.length, trackableCount: trackableCreates.length };
 }
 
