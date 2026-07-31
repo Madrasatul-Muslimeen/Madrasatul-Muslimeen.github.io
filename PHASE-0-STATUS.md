@@ -7,8 +7,27 @@ Read alongside `CLAUDE.md`.
 
 ## Position
 
-Phase 0 **planned and signed off. Not yet built.** No new code written.
-The production `index.html` has not been touched.
+**Phase 0 built and owner-verified.** Seven of the eight deliverables
+(F-001, F-002, F-004, F-005, F-006, F-007, F-008) are built, live in the
+new `app/` folder, and confirmed working by the owner's own click-through of
+the F-008 self-check screen — signed in as themselves, in an Incognito
+window, against the real production database. All 14 checks passed or
+blocked exactly as expected; nothing failed.
+
+**F-003** (security rules for the new-generation collections) is the one
+deliverable still deferred — deliberately. Nothing writes real data into
+those collections yet, so there is nothing concrete to write permission
+rules against. Revisit at the start of Phase 1, when tenant data starts
+being written for real.
+
+The production `index.html` has not been touched anywhere in this process —
+everything new lives in `app/`, alongside it.
+
+**O1 partially resolved:** `monitorWeeks` is confirmed reachable and
+writable under the existing rules (self-check test write succeeded).
+`juzSummariesPage` likewise. Both were previously "unconfirmed, do not
+assume fixed" — now confirmed reachable. Whether they hold real data yet is
+still separate from whether they're reachable.
 
 Work completed this session was diagnosis plus two live fixes to the fallback
 app — both applied through the Firebase console, no code changes.
@@ -111,18 +130,23 @@ the owner; no export built yet.
 
 ---
 
-## Phase 0 deliverables — signed off, not built
+## Phase 0 deliverables — built, files in `app/`
 
-| ID | Deliverable |
-|---|---|
-| F-001 | Firebase bootstrap — modular SDK, auth and Firestore loaded in parallel, persistent cache |
-| F-002 | Collection map — every collection name as a constant in one place; no bare strings elsewhere |
-| F-003 | Merged security rules covering both generations |
-| F-004 | Document envelope — stamps `schemaVersion`, `createdAt`, `updatedAt`, `createdBy` on every write (I17). Nothing writes except through it |
-| F-005 | Language-key helpers — read with `bn` → `en` → key fallback; always write an object (I11) |
-| F-006 | Feature registry — F-001…F-175 as bundled data, each with phase and `built \| planned`. The About screen reads this same list |
-| F-007 | Write-failure surface — every failed write reaches the user in plain language plus a session error buffer (I15) |
-| F-008 | Admin self-check screen — one tap: collections reachable, test write to each, offline queue empty, no silent failures |
+| ID | Deliverable | Status |
+|---|---|---|
+| F-001 | Firebase bootstrap — modular SDK, auth and Firestore loaded in parallel, persistent cache | Built — `app/js/firebase-init.js` |
+| F-002 | Collection map — every collection name as a constant in one place; no bare strings elsewhere | Built — `app/js/collections.js` |
+| F-003 | Merged security rules covering both generations | **Deferred by design** — see below |
+| F-004 | Document envelope — stamps `schemaVersion`, `createdAt`, `updatedAt`, `createdBy` on every write (I17). Nothing writes except through it | Built — `app/js/envelope.js` |
+| F-005 | Language-key helpers — read with `bn` → `en` → key fallback; always write an object (I11) | Built — `app/js/lang.js` |
+| F-006 | Feature registry — F-001…F-175 as bundled data, each with phase and `built \| planned`. The About screen reads this same list | Built — `app/js/feature-registry.js`. F-001–F-008 named individually; F-009–F-175 reserved at phase level only (the Architecture doc doesn't specify finer detail yet) |
+| F-007 | Write-failure surface — every failed write reaches the user in plain language plus a session error buffer (I15) | Built — `app/js/errors.js` |
+| F-008 | Admin self-check screen — one tap: collections reachable, test write to each, offline queue empty, no silent failures | Built and **owner-verified** — `app/admin-self-check.html` + `app/js/self-check.js` |
+
+Also added, outside the F-numbered list: `app/index.html` (a small F-001
+connection-test page), `serve.js` and `Start Local Test Server.bat` (a local
+web address is required for Google sign-in to work at all — a plain
+double-clicked file is refused).
 
 **Deliberate deviation from the original plan:** the rules file published today
 covers the **live generation only**. Rules for the new-generation collections
@@ -139,8 +163,13 @@ faster. Nothing else joins the startup path without flagging it first.
 
 ## Next actions
 
-1. Confirm the published rules caused no regression — admin saves an ayah;
-   teacher sees students and the invite screen.
-2. Resolve O1 (`juzSummariesPage`, `monitorWeeks`).
-3. Investigate O2 (`rooms`) before Phase 0 build.
-4. Begin Phase 0 — F-001 first, F-008 early.
+1. ~~Confirm the published rules caused no regression.~~ Done — self-check
+   confirms admin read/write across every rule-guarded collection.
+2. ~~Resolve O1.~~ Done for reachability — `juzSummariesPage` and
+   `monitorWeeks` both confirmed reachable and writable.
+3. ~~Investigate O2 (`rooms`).~~ Confirmed still correctly locked; origin
+   still unknown, still deliberately left alone.
+4. ~~Begin Phase 0 — F-001 first, F-008 early.~~ Done, owner-verified.
+5. **Decide:** build F-003 now anyway (rules for collections nothing yet
+   writes to), or leave it deferred and move into Phase 1 (Identity &
+   access), which is what will actually start writing real tenant data.
