@@ -53,6 +53,17 @@ referenced in older instructions but were never supplied and do not exist.
 - **State the blast radius before writing code.**
 - **If a plan proves wrong mid-build, STOP and say so.** Do not build something
   known to be poor.
+- **No permission-asking for routine building/fixing work.** The owner has
+  said this repeatedly and explicitly: do not pause to ask before file
+  edits, git operations (add/commit/status/log/diff/init), running or
+  stopping the local test server, or any Firebase CLI action on the
+  `study-monitoring` project — including deploying `firestore.rules`. This
+  covers everything in this project's folder and everything on that
+  Firebase project. Just do it and report what was done afterward. The
+  only things that still need the owner's actual input are genuine
+  design/scope decisions — an architecture deviation, an ambiguous spec, a
+  real "which approach" choice — the kind of thing that needs their
+  opinion, not their permission.
 - **Be proactive.** Flag anything adjacent that is broken or risky rather than
   working around it silently.
 - **Report every time:** what was done, what is pending, what the owner should
