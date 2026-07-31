@@ -58,7 +58,7 @@
 
     <h2>Subject tree</h2>
     <table>
-      <thead><tr><th>Name</th><th>Gloss</th><th>Modules</th><th>Status</th><th id="subjActionsHead" style="display:none;">Edit</th></tr></thead>
+      <thead><tr><th>Name</th><th>Gloss</th><th>Modules</th><th>Level (parent)</th><th>Status</th><th id="subjActionsHead" style="display:none;">Edit</th></tr></thead>
       <tbody id="subjectsBody"></tbody>
     </table>
 
@@ -132,6 +132,7 @@
       getSubjectTree,
       getTrackables,
       editCatalogueNode,
+      reparentSubject,
       createLadder,
       createLevel,
       listLadders,
@@ -182,8 +183,50 @@
         .join("");
     }
 
+    let editingSubjectId = null;
+
+    // Options for a parent-picker, excluding the node itself and anything
+    // beneath it in the tree -- picking one of your own descendants as your
+    // new parent would create a cycle; reparentSubject() also refuses this
+    // server-side, but there's no reason to offer an invalid choice at all.
+    function parentOptionsHtml(selectedParentId, excludeId) {
+      const excludeIds = new Set(excludeId ? [excludeId] : []);
+      if (excludeId) {
+        for (const n of subjectTree) {
+          if ((n.ancestorIds ?? []).includes(excludeId)) excludeIds.add(n.id);
+        }
+      }
+      const options = subjectTree
+        .filter((n) => !excludeIds.has(n.id))
+        .map((n) => `<option value="${n.id}" ${n.id === selectedParentId ? "selected" : ""}>${"— ".repeat(depthOf(n))}${langText(n.name, "en", n.id)}</option>`)
+        .join("");
+      return `<option value="" ${!selectedParentId ? "selected" : ""}>(top level)</option>${options}`;
+    }
+
+    function parentDisplayName(node) {
+      if (!node.parentId) return "(top level)";
+      const parent = subjectTree.find((n) => n.id === node.parentId);
+      return parent ? langText(parent.name, "en", parent.id) : node.parentId;
+    }
+
     function subjectRowHtml(node) {
       const modules = (node.moduleIds ?? []).map((id) => `<span class="tag">${id}</span>`).join("");
+
+      if (canEdit && editingSubjectId === node.id) {
+        const escapedName = langText(node.name, "en", node.id).replace(/"/g, "&quot;");
+        return `<tr>
+          <td class="depth-${depthOf(node)}"><input type="text" class="editNameInput" value="${escapedName}" /></td>
+          <td>${node.gloss ? langText(node.gloss, "en", "") : ""}</td>
+          <td>${modules}</td>
+          <td><select class="editParentSelect">${parentOptionsHtml(node.parentId, node.id)}</select></td>
+          <td>${node.status}</td>
+          <td>
+            <button class="small saveSubjBtn" data-id="${node.id}">Save</button>
+            <button class="small secondary cancelSubjBtn" data-id="${node.id}">Cancel</button>
+          </td>
+        </tr>`;
+      }
+
       const actionCell = canEdit
         ? `<td><button class="small secondary editSubjBtn" data-id="${node.id}">Edit</button></td>`
         : "";
@@ -191,6 +234,7 @@
         <td class="depth-${depthOf(node)}">${langText(node.name, "en", node.id)}</td>
         <td>${node.gloss ? langText(node.gloss, "en", "") : ""}</td>
         <td>${modules}</td>
+        <td>${parentDisplayName(node)}</td>
         <td>${node.status}</td>
         ${actionCell}
       </tr>`;
@@ -198,22 +242,65 @@
 
     async function loadSubjects() {
       subjectTree = await getSubjectTree(db, activeTenantId);
+      renderSubjects();
+      newSubjParent.innerHTML = parentOptionsHtml(null, null);
+    }
+
+    function renderSubjects() {
       subjectsBody.innerHTML = subjectTree.map(subjectRowHtml).join("");
-      newSubjParent.innerHTML =
-        `<option value="">(top level)</option>` +
-        subjectTree.map((n) => `<option value="${n.id}">${"— ".repeat(depthOf(n))}${langText(n.name, "en", n.id)}</option>`).join("");
 
       subjectsBody.querySelectorAll(".editSubjBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          editingSubjectId = btn.dataset.id;
+          renderSubjects();
+        });
+      });
+
+      subjectsBody.querySelectorAll(".cancelSubjBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          editingSubjectId = null;
+          renderSubjects();
+        });
+      });
+
+      subjectsBody.querySelectorAll(".saveSubjBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {
           const node = subjectTree.find((n) => n.id === btn.dataset.id);
-          const nextName = prompt("New name for this subject:", langText(node.name, "en", node.id));
-          if (nextName == null || nextName.trim() === "") return;
-          const outcome = await safeWrite(
-            () => editCatalogueNode(db, TENANT.SUBJECTS, activeTenantId, node.id, { name: { ...node.name, en: nextName.trim() } }, auth.currentUser.uid),
-            { collection: "subjects", action: "editName", id: node.id }
-          );
-          if (outcome.ok) await loadSubjects();
-          else alert(outcome.entry.message);
+          const row = btn.closest("tr");
+          const nextName = row.querySelector(".editNameInput").value.trim();
+          const nextParentId = row.querySelector(".editParentSelect").value || null;
+          if (!nextName) {
+            alert("Name can't be empty.");
+            return;
+          }
+
+          btn.disabled = true;
+          if (nextName !== langText(node.name, "en", node.id)) {
+            const outcome = await safeWrite(
+              () => editCatalogueNode(db, TENANT.SUBJECTS, activeTenantId, node.id, { name: { ...node.name, en: nextName } }, auth.currentUser.uid),
+              { collection: "subjects", action: "editName", id: node.id }
+            );
+            if (!outcome.ok) {
+              alert(outcome.entry.message);
+              btn.disabled = false;
+              return;
+            }
+          }
+
+          if (nextParentId !== node.parentId) {
+            const outcome = await safeWrite(
+              () => reparentSubject(db, activeTenantId, node.id, nextParentId, auth.currentUser.uid),
+              { collection: "subjects", action: "reparent", id: node.id }
+            );
+            if (!outcome.ok) {
+              alert(outcome.entry.message);
+              btn.disabled = false;
+              return;
+            }
+          }
+
+          editingSubjectId = null;
+          await loadSubjects();
         });
       });
     }

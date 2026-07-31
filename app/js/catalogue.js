@@ -130,6 +130,12 @@ async function commitInChunks(db, creates, uid) {
   }
 }
 
+async function commitUpdatesInChunks(db, updates, uid) {
+  for (let i = 0; i < updates.length; i += SEED_CHUNK_SIZE) {
+    await commitEnvelopeBatch(db, { updates: updates.slice(i, i + SEED_CHUNK_SIZE) }, uid);
+  }
+}
+
 /**
  * Copies the full platform subject tree and the 30 Approaches into this
  * tenant's own subjects/trackables rows, if not already done. Explicit
@@ -227,6 +233,72 @@ export async function getTrackables(db, tenantId) {
  */
 export async function editCatalogueNode(db, collectionName, tenantId, nodeId, patch, uid) {
   return updateDocument(db, collectionName, `${tenantId}__${nodeId}`, { ...patch, edited: true });
+}
+
+/**
+ * Moves a subject to a different place in the tree ("level"). Re-parenting
+ * isn't a single-field edit: ancestorIds has to be recomputed for the moved
+ * node AND every one of its descendants (I12 -- roll-ups walk that chain,
+ * so a stale one silently double-counts or drops a branch), and the old/
+ * new parent's isTrackable flips if the move changes whether either one
+ * still has children. Refuses a move that would make a node its own
+ * ancestor.
+ */
+export async function reparentSubject(db, tenantId, nodeId, newParentId, uid) {
+  const tree = await getSubjectTree(db, tenantId);
+  const node = tree.find((n) => n.id === nodeId);
+  if (!node) throw new Error(`Subject "${nodeId}" not found.`);
+  if (newParentId === nodeId) throw new Error("A subject can't be its own parent.");
+
+  const byId = new Map(tree.map((n) => [n.id, n]));
+  function isDescendantOf(candidateId, ancestorId) {
+    let cur = byId.get(candidateId);
+    while (cur?.parentId) {
+      if (cur.parentId === ancestorId) return true;
+      cur = byId.get(cur.parentId);
+    }
+    return false;
+  }
+  if (newParentId && isDescendantOf(newParentId, nodeId)) {
+    throw new Error("Can't move a subject under one of its own children.");
+  }
+
+  const oldParentId = node.parentId;
+  const working = tree.map((n) => (n.id === nodeId ? { ...n, parentId: newParentId } : n));
+  const ancestorMap = computeAncestorIds(working);
+
+  const childCountWorking = new Map();
+  for (const n of working) {
+    if (n.parentId) childCountWorking.set(n.parentId, (childCountWorking.get(n.parentId) ?? 0) + 1);
+  }
+
+  // Patches keyed by id so the moved node, its descendants, and its old/new
+  // parent each get exactly one merged update even if they overlap.
+  const patches = new Map();
+  function mergePatch(id, patch) {
+    patches.set(id, { ...(patches.get(id) ?? {}), ...patch });
+  }
+
+  mergePatch(nodeId, { parentId: newParentId, ancestorIds: ancestorMap.get(nodeId) ?? [], edited: true });
+  for (const n of tree) {
+    if (n.id !== nodeId && (n.ancestorIds ?? []).includes(nodeId)) {
+      mergePatch(n.id, { ancestorIds: ancestorMap.get(n.id) ?? [], edited: true });
+    }
+  }
+  if (oldParentId && oldParentId !== newParentId) {
+    mergePatch(oldParentId, { isTrackable: !childCountWorking.has(oldParentId), edited: true });
+  }
+  if (newParentId && newParentId !== oldParentId) {
+    mergePatch(newParentId, { isTrackable: false, edited: true }); // just gained a child, can no longer be a leaf
+  }
+
+  const updates = [...patches.entries()].map(([id, data]) => ({
+    collectionName: TENANT.SUBJECTS,
+    docId: `${tenantId}__${id}`,
+    data,
+  }));
+  await commitUpdatesInChunks(db, updates, uid);
+  return { movedId: nodeId, affectedCount: updates.length };
 }
 
 // ---------------------------------------------------------------------------
