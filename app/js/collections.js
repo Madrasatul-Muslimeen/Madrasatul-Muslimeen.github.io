@@ -40,6 +40,8 @@ export const TENANT = Object.freeze({
   MEMBERSHIPS: "memberships",
   USER_INDEX: "userIndex",
   TENANT_INVITES: "tenantInvites", // D2: was "invites" in the Architecture doc
+  TENANT_MEMBER_UIDS: "tenantMemberUids", // Phase 1 addition (D9): rules-support mirror, keyed by uid so security rules can look up role membership without a query. Never shown in any UI.
+  INVITE_TOKENS: "inviteTokens", // Phase 1 addition (D9): opaque link codes, so invite links never carry a raw email in the URL
 
   // Layer 1 — catalogue and org
   MODULES: "modules",

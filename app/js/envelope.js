@@ -12,6 +12,7 @@ import {
   doc,
   setDoc,
   updateDoc,
+  writeBatch,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -55,4 +56,44 @@ export async function updateDocument(db, collectionName, docId, data) {
   };
   await updateDoc(ref, stamped);
   return ref;
+}
+
+/**
+ * F-009 — Batched envelope writes (Phase 1, Identity & access).
+ *
+ * Some operations touch several documents that must land together or not
+ * at all — e.g. onboarding creates a tenant, a person, and a membership row
+ * in one step. This is still the only place new-generation writes happen:
+ * every create/update in the batch gets the same stamping rules as
+ * createDocument/updateDocument above, just committed atomically.
+ *
+ * creates: [{ collectionName, docId, data }]
+ * updates: [{ collectionName, docId, data }]
+ */
+export async function commitEnvelopeBatch(db, { creates = [], updates = [] }, uid) {
+  if (creates.length && !uid) {
+    throw new Error("commitEnvelopeBatch refused: no uid supplied for createdBy on a create.");
+  }
+  const batch = writeBatch(db);
+
+  for (const { collectionName, docId, data } of creates) {
+    const ref = doc(db, collectionName, docId);
+    batch.set(ref, {
+      ...data,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      createdBy: uid,
+    });
+  }
+
+  for (const { collectionName, docId, data } of updates) {
+    const ref = doc(db, collectionName, docId);
+    batch.update(ref, {
+      ...data,
+      updatedAt: serverTimestamp(),
+    });
+  }
+
+  await batch.commit();
 }
