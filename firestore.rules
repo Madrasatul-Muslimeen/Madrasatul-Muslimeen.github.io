@@ -637,5 +637,71 @@ service cloud.firestore {
       // No update (dated rows are never overwritten -- a correction is a
       // new row with a new fromDate) and no delete (I4/D6).
     }
+
+    // =====================================================================
+    // Phase 3 — Tracking core (Layer 2: records, activity, domains)
+    // Version: 2026-07-31
+    //
+    // Who may read/write ONE PERSON's tracking data is the same set for all
+    // three collections here -- the person themself (an adult with their
+    // own login), whoever guards them, whoever teaches in this tenant, and
+    // whoever administers it (owner/prime/platformAdmin). This deliberately
+    // matches D10: a guardian/teacher logging progress for several people
+    // in one sitting from a simple dropdown must never be blocked by rules
+    // any tighter than "can you act for this person at all" -- there is no
+    // finer-grained, per-field (e.g. "only a supervisor may set
+    // confirmState=confirmed") restriction here, same as every other
+    // dynamic-map-shaped collection in this file (subjects, trackables):
+    // Firestore rules can't safely inspect one key of an arbitrarily-keyed
+    // map, so role-appropriateness within an allowed write is enforced by
+    // the client functions in records.js/activity.js, not by the rule
+    // itself. isSelfPerson() adds one get() beyond the existing helpers
+    // (tenantPeople lookup by personId) to recognise an adult acting for
+    // their own record.
+    // =====================================================================
+
+    function tenantPersonRef(personId) { return /databases/$(database)/documents/tenantPeople/$(personId); }
+    function isSelfPerson(personId) {
+      return signedIn() && exists(tenantPersonRef(personId))
+          && get(tenantPersonRef(personId)).data.authUid == myUid();
+    }
+    function canRecordFor(tenantId, personId) {
+      return canAdminIdentity(tenantId) || isTeacherIn(tenantId)
+          || isGuardianOf(tenantId, personId) || isSelfPerson(personId);
+    }
+
+    // records/{tenantId}__{personId}__{chunkKey}
+    match /records/{recordKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);
+      allow update: if canRecordFor(resource.data.tenantId, resource.data.personId);
+      // No delete (I4/D6).
+    }
+
+    // activity/{tenantId}__{personId}__{weekKey} -- append-only in practice
+    // (activity.js only ever arrayUnion-appends), same read/write access as
+    // records above since it's the same person's data, just the "where did
+    // this claim come from" context (I3) instead of the claim itself.
+    match /activity/{activityKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);
+      allow update: if canRecordFor(resource.data.tenantId, resource.data.personId);
+      // No delete (I4/D6).
+    }
+
+    // domains/{tenantId}__{domainId} -- D12: tenant-authored tag registry
+    // backing records.entries.domainIds[]. Same shape as ladders/levels:
+    // any member reads, only owner/prime/platformAdmin authors.
+    match /domains/{domainKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- deactivate via status instead.
+    }
   }
 }

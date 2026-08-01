@@ -61,7 +61,7 @@
       <input type="checkbox" id="showArchivedSubjects" /> Show archived subjects
     </label>
     <table>
-      <thead><tr><th>Name</th><th>Gloss</th><th>Modules</th><th>Level (parent)</th><th>Status</th><th id="subjActionsHead" style="display:none;">Edit</th></tr></thead>
+      <thead><tr><th>Name</th><th>Gloss</th><th>Modules</th><th>Level (parent)</th><th>Status</th><th>Confirmation</th><th id="subjActionsHead" style="display:none;">Edit</th></tr></thead>
       <tbody id="subjectsBody"></tbody>
     </table>
 
@@ -231,6 +231,23 @@
       return parent ? langText(parent.name, "en", parent.id) : node.parentId;
     }
 
+    // confirmationRequired: null/undefined = "auto" (Architecture s6's
+    // computed rule -- does this person have a teacher/guardian/prime).
+    // true/false is an explicit per-subject override ("confirmation can be
+    // switched on or off per subject").
+    function confirmationLabel(node) {
+      if (node.confirmationRequired === true) return "Always required";
+      if (node.confirmationRequired === false) return "Never required";
+      return "Auto (computed)";
+    }
+
+    function confirmationOptionsHtml(node) {
+      const v = node.confirmationRequired === true ? "true" : node.confirmationRequired === false ? "false" : "auto";
+      return `<option value="auto" ${v === "auto" ? "selected" : ""}>Auto (computed)</option>
+        <option value="true" ${v === "true" ? "selected" : ""}>Always required</option>
+        <option value="false" ${v === "false" ? "selected" : ""}>Never required</option>`;
+    }
+
     function subjectRowHtml(node) {
       const modules = (node.moduleIds ?? []).map((id) => `<span class="tag">${id}</span>`).join("");
 
@@ -242,6 +259,7 @@
           <td>${modules}</td>
           <td><select class="editParentSelect">${parentOptionsHtml(node.parentId, node.id)}</select></td>
           <td>${node.status}</td>
+          <td><select class="editConfirmSelect">${confirmationOptionsHtml(node)}</select></td>
           <td>
             <button class="small saveSubjBtn" data-id="${node.id}">Save</button>
             <button class="small secondary cancelSubjBtn" data-id="${node.id}">Cancel</button>
@@ -261,6 +279,7 @@
         <td>${modules}</td>
         <td>${parentDisplayName(node)}</td>
         <td>${node.status}</td>
+        <td>${confirmationLabel(node)}</td>
         ${actionCell}
       </tr>`;
     }
@@ -321,6 +340,8 @@
           const row = btn.closest("tr");
           const nextName = row.querySelector(".editNameInput").value.trim();
           const nextParentId = row.querySelector(".editParentSelect").value || null;
+          const nextConfirmRaw = row.querySelector(".editConfirmSelect").value;
+          const nextConfirm = nextConfirmRaw === "true" ? true : nextConfirmRaw === "false" ? false : null;
           if (!nextName) {
             alert("Name can't be empty.");
             return;
@@ -331,6 +352,18 @@
             const outcome = await safeWrite(
               () => editCatalogueNode(db, TENANT.SUBJECTS, activeTenantId, node.id, { name: { ...node.name, en: nextName } }, auth.currentUser.uid),
               { collection: "subjects", action: "editName", id: node.id }
+            );
+            if (!outcome.ok) {
+              alert(outcome.entry.message);
+              btn.disabled = false;
+              return;
+            }
+          }
+
+          if (nextConfirm !== (node.confirmationRequired ?? null)) {
+            const outcome = await safeWrite(
+              () => editCatalogueNode(db, TENANT.SUBJECTS, activeTenantId, node.id, { confirmationRequired: nextConfirm }, auth.currentUser.uid),
+              { collection: "subjects", action: "editConfirmation", id: node.id }
             );
             if (!outcome.ok) {
               alert(outcome.entry.message);

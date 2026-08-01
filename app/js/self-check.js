@@ -18,6 +18,9 @@ import { safeWrite, getSessionErrorBuffer, reportWriteFailure } from "./errors.j
 import { getMyMemberships } from "./session-context.js";
 import { listModules } from "./modules.js";
 import { getSubjectTree, getTrackables } from "./catalogue.js";
+import { listDomains } from "./domains.js";
+import { claimStatus, getRecordsChunk, computeConfirmationRequired, chunkKeyFor } from "./records.js";
+import { logActivity, getWeekActivity, weekKeyFor } from "./activity.js";
 
 const TEST_MARKER_ID = "_selfCheckTest";
 
@@ -242,6 +245,84 @@ export async function runSelfCheck(db, uid) {
           ? "Reachable, test write succeeded — you hold owner or prime in this tenant."
           : "Blocked, as expected for a role other than owner/prime. Nothing to act on unless you expected write access.",
       });
+    }
+
+    // 3c. Phase 3 — Layer 2 (tracking core). Real checks against the
+    // caller's own real personId (same "additive marker, safely repeatable"
+    // reasoning as everything above) -- a synthetic subject/trackable id
+    // clearly marked _selfCheckTest so it can never be confused with real
+    // catalogue content, statusId "not_applicable" so it never counts
+    // toward any real total (I7).
+    const SC_SUBJECT = "_selfCheckTest";
+    const SC_TRACKABLE = "_selfCheckTest";
+    const SC_UNIT_KEY = "topic:_selfCheckTest";
+
+    try {
+      const domains = await listDomains(db, tenantId);
+      results.push({
+        label: "domains (D12 tag registry)",
+        status: "ok",
+        message: `Reachable, ${domains.length} domain tag(s) defined so far.`,
+      });
+    } catch (err) {
+      results.push({ label: "domains (D12 tag registry)", status: "fail", message: reportWriteFailure(err, { collection: TENANT.DOMAINS }).message });
+    }
+
+    const claimOutcome = await safeWrite(
+      () => claimStatus(db, {
+        tenantId, personId, subjectId: SC_SUBJECT, unitKey: SC_UNIT_KEY, trackableId: SC_TRACKABLE,
+        statusId: "not_applicable", notes: "safe to ignore — self-check marker", domainIds: [],
+        claimedByPersonId: personId, claimedByUid: uid,
+      }),
+      { collection: TENANT.RECORDS, action: "selfCheckClaim" }
+    );
+    if (claimOutcome.ok) {
+      const chunkKey = chunkKeyFor(SC_UNIT_KEY, SC_SUBJECT);
+      const chunk = await getRecordsChunk(db, tenantId, personId, chunkKey);
+      const entry = chunk?.entries?.[`${SC_UNIT_KEY}::${SC_TRACKABLE}`];
+      results.push({
+        label: "records (chunked claim/confirm write path)",
+        status: entry ? "ok" : "fail",
+        message: entry
+          ? `Reachable, test claim wrote and read back correctly (confirmState: ${entry.confirmState}).`
+          : "The write reported success but the entry could not be read back — tell the admin.",
+      });
+    } else {
+      results.push({ label: "records (chunked claim/confirm write path)", status: "fail", message: claimOutcome.entry.message });
+    }
+
+    const activityOutcome = await safeWrite(
+      () => logActivity(db, {
+        tenantId, personId, date: new Date(), weekStartsOn: 6,
+        subjectId: SC_SUBJECT, unitKey: SC_UNIT_KEY, trackableId: SC_TRACKABLE,
+        action: "selfCheck", uid,
+      }),
+      { collection: TENANT.ACTIVITY, action: "selfCheckLogActivity" }
+    );
+    if (activityOutcome.ok) {
+      const weekKey = weekKeyFor(new Date(), 6);
+      const week = await getWeekActivity(db, tenantId, personId, weekKey);
+      const found = (week?.entries ?? []).some((e) => e.trackableId === SC_TRACKABLE && e.action === "selfCheck");
+      results.push({
+        label: "activity (weekly, append-only write path)",
+        status: found ? "ok" : "fail",
+        message: found
+          ? "Reachable, test entry appended and read back correctly."
+          : "The write reported success but the entry could not be read back — tell the admin.",
+      });
+    } else {
+      results.push({ label: "activity (weekly, append-only write path)", status: "fail", message: activityOutcome.entry.message });
+    }
+
+    try {
+      const needsConfirmation = await computeConfirmationRequired(db, tenantId, personId, null);
+      results.push({
+        label: "Confirmation rule (Architecture s6, computed)",
+        status: "ok",
+        message: `Ran without error. For your own account right now, this computes to: ${needsConfirmation ? "waits for confirmation" : "self-confirmed"}.`,
+      });
+    } catch (err) {
+      results.push({ label: "Confirmation rule (Architecture s6, computed)", status: "fail", message: reportWriteFailure(err, { collection: TENANT.MEMBERSHIPS }).message });
     }
   }
 

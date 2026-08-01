@@ -54,14 +54,26 @@ export const FEATURES = Object.freeze([
   { id: "F-027", phase: 2, name: "Self-check extended for Layer 1", status: "built" },
   { id: "F-028", phase: 2, name: "Subject re-parenting (move a node's level, cascades ancestorIds)", status: "built" },
   { id: "F-029", phase: 2, name: "Archive/Restore for subjects, trackables, ladders, levels (I4/D6 stand-in for delete)", status: "built" },
+
+  // Phase 3 — Tracking core. Reserved as a 14-ID range (F-033..F-046)
+  // before planning; needed 8 concrete features plus one small addition to
+  // Phase 2's catalogue screen (the confirmationRequired toggle) that
+  // doesn't warrant its own id. F-041..F-046 are simply unused, same
+  // "consumed fewer IDs than first guessed" shape as Phases 1 and 2.
+  { id: "F-033", phase: 3, name: "Unit keys (all 12 namespaces) + the 6 progress statuses + I7 Not-Applicable exclusion helper", status: "built" },
+  { id: "F-034", phase: 3, name: "Domain tags (domains collection, D12 — supports records.entries.domainIds[])", status: "built" },
+  { id: "F-035", phase: 3, name: "Records: chunked storage (one doc per surah/subject) + claim a status", status: "built" },
+  { id: "F-036", phase: 3, name: "Confirmation rule — computed per person, per-subject override", status: "built" },
+  { id: "F-037", phase: 3, name: "Confirm / return an entry (I6 — confirmation state frozen when marked)", status: "built" },
+  { id: "F-038", phase: 3, name: "Bulk confirm — a surah/subject chunk, or a week", status: "built" },
+  { id: "F-039", phase: 3, name: "Activity — one document per week, append-only, viaProgramId/viaSessionId (I3)", status: "built" },
+  { id: "F-040", phase: 3, name: "Records/activity/domains screen (records.html) + Layer 2 security rules", status: "built" },
 ]);
 
 // Phase-level reservations for everything not yet broken down individually.
 // idRange is inclusive. "delivers" is copied verbatim from the Architecture
 // doc's Build Phases table (section s7) -- not summarized or reinterpreted.
 export const PHASE_RESERVATIONS = Object.freeze([
-  { phase: 3, name: "Tracking core", idRange: [33, 46], status: "planned",
-    delivers: "records (chunked), activity (weekly), 6 statuses, Not-Applicable exclusion, unit keys incl. hizb/rub/manzil, domainIds, confirmation + bulk confirm + return" },
   { phase: 4, name: "QuranRevival module", idRange: [47, 60], status: "planned",
     delivers: "Ayah renderer, Mastery Wheel, Way modal (Track/Guide/Breakdown/Coverage), panels per approach, approach dropdown, tajweed toggle, word-by-word, audio + loop, Bangla Quran translation" },
   { phase: 5, name: "Migration & parity", idRange: [61, 66], status: "planned",

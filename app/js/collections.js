@@ -62,6 +62,7 @@ export const TENANT = Object.freeze({
   RECORDS: "records",
   ACTIVITY: "activity",
   BOOKMARKS: "bookmarks",
+  DOMAINS: "domains", // Phase 3 addition (D12): tenant-authored tag registry backing records.entries.domainIds[] — the Architecture doc names the domainIds field but never lists a domains collection. Same "not in the original doc, added to support a named field" shape as D9's tenantMemberUids/inviteTokens. Mirrors ladders: tenant-authored, no platform seed, freeform tags (legacy app's "Domains are optional & user-defined").
 
   // Layer 2.5 — communication
   THREADS: "threads",
