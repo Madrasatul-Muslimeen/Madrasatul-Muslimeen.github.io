@@ -198,3 +198,24 @@ predates this rebuild; it is not a Phase 3 defect. It doesn't block Phase 4
 (QuranRevival module — Quran-only by definition), but likely needs a design
 conversation, possibly back at the architecture stage, before Phase 6
 (Deen Study & topic renderer) can be planned. See `PHASE-3-STATUS.md`.
+
+**Second open access-control question, raised by the owner 2026-07-31, not
+yet resolved:** a guardian (in a Family/Individual tenant, not a Tuition
+Provider) wants to bring in an outside teacher for a few subjects only —
+that teacher should be able to record/confirm progress **only on the
+subjects they're actually assigned to teach, only for the specific
+children they teach**, and should be **blocked from every other subject
+and every other module entirely**, not just from other teachers' students.
+**Nothing built through Phase 3 supports this.** Every place a `teacher`
+role currently grants access (`canRecordFor` in `firestore.rules`,
+`isTeacherIn(tenantId)`) is **tenant-wide** — any teacher membership in a
+tenant currently sees/can act on every person and every subject in it,
+because there is no subject-scoped or student-scoped assignment concept
+yet. The Architecture doc's own Phase 10 ("Classes & provider") is titled
+"safeguarding rules at scale" and lists "teacher assignment," but that's
+scoped to Stage B2 (Tuition Provider tenants running classes) — the owner's
+scenario is a **Family-tenant, no-classes-yet** version of the same need,
+which may mean this needs a lighter-weight primitive earlier than Phase 10,
+not a full classes/enrolments system. **Do not build this without a design
+conversation first** — flagged for discussion after the phased work, same
+as the item above.
