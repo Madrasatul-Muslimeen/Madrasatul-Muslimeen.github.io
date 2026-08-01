@@ -170,27 +170,36 @@ fields required but never defined:
 None of these block anything or need to be undone if the owner wants them
 differently — they're each a small, contained correction, not a rebuild.
 
-## Owner verification — pending re-check
+## Owner verification — done
 
-First run found the two bugs above; both are fixed and redeployed but not
-yet re-verified. Same check as before:
+Confirmed working end-to-end by the owner after the fix: `admin-self-check.html`
+re-ran green across records/activity/domains/confirmation rule. Claiming
+against Quran → an Approach → an ayah reference works, including confirm/
+return and both bulk-confirm scopes.
 
-1. Open `records.html`, sign in, pick a person.
-2. Pick subject "Quran", an Approach, unit type "ayah", reference `2:255`,
-   a status, claim it. Confirm it shows "Claimed and confirmed
-   (self-confirmed)" if you're owner/prime/teacher, or "waiting for
-   confirmation" if you're testing as a student/child.
-3. If it's pending, confirm or return it from the entries table; check
-   "Confirm anyway" appears after a return.
-4. Try "Bulk confirm all pending here" and "Bulk confirm all pending this
-   week" after claiming a couple of entries.
-5. Open `admin-self-check.html` and re-run the check — everything from
-   "domains" down through "Confirmation rule" should read green (or a
-   plain-language explanation if not).
+## Open design question raised during verification — not a bug, not solved here
+
+**Claiming only works for the Quran subject right now, because Approaches
+(`trackables`) only exist for Quran.** Confirmed by the owner as expected,
+not a defect: Phase 2's catalogue only ever seeded the 30 Approaches against
+`subjectId: "quran"` (`APPROACH_TEMPLATES` in `catalogue-data.js`), because
+that's the only content the source catalogue doc (`QuranRevival_Subject_Catalogue_v3.md`)
+actually defines. Every other subject (Deen Study, Arabic, General Study,
+Hadith, Nature-Life, Health) has no equivalent "what does progress on this
+subject look like" system defined anywhere yet — not a gap in this build,
+a gap in the design that predates it.
+
+**Owner has flagged this for a separate design conversation, after Phase 3
+closes** — possibly requiring a trip back to the design/architecture stage
+before Phase 6 (Deen Study & topic renderer) can be planned in the same
+"one phase at a time, get sign-off" way Phases 0-3 were. Nothing here blocks
+Phase 4 (QuranRevival module), since Phase 4 is Quran-only by definition —
+this only needs resolving before Phase 6 gets planned.
 
 ## Next
 
-**Phase 3 is built, not yet closed** — closes once the owner has run the
-check above. Phase 4 (QuranRevival module: ayah renderer, Mastery Wheel,
-Way modal, panels per approach, tajweed/word-by-word/audio) is next once
-Phase 3 is signed off.
+**Phase 3 is closed.** Ready to start Phase 4 (QuranRevival module: ayah
+renderer, Mastery Wheel, Way modal, panels per approach, tajweed/
+word-by-word/audio) whenever you'd like — or to have the "how do other
+subjects get monitored" design conversation first, since that's an
+earlier-numbered open question than Phase 4 itself.

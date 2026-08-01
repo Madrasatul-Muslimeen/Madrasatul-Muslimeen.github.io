@@ -184,7 +184,17 @@ modules · 13 Full messaging & extras · 14 Operations · 15+ Reserved.
 is derived from a live audit of `index.html` and signed by the owner — not by
 Claude.
 
-**Current position: Phase 0, Phase 1 (Identity & access), and Phase 2
-(Catalogue) all complete and owner-verified. Phase 3 (Tracking core) built,
-awaiting owner verification.** See `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`,
-`PHASE-2-STATUS.md`, and `PHASE-3-STATUS.md`.
+**Current position: Phase 0, Phase 1 (Identity & access), Phase 2
+(Catalogue), and Phase 3 (Tracking core) all complete and owner-verified.**
+See `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`, `PHASE-2-STATUS.md`, and
+`PHASE-3-STATUS.md`.
+
+**Open design question, raised during Phase 3 verification, not yet
+resolved:** claiming/confirming only works for the Quran subject today,
+because Approaches (`trackables`) only exist for Quran — every other
+subject (Deen Study, Arabic, General Study, Hadith, Nature-Life, Health)
+has no defined "what does progress look like here" system at all. This
+predates this rebuild; it is not a Phase 3 defect. It doesn't block Phase 4
+(QuranRevival module — Quran-only by definition), but likely needs a design
+conversation, possibly back at the architecture stage, before Phase 6
+(Deen Study & topic renderer) can be planned. See `PHASE-3-STATUS.md`.
