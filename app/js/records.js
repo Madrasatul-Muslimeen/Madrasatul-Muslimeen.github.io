@@ -26,7 +26,6 @@ import {
   query,
   where,
   getDocs,
-  limit,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
@@ -75,38 +74,37 @@ export async function getRecordsChunk(db, tenantId, personId, chunkKey) {
 //   Confirmation can be switched on/off per subject (subjectOverride,
 //   subjects.confirmationRequired -- true/false forces it, null/undefined
 //   defers to the computed rule below).
+//
+// Deliberately built on deterministic get()s, never a `where(...)` query
+// against memberships/tenantPeople: a Firestore security rule can only
+// allow a LIST (query) request if it can prove, from the query's own
+// filters alone, that every possible result satisfies the rule -- the same
+// limitation D9 already worked around for tenantMemberUids. memberships/
+// tenantPeople weren't built with that list-safety in mind (only
+// tenantMemberUids was), so this reads each known, addressable document
+// directly instead.
 // ---------------------------------------------------------------------------
 
+const MEMBERSHIP_ROLES = ["owner", "prime", "teacher", "guardian", "student", "self"];
+
+/** Every role this person holds in this tenant, via one get() per possible role (deterministic ids, no query). */
 async function getPersonRoles(db, tenantId, personId) {
-  const q = query(
-    collection(db, TENANT.MEMBERSHIPS),
-    where("tenantId", "==", tenantId),
-    where("personId", "==", personId)
+  const snaps = await Promise.all(
+    MEMBERSHIP_ROLES.map((role) => getDoc(doc(db, TENANT.MEMBERSHIPS, `${tenantId}__${personId}__${role}`)))
   );
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => d.data().role);
+  return MEMBERSHIP_ROLES.filter((_, i) => snaps[i].exists());
 }
 
-async function isPersonGuardedBySomeone(db, tenantId, personId) {
-  const q = query(
-    collection(db, TENANT.MEMBERSHIPS),
-    where("tenantId", "==", tenantId),
-    where("role", "==", "guardian"),
-    where("guardianOf", "array-contains", personId)
-  );
-  const snap = await getDocs(q);
-  return !snap.empty;
-}
-
-async function tenantHasTeacherOrPrime(db, tenantId) {
-  const q = query(
-    collection(db, TENANT.MEMBERSHIPS),
-    where("tenantId", "==", tenantId),
-    where("role", "in", ["teacher", "prime"]),
-    limit(1)
-  );
-  const snap = await getDocs(q);
-  return !snap.empty;
+/**
+ * tenantPeople.managedByPersonId is the actually-populated signal for "this
+ * person is a managed child with a guardian" -- memberships.guardianOf[]
+ * exists in the schema but nothing in the codebase writes to it yet, so
+ * checking it here would silently never fire. One get(), same collection/
+ * rule already exercised successfully elsewhere (own record, rosters).
+ */
+async function personIsManaged(db, personId) {
+  const snap = await getDoc(doc(db, TENANT.TENANT_PEOPLE, personId));
+  return !!snap.data()?.managedByPersonId;
 }
 
 /** subjects/{tenantId}__{subjectId}.confirmationRequired -- true/false override, null/missing = defer to the computed rule. */
@@ -132,11 +130,10 @@ export async function computeConfirmationRequired(db, tenantId, personId, subjec
   // someone else's declared student) stands at the same level.
   if (roles.includes("teacher") || roles.includes("guardian")) return false;
 
-  if (await isPersonGuardedBySomeone(db, tenantId, personId)) return true;
+  if (await personIsManaged(db, personId)) return true;
+  if (roles.includes("student")) return true;
 
-  if (roles.includes("student") && (await tenantHasTeacherOrPrime(db, tenantId))) return true;
-
-  // 'self' role, or a student in a tenant with no teacher/prime yet.
+  // 'self' role (or no role rows at all) with no guardian on file.
   return false;
 }
 

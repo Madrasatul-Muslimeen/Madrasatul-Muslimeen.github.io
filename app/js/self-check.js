@@ -249,11 +249,18 @@ export async function runSelfCheck(db, uid) {
 
     // 3c. Phase 3 — Layer 2 (tracking core). Real checks against the
     // caller's own real personId (same "additive marker, safely repeatable"
-    // reasoning as everything above) -- a synthetic subject/trackable id
-    // clearly marked _selfCheckTest so it can never be confused with real
-    // catalogue content, statusId "not_applicable" so it never counts
-    // toward any real total (I7).
-    const SC_SUBJECT = "_selfCheckTest";
+    // reasoning as everything above). SC_SUBJECT must be a real, already-
+    // seeded subject id ("quran" -- guaranteed present by Phase 2's
+    // catalogue seed) rather than a synthetic one: claimStatus() reads
+    // subjects/{tenantId}__{subjectId} to check confirmationRequired, and
+    // for a NONEXISTENT subject doc that get() is denied outright (Firestore
+    // hands the rule a null `resource`, so `resource.data.tenantId` errors
+    // and every `allow read` clause on subjects fails closed) -- a real
+    // subject was misdiagnosed as a permissions bug the first time this ran.
+    // SC_TRACKABLE/SC_UNIT_KEY stay synthetic and clearly marked so this can
+    // never be confused with real content; statusId "not_applicable" so it
+    // never counts toward any real total (I7).
+    const SC_SUBJECT = "quran";
     const SC_TRACKABLE = "_selfCheckTest";
     const SC_UNIT_KEY = "topic:_selfCheckTest";
 

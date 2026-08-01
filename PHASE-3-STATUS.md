@@ -7,13 +7,12 @@ Read alongside `CLAUDE.md`.
 
 ## Position
 
-**Phase 3 built — all 8 features (F-033..F-040) built and deployed. Awaiting
-owner verification** (same "owner ran it for real, found real bugs" step
-that closed Phases 1 and 2 — nothing below has been exercised against
-production yet). Delivers records (chunked per surah/subject), activity
-(one document per week), the 6 progress statuses with Not-Applicable
-exclusion (I7), all 12 unit-key namespaces, domain tags, and confirmation
-+ bulk confirm + return.
+**Phase 3 built — all 8 features (F-033..F-040) built and deployed. Owner
+ran `records.html` for real, found two real bugs (see below, both fixed and
+redeployed) — awaiting a re-check.** Delivers records (chunked per
+surah/subject), activity (one document per week), the 6 progress statuses
+with Not-Applicable exclusion (I7), all 12 unit-key namespaces, domain tags,
+and confirmation + bulk confirm + return.
 
 `app/` now has, beyond Phase 2's files: `records.html`, and
 `js/unit-keys.js`, `js/domains.js`, `js/records.js`, `js/activity.js`.
@@ -98,12 +97,55 @@ caller's own real tenant and person record.
 - **Self-check extended for Layer 2** — `admin-self-check.html` now also
   confirms, against your real tenant and your own real person record: the
   `domains` collection is reachable, a real claim writes to a records chunk
-  and reads back correctly (a clearly-marked `_selfCheckTest` subject/unit,
-  status `not_applicable` so I7 keeps it out of every real total), a real
-  activity entry appends and reads back correctly, and the confirmation
-  rule runs without error and reports what it computed for your own
-  account (informational, not pass/fail — the correct answer depends on
-  which role you hold).
+  and reads back correctly (against the real "quran" subject, with a
+  clearly-marked `_selfCheckTest` unit/Approach and status `not_applicable`
+  so I7 keeps it out of every real total), a real activity entry appends
+  and reads back correctly, and the confirmation rule runs without error
+  and reports what it computed for your own account (informational, not
+  pass/fail — the correct answer depends on which role you hold).
+
+## Real bugs found and fixed along the way
+
+Same discipline as Phases 1 and 2: you ran it for real and it broke twice.
+Both are fixed and redeployed; not yet re-verified by you.
+
+1. **Every first-ever claim or activity entry was blocked outright.**
+   `claimStatus()`/`logActivity()`/`confirmEntry()` all read a document
+   first to decide "does this chunk/week already exist yet" before writing
+   it — the single most common case for a brand-new person or a brand-new
+   week. Firestore hands a security rule a `null` resource when the
+   document being read doesn't exist yet, and the Phase 3 rules referenced
+   `resource.data.tenantId` directly, which **errors** (not "returns
+   false") against a null resource — denying the read outright, surfacing
+   as a generic "blocked by a permissions rule" with no further detail.
+   This is the exact same bug class this file's own S8 fix (legacy
+   section, "MISSING-PERSON ROBUSTNESS") already found and fixed once
+   before — reintroduced here in the new Phase 3 rules. Fixed by adding an
+   `exists()`-guard read branch (same idiom as S8) to `records`, `activity`,
+   `memberships`, `subjects`, and `trackables` — a nonexistent document has
+   no data to protect, so allowing the read to return "not found" rather
+   than erroring is safe, not a widening of access.
+2. **The confirmation-rule's own role lookups hit the same bug, structurally
+   guaranteed to fire.** `computeConfirmationRequired()`'s first draft
+   queried `memberships` with `where(...)` clauses — a shape this codebase
+   had already flagged as risky for `tenantMemberUids` (D9's own comment:
+   Firestore can only allow a list/query request if it can prove, from the
+   query's filters alone, that every possible result satisfies the rule).
+   Rebuilt on deterministic `get()`s instead — one per possible role
+   (`memberships/{tenantId}__{personId}__{role}`) — which is simpler to
+   reason about, but then hit bug #1 above just as directly, since a person
+   typically holds only one or two of the six roles and every other lookup
+   is a get() on a document that doesn't exist. Fixed by the same
+   `exists()`-guard fix to `memberships`, above. Along the way, the
+   `guardianOf[]`-based guardianship check was also replaced with
+   `tenantPeople.managedByPersonId` — the field addPersonToTenant (Phase 1)
+   actually writes; nothing in the codebase writes to `guardianOf[]` yet,
+   so checking it would have silently never fired. The tenant-wide
+   "does anyone hold teacher/prime at all" check was dropped rather than
+   rebuilt around an `in`-query of uncertain list-safety — a declared
+   'student' role now always waits for confirmation, full stop; if nobody
+   in the tenant can confirm it yet, it just stays pending until someone
+   can, which is a reasonable state, not a dead end.
 
 ## Decisions made without stopping to ask, flagged for review (D12)
 
@@ -128,10 +170,10 @@ fields required but never defined:
 None of these block anything or need to be undone if the owner wants them
 differently — they're each a small, contained correction, not a rebuild.
 
-## Owner verification — pending
+## Owner verification — pending re-check
 
-Not yet run against production by the owner. Suggested check, following
-the same pattern as Phases 1 and 2:
+First run found the two bugs above; both are fixed and redeployed but not
+yet re-verified. Same check as before:
 
 1. Open `records.html`, sign in, pick a person.
 2. Pick subject "Quran", an Approach, unit type "ayah", reference `2:255`,

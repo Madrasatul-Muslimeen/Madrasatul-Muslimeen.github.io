@@ -410,6 +410,14 @@ service cloud.firestore {
       }
 
       allow read: if isPlatformAdmin();
+      // S8-class fix (Phase 3): a get() on a membershipId that doesn't exist
+      // yet hands the rule a null `resource` -- resource.data.tenantId below
+      // then ERRORS instead of returning false, denying the read outright.
+      // records.js's getPersonRoles() does exactly this: one get() per
+      // POSSIBLE role, most of which a given person doesn't hold, so most
+      // of those six lookups hit a nonexistent doc. Nothing is exposed by
+      // allowing this -- a nonexistent document has no data to read.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/memberships/$(membershipId));
       allow read: if canAdminIdentity(resource.data.tenantId);
       allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) == resource.data.personId;
 
@@ -584,6 +592,12 @@ service cloud.firestore {
     // subjects/{tenantId}__{nodeId} -- tenant's own copy-on-write tree.
     match /subjects/{subjectKey} {
       allow read: if isPlatformAdmin();
+      // S8-class fix (Phase 3): a get() on a subjectId that doesn't exist
+      // (e.g. records.js checking a subject's confirmationRequired override)
+      // hands the rule a null `resource`, and anyMemberOf(resource.data...)
+      // below errors instead of returning false, denying the read outright.
+      // Nothing is exposed by allowing this -- there's no data to read.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/subjects/$(subjectKey));
       allow read: if anyMemberOf(resource.data.tenantId);
 
       allow create: if canAdminCatalogue(request.resource.data.tenantId);
@@ -597,6 +611,8 @@ service cloud.firestore {
     // trackables/{tenantId}__{trackableId} -- the 30 Approaches, tenant copy.
     match /trackables/{trackableKey} {
       allow read: if isPlatformAdmin();
+      // S8-class fix (Phase 3): see the identical comment on subjects above.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/trackables/$(trackableKey));
       allow read: if anyMemberOf(resource.data.tenantId);
 
       allow create: if canAdminCatalogue(request.resource.data.tenantId);
@@ -673,6 +689,13 @@ service cloud.firestore {
     // records/{tenantId}__{personId}__{chunkKey}
     match /records/{recordKey} {
       allow read: if isPlatformAdmin();
+      // S8-class fix: claimStatus()/getRecordsChunk()/confirmEntry()/etc. all
+      // getDoc() a chunk to see whether it exists yet BEFORE creating it --
+      // for that very common first-ever-claim case, resource is null and
+      // resource.data.tenantId below would error instead of returning
+      // false, denying the read outright. Nothing is exposed by allowing
+      // this -- a nonexistent document has no data to read.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/records/$(recordKey));
       allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
 
       allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);
@@ -686,6 +709,9 @@ service cloud.firestore {
     // this claim come from" context (I3) instead of the claim itself.
     match /activity/{activityKey} {
       allow read: if isPlatformAdmin();
+      // S8-class fix: same reasoning as records above -- logActivity() reads
+      // the week's document first to decide create vs. arrayUnion-append.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/activity/$(activityKey));
       allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
 
       allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);
