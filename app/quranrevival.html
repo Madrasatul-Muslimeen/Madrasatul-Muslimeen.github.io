@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuranRevival — Phase 4</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.1rem; margin-top: 1.6rem; }
+  h3 { font-size: 1rem; }
+  h4 { font-size: 0.88rem; margin: 0.6rem 0 0.15rem; color: #555; }
+  label { display: block; margin: 0.5rem 0 0.2rem; font-weight: 600; font-size: 0.85rem; }
+  select, textarea, input[type="text"] { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #ccc; border-radius: 0.35rem; }
+  button { font-size: 0.88rem; padding: 0.35rem 0.8rem; border-radius: 0.4rem; border: 1px solid #ccc; background: #1F3A6E; color: white; cursor: pointer; }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  .row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; margin: 0.6rem 0; }
+  .row > div { min-width: 9rem; }
+
+  /* ---------- Mastery Wheel ---------- */
+  #wheelSection { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center; }
+  .mastery-wheel { max-width: 320px; }
+  .wheel-seg { cursor: pointer; stroke: #fff; stroke-width: 0.5; }
+  .wheel-seg:hover { opacity: 0.8; }
+  .wheel-legend { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.82rem; }
+  .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+  /* ---------- Study screen ---------- */
+  #studyScreen { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 1rem; margin-top: 1rem; }
+  .ayah-arabic { font-family: 'Traditional Arabic', 'Amiri', serif; font-size: 1.7rem; line-height: 2.6rem; text-align: right; margin: 0.6rem 0; }
+  .ayah-num { color: #B8862F; font-size: 1rem; }
+  .ayah-translation { font-size: 0.95rem; color: #333; margin: 0.3rem 0; }
+  .ayah-translation-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; }
+  .wbw-strip, .root-deriv-strip { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.6rem 0; }
+  .wbw-word, .root-row { border: 1px solid #eee; border-radius: 0.4rem; padding: 0.3rem 0.5rem; text-align: center; min-width: 4.5rem; }
+  .wbw-arabic, .root-word, .root-root, .root-lemma { font-family: 'Amiri', serif; font-size: 1.15rem; }
+  .wbw-translit { font-size: 0.72rem; color: #888; font-style: italic; }
+  .wbw-gloss { font-size: 0.8rem; }
+  .wbw-gloss-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; }
+  .root-pos { font-size: 0.7rem; color: #888; }
+  .root-root { color: #1F3A6E; }
+  .root-count { font-size: 0.65rem; color: #999; margin-left: 0.2rem; }
+  .wbw-empty { color: #888; font-size: 0.85rem; }
+  .panel-notes, .panel-reflection, .panel-writing textarea { width: 100%; box-sizing: border-box; margin: 0.4rem 0; }
+  .panel-checklist { font-weight: 400; }
+
+  /* Tajweed colours -- same proven values as the legacy app (reference only, never imported). */
+  .tajweed-ham_wasl, .tajweed-laam_shamsiyah, .tajweed-slnt, .tajweed-silent { color: #9aa3b5; }
+  .tajweed-madda_normal, .tajweed-ghunnah { color: #FF7E1E; }
+  .tajweed-madda_necessary, .tajweed-madda_obligatory, .tajweed-qalaqah { color: #e04040; }
+  .tajweed-madda_permissible { color: #4d7dff; }
+  .tajweed-ikhafa, .tajweed-ikhafa_shafawi { color: #c651c6; }
+  .tajweed-iqlab { color: #26bffd; }
+  .tajweed-idgham_ghunnah, .tajweed-idgham_wo_ghunnah, .tajweed-idgham_mutajanisayn, .tajweed-idgham_mutaqaribayn, .tajweed-idgham_shafawi { color: #1fa87a; }
+  .tajweed-end { color: #B8862F; }
+
+  /* ---------- Way modal ---------- */
+  #wayModalOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 50; }
+  #wayModalOverlay.open { display: flex; }
+  .way-modal { background: white; border-radius: 0.6rem; max-width: 34rem; width: 92%; max-height: 85vh; overflow-y: auto; padding: 1rem 1.2rem; }
+  .way-modal-header { display: flex; justify-content: space-between; align-items: center; }
+  .way-close-btn { background: none; border: none; font-size: 1.4rem; color: #888; padding: 0; }
+  .way-tab-bar { display: flex; gap: 0.4rem; border-bottom: 1px solid #eee; margin: 0.6rem 0; }
+  .way-tab-btn { background: none; border: none; color: #888; padding: 0.4rem 0.6rem; border-bottom: 2px solid transparent; border-radius: 0; }
+  .way-tab-btn.active { color: #1F3A6E; border-bottom-color: #1F3A6E; font-weight: 600; }
+  .way-tab-panel { display: none; }
+  .way-tab-panel.active { display: block; }
+  .pill { display: inline-block; padding: 0.05rem 0.4rem; border-radius: 0.7rem; font-size: 0.72rem; }
+  .pill-pending { background: #f5ebd6; color: #8a6220; }
+  .pill-confirmed { background: #deede4; color: #2e6b4f; }
+  .pill-returned { background: #f6e3df; color: #9c3b2e; }
+  .breakdown-row { display: flex; align-items: center; gap: 0.5rem; margin: 0.3rem 0; font-size: 0.82rem; }
+  .breakdown-label { width: 6rem; }
+  .breakdown-bar-track { flex: 1; background: #f0f0f0; border-radius: 0.3rem; height: 0.6rem; }
+  .breakdown-bar { height: 100%; border-radius: 0.3rem; }
+  .breakdown-count { width: 2rem; text-align: right; }
+  .coverage-grid { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.5rem; }
+  .coverage-chip { display: inline-flex; align-items: center; justify-content: center; width: 1.7rem; height: 1.7rem; border-radius: 0.3rem; font-size: 0.68rem; color: #fff; text-shadow: 0 0 2px rgba(0,0,0,0.4); }
+</style>
+</head>
+<body>
+  <h1>QuranRevival (Phase 4)</h1>
+
+  <div id="who">Not signed in.</div>
+  <button id="signInBtn">Sign in with Google</button>
+
+  <div id="app" style="display:none;">
+    <div class="row">
+      <div><label>Tenant</label><select id="tenantSelect"></select></div>
+      <div><label>Person</label><select id="personSelect"></select></div>
+      <div><label>Surah</label><select id="surahSelect"></select></div>
+      <div><label>Approach</label><select id="trackableSelect"></select></div>
+      <div><label><input type="checkbox" id="showBangla" /> Show Bangla translation</label></div>
+    </div>
+
+    <h2>Mastery Wheel</h2>
+    <div id="wheelSection">
+      <div id="wheelContainer">Loading…</div>
+      <div id="wheelLegendContainer"></div>
+    </div>
+
+    <h2>Study</h2>
+    <div id="studyScreen">
+      <div class="row">
+        <button class="secondary" id="prevAyahBtn">◂ Previous</button>
+        <div id="ayahPosition" style="align-self:center; font-size:0.85rem; color:#666;"></div>
+        <button class="secondary" id="nextAyahBtn">Next ▸</button>
+        <div><label style="display:inline-block; margin:0 0 0 1rem;"><input type="checkbox" id="tajweedToggle" /> Tajweed colours</label></div>
+      </div>
+      <div class="row" id="audioControls"></div>
+      <div id="ayahPanels"></div>
+    </div>
+  </div>
+
+  <div id="wayModalOverlay"><div id="wayModalMount"></div></div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider, signInWithPopup, onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { safeWrite } from "./js/errors.js";
+    import { getMyMemberships, initializeActiveContext, setActiveContext } from "./js/session-context.js";
+    import { getTrackables } from "./js/catalogue.js";
+    import { buildUnitKey, STATUSES } from "./js/unit-keys.js";
+    import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
+    import { weekKeyFor, logActivity } from "./js/activity.js";
+    import { getSurah, getSurahIndex } from "./js/quran-data.js";
+    import { renderLayoutA } from "./js/ayah-renderer.js";
+    import { renderMasteryWheel, attachWheelClickHandler, renderWheelLegend } from "./js/mastery-wheel.js";
+    import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab, renderWayModalShell, attachWayModalHandlers } from "./js/way-modal.js";
+    import { RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah, setLoop, stop as stopAudio } from "./js/audio-player.js";
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const appEl = document.getElementById("app");
+    const tenantSelect = document.getElementById("tenantSelect");
+    const personSelect = document.getElementById("personSelect");
+    const surahSelect = document.getElementById("surahSelect");
+    const trackableSelect = document.getElementById("trackableSelect");
+    const showBangla = document.getElementById("showBangla");
+    const wheelContainer = document.getElementById("wheelContainer");
+    const wheelLegendContainer = document.getElementById("wheelLegendContainer");
+    const ayahPosition = document.getElementById("ayahPosition");
+    const prevAyahBtn = document.getElementById("prevAyahBtn");
+    const nextAyahBtn = document.getElementById("nextAyahBtn");
+    const tajweedToggle = document.getElementById("tajweedToggle");
+    const audioControls = document.getElementById("audioControls");
+    const ayahPanels = document.getElementById("ayahPanels");
+    const wayModalOverlay = document.getElementById("wayModalOverlay");
+    const wayModalMount = document.getElementById("wayModalMount");
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = `Sign-in failed: ${err.message}`;
+      });
+    });
+
+    let activeTenantId = null;
+    let myMemberships = [];
+    let roster = [];
+    let selectedPersonId = null;
+    let tenantWeekStartsOn = 6;
+
+    let quranTrackables = [];
+    let surahIndex = [];
+    let currentSurahNum = 1;
+    let currentSurahData = null;
+    let currentTrackableId = null;
+    let currentAyahNum = 1;
+    let currentChunk = null;
+
+    function currentActingPersonId() {
+      const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      return membership?.personId ?? selectedPersonId;
+    }
+
+    function currentTrackable() {
+      return quranTrackables.find((t) => t.id === currentTrackableId) ?? null;
+    }
+
+    async function loadContextData() {
+      const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+      const [rosterSnap, tenantSnap] = await Promise.all([
+        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        getDoc(doc(db, TENANT.TENANTS, activeTenantId)),
+      ]);
+      roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      tenantWeekStartsOn = tenantSnap.exists() ? (tenantSnap.data().weekStartsOn ?? 6) : 6;
+      personSelect.innerHTML = roster.map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`).join("");
+      selectedPersonId = roster[0]?.id ?? null;
+
+      const allTrackables = await getTrackables(db, activeTenantId);
+      quranTrackables = allTrackables.filter((t) => t.subjectId === "quran" && t.status !== "archived");
+      trackableSelect.innerHTML = quranTrackables.length
+        ? quranTrackables.map((t) => `<option value="${t.id}">${langText(t.name, "en", t.id)}</option>`).join("")
+        : `<option value="">(no Quran Approaches yet)</option>`;
+      currentTrackableId = quranTrackables[0]?.id ?? null;
+
+      surahIndex = await getSurahIndex();
+      surahSelect.innerHTML = surahIndex
+        .map((s) => `<option value="${s.surahNumber}">${s.surahNumber}. ${s.surahNameEnglish}</option>`)
+        .join("");
+      currentSurahNum = surahIndex[0]?.surahNumber ?? 1;
+
+      await loadSurah();
+    }
+
+    async function loadSurah() {
+      currentSurahData = await getSurah(currentSurahNum);
+      currentAyahNum = 1;
+      await refreshChunkAndWheel();
+      renderStudyScreen();
+    }
+
+    async function refreshChunkAndWheel() {
+      if (!selectedPersonId) return;
+      const chunkKey = `surah_${currentSurahNum}`;
+      currentChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, chunkKey);
+      renderWheel();
+    }
+
+    function ayahStatusesForCurrentTrackable() {
+      const entries = currentChunk?.entries ?? {};
+      return currentSurahData.ayahs.map((a) => {
+        const unitKey = buildUnitKey.ayah(currentSurahNum, a.ayah);
+        const entry = entries[`${unitKey}::${currentTrackableId}`];
+        return { ayah: a.ayah, statusId: entry?.claimedStatus ?? "not_started" };
+      });
+    }
+
+    function renderWheel() {
+      if (!currentTrackableId || !currentSurahData) {
+        wheelContainer.innerHTML = `<p style="color:#888;">Pick an Approach to see the wheel.</p>`;
+        return;
+      }
+      const ayahStatuses = ayahStatusesForCurrentTrackable();
+      wheelContainer.innerHTML = renderMasteryWheel(ayahStatuses);
+      attachWheelClickHandler(wheelContainer, (ayahNum) => {
+        currentAyahNum = ayahNum;
+        renderStudyScreen();
+        openWayModal();
+      });
+      const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
+      wheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+    }
+
+    function langsForTranslation() {
+      return showBangla.checked ? ["en", "bn"] : ["en"];
+    }
+
+    function renderStudyScreen() {
+      if (!currentSurahData) return;
+      const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
+      if (!ayah) return;
+      ayahPosition.textContent = `Surah ${currentSurahNum} — Ayah ${currentAyahNum} of ${currentSurahData.ayahCount}`;
+      prevAyahBtn.disabled = currentAyahNum <= 1;
+      nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount;
+
+      const trackable = currentTrackable();
+      const panels = trackable?.panels ?? ["text"];
+      ayahPanels.innerHTML = renderLayoutA(ayah, panels, {
+        tajweedOn: tajweedToggle.checked,
+        langs: langsForTranslation(),
+      });
+
+      renderAudioControls(panels);
+    }
+
+    function renderAudioControls(panels) {
+      if (!panels.includes("audio")) { audioControls.innerHTML = ""; return; }
+      const options = Object.values(RECITERS)
+        .map((r) => {
+          const label = reciterIsReady(r.id) && !reciterSupportsSingleAyah(r.id) ? `${r.label} (whole surah only)` : r.label;
+          return `<option value="${r.id}" ${!reciterIsReady(r.id) ? "disabled" : ""}>${label}${reciterIsReady(r.id) ? "" : " (not uploaded yet)"}</option>`;
+        })
+        .join("");
+      audioControls.innerHTML = `
+        <select id="reciterSelect">${options}</select>
+        <button type="button" class="secondary" id="playBtn">▶ Play ayah</button>
+        <button type="button" class="secondary" id="playSurahBtn">▶ Play whole surah</button>
+        ${panels.includes("loop") ? `<label style="display:inline-flex; align-items:center; gap:0.3rem; font-weight:400;"><input type="checkbox" id="loopToggle" /> Loop</label>` : ""}
+      `;
+      const reciterSelect = document.getElementById("reciterSelect");
+      const playBtn = document.getElementById("playBtn");
+      const playSurahBtn = document.getElementById("playSurahBtn");
+      const loopToggle = document.getElementById("loopToggle");
+      if (loopToggle) loopToggle.addEventListener("change", () => setLoop(loopToggle.checked));
+      playBtn.addEventListener("click", async () => {
+        const reciterId = reciterSelect.value;
+        const reciter = RECITERS[reciterId];
+        try {
+          if (!reciterSupportsSingleAyah(reciterId)) throw new Error(`${reciter.label} only has whole-surah audio — use "Play whole surah" instead.`);
+          if (reciter.kind === "segmented") await playSegmentedAyah(currentSurahNum, currentAyahNum, reciterId);
+          else await playAyah(currentSurahNum, currentAyahNum, reciterId);
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+      playSurahBtn.addEventListener("click", async () => {
+        const reciterId = reciterSelect.value;
+        try {
+          await playSurah(currentSurahNum, reciterId, currentSurahData.ayahCount);
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    }
+
+    prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopAudio(); currentAyahNum--; renderStudyScreen(); } });
+    nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount) { stopAudio(); currentAyahNum++; renderStudyScreen(); } });
+    tajweedToggle.addEventListener("change", renderStudyScreen);
+    showBangla.addEventListener("change", renderStudyScreen);
+
+    surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); });
+    trackableSelect.addEventListener("change", async () => { currentTrackableId = trackableSelect.value; renderWheel(); renderStudyScreen(); });
+    personSelect.addEventListener("change", async () => { selectedPersonId = personSelect.value; await refreshChunkAndWheel(); });
+
+    // ---------------------------------------------------------------------
+    // Way modal
+    // ---------------------------------------------------------------------
+
+    function openWayModal() {
+      const trackable = currentTrackable();
+      if (!trackable) return;
+      const unitKey = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
+      const entryKey = `${unitKey}::${trackable.id}`;
+      const entry = currentChunk?.entries?.[entryKey] ?? null;
+
+      const statusIdsForTrackable = Object.values(currentChunk?.entries ?? {})
+        .filter((e) => e.trackableId === trackable.id)
+        .map((e) => e.claimedStatus);
+      const ayahStatuses = ayahStatusesForCurrentTrackable();
+
+      const title = `${langText(trackable.name, "en", trackable.id)} — Surah ${currentSurahNum}, Ayah ${currentAyahNum}`;
+      const tabBodies = {
+        Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
+        Guide: renderGuideTab(trackable, "en"),
+        Breakdown: renderBreakdownTab(statusIdsForTrackable),
+        Coverage: renderCoverageTab(ayahStatuses),
+      };
+      wayModalMount.innerHTML = renderWayModalShell(title, tabBodies);
+      wayModalOverlay.classList.add("open");
+
+      attachWayModalHandlers(wayModalMount.firstElementChild, {
+        onClose: () => wayModalOverlay.classList.remove("open"),
+      });
+
+      const claimBtn = wayModalMount.querySelector(".way-claim-btn");
+      const statusSelectEl = wayModalMount.querySelector(".way-status-select");
+      const resultEl = wayModalMount.querySelector(".way-claim-result");
+      claimBtn.addEventListener("click", async () => {
+        claimBtn.disabled = true;
+        const outcome = await safeWrite(
+          () => claimStatus(db, {
+            tenantId: activeTenantId,
+            personId: selectedPersonId,
+            subjectId: "quran",
+            unitKey,
+            trackableId: trackable.id,
+            statusId: statusSelectEl.value,
+            notes: "",
+            domainIds: [],
+            claimedByPersonId: currentActingPersonId(),
+            claimedByUid: auth.currentUser.uid,
+          }),
+          { collection: "records", action: "claimStatus" }
+        );
+        if (outcome.ok) {
+          await logActivity(db, {
+            tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
+            weekStartsOn: tenantWeekStartsOn, subjectId: "quran", unitKey,
+            trackableId: trackable.id, action: "claimed", uid: auth.currentUser.uid,
+          });
+          const message = outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.";
+          await refreshChunkAndWheel();
+          openWayModal(); // refresh the modal's own tabs against the new chunk -- this replaces resultEl, so the message has to be applied to the NEW element below, not the one captured above
+          const freshResultEl = wayModalMount.querySelector(".way-claim-result");
+          if (freshResultEl) freshResultEl.textContent = message;
+        } else {
+          resultEl.textContent = outcome.entry.message;
+          claimBtn.disabled = false;
+        }
+      });
+    }
+
+    // ---------------------------------------------------------------------
+    // Sign-in / context bootstrap (same pattern as records.html)
+    // ---------------------------------------------------------------------
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = "Not signed in.";
+        signInBtn.style.display = "inline-block";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = `Signed in as ${user.email}`;
+      signInBtn.style.display = "none";
+
+      async function step(name, fn) {
+        try { return await fn(); } catch (err) { err.stepName = err.stepName ?? name; throw err; }
+      }
+
+      try {
+        const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+
+        const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
+        if (!context) {
+          whoEl.textContent += " — no account found yet. Create one on onboarding.html first.";
+          return;
+        }
+        activeTenantId = context.tenantId;
+
+        myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+          .join("");
+
+        appEl.style.display = "block";
+        await step("load context data", loadContextData);
+      } catch (err) {
+        whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
+        console.error(err);
+      }
+    });
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      await loadContextData();
+    });
+  </script>
+</body>
+</html>
