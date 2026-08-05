@@ -104,7 +104,10 @@ const PANEL_ORDER = ["text", "tajweed", "wordByWord", "notes", "reflection", "wr
 const PANEL_RENDERERS = {
   text: (ayah, opts) => renderArabicPanel(ayah, opts) + renderTranslationPanel(ayah, opts.langs),
   tajweed: () => "", // tajweed is a toggle on the text panel (opts.tajweedOn), not a separate panel
-  wordByWord: (ayah, opts) => renderWordByWordPanel(ayah, { langs: opts.langs }) + renderRootDerivativePanel(ayah),
+  // wbwLangs, if given, overrides langs for this panel only -- lets the
+  // caller offer an explicit word-by-word language choice independent of
+  // the ayah translation panel's language (owner request, 5 Aug 2026).
+  wordByWord: (ayah, opts) => renderWordByWordPanel(ayah, { langs: opts.wbwLangs ?? opts.langs }) + renderRootDerivativePanel(ayah),
   notes: () => `<textarea class="panel-notes" placeholder="Notes"></textarea>`,
   reflection: () => `<textarea class="panel-reflection" placeholder="Reflection"></textarea>`,
   writing: () => `<div class="panel-writing"><textarea placeholder="Write it out here"></textarea></div>`,

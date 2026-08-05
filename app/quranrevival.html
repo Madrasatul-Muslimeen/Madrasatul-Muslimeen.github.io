@@ -93,7 +93,16 @@
       <div><label>Person</label><select id="personSelect"></select></div>
       <div><label>Surah</label><select id="surahSelect"></select></div>
       <div><label>Approach</label><select id="trackableSelect"></select></div>
-      <div><label><input type="checkbox" id="showBangla" /> Show Bangla translation</label></div>
+      <div><label>Language</label><select id="langSelect">
+        <option value="en">English</option>
+        <option value="bn">English + বাংলা (Bangla)</option>
+      </select></div>
+      <div id="wbwLangControl" style="display:none;"><label>Word by Word</label><select id="wbwLangSelect">
+        <option value="auto">Follow language above</option>
+        <option value="en">English only</option>
+        <option value="bn">বাংলা only</option>
+        <option value="both">English + বাংলা</option>
+      </select></div>
     </div>
 
     <h2>Mastery Wheel</h2>
@@ -127,7 +136,7 @@
     import { langText } from "./js/lang.js";
     import { safeWrite } from "./js/errors.js";
     import { getMyMemberships, initializeActiveContext, setActiveContext } from "./js/session-context.js";
-    import { getTrackables } from "./js/catalogue.js";
+    import { getTrackables, syncUnneditedTrackableNames } from "./js/catalogue.js";
     import { buildUnitKey, STATUSES } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
@@ -135,7 +144,12 @@
     import { renderLayoutA } from "./js/ayah-renderer.js";
     import { renderMasteryWheel, attachWheelClickHandler, renderWheelLegend } from "./js/mastery-wheel.js";
     import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab, renderWayModalShell, attachWayModalHandlers } from "./js/way-modal.js";
-    import { RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah, setLoop, stop as stopAudio } from "./js/audio-player.js";
+    import { RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah, setLoop, setPlaybackErrorHandler, stop as stopAudio } from "./js/audio-player.js";
+
+    // Async playback failures (network drop mid-file, a source that turns
+    // out not to exist, etc.) never reject play()'s own promise -- without
+    // this they'd fail silently. Registered once; not tied to auth state.
+    setPlaybackErrorHandler((message) => alert(message));
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
@@ -144,7 +158,9 @@
     const personSelect = document.getElementById("personSelect");
     const surahSelect = document.getElementById("surahSelect");
     const trackableSelect = document.getElementById("trackableSelect");
-    const showBangla = document.getElementById("showBangla");
+    const langSelect = document.getElementById("langSelect");
+    const wbwLangControl = document.getElementById("wbwLangControl");
+    const wbwLangSelect = document.getElementById("wbwLangSelect");
     const wheelContainer = document.getElementById("wheelContainer");
     const wheelLegendContainer = document.getElementById("wheelLegendContainer");
     const ayahPosition = document.getElementById("ayahPosition");
@@ -175,6 +191,10 @@
     let currentTrackableId = null;
     let currentAyahNum = 1;
     let currentChunk = null;
+    let currentLang = "en"; // drives translation panel, word-by-word (unless overridden below), Approach/section names, person names, Guide tab
+    let wbwLangMode = "auto"; // "auto" follows currentLang; "en"/"bn"/"both" is an explicit per-panel override (owner request, 5 Aug 2026)
+    let currentReciterId = "ar"; // persisted across renderAudioControls() rebuilds -- a fresh <select> is built on every ayah nav/toggle, so without this the choice silently reverts to the first option each time
+    let loopIsOn = false;
 
     function currentActingPersonId() {
       const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
@@ -185,6 +205,43 @@
       return quranTrackables.find((t) => t.id === currentTrackableId) ?? null;
     }
 
+    function canAdminCatalogueClientSide() {
+      const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      return !!membership && (membership.roles.includes("owner") || membership.roles.includes("prime"));
+    }
+
+    function renderPersonSelectOptions() {
+      const prev = personSelect.value;
+      personSelect.innerHTML = roster.map((p) => `<option value="${p.id}">${langText(p.name, currentLang, p.id)}</option>`).join("");
+      if (roster.some((p) => p.id === prev)) personSelect.value = prev;
+    }
+
+    /** Grouped by section (owner request, 5 Aug 2026: section names should show, in whichever language is chosen) -- also just a nicer 30-item dropdown than one flat list. */
+    function renderTrackableSelectOptions() {
+      const prev = trackableSelect.value;
+      if (!quranTrackables.length) {
+        trackableSelect.innerHTML = `<option value="">(no Quran Approaches yet)</option>`;
+        return;
+      }
+      const bySection = new Map();
+      for (const t of quranTrackables) {
+        const key = t.group ?? 0;
+        if (!bySection.has(key)) bySection.set(key, { groupName: t.groupName, items: [] });
+        bySection.get(key).items.push(t);
+      }
+      trackableSelect.innerHTML = [...bySection.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([, { groupName, items }]) => {
+          const label = groupName ? langText(groupName, currentLang) : "";
+          const options = items
+            .map((t) => `<option value="${t.id}">${langText(t.name, currentLang, t.id)}</option>`)
+            .join("");
+          return label ? `<optgroup label="${label}">${options}</optgroup>` : options;
+        })
+        .join("");
+      if (quranTrackables.some((t) => t.id === prev)) trackableSelect.value = prev;
+    }
+
     async function loadContextData() {
       const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
       const [rosterSnap, tenantSnap] = await Promise.all([
@@ -193,14 +250,21 @@
       ]);
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
       tenantWeekStartsOn = tenantSnap.exists() ? (tenantSnap.data().weekStartsOn ?? 6) : 6;
-      personSelect.innerHTML = roster.map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`).join("");
+      renderPersonSelectOptions();
       selectedPersonId = roster[0]?.id ?? null;
+
+      // Backfills newly-added language keys (e.g. Bangla) onto this tenant's
+      // own unedited trackable copies -- best-effort: only owner/prime can
+      // write catalogue data, and a viewer without that role should still
+      // see the page fine on whatever names are already there.
+      if (canAdminCatalogueClientSide()) {
+        try { await syncUnneditedTrackableNames(db, activeTenantId, auth.currentUser.uid); }
+        catch (err) { console.warn("Trackable name sync skipped:", err.message); }
+      }
 
       const allTrackables = await getTrackables(db, activeTenantId);
       quranTrackables = allTrackables.filter((t) => t.subjectId === "quran" && t.status !== "archived");
-      trackableSelect.innerHTML = quranTrackables.length
-        ? quranTrackables.map((t) => `<option value="${t.id}">${langText(t.name, "en", t.id)}</option>`).join("")
-        : `<option value="">(no Quran Approaches yet)</option>`;
+      renderTrackableSelectOptions();
       currentTrackableId = quranTrackables[0]?.id ?? null;
 
       surahIndex = await getSurahIndex();
@@ -251,8 +315,17 @@
       wheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
     }
 
-    function langsForTranslation() {
-      return showBangla.checked ? ["en", "bn"] : ["en"];
+    /** Ayah translation panel: additive when Bangla is chosen (English stays visible alongside it), per the F-060 design note in ayah-renderer.js. */
+    function translationLangs() {
+      return currentLang === "bn" ? ["en", "bn"] : ["en"];
+    }
+
+    /** Word-by-word panel: "auto" follows the language above; otherwise the owner's explicit choice wins (owner request, 5 Aug 2026 -- an explicit fallback alongside the automatic behaviour, not instead of it). */
+    function wbwLangs() {
+      if (wbwLangMode === "en") return ["en"];
+      if (wbwLangMode === "bn") return ["bn"];
+      if (wbwLangMode === "both") return ["en", "bn"];
+      return translationLangs();
     }
 
     function renderStudyScreen() {
@@ -265,9 +338,11 @@
 
       const trackable = currentTrackable();
       const panels = trackable?.panels ?? ["text"];
+      wbwLangControl.style.display = panels.includes("wordByWord") ? "" : "none";
       ayahPanels.innerHTML = renderLayoutA(ayah, panels, {
         tajweedOn: tajweedToggle.checked,
-        langs: langsForTranslation(),
+        langs: translationLangs(),
+        wbwLangs: wbwLangs(),
       });
 
       renderAudioControls(panels);
@@ -291,7 +366,16 @@
       const playBtn = document.getElementById("playBtn");
       const playSurahBtn = document.getElementById("playSurahBtn");
       const loopToggle = document.getElementById("loopToggle");
-      if (loopToggle) loopToggle.addEventListener("change", () => setLoop(loopToggle.checked));
+
+      // This whole block is rebuilt on every ayah nav/toggle (renderStudyScreen
+      // runs every time), so without re-applying the persisted choice here the
+      // reciter would silently revert to the first <option> and Loop would
+      // silently uncheck itself, even though playback kept working underneath.
+      reciterSelect.value = currentReciterId;
+      if (loopToggle) { loopToggle.checked = loopIsOn; setLoop(loopIsOn); }
+
+      reciterSelect.addEventListener("change", () => { currentReciterId = reciterSelect.value; });
+      if (loopToggle) loopToggle.addEventListener("change", () => { loopIsOn = loopToggle.checked; setLoop(loopIsOn); });
       playBtn.addEventListener("click", async () => {
         const reciterId = reciterSelect.value;
         const reciter = RECITERS[reciterId];
@@ -316,7 +400,16 @@
     prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopAudio(); currentAyahNum--; renderStudyScreen(); } });
     nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount) { stopAudio(); currentAyahNum++; renderStudyScreen(); } });
     tajweedToggle.addEventListener("change", renderStudyScreen);
-    showBangla.addEventListener("change", renderStudyScreen);
+    langSelect.addEventListener("change", () => {
+      currentLang = langSelect.value;
+      renderPersonSelectOptions();
+      renderTrackableSelectOptions();
+      renderStudyScreen();
+    });
+    wbwLangSelect.addEventListener("change", () => {
+      wbwLangMode = wbwLangSelect.value;
+      renderStudyScreen();
+    });
 
     surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); });
     trackableSelect.addEventListener("change", async () => { currentTrackableId = trackableSelect.value; renderWheel(); renderStudyScreen(); });
@@ -338,10 +431,10 @@
         .map((e) => e.claimedStatus);
       const ayahStatuses = ayahStatusesForCurrentTrackable();
 
-      const title = `${langText(trackable.name, "en", trackable.id)} — Surah ${currentSurahNum}, Ayah ${currentAyahNum}`;
+      const title = `${langText(trackable.name, currentLang, trackable.id)} — Surah ${currentSurahNum}, Ayah ${currentAyahNum}`;
       const tabBodies = {
         Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
-        Guide: renderGuideTab(trackable, "en"),
+        Guide: renderGuideTab(trackable, currentLang),
         Breakdown: renderBreakdownTab(statusIdsForTrackable),
         Coverage: renderCoverageTab(ayahStatuses),
       };

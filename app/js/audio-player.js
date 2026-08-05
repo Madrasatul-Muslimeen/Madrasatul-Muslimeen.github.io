@@ -224,18 +224,59 @@ export function reciterSupportsSingleAyah(reciterId) {
 
 let audioEl = null;
 let loopEnabled = false;
-let currentPlaylist = null; // { urls: [...], index } for sequential per-ayah playback across a range
+let currentPlaylist = null; // legacy single-shot playlist shape, kept only so playAyah()/playSurah() have something to null out -- currentRange below is what actually drives auto-advance now
+let currentRange = null; // { surahNum, ayahs: [...], index, reciterId } -- drives ayah-by-ayah auto-advance for BOTH direct (one file per ayah) and segmented (seek+boundary) reciters
+let currentBoundaryListener = null; // the one active timeupdate listener for segmented playback, tracked so switching ayah/reciter never leaves a stale one (with a stale endMs) attached alongside a new one
 let timestampsCache = null; // Promise<raw Bangla timestamp map> -- same shape for every segmented reciter for now
+let onPlaybackError = null;
+
+/**
+ * Registers a callback for playback failures that happen after play()
+ * already resolved -- a network drop mid-file, a source that turns out not
+ * to exist, a corrupt/undecodable file. None of those reject play()'s own
+ * promise (that promise is about starting playback, not finishing it), so
+ * without this a real failure just goes silent. Same idea as I15 ("a failed
+ * write must reach the user, never console.error alone") applied to audio.
+ */
+export function setPlaybackErrorHandler(fn) {
+  onPlaybackError = fn;
+}
+
+function describeMediaError(code) {
+  switch (code) {
+    case 1: return "playback was aborted";
+    case 2: return "a network error interrupted the download";
+    case 3: return "the file could not be decoded -- it may be corrupt or an unsupported format";
+    case 4: return "the audio source isn't available -- the file may not exist at that address";
+    default: return "an unknown playback error occurred";
+  }
+}
+
+function clearBoundaryListener() {
+  if (audioEl && currentBoundaryListener) audioEl.removeEventListener("timeupdate", currentBoundaryListener);
+  currentBoundaryListener = null;
+}
 
 function ensureAudioEl() {
   if (!audioEl) {
     audioEl = new Audio();
     audioEl.addEventListener("ended", handleEnded);
+    audioEl.addEventListener("error", () => {
+      const message = `Couldn't play this audio: ${describeMediaError(audioEl.error?.code)}.`;
+      currentPlaylist = null;
+      currentRange = null;
+      clearBoundaryListener();
+      if (onPlaybackError) onPlaybackError(message, { code: audioEl.error?.code });
+    });
   }
   return audioEl;
 }
 
 function handleEnded() {
+  if (currentRange) {
+    advanceRange();
+    return;
+  }
   if (loopEnabled && audioEl) {
     audioEl.currentTime = 0;
     audioEl.play();
@@ -252,43 +293,81 @@ export function setLoop(enabled) {
   loopEnabled = enabled;
 }
 
-/** Play a single ayah (direct reciters with a perAyahUrl only -- e.g. Arabic). */
+/** Play a single ayah (direct reciters with a perAyahUrl -- Arabic, English Ibraheem Walk). Standalone -- not part of a range, just finishes and stops. */
 export function playAyah(surahNum, ayahNum, reciterId) {
   const reciter = RECITERS[reciterId];
   if (!reciter || reciter.kind !== "direct" || !reciter.perAyahUrl) {
     throw new Error(`"${reciterId}" has no per-ayah audio configured yet.`);
   }
   currentPlaylist = null;
+  currentRange = null;
+  clearBoundaryListener();
   const el = ensureAudioEl();
   el.src = reciter.perAyahUrl(surahNum, ayahNum);
   return el.play();
 }
 
-/** Play a range/whole surah sequentially, ayah by ayah, for direct reciters with no single whole-surah file. */
-export function playAyahRangeAsPlaylist(surahNum, fromAyah, toAyah, reciterId) {
+function playCurrentRangeAyah() {
+  const { surahNum, ayahs, index, reciterId } = currentRange;
+  const ayahNum = ayahs[index];
   const reciter = RECITERS[reciterId];
-  if (!reciter || reciter.kind !== "direct" || !reciter.perAyahUrl) {
-    throw new Error(`"${reciterId}" has no per-ayah audio configured yet.`);
-  }
-  const urls = [];
-  for (let a = fromAyah; a <= toAyah; a++) urls.push(reciter.perAyahUrl(surahNum, a));
-  currentPlaylist = { urls, index: 0 };
+  if (reciter.kind === "segmented") return playSegmentedAyahInternal(surahNum, ayahNum, reciterId);
+  clearBoundaryListener();
   const el = ensureAudioEl();
-  el.src = urls[0];
+  el.src = reciter.perAyahUrl(surahNum, ayahNum);
   return el.play();
 }
 
-/** Play the reciter's single whole-surah file, if one exists (falls back to a playlist otherwise). */
+function advanceRange() {
+  if (!currentRange) return;
+  if (currentRange.index < currentRange.ayahs.length - 1) {
+    currentRange.index++;
+    playCurrentRangeAyah();
+    return;
+  }
+  if (loopEnabled) {
+    currentRange.index = 0;
+    playCurrentRangeAyah();
+    return;
+  }
+  currentRange = null;
+  clearBoundaryListener();
+  if (audioEl) audioEl.pause();
+}
+
+/**
+ * Play a run of ayahs, auto-advancing from one to the next until the range
+ * ends (or looping the whole range, if loop is on) -- works for BOTH direct
+ * per-ayah reciters (Arabic, English Ibraheem Walk) and segmented reciters
+ * (Bangla: one file per surah, seek + boundary per ayah). This is what
+ * "Play whole surah" actually calls for any reciter with per-ayah playback
+ * at all -- see playSurah() for the one reciter (English Kevan Brighting)
+ * that has only a single whole-surah file and never needs to advance.
+ */
+export function playAyahRange(surahNum, fromAyah, toAyah, reciterId) {
+  if (!reciterSupportsSingleAyah(reciterId)) {
+    throw new Error(`"${reciterId}" can't play ayah by ayah -- use playSurah() for its single whole-file playback instead.`);
+  }
+  const ayahs = [];
+  for (let a = fromAyah; a <= toAyah; a++) ayahs.push(a);
+  currentPlaylist = null;
+  currentRange = { surahNum, ayahs, index: 0, reciterId };
+  return playCurrentRangeAyah();
+}
+
+/** Play the reciter's single whole-surah file if that's all it has (English Kevan Brighting -- one continuous file, nothing to advance between); otherwise play the whole surah ayah-by-ayah via playAyahRange, which auto-advances for both direct and segmented reciters. */
 export function playSurah(surahNum, reciterId, ayahCount) {
   const reciter = RECITERS[reciterId];
-  if (reciter?.surahUrl) {
+  if (reciter?.kind === "direct" && reciter.surahUrl && !reciter.perAyahUrl) {
     currentPlaylist = null;
+    currentRange = null;
+    clearBoundaryListener();
     const el = ensureAudioEl();
     el.src = reciter.surahUrl(surahNum);
     return el.play();
   }
-  if (!ayahCount) throw new Error("playSurah: no whole-surah file for this reciter, and no ayahCount given to build a playlist.");
-  return playAyahRangeAsPlaylist(surahNum, 1, ayahCount, reciterId);
+  if (!ayahCount) throw new Error("playSurah: no whole-surah file for this reciter, and no ayahCount given to play it ayah by ayah.");
+  return playAyahRange(surahNum, 1, ayahCount, reciterId);
 }
 
 /** { surahNumber(string) -> [{verse_key, timestamp_from, timestamp_to}, ...] }, ms-based, one shared shape across segmented reciters for now. */
@@ -332,38 +411,60 @@ function seekTo(el, url, seconds) {
   return Promise.resolve();
 }
 
-/** Segmented reciters (one file per surah, ayah boundaries by timestamp): play one ayah by seeking + auto-stop at the next boundary. */
-export async function playSegmentedAyah(surahNum, ayahNum, reciterId) {
+/**
+ * Core segmented-ayah playback: seek to this ayah's boundary and stop at
+ * the next one -- OR, if this ayah is part of an active currentRange,
+ * advance to the next ayah in the range instead of just stopping. Shared by
+ * the standalone playSegmentedAyah() below and by playCurrentRangeAyah()
+ * above; the only difference between those two callers is whether
+ * currentRange happens to be set when this runs.
+ */
+async function playSegmentedAyahInternal(surahNum, ayahNum, reciterId) {
   const reciter = RECITERS[reciterId];
-  if (!reciter || reciter.kind !== "segmented") throw new Error(`"${reciterId}" is not a segmented reciter.`);
   const timestamps = await getTimestamps(reciterId);
   const surahEntries = timestamps[String(surahNum)];
   const entry = surahEntries?.find((e) => e.verse_key === `${surahNum}:${ayahNum}`);
   if (!entry) throw new Error(`No timing data for surah ${surahNum}, ayah ${ayahNum}.`);
 
   const { timestamp_from: startMs, timestamp_to: endMs } = entry;
-  currentPlaylist = null;
+  clearBoundaryListener(); // never leave the previous ayah's boundary check (with its own stale endMs) attached alongside this one
   const el = ensureAudioEl();
   const url = reciter.surahUrl(surahNum);
   await seekTo(el, url, startMs / 1000);
 
   const stopAtBoundary = () => {
-    if (el.currentTime * 1000 >= endMs) {
-      el.removeEventListener("timeupdate", stopAtBoundary);
-      if (loopEnabled) {
-        el.currentTime = startMs / 1000;
-        el.addEventListener("timeupdate", stopAtBoundary);
-      } else {
-        el.pause();
-      }
+    if (el.currentTime * 1000 < endMs) return;
+    clearBoundaryListener();
+    if (currentRange && currentRange.reciterId === reciterId) {
+      advanceRange();
+      return;
+    }
+    if (loopEnabled) {
+      el.currentTime = startMs / 1000;
+      currentBoundaryListener = stopAtBoundary;
+      el.addEventListener("timeupdate", stopAtBoundary);
+    } else {
+      el.pause();
     }
   };
+  currentBoundaryListener = stopAtBoundary;
   el.addEventListener("timeupdate", stopAtBoundary);
   return el.play();
 }
 
+/** Play one Bangla-style segmented ayah standalone (e.g. the "Play ayah" button) -- not part of a range, just finishes and stops (or loops on itself, if loop is on). */
+export function playSegmentedAyah(surahNum, ayahNum, reciterId) {
+  const reciter = RECITERS[reciterId];
+  if (!reciter || reciter.kind !== "segmented") throw new Error(`"${reciterId}" is not a segmented reciter.`);
+  currentPlaylist = null;
+  currentRange = null;
+  return playSegmentedAyahInternal(surahNum, ayahNum, reciterId);
+}
+
 export function stop() {
   currentPlaylist = null;
+  currentRange = null;
+  clearBoundaryListener();
   if (audioEl) audioEl.pause();
 }
 

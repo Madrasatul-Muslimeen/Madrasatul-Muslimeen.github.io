@@ -225,6 +225,37 @@ export async function getTrackables(db, tenantId) {
 }
 
 /**
+ * Refreshes name/groupName on a tenant's own trackables copies from the
+ * current APPROACH_TEMPLATES/section names, for any copy the tenant hasn't
+ * edited (edited !== true) -- the same "update-without-overwrite" shape
+ * this file's own header describes for subjects (Architecture Layer 1): an
+ * edited copy is frozen away from platform changes, an untouched one stays
+ * in sync. Backfills newly-added language keys (e.g. Bangla, added 5 Aug
+ * 2026) into tenants that seeded before those keys existed, without
+ * re-running the whole seed or touching anything else on the doc.
+ */
+export async function syncUnneditedTrackableNames(db, tenantId, uid) {
+  const existing = await getTrackables(db, tenantId);
+  const byTemplateId = new Map(APPROACH_TEMPLATES.map((t) => [t.id, t]));
+  const updates = [];
+  for (const t of existing) {
+    if (t.edited) continue; // I6-style: tenant made this their own, never silently overwritten
+    const template = byTemplateId.get(t.sourceTemplateId);
+    if (!template) continue;
+    const nameChanged = JSON.stringify(t.name) !== JSON.stringify(template.name);
+    const groupNameChanged = JSON.stringify(t.groupName) !== JSON.stringify(template.sectionName);
+    if (!nameChanged && !groupNameChanged) continue;
+    updates.push({
+      collectionName: TENANT.TRACKABLES,
+      docId: `${tenantId}__${t.id}`,
+      data: { name: template.name, groupName: template.sectionName },
+    });
+  }
+  if (updates.length) await commitUpdatesInChunks(db, updates, uid);
+  return { updatedCount: updates.length };
+}
+
+/**
  * Tenant-level edit to a subject or trackable copy. Always sets edited:true
  * (I6-style: once a tenant has made this node their own, it's frozen away
  * from silently following future platform-template changes -- "drives
