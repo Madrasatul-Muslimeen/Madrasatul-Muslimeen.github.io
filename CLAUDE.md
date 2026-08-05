@@ -189,6 +189,11 @@ Claude.
 See `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`, `PHASE-2-STATUS.md`, and
 `PHASE-3-STATUS.md`.
 
+**Phase 4 (QuranRevival module) is built and automated-render-tested (zero
+errors against real pulled data), but not yet owner-verified** — the
+authenticated real-Firestore path (sign in, claim, wheel update, real audio)
+needs the owner's own click-through. See `PHASE-4-STATUS.md`.
+
 **Open design question, raised during Phase 3 verification, not yet
 resolved:** claiming/confirming only works for the Quran subject today,
 because Approaches (`trackables`) only exist for Quran — every other

@@ -68,14 +68,25 @@ export const FEATURES = Object.freeze([
   { id: "F-038", phase: 3, name: "Bulk confirm — a surah/subject chunk, or a week", status: "built" },
   { id: "F-039", phase: 3, name: "Activity — one document per week, append-only, viaProgramId/viaSessionId (I3)", status: "built" },
   { id: "F-040", phase: 3, name: "Records/activity/domains screen (records.html) + Layer 2 security rules", status: "built" },
+
+  // Phase 4 — QuranRevival module. Reserved as a 14-ID range (F-047..F-060);
+  // needed 5 concrete features. F-048, F-052..F-059 are simply unused, same
+  // "consumed fewer IDs than first guessed" shape as Phases 1-3. Built and
+  // automated-render-tested (quranrevival-render-test.html, headless, zero
+  // errors); NOT YET owner-verified end-to-end (sign-in -> claim -> wheel
+  // update -> real audio needs a real browser + Firebase session, which this
+  // testing pass couldn't reach -- see PHASE-4-STATUS.md).
+  { id: "F-047", phase: 4, name: "QuranRevival core -- Quran static data layer (all 114 surahs pulled), ayah renderer, Mastery Wheel, Way modal, quranrevival.html wiring", status: "built" },
+  { id: "F-049", phase: 4, name: "Tajweed colour toggle on the Arabic text panel", status: "built" },
+  { id: "F-050", phase: 4, name: "Word-by-word panel + root/derivative panel (two panels, per Architecture)", status: "built" },
+  { id: "F-051", phase: 4, name: "Audio playback + loop -- 3 reciters (Basfar Arabic per-ayah, Ibraheem Walk English per-ayah, Kevan Brighting English whole-surah, Shareef Bayezid Mahmud Bangla segmented)", status: "built" },
+  { id: "F-060", phase: 4, name: "Bangla Quran translation, alongside English, across text + word-by-word panels", status: "built" },
 ]);
 
 // Phase-level reservations for everything not yet broken down individually.
 // idRange is inclusive. "delivers" is copied verbatim from the Architecture
 // doc's Build Phases table (section s7) -- not summarized or reinterpreted.
 export const PHASE_RESERVATIONS = Object.freeze([
-  { phase: 4, name: "QuranRevival module", idRange: [47, 60], status: "planned",
-    delivers: "Ayah renderer, Mastery Wheel, Way modal (Track/Guide/Breakdown/Coverage), panels per approach, approach dropdown, tajweed toggle, word-by-word, audio + loop, Bangla Quran translation" },
   { phase: 5, name: "Migration & parity", idRange: [61, 66], status: "planned",
     delivers: "Additive import from the old file; old collections untouched; B1 write-path bug traced; backfill of stranded summaries; parity checklist -- owner sign-off" },
   { phase: 6, name: "Deen Study & topic renderer", idRange: [67, 72], status: "planned",
