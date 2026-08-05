@@ -1,32 +1,27 @@
 # Phase 4 — QuranRevival module — Status
 
-Last updated: 2026-08-05 (round 2 -- owner click-through fixes)
+Last updated: 2026-08-05 (round 4 -- owner-verified, closed)
 Read alongside `CLAUDE.md`.
 
 ---
 
 ## Position
 
-**Phase 4 was already built (found already committed in the repo, not built
-in this session) — 5 features (F-047, F-049, F-050, F-051, F-060).** Items
-1-3 of the owner's own click-through checklist (sign-in/claim/wheel round
-trip, tajweed/Bangla toggle) passed. Item 4 (audio) surfaced 3 real
-issues, plus 2 more the owner raised separately (Bangla word-by-word,
-Approach/section names not language-aware) — all 5 addressed in round 2
-(see below).
+**Phase 4 complete and owner-verified.** Built as 5 features (F-047, F-049,
+F-050, F-051, F-060; found already in the repo, not built in this specific
+session -- see "What was built" below). The owner ran it for real across
+four rounds and found real bugs each time (audio, a merge gap, then two
+more audio/language issues); all fixed, all confirmed working in the
+owner's own browser as of round 4. Same "owner ran it for real, found real
+bugs, fixed, re-verified" discipline as Phases 1-3.
 
-**Round 2's owner re-test (Edge) found it still hadn't reached `main`** --
-the fixes existed on the feature branch but nothing had merged them, so
-only round 1's Basfar swap was actually live; everything else in round 2
-was, correctly, still missing. **Merged to `main` this round (PR #2,
-`a556a86`).** As deep a verification pass as this sandboxed environment
-allows was run against the merged code -- see "Round 3" below for exactly
-what that covers and, importantly, what it still can't: this environment
-has no browser network route to archive.org or Firebase (confirmed via a
-proxy test against several other domains too -- a policy boundary, not a
-misconfiguration), so the owner's own click-through is still the only way
-to confirm real playback and the real sign-in/claim/wheel round trip on
-the round-2 fixes specifically.
+**The owner's actual test environment turned out to be the hardest part of
+this phase**, not the app itself: a non-persistent office VDI with no admin
+rights and no Node/Python pre-installed, which is why rounds 2-3 kept
+showing old behaviour even after fixes were merged -- the owner simply
+had no way to run the app at all yet. Worked around with a portable
+(no-install) Node.js setup; see "Round 4" below for exactly what that
+involved, in case it's needed again.
 
 `feature-registry.js` had this phase marked `status: "planned"` even though
 the code existed — that was a tracking gap, not a build gap. Corrected in
@@ -274,6 +269,57 @@ claim/confirm, the wheel/Way-modal update, and the `syncUnneditedTrackableNames`
 backfill actually running against a real tenant) -- none of that is
 reachable from here at all, sandboxed or not, without real credentials this
 session doesn't have and shouldn't try to obtain another way.
+
+## Round 4 — owner-verified, closed (5 Aug 2026)
+
+The owner's re-test in round 2 (Edge) still showed round-1-only behaviour
+even after round 2 was pushed. Root cause turned out to be twofold, found
+in this order:
+
+1. **Round 2 had never been merged** -- no PR existed for it yet, only
+   round 1 was live on `main`. Fixed in round 3 (merged via PR #2, then a
+   docs-only PR #3 recording the verification pass).
+2. **The owner's test machine couldn't run the app at all.** It's a
+   non-persistent office VDI (resets on logoff/disconnect) with no local
+   admin rights, so: `git clone` into a folder that then vanished between
+   messages, no Node.js and no rights to install the `.msi`, and the
+   `python` on PATH turned out to be the Microsoft Store's fake stub, not
+   real Python. Worked around with Node's **portable ZIP distribution**
+   (no install, no admin needed): download `node-<version>-win-x64.zip`
+   from `nodejs.org/dist/`, extract it anywhere writable (Desktop worked),
+   and run `serve.js` via the extracted `node.exe`'s full path rather than
+   relying on it being on `PATH`. Confirmed working. If this machine
+   resets again, the whole clone + portable-Node setup needs redoing each
+   session -- there was no persistent storage available to fix that
+   permanently (GitHub Pages was also checked as an alternative and ruled
+   out: this repo's private, and the org's GitHub plan doesn't include
+   Pages for private repos).
+
+Once actually running the current code, the owner's re-test found:
+
+- Kevan Brighting selection persisting across ayah navigation -- **fixed,
+  confirmed**.
+- Language switching (English / English+Bangla) -- **confirmed working**.
+- Approach names showing in Bangla when Bangla is selected -- **confirmed
+  working**.
+- Basfar (Arabic) playing -- **confirmed working**.
+- One new issue: selecting Bayezid Mahmud and pressing Play could still
+  play Kevan Brighting's audio (exact mechanism not conclusively pinned
+  down -- no error/alert was reported, so the new reciter's playback
+  likely wasn't failing outright; most likely the shared `<audio>` element
+  simply wasn't being told to stop the previous reciter before loading the
+  new one). Fixed by having both Play handlers call `stopAudio()`
+  explicitly before starting anything new (PR #4), regardless of the exact
+  prior mechanism -- "stop whatever's currently playing before starting
+  something else" is correct regardless of cause.
+- Word-by-word not appearing initially -- traced to the owner not yet
+  having the "Reading — Word-by-Word Meaning" Approach selected (the only
+  one of the 30 with a word-by-word panel at all). Once selected: **word-
+  by-word panel and its language control both confirmed working,
+  including Bangla.**
+
+**Owner confirmed both remaining items fixed** after pulling PR #4's merge
+and hard-refreshing. All 5 round-2 issues plus the merge gap are closed.
 
 ## Open item — not a bug, a hosting decision
 
