@@ -19,6 +19,7 @@ const BASE_URL = "/tools/quran-data-pull/output";
 
 const surahCache = new Map(); // surahNumber -> Promise<surah data>
 let surahIndexPromise = null;
+let juzIndexPromise = null;
 
 function surahFileUrl(surahNumber) {
   const padded = String(surahNumber).padStart(3, "0");
@@ -68,4 +69,25 @@ export async function getSurahIndex() {
     });
   }
   return surahIndexPromise;
+}
+
+/**
+ * Phase 5 — Explore navigator's Quran-wheel. 30 entries, {juz, startSurah,
+ * startAyah, endSurah, endAyah} — where each Juz begins and ends. Computed
+ * once (not hand-typed) from the real pulled per-ayah `juz` field across all
+ * 114 surah files, so it's verified against actual data rather than a
+ * remembered boundary table — see tools/quran-data-pull/output/juz-index.json.
+ * Tiny (30 rows); loaded once, cached like the surah index above.
+ */
+export async function getJuzIndex() {
+  if (!juzIndexPromise) {
+    juzIndexPromise = fetch(`${BASE_URL}/juz-index.json`).then((res) => {
+      if (!res.ok) throw new Error(`Couldn't load the juz index (HTTP ${res.status}).`);
+      return res.json();
+    }).catch((err) => {
+      juzIndexPromise = null;
+      throw err;
+    });
+  }
+  return juzIndexPromise;
 }

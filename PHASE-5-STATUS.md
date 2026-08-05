@@ -1,20 +1,161 @@
-# Phase 5 — Migration & Parity — Audit & Plan
+# Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 5 August 2026 (audit only — nothing built yet)
+Last updated: 5 August 2026 (round 2 — build round, owner sign-off pending)
 Read alongside `CLAUDE.md`.
 
 ---
 
 ## Position
 
-**Nothing in this phase has been built.** Per CLAUDE.md: "Phase 5 is the
-gate. No cutover from the old app until the parity checklist is derived
-from a live audit of `index.html` and signed by the owner — not by
-Claude." This document **is** that audit. It ends with open questions and
-a proposed build order, not code. Waiting on your review.
+**Round 1 was the audit below (unchanged, kept for the record).** The
+owner reviewed it and said: B2 is closed (the local-only roster was test
+data only, confirmed disregardable), and gave the go-ahead to build
+everything the audit recommended, deferring the open design calls to
+Claude's judgement rather than answering each one individually.
+
+**Round 2 (this round) built the real Quran-parity gaps plus the
+migration tool.** Not yet owner-verified in a real browser — same
+"built and syntax-checked here, needs a real click-through" position
+every prior phase has been in before its own round 2. See "What was
+built this round" below, before the original audit text.
 
 `index.html` was not touched anywhere in this process — read-only, as
-always.
+always. No old Firestore collection was ever written to.
+
+---
+
+## What was built this round (F-048, F-052, F-053, F-061, F-062)
+
+1. **Study Unit picker** (`app/quranrevival.html`, `app/js/unit-keys.js`) —
+   the single biggest gap from round 1: only single-ayah tracking existed
+   before. Added a Study Unit selector (Ayah/Range/Whole Surah/Ruku'/Juz/
+   Page), each building the correct unit key and landing in the correct
+   records chunk (surah-chunked vs. subject-chunked, matching
+   `records.js`'s own `chunkKeyFor` exactly). A new "Track this unit"
+   button opens the Way modal scoped to whatever's selected, via a new
+   `openUnitWayModal()` function kept entirely separate from the existing,
+   owner-verified `openWayModal()` (wheel-click path) — zero risk of
+   regressing what Phase 4 already shipped. Ruku' numbering required a
+   real fix: the pulled data's `ruku` field is a *global* sequential index
+   across the whole Quran, but the unit-key format needs a *per-surah*
+   index — `rukuIndexInSurah()` converts one to the other, verified
+   against the actual pulled data (Surah 1 = ruku 1, Surah 2 starts at
+   ruku 2 and runs to 41, etc.).
+2. **Explore navigator** (`app/js/mastery-wheel.js`, `app/js/quran-data.js`,
+   `tools/quran-data-pull/build-juz-index.js`) — a whole-Quran "Quran-wheel"
+   of 30 Juz segments, click-to-jump. Deliberately built on **direct
+   Juz-level claims** (Study Unit = Juz, from the picker above) rather than
+   pooling from ayah-level data live the way the legacy app had to — the
+   legacy app had no direct Juz-claim concept, so pooling was its only
+   option; this build does have one, so Explore just visualises those
+   claims. One clean source of truth per unit key (I2/I5), no derived
+   aggregate collection to keep in sync, no N-chunk-read cost on open. The
+   30 Juz start/end boundaries are **computed, not remembered** — a new
+   `build-juz-index.js` script scans the real pulled per-ayah `juz` field
+   across all 114 surahs and writes `juz-index.json`, so the boundaries
+   are verified against actual data rather than a typed-from-memory table.
+   Scope cut, disclosed: only the Juz level was built (not the legacy
+   app's full Quran→Juz→Surah→Ruku' nested wheel-of-wheels) — Ruku'-level
+   browsing already works via the Study Unit picker's own ayah navigation,
+   so a second, separate wheel for it seemed like duplication rather than
+   a real gap.
+3. **Multi-reciter drill/repeat playback** (`app/js/audio-player.js`) —
+   the legacy app's "Each Ayah" (cycle every selected reciter N times per
+   ayah before advancing) and "Whole Unit" (each reciter plays the whole
+   range once, that pass repeats N times) modes, with a 1/2/3/5/10× repeat
+   count. Built as a genuinely new, additive primitive
+   (`playOneAndWait()` — "play this one ayah and resolve when it's
+   actually finished") layered on top of the existing playback code
+   without changing a single line of it — the simple Play/Play-whole-surah/
+   Loop buttons Phase 4 already shipped are untouched.
+4. **Global banner** (`app/quranrevival.html`) — tenant-scoped (not
+   platform-wide like the legacy app's single shared banner, since D2's
+   tenant isolation means there's no one shared banner to begin with).
+   Reads/writes `tenants/{tenantId}.bannerTitle`/`.bannerSub` (language-
+   keyed, I11), owner/prime-editable. No rules change was needed —
+   `tenants/{tenantId}` was already owner/prime/platformAdmin-writable.
+5. **Additive migration tool** (`app/migrate.html`) — the actual "read old,
+   write new, touch nothing old" import. Preview-before-commit (nothing
+   writes until you review counts and click Run), idempotent (safe to
+   re-run — anything already migrated is skipped, never overwritten).
+   Exact old-format conversion verified directly against `index.html`'s
+   own code, not assumed:
+   - Old unit-key shapes (`buildUnitKey`/`parseUnitKey`, index.html:3711)
+     — `"S:A"` (ayah), `"S:start-end"` (range), `"S:surah"` (whole surah),
+     `"S:rukuN"` (ruku, already surah-local/1-based — same convention the
+     new schema uses), `"page:P"`, `"juz:J"` — all converted exactly.
+   - Old status numbers (`STATUS_LABELS`, index.html:3495) map by meaning,
+     not position, onto the new six-status set (`0 Not Started→not_started`
+     … `4 Not Applicable→not_applicable`); the new build's extra
+     in-between "Achieved" status is simply never produced by migrated
+     data, which is correct — it didn't exist in the source.
+   - Old way IDs 1–30 (`WAYS_DEFAULT`, index.html:3447) map onto
+     `approach_01`…`approach_30` — verified by comparing every name, not
+     assumed from matching array position alone.
+   - **I16 honoured literally, not just in spirit**: every legacy
+     `personId` is reused unchanged as the new `tenantPeople` document ID.
+     No ID-translation table exists anywhere in the tool.
+   - **Role mapping** (a design call the owner delegated): old
+     `admin`→`owner`+`prime`+`self`, old `teacher`→`teacher`+`self`, old
+     `student`→`self` only. Every migrated person gets `self` because
+     every one of them has their own `studyProgress` history under their
+     own personId.
+   - **Historical data imports pre-confirmed** (another delegated call):
+     migrated progress is stamped `confirmState: "confirmed"` directly
+     rather than run through the live `claimStatus()` confirmation
+     workflow — it's already-done, years-old study, not a new claim that
+     should queue a review request for a teacher today.
+   - Ruku'/Juz/Page *summary* collections (`rukuSummaries`, `juzSummaries`,
+     `juzSummariesPage`) are **deliberately not migrated** — they were
+     pooled aggregates the legacy app derived from ayah-level saves, not a
+     separate source of truth; the new build can recompute the same
+     picture live from `records`, the same way the old app pooled them.
+   - **A real rules bug found and worked around while building this**:
+     `tenantPeople`, `tenantInvites` and `tenantMemberUids` reads on a
+     *nonexistent* document throw a permission error rather than
+     returning `exists()===false` — the exact "S8-class" issue
+     `firestore.rules` already patched for `records`/`subjects`/
+     `trackables`/`memberships`, just never extended to these three. Not
+     patched in the rules this round (out of scope for an audit-driven
+     build without a rules-change conversation first) — instead the
+     migration tool works around it: existence checks catch the error and
+     treat it as "not migrated yet" (safe, because the create/update rules
+     underneath still correctly refuse a genuine collision), and the
+     `tenantMemberUids` merge step uses `arrayUnion` via a blind update
+     that only falls back to create on Firestore's distinct "no document
+     to update" error — a merge that can never drop a role a previous run
+     already added, and needs no read at all. **Flagging the underlying
+     rules gap for the owner**: worth a real S8-style fix in
+     `firestore.rules` at some point, same shape as the existing patches,
+     just not bundled into this round.
+
+**Who can actually run `app/migrate.html`**: whoever is signed in as the
+account holding the *old app's* `admin` role in `users/{uid}` (that's
+`smahk9@gmail.com` — confirmed in `PHASE-0-STATUS.md`) — the old
+`people`/`invites`/`studyProgress` collections are only readable in bulk
+by that old-schema role, not by the new schema's owner/prime, and the
+tool will fail closed (a clear error in the preview box) for anyone else.
+
+## What still needs your click-through
+
+Same reason every prior phase has needed one: nothing here has touched a
+real Firebase session in this sandbox.
+
+1. Study Unit picker — pick Range/Whole Surah/Ruku'/Juz/Page, claim a
+   status, confirm it lands and the Way modal's tabs show the right thing.
+2. Explore — open it, click a Juz, confirm it jumps to the right surah/ayah
+   and sets Study Unit to Juz.
+3. Drill playback — pick 2 reciters, try both Each Ayah and Whole Unit
+   modes, confirm Stop actually stops mid-drill.
+4. Global banner — edit it as owner, confirm it shows for a non-owner
+   viewer too (or at least doesn't error).
+5. `app/migrate.html` — run the preview first (it writes nothing), check
+   the counts look sane, *then* click Run. Nothing in the old app is
+   touched either way, so this is safe to try.
+
+---
+
+## Original audit (round 1, 5 August 2026) — unchanged below
 
 ---
 

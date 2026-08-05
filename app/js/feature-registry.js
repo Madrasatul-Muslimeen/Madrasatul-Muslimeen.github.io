@@ -81,14 +81,27 @@ export const FEATURES = Object.freeze([
   { id: "F-050", phase: 4, name: "Word-by-word panel + root/derivative panel (two panels, per Architecture)", status: "built" },
   { id: "F-051", phase: 4, name: "Audio playback + loop -- 3 reciters (Basfar Arabic per-ayah, Ibraheem Walk English per-ayah, Kevan Brighting English whole-surah, Shareef Bayezid Mahmud Bangla segmented)", status: "built" },
   { id: "F-060", phase: 4, name: "Bangla Quran translation, alongside English, across text + word-by-word panels", status: "built" },
+
+  // Phase 5 round 1 -- closing the parity gaps the Phase 5 audit found
+  // (PHASE-5-STATUS.md). F-048/F-052/F-053 use IDs already reserved for
+  // Phase 4 that went unused when that phase shipped with fewer concrete
+  // features than first guessed -- same "consumed fewer IDs" shape noted
+  // above, filled in now that the gap they cover is real. NOT YET
+  // owner-verified end-to-end -- built and syntax-checked this session,
+  // needs the same real-browser click-through every prior phase has.
+  { id: "F-048", phase: 4, name: "Study Unit picker -- Range/Whole Surah/Ruku'/Juz/Page tracking (previously ayah-only), correct per-type chunking and claim/confirm via the existing Way modal shell", status: "built" },
+  { id: "F-052", phase: 4, name: "Explore navigator -- whole-Quran Quran-wheel (30 Juz segments) built on direct Juz-level claims, click-to-jump", status: "built" },
+  { id: "F-053", phase: 4, name: "Multi-reciter drill/repeat playback -- select several reciters, Repeat count (1/2/3/5/10x), Repeat mode (Each Ayah / Whole Unit)", status: "built" },
+  { id: "F-061", phase: 5, name: "Tenant-scoped global banner (legacy appSettings/global parity), owner/prime-editable", status: "built" },
+  { id: "F-062", phase: 5, name: "Additive migration tool (app/migrate.html) -- old people/invites/studyProgress -> new schema, preview-before-commit, idempotent re-run, old collections never written to", status: "built" },
 ]);
 
 // Phase-level reservations for everything not yet broken down individually.
 // idRange is inclusive. "delivers" is copied verbatim from the Architecture
 // doc's Build Phases table (section s7) -- not summarized or reinterpreted.
 export const PHASE_RESERVATIONS = Object.freeze([
-  { phase: 5, name: "Migration & parity", idRange: [61, 66], status: "planned",
-    delivers: "Additive import from the old file; old collections untouched; B1 write-path bug traced; backfill of stranded summaries; parity checklist -- owner sign-off" },
+  { phase: 5, name: "Migration & parity", idRange: [63, 66], status: "planned",
+    delivers: "B1 traced (found already resolved, Phase 0); backfill of stranded summaries (B2 -- closed, owner confirmed no real data at risk); parity checklist -- delivered, see PHASE-5-STATUS.md. Remaining: owner click-through verification of F-048/F-052/F-053/F-061/F-062" },
   { phase: 6, name: "Deen Study & topic renderer", idRange: [67, 72], status: "planned",
     delivers: "Topic renderer, Deen subjects, Monitor data migrated onto Layer 2, old sync bridge deleted" },
   { phase: 7, name: "Bookmarks, programs, routines", idRange: [73, 84], status: "planned",

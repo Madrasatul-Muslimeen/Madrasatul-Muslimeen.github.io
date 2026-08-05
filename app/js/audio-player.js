@@ -471,3 +471,112 @@ export function stop() {
 export function isPlaying() {
   return !!audioEl && !audioEl.paused;
 }
+
+// ---------------------------------------------------------------------------
+// Phase 5 — multi-reciter drill/repeat playback (legacy parity: select
+// several reciters, Repeat count 1/2/3/5/10x, Repeat mode "Each Ayah" vs
+// "Whole Unit" — PHASE-5-STATUS.md parity gap). Deliberately independent of
+// the currentRange/loop machinery above, which stays exactly as it was for
+// the simple Play/Play-whole-surah buttons — this is a separate, additive
+// sequencer built on top of one new primitive: "play this one ayah and tell
+// me when it's actually finished," which nothing above needed until now.
+// ---------------------------------------------------------------------------
+
+/**
+ * Plays exactly one ayah (direct or segmented) and resolves when it
+ * finishes — no auto-advance, no loop, just "play this and tell me when
+ * it's done." Rejects (AbortError) if `signal` fires before playback ends,
+ * or on a real playback error. Used only by the drill sequencer below.
+ */
+export function playOneAndWait(surahNum, ayahNum, reciterId, { signal } = {}) {
+  const reciter = RECITERS[reciterId];
+  if (!reciter) return Promise.reject(new Error(`Unknown reciter "${reciterId}".`));
+  if (signal?.aborted) return Promise.reject(new DOMException("Aborted", "AbortError"));
+
+  currentPlaylist = null;
+  currentRange = null;
+  clearBoundaryListener();
+  const el = ensureAudioEl();
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (fn, arg) => { if (settled) return; settled = true; cleanup(); fn(arg); };
+    const onEnded = () => finish(resolve);
+    const onAbort = () => { el.pause(); finish(reject, new DOMException("Aborted", "AbortError")); };
+    function cleanup() {
+      el.removeEventListener("ended", onEnded);
+      clearBoundaryListener();
+      signal?.removeEventListener("abort", onAbort);
+    }
+    signal?.addEventListener("abort", onAbort);
+
+    if (reciter.kind === "segmented") {
+      getTimestamps(reciterId)
+        .then((timestamps) => {
+          const entry = timestamps[String(surahNum)]?.find((e) => e.verse_key === `${surahNum}:${ayahNum}`);
+          if (!entry) throw new Error(`No timing data for surah ${surahNum}, ayah ${ayahNum}.`);
+          const { timestamp_from: startMs, timestamp_to: endMs } = entry;
+          return seekTo(el, reciter.surahUrl(surahNum), startMs / 1000).then(() => {
+            const stopAtBoundary = () => { if (el.currentTime * 1000 >= endMs) finish(resolve); };
+            currentBoundaryListener = stopAtBoundary;
+            el.addEventListener("timeupdate", stopAtBoundary);
+            return el.play();
+          });
+        })
+        .catch((err) => finish(reject, err));
+      return;
+    }
+
+    if (!reciter.perAyahUrl) { finish(reject, new Error(`"${reciterId}" has no per-ayah audio configured.`)); return; }
+    el.addEventListener("ended", onEnded);
+    el.src = reciter.perAyahUrl(surahNum, ayahNum);
+    el.play().catch((err) => finish(reject, err));
+  });
+}
+
+let drillAbortController = null;
+
+/**
+ * "Each Ayah" mode: for every ayah in the range, cycle all selected
+ * reciters for `repeatCount` rounds before moving to the next ayah. "Whole
+ * Unit" mode: each selected reciter plays the whole range once; that whole
+ * pass repeats `repeatCount` times. Matches the legacy app's two repeat
+ * modes exactly (PHASE-5-STATUS.md). Resolves when the drill finishes
+ * normally; rejects with an AbortError if stopDrill() is called mid-way.
+ */
+export async function playDrill({ surahNum, fromAyah, toAyah, reciterIds, repeatCount, mode }) {
+  if (drillAbortController) drillAbortController.abort();
+  const controller = new AbortController();
+  drillAbortController = controller;
+  const { signal } = controller;
+  const ayahs = [];
+  for (let a = fromAyah; a <= toAyah; a++) ayahs.push(a);
+
+  try {
+    if (mode === "each") {
+      for (const ayahNum of ayahs) {
+        for (let round = 0; round < repeatCount; round++) {
+          for (const reciterId of reciterIds) {
+            await playOneAndWait(surahNum, ayahNum, reciterId, { signal });
+          }
+        }
+      }
+    } else {
+      for (let round = 0; round < repeatCount; round++) {
+        for (const reciterId of reciterIds) {
+          for (const ayahNum of ayahs) {
+            await playOneAndWait(surahNum, ayahNum, reciterId, { signal });
+          }
+        }
+      }
+    }
+  } finally {
+    if (drillAbortController === controller) drillAbortController = null;
+  }
+}
+
+/** Stops a running drill (if any) and any other playback — safe to call any time. */
+export function stopDrill() {
+  if (drillAbortController) { drillAbortController.abort(); drillAbortController = null; }
+  stop();
+}
