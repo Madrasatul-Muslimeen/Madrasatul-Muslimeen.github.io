@@ -377,6 +377,10 @@
       reciterSelect.addEventListener("change", () => { currentReciterId = reciterSelect.value; });
       if (loopToggle) loopToggle.addEventListener("change", () => { loopIsOn = loopToggle.checked; setLoop(loopIsOn); });
       playBtn.addEventListener("click", async () => {
+        // Always stop whatever's currently loaded first -- switching reciters
+        // and pressing Play again must never leave the previous reciter's
+        // audio still running underneath, even if the new one then fails.
+        stopAudio();
         const reciterId = reciterSelect.value;
         const reciter = RECITERS[reciterId];
         try {
@@ -388,6 +392,7 @@
         }
       });
       playSurahBtn.addEventListener("click", async () => {
+        stopAudio();
         const reciterId = reciterSelect.value;
         try {
           await playSurah(currentSurahNum, reciterId, currentSurahData.ayahCount);
