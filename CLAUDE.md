@@ -185,14 +185,16 @@ is derived from a live audit of `index.html` and signed by the owner — not by
 Claude.
 
 **Current position: Phase 0, Phase 1 (Identity & access), Phase 2
-(Catalogue), and Phase 3 (Tracking core) all complete and owner-verified.**
-See `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`, `PHASE-2-STATUS.md`, and
-`PHASE-3-STATUS.md`.
+(Catalogue), Phase 3 (Tracking core), and Phase 4 (QuranRevival module) all
+complete and owner-verified.** See `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`,
+`PHASE-2-STATUS.md`, `PHASE-3-STATUS.md`, and `PHASE-4-STATUS.md`.
 
-**Phase 4 (QuranRevival module) is built and automated-render-tested (zero
-errors against real pulled data), but not yet owner-verified** — the
-authenticated real-Firestore path (sign in, claim, wheel update, real audio)
-needs the owner's own click-through. See `PHASE-4-STATUS.md`.
+**Note for future sessions on this owner's test setup:** the owner's actual
+click-through machine is a non-persistent office VDI with no admin rights
+and no Node/Python normally available — `git clone` targets and installed
+software don't survive between logins. If local testing is needed again,
+use Node's portable ZIP distribution (no install/admin needed — see
+`PHASE-4-STATUS.md` round 4 for the exact steps), not the `.msi` installer.
 
 **Open design question, raised during Phase 3 verification, not yet
 resolved:** claiming/confirming only works for the Quran subject today,
