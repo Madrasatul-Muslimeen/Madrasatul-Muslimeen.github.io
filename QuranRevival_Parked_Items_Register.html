@@ -142,7 +142,20 @@ footer{margin-top:56px;padding-top:18px;border-top:3px double var(--lapis);
 </tbody></table></div>
 <div class="box ok"><span class="bt">Already fixed and published</span>
 <p><strong>S1</strong> teacher&rarr;Admin escalation &nbsp;&middot;&nbsp; <strong>S2</strong> invite-gated account overwrite
-&nbsp;&middot;&nbsp; <strong>S3</strong> four collections with no rules at all</p></div><section class="sec" id="s4"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Out of scope until you ask</h2></div><div class="tw"><table><thead><tr><th>#</th><th>Item</th></tr></thead><tbody>
+&nbsp;&middot;&nbsp; <strong>S3</strong> four collections with no rules at all</p></div>
+<div class="box ok"><span class="bt">Resolved during Phase 0/1 of the rebuild (5 Aug 2026)</span>
+<p>Found stale during the Phase 5 audit &mdash; these were fixed before this
+register was last edited, but never marked here. <strong>B1</strong>
+(Ruku&rsquo;/Juz write path) was a data fault, not a code fault &mdash; one
+account&rsquo;s <code>users/</code> doc had the field misspelled
+<code>PersonId</code> instead of <code>personId</code>; fixed 30 Jul, no
+code change needed. <strong>C1</strong> (S4), <strong>C2</strong> (S5) and
+<strong>C3</strong> (S6) are live in the deployed <code>firestore.rules</code>
+since 30 Jul, protecting the same collections <code>index.html</code> uses.
+<strong>C4</strong> (invite quota) and <strong>C5</strong>
+(platformAdmin not self-grantable) were built in Phase 1 for the new
+tenant schema. Full detail in <code>PHASE-0-STATUS.md</code>,
+<code>PHASE-1-STATUS.md</code> and <code>PHASE-5-STATUS.md</code>.</p></div><section class="sec" id="s4"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Out of scope until you ask</h2></div><div class="tw"><table><thead><tr><th>#</th><th>Item</th></tr></thead><tbody>
 <tr><td>D1</td><td><strong>Finance</strong> &mdash; invoices, payments, ledger, billing, course pricing</td></tr>
 <tr><td>D2</td><td><strong>Operations</strong> &mdash; attendance, scheduling, timetables, rooms. <strong>Flagged 29 Jul:</strong> &ldquo;certain hourly classes per week&rdquo; crosses into this. Curriculum <em>sequencing</em> (Term 2, Week 3) stays in scope; <em>timetabling</em> (Monday 9am, Room 2) does not &mdash; awaiting your decision.</td></tr>
 <tr><td>D3</td><td><strong>Layer 3.5 &mdash; medical and biometric health records</strong> (allergies, medications, growth charts). Health stays habits and education only.</td></tr>
