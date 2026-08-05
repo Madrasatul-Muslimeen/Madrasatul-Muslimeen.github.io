@@ -10,11 +10,23 @@ Read alongside `CLAUDE.md`.
 **Phase 4 was already built (found already committed in the repo, not built
 in this session) — 5 features (F-047, F-049, F-050, F-051, F-060).** Items
 1-3 of the owner's own click-through checklist (sign-in/claim/wheel round
-trip, tajweed/Bangla toggle) passed. **Item 4 (audio) surfaced 3 real
+trip, tajweed/Bangla toggle) passed. Item 4 (audio) surfaced 3 real
 issues, plus 2 more the owner raised separately (Bangla word-by-word,
-Approach/section names not language-aware) — all 5 addressed this round,
-see "Round 2" below. Still not owner-re-verified** — needs another
-click-through pass on the fixes themselves.
+Approach/section names not language-aware) — all 5 addressed in round 2
+(see below).
+
+**Round 2's owner re-test (Edge) found it still hadn't reached `main`** --
+the fixes existed on the feature branch but nothing had merged them, so
+only round 1's Basfar swap was actually live; everything else in round 2
+was, correctly, still missing. **Merged to `main` this round (PR #2,
+`a556a86`).** As deep a verification pass as this sandboxed environment
+allows was run against the merged code -- see "Round 3" below for exactly
+what that covers and, importantly, what it still can't: this environment
+has no browser network route to archive.org or Firebase (confirmed via a
+proxy test against several other domains too -- a policy boundary, not a
+misconfiguration), so the owner's own click-through is still the only way
+to confirm real playback and the real sign-in/claim/wheel round trip on
+the round-2 fixes specifically.
 
 `feature-registry.js` had this phase marked `status: "planned"` even though
 the code existed — that was a tracking gap, not a build gap. Corrected in
@@ -201,6 +213,67 @@ logic) -- 18/18 checks passing. **Not yet verified live** -- items 1 and 4
 in particular could not be reproduced or disproven in this sandbox (no
 network route out to archive.org or Firebase from the headless browser
 here), so the real test is the owner's next click-through.
+
+## Round 3 — merged to main, deepest verification this environment allows (5 Aug 2026)
+
+Owner asked for the merge and the confirmation to be done directly, not
+handed back as another click-through request. Did both, as far as this
+sandbox genuinely allows:
+
+1. **Merged.** Opened and merged PR #2 (`claude/project-context-review-ff986j`
+   -> `main`, commit `a556a86`). Confirmed `main` now contains the round-2
+   commit (`git merge-base --is-ancestor` check, not just "the push
+   succeeded"). Local working tree diffed against the merged `main` --
+   identical, byte for byte.
+2. **Re-ran every automated check against the merged code** (not the
+   pre-merge branch): the render-test page, the full-page pre-auth load,
+   and the 18-check mocked-`Audio` sequencing test. All still pass, 0
+   failures.
+3. **Tried to get real network access into the headless browser**, to
+   actually press play against archive.org for real instead of only
+   testing the logic with a mock. Configured Chromium to go through this
+   session's own outbound proxy. Result: still blocked, and confirmed *why*
+   -- tested several other unrelated domains (`example.com`,
+   `raw.githubusercontent.com`, `archive.org`) through the same proxy
+   config and every one of them was refused at the connection stage,
+   distinct from a real TLS/cert failure (one domain, `api.github.com`, got
+   *past* the connection stage and failed on a cert-trust issue instead --
+   showing the block is a deliberate policy allowlist, not something to
+   route around, and not a bug in this app). Real in-browser playback is
+   only confirmable from a real browser outside this sandbox -- i.e. the
+   owner's.
+4. **What curl *can* reach, though, is real archive.org data** (this
+   session's Bash tool has its own separate, allowed network path -- the
+   metadata checks in rounds 1-2 already relied on this). Used it to go
+   one level deeper than before: downloaded the actual audio bytes (not
+   just HTTP headers) for one file from each of the four reciters,
+   including Basfar surah 2 ayah 286 specifically -- the exact "near the
+   end of a long surah" case that used to 404 before round 1's fix. Every
+   download completed at exactly its declared `Content-Length` (no
+   truncation), and every file parses as a structurally valid MP3 (correct
+   frame sync bytes, sane bitrate/sample-rate fields) rather than an HTML
+   error page or a corrupt/partial file:
+
+   | File | Bytes | Valid MP3 frame | Bitrate / sample rate |
+   |---|---|---|---|
+   | Basfar 1:1 | 270,668 | yes | 192kbps / 44100Hz |
+   | Basfar 2:286 (the previously-failing case) | 1,497,258 | yes | 192kbps / 44100Hz |
+   | Ibraheem Walk 1:1 | 171,910 | yes | 192kbps / 44100Hz |
+   | Kevan Brighting, Al-Fatihah | 651,375 | yes | 128kbps / 44100Hz |
+   | Bayezid Mahmud, surah 1 | 654,957 | yes | 64kbps / 48000Hz |
+
+**Net effect: every mechanically-checkable layer now checks out** -- the
+files exist, are complete, are structurally valid audio, are named/URLed
+exactly as the code expects, and the code's own playback-sequencing logic
+(auto-advance, loop, language switching, dropdown persistence) is verified
+correct against a simulated player. **What remains unconfirmed, and can only
+be confirmed from a real browser:** whether audio actually produces sound
+when played (needs a real audio pipeline, not just a valid file), and the
+full authenticated round trip (real Google sign-in, real Firestore
+claim/confirm, the wheel/Way-modal update, and the `syncUnneditedTrackableNames`
+backfill actually running against a real tenant) -- none of that is
+reachable from here at all, sandboxed or not, without real credentials this
+session doesn't have and shouldn't try to obtain another way.
 
 ## Open item — not a bug, a hosting decision
 
