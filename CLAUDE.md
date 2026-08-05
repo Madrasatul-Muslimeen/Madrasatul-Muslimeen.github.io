@@ -64,6 +64,20 @@ referenced in older instructions but were never supplied and do not exist.
   design/scope decisions — an architecture deviation, an ambiguous spec, a
   real "which approach" choice — the kind of thing that needs their
   opinion, not their permission.
+- **On Claude Code on the web: merge your own PRs, every time, without being
+  asked.** This project has been worked on both via the Claude Code CLI
+  (local files, no GitHub layer, changes are just immediately there) and via
+  Claude Code on the web (each session gets its own working branch on
+  `Madrasatul-Muslimeen/QuranRevival---ClaudeCode`; nothing reaches `main` —
+  what the owner actually tests — until a PR merges it in). The owner's own
+  click-through always happens against `main`. A session that finishes work
+  and leaves it sitting on an unmerged branch has, from the owner's side,
+  done nothing yet — this already caused real confusion once (Phase 4
+  round 2: real fixes, pushed, but invisible until merged two rounds later).
+  So: open the PR and merge it yourself as the last step of finishing any
+  chunk of work on this repo, same as the other git operations above — no
+  permission needed, don't leave it pending "for the owner to merge" unless
+  they've explicitly said they want to review first.
 - **Be proactive.** Flag anything adjacent that is broken or risky rather than
   working around it silently.
 - **Report every time:** what was done, what is pending, what the owner should
