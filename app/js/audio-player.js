@@ -162,13 +162,18 @@ export const RECITERS = {
     id: "ar",
     label: "Abdullah Basfar (Arabic)",
     kind: "direct",
-    // Still the item confirmed 85% uploaded (owner working on completing it,
-    // ETA "tomorrow"). The "Abdullah Basfar" link sent 2 Aug 2026 actually
-    // pointed at the Kevan Brighting English item (title mismatch, almost
-    // certainly a pasted-wrong-link mistake) -- left untouched here rather
-    // than guessed at. Swap this one URL once the real, complete Basfar
-    // item link is confirmed.
-    perAyahUrl: (surah, ayah) => `https://archive.org/download/abdullah-ali-basfar/${surah}/${ayah}.mp3`,
+    // Confirmed complete 5 Aug 2026: archive.org item
+    // abdullah-ali-basfar.ayahbyayah (superseding the old abdullah-ali-basfar
+    // item, which was only 85% uploaded and capped every long surah early --
+    // e.g. surah 2 stopped at ayah 189/286). Verified via the item's own
+    // metadata: 6,314 numbered files, all 114 surahs present, surah 2 runs
+    // the full 1-286. Flat SSSAAA.mp3 naming (same convention as the English
+    // Ibraheem Walk item below), not the old item's folder-per-surah layout.
+    // Each surah also carries a "000" bismillah/istiadhah track ahead of
+    // ayah 1 -- unused here since callers only ever request real ayah
+    // numbers (1-based), never 0.
+    perAyahUrl: (surah, ayah) =>
+      `https://archive.org/download/abdullah-ali-basfar.ayahbyayah/${String(surah).padStart(3, "0")}${String(ayah).padStart(3, "0")}.mp3`,
     surahUrl: null, // no confirmed whole-surah file for this reciter -- callers fall back to a per-ayah playlist
   },
   en_ibraheemwalk: {
