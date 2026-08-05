@@ -38,6 +38,21 @@ export function parseUnitKey(unitKey) {
   return { unitType, parts };
 }
 
+/**
+ * Phase 5 — Study Unit picker. The pulled Quran data's `ruku` field (see
+ * tools/quran-data-pull) is a GLOBAL sequential index across the whole
+ * Quran (Surah 1 = ruku 1, Surah 2 starts at ruku 2, ...), but
+ * buildUnitKey.ruku expects a per-surah-relative index ("the Nth ruku of
+ * THIS surah") — matching the legacy app's rukuSummary["surah_rukuIndex"]
+ * shape (PHASE-5-STATUS.md migration map). This converts one to the other:
+ * pass the surah's own ayahs array (each already carrying .ruku) and the
+ * ayah's global ruku value.
+ */
+export function rukuIndexInSurah(surahAyahs, globalRuku) {
+  const firstRuku = surahAyahs[0]?.ruku;
+  return firstRuku == null ? globalRuku : globalRuku - firstRuku + 1;
+}
+
 /** The surah number for unit types that carry one as their first part (ayah/range/surah/ruku) — null for types that don't (juz/hizb/rub/manzil/page/hadith/topic/name), since those are Quran-wide or non-Quran and have no single surah. */
 export function surahOf(unitKey) {
   const { unitType, parts } = parseUnitKey(unitKey);

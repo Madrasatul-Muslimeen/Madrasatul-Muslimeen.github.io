@@ -20,12 +20,12 @@ export const STATUS_COLORS = Object.freeze({
   mastered: "#2e6b4f",
 });
 
-function polarToCartesian(cx, cy, r, angleDeg) {
+export function polarToCartesian(cx, cy, r, angleDeg) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
   return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
 }
 
-function segmentPath(cx, cy, rInner, rOuter, startAngle, endAngle) {
+export function segmentPath(cx, cy, rInner, rOuter, startAngle, endAngle) {
   const p1 = polarToCartesian(cx, cy, rOuter, startAngle);
   const p2 = polarToCartesian(cx, cy, rOuter, endAngle);
   const p3 = polarToCartesian(cx, cy, rInner, endAngle);
@@ -76,6 +76,49 @@ export function renderMasteryWheel(ayahStatuses, { size = 360 } = {}) {
 export function attachWheelClickHandler(containerEl, onAyahClick) {
   containerEl.querySelectorAll(".wheel-seg").forEach((seg) => {
     seg.addEventListener("click", () => onAyahClick(Number(seg.dataset.ayah)));
+  });
+}
+
+/**
+ * Phase 5 — Explore navigator's generic wheel: same visual language as the
+ * per-ayah Mastery Wheel above (reuses the same geometry helpers and
+ * STATUS_COLORS), but for any labelled set of segments rather than
+ * assuming "one segment per ayah" — e.g. the whole-Quran Quran-wheel (30
+ * Juz segments). items: [{ key, statusId, title }]. I2: still a pure
+ * renderer — never reads records.js itself.
+ */
+export function renderScopedWheel(items, { size = 360 } = {}) {
+  const cx = size / 2, cy = size / 2;
+  const rOuter = size / 2 - 4;
+  const rInner = rOuter * 0.42;
+  const n = items.length || 1;
+  const anglePer = 360 / n;
+
+  const segments = items
+    .map((entry, i) => {
+      const start = i * anglePer;
+      const end = start + anglePer - Math.min(1.2, anglePer * 0.08);
+      const fill = STATUS_COLORS[entry.statusId] ?? STATUS_COLORS.not_started;
+      return `<path class="wheel-seg" data-key="${entry.key}" d="${segmentPath(cx, cy, rInner, rOuter, start, end)}" fill="${fill}"><title>${entry.title}</title></path>`;
+    })
+    .join("");
+
+  return `<svg class="mastery-wheel" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+    <defs>
+      <pattern id="naHatch" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+        <rect width="6" height="6" fill="#f2f2f2"/>
+        <line x1="0" y1="0" x2="0" y2="6" stroke="#bbb" stroke-width="2"/>
+      </pattern>
+    </defs>
+    ${segments}
+    <circle cx="${cx}" cy="${cy}" r="${rInner - 2}" fill="#fff" stroke="#e5e5e5"/>
+  </svg>`;
+}
+
+/** Like attachWheelClickHandler, but for renderScopedWheel's generic segments — returns the segment's raw string key rather than assuming it's an ayah number. */
+export function attachScopedWheelClickHandler(containerEl, onSegmentClick) {
+  containerEl.querySelectorAll(".wheel-seg").forEach((seg) => {
+    seg.addEventListener("click", () => onSegmentClick(seg.dataset.key));
   });
 }
 

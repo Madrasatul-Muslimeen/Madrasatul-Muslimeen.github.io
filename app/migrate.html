@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuranRevival — Phase 5 migration</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 50rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.05rem; margin-top: 1.6rem; }
+  label { display: block; margin: 0.5rem 0 0.2rem; font-weight: 600; font-size: 0.85rem; }
+  select, button { padding: 0.4rem 0.7rem; font-size: 0.92rem; border-radius: 0.35rem; }
+  button { border: 1px solid #ccc; background: #1F3A6E; color: white; cursor: pointer; }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .box { border: 1px solid #e5e5e5; border-radius: 0.5rem; padding: 0.9rem 1.1rem; margin: 0.8rem 0; }
+  .box.warn { border-color: #9C3B2E; background: #F6E3DF; }
+  .box.ok { border-color: #2E6B4F; background: #DEEDE4; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.85rem; margin: 0.5rem 0; }
+  th, td { border-bottom: 1px solid #eee; padding: 0.3rem 0.5rem; text-align: left; }
+  .status-ok { color: #2E6B4F; }
+  .status-skip { color: #8A6220; }
+  .status-fail { color: #9C3B2E; }
+  #log { max-height: 20rem; overflow-y: auto; font-family: ui-monospace, monospace; font-size: 0.78rem; background: #fafafa; border: 1px solid #eee; padding: 0.6rem; }
+</style>
+</head>
+<body>
+  <h1>QuranRevival — Phase 5: additive import from the old app</h1>
+  <p>Reads <code>people</code>, <code>users</code>, <code>invites</code> and <code>studyProgress</code> (the old app's
+  live Firestore collections) and writes the equivalent new-schema records into whichever tenant you pick below.
+  <strong>Nothing in the old collections is ever written to, updated, or deleted</strong> — this only ever reads
+  from them. Re-running this tool is safe: anything already migrated is skipped, never overwritten.</p>
+
+  <div id="who">Not signed in.</div>
+  <button id="signInBtn">Sign in with Google</button>
+
+  <div id="app" style="display:none;">
+    <div><label>Migrate old data into which of your tenants?</label><select id="tenantSelect"></select></div>
+
+    <h2>1. Preview</h2>
+    <button type="button" id="previewBtn">Load old data &amp; build preview</button>
+    <div id="previewBox"></div>
+
+    <h2>2. Run</h2>
+    <button type="button" id="runBtn" disabled>Run migration</button>
+    <div id="log"></div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc, getDocs, collection, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT, LEGACY } from "./js/collections.js";
+    import { createDocument, updateDocument, commitEnvelopeBatch } from "./js/envelope.js";
+    import { toLangObject } from "./js/lang.js";
+    import { getMyMemberships } from "./js/session-context.js";
+    import { buildUnitKey } from "./js/unit-keys.js";
+    import { chunkKeyFor } from "./js/records.js";
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const appEl = document.getElementById("app");
+    const tenantSelect = document.getElementById("tenantSelect");
+    const previewBtn = document.getElementById("previewBtn");
+    const previewBox = document.getElementById("previewBox");
+    const runBtn = document.getElementById("runBtn");
+    const logEl = document.getElementById("log");
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => { whoEl.textContent = `Sign-in failed: ${err.message}`; });
+    });
+
+    let myMemberships = [];
+    let activeTenantId = null;
+    let plan = null; // built by buildPlan()
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = "Not signed in.";
+        signInBtn.style.display = "inline-block";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = `Signed in as ${user.email}`;
+      signInBtn.style.display = "none";
+      myMemberships = (await getMyMemberships(db, user.uid)).filter((m) => m.roles.includes("owner") || m.roles.includes("prime"));
+      if (!myMemberships.length) {
+        whoEl.textContent += " — you're not owner/prime on any tenant, so there's nothing you're allowed to migrate into. Create a tenant on onboarding.html first.";
+        return;
+      }
+      tenantSelect.innerHTML = myMemberships.map((m) => `<option value="${m.tenantId}">${m.tenantName} (${m.roles.join(", ")})</option>`).join("");
+      activeTenantId = myMemberships[0].tenantId;
+      appEl.style.display = "block";
+    });
+    tenantSelect.addEventListener("change", () => { activeTenantId = tenantSelect.value; plan = null; runBtn.disabled = true; previewBox.innerHTML = ""; });
+
+    // -------------------------------------------------------------------
+    // Old-app format conversion (verified directly against index.html --
+    // buildUnitKey/parseUnitKey around line 3711, STATUS_LABELS at 3495,
+    // WAYS_DEFAULT at 3447 -- see PHASE-5-STATUS.md).
+    // -------------------------------------------------------------------
+
+    const PAGE_EDITION = "madani";
+    const OLD_STATUS_MAP = ["not_started", "learning", "practising", "mastered", "not_applicable"];
+
+    /** Old key shapes: "S:A" (ayah), "S:start-end" (range), "S:surah" (whole surah), "S:rukuN" (ruku, surah-local, 1-based -- same convention buildUnitKey.ruku already expects), "page:P", "juz:J" (global). */
+    function convertOldUnitKey(oldKey) {
+      if (oldKey.startsWith("page:")) return buildUnitKey.page(PAGE_EDITION, Number(oldKey.slice(5)));
+      if (oldKey.startsWith("juz:")) return buildUnitKey.juz(Number(oldKey.slice(4)));
+      const sep = oldKey.indexOf(":");
+      if (sep === -1) throw new Error(`Unrecognised legacy unit key: "${oldKey}"`);
+      const surah = Number(oldKey.slice(0, sep));
+      const rest = oldKey.slice(sep + 1);
+      if (rest === "surah") return buildUnitKey.surah(surah);
+      if (rest.startsWith("ruku")) return buildUnitKey.ruku(surah, Number(rest.slice(4)));
+      if (rest.includes("-")) {
+        const [from, to] = rest.split("-").map(Number);
+        return buildUnitKey.range(surah, from, to);
+      }
+      const ayah = Number(rest);
+      if (!Number.isFinite(ayah)) throw new Error(`Unrecognised legacy unit key: "${oldKey}"`);
+      return buildUnitKey.ayah(surah, ayah);
+    }
+
+    /** WAYS_DEFAULT ids 1-30 correspond 1:1, in order, to APPROACH_TEMPLATES' approach_01..approach_30 (verified by name against catalogue-data.js -- see PHASE-5-STATUS.md). */
+    function convertWayIdToTrackableId(wayId) {
+      const n = Number(wayId);
+      if (!Number.isFinite(n) || n < 1 || n > 30) return null;
+      return `approach_${String(n).padStart(2, "0")}`;
+    }
+
+    // -------------------------------------------------------------------
+    // Role mapping (owner decision, PHASE-5-STATUS.md): old admin -> new
+    // owner+prime (+self, since the admin's own personId also has its own
+    // studyProgress); old teacher -> new teacher+self; old student -> self
+    // only. Every migrated person also keeps their exact legacy personId
+    // (I16) -- no id translation table, ever.
+    // -------------------------------------------------------------------
+
+    function rolesForOldRole(oldRole) {
+      if (oldRole === "admin") return ["owner", "prime", "self"];
+      if (oldRole === "teacher") return ["teacher", "self"];
+      return ["self"]; // student, or anything unrecognised -- least-privilege default
+    }
+
+    async function readAllDocs(collectionName) {
+      const snap = await getDocs(collection(db, collectionName));
+      return snap.docs.map((d) => ({ id: d.id, data: d.data() }));
+    }
+
+    /**
+     * tenantPeople/tenantInvites/tenantMemberUids read rules all check
+     * resource.data.tenantId against the caller's own membership -- with no
+     * !exists() guard (unlike records, which already has one). A getDoc()
+     * on a doc that genuinely doesn't exist yet therefore THROWS
+     * (permission-denied) rather than returning a clean exists()===false --
+     * see identity.js's own comment on the exact same limitation. Since this
+     * tool only ever offers tenants you're owner/prime on, canAdminIdentity()
+     * is guaranteed true for you there -- so a real existing doc under YOUR
+     * tenant always reads successfully, and a thrown error safely means
+     * "not there yet, from where I'm standing." The create/update rules
+     * underneath are what actually protects a genuine collision (e.g. this
+     * legacy personId somehow already belongs to a tenant that isn't this
+     * one) -- that write would still be correctly denied, not silently
+     * overwritten, so treating a read failure as "not migrated" here is
+     * additive-safe either way.
+     */
+    async function existsForMe(ref) {
+      try { return (await getDoc(ref)).exists(); }
+      catch { return false; }
+    }
+
+    async function buildPlan() {
+      const [people, invites, studyProgress] = await Promise.all([
+        readAllDocs(LEGACY.PEOPLE),
+        readAllDocs(LEGACY.INVITES),
+        readAllDocs(LEGACY.STUDY_PROGRESS),
+      ]);
+
+      const peoplePlan = [];
+      for (const { id: personId, data: p } of people) {
+        const alreadyMigrated = await existsForMe(doc(db, TENANT.TENANT_PEOPLE, personId));
+        peoplePlan.push({
+          personId, oldData: p,
+          alreadyMigrated,
+          roles: rolesForOldRole(p.role),
+        });
+      }
+
+      const invitesPlan = [];
+      for (const { id: email, data: inv } of invites) {
+        const docId = `${activeTenantId}__${email}`;
+        const alreadyMigrated = await existsForMe(doc(db, TENANT.TENANT_INVITES, docId));
+        invitesPlan.push({ email, oldData: inv, alreadyMigrated });
+      }
+
+      // Records: group by target records docId (tenantId__personId__chunkKey).
+      const recordsByDoc = new Map(); // docId -> { tenantId, personId, chunkKey, entries: {entryKey: entry}, warnings: [] }
+      let totalEntries = 0, skippedEntries = 0;
+      for (const { id: personId, data: sp } of studyProgress) {
+        const progress = sp.progress ?? {};
+        for (const [oldUnitKey, byWay] of Object.entries(progress)) {
+          let newUnitKey;
+          try { newUnitKey = convertOldUnitKey(oldUnitKey); }
+          catch { skippedEntries += Object.keys(byWay).length; continue; }
+          for (const [wayId, rec] of Object.entries(byWay)) {
+            totalEntries++;
+            const trackableId = convertWayIdToTrackableId(wayId);
+            if (!trackableId || rec.status == null || !OLD_STATUS_MAP[rec.status]) { skippedEntries++; continue; }
+            const chunkKey = chunkKeyFor(newUnitKey, "quran");
+            const docId = `${activeTenantId}__${personId}__${chunkKey}`;
+            const entryKey = `${newUnitKey}::${trackableId}`;
+            if (!recordsByDoc.has(docId)) recordsByDoc.set(docId, { tenantId: activeTenantId, personId, chunkKey, entries: {} });
+            const nowIso = rec.date ? new Date(rec.date).toISOString() : new Date().toISOString();
+            recordsByDoc.get(docId).entries[entryKey] = {
+              unitType: newUnitKey.split(":")[0],
+              subjectId: "quran",
+              trackableId,
+              claimedStatus: OLD_STATUS_MAP[rec.status],
+              claimedByPersonId: personId,
+              // Historical data imports pre-confirmed -- it's already-done
+              // study, not a new claim that should queue a confirmation
+              // request years after the fact (owner decision, PHASE-5-STATUS.md).
+              confirmedStatus: OLD_STATUS_MAP[rec.status],
+              confirmState: "confirmed",
+              confirmedByPersonId: personId,
+              confirmedAt: nowIso,
+              returnNote: null,
+              domainIds: [],
+              notes: rec.notes ?? "",
+              updatedAt: nowIso,
+              migratedFromLegacy: true,
+            };
+          }
+        }
+      }
+
+      // Check which records docs/entries already exist, so re-runs stay idempotent.
+      for (const [docId, group] of recordsByDoc) {
+        const existing = await getDoc(doc(db, TENANT.RECORDS, docId));
+        group.existingDoc = existing.exists();
+        group.existingEntries = existing.exists() ? Object.keys(existing.data().entries ?? {}) : [];
+      }
+
+      return { people: peoplePlan, invites: invitesPlan, records: [...recordsByDoc.entries()].map(([docId, g]) => ({ docId, ...g })), totalEntries, skippedEntries };
+    }
+
+    function renderPreview(p) {
+      const newPeople = p.people.filter((x) => !x.alreadyMigrated).length;
+      const newInvites = p.invites.filter((x) => !x.alreadyMigrated).length;
+      const newRecordDocs = p.records.length;
+      const newEntryCount = p.records.reduce((sum, g) => sum + Object.keys(g.entries).filter((k) => !g.existingEntries.includes(k)).length, 0);
+
+      previewBox.innerHTML = `
+        <div class="box">
+          <table>
+            <tr><th>Old collection</th><th>Found</th><th>Will create</th><th>Already migrated (skipped)</th></tr>
+            <tr><td>people</td><td>${p.people.length}</td><td>${newPeople}</td><td>${p.people.length - newPeople}</td></tr>
+            <tr><td>invites (pending)</td><td>${p.invites.length}</td><td>${newInvites}</td><td>${p.invites.length - newInvites}</td></tr>
+            <tr><td>studyProgress entries</td><td>${p.totalEntries}</td><td>${newEntryCount}</td><td>${p.totalEntries - newEntryCount - p.skippedEntries}</td></tr>
+          </table>
+          ${p.skippedEntries ? `<p class="status-skip">${p.skippedEntries} progress entries couldn't be converted (unrecognised unit key or way id) and will be left alone in the old app -- nothing is lost, they're just not migrated. Check the log after running for details.</p>` : ""}
+        </div>
+        <div class="box warn"><strong>Before you run this:</strong> historical progress imports as already-confirmed (it's past study, not a new claim awaiting review). Role mapping: old admin → owner+prime+self, old teacher → teacher+self, old student → self. Nothing in the old app's collections is ever touched.</div>
+      `;
+      runBtn.disabled = (newPeople + newInvites + newEntryCount) === 0;
+    }
+
+    previewBtn.addEventListener("click", async () => {
+      previewBtn.disabled = true;
+      previewBox.innerHTML = "Loading…";
+      try {
+        plan = await buildPlan();
+        renderPreview(plan);
+      } catch (err) {
+        previewBox.innerHTML = `<div class="box warn">Couldn't build the preview: ${err.message}</div>`;
+        console.error(err);
+      } finally {
+        previewBtn.disabled = false;
+      }
+    });
+
+    function logLine(cls, text) {
+      const div = document.createElement("div");
+      div.className = cls;
+      div.textContent = text;
+      logEl.appendChild(div);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function chunkArray(arr, size) {
+      const out = [];
+      for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+      return out;
+    }
+
+    runBtn.addEventListener("click", async () => {
+      if (!plan) return;
+      runBtn.disabled = true;
+      logEl.innerHTML = "";
+      const uid = auth.currentUser.uid;
+
+      // 1. People -- tenantPeople, then memberships + tenantMemberUids (two
+      // steps, same reasoning as identity.js: the membership/tenantMemberUids
+      // rules read tenantPeople back with get(), which only sees truly
+      // committed writes, not same-batch ones.
+      const peopleToCreate = plan.people.filter((x) => !x.alreadyMigrated);
+      for (const batch of chunkArray(peopleToCreate, 400)) {
+        const creates = batch.map(({ personId, oldData }) => ({
+          collectionName: TENANT.TENANT_PEOPLE,
+          docId: personId,
+          data: {
+            tenantId: activeTenantId,
+            name: toLangObject(oldData.name ?? "Unnamed", "en"),
+            emoji: oldData.emoji ?? null,
+            color: oldData.color ?? null,
+            authUid: oldData.ownerUid ?? null,
+            isMinor: false, // assumption -- every migrated Firestore `people` doc has its own login (ownerUid); flagged in PHASE-5-STATUS.md
+            managedByPersonId: null,
+            timezone: null,
+            status: "active",
+            legacy: { teacherId: oldData.teacherId ?? null, ownerUid: oldData.ownerUid ?? null },
+          },
+        }));
+        try {
+          await commitEnvelopeBatch(db, { creates }, uid);
+          batch.forEach(({ personId }) => logLine("status-ok", `✓ tenantPeople/${personId} created`));
+        } catch (err) {
+          batch.forEach(({ personId }) => logLine("status-fail", `✗ tenantPeople/${personId}: ${err.message}`));
+        }
+      }
+
+      for (const { personId, oldData, roles } of peopleToCreate) {
+        try {
+          const roleCreates = roles.map((role) => ({
+            collectionName: TENANT.MEMBERSHIPS,
+            docId: `${activeTenantId}__${personId}__${role}`,
+            data: { tenantId: activeTenantId, personId, role, guardianOf: [], status: "active", meta: { migratedFromLegacy: true } },
+          }));
+          await commitEnvelopeBatch(db, { creates: roleCreates }, uid);
+          logLine("status-ok", `✓ memberships for ${personId}: ${roles.join(", ")}`);
+
+          if (oldData.ownerUid) {
+            // tenantMemberUids' READ rule is uid-scoped (only that uid's own
+            // row, or platformAdmin) -- so a migrating owner/prime generally
+            // CANNOT read someone else's row to check-then-merge safely (see
+            // existsForMe's comment above for the same limitation on
+            // tenantPeople/tenantInvites). Its UPDATE rule is more permissive
+            // than its read rule, though: canAdminIdentity(tenantId) alone is
+            // enough, regardless of whose uid the doc belongs to. So this
+            // tries an arrayUnion update FIRST (additive by construction --
+            // can never drop a role a previous run already added, unlike a
+            // read-then-overwrite that might work from stale/denied data) and
+            // only falls back to a genuine create on Firestore's distinct
+            // "no document to update" failure, which needs no read at all.
+            const tmuDocId = `${activeTenantId}__${oldData.ownerUid}`;
+            try {
+              await updateDocument(db, TENANT.TENANT_MEMBER_UIDS, tmuDocId, { roles: arrayUnion(...roles), personId });
+              logLine("status-ok", `✓ tenantMemberUids/${tmuDocId} roles merged (arrayUnion): ${roles.join(", ")}`);
+            } catch (updateErr) {
+              if (updateErr.code !== "not-found") throw updateErr;
+              await createDocument(db, TENANT.TENANT_MEMBER_UIDS, tmuDocId, { tenantId: activeTenantId, uid: oldData.ownerUid, personId, roles }, uid);
+              logLine("status-ok", `✓ tenantMemberUids/${tmuDocId} created`);
+            }
+          }
+        } catch (err) {
+          logLine("status-fail", `✗ roles for ${personId}: ${err.message}`);
+        }
+      }
+
+      // 2. Invites.
+      const invitesToCreate = plan.invites.filter((x) => !x.alreadyMigrated);
+      for (const { email, oldData } of invitesToCreate) {
+        const docId = `${activeTenantId}__${email}`;
+        try {
+          await createDocument(db, TENANT.TENANT_INVITES, docId, {
+            tenantId: activeTenantId, email, role: oldData.role ?? "student",
+            status: "pending", consumedAt: null, consumedByUid: null,
+          }, uid);
+          logLine("status-ok", `✓ tenantInvites/${docId} created`);
+        } catch (err) {
+          logLine("status-fail", `✗ tenantInvites/${docId}: ${err.message}`);
+        }
+      }
+
+      // 3. Records -- one dot-path update per new entry into an existing
+      // chunk, or one create for a brand-new chunk. Never touches an
+      // entryKey that's already there (idempotent re-run, and never
+      // overwrites live new-schema activity with imported history).
+      for (const group of plan.records) {
+        const newEntries = Object.fromEntries(
+          Object.entries(group.entries).filter(([k]) => !group.existingEntries.includes(k))
+        );
+        if (Object.keys(newEntries).length === 0) continue;
+        try {
+          if (group.existingDoc) {
+            const patch = {};
+            for (const [k, v] of Object.entries(newEntries)) patch[`entries.${k}`] = v;
+            patch.tenantId = group.tenantId;
+            patch.personId = group.personId;
+            await updateDocument(db, TENANT.RECORDS, group.docId, patch);
+          } else {
+            await createDocument(db, TENANT.RECORDS, group.docId, { tenantId: group.tenantId, personId: group.personId, entries: newEntries }, uid);
+          }
+          logLine("status-ok", `✓ records/${group.docId}: ${Object.keys(newEntries).length} entries`);
+        } catch (err) {
+          logLine("status-fail", `✗ records/${group.docId}: ${err.message}`);
+        }
+      }
+
+      logLine("status-ok", "Done. Old collections were never written to -- re-check them any time to confirm.");
+      runBtn.disabled = false;
+      plan = null;
+    });
+  </script>
+</body>
+</html>

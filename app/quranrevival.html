@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>QuranRevival — Phase 4</title>
+<title>QuranRevival — Phase 4/5</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
@@ -19,6 +19,14 @@
   .row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; margin: 0.6rem 0; }
   .row > div { min-width: 9rem; }
 
+  /* ---------- Global banner (Phase 5) ---------- */
+  #globalBanner { border-bottom: 2px solid #DDE4F0; padding-bottom: 0.6rem; margin-bottom: 0.6rem; }
+  #bannerTitle { font-size: 1.5rem; margin: 0; }
+  #bannerSub { color: #555; margin: 0.2rem 0 0; }
+  #bannerEditForm { display: none; gap: 0.5rem; flex-direction: column; max-width: 30rem; }
+  #bannerEditForm input { width: 100%; box-sizing: border-box; }
+  #bannerEditBtn { font-size: 0.75rem; padding: 0.2rem 0.5rem; }
+
   /* ---------- Mastery Wheel ---------- */
   #wheelSection { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center; }
   .mastery-wheel { max-width: 320px; }
@@ -27,6 +35,13 @@
   .wheel-legend { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.82rem; }
   .legend-item { display: flex; align-items: center; gap: 0.4rem; }
   .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+  /* ---------- Study Unit picker (Phase 5) ---------- */
+  #unitLabel { font-size: 0.85rem; color: #1F3A6E; font-weight: 600; margin: 0.3rem 0; }
+
+  /* ---------- Explore (Phase 5) ---------- */
+  #explorePanel { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 1rem; margin-top: 0.6rem; }
+  #explorePanel p.hint { font-size: 0.8rem; color: #666; }
 
   /* ---------- Study screen ---------- */
   #studyScreen { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 1rem; margin-top: 1rem; }
@@ -57,6 +72,10 @@
   .tajweed-idgham_ghunnah, .tajweed-idgham_wo_ghunnah, .tajweed-idgham_mutajanisayn, .tajweed-idgham_mutaqaribayn, .tajweed-idgham_shafawi { color: #1fa87a; }
   .tajweed-end { color: #B8862F; }
 
+  /* ---------- Drill controls (Phase 5) ---------- */
+  #drillControls { border-top: 1px dashed #ddd; margin-top: 0.5rem; padding-top: 0.5rem; }
+  #drillReciterChecks label { display: block; font-weight: 400; font-size: 0.85rem; }
+
   /* ---------- Way modal ---------- */
   #wayModalOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 50; }
   #wayModalOverlay.open { display: flex; }
@@ -82,12 +101,23 @@
 </style>
 </head>
 <body>
-  <h1>QuranRevival (Phase 4)</h1>
+  <h1>QuranRevival</h1>
 
   <div id="who">Not signed in.</div>
   <button id="signInBtn">Sign in with Google</button>
 
   <div id="app" style="display:none;">
+    <div id="globalBanner">
+      <h2 id="bannerTitle" style="display:none;"></h2>
+      <p id="bannerSub" style="display:none;"></p>
+      <button type="button" class="secondary" id="bannerEditBtn" style="display:none;">Edit banner</button>
+      <div id="bannerEditForm">
+        <label>Title <input type="text" id="bannerTitleInput" /></label>
+        <label>Subtitle <input type="text" id="bannerSubInput" /></label>
+        <div class="row"><button type="button" id="bannerSaveBtn">Save</button><button type="button" class="secondary" id="bannerCancelBtn">Cancel</button></div>
+      </div>
+    </div>
+
     <div class="row">
       <div><label>Tenant</label><select id="tenantSelect"></select></div>
       <div><label>Person</label><select id="personSelect"></select></div>
@@ -105,10 +135,35 @@
       </select></div>
     </div>
 
+    <div class="row">
+      <div><label>Study Unit</label><select id="unitTypeSelect">
+        <option value="ayah">Single Ayah</option>
+        <option value="range">Range of Ayahs</option>
+        <option value="surah">Whole Surah</option>
+        <option value="ruku">Ruku'</option>
+        <option value="juz">Juz</option>
+        <option value="page">Page</option>
+      </select></div>
+      <div id="rangeControls" style="display:none;">
+        <label>From ayah</label><select id="rangeFromSelect"></select>
+      </div>
+      <div id="rangeToControls" style="display:none;">
+        <label>To ayah</label><select id="rangeToSelect"></select>
+      </div>
+      <div><button type="button" class="secondary" id="trackUnitBtn">Track this unit</button></div>
+    </div>
+    <div id="unitLabel"></div>
+
     <h2>Mastery Wheel</h2>
     <div id="wheelSection">
       <div id="wheelContainer">Loading…</div>
       <div id="wheelLegendContainer"></div>
+    </div>
+
+    <h2>Explore <button type="button" class="secondary" id="exploreToggleBtn">Whole Quran ▾</button></h2>
+    <div id="explorePanel" style="display:none;">
+      <div id="exploreWheelContainer">Loading…</div>
+      <p class="hint">Click a Juz to jump there and start tracking it. Shows this Approach's direct Juz-level claims (Study Unit = Juz) — not pooled from ayah-level progress; see PHASE-5-STATUS.md for why.</p>
     </div>
 
     <h2>Study</h2>
@@ -120,6 +175,7 @@
         <div><label style="display:inline-block; margin:0 0 0 1rem;"><input type="checkbox" id="tajweedToggle" /> Tajweed colours</label></div>
       </div>
       <div class="row" id="audioControls"></div>
+      <div id="drillControls"></div>
       <div id="ayahPanels"></div>
     </div>
   </div>
@@ -135,16 +191,20 @@
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
     import { safeWrite } from "./js/errors.js";
+    import { updateDocument } from "./js/envelope.js";
     import { getMyMemberships, initializeActiveContext, setActiveContext } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames } from "./js/catalogue.js";
-    import { buildUnitKey, STATUSES } from "./js/unit-keys.js";
+    import { buildUnitKey, STATUSES, rukuIndexInSurah } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
-    import { getSurah, getSurahIndex } from "./js/quran-data.js";
+    import { getSurah, getSurahIndex, getJuzIndex } from "./js/quran-data.js";
     import { renderLayoutA } from "./js/ayah-renderer.js";
-    import { renderMasteryWheel, attachWheelClickHandler, renderWheelLegend } from "./js/mastery-wheel.js";
+    import { renderMasteryWheel, attachWheelClickHandler, renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler } from "./js/mastery-wheel.js";
     import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab, renderWayModalShell, attachWayModalHandlers } from "./js/way-modal.js";
-    import { RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah, setLoop, setPlaybackErrorHandler, stop as stopAudio } from "./js/audio-player.js";
+    import {
+      RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah,
+      setLoop, setPlaybackErrorHandler, stop as stopAudio, playDrill, stopDrill,
+    } from "./js/audio-player.js";
 
     // Async playback failures (network drop mid-file, a source that turns
     // out not to exist, etc.) never reject play()'s own promise -- without
@@ -168,9 +228,31 @@
     const nextAyahBtn = document.getElementById("nextAyahBtn");
     const tajweedToggle = document.getElementById("tajweedToggle");
     const audioControls = document.getElementById("audioControls");
+    const drillControlsEl = document.getElementById("drillControls");
     const ayahPanels = document.getElementById("ayahPanels");
     const wayModalOverlay = document.getElementById("wayModalOverlay");
     const wayModalMount = document.getElementById("wayModalMount");
+
+    const unitTypeSelect = document.getElementById("unitTypeSelect");
+    const rangeControls = document.getElementById("rangeControls");
+    const rangeToControls = document.getElementById("rangeToControls");
+    const rangeFromSelect = document.getElementById("rangeFromSelect");
+    const rangeToSelect = document.getElementById("rangeToSelect");
+    const trackUnitBtn = document.getElementById("trackUnitBtn");
+    const unitLabelEl = document.getElementById("unitLabel");
+
+    const exploreToggleBtn = document.getElementById("exploreToggleBtn");
+    const explorePanel = document.getElementById("explorePanel");
+    const exploreWheelContainer = document.getElementById("exploreWheelContainer");
+
+    const bannerTitleEl = document.getElementById("bannerTitle");
+    const bannerSubEl = document.getElementById("bannerSub");
+    const bannerEditBtn = document.getElementById("bannerEditBtn");
+    const bannerEditForm = document.getElementById("bannerEditForm");
+    const bannerTitleInput = document.getElementById("bannerTitleInput");
+    const bannerSubInput = document.getElementById("bannerSubInput");
+    const bannerSaveBtn = document.getElementById("bannerSaveBtn");
+    const bannerCancelBtn = document.getElementById("bannerCancelBtn");
 
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
@@ -183,6 +265,7 @@
     let roster = [];
     let selectedPersonId = null;
     let tenantWeekStartsOn = 6;
+    let currentTenantDoc = null;
 
     let quranTrackables = [];
     let surahIndex = [];
@@ -195,6 +278,22 @@
     let wbwLangMode = "auto"; // "auto" follows currentLang; "en"/"bn"/"both" is an explicit per-panel override (owner request, 5 Aug 2026)
     let currentReciterId = "ar"; // persisted across renderAudioControls() rebuilds -- a fresh <select> is built on every ayah nav/toggle, so without this the choice silently reverts to the first option each time
     let loopIsOn = false;
+
+    // Phase 5 -- Study Unit picker state (PHASE-5-STATUS.md parity gap: the
+    // legacy app tracked 6 granularities; only "ayah" existed here before).
+    let currentUnitType = "ayah"; // ayah | range | surah | ruku | juz | page
+    let rangeFrom = 1;
+    let rangeTo = 1;
+    const PAGE_EDITION = "madani"; // the pulled data's `page` field is standard 604-page Madani mushaf numbering
+
+    // Phase 5 -- Explore navigator state.
+    let juzIndexData = null; // loaded lazily on first Explore open
+
+    // Phase 5 -- drill playback state (persisted across renderAudioControls()
+    // rebuilds, same pattern as currentReciterId/loopIsOn above).
+    let drillSelectedReciterIds = null; // null = not yet initialised
+    let drillRepeatCount = 5;
+    let drillMode = "each";
 
     function currentActingPersonId() {
       const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
@@ -242,6 +341,127 @@
       if (quranTrackables.some((t) => t.id === prev)) trackableSelect.value = prev;
     }
 
+    // -----------------------------------------------------------------------
+    // Phase 5 -- Global banner (legacy appSettings/global parity, tenant-
+    // scoped here rather than platform-wide, since D2/tenant isolation means
+    // there's no single shared platform banner to begin with -- this is
+    // "your tenant's own eyebrow/title," written to tenants/{tenantId}
+    // (already owner/prime/platformAdmin-writable via canAdminIdentity() in
+    // firestore.rules, so no rules change was needed for this).
+    // -----------------------------------------------------------------------
+
+    function renderBanner() {
+      const title = langText(currentTenantDoc?.bannerTitle, currentLang);
+      const sub = langText(currentTenantDoc?.bannerSub, currentLang);
+      bannerTitleEl.textContent = title || "";
+      bannerTitleEl.style.display = title ? "" : "none";
+      bannerSubEl.textContent = sub || "";
+      bannerSubEl.style.display = sub ? "" : "none";
+      bannerEditBtn.style.display = canAdminCatalogueClientSide() ? "" : "none";
+    }
+
+    bannerEditBtn.addEventListener("click", () => {
+      bannerTitleInput.value = langText(currentTenantDoc?.bannerTitle, "en") || "";
+      bannerSubInput.value = langText(currentTenantDoc?.bannerSub, "en") || "";
+      bannerEditForm.style.display = "flex";
+    });
+    bannerCancelBtn.addEventListener("click", () => { bannerEditForm.style.display = "none"; });
+    bannerSaveBtn.addEventListener("click", async () => {
+      const bannerTitle = { ...(currentTenantDoc?.bannerTitle ?? {}), en: bannerTitleInput.value };
+      const bannerSub = { ...(currentTenantDoc?.bannerSub ?? {}), en: bannerSubInput.value };
+      const outcome = await safeWrite(
+        () => updateDocument(db, TENANT.TENANTS, activeTenantId, { bannerTitle, bannerSub }),
+        { collection: "tenants", action: "saveBanner" }
+      );
+      if (outcome.ok) {
+        currentTenantDoc = { ...(currentTenantDoc ?? {}), bannerTitle, bannerSub };
+        bannerEditForm.style.display = "none";
+        renderBanner();
+      } else {
+        alert(outcome.entry.message);
+      }
+    });
+
+    // -----------------------------------------------------------------------
+    // Phase 5 -- Study Unit picker.
+    // -----------------------------------------------------------------------
+
+    /** The ayah numbers (within the currently-open surah) covered by whichever unit is currently selected -- used both for the drill's playback range and for the unit label. Juz/Page are Quran-wide and can span more than one surah; this only ever returns this SURAH's portion of them (same bounded scope as the Coverage tab below). */
+    function currentUnitAyahBounds() {
+      const ayahs = currentSurahData.ayahs;
+      const current = ayahs.find((a) => a.ayah === currentAyahNum);
+      if (currentUnitType === "range") return [Math.min(rangeFrom, rangeTo), Math.max(rangeFrom, rangeTo)];
+      if (currentUnitType === "surah") return [1, currentSurahData.ayahCount];
+      if (currentUnitType === "ruku") {
+        const inRuku = ayahs.filter((a) => a.ruku === current.ruku).map((a) => a.ayah);
+        return [Math.min(...inRuku), Math.max(...inRuku)];
+      }
+      if (currentUnitType === "juz") {
+        const inJuz = ayahs.filter((a) => a.juz === current.juz).map((a) => a.ayah);
+        return [Math.min(...inJuz), Math.max(...inJuz)];
+      }
+      if (currentUnitType === "page") {
+        const inPage = ayahs.filter((a) => a.page === current.page).map((a) => a.ayah);
+        return [Math.min(...inPage), Math.max(...inPage)];
+      }
+      return [currentAyahNum, currentAyahNum]; // ayah
+    }
+
+    /** { unitType, unitKey, chunkKey, label } for whatever's currently selected -- the single source of truth both "Track this unit" and the drill controls build on. chunkKey mirrors records.js's own chunkKeyFor() exactly (surah-chunked for ayah/range/surah/ruku, subject-chunked for juz/page) so it always matches the real document a claim will land in. */
+    function currentUnitInfo() {
+      const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
+      const surahChunkKey = `surah_${currentSurahNum}`;
+      if (currentUnitType === "range") {
+        const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
+        return { unitType: "range", unitKey: buildUnitKey.range(currentSurahNum, from, to), chunkKey: surahChunkKey, label: `Ayahs ${from}–${to} of Surah ${currentSurahNum}` };
+      }
+      if (currentUnitType === "surah") {
+        return { unitType: "surah", unitKey: buildUnitKey.surah(currentSurahNum), chunkKey: surahChunkKey, label: `Whole Surah ${currentSurahNum}` };
+      }
+      if (currentUnitType === "ruku") {
+        const idx = rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku);
+        const [from, to] = currentUnitAyahBounds();
+        return { unitType: "ruku", unitKey: buildUnitKey.ruku(currentSurahNum, idx), chunkKey: surahChunkKey, label: `Ruku' ${idx} of Surah ${currentSurahNum} (ayahs ${from}–${to})` };
+      }
+      if (currentUnitType === "juz") {
+        return { unitType: "juz", unitKey: buildUnitKey.juz(ayah.juz), chunkKey: "subject_quran", label: `Juz ${ayah.juz}` };
+      }
+      if (currentUnitType === "page") {
+        return { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), chunkKey: "subject_quran", label: `Page ${ayah.page}` };
+      }
+      return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, currentAyahNum), chunkKey: surahChunkKey, label: `Surah ${currentSurahNum}, Ayah ${currentAyahNum}` };
+    }
+
+    function renderUnitLabel() {
+      if (!currentSurahData) return;
+      unitLabelEl.textContent = `Tracking: ${currentUnitInfo().label}`;
+    }
+
+    function renderRangeSelects() {
+      const count = currentSurahData?.ayahCount ?? 1;
+      const options = Array.from({ length: count }, (_, i) => i + 1).map((n) => `<option value="${n}">${n}</option>`).join("");
+      rangeFromSelect.innerHTML = options;
+      rangeToSelect.innerHTML = options;
+      rangeFromSelect.value = String(rangeFrom);
+      rangeToSelect.value = String(rangeTo);
+    }
+
+    function updateUnitControlsVisibility() {
+      const isRange = currentUnitType === "range";
+      rangeControls.style.display = isRange ? "" : "none";
+      rangeToControls.style.display = isRange ? "" : "none";
+      if (isRange) renderRangeSelects();
+      renderUnitLabel();
+    }
+
+    unitTypeSelect.addEventListener("change", () => {
+      currentUnitType = unitTypeSelect.value;
+      if (currentUnitType === "range") { rangeFrom = currentAyahNum; rangeTo = Math.min(currentAyahNum + 4, currentSurahData?.ayahCount ?? currentAyahNum); }
+      updateUnitControlsVisibility();
+    });
+    rangeFromSelect.addEventListener("change", () => { rangeFrom = Number(rangeFromSelect.value); renderUnitLabel(); });
+    rangeToSelect.addEventListener("change", () => { rangeTo = Number(rangeToSelect.value); renderUnitLabel(); });
+
     async function loadContextData() {
       const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
       const [rosterSnap, tenantSnap] = await Promise.all([
@@ -249,7 +469,8 @@
         getDoc(doc(db, TENANT.TENANTS, activeTenantId)),
       ]);
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      tenantWeekStartsOn = tenantSnap.exists() ? (tenantSnap.data().weekStartsOn ?? 6) : 6;
+      currentTenantDoc = tenantSnap.exists() ? tenantSnap.data() : null;
+      tenantWeekStartsOn = currentTenantDoc?.weekStartsOn ?? 6;
       renderPersonSelectOptions();
       selectedPersonId = roster[0]?.id ?? null;
 
@@ -261,6 +482,7 @@
         try { await syncUnneditedTrackableNames(db, activeTenantId, auth.currentUser.uid); }
         catch (err) { console.warn("Trackable name sync skipped:", err.message); }
       }
+      renderBanner();
 
       const allTrackables = await getTrackables(db, activeTenantId);
       quranTrackables = allTrackables.filter((t) => t.subjectId === "quran" && t.status !== "archived");
@@ -281,6 +503,7 @@
       currentAyahNum = 1;
       await refreshChunkAndWheel();
       renderStudyScreen();
+      updateUnitControlsVisibility();
     }
 
     async function refreshChunkAndWheel() {
@@ -309,10 +532,58 @@
       attachWheelClickHandler(wheelContainer, (ayahNum) => {
         currentAyahNum = ayahNum;
         renderStudyScreen();
+        renderUnitLabel();
         openWayModal();
       });
       const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
       wheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+    }
+
+    // -----------------------------------------------------------------------
+    // Phase 5 -- Explore navigator (whole-Quran Quran-wheel, 30 Juz segments).
+    // Built on DIRECT Juz-level claims (Study Unit = Juz, above) rather than
+    // pooling from ayah-level data live -- the legacy app had no direct
+    // Juz-claim concept so it had no choice but to pool; this build does, so
+    // Explore just visualises those claims (I2/I5 -- one clean source of
+    // truth per unit key, no derived-aggregate collection to keep in sync).
+    // See PHASE-5-STATUS.md for the reasoning.
+    // -----------------------------------------------------------------------
+
+    exploreToggleBtn.addEventListener("click", async () => {
+      const opening = explorePanel.style.display === "none";
+      explorePanel.style.display = opening ? "block" : "none";
+      if (opening) await renderExploreWheel();
+    });
+
+    async function renderExploreWheel() {
+      const trackable = currentTrackable();
+      if (!trackable) { exploreWheelContainer.innerHTML = "<p>Pick an Approach first.</p>"; return; }
+      exploreWheelContainer.innerHTML = "Loading…";
+      if (!juzIndexData) juzIndexData = await getJuzIndex();
+      const chunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, "subject_quran");
+      const items = juzIndexData.map((j) => {
+        const unitKey = buildUnitKey.juz(j.juz);
+        const entry = chunk?.entries?.[`${unitKey}::${trackable.id}`];
+        const statusId = entry?.claimedStatus ?? "not_started";
+        return { key: j.juz, statusId, title: `Juz ${j.juz} — ${statusId.replace(/_/g, " ")}` };
+      });
+      exploreWheelContainer.innerHTML = renderScopedWheel(items);
+      attachScopedWheelClickHandler(exploreWheelContainer, async (key) => {
+        const j = juzIndexData.find((x) => x.juz === Number(key));
+        if (!j) return;
+        explorePanel.style.display = "none";
+        currentUnitType = "juz";
+        unitTypeSelect.value = "juz";
+        updateUnitControlsVisibility();
+        if (j.startSurah !== currentSurahNum) {
+          currentSurahNum = j.startSurah;
+          surahSelect.value = String(j.startSurah);
+          await loadSurah();
+        }
+        currentAyahNum = j.startAyah;
+        renderStudyScreen();
+        updateUnitControlsVisibility();
+      });
     }
 
     /** Ayah translation panel: additive when Bangla is chosen (English stays visible alongside it), per the F-060 design note in ayah-renderer.js. */
@@ -346,10 +617,11 @@
       });
 
       renderAudioControls(panels);
+      renderUnitLabel();
     }
 
     function renderAudioControls(panels) {
-      if (!panels.includes("audio")) { audioControls.innerHTML = ""; return; }
+      if (!panels.includes("audio")) { audioControls.innerHTML = ""; drillControlsEl.innerHTML = ""; return; }
       const options = Object.values(RECITERS)
         .map((r) => {
           const label = reciterIsReady(r.id) && !reciterSupportsSingleAyah(r.id) ? `${r.label} (whole surah only)` : r.label;
@@ -378,9 +650,9 @@
       if (loopToggle) loopToggle.addEventListener("change", () => { loopIsOn = loopToggle.checked; setLoop(loopIsOn); });
       playBtn.addEventListener("click", async () => {
         // Always stop whatever's currently loaded first -- switching reciters
-        // and pressing Play again must never leave the previous reciter's
-        // audio still running underneath, even if the new one then fails.
-        stopAudio();
+        // (or a running drill) and pressing Play again must never leave
+        // something else's audio still running underneath.
+        stopDrill();
         const reciterId = reciterSelect.value;
         const reciter = RECITERS[reciterId];
         try {
@@ -392,7 +664,7 @@
         }
       });
       playSurahBtn.addEventListener("click", async () => {
-        stopAudio();
+        stopDrill();
         const reciterId = reciterSelect.value;
         try {
           await playSurah(currentSurahNum, reciterId, currentSurahData.ayahCount);
@@ -400,15 +672,73 @@
           alert(err.message);
         }
       });
+
+      renderDrillControls();
     }
 
-    prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopAudio(); currentAyahNum--; renderStudyScreen(); } });
-    nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount) { stopAudio(); currentAyahNum++; renderStudyScreen(); } });
+    /**
+     * Phase 5 -- multi-reciter drill/repeat playback (legacy parity gap):
+     * pick several reciters, a repeat count (1/2/3/5/10x) and a repeat mode
+     * ("Each Ayah" drills one ayah across every chosen reciter N times
+     * before advancing; "Whole Unit" plays the whole current Study Unit once
+     * per reciter, and that whole pass repeats N times). Uses
+     * currentUnitAyahBounds() so the drill range always matches whatever
+     * Study Unit is currently selected above.
+     */
+    function renderDrillControls() {
+      const drillReciters = Object.values(RECITERS).filter((r) => reciterIsReady(r.id) && reciterSupportsSingleAyah(r.id));
+      if (drillSelectedReciterIds === null) drillSelectedReciterIds = [currentReciterId].filter((id) => reciterSupportsSingleAyah(id));
+
+      drillControlsEl.innerHTML = `
+        <div class="row">
+          <div><label>Drill reciters</label><div id="drillReciterChecks">
+            ${drillReciters.map((r) => `<label><input type="checkbox" class="drill-reciter-check" value="${r.id}" ${drillSelectedReciterIds.includes(r.id) ? "checked" : ""}/> ${r.label}</label>`).join("")}
+          </div></div>
+          <div><label>Repeat</label><select id="drillRepeatSelect">${[1, 2, 3, 5, 10].map((n) => `<option value="${n}">${n}×</option>`).join("")}</select></div>
+          <div><label>Mode</label><select id="drillModeSelect"><option value="each">Each Ayah</option><option value="whole">Whole Unit</option></select></div>
+          <div><button type="button" class="secondary" id="drillPlayBtn">▶ Play Drill</button></div>
+          <div><button type="button" class="secondary" id="drillStopBtn">■ Stop Drill</button></div>
+        </div>
+      `;
+      const drillReciterChecks = document.getElementById("drillReciterChecks");
+      const drillRepeatSelect = document.getElementById("drillRepeatSelect");
+      const drillModeSelect = document.getElementById("drillModeSelect");
+      const drillPlayBtn = document.getElementById("drillPlayBtn");
+      const drillStopBtn = document.getElementById("drillStopBtn");
+
+      drillRepeatSelect.value = String(drillRepeatCount);
+      drillModeSelect.value = drillMode;
+
+      drillReciterChecks.addEventListener("change", (e) => {
+        if (!e.target.classList.contains("drill-reciter-check")) return;
+        drillSelectedReciterIds = [...drillReciterChecks.querySelectorAll(".drill-reciter-check:checked")].map((c) => c.value);
+      });
+      drillRepeatSelect.addEventListener("change", () => { drillRepeatCount = Number(drillRepeatSelect.value); });
+      drillModeSelect.addEventListener("change", () => { drillMode = drillModeSelect.value; });
+
+      drillPlayBtn.addEventListener("click", async () => {
+        if (!drillSelectedReciterIds?.length) { alert("Pick at least one reciter to drill."); return; }
+        const [fromAyah, toAyah] = currentUnitAyahBounds();
+        drillPlayBtn.disabled = true;
+        try {
+          await playDrill({ surahNum: currentSurahNum, fromAyah, toAyah, reciterIds: drillSelectedReciterIds, repeatCount: drillRepeatCount, mode: drillMode });
+        } catch (err) {
+          if (err.name !== "AbortError") alert(err.message);
+        } finally {
+          drillPlayBtn.disabled = false;
+        }
+      });
+      drillStopBtn.addEventListener("click", () => stopDrill());
+    }
+
+    prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopDrill(); currentAyahNum--; renderStudyScreen(); } });
+    nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount) { stopDrill(); currentAyahNum++; renderStudyScreen(); } });
     tajweedToggle.addEventListener("change", renderStudyScreen);
     langSelect.addEventListener("change", () => {
       currentLang = langSelect.value;
       renderPersonSelectOptions();
       renderTrackableSelectOptions();
+      renderBanner();
       renderStudyScreen();
     });
     wbwLangSelect.addEventListener("change", () => {
@@ -421,7 +751,8 @@
     personSelect.addEventListener("change", async () => { selectedPersonId = personSelect.value; await refreshChunkAndWheel(); });
 
     // ---------------------------------------------------------------------
-    // Way modal
+    // Way modal -- ayah-level (unchanged from Phase 4: wheel-click always
+    // opens this, always at ayah granularity, regardless of Study Unit).
     // ---------------------------------------------------------------------
 
     function openWayModal() {
@@ -487,6 +818,72 @@
         }
       });
     }
+
+    // ---------------------------------------------------------------------
+    // Phase 5 -- Way modal for the currently-selected Study Unit (Range/
+    // Whole Surah/Ruku'/Juz/Page). Separate from openWayModal() above on
+    // purpose: the wheel-click path stays byte-for-byte what Phase 4 shipped
+    // and the owner already verified, zero regression risk. This is the new,
+    // additive path "Track this unit" uses.
+    // ---------------------------------------------------------------------
+
+    async function openUnitWayModal() {
+      const trackable = currentTrackable();
+      if (!trackable) return;
+      const info = currentUnitInfo();
+      const entryKey = `${info.unitKey}::${trackable.id}`;
+      const surahChunkKey = `surah_${currentSurahNum}`;
+      const chunk = info.chunkKey === surahChunkKey ? currentChunk : await getRecordsChunk(db, activeTenantId, selectedPersonId, info.chunkKey);
+      const entry = chunk?.entries?.[entryKey] ?? null;
+
+      const statusIdsForTrackable = Object.values(chunk?.entries ?? {})
+        .filter((e) => e.trackableId === trackable.id)
+        .map((e) => e.claimedStatus);
+
+      const title = `${langText(trackable.name, currentLang, trackable.id)} — ${info.label}`;
+      const tabBodies = {
+        Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
+        Guide: renderGuideTab(trackable, currentLang),
+        Breakdown: renderBreakdownTab(statusIdsForTrackable),
+        Coverage: info.chunkKey === surahChunkKey
+          ? renderCoverageTab(ayahStatusesForCurrentTrackable())
+          : `<div class="way-coverage"><p>Ayah-by-ayah coverage isn't available at this granularity — switch Study Unit to Ayah, Range, Whole Surah or Ruku' to see it.</p></div>`,
+      };
+      wayModalMount.innerHTML = renderWayModalShell(title, tabBodies);
+      wayModalOverlay.classList.add("open");
+      attachWayModalHandlers(wayModalMount.firstElementChild, { onClose: () => wayModalOverlay.classList.remove("open") });
+
+      const claimBtn = wayModalMount.querySelector(".way-claim-btn");
+      const statusSelectEl = wayModalMount.querySelector(".way-status-select");
+      const resultEl = wayModalMount.querySelector(".way-claim-result");
+      claimBtn.addEventListener("click", async () => {
+        claimBtn.disabled = true;
+        const outcome = await safeWrite(
+          () => claimStatus(db, {
+            tenantId: activeTenantId, personId: selectedPersonId, subjectId: "quran",
+            unitKey: info.unitKey, trackableId: trackable.id, statusId: statusSelectEl.value,
+            notes: "", domainIds: [], claimedByPersonId: currentActingPersonId(), claimedByUid: auth.currentUser.uid,
+          }),
+          { collection: "records", action: "claimStatus" }
+        );
+        if (outcome.ok) {
+          await logActivity(db, {
+            tenantId: activeTenantId, personId: selectedPersonId, date: new Date(), weekStartsOn: tenantWeekStartsOn,
+            subjectId: "quran", unitKey: info.unitKey, trackableId: trackable.id, action: "claimed", uid: auth.currentUser.uid,
+          });
+          const message = outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.";
+          if (info.chunkKey === surahChunkKey) await refreshChunkAndWheel();
+          await openUnitWayModal();
+          const freshResultEl = wayModalMount.querySelector(".way-claim-result");
+          if (freshResultEl) freshResultEl.textContent = message;
+        } else {
+          resultEl.textContent = outcome.entry.message;
+          claimBtn.disabled = false;
+        }
+      });
+    }
+
+    trackUnitBtn.addEventListener("click", () => openUnitWayModal());
 
     // ---------------------------------------------------------------------
     // Sign-in / context bootstrap (same pattern as records.html)
