@@ -514,6 +514,14 @@
     async function loadSurah() {
       currentSurahData = await getSurah(currentSurahNum);
       currentAyahNum = 1;
+      // Owner round-2 ask: "Arabic should be playing first." Reset ONLY on
+      // an actual surah change -- ayah navigation and tajweed/language
+      // toggles still leave the reciter choice alone (that's the Phase 4
+      // round-2 fix for "reciter silently reverts," and this must not
+      // reintroduce it: renderAudioControls() rebuilds on every
+      // renderStudyScreen() call, including ayah nav, so resetting there
+      // instead of here would break that fix).
+      currentReciterId = "ar";
       await refreshChunkAndWheel();
       renderStudyScreen();
       updateUnitControlsVisibility();
