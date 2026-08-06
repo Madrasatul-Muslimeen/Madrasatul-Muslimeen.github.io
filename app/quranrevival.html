@@ -163,7 +163,7 @@
     <h2>Explore <button type="button" class="secondary" id="exploreToggleBtn">Whole Quran ▾</button></h2>
     <div id="explorePanel" style="display:none;">
       <div id="exploreWheelContainer">Loading…</div>
-      <p class="hint">Click a Juz to jump there and start tracking it. Shows this Approach's direct Juz-level claims (Study Unit = Juz) — not pooled from ayah-level progress; see PHASE-5-STATUS.md for why.</p>
+      <p class="hint">Click a Juz to jump there and start tracking it. Colours show this Approach's real ayah-by-ayah progress pooled across the whole Juz — a Juz only turns fully green once every ayah in it is Mastered.</p>
     </div>
 
     <h2>Study</h2>
@@ -203,13 +203,26 @@
     import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab, renderWayModalShell, attachWayModalHandlers } from "./js/way-modal.js";
     import {
       RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah,
-      setLoop, setPlaybackErrorHandler, stop as stopAudio, playDrill, stopDrill,
+      setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
     } from "./js/audio-player.js";
 
     // Async playback failures (network drop mid-file, a source that turns
     // out not to exist, etc.) never reject play()'s own promise -- without
     // this they'd fail silently. Registered once; not tied to auth state.
     setPlaybackErrorHandler((message) => alert(message));
+
+    // Phase 5 fix (owner round-2 click-through, 6 Aug 2026): "on a whole
+    // Surah choice, only first Ayah appears" / "text shows something
+    // different, not the Ayah playing" -- whole-surah/range/drill playback
+    // was always auto-advancing the AUDIO correctly, but nothing told the
+    // page which ayah was actually sounding, so the visible text stayed
+    // frozen on whichever ayah was showing when Play was pressed. Keeps the
+    // panels in sync with whatever's actually playing, for every reciter.
+    setAyahChangeHandler((surahNum, ayahNum) => {
+      if (surahNum !== currentSurahNum || !currentSurahData) return;
+      currentAyahNum = ayahNum;
+      renderStudyScreen();
+    });
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
@@ -491,7 +504,7 @@
 
       surahIndex = await getSurahIndex();
       surahSelect.innerHTML = surahIndex
-        .map((s) => `<option value="${s.surahNumber}">${s.surahNumber}. ${s.surahNameEnglish}</option>`)
+        .map((s) => `<option value="${s.surahNumber}">${s.surahNumber}. ${s.nameEnglish}</option>`)
         .join("");
       currentSurahNum = surahIndex[0]?.surahNumber ?? 1;
 
@@ -541,12 +554,29 @@
 
     // -----------------------------------------------------------------------
     // Phase 5 -- Explore navigator (whole-Quran Quran-wheel, 30 Juz segments).
-    // Built on DIRECT Juz-level claims (Study Unit = Juz, above) rather than
-    // pooling from ayah-level data live -- the legacy app had no direct
-    // Juz-claim concept so it had no choice but to pool; this build does, so
-    // Explore just visualises those claims (I2/I5 -- one clean source of
-    // truth per unit key, no derived-aggregate collection to keep in sync).
-    // See PHASE-5-STATUS.md for the reasoning.
+    //
+    // Round 1 of this feature showed only DIRECT Juz-level claims (Study
+    // Unit = Juz). Owner round-2 click-through: "Finished a few approaches
+    // in one Surah and checked the explore in that particular Surah,
+    // doesn't reflect" -- correct, and a real scoping mistake on Claude's
+    // part, not a misunderstanding on the owner's: the legacy app's Explore
+    // pooled from ordinary ayah-level progress, and that's what people
+    // actually expect to see. Rebuilt to pool real ayah-level claims per
+    // Juz (a Juz only shows as fully mastered once EVERY ayah claimed
+    // within it is -- "weakest link", poolJuzStatus below), falling back to
+    // a direct Juz-level claim only for a Juz with no ayah-level data at
+    // all yet. Juz boundaries -- and which ayahs of a boundary surah belong
+    // to which Juz -- come from juz-index.json + the already-loaded
+    // surah-index.json ayah counts (juzAyahCoverage below), not from
+    // loading full surah text.
+    //
+    // Cost, disclosed: since every surah belongs to some Juz, opening
+    // Explore reads essentially every surah's records chunk at least once
+    // (parallelised; the currently-open surah's chunk is reused from
+    // memory at zero extra cost). That's a real, sizeable one-time read,
+    // but Explore is an explicitly-opened, on-first-use screen, not the
+    // startup path -- Architecture s8's load-speed table exempts this
+    // class of screen the same way it exempts About/resources/screensaver.
     // -----------------------------------------------------------------------
 
     exploreToggleBtn.addEventListener("click", async () => {
@@ -555,16 +585,65 @@
       if (opening) await renderExploreWheel();
     });
 
+    /** Which (surah, ayah-range) pairs make up Juz j, using only juz-index.json's own boundaries + surah-index.json's ayah counts -- never loads full surah text just to find this out. */
+    function juzAyahCoverage(j) {
+      if (j.startSurah === j.endSurah) return [{ surah: j.startSurah, from: j.startAyah, to: j.endAyah }];
+      const ranges = [];
+      const startCount = surahIndex.find((s) => s.surahNumber === j.startSurah)?.ayahCount ?? j.startAyah;
+      ranges.push({ surah: j.startSurah, from: j.startAyah, to: startCount });
+      for (let s = j.startSurah + 1; s < j.endSurah; s++) {
+        const count = surahIndex.find((x) => x.surahNumber === s)?.ayahCount ?? 0;
+        if (count) ranges.push({ surah: s, from: 1, to: count });
+      }
+      ranges.push({ surah: j.endSurah, from: 1, to: j.endAyah });
+      return ranges;
+    }
+
+    const RAMP_ORDER = STATUSES.filter((s) => s.onRamp).map((s) => s.id); // not_started .. mastered, in ramp order
+
+    /** "Weakest link" pooled status across every ayah a Juz covers, for one trackable. Ayahs never claimed count as not_started (matches ayahStatusesForCurrentTrackable's own default). Not Applicable ayahs are excluded from the pool entirely (I7), not counted as a low score. Returns null if nothing at all is countable yet (every ayah Not Applicable, or the chunk simply doesn't exist) -- the caller falls back to a direct Juz-level claim in that case. */
+    function poolJuzStatus(coverage, chunksBySurah, trackableId) {
+      let worstIdx = null;
+      let anyCounted = false;
+      for (const { surah, from, to } of coverage) {
+        const entries = chunksBySurah.get(surah)?.entries ?? {};
+        for (let a = from; a <= to; a++) {
+          const statusId = entries[`${buildUnitKey.ayah(surah, a)}::${trackableId}`]?.claimedStatus ?? "not_started";
+          if (statusId === "not_applicable") continue;
+          anyCounted = true;
+          const idx = RAMP_ORDER.indexOf(statusId);
+          if (worstIdx === null || idx < worstIdx) worstIdx = idx;
+        }
+      }
+      return anyCounted ? RAMP_ORDER[worstIdx] : null;
+    }
+
     async function renderExploreWheel() {
       const trackable = currentTrackable();
       if (!trackable) { exploreWheelContainer.innerHTML = "<p>Pick an Approach first.</p>"; return; }
-      exploreWheelContainer.innerHTML = "Loading…";
+      exploreWheelContainer.innerHTML = "Loading whole-Quran progress — this reads every surah's saved progress once, so it can take a few seconds…";
       if (!juzIndexData) juzIndexData = await getJuzIndex();
-      const chunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, "subject_quran");
-      const items = juzIndexData.map((j) => {
-        const unitKey = buildUnitKey.juz(j.juz);
-        const entry = chunk?.entries?.[`${unitKey}::${trackable.id}`];
-        const statusId = entry?.claimedStatus ?? "not_started";
+
+      const coverageByJuz = juzIndexData.map((j) => ({ j, coverage: juzAyahCoverage(j) }));
+      const neededSurahs = new Set();
+      for (const { coverage } of coverageByJuz) for (const c of coverage) neededSurahs.add(c.surah);
+
+      const chunksBySurah = new Map();
+      await Promise.all(
+        [...neededSurahs].map(async (surahNum) => {
+          if (surahNum === currentSurahNum && currentChunk) { chunksBySurah.set(surahNum, currentChunk); return; }
+          const chunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, `surah_${surahNum}`);
+          if (chunk) chunksBySurah.set(surahNum, chunk);
+        })
+      );
+
+      // Direct Juz-level claims (Study Unit = Juz) -- fallback only, for a
+      // Juz with no ayah-level progress pooled above yet.
+      const juzChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, "subject_quran");
+
+      const items = coverageByJuz.map(({ j, coverage }) => {
+        const pooled = poolJuzStatus(coverage, chunksBySurah, trackable.id);
+        const statusId = pooled ?? (juzChunk?.entries?.[`${buildUnitKey.juz(j.juz)}::${trackable.id}`]?.claimedStatus ?? "not_started");
         return { key: j.juz, statusId, title: `Juz ${j.juz} — ${statusId.replace(/_/g, " ")}` };
       });
       exploreWheelContainer.innerHTML = renderScopedWheel(items);

@@ -229,6 +229,21 @@ let currentRange = null; // { surahNum, ayahs: [...], index, reciterId } -- driv
 let currentBoundaryListener = null; // the one active timeupdate listener for segmented playback, tracked so switching ayah/reciter never leaves a stale one (with a stale endMs) attached alongside a new one
 let timestampsCache = null; // Promise<raw Bangla timestamp map> -- same shape for every segmented reciter for now
 let onPlaybackError = null;
+let onAyahChange = null;
+
+/**
+ * Phase 5 fix (owner round-2 click-through, 6 Aug 2026): "on a whole Surah
+ * choice, only first Ayah appears" / "text shows something different, not
+ * the Ayah playing" -- playAyahRange/playDrill were auto-advancing the
+ * AUDIO correctly all along, but nothing ever told the calling page which
+ * ayah was actually sounding, so the visible ayah/text panel stayed frozen
+ * on whatever ayah was showing when playback started. Registers a callback
+ * fired with (surahNum, ayahNum) every time a range or drill sequence
+ * starts playing a new ayah, direct or segmented alike.
+ */
+export function setAyahChangeHandler(fn) {
+  onAyahChange = fn;
+}
 
 /**
  * Registers a callback for playback failures that happen after play()
@@ -310,6 +325,7 @@ export function playAyah(surahNum, ayahNum, reciterId) {
 function playCurrentRangeAyah() {
   const { surahNum, ayahs, index, reciterId } = currentRange;
   const ayahNum = ayahs[index];
+  if (onAyahChange) onAyahChange(surahNum, ayahNum);
   const reciter = RECITERS[reciterId];
   if (reciter.kind === "segmented") return playSegmentedAyahInternal(surahNum, ayahNum, reciterId);
   clearBoundaryListener();
@@ -496,6 +512,7 @@ export function playOneAndWait(surahNum, ayahNum, reciterId, { signal } = {}) {
   currentPlaylist = null;
   currentRange = null;
   clearBoundaryListener();
+  if (onAyahChange) onAyahChange(surahNum, ayahNum);
   const el = ensureAudioEl();
 
   return new Promise((resolve, reject) => {
