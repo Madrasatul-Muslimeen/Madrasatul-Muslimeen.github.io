@@ -1,6 +1,6 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 5 August 2026 (round 2 — build round, owner sign-off pending)
+Last updated: 6 August 2026 (round 3 — owner found real bugs, fixed)
 Read alongside `CLAUDE.md`.
 
 ---
@@ -13,11 +13,51 @@ data only, confirmed disregardable), and gave the go-ahead to build
 everything the audit recommended, deferring the open design calls to
 Claude's judgement rather than answering each one individually.
 
-**Round 2 (this round) built the real Quran-parity gaps plus the
-migration tool.** Not yet owner-verified in a real browser — same
-"built and syntax-checked here, needs a real click-through" position
-every prior phase has been in before its own round 2. See "What was
-built this round" below, before the original audit text.
+**Round 2 built the real Quran-parity gaps plus the migration tool.**
+See "What was built this round" below, before the original audit text.
+
+**Round 3 (6 Aug 2026): the owner's first real click-through, same
+"real bugs found, fixed" discipline every prior phase has gone through.**
+Five findings, four fixed, one genuinely open:
+
+1. **Fixed, pre-existing Phase 4 bug, found while investigating**: the
+   surah dropdown read `s.surahNameEnglish`, but the real field pulled
+   into `surah-index.json` is `s.nameEnglish` — the dropdown has likely
+   never shown a real surah name, just "1. undefined" etc., since Phase 4.
+   Unrelated to Phase 5's own changes.
+2. **Fixed** — "on a whole Surah choice, only first Ayah appears" / "Text
+   shows something different, not the Ayah playing": whole-surah/range/
+   drill playback was auto-advancing the *audio* correctly the whole
+   time (Phase 4's 18/18 mocked-sequencing tests were right), but nothing
+   ever told the page which ayah was actually sounding, so the visible
+   text stayed frozen. New `setAyahChangeHandler()` in `audio-player.js`
+   keeps the panels in sync with whatever's actually playing.
+3. **Fixed** — "finished a few approaches in one Surah, checked Explore
+   in that Surah, doesn't reflect": a real scoping mistake in round 2
+   (Explore only showed direct Juz-level claims), not a misunderstanding
+   on the owner's side. Rebuilt to pool real ayah-level progress per Juz
+   ("weakest link" — a Juz only shows fully mastered once every ayah in
+   it is), falling back to a direct Juz claim only when no ayah data
+   exists yet.
+4. **Fixed** — "we have to enable Arabic should be playing first":
+   reciter now resets to Arabic on every actual surah change, without
+   reintroducing the Phase 4 round-2 "reciter silently reverts" bug
+   (the reset is scoped to `loadSurah()` only, not ayah nav/toggles).
+5. **Left open, asked the owner rather than guess again**: whether Study
+   Unit "Whole Surah"/"Range" should switch the *reading view* to show
+   all those ayahs combined on one page, instead of one ayah at a time —
+   this is a real, possibly sizeable feature (a genuinely different
+   reading mode), not a bug fix, and Explore's scope was already wrong
+   once this round. Also asked what exactly triggered the Bangla-plays-
+   first report (had the owner picked Bangla earlier and it just stayed
+   selected — working as designed — or did Arabic stay selected while
+   Bangla audio played anyway, which would be a different, real bug).
+   The reciter-default fix (#4) was shipped anyway as a safe default
+   either way; the display-mode question was not, since it isn't a safe
+   default to guess.
+
+None of round 3's fixes touched `index.html` or wrote to an old
+Firestore collection.
 
 `index.html` was not touched anywhere in this process — read-only, as
 always. No old Firestore collection was ever written to.
