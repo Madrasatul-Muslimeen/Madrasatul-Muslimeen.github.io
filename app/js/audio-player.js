@@ -238,6 +238,7 @@ let currentBoundaryListener = null; // the one active timeupdate listener for se
 let timestampsCache = null; // Promise<raw Bangla timestamp map> -- same shape for every segmented reciter for now
 let onPlaybackError = null;
 let onAyahChange = null;
+let oneShotActive = false; // true only while playOneAndWait() owns the shared <audio> element -- see handleEnded() below
 
 /**
  * Phase 5 fix (owner round-2 click-through, 6 Aug 2026): "on a whole Surah
@@ -296,6 +297,17 @@ function ensureAudioEl() {
 }
 
 function handleEnded() {
+  // Round 4 bug fix (owner click-through, 8 Aug 2026): this listener is
+  // permanent -- attached once, when the shared <audio> element is first
+  // created -- so it used to fire on every 'ended' event including ones
+  // that belong to a drill step (playOneAndWait). If Loop was left on from
+  // an earlier, unrelated bit of testing, a direct reciter's clip finishing
+  // mid-drill would get replayed from here *as well as* resolving the
+  // drill's own await on the same event -- observed as a reciter playing
+  // twice while its neighbours played once. playOneAndWait owns 'ended'
+  // handling for its own step; this global playlist/range/loop machinery
+  // must stay out of the way while it's active.
+  if (oneShotActive) return;
   if (currentRange) {
     advanceRange();
     return;
@@ -422,10 +434,26 @@ for (const reciter of Object.values(RECITERS)) {
   }
 }
 
-/** Seeks an <audio> element to a position, waiting for loadedmetadata first if the src just changed -- setting currentTime before the browser knows the media's seekable range is silently ignored in some browsers. */
+/**
+ * Seeks an <audio> element to a position, waiting for loadedmetadata first
+ * if the src just changed -- setting currentTime before the browser knows
+ * the media's seekable range is silently ignored in some browsers.
+ *
+ * Round 4 bug fix (owner click-through, 8 Aug 2026): this used to track
+ * "did the src just change" with a hand-set `el.dataset.segUrl` flag that
+ * only this function ever wrote. Every OTHER path that plays audio on the
+ * same shared element (direct reciters in playAyah/playCurrentRangeAyah/
+ * playOneAndWait) sets `el.src` directly and never touched that flag -- so
+ * after a drill stepped Arabic -> English -> Bangla, dataset.segUrl still
+ * named the Bangla surah file from an earlier round while el.src was
+ * actually pointing at whatever direct reciter played last. The next
+ * Bangla turn compared the (stale-but-matching) flag, decided nothing had
+ * changed, and just set currentTime on the wrong loaded file -- audibly,
+ * "Bangla doesn't play at all". Checking the element's own `currentSrc`
+ * instead of a manually-tracked flag can't go stale like that.
+ */
 function seekTo(el, url, seconds) {
-  if (el.dataset.segUrl !== url) {
-    el.dataset.segUrl = url;
+  if (el.currentSrc !== url) {
     return new Promise((resolve) => {
       el.addEventListener("loadedmetadata", () => { el.currentTime = seconds; resolve(); }, { once: true });
       el.src = url; // setting src triggers the load that will fire loadedmetadata above
@@ -525,10 +553,12 @@ export function playOneAndWait(surahNum, ayahNum, reciterId, { signal } = {}) {
 
   return new Promise((resolve, reject) => {
     let settled = false;
+    oneShotActive = true;
     const finish = (fn, arg) => { if (settled) return; settled = true; cleanup(); fn(arg); };
     const onEnded = () => finish(resolve);
     const onAbort = () => { el.pause(); finish(reject, new DOMException("Aborted", "AbortError")); };
     function cleanup() {
+      oneShotActive = false;
       el.removeEventListener("ended", onEnded);
       clearBoundaryListener();
       signal?.removeEventListener("abort", onAbort);
@@ -542,7 +572,17 @@ export function playOneAndWait(surahNum, ayahNum, reciterId, { signal } = {}) {
           if (!entry) throw new Error(`No timing data for surah ${surahNum}, ayah ${ayahNum}.`);
           const { timestamp_from: startMs, timestamp_to: endMs } = entry;
           return seekTo(el, reciter.surahUrl(surahNum), startMs / 1000).then(() => {
-            const stopAtBoundary = () => { if (el.currentTime * 1000 >= endMs) finish(resolve); };
+            // Round 4 bug fix: this used to only resolve() on reaching the
+            // boundary, never pause() -- the promise settled (the drill
+            // moved on to the next reciter/ayah) but the shared <audio>
+            // element itself just kept playing straight into the rest of
+            // the surah file. Observed as "Bangla plays the entire Surah"
+            // on a single-ayah drill.
+            const stopAtBoundary = () => {
+              if (el.currentTime * 1000 < endMs) return;
+              el.pause();
+              finish(resolve);
+            };
             currentBoundaryListener = stopAtBoundary;
             el.addEventListener("timeupdate", stopAtBoundary);
             return el.play();

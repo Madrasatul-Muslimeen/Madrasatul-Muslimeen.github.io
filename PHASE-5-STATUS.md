@@ -1,7 +1,7 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 8 August 2026 (round 4 — Bangla drill-audio bug, fixed;
-beta published for owner testing)
+Last updated: 8 August 2026 (round 5 — drill-sequencer bugs fixed;
+migration formally deprioritized by the owner)
 Read alongside `CLAUDE.md`.
 
 ---
@@ -109,6 +109,71 @@ Owner ran the 5-item checklist from round 3. Results:
 None of round 4's changes touched `index.html`, wrote to an old Firestore
 collection, or touched anything outside `/beta/` and `/tools/` on the
 public site.
+
+---
+
+## Round 5 (8 Aug 2026) — drill-sequencer bugs fixed; migration deprioritized
+
+Owner re-tested items 3 and 5 from the round-3/4 checklist.
+
+### Item 3 — multi-reciter drill, retested: two more real bugs, both fixed
+
+Single-Ayah drill, all three reciters selected. Reported: "Arabic and Eng
+play once (in repeat) but Bangla plays the entire Surah. Second time,
+Arabic played once, Eng played twice, Bangla didn't play at all." Two
+separate, genuine bugs in `app/js/audio-player.js`, not one:
+
+1. **`playOneAndWait()`'s segmented (Bangla) branch never paused on
+   reaching the ayah boundary** — it only resolved the promise, so the
+   drill logically moved on to the next step while the shared `<audio>`
+   element kept physically playing straight into the rest of the surah
+   file. This alone explains "Bangla plays the entire Surah" on the first
+   run. Fixed: `el.pause()` now runs before resolving.
+2. **`seekTo()` tracked "did the source change" with a hand-set
+   `el.dataset.segUrl` flag that only the segmented path ever wrote.**
+   Every direct reciter (Arabic, English) sets `el.src` straight, without
+   touching that flag — so after a drill stepped Arabic → English → Bangla,
+   the flag still named the Bangla file from the *previous* run while the
+   element's actual source was whatever direct reciter played last. The
+   next Bangla turn saw a "match", skipped reloading, and just set
+   `currentTime` on the wrong loaded file — audibly, nothing. This is the
+   round's most likely explanation for "Bangla didn't play at all" on the
+   second run. Fixed: checks the element's own `currentSrc` instead of a
+   flag that can go stale.
+3. **Found while tracing the above, fixed defensively**: `handleEnded()` —
+   the *permanent* listener attached once when the shared `<audio>`
+   element is first created — fires on every 'ended' event with no
+   awareness that a drill step (`playOneAndWait`) might be the one that
+   scheduled it. If the persistent Loop toggle was left on from earlier,
+   unrelated testing, a direct reciter's clip finishing mid-drill would
+   get replayed *in addition to* the drill's own step resolving — a
+   plausible cause of "Eng played twice" specifically (English was
+   immediately followed by Bangla's async `getTimestamps()` lookup, giving
+   a stray replay just enough time to become audible; Arabic was
+   immediately followed by English's synchronous `el.src = …`, which cut
+   any stray replay off before it could be heard). Fixed: a new
+   `oneShotActive` flag makes `handleEnded()` a no-op for the whole time
+   `playOneAndWait()` owns the element, regardless of Loop's state.
+
+All three fixes verified by reading the corrected control flow end to end
+against the reported sequence, not just patched and assumed. Owner
+re-test still needed — this class of bug (event-listener interaction
+under a specific reciter order and timing) is exactly the kind that's
+easy to half-fix; a real click-through is what actually closes it.
+
+### Item 4 — `migrate.html` "loading forever": deprioritized, not investigated
+
+Owner's decision: **the old app's data doesn't matter — it was all demo
+data, nothing worth preserving.** Migration (the whole "additive import
+from the old collections" job B2 was built for) is no longer something
+this phase needs. Per instruction, no further engineering time is going
+into `app/migrate.html`'s loading-state bug — it's left as-is,
+unmaintained, not on the round-6 list unless asked for again. This also
+formally closes the "migration data map" section of the round-1 audit
+above: nothing in it blocks Phase 5 sign-off any more.
+
+None of round 5's changes touched `index.html` or wrote to an old
+Firestore collection.
 
 ---
 
