@@ -1,6 +1,7 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 6 August 2026 (round 3 — owner found real bugs, fixed)
+Last updated: 8 August 2026 (round 4 — Bangla drill-audio bug, fixed;
+beta published for owner testing)
 Read alongside `CLAUDE.md`.
 
 ---
@@ -61,6 +62,53 @@ Firestore collection.
 
 `index.html` was not touched anywhere in this process — read-only, as
 always. No old Firestore collection was ever written to.
+
+---
+
+## Round 4 (8 Aug 2026) — beta published for real click-through; one bug found and fixed
+
+Since round 3 the beta build (`app/`) has been mirrored to a `/beta/`
+subfolder on the public `madrasatul-muslimeen.github.io` site (a separate,
+additive path — `index.html`, `mushaf/`, and the Bangla timestamps file at
+the site root are untouched) so the owner can click-through from any
+device without needing Node/a dev server. Live at
+`https://madrasatul-muslimeen.github.io/beta/app/quranrevival.html`. The
+data folder (`tools/quran-data-pull/output/`) had to be published at the
+site *root*, not under `/beta/`, because `quran-data.js`'s `BASE_URL` is a
+domain-root-relative path (`/tools/quran-data-pull/output`) — kept
+identical between the local dev server and this deployment rather than
+special-cased.
+
+Owner ran the 5-item checklist from round 3. Results:
+
+1. Study Unit picker — OK.
+2. Explore — OK.
+3. Drill playback — Arabic and English reciters OK. **Bangla reciter
+   failed**: "Couldn't play this audio: the audio source isn't available."
+   **Real bug, fixed.** Traced against the archive.org item's own file
+   listing (`archive.org/metadata/ShareefBayezidMahmud`), not assumed:
+   surahs 1–100 live under the
+   `Quran Bangla mp3 - Shareef Bayezid Mahmud/` subfolder as
+   `001.mp3`…`100.mp3`, but surahs 101–114 were uploaded later straight at
+   the item's *root*, no subfolder — `101.mp3`…`114.mp3`. The code
+   (`app/js/audio-player.js`, `RECITERS.bn.surahUrl`) always prepended the
+   subfolder, so every surah from 101 (Al-Kafirun) to 114 (An-Nas) 404'd —
+   likely how the owner hit it, testing a short surah near the end.
+   Surahs 1–100 were unaffected. Fixed with a surah-number branch, each
+   path verified live against the real archive.org URLs before shipping.
+4. Global banner — OK.
+5. `app/migrate.html` — owner got a GitHub "page not found" for
+   `.../beta/app/migrate.html`. **Not a real bug** — that error text
+   (`The claude/phase-5-audit-parity-fwmt2f branch of
+   QuranRevival---ClaudeCode does not contain the path...`) is GitHub's
+   own 404 page, meaning the link opened was a `github.com` source-browsing
+   URL against the private dev repo, not the live site. The file is live
+   and returns 200 at the correct address:
+   `https://madrasatul-muslimeen.github.io/beta/app/migrate.html`.
+
+None of round 4's changes touched `index.html`, wrote to an old Firestore
+collection, or touched anything outside `/beta/` and `/tools/` on the
+public site.
 
 ---
 
