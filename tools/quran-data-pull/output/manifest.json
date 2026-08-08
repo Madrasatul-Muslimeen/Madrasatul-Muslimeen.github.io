@@ -1,0 +1,22 @@
+{
+  "generatedAt": "2026-08-01T02:04:14.922Z",
+  "schemaVersion": 1,
+  "range": {
+    "start": 1,
+    "end": 114
+  },
+  "surahCount": 114,
+  "totalAyahs": 6236,
+  "totalWords": 77429,
+  "wordsWithRoot": 49971,
+  "morphology": {
+    "chapterCount": 114,
+    "rowCount": 128011
+  },
+  "sources": [
+    "alquran.cloud (Uthmani text, en.sahih, bn.bengali translations, juz/page/ruku/manzil/hizbQuarter/sajda metadata)",
+    "api.quran.com v4 (tajweed-tagged text, word-by-word Arabic/transliteration/English/Bangla)",
+    "GitHub mirror of the 2011 Quranic Arabic Corpus release (root/lemma/part-of-speech)"
+  ],
+  "failures": []
+}

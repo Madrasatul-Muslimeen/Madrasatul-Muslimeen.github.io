@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuranRevival — People (F-012)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  label { display: block; margin: 1rem 0 0.3rem; font-weight: 600; font-size: 0.92rem; }
+  input[type="text"], select { width: 100%; padding: 0.5rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box; }
+  .role-row { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 0.3rem; }
+  .role-row label, .check-row label { display: flex; align-items: center; gap: 0.35rem; font-weight: 400; margin: 0; }
+  .role-row input, .check-row input { width: auto; }
+  button {
+    font-size: 1rem; padding: 0.5rem 1rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+  th, td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid #eee; font-size: 0.92rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  #result { margin-top: 1rem; padding: 0.8rem; border-radius: 0.5rem; font-size: 0.92rem; display: none; }
+  #result.ok { background: #d7f4d7; }
+  #result.fail { background: #f8d7da; }
+  fieldset { border: 1px solid #ddd; border-radius: 0.5rem; margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+  <h1>People (F-012)</h1>
+  <div id="who">Not signed in.</div>
+  <button id="signInBtn">Sign in with Google</button>
+
+  <div id="app" style="display:none;">
+    <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem; font-size:0.9rem;">
+      <label style="margin:0;">Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label id="viewAsWrap" style="margin:0; display:none;">View as
+        <select id="viewAsSelect" style="width:auto;">
+          <option value="">(your real role)</option>
+          <option value="teacher">Teacher</option>
+          <option value="student">Student</option>
+        </select>
+      </label>
+    </div>
+
+    <table id="rosterTable">
+      <thead><tr><th>Name</th><th>Roles</th><th>Managed by</th></tr></thead>
+      <tbody id="rosterBody"></tbody>
+    </table>
+
+    <fieldset>
+      <legend>Add a person</legend>
+      <label for="name">Name</label>
+      <input id="name" type="text" maxlength="80" />
+
+      <div class="check-row" style="margin-top:0.8rem;">
+        <label><input id="isMinor" type="checkbox" /> This is a child (no login of their own)</label>
+      </div>
+
+      <label>Roles</label>
+      <div class="role-row">
+        <label><input type="checkbox" name="role" value="teacher" /> Teacher</label>
+        <label><input type="checkbox" name="role" value="student" /> Student</label>
+        <label><input type="checkbox" name="role" value="guardian" /> Guardian</label>
+        <label><input type="checkbox" name="role" value="prime" /> Prime</label>
+      </div>
+
+      <div id="managedByWrap" style="display:none;">
+        <label for="managedBy">Managed by</label>
+        <select id="managedBy"></select>
+      </div>
+
+      <button id="addBtn" style="margin-top:1.2rem;">Add person</button>
+    </fieldset>
+
+    <div id="result"></div>
+
+    <fieldset>
+      <legend>Invite someone (they sign in themselves)</legend>
+      <label for="inviteEmail">Their email</label>
+      <input id="inviteEmail" type="text" maxlength="120" />
+
+      <label for="inviteRole">Role</label>
+      <select id="inviteRole">
+        <option value="teacher">Teacher</option>
+        <option value="student">Student</option>
+        <option value="guardian">Guardian</option>
+        <option value="prime">Prime</option>
+      </select>
+
+      <button id="inviteBtn" style="margin-top:1.2rem;">Invite</button>
+      <div id="inviteResult" style="margin-top:0.8rem;"></div>
+
+      <table>
+        <thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Link</th></tr></thead>
+        <tbody id="inviteBody"></tbody>
+      </table>
+    </fieldset>
+
+    <fieldset>
+      <legend>Study Mode handover lock — test only (F-016)</legend>
+      <p style="margin-top:0; font-size:0.9rem;">
+        This is a throwaway demo of the LOCK MECHANISM only, not how real
+        teaching/recording will work. It simulates a shared device where a
+        child is left to study independently: pick a child to "start
+        studying" as, and switching to a DIFFERENT child is blocked until
+        you end that session. This is deliberately separate from — and
+        will never apply to — quickly logging progress for several
+        people yourself in one sitting (D10), which the real records
+        screen (Phase 3/4) will let you do freely from a simple dropdown.
+      </p>
+      <label for="studyPersonSelect">Child</label>
+      <select id="studyPersonSelect"></select>
+      <button id="startStudyBtn" style="margin-top:1rem;">Start studying</button>
+      <button id="endStudyBtn" style="margin-top:1rem; display:none; background:#666;">End session</button>
+      <div id="studyResult" style="margin-top:0.8rem; font-size:0.92rem;"></div>
+    </fieldset>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider,
+      signInWithPopup,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      doc,
+      getDoc,
+      collection,
+      query,
+      where,
+      getDocs,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { addPersonToTenant } from "./js/people.js";
+    import { createInvite, listInvitesForTenant, getTokenForPendingInvite } from "./js/invites.js";
+    import { langText } from "./js/lang.js";
+    import { safeWrite } from "./js/errors.js";
+    import {
+      getMyMemberships,
+      initializeActiveContext,
+      getActiveContext,
+      setActiveContext,
+      canUseViewAs,
+    } from "./js/session-context.js";
+    import { getStudyLock, acquireStudyLock, releaseStudyLock, canSwitchTo } from "./js/study-lock.js";
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const appEl = document.getElementById("app");
+    const rosterBody = document.getElementById("rosterBody");
+    const isMinorEl = document.getElementById("isMinor");
+    const managedByWrap = document.getElementById("managedByWrap");
+    const managedBySelect = document.getElementById("managedBy");
+    const addBtn = document.getElementById("addBtn");
+    const resultEl = document.getElementById("result");
+    const inviteEmailEl = document.getElementById("inviteEmail");
+    const inviteRoleEl = document.getElementById("inviteRole");
+    const inviteBtn = document.getElementById("inviteBtn");
+    const inviteResultEl = document.getElementById("inviteResult");
+    const inviteBody = document.getElementById("inviteBody");
+    const tenantSelect = document.getElementById("tenantSelect");
+    const viewAsWrap = document.getElementById("viewAsWrap");
+    const viewAsSelect = document.getElementById("viewAsSelect");
+    const studyPersonSelect = document.getElementById("studyPersonSelect");
+    const startStudyBtn = document.getElementById("startStudyBtn");
+    const endStudyBtn = document.getElementById("endStudyBtn");
+    const studyResultEl = document.getElementById("studyResult");
+
+    let activeTenantId = null;
+    let roster = [];
+    let myMemberships = [];
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = `Sign-in failed: ${err.message}`;
+      });
+    });
+
+    isMinorEl.addEventListener("change", () => {
+      managedByWrap.style.display = isMinorEl.checked ? "block" : "none";
+    });
+
+    async function loadRoster() {
+      const q = query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId));
+      const snap = await getDocs(q);
+      roster = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+      rosterBody.innerHTML = "";
+      for (const person of roster) {
+        const tr = document.createElement("tr");
+        const managerName = person.managedByPersonId
+          ? langText(roster.find((p) => p.id === person.managedByPersonId)?.name, "en", "—")
+          : "—";
+        tr.innerHTML = `<td>${langText(person.name, "en", person.id)}</td><td>${person.roles ?? ""}</td><td>${managerName}</td>`;
+        rosterBody.appendChild(tr);
+      }
+
+      managedBySelect.innerHTML = roster
+        .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+        .join("");
+
+      const children = roster.filter((p) => p.isMinor);
+      studyPersonSelect.innerHTML = children
+        .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+        .join("");
+      renderStudyLockState();
+    }
+
+    function renderStudyLockState() {
+      // The dropdown and "Start studying" button stay enabled even while
+      // locked -- on purpose. The lock is enforced when you actually TRY to
+      // switch (the button's click handler below), not by hiding the
+      // controls, otherwise there'd be no way to even attempt (and see
+      // refused) a switch to a different child.
+      const lock = getStudyLock();
+      if (lock) {
+        const person = roster.find((p) => p.id === lock.personId);
+        studyResultEl.textContent = `Currently studying as: ${langText(person?.name, "en", lock.personId)}. Pick someone else and click "Start studying" to see the block, or "End session" to release it.`;
+        endStudyBtn.style.display = "inline-block";
+      } else {
+        studyResultEl.textContent = "";
+        endStudyBtn.style.display = "none";
+      }
+    }
+
+    // The invite link's token is looked up fresh each time (via
+    // getTokenForPendingInvite -- tenant admins can look up any of their
+    // own tenant's still-pending invite tokens, any time, not just in the
+    // browser session an invite was created in). Fetched on click rather
+    // than for every row up front, to avoid an extra read per invite on
+    // every page load.
+    async function loadInvites() {
+      const invites = await listInvitesForTenant(db, activeTenantId);
+      inviteBody.innerHTML = "";
+      for (const inv of invites) {
+        const linkCell = inv.status === "pending" ? `<button data-email="${inv.email}" class="getLinkBtn">Copy link</button>` : "—";
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${inv.email}</td><td>${inv.role}</td><td>${inv.status}</td><td>${linkCell}</td>`;
+        inviteBody.appendChild(tr);
+      }
+      inviteBody.querySelectorAll(".getLinkBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          const token = await getTokenForPendingInvite(db, activeTenantId, btn.dataset.email);
+          if (!token) {
+            btn.textContent = "Link not found";
+            return;
+          }
+          const link = new URL(`accept-invite.html?token=${token}`, location.href).href;
+          await navigator.clipboard.writeText(link);
+          btn.textContent = "Copied!";
+          btn.disabled = false;
+        });
+      });
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = "Not signed in.";
+        signInBtn.style.display = "inline-block";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = `Signed in as ${user.email}`;
+      signInBtn.style.display = "none";
+
+      // Tags which named step failed onto the error, so the on-screen
+      // message pinpoints the exact read that was denied instead of just
+      // "something failed."
+      async function step(name, fn) {
+        try {
+          return await fn();
+        } catch (err) {
+          err.stepName = err.stepName ?? name; // keep a more specific inner tag if one was already set
+          throw err;
+        }
+      }
+
+      try {
+        const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+
+        const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
+        if (!context) {
+          whoEl.textContent += " — no account found yet. Create one on onboarding.html first.";
+          return;
+        }
+        activeTenantId = context.tenantId;
+
+        myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+          .join("");
+
+        const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+        const showViewAs = activeMembership && canUseViewAs(activeMembership.roles);
+        viewAsWrap.style.display = showViewAs ? "inline-block" : "none";
+        viewAsSelect.value = context.viewAsRole ?? "";
+
+        appEl.style.display = "block";
+        await step("load roster", loadRoster);
+        await step("load invites", loadInvites);
+      } catch (err) {
+        // I15: a failure here must never just leave a half-loaded page with
+        // no explanation -- show exactly what went wrong, and where.
+        whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
+        console.error(err);
+      }
+    });
+
+    tenantSelect.addEventListener("change", () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      viewAsWrap.style.display = canUseViewAs(chosen.roles) ? "inline-block" : "none";
+      viewAsSelect.value = "";
+      loadRoster();
+      loadInvites();
+    });
+
+    viewAsSelect.addEventListener("change", () => {
+      const context = getActiveContext();
+      if (!context) return;
+      setActiveContext({ ...context, viewAsRole: viewAsSelect.value || null });
+      // Stage 7 only wires the control itself -- later phases' screens are
+      // what actually read viewAsRole from getActiveContext() to change
+      // what they render. Nothing on this page changes yet.
+    });
+
+    addBtn.addEventListener("click", async () => {
+      addBtn.disabled = true;
+      resultEl.style.display = "none";
+
+      const name = document.getElementById("name").value.trim();
+      const isMinor = isMinorEl.checked;
+      const managedByPersonId = isMinor ? managedBySelect.value || null : null;
+      const roles = Array.from(document.querySelectorAll('input[name="role"]:checked')).map((el) => el.value);
+
+      const outcome = await safeWrite(
+        () => addPersonToTenant(db, {
+          tenantId: activeTenantId,
+          uid: auth.currentUser.uid,
+          name,
+          isMinor,
+          managedByPersonId,
+          roles,
+        }),
+        { collection: "tenantPeople", action: "addPerson" }
+      );
+
+      resultEl.style.display = "block";
+      if (outcome.ok) {
+        resultEl.className = "ok";
+        resultEl.textContent = `Added. Person ID: ${outcome.result.personId}`;
+        document.getElementById("name").value = "";
+        isMinorEl.checked = false;
+        managedByWrap.style.display = "none";
+        document.querySelectorAll('input[name="role"]').forEach((el) => (el.checked = false));
+        await loadRoster();
+      } else {
+        resultEl.className = "fail";
+        resultEl.textContent = outcome.entry.message;
+      }
+
+      addBtn.disabled = false;
+    });
+
+    inviteBtn.addEventListener("click", async () => {
+      inviteBtn.disabled = true;
+      inviteResultEl.textContent = "";
+
+      const email = inviteEmailEl.value.trim();
+      const role = inviteRoleEl.value;
+
+      const outcome = await safeWrite(
+        () => createInvite(db, { tenantId: activeTenantId, email, role, uid: auth.currentUser.uid }),
+        { collection: "tenantInvites", action: "createInvite" }
+      );
+
+      if (outcome.ok) {
+        inviteResultEl.textContent = "Invite created — click \"Copy link\" below to get it.";
+        inviteEmailEl.value = "";
+        await loadInvites();
+      } else {
+        inviteResultEl.textContent = outcome.entry.message;
+      }
+
+      inviteBtn.disabled = false;
+    });
+
+    startStudyBtn.addEventListener("click", () => {
+      const personId = studyPersonSelect.value;
+      if (!personId) {
+        studyResultEl.textContent = "No child in the roster yet — add one above first.";
+        return;
+      }
+      const check = canSwitchTo(personId);
+      if (!check.allowed) {
+        studyResultEl.textContent = check.reason;
+        return;
+      }
+      acquireStudyLock(personId);
+      renderStudyLockState();
+    });
+
+    endStudyBtn.addEventListener("click", () => {
+      releaseStudyLock();
+      renderStudyLockState();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,716 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuranRevival — Catalogue (Phase 2)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.15rem; margin-top: 2.2rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+  label { display: block; margin: 0.8rem 0 0.3rem; font-weight: 600; font-size: 0.92rem; }
+  input[type="text"], input[type="number"], select { padding: 0.45rem; font-size: 0.95rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box; }
+  button {
+    font-size: 0.92rem; padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.small { padding: 0.2rem 0.5rem; font-size: 0.82rem; }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.6rem; }
+  th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid #eee; font-size: 0.88rem; vertical-align: top; }
+  .depth-1 { padding-left: 1.2rem; }
+  .depth-2 { padding-left: 2.4rem; }
+  .depth-3 { padding-left: 3.6rem; }
+  .tag { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 0.8rem; font-size: 0.75rem; background: #eef1f7; color: #1F3A6E; margin-right: 0.2rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  #seedStatus { margin: 0.8rem 0; padding: 0.6rem; border-radius: 0.4rem; font-size: 0.88rem; display: none; }
+  #seedStatus.ok { background: #d7f4d7; }
+  #seedStatus.fail { background: #f8d7da; }
+  fieldset { border: 1px solid #ddd; border-radius: 0.5rem; margin-top: 1rem; }
+  .guideBox { font-size: 0.85rem; color: #444; background: #fafafa; padding: 0.5rem; border-radius: 0.3rem; margin-top: 0.3rem; }
+  .readonly-note { font-size: 0.85rem; color: #777; margin-top: 0.4rem; }
+</style>
+</head>
+<body>
+  <h1>Catalogue (Phase 2)</h1>
+  <p>Modules, the subject tree, the 30 Approaches, and ladders/levels — the
+     data every later module reads from. Reading is open to anyone in the
+     tenant; editing is restricted to owner/prime.</p>
+
+  <div id="who">Not signed in.</div>
+  <button id="signInBtn">Sign in with Google</button>
+
+  <div id="app" style="display:none;">
+    <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
+      <label style="margin:0;">Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+    </div>
+
+    <div id="seedStatus"></div>
+
+    <h2>Modules</h2>
+    <table>
+      <thead><tr><th>Module</th><th>Renderer</th><th>Status</th></tr></thead>
+      <tbody id="modulesBody"></tbody>
+    </table>
+
+    <h2>Subject tree</h2>
+    <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
+      <input type="checkbox" id="showArchivedSubjects" /> Show archived subjects
+    </label>
+    <table>
+      <thead><tr><th>Name</th><th>Gloss</th><th>Modules</th><th>Level (parent)</th><th>Status</th><th>Confirmation</th><th id="subjActionsHead" style="display:none;">Edit</th></tr></thead>
+      <tbody id="subjectsBody"></tbody>
+    </table>
+
+    <fieldset id="addSubjectBox" style="display:none;">
+      <legend>Add a tenant-specific subject</legend>
+      <label for="newSubjName">Name</label>
+      <input id="newSubjName" type="text" maxlength="80" />
+      <label for="newSubjParent">Parent</label>
+      <select id="newSubjParent"></select>
+      <label for="newSubjGloss">Gloss (optional)</label>
+      <input id="newSubjGloss" type="text" maxlength="160" />
+      <button id="addSubjBtn" style="margin-top:0.8rem;">Add subject</button>
+      <div id="addSubjResult" style="margin-top:0.5rem; font-size:0.88rem;"></div>
+    </fieldset>
+
+    <h2>The 30 Approaches</h2>
+    <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
+      <input type="checkbox" id="showArchivedTrackables" /> Show archived Approaches
+    </label>
+    <table>
+      <thead><tr><th>#</th><th>Approach</th><th>Section</th><th>Status</th><th>Guide</th><th id="trkActionsHead" style="display:none;">Edit</th></tr></thead>
+      <tbody id="trackablesBody"></tbody>
+    </table>
+
+    <h2>Ladders &amp; levels</h2>
+    <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
+      <input type="checkbox" id="showArchivedLadders" /> Show archived ladders/levels
+    </label>
+    <table>
+      <thead><tr><th>Ladder</th><th>Actions</th><th>Levels</th></tr></thead>
+      <tbody id="laddersBody"></tbody>
+    </table>
+
+    <fieldset id="addLadderBox" style="display:none;">
+      <legend>Add a ladder</legend>
+      <label for="newLadderName">Name</label>
+      <input id="newLadderName" type="text" maxlength="60" placeholder="e.g. General Grades" />
+      <button id="addLadderBtn" style="margin-top:0.8rem;">Add ladder</button>
+
+      <label for="levelLadderSelect" style="margin-top:1.2rem;">Add a level to</label>
+      <select id="levelLadderSelect"></select>
+      <label for="newLevelName">Level name</label>
+      <input id="newLevelName" type="text" maxlength="60" placeholder="e.g. Year 1" />
+      <label for="newLevelOrder">Order</label>
+      <input id="newLevelOrder" type="number" value="1" style="width:6rem;" />
+      <button id="addLevelBtn" style="margin-top:0.8rem;">Add level</button>
+      <div id="ladderResult" style="margin-top:0.5rem; font-size:0.88rem;"></div>
+    </fieldset>
+
+    <p class="readonly-note" id="readOnlyNote" style="display:none;">
+      You're viewing as a role that cannot edit the catalogue (owner/prime
+      only). Everything above is read-only for you.
+    </p>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider,
+      signInWithPopup,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc, collection as fsCollection } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { safeWrite } from "./js/errors.js";
+    import { createDocument } from "./js/envelope.js";
+    import {
+      getMyMemberships,
+      initializeActiveContext,
+      setActiveContext,
+    } from "./js/session-context.js";
+    import { ensureModulesSeeded, listModules } from "./js/modules.js";
+    import {
+      ensureSubjectTemplatesSeeded,
+      ensureTenantCatalogueSeeded,
+      getSubjectTree,
+      getTrackables,
+      editCatalogueNode,
+      reparentSubject,
+      setSubjectStatus,
+      setTrackableStatus,
+      setLadderStatus,
+      setLevelStatus,
+      createLadder,
+      createLevel,
+      listLadders,
+      listLevels,
+    } from "./js/catalogue.js";
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const appEl = document.getElementById("app");
+    const tenantSelect = document.getElementById("tenantSelect");
+    const seedStatusEl = document.getElementById("seedStatus");
+    const modulesBody = document.getElementById("modulesBody");
+    const subjectsBody = document.getElementById("subjectsBody");
+    const subjActionsHead = document.getElementById("subjActionsHead");
+    const trackablesBody = document.getElementById("trackablesBody");
+    const trkActionsHead = document.getElementById("trkActionsHead");
+    const laddersBody = document.getElementById("laddersBody");
+    const addSubjectBox = document.getElementById("addSubjectBox");
+    const newSubjParent = document.getElementById("newSubjParent");
+    const addSubjBtn = document.getElementById("addSubjBtn");
+    const addSubjResult = document.getElementById("addSubjResult");
+    const addLadderBox = document.getElementById("addLadderBox");
+    const levelLadderSelect = document.getElementById("levelLadderSelect");
+    const addLadderBtn = document.getElementById("addLadderBtn");
+    const addLevelBtn = document.getElementById("addLevelBtn");
+    const ladderResult = document.getElementById("ladderResult");
+    const readOnlyNote = document.getElementById("readOnlyNote");
+    const showArchivedSubjects = document.getElementById("showArchivedSubjects");
+    const showArchivedTrackables = document.getElementById("showArchivedTrackables");
+    const showArchivedLadders = document.getElementById("showArchivedLadders");
+
+    let activeTenantId = null;
+    let myMemberships = [];
+    let canEdit = false;
+    let subjectTree = [];
+
+    showArchivedSubjects.addEventListener("change", renderSubjects);
+    showArchivedTrackables.addEventListener("change", renderTrackables);
+    showArchivedLadders.addEventListener("change", loadLadders);
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = `Sign-in failed: ${err.message}`;
+      });
+    });
+
+    function depthOf(node) {
+      return Math.min(node.ancestorIds?.length ?? 0, 3);
+    }
+
+    async function loadModules() {
+      const modules = await listModules(db);
+      modulesBody.innerHTML = modules
+        .map((m) => `<tr><td>${m.icon ?? ""} ${langText(m.name, "en", m.id)}</td><td>${m.renderer}</td><td>${m.status}</td></tr>`)
+        .join("");
+    }
+
+    let editingSubjectId = null;
+
+    // Options for a parent-picker, excluding the node itself, anything
+    // beneath it in the tree (picking a descendant as your new parent would
+    // create a cycle; reparentSubject() also refuses this server-side, but
+    // there's no reason to offer an invalid choice at all), and anything
+    // archived (nothing new should be filed under a subject that's been
+    // taken out of active use).
+    function parentOptionsHtml(selectedParentId, excludeId) {
+      const excludeIds = new Set(excludeId ? [excludeId] : []);
+      if (excludeId) {
+        for (const n of subjectTree) {
+          if ((n.ancestorIds ?? []).includes(excludeId)) excludeIds.add(n.id);
+        }
+      }
+      const options = subjectTree
+        .filter((n) => !excludeIds.has(n.id) && (n.status !== "archived" || n.id === selectedParentId))
+        .map((n) => `<option value="${n.id}" ${n.id === selectedParentId ? "selected" : ""}>${"— ".repeat(depthOf(n))}${langText(n.name, "en", n.id)}</option>`)
+        .join("");
+      return `<option value="" ${!selectedParentId ? "selected" : ""}>(top level)</option>${options}`;
+    }
+
+    function parentDisplayName(node) {
+      if (!node.parentId) return "(top level)";
+      const parent = subjectTree.find((n) => n.id === node.parentId);
+      return parent ? langText(parent.name, "en", parent.id) : node.parentId;
+    }
+
+    // confirmationRequired: null/undefined = "auto" (Architecture s6's
+    // computed rule -- does this person have a teacher/guardian/prime).
+    // true/false is an explicit per-subject override ("confirmation can be
+    // switched on or off per subject").
+    function confirmationLabel(node) {
+      if (node.confirmationRequired === true) return "Always required";
+      if (node.confirmationRequired === false) return "Never required";
+      return "Auto (computed)";
+    }
+
+    function confirmationOptionsHtml(node) {
+      const v = node.confirmationRequired === true ? "true" : node.confirmationRequired === false ? "false" : "auto";
+      return `<option value="auto" ${v === "auto" ? "selected" : ""}>Auto (computed)</option>
+        <option value="true" ${v === "true" ? "selected" : ""}>Always required</option>
+        <option value="false" ${v === "false" ? "selected" : ""}>Never required</option>`;
+    }
+
+    function subjectRowHtml(node) {
+      const modules = (node.moduleIds ?? []).map((id) => `<span class="tag">${id}</span>`).join("");
+
+      if (canEdit && editingSubjectId === node.id) {
+        const escapedName = langText(node.name, "en", node.id).replace(/"/g, "&quot;");
+        return `<tr>
+          <td class="depth-${depthOf(node)}"><input type="text" class="editNameInput" value="${escapedName}" /></td>
+          <td>${node.gloss ? langText(node.gloss, "en", "") : ""}</td>
+          <td>${modules}</td>
+          <td><select class="editParentSelect">${parentOptionsHtml(node.parentId, node.id)}</select></td>
+          <td>${node.status}</td>
+          <td><select class="editConfirmSelect">${confirmationOptionsHtml(node)}</select></td>
+          <td>
+            <button class="small saveSubjBtn" data-id="${node.id}">Save</button>
+            <button class="small secondary cancelSubjBtn" data-id="${node.id}">Cancel</button>
+          </td>
+        </tr>`;
+      }
+
+      const archiveBtn = canEdit
+        ? `<button class="small secondary archiveSubjBtn" data-id="${node.id}" data-next="${node.status === "archived" ? "active" : "archived"}">${node.status === "archived" ? "Restore" : "Archive"}</button>`
+        : "";
+      const actionCell = canEdit
+        ? `<td><button class="small secondary editSubjBtn" data-id="${node.id}">Edit</button> ${archiveBtn}</td>`
+        : "";
+      return `<tr>
+        <td class="depth-${depthOf(node)}">${langText(node.name, "en", node.id)}</td>
+        <td>${node.gloss ? langText(node.gloss, "en", "") : ""}</td>
+        <td>${modules}</td>
+        <td>${parentDisplayName(node)}</td>
+        <td>${node.status}</td>
+        <td>${confirmationLabel(node)}</td>
+        ${actionCell}
+      </tr>`;
+    }
+
+    async function loadSubjects() {
+      subjectTree = await getSubjectTree(db, activeTenantId);
+      renderSubjects();
+      newSubjParent.innerHTML = parentOptionsHtml(null, null);
+    }
+
+    function renderSubjects() {
+      const visible = showArchivedSubjects.checked
+        ? subjectTree
+        : subjectTree.filter((n) => n.status !== "archived");
+      subjectsBody.innerHTML = visible.map(subjectRowHtml).join("");
+
+      subjectsBody.querySelectorAll(".editSubjBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          editingSubjectId = btn.dataset.id;
+          renderSubjects();
+        });
+      });
+
+      subjectsBody.querySelectorAll(".cancelSubjBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          editingSubjectId = null;
+          renderSubjects();
+        });
+      });
+
+      subjectsBody.querySelectorAll(".archiveSubjBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const node = subjectTree.find((n) => n.id === btn.dataset.id);
+          const nextStatus = btn.dataset.next;
+          const childCount = subjectTree.filter((n) => n.parentId === node.id).length;
+          const warning = childCount > 0
+            ? ` It has ${childCount} sub-item(s) underneath it — they'll stay active, just nested under an archived subject.`
+            : "";
+          const label = nextStatus === "archived" ? "Archive" : "Restore";
+          if (!confirm(`${label} "${langText(node.name, "en", node.id)}"?${warning}`)) return;
+
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setSubjectStatus(db, activeTenantId, node.id, nextStatus, auth.currentUser.uid),
+            { collection: "subjects", action: "setStatus", id: node.id }
+          );
+          if (outcome.ok) await loadSubjects();
+          else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      subjectsBody.querySelectorAll(".saveSubjBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const node = subjectTree.find((n) => n.id === btn.dataset.id);
+          const row = btn.closest("tr");
+          const nextName = row.querySelector(".editNameInput").value.trim();
+          const nextParentId = row.querySelector(".editParentSelect").value || null;
+          const nextConfirmRaw = row.querySelector(".editConfirmSelect").value;
+          const nextConfirm = nextConfirmRaw === "true" ? true : nextConfirmRaw === "false" ? false : null;
+          if (!nextName) {
+            alert("Name can't be empty.");
+            return;
+          }
+
+          btn.disabled = true;
+          if (nextName !== langText(node.name, "en", node.id)) {
+            const outcome = await safeWrite(
+              () => editCatalogueNode(db, TENANT.SUBJECTS, activeTenantId, node.id, { name: { ...node.name, en: nextName } }, auth.currentUser.uid),
+              { collection: "subjects", action: "editName", id: node.id }
+            );
+            if (!outcome.ok) {
+              alert(outcome.entry.message);
+              btn.disabled = false;
+              return;
+            }
+          }
+
+          if (nextConfirm !== (node.confirmationRequired ?? null)) {
+            const outcome = await safeWrite(
+              () => editCatalogueNode(db, TENANT.SUBJECTS, activeTenantId, node.id, { confirmationRequired: nextConfirm }, auth.currentUser.uid),
+              { collection: "subjects", action: "editConfirmation", id: node.id }
+            );
+            if (!outcome.ok) {
+              alert(outcome.entry.message);
+              btn.disabled = false;
+              return;
+            }
+          }
+
+          if (nextParentId !== node.parentId) {
+            const outcome = await safeWrite(
+              () => reparentSubject(db, activeTenantId, node.id, nextParentId, auth.currentUser.uid),
+              { collection: "subjects", action: "reparent", id: node.id }
+            );
+            if (!outcome.ok) {
+              alert(outcome.entry.message);
+              btn.disabled = false;
+              return;
+            }
+          }
+
+          editingSubjectId = null;
+          await loadSubjects();
+        });
+      });
+    }
+
+    function trackableRowHtml(t) {
+      const archiveBtn = canEdit
+        ? `<button class="small secondary archiveTrkBtn" data-id="${t.id}" data-next="${t.status === "archived" ? "active" : "archived"}">${t.status === "archived" ? "Restore" : "Archive"}</button>`
+        : "";
+      const actionCell = canEdit
+        ? `<td><button class="small secondary editTrkBtn" data-id="${t.id}">Edit</button> ${archiveBtn}</td>`
+        : "";
+      return `<tr>
+        <td>${t.order}</td>
+        <td>${langText(t.name, "en", t.id)}</td>
+        <td>${langText(t.groupName, "en", `Section ${t.group}`)}</td>
+        <td>${t.status}</td>
+        <td>
+          <button class="small secondary guideBtn" data-id="${t.id}">Guide</button>
+          <div class="guideBox" id="guide-${t.id}" style="display:none;">
+            <strong>What:</strong> ${langText(t.guide?.what, "en", "")}<br/>
+            <strong>How:</strong> ${langText(t.guide?.how, "en", "")}<br/>
+            <strong>Measure:</strong> ${langText(t.guide?.measure, "en", "")}
+          </div>
+        </td>
+        ${actionCell}
+      </tr>`;
+    }
+
+    let trackableList = [];
+
+    async function loadTrackables() {
+      trackableList = await getTrackables(db, activeTenantId);
+      renderTrackables();
+    }
+
+    function renderTrackables() {
+      const visible = showArchivedTrackables.checked
+        ? trackableList
+        : trackableList.filter((t) => t.status !== "archived");
+      trackablesBody.innerHTML = visible.map(trackableRowHtml).join("");
+
+      trackablesBody.querySelectorAll(".guideBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const box = document.getElementById(`guide-${btn.dataset.id}`);
+          box.style.display = box.style.display === "none" ? "block" : "none";
+        });
+      });
+
+      trackablesBody.querySelectorAll(".editTrkBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const t = trackableList.find((x) => x.id === btn.dataset.id);
+          const nextName = prompt("New name for this Approach:", langText(t.name, "en", t.id));
+          if (nextName == null || nextName.trim() === "") return;
+          const outcome = await safeWrite(
+            () => editCatalogueNode(db, TENANT.TRACKABLES, activeTenantId, t.id, { name: { ...t.name, en: nextName.trim() } }, auth.currentUser.uid),
+            { collection: "trackables", action: "editName", id: t.id }
+          );
+          if (outcome.ok) await loadTrackables();
+          else alert(outcome.entry.message);
+        });
+      });
+
+      trackablesBody.querySelectorAll(".archiveTrkBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const t = trackableList.find((x) => x.id === btn.dataset.id);
+          const nextStatus = btn.dataset.next;
+          const label = nextStatus === "archived" ? "Archive" : "Restore";
+          if (!confirm(`${label} "${langText(t.name, "en", t.id)}"?`)) return;
+
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setTrackableStatus(db, activeTenantId, t.id, nextStatus, auth.currentUser.uid),
+            { collection: "trackables", action: "setStatus", id: t.id }
+          );
+          if (outcome.ok) await loadTrackables();
+          else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    async function loadLadders() {
+      const showArchived = showArchivedLadders.checked;
+      const allLadders = await listLadders(db, activeTenantId);
+      const ladders = showArchived ? allLadders : allLadders.filter((l) => l.status !== "archived");
+
+      levelLadderSelect.innerHTML = allLadders
+        .filter((l) => l.status !== "archived")
+        .map((l) => `<option value="${l.id}">${langText(l.name, "en", l.id)}</option>`)
+        .join("");
+
+      const rows = [];
+      for (const ladder of ladders) {
+        const allLevels = await listLevels(db, activeTenantId, ladder.id);
+        const levels = showArchived ? allLevels : allLevels.filter((lv) => lv.status !== "archived");
+        const levelChips = levels.length
+          ? levels.map((lv) => {
+              const archiveBtn = canEdit
+                ? `<button class="small secondary archiveLevelBtn" data-id="${lv.id}" data-next="${lv.status === "archived" ? "active" : "archived"}">${lv.status === "archived" ? "Restore" : "Archive"}</button>`
+                : "";
+              return `<span style="display:inline-block; margin:0.15rem 0.4rem 0.15rem 0;">${langText(lv.name, "en", lv.id)}${lv.status === "archived" ? " (archived)" : ""} ${archiveBtn}</span>`;
+            }).join("")
+          : "(no levels yet)";
+        const ladderArchiveBtn = canEdit
+          ? `<button class="small secondary archiveLadderBtn" data-id="${ladder.id}" data-next="${ladder.status === "archived" ? "active" : "archived"}">${ladder.status === "archived" ? "Restore" : "Archive"}</button>`
+          : "";
+        rows.push(`<tr>
+          <td>${langText(ladder.name, "en", ladder.id)}${ladder.status === "archived" ? " (archived)" : ""}</td>
+          <td>${ladderArchiveBtn}</td>
+          <td>${levelChips}</td>
+        </tr>`);
+      }
+      laddersBody.innerHTML = rows.join("") || `<tr><td colspan="3">No ladders yet.</td></tr>`;
+
+      laddersBody.querySelectorAll(".archiveLadderBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const nextStatus = btn.dataset.next;
+          if (!confirm(`${nextStatus === "archived" ? "Archive" : "Restore"} this ladder?`)) return;
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setLadderStatus(db, activeTenantId, btn.dataset.id, nextStatus, auth.currentUser.uid),
+            { collection: "ladders", action: "setStatus", id: btn.dataset.id }
+          );
+          if (outcome.ok) await loadLadders();
+          else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      laddersBody.querySelectorAll(".archiveLevelBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const nextStatus = btn.dataset.next;
+          if (!confirm(`${nextStatus === "archived" ? "Archive" : "Restore"} this level?`)) return;
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setLevelStatus(db, activeTenantId, btn.dataset.id, nextStatus, auth.currentUser.uid),
+            { collection: "levels", action: "setStatus", id: btn.dataset.id }
+          );
+          if (outcome.ok) await loadLadders();
+          else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    async function runSeedIfNeeded() {
+      seedStatusEl.style.display = "block";
+      seedStatusEl.className = "";
+      seedStatusEl.textContent = "Checking catalogue…";
+      try {
+        await ensureModulesSeeded(db, auth.currentUser.uid);
+        await ensureSubjectTemplatesSeeded(db, auth.currentUser.uid);
+        const result = await ensureTenantCatalogueSeeded(db, activeTenantId, auth.currentUser.uid);
+        seedStatusEl.className = "ok";
+        seedStatusEl.textContent = result.seeded
+          ? `Catalogue set up for this tenant: ${result.subjectCount} subjects, ${result.trackableCount} Approaches.`
+          : "Catalogue already set up for this tenant.";
+      } catch (err) {
+        seedStatusEl.className = "fail";
+        seedStatusEl.textContent = `Could not set up the catalogue: ${err.code ?? ""} ${err.message}`;
+        console.error(err);
+        throw err;
+      }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = "Not signed in.";
+        signInBtn.style.display = "inline-block";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = `Signed in as ${user.email}`;
+      signInBtn.style.display = "none";
+
+      async function step(name, fn) {
+        try {
+          return await fn();
+        } catch (err) {
+          err.stepName = err.stepName ?? name;
+          throw err;
+        }
+      }
+
+      try {
+        const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+
+        const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
+        if (!context) {
+          whoEl.textContent += " — no account found yet. Create one on onboarding.html first.";
+          return;
+        }
+        activeTenantId = context.tenantId;
+
+        myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+          .join("");
+
+        const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+        canEdit = !!activeMembership && (activeMembership.roles.includes("owner") || activeMembership.roles.includes("prime"));
+        subjActionsHead.style.display = canEdit ? "" : "none";
+        trkActionsHead.style.display = canEdit ? "" : "none";
+        addSubjectBox.style.display = canEdit ? "block" : "none";
+        addLadderBox.style.display = canEdit ? "block" : "none";
+        readOnlyNote.style.display = canEdit ? "none" : "block";
+
+        appEl.style.display = "block";
+        await step("set up catalogue", runSeedIfNeeded);
+        await step("load modules", loadModules);
+        await step("load subjects", loadSubjects);
+        await step("load trackables", loadTrackables);
+        await step("load ladders", loadLadders);
+      } catch (err) {
+        whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
+        console.error(err);
+      }
+    });
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      canEdit = chosen.roles.includes("owner") || chosen.roles.includes("prime");
+      subjActionsHead.style.display = canEdit ? "" : "none";
+      trkActionsHead.style.display = canEdit ? "" : "none";
+      addSubjectBox.style.display = canEdit ? "block" : "none";
+      addLadderBox.style.display = canEdit ? "block" : "none";
+      readOnlyNote.style.display = canEdit ? "none" : "block";
+
+      await runSeedIfNeeded();
+      await loadSubjects();
+      await loadTrackables();
+      await loadLadders();
+    });
+
+    addSubjBtn.addEventListener("click", async () => {
+      const name = document.getElementById("newSubjName").value.trim();
+      const parentId = newSubjParent.value || null;
+      const gloss = document.getElementById("newSubjGloss").value.trim();
+      if (!name) {
+        addSubjResult.textContent = "Enter a name first.";
+        return;
+      }
+      const parentNode = parentId ? subjectTree.find((n) => n.id === parentId) : null;
+      const ancestorIds = parentNode ? [...(parentNode.ancestorIds ?? []), parentId] : [];
+      const moduleIds = parentNode ? parentNode.moduleIds : [];
+
+      addSubjBtn.disabled = true;
+      const newId = doc(fsCollection(db, TENANT.SUBJECTS)).id;
+      const outcome = await safeWrite(
+        () => createDocument(db, TENANT.SUBJECTS, `${activeTenantId}__${newId}`, {
+          tenantId: activeTenantId,
+          name: { en: name },
+          gloss: gloss ? { en: gloss } : null,
+          parentId,
+          ancestorIds,
+          moduleIds,
+          isTrackable: true,
+          order: 999,
+          status: "active",
+          sourceTemplateId: null,
+          edited: false,
+        }, auth.currentUser.uid),
+        { collection: "subjects", action: "addTenantSubject" }
+      );
+      addSubjBtn.disabled = false;
+      if (outcome.ok) {
+        addSubjResult.textContent = "Added.";
+        document.getElementById("newSubjName").value = "";
+        document.getElementById("newSubjGloss").value = "";
+        await loadSubjects();
+      } else {
+        addSubjResult.textContent = outcome.entry.message;
+      }
+    });
+
+    addLadderBtn.addEventListener("click", async () => {
+      const name = document.getElementById("newLadderName").value.trim();
+      if (!name) return;
+      addLadderBtn.disabled = true;
+      const outcome = await safeWrite(
+        () => createLadder(db, activeTenantId, name, auth.currentUser.uid),
+        { collection: "ladders", action: "createLadder" }
+      );
+      addLadderBtn.disabled = false;
+      if (outcome.ok) {
+        document.getElementById("newLadderName").value = "";
+        ladderResult.textContent = "Ladder added.";
+        await loadLadders();
+      } else {
+        ladderResult.textContent = outcome.entry.message;
+      }
+    });
+
+    addLevelBtn.addEventListener("click", async () => {
+      const ladderId = levelLadderSelect.value;
+      const name = document.getElementById("newLevelName").value.trim();
+      const order = Number(document.getElementById("newLevelOrder").value) || 1;
+      if (!ladderId || !name) {
+        ladderResult.textContent = "Add a ladder first, then name the level.";
+        return;
+      }
+      addLevelBtn.disabled = true;
+      const outcome = await safeWrite(
+        () => createLevel(db, activeTenantId, ladderId, name, order, auth.currentUser.uid),
+        { collection: "levels", action: "createLevel" }
+      );
+      addLevelBtn.disabled = false;
+      if (outcome.ok) {
+        document.getElementById("newLevelName").value = "";
+        ladderResult.textContent = "Level added.";
+        await loadLadders();
+      } else {
+        ladderResult.textContent = outcome.entry.message;
+      }
+    });
+  </script>
+</body>
+</html>

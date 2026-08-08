@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Render test — no auth needed</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 50rem; margin: 2rem auto; padding: 0 1rem; }
+  .ayah-arabic { font-family: 'Traditional Arabic', 'Amiri', serif; font-size: 1.7rem; line-height: 2.6rem; text-align: right; margin: 0.6rem 0; }
+  .ayah-num { color: #B8862F; font-size: 1rem; }
+  .ayah-translation { font-size: 0.95rem; color: #333; margin: 0.3rem 0; }
+  .ayah-translation-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; }
+  .wbw-strip, .root-deriv-strip { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.6rem 0; }
+  .wbw-word, .root-row { border: 1px solid #eee; border-radius: 0.4rem; padding: 0.3rem 0.5rem; text-align: center; min-width: 4.5rem; }
+  .wbw-arabic, .root-word, .root-root, .root-lemma { font-family: 'Amiri', serif; font-size: 1.15rem; }
+  .wbw-translit { font-size: 0.72rem; color: #888; font-style: italic; }
+  .wbw-gloss { font-size: 0.8rem; }
+  .wbw-gloss-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; }
+  .root-pos { font-size: 0.7rem; color: #888; }
+  .root-root { color: #1F3A6E; }
+  .root-count { font-size: 0.65rem; color: #999; margin-left: 0.2rem; }
+  .tajweed-ham_wasl, .tajweed-laam_shamsiyah, .tajweed-slnt, .tajweed-silent { color: #9aa3b5; }
+  .tajweed-madda_normal, .tajweed-ghunnah { color: #FF7E1E; }
+  .tajweed-madda_necessary, .tajweed-madda_obligatory, .tajweed-qalaqah { color: #e04040; }
+  .tajweed-madda_permissible { color: #4d7dff; }
+  .tajweed-ikhafa, .tajweed-ikhafa_shafawi { color: #c651c6; }
+  .tajweed-iqlab { color: #26bffd; }
+  .tajweed-idgham_ghunnah, .tajweed-idgham_wo_ghunnah, .tajweed-idgham_mutajanisayn, .tajweed-idgham_mutaqaribayn, .tajweed-idgham_shafawi { color: #1fa87a; }
+  .tajweed-end { color: #B8862F; }
+  .mastery-wheel { max-width: 320px; }
+  .wheel-seg { cursor: pointer; stroke: #fff; stroke-width: 0.5; }
+  .wheel-legend { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.82rem; margin-top: 0.5rem; }
+  .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  fieldset { margin: 1rem 0; }
+</style>
+</head>
+<body>
+  <h1>Phase 4 render test (no Firebase auth needed)</h1>
+  <p>Exercises quran-data.js, ayah-renderer.js and mastery-wheel.js directly against the real pulled data, to check the rendering logic before the owner's own sign-in click-through.</p>
+
+  <fieldset>
+    <legend>Ayah 2:255 (Ayat al-Kursi) — text, tajweed, translation, word-by-word, root/derivative</legend>
+    <label><input type="checkbox" id="tajweedToggle" /> Tajweed colours</label>
+    <label><input type="checkbox" id="banglaToggle" /> Show Bangla</label>
+    <div id="ayahOut"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Mastery Wheel — Surah 1 (Al-Fatiha), fake statuses</legend>
+    <div id="wheelOut"></div>
+  </fieldset>
+
+  <div id="errors" style="color:#9c3b2e; white-space:pre-wrap;"></div>
+
+  <script type="module">
+    import { getAyah, getSurah, getSurahIndex } from "./js/quran-data.js";
+    import { renderArabicPanel, renderTranslationPanel, renderWordByWordPanel, renderRootDerivativePanel } from "./js/ayah-renderer.js";
+    import { renderMasteryWheel, renderWheelLegend } from "./js/mastery-wheel.js";
+
+    const errorsEl = document.getElementById("errors");
+    function reportError(label, err) {
+      errorsEl.textContent += `${label}: ${err.message}\n`;
+      console.error(label, err);
+    }
+
+    const tajweedToggle = document.getElementById("tajweedToggle");
+    const banglaToggle = document.getElementById("banglaToggle");
+    const ayahOut = document.getElementById("ayahOut");
+
+    let ayah255 = null;
+    async function renderAyah() {
+      if (!ayah255) return;
+      const langs = banglaToggle.checked ? ["en", "bn"] : ["en"];
+      ayahOut.innerHTML =
+        renderArabicPanel(ayah255, { tajweedOn: tajweedToggle.checked }) +
+        renderTranslationPanel(ayah255, langs) +
+        `<h4>Word by word</h4>` + renderWordByWordPanel(ayah255, { langs }) +
+        `<h4>Root &amp; Derivatives</h4>` + renderRootDerivativePanel(ayah255);
+    }
+    tajweedToggle.addEventListener("change", renderAyah);
+    banglaToggle.addEventListener("change", renderAyah);
+
+    try {
+      ayah255 = await getAyah(2, 255);
+      await renderAyah();
+    } catch (err) { reportError("getAyah(2,255)", err); }
+
+    try {
+      const index = await getSurahIndex();
+      if (index.length !== 114) throw new Error(`Expected 114 surahs in index, got ${index.length}`);
+      console.log("surah-index.json OK:", index.length, "entries. First:", index[0], "Last:", index[113]);
+    } catch (err) { reportError("getSurahIndex()", err); }
+
+    try {
+      const fatiha = await getSurah(1);
+      const fakeStatuses = fatiha.ayahs.map((a, i) => ({
+        ayah: a.ayah,
+        statusId: ["not_applicable", "not_started", "learning", "practising", "achieved", "mastered", "not_started"][i % 7],
+      }));
+      document.getElementById("wheelOut").innerHTML =
+        renderMasteryWheel(fakeStatuses) +
+        renderWheelLegend({
+          not_applicable: "Not Applicable", not_started: "Not started", learning: "Learning",
+          practising: "Practising", achieved: "Achieved", mastered: "Mastered",
+        });
+    } catch (err) { reportError("wheel render", err); }
+  </script>
+</body>
+</html>

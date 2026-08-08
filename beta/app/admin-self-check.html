@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuranRevival — Admin self-check (F-008)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  button {
+    font-size: 1rem; padding: 0.6rem 1.2rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer; margin-right: 0.5rem;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.secondary { background: white; color: #1F3A6E; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
+  th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid #eee; font-size: 0.92rem; vertical-align: top; }
+  .tag { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 1rem; font-size: 0.8rem; font-weight: 600; }
+  .tag-ok { background: #d7f4d7; color: #1a5e1a; }
+  .tag-fail { background: #f8d7da; color: #58151c; }
+  .tag-expected-block { background: #fff3cd; color: #6b5300; }
+  .tag-skipped { background: #eee; color: #555; }
+  #summary { margin-top: 1.5rem; padding: 1rem; border-radius: 0.5rem; font-size: 1rem; }
+  #summary.ok { background: #d7f4d7; }
+  #summary.attention { background: #f8d7da; }
+</style>
+</head>
+<body>
+  <h1>Admin self-check (F-008)</h1>
+  <p>One tap: checks that every collection this account can safely reach is
+     actually reachable, and that a test save to each one succeeds. Nothing
+     shown here is invented — every line is a real result from a real check
+     against the database, just now.</p>
+
+  <div id="who">Not signed in.</div>
+  <button id="signInBtn">Sign in with Google</button>
+  <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+  <button id="runBtn" disabled>Run self-check</button>
+
+  <div id="summary" style="display:none;"></div>
+  <table id="resultsTable" style="display:none;">
+    <thead><tr><th>Check</th><th>Result</th><th>What it means</th></tr></thead>
+    <tbody id="resultsBody"></tbody>
+  </table>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { runSelfCheck } from "./js/self-check.js";
+    import { getSessionErrorBuffer } from "./js/errors.js";
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const runBtn = document.getElementById("runBtn");
+    const summaryEl = document.getElementById("summary");
+    const tableEl = document.getElementById("resultsTable");
+    const bodyEl = document.getElementById("resultsBody");
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = `Sign-in failed: ${err.message}`;
+      });
+    });
+
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        whoEl.textContent = `Signed in as ${user.email}`;
+        signInBtn.style.display = "none";
+        signOutBtn.style.display = "inline-block";
+        runBtn.disabled = false;
+      } else {
+        whoEl.textContent = "Not signed in.";
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        runBtn.disabled = true;
+      }
+    });
+
+    const STATUS_LABEL = {
+      ok: "Pass",
+      fail: "FAIL",
+      "expected-block": "Blocked (expected)",
+      skipped: "Skipped",
+    };
+
+    runBtn.addEventListener("click", async () => {
+      runBtn.disabled = true;
+      runBtn.textContent = "Running…";
+      bodyEl.innerHTML = "";
+      summaryEl.style.display = "none";
+
+      const { results, errorCount } = await runSelfCheck(db, auth.currentUser.uid);
+
+      for (const r of results) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.label}</td>
+          <td><span class="tag tag-${r.status}">${STATUS_LABEL[r.status]}</span></td>
+          <td>${r.message}</td>
+        `;
+        bodyEl.appendChild(tr);
+      }
+      tableEl.style.display = "table";
+
+      const failCount = results.filter((r) => r.status === "fail").length;
+      summaryEl.style.display = "block";
+      summaryEl.className = failCount === 0 ? "ok" : "attention";
+      summaryEl.textContent =
+        failCount === 0
+          ? `All clear. ${results.length} checks ran, nothing needs attention. (${getSessionErrorBuffer().length} write failures logged this session.)`
+          : `${failCount} check(s) need attention — see the FAIL rows above. (${getSessionErrorBuffer().length} write failures logged this session.)`;
+
+      runBtn.disabled = false;
+      runBtn.textContent = "Run self-check again";
+    });
+  </script>
+</body>
+</html>

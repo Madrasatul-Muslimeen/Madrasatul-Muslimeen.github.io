@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuranRevival — Accept invite (F-014)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 30rem; margin: 3rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.3rem; }
+  label { display: block; margin: 1rem 0 0.3rem; font-weight: 600; font-size: 0.92rem; }
+  input { width: 100%; padding: 0.5rem; font-size: 1rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box; }
+  button {
+    font-size: 1rem; padding: 0.6rem 1.2rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer; margin-top: 1.2rem;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  #box { margin-top: 1rem; padding: 1rem; border-radius: 0.5rem; }
+  #box.info { background: #eef2fb; }
+  #box.ok { background: #d7f4d7; }
+  #box.fail { background: #f8d7da; }
+</style>
+</head>
+<body>
+  <h1>Accept invite</h1>
+  <div id="box" class="info">Checking your invite link…</div>
+  <div id="signInArea" style="display:none;">
+    <button id="signInBtn">Sign in with Google</button>
+  </div>
+  <div id="acceptArea" style="display:none;">
+    <label for="name">Your name</label>
+    <input id="name" type="text" maxlength="80" />
+    <button id="acceptBtn">Accept</button>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider,
+      signInWithPopup,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { peekInviteToken, resolveInviteToken, acceptInvite } from "./js/invites.js";
+    import { langText } from "./js/lang.js";
+    import { safeWrite } from "./js/errors.js";
+
+    const boxEl = document.getElementById("box");
+    const signInArea = document.getElementById("signInArea");
+    const signInBtn = document.getElementById("signInBtn");
+    const acceptArea = document.getElementById("acceptArea");
+    const acceptBtn = document.getElementById("acceptBtn");
+
+    const token = new URLSearchParams(location.search).get("token");
+    let peeked = null; // { tenantId, email } -- readable by anyone, signed in or not
+    let invite = null; // full resolution -- only readable once signed in as the invited email
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        boxEl.className = "fail";
+        boxEl.textContent = `Sign-in failed: ${err.message}`;
+      });
+    });
+
+    async function init() {
+      if (!token) {
+        boxEl.className = "fail";
+        boxEl.textContent = "This link is missing its invite code. Ask whoever invited you to send it again.";
+        return;
+      }
+
+      // Step 1 -- readable before sign-in (inviteTokens' get rule is
+      // unconditional): just enough to tell the visitor which account to
+      // sign in with, without revealing anything about the tenant itself.
+      peeked = await peekInviteToken(db, token);
+      if (!peeked) {
+        boxEl.className = "fail";
+        boxEl.textContent = "This invite link is no longer valid — it may have already been used.";
+        return;
+      }
+
+      boxEl.className = "info";
+      boxEl.textContent = `This invite is for ${peeked.email}. Please sign in with that account to continue.`;
+      signInArea.style.display = "block";
+
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          signInArea.style.display = "block";
+          acceptArea.style.display = "none";
+          return;
+        }
+        signInArea.style.display = "none";
+
+        if (user.email.toLowerCase() !== peeked.email) {
+          boxEl.className = "fail";
+          boxEl.textContent = `This invite was sent to ${peeked.email}, but you're signed in as ${user.email}. Please sign out and sign in with the invited email instead.`;
+          acceptArea.style.display = "none";
+          return;
+        }
+
+        // Step 2 -- only attempted once signed in as the matching email,
+        // since that's the only case these reads are allowed at all.
+        invite = await resolveInviteToken(db, token);
+        if (!invite) {
+          boxEl.className = "fail";
+          boxEl.textContent = "This invite is no longer valid — it may have already been used.";
+          acceptArea.style.display = "none";
+          return;
+        }
+
+        const tenantName = langText(invite.tenantName, "en", "this account");
+        boxEl.className = "info";
+        boxEl.textContent = `You're invited to join ${tenantName} as ${invite.role}.`;
+        acceptArea.style.display = "block";
+      });
+    }
+
+    acceptBtn.addEventListener("click", async () => {
+      acceptBtn.disabled = true;
+      const name = document.getElementById("name").value.trim();
+
+      const outcome = await safeWrite(
+        () => acceptInvite(db, { token, uid: auth.currentUser.uid, name }),
+        { collection: "tenantInvites", action: "acceptInvite" }
+      );
+
+      if (outcome.ok) {
+        boxEl.className = "ok";
+        boxEl.textContent = `Welcome! You've joined as ${outcome.result.role}. Your person ID: ${outcome.result.personId}.`;
+        acceptArea.style.display = "none";
+      } else {
+        boxEl.className = "fail";
+        boxEl.textContent = outcome.entry.message;
+        acceptBtn.disabled = false;
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>
