@@ -201,7 +201,15 @@ export const RECITERS = {
     id: "bn",
     label: "Shareef Bayezid Mahmud (Bangla)",
     kind: "segmented",
-    surahUrl: (surah) => `https://archive.org/download/ShareefBayezidMahmud/${encodeURIComponent(BANGLA_FOLDER)}/${String(surah).padStart(3, "0")}.mp3`,
+    // Verified against the item's own file list (round 3 bug fix, 8 Aug
+    // 2026): surahs 1-100 live under BANGLA_FOLDER as "001.mp3".."100.mp3",
+    // but surahs 101-114 were uploaded later straight at the item root as
+    // "101.mp3".."114.mp3", no subfolder -- not a naming convention, just
+    // how the archive.org item is actually laid out.
+    surahUrl: (surah) =>
+      surah <= 100
+        ? `https://archive.org/download/ShareefBayezidMahmud/${encodeURIComponent(BANGLA_FOLDER)}/${String(surah).padStart(3, "0")}.mp3`
+        : `https://archive.org/download/ShareefBayezidMahmud/${surah}.mp3`,
     timestampsUrl: BANGLA_TIMESTAMPS_URL,
   },
 };
