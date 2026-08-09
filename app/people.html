@@ -30,6 +30,7 @@
   .app-nav .nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
   .app-nav .nav-link:hover { text-decoration: underline; }
   .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
+  .nav-preview-notice { margin-left: auto; font-size: 0.82rem; color: #8a6220; background: #f5ebd6; padding: 0.15rem 0.6rem; border-radius: 0.7rem; }
 </style>
 </head>
 <body>
@@ -47,7 +48,9 @@
       <label id="viewAsWrap" style="margin:0; display:none;">View as
         <select id="viewAsSelect" style="width:auto;">
           <option value="">(your real role)</option>
+          <option value="prime">Prime</option>
           <option value="teacher">Teacher</option>
+          <option value="guardian">Guardian</option>
           <option value="student">Student</option>
         </select>
       </label>
@@ -58,7 +61,7 @@
       <tbody id="rosterBody"></tbody>
     </table>
 
-    <fieldset>
+    <fieldset id="addPersonBox">
       <legend>Add a person</legend>
       <label for="name">Name</label>
       <input id="name" type="text" maxlength="80" />
@@ -85,7 +88,7 @@
 
     <div id="result"></div>
 
-    <fieldset>
+    <fieldset id="inviteBox">
       <legend>Invite someone (they sign in themselves)</legend>
       <label for="inviteEmail">Their email</label>
       <input id="inviteEmail" type="text" maxlength="120" />
@@ -154,6 +157,8 @@
       getActiveContext,
       setActiveContext,
       canUseViewAs,
+      effectiveRoles,
+      scopedRoster,
     } from "./js/session-context.js";
     import { getStudyLock, acquireStudyLock, releaseStudyLock, canSwitchTo } from "./js/study-lock.js";
     import { renderNavBar } from "./js/nav.js";
@@ -177,6 +182,8 @@
     const tenantSelect = document.getElementById("tenantSelect");
     const viewAsWrap = document.getElementById("viewAsWrap");
     const viewAsSelect = document.getElementById("viewAsSelect");
+    const addPersonBox = document.getElementById("addPersonBox");
+    const inviteBox = document.getElementById("inviteBox");
     const studyPersonSelect = document.getElementById("studyPersonSelect");
     const startStudyBtn = document.getElementById("startStudyBtn");
     const endStudyBtn = document.getElementById("endStudyBtn");
@@ -206,13 +213,35 @@
       managedByWrap.style.display = isMinorEl.checked ? "block" : "none";
     });
 
+    /**
+     * Round 11 -- "View as" wired up for real. Everything here reads the
+     * PREVIEWED role only when one is active (effectiveRoles/scopedRoster
+     * from session-context.js); with no preview active this is byte-for-byte
+     * what loadRoster() already did, so normal (non-preview) behaviour for
+     * every role, real or not, is unchanged.
+     */
+    function currentPreview() {
+      const context = getActiveContext();
+      const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      const realRoles = activeMembership?.roles ?? [];
+      const viewAsRole = context?.viewAsRole ?? null;
+      return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: activeMembership?.personId ?? null };
+    }
+
     async function loadRoster() {
       const q = query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId));
       const snap = await getDocs(q);
       roster = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
+      const { viewAsRole, effRoles, myPersonId } = currentPreview();
+      const canAdmin = effRoles.includes("owner") || effRoles.includes("prime");
+      addPersonBox.style.display = canAdmin ? "block" : "none";
+      inviteBox.style.display = canAdmin ? "block" : "none";
+      navBar.innerHTML = renderNavBar(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
+
+      const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
       rosterBody.innerHTML = "";
-      for (const person of roster) {
+      for (const person of visibleRoster) {
         const tr = document.createElement("tr");
         const managerName = person.managedByPersonId
           ? langText(roster.find((p) => p.id === person.managedByPersonId)?.name, "en", "—")
@@ -321,7 +350,6 @@
           .join("");
 
         const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
-        navBar.innerHTML = renderNavBar(activeMembership?.roles ?? []);
         const showViewAs = activeMembership && canUseViewAs(activeMembership.roles);
         viewAsWrap.style.display = showViewAs ? "inline-block" : "none";
         viewAsSelect.value = context.viewAsRole ?? "";
@@ -342,7 +370,6 @@
       if (!chosen) return;
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
-      navBar.innerHTML = renderNavBar(chosen.roles);
       viewAsWrap.style.display = canUseViewAs(chosen.roles) ? "inline-block" : "none";
       viewAsSelect.value = "";
       loadRoster();
@@ -353,9 +380,7 @@
       const context = getActiveContext();
       if (!context) return;
       setActiveContext({ ...context, viewAsRole: viewAsSelect.value || null });
-      // Stage 7 only wires the control itself -- later phases' screens are
-      // what actually read viewAsRole from getActiveContext() to change
-      // what they render. Nothing on this page changes yet.
+      loadRoster(); // re-render scoped roster + admin-forms visibility for the new preview role
     });
 
     addBtn.addEventListener("click", async () => {

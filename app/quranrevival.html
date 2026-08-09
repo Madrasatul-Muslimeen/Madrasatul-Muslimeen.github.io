@@ -24,6 +24,7 @@
   .app-nav .nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
   .app-nav .nav-link:hover { text-decoration: underline; }
   .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
+  .nav-preview-notice { margin-left: auto; font-size: 0.82rem; color: #8a6220; background: #f5ebd6; padding: 0.15rem 0.6rem; border-radius: 0.7rem; }
 
   /* ---------- Splash screens (shell round 2, ported from index.html) ---------- */
   .app-splash-overlay { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%); font-family: 'Inter', system-ui, sans-serif; }
@@ -251,7 +252,7 @@
     import { langText } from "./js/lang.js";
     import { safeWrite } from "./js/errors.js";
     import { updateDocument } from "./js/envelope.js";
-    import { getMyMemberships, initializeActiveContext, setActiveContext } from "./js/session-context.js";
+    import { getMyMemberships, initializeActiveContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames } from "./js/catalogue.js";
     import { buildUnitKey, STATUSES, rukuIndexInSurah } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
@@ -418,15 +419,27 @@
       return quranTrackables.find((t) => t.id === currentTrackableId) ?? null;
     }
 
+    /** Round 11 -- "View as" wired up for real. Falls back to real roles/full roster when no preview is active, so normal (non-preview) behaviour is unchanged. */
+    function currentPreview() {
+      const context = getActiveContext();
+      const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      const realRoles = membership?.roles ?? [];
+      const viewAsRole = context?.viewAsRole ?? null;
+      return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: membership?.personId ?? null };
+    }
+
     function canAdminCatalogueClientSide() {
       const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
-      return !!membership && (membership.roles.includes("owner") || membership.roles.includes("prime"));
+      if (!membership) return false;
+      return currentPreview().effRoles.some((r) => r === "owner" || r === "prime");
     }
 
     function renderPersonSelectOptions() {
       const prev = personSelect.value;
-      personSelect.innerHTML = roster.map((p) => `<option value="${p.id}">${langText(p.name, currentLang, p.id)}</option>`).join("");
-      if (roster.some((p) => p.id === prev)) personSelect.value = prev;
+      const { viewAsRole, effRoles, myPersonId } = currentPreview();
+      const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
+      personSelect.innerHTML = visibleRoster.map((p) => `<option value="${p.id}">${langText(p.name, currentLang, p.id)}</option>`).join("");
+      if (visibleRoster.some((p) => p.id === prev)) personSelect.value = prev;
     }
 
     /** Grouped by section (owner request, 5 Aug 2026: section names should show, in whichever language is chosen) -- also just a nicer 30-item dropdown than one flat list. */
@@ -591,7 +604,7 @@
       currentTenantDoc = tenantSnap.exists() ? tenantSnap.data() : null;
       tenantWeekStartsOn = currentTenantDoc?.weekStartsOn ?? 6;
       renderPersonSelectOptions();
-      selectedPersonId = roster[0]?.id ?? null;
+      selectedPersonId = personSelect.value || null; // whichever person is actually visible/selected (round 11: may be scoped by an active "View as" preview)
 
       // Backfills newly-added language keys (e.g. Bangla) onto this tenant's
       // own unedited trackable copies -- best-effort: only owner/prime can
@@ -1190,7 +1203,7 @@
         tenantSelect.innerHTML = myMemberships
           .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
           .join("");
-        navBar.innerHTML = renderNavBar(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? []);
+        navBar.innerHTML = renderNavBar(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], getActiveContext()?.viewAsRole ?? null);
 
         appEl.style.display = "block";
         await step("load context data", loadContextData);
@@ -1205,7 +1218,7 @@
       if (!chosen) return;
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
-      navBar.innerHTML = renderNavBar(chosen.roles);
+      navBar.innerHTML = renderNavBar(chosen.roles, null); // switching tenants resets any active preview
       await loadContextData();
     });
   </script>

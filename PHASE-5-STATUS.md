@@ -1,7 +1,6 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 8 August 2026 (round 10 — sign-out added everywhere; the
-"no account found" message no longer misdirects invited people)
+Last updated: 8 August 2026 (round 11 — "View as" wired up for real)
 Read alongside `CLAUDE.md`.
 
 ---
@@ -535,6 +534,90 @@ any Firestore collection.
    person open *that* link specifically — not the general beta URL.
 4. Splash screens: watch one through from the very start (don't navigate
    away in the first couple seconds) and confirm it does play as expected.
+
+---
+
+## Round 11 (8 Aug 2026) — "View as" wired up for real
+
+Owner asked for a way to toggle their own role (Owner/Prime/Teacher/
+Guardian/Student) to check how the app looks to an invited student. While
+scoping this, checked every place `viewAsRole` is actually read across the
+whole app and found it was **never read anywhere except to fill in its own
+dropdown** — "View as" has done literally nothing since Phase 1, not even
+for the two roles (Teacher/Student) it already listed. Owner's decision,
+given that: build it for real, all roles, not just extend the dropdown.
+
+**What "for real" means, concretely** — derived directly from the
+Architecture doc's own role table (s6), not invented:
+
+- **Student preview**: roster/person-pickers show only yourself. Can't
+  confirm your own attainment (Architecture: "cannot confirm own
+  attainment") — bulk-confirm and per-entry Confirm/Return buttons on
+  Records disappear.
+- **Guardian preview**: roster shows yourself + anyone whose
+  `managedByPersonId` is you (Architecture: "for their own children only").
+  Confirm/bulk-confirm stay available — Guardian, like Teacher, genuinely
+  can confirm.
+- **Teacher preview**: full roster, unchanged. **Deliberately not scoped
+  down** — CLAUDE.md already has an open, unresolved design question about
+  per-teacher student assignment (raised 31 Jul, explicitly "do not build
+  without a design conversation first"). Faking a scoped Teacher view here
+  would mean silently answering that question by accident. Disclosed
+  directly in the UI: the "Previewing as" notice says so in words, not left
+  as an unexplained inconsistency.
+- **Prime preview / no preview**: unchanged, full access, matches today.
+- **Admin controls** (catalogue edit/add/archive, Add Person, Invite
+  someone, global banner edit) hidden while previewing as anything other
+  than Owner/Prime.
+
+**Built**: `effectiveRoles()`/`scopedRoster()` (new, in `session-context.js`)
+— pure functions, no Firebase calls. `effectiveRoles` collapses to *just*
+the previewed role when one's active (never a union with your real roles,
+per the file's own existing rule that View as only narrows, never widens,
+what a screen shows) and falls back to real roles unchanged with no preview
+active, so normal, non-preview behaviour for every role — real or not — is
+untouched by this round. Wired into `people.html` (roster + Add Person/
+Invite forms + the dropdown itself, extended to all 4 previewable roles),
+`records.html` (person picker + confirm controls), `quranrevival.html`
+(person picker + banner-edit gating), `catalogue.html` (edit controls). A
+"Previewing as: X" notice (`nav.js`, shown on all 4 pages) makes it visually
+unambiguous you're in preview mode, and spells out the Teacher gap inline
+when relevant. **Deliberate design choice, tested and confirmed**: the nav
+bar's own Study/Records/People/Catalogue links stay based on your *real*
+roles regardless of preview, specifically so previewing as Student never
+traps you without an easy way back to People to change or exit it.
+
+**Tested this round**, via the render-test harness (pure functions, no
+auth needed): `effectiveRoles`/`scopedRoster` checked against a fake
+4-person roster (an owner, two of their own children, one unrelated
+child) for all four preview roles — Student saw only themselves; Guardian
+saw themselves plus their own two children only, correctly excluding the
+unrelated child; Teacher and no-preview both saw the full roster, as
+designed. Nav bar's preview notice confirmed rendering correctly, teacher
+gap note included. All 4 touched pages load cleanly in a real browser with
+zero new console errors (verified network log page-by-page, not assumed);
+every edited file passes a syntax check. **Actually toggling "View as" in
+a signed-in session and confirming each screen behaves as designed still
+needs the owner's own click-through**, same as always.
+
+None of round 11's changes touched `index.html` or wrote to any Firestore
+collection — `viewAsRole` is a pure client-side render-mode flag, same as
+it's always been (see `session-context.js`'s own file header).
+
+## What still needs your click-through (round 11)
+
+1. On the People page, try "View as" for each of Prime/Teacher/Guardian/
+   Student and confirm the roster table changes as described above (Student
+   sees only you; Guardian sees you + your own children; Teacher/Prime see
+   everyone, same as today).
+2. While previewing as Student, confirm Add Person/Invite forms disappear,
+   and on Records confirm the Confirm/Return/bulk-confirm buttons disappear.
+3. While previewing as Teacher, confirm the "shows the full roster" note
+   appears in the nav bar and reads clearly.
+4. Confirm the "Previewing as" notice shows on Study/Records/Catalogue too
+   after navigating there via the nav links, not just on People.
+5. Set it back to "(your real role)" and confirm everything returns to
+   normal everywhere.
 
 ---
 

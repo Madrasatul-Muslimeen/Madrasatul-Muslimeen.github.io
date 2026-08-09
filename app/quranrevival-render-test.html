@@ -51,6 +51,11 @@
   </fieldset>
 
   <fieldset>
+    <legend>Round 11 — "View as" logic (effectiveRoles/scopedRoster) + nav preview notice</legend>
+    <div id="viewAsOut" style="font-size:0.85rem; white-space:pre-wrap;"></div>
+  </fieldset>
+
+  <fieldset>
     <legend>Shell round 2 — splash screens (splash.js)</legend>
     <p>Click to trigger each splash on demand (not on a real page-load timer). Check the gear icon (top-right of the overlay) for the Every time/Once a day/Once a week panel. "Reset splash prefs" clears localStorage so repeat testing starts fresh.</p>
     <button type="button" id="triggerBootSplash">Show boot splash</button>
@@ -121,6 +126,32 @@
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar } from "./js/nav.js";
     import { showBootSplash, showQuranSplash } from "./js/splash.js";
+    import { effectiveRoles, scopedRoster } from "./js/session-context.js";
+
+    try {
+      const fakeRoster = [
+        { id: "p_owner", name: { en: "Owner Self" } },
+        { id: "p_kid1", name: { en: "Kid One" }, managedByPersonId: "p_owner" },
+        { id: "p_kid2", name: { en: "Kid Two" }, managedByPersonId: "p_owner" },
+        { id: "p_other", name: { en: "Someone Else's Child" }, managedByPersonId: "p_someone_else" },
+      ];
+      const cases = [
+        { real: ["owner"], viewAs: null },
+        { real: ["owner"], viewAs: "student" },
+        { real: ["owner"], viewAs: "guardian" },
+        { real: ["owner"], viewAs: "teacher" },
+      ];
+      const lines = cases.map(({ real, viewAs }) => {
+        const eff = effectiveRoles(real, viewAs);
+        const visible = viewAs ? scopedRoster(fakeRoster, eff, "p_owner") : fakeRoster;
+        return `viewAs=${viewAs ?? "(none)"} -> effectiveRoles=[${eff.join(",")}], visible=[${visible.map((p) => p.id).join(",")}]`;
+      });
+      lines.push("---");
+      lines.push("navBar with no preview: " + renderNavBar(["owner"], null));
+      lines.push("navBar previewing as student: " + renderNavBar(["owner"], "student"));
+      lines.push("navBar previewing as teacher: " + renderNavBar(["owner"], "teacher"));
+      document.getElementById("viewAsOut").textContent = lines.join("\n");
+    } catch (err) { reportError("View as logic (effectiveRoles/scopedRoster/nav notice)", err); }
 
     try {
       const log = document.getElementById("splashTestLog");
