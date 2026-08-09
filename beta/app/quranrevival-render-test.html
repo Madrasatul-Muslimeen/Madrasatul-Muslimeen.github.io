@@ -50,12 +50,35 @@
     <div id="wheelOut"></div>
   </fieldset>
 
+  <fieldset>
+    <legend>Phase 5 round 7 — Mushaf page view (hifz-renderer.js) against the real hosted QUL data</legend>
+    <p>Surah 1 (Al-Fatiha, page 1), highlighting ayahs 1:1-5 as if a Range unit, dimming the rest of the page. Then simulates a drill "playing" 1:3 via <code>setActiveAyah</code> without a re-render.</p>
+    <div id="hifzOut" style="max-width:420px;"></div>
+    <button type="button" id="hifzSimulatePlay">Simulate: highlight 1:3 as currently playing</button>
+  </fieldset>
+
   <div id="errors" style="color:#9c3b2e; white-space:pre-wrap;"></div>
+
+  <style>
+    .hifz-page { background: #fbf6e9; color: #1b1b16; border-radius: 10px; padding: 18px 16px; width: 100%; max-width: 420px; margin: 0 auto 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); container-type: inline-size; }
+    .hifz-page-num { font-size: 11px; color: #8a7c55; text-align: center; margin-bottom: 10px; letter-spacing: 0.05em; }
+    .hifz-line { display: flex; flex-wrap: nowrap; direction: rtl; gap: 0.12em; padding: 0.15em 0; font-size: 34px; font-size: 6.07cqw; line-height: 2.05; }
+    .hifz-line.centered { justify-content: center; }
+    .hifz-line:not(.centered) { width: fit-content; max-width: 100%; margin-left: auto; margin-right: 0; }
+    .hifz-word { white-space: nowrap; }
+    .hifz-word.dim { opacity: 0.32; }
+    .hifz-word.playing { color: #1F3A6E; text-shadow: 0 0 1px rgba(31,58,110,0.4); }
+    .hifz-surah-header { justify-content: center; background: rgba(201,162,75,0.14); border: 1px solid rgba(201,162,75,0.4); border-radius: 6px; font-size: 16px; font-size: 4.5cqw; font-family: system-ui, sans-serif; color: #7a5f1e; padding: 0.3em 0.6em; }
+    .hifz-surah-header.glyph-loaded { background: none; border: none; padding: 0.2em 0; font-size: 20px; font-size: 6cqw; }
+    .hifz-basmallah { justify-content: center; font-size: 16px; font-size: 4.5cqw; }
+    .hifz-line-error { font-size: 13px; color: #a33; text-align: center; }
+  </style>
 
   <script type="module">
     import { getAyah, getSurah, getSurahIndex } from "./js/quran-data.js";
     import { renderArabicPanel, renderTranslationPanel, renderWordByWordPanel, renderRootDerivativePanel } from "./js/ayah-renderer.js";
     import { renderMasteryWheel, renderWheelLegend } from "./js/mastery-wheel.js";
+    import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
 
     const errorsEl = document.getElementById("errors");
     function reportError(label, err) {
@@ -104,6 +127,17 @@
           practising: "Practising", achieved: "Achieved", mastered: "Mastered",
         });
     } catch (err) { reportError("wheel render", err); }
+
+    const hifzOut = document.getElementById("hifzOut");
+    try {
+      await ensureMushafData();
+      const ayahKeys = ["1:1", "1:2", "1:3", "1:4", "1:5"];
+      const pages = getMushafPagesForKeys(ayahKeys);
+      if (!pages.length) throw new Error("getMushafPagesForKeys returned no pages for Surah 1 -- ayah->page index is broken.");
+      console.log("Surah 1 ayahs 1-5 resolved to Mushaf page(s):", pages);
+      await renderMushafPages(hifzOut, pages, new Set(ayahKeys), (surahNum) => (surahNum === 1 ? "سورة الفاتحة" : null));
+      document.getElementById("hifzSimulatePlay").addEventListener("click", () => setActiveAyah("1:3"));
+    } catch (err) { reportError("Mushaf page render (hifz-renderer.js)", err); }
   </script>
 </body>
 </html>

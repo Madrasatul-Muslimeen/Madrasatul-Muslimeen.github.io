@@ -98,6 +98,22 @@
   .breakdown-count { width: 2rem; text-align: right; }
   .coverage-grid { display: flex; flex-wrap: wrap; gap: 0.25rem; margin-top: 0.5rem; }
   .coverage-chip { display: inline-flex; align-items: center; justify-content: center; width: 1.7rem; height: 1.7rem; border-radius: 0.3rem; font-size: 0.68rem; color: #fff; text-shadow: 0 0 2px rgba(0,0,0,0.4); }
+
+  /* ---------- Mushaf page view (Phase 5 round 7) — Whole Surah / Range ---------- */
+  #pageViewContainer { margin-top: 0.6rem; }
+  .hifz-page { background: #fbf6e9; color: #1b1b16; border-radius: 10px; padding: 18px 16px; width: 100%; max-width: 560px; margin: 0 auto 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); container-type: inline-size; }
+  .hifz-page-num { font-size: 11px; color: #8a7c55; text-align: center; margin-bottom: 10px; letter-spacing: 0.05em; }
+  .hifz-line { display: flex; flex-wrap: nowrap; direction: rtl; gap: 0.12em; padding: 0.15em 0; font-size: 34px; font-size: 6.07cqw; line-height: 2.05; }
+  .hifz-line.centered { justify-content: center; }
+  .hifz-line:not(.centered) { width: fit-content; max-width: 100%; margin-left: auto; margin-right: 0; }
+  .hifz-word { white-space: nowrap; }
+  .hifz-word.dim { opacity: 0.32; }
+  .hifz-word.playing { color: #1F3A6E; text-shadow: 0 0 1px rgba(31,58,110,0.4); }
+  .hifz-surah-header { justify-content: center; background: rgba(201,162,75,0.14); border: 1px solid rgba(201,162,75,0.4); border-radius: 6px; font-size: 16px; font-size: 4.5cqw; font-family: system-ui, sans-serif; color: #7a5f1e; padding: 0.3em 0.6em; }
+  .hifz-surah-header.glyph-loaded { background: none; border: none; padding: 0.2em 0; font-size: 20px; font-size: 6cqw; }
+  .hifz-basmallah { justify-content: center; font-size: 16px; font-size: 4.5cqw; }
+  .hifz-line-error { font-size: 13px; color: #a33; text-align: center; }
+  .page-flow-ayah { border-bottom: 1px solid #eee; padding-bottom: 0.6rem; margin-bottom: 0.6rem; }
 </style>
 </head>
 <body>
@@ -168,7 +184,15 @@
 
     <h2>Study</h2>
     <div id="studyScreen">
-      <div class="row">
+      <div class="row" id="pageViewToggleRow" style="display:none;">
+        <div><label>Page view</label><select id="pageViewModeSelect">
+          <option value="mushaf">Mushaf (real page)</option>
+          <option value="tajweed">Tajweed</option>
+          <option value="wordByWord">Word by Word</option>
+          <option value="translation">Translation</option>
+        </select></div>
+      </div>
+      <div class="row" id="singleAyahNavRow">
         <button class="secondary" id="prevAyahBtn">◂ Previous</button>
         <div id="ayahPosition" style="align-self:center; font-size:0.85rem; color:#666;"></div>
         <button class="secondary" id="nextAyahBtn">Next ▸</button>
@@ -177,6 +201,7 @@
       <div class="row" id="audioControls"></div>
       <div id="drillControls"></div>
       <div id="ayahPanels"></div>
+      <div id="pageViewContainer" style="display:none;"></div>
     </div>
   </div>
 
@@ -198,7 +223,8 @@
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
     import { getSurah, getSurahIndex, getJuzIndex } from "./js/quran-data.js";
-    import { renderLayoutA } from "./js/ayah-renderer.js";
+    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootDerivativePanel, renderTranslationPanel } from "./js/ayah-renderer.js";
+    import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderMasteryWheel, attachWheelClickHandler, renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler } from "./js/mastery-wheel.js";
     import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab, renderWayModalShell, attachWayModalHandlers } from "./js/way-modal.js";
     import {
@@ -221,7 +247,17 @@
     setAyahChangeHandler((surahNum, ayahNum) => {
       if (surahNum !== currentSurahNum || !currentSurahData) return;
       currentAyahNum = ayahNum;
-      renderStudyScreen();
+      // Phase 5 round 7 -- in Mushaf page-view mode, a full renderStudyScreen()
+      // on every ayah tick would re-fetch fonts/re-justify the whole page and
+      // visibly jank during a fast drill. setActiveAyah() is a cheap class
+      // toggle on already-rendered word spans instead. Every other mode keeps
+      // the existing round-3 full-rerender behaviour, already owner-verified.
+      const isPageUnit = currentUnitType === "surah" || currentUnitType === "range";
+      if (isPageUnit && pageDisplayMode === "mushaf") {
+        setActiveAyah(`${surahNum}:${ayahNum}`);
+      } else {
+        renderStudyScreen();
+      }
     });
 
     const whoEl = document.getElementById("who");
@@ -243,6 +279,10 @@
     const audioControls = document.getElementById("audioControls");
     const drillControlsEl = document.getElementById("drillControls");
     const ayahPanels = document.getElementById("ayahPanels");
+    const pageViewToggleRow = document.getElementById("pageViewToggleRow");
+    const pageViewModeSelect = document.getElementById("pageViewModeSelect");
+    const singleAyahNavRow = document.getElementById("singleAyahNavRow");
+    const pageViewContainer = document.getElementById("pageViewContainer");
     const wayModalOverlay = document.getElementById("wayModalOverlay");
     const wayModalMount = document.getElementById("wayModalMount");
 
@@ -297,6 +337,14 @@
     let currentUnitType = "ayah"; // ayah | range | surah | ruku | juz | page
     let rangeFrom = 1;
     let rangeTo = 1;
+
+    // Phase 5 round 7 -- page-view display mode, only meaningful when
+    // currentUnitType is "surah" or "range" (PHASE-5-STATUS.md round 6:
+    // owner's spec for the Whole Surah/Range reading view). "mushaf" is the
+    // true page-for-page glyph replica; the other three reuse the existing,
+    // already-verified single-ayah panels from ayah-renderer.js, looped over
+    // every ayah in scope.
+    let pageDisplayMode = "mushaf"; // mushaf | tajweed | wordByWord | translation
     const PAGE_EDITION = "madani"; // the pulled data's `page` field is standard 604-page Madani mushaf numbering
 
     // Phase 5 -- Explore navigator state.
@@ -471,9 +519,14 @@
       currentUnitType = unitTypeSelect.value;
       if (currentUnitType === "range") { rangeFrom = currentAyahNum; rangeTo = Math.min(currentAyahNum + 4, currentSurahData?.ayahCount ?? currentAyahNum); }
       updateUnitControlsVisibility();
+      renderStudyScreen();
     });
-    rangeFromSelect.addEventListener("change", () => { rangeFrom = Number(rangeFromSelect.value); renderUnitLabel(); });
-    rangeToSelect.addEventListener("change", () => { rangeTo = Number(rangeToSelect.value); renderUnitLabel(); });
+    rangeFromSelect.addEventListener("change", () => { rangeFrom = Number(rangeFromSelect.value); renderStudyScreen(); });
+    rangeToSelect.addEventListener("change", () => { rangeTo = Number(rangeToSelect.value); renderStudyScreen(); });
+    pageViewModeSelect.addEventListener("change", () => {
+      pageDisplayMode = pageViewModeSelect.value;
+      renderStudyScreen();
+    });
 
     async function loadContextData() {
       const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -686,22 +739,82 @@
       return translationLangs();
     }
 
+    /** Whole surah -> every ayah; range -> just the selected ayahs. Same bounds logic as currentUnitAyahBounds() for those two unit types, kept separate since that function also has to handle ruku/juz/page. */
+    function pageViewAyahBounds() {
+      if (currentUnitType === "range") return [Math.min(rangeFrom, rangeTo), Math.max(rangeFrom, rangeTo)];
+      return [1, currentSurahData.ayahCount];
+    }
+
+    /**
+     * Phase 5 round 7 -- Whole Surah / Range page view (PHASE-5-STATUS.md
+     * round 6 spec). "mushaf" renders the true page-for-page glyph replica
+     * via hifz-renderer.js, with the selected ayahs highlighted and anything
+     * else sharing the same real page (a neighbouring surah's tail/head on a
+     * boundary page) de-emphasized. The other three modes are NOT a panel
+     * layered on the Mushaf page (owner, 8 Aug 2026) -- switching the toggle
+     * replaces the whole view, reusing the existing single-ayah panels from
+     * ayah-renderer.js looped over every ayah in scope.
+     */
+    async function renderPageView() {
+      const [from, to] = pageViewAyahBounds();
+      const ayahKeys = [];
+      for (let a = from; a <= to; a++) ayahKeys.push(`${currentSurahNum}:${a}`);
+
+      if (pageDisplayMode === "mushaf") {
+        pageViewContainer.innerHTML = `<p style="color:#888;">Loading Mushaf page…</p>`;
+        try {
+          await ensureMushafData();
+          const pages = getMushafPagesForKeys(ayahKeys);
+          await renderMushafPages(
+            pageViewContainer,
+            pages,
+            new Set(ayahKeys),
+            (surahNum) => surahIndex.find((s) => s.surahNumber === surahNum)?.nameArabic ?? null
+          );
+        } catch (err) {
+          pageViewContainer.innerHTML = `<p style="color:#a33;">Couldn't load Mushaf page data (${err.message}).</p>`;
+        }
+        return;
+      }
+
+      const ayahs = currentSurahData.ayahs.filter((a) => a.ayah >= from && a.ayah <= to);
+      pageViewContainer.innerHTML = ayahs
+        .map((ayah) => {
+          let body;
+          if (pageDisplayMode === "tajweed") body = renderArabicPanel(ayah, { tajweedOn: true });
+          else if (pageDisplayMode === "wordByWord") body = renderWordByWordPanel(ayah, { langs: wbwLangs() }) + renderRootDerivativePanel(ayah);
+          else body = renderArabicPanel(ayah, { tajweedOn: false }) + renderTranslationPanel(ayah, translationLangs());
+          return `<div class="page-flow-ayah">${body}</div>`;
+        })
+        .join("");
+    }
+
     function renderStudyScreen() {
       if (!currentSurahData) return;
-      const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
-      if (!ayah) return;
-      ayahPosition.textContent = `Surah ${currentSurahNum} — Ayah ${currentAyahNum} of ${currentSurahData.ayahCount}`;
-      prevAyahBtn.disabled = currentAyahNum <= 1;
-      nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount;
+      const isPageUnit = currentUnitType === "surah" || currentUnitType === "range";
+      pageViewToggleRow.style.display = isPageUnit ? "" : "none";
+      singleAyahNavRow.style.display = isPageUnit ? "none" : "";
+      ayahPanels.style.display = isPageUnit ? "none" : "";
+      pageViewContainer.style.display = isPageUnit ? "" : "none";
 
       const trackable = currentTrackable();
       const panels = trackable?.panels ?? ["text"];
-      wbwLangControl.style.display = panels.includes("wordByWord") ? "" : "none";
-      ayahPanels.innerHTML = renderLayoutA(ayah, panels, {
-        tajweedOn: tajweedToggle.checked,
-        langs: translationLangs(),
-        wbwLangs: wbwLangs(),
-      });
+      wbwLangControl.style.display = panels.includes("wordByWord") && (!isPageUnit || pageDisplayMode === "wordByWord") ? "" : "none";
+
+      if (isPageUnit) {
+        renderPageView();
+      } else {
+        const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
+        if (!ayah) return;
+        ayahPosition.textContent = `Surah ${currentSurahNum} — Ayah ${currentAyahNum} of ${currentSurahData.ayahCount}`;
+        prevAyahBtn.disabled = currentAyahNum <= 1;
+        nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount;
+        ayahPanels.innerHTML = renderLayoutA(ayah, panels, {
+          tajweedOn: tajweedToggle.checked,
+          langs: translationLangs(),
+          wbwLangs: wbwLangs(),
+        });
+      }
 
       renderAudioControls(panels);
       renderUnitLabel();
