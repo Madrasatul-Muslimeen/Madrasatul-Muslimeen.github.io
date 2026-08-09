@@ -26,6 +26,9 @@
   <div id="signInArea" style="display:none;">
     <button id="signInBtn">Sign in with Google</button>
   </div>
+  <div id="signOutArea" style="display:none;">
+    <button id="signOutBtn" style="background:white; color:#1F3A6E;">Sign out</button>
+  </div>
   <div id="acceptArea" style="display:none;">
     <label for="name">Your name</label>
     <input id="name" type="text" maxlength="80" />
@@ -37,6 +40,7 @@
     import {
       GoogleAuthProvider,
       signInWithPopup,
+      signOut,
       onAuthStateChanged,
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { peekInviteToken, resolveInviteToken, acceptInvite } from "./js/invites.js";
@@ -46,6 +50,8 @@
     const boxEl = document.getElementById("box");
     const signInArea = document.getElementById("signInArea");
     const signInBtn = document.getElementById("signInBtn");
+    const signOutArea = document.getElementById("signOutArea");
+    const signOutBtn = document.getElementById("signOutBtn");
     const acceptArea = document.getElementById("acceptArea");
     const acceptBtn = document.getElementById("acceptBtn");
 
@@ -59,6 +65,11 @@
         boxEl.textContent = `Sign-in failed: ${err.message}`;
       });
     });
+    // Round 10 fix (8 Aug 2026): the wrong-account message below has always
+    // told people to "sign out and sign in with the invited email instead"
+    // -- but there was never a button anywhere on this page to actually do
+    // that. Added here specifically, not just because it was a general gap.
+    signOutBtn.addEventListener("click", () => signOut(auth));
 
     async function init() {
       if (!token) {
@@ -84,14 +95,16 @@
       onAuthStateChanged(auth, async (user) => {
         if (!user) {
           signInArea.style.display = "block";
+          signOutArea.style.display = "none";
           acceptArea.style.display = "none";
           return;
         }
         signInArea.style.display = "none";
+        signOutArea.style.display = "block";
 
         if (user.email.toLowerCase() !== peeked.email) {
           boxEl.className = "fail";
-          boxEl.textContent = `This invite was sent to ${peeked.email}, but you're signed in as ${user.email}. Please sign out and sign in with the invited email instead.`;
+          boxEl.textContent = `This invite was sent to ${peeked.email}, but you're signed in as ${user.email}. Sign out below and sign in with the invited email instead.`;
           acceptArea.style.display = "none";
           return;
         }

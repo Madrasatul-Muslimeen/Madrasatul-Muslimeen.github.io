@@ -30,6 +30,7 @@
 
   <div id="who">Not signed in.</div>
   <button id="signInBtn">Sign in with Google</button>
+  <button id="signOutBtn" style="display:none; background:white; color:#1F3A6E;">Sign out</button>
 
   <form id="onboardForm" style="display:none;">
     <label>What is this account for?</label>
@@ -62,6 +63,7 @@
     import {
       GoogleAuthProvider,
       signInWithPopup,
+      signOut,
       onAuthStateChanged,
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { createTenantWithOwner, upsertUserIndex } from "./js/identity.js";
@@ -69,6 +71,7 @@
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
     const form = document.getElementById("onboardForm");
     const createBtn = document.getElementById("createBtn");
     const resultEl = document.getElementById("result");
@@ -78,15 +81,18 @@
         whoEl.textContent = `Sign-in failed: ${err.message}`;
       });
     });
+    signOutBtn.addEventListener("click", () => signOut(auth));
 
     onAuthStateChanged(auth, (user) => {
       if (user) {
         whoEl.textContent = `Signed in as ${user.email}`;
         signInBtn.style.display = "none";
+        signOutBtn.style.display = "inline-block";
         form.style.display = "block";
       } else {
         whoEl.textContent = "Not signed in.";
         signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
         form.style.display = "none";
       }
     });

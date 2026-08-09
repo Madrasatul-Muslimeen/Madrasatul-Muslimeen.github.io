@@ -46,11 +46,12 @@
   <h1>QuranRevival</h1>
   <div id="who">Not signed in.</div>
   <button id="signInBtn">Sign in with Google</button>
+  <button id="signOutBtn" style="display:none; background:white; color:#1F3A6E;">Sign out</button>
   <div id="status" style="display:none;"></div>
 
   <script type="module">
     import { auth, db } from "./js/firebase-init.js";
-    import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { getMyMemberships, initializeActiveContext } from "./js/session-context.js";
@@ -76,6 +77,7 @@
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
     const statusEl = document.getElementById("status");
 
     function showStatus(message, isFail = false) {
@@ -84,21 +86,35 @@
       statusEl.innerHTML = message;
     }
 
+    // Round 10 fix (8 Aug 2026): the old wording ("no account found -- create
+    // one on onboarding.html") was actively wrong advice for someone who has
+    // a real pending invite they just haven't clicked yet -- onboarding.html
+    // creates a BRAND NEW madrasah, not a way to join one you were invited
+    // to. Surfaces the invite path first now.
+    const NO_ACCOUNT_MESSAGE = `No account found yet for this Google sign-in.
+      <br>If someone invited you to join an existing madrasah, use the invite
+      link they sent you (check your email) — don't create a new one here.
+      <br>Starting fresh instead? <a href="onboarding.html">Create a new account
+      on the onboarding page</a>.`;
+
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
         whoEl.textContent = `Sign-in failed: ${err.message}`;
       });
     });
+    signOutBtn.addEventListener("click", () => signOut(auth));
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         whoEl.textContent = "Not signed in.";
         signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
         statusEl.style.display = "none";
         return;
       }
       whoEl.textContent = `Signed in as ${user.email}`;
       signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
 
       // I15: a failure here must reach the user, not just console.error --
       // tags which step failed the same way every other page's bootstrap does.
@@ -114,13 +130,13 @@
 
         const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
         if (!context) {
-          showStatus('No account found yet. <a href="onboarding.html">Create one on the onboarding page</a>.');
+          showStatus(NO_ACCOUNT_MESSAGE);
           return;
         }
 
         const myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
         if (!myMemberships.length) {
-          showStatus('No memberships found for this account yet. <a href="onboarding.html">Set up an account on the onboarding page</a>.');
+          showStatus(NO_ACCOUNT_MESSAGE);
           return;
         }
 
