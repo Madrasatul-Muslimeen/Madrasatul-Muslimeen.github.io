@@ -37,6 +37,12 @@
   fieldset { border: 1px solid #ddd; border-radius: 0.5rem; margin-top: 1rem; }
   .domainChips label { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 400; margin: 0.2rem 0.6rem 0.2rem 0; }
   .domainChips input { width: auto; }
+
+  /* ---------- Shared nav (shell round 1) ---------- */
+  .app-nav { display: flex; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5; }
+  .app-nav .nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+  .app-nav .nav-link:hover { text-decoration: underline; }
+  .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -49,6 +55,7 @@
   <button id="signInBtn">Sign in with Google</button>
 
   <div id="app" style="display:none;">
+    <div id="navBar"></div>
     <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
       <label style="margin:0;">Tenant
         <select id="tenantSelect" style="width:auto;"></select>
@@ -165,10 +172,12 @@
     } from "./js/records.js";
     import { weekKeyFor, getWeekActivity, logActivity } from "./js/activity.js";
     import { createDomain, listDomains } from "./js/domains.js";
+    import { renderNavBar } from "./js/nav.js";
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
     const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
     const subjectSelect = document.getElementById("subjectSelect");
@@ -561,6 +570,7 @@
         tenantSelect.innerHTML = myMemberships
           .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
           .join("");
+        navBar.innerHTML = renderNavBar(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? []);
 
         appEl.style.display = "block";
         await step("load context data", loadContextData);
@@ -575,6 +585,7 @@
       if (!chosen) return;
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      navBar.innerHTML = renderNavBar(chosen.roles);
       await loadContextData();
     });
   </script>
