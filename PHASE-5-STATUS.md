@@ -1,6 +1,6 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 9 August 2026 (round 13 — Mastery Wheel's axis corrected to match the old app)
+Last updated: 9 August 2026 (round 14 — Explore's full Quran→Juz→Surah→Ruku' drill-down built)
 Read alongside `CLAUDE.md`.
 
 ---
@@ -534,6 +534,139 @@ any Firestore collection.
    person open *that* link specifically — not the general beta URL.
 4. Splash screens: watch one through from the very start (don't navigate
    away in the first couple seconds) and confirm it does play as expected.
+
+---
+
+## Round 14 (9 Aug 2026) — Explore's full Quran→Juz→Surah→Ruku' drill-down built
+
+The "Part 2" gap flagged since the original Phase 5 audit: Explore only had
+a flat Quran-wheel (30 Juz) with no way to drill further in. Owner's
+decisions this round: build the old app's real 4-level drill-down
+(Quran-wheel → Juz-wheel → Surah-wheel → Ruku'-wheel), keep it in this
+build's one consistent progress-ring visual style throughout rather than
+the old app's different look for short surahs (round 13's "keep
+consistent" answer) — but **keep the old app's actual navigation depth**:
+long surahs (>30 ayahs) still route through an intermediate Ruku'-wheel
+step rather than showing every ayah directly, since that's a functional
+difference, not a cosmetic one, and the owner's stated goal was full
+functional parity.
+
+**A real data assumption caught before it shipped, not after**: the plan
+was to tag every one of the 604 mushaf pages with "which Juz it belongs
+to," matching the old app's own code comment ("a page never straddles a
+Juz boundary"). Checked directly against the real pulled data before
+building on top of it (not assumed) — **it's false for this data**: page 62
+carries both 3:92 (Juz 3's last ayah) and 3:93 (Juz 4's first ayah), so that
+one page genuinely belongs to both Juz. The old app's comment describes an
+assumption about whatever edition its live `alquran.cloud` calls returned,
+not a fact about the Quran itself, and it doesn't hold here. Built around
+the real behaviour instead: a Juz's own page range is computed directly
+from its own boundary ayahs' page numbers (matching what the old app's code
+actually *does* — `ensureJuzPageRange` — not what its comment *assumes*),
+so a straddling page correctly shows up in both neighbouring Juz's
+page-wheel rather than being silently dropped from one or crashing on a
+bad assumption.
+
+**Built:**
+
+- **`tools/quran-data-pull/build-juz-index.js`** — extended (purely
+  additive; the four original fields are unchanged) with `startPage`/
+  `endPage` per Juz, read straight from the real pulled per-ayah `page`
+  field (confirmed present in the existing pulled data — no new data
+  source needed).
+- **`tools/quran-data-pull/build-page-index.js`** (new) — 604-row
+  `page-index.json`, `{page, startSurah, startAyah, endSurah, endAyah}`
+  for every mushaf page, same discipline as `build-juz-index.js`: scans
+  real pulled data, doesn't hand-type a boundary table. Deliberately
+  carries no "which Juz" tag, for the reason above.
+- **`app/js/quran-data.js`** — new `getPageIndex()`, mirrors `getJuzIndex()`
+  exactly (fetch once, cache, same error handling).
+- **`app/quranrevival.html` — Explore rebuilt as a real 4-level state
+  machine** (`exploreLevel`/`exploreJuzNum`/`exploreSurahNum`/
+  `exploreRukuIndex`), replacing the flat single-wheel version:
+  - **Quran-wheel** (unchanged from round 1's rebuild) — 30 Juz, "weakest
+    link" pooled status across every ayah each Juz covers.
+  - **Juz-wheel** (new) — one segment per page in that Juz's own
+    `startPage..endPage` range, pooled the same way. Click a page → jumps
+    to the **Surah-wheel** for whichever surah that page starts on.
+  - **Surah-wheel** (new), dual-mode at `SURAH_WHEEL_THRESHOLD = 30`
+    (matches `index.html:5085` exactly): surahs with ≤30 ayahs show every
+    ayah directly (click → Study screen); longer surahs group ayahs into
+    their real Ruku's (using the already-built `rukuIndexInSurah()`) and
+    show pooled Ruku' segments instead (click → Ruku'-wheel).
+  - **Ruku'-wheel** (new, long surahs only) — every ayah in that one
+    Ruku', direct per-ayah status. Click an ayah → closes Explore, jumps
+    Study to it.
+  - **Breadcrumb trail** (new, `#exploreBreadcrumb`) — "Whole Quran › Juz
+    N › Surah name › Ruku' N," each earlier crumb clickable to jump back
+    and clear everything deeper than it; the current level's own crumb is
+    shown but not clickable.
+  - The old Juz-pooling/coverage helpers (`juzAyahCoverage`,
+    `poolJuzStatus`) were generalised into `ayahCoverage()`/
+    `poolCoverageStatus()`, reused by all three pooled levels (Juz/Page/
+    Ruku') rather than duplicated.
+  - **Cost, disclosed**: opening Explore still does the one, already-known
+    "essentially every surah's records chunk" read the Quran-wheel always
+    needed — now cached in `exploreChunksBySurah` for the whole Explore
+    session, so drilling into Juz/Surah/Ruku' levels afterward costs
+    **nothing extra** on that front. Drilling into a Surah or Ruku' level
+    does add one new, real cost: that surah's full text has to load if it
+    isn't already the one open in Study (`getSurah()`, needed for its
+    Ruku' groupings/ayah count) — the same static, cached-after-first-load
+    fetch opening that surah in Study would trigger anyway, not a new kind
+    of cost.
+  - **Real behaviour change from rounds 1–13, intentional**: clicking a
+    Juz no longer jumps straight to the Study screen with Study Unit set
+    to "Juz" — it now opens the Juz-wheel (pages) first, matching the old
+    app's actual drill-down instead of the simplified flat version built
+    before this was fully scoped.
+
+**What was deliberately not built**: the old app's separate "direct jump"
+shortcut menu (a way to type/pick a destination without drilling through
+every level) — treated as a UX convenience on top of the core
+visualisation, not part of "the wheel and its functions," and not asked
+for.
+
+**Tested this round**: a pure-logic scratch script (deleted after use,
+never committed) ran the real `ayahCoverage()`/Ruku'-grouping algorithms
+against the actual pulled data — confirmed Juz 3's coverage correctly spans
+surahs 2 and 3 (126 ayahs total), confirmed the page-62 straddle produces
+the right page ranges for both Juz 3 (ending at 62) and Juz 4 (starting at
+62), confirmed Al-Baqarah's 286 ayahs group into exactly 40 contiguous
+Ruku's with no gaps or overlaps, and confirmed Al-Fatiha's 7 ayahs correctly
+stay under the 30-ayah threshold. A separate scratch HTML page (deleted
+after use) confirmed the breadcrumb's DOM rendering, active-crumb
+highlighting, and click-to-navigate wiring all work. `node --check` passed
+on every touched file (`quran-data.js`, the extracted `<script
+type="module">` from `quranrevival.html`, both build scripts). **Still
+could not click through the real signed-in Explore flow** — no Google
+credentials available here, same limitation as every round; the full
+4-level drill-down's actual Firebase-backed rendering (as opposed to its
+pure algorithms, which were verified) has not been exercised end to end.
+
+None of round 14's changes touched `index.html` or wrote to any Firestore
+collection.
+
+## What still needs your click-through (round 14)
+
+1. Open Explore, confirm the Quran-wheel still looks and behaves as before
+   (30 Juz, click one).
+2. After clicking a Juz, confirm you land on a **Juz-wheel of pages**
+   (not straight back at the Study screen the way it worked last round),
+   and the breadcrumb reads "Whole Quran › Juz N."
+3. Click a page, confirm you land on a **Surah-wheel** for the right
+   surah, breadcrumb now three-deep.
+4. On a short surah (≤30 ayahs, e.g. Al-Fatiha), confirm the Surah-wheel
+   shows individual ayahs directly, and clicking one closes Explore and
+   jumps Study there.
+5. On a long surah (e.g. Al-Baqarah), confirm the Surah-wheel shows
+   Ruku' groups instead, clicking one opens a **Ruku'-wheel** of that
+   Ruku's ayahs, breadcrumb now four-deep, and clicking an ayah there
+   closes Explore and jumps Study to it.
+6. Click an earlier breadcrumb crumb (e.g. "Whole Quran" while four levels
+   deep) and confirm it jumps back and the deeper crumbs disappear.
+7. Confirm the sidebar list next to each level's wheel matches what the
+   wheel itself shows (pages/ayahs/Ruku's with the right labels).
 
 ---
 

@@ -20,6 +20,7 @@ const BASE_URL = "/tools/quran-data-pull/output";
 const surahCache = new Map(); // surahNumber -> Promise<surah data>
 let surahIndexPromise = null;
 let juzIndexPromise = null;
+let pageIndexPromise = null;
 
 function surahFileUrl(surahNumber) {
   const padded = String(surahNumber).padStart(3, "0");
@@ -90,4 +91,28 @@ export async function getJuzIndex() {
     });
   }
   return juzIndexPromise;
+}
+
+/**
+ * Phase 5 round 14 — Explore navigator's Juz-wheel drill-down level (which
+ * page starts where, to jump to that page's Surah-wheel on click). 604
+ * entries, {page, startSurah, startAyah, endSurah, endAyah}, computed from
+ * the real pulled per-ayah `page` field the same way getJuzIndex() is —
+ * see tools/quran-data-pull/output/page-index.json. Deliberately doesn't
+ * carry a "which Juz" tag; a page can straddle a Juz boundary (verified
+ * against the real data — see build-page-index.js's own header), so "which
+ * pages belong to Juz J" is computed from Juz J's own startPage/endPage
+ * instead, not by filtering this index.
+ */
+export async function getPageIndex() {
+  if (!pageIndexPromise) {
+    pageIndexPromise = fetch(`${BASE_URL}/page-index.json`).then((res) => {
+      if (!res.ok) throw new Error(`Couldn't load the page index (HTTP ${res.status}).`);
+      return res.json();
+    }).catch((err) => {
+      pageIndexPromise = null;
+      throw err;
+    });
+  }
+  return pageIndexPromise;
 }

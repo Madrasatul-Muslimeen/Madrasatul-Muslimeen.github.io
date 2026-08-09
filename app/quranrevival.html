@@ -101,6 +101,14 @@
   .chip-achieved { background: rgba(91,132,196,0.35); color: #cfe0ff; }
   .chip-mastered { background: #3fae74; color: #0d2417; }
 
+  /* Explore's drill-down trail (Phase 5 round 14) -- "Whole Quran › Juz 3 › Al Imran › Ruku' 2". */
+  #exploreBreadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: 2px; font-size: 0.78rem; }
+  .explore-crumb { background: transparent; border: none; color: #8fa0c2; padding: 2px 4px; font-size: 0.78rem; font-family: 'Inter', sans-serif; cursor: pointer; border-radius: 4px; }
+  .explore-crumb:hover { color: #F2E8D5; background: rgba(255,255,255,0.06); }
+  .explore-crumb.active { color: #C9A24B; font-weight: 600; cursor: default; }
+  .explore-crumb.active:hover { background: none; }
+  .explore-crumb-sep { color: #556; opacity: 0.6; }
+
   /* ---------- Study Unit picker (Phase 5) ---------- */
   #unitLabel { font-size: 0.85rem; color: #1F3A6E; font-weight: 600; margin: 0.3rem 0; }
 
@@ -248,9 +256,10 @@
     <h2 class="wheel-heading">Explore <button type="button" class="secondary" id="exploreToggleBtn">Whole Quran ▾</button></h2>
     <div id="explorePanel" class="wheel-box" style="display:none;">
       <div class="wheel-col">
+        <div id="exploreBreadcrumb"></div>
         <div id="exploreWheelContainer">Loading…</div>
         <div id="exploreWheelLegendContainer"></div>
-        <p class="hint">Click a Juz to jump there and start tracking it. Colours show this Approach's real ayah-by-ayah progress pooled across the whole Juz — a Juz only turns fully green once every ayah in it is Mastered.</p>
+        <p class="hint">Click a segment to drill in — Quran → Juz → Surah → Ruku' → an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment — it only turns fully green once every ayah inside it is Mastered.</p>
       </div>
       <div id="exploreSidebarContainer" class="wheel-sidebar"></div>
     </div>
@@ -295,7 +304,7 @@
     import { buildUnitKey, STATUSES, rukuIndexInSurah } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
-    import { getSurah, getSurahIndex, getJuzIndex } from "./js/quran-data.js";
+    import { getSurah, getSurahIndex, getJuzIndex, getPageIndex } from "./js/quran-data.js";
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootDerivativePanel, renderTranslationPanel } from "./js/ayah-renderer.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar } from "./js/nav.js";
@@ -384,6 +393,7 @@
 
     const exploreToggleBtn = document.getElementById("exploreToggleBtn");
     const explorePanel = document.getElementById("explorePanel");
+    const exploreBreadcrumb = document.getElementById("exploreBreadcrumb");
     const exploreWheelContainer = document.getElementById("exploreWheelContainer");
     const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
     const exploreSidebarContainer = document.getElementById("exploreSidebarContainer");
@@ -448,7 +458,15 @@
     const PAGE_EDITION = "madani"; // the pulled data's `page` field is standard 604-page Madani mushaf numbering
 
     // Phase 5 -- Explore navigator state.
+    const SURAH_WHEEL_THRESHOLD = 30; // matches index.html's own confirmed threshold (index.html:5085)
     let juzIndexData = null; // loaded lazily on first Explore open
+    let pageIndexData = null; // loaded lazily on first Explore open
+    let exploreChunksBySurah = null; // Map surahNum -> chunk, shared across every Explore level for one "open" -- loading it once at the Quran-wheel level covers every deeper level too (every surah belongs to some Juz), so drilling down never costs an extra Firestore read
+    let exploreSubjectChunk = null; // subject_quran chunk -- Juz/Page direct-claim fallback, used when no ayah-level data exists yet to pool from
+    let exploreLevel = "quran"; // "quran" | "juz" | "surah" | "ruku"
+    let exploreJuzNum = null;
+    let exploreSurahNum = null;
+    let exploreRukuIndex = null;
 
     // Phase 5 -- drill playback state (persisted across renderAudioControls()
     // rebuilds, same pattern as currentReciterId/loopIsOn above).
@@ -770,7 +788,16 @@
     }
 
     // -----------------------------------------------------------------------
-    // Phase 5 -- Explore navigator (whole-Quran Quran-wheel, 30 Juz segments).
+    // Phase 5 -- Explore navigator: a 4-level drill-down, Quran-wheel (30
+    // Juz) -> Juz-wheel (that Juz's own pages) -> Surah-wheel (a page's
+    // surah -- ayahs directly if <=30, else Ruku' groups) -> Ruku'-wheel
+    // (that Ruku's ayahs) -> Study screen. Matches the old app's real
+    // navigation depth (index.html's renderQuranWheelExplore /
+    // renderJuzWheelExplore / renderSurahWheelExplore /
+    // renderRukuWheelExplore, and its own SURAH_WHEEL_THRESHOLD=30), in
+    // this build's one consistent progress-ring visual style throughout
+    // (owner's call, round 14 -- not index.html's different look for short
+    // surahs).
     //
     // Round 1 of this feature showed only DIRECT Juz-level claims (Study
     // Unit = Juz). Owner round-2 click-through: "Finished a few approaches
@@ -778,52 +805,61 @@
     // doesn't reflect" -- correct, and a real scoping mistake on Claude's
     // part, not a misunderstanding on the owner's: the legacy app's Explore
     // pooled from ordinary ayah-level progress, and that's what people
-    // actually expect to see. Rebuilt to pool real ayah-level claims per
-    // Juz (a Juz only shows as fully mastered once EVERY ayah claimed
-    // within it is -- "weakest link", poolJuzStatus below), falling back to
-    // a direct Juz-level claim only for a Juz with no ayah-level data at
-    // all yet. Juz boundaries -- and which ayahs of a boundary surah belong
-    // to which Juz -- come from juz-index.json + the already-loaded
-    // surah-index.json ayah counts (juzAyahCoverage below), not from
-    // loading full surah text.
+    // actually expect to see. Every pooled level below (Juz/Page/Ruku')
+    // uses the same "weakest link" rule -- a segment only shows as fully
+    // mastered once EVERY ayah inside it is -- falling back to a direct
+    // claim at that level only when no ayah-level data exists yet.
     //
-    // Cost, disclosed: since every surah belongs to some Juz, opening
-    // Explore reads essentially every surah's records chunk at least once
-    // (parallelised; the currently-open surah's chunk is reused from
-    // memory at zero extra cost). That's a real, sizeable one-time read,
-    // but Explore is an explicitly-opened, on-first-use screen, not the
-    // startup path -- Architecture s8's load-speed table exempts this
-    // class of screen the same way it exempts About/resources/screensaver.
+    // Cost, disclosed: opening Explore (the Quran-wheel) reads essentially
+    // every surah's records chunk once, since every surah belongs to some
+    // Juz (parallelised; the currently-open surah's chunk is reused from
+    // memory at zero extra cost). That one read is cached in
+    // exploreChunksBySurah for the rest of the Explore session, so drilling
+    // into Juz/Surah/Ruku' levels afterward costs nothing extra on that
+    // front. Drilling into a Surah or Ruku' level does add one new cost:
+    // that surah's full text (`getSurah`) has to load if it isn't already
+    // the one open in Study -- same static, cached-after-first-load fetch
+    // opening it in Study would trigger anyway. Explore is an explicitly-
+    // opened, on-first-use screen, not the startup path -- Architecture
+    // s8's load-speed table exempts this class of screen the same way it
+    // exempts About/resources/screensaver.
     // -----------------------------------------------------------------------
 
     exploreToggleBtn.addEventListener("click", async () => {
       const opening = explorePanel.style.display === "none";
       explorePanel.style.display = opening ? "block" : "none";
-      if (opening) await renderExploreWheel();
+      if (!opening) return;
+      exploreLevel = "quran";
+      exploreJuzNum = null;
+      exploreSurahNum = null;
+      exploreRukuIndex = null;
+      exploreWheelContainer.innerHTML = "Loading whole-Quran progress — this reads every surah's saved progress once, so it can take a few seconds…";
+      await ensureExploreChunksLoaded();
+      await renderExplore();
     });
 
-    /** Which (surah, ayah-range) pairs make up Juz j, using only juz-index.json's own boundaries + surah-index.json's ayah counts -- never loads full surah text just to find this out. */
-    function juzAyahCoverage(j) {
-      if (j.startSurah === j.endSurah) return [{ surah: j.startSurah, from: j.startAyah, to: j.endAyah }];
+    /** Which (surah, ayah-range) pairs a boundary spans, using only surah-index.json's ayah counts -- never loads full surah text just to find this out. Generic over Juz/Page/Ruku' -- any {startSurah,startAyah,endSurah,endAyah} shape works. */
+    function ayahCoverage(startSurah, startAyah, endSurah, endAyah) {
+      if (startSurah === endSurah) return [{ surah: startSurah, from: startAyah, to: endAyah }];
       const ranges = [];
-      const startCount = surahIndex.find((s) => s.surahNumber === j.startSurah)?.ayahCount ?? j.startAyah;
-      ranges.push({ surah: j.startSurah, from: j.startAyah, to: startCount });
-      for (let s = j.startSurah + 1; s < j.endSurah; s++) {
+      const startCount = surahIndex.find((s) => s.surahNumber === startSurah)?.ayahCount ?? startAyah;
+      ranges.push({ surah: startSurah, from: startAyah, to: startCount });
+      for (let s = startSurah + 1; s < endSurah; s++) {
         const count = surahIndex.find((x) => x.surahNumber === s)?.ayahCount ?? 0;
         if (count) ranges.push({ surah: s, from: 1, to: count });
       }
-      ranges.push({ surah: j.endSurah, from: 1, to: j.endAyah });
+      ranges.push({ surah: endSurah, from: 1, to: endAyah });
       return ranges;
     }
 
     const RAMP_ORDER = STATUSES.filter((s) => s.onRamp).map((s) => s.id); // not_started .. mastered, in ramp order
 
-    /** "Weakest link" pooled status across every ayah a Juz covers, for one trackable. Ayahs never claimed count as not_started (matches ayahStatusesForCurrentTrackable's own default). Not Applicable ayahs are excluded from the pool entirely (I7), not counted as a low score. Returns null if nothing at all is countable yet (every ayah Not Applicable, or the chunk simply doesn't exist) -- the caller falls back to a direct Juz-level claim in that case. */
-    function poolJuzStatus(coverage, chunksBySurah, trackableId) {
+    /** "Weakest link" pooled status across every ayah a coverage range covers, for one trackable, reading from the shared exploreChunksBySurah loaded once per Explore open. Ayahs never claimed count as not_started (matches ayahStatusesForCurrentTrackable's own default). Not Applicable ayahs are excluded from the pool entirely (I7), not counted as a low score. Returns null if nothing at all is countable yet -- the caller falls back to a direct claim at that level in that case. */
+    function poolCoverageStatus(coverage, trackableId) {
       let worstIdx = null;
       let anyCounted = false;
       for (const { surah, from, to } of coverage) {
-        const entries = chunksBySurah.get(surah)?.entries ?? {};
+        const entries = exploreChunksBySurah.get(surah)?.entries ?? {};
         for (let a = from; a <= to; a++) {
           const statusId = entries[`${buildUnitKey.ayah(surah, a)}::${trackableId}`]?.claimedStatus ?? "not_started";
           if (statusId === "not_applicable") continue;
@@ -835,7 +871,76 @@
       return anyCounted ? RAMP_ORDER[worstIdx] : null;
     }
 
-    async function renderExploreWheel() {
+    /** Loads every surah's records chunk once per Explore "open" (the Quran-wheel's own cost, described above), plus the subject_quran chunk (Juz/Page direct-claim fallback) -- shared by every level's renderer below, so drilling deeper never re-reads Firestore. */
+    async function ensureExploreChunksLoaded() {
+      if (!juzIndexData) juzIndexData = await getJuzIndex();
+      if (!pageIndexData) pageIndexData = await getPageIndex();
+      const neededSurahs = new Set();
+      for (const j of juzIndexData) for (const c of ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah)) neededSurahs.add(c.surah);
+      exploreChunksBySurah = new Map();
+      await Promise.all(
+        [...neededSurahs].map(async (surahNum) => {
+          if (surahNum === currentSurahNum && currentChunk) { exploreChunksBySurah.set(surahNum, currentChunk); return; }
+          const chunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, `surah_${surahNum}`);
+          if (chunk) exploreChunksBySurah.set(surahNum, chunk);
+        })
+      );
+      exploreSubjectChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, "subject_quran");
+    }
+
+    /** Clickable "Whole Quran › Juz N › Surah name › Ruku' N" trail, one crumb per level actually visited so far. Clicking an earlier crumb jumps back to that level and clears everything deeper than it -- the current level's own crumb is shown but not clickable. */
+    function renderExploreBreadcrumb() {
+      const crumbs = [{ label: "Whole Quran", level: "quran" }];
+      if (exploreJuzNum != null) crumbs.push({ label: `Juz ${exploreJuzNum}`, level: "juz" });
+      if (exploreSurahNum != null) {
+        const name = surahIndex.find((s) => s.surahNumber === exploreSurahNum)?.nameEnglish ?? `Surah ${exploreSurahNum}`;
+        crumbs.push({ label: name, level: "surah" });
+      }
+      if (exploreRukuIndex != null) crumbs.push({ label: `Ruku' ${exploreRukuIndex}`, level: "ruku" });
+
+      exploreBreadcrumb.innerHTML = crumbs
+        .map((c) => `<button type="button" class="explore-crumb${c.level === exploreLevel ? " active" : ""}" data-level="${c.level}">${c.label}</button>`)
+        .join('<span class="explore-crumb-sep">›</span>');
+      exploreBreadcrumb.querySelectorAll(".explore-crumb").forEach((btn) => {
+        if (btn.dataset.level === exploreLevel) return;
+        btn.addEventListener("click", () => {
+          const level = btn.dataset.level;
+          if (level === "quran") { exploreJuzNum = null; exploreSurahNum = null; exploreRukuIndex = null; }
+          else if (level === "juz") { exploreSurahNum = null; exploreRukuIndex = null; }
+          else if (level === "surah") { exploreRukuIndex = null; }
+          exploreLevel = level;
+          renderExplore();
+        });
+      });
+    }
+
+    /** Closes Explore and jumps the Study screen to one specific ayah -- the drill-down's final step, from either a short Surah-wheel or a Ruku'-wheel. */
+    async function goToAyahFromExplore(surahNum, ayahNum) {
+      explorePanel.style.display = "none";
+      currentUnitType = "ayah";
+      unitTypeSelect.value = "ayah";
+      updateUnitControlsVisibility();
+      if (surahNum !== currentSurahNum) {
+        currentSurahNum = surahNum;
+        surahSelect.value = String(surahNum);
+        await loadSurah();
+      }
+      currentAyahNum = ayahNum;
+      renderStudyScreen();
+      renderWheel();
+      updateUnitControlsVisibility();
+    }
+
+    async function renderExplore() {
+      renderExploreBreadcrumb();
+      if (exploreLevel === "quran") return renderExploreQuranLevel();
+      if (exploreLevel === "juz") return renderExploreJuzLevel();
+      if (exploreLevel === "surah") return renderExploreSurahLevel();
+      if (exploreLevel === "ruku") return renderExploreRukuLevel();
+    }
+
+    /** Level 1: 30 Juz segments, pooled across every ayah each Juz covers. Click -> Juz level. */
+    async function renderExploreQuranLevel() {
       const trackable = currentTrackable();
       if (!trackable) {
         exploreWheelContainer.innerHTML = `<p style="color:#8fa0c2;">Pick an Approach first.</p>`;
@@ -843,48 +948,19 @@
         exploreSidebarContainer.innerHTML = "";
         return;
       }
-      exploreWheelContainer.innerHTML = "Loading whole-Quran progress — this reads every surah's saved progress once, so it can take a few seconds…";
-      if (!juzIndexData) juzIndexData = await getJuzIndex();
-
-      const coverageByJuz = juzIndexData.map((j) => ({ j, coverage: juzAyahCoverage(j) }));
-      const neededSurahs = new Set();
-      for (const { coverage } of coverageByJuz) for (const c of coverage) neededSurahs.add(c.surah);
-
-      const chunksBySurah = new Map();
-      await Promise.all(
-        [...neededSurahs].map(async (surahNum) => {
-          if (surahNum === currentSurahNum && currentChunk) { chunksBySurah.set(surahNum, currentChunk); return; }
-          const chunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, `surah_${surahNum}`);
-          if (chunk) chunksBySurah.set(surahNum, chunk);
-        })
-      );
-
-      // Direct Juz-level claims (Study Unit = Juz) -- fallback only, for a
-      // Juz with no ayah-level progress pooled above yet.
-      const juzChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, "subject_quran");
-
-      const items = coverageByJuz.map(({ j, coverage }) => {
-        const pooled = poolJuzStatus(coverage, chunksBySurah, trackable.id);
-        const statusId = pooled ?? (juzChunk?.entries?.[`${buildUnitKey.juz(j.juz)}::${trackable.id}`]?.claimedStatus ?? "not_started");
+      const items = juzIndexData.map((j) => {
+        const coverage = ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah);
+        const pooled = poolCoverageStatus(coverage, trackable.id);
+        const statusId = pooled ?? (exploreSubjectChunk?.entries?.[`${buildUnitKey.juz(j.juz)}::${trackable.id}`]?.claimedStatus ?? "not_started");
         return { key: j.juz, number: j.juz, statusId, title: `Juz ${j.juz} — ${statusId.replace(/_/g, " ")}` };
       });
 
-      const jumpToJuz = async (key) => {
-        const j = juzIndexData.find((x) => x.juz === Number(key));
-        if (!j) return;
-        explorePanel.style.display = "none";
-        currentUnitType = "juz";
-        unitTypeSelect.value = "juz";
-        updateUnitControlsVisibility();
-        if (j.startSurah !== currentSurahNum) {
-          currentSurahNum = j.startSurah;
-          surahSelect.value = String(j.startSurah);
-          await loadSurah();
-        }
-        currentAyahNum = j.startAyah;
-        renderStudyScreen();
-        renderWheel(); // Phase 5 round 13 -- the wheel is ayah-scoped now, and loadSurah() above (if it ran) already rendered it for ayah 1, not j.startAyah
-        updateUnitControlsVisibility();
+      const jumpToJuz = (key) => {
+        exploreJuzNum = Number(key);
+        exploreSurahNum = null;
+        exploreRukuIndex = null;
+        exploreLevel = "juz";
+        renderExplore();
       };
 
       const approachName = langText(trackable.name, currentLang, trackable.id);
@@ -896,6 +972,124 @@
       const sidebarItems = items.map((it) => ({ ...it, label: `Juz ${it.key}` }));
       exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToJuz);
+    }
+
+    /** Level 2: one segment per page that Juz covers (its own startPage..endPage -- see build-juz-index.js round 14 for why this isn't "pages tagged with this juz": a page can straddle a Juz boundary in the real data, so a boundary page correctly appears in both neighbouring Juz's page range). Click a page -> Surah level, for whichever surah that page starts on. */
+    async function renderExploreJuzLevel() {
+      const trackable = currentTrackable();
+      const j = juzIndexData.find((x) => x.juz === exploreJuzNum);
+      if (!trackable || !j) return;
+
+      const pages = [];
+      for (let p = j.startPage; p <= j.endPage; p++) {
+        const entry = pageIndexData.find((x) => x.page === p);
+        if (entry) pages.push(entry);
+      }
+
+      const items = pages.map((p) => {
+        const coverage = ayahCoverage(p.startSurah, p.startAyah, p.endSurah, p.endAyah);
+        const pooled = poolCoverageStatus(coverage, trackable.id);
+        const statusId = pooled ?? (exploreSubjectChunk?.entries?.[`${buildUnitKey.page(PAGE_EDITION, p.page)}::${trackable.id}`]?.claimedStatus ?? "not_started");
+        return { key: p.page, number: p.page, statusId, title: `Page ${p.page} — ${statusId.replace(/_/g, " ")}` };
+      });
+
+      const jumpToSurahForPage = (key) => {
+        const p = pages.find((x) => x.page === Number(key));
+        if (!p) return;
+        exploreSurahNum = p.startSurah;
+        exploreRukuIndex = null;
+        exploreLevel = "surah";
+        renderExplore();
+      };
+
+      const approachName = langText(trackable.name, currentLang, trackable.id);
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `Juz ${exploreJuzNum}`, centerSub: approachName });
+      attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurahForPage);
+
+      const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
+      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+      const sidebarItems = items.map((it) => ({ ...it, label: `Page ${it.key}` }));
+      exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
+      attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToSurahForPage);
+    }
+
+    /** Level 3, dual-mode by SURAH_WHEEL_THRESHOLD, matching the old app's own navigation depth: <=30 ayahs shows every ayah directly (click -> Study, via goToAyahFromExplore); >30 shows Ruku' groups instead (click -> Ruku' level), since a 286-segment wheel for Al-Baqarah wouldn't read as anything at a glance. Needs this surah's full text (Ruku' groupings, ayah count) -- one static, cached-after-first-load fetch, same one Study would trigger opening it directly. */
+    async function renderExploreSurahLevel() {
+      const trackable = currentTrackable();
+      if (!trackable || exploreSurahNum == null) return;
+      exploreWheelContainer.innerHTML = "Loading this surah…";
+      const surahData = await getSurah(exploreSurahNum);
+      const surahName = surahIndex.find((s) => s.surahNumber === exploreSurahNum)?.nameEnglish ?? `Surah ${exploreSurahNum}`;
+      const approachName = langText(trackable.name, currentLang, trackable.id);
+      const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
+      const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
+
+      if (surahData.ayahCount <= SURAH_WHEEL_THRESHOLD) {
+        const items = surahData.ayahs.map((a) => {
+          const statusId = entries[`${buildUnitKey.ayah(exploreSurahNum, a.ayah)}::${trackable.id}`]?.claimedStatus ?? "not_started";
+          return { key: a.ayah, number: a.ayah, statusId, title: `Ayah ${a.ayah} — ${statusId.replace(/_/g, " ")}` };
+        });
+        const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
+        exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: surahName, centerSub: approachName });
+        attachScopedWheelClickHandler(exploreWheelContainer, jumpToStudy);
+        exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+        const sidebarItems = items.map((it) => ({ ...it, label: `Ayah ${it.key}` }));
+        exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
+        attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToStudy);
+        return;
+      }
+
+      // Long surah -- group ayahs by their per-surah Ruku' index.
+      const rukuRanges = new Map(); // per-surah ruku index -> {from, to}
+      for (const a of surahData.ayahs) {
+        const idx = rukuIndexInSurah(surahData.ayahs, a.ruku);
+        const g = rukuRanges.get(idx) ?? { from: a.ayah, to: a.ayah };
+        g.from = Math.min(g.from, a.ayah);
+        g.to = Math.max(g.to, a.ayah);
+        rukuRanges.set(idx, g);
+      }
+      const rukus = [...rukuRanges.entries()].sort((a, b) => a[0] - b[0]);
+      const items = rukus.map(([idx, range]) => {
+        const coverage = [{ surah: exploreSurahNum, from: range.from, to: range.to }];
+        const pooled = poolCoverageStatus(coverage, trackable.id);
+        const statusId = pooled ?? (entries[`${buildUnitKey.ruku(exploreSurahNum, idx)}::${trackable.id}`]?.claimedStatus ?? "not_started");
+        return { key: idx, number: idx, statusId, title: `Ruku' ${idx} (ayahs ${range.from}–${range.to}) — ${statusId.replace(/_/g, " ")}` };
+      });
+      const jumpToRuku = (key) => {
+        exploreRukuIndex = Number(key);
+        exploreLevel = "ruku";
+        renderExplore();
+      };
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: surahName, centerSub: approachName });
+      attachScopedWheelClickHandler(exploreWheelContainer, jumpToRuku);
+      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+      const sidebarItems = items.map((it) => ({ ...it, label: `Ruku' ${it.key}` }));
+      exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
+      attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToRuku);
+    }
+
+    /** Level 4 (long surahs only): every ayah in one Ruku', direct per-ayah status, same shape as the Surah level's own short-surah branch. Click -> Study, via goToAyahFromExplore. */
+    async function renderExploreRukuLevel() {
+      const trackable = currentTrackable();
+      if (!trackable || exploreSurahNum == null || exploreRukuIndex == null) return;
+      const surahData = await getSurah(exploreSurahNum); // already cached from the Surah level's own fetch
+      const ayahsInRuku = surahData.ayahs.filter((a) => rukuIndexInSurah(surahData.ayahs, a.ruku) === exploreRukuIndex);
+      const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
+      const items = ayahsInRuku.map((a) => {
+        const statusId = entries[`${buildUnitKey.ayah(exploreSurahNum, a.ayah)}::${trackable.id}`]?.claimedStatus ?? "not_started";
+        return { key: a.ayah, number: a.ayah, statusId, title: `Ayah ${a.ayah} — ${statusId.replace(/_/g, " ")}` };
+      });
+      const surahName = surahIndex.find((s) => s.surahNumber === exploreSurahNum)?.nameEnglish ?? `Surah ${exploreSurahNum}`;
+      const approachName = langText(trackable.name, currentLang, trackable.id);
+      const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
+
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `${surahName} · Ruku' ${exploreRukuIndex}`, centerSub: approachName });
+      attachScopedWheelClickHandler(exploreWheelContainer, jumpToStudy);
+      const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
+      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+      const sidebarItems = items.map((it) => ({ ...it, label: `Ayah ${it.key}` }));
+      exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
+      attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToStudy);
     }
 
     /** Ayah translation panel: additive when Bangla is chosen (English stays visible alongside it), per the F-060 design note in ayah-renderer.js. */
