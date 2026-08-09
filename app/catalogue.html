@@ -30,6 +30,12 @@
   fieldset { border: 1px solid #ddd; border-radius: 0.5rem; margin-top: 1rem; }
   .guideBox { font-size: 0.85rem; color: #444; background: #fafafa; padding: 0.5rem; border-radius: 0.3rem; margin-top: 0.3rem; }
   .readonly-note { font-size: 0.85rem; color: #777; margin-top: 0.4rem; }
+
+  /* ---------- Shared nav (shell round 1) ---------- */
+  .app-nav { display: flex; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5; }
+  .app-nav .nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+  .app-nav .nav-link:hover { text-decoration: underline; }
+  .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -42,6 +48,7 @@
   <button id="signInBtn">Sign in with Google</button>
 
   <div id="app" style="display:none;">
+    <div id="navBar"></div>
     <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
       <label style="margin:0;">Tenant
         <select id="tenantSelect" style="width:auto;"></select>
@@ -151,10 +158,12 @@
       listLadders,
       listLevels,
     } from "./js/catalogue.js";
+    import { renderNavBar } from "./js/nav.js";
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
     const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
     const tenantSelect = document.getElementById("tenantSelect");
     const seedStatusEl = document.getElementById("seedStatus");
     const modulesBody = document.getElementById("modulesBody");
@@ -594,6 +603,7 @@
 
         const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
         canEdit = !!activeMembership && (activeMembership.roles.includes("owner") || activeMembership.roles.includes("prime"));
+        navBar.innerHTML = renderNavBar(activeMembership?.roles ?? []);
         subjActionsHead.style.display = canEdit ? "" : "none";
         trkActionsHead.style.display = canEdit ? "" : "none";
         addSubjectBox.style.display = canEdit ? "block" : "none";
@@ -617,6 +627,7 @@
       if (!chosen) return;
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      navBar.innerHTML = renderNavBar(chosen.roles);
       canEdit = chosen.roles.includes("owner") || chosen.roles.includes("prime");
       subjActionsHead.style.display = canEdit ? "" : "none";
       trkActionsHead.style.display = canEdit ? "" : "none";

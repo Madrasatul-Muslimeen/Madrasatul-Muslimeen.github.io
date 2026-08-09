@@ -1,6 +1,7 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 8 August 2026 (round 7 — Mushaf page view built)
+Last updated: 8 August 2026 (round 8 — shell option A: shared nav + real
+entry point)
 Read alongside `CLAUDE.md`.
 
 ---
@@ -329,6 +330,78 @@ collection.
    currently-sounding ayah highlights on the page as it plays.
 5. Confirm Ayah/Ruku'/Juz/Page Study Units still look and behave exactly as
    before (no regression from this round's changes).
+
+---
+
+## Round 8 (8 Aug 2026) — shell gap, option A built
+
+Not part of the original Phase 5 parity checklist — a separate gap surfaced
+while discussing when cutover to `https://madrasatul-muslimeen.github.io/`
+(the real site) can actually happen. Diagnosis, checked directly in the
+code rather than assumed:
+
+- `app/index.html` was still the Phase 0 F-001 connection-test stub,
+  explicitly marked "not part of the live app."
+- `catalogue.html`, `people.html`, `records.html` and `quranrevival.html`
+  each independently re-run the same sign-in + tenant/role bootstrap —
+  nothing shared.
+- Zero `<a href="...">` links existed anywhere between the 8 pages under
+  `app/` — no way to get from one to another without already knowing the
+  exact URL.
+- The Architecture doc's own "landing rule" ("one module → open straight
+  into it; two or more → card grid") has no code anywhere implementing it.
+
+Three options were laid out (A: small shared nav strip + entry redirect,
+low risk; B: a real unified shell now, higher risk/rebuild; C: defer
+entirely, ship as separate bookmarked pages). **Owner picked A.** Also
+noted at this point: **no real users exist yet** — everything in the system
+so far is the owner's own test data — which lowers the cost of getting this
+wrong and was factored into not over-building (Option B) prematurely.
+
+**Built:**
+
+- **`app/js/nav.js` (new file)** — a renderer (I2: data in, HTML out, no
+  Firebase calls of its own) building a small nav strip from whatever roles
+  the caller already computed: Study + Records for everyone, People +
+  Catalogue additionally for owner/prime. Verified with the render-test
+  harness for both cases — `["self"]` gets 2 links, `["owner"]` gets 4.
+- **A nav mount point added to `catalogue.html`, `people.html`,
+  `records.html`, `quranrevival.html`** — purely additive: a
+  `<div id="navBar">` plus two calls to `renderNavBar()` per page (once
+  after sign-in, once on tenant switch, since roles can differ per tenant).
+  Nothing inside any of these pages' existing logic was touched or
+  restructured.
+- **`app/index.html` rewritten as the real entry point**, replacing the old
+  F-001 stub. Signs in, runs the same tenant/role bootstrap every other page
+  already runs, then redirects straight to `quranrevival.html` — the
+  landing rule's own "one module" case, since QuranRevival is still the only
+  module that exists. Written so Phase 7 can add the multi-module card-grid
+  branch later without a rewrite, not so it does that work now (nothing to
+  branch on yet). No account found yet → links to `onboarding.html` instead
+  of failing silently (I15).
+
+**Tested this round** (pre-sign-in only — Google sign-in needs a real
+account, same limitation as always): all 5 touched pages load cleanly with
+no new console errors, `nav.js` verified correct for both role cases via the
+render-test harness, all edited files pass a Node syntax check. **The
+actual behind-sign-in behaviour — nav links appearing per role, the entry
+page's redirect firing — still needs your own click-through**, same as
+every round before it.
+
+None of round 8's changes touched `index.html` (the old app) or wrote to
+any Firestore collection — this is display/navigation only.
+
+## What still needs your click-through (round 8)
+
+1. Sign in at `quranrevival.html` (or wherever you land) and confirm the
+   Study/Records/People/Catalogue nav strip appears at the top, and that
+   People/Catalogue only show if you're owner or prime in that tenant.
+2. Click between Study/Records/People/Catalogue and confirm each link
+   actually goes to the right page.
+3. Open `app/index.html` directly and confirm it signs you in and lands you
+   on the Study screen automatically, without an extra click.
+4. If you belong to more than one tenant, switch tenants and confirm the
+   nav updates if your role differs there.
 
 ---
 

@@ -3,34 +3,101 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>QuranRevival — F-001 connection test</title>
+<title>QuranRevival</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; }
-  #status { font-size: 1.1rem; padding: 1rem; border-radius: 0.5rem; }
-  .pending { background: #eee; }
-  .ok { background: #d7f4d7; }
-  .fail { background: #f8d7da; }
+  body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  #status { font-size: 1rem; padding: 1rem; border-radius: 0.5rem; background: #eee; margin-top: 1rem; }
+  #status.fail { background: #f8d7da; }
+  button {
+    font-size: 1rem; padding: 0.5rem 1rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer; margin-top: 1rem;
+  }
+  a { color: #1F3A6E; }
 </style>
 </head>
 <body>
-  <h1>F-001 — Firebase connection test</h1>
-  <p>This page only checks that the new (not-yet-visible) build can reach
-     Firebase. It is not part of the live app and nobody else can see it
-     unless they have this exact file open.</p>
-  <div id="status" class="pending">Connecting…</div>
+  <h1>QuranRevival</h1>
+  <div id="who">Not signed in.</div>
+  <button id="signInBtn">Sign in with Google</button>
+  <div id="status" style="display:none;"></div>
 
   <script type="module">
     import { auth, db } from "./js/firebase-init.js";
+    import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { getMyMemberships, initializeActiveContext } from "./js/session-context.js";
 
+    // Shell round 1 (option A, agreed with the owner 8 Aug 2026) — the real
+    // entry point, replacing the old F-001 connection-test stub that used to
+    // live at this path.
+    //
+    // Architecture s5's "landing rule, computed not configured": a person
+    // using one module opens straight into it; two or more get a card grid
+    // (Phase 7 -- Bookmarks, programs, routines -- not built yet). QuranRevival
+    // is the only module that exists today, so that computation is trivial
+    // for now -- there is nothing yet to branch on. This file exists so that
+    // trivial case is still real code, in the real place, ready for Phase 7
+    // to extend into an actual branch rather than a rewrite.
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
     const statusEl = document.getElementById("status");
 
-    // A successful import + initialization above already means the SDK
-    // loaded and the config was accepted. This just makes that visible
-    // in plain language instead of leaving it silent (I15).
-    if (auth && db) {
-      statusEl.textContent = "Connected — Firebase app initialized, auth and offline-enabled Firestore are ready.";
-      statusEl.className = "ok";
+    function showStatus(message, isFail = false) {
+      statusEl.style.display = "block";
+      statusEl.className = isFail ? "fail" : "";
+      statusEl.innerHTML = message;
     }
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = `Sign-in failed: ${err.message}`;
+      });
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = "Not signed in.";
+        signInBtn.style.display = "inline-block";
+        statusEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = `Signed in as ${user.email}`;
+      signInBtn.style.display = "none";
+
+      // I15: a failure here must reach the user, not just console.error --
+      // tags which step failed the same way every other page's bootstrap does.
+      async function step(name, fn) {
+        try { return await fn(); }
+        catch (err) { err.stepName = err.stepName ?? name; throw err; }
+      }
+
+      try {
+        showStatus("Loading your account…");
+        const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+
+        const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
+        if (!context) {
+          showStatus('No account found yet. <a href="onboarding.html">Create one on the onboarding page</a>.');
+          return;
+        }
+
+        const myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
+        if (!myMemberships.length) {
+          showStatus('No memberships found for this account yet. <a href="onboarding.html">Set up an account on the onboarding page</a>.');
+          return;
+        }
+
+        showStatus("Taking you to Study…");
+        location.replace("quranrevival.html");
+      } catch (err) {
+        showStatus(`Couldn't load your account — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`, true);
+        console.error(err);
+      }
+    });
   </script>
 </body>
 </html>

@@ -24,6 +24,12 @@
   #result.ok { background: #d7f4d7; }
   #result.fail { background: #f8d7da; }
   fieldset { border: 1px solid #ddd; border-radius: 0.5rem; margin-top: 1.5rem; }
+
+  /* ---------- Shared nav (shell round 1) ---------- */
+  .app-nav { display: flex; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5; }
+  .app-nav .nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+  .app-nav .nav-link:hover { text-decoration: underline; }
+  .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -32,6 +38,7 @@
   <button id="signInBtn">Sign in with Google</button>
 
   <div id="app" style="display:none;">
+    <div id="navBar"></div>
     <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem; font-size:0.9rem;">
       <label style="margin:0;">Tenant
         <select id="tenantSelect" style="width:auto;"></select>
@@ -147,10 +154,12 @@
       canUseViewAs,
     } from "./js/session-context.js";
     import { getStudyLock, acquireStudyLock, releaseStudyLock, canSwitchTo } from "./js/study-lock.js";
+    import { renderNavBar } from "./js/nav.js";
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
     const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
     const rosterBody = document.getElementById("rosterBody");
     const isMinorEl = document.getElementById("isMinor");
     const managedByWrap = document.getElementById("managedByWrap");
@@ -297,6 +306,7 @@
           .join("");
 
         const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+        navBar.innerHTML = renderNavBar(activeMembership?.roles ?? []);
         const showViewAs = activeMembership && canUseViewAs(activeMembership.roles);
         viewAsWrap.style.display = showViewAs ? "inline-block" : "none";
         viewAsSelect.value = context.viewAsRole ?? "";
@@ -317,6 +327,7 @@
       if (!chosen) return;
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      navBar.innerHTML = renderNavBar(chosen.roles);
       viewAsWrap.style.display = canUseViewAs(chosen.roles) ? "inline-block" : "none";
       viewAsSelect.value = "";
       loadRoster();
