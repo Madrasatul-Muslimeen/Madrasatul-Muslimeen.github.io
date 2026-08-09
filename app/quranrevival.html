@@ -305,7 +305,7 @@
     // the old app's "each time the Quran tab is entered" trigger, since
     // there's no SPA tab-switch here to hook instead.
     showQuranSplash();
-    import { renderMasteryWheel, attachWheelClickHandler, renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler } from "./js/mastery-wheel.js";
+    import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler } from "./js/mastery-wheel.js";
     import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab, renderWayModalShell, attachWayModalHandlers } from "./js/way-modal.js";
     import {
       RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah,
@@ -338,6 +338,11 @@
       } else {
         renderStudyScreen();
       }
+      // Phase 5 round 13 -- the wheel is now ayah-scoped (one segment per
+      // Approach for THIS ayah), so it has to follow playback the same way
+      // the study panels do. Cheap: an SVG string rebuild, no font loads or
+      // page re-justification, so it doesn't carry the round-7 jank risk.
+      renderWheel();
     });
 
     const whoEl = document.getElementById("who");
@@ -703,29 +708,65 @@
       });
     }
 
+    /** Every Approach's status for the currently-shown ayah -- the axis the old app's real Mastery Wheel uses (index.html:4932, `state.ways.map`), not "every ayah for one Approach." Reads currentChunk's own entries directly (already holds every trackable's records for this surah, not just the selected one) -- no extra Firestore read to build this. */
+    function approachStatusesForCurrentAyah() {
+      const entries = currentChunk?.entries ?? {};
+      const unitKey = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
+      return quranTrackables.map((trackable) => ({
+        trackable,
+        statusId: entries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started",
+      }));
+    }
+
+    /** The Study-page Mastery Wheel (Phase 5 round 13 -- axis corrected to
+        match the old app's real one): one segment per Approach, all for the
+        current ayah, Arabic ayah text in the centre disc, same as
+        index.html's actual Mastery Wheel. Depends on currentAyahNum now, not
+        just currentTrackableId/currentChunk -- every place that changes the
+        current ayah must call this too (see the ayah-nav buttons, the
+        playback ayah-change handler, and Explore's jumpToJuz below). */
     function renderWheel() {
-      if (!currentTrackableId || !currentSurahData) {
-        wheelContainer.innerHTML = `<p style="color:#8fa0c2;">Pick an Approach to see the wheel.</p>`;
+      if (!quranTrackables.length || !currentSurahData) {
+        wheelContainer.innerHTML = `<p style="color:#8fa0c2;">No Approaches yet.</p>`;
         wheelSidebarContainer.innerHTML = "";
         return;
       }
-      const ayahStatuses = ayahStatusesForCurrentTrackable();
-      const surahName = surahIndex.find((s) => s.surahNumber === currentSurahNum)?.nameEnglish ?? `Surah ${currentSurahNum}`;
-      const approachName = langText(currentTrackable()?.name, currentLang, currentTrackableId);
-      wheelContainer.innerHTML = renderMasteryWheel(ayahStatuses, { centerLabel: surahName, centerSub: approachName });
-      const jumpToAyah = (ayahNum) => {
-        currentAyahNum = ayahNum;
-        renderStudyScreen();
-        renderUnitLabel();
+      const approachStatuses = approachStatusesForCurrentAyah();
+      const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
+      const items = approachStatuses.map(({ trackable, statusId }) => ({
+        key: trackable.id,
+        number: trackable.order ?? "",
+        statusId,
+        title: `${langText(trackable.name, currentLang, trackable.id)} — ${statusId.replace(/_/g, " ")}`,
+      }));
+      wheelContainer.innerHTML = renderScopedWheel(items, {
+        centerArabic: ayah?.uthmaniText,
+        centerRef: `SURAH ${currentSurahNum} · AYAH ${currentAyahNum}`,
+      });
+
+      // Matches the old app's own wheel-click behaviour exactly: clicking a
+      // segment opens that Approach's Way modal for the ayah on screen --
+      // it does not navigate anywhere. Also focuses the Approach dropdown
+      // on the clicked one, since Explore and "Track this unit" still
+      // operate on a single selected Approach.
+      const jumpToApproach = (key) => {
+        currentTrackableId = key;
+        trackableSelect.value = key;
         openWayModal();
       };
-      attachWheelClickHandler(wheelContainer, jumpToAyah);
+      attachScopedWheelClickHandler(wheelContainer, jumpToApproach);
+
       const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
       wheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
 
-      const sidebarItems = ayahStatuses.map((e) => ({ key: e.ayah, number: e.ayah, label: `Ayah ${e.ayah}`, statusId: e.statusId }));
+      const sidebarItems = approachStatuses.map(({ trackable, statusId }) => ({
+        key: trackable.id,
+        number: trackable.order ?? "",
+        label: langText(trackable.name, currentLang, trackable.id),
+        statusId,
+      }));
       wheelSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
-      attachWheelSidebarClickHandler(wheelSidebarContainer, (key) => jumpToAyah(Number(key)));
+      attachWheelSidebarClickHandler(wheelSidebarContainer, jumpToApproach);
     }
 
     // -----------------------------------------------------------------------
@@ -842,6 +883,7 @@
         }
         currentAyahNum = j.startAyah;
         renderStudyScreen();
+        renderWheel(); // Phase 5 round 13 -- the wheel is ayah-scoped now, and loadSurah() above (if it ran) already rendered it for ayah 1, not j.startAyah
         updateUnitControlsVisibility();
       };
 
@@ -1078,8 +1120,8 @@
       drillStopBtn.addEventListener("click", () => stopDrill());
     }
 
-    prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopDrill(); currentAyahNum--; renderStudyScreen(); } });
-    nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount) { stopDrill(); currentAyahNum++; renderStudyScreen(); } });
+    prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopDrill(); currentAyahNum--; renderStudyScreen(); renderWheel(); } });
+    nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount) { stopDrill(); currentAyahNum++; renderStudyScreen(); renderWheel(); } });
     tajweedToggle.addEventListener("change", renderStudyScreen);
     langSelect.addEventListener("change", () => {
       currentLang = langSelect.value;

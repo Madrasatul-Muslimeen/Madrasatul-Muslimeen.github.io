@@ -1,6 +1,6 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 9 August 2026 (round 12 — Mastery Wheel restyled to match the old app)
+Last updated: 9 August 2026 (round 13 — Mastery Wheel's axis corrected to match the old app)
 Read alongside `CLAUDE.md`.
 
 ---
@@ -534,6 +534,132 @@ any Firestore collection.
    person open *that* link specifically — not the general beta URL.
 4. Splash screens: watch one through from the very start (don't navigate
    away in the first couple seconds) and confirm it does play as expected.
+
+---
+
+## Round 13 (9 Aug 2026) — Mastery Wheel's axis corrected to match the old app
+
+Owner asked, after seeing round 12's restyle, to go check the *actual live*
+old app (`https://madrasatul-muslimeen.github.io/`) and confirm the wheel
+and its functions genuinely match before cutover.
+
+**Real finding, not a styling gap**: the live site requires Google sign-in
+(no credentials available here, so it wasn't clicked through), but its
+served source was fetched directly and confirmed byte-identical to this
+repo's reference `index.html` (same functions, same 30-ayah threshold
+constant, same class names — checked, not assumed). Reading that source
+closely surfaced that round 12 restyled the wheel's *look* without checking
+its *axis*, and the two turned out to be genuinely different things:
+
+- **The old app's real Mastery Wheel** (`index.html:4932`, `renderWheel()`
+  → `state.ways.map(...)`) has **one segment per Approach** (of the 30),
+  all for whichever **one ayah** is currently open, coloured by that
+  Approach's status for that ayah. The centre shows that **ayah's actual
+  Arabic text**.
+- **This build's Mastery Wheel, through round 12**, had one segment per
+  **ayah** in the surah, all for whichever one Approach was selected in the
+  dropdown — the inverse axis. That shape wasn't introduced in round 12; it
+  dates to Phase 4 and was owner-verified then. Round 12 only restyled it —
+  colours, fonts, ring proportions — without questioning what it counted.
+- Old app's actual `.ring-segment`/`.ring-seg-num` progress-ring style
+  (what round 12 borrowed) isn't the Mastery Wheel's own style at all — it
+  belongs to old app's **Explore** feature, specifically the long-surah
+  branch of `renderSurahWheelExplore()` (`index.html:5301`, switching at
+  `SURAH_WHEEL_THRESHOLD = 30` ayahs). That Explore drill-down (Quran-wheel
+  → Juz-wheel → Surah-wheel → Ruku'-wheel) is a separate, bigger gap,
+  already on record since the original Phase 5 audit — **owner's call this
+  round: leave it for its own later round, fix just the main wheel's axis
+  now.**
+
+**Owner's two decisions this round:**
+1. Build the axis fix now (Part 1 only) — Explore's full drill-down stays
+   as today's simpler flat Juz-wheel for now.
+2. Keep this build's six-category status colours rather than reverting to
+   the old app's single blended 0–100% intensity score — the categorical
+   model was a deliberate Phase 3 fix (I7) for a real legibility flaw the
+   old app has (adjacent light/dark shades of one hue are hard to tell
+   apart on a thin segment); reintroducing that flaw wasn't worth exact
+   fidelity here.
+
+**Built:**
+
+- **`app/js/mastery-wheel.js`** — `centerLabelMarkup()` now supports two
+  centre modes: `centerArabic`/`centerRef` (Amiri, RTL — the ayah's actual
+  text, what the old app's real Mastery Wheel shows) alongside the existing
+  `centerLabel`/`centerSub` (Cormorant Garamond, for scopes with no single
+  ayah to anchor on, e.g. Explore's "Whole Quran"). Both `renderMasteryWheel`
+  and `renderScopedWheel` now accept either. `renderMasteryWheel` itself
+  (one segment per ayah) is **kept, not deleted** — it's still exercised by
+  `quranrevival-render-test.html`, and it's the exact shape old app's own
+  long-surah Explore wheel uses, so it's earmarked for whenever that
+  drill-down gets built, not dead code.
+- **`app/quranrevival.html`** — `renderWheel()` rebuilt on the corrected
+  axis: new `approachStatusesForCurrentAyah()` reads every Approach's
+  status for the ayah on screen straight out of the already-loaded surah
+  chunk (`currentChunk.entries` already holds every trackable's records,
+  not just the selected one — **no new Firestore read** for this). The
+  wheel now renders via `renderScopedWheel` with one segment per Approach,
+  numbered by the Approach's own `order` field (matching old app's 1–30
+  Way numbering), Arabic ayah text in the centre disc. Clicking a segment
+  or a sidebar row **opens that Approach's Way modal for the ayah on
+  screen** — old app's exact click behaviour (`onClick: ()=>
+  openWayModal(w.id)`) — rather than navigating anywhere, and focuses the
+  Approach dropdown on the clicked one (Explore and "Track this unit" still
+  operate on a single selected Approach, so this keeps them pointed at
+  whatever you just clicked). The sidebar list is now one row per Approach
+  instead of one row per ayah — incidentally simpler, and now matches what
+  old app's own `.ways-list` actually lists.
+  **Because the wheel now depends on the current ayah, not just the
+  selected Approach**, every place that changes `currentAyahNum` needed a
+  matching `renderWheel()` call added: the Prev/Next ayah buttons, the
+  audio/drill playback ayah-change handler (confirmed cheap enough not to
+  reintroduce the round-7 Mushaf-page jank risk — this is a plain SVG
+  string rebuild, no font loads or page re-justification), and Explore's
+  jump-to-Juz handler (which sets `currentAyahNum` *after* `loadSurah()`
+  may have already rendered the wheel for ayah 1, so needed its own
+  explicit re-render for the real target ayah).
+
+**What was deliberately not touched**: Explore still shows only the flat
+Juz-wheel it had before this round — no Quran-wheel/Surah-wheel/Ruku'-wheel
+drill-down, per the owner's Part-1-only scope call. The Coverage tab inside
+the Way modal (`ayahStatusesForCurrentTrackable()`, unrelated axis — "which
+ayahs have I done for this one Approach") is unchanged and unaffected.
+
+**Tested this round**, same discipline as round 12 — a temporary scratch
+harness (deleted after use, never committed) with 20 fake Approaches
+cycling all six statuses: confirmed 20 segments render, the centre text is
+real Arabic with `direction="rtl"`, 20 sidebar rows render with the right
+badge numbers and Approach names, and both a wheel-segment click and a
+sidebar-row click fire with the clicked Approach's own id (not an ayah
+number). `node --check` passed on `mastery-wheel.js` and the extracted
+`<script type="module">` from `quranrevival.html`. **Still could not get an
+actual screenshot or click through the real signed-in Study screen** — no
+Google credentials available here, same limitation as always; the wiring
+between the wheel and `currentAyahNum`/`currentTrackableId` was verified by
+reading the control flow end to end, not by watching it run signed-in.
+
+None of round 13's changes touched `index.html` or wrote to any Firestore
+collection.
+
+## What still needs your click-through (round 13)
+
+1. Open a Surah with a couple of Approaches already claimed at different
+   statuses, confirm the wheel now shows **one segment per Approach**
+   (not per ayah), and the centre shows the current ayah's actual Arabic
+   text.
+2. Click Prev/Next ayah, confirm the wheel's centre text and segment
+   colours update to match the new ayah.
+3. Click a wheel segment (or its matching sidebar row) for an Approach
+   *other than* the one currently selected in the dropdown — confirm it
+   opens that Approach's Way modal for the current ayah, and that the
+   Approach dropdown itself updates to match.
+4. Start a drill/reciter playback, confirm the wheel's centre Arabic text
+   keeps following the ayah that's actually sounding, without visible
+   jank.
+5. Open Explore from a Juz-wheel click, confirm the Study-page wheel
+   updates for the Juz's starting ayah once you land there.
+6. Confirm the sidebar list beside the wheel now lists Approaches (with
+   your real claimed statuses), not ayahs.
 
 ---
 

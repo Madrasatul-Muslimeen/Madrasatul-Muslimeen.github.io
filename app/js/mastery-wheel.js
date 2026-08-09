@@ -1,10 +1,8 @@
 // F-047 — The Mastery Wheel: QuranRevival's landing page (never the
-// platform's — Architecture s5). One ring, one segment per ayah in the
-// currently-chosen surah, coloured by that ayah's status for the currently-
-// chosen Approach. The approach dropdown sits beside it as a second door.
+// platform's — Architecture s5).
 //
-// I2: pure renderer — takes ayah numbers + statuses in, SVG/HTML out, plus
-// click callbacks. Never reads records.js itself.
+// I2: pure renderer — takes statuses in, SVG/HTML out, plus click
+// callbacks. Never reads records.js itself.
 //
 // Phase 5 round 12 — restyled to match the old app's (index.html) dark
 // navy/gold "progress-ring" wheel: thin ring (rInner = rOuter*0.5, same
@@ -13,6 +11,17 @@
 // ringNumberRotation, re-derived here since it's plain trig, not copied),
 // and a dark centre disc with a two-line label. index.html itself is
 // reference-only — never imported from directly.
+//
+// Phase 5 round 13 — axis corrected to match the old app's real Mastery
+// Wheel: quranrevival.html's Study-page wheel now uses renderScopedWheel
+// with one segment per APPROACH for the current ayah (old app's actual
+// axis — index.html:4932, `state.ways.map`), Arabic ayah text in the
+// centre disc (index.html's centerArabic). renderMasteryWheel below (one
+// segment per AYAH for one Approach) is kept as-is, still exercised by
+// quranrevival-render-test.html — it's the shape the old app's own
+// Explore/long-surah wheel uses (renderSurahWheelExplore's Progress-ring
+// branch), earmarked for whenever that drill-down gets built, not dead
+// code.
 
 // Six on the ramp, Not Applicable off it entirely (I7, Architecture s5 —
 // "Achieved and Mastered must be visibly distinct: adjacent colours are
@@ -70,13 +79,31 @@ function naHatchDefs() {
   </pattern>`;
 }
 
-/** The dark centre disc + optional two-line label, shared by both wheel styles below. */
-function centerLabelMarkup(cx, cy, rInner, centerLabel, centerSub) {
-  if (centerLabel === undefined) return "";
+/**
+ * The dark centre disc, shared by both wheel styles below, in either of two
+ * modes (index.html's own two centre treatments, re-derived):
+ *  - centerArabic: the actual ayah text (Amiri, RTL) + a small centerRef
+ *    line under it (e.g. "SURAH 1 · AYAH 1") -- what the old app's real
+ *    Mastery Wheel shows, since its centre is always one fixed ayah.
+ *  - centerLabel: a short plain-text label (Cormorant Garamond) + optional
+ *    centerSub line -- for wheels with no single ayah to anchor on (the
+ *    Explore/Juz-wheel's "Whole Quran" + Approach name).
+ */
+function centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabel, centerSub } = {}) {
+  if (centerArabic === undefined && centerLabel === undefined) return "";
+  const circle = `<circle cx="${cx}" cy="${cy}" r="${rInner - 4}" fill="#13192a" stroke="#C9A24B" stroke-width="1.5"/>`;
+  if (centerArabic !== undefined) {
+    const ref = centerRef
+      ? `<text x="${cx}" y="${cy + 22}" text-anchor="middle" font-family="Inter" font-size="10" fill="#8fa0c2">${centerRef}</text>`
+      : "";
+    return `${circle}
+      <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="Amiri, serif" font-size="22" direction="rtl" fill="#fbf3df">${centerArabic}</text>
+      ${ref}`;
+  }
   const sub = centerSub
     ? `<text x="${cx}" y="${cy + 20}" text-anchor="middle" font-family="Inter" font-size="10" fill="#8fa0c2">${centerSub}</text>`
     : "";
-  return `<circle cx="${cx}" cy="${cy}" r="${rInner - 4}" fill="#13192a" stroke="#C9A24B" stroke-width="1.5"/>
+  return `${circle}
     <text x="${cx}" y="${centerSub ? cy - 2 : cy + 6}" text-anchor="middle" font-family="Cormorant Garamond, serif" font-weight="600" font-size="20" fill="#C9A24B">${centerLabel}</text>
     ${sub}`;
 }
@@ -84,10 +111,10 @@ function centerLabelMarkup(cx, cy, rInner, centerLabel, centerSub) {
 /**
  * @param ayahStatuses  array of { ayah, statusId } in ayah order, one per ayah in the surah
  * @param size          pixel size of the (square) SVG viewport
- * @param centerLabel   optional short text for the centre disc (e.g. the surah name)
- * @param centerSub     optional second line under centerLabel (e.g. the Approach name)
+ * @param centerArabic  optional ayah text for the centre disc; centerRef is a small line under it
+ * @param centerLabel   optional short plain-text label for the centre disc instead of centerArabic; centerSub is a small line under it
  */
-export function renderMasteryWheel(ayahStatuses, { size = 360, centerLabel, centerSub } = {}) {
+export function renderMasteryWheel(ayahStatuses, { size = 360, centerArabic, centerRef, centerLabel, centerSub } = {}) {
   const cx = size / 2, cy = size / 2;
   const rOuter = size / 2 - 4;
   const rInner = rOuter * 0.5;
@@ -110,7 +137,7 @@ export function renderMasteryWheel(ayahStatuses, { size = 360, centerLabel, cent
   return `<svg class="mastery-wheel" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
     <defs>${naHatchDefs()}</defs>
     ${segments}
-    ${centerLabelMarkup(cx, cy, rInner, centerLabel, centerSub)}
+    ${centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabel, centerSub })}
   </svg>`;
 }
 
@@ -130,7 +157,7 @@ export function attachWheelClickHandler(containerEl, onAyahClick) {
  * prints outside the segment, defaulting to key. I2: still a pure
  * renderer — never reads records.js itself.
  */
-export function renderScopedWheel(items, { size = 360, centerLabel, centerSub } = {}) {
+export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, centerLabel, centerSub } = {}) {
   const cx = size / 2, cy = size / 2;
   const rOuter = size / 2 - 4;
   const rInner = rOuter * 0.5;
@@ -153,7 +180,7 @@ export function renderScopedWheel(items, { size = 360, centerLabel, centerSub } 
   return `<svg class="mastery-wheel" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
     <defs>${naHatchDefs()}</defs>
     ${segments}
-    ${centerLabelMarkup(cx, cy, rInner, centerLabel, centerSub)}
+    ${centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabel, centerSub })}
   </svg>`;
 }
 
