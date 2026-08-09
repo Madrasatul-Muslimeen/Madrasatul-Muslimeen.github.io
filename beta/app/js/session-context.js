@@ -80,6 +80,36 @@ export function canUseViewAs(roles) {
 }
 
 /**
+ * Round 11 (8 Aug 2026) — "View as" wired up for real (previously stored a
+ * preference nothing ever read). Collapses to JUST the previewed role when
+ * one is active, per the file header's own rule: "View as only ever narrows
+ * what a screen displays, on top of permissions the viewer already,
+ * genuinely has" — never a union with the real roles. Falls back to the
+ * real roles unchanged when no preview is active, so normal (non-preview)
+ * behaviour for every role, real or not, is untouched by this round.
+ */
+export function effectiveRoles(realRoles, viewAsRole) {
+  return viewAsRole ? [viewAsRole] : realRoles;
+}
+
+/**
+ * Which roster entries someone holding `effRoles` (already collapsed via
+ * effectiveRoles() above) should see, scoped to their own personId --
+ * Architecture s6's role table: student "cannot see others", guardian
+ * "for their own children only". owner/prime/teacher see everyone here --
+ * teacher is a known, disclosed gap: no per-teacher student-assignment
+ * model exists yet (CLAUDE.md's own open access-control question), so a
+ * teacher preview cannot actually be scoped down without guessing at a
+ * design that hasn't been decided. Real, unrestricted teacher access is
+ * pre-existing behaviour, not something this function changes.
+ */
+export function scopedRoster(roster, effRoles, myPersonId) {
+  if (effRoles.includes("owner") || effRoles.includes("prime") || effRoles.includes("teacher")) return roster;
+  if (effRoles.includes("guardian")) return roster.filter((p) => p.id === myPersonId || p.managedByPersonId === myPersonId);
+  return roster.filter((p) => p.id === myPersonId); // student / self
+}
+
+/**
  * Picks a sensible starting context: whatever's already stored in this
  * tab's session if it's still valid, otherwise the user's userIndex
  * default tenant if they belong to it, otherwise their first membership.

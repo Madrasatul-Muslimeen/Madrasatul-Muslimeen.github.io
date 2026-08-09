@@ -36,6 +36,7 @@
   .app-nav .nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
   .app-nav .nav-link:hover { text-decoration: underline; }
   .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
+  .nav-preview-notice { margin-left: auto; font-size: 0.82rem; color: #8a6220; background: #f5ebd6; padding: 0.15rem 0.6rem; border-radius: 0.7rem; }
 </style>
 </head>
 <body>
@@ -141,7 +142,9 @@
     import {
       getMyMemberships,
       initializeActiveContext,
+      getActiveContext,
       setActiveContext,
+      effectiveRoles,
     } from "./js/session-context.js";
     import { ensureModulesSeeded, listModules } from "./js/modules.js";
     import {
@@ -617,8 +620,14 @@
           .join("");
 
         const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
-        canEdit = !!activeMembership && (activeMembership.roles.includes("owner") || activeMembership.roles.includes("prime"));
-        navBar.innerHTML = renderNavBar(activeMembership?.roles ?? []);
+        // Round 11 -- "View as" wired up for real: previewing as a role that
+        // can't edit the catalogue now actually hides the edit controls,
+        // same as it would for that role genuinely. effectiveRoles() falls
+        // back to the real roles unchanged when no preview is active.
+        const viewAsRole = getActiveContext()?.viewAsRole ?? null;
+        const effRoles = effectiveRoles(activeMembership?.roles ?? [], viewAsRole);
+        canEdit = effRoles.includes("owner") || effRoles.includes("prime");
+        navBar.innerHTML = renderNavBar(activeMembership?.roles ?? [], viewAsRole);
         subjActionsHead.style.display = canEdit ? "" : "none";
         trkActionsHead.style.display = canEdit ? "" : "none";
         addSubjectBox.style.display = canEdit ? "block" : "none";
@@ -642,7 +651,7 @@
       if (!chosen) return;
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
-      navBar.innerHTML = renderNavBar(chosen.roles);
+      navBar.innerHTML = renderNavBar(chosen.roles, null); // switching tenants resets any active preview
       canEdit = chosen.roles.includes("owner") || chosen.roles.includes("prime");
       subjActionsHead.style.display = canEdit ? "" : "none";
       trkActionsHead.style.display = canEdit ? "" : "none";
