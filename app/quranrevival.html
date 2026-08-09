@@ -25,6 +25,32 @@
   .app-nav .nav-link:hover { text-decoration: underline; }
   .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
 
+  /* ---------- Splash screens (shell round 2, ported from index.html) ---------- */
+  .app-splash-overlay { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%); font-family: 'Inter', system-ui, sans-serif; }
+  .splash-slide { display: none; text-align: center; padding: 40px 24px; max-width: 560px; }
+  .splash-slide.show { display: block; animation: splashFade .6s ease; }
+  @keyframes splashFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .splash-arabic { font-family: 'Amiri', serif; font-size: 44px; color: #C9A24B; line-height: 1.6; margin-bottom: 18px; direction: rtl; }
+  .splash-translit { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: #b9c2d4; font-style: italic; margin-bottom: 10px; }
+  .splash-english { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: #F2E8D5; line-height: 1.5; }
+  .splash-gear { position: absolute; top: 18px; right: 18px; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: #e2e8f0; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .splash-gear:hover { background: rgba(255,255,255,.16); }
+  .splash-panel { display: none; position: absolute; top: 60px; right: 18px; width: 230px; background: #13192a; border: 1px solid rgba(201,162,75,.3); border-radius: 10px; padding: 14px; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+  .splash-panel.open { display: block; }
+  .splash-panel h4 { margin: 0 0 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #C9A24B; }
+  .splash-panel label { display: block; font-size: 13px; color: #e2e8f0; margin-bottom: 8px; cursor: pointer; }
+  .splash-panel input { margin-right: 8px; }
+  .splash-qs-wrap { max-width: 640px; padding: 40px 28px; text-align: center; }
+  .splash-qs-item { opacity: 0; transform: translateY(10px); animation: splashQsFade .9s ease forwards; }
+  @keyframes splashQsFade { to { opacity: 1; transform: translateY(0); } }
+  .splash-qs-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: clamp(36px,6vw,58px); color: #C9A24B; letter-spacing: .01em; margin: 0 0 12px; }
+  .splash-qs-tagline1 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: clamp(16px,2.4vw,21px); color: #F2E8D5; margin: 0 0 30px; }
+  .splash-qs-divider { width: 70px; height: 1px; background: linear-gradient(to right, transparent, #C9A24B, transparent); margin: 0 auto 30px; position: relative; }
+  .splash-qs-divider:after { content: ""; position: absolute; left: 50%; top: -3px; width: 6px; height: 6px; background: #C9A24B; transform: translateX(-50%) rotate(45deg); }
+  .splash-qs-project { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .16em; font-size: 12px; color: #b9c2d4; margin: 0 0 14px; }
+  .splash-qs-tagline2 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: clamp(14px,1.8vw,17px); color: #c7cfe0; line-height: 1.5; margin: 0 auto 28px; max-width: 480px; }
+  .splash-qs-motto { font-family: 'Inter', sans-serif; font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase; color: #A4823A; }
+
   /* ---------- Global banner (Phase 5) ---------- */
   #globalBanner { border-bottom: 2px solid #DDE4F0; padding-bottom: 0.6rem; margin-bottom: 0.6rem; }
   #bannerTitle { font-size: 1.5rem; margin: 0; }
@@ -233,6 +259,12 @@
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootDerivativePanel, renderTranslationPanel } from "./js/ayah-renderer.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar } from "./js/nav.js";
+    import { showQuranSplash } from "./js/splash.js";
+
+    // Fires on every real load of this page -- the multi-page equivalent of
+    // the old app's "each time the Quran tab is entered" trigger, since
+    // there's no SPA tab-switch here to hook instead.
+    showQuranSplash();
     import { renderMasteryWheel, attachWheelClickHandler, renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler } from "./js/mastery-wheel.js";
     import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab, renderWayModalShell, attachWayModalHandlers } from "./js/way-modal.js";
     import {

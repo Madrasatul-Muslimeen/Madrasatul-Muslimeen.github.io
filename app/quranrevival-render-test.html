@@ -51,6 +51,15 @@
   </fieldset>
 
   <fieldset>
+    <legend>Shell round 2 — splash screens (splash.js)</legend>
+    <p>Click to trigger each splash on demand (not on a real page-load timer). Check the gear icon (top-right of the overlay) for the Every time/Once a day/Once a week panel. "Reset splash prefs" clears localStorage so repeat testing starts fresh.</p>
+    <button type="button" id="triggerBootSplash">Show boot splash</button>
+    <button type="button" id="triggerQuranSplash">Show Quran splash</button>
+    <button type="button" id="resetSplashPrefs">Reset splash prefs</button>
+    <div id="splashTestLog" style="font-size:0.85rem; color:#555; margin-top:0.5rem;"></div>
+  </fieldset>
+
+  <fieldset>
     <legend>Shell round 1 — shared nav (nav.js)</legend>
     <p>Non-admin roles (["self"]) on quranrevival.html should only see Study + Records. Owner/prime should also see People + Catalogue.</p>
     <div id="navOut1"></div>
@@ -67,6 +76,30 @@
   <div id="errors" style="color:#9c3b2e; white-space:pre-wrap;"></div>
 
   <style>
+    .app-splash-overlay { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%); font-family: 'Inter', system-ui, sans-serif; }
+    .splash-slide { display: none; text-align: center; padding: 40px 24px; max-width: 560px; }
+    .splash-slide.show { display: block; animation: splashFade .6s ease; }
+    @keyframes splashFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .splash-arabic { font-family: 'Amiri', serif; font-size: 44px; color: #C9A24B; line-height: 1.6; margin-bottom: 18px; direction: rtl; }
+    .splash-translit { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: #b9c2d4; font-style: italic; margin-bottom: 10px; }
+    .splash-english { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: #F2E8D5; line-height: 1.5; }
+    .splash-gear { position: absolute; top: 18px; right: 18px; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: #e2e8f0; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .splash-gear:hover { background: rgba(255,255,255,.16); }
+    .splash-panel { display: none; position: absolute; top: 60px; right: 18px; width: 230px; background: #13192a; border: 1px solid rgba(201,162,75,.3); border-radius: 10px; padding: 14px; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+    .splash-panel.open { display: block; }
+    .splash-panel h4 { margin: 0 0 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #C9A24B; }
+    .splash-panel label { display: block; font-size: 13px; color: #e2e8f0; margin-bottom: 8px; cursor: pointer; }
+    .splash-panel input { margin-right: 8px; }
+    .splash-qs-wrap { max-width: 640px; padding: 40px 28px; text-align: center; }
+    .splash-qs-item { opacity: 0; transform: translateY(10px); animation: splashQsFade .9s ease forwards; }
+    @keyframes splashQsFade { to { opacity: 1; transform: translateY(0); } }
+    .splash-qs-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: clamp(36px,6vw,58px); color: #C9A24B; letter-spacing: .01em; margin: 0 0 12px; }
+    .splash-qs-tagline1 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: clamp(16px,2.4vw,21px); color: #F2E8D5; margin: 0 0 30px; }
+    .splash-qs-divider { width: 70px; height: 1px; background: linear-gradient(to right, transparent, #C9A24B, transparent); margin: 0 auto 30px; position: relative; }
+    .splash-qs-divider:after { content: ""; position: absolute; left: 50%; top: -3px; width: 6px; height: 6px; background: #C9A24B; transform: translateX(-50%) rotate(45deg); }
+    .splash-qs-project { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .16em; font-size: 12px; color: #b9c2d4; margin: 0 0 14px; }
+    .splash-qs-tagline2 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: clamp(14px,1.8vw,17px); color: #c7cfe0; line-height: 1.5; margin: 0 auto 28px; max-width: 480px; }
+    .splash-qs-motto { font-family: 'Inter', sans-serif; font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase; color: #A4823A; }
     .hifz-page { background: #fbf6e9; color: #1b1b16; border-radius: 10px; padding: 18px 16px; width: 100%; max-width: 420px; margin: 0 auto 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); container-type: inline-size; }
     .hifz-page-num { font-size: 11px; color: #8a7c55; text-align: center; margin-bottom: 10px; letter-spacing: 0.05em; }
     .hifz-line { display: flex; flex-wrap: nowrap; direction: rtl; gap: 0.12em; padding: 0.15em 0; font-size: 34px; font-size: 6.07cqw; line-height: 2.05; }
@@ -87,6 +120,21 @@
     import { renderMasteryWheel, renderWheelLegend } from "./js/mastery-wheel.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar } from "./js/nav.js";
+    import { showBootSplash, showQuranSplash } from "./js/splash.js";
+
+    try {
+      const log = document.getElementById("splashTestLog");
+      document.getElementById("triggerBootSplash").addEventListener("click", () => {
+        showBootSplash(() => { log.textContent = "Boot splash closed (onDone fired)."; });
+      });
+      document.getElementById("triggerQuranSplash").addEventListener("click", () => {
+        showQuranSplash(() => { log.textContent = "Quran splash closed (onDone fired)."; });
+      });
+      document.getElementById("resetSplashPrefs").addEventListener("click", () => {
+        ["mm_splash_pref", "mm_splash_last_date", "mm_qs_splash_pref", "mm_qs_splash_last_date"].forEach((k) => localStorage.removeItem(k));
+        log.textContent = "Splash prefs cleared from localStorage.";
+      });
+    } catch (err) { reportError("splash test wiring", err); }
 
     const errorsEl = document.getElementById("errors");
     function reportError(label, err) {

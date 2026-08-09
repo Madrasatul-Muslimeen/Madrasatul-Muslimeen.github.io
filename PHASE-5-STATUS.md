@@ -1,7 +1,6 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 8 August 2026 (round 8 — shell option A: shared nav + real
-entry point)
+Last updated: 8 August 2026 (round 9 — splash screens ported)
 Read alongside `CLAUDE.md`.
 
 ---
@@ -402,6 +401,71 @@ any Firestore collection — this is display/navigation only.
    on the Study screen automatically, without an extra click.
 4. If you belong to more than one tenant, switch tenants and confirm the
    nav updates if your role differs there.
+
+---
+
+## Round 9 (8 Aug 2026) — the three leftover audit items, decided
+
+Owner's answers: **Print Report — drop.** **Appearance/Theme modal — drop.**
+**Splash screens — build, faithfully as they are in `index.html`**, including
+the "show this opener: Every time / Once a day / Once a week" preference.
+
+**Built**, ported (rewritten fresh, not imported — `index.html` stays
+reference-only) from `index.html`'s `mm-splash-overlay` (boot) and
+`mm-quran-splash-overlay` (Quran-tab entry):
+
+- **`app/js/splash.js` (new file)** — `showBootSplash()`: Ta'awwudh then
+  Basmala, 3s each, ~6.5s total. `showQuranSplash()`: the "Quran Revival"
+  brand card, staggered fade-in lines over ~14s. Both identical in content
+  and timing to the old app. The old app duplicated its daily/weekly
+  preference logic once per splash under different key prefixes
+  (`mm_splash_*` / `mm_qs_splash_*`); this shares one implementation
+  parameterized by key instead — same behaviour, same localStorage keys, no
+  content or timing difference from what's on record.
+- **`app/index.html`** — fires the boot splash unconditionally on load,
+  independent of sign-in state, same as the old app (it was the first thing
+  in `<body>` there too).
+- **`app/quranrevival.html`** — fires the Quran-brand splash on every real
+  page load. The old app triggered this on an SPA tab-switch into Quran;
+  since this build is separate pages rather than one SPA, every load of
+  this page already **is** that same "entering the Quran module" moment —
+  no extra wrapper needed.
+
+**Known, disclosed consequence of building both, faithfully, as asked**:
+today, since `app/index.html` immediately redirects into `quranrevival.html`
+(the shell's landing rule — QuranRevival is still the only module), a fresh
+sign-in shows both splashes back-to-back — roughly 20 seconds combined
+before the Study screen is actually usable, on a day neither has been
+dismissed yet. Not a bug — this matches exactly what the old app also did
+when opening the app and immediately switching to the Quran tab. The
+"Once a day"/"Once a week" preference (owner-requested, built) is what
+keeps this from repeating on every visit.
+
+**Tested this round**, via the render-test harness (trigger buttons +
+`localStorage` inspection, since these fire on a timer independent of
+sign-in): both splashes render their correct real content; the gear icon
+opens the preference panel and selecting "Once a day" persists to
+`localStorage` immediately; triggering the boot splash again after it
+already ran once "today" correctly skips showing it and fires its
+completion callback immediately, confirmed by inspecting `localStorage`
+directly rather than assumed; `app/index.html` confirmed to show the boot
+splash on a real page load, `#who` ("Not signed in.") visible underneath
+exactly as the old app behaved. No new console errors introduced.
+
+None of round 9's changes touched `index.html` or wrote to any Firestore
+collection — this is client-side, `localStorage`-only display behaviour,
+same as the old app's own splash preference (not synced, not tenant-scoped).
+
+## What still needs your click-through (round 9)
+
+1. Sign in fresh (clear the site's local storage first, or use a
+   fresh/incognito profile, to see the "first ever" behaviour) and confirm
+   both splashes play in order before you reach the Study screen.
+2. Click the gear icon on each and set "Once a day," then reload — confirm
+   it doesn't replay.
+3. Confirm the "Once a week" option behaves the same way across a longer
+   gap (or trust the logic, since it's the same code path as "daily," just
+   a different day-count threshold).
 
 ---
 
