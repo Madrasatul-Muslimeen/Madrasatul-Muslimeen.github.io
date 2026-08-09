@@ -213,7 +213,17 @@ every session, for what's actually current**; don't rely on this file's own
 "current position" line alone. A beta build is also live at
 `https://madrasatul-muslimeen.github.io/beta/app/quranrevival.html` for the
 owner's click-through — any fix has to ship to both this repo's `app/` and
-that separate repo's `beta/app/`.
+that separate repo's `beta/app/`. Same GitHub access that reaches this
+repo also reaches `madrasatul-muslimeen.github.io` (confirmed 9 Aug
+2026) — updating the beta mirror is possible directly, but it's a live
+public site outside this repo's own scope, so ask before pushing there,
+unlike the routine git operations below.
+
+**`PHASE-5-PARITY-CHECKLIST.md` is the actual cutover-gate document** —
+built 9 Aug 2026, consolidating all 14 rounds into the single sign-off
+CLAUDE.md's own "Phase 5 is the gate" rule requires. Read that file, not
+`PHASE-5-STATUS.md`'s full round-by-round history, for "are we ready to
+cut over" — `PHASE-5-STATUS.md` stays the detailed log underneath it.
 
 **Note for future sessions on this owner's test setup:** the owner's actual
 click-through machine is a non-persistent office VDI with no admin rights
