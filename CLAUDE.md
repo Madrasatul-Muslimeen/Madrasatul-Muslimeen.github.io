@@ -2,11 +2,16 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.00.** Cutover to production happened
-9 August 2026 — the app is now live and real, not a beta. We are past
-"build against a parity checklist" and into "rebuild, enhance, modify, and
-fix from here," driven by real use. See "Post-cutover rollout order" below
-for whose real use comes first.
+**Current milestone: QuranRevival v07.01.** Cutover to production happened
+9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
+(same day) added a version badge next to the app name and a link to the
+old app from the shared nav bar. We are past "build against a parity
+checklist" and into "rebuild, enhance, modify, and fix from here," driven
+by real use. See "Post-cutover rollout order" below for whose real use
+comes first. **Check this line's version number every session** — it's
+manually updated per `app/js/version.js`'s own scheme (first two digits =
+big overhaul, last two = each new feature) and will drift if a future
+round forgets to bump it here too.
 
 ---
 
