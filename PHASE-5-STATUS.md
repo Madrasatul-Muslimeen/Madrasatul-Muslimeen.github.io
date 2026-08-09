@@ -1,8 +1,6 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 8 August 2026 (round 6 — the two remaining open questions
-answered; Bangla auto-text built; Mushaf page view specced for the next
-session)
+Last updated: 8 August 2026 (round 7 — Mushaf page view built)
 Read alongside `CLAUDE.md`.
 
 ---
@@ -235,6 +233,102 @@ noted here once, for the record, and left alone until the owner opens it.
 
 None of round 6's changes touched `index.html` or wrote to an old
 Firestore collection.
+
+---
+
+## Round 7 (8 Aug 2026) — Mushaf page view built
+
+Owner's answer on fidelity: a **true page-for-page replica** of the printed
+604-page Madani Mushaf, not just Mushaf-styled flowing text.
+
+**Correction made mid-diagnosis, worth recording**: the first pass proposed
+registering for a new external API (Quran Foundation) to source page/line
+layout data, on the assumption this didn't exist anywhere in this build yet.
+The owner asked directly whether this was already working in `index.html`
+before accepting that — it was. `index.html` already has a complete, real
+Hifz Mushaf mode (`renderHifzView` and around 300 lines near it), using a
+604-page layout + word-glyph JSON (`mushaf-madani-v2.json`, sourced from QUL —
+qul.tarteel.ai) plus 604 QCF V2 per-page glyph fonts, both already hosted,
+live, no auth needed, in the public `madrasatul-muslimeen.github.io` repo at
+`/mushaf/`. No signup, no new hosting, no licence question — this data is
+already in production use. The Quran Foundation path was dropped entirely.
+
+**What was built**, reusing that same already-hosted data (`index.html`
+itself untouched, reference only, logic rewritten fresh against this build's
+own data shapes):
+
+- **`app/js/hifz-renderer.js` (new file)** — the true page-for-page glyph
+  renderer: fetches `mushaf-madani-v2.json` once per session, builds a
+  reverse ayah→page index, loads each page's own QCF V2 font on demand,
+  justifies each line to the page width (glyph fonts don't self-justify), and
+  dims any word whose ayah key falls outside the requested highlight set —
+  the mechanism behind Range's "highlight the selection, de-emphasize the
+  rest of the page." Also exposes `setActiveAyah()`, a cheap DOM class toggle
+  (no re-fetch, no re-render) so the currently-sounding ayah can highlight
+  live during drill/reciter playback without the jank a full page re-render
+  would cause on every ayah tick.
+- **`app/quranrevival.html`** — when Study Unit is **Whole Surah** or
+  **Range**, a new toggle appears: **Mushaf (real page) / Tajweed / Word by
+  Word / Translation**, default Mushaf. Owner's clarification, 8 Aug 2026:
+  this is **not** a panel layered on top of the glyph page — switching the
+  toggle replaces the whole view. The three non-Mushaf modes reuse the
+  existing, already-verified single-ayah panels from `ayah-renderer.js`
+  (`renderArabicPanel`, `renderWordByWordPanel`, `renderRootDerivativePanel`,
+  `renderTranslationPanel`), looped over every ayah in the selected Surah/
+  Range — nothing new written there. Every other Study Unit (Ayah/Ruku'/Juz/
+  Page) is completely unchanged, same code path as before. Audio and the
+  multi-reciter drill (round 5) keep working in all four modes; per the
+  owner's answer on audio interaction, Mushaf mode highlights whichever ayah
+  is currently sounding via `setActiveAyah()`.
+
+**Known, disclosed scope limit — not a bug**: QCF glyph fonts render each
+word as one pre-drawn ligature, not letter-by-letter, so true per-letter
+Tajweed coloring isn't possible on the glyph page itself. That's exactly why
+Tajweed is its own separate full-page mode (ordinary Unicode text, coloured
+by rule, same mechanism the single-ayah view already uses) rather than a
+recoloring of the Mushaf glyphs — matches how `index.html` itself treats
+Hifz and Tajweed as mutually exclusive modes, for the same underlying reason.
+
+**Tested this round, without the owner's own sign-in** (Google sign-in needs
+a real account Claude doesn't have — same limitation every phase has had):
+extended `app/quranrevival-render-test.html` (the existing no-auth-needed
+harness from Phase 4) with a live check against the real hosted data —
+confirmed in a real browser, not assumed:
+- `mushaf-madani-v2.json` fetched and parsed; Surah 1 ayahs 1–5 correctly
+  resolved to Mushaf page 1.
+- Page 1's real QCF V2 font and the surah-header COLOR font both reported
+  `status: "loaded"` (via `document.fonts`), and the header rendered the
+  correct glyph for Al-Fatiha.
+- 36 words rendered across 8 lines; 14 correctly dimmed (content on page 1
+  outside ayahs 1:1–1:5 — the boundary-page case Range highlighting exists
+  for).
+- `setActiveAyah("1:3")` correctly added the "playing" class to just that
+  ayah's words, without disturbing the existing dim state and without
+  re-rendering anything — confirms the live-playback hook is a cheap DOM
+  update, not a refetch.
+- No exceptions surfaced in the test harness's own error reporting. Three
+  browser console "404" messages appeared against the same three hosted
+  URLs (the JSON + two fonts) despite all three demonstrably loading
+  correctly (fonts confirmed `loaded`, JSON confirmed parsed and rendered) —
+  read as harmless console noise (likely a speculative/preflight request
+  Chrome logs before the real fetch succeeds), not a real failure, but
+  flagged rather than silently ignored.
+
+None of round 7's changes touched `index.html` or wrote to any old Firestore
+collection.
+
+## What still needs your click-through (round 7)
+
+1. Open a Surah, set Study Unit to **Whole Surah**, confirm the Mushaf page
+   toggle appears and shows a real, readable printed-style page.
+2. Switch the toggle through Tajweed / Word by Word / Translation, confirm
+   each replaces the view cleanly (no leftover glyph page underneath).
+3. Set Study Unit to **Range**, pick a few ayahs, confirm the Mushaf page
+   highlights just those and dims the rest of the page.
+4. Start a drill/reciter playback while in Mushaf mode, confirm the
+   currently-sounding ayah highlights on the page as it plays.
+5. Confirm Ayah/Ruku'/Juz/Page Study Units still look and behave exactly as
+   before (no regression from this round's changes).
 
 ---
 

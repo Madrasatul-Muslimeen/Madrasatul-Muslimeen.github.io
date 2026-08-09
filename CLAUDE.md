@@ -203,6 +203,18 @@ Claude.
 complete and owner-verified.** See `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`,
 `PHASE-2-STATUS.md`, `PHASE-3-STATUS.md`, and `PHASE-4-STATUS.md`.
 
+**Phase 5 (Migration & Parity) is in progress, not yet signed off** — six
+rounds of real owner click-through testing plus a round-7 build (the Mushaf
+page view for Whole Surah/Range). Migration itself is closed (the owner
+decided the old app's data is all demo data, not worth preserving); the
+remaining open item is B5 (student-invite flow retest). This paragraph was
+stale for six rounds before this note — **check `PHASE-5-STATUS.md` first,
+every session, for what's actually current**; don't rely on this file's own
+"current position" line alone. A beta build is also live at
+`https://madrasatul-muslimeen.github.io/beta/app/quranrevival.html` for the
+owner's click-through — any fix has to ship to both this repo's `app/` and
+that separate repo's `beta/app/`.
+
 **Note for future sessions on this owner's test setup:** the owner's actual
 click-through machine is a non-persistent office VDI with no admin rights
 and no Node/Python normally available — `git clone` targets and installed
@@ -219,6 +231,12 @@ predates this rebuild; it is not a Phase 3 defect. It doesn't block Phase 4
 (QuranRevival module — Quran-only by definition), but likely needs a design
 conversation, possibly back at the architecture stage, before Phase 6
 (Deen Study & topic renderer) can be planned. See `PHASE-3-STATUS.md`.
+
+**Owner's decision on this, round 6 of Phase 5 (see `PHASE-5-STATUS.md`):**
+needs a long discussion and real resourcing, and should wait until every
+other phase that doesn't depend on it is finished first. **Do not raise this
+proactively again each session** — it's on record here once; leave it alone
+until the owner reopens it themselves.
 
 **Second open access-control question, raised by the owner 2026-07-31, not
 yet resolved:** a guardian (in a Family/Individual tenant, not a Tuition
