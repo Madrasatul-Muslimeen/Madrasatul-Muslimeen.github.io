@@ -14,6 +14,7 @@
     background: #1F3A6E; color: white; cursor: pointer; margin-top: 1rem;
   }
   a { color: #1F3A6E; }
+  .app-version { font-size: 0.85rem; font-weight: 400; color: #888; vertical-align: middle; }
 
   /* ---------- Splash screens (shell round 2, ported from index.html) ---------- */
   .app-splash-overlay { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%); font-family: 'Inter', system-ui, sans-serif; }
@@ -43,7 +44,7 @@
 </style>
 </head>
 <body>
-  <h1>QuranRevival</h1>
+  <h1>QuranRevival <span id="appVersion" class="app-version"></span></h1>
   <div id="who">Not signed in.</div>
   <button id="signInBtn">Sign in with Google</button>
   <button id="signOutBtn" style="display:none; background:white; color:#1F3A6E;">Sign out</button>
@@ -56,6 +57,9 @@
     import { TENANT } from "./js/collections.js";
     import { getMyMemberships, initializeActiveContext } from "./js/session-context.js";
     import { showBootSplash } from "./js/splash.js";
+    import { APP_VERSION } from "./js/version.js";
+
+    document.getElementById("appVersion").textContent = `v${APP_VERSION}`;
 
     // Fires immediately on load, independent of sign-in state -- same as the
     // old app, where this was the very first thing in <body>. Nothing below
