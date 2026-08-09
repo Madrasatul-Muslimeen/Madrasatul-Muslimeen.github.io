@@ -1,6 +1,6 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 9 August 2026 (round 14 addendum — deeper re-verification of the Wheel/Explore rebuild)
+Last updated: 9 August 2026 (beta mirror caught up through round 14)
 Read alongside `CLAUDE.md`.
 
 ---
@@ -534,6 +534,51 @@ any Firestore collection.
    person open *that* link specifically — not the general beta URL.
 4. Splash screens: watch one through from the very start (don't navigate
    away in the first couple seconds) and confirm it does play as expected.
+
+---
+
+## Beta mirror caught up through round 14 (9 Aug 2026)
+
+Discussing cutover readiness surfaced that the beta mirror
+(`madrasatul-muslimeen.github.io/beta/app/…`) was 3 rounds stale — it had
+been kept current through round 11 by prior sessions ("Mirror round N"
+commits), but rounds 12–14 (the Mastery Wheel restyle/axis fix and
+Explore's drill-down) were never pushed there. Checked directly, not
+assumed: cloned that repo, diffed it against this one file-by-file
+(ignoring line-ending noise), and confirmed only the 3 files those rounds
+touched had actually diverged — `app/js/mastery-wheel.js`,
+`app/js/quran-data.js`, `app/quranrevival.html` — everything else really
+was still in sync through round 11.
+
+**Same access already used for this repo turned out to reach that one
+too** — checked with a dry-run push before touching anything for real.
+Given the standing friction (the owner couldn't do a local click-through),
+updating the mirror directly was the practical fix, but publishing to a
+live public site is outside this repo's own scope and outside
+`CLAUDE.md`'s blanket authorisation (which covers this project's folder
+and the `study-monitoring` Firebase project, not a separate GitHub Pages
+repo) — asked first, owner said yes, then:
+
+- Copied the 3 changed files, byte-for-byte verified against this repo's
+  copies before pushing (not assumed identical).
+- Added the new `tools/quran-data-pull/output/page-index.json` and the
+  updated `juz-index.json` (with round 14's new `startPage`/`endPage`
+  fields) at the site root, alongside the existing `juz-index.json` etc. —
+  same root-level placement as every other pulled-data file, per round 4's
+  original reasoning (`quran-data.js`'s `BASE_URL` is domain-root-relative).
+- Pushed, then **polled the live site until every changed file actually
+  served the new content** (GitHub Pages' CDN propagates individual files
+  on its own schedule, not atomically — `mastery-wheel.js` and
+  `page-index.json` went live within ~60s, `quran-data.js` and
+  `quranrevival.html` took a little longer) — confirmed live, not just
+  "pushed and assumed."
+- `index.html`, `mushaf/`, and the Bangla timestamps file at that repo's
+  root are untouched, same rule as every prior mirror commit.
+
+**The beta site now has rounds 12–14 live**:
+`https://madrasatul-muslimeen.github.io/beta/app/quranrevival.html` — a
+real signed-in click-through of the Mastery Wheel/Explore work is now
+possible with no local setup, just opening that URL and signing in.
 
 ---
 
