@@ -1,6 +1,6 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 8 August 2026 (round 11 — "View as" wired up for real)
+Last updated: 9 August 2026 (round 12 — Mastery Wheel restyled to match the old app)
 Read alongside `CLAUDE.md`.
 
 ---
@@ -534,6 +534,147 @@ any Firestore collection.
    person open *that* link specifically — not the general beta URL.
 4. Splash screens: watch one through from the very start (don't navigate
    away in the first couple seconds) and confirm it does play as expected.
+
+---
+
+## Round 12 (9 Aug 2026) — Mastery Wheel restyled to match the old app
+
+Owner asked for the new build's Mastery Wheel (`app/js/mastery-wheel.js`,
+plain light SVG since Phase 4) to be restyled to match `index.html`'s dark
+navy/gold wheel: the "progress-ring" segment style, small numbers on each
+segment, a centre label, Cormorant Garamond/Amiri fonts, and the companion
+list-panel-with-status-chips the old app shows alongside its wheel.
+
+**Diagnosis first, as asked**, read directly out of `index.html` (never
+edited, reference only): its colour variables (`--ink #1B2A41`, `--gold
+#C9A24B`, `--parchment #F2E8D5`, etc., `index.html:58-80`), its
+`renderProgressRingWheel`/`ringNumberRotation`/`polar` functions
+(`index.html:4839-4930`, `4721-4724`) for the exact ring ratio (rInner =
+rOuter × 0.5) and the radial-number rotation formula, and its
+`.ways-list`/`.way-row`/`.status-chip`/`.chip-0`…`.chip-4` CSS
+(`index.html:281-294`) for the companion list panel.
+
+**Scope call, asked rather than guessed**: the old app's dark theme covers
+its *entire* Quran tab (`.mm-quran-scope`), but this build's
+`quranrevival.html` is a plain light utility page built up additively over
+11 rounds (nav, banner, study screen, Way modal, drill controls, Mushaf page
+view). Restyling the whole page was one option; restyling just the wheel's
+own card was the other. **Owner picked wheel-section-only** — lowest risk,
+nothing already owner-verified elsewhere on the page changes.
+
+**Built:**
+
+- **`app/js/mastery-wheel.js` — ring geometry and colours rebuilt.**
+  `rInner` changed from `rOuter × 0.42` to `rOuter × 0.5` (index.html's own
+  ratio — a thinner ring, bigger centre disc). Added a `wheel-seg-num` text
+  element per segment, positioned just outside the outer radius and rotated
+  with a re-derived `ringNumberRotation()` (same trig as index.html's,
+  matched against this file's own `polarToCartesian` angle convention, not
+  copied blind) so numbers on the left half of the ring read right-side-up
+  instead of upside-down. Added an optional dark centre disc (`centerLabel`
+  / `centerSub`, Cormorant Garamond gold + Inter parchment) to both
+  `renderMasteryWheel` and `renderScopedWheel`.
+  **`STATUS_COLORS` retinted, not just recoloured** — the existing
+  categorical palette (each of the six statuses its own hue, not a light→dark
+  ramp, specifically so Achieved and Mastered stay visually distinct per I7)
+  was built and tuned for a *white* page background. `not_started`'s old
+  `#e3e6ea` (near-white, reads as "barely there" on white) would read as a
+  bright, lit-up segment on the new dark card — inverted to a dim slate
+  (`#333f5c`) that recedes instead. `achieved` and `mastered` were also
+  brightened (`#5b84c4`, `#3fae74`) so they still pop against navy instead of
+  sinking into the shadows the way their light-bg values would have.
+  `not_applicable`'s SVG hatch pattern is retinted (dark fill, gold lines)
+  rather than left as index.html's light-grey version.
+- **New `renderWheelSidebar()` / `attachWheelSidebarClickHandler()`** — the
+  companion list panel, index.html's `.ways-list`/`.way-row`/`.status-chip`
+  pattern, genuinely rebuilt rather than copied: index.html's wheel has one
+  segment *per Approach* (20-30 Ways), so its list panel is naturally
+  "one row per Way." This build's wheel has one segment *per ayah* (or per
+  Juz, for Explore) for a single chosen Approach — a different axis
+  entirely — so the new sidebar lists ayahs/Juz with their status chip
+  instead. **Chip classes are named by status id** (`chip-mastered`,
+  `chip-not_started`, …), not index.html's `chip-0`…`chip-4` — this build's
+  six statuses are id-keyed (I5), not position-keyed, so a positional class
+  name would silently break the moment status order ever changes. Visually
+  equivalent, not literally the same class names — flagged as a deliberate
+  naming deviation, not an oversight.
+  `renderWheelLegend()`'s Not Applicable swatch also fixed while touching
+  this file: it was rendering `background:url(#naHatch)` on a plain HTML
+  span in a *different* container than the wheel's own `<svg>`, which can
+  never resolve an SVG pattern id — replaced with a CSS diagonal-stripe
+  swatch that doesn't depend on being inside the same SVG. **Pre-existing,
+  found while restyling, not introduced this round** — and the same latent
+  issue still exists, unpatched, in `way-modal.js`'s Breakdown/Coverage tabs
+  (`STATUS_COLORS.not_applicable` used the same way there) — out of scope
+  for this round, flagged for whenever that file's next touched.
+- **`app/quranrevival.html` — the wheel-box card.** New scoped CSS
+  (`.wheel-box`, `.wheel-col`, `.wheel-sidebar`, `.ways-list`/`.way-row`/
+  `.status-chip`/`.chip-*`, `.wheel-legend`) matching index.html's palette,
+  plus the Cormorant Garamond/Amiri Google Fonts `@import`. Applied to both
+  the Mastery Wheel section and the Explore (Juz) wheel section — the same
+  renderer draws both, so leaving Explore in its old light styling would
+  have put two visually inconsistent wheels on the same page. Two existing
+  ID-selector rules (`#explorePanel`, `#explorePanel p.hint`) had a
+  light-grey border/text colour that would have out-specificity'd the new
+  `.wheel-box` class rules — trimmed rather than left to silently win.
+  `renderWheel()`/`renderExploreWheel()` now pass a real `centerLabel`/
+  `centerSub` (surah name + Approach name; "Whole Quran" + Approach name)
+  and build/attach the new sidebar list, wired to the same jump-to-ayah /
+  jump-to-Juz callback the wheel segments already used (factored into a
+  named function so wheel and sidebar share one code path, not two).
+
+**What was deliberately not touched**: nav, banner, Study Unit picker,
+single-ayah study screen, drill controls, Way modal, and the Mushaf page
+view — all still their existing plain light styling, per the owner's
+wheel-section-only scope call above.
+
+**Tested this round**, via a temporary scratch harness (fake ayah/Juz data
+cycling through all six statuses, deleted after use — never committed):
+loaded in a real browser through the project's own `serve.js` static
+server. Confirmed via computed-style inspection (not just "it rendered"):
+`.wheel-box`'s actual computed background is the dark radial gradient, ring
+segment fill/stroke match the new `STATUS_COLORS`, the mastered chip's
+computed background/text colour are correct, the centre label reads
+"Al-Fatihah", segment and generated-number counts match input length (7 for
+the ayah wheel, 30 for the Juz wheel), no `NaN` in any generated path or
+rotation transform, and both a wheel-segment click and a sidebar-row click
+fire their callback with the right key. `node --check` passed on both
+`mastery-wheel.js` and the extracted `<script type="module">` from
+`quranrevival.html`. **Could not get a rendered screenshot or confirm the
+mobile-width stacking behaviour visually** — the Browser pane wasn't
+displayed on the owner's side this session, so screenshots timed out
+(no compositing without a displayed pane); the responsive layout uses the
+same `flex-wrap` idiom already proven elsewhere in this build
+(`.row { display:flex; flex-wrap:wrap; }`), but that's inference from a
+known-good pattern, not a confirmed screenshot the way every other visual
+claim in this file has been.
+
+**Not shipped to the public beta site this round** — round 4 established a
+mirror at `https://madrasatul-muslimeen.github.io/beta/app/…` on a
+*separate* repo, and this local environment has no clone of that repo and
+no `gh` CLI available to reach it. Only this repo's `app/` has the new
+styling right now; the beta mirror is still on the old plain light wheel
+until someone with access to that repo re-runs the mirror step.
+
+None of round 12's changes touched `index.html` or wrote to any Firestore
+collection — this is display-only, two files (`mastery-wheel.js`,
+`quranrevival.html`), no schema/rules involvement.
+
+## What still needs your click-through (round 12)
+
+1. Sign in, open a Surah with an Approach picked, confirm the Mastery Wheel
+   now shows on a dark navy/gold card with small ayah numbers around the
+   ring and a centre label (surah name + Approach name).
+2. Confirm the new list panel next to the wheel shows one row per ayah with
+   a coloured status chip, and clicking a row jumps to that ayah the same
+   way clicking its wheel segment does.
+3. Open Explore, confirm the Juz-wheel got the same dark styling + list
+   panel, and clicking a Juz row jumps there the same as clicking its wedge.
+4. Check on a phone-width screen that the wheel and its list panel stack
+   sensibly instead of overlapping or overflowing.
+5. Confirm nothing *else* on the page changed look — nav, banner, Study
+   Unit picker, ayah study screen, drill controls, Way modal should all
+   look exactly as they did before this round.
 
 ---
 

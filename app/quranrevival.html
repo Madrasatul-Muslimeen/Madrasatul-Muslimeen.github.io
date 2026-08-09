@@ -60,21 +60,52 @@
   #bannerEditForm input { width: 100%; box-sizing: border-box; }
   #bannerEditBtn { font-size: 0.75rem; padding: 0.2rem 0.5rem; }
 
-  /* ---------- Mastery Wheel ---------- */
-  #wheelSection { display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center; }
-  .mastery-wheel { max-width: 320px; }
-  .wheel-seg { cursor: pointer; stroke: #fff; stroke-width: 0.5; }
-  .wheel-seg:hover { opacity: 0.8; }
-  .wheel-legend { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.82rem; }
+  /* ---------- Mastery Wheel (Phase 5 round 12) ----------
+     Dark navy/gold theme, restyled to match index.html's wheel page --
+     fonts, palette and ring geometry read from its CSS/JS, never imported
+     from it directly (index.html stays reference-only, as always).
+     Scoped deliberately to just this card: the rest of the page (nav,
+     banner, study screen, Way modal, drill controls, Mushaf page view)
+     is untouched, per the owner's own scope call this round. */
+  @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cormorant+Garamond:wght@400;500;600;700&display=swap');
+  .wheel-heading { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: #C9A24B; margin-bottom: 0.4rem; }
+  .wheel-box {
+    display: flex; gap: 1.75rem; flex-wrap: wrap; align-items: flex-start;
+    background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%);
+    border: 1px solid rgba(201,162,75,0.3); border-radius: 14px; padding: 1.5rem;
+    color: #F2E8D5; font-family: 'Inter', sans-serif;
+  }
+  .wheel-col { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; flex: 1 1 320px; min-width: 0; }
+  .wheel-box .hint { color: #8fa0c2; font-size: 0.8rem; text-align: center; margin: 0; }
+  .mastery-wheel { max-width: 320px; overflow: visible; }
+  .wheel-seg { cursor: pointer; stroke: #0c1320; stroke-width: 1; transition: stroke .15s, stroke-width .15s; }
+  .wheel-seg:hover { stroke: #F2E8D5; stroke-width: 1.5; }
+  .wheel-seg-num { font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 600; fill: #F2E8D5; }
+  .wheel-legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 0.78rem; color: #cdd5e3; }
   .legend-item { display: flex; align-items: center; gap: 0.4rem; }
   .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+  /* Companion list panel -- index.html's .ways-list / .way-row / .status-chip pattern, alongside the wheel. */
+  .wheel-sidebar { flex: 1 1 260px; min-width: 220px; max-width: 340px; }
+  .ways-list { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow-y: auto; }
+  .way-row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 9px; background: rgba(255,255,255,0.03); border: 1px solid transparent; cursor: pointer; transition: background .12s; }
+  .way-row:hover { background: rgba(255,255,255,0.07); border-color: rgba(201,162,75,0.25); }
+  .way-row .badge { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; flex-shrink: 0; color: #241a06; background: #C9A24B; }
+  .way-row .name { flex: 1; font-size: 13px; color: #dde3ee; }
+  .way-row .status-chip { font-size: 10px; padding: 3px 9px; border-radius: 10px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; white-space: nowrap; }
+  /* Named by status id, not position (chip-0..chip-4 the way index.html did it) -- this build's six statuses are id-keyed (I5), not order-keyed. */
+  .chip-not_applicable { background: rgba(255,255,255,0.03); color: #6b7688; border: 1px dashed rgba(255,255,255,0.18); }
+  .chip-not_started { background: rgba(255,255,255,0.08); color: #8fa0c2; }
+  .chip-learning { background: rgba(201,162,75,0.18); color: #C9A24B; }
+  .chip-practising { background: rgba(201,162,75,0.4); color: #fff0cf; }
+  .chip-achieved { background: rgba(91,132,196,0.35); color: #cfe0ff; }
+  .chip-mastered { background: #3fae74; color: #0d2417; }
 
   /* ---------- Study Unit picker (Phase 5) ---------- */
   #unitLabel { font-size: 0.85rem; color: #1F3A6E; font-weight: 600; margin: 0.3rem 0; }
 
   /* ---------- Explore (Phase 5) ---------- */
-  #explorePanel { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 1rem; margin-top: 0.6rem; }
-  #explorePanel p.hint { font-size: 0.8rem; color: #666; }
+  #explorePanel { margin-top: 0.6rem; } /* border/background/padding now come from .wheel-box (Phase 5 round 12) */
 
   /* ---------- Study screen ---------- */
   #studyScreen { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 1rem; margin-top: 1rem; }
@@ -205,16 +236,23 @@
     </div>
     <div id="unitLabel"></div>
 
-    <h2>Mastery Wheel</h2>
-    <div id="wheelSection">
-      <div id="wheelContainer">Loading…</div>
-      <div id="wheelLegendContainer"></div>
+    <h2 class="wheel-heading">Mastery Wheel</h2>
+    <div id="wheelSection" class="wheel-box">
+      <div class="wheel-col">
+        <div id="wheelContainer">Loading…</div>
+        <div id="wheelLegendContainer"></div>
+      </div>
+      <div id="wheelSidebarContainer" class="wheel-sidebar"></div>
     </div>
 
-    <h2>Explore <button type="button" class="secondary" id="exploreToggleBtn">Whole Quran ▾</button></h2>
-    <div id="explorePanel" style="display:none;">
-      <div id="exploreWheelContainer">Loading…</div>
-      <p class="hint">Click a Juz to jump there and start tracking it. Colours show this Approach's real ayah-by-ayah progress pooled across the whole Juz — a Juz only turns fully green once every ayah in it is Mastered.</p>
+    <h2 class="wheel-heading">Explore <button type="button" class="secondary" id="exploreToggleBtn">Whole Quran ▾</button></h2>
+    <div id="explorePanel" class="wheel-box" style="display:none;">
+      <div class="wheel-col">
+        <div id="exploreWheelContainer">Loading…</div>
+        <div id="exploreWheelLegendContainer"></div>
+        <p class="hint">Click a Juz to jump there and start tracking it. Colours show this Approach's real ayah-by-ayah progress pooled across the whole Juz — a Juz only turns fully green once every ayah in it is Mastered.</p>
+      </div>
+      <div id="exploreSidebarContainer" class="wheel-sidebar"></div>
     </div>
 
     <h2>Study</h2>
@@ -267,7 +305,7 @@
     // the old app's "each time the Quran tab is entered" trigger, since
     // there's no SPA tab-switch here to hook instead.
     showQuranSplash();
-    import { renderMasteryWheel, attachWheelClickHandler, renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler } from "./js/mastery-wheel.js";
+    import { renderMasteryWheel, attachWheelClickHandler, renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler } from "./js/mastery-wheel.js";
     import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab, renderWayModalShell, attachWayModalHandlers } from "./js/way-modal.js";
     import {
       RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah,
@@ -316,6 +354,7 @@
     const wbwLangSelect = document.getElementById("wbwLangSelect");
     const wheelContainer = document.getElementById("wheelContainer");
     const wheelLegendContainer = document.getElementById("wheelLegendContainer");
+    const wheelSidebarContainer = document.getElementById("wheelSidebarContainer");
     const ayahPosition = document.getElementById("ayahPosition");
     const prevAyahBtn = document.getElementById("prevAyahBtn");
     const nextAyahBtn = document.getElementById("nextAyahBtn");
@@ -341,6 +380,8 @@
     const exploreToggleBtn = document.getElementById("exploreToggleBtn");
     const explorePanel = document.getElementById("explorePanel");
     const exploreWheelContainer = document.getElementById("exploreWheelContainer");
+    const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
+    const exploreSidebarContainer = document.getElementById("exploreSidebarContainer");
 
     const bannerTitleEl = document.getElementById("bannerTitle");
     const bannerSubEl = document.getElementById("bannerSub");
@@ -664,19 +705,27 @@
 
     function renderWheel() {
       if (!currentTrackableId || !currentSurahData) {
-        wheelContainer.innerHTML = `<p style="color:#888;">Pick an Approach to see the wheel.</p>`;
+        wheelContainer.innerHTML = `<p style="color:#8fa0c2;">Pick an Approach to see the wheel.</p>`;
+        wheelSidebarContainer.innerHTML = "";
         return;
       }
       const ayahStatuses = ayahStatusesForCurrentTrackable();
-      wheelContainer.innerHTML = renderMasteryWheel(ayahStatuses);
-      attachWheelClickHandler(wheelContainer, (ayahNum) => {
+      const surahName = surahIndex.find((s) => s.surahNumber === currentSurahNum)?.nameEnglish ?? `Surah ${currentSurahNum}`;
+      const approachName = langText(currentTrackable()?.name, currentLang, currentTrackableId);
+      wheelContainer.innerHTML = renderMasteryWheel(ayahStatuses, { centerLabel: surahName, centerSub: approachName });
+      const jumpToAyah = (ayahNum) => {
         currentAyahNum = ayahNum;
         renderStudyScreen();
         renderUnitLabel();
         openWayModal();
-      });
+      };
+      attachWheelClickHandler(wheelContainer, jumpToAyah);
       const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
       wheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+
+      const sidebarItems = ayahStatuses.map((e) => ({ key: e.ayah, number: e.ayah, label: `Ayah ${e.ayah}`, statusId: e.statusId }));
+      wheelSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
+      attachWheelSidebarClickHandler(wheelSidebarContainer, (key) => jumpToAyah(Number(key)));
     }
 
     // -----------------------------------------------------------------------
@@ -747,7 +796,12 @@
 
     async function renderExploreWheel() {
       const trackable = currentTrackable();
-      if (!trackable) { exploreWheelContainer.innerHTML = "<p>Pick an Approach first.</p>"; return; }
+      if (!trackable) {
+        exploreWheelContainer.innerHTML = `<p style="color:#8fa0c2;">Pick an Approach first.</p>`;
+        exploreWheelLegendContainer.innerHTML = "";
+        exploreSidebarContainer.innerHTML = "";
+        return;
+      }
       exploreWheelContainer.innerHTML = "Loading whole-Quran progress — this reads every surah's saved progress once, so it can take a few seconds…";
       if (!juzIndexData) juzIndexData = await getJuzIndex();
 
@@ -771,10 +825,10 @@
       const items = coverageByJuz.map(({ j, coverage }) => {
         const pooled = poolJuzStatus(coverage, chunksBySurah, trackable.id);
         const statusId = pooled ?? (juzChunk?.entries?.[`${buildUnitKey.juz(j.juz)}::${trackable.id}`]?.claimedStatus ?? "not_started");
-        return { key: j.juz, statusId, title: `Juz ${j.juz} — ${statusId.replace(/_/g, " ")}` };
+        return { key: j.juz, number: j.juz, statusId, title: `Juz ${j.juz} — ${statusId.replace(/_/g, " ")}` };
       });
-      exploreWheelContainer.innerHTML = renderScopedWheel(items);
-      attachScopedWheelClickHandler(exploreWheelContainer, async (key) => {
+
+      const jumpToJuz = async (key) => {
         const j = juzIndexData.find((x) => x.juz === Number(key));
         if (!j) return;
         explorePanel.style.display = "none";
@@ -789,7 +843,17 @@
         currentAyahNum = j.startAyah;
         renderStudyScreen();
         updateUnitControlsVisibility();
-      });
+      };
+
+      const approachName = langText(trackable.name, currentLang, trackable.id);
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: "Whole Quran", centerSub: approachName });
+      attachScopedWheelClickHandler(exploreWheelContainer, jumpToJuz);
+
+      const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
+      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+      const sidebarItems = items.map((it) => ({ ...it, label: `Juz ${it.key}` }));
+      exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
+      attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToJuz);
     }
 
     /** Ayah translation panel: additive when Bangla is chosen (English stays visible alongside it), per the F-060 design note in ayah-renderer.js. */
