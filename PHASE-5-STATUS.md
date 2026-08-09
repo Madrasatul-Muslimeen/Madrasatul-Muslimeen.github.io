@@ -1,6 +1,7 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 8 August 2026 (round 9 — splash screens ported)
+Last updated: 8 August 2026 (round 10 — sign-out added everywhere; the
+"no account found" message no longer misdirects invited people)
 Read alongside `CLAUDE.md`.
 
 ---
@@ -466,6 +467,74 @@ same as the old app's own splash preference (not synced, not tenant-scoped).
 3. Confirm the "Once a week" option behaves the same way across a longer
    gap (or trust the logic, since it's the same code path as "daily," just
    a different day-count threshold).
+
+---
+
+## Round 10 (8 Aug 2026) — two real bugs found during the owner's own B5 attempt
+
+The owner tried to retest the student-invite flow (B5) by having a second
+person, qamar.kabeer@gmail.com, sign in on the beta site. Two real problems
+surfaced, neither of them B5 itself:
+
+1. **No page anywhere had a sign-out button** — checked directly: `signOut`
+   only existed on `admin-self-check.html`, nowhere else, including the new
+   entry point (`app/index.html`) where the owner actually got stuck trying
+   to switch accounts to test as a student. `accept-invite.html` had a
+   long-standing case that outright *told* people to "sign out and sign in
+   with the invited email instead" with no button anywhere on the page to
+   do it. **Fixed** — a sign-out button now exists on every user-facing
+   page: `index.html`, `quranrevival.html`, `records.html`, `catalogue.html`,
+   `people.html`, `onboarding.html`, `accept-invite.html`.
+2. **The "no account found" fallback actively misdirected invited people.**
+   qamar's actual test report was `app/index.html` saying "no account found
+   yet. Create one on onboarding.html first." — that's the entry point's
+   generic fallback for anyone with no Firestore membership yet, and it was
+   wrong advice for someone who has a real invite waiting: `onboarding.html`
+   creates a **brand-new** madrasah, it doesn't join one you were invited
+   to. This wasn't unique to `index.html` — the identical string existed on
+   `quranrevival.html`, `records.html`, `catalogue.html`, `people.html` too
+   (all four just never had a real user hit it before now, since the entry
+   point sending people there is what's new this round). **Fixed** on all
+   five: now points to checking your invite email/link first, onboarding
+   only offered as the explicit "starting fresh" option.
+
+**Whether qamar's original test actually exercised B5 is still open** — the
+symptom is fully explained by them landing on the general beta link rather
+than a personal `accept-invite.html?token=...` link, which never touches
+the invite-acceptance code path B5 is actually about. **Still needs an
+actual click-through with a real invite link** to close B5 for real.
+
+**Splash screens, checked live at the reported URL and found to be working**:
+navigated to `https://madrasatul-muslimeen.github.io/beta/app/quranrevival.html`
+directly and confirmed via `localStorage` that the Quran-entry splash ran
+its full cycle and closed correctly. Read as: the owner likely didn't wait
+through the ~1-2 second mostly-dark opening before the first line fades in
+(faithful to the old app's own timing), not a real defect. Not marked
+resolved outright — flagged for the owner to confirm what they actually saw
+next time, since "confirmed working once, live, by Claude" isn't the same
+bar as the owner's own click-through this project runs on for everything
+else.
+
+**Tested this round**: `signOutBtn` confirmed present and correctly hidden
+pre-sign-in on all 7 pages via direct DOM inspection in a real browser (not
+assumed from reading the code). All edited files pass a syntax check.
+Actual sign-out behaviour once signed in still needs the owner's own
+click-through, same limitation as always.
+
+None of round 10's changes touched `index.html` (the old app) or wrote to
+any Firestore collection.
+
+## What still needs your click-through (round 10)
+
+1. Sign in anywhere, confirm a "Sign out" button now appears next to your
+   email, and that clicking it actually signs you out.
+2. On `accept-invite.html`, if you ever land there signed in as the wrong
+   account, confirm the new sign-out button next to that message works.
+3. **Retest B5 properly**: generate a real invite from the People page,
+   copy the actual link (with `?token=...` in it), and have the invited
+   person open *that* link specifically — not the general beta URL.
+4. Splash screens: watch one through from the very start (don't navigate
+   away in the first couple seconds) and confirm it does play as expected.
 
 ---
 

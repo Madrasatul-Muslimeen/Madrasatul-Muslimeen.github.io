@@ -36,6 +36,7 @@
   <h1>People (F-012)</h1>
   <div id="who">Not signed in.</div>
   <button id="signInBtn">Sign in with Google</button>
+  <button id="signOutBtn" style="display:none; background:white; color:#1F3A6E;">Sign out</button>
 
   <div id="app" style="display:none;">
     <div id="navBar"></div>
@@ -131,6 +132,7 @@
     import {
       GoogleAuthProvider,
       signInWithPopup,
+      signOut,
       onAuthStateChanged,
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import {
@@ -158,6 +160,7 @@
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
     const appEl = document.getElementById("app");
     const navBar = document.getElementById("navBar");
     const rosterBody = document.getElementById("rosterBody");
@@ -183,11 +186,21 @@
     let roster = [];
     let myMemberships = [];
 
+    // Round 10 fix (8 Aug 2026): old wording told anyone with no account to
+    // create one on onboarding.html -- wrong for someone with a real pending
+    // invite who hasn't clicked their invite link yet. Points there first.
+    const NO_ACCOUNT_MESSAGE = ` — no account found yet.
+      <br>If someone invited you to join an existing madrasah, use the invite
+      link they sent you (check your email) — don't create a new one here.
+      <br>Starting fresh instead? <a href="onboarding.html">Create a new account
+      on the onboarding page</a>.`;
+
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
         whoEl.textContent = `Sign-in failed: ${err.message}`;
       });
     });
+    signOutBtn.addEventListener("click", () => signOut(auth));
 
     isMinorEl.addEventListener("change", () => {
       managedByWrap.style.display = isMinorEl.checked ? "block" : "none";
@@ -271,11 +284,13 @@
       if (!user) {
         whoEl.textContent = "Not signed in.";
         signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
         appEl.style.display = "none";
         return;
       }
       whoEl.textContent = `Signed in as ${user.email}`;
       signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
 
       // Tags which named step failed onto the error, so the on-screen
       // message pinpoints the exact read that was denied instead of just
@@ -295,7 +310,7 @@
 
         const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
         if (!context) {
-          whoEl.textContent += " — no account found yet. Create one on onboarding.html first.";
+          whoEl.innerHTML += NO_ACCOUNT_MESSAGE;
           return;
         }
         activeTenantId = context.tenantId;
