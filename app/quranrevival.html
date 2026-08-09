@@ -733,7 +733,24 @@
       reciterSelect.value = currentReciterId;
       if (loopToggle) { loopToggle.checked = loopIsOn; setLoop(loopIsOn); }
 
-      reciterSelect.addEventListener("change", () => { currentReciterId = reciterSelect.value; });
+      reciterSelect.addEventListener("change", () => {
+        currentReciterId = reciterSelect.value;
+        // Owner request, 8 Aug 2026: picking the Bangla reciter should bring
+        // the Bangla translation on screen automatically, not leave the
+        // reader looking at English while Bangla audio plays. One-way and
+        // additive (matches F-060: Bangla always sits alongside English,
+        // never replaces it) -- switching to a different reciter afterwards
+        // does not take Bangla back off, since the owner only asked for the
+        // "audio implies text" direction, not the reverse.
+        if (currentReciterId === "bn" && currentLang !== "bn") {
+          currentLang = "bn";
+          langSelect.value = "bn";
+          renderPersonSelectOptions();
+          renderTrackableSelectOptions();
+          renderBanner();
+          renderStudyScreen();
+        }
+      });
       if (loopToggle) loopToggle.addEventListener("change", () => { loopIsOn = loopToggle.checked; setLoop(loopIsOn); });
       playBtn.addEventListener("click", async () => {
         // Always stop whatever's currently loaded first -- switching reciters

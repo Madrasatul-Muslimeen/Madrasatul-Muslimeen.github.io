@@ -1,7 +1,8 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 8 August 2026 (round 5 — drill-sequencer bugs fixed;
-migration formally deprioritized by the owner)
+Last updated: 8 August 2026 (round 6 — the two remaining open questions
+answered; Bangla auto-text built; Mushaf page view specced for the next
+session)
 Read alongside `CLAUDE.md`.
 
 ---
@@ -173,6 +174,66 @@ formally closes the "migration data map" section of the round-1 audit
 above: nothing in it blocks Phase 5 sign-off any more.
 
 None of round 5's changes touched `index.html` or wrote to an old
+Firestore collection.
+
+---
+
+## Round 6 (8 Aug 2026) — both round-3 open questions answered
+
+### Bangla text auto-display — answered and built
+
+**Owner's answer**: whenever the Bangla reciter is playing, Bangla text
+should show automatically. Built in `app/quranrevival.html`: selecting the
+Bangla reciter now sets the Language control to "English + বাংলা"
+automatically (one-way — switching to a different reciter afterwards does
+not take Bangla back off; matches F-060's existing additive design,
+English always stays visible alongside Bangla, never replaced by it).
+Deliberately scoped to the reciter *dropdown*, not to the drill sequencer
+— the drill can cycle through several reciters every few seconds in "Each
+Ayah" mode, and flipping the whole translation panel on every step would
+be a worse experience than just leaving it alone. Owner re-test needed.
+
+### Whole Surah / Range reading view — answered, not yet built
+
+**Owner's answer, in full:**
+- **Whole Surah**: page-by-page, styled like a standard Mushaf page. Toggle
+  between Tajweed view, Word-by-Word view, and Translation view while in
+  this page layout.
+- **Range**: the same page-by-page Mushaf view, with the selected range
+  highlighted and the rest of the page shown de-emphasized (not hidden).
+  Same three toggles.
+
+This is real, substantial new scope — it's the previously-flagged "Hifz
+Mode" gap from the round-1 parity audit ("real Madani Mushaf page
+rendering... not built anywhere in `app/`"), now with an actual spec
+instead of a placeholder line in a gap table. It needs its own diagnosis
+before any code gets written, not a quick patch:
+- A real Mushaf page-layout data source — line-by-line, page-accurate
+  ayah placement (QCF-style), not just the flat per-ayah text this build
+  already has from `tools/quran-data-pull/`.
+- How the existing Tajweed/Word-by-Word/Translation renderers (built for
+  one ayah at a time in `ayah-renderer.js`) extend to a full justified
+  page without a rewrite of that renderer.
+- How "highlight the range, de-emphasize the rest of the page" actually
+  reads at ayah-inside-a-line granularity, since Mushaf lines don't
+  reliably start/end on ayah boundaries.
+
+**Decision**: not built this round. Deliberately handed to the next
+session (fresh window, same repo) as its first real build task, once the
+Phase 5 loose ends above are confirmed closed — this is exactly the kind
+of "diagnose before changing anything, state the blast radius before
+writing code" item CLAUDE.md asks for, and it deserves a clean context
+rather than being squeezed in at the end of this one.
+
+### Non-Quran subject progress-tracking — deferred, owner's call
+
+Raised last round as a Phase-6 blocker (Approaches only exist for Quran
+today). **Owner's decision**: this needs a long discussion and real
+resourcing, and should wait until every other phase that doesn't depend on
+it is finished first. Not to be raised again proactively each session —
+noted here once, for the record, and left alone until the owner opens it.
+
+None of round 6's changes touched `index.html` or wrote to an old
 Firestore collection.
 
 ---
