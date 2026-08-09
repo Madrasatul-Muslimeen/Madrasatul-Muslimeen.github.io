@@ -20,11 +20,15 @@
   .row > div { min-width: 9rem; }
 
   /* ---------- Shared nav (shell round 1) ---------- */
-  .app-nav { display: flex; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5; }
+  .app-nav { display: flex; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5; align-items: center; }
   .app-nav .nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
   .app-nav .nav-link:hover { text-decoration: underline; }
   .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
   .nav-preview-notice { margin-left: auto; font-size: 0.82rem; color: #8a6220; background: #f5ebd6; padding: 0.15rem 0.6rem; border-radius: 0.7rem; }
+  .nav-legacy-link { margin-left: auto; font-size: 0.78rem; color: #888; text-decoration: none; border: 1px solid #ddd; border-radius: 0.7rem; padding: 0.15rem 0.6rem; }
+  .nav-legacy-link:hover { color: #1F3A6E; border-color: #1F3A6E; }
+  .nav-preview-notice + .nav-legacy-link { margin-left: 0; } /* both present: sit together at the right edge, not double-pushed */
+  .app-version { font-size: 0.85rem; font-weight: 400; color: #888; vertical-align: middle; }
 
   /* ---------- Splash screens (shell round 2, ported from index.html) ---------- */
   .app-splash-overlay { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%); font-family: 'Inter', system-ui, sans-serif; }
@@ -189,7 +193,7 @@
 </style>
 </head>
 <body>
-  <h1>QuranRevival</h1>
+  <h1>QuranRevival <span id="appVersion" class="app-version"></span></h1>
 
   <div id="who">Not signed in.</div>
   <button id="signInBtn">Sign in with Google</button>
@@ -309,6 +313,9 @@
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar } from "./js/nav.js";
     import { showQuranSplash } from "./js/splash.js";
+    import { APP_VERSION } from "./js/version.js";
+
+    document.getElementById("appVersion").textContent = `v${APP_VERSION}`;
 
     // Fires on every real load of this page -- the multi-page equivalent of
     // the old app's "each time the Quran tab is entered" trigger, since
