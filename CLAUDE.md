@@ -2,6 +2,12 @@
 
 Read this first, every session. It is the standing brief.
 
+**Current milestone: QuranRevival v07.00.** Cutover to production happened
+9 August 2026 — the app is now live and real, not a beta. We are past
+"build against a parity checklist" and into "rebuild, enhance, modify, and
+fix from here," driven by real use. See "Post-cutover rollout order" below
+for whose real use comes first.
+
 ---
 
 ## What this is
@@ -154,7 +160,7 @@ Ethics (social) and Akhlaq (personal) are **distinct** nodes. Confirmed.
 
 ---
 
-## Approved decisions (D1–D8)
+## Approved decisions (D1–D13)
 
 | # | Decision |
 |---|---|
@@ -170,6 +176,7 @@ Ethics (social) and Akhlaq (personal) are **distinct** nodes. Confirmed.
 | D10 | **The Study Mode handover lock (F-016) only ever engages for an explicit "hand this device to a child to study independently" action — never for a guardian/teacher's own recording.** Confirmed by the owner: teaching the same Ayah/Hadith to multiple children (and themselves) in one sitting, then logging each person's progress in turn from a dropdown, is the normal fast workflow and must never be blocked or require "ending a session." Signed-in owner/teacher picking a person from a roster/records dropdown to log something for them is not a device handover and must never touch the lock, no matter how many people are recorded in sequence. Binding on Phase 3 (records/activity) and Phase 4 (the QuranRevival module's actual study screens) when they're built. |
 | D11 | **`QuranRevival_Subject_Catalogue_v3.md` approved as-is**, at the start of Phase 2 (2026-07-31): 6 top-level subject-tree nodes (Quran, Hadith, Arabic Language, Deen Study, General Study, Nature-Life), 31 studiable subjects, 30 Approaches in 7 sections, Hadith kept top-level and mandatory in its own right, Ethics/Akhlaq distinct. One resolved ambiguity: the doc tags Hadith `[QuranRevival / Deen]`, but Part 5 also states no node uses `moduleIds[]` for more than one module, and the Architecture doc's Phase 12 list names Hadith as its own fifth remaining module (alongside Arabic, General Study, Health, Nature-Life). Built as: **Hadith is its own module** (`moduleIds: ["hadith"]`), its bracket tag read as descriptive text about its role, not a literal dual-module assignment. Flagged for the owner to correct if the intent was actually a shared/dual-module node. |
 | D12 | **New Phase 3 collection `domains`** (`domains/{tenantId}__{domainId}`), not in the original Architecture doc, added to back the `records.entries.domainIds[]` field the doc names but never defines a collection for. Same shape as D9 (a small supporting collection the doc's own named fields required). Tenant-authored, no platform seed, mirrors `ladders`/`levels` — matches the legacy app's free-text, user-defined "Domains" tag on subjects, promoted to a permanent-ID registry (I5) since `domainIds` is now a plural array on each record entry. *Approved-by-precedent deviation, flagged for the owner to correct if a different shape was intended.* Also Phase 3: **records chunking** ("one doc per surah/subject") is implemented as *surah* for unit types that carry their own surah number (`ayah`/`range`/`surah`/`ruku`) and *subject* for everything else (`juz`/`hizb`/`rub`/`manzil`/`page`/`hadith`/`topic`/`name` — Quran-wide divisions or non-Quran, with no single surah to group by). Re-chunking later is a data migration, not an architecture change (I5 only pins the unit key itself). And **`subjects.confirmationRequired`** (`true`/`false`/`null`) was added as a new, additive field so "confirmation can be switched on or off per subject" (Architecture s6) has somewhere to live — editable from `catalogue.html`'s existing subject edit form. |
+| D13 | **Post-cutover rollout order** (confirmed 9 Aug 2026, QuranRevival v07.00): make it work for the **owner's own real use first** — before family, before external students, before the rest of the role/tenant model the Architecture doc already plans for. Then family. Then external students. Then everyone/everything else, as originally planned. **This reorders priority, not scope** — nothing here changes what gets built, only what gets fixed/polished first when something's wrong. Concretely: if the owner hits real friction using the app themselves, that outranks a family- or student-facing gap, which outranks a general multi-tenant/other-role gap, regardless of build-phase numbering. Don't re-derive this from the Architecture doc's own phase order — this is a use-rollout sequence layered on top of it, not a replacement for Phase 6–15's own scope. |
 
 ---
 
@@ -206,16 +213,19 @@ and gets read seriously; it wasn't overridden by Claude.)*
 complete and owner-verified.** See `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`,
 `PHASE-2-STATUS.md`, `PHASE-3-STATUS.md`, and `PHASE-4-STATUS.md`.
 
-**Cutover happened 9 August 2026.** `https://madrasatul-muslimeen.github.io/`
-now redirects into the new app (`/app/index.html`); the old app is archived,
-not deleted, at `/legacy/index.html`. The owner made an explicit, informed
-call to cut over before B5 and a real signed-in click-through of rounds
-12–14 were resolved — both are now post-cutover follow-up, tracked in
+**Cutover happened 9 August 2026 — QuranRevival v07.00.**
+`https://madrasatul-muslimeen.github.io/` now redirects into the new app
+(`/app/index.html`); the old app is archived, not deleted, at
+`/legacy/index.html`. The owner made an explicit, informed call to cut over
+before B5 and a real signed-in click-through of rounds 12–14 were resolved
+— both are now post-cutover follow-up, tracked in
 `PHASE-5-PARITY-CHECKLIST.md`, not blockers. Migration itself was closed
 earlier (the owner decided the old app's data is all demo data, not worth
-preserving). This paragraph was stale for six rounds before a 9 Aug note —
-**check `PHASE-5-STATUS.md` first,
-every session, for what's actually current**; don't rely on this file's own
+preserving). **We are now in real-use iteration, not pre-cutover build
+mode — see D13 for whose real use gets priority (owner, then family, then
+external students, then everyone else).** This paragraph was stale for six
+rounds before a 9 Aug note — **check `PHASE-5-STATUS.md` first, every
+session, for what's actually current**; don't rely on this file's own
 "current position" line alone.
 
 **Post-cutover deployment shape (9 Aug 2026), replacing the old beta-mirror
@@ -227,7 +237,11 @@ to a `/beta/app/` path anymore — it no longer exists on that repo**).
 `/beta/` itself is free again for the *next* phase's testing cycle, same
 pattern this project used throughout Phase 5 — check what, if anything,
 currently lives there before assuming it's empty. The old app lives on,
-untouched, at `https://madrasatul-muslimeen.github.io/legacy/index.html`.
+untouched, at `https://madrasatul-muslimeen.github.io/legacy/index.html` —
+**by direct URL only; no button or link exists in either app pointing to
+the other** (asked and confirmed 9 Aug 2026 — this was a deliberate
+minimal-risk choice at cutover, not an oversight left unfinished. Add one
+only if the owner actually asks for it).
 Same GitHub access that reaches this repo also reaches
 `madrasatul-muslimeen.github.io` (confirmed 9 Aug 2026) — pushing there
 directly is possible, but it's a live public site outside this repo's own
