@@ -1,6 +1,6 @@
 # Phase 5 — Migration & Parity — Audit & Build
 
-Last updated: 9 August 2026 (beta mirror caught up through round 14)
+Last updated: 9 August 2026 — **cutover executed**. The production URL now serves the new app.
 Read alongside `CLAUDE.md`.
 
 ---
@@ -534,6 +534,66 @@ any Firestore collection.
    person open *that* link specifically — not the general beta URL.
 4. Splash screens: watch one through from the very start (don't navigate
    away in the first couple seconds) and confirm it does play as expected.
+
+---
+
+## Cutover executed (9 Aug 2026)
+
+Owner confirmed nobody but them uses the old app for real, discussed cutover
+mechanics directly (plan/impact/end-state, all three asked for explicitly),
+approved the plan, and said go ahead — explicitly accepting that B5 and a
+real signed-in click-through of rounds 12–14 (the two other open items on
+`PHASE-5-PARITY-CHECKLIST.md`'s Part C) were still unresolved at the time,
+given the low risk of a single-user, fully-reversible change. Recorded here
+precisely as it happened, not smoothed over: **the parity checklist was not
+fully signed before this went live** — the owner made an informed, explicit
+call to sequence it this way.
+
+**The plan** (proposed, then approved as-is): promote the new app from
+`/beta/app/` to `/app/` at the production domain's root, archive the old
+`index.html` to `/legacy/index.html` (I4 — nothing deleted, still fully
+reachable), and replace the root `index.html` with a lightweight redirect
+into `/app/index.html`. Chosen over a hard content-swap specifically for
+reversibility — undoing it is one file, not a rebuild.
+
+**Verified safe before moving anything**: grepped this repo's own `app/`
+for any hardcoded `/beta/` path reference — none exist. Every internal
+reference is either relative (`./js/...`) or domain-root-relative for
+`/tools/` and `/mushaf/` (`quran-data.js`'s `BASE_URL`,
+`hifz-renderer.js`'s mushaf paths) — and both of those stay exactly where
+they already were, untouched by this move. So moving `/beta/app/` →
+`/app/` needed no internal rewriting at all, confirmed rather than assumed.
+
+**Built and verified live, in a real browser, after the push**:
+- `https://madrasatul-muslimeen.github.io/` → redirects to `/app/index.html`
+  — confirmed via `location.href` after navigating, not just that the
+  redirect *tag* exists.
+- `/app/index.html` renders the real sign-in screen, zero console errors.
+- `/app/quranrevival.html` loads with every one of its ~20 JS modules
+  returning 200 from the new `/app/js/...` path.
+- `/tools/quran-data-pull/output/surah-index.json` and
+  `/mushaf/mushaf-madani-v2.json` both still resolve (200) from the new
+  location — confirming the domain-root-relative paths the reasoning above
+  predicted, not just assuming it.
+- `/legacy/index.html` still serves the real, complete old app — confirmed
+  by its actual boot-splash content ("📚 QuranRevival / Sign in to
+  continue"), not just a file-exists check.
+- Deploy timing: GitHub Pages doesn't propagate every file atomically —
+  polled each of the three (redirect, `/app/`, `/legacy/`) until each
+  actually served the new content, rather than assuming the push alone was
+  enough.
+
+**What this doesn't change**: this was a repo-level file move on the
+*production* mirror (`madrasatul-muslimeen.github.io`) — nothing in this
+repo (`QuranRevival---ClaudeCode`) or in Firestore/`firestore.rules`
+changed at all. Same Firebase project throughout (D1); no accounts, no
+sign-in flow, no data touched.
+
+**Still genuinely open, now as post-cutover follow-up rather than a
+pre-condition**: B5 (student-invite retest) and a real signed-in
+click-through of the Mastery Wheel/Explore work (rounds 12–14) — both
+unchanged from before, just re-sequenced after this discussion.
+`PHASE-5-PARITY-CHECKLIST.md` updated to match.
 
 ---
 

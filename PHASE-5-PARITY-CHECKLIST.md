@@ -1,18 +1,29 @@
 # QuranRevival — Phase 5 Parity Checklist (the cutover gate)
 
-**This is the document `CLAUDE.md` requires before cutover**: "No cutover
-from the old app until the parity checklist is derived from a live audit
-of `index.html` and signed by the owner — not by Claude." Everything below
-is drawn from an actual read of `index.html`'s own code (round 1's audit)
-plus 14 rounds of building against it, not from memory or assumption.
-`index.html` itself was never edited — reference only, as always.
+**Status: cutover executed 9 August 2026.**
+`https://madrasatul-muslimeen.github.io/` now redirects into the new app
+(`/app/index.html`). The old app is archived, not deleted, at
+`https://madrasatul-muslimeen.github.io/legacy/index.html`. This happened
+**before** items 1 and 2 in Part C were resolved — an explicit, informed
+call by the owner (confirmed no one else uses the old app; the swap is a
+one-file, trivially reversible redirect), not an oversight. See
+`PHASE-5-STATUS.md`'s "Cutover executed" entry for the full mechanics and
+verification. Items 1 and 2 below are now post-cutover follow-up, not
+pre-conditions.
+
+**This is still the document `CLAUDE.md` calls for**: "the parity checklist
+... derived from a live audit of `index.html` and signed by the owner —
+not by Claude." Everything below is drawn from an actual read of
+`index.html`'s own code (round 1's audit) plus 14 rounds of building
+against it, not from memory or assumption. `index.html` itself was never
+edited — reference only, as always; it now lives on at `/legacy/`.
 
 **How to use this**: three sections. Part A is what's done — nothing to
 decide, just confirm it matches your expectation. Part B is what's
 *different on purpose* — a decision was already made, by you or as a
 disclosed judgement call; nothing to build, just confirm you're still fine
-with it. Part C is the actual gate — the handful of things that still need
-to happen before cutover is safe. Sign-off is at the bottom.
+with it. Part C is what's still genuinely open — now follow-up, not a
+gate. Sign-off is at the bottom.
 
 ---
 
@@ -59,15 +70,15 @@ to happen before cutover is safe. Sign-off is at the bottom.
 
 ---
 
-## Part C — Still open (the actual gate)
+## Part C — Still open (post-cutover follow-up, not a gate anymore)
 
 | # | Item | What it needs |
 |---|---|---|
-| 1 | **B5 — student-invite retest** | Someone opens a *real* invite link (`accept-invite.html?token=...`, generated from the People page), not the general beta URL. Open since round 10, never confirmed closed. |
-| 2 | **A real signed-in click-through of rounds 12–14** | The Mastery Wheel axis fix and Explore's full drill-down have only been verified by Claude (code review + a mock-data integration harness, 43/43 checks passing) — never by a real signed-in person. The beta mirror now has this live (see below), so this is now just a matter of doing it. |
-| 3 | **The cutover mechanics themselves** | Not yet discussed at all: what literally happens at the real production URL — does `index.html` get replaced, does something redirect, is there a cutover moment communicated to anyone already using the old app? A decision, not an engineering task. |
+| 1 | **B5 — student-invite retest** | Someone opens a *real* invite link (`accept-invite.html?token=...`, generated from the People page), not just the site's front door. Open since round 10, never confirmed closed. |
+| 2 | **A real signed-in click-through of rounds 12–14** | The Mastery Wheel axis fix and Explore's full drill-down have only been verified by Claude (code review + a mock-data integration harness, 43/43 checks passing) — never by a real signed-in person. Now live at the real production URL, so this is just a matter of doing it next time you're signed in. |
+| ~~3~~ | ~~The cutover mechanics themselves~~ | **Done, 9 Aug 2026** — see the status banner at the top of this document. |
 
-**Where to test #1 and #2**: `https://madrasatul-muslimeen.github.io/beta/app/quranrevival.html` — caught up through round 14 as of 9 Aug 2026, confirmed live file-by-file, not just pushed and assumed.
+**Where to test #1 and #2 now**: `https://madrasatul-muslimeen.github.io/` — the real production URL, not a beta link anymore.
 
 ---
 
@@ -81,11 +92,14 @@ B1 (ruku/juz write path — wrong Firestore field name) and C1–C5 (security-ru
 
 ## Sign-off
 
-This section is for you to fill in — plain language, no code involved.
-
+- [x] **I'm ready for cutover** — confirmed, 9 Aug 2026; executed same day.
 - [ ] Part A matches what I expect from the old app.
 - [ ] Part B's differences are all still fine with me as-is.
-- [ ] Part C's three items are resolved (or I'm choosing to accept the risk of proceeding without one of them — state which, and why).
-- [ ] I'm ready for cutover.
+- [ ] Part C's remaining two items (B5, a real click-through) are closed.
 
-If any box can't be checked, tell me which one and what's wrong — that becomes the next round's work, not a reason to redo this whole document.
+The last three are still open for you to confirm at your own pace, now that
+they're follow-up rather than something blocking a decision already made.
+If anything in Part A or B doesn't match what you actually see, or B5/the
+click-through turns up a real problem, tell me and that becomes the next
+round's work — not a reason to undo the cutover, which stays in place
+regardless (it's the redirect that's easy to undo, not this document).

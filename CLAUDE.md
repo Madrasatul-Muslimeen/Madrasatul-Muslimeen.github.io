@@ -27,7 +27,7 @@ decision-oriented. Corrections come promptly when framing drifts.
 | `QuranRevival_Complete_Architecture.html` | **THE source of truth.** Schema, invariants, roles, renderers, unit keys, 15 build phases, load-speed budget. Confirmed by the owner. |
 | `QuranRevival_Subject_Catalogue_v3.md` | 31 subjects, 30 Approaches in 7 sections. **Approved as-is (D11).** Phase 2 input. |
 | `QuranRevival_Parked_Items_Register.html` | 36 deferred items. **Do not build these.** |
-| `index.html` | Current production app. **REFERENCE ONLY — NEVER EDIT.** Live fallback until the Phase 5 parity checklist is signed. |
+| `index.html` | The pre-cutover production app. **REFERENCE ONLY — NEVER EDIT.** No longer live at the production URL as of 9 Aug 2026 (cutover) — archived, reachable at `https://madrasatul-muslimeen.github.io/legacy/index.html`. |
 
 Do not re-derive or re-propose the architecture. If a request appears to
 conflict with it, **ask** — do not assume.
@@ -196,28 +196,43 @@ modules · 13 Full messaging & extras · 14 Operations · 15+ Reserved.
 
 **Phase 5 is the gate.** No cutover from the old app until the parity checklist
 is derived from a live audit of `index.html` and signed by the owner — not by
-Claude.
+Claude. *(9 Aug 2026: the owner exercised this as their own call, not
+Claude's — chose to cut over before the checklist was fully signed, given no
+other real users existed. The rule stands as the reason a checklist exists
+and gets read seriously; it wasn't overridden by Claude.)*
 
 **Current position: Phase 0, Phase 1 (Identity & access), Phase 2
 (Catalogue), Phase 3 (Tracking core), and Phase 4 (QuranRevival module) all
 complete and owner-verified.** See `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`,
 `PHASE-2-STATUS.md`, `PHASE-3-STATUS.md`, and `PHASE-4-STATUS.md`.
 
-**Phase 5 (Migration & Parity) is in progress, not yet signed off** — six
-rounds of real owner click-through testing plus a round-7 build (the Mushaf
-page view for Whole Surah/Range). Migration itself is closed (the owner
-decided the old app's data is all demo data, not worth preserving); the
-remaining open item is B5 (student-invite flow retest). This paragraph was
-stale for six rounds before this note — **check `PHASE-5-STATUS.md` first,
+**Cutover happened 9 August 2026.** `https://madrasatul-muslimeen.github.io/`
+now redirects into the new app (`/app/index.html`); the old app is archived,
+not deleted, at `/legacy/index.html`. The owner made an explicit, informed
+call to cut over before B5 and a real signed-in click-through of rounds
+12–14 were resolved — both are now post-cutover follow-up, tracked in
+`PHASE-5-PARITY-CHECKLIST.md`, not blockers. Migration itself was closed
+earlier (the owner decided the old app's data is all demo data, not worth
+preserving). This paragraph was stale for six rounds before a 9 Aug note —
+**check `PHASE-5-STATUS.md` first,
 every session, for what's actually current**; don't rely on this file's own
-"current position" line alone. A beta build is also live at
-`https://madrasatul-muslimeen.github.io/beta/app/quranrevival.html` for the
-owner's click-through — any fix has to ship to both this repo's `app/` and
-that separate repo's `beta/app/`. Same GitHub access that reaches this
-repo also reaches `madrasatul-muslimeen.github.io` (confirmed 9 Aug
-2026) — updating the beta mirror is possible directly, but it's a live
-public site outside this repo's own scope, so ask before pushing there,
-unlike the routine git operations below.
+"current position" line alone.
+
+**Post-cutover deployment shape (9 Aug 2026), replacing the old beta-mirror
+setup**: `madrasatul-muslimeen.github.io` is the real production site.
+`https://madrasatul-muslimeen.github.io/app/…` is the live app — any fix
+to this repo's `app/` has to also ship there (that path used to be
+`/beta/app/`; the cutover promoted it to `/app/` directly, so **don't ship
+to a `/beta/app/` path anymore — it no longer exists on that repo**).
+`/beta/` itself is free again for the *next* phase's testing cycle, same
+pattern this project used throughout Phase 5 — check what, if anything,
+currently lives there before assuming it's empty. The old app lives on,
+untouched, at `https://madrasatul-muslimeen.github.io/legacy/index.html`.
+Same GitHub access that reaches this repo also reaches
+`madrasatul-muslimeen.github.io` (confirmed 9 Aug 2026) — pushing there
+directly is possible, but it's a live public site outside this repo's own
+scope, so ask before pushing there, unlike the routine git operations
+below.
 
 **`PHASE-5-PARITY-CHECKLIST.md` is the actual cutover-gate document** —
 built 9 Aug 2026, consolidating all 14 rounds into the single sign-off
