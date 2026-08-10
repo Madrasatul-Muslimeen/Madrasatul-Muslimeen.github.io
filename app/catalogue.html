@@ -23,7 +23,7 @@
   .depth-2 { padding-left: 2.4rem; }
   .depth-3 { padding-left: 3.6rem; }
   .tag { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 0.8rem; font-size: 0.75rem; background: #eef1f7; color: #1F3A6E; margin-right: 0.2rem; }
-  .subj-toggle-btn { background: none; border: none; cursor: pointer; padding: 0 0.3rem 0 0; font-size: 0.8rem; color: #1F3A6E; }
+  .subj-toggle-btn { background: none; border: none; cursor: pointer; padding: 0.1rem 0.6rem 0.1rem 0; font-size: 1.3rem; font-weight: 700; line-height: 1; min-width: 1.6rem; color: #1F3A6E; }
   .module-row { cursor: pointer; }
   .module-row:hover { background: #f7f9fc; }
   @keyframes subjRowFlash { from { background: #fff3cd; } to { background: transparent; } }
@@ -222,6 +222,14 @@
     // the subject list is collapsible per-subject -- session-only state
     // (not persisted), a row is hidden if ANY of its ancestors is collapsed.
     let collapsedSubjectIds = new Set();
+    // Owner follow-up: subjects should start collapsed, opened on demand --
+    // but only on a genuinely fresh view (first load / tenant switch), not
+    // after an in-place edit/add/archive silently re-collapses whatever the
+    // owner currently has open. loadSubjects() only (re-)seeds the default
+    // collapsed set while this is false, then flips it true; the tenant
+    // switch handler resets it so switching tenants gets its own fresh
+    // collapsed start.
+    let collapseInitialized = false;
 
     showArchivedSubjects.addEventListener("change", renderSubjects);
     showArchivedTrackables.addEventListener("change", renderTrackables);
@@ -384,6 +392,12 @@
 
     async function loadSubjects() {
       subjectTree = await getSubjectTree(db, activeTenantId);
+      if (!collapseInitialized) {
+        collapsedSubjectIds = new Set(
+          subjectTree.filter((n) => subjectTree.some((c) => c.parentId === n.id)).map((n) => n.id)
+        );
+        collapseInitialized = true;
+      }
       renderSubjects();
       newSubjParent.innerHTML = parentOptionsHtml(null, null);
     }
@@ -747,6 +761,7 @@
       addSubjectBox.style.display = canEdit ? "block" : "none";
       addLadderBox.style.display = canEdit ? "block" : "none";
       readOnlyNote.style.display = canEdit ? "none" : "block";
+      collapseInitialized = false; // fresh view for this tenant -- back to all-collapsed
 
       await runSeedIfNeeded();
       await loadSubjects();
