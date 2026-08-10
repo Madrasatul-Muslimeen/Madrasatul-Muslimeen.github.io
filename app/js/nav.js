@@ -9,6 +9,10 @@
 const LINKS = [
   { href: "quranrevival.html", label: "Study" },
   { href: "deen-study.html", label: "Deen Study" }, // Phase 6
+  { href: "arabic-study.html", label: "Arabic" }, // Phase 6 (topic-renderer rollout)
+  { href: "hadith-study.html", label: "Hadith" },
+  { href: "general-study.html", label: "General Study" },
+  { href: "naturelife-study.html", label: "Nature-Life" },
   { href: "records.html", label: "Records" },
   { href: "people.html", label: "People", ownerPrimeOnly: true },
   { href: "catalogue.html", label: "Catalogue", ownerPrimeOnly: true },
