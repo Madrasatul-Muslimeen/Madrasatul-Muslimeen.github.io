@@ -2,24 +2,33 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.02.** Cutover to production happened
+**Current milestone: QuranRevival v07.03.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
 topic renderer plus six new study screens — Deen Study, Arabic, Hadith,
 General Study, Nature-Life, and Life Skill (pulled out mid-round into its
 own independent module, owner's call) — a real top-level subject tree +
-module for Health (structure only; its actual study screen needs the
-"routine" renderer, which is Phase 7), and topic authoring with resources
-from the Catalogue page. See `PHASE-6-STATUS.md` for the full build log,
-including three real pre-existing data bugs found and fixed by querying
-Firestore directly rather than guessing from the code. We are past "build
-against a parity checklist" and into "rebuild, enhance, modify, and fix
-from here," driven by real use. See "Post-cutover rollout order" below for
-whose real use comes first. **Check this line's version number every
-session** — it's manually updated per `app/js/version.js`'s own scheme
-(first two digits = big overhaul, last two = each new feature) and will
-drift if a future round forgets to bump it here too.
+module for Health (structure only; its actual study screen needed the
+"routine" renderer, built next round), and topic authoring with resources
+from the Catalogue page. v07.03 (10 Aug 2026) is Phase 7 round 1: the
+routine renderer (streak + "log today," on top of the same claim/confirm
+ramp every renderer shares), Bookmarks + a Continue strip embedded in
+every study page, Health's real study screen, and Learn Deen On-the-Go
+pulled out of Deen Study into its own module (owner's call, same
+treatment Health/Life Skill got). Course offers + routines — the rest of
+Phase 7's written scope — deferred by the owner to a later round (Stage
+B1, lower priority than the owner's/family's own use per D13). See
+`PHASE-7-STATUS.md` for that round's build log, and `PHASE-6-STATUS.md`
+for Phase 6's, including three real pre-existing data bugs found and
+fixed by querying Firestore directly rather than guessing from the code.
+We are past "build against a parity checklist" and into "rebuild,
+enhance, modify, and fix from here," driven by real use. See "Post-cutover
+rollout order" below for whose real use comes first. **Check this line's
+version number every session** — it's manually updated per
+`app/js/version.js`'s own scheme (first two digits = big overhaul, last
+two = each new feature) and will drift if a future round forgets to bump
+it here too.
 
 ---
 
@@ -223,14 +232,16 @@ and gets read seriously; it wasn't overridden by Claude.)*
 
 **Current position: Phase 0, Phase 1 (Identity & access), Phase 2
 (Catalogue), Phase 3 (Tracking core), Phase 4 (QuranRevival module), and
-Phase 6 (Deen Study & topic renderer) all complete and owner-verified.**
-See `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`, `PHASE-2-STATUS.md`,
+Phase 6 (Deen Study & topic renderer) all complete and owner-verified.
+Phase 7 (Bookmarks, programs, routines) round 1 is built, not yet
+owner-verified** — see `PHASE-7-STATUS.md` for exactly what's in round 1
+(bookmarks, Continue strip, the routine renderer, Health's real study
+screen, Learn Deen On-the-Go pulled out as its own module) vs. what the
+owner deferred (course offers + routines, Stage B1 territory). See also
+`PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`, `PHASE-2-STATUS.md`,
 `PHASE-3-STATUS.md`, `PHASE-4-STATUS.md`, and `PHASE-6-STATUS.md`. Phase 5
 (Migration & parity) is separately covered below — cutover already
 happened; two small follow-up items remain open, not gating anything.
-**Phase 7 (Bookmarks, programs, routines) is next** — independent of
-Phase 6, ready to start any time. It also carries the "routine renderer"
-Health's real study screen is waiting on.
 
 **Cutover happened 9 August 2026 — QuranRevival v07.00.**
 `https://madrasatul-muslimeen.github.io/` now redirects into the new app

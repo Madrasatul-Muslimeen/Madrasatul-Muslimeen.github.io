@@ -58,6 +58,13 @@ export const MODULE_TEMPLATES = [
   // totally independent." Same treatment Health just got -- own module,
   // own top-level subject root, not nested inside another module's tree.
   { id: "lifeskill", name: en("Life Skill"), icon: "🛠️", renderer: "topic", order: 8 },
+  // Phase 7 (Bookmarks, programs, routines): Learn Deen On-the-Go was a
+  // plain topic under Deen Study ▸ Enhancement ("Daily Deen Learning Habit
+  // for Life"). Architecture s5's renderer table names it alongside Health
+  // as a "routine" module in its own right (a scheduled habit, not a
+  // topic+resource) -- owner confirmed this round: pull it out, same
+  // treatment Health and Life Skill already got.
+  { id: "ldog", name: en("Learn Deen On-the-Go"), icon: "🚶", renderer: "routine", order: 9 },
 ];
 
 // ---------------------------------------------------------------------------
@@ -95,8 +102,12 @@ export const SUBJECT_TEMPLATES = [
   { id: "deen_enhancement", name: en("Enhancement"), parentId: "deen_study", order: 2, moduleIds: ["deen"] },
   { id: "islamic_mindset", name: en("Islamic Mindset"), parentId: "deen_enhancement", order: 1, moduleIds: ["deen"] },
   { id: "islamic_lifestyle", name: en("Islamic Lifestyle"), parentId: "deen_enhancement", order: 2, moduleIds: ["deen"] },
-  { id: "daily_deen_habit", name: en("Daily Deen Learning Habit for Life"), gloss: en("Learn Deen On-the-Go"), parentId: "deen_enhancement", order: 3, moduleIds: ["deen"] },
-  { id: "islamic_sports_entertainment", name: en("Islamic Sports & Entertainment"), parentId: "deen_enhancement", order: 4, moduleIds: ["deen"] },
+  // daily_deen_habit used to live here (parentId: deen_enhancement,
+  // moduleIds: ["deen"]) -- pulled out to its own top-level root under
+  // module 9 (ldog) below, Phase 7, same shape as the health_study/
+  // life_skill moves above. Existing tenants get repaired via
+  // catalogue.js's ensureLdogReparented.
+  { id: "islamic_sports_entertainment", name: en("Islamic Sports & Entertainment"), parentId: "deen_enhancement", order: 3, moduleIds: ["deen"] },
 
   // 5. General Study [General]
   { id: "general_study", name: en("General Study"), parentId: null, order: 5, moduleIds: ["general"] },
@@ -157,6 +168,15 @@ export const SUBJECT_TEMPLATES = [
   { id: "life_skill", name: en("Life Skill"), parentId: null, order: 8, moduleIds: ["lifeskill"] },
   { id: "life_skill_tech_cognition", name: en("Technology & Cognition"), parentId: "life_skill", order: 1, moduleIds: ["lifeskill"] },
   { id: "life_skill_trading", name: en("Trading"), parentId: "life_skill", order: 2, moduleIds: ["lifeskill"] },
+
+  // 9. Learn Deen On-the-Go [ldog] -- Phase 7: pulled out of Deen Study ▸
+  // Enhancement (owner confirmed, same treatment as Health/Life Skill).
+  // Given its own root+child shape, matching Health (root "ldog" + first
+  // child "daily_deen_habit") rather than Life Skill's root-is-a-real-node
+  // shape -- this leaves room for more LDOG subjects to sit as siblings of
+  // daily_deen_habit later without a second restructure.
+  { id: "ldog", name: en("Learn Deen On-the-Go"), parentId: null, order: 9, moduleIds: ["ldog"] },
+  { id: "daily_deen_habit", name: en("Daily Deen Learning Habit for Life"), parentId: "ldog", order: 1, moduleIds: ["ldog"] },
 ];
 
 // ---------------------------------------------------------------------------
@@ -300,12 +320,26 @@ function studiedTemplate(id, moduleId) {
   };
 }
 
+/** Phase 7 — the routine renderer's own module-wide trackable. Same claim/confirm ramp as "Studied" (the routine renderer still uses Track/Guide/Breakdown for overall status), plus a separate per-occurrence activity log (routine-study.js) the way modal's Streak tab reads for a streak count -- that log isn't a trackable/status at all, so it doesn't belong in this template. */
+function practisedTemplate(id, moduleId) {
+  return {
+    id, moduleId, subjectId: null, group: null, groupName: null,
+    name: nameLang("Practised", "অনুশীলন করা হয়েছে"),
+    guide: {
+      what: en("Whether this routine has become a habit worth recording, on top of logging it day to day."),
+      how: en("Log it from the routine's page each time it's done, then claim an overall status once it's genuinely a habit."),
+      measure: en("Whether it happens without being reminded, most of the time."),
+    },
+    panels: ["resource", "notes"], order: 1,
+  };
+}
+
 // One per topic-renderer module (Architecture s5: Arabic, Hadith, Deen
 // Study, General Study, Nature-Life) -- trackables.moduleId is required, so
 // a single "Studied" trackable can't literally be shared across modules;
 // this is that same design, replicated once per module as each one gets
-// its real study screen built. Health is NOT here -- it uses the "routine"
-// renderer, not "topic" (Phase 7 scope).
+// its real study screen built. Health and LDOG use practisedTemplate
+// instead -- same shape, "routine" renderer wording (Phase 7).
 export const TOPIC_TRACKABLE_TEMPLATES = [
   studiedTemplate("studied_deen", "deen"),
   studiedTemplate("studied_arabic", "arabic"),
@@ -313,4 +347,6 @@ export const TOPIC_TRACKABLE_TEMPLATES = [
   studiedTemplate("studied_general", "general"),
   studiedTemplate("studied_naturelife", "naturelife"),
   studiedTemplate("studied_lifeskill", "lifeskill"),
+  practisedTemplate("practised_health", "health"),
+  practisedTemplate("practised_ldog", "ldog"),
 ];

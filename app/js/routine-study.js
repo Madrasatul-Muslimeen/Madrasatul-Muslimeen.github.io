@@ -1,22 +1,23 @@
-// Phase 6+ — Shared study-screen logic for every "topic" renderer module
-// (Architecture s5: Arabic, Hadith, Deen Study, General Study, Nature-Life).
+// Phase 7 — Shared study-screen logic for every "routine" renderer module
+// (Architecture s5: Health, Learn Deen On-the-Go).
 //
-// Extracted from deen-study.html once a second, third, fourth and fifth
-// call site made the duplication real rather than premature (Deen Study
-// proved the pattern; this is that same code, parameterized). Each of
-// deen-study.html / arabic-study.html / hadith-study.html /
-// general-study.html / naturelife-study.html is now a thin shell: same DOM
-// ids, same CSS, one call to initTopicStudyPage() with its own
-// {moduleId, trackableId}.
+// Deliberately built as topic-study.js's sibling, not a subclass of it or a
+// parametrized merge with it -- the two controllers share the same subject
+// tree / breadcrumb / resource machinery (topic-renderer.js, way-modal.js,
+// records.js) but diverge on what a leaf actually IS: a topic is claimed
+// once toward mastery; a routine is claimed toward mastery too (same
+// Track/Guide/Breakdown tabs, same "Studied"-shaped trackable, here named
+// "Practised") but is ALSO logged per-occurrence for a streak, which a
+// topic never is. Forcing one file to cover both would mean every topic
+// caller carrying dead streak/log code it never uses -- I2's "renderers are
+// shared components" is about not duplicating the RENDERING (topic-renderer.js's
+// breadcrumb/list/resource functions are reused directly below), not about
+// forcing every renderer family through one controller.
 //
 // I2-adjacent: this file DOES touch Firebase (it's the page's own
-// controller, not a pure renderer like topic-renderer.js/way-modal.js are)
-// -- but it never imports another module's page logic, only the shared
-// renderer/records/catalogue layer every module already goes through.
-//
-// Health is deliberately NOT one of these pages -- it uses the "routine"
-// renderer (a scheduled habit, not a topic+resource), grouped with Learn
-// Deen On-the-Go, which is Phase 7 scope.
+// controller, not a pure renderer) -- but it never imports another
+// module's page logic, only the shared renderer/records/activity/catalogue
+// layer every module already goes through.
 
 import { auth, db } from "./firebase-init.js";
 import {
@@ -36,34 +37,29 @@ import {
 import { ensureModulesSeeded } from "./modules.js";
 import { buildUnitKey } from "./unit-keys.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
-import { logActivity } from "./activity.js";
+import {
+  logActivity, weekKeyFor, getWeekActivity, hasLoggedOn, getRecentWeeksActivity, computeStreak,
+} from "./activity.js";
 import { getResourcesByIds } from "./resources.js";
 import { renderNavBar } from "./nav.js";
 import { renderTopicBreadcrumb, renderTopicChildList, renderTopicResource } from "./topic-renderer.js";
-import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderWayModalShell, attachWayModalHandlers } from "./way-modal.js";
+import {
+  renderGuideTab, renderTrackTab, renderBreakdownTab, renderStreakTab,
+  renderWayModalShell, attachWayModalHandlers,
+} from "./way-modal.js";
 import { getBookmarks, touchResume, recentResumeEntries } from "./bookmarks.js";
 import { renderContinueStrip } from "./continue-strip.js";
 
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
 /**
- * Wires up a topic-renderer study page. Expects the page to already contain
- * the shared DOM shell (same element ids deen-study.html established):
- * who, signInBtn, signOutBtn, app, navBar, tenantSelect, personSelect,
- * breadcrumbContainer, listContainer, detailContainer, wayModalOverlay,
- * wayModalMount.
- *
- * rootSubjectId is the module's own known top-level subject id (e.g.
- * "deen_study", "general_study") -- passed explicitly rather than found by
- * searching moduleSubjects for "the" node with parentId === null. That
- * search was the actual bug behind the owner's "General Study shows Life
- * Skill" report: two "Enhancement" subjects (deen_enhancement,
- * general_enhancement) had been accidentally reparented to top-level back
- * in Phase 2 testing (31 Jul 2026, long before this page existed to
- * surface it) -- `.find(parentId === null)` then picked whichever of the
- * two real top-level nodes Firestore happened to return first, which isn't
- * guaranteed or stable. Anchoring on a known id sidesteps that whole bug
- * class rather than just fixing this one instance of it.
+ * Wires up a routine-renderer study page. Same DOM contract as
+ * initTopicStudyPage() (topic-study.js) plus one more optional element:
+ * reminderBanner (a top-of-page "N routines not logged today" count).
  */
-export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
+export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
   const whoEl = document.getElementById("who");
   const signInBtn = document.getElementById("signInBtn");
   const signOutBtn = document.getElementById("signOutBtn");
@@ -76,7 +72,8 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
   const detailContainer = document.getElementById("detailContainer");
   const wayModalOverlay = document.getElementById("wayModalOverlay");
   const wayModalMount = document.getElementById("wayModalMount");
-  const continueStripContainer = document.getElementById("continueStrip"); // optional -- Phase 7; older shells without this id just skip the strip
+  const continueStripContainer = document.getElementById("continueStrip");
+  const reminderBanner = document.getElementById("reminderBanner"); // optional
 
   const NO_ACCOUNT_MESSAGE = ` — no account found yet.
     <br>If someone invited you to join an existing madrasah, use the invite
@@ -97,16 +94,11 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
   let tenantWeekStartsOn = 6;
   let selectedPersonId = null;
   let moduleSubjects = [];
-  let studiedTrackable = null;
+  let practisedTrackable = null;
   let currentChunk = null;
-  let currentParentId = null; // null until the tree loads, then set to the module's root subject id
+  let currentWeekActivity = null; // this person's current week -- "logged today" comes from here
+  let currentParentId = null;
   let rootLabel = "";
-  // All of this module's topic claims share one chunk (mirrors how Quran's
-  // own non-surah unit types all chunk under "subject_quran" -- chunkKeyFor
-  // only cares about the subjectId string passed in, not which specific
-  // topic was claimed; I5 keeps each topic's own identity in its unitKey
-  // regardless of which chunk it lands in). Set once the tree loads and the
-  // module's own root subject id is known.
   let chunkSubjectId = null;
 
   function currentPreview() {
@@ -143,7 +135,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     moduleSubjects = tree.filter((n) => (n.moduleIds ?? []).includes(moduleId) && n.status !== "archived");
 
     const trackables = await getTrackables(db, activeTenantId);
-    studiedTrackable = trackables.find((t) => t.id === trackableId) ?? null;
+    practisedTrackable = trackables.find((t) => t.id === trackableId) ?? null;
 
     const root = moduleSubjects.find((n) => n.id === rootSubjectId);
     currentParentId = rootSubjectId;
@@ -151,21 +143,30 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     rootLabel = root ? langText(root.name, "en", moduleId) : moduleId;
 
     await refreshChunk();
+    await refreshWeekActivity();
     renderBrowser();
     await refreshContinueStrip();
 
-    // Phase 7 auto-resume: a Continue-strip link lands here as
-    // page.html?resume=<subjectId> -- jump straight to that topic's detail
-    // instead of leaving the person to re-browse to it. Silently ignored if
-    // the id doesn't resolve to a trackable node in this tenant's tree.
     const resumeId = new URLSearchParams(location.search).get("resume");
     if (resumeId) {
       const resumeNode = moduleSubjects.find((n) => n.id === resumeId && n.isTrackable);
-      if (resumeNode) await openTopicDetail(resumeId);
+      if (resumeNode) await openRoutineDetail(resumeId);
     }
   }
 
-  /** Phase 7 — Continue strip: this module's own most-recent position, plus whatever other modules' pages already wrote to this person's bookmarks. Guarded on continueStripContainer so a shell without the id degrades silently. */
+  async function refreshChunk() {
+    if (!selectedPersonId || !chunkSubjectId) { currentChunk = null; return; }
+    const chunkKey = chunkKeyFor(buildUnitKey.topic("_"), chunkSubjectId);
+    currentChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, chunkKey);
+  }
+
+  /** This person's current week of activity -- one doc, load-speed-safe (Architecture: "Activity -- one document per week"). Drives the "logged today" badges and the reminder banner; the fuller multi-week streak only loads on demand when a routine's Streak tab actually opens. */
+  async function refreshWeekActivity() {
+    if (!selectedPersonId) { currentWeekActivity = null; return; }
+    const weekKey = weekKeyFor(new Date(), tenantWeekStartsOn);
+    currentWeekActivity = await getWeekActivity(db, activeTenantId, selectedPersonId, weekKey);
+  }
+
   async function refreshContinueStrip() {
     if (!continueStripContainer || !selectedPersonId) return;
     const bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
@@ -176,18 +177,6 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     continueStripContainer.innerHTML = renderContinueStrip(entries);
   }
 
-  async function refreshChunk() {
-    if (!selectedPersonId || !chunkSubjectId) { currentChunk = null; return; }
-    // chunkKeyFor("topic" units) only ever looks at the subjectId argument
-    // (see records.js SURAH_CHUNKED_TYPES) -- any topic unitKey produces
-    // the same chunk key here, so this reads exactly as `subject_${chunkSubjectId}`.
-    const chunkKey = chunkKeyFor(buildUnitKey.topic("_"), chunkSubjectId);
-    currentChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, chunkKey);
-  }
-
-  // Root is the breadcrumb's own label (rootLabel) -- never repeated as a
-  // path entry, including when currentParentId IS the root (path = [], so
-  // only that one non-clickable root crumb shows).
   function ancestorPath(nodeId) {
     if (nodeId === rootSubjectId) return [];
     const node = moduleSubjects.find((n) => n.id === nodeId);
@@ -204,6 +193,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     if (!currentParentId) {
       listContainer.innerHTML = `<p class="topic-empty">This subject area hasn't been set up in the catalogue for this tenant yet.</p>`;
       breadcrumbContainer.innerHTML = "";
+      if (reminderBanner) reminderBanner.innerHTML = "";
       return;
     }
     breadcrumbContainer.innerHTML = renderTopicBreadcrumb(ancestorPath(currentParentId), rootLabel);
@@ -212,13 +202,23 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
     const statusByNodeId = new Map();
+    const loggedTodayByNodeId = new Map();
+    const today = todayIso();
     for (const n of children) {
       if (!n.isTrackable) continue;
       const entryKey = `${buildUnitKey.topic(n.id)}::${trackableId}`;
       const status = currentChunk?.entries?.[entryKey]?.claimedStatus ?? null;
       if (status) statusByNodeId.set(n.id, status);
+      loggedTodayByNodeId.set(n.id, hasLoggedOn(currentWeekActivity, n.id, today));
     }
-    listContainer.innerHTML = renderTopicChildList(children, statusByNodeId);
+    listContainer.innerHTML = renderTopicChildList(children, statusByNodeId, loggedTodayByNodeId);
+
+    if (reminderBanner) {
+      const dueCount = [...loggedTodayByNodeId.values()].filter((logged) => !logged).length;
+      reminderBanner.innerHTML = dueCount > 0
+        ? `<p class="routine-reminder">${dueCount} routine${dueCount === 1 ? "" : "s"} here not logged today yet.</p>`
+        : "";
+    }
 
     breadcrumbContainer.querySelectorAll(".topic-crumb-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -233,18 +233,14 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       });
     });
     listContainer.querySelectorAll(".topic-row-leaf").forEach((btn) => {
-      btn.addEventListener("click", () => openTopicDetail(btn.dataset.id));
+      btn.addEventListener("click", () => openRoutineDetail(btn.dataset.id));
     });
   }
 
-  async function openTopicDetail(nodeId) {
+  async function openRoutineDetail(nodeId) {
     const node = moduleSubjects.find((n) => n.id === nodeId);
     if (!node) return;
 
-    // Phase 7 auto-resume: overwrite this module's one "where was I"
-    // position every time a topic is opened. Best-effort, same risk
-    // tolerance as logActivity() below -- not wrapped in safeWrite(), a
-    // failure here doesn't block studying.
     if (selectedPersonId) {
       await touchResume(db, {
         tenantId: activeTenantId, personId: selectedPersonId, moduleId,
@@ -262,11 +258,13 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const statusLine = entry
       ? `Status: <strong>${entry.claimedStatus.replace(/_/g, " ")}</strong> &middot; ${entry.confirmState}`
       : "Not started yet.";
+    const loggedToday = hasLoggedOn(currentWeekActivity, node.id, todayIso());
 
     detailContainer.innerHTML = `<div class="topic-detail">
       <h2>${langText(node.name, "en", node.id)}</h2>
       ${renderTopicResource(resource)}
       <p>${statusLine}</p>
+      <p>${loggedToday ? "Logged today ✓" : "Not logged today yet."}</p>
       <button type="button" id="trackTopicBtn" ${resource ? "" : "disabled"}>Track my progress</button>
     </div>`;
 
@@ -274,8 +272,20 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     trackBtn.addEventListener("click", () => openWayModal(node));
   }
 
-  function openWayModal(node) {
-    if (!studiedTrackable || !selectedPersonId) return;
+  async function logRoutineToday(node) {
+    return safeWrite(
+      () => logActivity(db, {
+        tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
+        weekStartsOn: tenantWeekStartsOn, subjectId: node.id,
+        unitKey: buildUnitKey.topic(node.id), trackableId, action: "practised",
+        uid: auth.currentUser.uid,
+      }),
+      { collection: "activity", action: "logRoutine" }
+    );
+  }
+
+  async function openWayModal(node) {
+    if (!practisedTrackable || !selectedPersonId) return;
     const unitKey = buildUnitKey.topic(node.id);
     const entryKey = `${unitKey}::${trackableId}`;
     const entry = currentChunk?.entries?.[entryKey] ?? null;
@@ -283,17 +293,40 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       .filter((e) => e.trackableId === trackableId)
       .map((e) => e.claimedStatus);
 
-    const title = `${langText(node.name, "en", node.id)} — Studied`;
+    const recentWeeks = await getRecentWeeksActivity(db, activeTenantId, selectedPersonId, tenantWeekStartsOn, 8);
+    const streakCount = computeStreak(recentWeeks, node.id);
+    const loggedToday = hasLoggedOn(currentWeekActivity, node.id, todayIso());
+
+    const title = `${langText(node.name, "en", node.id)} — Practised`;
     const tabBodies = {
       Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
-      Guide: renderGuideTab(studiedTrackable, "en"),
+      Guide: renderGuideTab(practisedTrackable, "en"),
+      Streak: renderStreakTab(streakCount, loggedToday),
       Breakdown: renderBreakdownTab(statusIdsForTrackable),
     };
-    wayModalMount.innerHTML = renderWayModalShell(title, tabBodies, ["Track", "Guide", "Breakdown"]);
+    wayModalMount.innerHTML = renderWayModalShell(title, tabBodies, ["Track", "Guide", "Streak", "Breakdown"]);
     wayModalOverlay.classList.add("open");
     attachWayModalHandlers(wayModalMount.firstElementChild, {
       onClose: () => wayModalOverlay.classList.remove("open"),
     });
+
+    const logBtn = wayModalMount.querySelector(".way-log-btn");
+    if (logBtn) {
+      logBtn.addEventListener("click", async () => {
+        logBtn.disabled = true;
+        const outcome = await logRoutineToday(node);
+        const logResultEl = wayModalMount.querySelector(".way-log-result");
+        if (outcome.ok) {
+          await refreshWeekActivity();
+          renderBrowser();
+          await openRoutineDetail(node.id);
+          openWayModal(node); // refresh the modal against the new activity
+        } else if (logResultEl) {
+          logResultEl.textContent = outcome.entry.message;
+          logBtn.disabled = false;
+        }
+      });
+    }
 
     const claimBtn = wayModalMount.querySelector(".way-claim-btn");
     const statusSelectEl = wayModalMount.querySelector(".way-status-select");
@@ -324,7 +357,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
         const message = outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.";
         await refreshChunk();
         renderBrowser();
-        await openTopicDetail(node.id);
+        await openRoutineDetail(node.id);
         openWayModal(node); // refresh the modal against the new chunk
         const freshResultEl = wayModalMount.querySelector(".way-claim-result");
         if (freshResultEl) freshResultEl.textContent = message;
@@ -368,9 +401,6 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
         .join("");
 
       appEl.style.display = "block";
-      // Self-repairing, same idempotent shape catalogue.html's own
-      // runSeedIfNeeded uses -- lets this page work standalone even for a
-      // tenant that never happened to open catalogue.html first.
       await step("set up modules", () => ensureModulesSeeded(db, user.uid));
       await step("set up subject templates", () => ensureSubjectTemplatesSeeded(db, user.uid));
       await step("set up this tenant's catalogue", () => ensureTenantCatalogueSeeded(db, activeTenantId, user.uid));
@@ -396,6 +426,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
   personSelect.addEventListener("change", async () => {
     selectedPersonId = personSelect.value;
     await refreshChunk();
+    await refreshWeekActivity();
     renderBrowser();
     await refreshContinueStrip();
   });

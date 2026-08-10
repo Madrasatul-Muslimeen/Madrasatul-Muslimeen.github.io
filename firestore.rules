@@ -730,6 +730,23 @@ service cloud.firestore {
       // No delete (I4/D6) -- deactivate via status instead.
     }
 
+    // bookmarks/{tenantId}__{personId} -- Phase 7: ONE doc per person
+    // (resume{} + saved[]). Same canRecordFor shape as records/activity
+    // above -- it's the same person's own data, just "where was I" instead
+    // of a claim or its context.
+    match /bookmarks/{bookmarkKey} {
+      allow read: if isPlatformAdmin();
+      // S8-class fix: touchResume()/saveBookmark()/removeSavedBookmark() all
+      // getDoc() first to decide create vs. update -- same reasoning as
+      // records/activity above, a nonexistent document has no data to leak.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/bookmarks/$(bookmarkKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);
+      allow update: if canRecordFor(resource.data.tenantId, resource.data.personId);
+      // No delete (I4/D6) -- saved[] entries are soft-removed (removed:true).
+    }
+
     // resources/{tenantId}__{resourceId} -- Architecture Layer 1, reserved
     // since Phase 0 but never written to until Phase 6 (Deen Study topics
     // need somewhere for their actual content to live). Same

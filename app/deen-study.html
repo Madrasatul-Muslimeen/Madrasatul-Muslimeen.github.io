@@ -41,6 +41,14 @@
   .topic-status-unclaimed { background: #888 !important; }
   .topic-status-noresource { background: #bbb !important; color: #444; }
   .topic-empty { color: #888; font-size: 0.9rem; }
+  .topic-reminder-badge { padding: 0.1rem 0.5rem; border-radius: 0.7rem; font-size: 0.72rem; margin-left: 0.3rem; }
+  .topic-reminder-due { background: #f5ebd6; color: #8a6220; }
+  .topic-reminder-done { background: #dbeee0; color: #1c6b3a; }
+
+  /* ---------- Continue strip (Phase 7) ---------- */
+  .continue-strip { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0 1rem; }
+  .continue-chip { background: #eef1f7; color: #1F3A6E; border: 1px solid #d3dbea; border-radius: 999px; padding: 0.3rem 0.8rem; font-size: 0.82rem; text-decoration: none; }
+  .continue-chip:hover { border-color: #1F3A6E; }
 
   .topic-detail { border: 1px solid #e0e0e0; border-radius: 0.6rem; padding: 1rem; margin-top: 1rem; }
   .topic-resource-empty { color: #888; }
@@ -70,6 +78,7 @@
 
   <div id="app" style="display:none;">
     <div id="navBar"></div>
+    <div id="continueStrip"></div>
     <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
       <label style="margin:0;">Tenant
         <select id="tenantSelect" style="width:auto;"></select>

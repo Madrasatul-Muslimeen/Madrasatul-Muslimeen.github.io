@@ -14,6 +14,8 @@ const LINKS = [
   { href: "general-study.html", label: "General Study" },
   { href: "naturelife-study.html", label: "Nature-Life" },
   { href: "life-skill.html", label: "Life Skill" }, // owner: independent module, pulled out of General Study this round
+  { href: "health-study.html", label: "Health" }, // Phase 7 -- routine renderer
+  { href: "ldog-study.html", label: "Learn Deen On-the-Go" }, // Phase 7 -- pulled out of Deen Study, routine renderer
   { href: "records.html", label: "Records" },
   { href: "people.html", label: "People", ownerPrimeOnly: true },
   { href: "catalogue.html", label: "Catalogue", ownerPrimeOnly: true },

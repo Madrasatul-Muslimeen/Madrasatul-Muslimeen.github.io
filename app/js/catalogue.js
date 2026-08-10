@@ -387,6 +387,34 @@ export async function ensureLifeSkillReparented(db, tenantId, uid) {
 }
 
 /**
+ * One-time repair for tenants that seeded daily_deen_habit back when it
+ * lived under deen_enhancement (moduleIds: ["deen"]) -- Phase 7: owner
+ * confirmed Learn Deen On-the-Go should get the same treatment Health and
+ * Life Skill already got, pulled into its own "ldog" module root. Same
+ * root+child shape as ensureHealthStudyReparented (a new sibling root,
+ * not a null-parent move like Life Skill), plus the moduleIds retag
+ * ensureLifeSkillReparented needed since daily_deen_habit's old tag
+ * ("deen") is wrong for its new module, unlike health_study which was
+ * already tagged "health" even in its old placement. Requires "ldog" to
+ * already exist -- call this AFTER ensureTenantCatalogueSeeded(), never
+ * before.
+ */
+export async function ensureLdogReparented(db, tenantId, uid) {
+  const tree = await getSubjectTree(db, tenantId);
+  const node = tree.find((n) => n.id === "daily_deen_habit");
+  if (!node || node.parentId !== "deen_enhancement") return false;
+  if (!tree.some((n) => n.id === "ldog")) return false; // not seeded yet -- try again next load
+
+  await reparentSubject(db, tenantId, "daily_deen_habit", "ldog", uid);
+  await commitUpdatesInChunks(db, [{
+    collectionName: TENANT.SUBJECTS,
+    docId: `${tenantId}__daily_deen_habit`,
+    data: { moduleIds: ["ldog"] },
+  }], uid);
+  return true;
+}
+
+/**
  * Tenant-level edit to a subject or trackable copy. Always sets edited:true
  * (I6-style: once a tenant has made this node their own, it's frozen away
  * from silently following future platform-template changes -- "drives

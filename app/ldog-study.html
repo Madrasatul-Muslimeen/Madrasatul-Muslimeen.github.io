@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>QuranRevival — Hadith</title>
+<title>QuranRevival — Learn Deen On-the-Go (Phase 7)</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
@@ -24,7 +24,7 @@
   .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
   .nav-preview-notice { margin-left: auto; font-size: 0.82rem; color: #8a6220; background: #f5ebd6; padding: 0.15rem 0.6rem; border-radius: 0.7rem; }
 
-  /* ---------- Topic browser ---------- */
+  /* ---------- Topic browser (shared with topic-renderer modules) ---------- */
   .topic-breadcrumb { font-size: 0.88rem; margin: 1rem 0; color: #555; }
   .topic-crumb-btn { background: none; border: none; color: #1F3A6E; cursor: pointer; padding: 0; font: inherit; text-decoration: underline; }
   .topic-crumb-current { font-weight: 600; color: #222; }
@@ -45,14 +45,15 @@
   .topic-reminder-due { background: #f5ebd6; color: #8a6220; }
   .topic-reminder-done { background: #dbeee0; color: #1c6b3a; }
 
-  /* ---------- Continue strip (Phase 7) ---------- */
-  .continue-strip { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0 1rem; }
-  .continue-chip { background: #eef1f7; color: #1F3A6E; border: 1px solid #d3dbea; border-radius: 999px; padding: 0.3rem 0.8rem; font-size: 0.82rem; text-decoration: none; }
-  .continue-chip:hover { border-color: #1F3A6E; }
-
   .topic-detail { border: 1px solid #e0e0e0; border-radius: 0.6rem; padding: 1rem; margin-top: 1rem; }
   .topic-resource-empty { color: #888; }
   .topic-resource-link { word-break: break-all; }
+
+  /* ---------- Continue strip + routine reminder (Phase 7) ---------- */
+  .continue-strip { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0 1rem; }
+  .continue-chip { background: #eef1f7; color: #1F3A6E; border: 1px solid #d3dbea; border-radius: 999px; padding: 0.3rem 0.8rem; font-size: 0.82rem; text-decoration: none; }
+  .continue-chip:hover { border-color: #1F3A6E; }
+  .routine-reminder { background: #f5ebd6; color: #8a6220; padding: 0.5rem 0.8rem; border-radius: 0.5rem; font-size: 0.88rem; margin: 0.6rem 0; }
 
   #wayModalOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 50; }
   #wayModalOverlay.open { display: flex; }
@@ -64,13 +65,16 @@
   .way-tab-panel.active { display: block; }
   .way-modal-header { display: flex; justify-content: space-between; align-items: center; }
   .way-close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; }
+  .way-streak-count { font-size: 1.1rem; margin: 0.5rem 0 0.2rem; }
+  .way-streak-today { color: #555; font-size: 0.9rem; margin-bottom: 0.6rem; }
 </style>
 </head>
 <body>
-  <h1>Hadith</h1>
-  <p>Adab Al-Mufrad, Shamayyl Muhammadiya, Al-Ghayb, Hadith Reading, and
-     Stories — each topic only appears here once it has a real resource
-     attached, added subject by subject from the Catalogue page.</p>
+  <h1>Learn Deen On-the-Go</h1>
+  <p>A daily Deen learning habit for life — log it each time it's done to build a
+     streak; claim an overall status once it's genuinely become a habit. Only
+     appears here once it has a real resource attached, added from the Catalogue
+     page.</p>
 
   <div id="who">Not signed in.</div>
   <button id="signInBtn">Sign in with Google</button>
@@ -88,6 +92,7 @@
       </label>
     </div>
 
+    <div id="reminderBanner"></div>
     <div id="breadcrumbContainer"></div>
     <div id="listContainer"></div>
     <div id="detailContainer"></div>
@@ -96,8 +101,8 @@
   <div id="wayModalOverlay"><div id="wayModalMount"></div></div>
 
   <script type="module">
-    import { initTopicStudyPage } from "./js/topic-study.js";
-    initTopicStudyPage({ moduleId: "hadith", trackableId: "studied_hadith", rootSubjectId: "hadith" });
+    import { initRoutineStudyPage } from "./js/routine-study.js";
+    initRoutineStudyPage({ moduleId: "ldog", trackableId: "practised_ldog", rootSubjectId: "ldog" });
   </script>
 </body>
 </html>
