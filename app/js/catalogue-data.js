@@ -231,3 +231,25 @@ export const APPROACH_TEMPLATES = [
     guide: { what: en("Teaching what has been learned to someone else in a structured way."), how: en("Prepare a short explanation of the topic and teach it to another person."), measure: en("Whether the topic was taught, and whether the learner understood it.") },
     panels: ["notes", "checklist", "timer"] },
 ].map((t) => ({ ...t, sectionName: SECTION_NAMES[t.section] }));
+
+// ---------------------------------------------------------------------------
+// Topic-renderer trackables (Phase 6+). Quran's 30 Approaches work because
+// "what we teach, the target, and the resources" were already in hand
+// (owner, Phase 6 planning). Every other subject doesn't have that yet --
+// so instead of a second 30-item system invented ahead of the resources
+// existing, one universal "Studied" trackable per topic-based module,
+// applied to whichever topic nodes actually get authored (subject by
+// subject, as their own resources are set up -- see subjects.resourceIds[]
+// and catalogue.html's "Add topic" action). Module-wide (subjectId: null),
+// which the Architecture doc's own trackables schema already allows.
+// ---------------------------------------------------------------------------
+export const TOPIC_TRACKABLE_TEMPLATES = [
+  { id: "studied_deen", moduleId: "deen", subjectId: null, group: null, groupName: null,
+    name: nameLang("Studied", "অধ্যয়ন করা হয়েছে"),
+    guide: {
+      what: en("Whether this topic has been studied, at a level worth recording."),
+      how: en("Go through the topic's resource, then claim a status once it has actually been covered."),
+      measure: en("Whether you can explain the topic's content back, in your own words."),
+    },
+    panels: ["resource", "notes"], order: 1 },
+];

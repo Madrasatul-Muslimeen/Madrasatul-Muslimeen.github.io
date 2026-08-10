@@ -729,5 +729,17 @@ service cloud.firestore {
       allow update: if canAdminCatalogue(resource.data.tenantId);
       // No delete (I4/D6) -- deactivate via status instead.
     }
+
+    // resources/{tenantId}__{resourceId} -- Architecture Layer 1, reserved
+    // since Phase 0 but never written to until Phase 6 (Deen Study topics
+    // need somewhere for their actual content to live). Same
+    // read-any-member / write-owner-prime shape as domains/subjects.
+    match /resources/{resourceKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- deactivate via status instead.
+    }
   }
 }

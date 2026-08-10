@@ -31,7 +31,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { createDocument, commitEnvelopeBatch, updateDocument } from "./envelope.js";
-import { SUBJECT_TEMPLATES, APPROACH_TEMPLATES } from "./catalogue-data.js";
+import { SUBJECT_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES } from "./catalogue-data.js";
+import { createResource } from "./resources.js";
 
 /**
  * Orders a flat {id, parentId, order} list for DISPLAY as a tree: top-level
@@ -157,7 +158,8 @@ export async function ensureTenantCatalogueSeeded(db, tenantId, uid) {
 
   const missingSubjects = SUBJECT_TEMPLATES.filter((n) => !existingSubjectIds.has(n.id));
   const missingTrackables = APPROACH_TEMPLATES.filter((t) => !existingTrackableIds.has(t.id));
-  if (missingSubjects.length === 0 && missingTrackables.length === 0) {
+  const missingTopicTrackables = TOPIC_TRACKABLE_TEMPLATES.filter((t) => !existingTrackableIds.has(t.id));
+  if (missingSubjects.length === 0 && missingTrackables.length === 0 && missingTopicTrackables.length === 0) {
     return { seeded: false };
   }
 
@@ -204,9 +206,88 @@ export async function ensureTenantCatalogueSeeded(db, tenantId, uid) {
     },
   }));
 
+  // Kept as a separate list from trackableCreates above rather than merged
+  // in: APPROACH_TEMPLATES' moduleId/subjectId are hardcoded to Quran
+  // above, so folding a module-wide (subjectId: null) template into that
+  // same map would either wrongly inherit "quran" or need every one of
+  // that map's fields re-derived per-template for no real benefit -- this
+  // stays a one-line append to the same seeding pass instead.
+  const topicTrackableCreates = missingTopicTrackables.map((t) => ({
+    collectionName: TENANT.TRACKABLES,
+    docId: `${tenantId}__${t.id}`,
+    data: {
+      tenantId,
+      moduleId: t.moduleId,
+      subjectId: t.subjectId,
+      group: t.group,
+      groupName: t.groupName,
+      name: t.name,
+      guide: t.guide,
+      panels: t.panels,
+      order: t.order,
+      status: "active",
+      sourceTemplateId: t.id,
+      edited: false,
+    },
+  }));
+
   await commitInChunks(db, subjectCreates, uid);
-  await commitInChunks(db, trackableCreates, uid);
-  return { seeded: true, subjectCount: subjectCreates.length, trackableCount: trackableCreates.length };
+  await commitInChunks(db, [...trackableCreates, ...topicTrackableCreates], uid);
+  return {
+    seeded: true,
+    subjectCount: subjectCreates.length,
+    trackableCount: trackableCreates.length + topicTrackableCreates.length,
+  };
+}
+
+/**
+ * Adds a tenant-authored child subject ("topic") under an existing parent,
+ * optionally attaching a resource -- this is "set the unit, subject by
+ * subject, as resources are ready" (owner, Phase 6 planning): a Deen Study
+ * subject like Fiqh starts as a plain leaf with nothing to claim, and stays
+ * that way until a real topic with real content is added underneath it.
+ *
+ * Flips the parent's isTrackable off if it was on -- a parent that just
+ * gained its first child is no longer a leaf, the same flip
+ * reparentSubject() already does when a move changes leaf status. Without
+ * this, a subject would end up claimable both as itself AND as its own new
+ * child topic -- two trackable nodes for what is now one branch.
+ *
+ * parentNode is the full node object the caller already has loaded (from
+ * getSubjectTree) -- not re-fetched here, so this stays one write for the
+ * new subject plus, at most, one for the parent's flip.
+ */
+export async function createTopicSubject(db, tenantId, parentNode, { name, gloss, resource, addedByPersonId }, uid) {
+  const newId = doc(collection(db, TENANT.SUBJECTS)).id;
+  const ancestorIds = parentNode ? [...(parentNode.ancestorIds ?? []), parentNode.id] : [];
+  const moduleIds = parentNode ? parentNode.moduleIds : [];
+
+  let resourceIds = [];
+  if (resource && (resource.url || resource.body)) {
+    const resourceId = await createResource(db, tenantId, resource, addedByPersonId, uid);
+    resourceIds = [resourceId];
+  }
+
+  await createDocument(db, TENANT.SUBJECTS, `${tenantId}__${newId}`, {
+    tenantId,
+    name: { en: name },
+    gloss: gloss ? { en: gloss } : null,
+    parentId: parentNode?.id ?? null,
+    ancestorIds,
+    moduleIds,
+    isTrackable: true,
+    resourceIds,
+    order: 999,
+    status: "active",
+    sourceTemplateId: null,
+    edited: false,
+  }, uid);
+
+  if (parentNode && parentNode.isTrackable) {
+    await editCatalogueNode(db, TENANT.SUBJECTS, tenantId, parentNode.id, { isTrackable: false }, uid);
+  }
+
+  return newId;
 }
 
 export async function getSubjectTree(db, tenantId) {

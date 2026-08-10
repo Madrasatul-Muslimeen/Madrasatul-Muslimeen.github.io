@@ -8,6 +8,7 @@
 
 const LINKS = [
   { href: "quranrevival.html", label: "Study" },
+  { href: "deen-study.html", label: "Deen Study" }, // Phase 6
   { href: "records.html", label: "Records" },
   { href: "people.html", label: "People", ownerPrimeOnly: true },
   { href: "catalogue.html", label: "Catalogue", ownerPrimeOnly: true },

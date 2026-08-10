@@ -80,12 +80,18 @@ export function renderCoverageTab(ayahStatuses) {
   </div>`;
 }
 
-const TABS = ["Track", "Guide", "Breakdown", "Coverage"];
+const DEFAULT_TABS = ["Track", "Guide", "Breakdown", "Coverage"];
 
-/** Modal shell -- renders all four tab bodies (already-built HTML strings) with a tab bar; caller supplies the bodies keyed by tab name. */
-export function renderWayModalShell(title, tabBodies) {
-  const buttons = TABS.map((t, i) => `<button type="button" class="way-tab-btn ${i === 0 ? "active" : ""}" data-tab="${t}">${t}</button>`).join("");
-  const panels = TABS.map((t, i) => `<div class="way-tab-panel ${i === 0 ? "active" : ""}" data-tab="${t}">${tabBodies[t] ?? ""}</div>`).join("");
+/**
+ * Modal shell -- renders each tab body (already-built HTML strings) with a
+ * tab bar; caller supplies the bodies keyed by tab name. `tabs` defaults to
+ * the full Quran four; Phase 6's topic renderer passes a shorter list
+ * (Track/Guide/Breakdown only -- "which topics in this subject have been
+ * touched" isn't a built concept yet, so there's no Coverage tab to show).
+ */
+export function renderWayModalShell(title, tabBodies, tabs = DEFAULT_TABS) {
+  const buttons = tabs.map((t, i) => `<button type="button" class="way-tab-btn ${i === 0 ? "active" : ""}" data-tab="${t}">${t}</button>`).join("");
+  const panels = tabs.map((t, i) => `<div class="way-tab-panel ${i === 0 ? "active" : ""}" data-tab="${t}">${tabBodies[t] ?? ""}</div>`).join("");
   return `<div class="way-modal">
     <div class="way-modal-header"><h3>${escapeHtml(title)}</h3><button type="button" class="way-close-btn" aria-label="Close">&times;</button></div>
     <div class="way-tab-bar">${buttons}</div>
