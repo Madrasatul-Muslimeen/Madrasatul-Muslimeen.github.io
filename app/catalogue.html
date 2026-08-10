@@ -173,6 +173,7 @@
       listLevels,
       createTopicSubject,
       ensureHealthStudyReparented,
+      ensureLifeSkillReparented,
     } from "./js/catalogue.js";
     import { renderNavBar } from "./js/nav.js";
 
@@ -599,6 +600,7 @@
         await ensureSubjectTemplatesSeeded(db, auth.currentUser.uid);
         const result = await ensureTenantCatalogueSeeded(db, activeTenantId, auth.currentUser.uid);
         await ensureHealthStudyReparented(db, activeTenantId, auth.currentUser.uid);
+        await ensureLifeSkillReparented(db, activeTenantId, auth.currentUser.uid);
         seedStatusEl.className = "ok";
         seedStatusEl.textContent = result.seeded
           ? `Catalogue set up for this tenant: ${result.subjectCount} subjects, ${result.trackableCount} Approaches.`

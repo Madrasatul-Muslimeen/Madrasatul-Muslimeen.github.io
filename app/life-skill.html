@@ -60,10 +60,9 @@
 </head>
 <body>
   <h1>Life Skill</h1>
-  <p>Technology &amp; Cognition and Trading — a direct link into this branch
-     of General Study, so you don't have to go through Enhancement first.
-     Progress claimed here counts the same as claiming it from the General
-     Study page — same subject, same records, just a shortcut in.</p>
+  <p>Technology &amp; Cognition and Trading — its own module now, independent
+     of General Study, same as Health. Add topics from the Catalogue page,
+     each with its own resource, and they'll show up here.</p>
 
   <div id="who">Not signed in.</div>
   <button id="signInBtn">Sign in with Google</button>
@@ -89,10 +88,7 @@
 
   <script type="module">
     import { initTopicStudyPage } from "./js/topic-study.js";
-    initTopicStudyPage({
-      moduleId: "general", trackableId: "studied_general",
-      rootSubjectId: "general_study", startAtSubjectId: "life_skill",
-    });
+    initTopicStudyPage({ moduleId: "lifeskill", trackableId: "studied_lifeskill", rootSubjectId: "life_skill" });
   </script>
 </body>
 </html>
