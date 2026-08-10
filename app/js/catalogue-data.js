@@ -243,13 +243,29 @@ export const APPROACH_TEMPLATES = [
 // and catalogue.html's "Add topic" action). Module-wide (subjectId: null),
 // which the Architecture doc's own trackables schema already allows.
 // ---------------------------------------------------------------------------
-export const TOPIC_TRACKABLE_TEMPLATES = [
-  { id: "studied_deen", moduleId: "deen", subjectId: null, group: null, groupName: null,
+function studiedTemplate(id, moduleId) {
+  return {
+    id, moduleId, subjectId: null, group: null, groupName: null,
     name: nameLang("Studied", "অধ্যয়ন করা হয়েছে"),
     guide: {
       what: en("Whether this topic has been studied, at a level worth recording."),
       how: en("Go through the topic's resource, then claim a status once it has actually been covered."),
       measure: en("Whether you can explain the topic's content back, in your own words."),
     },
-    panels: ["resource", "notes"], order: 1 },
+    panels: ["resource", "notes"], order: 1,
+  };
+}
+
+// One per topic-renderer module (Architecture s5: Arabic, Hadith, Deen
+// Study, General Study, Nature-Life) -- trackables.moduleId is required, so
+// a single "Studied" trackable can't literally be shared across modules;
+// this is that same design, replicated once per module as each one gets
+// its real study screen built. Health is NOT here -- it uses the "routine"
+// renderer, not "topic" (Phase 7 scope).
+export const TOPIC_TRACKABLE_TEMPLATES = [
+  studiedTemplate("studied_deen", "deen"),
+  studiedTemplate("studied_arabic", "arabic"),
+  studiedTemplate("studied_hadith", "hadith"),
+  studiedTemplate("studied_general", "general"),
+  studiedTemplate("studied_naturelife", "naturelife"),
 ];
