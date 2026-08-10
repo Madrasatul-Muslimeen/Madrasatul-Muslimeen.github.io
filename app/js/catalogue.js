@@ -337,6 +337,26 @@ export async function syncUnneditedTrackableNames(db, tenantId, uid) {
 }
 
 /**
+ * One-time repair for tenants that seeded health_study back when it lived
+ * under general_enhancement (before Health had its own module root, this
+ * round). Moves it under "health" via the existing reparentSubject() --
+ * same ancestorIds recompute and isTrackable flip that already handles any
+ * other move correctly. A no-op once already repaired (or for a tenant
+ * that never had the old placement to begin with), so it's safe to call on
+ * every catalogue.html load, same self-repairing shape as the rest of this
+ * file. Requires the new "health" root to already exist -- call this AFTER
+ * ensureTenantCatalogueSeeded(), never before.
+ */
+export async function ensureHealthStudyReparented(db, tenantId, uid) {
+  const tree = await getSubjectTree(db, tenantId);
+  const node = tree.find((n) => n.id === "health_study");
+  if (!node || node.parentId !== "general_enhancement") return false;
+  if (!tree.some((n) => n.id === "health")) return false; // not seeded yet -- try again next load
+  await reparentSubject(db, tenantId, "health_study", "health", uid);
+  return true;
+}
+
+/**
  * Tenant-level edit to a subject or trackable copy. Always sets edited:true
  * (I6-style: once a tenant has made this node their own, it's frozen away
  * from silently following future platform-template changes -- "drives

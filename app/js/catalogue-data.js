@@ -103,7 +103,12 @@ export const SUBJECT_TEMPLATES = [
   { id: "geography", name: en("Geography"), parentId: "general_core", order: 4, moduleIds: ["general"] },
   { id: "world_history", name: en("World History"), parentId: "general_core", order: 5, moduleIds: ["general"] },
   { id: "general_enhancement", name: en("Enhancement"), parentId: "general_study", order: 2, moduleIds: ["general"] },
-  { id: "health_study", name: en("Health Study"), parentId: "general_enhancement", order: 1, moduleIds: ["health"] },
+  // health_study used to live here (parentId: general_enhancement) as a
+  // single stub leaf, from before Health had its own module root -- moved
+  // under the new "health" root below (owner, this round). Existing
+  // tenants that already seeded the old placement get repaired in place
+  // (catalogue.js's ensureHealthStudyReparented, I4: archive/move, never
+  // delete) rather than losing that row's history.
   { id: "life_skill", name: en("Life Skill"), parentId: "general_enhancement", order: 2, moduleIds: ["general"] },
   { id: "life_skill_tech_cognition", name: en("Technology & Cognition"), parentId: "life_skill", order: 1, moduleIds: ["general"] },
   { id: "life_skill_trading", name: en("Trading"), parentId: "life_skill", order: 2, moduleIds: ["general"] },
@@ -113,6 +118,29 @@ export const SUBJECT_TEMPLATES = [
   { id: "nature_life", name: en("Nature-Life"), parentId: null, order: 6, moduleIds: ["naturelife"] },
   { id: "nature_studies", name: en("Nature Studies"), gloss: en("moved up from General Study ▸ Enhancement"), parentId: "nature_life", order: 1, moduleIds: ["naturelife"] },
   { id: "agro_farming", name: en("Agro-Farming"), gloss: en("moved from General Study ▸ Enhancement"), parentId: "nature_life", order: 2, moduleIds: ["naturelife"] },
+
+  // 7. Health [Health] -- not one of D11's 6 top-level catalogue nodes;
+  // added as its own module root per the owner's explicit instruction
+  // this round ("a HUGE module in my Madrasah Study Curriculum... build it
+  // as a module now"). Health was always one of the Architecture doc's own
+  // module ids (s1's module list), just not previously given a real
+  // subject tree of its own. Uses the "routine" renderer (a scheduled
+  // habit, not a topic+resource) -- the actual study screen is Phase 7
+  // scope; this round is structure only, as asked. Subjects/counts are the
+  // owner's own list, not derived from the catalogue doc.
+  { id: "health", name: en("Health"), parentId: null, order: 7, moduleIds: ["health"] },
+  { id: "health_study", name: en("Health Study"), parentId: "health", order: 1, moduleIds: ["health"] },
+  { id: "know_your_body", name: en("Know Your Body"), parentId: "health", order: 2, moduleIds: ["health"] },
+  { id: "know_your_food", name: en("Know Your Food"), parentId: "health", order: 3, moduleIds: ["health"] },
+  { id: "physical_activities", name: en("Physical Activities"), parentId: "health", order: 4, moduleIds: ["health"] },
+  { id: "lying_movements", name: en("Lying Movements"), parentId: "physical_activities", order: 1, moduleIds: ["health"] },
+  { id: "standing_movements", name: en("Standing Movements"), parentId: "physical_activities", order: 2, moduleIds: ["health"] },
+  { id: "sitting_movements", name: en("Sitting Movements"), parentId: "physical_activities", order: 3, moduleIds: ["health"] },
+  { id: "walking", name: en("Walking"), parentId: "physical_activities", order: 4, moduleIds: ["health"] },
+  { id: "squatting", name: en("Squatting"), parentId: "physical_activities", order: 5, moduleIds: ["health"] },
+  { id: "hiit", name: en("HIIT"), parentId: "physical_activities", order: 6, moduleIds: ["health"] },
+  { id: "breathing_exercise", name: en("Breathing Exercise"), parentId: "physical_activities", order: 7, moduleIds: ["health"] },
+  { id: "fasting", name: en("Fasting"), parentId: "physical_activities", order: 8, moduleIds: ["health"] },
 ];
 
 // ---------------------------------------------------------------------------
