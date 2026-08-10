@@ -54,6 +54,10 @@ export const MODULE_TEMPLATES = [
   { id: "health", name: en("Health"), icon: "🩺", renderer: "routine", order: 5 },
   { id: "naturelife", name: en("Nature-Life"), icon: "🌱", renderer: "topic", order: 6 },
   { id: "hadith", name: en("Hadith"), icon: "📜", renderer: "topic", order: 7 },
+  // Owner, this round: "Life Skill is not a subject under General. It's
+  // totally independent." Same treatment Health just got -- own module,
+  // own top-level subject root, not nested inside another module's tree.
+  { id: "lifeskill", name: en("Life Skill"), icon: "🛠️", renderer: "topic", order: 8 },
 ];
 
 // ---------------------------------------------------------------------------
@@ -109,9 +113,13 @@ export const SUBJECT_TEMPLATES = [
   // tenants that already seeded the old placement get repaired in place
   // (catalogue.js's ensureHealthStudyReparented, I4: archive/move, never
   // delete) rather than losing that row's history.
-  { id: "life_skill", name: en("Life Skill"), parentId: "general_enhancement", order: 2, moduleIds: ["general"] },
-  { id: "life_skill_tech_cognition", name: en("Technology & Cognition"), parentId: "life_skill", order: 1, moduleIds: ["general"] },
-  { id: "life_skill_trading", name: en("Trading"), parentId: "life_skill", order: 2, moduleIds: ["general"] },
+  //
+  // life_skill used to live here too (parentId: general_enhancement,
+  // moduleIds: ["general"]) -- owner, this round: "Life Skill is not a
+  // subject under General. It's totally independent. Should come out from
+  // General." Moved to its own top-level root under module 8 below, same
+  // shape as the health_study move above. Existing tenants get repaired
+  // via catalogue.js's ensureLifeSkillReparented.
   { id: "creativity", name: en("Creativity"), parentId: "general_enhancement", order: 3, moduleIds: ["general"] },
 
   // 6. Nature-Life [Nature-Life]
@@ -141,6 +149,14 @@ export const SUBJECT_TEMPLATES = [
   { id: "hiit", name: en("HIIT"), parentId: "physical_activities", order: 6, moduleIds: ["health"] },
   { id: "breathing_exercise", name: en("Breathing Exercise"), parentId: "physical_activities", order: 7, moduleIds: ["health"] },
   { id: "fasting", name: en("Fasting"), parentId: "physical_activities", order: 8, moduleIds: ["health"] },
+
+  // 8. Life Skill [lifeskill] -- also not one of D11's 6 top-level nodes;
+  // pulled out of General Study's Enhancement branch this round (owner:
+  // "totally independent... should come out from General"). Same
+  // structural shape as Health above -- own module, own top-level root.
+  { id: "life_skill", name: en("Life Skill"), parentId: null, order: 8, moduleIds: ["lifeskill"] },
+  { id: "life_skill_tech_cognition", name: en("Technology & Cognition"), parentId: "life_skill", order: 1, moduleIds: ["lifeskill"] },
+  { id: "life_skill_trading", name: en("Trading"), parentId: "life_skill", order: 2, moduleIds: ["lifeskill"] },
 ];
 
 // ---------------------------------------------------------------------------
@@ -296,4 +312,5 @@ export const TOPIC_TRACKABLE_TEMPLATES = [
   studiedTemplate("studied_hadith", "hadith"),
   studiedTemplate("studied_general", "general"),
   studiedTemplate("studied_naturelife", "naturelife"),
+  studiedTemplate("studied_lifeskill", "lifeskill"),
 ];

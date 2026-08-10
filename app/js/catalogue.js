@@ -357,6 +357,36 @@ export async function ensureHealthStudyReparented(db, tenantId, uid) {
 }
 
 /**
+ * One-time repair for tenants that seeded life_skill back when it was
+ * nested inside General Study (parentId: general_enhancement, moduleIds:
+ * ["general"]) -- owner, this round: "Life Skill is not a subject under
+ * General. It's totally independent. Should come out from General." Same
+ * shape as ensureHealthStudyReparented above, plus an extra step
+ * reparentSubject() alone can't cover: it only ever touches structural
+ * fields (parentId/ancestorIds), never moduleIds, so life_skill and its
+ * two children need a separate re-tag from ["general"] to ["lifeskill"]
+ * once the move itself is done. A no-op once already repaired.
+ */
+export async function ensureLifeSkillReparented(db, tenantId, uid) {
+  const tree = await getSubjectTree(db, tenantId);
+  const node = tree.find((n) => n.id === "life_skill");
+  if (!node || node.parentId !== "general_enhancement") return false;
+
+  await reparentSubject(db, tenantId, "life_skill", null, uid);
+
+  const retagIds = ["life_skill", "life_skill_tech_cognition", "life_skill_trading"];
+  const updates = retagIds
+    .filter((id) => tree.some((n) => n.id === id))
+    .map((id) => ({
+      collectionName: TENANT.SUBJECTS,
+      docId: `${tenantId}__${id}`,
+      data: { moduleIds: ["lifeskill"] },
+    }));
+  if (updates.length) await commitUpdatesInChunks(db, updates, uid);
+  return true;
+}
+
+/**
  * Tenant-level edit to a subject or trackable copy. Always sets edited:true
  * (I6-style: once a tenant has made this node their own, it's frozen away
  * from silently following future platform-template changes -- "drives
