@@ -60,8 +60,18 @@ import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderWayModalShell
  * two real top-level nodes Firestore happened to return first, which isn't
  * guaranteed or stable. Anchoring on a known id sidesteps that whole bug
  * class rather than just fixing this one instance of it.
+ *
+ * startAtSubjectId (optional, owner request -- a direct "Life Skill" menu
+ * link into General Study's tree rather than three clicks deep): where
+ * browsing starts and what the breadcrumb treats as its own top, defaults
+ * to rootSubjectId. Deliberately NOT used for chunkSubjectId -- records
+ * always chunk under the true module root (rootSubjectId) regardless of
+ * which page a claim was made from, so a claim made here and the same
+ * claim made from the module's own main page land in the same chunk
+ * instead of silently forking into two.
  */
-export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
+export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId, startAtSubjectId }) {
+  const browseRootId = startAtSubjectId ?? rootSubjectId;
   const whoEl = document.getElementById("who");
   const signInBtn = document.getElementById("signInBtn");
   const signOutBtn = document.getElementById("signOutBtn");
@@ -142,9 +152,9 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const trackables = await getTrackables(db, activeTenantId);
     studiedTrackable = trackables.find((t) => t.id === trackableId) ?? null;
 
-    const root = moduleSubjects.find((n) => n.id === rootSubjectId);
-    currentParentId = rootSubjectId;
-    chunkSubjectId = rootSubjectId;
+    const root = moduleSubjects.find((n) => n.id === browseRootId);
+    currentParentId = browseRootId;
+    chunkSubjectId = rootSubjectId; // always the true module root -- see startAtSubjectId's own doc comment above
     rootLabel = root ? langText(root.name, "en", moduleId) : moduleId;
 
     await refreshChunk();
@@ -164,11 +174,22 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
   // path entry, including when currentParentId IS the root (path = [], so
   // only that one non-clickable root crumb shows).
   function ancestorPath(nodeId) {
-    if (nodeId === rootSubjectId) return [];
+    if (nodeId === browseRootId) return [];
     const node = moduleSubjects.find((n) => n.id === nodeId);
     if (!node) return [];
-    return (node.ancestorIds ?? [])
-      .filter((id) => id !== rootSubjectId)
+    // ancestorIds is ordered top-down (true module root first). When
+    // browseRootId IS that true root, dropping just that one id is enough.
+    // When browseRootId is a shortcut into a deeper subtree (e.g.
+    // "life_skill" nested three levels under General Study's real root),
+    // everything ABOVE browseRootId in the chain has to be dropped too --
+    // a plain "remove this one id" filter would leave general_study/
+    // general_enhancement sitting in a breadcrumb that's supposed to start
+    // at Life Skill. Slicing to whatever comes AFTER browseRootId's own
+    // position handles both cases with the same code.
+    const ancestors = node.ancestorIds ?? [];
+    const rootIdx = ancestors.indexOf(browseRootId);
+    const relevant = rootIdx === -1 ? ancestors : ancestors.slice(rootIdx + 1);
+    return relevant
       .map((id) => moduleSubjects.find((n) => n.id === id))
       .filter(Boolean)
       .concat([node]);
@@ -197,7 +218,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
     breadcrumbContainer.querySelectorAll(".topic-crumb-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
-        currentParentId = btn.dataset.id || rootSubjectId;
+        currentParentId = btn.dataset.id || browseRootId;
         renderBrowser();
       });
     });

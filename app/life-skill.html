@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuranRevival — Life Skill</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.15rem; margin-top: 1.6rem; }
+  button {
+    font-size: 0.92rem; padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  select { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #ccc; border-radius: 0.35rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+
+  /* ---------- Shared nav (shell round 1) ---------- */
+  .app-nav { display: flex; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5; }
+  .app-nav .nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+  .app-nav .nav-link:hover { text-decoration: underline; }
+  .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
+  .nav-preview-notice { margin-left: auto; font-size: 0.82rem; color: #8a6220; background: #f5ebd6; padding: 0.15rem 0.6rem; border-radius: 0.7rem; }
+
+  /* ---------- Topic browser ---------- */
+  .topic-breadcrumb { font-size: 0.88rem; margin: 1rem 0; color: #555; }
+  .topic-crumb-btn { background: none; border: none; color: #1F3A6E; cursor: pointer; padding: 0; font: inherit; text-decoration: underline; }
+  .topic-crumb-current { font-weight: 600; color: #222; }
+  .topic-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .topic-row {
+    display: flex; align-items: center; gap: 0.6rem; text-align: left; width: 100%;
+    padding: 0.6rem 0.8rem; border: 1px solid #e0e0e0; border-radius: 0.5rem; background: white; cursor: pointer;
+  }
+  .topic-row:hover { border-color: #1F3A6E; }
+  .topic-row-name { font-weight: 600; flex: 1; }
+  .topic-gloss { color: #777; font-size: 0.85rem; }
+  .topic-row-arrow { color: #999; font-size: 1.1rem; }
+  .topic-status-chip { color: white; padding: 0.15rem 0.55rem; border-radius: 0.8rem; font-size: 0.78rem; }
+  .topic-status-unclaimed { background: #888 !important; }
+  .topic-status-noresource { background: #bbb !important; color: #444; }
+  .topic-empty { color: #888; font-size: 0.9rem; }
+
+  .topic-detail { border: 1px solid #e0e0e0; border-radius: 0.6rem; padding: 1rem; margin-top: 1rem; }
+  .topic-resource-empty { color: #888; }
+  .topic-resource-link { word-break: break-all; }
+
+  #wayModalOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 50; }
+  #wayModalOverlay.open { display: flex; }
+  #wayModalMount { background: white; border-radius: 0.6rem; padding: 1.2rem; max-width: 32rem; width: 92%; max-height: 85vh; overflow-y: auto; }
+  .way-tab-bar { display: flex; gap: 0.4rem; margin: 0.8rem 0; }
+  .way-tab-btn { background: #eef1f7; color: #1F3A6E; border: none; }
+  .way-tab-btn.active { background: #1F3A6E; color: white; }
+  .way-tab-panel { display: none; }
+  .way-tab-panel.active { display: block; }
+  .way-modal-header { display: flex; justify-content: space-between; align-items: center; }
+  .way-close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; }
+</style>
+</head>
+<body>
+  <h1>Life Skill</h1>
+  <p>Technology &amp; Cognition and Trading — a direct link into this branch
+     of General Study, so you don't have to go through Enhancement first.
+     Progress claimed here counts the same as claiming it from the General
+     Study page — same subject, same records, just a shortcut in.</p>
+
+  <div id="who">Not signed in.</div>
+  <button id="signInBtn">Sign in with Google</button>
+  <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+
+  <div id="app" style="display:none;">
+    <div id="navBar"></div>
+    <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
+      <label style="margin:0;">Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label style="margin:0;">Person
+        <select id="personSelect" style="width:auto;"></select>
+      </label>
+    </div>
+
+    <div id="breadcrumbContainer"></div>
+    <div id="listContainer"></div>
+    <div id="detailContainer"></div>
+  </div>
+
+  <div id="wayModalOverlay"><div id="wayModalMount"></div></div>
+
+  <script type="module">
+    import { initTopicStudyPage } from "./js/topic-study.js";
+    initTopicStudyPage({
+      moduleId: "general", trackableId: "studied_general",
+      rootSubjectId: "general_study", startAtSubjectId: "life_skill",
+    });
+  </script>
+</body>
+</html>
