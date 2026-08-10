@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuranRevival — Deen Study (Phase 6)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.15rem; margin-top: 1.6rem; }
+  button {
+    font-size: 0.92rem; padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  select { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #ccc; border-radius: 0.35rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+
+  /* ---------- Shared nav (shell round 1) ---------- */
+  .app-nav { display: flex; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5; }
+  .app-nav .nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+  .app-nav .nav-link:hover { text-decoration: underline; }
+  .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
+  .nav-preview-notice { margin-left: auto; font-size: 0.82rem; color: #8a6220; background: #f5ebd6; padding: 0.15rem 0.6rem; border-radius: 0.7rem; }
+
+  /* ---------- Topic browser ---------- */
+  .topic-breadcrumb { font-size: 0.88rem; margin: 1rem 0; color: #555; }
+  .topic-crumb-btn { background: none; border: none; color: #1F3A6E; cursor: pointer; padding: 0; font: inherit; text-decoration: underline; }
+  .topic-crumb-current { font-weight: 600; color: #222; }
+  .topic-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .topic-row {
+    display: flex; align-items: center; gap: 0.6rem; text-align: left; width: 100%;
+    padding: 0.6rem 0.8rem; border: 1px solid #e0e0e0; border-radius: 0.5rem; background: white; cursor: pointer;
+  }
+  .topic-row:hover { border-color: #1F3A6E; }
+  .topic-row-name { font-weight: 600; flex: 1; }
+  .topic-gloss { color: #777; font-size: 0.85rem; }
+  .topic-row-arrow { color: #999; font-size: 1.1rem; }
+  .topic-status-chip { color: white; padding: 0.15rem 0.55rem; border-radius: 0.8rem; font-size: 0.78rem; }
+  .topic-status-unclaimed { background: #888 !important; }
+  .topic-status-noresource { background: #bbb !important; color: #444; }
+  .topic-empty { color: #888; font-size: 0.9rem; }
+
+  .topic-detail { border: 1px solid #e0e0e0; border-radius: 0.6rem; padding: 1rem; margin-top: 1rem; }
+  .topic-resource-empty { color: #888; }
+  .topic-resource-link { word-break: break-all; }
+
+  #wayModalOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 50; }
+  #wayModalOverlay.open { display: flex; }
+  #wayModalMount { background: white; border-radius: 0.6rem; padding: 1.2rem; max-width: 32rem; width: 92%; max-height: 85vh; overflow-y: auto; }
+  .way-tab-bar { display: flex; gap: 0.4rem; margin: 0.8rem 0; }
+  .way-tab-btn { background: #eef1f7; color: #1F3A6E; border: none; }
+  .way-tab-btn.active { background: #1F3A6E; color: white; }
+  .way-tab-panel { display: none; }
+  .way-tab-panel.active { display: block; }
+  .way-modal-header { display: flex; justify-content: space-between; align-items: center; }
+  .way-close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; }
+</style>
+</head>
+<body>
+  <h1>Deen Study</h1>
+  <p>Ethics, Akhlaq, Aqeedah, Ebadah, Sharia, Fiqh, Islamic History &amp; Story,
+     and Enhancement topics — each topic only appears here once it has a real
+     resource attached, added subject by subject from the Catalogue page.</p>
+
+  <div id="who">Not signed in.</div>
+  <button id="signInBtn">Sign in with Google</button>
+  <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+
+  <div id="app" style="display:none;">
+    <div id="navBar"></div>
+    <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
+      <label style="margin:0;">Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label style="margin:0;">Person
+        <select id="personSelect" style="width:auto;"></select>
+      </label>
+    </div>
+
+    <div id="breadcrumbContainer"></div>
+    <div id="listContainer"></div>
+    <div id="detailContainer"></div>
+  </div>
+
+  <div id="wayModalOverlay"><div id="wayModalMount"></div></div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { safeWrite } from "./js/errors.js";
+    import {
+      getMyMemberships, initializeActiveContext, getActiveContext, setActiveContext,
+      effectiveRoles, scopedRoster,
+    } from "./js/session-context.js";
+    import {
+      getSubjectTree, getTrackables, ensureSubjectTemplatesSeeded, ensureTenantCatalogueSeeded,
+    } from "./js/catalogue.js";
+    import { ensureModulesSeeded } from "./js/modules.js";
+    import { buildUnitKey } from "./js/unit-keys.js";
+    import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
+    import { logActivity } from "./js/activity.js";
+    import { getResourcesByIds } from "./js/resources.js";
+    import { renderNavBar } from "./js/nav.js";
+    import {
+      renderTopicBreadcrumb, renderTopicChildList, renderTopicResource,
+    } from "./js/topic-renderer.js";
+    import {
+      renderGuideTab, renderTrackTab, renderBreakdownTab, renderWayModalShell, attachWayModalHandlers,
+    } from "./js/way-modal.js";
+
+    const MODULE_ID = "deen";
+    const TRACKABLE_ID = "studied_deen";
+    // All of this module's topic claims share one chunk (mirrors how Quran's
+    // own non-surah unit types all chunk under "subject_quran" -- chunkKeyFor
+    // only cares about the subjectId string passed in, not which specific
+    // topic was claimed; I5 keeps each topic's own identity in its unitKey
+    // regardless of which chunk it lands in).
+    const CHUNK_SUBJECT_ID = "deen_study";
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+    const tenantSelect = document.getElementById("tenantSelect");
+    const personSelect = document.getElementById("personSelect");
+    const breadcrumbContainer = document.getElementById("breadcrumbContainer");
+    const listContainer = document.getElementById("listContainer");
+    const detailContainer = document.getElementById("detailContainer");
+    const wayModalOverlay = document.getElementById("wayModalOverlay");
+    const wayModalMount = document.getElementById("wayModalMount");
+
+    const NO_ACCOUNT_MESSAGE = ` — no account found yet.
+      <br>If someone invited you to join an existing madrasah, use the invite
+      link they sent you (check your email) — don't create a new one here.
+      <br>Starting fresh instead? <a href="onboarding.html">Create a new account
+      on the onboarding page</a>.`;
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = `Sign-in failed: ${err.message}`;
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    let activeTenantId = null;
+    let myMemberships = [];
+    let roster = [];
+    let tenantWeekStartsOn = 6;
+    let selectedPersonId = null;
+    let deenSubjects = [];
+    let studiedTrackable = null;
+    let currentChunk = null;
+    let currentParentId = null; // null until the tree loads, then set to the module's root subject id
+    let currentLeafId = null;
+
+    function currentPreview() {
+      const context = getActiveContext();
+      const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      const realRoles = activeMembership?.roles ?? [];
+      const viewAsRole = context?.viewAsRole ?? null;
+      return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: activeMembership?.personId ?? null };
+    }
+
+    function currentActingPersonId() {
+      const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      return membership?.personId ?? selectedPersonId;
+    }
+
+    async function loadContextData() {
+      const [rosterSnap, tenantSnap] = await Promise.all([
+        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        getDoc(doc(db, TENANT.TENANTS, activeTenantId)),
+      ]);
+      roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      tenantWeekStartsOn = tenantSnap.exists() ? (tenantSnap.data().weekStartsOn ?? 6) : 6;
+
+      const { viewAsRole, effRoles, myPersonId } = currentPreview();
+      navBar.innerHTML = renderNavBar(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
+
+      const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
+      personSelect.innerHTML = visibleRoster
+        .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+        .join("");
+      selectedPersonId = visibleRoster[0]?.id ?? null;
+
+      const tree = await getSubjectTree(db, activeTenantId);
+      deenSubjects = tree.filter((n) => (n.moduleIds ?? []).includes(MODULE_ID) && n.status !== "archived");
+
+      const trackables = await getTrackables(db, activeTenantId);
+      studiedTrackable = trackables.find((t) => t.id === TRACKABLE_ID) ?? null;
+
+      const root = deenSubjects.find((n) => n.parentId === null);
+      currentParentId = root?.id ?? null;
+      currentLeafId = null;
+
+      await refreshChunk();
+      renderBrowser();
+    }
+
+    async function refreshChunk() {
+      if (!selectedPersonId) { currentChunk = null; return; }
+      // chunkKeyFor("topic" units) only ever looks at the subjectId argument
+      // (see records.js SURAH_CHUNKED_TYPES) -- any topic unitKey produces
+      // the same chunk key here, so this reads exactly as `subject_${CHUNK_SUBJECT_ID}`.
+      const chunkKey = chunkKeyFor(buildUnitKey.topic("_"), CHUNK_SUBJECT_ID);
+      currentChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, chunkKey);
+    }
+
+    // Root is the breadcrumb's own "Deen Study" label (rootLabel in
+    // renderTopicBreadcrumb) -- never repeated as a path entry, including
+    // when currentParentId IS the root (path = [], so only that one
+    // non-clickable "Deen Study" crumb shows).
+    function ancestorPath(nodeId) {
+      const rootId = deenSubjects.find((n) => n.parentId === null)?.id;
+      if (nodeId === rootId) return [];
+      const node = deenSubjects.find((n) => n.id === nodeId);
+      if (!node) return [];
+      return (node.ancestorIds ?? [])
+        .filter((id) => id !== rootId)
+        .map((id) => deenSubjects.find((n) => n.id === id))
+        .filter(Boolean)
+        .concat([node]);
+    }
+
+    function renderBrowser() {
+      detailContainer.innerHTML = "";
+      currentLeafId = null;
+      if (!currentParentId) {
+        listContainer.innerHTML = `<p class="topic-empty">Deen Study hasn't been set up in the catalogue for this tenant yet.</p>`;
+        breadcrumbContainer.innerHTML = "";
+        return;
+      }
+      breadcrumbContainer.innerHTML = renderTopicBreadcrumb(ancestorPath(currentParentId), "Deen Study");
+      const children = deenSubjects
+        .filter((n) => n.parentId === currentParentId)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+      const statusByNodeId = new Map();
+      for (const n of children) {
+        if (!n.isTrackable) continue;
+        const entryKey = `${buildUnitKey.topic(n.id)}::${TRACKABLE_ID}`;
+        const status = currentChunk?.entries?.[entryKey]?.claimedStatus ?? null;
+        if (status) statusByNodeId.set(n.id, status);
+      }
+      listContainer.innerHTML = renderTopicChildList(children, statusByNodeId);
+
+      breadcrumbContainer.querySelectorAll(".topic-crumb-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          currentParentId = btn.dataset.id || deenSubjects.find((n) => n.parentId === null)?.id;
+          renderBrowser();
+        });
+      });
+      listContainer.querySelectorAll(".topic-row-branch").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          currentParentId = btn.dataset.id;
+          renderBrowser();
+        });
+      });
+      listContainer.querySelectorAll(".topic-row-leaf").forEach((btn) => {
+        btn.addEventListener("click", () => openTopicDetail(btn.dataset.id));
+      });
+    }
+
+    async function openTopicDetail(nodeId) {
+      currentLeafId = nodeId;
+      const node = deenSubjects.find((n) => n.id === nodeId);
+      if (!node) return;
+
+      detailContainer.innerHTML = `<div class="topic-detail"><p>Loading…</p></div>`;
+      const resources = await getResourcesByIds(db, activeTenantId, node.resourceIds ?? []);
+      const resource = resources[0] ?? null;
+
+      const entryKey = `${buildUnitKey.topic(node.id)}::${TRACKABLE_ID}`;
+      const entry = currentChunk?.entries?.[entryKey] ?? null;
+      const statusLine = entry
+        ? `Status: <strong>${entry.claimedStatus.replace(/_/g, " ")}</strong> &middot; ${entry.confirmState}`
+        : "Not started yet.";
+
+      detailContainer.innerHTML = `<div class="topic-detail">
+        <h2>${langText(node.name, "en", node.id)}</h2>
+        ${renderTopicResource(resource)}
+        <p>${statusLine}</p>
+        <button type="button" id="trackTopicBtn" ${resource ? "" : "disabled"}>Track my progress</button>
+      </div>`;
+
+      const trackBtn = document.getElementById("trackTopicBtn");
+      trackBtn.addEventListener("click", () => openWayModal(node));
+    }
+
+    function openWayModal(node) {
+      if (!studiedTrackable || !selectedPersonId) return;
+      const unitKey = buildUnitKey.topic(node.id);
+      const entryKey = `${unitKey}::${TRACKABLE_ID}`;
+      const entry = currentChunk?.entries?.[entryKey] ?? null;
+      const statusIdsForTrackable = Object.values(currentChunk?.entries ?? {})
+        .filter((e) => e.trackableId === TRACKABLE_ID)
+        .map((e) => e.claimedStatus);
+
+      const title = `${langText(node.name, "en", node.id)} — Studied`;
+      const tabBodies = {
+        Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
+        Guide: renderGuideTab(studiedTrackable, "en"),
+        Breakdown: renderBreakdownTab(statusIdsForTrackable),
+      };
+      wayModalMount.innerHTML = renderWayModalShell(title, tabBodies, ["Track", "Guide", "Breakdown"]);
+      wayModalOverlay.classList.add("open");
+      attachWayModalHandlers(wayModalMount.firstElementChild, {
+        onClose: () => wayModalOverlay.classList.remove("open"),
+      });
+
+      const claimBtn = wayModalMount.querySelector(".way-claim-btn");
+      const statusSelectEl = wayModalMount.querySelector(".way-status-select");
+      const resultEl = wayModalMount.querySelector(".way-claim-result");
+      claimBtn.addEventListener("click", async () => {
+        claimBtn.disabled = true;
+        const outcome = await safeWrite(
+          () => claimStatus(db, {
+            tenantId: activeTenantId,
+            personId: selectedPersonId,
+            subjectId: CHUNK_SUBJECT_ID,
+            unitKey,
+            trackableId: TRACKABLE_ID,
+            statusId: statusSelectEl.value,
+            notes: "",
+            domainIds: [],
+            claimedByPersonId: currentActingPersonId(),
+            claimedByUid: auth.currentUser.uid,
+          }),
+          { collection: "records", action: "claimStatus" }
+        );
+        if (outcome.ok) {
+          await logActivity(db, {
+            tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
+            weekStartsOn: tenantWeekStartsOn, subjectId: node.id, unitKey,
+            trackableId: TRACKABLE_ID, action: "claimed", uid: auth.currentUser.uid,
+          });
+          const message = outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.";
+          await refreshChunk();
+          renderBrowser();
+          await openTopicDetail(node.id);
+          openWayModal(node); // refresh the modal against the new chunk
+          const freshResultEl = wayModalMount.querySelector(".way-claim-result");
+          if (freshResultEl) freshResultEl.textContent = message;
+        } else {
+          resultEl.textContent = outcome.entry.message;
+          claimBtn.disabled = false;
+        }
+      });
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = "Not signed in.";
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = `Signed in as ${user.email}`;
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+
+      async function step(name, fn) {
+        try { return await fn(); } catch (err) { err.stepName = err.stepName ?? name; throw err; }
+      }
+
+      try {
+        const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+
+        const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
+        if (!context) {
+          whoEl.innerHTML += NO_ACCOUNT_MESSAGE;
+          return;
+        }
+        activeTenantId = context.tenantId;
+
+        myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+          .join("");
+
+        appEl.style.display = "block";
+        // Self-repairing, same idempotent shape catalogue.html's own
+        // runSeedIfNeeded uses -- lets this page work standalone even for a
+        // tenant that never happened to open catalogue.html first.
+        await step("set up modules", () => ensureModulesSeeded(db, user.uid));
+        await step("set up subject templates", () => ensureSubjectTemplatesSeeded(db, user.uid));
+        await step("set up this tenant's catalogue", () => ensureTenantCatalogueSeeded(db, activeTenantId, user.uid));
+        await step("load Deen Study", loadContextData);
+      } catch (err) {
+        whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
+        console.error(err);
+      }
+    });
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      navBar.innerHTML = renderNavBar(chosen.roles, null);
+      await ensureModulesSeeded(db, auth.currentUser.uid);
+      await ensureSubjectTemplatesSeeded(db, auth.currentUser.uid);
+      await ensureTenantCatalogueSeeded(db, activeTenantId, auth.currentUser.uid);
+      await loadContextData();
+    });
+
+    personSelect.addEventListener("change", async () => {
+      selectedPersonId = personSelect.value;
+      await refreshChunk();
+      renderBrowser();
+    });
+  </script>
+</body>
+</html>

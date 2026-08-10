@@ -70,7 +70,7 @@
       <input type="checkbox" id="showArchivedSubjects" /> Show archived subjects
     </label>
     <table>
-      <thead><tr><th>Name</th><th>Gloss</th><th>Modules</th><th>Level (parent)</th><th>Status</th><th>Confirmation</th><th id="subjActionsHead" style="display:none;">Edit</th></tr></thead>
+      <thead><tr><th>Name</th><th>Gloss</th><th>Modules</th><th>Level (parent)</th><th>Status</th><th>Confirmation</th><th>Resource</th><th id="subjActionsHead" style="display:none;">Edit</th></tr></thead>
       <tbody id="subjectsBody"></tbody>
     </table>
 
@@ -82,6 +82,16 @@
       <select id="newSubjParent"></select>
       <label for="newSubjGloss">Gloss (optional)</label>
       <input id="newSubjGloss" type="text" maxlength="160" />
+      <label for="newSubjResourceType">Resource (optional — leave blank to add later, once you have the content ready)</label>
+      <select id="newSubjResourceType">
+        <option value="">No resource yet</option>
+        <option value="link">Link (URL)</option>
+        <option value="text">Text (typed in directly)</option>
+      </select>
+      <div id="newSubjResourceValueBox" style="display:none;">
+        <input id="newSubjResourceUrl" type="text" placeholder="https://…" style="width:100%; box-sizing:border-box; display:none;" />
+        <textarea id="newSubjResourceBody" rows="4" placeholder="What this topic actually covers…" style="width:100%; box-sizing:border-box; display:none;"></textarea>
+      </div>
       <button id="addSubjBtn" style="margin-top:0.8rem;">Add subject</button>
       <div id="addSubjResult" style="margin-top:0.5rem; font-size:0.88rem;"></div>
     </fieldset>
@@ -134,11 +144,10 @@
       signOut,
       onAuthStateChanged,
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { doc, getDoc, collection as fsCollection } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
     import { safeWrite } from "./js/errors.js";
-    import { createDocument } from "./js/envelope.js";
     import {
       getMyMemberships,
       initializeActiveContext,
@@ -162,6 +171,7 @@
       createLevel,
       listLadders,
       listLevels,
+      createTopicSubject,
     } from "./js/catalogue.js";
     import { renderNavBar } from "./js/nav.js";
 
@@ -180,6 +190,10 @@
     const laddersBody = document.getElementById("laddersBody");
     const addSubjectBox = document.getElementById("addSubjectBox");
     const newSubjParent = document.getElementById("newSubjParent");
+    const newSubjResourceType = document.getElementById("newSubjResourceType");
+    const newSubjResourceValueBox = document.getElementById("newSubjResourceValueBox");
+    const newSubjResourceUrl = document.getElementById("newSubjResourceUrl");
+    const newSubjResourceBody = document.getElementById("newSubjResourceBody");
     const addSubjBtn = document.getElementById("addSubjBtn");
     const addSubjResult = document.getElementById("addSubjResult");
     const addLadderBox = document.getElementById("addLadderBox");
@@ -273,6 +287,13 @@
         <option value="false" ${v === "false" ? "selected" : ""}>Never required</option>`;
     }
 
+    // Only meaningful for leaf/topic nodes -- a branch with children isn't
+    // itself claimable, so "no resource" there isn't a gap to flag.
+    function resourceLabel(node) {
+      if (!node.isTrackable) return "";
+      return (node.resourceIds ?? []).length > 0 ? "Yes" : "—";
+    }
+
     function subjectRowHtml(node) {
       const modules = (node.moduleIds ?? []).map((id) => `<span class="tag">${id}</span>`).join("");
 
@@ -285,6 +306,7 @@
           <td><select class="editParentSelect">${parentOptionsHtml(node.parentId, node.id)}</select></td>
           <td>${node.status}</td>
           <td><select class="editConfirmSelect">${confirmationOptionsHtml(node)}</select></td>
+          <td>${resourceLabel(node)}</td>
           <td>
             <button class="small saveSubjBtn" data-id="${node.id}">Save</button>
             <button class="small secondary cancelSubjBtn" data-id="${node.id}">Cancel</button>
@@ -305,6 +327,7 @@
         <td>${parentDisplayName(node)}</td>
         <td>${node.status}</td>
         <td>${confirmationLabel(node)}</td>
+        <td>${resourceLabel(node)}</td>
         ${actionCell}
       </tr>`;
     }
@@ -665,6 +688,13 @@
       await loadLadders();
     });
 
+    newSubjResourceType.addEventListener("change", () => {
+      const type = newSubjResourceType.value;
+      newSubjResourceValueBox.style.display = type ? "block" : "none";
+      newSubjResourceUrl.style.display = type === "link" ? "block" : "none";
+      newSubjResourceBody.style.display = type === "text" ? "block" : "none";
+    });
+
     addSubjBtn.addEventListener("click", async () => {
       const name = document.getElementById("newSubjName").value.trim();
       const parentId = newSubjParent.value || null;
@@ -674,24 +704,25 @@
         return;
       }
       const parentNode = parentId ? subjectTree.find((n) => n.id === parentId) : null;
-      const ancestorIds = parentNode ? [...(parentNode.ancestorIds ?? []), parentId] : [];
-      const moduleIds = parentNode ? parentNode.moduleIds : [];
+
+      const resourceType = newSubjResourceType.value;
+      let resource = null;
+      if (resourceType === "link") {
+        const url = newSubjResourceUrl.value.trim();
+        if (url) resource = { type: "link", url };
+      } else if (resourceType === "text") {
+        const body = newSubjResourceBody.value.trim();
+        if (body) resource = { type: "text", body };
+      }
+
+      // Own study record for whoever's adding this -- session-context's
+      // active membership, same "who is acting" the rest of the app uses.
+      const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
 
       addSubjBtn.disabled = true;
-      const newId = doc(fsCollection(db, TENANT.SUBJECTS)).id;
       const outcome = await safeWrite(
-        () => createDocument(db, TENANT.SUBJECTS, `${activeTenantId}__${newId}`, {
-          tenantId: activeTenantId,
-          name: { en: name },
-          gloss: gloss ? { en: gloss } : null,
-          parentId,
-          ancestorIds,
-          moduleIds,
-          isTrackable: true,
-          order: 999,
-          status: "active",
-          sourceTemplateId: null,
-          edited: false,
+        () => createTopicSubject(db, activeTenantId, parentNode, {
+          name, gloss, resource, addedByPersonId: activeMembership?.personId ?? null,
         }, auth.currentUser.uid),
         { collection: "subjects", action: "addTenantSubject" }
       );
@@ -700,6 +731,10 @@
         addSubjResult.textContent = "Added.";
         document.getElementById("newSubjName").value = "";
         document.getElementById("newSubjGloss").value = "";
+        newSubjResourceType.value = "";
+        newSubjResourceUrl.value = "";
+        newSubjResourceBody.value = "";
+        newSubjResourceValueBox.style.display = "none";
         await loadSubjects();
       } else {
         addSubjResult.textContent = outcome.entry.message;
