@@ -48,8 +48,20 @@ import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderWayModalShell
  * who, signInBtn, signOutBtn, app, navBar, tenantSelect, personSelect,
  * breadcrumbContainer, listContainer, detailContainer, wayModalOverlay,
  * wayModalMount.
+ *
+ * rootSubjectId is the module's own known top-level subject id (e.g.
+ * "deen_study", "general_study") -- passed explicitly rather than found by
+ * searching moduleSubjects for "the" node with parentId === null. That
+ * search was the actual bug behind the owner's "General Study shows Life
+ * Skill" report: two "Enhancement" subjects (deen_enhancement,
+ * general_enhancement) had been accidentally reparented to top-level back
+ * in Phase 2 testing (31 Jul 2026, long before this page existed to
+ * surface it) -- `.find(parentId === null)` then picked whichever of the
+ * two real top-level nodes Firestore happened to return first, which isn't
+ * guaranteed or stable. Anchoring on a known id sidesteps that whole bug
+ * class rather than just fixing this one instance of it.
  */
-export function initTopicStudyPage({ moduleId, trackableId }) {
+export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
   const whoEl = document.getElementById("who");
   const signInBtn = document.getElementById("signInBtn");
   const signOutBtn = document.getElementById("signOutBtn");
@@ -130,9 +142,9 @@ export function initTopicStudyPage({ moduleId, trackableId }) {
     const trackables = await getTrackables(db, activeTenantId);
     studiedTrackable = trackables.find((t) => t.id === trackableId) ?? null;
 
-    const root = moduleSubjects.find((n) => n.parentId === null);
-    currentParentId = root?.id ?? null;
-    chunkSubjectId = root?.id ?? null;
+    const root = moduleSubjects.find((n) => n.id === rootSubjectId);
+    currentParentId = rootSubjectId;
+    chunkSubjectId = rootSubjectId;
     rootLabel = root ? langText(root.name, "en", moduleId) : moduleId;
 
     await refreshChunk();
@@ -152,12 +164,11 @@ export function initTopicStudyPage({ moduleId, trackableId }) {
   // path entry, including when currentParentId IS the root (path = [], so
   // only that one non-clickable root crumb shows).
   function ancestorPath(nodeId) {
-    const rootId = moduleSubjects.find((n) => n.parentId === null)?.id;
-    if (nodeId === rootId) return [];
+    if (nodeId === rootSubjectId) return [];
     const node = moduleSubjects.find((n) => n.id === nodeId);
     if (!node) return [];
     return (node.ancestorIds ?? [])
-      .filter((id) => id !== rootId)
+      .filter((id) => id !== rootSubjectId)
       .map((id) => moduleSubjects.find((n) => n.id === id))
       .filter(Boolean)
       .concat([node]);
@@ -186,7 +197,7 @@ export function initTopicStudyPage({ moduleId, trackableId }) {
 
     breadcrumbContainer.querySelectorAll(".topic-crumb-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
-        currentParentId = btn.dataset.id || moduleSubjects.find((n) => n.parentId === null)?.id;
+        currentParentId = btn.dataset.id || rootSubjectId;
         renderBrowser();
       });
     });
