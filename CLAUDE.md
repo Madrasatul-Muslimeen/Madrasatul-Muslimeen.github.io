@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.06.** Cutover to production happened
+**Current milestone: QuranRevival v07.07.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -31,9 +31,15 @@ chip's own explicitly-colored text ever showed, which read as "nothing
 here but 'No resource yet'." v07.06 (10 Aug 2026) made the Catalogue
 page's subject tree collapsible per-subject (a toggle on any branch row,
 session-only state) and made clicking a module in the Modules table jump
-straight to that module's subject-tree section. None of v07.04–07.06 are
-phase deliverables; no status file of their own. See `PHASE-7-STATUS.md`
-for Phase 7 round 1's build log, and `PHASE-6-STATUS.md`
+straight to that module's subject-tree section. v07.07 (same day)
+followed up on owner feedback: every branch now starts collapsed by
+default (opened on demand, not the other way round) on a fresh view —
+reset per tenant switch, but left alone after an in-place add/edit/archive
+so an open section doesn't silently re-collapse — and the toggle itself is
+now much bigger (0.8rem → 1.3rem, bold) for an easier tap target. None of
+v07.04–07.07 are phase deliverables; no status file of their own. See
+`PHASE-7-STATUS.md` for Phase 7 round 1's build log, and
+`PHASE-6-STATUS.md`
 for Phase 6's, including three real pre-existing data bugs found and
 fixed by querying Firestore directly rather than guessing from the code.
 We are past "build against a parity checklist" and into "rebuild,
