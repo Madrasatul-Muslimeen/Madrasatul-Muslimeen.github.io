@@ -40,8 +40,13 @@ export function renderTopicBreadcrumb(path, rootLabel) {
  * caller has already loaded claim data for -- callers decide how much to
  * pre-load (a single subject's worth is cheap; the whole tree's worth is
  * not, per the load-speed contract).
+ *
+ * loggedTodayByNodeId (Phase 7, routine renderer): Map(subjectId -> true)
+ * for leaves already logged today -- an additive, optional in-app reminder
+ * badge. Empty by default so every existing topic-renderer caller is
+ * unaffected (I2: still one shared list renderer, not a forked copy).
  */
-export function renderTopicChildList(children, statusByNodeId = new Map()) {
+export function renderTopicChildList(children, statusByNodeId = new Map(), loggedTodayByNodeId = new Map()) {
   if (children.length === 0) {
     return `<p class="topic-empty">Nothing under here yet.</p>`;
   }
@@ -61,9 +66,18 @@ export function renderTopicChildList(children, statusByNodeId = new Map()) {
       : hasResource
         ? `<span class="topic-status-chip topic-status-unclaimed">Not started</span>`
         : `<span class="topic-status-chip topic-status-noresource">No resource yet</span>`;
+    // loggedTodayByNodeId only carries entries when the caller is the
+    // routine renderer (routine-study.js sets true/false for every
+    // trackable child it loads) -- .has() is the signal, not .size, so a
+    // topic-renderer caller's default empty Map never shows this badge.
+    const reminderBadge = hasResource && loggedTodayByNodeId.has(node.id)
+      ? (loggedTodayByNodeId.get(node.id)
+        ? `<span class="topic-reminder-badge topic-reminder-done">Logged today</span>`
+        : `<span class="topic-reminder-badge topic-reminder-due">Due today</span>`)
+      : "";
     return `<button type="button" class="topic-row topic-row-leaf" data-id="${node.id}">
       <span class="topic-row-name">${name}</span>${gloss}
-      ${chip}
+      ${chip}${reminderBadge}
     </button>`;
   });
   return `<div class="topic-list">${rows.join("")}</div>`;

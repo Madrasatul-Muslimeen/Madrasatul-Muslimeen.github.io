@@ -80,6 +80,22 @@ export function renderCoverageTab(ayahStatuses) {
   </div>`;
 }
 
+/** Streak tab -- Phase 7, routine renderer. streakCount comes from activity.js's computeStreak (a pure count, this file stays Firebase-free); the Log button itself is wired by the caller, same I2 split as Track's claim button. */
+export function renderStreakTab(streakCount, loggedToday) {
+  const streakLine = streakCount > 0
+    ? `<p class="way-streak-count">🔥 ${streakCount} day${streakCount === 1 ? "" : "s"} in a row</p>`
+    : `<p class="way-streak-count">No streak yet — log it to start one.</p>`;
+  const todayLine = loggedToday
+    ? `<p class="way-streak-today">Logged today ✓</p>`
+    : `<p class="way-streak-today">Not logged today yet.</p>`;
+  return `<div class="way-streak">
+    ${streakLine}
+    ${todayLine}
+    <button type="button" class="way-log-btn" ${loggedToday ? "disabled" : ""}>${loggedToday ? "Logged today" : "Log today"}</button>
+    <div class="way-log-result"></div>
+  </div>`;
+}
+
 const DEFAULT_TABS = ["Track", "Guide", "Breakdown", "Coverage"];
 
 /**

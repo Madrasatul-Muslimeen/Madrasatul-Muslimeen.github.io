@@ -74,3 +74,61 @@ export async function logActivity(db, {
 
   return { weekKey };
 }
+
+// ---------------------------------------------------------------------------
+// Phase 7 — routine renderer support: "logged today" + a streak count, both
+// read from the same activity entries every other module already writes
+// (action: "practised" for a routine's Log button, vs. "claimed" for a
+// status claim) -- no new collection, no new write path.
+// ---------------------------------------------------------------------------
+
+/** Whether `subjectId` already has a "practised" entry for `dateIso` (YYYY-MM-DD) in this one already-loaded week doc. Cheap, load-speed-safe: reuses the current week's activity doc the caller already fetched, no extra read. */
+export function hasLoggedOn(weekActivity, subjectId, dateIso) {
+  return (weekActivity?.entries ?? []).some(
+    (e) => e.subjectId === subjectId && e.action === "practised" && e.date === dateIso
+  );
+}
+
+/**
+ * Fetches the last `weeksBack` weekly activity docs for this person, oldest
+ * first -- bounded, on-demand only (the way modal's Streak tab), never part
+ * of the startup path. Missing weeks (nothing logged that week) are simply
+ * absent from the result, not fetched as empty docs.
+ */
+export async function getRecentWeeksActivity(db, tenantId, personId, weekStartsOn, weeksBack = 8) {
+  const today = new Date();
+  const weekKeys = [];
+  for (let i = 0; i < weeksBack; i++) {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() - i * 7);
+    const wk = weekKeyFor(d, weekStartsOn);
+    if (!weekKeys.includes(wk)) weekKeys.push(wk);
+  }
+  const docs = await Promise.all(weekKeys.map((wk) => getWeekActivity(db, tenantId, personId, wk)));
+  return docs.filter(Boolean);
+}
+
+/**
+ * Consecutive-day streak for one routine (subjectId), counting back from
+ * today: today counts if already logged, otherwise the streak starts
+ * "yesterday" (today not being logged yet doesn't break a streak still in
+ * progress). Stops at the first day with no "practised" entry.
+ */
+export function computeStreak(weekDocs, subjectId, todayDate = new Date()) {
+  const loggedDates = new Set();
+  for (const wd of weekDocs) {
+    for (const e of wd.entries ?? []) {
+      if (e.subjectId === subjectId && e.action === "practised") loggedDates.add(e.date);
+    }
+  }
+  const toIso = (d) => d.toISOString().slice(0, 10);
+  let cursor = new Date(Date.UTC(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate()));
+  if (!loggedDates.has(toIso(cursor))) cursor.setUTCDate(cursor.getUTCDate() - 1);
+
+  let streak = 0;
+  while (loggedDates.has(toIso(cursor))) {
+    streak++;
+    cursor.setUTCDate(cursor.getUTCDate() - 1);
+  }
+  return streak;
+}
