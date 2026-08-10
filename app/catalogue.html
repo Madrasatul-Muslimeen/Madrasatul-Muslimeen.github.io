@@ -172,6 +172,7 @@
       listLadders,
       listLevels,
       createTopicSubject,
+      ensureHealthStudyReparented,
     } from "./js/catalogue.js";
     import { renderNavBar } from "./js/nav.js";
 
@@ -257,9 +258,13 @@
           if ((n.ancestorIds ?? []).includes(excludeId)) excludeIds.add(n.id);
         }
       }
+      // Module tag added to each option (owner feedback: a flat 40+ row
+      // list with only indentation to go on made it easy to pick the wrong
+      // parent, e.g. a General Study subject landing under the wrong
+      // branch without noticing).
       const options = subjectTree
         .filter((n) => !excludeIds.has(n.id) && (n.status !== "archived" || n.id === selectedParentId))
-        .map((n) => `<option value="${n.id}" ${n.id === selectedParentId ? "selected" : ""}>${"— ".repeat(depthOf(n))}${langText(n.name, "en", n.id)}</option>`)
+        .map((n) => `<option value="${n.id}" ${n.id === selectedParentId ? "selected" : ""}>${"— ".repeat(depthOf(n))}${langText(n.name, "en", n.id)} [${(n.moduleIds ?? []).join(", ") || "no module"}]</option>`)
         .join("");
       return `<option value="" ${!selectedParentId ? "selected" : ""}>(top level)</option>${options}`;
     }
@@ -593,6 +598,7 @@
         await ensureModulesSeeded(db, auth.currentUser.uid);
         await ensureSubjectTemplatesSeeded(db, auth.currentUser.uid);
         const result = await ensureTenantCatalogueSeeded(db, activeTenantId, auth.currentUser.uid);
+        await ensureHealthStudyReparented(db, activeTenantId, auth.currentUser.uid);
         seedStatusEl.className = "ok";
         seedStatusEl.textContent = result.seeded
           ? `Catalogue set up for this tenant: ${result.subjectCount} subjects, ${result.trackableCount} Approaches.`
