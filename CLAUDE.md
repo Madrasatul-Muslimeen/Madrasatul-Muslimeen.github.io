@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.05.** Cutover to production happened
+**Current milestone: QuranRevival v07.06.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -28,9 +28,12 @@ names in the browse list were invisible white-on-white (the row is a
 `<button>`, whose base style is white text; `.topic-row` overrode the
 background to white but never overrode the text color) — only the status
 chip's own explicitly-colored text ever showed, which read as "nothing
-here but 'No resource yet'." Neither v07.04 nor v07.05 is a phase
-deliverable; no status file of its own. See `PHASE-7-STATUS.md` for
-Phase 7 round 1's build log, and `PHASE-6-STATUS.md`
+here but 'No resource yet'." v07.06 (10 Aug 2026) made the Catalogue
+page's subject tree collapsible per-subject (a toggle on any branch row,
+session-only state) and made clicking a module in the Modules table jump
+straight to that module's subject-tree section. None of v07.04–07.06 are
+phase deliverables; no status file of their own. See `PHASE-7-STATUS.md`
+for Phase 7 round 1's build log, and `PHASE-6-STATUS.md`
 for Phase 6's, including three real pre-existing data bugs found and
 fixed by querying Firestore directly rather than guessing from the code.
 We are past "build against a parity checklist" and into "rebuild,
