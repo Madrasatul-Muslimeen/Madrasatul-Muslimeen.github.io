@@ -23,6 +23,11 @@
   .depth-2 { padding-left: 2.4rem; }
   .depth-3 { padding-left: 3.6rem; }
   .tag { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 0.8rem; font-size: 0.75rem; background: #eef1f7; color: #1F3A6E; margin-right: 0.2rem; }
+  .subj-toggle-btn { background: none; border: none; cursor: pointer; padding: 0 0.3rem 0 0; font-size: 0.8rem; color: #1F3A6E; }
+  .module-row { cursor: pointer; }
+  .module-row:hover { background: #f7f9fc; }
+  @keyframes subjRowFlash { from { background: #fff3cd; } to { background: transparent; } }
+  .subj-row-flash { animation: subjRowFlash 1.6s ease; }
   #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
   #seedStatus { margin: 0.8rem 0; padding: 0.6rem; border-radius: 0.4rem; font-size: 0.88rem; display: none; }
   #seedStatus.ok { background: #d7f4d7; }
@@ -213,6 +218,10 @@
     let myMemberships = [];
     let canEdit = false;
     let subjectTree = [];
+    // Owner ask (10 Aug 2026): clicking a module jumps to its subjects, and
+    // the subject list is collapsible per-subject -- session-only state
+    // (not persisted), a row is hidden if ANY of its ancestors is collapsed.
+    let collapsedSubjectIds = new Set();
 
     showArchivedSubjects.addEventListener("change", renderSubjects);
     showArchivedTrackables.addEventListener("change", renderTrackables);
@@ -241,8 +250,27 @@
     async function loadModules() {
       const modules = await listModules(db);
       modulesBody.innerHTML = modules
-        .map((m) => `<tr><td>${m.icon ?? ""} ${langText(m.name, "en", m.id)}</td><td>${m.renderer}</td><td>${m.status}</td></tr>`)
+        .map((m) => `<tr class="module-row" data-module-id="${m.id}" title="Click to jump to this module's subjects below"><td>${m.icon ?? ""} ${langText(m.name, "en", m.id)}</td><td>${m.renderer}</td><td>${m.status}</td></tr>`)
         .join("");
+
+      modulesBody.querySelectorAll(".module-row").forEach((row) => {
+        row.addEventListener("click", () => jumpToModuleSubjects(row.dataset.moduleId));
+      });
+    }
+
+    /** Owner ask: clicking a module jumps to its subject-tree section below. Each module's own top-level subject (parentId: null) is the anchor -- expands it if collapsed, then scrolls it into view with a brief highlight. subjectTree may not be loaded yet if clicked before loadSubjects() finishes; a no-op in that case rather than an error. */
+    function jumpToModuleSubjects(moduleId) {
+      const rootNode = subjectTree.find((n) => (n.moduleIds ?? []).includes(moduleId) && !n.parentId);
+      if (!rootNode) return;
+      if (collapsedSubjectIds.has(rootNode.id)) {
+        collapsedSubjectIds.delete(rootNode.id);
+        renderSubjects();
+      }
+      const targetRow = document.getElementById(`subj-row-${rootNode.id}`);
+      if (!targetRow) return;
+      targetRow.scrollIntoView({ behavior: "smooth", block: "center" });
+      targetRow.classList.add("subj-row-flash");
+      setTimeout(() => targetRow.classList.remove("subj-row-flash"), 1600);
     }
 
     let editingSubjectId = null;
@@ -301,12 +329,27 @@
       return (node.resourceIds ?? []).length > 0 ? "Yes" : "—";
     }
 
+    // Owner ask: the subject list is collapsible per-subject -- a toggle
+    // shows only for nodes with at least one child (branches), computed
+    // fresh from the tree's actual structure each render rather than
+    // trusting isTrackable (which only tracks claimability, not "does this
+    // specific render currently have children").
+    function subjectHasChildren(nodeId) {
+      return subjectTree.some((n) => n.parentId === nodeId);
+    }
+
+    function subjectToggleHtml(node) {
+      if (!subjectHasChildren(node.id)) return "";
+      const collapsed = collapsedSubjectIds.has(node.id);
+      return `<button type="button" class="subj-toggle-btn" data-toggle-id="${node.id}" title="${collapsed ? "Expand" : "Collapse"}">${collapsed ? "▸" : "▾"}</button>`;
+    }
+
     function subjectRowHtml(node) {
       const modules = (node.moduleIds ?? []).map((id) => `<span class="tag">${id}</span>`).join("");
 
       if (canEdit && editingSubjectId === node.id) {
         const escapedName = langText(node.name, "en", node.id).replace(/"/g, "&quot;");
-        return `<tr>
+        return `<tr id="subj-row-${node.id}">
           <td class="depth-${depthOf(node)}"><input type="text" class="editNameInput" value="${escapedName}" /></td>
           <td>${node.gloss ? langText(node.gloss, "en", "") : ""}</td>
           <td>${modules}</td>
@@ -327,8 +370,8 @@
       const actionCell = canEdit
         ? `<td><button class="small secondary editSubjBtn" data-id="${node.id}">Edit</button> ${archiveBtn}</td>`
         : "";
-      return `<tr>
-        <td class="depth-${depthOf(node)}">${langText(node.name, "en", node.id)}</td>
+      return `<tr id="subj-row-${node.id}">
+        <td class="depth-${depthOf(node)}">${subjectToggleHtml(node)}${langText(node.name, "en", node.id)}</td>
         <td>${node.gloss ? langText(node.gloss, "en", "") : ""}</td>
         <td>${modules}</td>
         <td>${parentDisplayName(node)}</td>
@@ -346,10 +389,23 @@
     }
 
     function renderSubjects() {
-      const visible = showArchivedSubjects.checked
+      const archivedFiltered = showArchivedSubjects.checked
         ? subjectTree
         : subjectTree.filter((n) => n.status !== "archived");
+      // Collapsible-by-subject: hide a row if any of its ancestors is collapsed.
+      const visible = archivedFiltered.filter(
+        (n) => !(n.ancestorIds ?? []).some((id) => collapsedSubjectIds.has(id))
+      );
       subjectsBody.innerHTML = visible.map(subjectRowHtml).join("");
+
+      subjectsBody.querySelectorAll(".subj-toggle-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.toggleId;
+          if (collapsedSubjectIds.has(id)) collapsedSubjectIds.delete(id);
+          else collapsedSubjectIds.add(id);
+          renderSubjects();
+        });
+      });
 
       subjectsBody.querySelectorAll(".editSubjBtn").forEach((btn) => {
         btn.addEventListener("click", () => {
