@@ -216,6 +216,7 @@
       <div><label>Tenant</label><select id="tenantSelect"></select></div>
       <div><label>Person</label><select id="personSelect"></select></div>
       <div><label>Surah</label><select id="surahSelect"></select></div>
+      <div id="ayahSelectControl"><label>Ayah</label><select id="ayahSelect"></select></div>
       <div><label>Approach</label><select id="trackableSelect"></select></div>
       <div><label>Language</label><select id="langSelect">
         <option value="en">English</option>
@@ -369,6 +370,8 @@
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
     const surahSelect = document.getElementById("surahSelect");
+    const ayahSelectControl = document.getElementById("ayahSelectControl");
+    const ayahSelect = document.getElementById("ayahSelect");
     const trackableSelect = document.getElementById("trackableSelect");
     const langSelect = document.getElementById("langSelect");
     const wbwLangControl = document.getElementById("wbwLangControl");
@@ -704,6 +707,12 @@
     async function loadSurah() {
       currentSurahData = await getSurah(currentSurahNum);
       currentAyahNum = 1;
+      // Owner ask (10 Aug 2026): Prev/Next alone made jumping to, say, ayah
+      // 200 of a 286-ayah surah impractical -- a direct Ayah picker next to
+      // Surah, same shape as the range unit's own From/To ayah selects.
+      ayahSelect.innerHTML = Array.from({ length: currentSurahData.ayahCount }, (_, i) => i + 1)
+        .map((n) => `<option value="${n}">${n}</option>`)
+        .join("");
       // Owner round-2 ask: "Arabic should be playing first." Reset ONLY on
       // an actual surah change -- ayah navigation and tajweed/language
       // toggles still leave the reciter choice alone (that's the Phase 4
@@ -1167,6 +1176,9 @@
       const isPageUnit = currentUnitType === "surah" || currentUnitType === "range";
       pageViewToggleRow.style.display = isPageUnit ? "" : "none";
       singleAyahNavRow.style.display = isPageUnit ? "none" : "";
+      // range already has its own From/To ayah selects; whole-surah has no
+      // single ayah to pick -- same visibility rule as singleAyahNavRow.
+      ayahSelectControl.style.display = isPageUnit ? "none" : "";
       ayahPanels.style.display = isPageUnit ? "none" : "";
       pageViewContainer.style.display = isPageUnit ? "" : "none";
 
@@ -1180,6 +1192,7 @@
         const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
         if (!ayah) return;
         ayahPosition.textContent = `Surah ${currentSurahNum} — Ayah ${currentAyahNum} of ${currentSurahData.ayahCount}`;
+        ayahSelect.value = String(currentAyahNum);
         prevAyahBtn.disabled = currentAyahNum <= 1;
         nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount;
         ayahPanels.innerHTML = renderLayoutA(ayah, panels, {
@@ -1323,6 +1336,7 @@
 
     prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopDrill(); currentAyahNum--; renderStudyScreen(); renderWheel(); } });
     nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount) { stopDrill(); currentAyahNum++; renderStudyScreen(); renderWheel(); } });
+    ayahSelect.addEventListener("change", () => { stopDrill(); currentAyahNum = Number(ayahSelect.value); renderStudyScreen(); renderWheel(); });
     tajweedToggle.addEventListener("change", renderStudyScreen);
     langSelect.addEventListener("change", () => {
       currentLang = langSelect.value;
