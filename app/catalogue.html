@@ -50,8 +50,8 @@
      data every later module reads from. Reading is open to anyone in the
      tenant; editing is restricted to owner/prime.</p>
 
-  <div id="who">Not signed in.</div>
-  <button id="signInBtn">Sign in with Google</button>
+  <div id="who">Checking sign-in…</div>
+  <button id="signInBtn" style="display:none;">Sign in with Google</button>
   <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
 
   <div id="app" style="display:none;">
@@ -66,7 +66,7 @@
 
     <h2>Modules</h2>
     <table>
-      <thead><tr><th>Module</th><th>Renderer</th><th>Status</th></tr></thead>
+      <thead><tr><th>Module</th><th>Renderer</th><th>Status</th><th id="moduleActionsHead" style="display:none;">Move</th></tr></thead>
       <tbody id="modulesBody"></tbody>
     </table>
 
@@ -160,7 +160,7 @@
       setActiveContext,
       effectiveRoles,
     } from "./js/session-context.js";
-    import { ensureModulesSeeded, listModules } from "./js/modules.js";
+    import { ensureModulesSeeded, listModules, swapModuleOrder } from "./js/modules.js";
     import {
       ensureSubjectTemplatesSeeded,
       ensureTenantCatalogueSeeded,
@@ -191,6 +191,7 @@
     const tenantSelect = document.getElementById("tenantSelect");
     const seedStatusEl = document.getElementById("seedStatus");
     const modulesBody = document.getElementById("modulesBody");
+    const moduleActionsHead = document.getElementById("moduleActionsHead");
     const subjectsBody = document.getElementById("subjectsBody");
     const subjActionsHead = document.getElementById("subjActionsHead");
     const trackablesBody = document.getElementById("trackablesBody");
@@ -258,12 +259,47 @@
     async function loadModules() {
       const modules = await listModules(db);
       modulesBody.innerHTML = modules
-        .map((m) => `<tr class="module-row" data-module-id="${m.id}" title="Click to jump to this module's subjects below"><td>${m.icon ?? ""} ${langText(m.name, "en", m.id)}</td><td>${m.renderer}</td><td>${m.status}</td></tr>`)
+        .map((m, i) => {
+          const moveCell = canEdit
+            ? `<td>
+                <button type="button" class="small secondary moduleMoveUpBtn" data-id="${m.id}" ${i === 0 ? "disabled" : ""} title="Move up">▲</button>
+                <button type="button" class="small secondary moduleMoveDownBtn" data-id="${m.id}" ${i === modules.length - 1 ? "disabled" : ""} title="Move down">▼</button>
+              </td>`
+            : "";
+          return `<tr class="module-row" data-module-id="${m.id}" title="Click to jump to this module's subjects below">
+            <td>${m.icon ?? ""} ${langText(m.name, "en", m.id)}</td><td>${m.renderer}</td><td>${m.status}</td>${moveCell}
+          </tr>`;
+        })
         .join("");
 
       modulesBody.querySelectorAll(".module-row").forEach((row) => {
         row.addEventListener("click", () => jumpToModuleSubjects(row.dataset.moduleId));
       });
+
+      // Owner ask (10 Aug 2026): move a module up/down in the flat list.
+      // stopPropagation so clicking these doesn't also fire the row's own
+      // jump-to-subjects click handler above.
+      modulesBody.querySelectorAll(".moduleMoveUpBtn").forEach((btn) => {
+        btn.addEventListener("click", (e) => { e.stopPropagation(); moveModule(modules, btn.dataset.id, "up"); });
+      });
+      modulesBody.querySelectorAll(".moduleMoveDownBtn").forEach((btn) => {
+        btn.addEventListener("click", (e) => { e.stopPropagation(); moveModule(modules, btn.dataset.id, "down"); });
+      });
+    }
+
+    /** modules is already sorted by order (listModules()'s own contract). Swaps order with the immediate neighbour -- the whole "move" operation for a flat, non-hierarchical list. */
+    async function moveModule(modules, moduleId, direction) {
+      const idx = modules.findIndex((m) => m.id === moduleId);
+      const swapWithIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (idx === -1 || swapWithIdx < 0 || swapWithIdx >= modules.length) return;
+      const a = modules[idx];
+      const b = modules[swapWithIdx];
+      const outcome = await safeWrite(
+        () => swapModuleOrder(db, a.id, a.order ?? 0, b.id, b.order ?? 0),
+        { collection: "modules", action: "reorder", id: a.id }
+      );
+      if (outcome.ok) await loadModules();
+      else alert(outcome.entry.message);
     }
 
     /** Owner ask: clicking a module jumps to its subject-tree section below. Each module's own top-level subject (parentId: null) is the anchor -- expands it if collapsed, then scrolls it into view with a brief highlight. subjectTree may not be loaded yet if clicked before loadSubjects() finishes; a no-op in that case rather than an error. */
@@ -282,6 +318,7 @@
     }
 
     let editingSubjectId = null;
+    let movingSubjectId = null;
 
     // Options for a parent-picker, excluding the node itself, anything
     // beneath it in the tree (picking a descendant as your new parent would
@@ -352,8 +389,29 @@
       return `<button type="button" class="subj-toggle-btn" data-toggle-id="${node.id}" title="${collapsed ? "Expand" : "Collapse"}">${collapsed ? "▸" : "▾"}</button>`;
     }
 
+    /** Same-parent siblings, sorted by order -- the scope "move up/down" operates within. */
+    function siblingsOf(node) {
+      return subjectTree.filter((n) => n.parentId === node.parentId).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+
     function subjectRowHtml(node) {
       const modules = (node.moduleIds ?? []).map((id) => `<span class="tag">${id}</span>`).join("");
+
+      if (canEdit && movingSubjectId === node.id) {
+        return `<tr id="subj-row-${node.id}">
+          <td class="depth-${depthOf(node)}">${langText(node.name, "en", node.id)}</td>
+          <td>${node.gloss ? langText(node.gloss, "en", "") : ""}</td>
+          <td>${modules}</td>
+          <td><select class="movingParentSelect">${parentOptionsHtml(node.parentId, node.id)}</select></td>
+          <td>${node.status}</td>
+          <td>${confirmationLabel(node)}</td>
+          <td>${resourceLabel(node)}</td>
+          <td>
+            <button class="small moveSaveBtn" data-id="${node.id}">Move here</button>
+            <button class="small secondary moveCancelBtn" data-id="${node.id}">Cancel</button>
+          </td>
+        </tr>`;
+      }
 
       if (canEdit && editingSubjectId === node.id) {
         const escapedName = langText(node.name, "en", node.id).replace(/"/g, "&quot;");
@@ -375,8 +433,20 @@
       const archiveBtn = canEdit
         ? `<button class="small secondary archiveSubjBtn" data-id="${node.id}" data-next="${node.status === "archived" ? "active" : "archived"}">${node.status === "archived" ? "Restore" : "Archive"}</button>`
         : "";
+      // Owner ask (10 Aug 2026): move up/down among siblings (auto-renumbers
+      // via a simple order swap) plus a one-click "Move to..." for
+      // re-parenting -- previously only reachable buried inside the full
+      // Edit form's Parent dropdown.
+      let moveButtons = "";
+      if (canEdit) {
+        const siblings = siblingsOf(node);
+        const idx = siblings.findIndex((n) => n.id === node.id);
+        moveButtons = `<button class="small secondary moveUpBtn" data-id="${node.id}" ${idx <= 0 ? "disabled" : ""} title="Move up">▲</button>
+          <button class="small secondary moveDownBtn" data-id="${node.id}" ${idx === -1 || idx >= siblings.length - 1 ? "disabled" : ""} title="Move down">▼</button>
+          <button class="small secondary moveToBtn" data-id="${node.id}" title="Move to a different parent">Move to…</button><br/>`;
+      }
       const actionCell = canEdit
-        ? `<td><button class="small secondary editSubjBtn" data-id="${node.id}">Edit</button> ${archiveBtn}</td>`
+        ? `<td>${moveButtons}<button class="small secondary editSubjBtn" data-id="${node.id}">Edit</button> ${archiveBtn}</td>`
         : "";
       return `<tr id="subj-row-${node.id}">
         <td class="depth-${depthOf(node)}">${subjectToggleHtml(node)}${langText(node.name, "en", node.id)}</td>
@@ -402,6 +472,27 @@
       newSubjParent.innerHTML = parentOptionsHtml(null, null);
     }
 
+    /** Swaps `order` with the immediate sibling in the given direction -- the whole "move" operation, auto-renumbered since it's just the two affected ranks trading places. */
+    async function moveSubject(nodeId, direction) {
+      const node = subjectTree.find((n) => n.id === nodeId);
+      if (!node) return;
+      const siblings = siblingsOf(node);
+      const idx = siblings.findIndex((n) => n.id === nodeId);
+      const swapWithIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (idx === -1 || swapWithIdx < 0 || swapWithIdx >= siblings.length) return;
+      const other = siblings[swapWithIdx];
+
+      const outcome = await safeWrite(
+        () => Promise.all([
+          editCatalogueNode(db, TENANT.SUBJECTS, activeTenantId, node.id, { order: other.order ?? 0 }, auth.currentUser.uid),
+          editCatalogueNode(db, TENANT.SUBJECTS, activeTenantId, other.id, { order: node.order ?? 0 }, auth.currentUser.uid),
+        ]),
+        { collection: "subjects", action: "reorder", id: node.id }
+      );
+      if (outcome.ok) await loadSubjects();
+      else alert(outcome.entry.message);
+    }
+
     function renderSubjects() {
       const archivedFiltered = showArchivedSubjects.checked
         ? subjectTree
@@ -423,6 +514,7 @@
 
       subjectsBody.querySelectorAll(".editSubjBtn").forEach((btn) => {
         btn.addEventListener("click", () => {
+          movingSubjectId = null;
           editingSubjectId = btn.dataset.id;
           renderSubjects();
         });
@@ -432,6 +524,47 @@
         btn.addEventListener("click", () => {
           editingSubjectId = null;
           renderSubjects();
+        });
+      });
+
+      subjectsBody.querySelectorAll(".moveUpBtn").forEach((btn) => {
+        btn.addEventListener("click", () => moveSubject(btn.dataset.id, "up"));
+      });
+      subjectsBody.querySelectorAll(".moveDownBtn").forEach((btn) => {
+        btn.addEventListener("click", () => moveSubject(btn.dataset.id, "down"));
+      });
+      subjectsBody.querySelectorAll(".moveToBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          editingSubjectId = null;
+          movingSubjectId = btn.dataset.id;
+          renderSubjects();
+        });
+      });
+      subjectsBody.querySelectorAll(".moveCancelBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          movingSubjectId = null;
+          renderSubjects();
+        });
+      });
+      subjectsBody.querySelectorAll(".moveSaveBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const node = subjectTree.find((n) => n.id === btn.dataset.id);
+          const row = btn.closest("tr");
+          const nextParentId = row.querySelector(".movingParentSelect").value || null;
+          if (nextParentId === node.parentId) { movingSubjectId = null; renderSubjects(); return; }
+
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => reparentSubject(db, activeTenantId, node.id, nextParentId, auth.currentUser.uid),
+            { collection: "subjects", action: "reparent", id: node.id }
+          );
+          if (outcome.ok) {
+            movingSubjectId = null;
+            await loadSubjects();
+          } else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
         });
       });
 
@@ -731,6 +864,7 @@
         const effRoles = effectiveRoles(activeMembership?.roles ?? [], viewAsRole);
         canEdit = effRoles.includes("owner") || effRoles.includes("prime");
         navBar.innerHTML = renderNavBar(activeMembership?.roles ?? [], viewAsRole);
+        moduleActionsHead.style.display = canEdit ? "" : "none";
         subjActionsHead.style.display = canEdit ? "" : "none";
         trkActionsHead.style.display = canEdit ? "" : "none";
         addSubjectBox.style.display = canEdit ? "block" : "none";
@@ -756,6 +890,7 @@
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
       navBar.innerHTML = renderNavBar(chosen.roles, null); // switching tenants resets any active preview
       canEdit = chosen.roles.includes("owner") || chosen.roles.includes("prime");
+      moduleActionsHead.style.display = canEdit ? "" : "none";
       subjActionsHead.style.display = canEdit ? "" : "none";
       trkActionsHead.style.display = canEdit ? "" : "none";
       addSubjectBox.style.display = canEdit ? "block" : "none";

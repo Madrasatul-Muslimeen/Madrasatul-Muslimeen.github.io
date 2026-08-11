@@ -14,7 +14,7 @@
 
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
-import { createDocument } from "./envelope.js";
+import { createDocument, updateDocument } from "./envelope.js";
 import { MODULE_TEMPLATES } from "./catalogue-data.js";
 
 /** Seeds any MODULE_TEMPLATES rows not yet present. Safe to call repeatedly -- existing docs are left untouched (I4/D6, and admin edits to a module's name/order must never be clobbered by a later seed run). */
@@ -42,4 +42,21 @@ export async function listModules(db) {
   return snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+}
+
+/**
+ * Owner ask (10 Aug 2026): move a module up/down in the flat list. Swaps
+ * `order` between two modules -- the whole reorder operation, since modules
+ * have no hierarchy to renumber. modules/{moduleId} is platform-wide, not
+ * tenant-scoped (Architecture, Layer 1) -- firestore.rules restricts writes
+ * here to isPlatformAdmin(), same reasoning Phase 6 already hit once
+ * (module.status auto-flip would have thrown for a tenant owner). Callers
+ * must surface a permission-denied failure clearly (safeWrite/I15), not
+ * assume this always succeeds for whoever's using catalogue.html.
+ */
+export async function swapModuleOrder(db, moduleIdA, orderA, moduleIdB, orderB) {
+  await Promise.all([
+    updateDocument(db, TENANT.MODULES, moduleIdA, { order: orderB }),
+    updateDocument(db, TENANT.MODULES, moduleIdB, { order: orderA }),
+  ]);
 }
