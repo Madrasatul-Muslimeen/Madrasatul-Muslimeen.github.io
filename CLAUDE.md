@@ -95,14 +95,25 @@ teachers — Firestore rules can't cheaply prove "every element of an
 array is one of my students," only a single id, so this needs a real
 contextId-trust model or per-student assignment docs as its own follow-up.
 Prime role was audited, not rebuilt — already correct everywhere since
-Phase 1. **`firestore.rules` for this round is NOT yet deployed** — no
-authenticated Firebase CLI on Claude Code on the web; the owner needs to
-run the deploy themselves before any of this actually takes effect, same
-as every rules change made from a web session. See `PHASE-10-STATUS.md`
-for the full build log, including a real gap found and fixed in the same
-sitting (not a live bug like Phase 9's): the first version of
-`enrollments`' read rule would have silently prevented a guardian-enrolled
-child's class teacher from ever gaining real authority over them. None of
+Phase 1. **`firestore.rules` for this round was deployed by the owner
+11 Aug 2026**, via the Firebase Console's rules editor (copy-paste from
+GitHub, not the CLI — this owner's click-through machine can't reliably
+keep Node/CLI tools installed between logins) — compiled and published
+clean, no errors. Owner-verified same day: version badge shows v07.12
+(confirms the production mirror push is actually live, not just merged in
+the dev repo), `classes.html` loads, a real class + student enrolment
+works. No teacher account existed before this round, so the one real
+behavior change this round makes (a teacher losing blanket tenant-wide
+access to just co-enrolled students) had nothing to break. **Still open:**
+the actual scoping enforcement (a co-enrolled teacher allowed, an
+unrelated one cleanly blocked) needs a second real account holding only
+`teacher` — owner/prime's own access bypasses the new scoping entirely, so
+it can't be proven from the owner's own login or a "View as" preview. See
+`PHASE-10-STATUS.md` for the full build log and the remaining checklist,
+including a real gap found and fixed in the same sitting (not a live bug
+like Phase 9's): the first version of `enrollments`' read rule would have
+silently prevented a guardian-enrolled child's class teacher from ever
+gaining real authority over them. None of
 v07.04–07.12 are phase deliverables beyond 07.09/07.10/07.11/07.12
 themselves; no status file of their own for 07.04–07.08. See
 `PHASE-10-STATUS.md` for Phase 10 round 1's build log, `PHASE-9-STATUS.md`
@@ -334,12 +345,15 @@ own deferral on purpose). **Phase 8
 built, not yet owner-verified** — see `PHASE-9-STATUS.md`, including a
 real guardian-access bug found and fixed in `firestore.rules` (already
 deployed) that predates this phase. **Phase 10 (Classes & provider,
-Stage B2) round 1 is also built, not yet owner-verified, and its
-`firestore.rules` change is NOT yet deployed** (built on Claude Code on
-the web, which has no authenticated Firebase CLI — the owner needs to run
-the deploy themselves before real per-student teacher scoping takes
-effect) — see `PHASE-10-STATUS.md`, including a real gap found and fixed
-in the same sitting, before it ever shipped. See also
+Stage B2) round 1 is built, `firestore.rules` deployed and partially
+owner-verified 11 Aug 2026** (deployed via the Firebase Console, not the
+CLI — see that phase's own paragraph above for why; version badge,
+`classes.html`, and a real class + enrolment all confirmed working; the
+actual teacher-scoping enforcement itself still needs a second real
+`teacher`-only account to prove, since owner/prime's own login bypasses
+it) — see `PHASE-10-STATUS.md` for the full build log, the remaining
+verification checklist, and a real gap found and fixed in the same
+sitting, before it ever shipped. See also
 `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`, `PHASE-2-STATUS.md`,
 `PHASE-3-STATUS.md`, `PHASE-4-STATUS.md`, and `PHASE-6-STATUS.md`. Phase 5
 (Migration & parity) is separately covered below — cutover already

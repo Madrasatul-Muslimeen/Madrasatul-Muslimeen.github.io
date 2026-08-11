@@ -164,10 +164,10 @@ Flagged here so it isn't mistaken for new drift.)
 
 ---
 
-## Not verified
+## Verification status
 
-No real Google account or authenticated Firebase CLI in this environment.
-Mechanically verified this round:
+Mechanically verified during the build (no real Google account or
+authenticated Firebase CLI available in that environment):
 
 - `node --check` on every changed/new `.js` file (`collections.js`,
   `course-offers.js`, `classes.js`, `records.js`, `nav.js`,
@@ -178,30 +178,41 @@ Mechanically verified this round:
   parse cleanly.
 - `firestore.rules` — brace/paren counts balanced, no duplicate `function`
   names (checked twice, once after finding and fixing a duplicate
-  `enrollmentRef()` introduced mid-edit). **Not compiled against the real
-  Firebase rules engine** — no CLI available here. The owner should run
-  `firebase deploy --only firestore:rules --project study-monitoring
-  --dry-run` first (same two-step Phase 9 used for its own rules change)
-  before a real deploy.
+  `enrollmentRef()` introduced mid-edit).
 
-**What the owner should check once rules are deployed and signed in:**
+**Owner-verified, 11 Aug 2026:**
 
-1. Create a class in `classes.html`, enrol a teacher and a student into it,
-   confirm the teacher can record/confirm for that student on a study
-   screen or Records.
+- `firestore.rules` deployed via the Firebase Console's rules editor
+  (console.firebase.google.com, project `study-monitoring`) — copy-paste
+  from GitHub's `main` branch, not the CLI (matches this owner's
+  non-persistent-VDI constraint noted in `CLAUDE.md` — no Node/CLI
+  reliably available on their click-through machine). Compiled and
+  published successfully, no errors.
+- App version badge confirmed showing `v07.12` after deploy — confirms the
+  mirrored `app/` push (`madrasatul-muslimeen.github.io`) is actually live,
+  not just merged in the dev repo.
+- `classes.html` loads cleanly from the nav bar.
+- Created a real class, enrolled a real person as a student — confirmed in
+  the roster line under the class card.
+- No teacher account existed before this round (owner confirmed directly),
+  so the one real behavior change this round makes — a teacher losing
+  blanket tenant-wide access to just co-enrolled students — had **nothing
+  to break**. Nothing needed re-testing for regressions here.
+
+**Still open — needs a real second account holding only the `teacher`
+role** (owner/prime's own access bypasses the new scoping entirely via
+`canAdminIdentity()`, and `View as: teacher` previews on top of that same
+real access, so neither proves the restriction actually holds):
+
+1. Enrol a teacher and a student into the same class; confirm the teacher
+   can record/confirm for that student on a study screen or Records.
 2. Confirm a **different** teacher (not enrolled in that class) gets a
    clean, on-screen permission-denied message (I15) trying to act for that
    same student — not a silent failure.
-3. Enrol a guardian's own child into a class as a student (as the guardian,
-   not as admin) and confirm the class's teacher gains authority over that
-   child too — this is exactly the scenario the `enrollments` read-rule gap
-   above would have silently broken if it had shipped unfixed.
+3. Enrol a guardian's own child into a class as a student (as the
+   guardian, not as admin) and confirm the class's teacher gains authority
+   over that child too — this is exactly the scenario the `enrollments`
+   read-rule gap (found and fixed before shipping, see above) would have
+   silently broken if it had gone out unfixed.
 4. Try the class-wide bulk confirm button after a couple of students have
    pending entries; confirm the count matches.
-5. Specifically re-test: does any teacher who was relying on the OLD
-   blanket tenant-wide access lose the ability to record for a student they
-   are not enrolled to teach? If the owner is currently using a teacher
-   account this way for real (not through a class/course offer yet), this
-   is the one real behavior change to watch for before deploying — it was
-   the explicit, informed choice made this round, not an accident, but it's
-   worth confirming against real current use before the rules go live.
