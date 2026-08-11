@@ -1,10 +1,12 @@
 // F-097..F-106 — Homework & feedback (Phase 9)
 //
 // assignments/{tenantId}__{assignmentId}
-//   createdByPersonId, assignedToPersonIds[], contextId (always null for now
-//   -- classes don't exist until Phase 10, and nothing in a later phase is a
-//   prerequisite for an earlier one), moduleId, subjectId, unitKeys[],
-//   dueDate, instructions{lang}, maxScore, status active|archived
+//   createdByPersonId, assignedToPersonIds[], contextId (class or
+//   course-offer id -- null for admin/guardian-created assignments, REQUIRED
+//   for a teacher-created one as of the follow-up round below;
+//   firestore.rules' isAssignmentCreator()/isActiveTeacherInContext() are
+//   what actually enforce that, not this file), moduleId, subjectId,
+//   unitKeys[], dueDate, instructions{lang}, maxScore, status active|archived
 //
 // submissions/{assignmentId}__{personId}  (assignmentId already carries the
 //   tenantId prefix, so this id is globally unique without its own separate
@@ -60,7 +62,7 @@ async function commitInChunks(db, creates, uid) {
  * not a pre-built lang object, matching createTopicSubject's own pattern.
  */
 export async function createAssignment(db, tenantId, {
-  createdByPersonId, assignedToPersonIds, moduleId, subjectId, unitKeys,
+  createdByPersonId, assignedToPersonIds, contextId, moduleId, subjectId, unitKeys,
   dueDate, instructions, maxScore,
 }, uid) {
   if (!assignedToPersonIds?.length) {
@@ -76,7 +78,12 @@ export async function createAssignment(db, tenantId, {
       tenantId,
       createdByPersonId,
       assignedToPersonIds,
-      contextId: null,
+      // Follow-up round (Homework teacher-scoping): a real class/course-offer
+      // id from now on when the creator is a teacher -- firestore.rules'
+      // isAssignmentCreator() requires it for the teacher branch
+      // (isActiveTeacherInContext()). Admin/guardian creators may still pass
+      // null, same as every assignment before this round.
+      contextId: contextId ?? null,
       moduleId: moduleId ?? null,
       subjectId: subjectId ?? null,
       unitKeys: unitKeys ?? [],
@@ -120,13 +127,36 @@ export async function listAssignmentsForTenant(db, tenantId) {
     .sort((a, b) => (b.dueDate ?? "").localeCompare(a.dueDate ?? ""));
 }
 
-/** Every assignment naming this specific person -- the query's own array-contains filter is what makes this read-safe for a self/student actor (matches the read rule's "myPersonIdIn in assignedToPersonIds" branch). */
-export async function listAssignmentsForPerson(db, tenantId, personId) {
-  const q = query(
-    collection(db, TENANT.ASSIGNMENTS),
+/**
+ * Every assignment naming this specific person -- the query's own
+ * array-contains filter is what makes this read-safe for a self/student
+ * actor (matches the read rule's "myPersonIdIn in assignedToPersonIds"
+ * branch), and for admin/guardian actors (their own read branches don't
+ * depend on contextId either).
+ *
+ * restrictTeacherContextIds (follow-up round, Homework teacher-scoping):
+ * REQUIRED when the caller's only path to reading this person's assignments
+ * is the teacher branch (firestore.rules' isActiveTeacherInContext()) --
+ * that branch now depends on each document's own contextId, which an
+ * unconstrained array-contains query can't prove ahead of time for every
+ * possible result, so Firestore would reject the whole query. Pass the
+ * caller's own active-teacher context ids (course-offers.js's
+ * activeTeacherContextIdsFromEnrollments()) and this adds the matching
+ * `contextId in [...]` filter. Omit for admin/guardian/self callers -- adding
+ * it there would WRONGLY hide assignments only visible via their own
+ * (contextId-independent) branch. An empty array short-circuits to no
+ * results rather than querying (Firestore errors on an empty "in" clause).
+ */
+export async function listAssignmentsForPerson(db, tenantId, personId, restrictTeacherContextIds = null) {
+  if (restrictTeacherContextIds && restrictTeacherContextIds.length === 0) return [];
+  const clauses = [
     where("tenantId", "==", tenantId),
-    where("assignedToPersonIds", "array-contains", personId)
-  );
+    where("assignedToPersonIds", "array-contains", personId),
+  ];
+  if (restrictTeacherContextIds?.length) {
+    clauses.push(where("contextId", "in", restrictTeacherContextIds.slice(0, 30)));
+  }
+  const q = query(collection(db, TENANT.ASSIGNMENTS), ...clauses);
   const snap = await getDocs(q);
   return snap.docs
     .map((d) => ({ id: d.id.replace(`${tenantId}__`, ""), ...d.data() }))

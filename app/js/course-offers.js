@@ -157,6 +157,22 @@ export async function listEnrollmentsForPerson(db, tenantId, personId) {
 }
 
 /**
+ * Follow-up round (Homework teacher-scoping): every class/course-offer
+ * contextId this person is an ACTIVE TEACHER in -- either contextType,
+ * unlike programSubjectMapFromEnrollments() below which is courseOffer-only
+ * (a class is a real teaching assignment too, homework isn't limited to
+ * course offers). Used both to build homework.html's context picker for a
+ * teacher and to constrain the read query for their own assignments list --
+ * mirrors firestore.rules' own isActiveTeacherInContext() so the client
+ * query and the rule agree on what "actively teaching this context" means.
+ */
+export function activeTeacherContextIdsFromEnrollments(enrollments) {
+  return enrollments
+    .filter((e) => e.roleInClass === "teacher" && e.status === "active")
+    .map((e) => e.contextId);
+}
+
+/**
  * Follow-up round: Map(subjectId -> courseOffer contextId) for one person --
  * every subject covered by an active course-offer enrolment of theirs. Only
  * contextType "courseOffer" counts as a "program" (bookmarks.js's own

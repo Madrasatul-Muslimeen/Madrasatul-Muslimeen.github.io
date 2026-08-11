@@ -375,6 +375,27 @@ service cloud.firestore {
           && get(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId)).data.active == true;
     }
 
+    // Follow-up round (11 Aug 2026) -- the contextId-trust model
+    // isAssignmentCreator()'s own comment proposed: rather than proving
+    // "every element of assignedToPersonIds is one of my co-enrolled
+    // students" (no per-element get() exists in rules), this proves the
+    // narrower, cheap thing instead -- "am I an ACTIVE TEACHER in the one
+    // class/course-offer this assignment is declared against" -- a single
+    // fixed-path get() on enrollments, same shape as teacherStudentLinkRef
+    // above. The client is trusted to only ever populate assignedToPersonIds
+    // from that one context's own roster (homework.html); this rule can't
+    // itself verify that part, same trust boundary canAdminCatalogue()
+    // already accepts for admin-authored content elsewhere in this file.
+    function enrollmentRef(tenantId, contextId, personId) {
+      return /databases/$(database)/documents/enrollments/$(tenantId + '__' + contextId + '__' + personId);
+    }
+    function isActiveTeacherInContext(tenantId, contextId) {
+      return signedIn() && myPersonIdIn(tenantId) != null && contextId != null
+          && exists(enrollmentRef(tenantId, contextId, myPersonIdIn(tenantId)))
+          && get(enrollmentRef(tenantId, contextId, myPersonIdIn(tenantId))).data.roleInClass == 'teacher'
+          && get(enrollmentRef(tenantId, contextId, myPersonIdIn(tenantId))).data.status == 'active';
+    }
+
     // tenants/{tenantId}
     match /tenants/{tenantId} {
       allow read: if isPlatformAdmin();
@@ -738,26 +759,25 @@ service cloud.firestore {
     }
 
     // Phase 9 -- who may create/edit an assignments doc. Admin is
-    // tenant-wide. The teacher branch is DELIBERATELY left unscoped for now,
-    // unlike canRecordFor() above -- assignedToPersonIds legitimately holds
-    // many students at once (a teacher assigning homework to a whole class
-    // in one document), and Firestore rules can't cheaply prove "every
-    // element of an arbitrary-length list is one of my co-enrolled
-    // students" the way isCoEnrolledTeacherOf() proves it for a single
-    // personId (that would cost one get() per array element, with no
-    // per-element get() construct available in rules at all, not just an
-    // expensive one). Closing this specific gap needs either a real
-    // contextId-trust model on assignments (the client only ever offering
-    // checkboxes for one class's own roster, the rule then checking a
-    // single get() on that one declared contextId instead of every array
-    // element) or per-student assignment documents -- both are
-    // real, separate follow-up work, not attempted in this round. A
+    // tenant-wide. Follow-up round (11 Aug 2026): the teacher branch used to
+    // be blanket isTeacherIn(tenantId) -- any teacher membership could write
+    // an assignment naming ANY student in the tenant, not just their own.
+    // Firestore rules still can't cheaply prove "every element of
+    // assignedToPersonIds is one of my co-enrolled students" (no per-element
+    // get() construct exists), so this closes the gap the contextId-trust
+    // model this comment used to propose: the teacher branch now requires
+    // isActiveTeacherInContext(tenantId, contextId) -- a single, cheap,
+    // fixed-path get() proving "I actively teach the ONE class/course-offer
+    // this assignment is declared against." The client (homework.html) is
+    // trusted to only ever offer checkboxes drawn from that one context's
+    // own roster -- same trust boundary canAdminCatalogue()-authored content
+    // already accepts elsewhere in this file, not a new kind of gap. A
     // guardian-only actor stays scoped exactly as before Phase 10:
     // assignedToPersonIds must be exactly ONE child, and isGuardianOf() must
-    // hold for that one id -- the same one-get()-per-element constraint,
-    // just already worked around by only ever allowing a single target.
-    function isAssignmentCreator(tenantId, assignedToPersonIds) {
-      return canAdminIdentity(tenantId) || isTeacherIn(tenantId)
+    // hold for that one id -- unaffected by this round's change.
+    function isAssignmentCreator(tenantId, contextId, assignedToPersonIds) {
+      return canAdminIdentity(tenantId)
+          || (isTeacherIn(tenantId) && isActiveTeacherInContext(tenantId, contextId))
           || (isGuardianIn(tenantId) && assignedToPersonIds.size() == 1 && isGuardianOf(tenantId, assignedToPersonIds[0]));
     }
 
@@ -853,25 +873,34 @@ service cloud.firestore {
     }
 
     // ==========================================================================
-    // Phase 9 -- Homework & feedback. Person-only for now (no classes/
-    // contextId until Phase 10 -- nothing in a later phase is a prerequisite
-    // for an earlier one, per the Architecture doc's own phase table).
+    // Phase 9 -- Homework & feedback. Built person-only originally (no
+    // classes/contextId existed yet at the time -- nothing in a later phase
+    // is a prerequisite for an earlier one, per the Architecture doc's own
+    // phase table). contextId is real and enforced for the teacher branch as
+    // of the follow-up round below.
     // ==========================================================================
 
-    // assignments/{tenantId}__{assignmentId} -- read is wider than write:
-    // any admin/teacher/guardian in the tenant can see every assignment
-    // (same disclosed, tenant-wide gap already accepted for teachers
-    // elsewhere in this codebase; a guardian seeing another family's
-    // homework in a real multi-family tenant is a real, flagged limitation,
-    // not an oversight -- see PHASE-9-STATUS.md), but only
-    // isAssignmentCreator() may actually create/edit one.
+    // assignments/{tenantId}__{assignmentId}. Follow-up round (11 Aug 2026):
+    // the teacher read branch used to be blanket isTeacherIn(tenantId), same
+    // gap as isAssignmentCreator() above -- now scoped to
+    // isActiveTeacherInContext() against the assignment's own contextId.
+    // Every assignment doc has always written a real contextId field
+    // (createAssignment() -- null until this round, a real class/course-offer
+    // id from now on), so resource.data.contextId is always safe to read,
+    // never a missing-field case. The guardian branch is UNCHANGED --
+    // isGuardianIn(tenantId) alone, tenant-wide -- still the real, flagged,
+    // not-this-round limitation PHASE-9-STATUS.md/this file's own git
+    // history already disclose (a guardian seeing another family's homework
+    // in a real multi-family tenant). Only isAssignmentCreator() may
+    // actually create/edit one.
     match /assignments/{assignmentKey} {
       allow read: if isPlatformAdmin();
-      allow read: if canAdminIdentity(resource.data.tenantId) || isTeacherIn(resource.data.tenantId) || isGuardianIn(resource.data.tenantId);
+      allow read: if canAdminIdentity(resource.data.tenantId) || isGuardianIn(resource.data.tenantId);
+      allow read: if isTeacherIn(resource.data.tenantId) && isActiveTeacherInContext(resource.data.tenantId, resource.data.contextId);
       allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) in resource.data.assignedToPersonIds; // the assigned student themself
 
-      allow create: if isAssignmentCreator(request.resource.data.tenantId, request.resource.data.assignedToPersonIds);
-      allow update: if isAssignmentCreator(resource.data.tenantId, resource.data.assignedToPersonIds);
+      allow create: if isAssignmentCreator(request.resource.data.tenantId, request.resource.data.contextId, request.resource.data.assignedToPersonIds);
+      allow update: if isAssignmentCreator(resource.data.tenantId, resource.data.contextId, resource.data.assignedToPersonIds);
       // No delete (I4/D6) -- archive via status instead.
     }
 
