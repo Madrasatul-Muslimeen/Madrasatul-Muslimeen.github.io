@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.11.** Cutover to production happened
+**Current milestone: QuranRevival v07.12.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -70,27 +70,53 @@ round 1 had deferred this as lower priority than the owner's/family's own
 use per D13; built now that the owner confirmed external-student use is
 actually on the horizon (asked directly before building, per the D13
 ordering's own stated trigger). `app/course-offers.html` +
-`js/course-offers.js`, plus a `firestore.rules` addition worth noting:
-`isEnrolledAsTeacherIn()` is a real, properly-scoped alternative to the
-"teacher sees the whole tenant roster" gap used elsewhere in this codebase
-— a teacher can only see the enrolment roster of a course offer they are
-themselves enrolled to teach. Does not yet wire live study activity
+`js/course-offers.js`, plus a `firestore.rules` addition at the time worth
+noting: `isEnrolledAsTeacherIn()` was a real, properly-scoped alternative
+to the "teacher sees the whole tenant roster" gap used elsewhere in this
+codebase — a teacher could see the enrolment roster of a course offer they
+were themselves enrolled to teach. Does not yet wire live study activity
 (`bookmarks.resume.programId`, `activity.viaProgramId`) to a real enrolled
-offer — flagged as a deliberate, separate follow-up, not an oversight. None
-of v07.04–07.11 are phase deliverables beyond 07.09/07.10/07.11
+offer — flagged as a deliberate, separate follow-up, not an oversight, and
+still true as of v07.12. v07.12 (11 Aug 2026, on Claude Code on the web) is
+**Phase 10 round 1: Classes & provider (Stage B2)** — `classes.html` +
+`js/classes.js`, `enrollments` generalized to `contextType: "class"`
+(reusing Phase 7 round 2's `enrolPerson()`/`endEnrollment()` rather than
+duplicating them), class-wide bulk confirm, and the real substance of the
+round: **the second open access-control question this file had parked is
+now closed, asked directly and confirmed by the owner before building** —
+a teacher membership no longer grants blanket tenant-wide access to every
+student; `canRecordFor()` (records/activity/bookmarks/submissions) and the
+`tenantPeople` roster read now both require `isCoEnrolledTeacherOf()`, a
+new `teacherStudentLinks` D9-style rules-support mirror keyed by
+class/course-offer enrolment. `isEnrolledAsTeacherIn()` above is retired —
+superseded by this, not left running alongside it. **`homework`/
+`assignments` is a flagged, deliberate exception**, still tenant-wide for
+teachers — Firestore rules can't cheaply prove "every element of an
+array is one of my students," only a single id, so this needs a real
+contextId-trust model or per-student assignment docs as its own follow-up.
+Prime role was audited, not rebuilt — already correct everywhere since
+Phase 1. **`firestore.rules` for this round is NOT yet deployed** — no
+authenticated Firebase CLI on Claude Code on the web; the owner needs to
+run the deploy themselves before any of this actually takes effect, same
+as every rules change made from a web session. See `PHASE-10-STATUS.md`
+for the full build log, including a real gap found and fixed in the same
+sitting (not a live bug like Phase 9's): the first version of
+`enrollments`' read rule would have silently prevented a guardian-enrolled
+child's class teacher from ever gaining real authority over them. None of
+v07.04–07.12 are phase deliverables beyond 07.09/07.10/07.11/07.12
 themselves; no status file of their own for 07.04–07.08. See
-`PHASE-9-STATUS.md` for Phase 9 round 1's build log (including the bug fix
-above in full), `PHASE-8-STATUS.md` for Phase 8 round 1's, `PHASE-7-STATUS.md`
-for Phase 7 (now covering both rounds), and `PHASE-6-STATUS.md`
-for Phase 6's, including three real pre-existing data bugs found and
-fixed by querying Firestore directly rather than guessing from the code.
-We are past "build against a parity checklist" and into "rebuild,
-enhance, modify, and fix from here," driven by real use. See "Post-cutover
-rollout order" below for whose real use comes first. **Check this line's
-version number every session** — it's manually updated per
-`app/js/version.js`'s own scheme (first two digits = big overhaul, last
-two = each new feature) and will drift if a future round forgets to bump
-it here too.
+`PHASE-10-STATUS.md` for Phase 10 round 1's build log, `PHASE-9-STATUS.md`
+for Phase 9 round 1's (including the bug fix above in full),
+`PHASE-8-STATUS.md` for Phase 8 round 1's, `PHASE-7-STATUS.md` for Phase 7
+(now covering both rounds), and `PHASE-6-STATUS.md` for Phase 6's,
+including three real pre-existing data bugs found and fixed by querying
+Firestore directly rather than guessing from the code. We are past "build
+against a parity checklist" and into "rebuild, enhance, modify, and fix
+from here," driven by real use. See "Post-cutover rollout order" below for
+whose real use comes first. **Check this line's version number every
+session** — it's manually updated per `app/js/version.js`'s own scheme
+(first two digits = big overhaul, last two = each new feature) and will
+drift if a future round forgets to bump it here too.
 
 ---
 
@@ -307,7 +333,13 @@ own deferral on purpose). **Phase 8
 `PHASE-8-STATUS.md`. **Phase 9 (Homework & feedback) round 1 is also
 built, not yet owner-verified** — see `PHASE-9-STATUS.md`, including a
 real guardian-access bug found and fixed in `firestore.rules` (already
-deployed) that predates this phase. See also
+deployed) that predates this phase. **Phase 10 (Classes & provider,
+Stage B2) round 1 is also built, not yet owner-verified, and its
+`firestore.rules` change is NOT yet deployed** (built on Claude Code on
+the web, which has no authenticated Firebase CLI — the owner needs to run
+the deploy themselves before real per-student teacher scoping takes
+effect) — see `PHASE-10-STATUS.md`, including a real gap found and fixed
+in the same sitting, before it ever shipped. See also
 `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`, `PHASE-2-STATUS.md`,
 `PHASE-3-STATUS.md`, `PHASE-4-STATUS.md`, and `PHASE-6-STATUS.md`. Phase 5
 (Migration & parity) is separately covered below — cutover already
@@ -419,23 +451,30 @@ other phase that doesn't depend on it is finished first. **Do not raise this
 proactively again each session** — it's on record here once; leave it alone
 until the owner reopens it themselves.
 
-**Second open access-control question, raised by the owner 2026-07-31, not
-yet resolved:** a guardian (in a Family/Individual tenant, not a Tuition
-Provider) wants to bring in an outside teacher for a few subjects only —
-that teacher should be able to record/confirm progress **only on the
-subjects they're actually assigned to teach, only for the specific
-children they teach**, and should be **blocked from every other subject
-and every other module entirely**, not just from other teachers' students.
-**Nothing built through Phase 3 supports this.** Every place a `teacher`
-role currently grants access (`canRecordFor` in `firestore.rules`,
-`isTeacherIn(tenantId)`) is **tenant-wide** — any teacher membership in a
-tenant currently sees/can act on every person and every subject in it,
-because there is no subject-scoped or student-scoped assignment concept
-yet. The Architecture doc's own Phase 10 ("Classes & provider") is titled
-"safeguarding rules at scale" and lists "teacher assignment," but that's
-scoped to Stage B2 (Tuition Provider tenants running classes) — the owner's
-scenario is a **Family-tenant, no-classes-yet** version of the same need,
-which may mean this needs a lighter-weight primitive earlier than Phase 10,
-not a full classes/enrolments system. **Do not build this without a design
-conversation first** — flagged for discussion after the phased work, same
-as the item above.
+**Second open access-control question, raised by the owner 2026-07-31 —
+the STUDENT half resolved 11 Aug 2026 (Phase 10 round 1, v07.12), the
+SUBJECT half still open.** The owner's original scenario: a guardian (in a
+Family/Individual tenant, not a Tuition Provider) wants to bring in an
+outside teacher for a few subjects only — that teacher should record/
+confirm progress **only for the specific children they teach** (now real
+and enforced) **and only on the subjects they're actually assigned to
+teach** (still not enforced). Phase 10 was asked directly, before
+building, whether the new class-scoped teacher-assignment mechanism should
+sit alongside today's blanket tenant-wide access or replace it — the owner
+chose replace. `canRecordFor()`/`tenantPeople` roster reads now require
+`isCoEnrolledTeacherOf()`, driven by `enrollments` + the new
+`teacherStudentLinks` mirror. Crucially, this works through **either** a
+`classes.html` class **or** a `course-offers.html` course offer — I1
+("nothing in Layer 2/3 ever requires a `classId`") already meant a
+Family/Individual tenant could use a course offer as the lightweight
+enrolment vehicle without needing a full "class" concept, so the owner's
+original scenario doesn't need its own separate primitive after all — a
+course offer with one teacher and one child enrolled is exactly that.
+**What's still open:** the rule scopes by STUDENT only, not by subject — a
+co-enrolled teacher currently gets full record/confirm authority over that
+student across every subject, not just the ones listed on their
+enrolment's own `subjectIds[]`. Same "Firestore rules can't safely inspect
+one key of an arbitrarily-keyed map" limitation this codebase already
+accepts elsewhere (subjects/trackables/records entries) — enforcing it for
+real needs client-side filtering in the study screens/records.js keyed off
+`subjectIds`, not attempted this round. See `PHASE-10-STATUS.md`.

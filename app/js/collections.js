@@ -53,6 +53,7 @@ export const TENANT = Object.freeze({
   CLASSES: "classes",
   COURSE_OFFERS: "courseOffers",
   ENROLLMENTS: "enrollments",
+  TEACHER_STUDENT_LINKS: "teacherStudentLinks", // Phase 10 addition (D9-style rules-support mirror): security rules can exists()/get() a fixed doc path but never run a query, so this denormalizes "is teacher T actively co-enrolled with student S in some shared class/courseOffer" for canRecordFor()'s per-student teacher scoping. Never shown in any screen.
   CURRICULUM_UNITS: "curriculumUnits",
   CURRICULUM_PLAN: "curriculumPlan",
   RESOURCES: "resources",

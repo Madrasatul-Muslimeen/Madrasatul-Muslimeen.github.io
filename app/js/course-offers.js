@@ -23,6 +23,19 @@
 // follow-up round, not attempted in the same sitting as the data layer
 // itself. programId stays the literal string "none" on bookmark entries
 // until that round.
+//
+// Phase 10 addition: enrolPerson()/endEnrollment() below now also back
+// classes.js's roster management (classes.js imports these functions
+// directly rather than duplicating them -- contextType is the only thing
+// that varies between a course offer and a class, and both share the same
+// enrollments collection per the Architecture doc's own schema). The same
+// two functions now also maintain teacherStudentLinks, the D9-style rules
+// mirror that lets firestore.rules answer "does this teacher actually
+// teach this specific student" in O(1) -- see the comment above
+// recomputeTeacherStudentLink() below. This means Phase 7 round 2's
+// course-offer teachers gain real, enforced scoped access (not just
+// roster read) the moment this round's rules deploy, same as class
+// teachers -- not a separate mechanism per contextType.
 
 import { collection, doc, getDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
@@ -66,37 +79,41 @@ export async function setCourseOfferStatus(db, tenantId, offerId, status) {
 }
 
 // ---------------------------------------------------------------------------
-// Enrolments -- contextType is always "courseOffer" this round (no classes
-// yet). contextId is the course offer's own OWN id segment (not
-// tenant-prefixed on its own -- the doc id below prefixes tenantId once,
-// matching every other compound-key collection in this codebase).
+// Enrolments -- contextType is "courseOffer" or "class" (Phase 10). contextId
+// is the course offer's/class's own OWN id segment (not tenant-prefixed on
+// its own -- the doc id below prefixes tenantId once, matching every other
+// compound-key collection in this codebase).
 // ---------------------------------------------------------------------------
 
 function enrollmentDocId(tenantId, contextId, personId) {
   return `${tenantId}__${contextId}__${personId}`;
 }
 
-/** roleInClass: "student" | "teacher" (the Architecture doc's own field name -- kept as-is even though "class" doesn't apply to a course-offer context yet, since Phase 10's classes will reuse this exact same field/collection). */
-export async function enrolPerson(db, tenantId, { contextId, personId, roleInClass, subjectIds }, uid) {
+/** roleInClass: "student" | "teacher" (the Architecture doc's own field name). contextType defaults to "courseOffer" so every pre-Phase-10 caller keeps working unchanged; classes.js passes "class" explicitly. */
+export async function enrolPerson(db, tenantId, { contextId, contextType, personId, roleInClass, subjectIds }, uid) {
+  const role = roleInClass ?? "student";
   await createDocument(db, TENANT.ENROLLMENTS, enrollmentDocId(tenantId, contextId, personId), {
     tenantId,
-    contextType: "courseOffer",
+    contextType: contextType ?? "courseOffer",
     contextId,
     personId,
-    roleInClass: roleInClass ?? "student",
+    roleInClass: role,
     subjectIds: subjectIds ?? [],
     status: "active",
     startedAt: new Date().toISOString(),
     endedAt: null,
   }, uid);
+  await syncTeacherStudentLinksForContext(db, tenantId, contextId, personId, role, uid);
 }
 
-/** I4/D6: end the enrolment, never delete it -- the history of who was ever enrolled stays. */
-export async function endEnrollment(db, tenantId, contextId, personId) {
-  return updateDocument(db, TENANT.ENROLLMENTS, enrollmentDocId(tenantId, contextId, personId), {
+/** I4/D6: end the enrolment, never delete it -- the history of who was ever enrolled stays. uid is needed now (Phase 10) to stamp any teacherStudentLinks rows this ending recomputes. */
+export async function endEnrollment(db, tenantId, contextId, personId, uid) {
+  const existing = await getEnrollment(db, tenantId, contextId, personId);
+  await updateDocument(db, TENANT.ENROLLMENTS, enrollmentDocId(tenantId, contextId, personId), {
     status: "ended",
     endedAt: new Date().toISOString(),
   });
+  if (existing) await syncTeacherStudentLinksForContext(db, tenantId, contextId, personId, existing.roleInClass, uid);
 }
 
 export async function getEnrollment(db, tenantId, contextId, personId) {
@@ -104,7 +121,7 @@ export async function getEnrollment(db, tenantId, contextId, personId) {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
-/** Every enrolment for one course offer -- read-safe for admin (canAdminIdentity's tenant-wide branch doesn't depend on personId) and for a teacher enrolled in this same offer (isEnrolledAsTeacherIn, also independent of the OTHER rows' personId). A guardian/self wanting just their own child's row should use getEnrollment() instead, same shape as submissions. */
+/** Every enrolment for one course offer or class -- read-safe for any tenant member (Phase 10: enrollments' read rule widened to anyMemberOf() so a guardian/self enrolling their own child can still see the REST of that context's roster, which teacherStudentLinks syncing below depends on -- see the enrollments match block's own comment in firestore.rules for why the narrower per-row rule this used to rely on couldn't support that). A guardian/self wanting just their own child's row can still use getEnrollment() instead, same shape as submissions. */
 export async function listEnrollmentsForOffer(db, tenantId, contextId) {
   const q = query(
     collection(db, TENANT.ENROLLMENTS),
@@ -115,7 +132,7 @@ export async function listEnrollmentsForOffer(db, tenantId, contextId) {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
 
-/** Every enrolment naming this specific person -- the query's own personId-derived doc structure means array-contains isn't needed here (unlike assignments); a where(personId==) filter is exactly what the read rule's self/guardian branches depend on. */
+/** Every enrolment naming this specific person -- the query's own personId-derived doc structure means array-contains isn't needed here (unlike assignments). Read-safe for any tenant member per the Phase 10 anyMemberOf() widening noted on listEnrollmentsForOffer() above. */
 export async function listEnrollmentsForPerson(db, tenantId, personId) {
   const q = query(
     collection(db, TENANT.ENROLLMENTS),
@@ -124,4 +141,64 @@ export async function listEnrollmentsForPerson(db, tenantId, personId) {
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+// ---------------------------------------------------------------------------
+// teacherStudentLinks -- Phase 10, D9-style rules-support mirror.
+//
+// Security rules can only exists()/get() a FIXED document path -- never run
+// a query -- so there is no cheap way for firestore.rules to answer "is
+// there SOME class or course offer where teacher T and student S are both
+// actively enrolled" directly against the enrollments collection (that
+// would mean scanning every contextId). This collection denormalizes
+// exactly that yes/no answer, keyed by the pair, so the rule becomes one
+// exists()+get() -- see isCoEnrolledTeacherOf() in firestore.rules. It is
+// recomputed by the client on every enrolPerson()/endEnrollment() call
+// above and is never shown in any screen (same as tenantMemberUids /
+// inviteTokens, D9).
+//
+// This is what lets canRecordFor() replace blanket isTeacherIn(tenantId)
+// access with real per-student scoping without breaking D10's "no
+// friction" logging workflow: the check is still a flat boolean on the
+// student being acted on, not a live query at write time.
+// ---------------------------------------------------------------------------
+
+function teacherStudentLinkDocId(tenantId, teacherPersonId, studentPersonId) {
+  return `${tenantId}__${teacherPersonId}__${studentPersonId}`;
+}
+
+/** Re-derives ONE pair's link from live, tenant-wide enrolment state (every context, not just the one that just changed) -- so a pair still sharing a DIFFERENT active context after one enrolment ends is correctly left active. */
+async function recomputeTeacherStudentLink(db, tenantId, teacherPersonId, studentPersonId, uid) {
+  const teacherCtxQ = query(
+    collection(db, TENANT.ENROLLMENTS),
+    where("tenantId", "==", tenantId), where("personId", "==", teacherPersonId),
+    where("roleInClass", "==", "teacher"), where("status", "==", "active")
+  );
+  const studentCtxQ = query(
+    collection(db, TENANT.ENROLLMENTS),
+    where("tenantId", "==", tenantId), where("personId", "==", studentPersonId),
+    where("roleInClass", "==", "student"), where("status", "==", "active")
+  );
+  const [teacherSnap, studentSnap] = await Promise.all([getDocs(teacherCtxQ), getDocs(studentCtxQ)]);
+  const teacherContexts = new Set(teacherSnap.docs.map((d) => d.data().contextId));
+  const active = studentSnap.docs.some((d) => teacherContexts.has(d.data().contextId));
+
+  const docId = teacherStudentLinkDocId(tenantId, teacherPersonId, studentPersonId);
+  const existing = await getDoc(doc(db, TENANT.TEACHER_STUDENT_LINKS, docId));
+  const payload = { tenantId, teacherPersonId, studentPersonId, active };
+  if (existing.exists()) await updateDocument(db, TENANT.TEACHER_STUDENT_LINKS, docId, payload);
+  else await createDocument(db, TENANT.TEACHER_STUDENT_LINKS, docId, payload, uid);
+}
+
+/** Recomputes every teacher<->student link touched by one person's enrolment change in one context. Only needs the roster of THIS context (see recomputeTeacherStudentLink's own comment for why touching just the changed context is still globally correct). */
+async function syncTeacherStudentLinksForContext(db, tenantId, contextId, changedPersonId, changedRole, uid) {
+  const roster = await listEnrollmentsForOffer(db, tenantId, contextId); // generic by contextId despite the name
+  const active = roster.filter((e) => e.status === "active");
+  const counterpartRole = changedRole === "teacher" ? "student" : "teacher";
+  const counterparts = active.filter((e) => e.roleInClass === counterpartRole).map((e) => e.personId);
+
+  await Promise.all(counterparts.map((otherId) => {
+    const [teacherPersonId, studentPersonId] = changedRole === "teacher" ? [changedPersonId, otherId] : [otherId, changedPersonId];
+    return recomputeTeacherStudentLink(db, tenantId, teacherPersonId, studentPersonId, uid);
+  }));
 }
