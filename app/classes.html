@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>QuranRevival — Course Offers (Phase 7 round 2)</title>
+<title>QuranRevival — Classes (Phase 10)</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
   h2 { font-size: 1.15rem; margin-top: 2.2rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
   label { display: block; margin: 0.8rem 0 0.3rem; font-weight: 600; font-size: 0.92rem; }
-  input[type="text"], input[type="date"], select, textarea { width: 100%; padding: 0.45rem; font-size: 0.95rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box; }
-  .row { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+  input[type="text"], select, textarea { width: 100%; padding: 0.45rem; font-size: 0.95rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box; }
+  .row { display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: flex-end; }
   .row > div { flex: 1; min-width: 10rem; }
   button {
     font-size: 0.92rem; padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1px solid #ccc;
@@ -20,14 +20,16 @@
   button.secondary { background: white; color: #1F3A6E; }
   button:disabled { opacity: 0.5; cursor: default; }
   fieldset { border: 1px solid #ddd; border-radius: 0.5rem; margin-top: 1rem; }
-  .dayChecks label { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 400; margin: 0.2rem 0.6rem 0.2rem 0; }
-  .dayChecks input { width: auto; }
+  .subjectChecks label { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 400; margin: 0.2rem 0.6rem 0.2rem 0; }
+  .subjectChecks input { width: auto; }
   .card { border: 1px solid #eee; border-radius: 0.5rem; padding: 0.8rem; margin-top: 0.8rem; }
   .card h3 { margin: 0 0 0.3rem; font-size: 1rem; }
   .muted { color: #888; font-size: 0.85rem; }
   .pill { display: inline-block; padding: 0.05rem 0.5rem; border-radius: 0.7rem; font-size: 0.75rem; }
   .pill-active { background: #deede4; color: #2e6b4f; }
-  .pill-ended, .pill-archived { background: #eee; color: #888; }
+  .pill-archived { background: #eee; color: #888; }
+  .pill-teacher { background: #f5ebd6; color: #8a6220; }
+  .pill-student { background: #dde4f0; color: #1F3A6E; }
   #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
   .contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; font-size: 0.9rem; }
   .contextBar label { margin: 0; }
@@ -41,12 +43,13 @@
 </style>
 </head>
 <body>
-  <h1>Course Offers (Phase 7 round 2)</h1>
-  <p>A shared schedule multiple people follow together — the piece of Phase
-     7 deferred until external-student use was actually on the horizon.
-     Studying through an enrolled offer isn't wired into the study screens
-     yet (that's its own follow-up round) — this page is the offer +
-     enrolment data itself: create an offer, enrol people, see who's in it.</p>
+  <h1>Classes (Phase 10)</h1>
+  <p>A class is a real, scoped context: create it, enrol students and
+     teachers into it, and a teacher enrolled here gains real record/confirm
+     authority over just this class's students — not the whole tenant
+     (Stage B2, "safeguarding rules at scale"). Class-wide bulk confirm
+     clears every pending entry for every actively-enrolled student in one
+     pass.</p>
 
   <div id="who">Checking sign-in…</div>
   <button id="signInBtn" style="display:none;">Sign in with Google</button>
@@ -58,34 +61,22 @@
       <label>Tenant
         <select id="tenantSelect" style="width:auto;"></select>
       </label>
-      <label>Person
-        <select id="personSelect" style="width:auto;"></select>
-      </label>
     </div>
 
     <fieldset id="createFieldset" style="display:none;">
-      <legend>New course offer</legend>
-      <label for="offerNameInput">Name</label>
-      <input type="text" id="offerNameInput" />
+      <legend>New class</legend>
+      <label for="classNameInput">Name</label>
+      <input type="text" id="classNameInput" />
+      <label for="classGlossInput">Gloss (optional)</label>
+      <input type="text" id="classGlossInput" />
       <label>Subjects (optional)</label>
-      <div class="dayChecks" id="subjectChecks"></div>
-      <label>Runs on</label>
-      <div class="dayChecks" id="dayChecks"></div>
-      <div class="row">
-        <div><label for="startDateInput">Start date (optional)</label><input type="date" id="startDateInput" /></div>
-        <div><label for="endDateInput">End date (optional)</label><input type="date" id="endDateInput" /></div>
-      </div>
-      <label for="notesInput">Notes (optional)</label>
-      <textarea id="notesInput" rows="2"></textarea>
-      <button id="createOfferBtn" style="margin-top:0.8rem;">Create offer</button>
+      <div class="subjectChecks" id="subjectChecks"></div>
+      <button id="createClassBtn" style="margin-top:0.8rem;">Create class</button>
       <div id="createResult" class="muted"></div>
     </fieldset>
 
-    <h2>Course offers</h2>
-    <div id="offersBody"><p class="muted">Loading…</p></div>
-
-    <h2><span id="enrolmentsPersonName"></span>'s enrolments</h2>
-    <div id="enrolmentsBody"><p class="muted">Loading…</p></div>
+    <h2>Classes</h2>
+    <div id="classesBody"><p class="muted">Loading…</p></div>
   </div>
 
   <script type="module">
@@ -109,10 +100,9 @@
       scopedRoster,
     } from "./js/session-context.js";
     import { getSubjectTree } from "./js/catalogue.js";
-    import {
-      createCourseOffer, listCourseOffers, setCourseOfferStatus,
-      enrolPerson, endEnrollment, listEnrollmentsForOffer, listEnrollmentsForPerson,
-    } from "./js/course-offers.js";
+    import { createClass, listClasses, setClassStatus } from "./js/classes.js";
+    import { enrolPerson, endEnrollment, listEnrollmentsForOffer } from "./js/course-offers.js";
+    import { bulkConfirmClass } from "./js/records.js";
     import { renderNavBar } from "./js/nav.js";
 
     const whoEl = document.getElementById("who");
@@ -121,22 +111,13 @@
     const appEl = document.getElementById("app");
     const navBar = document.getElementById("navBar");
     const tenantSelect = document.getElementById("tenantSelect");
-    const personSelect = document.getElementById("personSelect");
     const createFieldset = document.getElementById("createFieldset");
-    const offerNameInput = document.getElementById("offerNameInput");
+    const classNameInput = document.getElementById("classNameInput");
+    const classGlossInput = document.getElementById("classGlossInput");
     const subjectChecks = document.getElementById("subjectChecks");
-    const dayChecks = document.getElementById("dayChecks");
-    const startDateInput = document.getElementById("startDateInput");
-    const endDateInput = document.getElementById("endDateInput");
-    const notesInput = document.getElementById("notesInput");
-    const createOfferBtn = document.getElementById("createOfferBtn");
+    const createClassBtn = document.getElementById("createClassBtn");
     const createResult = document.getElementById("createResult");
-    const offersBody = document.getElementById("offersBody");
-    const enrolmentsPersonName = document.getElementById("enrolmentsPersonName");
-    const enrolmentsBody = document.getElementById("enrolmentsBody");
-
-    const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    dayChecks.innerHTML = DAY_NAMES.map((d, i) => `<label><input type="checkbox" value="${i}" /> ${d}</label>`).join("");
+    const classesBody = document.getElementById("classesBody");
 
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
@@ -156,8 +137,9 @@
     let roster = [];
     let visibleRoster = [];
     let subjectTree = [];
-    let offers = [];
-    let canAdmin = false; // owner/prime -- create offers, manage any enrolment
+    let classes = [];
+    let myPersonId = null;
+    let canAdmin = false; // owner/prime -- create classes, manage any enrolment/roster
 
     function currentPreview() {
       const context = getActiveContext();
@@ -171,14 +153,12 @@
       const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-      const { viewAsRole, effRoles, myPersonId } = currentPreview();
+      const preview = currentPreview();
+      const { viewAsRole, effRoles } = preview;
+      myPersonId = preview.myPersonId;
       navBar.innerHTML = renderNavBar(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
 
       visibleRoster = scopedRoster(roster, effRoles, myPersonId);
-      personSelect.innerHTML = visibleRoster
-        .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
-        .join("");
-
       canAdmin = effRoles.some((r) => ["owner", "prime"].includes(r));
       createFieldset.style.display = canAdmin ? "" : "none";
 
@@ -188,153 +168,154 @@
         .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, "en", n.id)}</label>`)
         .join("") || `<span class="muted">No subjects yet.</span>`;
 
-      await refreshOffers();
-      await refreshEnrolments();
+      await refreshClasses();
     }
 
     function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, "en", id) : id; }
     function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, "en", id) : id; }
-    function routineLine(routine) {
-      const days = (routine?.daysOfWeek ?? []).map((d) => DAY_NAMES[d]).join(", ");
-      const range = [routine?.startDate, routine?.endDate].filter(Boolean).join(" – ");
-      return [days, range].filter(Boolean).join(" · ") || "No schedule set";
-    }
 
     // -----------------------------------------------------------------------
-    // Course offers.
+    // Classes.
     // -----------------------------------------------------------------------
 
-    async function refreshOffers() {
-      offersBody.innerHTML = `<p class="muted">Loading…</p>`;
+    async function refreshClasses() {
+      classesBody.innerHTML = `<p class="muted">Loading…</p>`;
       try {
-        offers = (await listCourseOffers(db, activeTenantId)).filter((o) => canAdmin || o.status === "active");
-        offersBody.innerHTML = offers.length
-          ? (await Promise.all(offers.map(renderOfferCard))).join("")
-          : `<p class="muted">No course offers yet.</p>`;
-        wireOfferCardActions();
+        classes = (await listClasses(db, activeTenantId)).filter((c) => canAdmin || c.status === "active");
+        classesBody.innerHTML = classes.length
+          ? (await Promise.all(classes.map(renderClassCard))).join("")
+          : `<p class="muted">No classes yet.</p>`;
+        wireClassCardActions();
       } catch (err) {
-        offersBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load course offers: ${err.code ?? ""} ${err.message}</p>`;
+        classesBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load classes: ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
       }
     }
 
-    async function renderOfferCard(o) {
-      const subjectsLine = (o.subjectIds ?? []).map(subjectName).join(", ") || "(no subjects set)";
-      const rosterHtml = canAdmin ? await renderOfferRoster(o) : "";
-      const enrolBtn = `<button class="small enrolBtn" data-offer="${o.id}">Enrol <span class="targetName"></span></button>`;
-      const archiveBtn = canAdmin && o.status === "active"
-        ? `<button class="small secondary archiveOfferBtn" data-offer="${o.id}">Archive</button>`
+    async function renderClassCard(c) {
+      const subjectsLine = (c.subjectIds ?? []).map(subjectName).join(", ") || "(no subjects set)";
+      const rosterHtml = await renderClassRoster(c);
+      const archiveBtn = canAdmin && c.status === "active"
+        ? `<button class="small secondary archiveClassBtn" data-class="${c.id}">Archive</button>`
         : "";
+      const bulkConfirmBtn = canAdmin && c.status === "active"
+        ? `<button class="small secondary bulkConfirmClassBtn" data-class="${c.id}">Bulk confirm all pending for this class</button>`
+        : "";
+      const enrolControls = canAdmin && c.status === "active" ? renderEnrolControls(c) : "";
       return `<div class="card">
-        <h3>${langText(o.name, "en", o.id)} <span class="pill pill-${o.status}">${o.status}</span></h3>
+        <h3>${langText(c.name, "en", c.id)} <span class="pill pill-${c.status}">${c.status}</span></h3>
         <div class="muted">${subjectsLine}</div>
-        <div class="muted">${routineLine(o.routine)}</div>
-        ${o.status === "active" ? `<div style="margin-top:0.5rem;">${enrolBtn} ${archiveBtn}</div>` : ""}
+        ${c.gloss?.en ? `<div class="muted">${c.gloss.en}</div>` : ""}
+        ${enrolControls}
         ${rosterHtml}
+        ${c.status === "active" ? `<div style="margin-top:0.5rem;">${bulkConfirmBtn} ${archiveBtn}</div>` : ""}
+        <div class="muted bulkResult" data-class="${c.id}"></div>
       </div>`;
     }
 
-    async function renderOfferRoster(o) {
-      const enrolled = await listEnrollmentsForOffer(db, activeTenantId, o.id);
+    function renderEnrolControls(c) {
+      const personOptions = roster.map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`).join("");
+      return `<div class="row" style="margin-top:0.5rem;">
+        <div><label>Person</label><select class="enrolPersonSelect" data-class="${c.id}">${personOptions}</select></div>
+        <div><label>Role</label><select class="enrolRoleSelect" data-class="${c.id}">
+          <option value="student">Student</option>
+          <option value="teacher">Teacher</option>
+        </select></div>
+        <div><button class="small enrolBtn" data-class="${c.id}">Enrol</button></div>
+      </div>`;
+    }
+
+    async function renderClassRoster(c) {
+      const enrolled = await listEnrollmentsForOffer(db, activeTenantId, c.id); // generic by contextId
       const active = enrolled.filter((e) => e.status === "active");
       if (!active.length) return `<div class="muted" style="margin-top:0.4rem;">No one enrolled yet.</div>`;
-      const rows = active.map((e) => `<div class="muted">${personName(e.personId)} (${e.roleInClass}) <button class="small secondary endEnrolBtn" data-offer="${o.id}" data-person="${e.personId}">End</button></div>`).join("");
+      const rows = active.map((e) => {
+        const endBtn = canAdmin ? `<button class="small secondary endEnrolBtn" data-class="${c.id}" data-person="${e.personId}">End</button>` : "";
+        return `<div class="muted">${personName(e.personId)} <span class="pill pill-${e.roleInClass}">${e.roleInClass}</span> ${endBtn}</div>`;
+      }).join("");
       return `<div style="margin-top:0.5rem;">${rows}</div>`;
     }
 
-    function wireOfferCardActions() {
-      offersBody.querySelectorAll(".enrolBtn").forEach((btn) => {
-        btn.querySelector(".targetName").textContent = personName(personSelect.value);
+    function wireClassCardActions() {
+      classesBody.querySelectorAll(".enrolBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {
+          const classId = btn.dataset.class;
+          const personSel = classesBody.querySelector(`.enrolPersonSelect[data-class="${classId}"]`);
+          const roleSel = classesBody.querySelector(`.enrolRoleSelect[data-class="${classId}"]`);
           btn.disabled = true;
           const outcome = await safeWrite(
             () => enrolPerson(db, activeTenantId, {
-              contextId: btn.dataset.offer, personId: personSelect.value, roleInClass: "student", subjectIds: [],
+              contextId: classId, contextType: "class", personId: personSel.value, roleInClass: roleSel.value, subjectIds: [],
             }, auth.currentUser.uid),
-            { collection: "enrollments", action: "enrolPerson" }
+            { collection: "enrollments", action: "enrolPerson (class)" }
           );
           btn.disabled = false;
-          if (outcome.ok) { await refreshOffers(); await refreshEnrolments(); }
+          if (outcome.ok) await refreshClasses();
           else alert(outcome.entry.message);
         });
       });
-      offersBody.querySelectorAll(".archiveOfferBtn").forEach((btn) => {
+      classesBody.querySelectorAll(".archiveClassBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {
           btn.disabled = true;
           const outcome = await safeWrite(
-            () => setCourseOfferStatus(db, activeTenantId, btn.dataset.offer, "archived"),
-            { collection: "courseOffers", action: "setCourseOfferStatus" }
+            () => setClassStatus(db, activeTenantId, btn.dataset.class, "archived"),
+            { collection: "classes", action: "setClassStatus" }
           );
-          if (outcome.ok) await refreshOffers();
+          if (outcome.ok) await refreshClasses();
           else { alert(outcome.entry.message); btn.disabled = false; }
         });
       });
-      offersBody.querySelectorAll(".endEnrolBtn").forEach((btn) => {
+      classesBody.querySelectorAll(".endEnrolBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {
           btn.disabled = true;
           const outcome = await safeWrite(
-            () => endEnrollment(db, activeTenantId, btn.dataset.offer, btn.dataset.person, auth.currentUser.uid),
-            { collection: "enrollments", action: "endEnrollment" }
+            () => endEnrollment(db, activeTenantId, btn.dataset.class, btn.dataset.person, auth.currentUser.uid),
+            { collection: "enrollments", action: "endEnrollment (class)" }
           );
-          if (outcome.ok) { await refreshOffers(); await refreshEnrolments(); }
+          if (outcome.ok) await refreshClasses();
           else { alert(outcome.entry.message); btn.disabled = false; }
+        });
+      });
+      classesBody.querySelectorAll(".bulkConfirmClassBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const classId = btn.dataset.class;
+          const resultEl = classesBody.querySelector(`.bulkResult[data-class="${classId}"]`);
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => bulkConfirmClass(db, { tenantId: activeTenantId, classId, confirmedByPersonId: myPersonId }),
+            { collection: "records", action: "bulkConfirmClass" }
+          );
+          btn.disabled = false;
+          if (outcome.ok) resultEl.textContent = `Confirmed ${outcome.result.totalConfirmed} pending entr${outcome.result.totalConfirmed === 1 ? "y" : "ies"} across ${outcome.result.perStudent.length} student${outcome.result.perStudent.length === 1 ? "" : "s"}.`;
+          else resultEl.textContent = outcome.entry.message;
         });
       });
     }
 
-    createOfferBtn.addEventListener("click", async () => {
+    createClassBtn.addEventListener("click", async () => {
       createResult.textContent = "";
-      if (!offerNameInput.value.trim()) { createResult.textContent = "Enter a name first."; return; }
+      if (!classNameInput.value.trim()) { createResult.textContent = "Enter a name first."; return; }
       const subjectIds = Array.from(subjectChecks.querySelectorAll("input:checked")).map((c) => c.value);
-      const daysOfWeek = Array.from(dayChecks.querySelectorAll("input:checked")).map((c) => Number(c.value));
 
-      createOfferBtn.disabled = true;
+      createClassBtn.disabled = true;
       const outcome = await safeWrite(
-        () => createCourseOffer(db, activeTenantId, {
-          name: offerNameInput.value.trim(),
-          moduleIds: [],
+        () => createClass(db, activeTenantId, {
+          name: classNameInput.value.trim(),
+          gloss: classGlossInput.value.trim(),
           subjectIds,
-          routine: { daysOfWeek, startDate: startDateInput.value || null, endDate: endDateInput.value || null, notes: notesInput.value.trim() || null },
         }, auth.currentUser.uid),
-        { collection: "courseOffers", action: "createCourseOffer" }
+        { collection: "classes", action: "createClass" }
       );
-      createOfferBtn.disabled = false;
+      createClassBtn.disabled = false;
       if (outcome.ok) {
-        createResult.textContent = "Course offer created.";
-        offerNameInput.value = ""; startDateInput.value = ""; endDateInput.value = ""; notesInput.value = "";
+        createResult.textContent = "Class created.";
+        classNameInput.value = ""; classGlossInput.value = "";
         subjectChecks.querySelectorAll("input:checked").forEach((c) => (c.checked = false));
-        dayChecks.querySelectorAll("input:checked").forEach((c) => (c.checked = false));
-        await refreshOffers();
+        await refreshClasses();
       } else {
         createResult.textContent = outcome.entry.message;
       }
     });
-
-    // -----------------------------------------------------------------------
-    // This person's own enrolments.
-    // -----------------------------------------------------------------------
-
-    async function refreshEnrolments() {
-      const personId = personSelect.value;
-      if (!personId) { enrolmentsBody.innerHTML = `<p class="muted">Pick a person first.</p>`; return; }
-      enrolmentsPersonName.textContent = personName(personId);
-      enrolmentsBody.innerHTML = `<p class="muted">Loading…</p>`;
-      try {
-        const enrolments = await listEnrollmentsForPerson(db, activeTenantId, personId);
-        const active = enrolments.filter((e) => e.status === "active");
-        enrolmentsBody.innerHTML = active.length
-          ? active.map((e) => {
-              const offer = offers.find((o) => o.id === e.contextId);
-              return `<div class="card"><strong>${offer ? langText(offer.name, "en", e.contextId) : e.contextId}</strong> — ${e.roleInClass}</div>`;
-            }).join("")
-          : `<p class="muted">Not enrolled in anything yet.</p>`;
-      } catch (err) {
-        enrolmentsBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load enrolments: ${err.code ?? ""} ${err.message}</p>`;
-        console.error(err);
-      }
-    }
-
-    personSelect.addEventListener("change", () => { refreshOffers(); refreshEnrolments(); });
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
