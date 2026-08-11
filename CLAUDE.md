@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.14.** Cutover to production happened
+**Current milestone: QuranRevival v07.15.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -193,10 +193,38 @@ including three real pre-existing data bugs found and fixed by querying
 Firestore directly rather than guessing from the code. We are past "build
 against a parity checklist" and into "rebuild, enhance, modify, and fix
 from here," driven by real use. See "Post-cutover rollout order" below for
-whose real use comes first. **Check this line's version number every
-session** — it's manually updated per `app/js/version.js`'s own scheme
-(first two digits = big overhaul, last two = each new feature) and will
-drift if a future round forgets to bump it here too.
+whose real use comes first.
+v07.15 (11 Aug 2026, on Claude Code on the web) is **Phase 13 round 1:
+Asma ul Husna + About** — the 99 Names of Allah as a real study module
+(`app/js/asma-data.js`, sourced and cross-checked rather than typed from
+memory, registered via the same `MODULE_TEMPLATES`/`SUBJECT_TEMPLATES`/
+`TOPIC_TRACKABLE_TEMPLATES` pattern every other module uses, its own
+`"asma"` renderer since the content is fixed platform data, not
+tenant-authored), a screensaver cycling poster images the owner supplied
+mid-round (`https://archive.org/details/NamesAndAttributesOfAllah`,
+referenced by URL rather than copied into the repo — this codebase embeds
+no binary media anywhere else either, Quran audio included), and
+`about.html` — the first real screen reading `feature-registry.js`'s
+`getFullRegistry()` (built in Phase 0 as F-006, unused by any screen until
+now). Along the way, found and fixed a stale-flag bug: **Phase 12
+("Remaining modules") was already fully built**, delivered inside Phase 6
+round 2 (Arabic/Hadith/General Study/Nature-Life) and Phase 7 round 1
+(Health) without its own numbering ever being flipped from `"planned"` to
+`"built"` — same drift Phase 10's build log already flagged for Phases
+6-9's rows. No code changed for Phase 12 itself; the flag was simply
+wrong. **Messaging (threads, per-person inbox) — the third and largest
+piece of Phase 13's own scope — is deliberately deferred**, not built this
+round: the Architecture doc already resolves its hard safeguarding
+question (guardian sees every minor's thread, no private adult-child
+thread, append-only, no group chat), but it's still new direct-communication
+surface involving children, and per D13's own "lower-risk, proven-first"
+spirit it's better sequenced once there's a real second `teacher`-only
+account to verify against — the same gap Phase 10 itself is still waiting
+on. See `PHASE-13-STATUS.md` for the full build log. **Check this line's
+version number every session** — it's manually updated per
+`app/js/version.js`'s own scheme (first two digits = big overhaul, last
+two = each new feature) and will drift if a future round forgets to bump
+it here too.
 
 ---
 
@@ -423,11 +451,19 @@ actual teacher-scoping enforcement itself still needs a second real
 it) — see `PHASE-10-STATUS.md` for the full build log, the remaining
 verification checklist, and a real gap found and fixed in the same
 sitting, before it ever shipped. **Phase 11 (Curriculum, grades &
-resources, Stage C) round 1 is built, `firestore.rules` NOT yet
-deployed** — see `PHASE-11-STATUS.md` for the full build log and an
-8-item verification checklist; the two genuinely new collections
-(`curriculumUnits`, `curriculumPlan`) will 403 until the owner deploys the
-rules addition via the Firebase Console, same as Phase 10's. See also
+resources, Stage C) round 1 is built, `firestore.rules` deployed via the
+Firebase Console and owner-checked okay (11 Aug 2026)** — see
+`PHASE-11-STATUS.md` for the full build log and an 8-item verification
+checklist. **Phase 12 (Remaining modules) is built** — it turned out to
+already be fully delivered inside Phase 6 round 2 (Arabic, Hadith, General
+Study, Nature-Life) and Phase 7 round 1 (Health); only its own
+`feature-registry.js` status flag was stale, corrected 11 Aug 2026 — no
+new code was needed. **Phase 13 (Full messaging & extras) round 1 is
+built** — Asma ul Husna (99-Name study module + owner-supplied poster
+screensaver) and `about.html` reading the feature registry; messaging
+itself (threads, per-person inbox) is deliberately deferred to a later
+round, pending a real second `teacher`-only account to verify its
+safeguarding rules against — see `PHASE-13-STATUS.md`. See also
 `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`, `PHASE-2-STATUS.md`,
 `PHASE-3-STATUS.md`, `PHASE-4-STATUS.md`, and `PHASE-6-STATUS.md`. Phase 5
 (Migration & parity) is separately covered below — cutover already

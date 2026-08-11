@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — Asma ul Husna</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 56rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  button {
+    font-size: 0.92rem; padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.secondary { background: white; color: #1F3A6E; }
+  select { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #ccc; border-radius: 0.35rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+
+  /* ---------- Continue strip (Phase 7) ---------- */
+  .continue-strip { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0 1rem; }
+  .continue-chip { background: #eef1f7; color: #1F3A6E; border: 1px solid #d3dbea; border-radius: 999px; padding: 0.3rem 0.8rem; font-size: 0.82rem; text-decoration: none; }
+  .continue-chip:hover { border-color: #1F3A6E; }
+
+  /* ---------- Asma grid ---------- */
+  .asma-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.7rem; margin-top: 1rem; }
+  .asma-card {
+    display: flex; flex-direction: column; align-items: center; gap: 0.3rem; text-align: center;
+    padding: 0.8rem 0.6rem; border: 1px solid #e0e0e0; border-radius: 0.6rem; background: white; color: #222; cursor: pointer;
+  }
+  .asma-card:hover { border-color: #1F3A6E; }
+  .asma-card-number { font-size: 0.72rem; color: #999; }
+  .asma-card-arabic { font-size: 1.3rem; }
+  .asma-card-translit { font-weight: 600; }
+  .asma-card-meaning { font-size: 0.78rem; color: #666; }
+  .asma-status-chip { color: white; padding: 0.15rem 0.55rem; border-radius: 0.8rem; font-size: 0.72rem; }
+  .asma-status-unclaimed { background: #888 !important; }
+
+  .asma-detail { border: 1px solid #e0e0e0; border-radius: 0.6rem; padding: 1.2rem; margin-top: 1.2rem; text-align: center; }
+  .asma-detail-number { color: #999; font-size: 0.85rem; }
+  .asma-detail-arabic { font-size: 2.2rem; margin: 0.4rem 0; }
+  .asma-detail-meaning { color: #555; }
+
+  #wayModalOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 50; }
+  #wayModalOverlay.open { display: flex; }
+  #wayModalMount { background: white; border-radius: 0.6rem; padding: 1.2rem; max-width: 32rem; width: 92%; max-height: 85vh; overflow-y: auto; }
+  .way-tab-bar { display: flex; gap: 0.4rem; margin: 0.8rem 0; }
+  .way-tab-btn { background: #eef1f7; color: #1F3A6E; border: none; }
+  .way-tab-btn.active { background: #1F3A6E; color: white; }
+  .way-tab-panel { display: none; }
+  .way-tab-panel.active { display: block; }
+  .way-modal-header { display: flex; justify-content: space-between; align-items: center; }
+  .way-close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; }
+
+  /* ---------- Screensaver ---------- */
+  #screensaverOverlay { display: none; position: fixed; inset: 0; background: #000; align-items: center; justify-content: center; z-index: 60; cursor: pointer; }
+  #screensaverOverlay.open { display: flex; }
+  .asma-screensaver-slide { text-align: center; color: white; max-width: 90vw; }
+  .asma-screensaver-img { max-width: 90vw; max-height: 80vh; border-radius: 0.5rem; }
+  .asma-screensaver-caption { margin-top: 1rem; font-size: 1.1rem; }
+  .asma-screensaver-arabic { font-size: 3rem; margin-bottom: 1rem; }
+  #screensaverCloseBtn { position: fixed; top: 1rem; right: 1.2rem; background: rgba(255,255,255,0.15); color: white; border: none; font-size: 1.6rem; padding: 0.2rem 0.7rem; border-radius: 0.4rem; z-index: 61; }
+</style>
+</head>
+<body>
+  <h1>Asma ul Husna</h1>
+  <p>The 99 Names of Allah — read the meaning of each, then track your own
+     progress through them. Open the screensaver to slowly cycle through the
+     Names for reflection.</p>
+
+  <div class="app-home-bar">
+    <span class="nav-home-label">Home</span>
+    <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
+    <div id="who">Checking sign-in…</div>
+    <button id="signInBtn" style="display:none;">Sign in with Google</button>
+    <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+  </div>
+
+  <div id="app" style="display:none;">
+    <div id="navBar"></div>
+    <div id="continueStrip"></div>
+    <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
+      <label style="margin:0;">Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label style="margin:0;">Person
+        <select id="personSelect" style="width:auto;"></select>
+      </label>
+      <button type="button" id="screensaverBtn" class="secondary">Screensaver</button>
+    </div>
+
+    <div id="gridContainer"></div>
+    <div id="detailContainer"></div>
+  </div>
+
+  <div id="wayModalOverlay"><div id="wayModalMount"></div></div>
+
+  <div id="screensaverOverlay">
+    <button type="button" id="screensaverCloseBtn" aria-label="Close screensaver">&times;</button>
+    <div id="screensaverMount"></div>
+  </div>
+
+  <script type="module">
+    import { initAsmaStudyPage } from "./js/asma-study.js";
+    initAsmaStudyPage();
+  </script>
+</body>
+</html>
