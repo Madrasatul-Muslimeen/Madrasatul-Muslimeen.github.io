@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.11.** Cutover to production happened
+**Current milestone: QuranRevival v07.12.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -76,9 +76,37 @@ ordering's own stated trigger). `app/course-offers.html` +
 — a teacher can only see the enrolment roster of a course offer they are
 themselves enrolled to teach. Does not yet wire live study activity
 (`bookmarks.resume.programId`, `activity.viaProgramId`) to a real enrolled
-offer — flagged as a deliberate, separate follow-up, not an oversight. None
-of v07.04–07.11 are phase deliverables beyond 07.09/07.10/07.11
-themselves; no status file of their own for 07.04–07.08. See
+offer — flagged as a deliberate, separate follow-up, not an oversight.
+v07.12 (11 Aug 2026) is Shell round 3: the shared nav bar (`app/js/nav.js`,
+`renderNavBar()`) had grown to a flat ~19-link list that wrapped/crowded at
+the horizon — reorganized into five categories per the owner's own
+mockup — **Admin** (People, Catalogue — owner/prime only, unchanged
+gating), **Study Module** (all 9 study-renderer pages), **Operation**
+(Records, Monitor, Homework, Course Offers, plus a disabled "Curriculum"
+placeholder — that's unbuilt Phase 11 scope), **Bookmark** and **Settings**
+(Language, Appearance) both disabled placeholders only, real functionality
+deferred by the owner to a later round. Each category is a native
+`<details>/<summary>` disclosure (no click-handler JS needed, keeping
+`nav.js` a pure renderer per I2) that auto-opens if it contains the current
+page. Location change only, confirmed with the owner before building —
+no link's destination or gating logic changed. The Legacy App link, sign-in
+status text, and Sign In/Sign Out buttons moved out of `renderNavBar()`'s
+own output into each page's static pre-JS markup as a labeled "Home" bar —
+they were already static (v07.08's anti-flash fix), and folding them into
+the role-gated renderer would have delayed them until after sign-in
+resolves, reintroducing exactly the kind of flash v07.08 fixed. The nav
+bar's CSS, previously copy-pasted into a `<style>` block in every one of
+15 pages since shell round 1, is now one shared `app/css/shell.css` linked
+from each page instead. On `quranrevival.html` only (per the owner's own
+scope call — every other page's ad hoc `<h1>` stays untouched): the
+"QuranRevival vX.XX" title now carries a tagline ("Reviving the Quran,
+abandoned.", reused verbatim from the boot splash) and sits above the nav
+bar, and the existing tenant-editable banner (F-061, `#globalBanner`) moved
+to sit *before* `#navBar` instead of immediately after it, so the nav bar
+is no longer directly followed by a second banner. No Firestore or
+`firestore.rules` changes. None of v07.04–07.12 are phase deliverables
+beyond 07.09/07.10/07.11 themselves; no status file of their own for
+v07.04–07.08 or v07.12. See
 `PHASE-9-STATUS.md` for Phase 9 round 1's build log (including the bug fix
 above in full), `PHASE-8-STATUS.md` for Phase 8 round 1's, `PHASE-7-STATUS.md`
 for Phase 7 (now covering both rounds), and `PHASE-6-STATUS.md`

@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
 <title>QuranRevival — Records (Phase 3)</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
@@ -38,12 +39,6 @@
   .domainChips label { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 400; margin: 0.2rem 0.6rem 0.2rem 0; }
   .domainChips input { width: auto; }
 
-  /* ---------- Shared nav (shell round 1) ---------- */
-  .app-nav { display: flex; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5; }
-  .app-nav .nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
-  .app-nav .nav-link:hover { text-decoration: underline; }
-  .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
-  .nav-preview-notice { margin-left: auto; font-size: 0.82rem; color: #8a6220; background: #f5ebd6; padding: 0.15rem 0.6rem; border-radius: 0.7rem; }
 </style>
 </head>
 <body>
@@ -52,9 +47,13 @@
      a surah/subject or a week. There's no Quran/topic renderer yet (that's
      Phase 4) — unit keys are typed in directly here for testing.</p>
 
-  <div id="who">Checking sign-in…</div>
-  <button id="signInBtn" style="display:none;">Sign in with Google</button>
-  <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+  <div class="app-home-bar">
+    <span class="nav-home-label">Home</span>
+    <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
+    <div id="who">Checking sign-in…</div>
+    <button id="signInBtn" style="display:none;">Sign in with Google</button>
+    <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+  </div>
 
   <div id="app" style="display:none;">
     <div id="navBar"></div>

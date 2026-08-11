@@ -1,0 +1,48 @@
+/* ---------- Shared shell (shell round 3, 11 Aug 2026) ----------
+   Home bar (Legacy App link, sign-in status, Sign in/out -- each page's own
+   static markup, this file only styles it) and the categorized nav bar
+   (Admin / Study Module / Operation / Bookmark / Settings) rendered by
+   js/nav.js. Pulled out of every page's own <style> block, where this was
+   copy-pasted 15x since shell round 1 -- the flat ~19-link list this
+   replaces had outgrown that duplication, so the replacement isn't
+   copy-pasted again. Linked from every page that renders the nav bar; no
+   other page-specific CSS lives here. */
+
+.app-home-bar {
+  display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap;
+  margin-bottom: 0.8rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5;
+  font-size: 0.9rem;
+}
+.app-home-bar .nav-home-label {
+  font-weight: 700; color: #1F3A6E; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
+}
+.app-home-bar #who { color: #555; }
+.app-home-bar button { font-size: 0.85rem; padding: 0.3rem 0.75rem; }
+
+.nav-legacy-link {
+  font-size: 0.78rem; color: #888; text-decoration: none;
+  border: 1px solid #ddd; border-radius: 0.7rem; padding: 0.15rem 0.6rem;
+}
+.nav-legacy-link:hover { color: #1F3A6E; border-color: #1F3A6E; }
+
+.app-nav {
+  display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-start;
+  margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5;
+}
+.nav-cat { border: 1px solid #ddd; border-radius: 0.5rem; background: white; }
+.nav-cat > summary {
+  cursor: pointer; padding: 0.4rem 0.9rem; font-weight: 700; font-size: 0.85rem;
+  color: #1F3A6E; list-style: none; user-select: none;
+}
+.nav-cat > summary::-webkit-details-marker { display: none; }
+.nav-cat > summary::after { content: " \25BE"; font-size: 0.7em; color: #888; }
+.nav-cat[open] > summary::after { content: " \25B4"; }
+.nav-cat-links { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.3rem 0.9rem 0.7rem; min-width: 10rem; }
+.nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.88rem; font-weight: 600; padding: 0.1rem 0; }
+.nav-link:hover { text-decoration: underline; }
+.nav-current { color: #888; cursor: default; pointer-events: none; }
+.nav-link-disabled { color: #aaa; font-size: 0.84rem; font-style: italic; padding: 0.1rem 0; }
+.nav-preview-notice {
+  margin-left: auto; align-self: center; font-size: 0.82rem; color: #8a6220;
+  background: #f5ebd6; padding: 0.15rem 0.6rem; border-radius: 0.7rem;
+}
