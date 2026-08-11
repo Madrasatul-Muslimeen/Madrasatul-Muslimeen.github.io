@@ -147,100 +147,149 @@ Phase 3 and this round is what surfaced it.
 
 ---
 
-## Round 2 — closing the Homework teacher-scoping gap (11 Aug 2026, v07.17)
+## Round 2 — closing Homework's teacher AND guardian read gaps for real (11 Aug 2026, v07.17)
 
-Closes the gap `isAssignmentCreator()`'s own comment flagged since this
-phase first shipped: **the teacher branch was blanket `isTeacherIn(tenantId)`**
-— any teacher membership could create/read an assignment naming ANY
-student in the tenant, not just their own, because Firestore rules can't
-cheaply prove "every element of `assignedToPersonIds` is one of my
-co-enrolled students" (no per-element `get()` construct exists). Built now
-that Phase 10's `classes`/`enrollments` give this a real anchor to check
-against, using exactly the contextId-trust model the original comment
-proposed: the client only ever offers checkboxes drawn from one declared
-class/course-offer's own roster; the rule checks a single, cheap,
-fixed-path `get()` proving the teacher is an active teacher in that one
-declared context, instead of trying to inspect every array element.
+Closes two gaps at once, both the same structural shape:
+
+1. `isAssignmentCreator()`'s own comment flagged since this phase first
+   shipped: **the teacher branch was blanket `isTeacherIn(tenantId)`** — any
+   teacher membership could create/read an assignment naming ANY student in
+   the tenant, not just their own.
+2. The assignments read rule's guardian branch was `isGuardianIn(tenantId)`
+   alone — **any guardian could read every family's homework in the tenant**,
+   not just their own child's (flagged, not fixed, when round 1 first
+   shipped this phase — see this file's own earlier note).
+
+Both existed for the identical reason: Firestore rules can't cheaply prove
+"every element of `assignedToPersonIds` is one of mine" — no per-element
+`get()` construct exists for a data-driven-length array.
+
+**This section replaces an earlier version of itself, written and shipped
+in the same sitting, then found to have a real flaw before the owner ever
+deployed it** — worth recording plainly rather than pretending the first
+draft didn't happen. The first version fixed the teacher branch with
+`isActiveTeacherInContext()`, a `get()` against a *different* document
+(`enrollments`), checked inside the READ rule. That looked right and
+compiles fine, but a closer look at how this codebase's own
+`tenantMemberUids` rules block explains Firestore's list-query behavior
+made clear it was the same fragile shape: **Firestore can only allow a
+`list()`/`query()` request if it can prove, from the query's own filters
+alone, that every possible result satisfies the rule.** `assignments` is
+*always* read via a query in this app (`listAssignmentsForPerson()`),
+never a single `getDoc()` — so a get()-dependent read rule risked
+Firestore rejecting a teacher's (or a newly-scoped guardian's) entire
+assignments list with a flat permission-denied the moment the rules
+deployed, not a partial/filtered result. Caught and revised in the same
+round, before the owner ever ran the Firebase Console deploy that would
+have shipped it — no live breakage, but worth being honest that the first
+attempt was wrong and why.
+
+### The fix: denormalize instead of computing at read time
+
+`assignments` gains a new field, **`extraReadersPersonIds[]`** — every
+active teacher of the declared `contextId` (if set), plus the guardian of
+each `assignedToPersonIds` entry (if any) — computed **once, at creation**,
+by the client (`homework.html`, fed into `homework.js`'s
+`createAssignment()`), not recomputed at read time. The read rule then
+only ever checks **`myPersonIdIn(tenantId) in resource.data.extraReadersPersonIds`**
+— structurally identical to the assigned-student-self branch just above it
+(`myPersonIdIn(...) in resource.data.assignedToPersonIds`), which has
+worked in production, via a query, since Phase 9 round 1. No `get()`
+inside the array-membership check itself, so it's provable the same way.
 
 **`firestore.rules`**:
-- New `isActiveTeacherInContext(tenantId, contextId)` — a direct `get()` on
-  `enrollments/{tenantId}__{contextId}__{myPersonId}`, checking
-  `roleInClass == 'teacher' && status == 'active'`. Same shape as
-  `isCoEnrolledTeacherOf()`/`teacherStudentLinkRef()` just above it.
-- `isAssignmentCreator()` — teacher branch now
-  `isTeacherIn(tenantId) && isActiveTeacherInContext(tenantId, contextId)`,
-  gains a `contextId` parameter. Guardian branch unchanged.
-- `assignments`' own read rule — same change: the blanket
-  `isTeacherIn(resource.data.tenantId)` branch replaced with
-  `isTeacherIn(...) && isActiveTeacherInContext(..., resource.data.contextId)`.
-  **The guardian branch is deliberately left as-is** (`isGuardianIn(tenantId)`
-  alone, tenant-wide) — that's a separate, already-disclosed limitation
-  (see round 1 above and this file's own git history), not attempted this
-  round; only the teacher-scoping task that was actually asked for.
-- Every `assignments` doc has always written a real `contextId` field
-  (`createAssignment()` — `null` before this round, a real class/course-offer
-  id from now on for a teacher-created one), so `resource.data.contextId` is
-  always safe to read on old documents too — no missing-field case, no
-  migration needed.
+- `isActiveTeacherInContext(tenantId, contextId)` — **unchanged**, still
+  exactly right. It's used by `isAssignmentCreator()` for `create`/`update`,
+  which are single-document writes, not queries — the list-provability
+  concern never applied there in the first place, only to the read rule
+  that used to also call it.
+- `assignments`' read rule — now three branches: `canAdminIdentity()`
+  (tenant-wide, unchanged), the assigned-student-self branch (unchanged),
+  and the new `extraReadersPersonIds` branch, which replaces BOTH the old
+  blanket teacher branch and the old blanket guardian branch entirely.
+- `isAssignmentCreator()` — unchanged from the first draft (teacher branch
+  requires `isActiveTeacherInContext()`; guardian branch still single-child
+  only, `isGuardianOf()`).
 
-**`app/js/course-offers.js`** — new
-`activeTeacherContextIdsFromEnrollments(enrollments)`, a pure function
-mirroring the rule's own `isActiveTeacherInContext()` definition so the
-client query and the server rule agree on what "actively teaching this
-context" means.
+**`app/js/homework.js`**:
+- `createAssignment()` gains `extraReadersPersonIds` — stored as-given, `[]`
+  if omitted; computed by the caller, not this file.
+- `listAssignmentsForPerson()` — reverted to its original simple form (no
+  `restrictTeacherContextIds` — that belonged to the first, discarded
+  design). Safe for admin and self/assigned-student callers only.
+- New `listAssignmentsForReader(db, tenantId, readerPersonId)` — queries
+  `extraReadersPersonIds array-contains readerPersonId`. This is what a
+  teacher or guardian now calls to see assignments they're NOT the assigned
+  student on; the query's own filter on the exact field the rule checks is
+  what makes it provable. Returns everything the reader can see (their own
+  active-teacher contexts' assignments AND their own children's) — the
+  caller narrows further client-side (`a.assignedToPersonIds.includes(studentId)`)
+  since Firestore can't additionally constrain by a field
+  (`assignedToPersonIds`) this particular query doesn't filter on without
+  hitting the same problem this whole redesign exists to avoid.
+- `listAssignmentsForTenant()` — doc comment corrected (admin-only now,
+  teacher/guardian no longer have a blanket branch); still unused by any
+  screen.
 
-**`app/js/homework.js`** — `createAssignment()` gains a `contextId` param
-(still defaults to `null`, unchanged for admin/guardian callers).
-`listAssignmentsForPerson()` gains an optional `restrictTeacherContextIds`
-param — **required** for a pure-teacher caller (their read is only provable
-when the query itself is constrained to `contextId in [...]`, since
-Firestore evaluates a list query's rule against its whole potential result
-set, not per returned document) and **must be omitted** for admin/guardian/
-self callers, whose own read branches don't depend on `contextId` at all
-— passing it there would wrongly hide assignments only visible via their
-own branch.
-
-**`app/homework.html`** — new "Class / Course Offer" picker in the create
-form: an admin sees every class/course offer in the tenant plus
-"(none — any visible person)"; a teacher sees only their own actively-taught
-contexts, no "(none)" option (matches the rule's own requirement) unless
-they also hold owner/prime/guardian (a mixed-role actor can still fall back
-to their other, contextId-independent branch). Picking a real context
-restricts "Assign to" to that context's own active student roster instead
-of the full visible roster. A pure-teacher actor with zero active-teacher
-enrolments sees a clear message and a disabled create button, instead of a
-raw permission-denied.
-
-**`app/js/nav.js`** — the stale "Homework still shows every assignment"
-gap note is now an empty string, not deleted outright (kept as a landing
-spot for a future gap found the same way).
-**`app/js/version.js`** — bumped to `07.17`.
+**`app/homework.html`**:
+- The Class/Course Offer context picker from the first draft is unchanged
+  (still required for a pure-teacher actor to create an assignment at all —
+  that requirement was always about `isAssignmentCreator()`, which didn't
+  need revising).
+- `refreshAssignToChecks()` now also stashes `contextTeacherIds` (every
+  active teacher of the selected context) alongside the roster restriction
+  it already computed — reused at create time instead of a second fetch.
+- The create handler computes `extraReadersPersonIds` as
+  `[...contextTeacherIds, ...guardianIds]` (deduplicated), where
+  `guardianIds` comes from each assigned student's own `managedByPersonId`
+  — already present on `roster`, no extra Firestore read needed. Worth
+  noting explicitly: this is also what lets the CREATOR read their own
+  just-created assignment back afterward — a teacher is always among
+  `contextTeacherIds` for the context they just proved they teach, and a
+  guardian creating for their own (only allowed) child is always that
+  child's own `managedByPersonId`, i.e. themselves. No special-casing
+  needed for either.
+- `refreshAssignments()` now branches: admin or viewing yourself
+  (`personId === myPersonId`) still calls `listAssignmentsForPerson()`
+  exactly as before Phase 9 round 1 ever added a wrinkle; a non-admin actor
+  viewing someone else (a teacher's student, or a guardian's child) calls
+  `listAssignmentsForReader()` and narrows client-side to that one person.
 
 ### Verified this round
 
 - `node --check` on `course-offers.js`, `homework.js`, `nav.js` — parses
   cleanly. `homework.html`'s inline `<script type="module">` extracted and
   `node --check`ed — parses cleanly.
-- `firestore.rules` — brace/paren counts balanced (212/212, 744/744), no
+- `firestore.rules` — brace/paren counts balanced (212/212, 757/757), no
   duplicate `function` names.
+- Re-read `tenantMemberUids`' own rules comment specifically to sanity-check
+  the revised design against a failure mode this codebase has already hit
+  once for real — the `extraReadersPersonIds` branch's query/rule shape now
+  matches the ALREADY-WORKING self-branch pattern exactly, not the
+  get()-in-list-rule shape that motivated the rewrite.
 
 **Not yet owner-verified** (needs `firestore.rules` deployed via the
 Firebase Console first, same as every rules round since Phase 10 — this
-session has no authenticated Firebase CLI):
+session has no authenticated Firebase CLI, and no way to test a real
+Firestore query against real rules from here):
 
 1. Deploy `firestore.rules`.
 2. As owner/prime: create an assignment with "(none)" selected — confirm it
    still works exactly as before (no regression for admin-created
-   assignments).
-3. As owner/prime: create a class or course offer, enrol a real teacher and
-   a student into it, then (once signed in as that teacher, or via "View
-   as: teacher" with the caveat that a preview can't fully prove this —
-   see `PHASE-10-STATUS.md`'s own standing note) confirm the teacher's
-   Homework page shows the new context in the picker, restricts "Assign to"
-   to that context's roster, and successfully creates an assignment.
-4. Confirm a teacher with ZERO active-teacher enrolments sees the "no
+   assignments), and that the assigned student can still see it.
+3. **The one check that matters most this round**: as a real teacher
+   account, open Homework and confirm the assignments list actually loads
+   (not a permission-denied) — this is the exact failure mode the redesign
+   exists to prevent. Same for a real guardian account viewing their own
+   child.
+4. As owner/prime: create a class or course offer, enrol a real teacher and
+   a student into it, confirm the teacher's Homework page shows the new
+   context in the picker, restricts "Assign to" to that context's roster,
+   and successfully creates an assignment — then confirm THAT teacher can
+   see the assignment they just created.
+5. As a guardian: confirm you can see your own child's assignments
+   (including ones an admin or teacher created, not just ones you created
+   yourself) but NOT another family's child's assignments.
+6. Confirm a teacher with ZERO active-teacher enrolments sees the "no
    active class/course offer" message and can't create an assignment at
    all (button stays disabled).
-5. Confirm a teacher can still see/read assignments they already created
-   through a real context (the read-side restriction shouldn't hide their
-   own work).

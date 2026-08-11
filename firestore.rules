@@ -877,27 +877,46 @@ service cloud.firestore {
     // classes/contextId existed yet at the time -- nothing in a later phase
     // is a prerequisite for an earlier one, per the Architecture doc's own
     // phase table). contextId is real and enforced for the teacher branch as
-    // of the follow-up round below.
+    // of the follow-up rounds below.
     // ==========================================================================
 
-    // assignments/{tenantId}__{assignmentId}. Follow-up round (11 Aug 2026):
-    // the teacher read branch used to be blanket isTeacherIn(tenantId), same
-    // gap as isAssignmentCreator() above -- now scoped to
-    // isActiveTeacherInContext() against the assignment's own contextId.
-    // Every assignment doc has always written a real contextId field
-    // (createAssignment() -- null until this round, a real class/course-offer
-    // id from now on), so resource.data.contextId is always safe to read,
-    // never a missing-field case. The guardian branch is UNCHANGED --
-    // isGuardianIn(tenantId) alone, tenant-wide -- still the real, flagged,
-    // not-this-round limitation PHASE-9-STATUS.md/this file's own git
-    // history already disclose (a guardian seeing another family's homework
-    // in a real multi-family tenant). Only isAssignmentCreator() may
-    // actually create/edit one.
+    // assignments/{tenantId}__{assignmentId}. Follow-up round (11 Aug 2026),
+    // REVISED same day after finding a real risk in the first version: a
+    // read RULE that reaches for a get() on a DIFFERENT document
+    // (isActiveTeacherInContext(), isGuardianOf()) is exactly the shape
+    // Firestore's LIST-query provability check tends to reject outright --
+    // it can only allow a list()/query() request if it can prove, from the
+    // query's own filters alone, that every possible result satisfies the
+    // rule (see tenantMemberUids' own comment above for the first time this
+    // codebase hit this). assignments is ALWAYS read via a query in this
+    // app (listAssignmentsForPerson()/listAssignmentsForReader() in
+    // homework.js), never a single getDoc(), so this isn't a theoretical
+    // concern -- it would have meant a teacher's or guardian's OWN homework
+    // list silently 403ing the moment the rules deployed.
+    //
+    // Fixed by DENORMALIZING instead of computing at read time:
+    // extraReadersPersonIds[] is written ONCE, at creation, by the client
+    // (homework.js's createAssignment(), fed by homework.html) -- every
+    // active teacher of the declared contextId, plus the guardian of each
+    // assignedToPersonIds entry. The read rule then only ever checks
+    // "is my personId literally IN this array" -- structurally identical to
+    // the assigned-student-self branch below it, which has worked in
+    // production since Phase 9 round 1 (same array-contains-vs-array-membership
+    // shape, no get() inside the check itself), so it's provable the same way.
+    // This is also what actually closes the guardian gap this round was
+    // asked to fix (a guardian used to see EVERY assignment in the tenant,
+    // isGuardianIn(tenantId) alone -- same shape the teacher branch had, and
+    // just as real a gap, not something to leave for later this time).
+    //
+    // isAssignmentCreator()/isActiveTeacherInContext() above are UNCHANGED
+    // and still exactly right for create/update -- those are single-document
+    // writes, not queries, so the list-provability concern never applied to
+    // them in the first place.
     match /assignments/{assignmentKey} {
       allow read: if isPlatformAdmin();
-      allow read: if canAdminIdentity(resource.data.tenantId) || isGuardianIn(resource.data.tenantId);
-      allow read: if isTeacherIn(resource.data.tenantId) && isActiveTeacherInContext(resource.data.tenantId, resource.data.contextId);
+      allow read: if canAdminIdentity(resource.data.tenantId); // admin, tenant-wide
       allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) in resource.data.assignedToPersonIds; // the assigned student themself
+      allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) in resource.data.get('extraReadersPersonIds', []); // teacher(s) of the context + guardian(s) of the assigned students, denormalized at creation
 
       allow create: if isAssignmentCreator(request.resource.data.tenantId, request.resource.data.contextId, request.resource.data.assignedToPersonIds);
       allow update: if isAssignmentCreator(resource.data.tenantId, resource.data.contextId, resource.data.assignedToPersonIds);
