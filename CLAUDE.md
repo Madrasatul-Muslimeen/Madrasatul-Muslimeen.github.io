@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.17.** Cutover to production happened
+**Current milestone: QuranRevival v07.18.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -246,15 +246,37 @@ anchor: new `isActiveTeacherInContext()` in `firestore.rules` (a single,
 cheap, fixed-path `get()` on `enrollments`), `homework.html` gained a real
 "Class / Course Offer" picker that restricts a teacher's "Assign to" list
 to that context's own roster, and requires one before a teacher-created
-assignment can be written at all. **The guardian branch of the same rule
-was deliberately left as-is** — a separate, already-disclosed, tenant-wide
-limitation, not what was asked for this round. `firestore.rules` NOT yet
-deployed — needs the owner's own Firebase Console copy-paste, same as
-every rules round since Phase 10. See `PHASE-9-STATUS.md`'s new "Round 2"
-section for the full build log. **Check this line's version number every
-session** — it's manually updated per `app/js/version.js`'s own scheme
-(first two digits = big overhaul, last two = each new feature) and will
-drift if a future round forgets to bump it here too.
+assignment can be written at all. The guardian branch of the same rule was
+initially left as-is (a separate, already-disclosed, tenant-wide
+limitation) — see v07.18 immediately below for why that changed same-day.
+v07.18 (11 Aug 2026, on Claude Code on the web) is a same-day correction
+to v07.17, asked for directly ("finish the guardian side too") — and while
+building it, a real flaw was found in v07.17's own read-rule design before
+the owner ever deployed it (caught in time, no live exposure): a security
+rule that reads a *different* document via `get()` — which
+`isActiveTeacherInContext()` does — is exactly the shape Firestore's
+list-query provability check tends to reject outright, and `assignments`
+is *always* read via a query in this app, never a single `getDoc()`. Left
+as shipped, a real teacher's (or a newly-scoped guardian's) own homework
+list would likely have 403'd the moment the rules deployed. **Fixed by
+denormalizing instead of computing at read time**: `assignments` gained
+`extraReadersPersonIds[]` — every active teacher of the declared
+`contextId` plus the guardian of each assigned student, computed ONCE at
+creation by the client, not the rule. The read rule now only checks plain
+array membership on that field — the same, already-proven-in-production
+shape the assigned-student-self branch has used since Phase 9 round 1 —
+which is what actually closes the guardian gap too, symmetrically, in the
+same change. `isActiveTeacherInContext()` itself is untouched and still
+correct — it backs `create`/`update`, single-document writes where this
+list-query concern never applied. `firestore.rules` still NOT deployed —
+this round's version supersedes v07.17's; deploy v07.18's rules, not an
+earlier copy. See `PHASE-9-STATUS.md`'s "Round 2" section (rewritten
+in place to describe the corrected design, with the original flaw
+recorded rather than erased) for the full build log. **Check this line's
+version number every session** — it's manually updated per
+`app/js/version.js`'s own scheme (first two digits = big overhaul, last
+two = each new feature) and will drift if a future round forgets to bump
+it here too.
 
 ---
 
@@ -475,8 +497,12 @@ QuranRevival/Asma ul Husna still not wired, see `PHASE-7-STATUS.md`).
 `PHASE-8-STATUS.md`. **Phase 9 (Homework & feedback) round 1 is also
 built, not yet owner-verified** — see `PHASE-9-STATUS.md`, including a
 real guardian-access bug found and fixed in `firestore.rules` (already
-deployed) that predates this phase, **and round 2** (11 Aug 2026, v07.17 —
-closes the Homework teacher-scoping gap round 1 itself flagged;
+deployed) that predates this phase, **and round 2** (11 Aug 2026, v07.18 —
+closes both the Homework teacher-scoping gap round 1 itself flagged AND the
+matching guardian one, via a denormalized `extraReadersPersonIds[]` field
+rather than a get()-dependent read rule (v07.17's first attempt at the
+teacher half had a real list-query flaw, found and fixed same-day before
+ever being deployed — see that version's own CLAUDE.md paragraph);
 `firestore.rules` for this round NOT yet deployed). **Phase 10 (Classes &
 provider,
 Stage B2) round 1 is built, `firestore.rules` deployed and partially
