@@ -21,6 +21,7 @@ const LINKS = [
   { href: "homework.html", label: "Homework" }, // Phase 9 -- assign/mark/score, person-only (no classes until Phase 10)
   { href: "course-offers.html", label: "Course Offers" }, // Phase 7 round 2 -- offers + enrolments, Stage B1
   { href: "classes.html", label: "Classes", ownerPrimeOnly: true }, // Phase 10 -- classes + real per-student teacher scoping, Stage B2
+  { href: "curriculum.html", label: "Curriculum", ownerPrimeOnly: true }, // Phase 11 -- curriculum units + plan, resources, grades (dated level history), Stage C
   { href: "people.html", label: "People", ownerPrimeOnly: true },
   { href: "catalogue.html", label: "Catalogue", ownerPrimeOnly: true },
 ];
