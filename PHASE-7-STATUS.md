@@ -1,6 +1,12 @@
-# Phase 7 — Bookmarks, Programs, Routines — Build Log (round 1)
+# Phase 7 — Bookmarks, Programs, Routines — Build Log
 
-Read alongside `CLAUDE.md` and `PHASE-6-STATUS.md`. Built 10 August 2026.
+Read alongside `CLAUDE.md` and `PHASE-6-STATUS.md`. Round 1 built 10 August
+2026; round 2 (course offers + enrolments) also built 10 August 2026,
+v07.11, after the owner confirmed external-student use is actually on the
+horizon (see below — this reverses round 1's own deferral decision, on
+purpose, not by drift).
+
+## Round 1 — bookmarks, Continue strip, routine renderer, LDOG
 
 ---
 
@@ -167,7 +173,7 @@ once a resource is added). That needs the owner's own account — see below.
    under Enhancement (it should only appear now under Learn Deen
    On-the-Go).
 
-## What's next
+## What's next (as of round 1)
 
 **Course offers + routines** — deferred by the owner this round (Stage B1,
 lower priority than the owner's/family's own use per D13). Revisit once
@@ -177,3 +183,89 @@ string `"none"` for every entry.
 
 Production deploy (`madrasatul-muslimeen.github.io/app/`) — pending; see
 the session report for what's asked of the owner before that push.
+
+---
+
+## Round 2 — course offers + enrolments (v07.11)
+
+**Round 2 complete, not yet owner-verified.** Built after the owner
+confirmed (asked directly) that external-student use is now actually on
+the horizon — the exact trigger round 1's own deferral note said to wait
+for.
+
+### What was built
+
+**`app/js/course-offers.js`** (new) — `courseOffers/{tenantId}__{offerId}`
+(admin-authored, same read-any-member/write-`canAdminCatalogue` shape as
+ladders/domains/resources) and `enrollments/{tenantId}__{contextId}__{personId}`
+(`contextType` is always `"courseOffer"` this round — classes don't exist
+until Phase 10, and nothing in a later phase is a prerequisite for an
+earlier one). `routine{}` on a course offer is deliberately minimal — days
+of week, a start/end date, a notes field — a description of *when* the
+offer runs, not real dated session instances (that's Operations/Phase 14,
+reserved, not built). I4/D6 throughout: offers archive via `status`,
+enrolments end via `status`/`endedAt`, nothing is ever deleted.
+
+**`app/course-offers.html`** (new) — same shell every Phase page uses.
+Owner/prime get a "New course offer" form (name, subjects, a day-of-week
+picker, optional date range, notes) and can archive an offer or end anyone's
+enrolment. Every visible person can enrol themselves/their child into an
+active offer and see that person's own current enrolments.
+
+**`firestore.rules`**:
+
+- `courseOffers` — read any member, write `canAdminCatalogue` (owner/
+  prime/platformAdmin), exactly like ladders/domains/resources.
+- `enrollments` — write via a new `canEnrol()` (admin, the child's
+  guardian, or the adult enrolling themself — matches the role table;
+  teachers don't self-enrol students). Read via admin, the person
+  themself/their guardian, **or a new `isEnrolledAsTeacherIn()`** — this
+  is the one worth flagging: it's a real, properly-scoped alternative to
+  the "teacher sees the whole tenant roster" gap used everywhere else in
+  this codebase (records, assignments — no per-teacher assignment model
+  exists there yet). A teacher can only see the enrolment roster of a
+  course offer they are *themselves* enrolled in with `roleInClass:
+  "teacher"` — checked via one `get()` on their own enrolment doc for that
+  same `contextId`. It doesn't retroactively fix the older, disclosed gaps
+  elsewhere, but it's a real building block for eventually closing them
+  (the still-parked Family-tenant "outside teacher scoped to specific
+  subjects/children" question could plausibly reuse this exact mechanism
+  later, even outside a course-offer context).
+
+**`app/js/nav.js`** — added "Course Offers" after Homework.
+**`app/js/version.js`** — bumped to `07.11`.
+
+### Explicitly NOT built this round (flagged, not an oversight)
+
+**Wiring live study activity to a real enrolled offer.** `bookmarks.resume`'s
+`programId` and `activity`'s `viaProgramId` (I3) both stay the literal
+string `"none"`/`null` — this round ships the offer/enrolment data layer and
+an admin UI, but does not touch `topic-study.js`, `routine-study.js`,
+`quranrevival.html`, `hifz-renderer.js`, or any other already-shipped study
+renderer to make them aware "I'm studying this as part of an enrolled
+offer." That's a real, separate integration task across every study screen
+this codebase has, not something to fold into the same sitting as the data
+layer. Also not built: adding `enrollments` to the app's startup path,
+despite the Architecture doc's own load-speed budget (s8) listing it there
+("3 reads: userIndex, enrolments, bookmarks") — deliberately deferred until
+the live-study wiring above actually needs it; adding an unused startup
+read now would violate this project's own "nothing joins the startup path
+without being flagged" rule for no real benefit yet.
+
+### Verified this round
+
+- `node --check` on `course-offers.js` and the `nav.js` edit — parses
+  cleanly.
+- `firestore.rules` compiled clean on both a dry-run and the real deploy
+  (`firebase deploy --only firestore:rules --project study-monitoring`).
+- `course-offers.html` loaded in a real browser against the local dev
+  server: every import resolves, no console errors introduced, the
+  day-of-week checkbox list renders correctly, and `renderNavBar()`
+  re-exercised directly shows the new "Course Offers" link in the right
+  place.
+
+**Not verified**: the actual signed-in click-through — same limitation
+every round has had. What the owner should check for real: create a course
+offer, enrol yourself and a child into it from two different accounts, end
+an enrolment, and (if a teacher account is available) confirm a teacher can
+only see the roster of an offer they're enrolled to teach, not others.

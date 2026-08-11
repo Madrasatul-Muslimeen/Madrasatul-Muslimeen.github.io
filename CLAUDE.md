@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.10.** Cutover to production happened
+**Current milestone: QuranRevival v07.11.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -64,11 +64,24 @@ working by accident when the same account also held owner/prime/teacher.
 Rebuilt on the same real, populated `tenantPeople.managedByPersonId` field
 `records.js` already used (see `PHASE-3-STATUS.md`'s own note that this was
 fixed client-side but, it turns out, never on the rules side). Deployed to
-`study-monitoring` immediately. None of
-v07.04–07.10 are phase deliverables beyond 07.09/07.10 themselves; no
-status file of their own for 07.04–07.08. See `PHASE-9-STATUS.md` for Phase
-9 round 1's build log (including the bug fix above in full), `PHASE-8-STATUS.md` for Phase 8 round 1's, `PHASE-7-STATUS.md`
-for Phase 7 round 1's, and `PHASE-6-STATUS.md`
+`study-monitoring` immediately. v07.11 (same day) is Phase 7 **round 2**:
+course offers + enrolments (`courseOffers`/`enrollments`, Stage B1) —
+round 1 had deferred this as lower priority than the owner's/family's own
+use per D13; built now that the owner confirmed external-student use is
+actually on the horizon (asked directly before building, per the D13
+ordering's own stated trigger). `app/course-offers.html` +
+`js/course-offers.js`, plus a `firestore.rules` addition worth noting:
+`isEnrolledAsTeacherIn()` is a real, properly-scoped alternative to the
+"teacher sees the whole tenant roster" gap used elsewhere in this codebase
+— a teacher can only see the enrolment roster of a course offer they are
+themselves enrolled to teach. Does not yet wire live study activity
+(`bookmarks.resume.programId`, `activity.viaProgramId`) to a real enrolled
+offer — flagged as a deliberate, separate follow-up, not an oversight. None
+of v07.04–07.11 are phase deliverables beyond 07.09/07.10/07.11
+themselves; no status file of their own for 07.04–07.08. See
+`PHASE-9-STATUS.md` for Phase 9 round 1's build log (including the bug fix
+above in full), `PHASE-8-STATUS.md` for Phase 8 round 1's, `PHASE-7-STATUS.md`
+for Phase 7 (now covering both rounds), and `PHASE-6-STATUS.md`
 for Phase 6's, including three real pre-existing data bugs found and
 fixed by querying Firestore directly rather than guessing from the code.
 We are past "build against a parity checklist" and into "rebuild,
@@ -286,8 +299,10 @@ Phase 6 (Deen Study & topic renderer) all complete and owner-verified.
 Phase 7 (Bookmarks, programs, routines) round 1 is built, not yet
 owner-verified** — see `PHASE-7-STATUS.md` for exactly what's in round 1
 (bookmarks, Continue strip, the routine renderer, Health's real study
-screen, Learn Deen On-the-Go pulled out as its own module) vs. what the
-owner deferred (course offers + routines, Stage B1 territory). **Phase 8
+screen, Learn Deen On-the-Go pulled out as its own module) **and round 2**
+(course offers + enrolments, Stage B1 — built after the owner confirmed
+external-student use is now actually on the horizon, reversing round 1's
+own deferral on purpose). **Phase 8
 (Monitor & reports) round 1 is also built, not yet owner-verified** — see
 `PHASE-8-STATUS.md`. **Phase 9 (Homework & feedback) round 1 is also
 built, not yet owner-verified** — see `PHASE-9-STATUS.md`, including a

@@ -710,6 +710,29 @@ service cloud.firestore {
           || (isGuardianIn(tenantId) && assignedToPersonIds.size() == 1 && isGuardianOf(tenantId, assignedToPersonIds[0]));
     }
 
+    // Phase 7 round 2 -- course offers/enrolments. Whether the caller is
+    // THEMSELF enrolled in courseOffer/class `contextId` with roleInClass
+    // "teacher" -- a real, properly-scoped alternative to the tenant-wide
+    // "teacher sees everyone" gap used elsewhere in this codebase (no
+    // per-teacher assignment model exists for records/assignments yet, but
+    // enrolments give course offers one for free: a teacher can only see
+    // the roster of an offer they are themselves enrolled to teach).
+    function enrollmentRef(tenantId, contextId, personId) {
+      return /databases/$(database)/documents/enrollments/$(tenantId + '__' + contextId + '__' + personId);
+    }
+    function isEnrolledAsTeacherIn(tenantId, contextId) {
+      return signedIn() && myPersonIdIn(tenantId) != null
+          && exists(enrollmentRef(tenantId, contextId, myPersonIdIn(tenantId)))
+          && get(enrollmentRef(tenantId, contextId, myPersonIdIn(tenantId))).data.roleInClass == 'teacher'
+          && get(enrollmentRef(tenantId, contextId, myPersonIdIn(tenantId))).data.status == 'active';
+    }
+    // Who may create/end an enrolment: admin, the child's guardian, or the
+    // adult enrolling themself -- matches the role table (enrolling is an
+    // admin/guardian/self action; teachers don't self-enrol students).
+    function canEnrol(tenantId, personId) {
+      return canAdminIdentity(tenantId) || isGuardianOf(tenantId, personId) || isSelfPerson(personId);
+    }
+
     // records/{tenantId}__{personId}__{chunkKey}
     match /records/{recordKey} {
       allow read: if isPlatformAdmin();
@@ -836,6 +859,34 @@ service cloud.firestore {
       allow create: if signedIn() && anyMemberOf(request.resource.data.tenantId) && request.resource.data.authorUid == myUid();
       allow update: if signedIn() && resource.data.authorUid == myUid();
       // No delete (I4/D6) -- archive via status instead.
+    }
+
+    // ==========================================================================
+    // Phase 7 round 2 -- course offers + enrolments (Stage B1). contextType
+    // is always "courseOffer" for now -- classes (Phase 10, Stage B2) don't
+    // exist yet.
+    // ==========================================================================
+
+    // courseOffers/{tenantId}__{offerId} -- admin-authored, same
+    // read-any-member/write-canAdminCatalogue shape as ladders/domains/resources.
+    match /courseOffers/{offerKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- archive via status instead.
+    }
+
+    // enrollments/{tenantId}__{contextId}__{personId}
+    match /enrollments/{enrollmentKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if canAdminIdentity(resource.data.tenantId);
+      allow read: if isGuardianOf(resource.data.tenantId, resource.data.personId) || isSelfPerson(resource.data.personId);
+      allow read: if isEnrolledAsTeacherIn(resource.data.tenantId, resource.data.contextId);
+
+      allow create: if canEnrol(request.resource.data.tenantId, request.resource.data.personId);
+      allow update: if canEnrol(resource.data.tenantId, resource.data.personId);
+      // No delete (I4/D6) -- end via status instead.
     }
   }
 }
