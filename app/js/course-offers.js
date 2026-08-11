@@ -24,6 +24,19 @@
 // itself. programId stays the literal string "none" on bookmark entries
 // until that round.
 //
+// Follow-up round (11 Aug 2026, same day as Phase 13 round 1): the
+// bookmarks.resume/activity.viaProgramId wiring flagged above as a
+// deliberately separate round. Scoped to topic-study.js (Deen Study,
+// Arabic, Hadith, General Study, Nature-Life, Life Skill) and
+// routine-study.js (Health, LDOG) this round -- programIdForPersonSubject()
+// below is the one shared lookup both controllers call. QuranRevival
+// (quranrevival.html/hifz-renderer.js/ayah-renderer.js) and Asma ul Husna
+// (asma-study.js) are NOT wired yet -- their subjectId semantics don't map
+// the same way onto a course offer's subjectIds[] (Quran's own subject
+// tree is a single "quran" leaf, not per-Approach; Asma's chunk subject is
+// one anchor node, not per-Name) -- real follow-up, flagged rather than
+// guessed at.
+//
 // Phase 10 addition: enrolPerson()/endEnrollment() below now also back
 // classes.js's roster management (classes.js imports these functions
 // directly rather than duplicating them -- contextType is the only thing
@@ -141,6 +154,27 @@ export async function listEnrollmentsForPerson(db, tenantId, personId) {
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+}
+
+/**
+ * Follow-up round: Map(subjectId -> courseOffer contextId) for one person --
+ * every subject covered by an active course-offer enrolment of theirs. Only
+ * contextType "courseOffer" counts as a "program" (bookmarks.js's own
+ * NO_PROGRAM comment: programId means courseOffers specifically, not
+ * classes -- a class is a different concept in this app's own vocabulary).
+ * If more than one active course offer covers the same subject for the same
+ * person, the first one found wins -- a real but rare edge case, not solved
+ * here.
+ */
+export function programSubjectMapFromEnrollments(enrollments) {
+  const map = new Map();
+  for (const e of enrollments) {
+    if (e.contextType !== "courseOffer" || e.status !== "active") continue;
+    for (const subjectId of e.subjectIds ?? []) {
+      if (!map.has(subjectId)) map.set(subjectId, e.contextId);
+    }
+  }
+  return map;
 }
 
 // ---------------------------------------------------------------------------

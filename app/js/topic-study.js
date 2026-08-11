@@ -34,6 +34,8 @@ import {
   getSubjectTree, getTrackables, ensureSubjectTemplatesSeeded, ensureTenantCatalogueSeeded,
 } from "./catalogue.js";
 import { ensureModulesSeeded } from "./modules.js";
+import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./course-offers.js";
+import { NO_PROGRAM } from "./bookmarks.js";
 import { buildUnitKey } from "./unit-keys.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
 import { logActivity } from "./activity.js";
@@ -108,6 +110,10 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
   // regardless of which chunk it lands in). Set once the tree loads and the
   // module's own root subject id is known.
   let chunkSubjectId = null;
+  // Follow-up round: Map(subjectId -> courseOffer contextId) for the
+  // selected person, refreshed alongside the records chunk whenever the
+  // person changes -- see course-offers.js's programSubjectMapFromEnrollments().
+  let programBySubjectId = new Map();
 
   function currentPreview() {
     const context = getActiveContext();
@@ -151,6 +157,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     rootLabel = root ? langText(root.name, "en", moduleId) : moduleId;
 
     await refreshChunk();
+    await refreshProgramMap();
     renderBrowser();
     await refreshContinueStrip();
 
@@ -174,6 +181,13 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       return { ...e, subjectLabel: node ? langText(node.name, "en", node.id) : null };
     });
     continueStripContainer.innerHTML = renderContinueStrip(entries);
+  }
+
+  /** Follow-up round: which of this person's actively-enrolled course offers cover which subject, so touchResume()/logActivity() below can tag a real programId instead of always "none". Best-effort, same risk tolerance as refreshContinueStrip -- a lookup failure here shouldn't block studying. */
+  async function refreshProgramMap() {
+    if (!selectedPersonId) { programBySubjectId = new Map(); return; }
+    const enrollments = await listEnrollmentsForPerson(db, activeTenantId, selectedPersonId);
+    programBySubjectId = programSubjectMapFromEnrollments(enrollments);
   }
 
   async function refreshChunk() {
@@ -246,8 +260,11 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     // tolerance as logActivity() below -- not wrapped in safeWrite(), a
     // failure here doesn't block studying.
     if (selectedPersonId) {
+      // Follow-up round: tag the real course-offer id when this subject is
+      // actively enrolled through one, instead of always NO_PROGRAM.
       await touchResume(db, {
         tenantId: activeTenantId, personId: selectedPersonId, moduleId,
+        programId: programBySubjectId.get(node.id) ?? NO_PROGRAM,
         subjectId: node.id, position: node.id, uid: auth.currentUser.uid,
       });
       await refreshContinueStrip();
@@ -316,10 +333,13 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
         { collection: "records", action: "claimStatus" }
       );
       if (outcome.ok) {
+        // Follow-up round: tag the real course-offer id when this subject is
+        // actively enrolled through one, instead of always null.
         await logActivity(db, {
           tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
           weekStartsOn: tenantWeekStartsOn, subjectId: node.id, unitKey,
           trackableId, action: "claimed", uid: auth.currentUser.uid,
+          viaProgramId: programBySubjectId.get(node.id) ?? null,
         });
         const message = outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.";
         await refreshChunk();
@@ -396,6 +416,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
   personSelect.addEventListener("change", async () => {
     selectedPersonId = personSelect.value;
     await refreshChunk();
+    await refreshProgramMap();
     renderBrowser();
     await refreshContinueStrip();
   });
