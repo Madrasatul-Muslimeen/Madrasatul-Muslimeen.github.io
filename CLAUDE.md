@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.09.** Cutover to production happened
+**Current milestone: QuranRevival v07.10.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -52,9 +52,22 @@ actually works (D14). v07.09 (same day) is Phase 8 round 1: `monitor.html`
 + `js/monitor.js` — one universal report over `records` + `activity`
 (weekly/monthly, per-student and per-subject summaries, CSV export, print),
 plus a Quran-only Approach-status breakdown on top, exactly as scoped
-below. Read-only, no new collection, no `firestore.rules` change. None of
-v07.04–07.08 are phase deliverables; no status file of their own. See
-`PHASE-8-STATUS.md` for Phase 8 round 1's build log, `PHASE-7-STATUS.md`
+below. Read-only, no new collection, no `firestore.rules` change. v07.10
+(same day) is Phase 9 round 1: `homework.html` + `js/homework.js` —
+assignments to a **person** (no classes until Phase 10), numeric scores,
+confirm-with-comment, plus private teaching notes. Along the way, found and
+fixed a real bug live since Phase 3: `firestore.rules`' `isGuardianOf()`
+checked a `memberships.guardianOf[]` field nothing in the client has ever
+written to (always `[]`) — a guardian-only account could not actually
+record/confirm/bookmark for their own child through the rules, only ever
+working by accident when the same account also held owner/prime/teacher.
+Rebuilt on the same real, populated `tenantPeople.managedByPersonId` field
+`records.js` already used (see `PHASE-3-STATUS.md`'s own note that this was
+fixed client-side but, it turns out, never on the rules side). Deployed to
+`study-monitoring` immediately. None of
+v07.04–07.10 are phase deliverables beyond 07.09/07.10 themselves; no
+status file of their own for 07.04–07.08. See `PHASE-9-STATUS.md` for Phase
+9 round 1's build log (including the bug fix above in full), `PHASE-8-STATUS.md` for Phase 8 round 1's, `PHASE-7-STATUS.md`
 for Phase 7 round 1's, and `PHASE-6-STATUS.md`
 for Phase 6's, including three real pre-existing data bugs found and
 fixed by querying Firestore directly rather than guessing from the code.
@@ -276,7 +289,10 @@ owner-verified** — see `PHASE-7-STATUS.md` for exactly what's in round 1
 screen, Learn Deen On-the-Go pulled out as its own module) vs. what the
 owner deferred (course offers + routines, Stage B1 territory). **Phase 8
 (Monitor & reports) round 1 is also built, not yet owner-verified** — see
-`PHASE-8-STATUS.md`. See also
+`PHASE-8-STATUS.md`. **Phase 9 (Homework & feedback) round 1 is also
+built, not yet owner-verified** — see `PHASE-9-STATUS.md`, including a
+real guardian-access bug found and fixed in `firestore.rules` (already
+deployed) that predates this phase. See also
 `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`, `PHASE-2-STATUS.md`,
 `PHASE-3-STATUS.md`, `PHASE-4-STATUS.md`, and `PHASE-6-STATUS.md`. Phase 5
 (Migration & parity) is separately covered below — cutover already

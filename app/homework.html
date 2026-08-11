@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>QuranRevival — Homework (Phase 9)</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.15rem; margin-top: 2.2rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+  label { display: block; margin: 0.8rem 0 0.3rem; font-weight: 600; font-size: 0.92rem; }
+  input[type="text"], input[type="number"], input[type="date"], select, textarea { width: 100%; padding: 0.45rem; font-size: 0.95rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box; }
+  .row { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 10rem; }
+  button {
+    font-size: 0.92rem; padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.small { padding: 0.2rem 0.5rem; font-size: 0.8rem; }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  fieldset { border: 1px solid #ddd; border-radius: 0.5rem; margin-top: 1rem; }
+  .checkList label { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 400; margin: 0.2rem 0.8rem 0.2rem 0; }
+  .checkList input { width: auto; }
+  .card { border: 1px solid #eee; border-radius: 0.5rem; padding: 0.8rem; margin-top: 0.8rem; }
+  .card h3 { margin: 0 0 0.3rem; font-size: 1rem; }
+  .muted { color: #888; font-size: 0.85rem; }
+  .pill { display: inline-block; padding: 0.05rem 0.5rem; border-radius: 0.7rem; font-size: 0.75rem; }
+  .pill-not_submitted { background: #eee; color: #666; }
+  .pill-submitted { background: #f5ebd6; color: #8a6220; }
+  .pill-marked { background: #deede4; color: #2e6b4f; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  .contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; font-size: 0.9rem; }
+  .contextBar label { margin: 0; }
+
+  /* ---------- Shared nav ---------- */
+  .app-nav { display: flex; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5; }
+  .app-nav .nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
+  .app-nav .nav-link:hover { text-decoration: underline; }
+  .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
+  .nav-preview-notice { margin-left: auto; font-size: 0.82rem; color: #8a6220; background: #f5ebd6; padding: 0.15rem 0.6rem; border-radius: 0.7rem; }
+</style>
+</head>
+<body>
+  <h1>Homework (Phase 9)</h1>
+  <p>Assign to a person (no classes yet — that's Phase 10), mark with a score
+     and comment, and keep a private note about a student for yourself.</p>
+
+  <div id="who">Checking sign-in…</div>
+  <button id="signInBtn" style="display:none;">Sign in with Google</button>
+  <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+
+  <div id="app" style="display:none;">
+    <div id="navBar"></div>
+    <div class="contextBar">
+      <label>Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label>Student
+        <select id="personSelect" style="width:auto;"></select>
+      </label>
+    </div>
+
+    <fieldset id="createFieldset" style="display:none;">
+      <legend>New assignment</legend>
+      <label>Assign to</label>
+      <div class="checkList" id="assignToChecks"></div>
+      <div class="row">
+        <div>
+          <label for="subjectSelect">Subject (optional)</label>
+          <select id="subjectSelect"><option value="">(none)</option></select>
+        </div>
+        <div>
+          <label for="dueDateInput">Due date (optional)</label>
+          <input type="date" id="dueDateInput" />
+        </div>
+        <div>
+          <label for="maxScoreInput">Max score (optional)</label>
+          <input type="number" id="maxScoreInput" min="0" />
+        </div>
+      </div>
+      <label for="instructionsInput">Instructions</label>
+      <textarea id="instructionsInput" rows="3"></textarea>
+      <button id="createAssignmentBtn" style="margin-top:0.8rem;">Create assignment</button>
+      <div id="createResult" class="muted"></div>
+    </fieldset>
+
+    <h2>Assignments for <span id="assignmentsStudentName"></span></h2>
+    <div id="assignmentsBody"><p class="muted">Loading…</p></div>
+
+    <h2>My private teaching notes</h2>
+    <p class="muted">Only you can ever see these — never shown to the student, guardian, or anyone else.</p>
+    <fieldset id="noteFieldset" style="display:none;">
+      <legend>New note</legend>
+      <label for="noteAboutSelect">About</label>
+      <select id="noteAboutSelect"></select>
+      <label for="noteBodyInput">Note</label>
+      <textarea id="noteBodyInput" rows="2"></textarea>
+      <button id="saveNoteBtn" style="margin-top:0.6rem;">Save note</button>
+      <div id="noteResult" class="muted"></div>
+    </fieldset>
+    <div id="notesBody"></div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { safeWrite } from "./js/errors.js";
+    import {
+      getMyMemberships,
+      initializeActiveContext,
+      getActiveContext,
+      setActiveContext,
+      effectiveRoles,
+      scopedRoster,
+    } from "./js/session-context.js";
+    import { getSubjectTree } from "./js/catalogue.js";
+    import {
+      createAssignment, listAssignmentsForPerson, getSubmission,
+      markSubmitted, scoreSubmission, createTeachingNote, listMyTeachingNotes,
+    } from "./js/homework.js";
+    import { renderNavBar } from "./js/nav.js";
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+    const tenantSelect = document.getElementById("tenantSelect");
+    const personSelect = document.getElementById("personSelect");
+    const createFieldset = document.getElementById("createFieldset");
+    const assignToChecks = document.getElementById("assignToChecks");
+    const subjectSelect = document.getElementById("subjectSelect");
+    const dueDateInput = document.getElementById("dueDateInput");
+    const maxScoreInput = document.getElementById("maxScoreInput");
+    const instructionsInput = document.getElementById("instructionsInput");
+    const createAssignmentBtn = document.getElementById("createAssignmentBtn");
+    const createResult = document.getElementById("createResult");
+    const assignmentsStudentName = document.getElementById("assignmentsStudentName");
+    const assignmentsBody = document.getElementById("assignmentsBody");
+    const noteFieldset = document.getElementById("noteFieldset");
+    const noteAboutSelect = document.getElementById("noteAboutSelect");
+    const noteBodyInput = document.getElementById("noteBodyInput");
+    const saveNoteBtn = document.getElementById("saveNoteBtn");
+    const noteResult = document.getElementById("noteResult");
+    const notesBody = document.getElementById("notesBody");
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = `Sign-in failed: ${err.message}`;
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    const NO_ACCOUNT_MESSAGE = ` — no account found yet.
+      <br>If someone invited you to join an existing madrasah, use the invite
+      link they sent you (check your email) — don't create a new one here.
+      <br>Starting fresh instead? <a href="onboarding.html">Create a new account
+      on the onboarding page</a>.`;
+
+    let activeTenantId = null;
+    let myMemberships = [];
+    let roster = [];
+    let visibleRoster = [];
+    let subjectTree = [];
+    let canCreate = false; // owner/prime/teacher/guardian (real or previewed)
+    let currentUser = null;
+
+    function currentPreview() {
+      const context = getActiveContext();
+      const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      const realRoles = activeMembership?.roles ?? [];
+      const viewAsRole = context?.viewAsRole ?? null;
+      return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: activeMembership?.personId ?? null };
+    }
+
+    function currentActingPersonId() {
+      const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      return membership?.personId ?? personSelect.value;
+    }
+
+    async function loadContextData() {
+      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+      roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+      const { viewAsRole, effRoles, myPersonId } = currentPreview();
+      navBar.innerHTML = renderNavBar(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
+
+      visibleRoster = scopedRoster(roster, effRoles, myPersonId);
+      personSelect.innerHTML = visibleRoster
+        .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+        .join("");
+
+      canCreate = effRoles.some((r) => ["owner", "prime", "teacher", "guardian"].includes(r));
+      createFieldset.style.display = canCreate ? "" : "none";
+      noteFieldset.style.display = canCreate ? "" : "none";
+
+      assignToChecks.innerHTML = visibleRoster
+        .map((p) => `<label><input type="checkbox" value="${p.id}" /> ${langText(p.name, "en", p.id)}</label>`)
+        .join("") || `<span class="muted">No students visible to assign to.</span>`;
+      noteAboutSelect.innerHTML = visibleRoster
+        .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+        .join("");
+
+      subjectTree = await getSubjectTree(db, activeTenantId);
+      const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
+      subjectSelect.innerHTML = `<option value="">(none)</option>` + leaves
+        .map((n) => `<option value="${n.id}">${langText(n.name, "en", n.id)}</option>`)
+        .join("");
+
+      await refreshAssignments();
+      if (canCreate) await refreshMyNotes();
+      else notesBody.innerHTML = "";
+    }
+
+    function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, "en", id) : id; }
+    function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, "en", id) : id; }
+
+    // -----------------------------------------------------------------------
+    // Assignments + submissions.
+    // -----------------------------------------------------------------------
+
+    async function refreshAssignments() {
+      const personId = personSelect.value;
+      if (!personId) { assignmentsBody.innerHTML = `<p class="muted">Pick a student first.</p>`; return; }
+      assignmentsStudentName.textContent = personName(personId);
+      assignmentsBody.innerHTML = `<p class="muted">Loading…</p>`;
+      try {
+        const assignments = await listAssignmentsForPerson(db, activeTenantId, personId);
+        const active = assignments.filter((a) => a.status !== "archived");
+        if (!active.length) { assignmentsBody.innerHTML = `<p class="muted">No assignments yet.</p>`; return; }
+
+        const cards = await Promise.all(active.map((a) => renderAssignmentCard(a, personId)));
+        assignmentsBody.innerHTML = cards.join("");
+        wireAssignmentCardActions();
+      } catch (err) {
+        assignmentsBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load assignments: ${err.code ?? ""} ${err.message}</p>`;
+        console.error(err);
+      }
+    }
+
+    async function renderAssignmentCard(a, personId) {
+      const sub = await getSubmission(db, `${activeTenantId}__${a.id}`, personId);
+      const status = sub?.status ?? "not_submitted";
+      const subjectLine = a.subjectId ? `<div class="muted">Subject: ${subjectName(a.subjectId)}</div>` : "";
+      const dueLine = a.dueDate ? `<div class="muted">Due: ${a.dueDate}</div>` : "";
+      const maxLine = a.maxScore != null ? `<div class="muted">Max score: ${a.maxScore}</div>` : "";
+      const scoreLine = sub?.status === "marked"
+        ? `<div>Score: <strong>${sub.score ?? "—"}${sub.maxScoreAtMark != null ? ` / ${sub.maxScoreAtMark}` : ""}</strong>${sub.comment ? ` — ${sub.comment}` : ""}</div>`
+        : "";
+
+      const submitAction = status === "not_submitted"
+        ? `<div style="margin-top:0.5rem;">
+             <textarea class="submitNote" rows="1" placeholder="Optional note" style="margin-bottom:0.3rem;"></textarea>
+             <button class="small markSubmittedBtn" data-full-id="${activeTenantId}__${a.id}" data-person="${personId}">Mark as submitted</button>
+           </div>`
+        : "";
+
+      const scoreAction = canCreate && status !== "marked"
+        ? `<div style="margin-top:0.5rem;">
+             <div class="row">
+               <div><input type="number" class="scoreInput" placeholder="Score" ${a.maxScore != null ? `max="${a.maxScore}"` : ""} /></div>
+               <div><input type="text" class="commentInput" placeholder="Comment (optional)" /></div>
+             </div>
+             <button class="small secondary saveScoreBtn" data-full-id="${activeTenantId}__${a.id}" data-person="${personId}" data-max="${a.maxScore ?? ""}">Save score</button>
+           </div>`
+        : "";
+
+      return `<div class="card">
+        <h3>${a.instructions ? langText(a.instructions, "en", "") : "(no instructions)"} <span class="pill pill-${status}">${status.replace("_", " ")}</span></h3>
+        ${subjectLine}${dueLine}${maxLine}${scoreLine}
+        ${submitAction}${scoreAction}
+      </div>`;
+    }
+
+    function wireAssignmentCardActions() {
+      assignmentsBody.querySelectorAll(".markSubmittedBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const note = btn.parentElement.querySelector(".submitNote")?.value ?? "";
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => markSubmitted(db, btn.dataset.fullId, btn.dataset.person, note),
+            { collection: "submissions", action: "markSubmitted" }
+          );
+          if (outcome.ok) await refreshAssignments();
+          else { alert(outcome.entry.message); btn.disabled = false; }
+        });
+      });
+      assignmentsBody.querySelectorAll(".saveScoreBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const card = btn.closest(".card");
+          const score = card.querySelector(".scoreInput")?.value;
+          const comment = card.querySelector(".commentInput")?.value ?? "";
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => scoreSubmission(db, btn.dataset.fullId, btn.dataset.person, {
+              score: score === "" ? null : Number(score),
+              comment,
+              maxScoreAtMark: btn.dataset.max === "" ? null : Number(btn.dataset.max),
+              markedByPersonId: currentActingPersonId(),
+            }),
+            { collection: "submissions", action: "scoreSubmission" }
+          );
+          if (outcome.ok) await refreshAssignments();
+          else { alert(outcome.entry.message); btn.disabled = false; }
+        });
+      });
+    }
+
+    personSelect.addEventListener("change", refreshAssignments);
+
+    createAssignmentBtn.addEventListener("click", async () => {
+      createResult.textContent = "";
+      const assignedToPersonIds = Array.from(assignToChecks.querySelectorAll("input:checked")).map((c) => c.value);
+      if (!assignedToPersonIds.length) { createResult.textContent = "Pick at least one student."; return; }
+      if (!instructionsInput.value.trim()) { createResult.textContent = "Enter instructions first."; return; }
+
+      createAssignmentBtn.disabled = true;
+      const outcome = await safeWrite(
+        () => createAssignment(db, activeTenantId, {
+          createdByPersonId: currentActingPersonId(),
+          assignedToPersonIds,
+          subjectId: subjectSelect.value || null,
+          unitKeys: [],
+          dueDate: dueDateInput.value || null,
+          instructions: instructionsInput.value.trim(),
+          maxScore: maxScoreInput.value === "" ? null : Number(maxScoreInput.value),
+        }, currentUser.uid),
+        { collection: "assignments", action: "createAssignment" }
+      );
+      createAssignmentBtn.disabled = false;
+      if (outcome.ok) {
+        createResult.textContent = `Assigned to ${assignedToPersonIds.length} student${assignedToPersonIds.length === 1 ? "" : "s"}.`;
+        instructionsInput.value = ""; dueDateInput.value = ""; maxScoreInput.value = "";
+        assignToChecks.querySelectorAll("input:checked").forEach((c) => (c.checked = false));
+        await refreshAssignments();
+      } else {
+        createResult.textContent = outcome.entry.message;
+      }
+    });
+
+    // -----------------------------------------------------------------------
+    // Teaching notes -- private to the author.
+    // -----------------------------------------------------------------------
+
+    async function refreshMyNotes() {
+      notesBody.innerHTML = `<p class="muted">Loading…</p>`;
+      try {
+        const notes = await listMyTeachingNotes(db, activeTenantId, currentUser.uid);
+        notesBody.innerHTML = notes.length
+          ? notes.map((n) => `<div class="card"><div class="muted">About: ${personName(n.aboutPersonId)}</div><div>${n.body}</div></div>`).join("")
+          : `<p class="muted">No notes yet.</p>`;
+      } catch (err) {
+        notesBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load notes: ${err.code ?? ""} ${err.message}</p>`;
+        console.error(err);
+      }
+    }
+
+    saveNoteBtn.addEventListener("click", async () => {
+      noteResult.textContent = "";
+      if (!noteBodyInput.value.trim()) { noteResult.textContent = "Write a note first."; return; }
+      saveNoteBtn.disabled = true;
+      const outcome = await safeWrite(
+        () => createTeachingNote(db, activeTenantId, {
+          authorPersonId: currentActingPersonId(),
+          aboutPersonId: noteAboutSelect.value,
+          body: noteBodyInput.value,
+        }, currentUser.uid, currentUser.uid),
+        { collection: "teachingNotes", action: "createTeachingNote" }
+      );
+      saveNoteBtn.disabled = false;
+      if (outcome.ok) { noteBodyInput.value = ""; await refreshMyNotes(); }
+      else noteResult.textContent = outcome.entry.message;
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = "Not signed in.";
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      currentUser = user;
+      whoEl.textContent = `Signed in as ${user.email}`;
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+
+      async function step(name, fn) {
+        try { return await fn(); }
+        catch (err) { err.stepName = err.stepName ?? name; throw err; }
+      }
+
+      try {
+        const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+
+        const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
+        if (!context) {
+          whoEl.innerHTML += NO_ACCOUNT_MESSAGE;
+          return;
+        }
+        activeTenantId = context.tenantId;
+
+        myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+          .join("");
+
+        appEl.style.display = "block";
+        await step("load context data", loadContextData);
+      } catch (err) {
+        whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
+        console.error(err);
+      }
+    });
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      await loadContextData();
+    });
+  </script>
+</body>
+</html>

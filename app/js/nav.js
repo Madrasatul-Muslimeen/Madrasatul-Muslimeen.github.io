@@ -18,6 +18,7 @@ const LINKS = [
   { href: "ldog-study.html", label: "Learn Deen On-the-Go" }, // Phase 7 -- pulled out of Deen Study, routine renderer
   { href: "records.html", label: "Records" },
   { href: "monitor.html", label: "Monitor" }, // Phase 8 -- reads whatever's visible to the signed-in login, same as Records
+  { href: "homework.html", label: "Homework" }, // Phase 9 -- assign/mark/score, person-only (no classes until Phase 10)
   { href: "people.html", label: "People", ownerPrimeOnly: true },
   { href: "catalogue.html", label: "Catalogue", ownerPrimeOnly: true },
 ];

@@ -320,6 +320,7 @@ service cloud.firestore {
     function myRolesIn(tenantId)        { return tenantMemberHeld(tenantId) ? tenantMemberDoc(tenantId).roles : []; }
     function hasRoleIn(tenantId, role)  { return role in myRolesIn(tenantId); }
     function myPersonIdIn(tenantId)     { return tenantMemberHeld(tenantId) ? tenantMemberDoc(tenantId).personId : null; }
+    function tenantPersonRef(personId)  { return /databases/$(database)/documents/tenantPeople/$(personId); }
 
     function isPlatformAdmin() {
       return signedIn()
@@ -337,13 +338,22 @@ service cloud.firestore {
     // tenant academically).
     function canAdminIdentity(tenantId) { return isOwnerIn(tenantId) || isPrimeIn(tenantId) || isPlatformAdmin(); }
 
-    function myGuardianMembershipRef(tenantId) {
-      return /databases/$(database)/documents/memberships/$(tenantId + '__' + myPersonIdIn(tenantId) + '__guardian');
-    }
+    // Bug fix (Phase 9): this used to check memberships.guardianOf[] via
+    // myGuardianMembershipRef -- but addPersonToTenant()/invites.js/people.js
+    // all write guardianOf: [] and NOTHING in the client ever populates it
+    // (PHASE-3-STATUS.md already found and worked around this on the
+    // records.js side, computeConfirmationRequired() reading
+    // tenantPeople.managedByPersonId instead -- this rules-side copy was
+    // never fixed to match). Net effect: a guardian-only role (no owner/
+    // prime/teacher) could not actually canRecordFor()/confirm for their own
+    // child through these rules -- isGuardianOf was structurally always
+    // false. Rebuilt on the same real, populated field records.js already
+    // uses: tenantPeople/{childPersonId}.managedByPersonId == my own
+    // personId in this tenant.
     function isGuardianOf(tenantId, childPersonId) {
       return isGuardianIn(tenantId)
-          && exists(myGuardianMembershipRef(tenantId))
-          && childPersonId in get(myGuardianMembershipRef(tenantId)).data.get('guardianOf', []);
+          && exists(tenantPersonRef(childPersonId))
+          && get(tenantPersonRef(childPersonId)).data.get('managedByPersonId', null) == myPersonIdIn(tenantId);
     }
 
     // tenants/{tenantId}
@@ -676,7 +686,6 @@ service cloud.firestore {
     // their own record.
     // =====================================================================
 
-    function tenantPersonRef(personId) { return /databases/$(database)/documents/tenantPeople/$(personId); }
     function isSelfPerson(personId) {
       return signedIn() && exists(tenantPersonRef(personId))
           && get(tenantPersonRef(personId)).data.authUid == myUid();
@@ -684,6 +693,21 @@ service cloud.firestore {
     function canRecordFor(tenantId, personId) {
       return canAdminIdentity(tenantId) || isTeacherIn(tenantId)
           || isGuardianOf(tenantId, personId) || isSelfPerson(personId);
+    }
+
+    // Phase 9 -- who may create/edit an assignments doc. Admin/teacher are
+    // tenant-wide (same disclosed, pre-existing gap session-context.js's own
+    // scopedRoster() comment already carries for teachers -- no per-teacher
+    // student-assignment model exists yet). A guardian-only actor is scoped
+    // for real, not just disclosed: assignedToPersonIds must be exactly ONE
+    // child, and isGuardianOf() must hold for that one id -- Firestore rules
+    // can't cheaply prove "every element of an arbitrary-length list is my
+    // child" (isGuardianOf itself costs a get() per element), so a guardian
+    // assigning the same homework to two children makes two single-target
+    // assignment docs client-side rather than one two-target doc.
+    function isAssignmentCreator(tenantId, assignedToPersonIds) {
+      return canAdminIdentity(tenantId) || isTeacherIn(tenantId)
+          || (isGuardianIn(tenantId) && assignedToPersonIds.size() == 1 && isGuardianOf(tenantId, assignedToPersonIds[0]));
     }
 
     // records/{tenantId}__{personId}__{chunkKey}
@@ -757,6 +781,61 @@ service cloud.firestore {
       allow create: if canAdminCatalogue(request.resource.data.tenantId);
       allow update: if canAdminCatalogue(resource.data.tenantId);
       // No delete (I4/D6) -- deactivate via status instead.
+    }
+
+    // ==========================================================================
+    // Phase 9 -- Homework & feedback. Person-only for now (no classes/
+    // contextId until Phase 10 -- nothing in a later phase is a prerequisite
+    // for an earlier one, per the Architecture doc's own phase table).
+    // ==========================================================================
+
+    // assignments/{tenantId}__{assignmentId} -- read is wider than write:
+    // any admin/teacher/guardian in the tenant can see every assignment
+    // (same disclosed, tenant-wide gap already accepted for teachers
+    // elsewhere in this codebase; a guardian seeing another family's
+    // homework in a real multi-family tenant is a real, flagged limitation,
+    // not an oversight -- see PHASE-9-STATUS.md), but only
+    // isAssignmentCreator() may actually create/edit one.
+    match /assignments/{assignmentKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if canAdminIdentity(resource.data.tenantId) || isTeacherIn(resource.data.tenantId) || isGuardianIn(resource.data.tenantId);
+      allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) in resource.data.assignedToPersonIds; // the assigned student themself
+
+      allow create: if isAssignmentCreator(request.resource.data.tenantId, request.resource.data.assignedToPersonIds);
+      allow update: if isAssignmentCreator(resource.data.tenantId, resource.data.assignedToPersonIds);
+      // No delete (I4/D6) -- archive via status instead.
+    }
+
+    // submissions/{assignmentId}__{personId} -- assignmentId already carries
+    // the tenantId prefix (assignments/{tenantId}__{assignmentId}), so this
+    // doc id is globally unique without its own separate tenantId prefix --
+    // matches the Architecture doc's own literal id format. Same
+    // canRecordFor() shape as records/activity/bookmarks: it's this one
+    // person's own homework status (a student marking "submitted" is the
+    // same kind of self-write as a self-confirmed claim; a teacher/guardian/
+    // admin scoring it is the same kind of write confirmEntry() already does
+    // for records).
+    match /submissions/{submissionKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);
+      allow update: if canRecordFor(resource.data.tenantId, resource.data.personId);
+      // No delete (I4/D6).
+    }
+
+    // teachingNotes/{tenantId}__{noteId} -- PRIVATE to the author (Architecture
+    // s7). authorUid is a rules-support field alongside authorPersonId (same
+    // "carry a uid so a rule can check ownership in one field read, no extra
+    // get()" shape tenantPeople.authUid already uses for isSelfPerson) --
+    // never shown in any UI, just what the rule below checks against.
+    match /teachingNotes/{noteKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if signedIn() && resource.data.authorUid == myUid();
+
+      allow create: if signedIn() && anyMemberOf(request.resource.data.tenantId) && request.resource.data.authorUid == myUid();
+      allow update: if signedIn() && resource.data.authorUid == myUid();
+      // No delete (I4/D6) -- archive via status instead.
     }
   }
 }
