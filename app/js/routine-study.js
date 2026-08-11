@@ -47,8 +47,9 @@ import {
   renderGuideTab, renderTrackTab, renderBreakdownTab, renderStreakTab,
   renderWayModalShell, attachWayModalHandlers,
 } from "./way-modal.js";
-import { getBookmarks, touchResume, recentResumeEntries } from "./bookmarks.js";
+import { getBookmarks, touchResume, recentResumeEntries, NO_PROGRAM } from "./bookmarks.js";
 import { renderContinueStrip } from "./continue-strip.js";
+import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./course-offers.js";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -100,6 +101,10 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
   let currentParentId = null;
   let rootLabel = "";
   let chunkSubjectId = null;
+  // Follow-up round (same as topic-study.js): Map(subjectId -> courseOffer
+  // contextId) for the selected person -- see course-offers.js's
+  // programSubjectMapFromEnrollments().
+  let programBySubjectId = new Map();
 
   function currentPreview() {
     const context = getActiveContext();
@@ -144,6 +149,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
     await refreshChunk();
     await refreshWeekActivity();
+    await refreshProgramMap();
     renderBrowser();
     await refreshContinueStrip();
 
@@ -165,6 +171,13 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     if (!selectedPersonId) { currentWeekActivity = null; return; }
     const weekKey = weekKeyFor(new Date(), tenantWeekStartsOn);
     currentWeekActivity = await getWeekActivity(db, activeTenantId, selectedPersonId, weekKey);
+  }
+
+  /** Follow-up round: which of this person's actively-enrolled course offers cover which subject, so touchResume()/logActivity() below can tag a real programId instead of always "none"/null. Best-effort, same risk tolerance as refreshContinueStrip. */
+  async function refreshProgramMap() {
+    if (!selectedPersonId) { programBySubjectId = new Map(); return; }
+    const enrollments = await listEnrollmentsForPerson(db, activeTenantId, selectedPersonId);
+    programBySubjectId = programSubjectMapFromEnrollments(enrollments);
   }
 
   async function refreshContinueStrip() {
@@ -244,6 +257,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     if (selectedPersonId) {
       await touchResume(db, {
         tenantId: activeTenantId, personId: selectedPersonId, moduleId,
+        programId: programBySubjectId.get(node.id) ?? NO_PROGRAM,
         subjectId: node.id, position: node.id, uid: auth.currentUser.uid,
       });
       await refreshContinueStrip();
@@ -279,6 +293,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
         weekStartsOn: tenantWeekStartsOn, subjectId: node.id,
         unitKey: buildUnitKey.topic(node.id), trackableId, action: "practised",
         uid: auth.currentUser.uid,
+        viaProgramId: programBySubjectId.get(node.id) ?? null,
       }),
       { collection: "activity", action: "logRoutine" }
     );
@@ -353,6 +368,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
           tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
           weekStartsOn: tenantWeekStartsOn, subjectId: node.id, unitKey,
           trackableId, action: "claimed", uid: auth.currentUser.uid,
+          viaProgramId: programBySubjectId.get(node.id) ?? null,
         });
         const message = outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.";
         await refreshChunk();
@@ -427,6 +443,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     selectedPersonId = personSelect.value;
     await refreshChunk();
     await refreshWeekActivity();
+    await refreshProgramMap();
     renderBrowser();
     await refreshContinueStrip();
   });

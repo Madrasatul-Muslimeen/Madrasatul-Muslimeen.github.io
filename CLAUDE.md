@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.15.** Cutover to production happened
+**Current milestone: QuranRevival v07.16.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -220,11 +220,24 @@ thread, append-only, no group chat), but it's still new direct-communication
 surface involving children, and per D13's own "lower-risk, proven-first"
 spirit it's better sequenced once there's a real second `teacher`-only
 account to verify against — the same gap Phase 10 itself is still waiting
-on. See `PHASE-13-STATUS.md` for the full build log. **Check this line's
-version number every session** — it's manually updated per
-`app/js/version.js`'s own scheme (first two digits = big overhaul, last
-two = each new feature) and will drift if a future round forgets to bump
-it here too.
+on. See `PHASE-13-STATUS.md` for the full build log.
+v07.16 (11 Aug 2026, on Claude Code on the web) closes part of the gap
+Phase 7 round 2 explicitly flagged and deferred: `bookmarks.resume`'s
+`programId` and `activity`'s `viaProgramId` (I3) now carry a real course
+offer id when the person studying is actively enrolled in one that covers
+the subject — previously always `"none"`/`null`. Wired into `topic-study.js`
+(Deen Study, Arabic, Hadith, General Study, Nature-Life, Life Skill) and
+`routine-study.js` (Health, LDOG) via a new
+`programSubjectMapFromEnrollments()` helper in `course-offers.js`.
+**QuranRevival and Asma ul Husna are still NOT wired** — their subjectId
+shape doesn't map cleanly onto a course offer's `subjectIds[]` picker,
+flagged as real separate follow-up rather than guessed at. Purely additive
+metadata — no `firestore.rules` change, no behavior change for anyone not
+enrolled in a matching course offer. See `PHASE-7-STATUS.md`'s new "Round
+3" section for the full build log. **Check this line's version number
+every session** — it's manually updated per `app/js/version.js`'s own
+scheme (first two digits = big overhaul, last two = each new feature) and
+will drift if a future round forgets to bump it here too.
 
 ---
 
@@ -436,7 +449,11 @@ owner-verified** — see `PHASE-7-STATUS.md` for exactly what's in round 1
 screen, Learn Deen On-the-Go pulled out as its own module) **and round 2**
 (course offers + enrolments, Stage B1 — built after the owner confirmed
 external-student use is now actually on the horizon, reversing round 1's
-own deferral on purpose). **Phase 8
+own deferral on purpose) **and round 3** (11 Aug 2026, v07.16 — wires
+`bookmarks.resume.programId`/`activity.viaProgramId` into `topic-study.js`/
+`routine-study.js` for real, closing part of the gap round 2 flagged;
+QuranRevival/Asma ul Husna still not wired, see `PHASE-7-STATUS.md`).
+**Phase 8
 (Monitor & reports) round 1 is also built, not yet owner-verified** — see
 `PHASE-8-STATUS.md`. **Phase 9 (Homework & feedback) round 1 is also
 built, not yet owner-verified** — see `PHASE-9-STATUS.md`, including a
