@@ -129,7 +129,7 @@
     } from "./js/session-context.js";
     import { getSubjectTree } from "./js/catalogue.js";
     import {
-      createAssignment, listAssignmentsForPerson, getSubmission,
+      createAssignment, listAssignmentsForPerson, listAssignmentsForReader, getSubmission,
       markSubmitted, scoreSubmission, createTeachingNote, listMyTeachingNotes,
     } from "./js/homework.js";
     import { renderNavBar } from "./js/nav.js";
@@ -186,11 +186,14 @@
     let subjectTree = [];
     let canCreate = false; // owner/prime/teacher/guardian (real or previewed)
     let currentUser = null;
-    // Follow-up round (Homework teacher-scoping).
-    let isPureTeacher = false; // effRoles is exactly ["teacher"] -- the only case that needs the query/write restriction
+    // Follow-up round (Homework teacher-scoping + guardian-scoping).
+    let isAdmin = false; // owner/prime -- the only role with the old blanket-tenant-wide read/write left
+    let myPersonId = null;
+    let isPureTeacher = false; // effRoles is exactly ["teacher"] -- the only case a context is REQUIRED to create
     let myActiveTeacherContextIds = []; // this person's own actively-taught class/course-offer ids
     let availableContexts = []; // [{id, type: "class"|"courseOffer", name}] offered in the picker
     let contextRoster = []; // active "student" roster of the currently-selected context, [] if none selected
+    let contextTeacherIds = []; // active teacher personIds of the currently-selected context -- feeds extraReadersPersonIds at create time
 
     function currentPreview() {
       const context = getActiveContext();
@@ -209,10 +212,10 @@
       const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
-      const { viewAsRole, effRoles, myPersonId } = currentPreview();
+      const { viewAsRole, effRoles, myPersonId: myPersonIdFromPreview } = currentPreview();
       navBar.innerHTML = renderNavBar(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
 
-      visibleRoster = scopedRoster(roster, effRoles, myPersonId);
+      visibleRoster = scopedRoster(roster, effRoles, myPersonIdFromPreview);
       personSelect.innerHTML = visibleRoster
         .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
         .join("");
@@ -221,13 +224,15 @@
       createFieldset.style.display = canCreate ? "" : "none";
       noteFieldset.style.display = canCreate ? "" : "none";
 
-      // Follow-up round (Homework teacher-scoping): firestore.rules now
-      // requires a teacher-created assignment to declare a real contextId
-      // (the class/course-offer they actively teach), and a teacher's own
-      // read query needs the same context ids to stay provable -- see
-      // homework.js's listAssignmentsForPerson() doc comment.
-      const isAdmin = effRoles.includes("owner") || effRoles.includes("prime");
-      isPureTeacher = effRoles.length === 1 && effRoles[0] === "teacher";
+      // Follow-up round (Homework teacher-scoping + guardian-scoping):
+      // firestore.rules now requires a teacher-created assignment to
+      // declare a real contextId (the class/course-offer they actively
+      // teach), and reads for a non-admin actor viewing someone else's
+      // assignments go through extraReadersPersonIds, not a blanket role
+      // check -- see homework.js's own doc comments for the full picture.
+      isAdmin = effRoles.includes("owner") || effRoles.includes("prime");
+      myPersonId = myPersonIdFromPreview;
+      isPureTeacher = effRoles.length === 1 && effRoles[0] === "teacher"; // (kept for the create-time contextId requirement below)
       myActiveTeacherContextIds = [];
       if (effRoles.includes("teacher") && myPersonId) {
         const myEnrollments = await listEnrollmentsForPerson(db, activeTenantId, myPersonId);
@@ -291,17 +296,18 @@
       createAssignmentBtn.disabled = isPureTeacher && availableContexts.length === 0;
     }
 
-    /** Restricts "Assign to" to the selected context's active student roster; falls back to the full visibleRoster when "(none)" is selected (admin only) or the row is hidden (guardian-only/self). */
+    /** Restricts "Assign to" to the selected context's active student roster; falls back to the full visibleRoster when "(none)" is selected (admin only) or the row is hidden (guardian-only/self). Also stashes contextTeacherIds -- every active teacher of the selected context -- reusing this same enrollments fetch rather than a second one at create time. */
     async function refreshAssignToChecks() {
       const contextId = contextSelect.value || null;
       if (contextId) {
         const enrollments = await listEnrollmentsForOffer(db, activeTenantId, contextId);
-        const studentIds = new Set(
-          enrollments.filter((e) => e.roleInClass === "student" && e.status === "active").map((e) => e.personId)
-        );
+        const active = enrollments.filter((e) => e.status === "active");
+        const studentIds = new Set(active.filter((e) => e.roleInClass === "student").map((e) => e.personId));
         contextRoster = roster.filter((p) => studentIds.has(p.id));
+        contextTeacherIds = active.filter((e) => e.roleInClass === "teacher").map((e) => e.personId);
       } else {
         contextRoster = visibleRoster;
+        contextTeacherIds = [];
       }
       assignToChecks.innerHTML = contextRoster
         .map((p) => `<label><input type="checkbox" value="${p.id}" /> ${langText(p.name, "en", p.id)}</label>`)
@@ -320,14 +326,20 @@
       assignmentsStudentName.textContent = personName(personId);
       assignmentsBody.innerHTML = `<p class="muted">Loading…</p>`;
       try {
-        // Follow-up round (Homework teacher-scoping): a pure-teacher actor's
-        // read is only provable when constrained to their own actively-taught
-        // contexts -- see homework.js's listAssignmentsForPerson() doc
-        // comment for why admin/guardian/self callers must NOT pass this.
-        const assignments = await listAssignmentsForPerson(
-          db, activeTenantId, personId,
-          isPureTeacher ? myActiveTeacherContextIds : null
-        );
+        // Follow-up round (Homework teacher-scoping + guardian-scoping):
+        // admin, or viewing your OWN assignments (personId === myPersonId,
+        // the assigned-student-self case), reads through
+        // listAssignmentsForPerson() same as always. A non-admin actor
+        // viewing SOMEONE ELSE (a teacher's student, or a guardian's child)
+        // reads through listAssignmentsForReader() instead -- their access
+        // runs via extraReadersPersonIds, a field listAssignmentsForPerson's
+        // own query doesn't filter on -- then narrowed client-side to just
+        // this person's own assignments (see that function's own doc
+        // comment for why the narrowing can't happen in the query itself).
+        const assignments = (isAdmin || personId === myPersonId)
+          ? await listAssignmentsForPerson(db, activeTenantId, personId)
+          : (await listAssignmentsForReader(db, activeTenantId, myPersonId))
+              .filter((a) => a.assignedToPersonIds.includes(personId));
         const active = assignments.filter((a) => a.status !== "archived");
         if (!active.length) { assignmentsBody.innerHTML = `<p class="muted">No assignments yet.</p>`; return; }
 
@@ -425,12 +437,26 @@
         return;
       }
 
+      // Follow-up round (Homework teacher-scoping + guardian-scoping):
+      // extraReadersPersonIds -- every active teacher of the chosen context
+      // (contextTeacherIds, already fetched by refreshAssignToChecks() for
+      // the same context) plus the guardian of each assigned student
+      // (roster's own managedByPersonId field -- no extra Firestore read
+      // needed, roster is already loaded). Deduplicated; see
+      // firestore.rules' assignments match block for why this is computed
+      // here, once, at creation, rather than checked at read time.
+      const guardianIds = assignedToPersonIds
+        .map((id) => roster.find((p) => p.id === id)?.managedByPersonId)
+        .filter(Boolean);
+      const extraReadersPersonIds = [...new Set([...contextTeacherIds, ...guardianIds])];
+
       createAssignmentBtn.disabled = true;
       const outcome = await safeWrite(
         () => createAssignment(db, activeTenantId, {
           createdByPersonId: currentActingPersonId(),
           assignedToPersonIds,
           contextId,
+          extraReadersPersonIds,
           subjectId: subjectSelect.value || null,
           unitKeys: [],
           dueDate: dueDateInput.value || null,

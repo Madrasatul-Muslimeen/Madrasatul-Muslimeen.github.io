@@ -5,8 +5,16 @@
 //   course-offer id -- null for admin/guardian-created assignments, REQUIRED
 //   for a teacher-created one as of the follow-up round below;
 //   firestore.rules' isAssignmentCreator()/isActiveTeacherInContext() are
-//   what actually enforce that, not this file), moduleId, subjectId,
-//   unitKeys[], dueDate, instructions{lang}, maxScore, status active|archived
+//   what actually enforce that, not this file), extraReadersPersonIds[]
+//   (follow-up round -- every active teacher of the declared contextId plus
+//   every guardian of an assignedToPersonIds entry, computed ONCE at
+//   creation by the caller, not this file -- see firestore.rules' own long
+//   comment on the assignments match block for why this is denormalized
+//   rather than computed at read time: a get()-dependent READ rule is
+//   exactly the shape Firestore's list-query provability check tends to
+//   reject, and this collection is never read via a single getDoc(), always
+//   a query), moduleId, subjectId, unitKeys[], dueDate, instructions{lang},
+//   maxScore, status active|archived
 //
 // submissions/{assignmentId}__{personId}  (assignmentId already carries the
 //   tenantId prefix, so this id is globally unique without its own separate
@@ -62,7 +70,7 @@ async function commitInChunks(db, creates, uid) {
  * not a pre-built lang object, matching createTopicSubject's own pattern.
  */
 export async function createAssignment(db, tenantId, {
-  createdByPersonId, assignedToPersonIds, contextId, moduleId, subjectId, unitKeys,
+  createdByPersonId, assignedToPersonIds, contextId, extraReadersPersonIds, moduleId, subjectId, unitKeys,
   dueDate, instructions, maxScore,
 }, uid) {
   if (!assignedToPersonIds?.length) {
@@ -84,6 +92,11 @@ export async function createAssignment(db, tenantId, {
       // (isActiveTeacherInContext()). Admin/guardian creators may still pass
       // null, same as every assignment before this round.
       contextId: contextId ?? null,
+      // Follow-up round: who besides the assigned students and admin may
+      // read this -- computed by the caller (homework.html), not here. See
+      // firestore.rules' assignments match block for why this is
+      // denormalized at creation rather than checked at read time.
+      extraReadersPersonIds: extraReadersPersonIds ?? [],
       moduleId: moduleId ?? null,
       subjectId: subjectId ?? null,
       unitKeys: unitKeys ?? [],
@@ -118,7 +131,7 @@ export async function createAssignment(db, tenantId, {
   return assignmentId;
 }
 
-/** Every assignment in a tenant -- provable read-safe (canAdminIdentity/isTeacherIn/isGuardianIn are all tenant-wide, independent of any one assignedToPersonIds entry) only for admin/teacher/guardian actors; a self/student actor must use listAssignmentsForPerson() instead. */
+/** Every assignment in a tenant -- provable read-safe (canAdminIdentity is tenant-wide, independent of any one document's fields) only for an admin actor as of the follow-up round (teacher/guardian both lost their own blanket-tenant-wide read branch -- see firestore.rules' assignments match block). A non-admin actor must use listAssignmentsForPerson()/listAssignmentsForReader() instead. Currently unused by any screen -- kept for a future admin-wide overview. */
 export async function listAssignmentsForTenant(db, tenantId) {
   const q = query(collection(db, TENANT.ASSIGNMENTS), where("tenantId", "==", tenantId));
   const snap = await getDocs(q);
@@ -131,32 +144,47 @@ export async function listAssignmentsForTenant(db, tenantId) {
  * Every assignment naming this specific person -- the query's own
  * array-contains filter is what makes this read-safe for a self/student
  * actor (matches the read rule's "myPersonIdIn in assignedToPersonIds"
- * branch), and for admin/guardian actors (their own read branches don't
- * depend on contextId either).
- *
- * restrictTeacherContextIds (follow-up round, Homework teacher-scoping):
- * REQUIRED when the caller's only path to reading this person's assignments
- * is the teacher branch (firestore.rules' isActiveTeacherInContext()) --
- * that branch now depends on each document's own contextId, which an
- * unconstrained array-contains query can't prove ahead of time for every
- * possible result, so Firestore would reject the whole query. Pass the
- * caller's own active-teacher context ids (course-offers.js's
- * activeTeacherContextIdsFromEnrollments()) and this adds the matching
- * `contextId in [...]` filter. Omit for admin/guardian/self callers -- adding
- * it there would WRONGLY hide assignments only visible via their own
- * (contextId-independent) branch. An empty array short-circuits to no
- * results rather than querying (Firestore errors on an empty "in" clause).
+ * branch) and for an admin actor (their own read branch doesn't depend on
+ * assignedToPersonIds at all). A teacher or guardian viewing SOMEONE ELSE's
+ * assignments (not themselves) must use listAssignmentsForReader() instead
+ * -- their read access runs through extraReadersPersonIds, a different
+ * field this query doesn't filter on.
  */
-export async function listAssignmentsForPerson(db, tenantId, personId, restrictTeacherContextIds = null) {
-  if (restrictTeacherContextIds && restrictTeacherContextIds.length === 0) return [];
-  const clauses = [
+export async function listAssignmentsForPerson(db, tenantId, personId) {
+  const q = query(
+    collection(db, TENANT.ASSIGNMENTS),
     where("tenantId", "==", tenantId),
-    where("assignedToPersonIds", "array-contains", personId),
-  ];
-  if (restrictTeacherContextIds?.length) {
-    clauses.push(where("contextId", "in", restrictTeacherContextIds.slice(0, 30)));
-  }
-  const q = query(collection(db, TENANT.ASSIGNMENTS), ...clauses);
+    where("assignedToPersonIds", "array-contains", personId)
+  );
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => ({ id: d.id.replace(`${tenantId}__`, ""), ...d.data() }))
+    .sort((a, b) => (b.dueDate ?? "").localeCompare(a.dueDate ?? ""));
+}
+
+/**
+ * Follow-up round (Homework teacher-scoping + guardian-scoping): every
+ * assignment this specific person (a teacher or guardian, never the
+ * assigned student themself -- that's listAssignmentsForPerson() above) may
+ * read via extraReadersPersonIds -- the array createAssignment() denormalizes
+ * at creation time (every active teacher of the declared contextId, plus
+ * every guardian of an assignedToPersonIds entry). The query's own
+ * array-contains filter on THIS SAME FIELD is what makes it read-safe --
+ * structurally identical to listAssignmentsForPerson()'s own
+ * assignedToPersonIds filter, just on the other array. Callers wanting only
+ * the assignments relevant to one particular student should filter the
+ * result client-side by `a.assignedToPersonIds.includes(studentPersonId)`
+ * -- this function itself returns everything the reader can see, since
+ * Firestore has no way to additionally constrain by a field (assignedToPersonIds)
+ * this query doesn't itself filter on without hitting the same
+ * list-provability problem this whole redesign exists to avoid.
+ */
+export async function listAssignmentsForReader(db, tenantId, readerPersonId) {
+  const q = query(
+    collection(db, TENANT.ASSIGNMENTS),
+    where("tenantId", "==", tenantId),
+    where("extraReadersPersonIds", "array-contains", readerPersonId)
+  );
   const snap = await getDocs(q);
   return snap.docs
     .map((d) => ({ id: d.id.replace(`${tenantId}__`, ""), ...d.data() }))
