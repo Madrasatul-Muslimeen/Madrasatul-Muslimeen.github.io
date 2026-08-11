@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.08.** Cutover to production happened
+**Current milestone: QuranRevival v07.09.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -48,9 +48,14 @@ zero JS logic touched, across all 16 pages that have this block. Also
 added move-up/move-down + a "Move to…" re-parent action to Catalogue's
 Modules and Subjects tables (auto-renumbering siblings on each move), and
 granted the owner's account `platformAdmin` so the module half of that
-actually works (D14). None of v07.04–07.08 are phase deliverables; no
-status file of their own. See `PHASE-7-STATUS.md` for Phase 7 round 1's
-build log, and `PHASE-6-STATUS.md`
+actually works (D14). v07.09 (same day) is Phase 8 round 1: `monitor.html`
++ `js/monitor.js` — one universal report over `records` + `activity`
+(weekly/monthly, per-student and per-subject summaries, CSV export, print),
+plus a Quran-only Approach-status breakdown on top, exactly as scoped
+below. Read-only, no new collection, no `firestore.rules` change. None of
+v07.04–07.08 are phase deliverables; no status file of their own. See
+`PHASE-8-STATUS.md` for Phase 8 round 1's build log, `PHASE-7-STATUS.md`
+for Phase 7 round 1's, and `PHASE-6-STATUS.md`
 for Phase 6's, including three real pre-existing data bugs found and
 fixed by querying Firestore directly rather than guessing from the code.
 We are past "build against a parity checklist" and into "rebuild,
@@ -269,29 +274,33 @@ Phase 7 (Bookmarks, programs, routines) round 1 is built, not yet
 owner-verified** — see `PHASE-7-STATUS.md` for exactly what's in round 1
 (bookmarks, Continue strip, the routine renderer, Health's real study
 screen, Learn Deen On-the-Go pulled out as its own module) vs. what the
-owner deferred (course offers + routines, Stage B1 territory). See also
+owner deferred (course offers + routines, Stage B1 territory). **Phase 8
+(Monitor & reports) round 1 is also built, not yet owner-verified** — see
+`PHASE-8-STATUS.md`. See also
 `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`, `PHASE-2-STATUS.md`,
 `PHASE-3-STATUS.md`, `PHASE-4-STATUS.md`, and `PHASE-6-STATUS.md`. Phase 5
 (Migration & parity) is separately covered below — cutover already
 happened; two small follow-up items remain open, not gating anything.
 
-**Phase 8 (Monitor & reports) — planned 10 Aug 2026, not yet started, waiting
-on the owner's go-ahead.** Scope, confirmed with the owner: **one universal
-report**, not Quran-only — reads from `records` + `activity`, which are
-already the same shape for every module (ayah, topic, or routine), so it
-reports on whatever's actually been claimed/logged regardless of how built-
-out any given module is. New page `monitor.html` (+ a new `js/monitor.js`
-or extensions to `activity.js`/`records.js` for the aggregation queries),
-weekly and monthly views, per-student and per-subject summaries, CSV
-export, print — the same shapes the *old* app's own Monitor module had
-(`monitorWeeks`, read directly from `index.html` to confirm this scope
-before proposing it). Scoped to whoever can already see this data today
-(owner/prime/teacher/guardian per existing rules) — no new permission
-model. **Quran gets one extra section on top**: the 30-Approach status
-breakdown, aggregated across time/surahs into report form (reusing
-`summarizeStatuses`/`STATUS_COLORS`, already built) — richer because Quran
-has real structured trackable data nothing else does yet. Read-only
-throughout; no schema or security-rule changes anticipated.
+**Phase 8 (Monitor & reports) — built 10 Aug 2026 (v07.09), round 1, not yet
+owner-verified.** Scope, confirmed with the owner before building: **one
+universal report**, not Quran-only — reads from `records` + `activity`,
+which are already the same shape for every module (ayah, topic, or
+routine), so it reports on whatever's actually been claimed/logged
+regardless of how built-out any given module is. New page `monitor.html` +
+new `js/monitor.js` for the aggregation (plus one small additive read added
+to `records.js`, `listAllRecordsForPerson`), weekly and monthly views,
+per-student and per-subject summaries, CSV export, print — the same shapes
+the *old* app's own Monitor module had (`exportWeekCSV`/`exportMonthCSV`/
+`doPrint` in `index.html`, read directly to confirm this scope before
+building it). Scoped to whoever can already see this data today (owner/
+prime/teacher/guardian/self per existing rules) — no new permission model.
+**Quran gets one extra section on top**: the 30-Approach status breakdown
+for one student at a time (reusing `summarizeStatuses`, already built) —
+richer because Quran has real structured trackable data nothing else does
+yet. Read-only throughout; no schema or security-rule changes made. See
+`PHASE-8-STATUS.md` for the full build log and what's flagged for the
+owner to weigh in on.
 
 **Cutover happened 9 August 2026 — QuranRevival v07.00.**
 `https://madrasatul-muslimeen.github.io/` now redirects into the new app

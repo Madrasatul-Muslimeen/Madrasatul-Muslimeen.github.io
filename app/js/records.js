@@ -299,20 +299,36 @@ export async function bulkConfirmWeek(db, { tenantId, personId, weekKey, confirm
 // touched", not by raw entry count).
 // ---------------------------------------------------------------------------
 
-export async function listPendingForPerson(db, tenantId, personId) {
+/**
+ * Every records entry for a person, across however many chunks they touch --
+ * one query (list-safety: tenantId+personId are both fixed by the query's
+ * own filters, the exact fields canRecordFor's rule checks -- same proof
+ * D9/PHASE-3-STATUS.md already established for memberships/records list
+ * reads), never a per-surah loop. Read-only, on-demand only (Explore's own
+ * per-surah chunk reads are a separate, existing path -- this is for
+ * "everything this person has, regardless of which chunk it landed in":
+ * Phase 8's Monitor report and this function's own listPendingForPerson
+ * below.
+ */
+export async function listAllRecordsForPerson(db, tenantId, personId) {
   const q = query(
     collection(db, TENANT.RECORDS),
     where("tenantId", "==", tenantId),
     where("personId", "==", personId)
   );
   const snap = await getDocs(q);
-  const pending = [];
+  const out = [];
   for (const d of snap.docs) {
     const chunkKey = d.id.replace(`${tenantId}__${personId}__`, "");
     const entries = d.data().entries ?? {};
     for (const [entryKey, entry] of Object.entries(entries)) {
-      if (entry.confirmState === "pending") pending.push({ chunkKey, entryKey, ...entry });
+      out.push({ chunkKey, entryKey, ...entry });
     }
   }
-  return pending;
+  return out;
+}
+
+export async function listPendingForPerson(db, tenantId, personId) {
+  const all = await listAllRecordsForPerson(db, tenantId, personId);
+  return all.filter((e) => e.confirmState === "pending");
 }
