@@ -356,6 +356,25 @@ service cloud.firestore {
           && get(tenantPersonRef(childPersonId)).data.get('managedByPersonId', null) == myPersonIdIn(tenantId);
     }
 
+    // Phase 10 -- real, per-student teacher scoping (Stage B2, "safeguarding
+    // rules at scale"; closes the open access-control question CLAUDE.md had
+    // parked: a teacher was previously granted tenant-wide access to every
+    // student and subject via isTeacherIn(tenantId) alone). teacherStudentLinks
+    // is a D9-style rules-support mirror (see js/course-offers.js's own long
+    // comment on why it exists and how it's kept in sync) -- security rules
+    // can exists()/get() a fixed document path but can never run a query, so
+    // there's no cheap way to ask "is there SOME class/course offer where
+    // this teacher and this student are both actively enrolled" directly
+    // against enrollments. This function is that one flat, O(1) lookup.
+    function teacherStudentLinkRef(tenantId, teacherPersonId, studentPersonId) {
+      return /databases/$(database)/documents/teacherStudentLinks/$(tenantId + '__' + teacherPersonId + '__' + studentPersonId);
+    }
+    function isCoEnrolledTeacherOf(tenantId, studentPersonId) {
+      return signedIn() && myPersonIdIn(tenantId) != null
+          && exists(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId))
+          && get(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId)).data.active == true;
+    }
+
     // tenants/{tenantId}
     match /tenants/{tenantId} {
       allow read: if isPlatformAdmin();
@@ -380,7 +399,18 @@ service cloud.firestore {
     match /tenantPeople/{personId} {
       allow read: if isPlatformAdmin();
       allow read: if canAdminIdentity(resource.data.tenantId);
-      allow read: if isTeacherIn(resource.data.tenantId);              // rosters
+      // Phase 10: was blanket isTeacherIn(tenantId) ("rosters") -- any
+      // teacher membership could read every child's tenantPeople doc in the
+      // tenant, tenant-wide, regardless of who they actually teach. Scoped
+      // to isCoEnrolledTeacherOf() -- a teacher may still only read the
+      // people they're actually enrolled to teach. Because this rule is
+      // evaluated per-document, a list query (every page's own
+      // `where("tenantId","==",activeTenantId)` roster fetch) now comes
+      // back pre-filtered to that scoped roster automatically -- no client
+      // code needed to change for the UI to reflect this (scopedRoster() in
+      // session-context.js still passes teacher's roster through
+      // unmodified; it's already scoped by the time it gets there).
+      allow read: if isTeacherIn(resource.data.tenantId) && isCoEnrolledTeacherOf(resource.data.tenantId, personId);
       allow read: if signedIn() && resource.data.authUid == myUid();   // own record
       allow read: if isGuardianOf(resource.data.tenantId, personId);
 
@@ -670,9 +700,10 @@ service cloud.firestore {
     //
     // Who may read/write ONE PERSON's tracking data is the same set for all
     // three collections here -- the person themself (an adult with their
-    // own login), whoever guards them, whoever teaches in this tenant, and
-    // whoever administers it (owner/prime/platformAdmin). This deliberately
-    // matches D10: a guardian/teacher logging progress for several people
+    // own login), whoever guards them, whoever actually teaches them, and
+    // whoever administers the tenant (owner/prime/platformAdmin). This
+    // deliberately matches D10: a guardian/teacher logging progress for
+    // several people (any of the ones they're actually allowed to act for)
     // in one sitting from a simple dropdown must never be blocked by rules
     // any tighter than "can you act for this person at all" -- there is no
     // finer-grained, per-field (e.g. "only a supervisor may set
@@ -684,6 +715,16 @@ service cloud.firestore {
     // itself. isSelfPerson() adds one get() beyond the existing helpers
     // (tenantPeople lookup by personId) to recognise an adult acting for
     // their own record.
+    //
+    // Phase 10: isTeacherIn(tenantId) alone used to be enough here -- any
+    // teacher membership in the tenant could record/confirm for EVERY
+    // student, not just their own. That was always the disclosed gap
+    // CLAUDE.md's own open access-control question was about ("teacher
+    // cannot: other teachers' students" per the Architecture doc's own role
+    // table, never actually enforced). Now a teacher also needs
+    // isCoEnrolledTeacherOf() -- real, per-student scoping via the
+    // teacherStudentLinks mirror (see that function's own comment above),
+    // driven by class/course-offer enrolment rather than a guess.
     // =====================================================================
 
     function isSelfPerson(personId) {
@@ -691,41 +732,46 @@ service cloud.firestore {
           && get(tenantPersonRef(personId)).data.authUid == myUid();
     }
     function canRecordFor(tenantId, personId) {
-      return canAdminIdentity(tenantId) || isTeacherIn(tenantId)
+      return canAdminIdentity(tenantId)
+          || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, personId))
           || isGuardianOf(tenantId, personId) || isSelfPerson(personId);
     }
 
-    // Phase 9 -- who may create/edit an assignments doc. Admin/teacher are
-    // tenant-wide (same disclosed, pre-existing gap session-context.js's own
-    // scopedRoster() comment already carries for teachers -- no per-teacher
-    // student-assignment model exists yet). A guardian-only actor is scoped
-    // for real, not just disclosed: assignedToPersonIds must be exactly ONE
-    // child, and isGuardianOf() must hold for that one id -- Firestore rules
-    // can't cheaply prove "every element of an arbitrary-length list is my
-    // child" (isGuardianOf itself costs a get() per element), so a guardian
-    // assigning the same homework to two children makes two single-target
-    // assignment docs client-side rather than one two-target doc.
+    // Phase 9 -- who may create/edit an assignments doc. Admin is
+    // tenant-wide. The teacher branch is DELIBERATELY left unscoped for now,
+    // unlike canRecordFor() above -- assignedToPersonIds legitimately holds
+    // many students at once (a teacher assigning homework to a whole class
+    // in one document), and Firestore rules can't cheaply prove "every
+    // element of an arbitrary-length list is one of my co-enrolled
+    // students" the way isCoEnrolledTeacherOf() proves it for a single
+    // personId (that would cost one get() per array element, with no
+    // per-element get() construct available in rules at all, not just an
+    // expensive one). Closing this specific gap needs either a real
+    // contextId-trust model on assignments (the client only ever offering
+    // checkboxes for one class's own roster, the rule then checking a
+    // single get() on that one declared contextId instead of every array
+    // element) or per-student assignment documents -- both are
+    // real, separate follow-up work, not attempted in this round. A
+    // guardian-only actor stays scoped exactly as before Phase 10:
+    // assignedToPersonIds must be exactly ONE child, and isGuardianOf() must
+    // hold for that one id -- the same one-get()-per-element constraint,
+    // just already worked around by only ever allowing a single target.
     function isAssignmentCreator(tenantId, assignedToPersonIds) {
       return canAdminIdentity(tenantId) || isTeacherIn(tenantId)
           || (isGuardianIn(tenantId) && assignedToPersonIds.size() == 1 && isGuardianOf(tenantId, assignedToPersonIds[0]));
     }
 
-    // Phase 7 round 2 -- course offers/enrolments. Whether the caller is
-    // THEMSELF enrolled in courseOffer/class `contextId` with roleInClass
-    // "teacher" -- a real, properly-scoped alternative to the tenant-wide
-    // "teacher sees everyone" gap used elsewhere in this codebase (no
-    // per-teacher assignment model exists for records/assignments yet, but
-    // enrolments give course offers one for free: a teacher can only see
-    // the roster of an offer they are themselves enrolled to teach).
-    function enrollmentRef(tenantId, contextId, personId) {
-      return /databases/$(database)/documents/enrollments/$(tenantId + '__' + contextId + '__' + personId);
-    }
-    function isEnrolledAsTeacherIn(tenantId, contextId) {
-      return signedIn() && myPersonIdIn(tenantId) != null
-          && exists(enrollmentRef(tenantId, contextId, myPersonIdIn(tenantId)))
-          && get(enrollmentRef(tenantId, contextId, myPersonIdIn(tenantId))).data.roleInClass == 'teacher'
-          && get(enrollmentRef(tenantId, contextId, myPersonIdIn(tenantId))).data.status == 'active';
-    }
+    // Phase 7 round 2 -- course offers/enrolments. The narrower
+    // "isEnrolledAsTeacherIn" roster-visibility check (and its enrollmentRef()
+    // path helper) that used to live here were removed in Phase 10 --
+    // enrollments' own read rule (below) widened to anyMemberOf() for the
+    // teacherStudentLinks sync fix (see that match block's own comment),
+    // which made a separate roster-visibility helper redundant. Record/
+    // confirm AUTHORITY over a student is isCoEnrolledTeacherOf() above
+    // (Phase 10), which most of this codebase now runs through instead of
+    // blanket isTeacherIn(tenantId) -- assignments is the one place still
+    // tenant-wide for teachers, see isAssignmentCreator's own comment above
+    // for why.
     // Who may create/end an enrolment: admin, the child's guardian, or the
     // adult enrolling themself -- matches the role table (enrolling is an
     // admin/guardian/self action; teachers don't self-enrol students).
@@ -862,9 +908,11 @@ service cloud.firestore {
     }
 
     // ==========================================================================
-    // Phase 7 round 2 -- course offers + enrolments (Stage B1). contextType
-    // is always "courseOffer" for now -- classes (Phase 10, Stage B2) don't
-    // exist yet.
+    // Phase 7 round 2 -- course offers + enrolments (Stage B1). Phase 10
+    // adds classes as the other real contextType alongside courseOffer --
+    // enrollments below was already generic (contextId, contextType are
+    // plain fields, not collection-specific), so it needs no rule change of
+    // its own for classes to start using it.
     // ==========================================================================
 
     // courseOffers/{tenantId}__{offerId} -- admin-authored, same
@@ -877,16 +925,97 @@ service cloud.firestore {
       // No delete (I4/D6) -- archive via status instead.
     }
 
+    // classes/{tenantId}__{classId} -- Phase 10. Same admin-authored shape
+    // as courseOffers immediately above (both are just "a context people
+    // enrol into" at the data-model level -- Architecture Layer 1).
+    match /classes/{classKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- archive via status instead.
+    }
+
     // enrollments/{tenantId}__{contextId}__{personId}
+    //
+    // Phase 10: read widened from "admin, or your own/your child's row, or a
+    // teacher enrolled in this same context" to any tenant member -- found
+    // while wiring teacherStudentLinks (Phase 10): syncTeacherStudentLinksForContext()
+    // (js/course-offers.js) needs to enumerate EVERY OTHER active row in the
+    // context that was just changed to recompute the right mirror pairs, but
+    // a guardian enrolling/ending their own child could only ever read that
+    // ONE row under the narrower rule -- their query for "who else is in
+    // this class" came back empty, so a class's teacher never actually
+    // gained authority over a guardian-added child until some unrelated
+    // admin action next touched that same class. anyMemberOf() matches the
+    // same shape classes/courseOffers docs themselves already use one block
+    // up -- an enrollment row only carries personId + role + status, never
+    // the personal data itself (that's tenantPeople, which keeps its own,
+    // still fully scoped, read rule).
     match /enrollments/{enrollmentKey} {
       allow read: if isPlatformAdmin();
-      allow read: if canAdminIdentity(resource.data.tenantId);
-      allow read: if isGuardianOf(resource.data.tenantId, resource.data.personId) || isSelfPerson(resource.data.personId);
-      allow read: if isEnrolledAsTeacherIn(resource.data.tenantId, resource.data.contextId);
+      allow read: if anyMemberOf(resource.data.tenantId);
 
       allow create: if canEnrol(request.resource.data.tenantId, request.resource.data.personId);
       allow update: if canEnrol(resource.data.tenantId, resource.data.personId);
       // No delete (I4/D6) -- end via status instead.
+    }
+
+    // teacherStudentLinks/{tenantId}__{teacherPersonId}__{studentPersonId} --
+    // Phase 10, D9-style rules-support mirror (see isCoEnrolledTeacherOf()'s
+    // own comment above for what this backs). Never shown in any UI, so
+    // reads are kept as narrow as the two people it actually names, plus
+    // admin. Written as a side effect of enrolPerson()/endEnrollment()
+    // (js/course-offers.js) -- authorized the same way an enrolment change
+    // to EITHER side of the pair already is, via canEnrol(), since that's
+    // exactly the action that triggers a recompute.
+    match /teacherStudentLinks/{linkKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if canAdminIdentity(resource.data.tenantId);
+      allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) == resource.data.teacherPersonId;
+      allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) == resource.data.studentPersonId;
+
+      allow create: if canEnrol(request.resource.data.tenantId, request.resource.data.teacherPersonId)
+                    || canEnrol(request.resource.data.tenantId, request.resource.data.studentPersonId);
+      allow update: if canEnrol(resource.data.tenantId, resource.data.teacherPersonId)
+                    || canEnrol(resource.data.tenantId, resource.data.studentPersonId);
+      // No delete (I4/D6) -- active:false via recompute instead.
+    }
+
+    // ==========================================================================
+    // Phase 11 -- Curriculum, grades & resources (Stage C). ladders/levels/
+    // personLevels/resources above already carry their own rules (personLevels
+    // deployed ahead of time in Phase 2/10, resources in Phase 6). The two
+    // collections still missing a rule are curriculumUnits and curriculumPlan
+    // -- same admin-authored read-any-member/write-canAdminCatalogue shape as
+    // every other Layer 1 catalogue collection (ladders, classes, courseOffers,
+    // resources, domains).
+    // ==========================================================================
+
+    // curriculumUnits/{tenantId}__{unitId} -- the CONTENT half (I8: content is
+    // separate from schedule). subjectIds[] can name several subjects at once
+    // (cross-subject), resourceIds[] is maintained via arrayUnion from
+    // curriculum.js, never a full-document overwrite of someone else's edits.
+    match /curriculumUnits/{unitKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- archive via status instead.
+    }
+
+    // curriculumPlan/{tenantId}__{planId} -- the SCHEDULE half (I8). contextId
+    // is a class's or a person's own id (contextType "class" | "person" --
+    // Family/Individual tenants have no classes, I1's own reasoning extended
+    // here so they still get real curriculum scheduling). Same admin-authored
+    // shape as curriculumUnits above -- a plan entry is authored by the
+    // tenant's own admin, not by whoever the context belongs to.
+    match /curriculumPlan/{planKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- archive via status instead.
     }
   }
 }

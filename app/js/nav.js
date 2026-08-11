@@ -10,7 +10,12 @@
 // and revealed. Each category is a native <details>/<summary> disclosure --
 // no click-handler wiring needed, keeping this file a pure renderer per I2
 // (takes roles in, HTML out; the page's own script never has to attach
-// anything to what this returns).
+// anything to what this returns). Individual links can still carry their
+// own ownerPrimeOnly flag within a category that's otherwise open to
+// everyone (Operation: Classes/Curriculum are owner/prime-only, Records/
+// Monitor/Homework/Course Offers aren't) -- same per-item gating the old
+// flat list used, just filtered within a category now instead of across
+// the whole bar.
 //
 // Home (Legacy App link, Sign in, Sign out) is deliberately NOT part of
 // this file's output any more -- it now lives in each page's own static
@@ -36,15 +41,18 @@ const STUDY_LINKS = [
   { href: "ldog-study.html", label: "Learn Deen On-the-Go" },
 ];
 
+// Owner's mockup order: Curriculum, Course Offers, Homework, Record,
+// Monitor. Classes (Phase 10) isn't in the mockup -- it postdates it --
+// but is the same kind of owner/prime-only scheduling tool as Curriculum,
+// so it sits alongside it rather than getting its own category.
 const OPERATION_LINKS = [
+  { href: "classes.html", label: "Classes", ownerPrimeOnly: true }, // Phase 10 -- classes + real per-student teacher scoping, Stage B2
+  { href: "curriculum.html", label: "Curriculum", ownerPrimeOnly: true }, // Phase 11 -- curriculum units + plan, resources, grades, Stage C
+  { href: "course-offers.html", label: "Course Offers" }, // Phase 7 round 2 -- offers + enrolments, Stage B1
+  { href: "homework.html", label: "Homework" }, // Phase 9 -- assign/mark/score, person-only
   { href: "records.html", label: "Records" },
-  { href: "monitor.html", label: "Monitor" },
-  { href: "homework.html", label: "Homework" },
-  { href: "course-offers.html", label: "Course Offers" },
+  { href: "monitor.html", label: "Monitor" }, // Phase 8 -- reads whatever's visible to the signed-in login, same as Records
 ];
-// Curriculum (Architecture Phase 11) isn't built yet -- shown disabled so
-// the category's shape matches the owner's mockup without inventing a page.
-const OPERATION_PLACEHOLDERS = ["Curriculum"];
 
 const ADMIN_LINKS = [
   { href: "people.html", label: "People" },
@@ -63,8 +71,9 @@ const SETTINGS_PLACEHOLDERS = ["Language", "Appearance"];
 // output, so it's visible before sign-in resolves same as "who".
 export const LEGACY_APP_URL = "https://madrasatul-muslimeen.github.io/legacy/index.html";
 
-function renderLinks(links, currentFile) {
+function renderLinks(links, currentFile, canAdmin) {
   return links
+    .filter((l) => !l.ownerPrimeOnly || canAdmin)
     .map((l) => {
       const isCurrent = l.href === currentFile;
       return `<a href="${l.href}" class="nav-link${isCurrent ? " nav-current" : ""}"${isCurrent ? ' aria-current="page"' : ""}>${l.label}</a>`;
@@ -81,24 +90,26 @@ function renderCategory(name, linksHtml, currentFile, links) {
   return `<details class="nav-cat"${isCurrentCategory ? " open" : ""}><summary>${name}</summary><div class="nav-cat-links">${linksHtml}</div></details>`;
 }
 
-/** roles: this person's roles in the currently-active tenant (e.g. ["owner","prime"]). Admin category only shows for owner/prime -- everyone else just gets Study Module + Operation (+ the always-shown Bookmark/Settings placeholders). viewAsRole (round 11): when set, shows a "Previewing as" notice so it's never ambiguous why the page looks scoped down -- change/exit it from the People page's own dropdown. */
+/** roles: this person's roles in the currently-active tenant (e.g. ["owner","prime"]). Admin category, and the Classes/Curriculum links inside Operation, only show for owner/prime -- everyone else gets Study Module + the rest of Operation (+ the always-shown Bookmark/Settings placeholders). viewAsRole (round 11): when set, shows a "Previewing as" notice so it's never ambiguous why the page looks scoped down -- change/exit it from the People page's own dropdown. */
 export function renderNavBar(roles = [], viewAsRole = null) {
   const canAdmin = roles.includes("owner") || roles.includes("prime");
   const currentFile = location.pathname.split("/").pop();
 
   const cats = [];
-  if (canAdmin) cats.push(renderCategory("Admin", renderLinks(ADMIN_LINKS, currentFile), currentFile, ADMIN_LINKS));
-  cats.push(renderCategory("Study Module", renderLinks(STUDY_LINKS, currentFile), currentFile, STUDY_LINKS));
-  cats.push(renderCategory(
-    "Operation",
-    renderLinks(OPERATION_LINKS, currentFile) + renderPlaceholders(OPERATION_PLACEHOLDERS),
-    currentFile,
-    OPERATION_LINKS,
-  ));
+  if (canAdmin) cats.push(renderCategory("Admin", renderLinks(ADMIN_LINKS, currentFile, canAdmin), currentFile, ADMIN_LINKS));
+  cats.push(renderCategory("Study Module", renderLinks(STUDY_LINKS, currentFile, canAdmin), currentFile, STUDY_LINKS));
+  cats.push(renderCategory("Operation", renderLinks(OPERATION_LINKS, currentFile, canAdmin), currentFile, OPERATION_LINKS));
   cats.push(renderCategory("Bookmark", renderPlaceholders(BOOKMARK_PLACEHOLDERS), currentFile, null));
   cats.push(renderCategory("Settings", renderPlaceholders(SETTINGS_PLACEHOLDERS), currentFile, null));
 
-  const teacherGapNote = viewAsRole === "teacher" ? " (shows the full roster — per-student teacher assignment isn't built yet)" : "";
+  // Phase 10: real per-student teacher assignment now exists (classes.html
+  // + teacherStudentLinks) -- a teacher preview is scoped to whoever
+  // they're actually enrolled to teach, not the full roster any more.
+  // Homework/assignments is the one surface that's still tenant-wide for
+  // teachers (see isAssignmentCreator's own comment in firestore.rules for
+  // why) -- noted here since it's the one place "previewing as teacher"
+  // can still look broader than everywhere else.
+  const teacherGapNote = viewAsRole === "teacher" ? " (Homework still shows every assignment — per-teacher scoping isn't built there yet)" : "";
   const previewNotice = viewAsRole
     ? `<span class="nav-preview-notice">Previewing as: ${viewAsRole}${teacherGapNote} — change this on the People page</span>`
     : "";

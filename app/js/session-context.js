@@ -96,12 +96,19 @@ export function effectiveRoles(realRoles, viewAsRole) {
  * Which roster entries someone holding `effRoles` (already collapsed via
  * effectiveRoles() above) should see, scoped to their own personId --
  * Architecture s6's role table: student "cannot see others", guardian
- * "for their own children only". owner/prime/teacher see everyone here --
- * teacher is a known, disclosed gap: no per-teacher student-assignment
- * model exists yet (CLAUDE.md's own open access-control question), so a
- * teacher preview cannot actually be scoped down without guessing at a
- * design that hasn't been decided. Real, unrestricted teacher access is
- * pre-existing behaviour, not something this function changes.
+ * "for their own children only". owner/prime see everyone here, no
+ * scoping needed. teacher LOOKS unscoped in this function ("return roster
+ * unchanged"), but as of Phase 10 that's fine: the `roster` this function
+ * receives was already fetched via a Firestore query against
+ * tenantPeople, and firestore.rules' own per-student teacher scoping
+ * (isCoEnrolledTeacherOf(), replacing the old blanket isTeacherIn(tenantId)
+ * read) means Firestore itself silently drops any tenantPeople doc a
+ * teacher isn't actually enrolled to teach from that query's results
+ * before this function ever sees them -- the real scoping already
+ * happened server-side, so passing the (already-filtered) list through
+ * unchanged is correct, not a gap. Homework/assignments is the one
+ * surface still tenant-wide for teachers (see isAssignmentCreator's own
+ * comment in firestore.rules for why).
  */
 export function scopedRoster(roster, effRoles, myPersonId) {
   if (effRoles.includes("owner") || effRoles.includes("prime") || effRoles.includes("teacher")) return roster;
