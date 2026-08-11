@@ -116,11 +116,15 @@ export function renderNavBar(roles = [], viewAsRole = null) {
   // Phase 10: real per-student teacher assignment now exists (classes.html
   // + teacherStudentLinks) -- a teacher preview is scoped to whoever
   // they're actually enrolled to teach, not the full roster any more.
-  // Homework/assignments is the one surface that's still tenant-wide for
-  // teachers (see isAssignmentCreator's own comment in firestore.rules for
-  // why) -- noted here since it's the one place "previewing as teacher"
-  // can still look broader than everywhere else.
-  const teacherGapNote = viewAsRole === "teacher" ? " (Homework still shows every assignment — per-teacher scoping isn't built there yet)" : "";
+  // Follow-up round (11 Aug 2026): Homework/assignments closed the same gap
+  // (isAssignmentCreator()/isActiveTeacherInContext() in firestore.rules) --
+  // no surface left with the old blanket-tenant-wide teacher shape. Kept as
+  // an empty-string constant, not deleted outright, since "View as: teacher"
+  // previews on top of the owner's own real access either way (it can't
+  // prove the restriction actually holds -- same standing limitation every
+  // teacher-scoping round has disclosed, not new here) and a future gap
+  // found the same way deserves the same kind of note.
+  const teacherGapNote = "";
   const previewNotice = viewAsRole
     ? `<span class="nav-preview-notice">Previewing as: ${viewAsRole}${teacherGapNote} — change this on the People page</span>`
     : "";
