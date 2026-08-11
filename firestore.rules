@@ -981,5 +981,41 @@ service cloud.firestore {
                     || canEnrol(resource.data.tenantId, resource.data.studentPersonId);
       // No delete (I4/D6) -- active:false via recompute instead.
     }
+
+    // ==========================================================================
+    // Phase 11 -- Curriculum, grades & resources (Stage C). ladders/levels/
+    // personLevels/resources above already carry their own rules (personLevels
+    // deployed ahead of time in Phase 2/10, resources in Phase 6). The two
+    // collections still missing a rule are curriculumUnits and curriculumPlan
+    // -- same admin-authored read-any-member/write-canAdminCatalogue shape as
+    // every other Layer 1 catalogue collection (ladders, classes, courseOffers,
+    // resources, domains).
+    // ==========================================================================
+
+    // curriculumUnits/{tenantId}__{unitId} -- the CONTENT half (I8: content is
+    // separate from schedule). subjectIds[] can name several subjects at once
+    // (cross-subject), resourceIds[] is maintained via arrayUnion from
+    // curriculum.js, never a full-document overwrite of someone else's edits.
+    match /curriculumUnits/{unitKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- archive via status instead.
+    }
+
+    // curriculumPlan/{tenantId}__{planId} -- the SCHEDULE half (I8). contextId
+    // is a class's or a person's own id (contextType "class" | "person" --
+    // Family/Individual tenants have no classes, I1's own reasoning extended
+    // here so they still get real curriculum scheduling). Same admin-authored
+    // shape as curriculumUnits above -- a plan entry is authored by the
+    // tenant's own admin, not by whoever the context belongs to.
+    match /curriculumPlan/{planKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- archive via status instead.
+    }
   }
 }

@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.12.** Cutover to production happened
+**Current milestone: QuranRevival v07.13.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -113,10 +113,43 @@ it can't be proven from the owner's own login or a "View as" preview. See
 including a real gap found and fixed in the same sitting (not a live bug
 like Phase 9's): the first version of `enrollments`' read rule would have
 silently prevented a guardian-enrolled child's class teacher from ever
-gaining real authority over them. None of
-v07.04–07.12 are phase deliverables beyond 07.09/07.10/07.11/07.12
-themselves; no status file of their own for 07.04–07.08. See
-`PHASE-10-STATUS.md` for Phase 10 round 1's build log, `PHASE-9-STATUS.md`
+gaining real authority over them. v07.13 (11 Aug 2026, on Claude Code on
+the web) is **Phase 11 round 1: Curriculum, grades & resources (Stage
+C)** — `curriculum.html` + new `js/curriculum.js`/`js/grades.js`, plus an
+extension to the existing `js/resources.js`. Ladders and levels (the
+schema half of "grades") were already built in Phase 2 (`F-025`); what was
+actually missing was assigning a person a level over time as **dated
+history** — `personLevels`, whose `firestore.rules` block was, notably,
+already deployed pre-emptively back in Phase 2/10 for exactly this round,
+same "reserve the rule before the UI needs it" pattern as `tenantInvites`
+in Phase 1. That rule allows `create` but not `update`/`delete` on
+purpose: `grades.js` never edits an old dated row, it only ever adds a new
+one with a later `fromDate` — a correction is a new row, not touching the
+last one, matching I4/I6's own shape everywhere else in this app.
+`curriculumUnits` (the CONTENT half, cross-subject) and `curriculumPlan`
+(the SCHEDULE half — 4 terms × 10 weeks, a class **or a person** as
+context) are the two genuinely new collections this round, kept separate
+per I8 so re-planning a unit into a different week never touches the unit
+itself. `resources.js` gained a real tenant-wide browse (`listResources`)
+and archive (`setResourceStatus`) — its own old comment claiming Firestore
+couldn't support a tenant-wide list query for it was checked against the
+actual deployed rule and found to be stale, corrected in place rather than
+left to mislead a future round. Person-context curriculum planning
+(alongside class-context) was a deliberate choice, not directly asked of
+the owner: I1 ("nothing in Layer 2/3 ever requires a `classId`") only
+technically binds Layer 2/3, but the same reasoning was extended here so a
+Family/Individual tenant — the owner's/family's own real use, ranked first
+by D13 — gets real curriculum scheduling too, not just Tuition-Provider
+classes. **Not yet owner-verified, `firestore.rules` not yet deployed**
+(same Claude-Code-on-the-web / no-CLI constraint as every recent round) —
+see `PHASE-11-STATUS.md` for the full build log and an 8-item verification
+checklist, plus what was deliberately left for a later round (curriculum
+plan entries don't yet wire to any study renderer, same "data layer +
+admin UI first" shape Phase 7 round 2 already used for course offers).
+None of v07.04–07.13 are phase deliverables beyond
+07.09/07.10/07.11/07.12/07.13 themselves; no status file of their own for
+07.04–07.08. See `PHASE-11-STATUS.md` for Phase 11 round 1's build log,
+`PHASE-10-STATUS.md` for Phase 10 round 1's, `PHASE-9-STATUS.md`
 for Phase 9 round 1's (including the bug fix above in full),
 `PHASE-8-STATUS.md` for Phase 8 round 1's, `PHASE-7-STATUS.md` for Phase 7
 (now covering both rounds), and `PHASE-6-STATUS.md` for Phase 6's,
@@ -353,7 +386,12 @@ actual teacher-scoping enforcement itself still needs a second real
 `teacher`-only account to prove, since owner/prime's own login bypasses
 it) — see `PHASE-10-STATUS.md` for the full build log, the remaining
 verification checklist, and a real gap found and fixed in the same
-sitting, before it ever shipped. See also
+sitting, before it ever shipped. **Phase 11 (Curriculum, grades &
+resources, Stage C) round 1 is built, `firestore.rules` NOT yet
+deployed** — see `PHASE-11-STATUS.md` for the full build log and an
+8-item verification checklist; the two genuinely new collections
+(`curriculumUnits`, `curriculumPlan`) will 403 until the owner deploys the
+rules addition via the Firebase Console, same as Phase 10's. See also
 `PHASE-0-STATUS.md`, `PHASE-1-STATUS.md`, `PHASE-2-STATUS.md`,
 `PHASE-3-STATUS.md`, `PHASE-4-STATUS.md`, and `PHASE-6-STATUS.md`. Phase 5
 (Migration & parity) is separately covered below — cutover already
