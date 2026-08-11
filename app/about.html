@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — About</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 44rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.05rem; margin-top: 1.6rem; }
+  button {
+    font-size: 0.92rem; padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.secondary { background: white; color: #1F3A6E; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.6rem; }
+  th, td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid #eee; font-size: 0.88rem; vertical-align: top; }
+  .tag { display: inline-block; padding: 0.12rem 0.5rem; border-radius: 1rem; font-size: 0.76rem; font-weight: 600; white-space: nowrap; }
+  .tag-built { background: #d7f4d7; color: #1a5e1a; }
+  .tag-planned { background: #eee; color: #555; }
+  .delivers { color: #666; }
+</style>
+</head>
+<body>
+  <h1>About QuranRevival</h1>
+  <p>What's actually built versus only planned — read directly from this
+     app's own feature registry, never restated by hand, so this page can't
+     drift out of sync with the real code.</p>
+
+  <div class="app-home-bar">
+    <span class="nav-home-label">Home</span>
+    <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
+    <div id="who">Checking sign-in…</div>
+    <button id="signInBtn" style="display:none;">Sign in with Google</button>
+    <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+  </div>
+
+  <div id="app" style="display:none;">
+    <div id="navBar"></div>
+
+    <div id="versionLine" style="margin:1rem 0; font-size:0.95rem; color:#555;"></div>
+
+    <h2>Phase 0 &amp; 1 — individually tracked features</h2>
+    <table>
+      <thead><tr><th>ID</th><th>Feature</th><th>Status</th></tr></thead>
+      <tbody id="featureRows"></tbody>
+    </table>
+
+    <h2>Every build phase</h2>
+    <table>
+      <thead><tr><th>Phase</th><th>Name</th><th>Status</th><th>Delivers</th></tr></thead>
+      <tbody id="phaseRows"></tbody>
+    </table>
+  </div>
+
+  <script type="module">
+    import { auth } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { db } from "./js/firebase-init.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { getMyMemberships, initializeActiveContext } from "./js/session-context.js";
+    import { renderNavBar } from "./js/nav.js";
+    import { getFullRegistry } from "./js/feature-registry.js";
+    import { APP_VERSION } from "./js/version.js";
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = `Sign-in failed: ${err.message}`;
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    function renderRegistry() {
+      const { features, phaseReservations } = getFullRegistry();
+      document.getElementById("versionLine").textContent = `QuranRevival v${APP_VERSION}`;
+      document.getElementById("featureRows").innerHTML = features
+        .map((f) => `<tr><td>${f.id}</td><td>${f.name}</td><td><span class="tag tag-${f.status}">${f.status}</span></td></tr>`)
+        .join("");
+      document.getElementById("phaseRows").innerHTML = phaseReservations
+        .map((p) => `<tr><td>${p.phase}</td><td>${p.name}</td><td><span class="tag tag-${p.status}">${p.status}</span></td><td class="delivers">${p.delivers}</td></tr>`)
+        .join("");
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = "Not signed in.";
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = `Signed in as ${user.email}`;
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+      appEl.style.display = "block";
+      renderRegistry();
+
+      try {
+        const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+        const context = await initializeActiveContext(db, user.uid, defaultTenantId);
+        if (context) {
+          const myMemberships = await getMyMemberships(db, user.uid);
+          const roles = myMemberships.find((m) => m.tenantId === context.tenantId)?.roles ?? [];
+          navBar.innerHTML = renderNavBar(roles, null);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>

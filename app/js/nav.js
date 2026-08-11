@@ -39,6 +39,7 @@ const STUDY_LINKS = [
   { href: "life-skill.html", label: "Life Skill" },
   { href: "health-study.html", label: "Health" },
   { href: "ldog-study.html", label: "Learn Deen On-the-Go" },
+  { href: "asma-study.html", label: "Asma ul Husna" }, // Phase 13 round 1
 ];
 
 // Owner's mockup order: Curriculum, Course Offers, Homework, Record,
@@ -65,6 +66,11 @@ const ADMIN_LINKS = [
 // Appearance) are both explicit future work, not oversights.
 const BOOKMARK_PLACEHOLDERS = ["Bookmark"];
 const SETTINGS_PLACEHOLDERS = ["Language", "Appearance"];
+
+// Phase 13 round 1: About reads the feature registry live (getFullRegistry())
+// -- a real link, not a placeholder, sitting in the same category Settings
+// already occupies rather than inventing a sixth category for one link.
+const ABOUT_LINKS = [{ href: "about.html", label: "About" }];
 
 // Kept exported for reuse -- the literal link now lives in each page's own
 // static Home markup (see quranrevival.html etc.), not in this renderer's
@@ -100,7 +106,12 @@ export function renderNavBar(roles = [], viewAsRole = null) {
   cats.push(renderCategory("Study Module", renderLinks(STUDY_LINKS, currentFile, canAdmin), currentFile, STUDY_LINKS));
   cats.push(renderCategory("Operation", renderLinks(OPERATION_LINKS, currentFile, canAdmin), currentFile, OPERATION_LINKS));
   cats.push(renderCategory("Bookmark", renderPlaceholders(BOOKMARK_PLACEHOLDERS), currentFile, null));
-  cats.push(renderCategory("Settings", renderPlaceholders(SETTINGS_PLACEHOLDERS), currentFile, null));
+  cats.push(renderCategory(
+    "Settings",
+    renderLinks(ABOUT_LINKS, currentFile, canAdmin) + renderPlaceholders(SETTINGS_PLACEHOLDERS),
+    currentFile,
+    ABOUT_LINKS
+  ));
 
   // Phase 10: real per-student teacher assignment now exists (classes.html
   // + teacherStudentLinks) -- a teacher preview is scoped to whoever

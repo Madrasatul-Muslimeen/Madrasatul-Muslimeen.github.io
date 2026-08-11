@@ -65,6 +65,14 @@ export const MODULE_TEMPLATES = [
   // topic+resource) -- owner confirmed this round: pull it out, same
   // treatment Health and Life Skill already got.
   { id: "ldog", name: en("Learn Deen On-the-Go"), icon: "🚶", renderer: "routine", order: 9 },
+  // Phase 13 round 1: Asma ul Husna. Its own renderer ("asma"), not "topic"
+  // -- unlike every topic-renderer module, its content isn't tenant-authored
+  // (no per-name resource to add from Catalogue); the 99 Names are fixed
+  // platform data (asma-data.js), same "static content + claim/confirm"
+  // shape QuranRevival's own ayahs already use, just far simpler (no
+  // audio/tajweed/word-by-word panels). unit-keys.js already reserved
+  // `name:${number}` for exactly this back in Phase 3 (F-033).
+  { id: "asma", name: en("Asma ul Husna"), icon: "📿", renderer: "asma", order: 10 },
 ];
 
 // ---------------------------------------------------------------------------
@@ -177,6 +185,15 @@ export const SUBJECT_TEMPLATES = [
   // daily_deen_habit later without a second restructure.
   { id: "ldog", name: en("Learn Deen On-the-Go"), parentId: null, order: 9, moduleIds: ["ldog"] },
   { id: "daily_deen_habit", name: en("Daily Deen Learning Habit for Life"), parentId: "ldog", order: 1, moduleIds: ["ldog"] },
+
+  // Phase 13 round 1: Asma ul Husna -- a single anchor node, not a branch
+  // tree. Not isTrackable itself; it exists only so records.js has a
+  // subjectId to chunk the 99 names' claims under (chunkKeyFor falls back
+  // to `subject_${subjectId}` for any unit type outside the surah-chunked
+  // set, and "name" is one of those -- see records.js). The 99 names
+  // themselves live in asma-data.js as fixed platform content, not as 99
+  // separate subject nodes.
+  { id: "asma_ul_husna", name: en("Asma ul Husna"), parentId: null, order: 10, moduleIds: ["asma"] },
 ];
 
 // ---------------------------------------------------------------------------
@@ -349,4 +366,8 @@ export const TOPIC_TRACKABLE_TEMPLATES = [
   studiedTemplate("studied_lifeskill", "lifeskill"),
   practisedTemplate("practised_health", "health"),
   practisedTemplate("practised_ldog", "ldog"),
+  // Asma ul Husna reuses "Studied" wording (studiedTemplate is already
+  // generic, parameterized by moduleId) rather than inventing a fourth
+  // trackable-name convention for one module.
+  studiedTemplate("studied_asma", "asma"),
 ];
