@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.16.** Cutover to production happened
+**Current milestone: QuranRevival v07.17.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -234,10 +234,27 @@ shape doesn't map cleanly onto a course offer's `subjectIds[]` picker,
 flagged as real separate follow-up rather than guessed at. Purely additive
 metadata — no `firestore.rules` change, no behavior change for anyone not
 enrolled in a matching course offer. See `PHASE-7-STATUS.md`'s new "Round
-3" section for the full build log. **Check this line's version number
-every session** — it's manually updated per `app/js/version.js`'s own
-scheme (first two digits = big overhaul, last two = each new feature) and
-will drift if a future round forgets to bump it here too.
+3" section for the full build log.
+v07.17 (11 Aug 2026, on Claude Code on the web) closes the Homework
+teacher-scoping gap `isAssignmentCreator()`'s own comment flagged since
+Phase 9 first shipped: a teacher could create/read an assignment naming
+ANY student in the tenant, not just their own, because Firestore rules
+can't cheaply prove "every element of `assignedToPersonIds` is one of my
+co-enrolled students." Built using exactly the contextId-trust model that
+comment proposed, now that Phase 10's classes/enrollments give it a real
+anchor: new `isActiveTeacherInContext()` in `firestore.rules` (a single,
+cheap, fixed-path `get()` on `enrollments`), `homework.html` gained a real
+"Class / Course Offer" picker that restricts a teacher's "Assign to" list
+to that context's own roster, and requires one before a teacher-created
+assignment can be written at all. **The guardian branch of the same rule
+was deliberately left as-is** — a separate, already-disclosed, tenant-wide
+limitation, not what was asked for this round. `firestore.rules` NOT yet
+deployed — needs the owner's own Firebase Console copy-paste, same as
+every rules round since Phase 10. See `PHASE-9-STATUS.md`'s new "Round 2"
+section for the full build log. **Check this line's version number every
+session** — it's manually updated per `app/js/version.js`'s own scheme
+(first two digits = big overhaul, last two = each new feature) and will
+drift if a future round forgets to bump it here too.
 
 ---
 
@@ -458,7 +475,10 @@ QuranRevival/Asma ul Husna still not wired, see `PHASE-7-STATUS.md`).
 `PHASE-8-STATUS.md`. **Phase 9 (Homework & feedback) round 1 is also
 built, not yet owner-verified** — see `PHASE-9-STATUS.md`, including a
 real guardian-access bug found and fixed in `firestore.rules` (already
-deployed) that predates this phase. **Phase 10 (Classes & provider,
+deployed) that predates this phase, **and round 2** (11 Aug 2026, v07.17 —
+closes the Homework teacher-scoping gap round 1 itself flagged;
+`firestore.rules` for this round NOT yet deployed). **Phase 10 (Classes &
+provider,
 Stage B2) round 1 is built, `firestore.rules` deployed and partially
 owner-verified 11 Aug 2026** (deployed via the Firebase Console, not the
 CLI — see that phase's own paragraph above for why; version badge,

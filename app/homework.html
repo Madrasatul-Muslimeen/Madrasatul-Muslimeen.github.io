@@ -38,8 +38,9 @@
 </head>
 <body>
   <h1>Homework (Phase 9)</h1>
-  <p>Assign to a person (no classes yet — that's Phase 10), mark with a score
-     and comment, and keep a private note about a student for yourself.</p>
+  <p>Assign to a person, mark with a score and comment, and keep a private
+     note about a student for yourself. A teacher must assign through a
+     class or course offer they actively teach.</p>
 
   <div class="app-home-bar">
     <span class="nav-home-label">Home</span>
@@ -62,6 +63,11 @@
 
     <fieldset id="createFieldset" style="display:none;">
       <legend>New assignment</legend>
+      <div id="contextRow" style="display:none;">
+        <label for="contextSelect">Class / Course Offer</label>
+        <select id="contextSelect"></select>
+        <p id="contextHint" class="muted"></p>
+      </div>
       <label>Assign to</label>
       <div class="checkList" id="assignToChecks"></div>
       <div class="row">
@@ -127,6 +133,11 @@
       markSubmitted, scoreSubmission, createTeachingNote, listMyTeachingNotes,
     } from "./js/homework.js";
     import { renderNavBar } from "./js/nav.js";
+    import { listClasses } from "./js/classes.js";
+    import {
+      listCourseOffers, listEnrollmentsForPerson, listEnrollmentsForOffer,
+      activeTeacherContextIdsFromEnrollments,
+    } from "./js/course-offers.js";
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
@@ -136,6 +147,9 @@
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
     const createFieldset = document.getElementById("createFieldset");
+    const contextRow = document.getElementById("contextRow");
+    const contextSelect = document.getElementById("contextSelect");
+    const contextHint = document.getElementById("contextHint");
     const assignToChecks = document.getElementById("assignToChecks");
     const subjectSelect = document.getElementById("subjectSelect");
     const dueDateInput = document.getElementById("dueDateInput");
@@ -172,6 +186,11 @@
     let subjectTree = [];
     let canCreate = false; // owner/prime/teacher/guardian (real or previewed)
     let currentUser = null;
+    // Follow-up round (Homework teacher-scoping).
+    let isPureTeacher = false; // effRoles is exactly ["teacher"] -- the only case that needs the query/write restriction
+    let myActiveTeacherContextIds = []; // this person's own actively-taught class/course-offer ids
+    let availableContexts = []; // [{id, type: "class"|"courseOffer", name}] offered in the picker
+    let contextRoster = []; // active "student" roster of the currently-selected context, [] if none selected
 
     function currentPreview() {
       const context = getActiveContext();
@@ -202,9 +221,21 @@
       createFieldset.style.display = canCreate ? "" : "none";
       noteFieldset.style.display = canCreate ? "" : "none";
 
-      assignToChecks.innerHTML = visibleRoster
-        .map((p) => `<label><input type="checkbox" value="${p.id}" /> ${langText(p.name, "en", p.id)}</label>`)
-        .join("") || `<span class="muted">No students visible to assign to.</span>`;
+      // Follow-up round (Homework teacher-scoping): firestore.rules now
+      // requires a teacher-created assignment to declare a real contextId
+      // (the class/course-offer they actively teach), and a teacher's own
+      // read query needs the same context ids to stay provable -- see
+      // homework.js's listAssignmentsForPerson() doc comment.
+      const isAdmin = effRoles.includes("owner") || effRoles.includes("prime");
+      isPureTeacher = effRoles.length === 1 && effRoles[0] === "teacher";
+      myActiveTeacherContextIds = [];
+      if (effRoles.includes("teacher") && myPersonId) {
+        const myEnrollments = await listEnrollmentsForPerson(db, activeTenantId, myPersonId);
+        myActiveTeacherContextIds = activeTeacherContextIdsFromEnrollments(myEnrollments);
+      }
+      await refreshContextPicker(isAdmin, effRoles.includes("teacher"));
+
+      await refreshAssignToChecks();
       noteAboutSelect.innerHTML = visibleRoster
         .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
         .join("");
@@ -224,6 +255,62 @@
     function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, "en", id) : id; }
 
     // -----------------------------------------------------------------------
+    // Follow-up round (Homework teacher-scoping): the Class/Course Offer
+    // context picker, and the roster restriction it drives.
+    // -----------------------------------------------------------------------
+
+    /** isAdmin sees every class/course offer; a teacher (isTeacherRole) sees only their own actively-taught contexts. "(none)" is offered to everyone EXCEPT a pure-teacher actor (isPureTeacher, module-level) -- firestore.rules' isActiveTeacherInContext() means a teacher-created assignment MUST declare a real contextId, but a mixed teacher+guardian/admin actor can still fall back to their other (contextId-independent) branch, e.g. assigning their own child something outside any class. A guardian-only/self actor never needs this row at all, so it stays hidden for them. */
+    async function refreshContextPicker(isAdmin, isTeacherRole) {
+      if (!isAdmin && !isTeacherRole) {
+        contextRow.style.display = "none";
+        availableContexts = [];
+        contextSelect.innerHTML = "";
+        return;
+      }
+      contextRow.style.display = "";
+      const [classes, offers] = await Promise.all([
+        listClasses(db, activeTenantId),
+        listCourseOffers(db, activeTenantId),
+      ]);
+      const allContexts = [
+        ...classes.filter((c) => c.status !== "archived").map((c) => ({ id: c.id, type: "class", name: langText(c.name, "en", c.id) })),
+        ...offers.filter((o) => o.status !== "archived").map((o) => ({ id: o.id, type: "courseOffer", name: langText(o.name, "en", o.id) })),
+      ];
+      availableContexts = isAdmin ? allContexts : allContexts.filter((c) => myActiveTeacherContextIds.includes(c.id));
+
+      const options = availableContexts
+        .map((c) => `<option value="${c.id}">${c.name} (${c.type === "class" ? "Class" : "Course Offer"})</option>`)
+        .join("");
+      contextSelect.innerHTML = isPureTeacher ? options : `<option value="">(none — any visible person)</option>${options}`;
+
+      contextHint.textContent = isPureTeacher
+        ? (availableContexts.length
+          ? "Required — pick the class/course offer you're assigning this through."
+          : "You have no active class/course offer to assign homework through yet — ask an admin to enrol you as a teacher first.")
+        : "";
+      createAssignmentBtn.disabled = isPureTeacher && availableContexts.length === 0;
+    }
+
+    /** Restricts "Assign to" to the selected context's active student roster; falls back to the full visibleRoster when "(none)" is selected (admin only) or the row is hidden (guardian-only/self). */
+    async function refreshAssignToChecks() {
+      const contextId = contextSelect.value || null;
+      if (contextId) {
+        const enrollments = await listEnrollmentsForOffer(db, activeTenantId, contextId);
+        const studentIds = new Set(
+          enrollments.filter((e) => e.roleInClass === "student" && e.status === "active").map((e) => e.personId)
+        );
+        contextRoster = roster.filter((p) => studentIds.has(p.id));
+      } else {
+        contextRoster = visibleRoster;
+      }
+      assignToChecks.innerHTML = contextRoster
+        .map((p) => `<label><input type="checkbox" value="${p.id}" /> ${langText(p.name, "en", p.id)}</label>`)
+        .join("") || `<span class="muted">No students in this context yet.</span>`;
+    }
+
+    contextSelect.addEventListener("change", refreshAssignToChecks);
+
+    // -----------------------------------------------------------------------
     // Assignments + submissions.
     // -----------------------------------------------------------------------
 
@@ -233,7 +320,14 @@
       assignmentsStudentName.textContent = personName(personId);
       assignmentsBody.innerHTML = `<p class="muted">Loading…</p>`;
       try {
-        const assignments = await listAssignmentsForPerson(db, activeTenantId, personId);
+        // Follow-up round (Homework teacher-scoping): a pure-teacher actor's
+        // read is only provable when constrained to their own actively-taught
+        // contexts -- see homework.js's listAssignmentsForPerson() doc
+        // comment for why admin/guardian/self callers must NOT pass this.
+        const assignments = await listAssignmentsForPerson(
+          db, activeTenantId, personId,
+          isPureTeacher ? myActiveTeacherContextIds : null
+        );
         const active = assignments.filter((a) => a.status !== "archived");
         if (!active.length) { assignmentsBody.innerHTML = `<p class="muted">No assignments yet.</p>`; return; }
 
@@ -321,12 +415,22 @@
       const assignedToPersonIds = Array.from(assignToChecks.querySelectorAll("input:checked")).map((c) => c.value);
       if (!assignedToPersonIds.length) { createResult.textContent = "Pick at least one student."; return; }
       if (!instructionsInput.value.trim()) { createResult.textContent = "Enter instructions first."; return; }
+      const contextId = contextSelect.value || null;
+      // Follow-up round (Homework teacher-scoping): firestore.rules'
+      // isActiveTeacherInContext() requires a real contextId for the teacher
+      // branch -- catch it here with a clear message rather than a raw
+      // permission-denied from the write.
+      if (isPureTeacher && !contextId) {
+        createResult.textContent = "Pick a class or course offer first — required for a teacher-created assignment.";
+        return;
+      }
 
       createAssignmentBtn.disabled = true;
       const outcome = await safeWrite(
         () => createAssignment(db, activeTenantId, {
           createdByPersonId: currentActingPersonId(),
           assignedToPersonIds,
+          contextId,
           subjectId: subjectSelect.value || null,
           unitKeys: [],
           dueDate: dueDateInput.value || null,
@@ -335,7 +439,7 @@
         }, currentUser.uid),
         { collection: "assignments", action: "createAssignment" }
       );
-      createAssignmentBtn.disabled = false;
+      createAssignmentBtn.disabled = isPureTeacher && availableContexts.length === 0;
       if (outcome.ok) {
         createResult.textContent = `Assigned to ${assignedToPersonIds.length} student${assignedToPersonIds.length === 1 ? "" : "s"}.`;
         instructionsInput.value = ""; dueDateInput.value = ""; maxScoreInput.value = "";
