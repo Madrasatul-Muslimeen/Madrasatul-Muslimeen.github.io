@@ -269,3 +269,59 @@ every round has had. What the owner should check for real: create a course
 offer, enrol yourself and a child into it from two different accounts, end
 an enrolment, and (if a teacher account is available) confirm a teacher can
 only see the roster of an offer they're enrolled to teach, not others.
+
+---
+
+## Round 3 — wiring `bookmarks.resume.programId` / `activity.viaProgramId` (11 Aug 2026, v07.16)
+
+Closes the gap round 2 explicitly flagged above ("Wiring live study
+activity to a real enrolled offer") — but only for `topic-study.js` (Deen
+Study, Arabic, Hadith, General Study, Nature-Life, Life Skill) and
+`routine-study.js` (Health, LDOG), not the full list round 2's note named.
+**`quranrevival.html`/`hifz-renderer.js`/`ayah-renderer.js` (QuranRevival)
+and `asma-study.js` (Asma ul Husna, Phase 13) are still NOT wired** — their
+subjectId semantics don't map cleanly onto a course offer's `subjectIds[]`
+picker (Quran's own subject tree is one "quran" leaf, not per-Approach;
+Asma's chunk subject is one anchor node, not per-Name) — flagged as real,
+separate follow-up rather than guessed at in the same sitting.
+
+**`app/js/course-offers.js`** — new `programSubjectMapFromEnrollments(enrollments)`,
+a pure function (no Firebase call itself) that reduces a person's
+`listEnrollmentsForPerson()` result down to `Map(subjectId -> courseOffer
+contextId)`, only counting active `contextType: "courseOffer"` enrolments
+(a class is a different concept in this app's own vocabulary — bookmarks.js's
+own header comment already ties `programId` specifically to course
+offers/routines, not classes).
+
+**`app/js/topic-study.js` / `app/js/routine-study.js`** — both now call
+`listEnrollmentsForPerson()` + `programSubjectMapFromEnrollments()` once per
+person-load (`refreshProgramMap()`, alongside `refreshChunk()`/
+`refreshWeekActivity()` — same "reload whenever the selected person
+changes" shape those already use), and pass the looked-up `programId`/
+`viaProgramId` into every `touchResume()`/`logActivity()` call that already
+existed, instead of always the `"none"`/`null` default. No behavior change
+for anyone NOT enrolled in a course offer covering the subject they're
+studying — the map lookup returns `undefined`, and the existing defaults
+(`NO_PROGRAM`, `null`) kick in exactly as before.
+
+Purely additive metadata: no `firestore.rules` change, no new collection,
+nothing anyone can newly do or see — this only changes what gets written
+onto `bookmarks.resume` and `activity` entries a person was already going
+to create by studying normally. That's why this round didn't need a
+scope-decision check with the owner first (CLAUDE.md's own carve-out is for
+things that need an opinion, not permission) — it's finishing a wiring gap
+this file already flagged as scoped and deferred, not opening a new one.
+
+### Verified this round
+
+- `node --check` on `course-offers.js`, `topic-study.js`, `routine-study.js`
+  — parses cleanly.
+- No `firestore.rules` change — nothing to verify there.
+
+**Not yet owner-verified**: enrol a person into a course offer covering a
+specific subject, study that subject through Deen Study/Arabic/etc. or
+Health/LDOG, then check that person's `activity` entry for that claim
+carries the course offer's real id under `viaProgramId` (visible via the
+Firebase Console, not yet surfaced in any screen's own UI — Monitor/reports
+don't break this out per-program yet either, a further follow-up if the
+owner wants it).
