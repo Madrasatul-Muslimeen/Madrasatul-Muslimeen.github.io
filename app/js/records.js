@@ -30,6 +30,7 @@ import {
 import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
 import { parseUnitKey, isValidStatus } from "./unit-keys.js";
+import { listEnrollmentsForOffer } from "./course-offers.js";
 
 // ---------------------------------------------------------------------------
 // Chunking -- "one doc per surah or subject" (Architecture, Layer 2).
@@ -289,6 +290,45 @@ export async function bulkConfirmWeek(db, { tenantId, personId, weekKey, confirm
     confirmedCount += result.confirmedCount;
   }
   return { confirmedCount };
+}
+
+/** Every pending entry for one person, confirmed in one pass regardless of which chunk it lives in -- the building block class-wide bulk confirm below loops per student. */
+export async function bulkConfirmAllPendingForPerson(db, { tenantId, personId, confirmedByPersonId }) {
+  const pending = await listPendingForPerson(db, tenantId, personId);
+  const byChunk = new Map(); // chunkKey -> entryKey[]
+  for (const e of pending) {
+    if (!byChunk.has(e.chunkKey)) byChunk.set(e.chunkKey, []);
+    byChunk.get(e.chunkKey).push(e.entryKey);
+  }
+  let confirmedCount = 0;
+  for (const [chunkKey, entryKeys] of byChunk) {
+    const result = await bulkConfirmEntries(db, { tenantId, personId, chunkKey, entryKeys, confirmedByPersonId });
+    confirmedCount += result.confirmedCount;
+  }
+  return { confirmedCount };
+}
+
+/**
+ * Bulk confirm -- a CLASS scope (Phase 10): every pending entry for every
+ * actively-enrolled student in one class, in one pass. This is the third
+ * bulk-confirm scope the Architecture doc names ("a surah, a week, a
+ * class -- required from the first version") that couldn't be built until
+ * classes/enrolments existed (see this file's own bulkConfirmChunk/
+ * bulkConfirmWeek comment above). Teachers/students who ended their
+ * enrolment aren't included -- an ended enrolment isn't a live roster
+ * member any more.
+ */
+export async function bulkConfirmClass(db, { tenantId, classId, confirmedByPersonId }) {
+  const roster = await listEnrollmentsForOffer(db, tenantId, classId); // generic by contextId
+  const students = roster.filter((e) => e.status === "active" && e.roleInClass === "student");
+  const perStudent = [];
+  let totalConfirmed = 0;
+  for (const s of students) {
+    const result = await bulkConfirmAllPendingForPerson(db, { tenantId, personId: s.personId, confirmedByPersonId });
+    perStudent.push({ personId: s.personId, confirmedCount: result.confirmedCount });
+    totalConfirmed += result.confirmedCount;
+  }
+  return { totalConfirmed, perStudent };
 }
 
 // ---------------------------------------------------------------------------
