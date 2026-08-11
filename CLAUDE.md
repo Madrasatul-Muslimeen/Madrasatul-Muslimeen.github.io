@@ -275,6 +275,24 @@ owner deferred (course offers + routines, Stage B1 territory). See also
 (Migration & parity) is separately covered below — cutover already
 happened; two small follow-up items remain open, not gating anything.
 
+**Phase 8 (Monitor & reports) — planned 10 Aug 2026, not yet started, waiting
+on the owner's go-ahead.** Scope, confirmed with the owner: **one universal
+report**, not Quran-only — reads from `records` + `activity`, which are
+already the same shape for every module (ayah, topic, or routine), so it
+reports on whatever's actually been claimed/logged regardless of how built-
+out any given module is. New page `monitor.html` (+ a new `js/monitor.js`
+or extensions to `activity.js`/`records.js` for the aggregation queries),
+weekly and monthly views, per-student and per-subject summaries, CSV
+export, print — the same shapes the *old* app's own Monitor module had
+(`monitorWeeks`, read directly from `index.html` to confirm this scope
+before proposing it). Scoped to whoever can already see this data today
+(owner/prime/teacher/guardian per existing rules) — no new permission
+model. **Quran gets one extra section on top**: the 30-Approach status
+breakdown, aggregated across time/surahs into report form (reusing
+`summarizeStatuses`/`STATUS_COLORS`, already built) — richer because Quran
+has real structured trackable data nothing else does yet. Read-only
+throughout; no schema or security-rule changes anticipated.
+
 **Cutover happened 9 August 2026 — QuranRevival v07.00.**
 `https://madrasatul-muslimeen.github.io/` now redirects into the new app
 (`/app/index.html`); the old app is archived, not deleted, at
@@ -309,6 +327,28 @@ Same GitHub access that reaches this repo also reaches
 directly is possible, but it's a live public site outside this repo's own
 scope, so ask before pushing there, unlike the routine git operations
 below.
+
+**On the CLI (this tool), "the local repo" and "the GitHub repo" are the
+same repo — there is no other way to edit code with it.** The CLI always
+works on a local checkout; that's the tool, not a choice made per session.
+What went wrong once (10 Aug 2026) was a *process* gap, not a *tool* one:
+commits were made locally but never pushed, so GitHub sat 7 commits stale
+for a full session until the owner noticed. Fixed going forward — push to
+`origin/main` is now the automatic last step after every commit here, same
+tier as add/commit, no different from the production-mirror push above
+except this one never needs asking first (see
+[[feedback_push_dev_repo_to_origin]]). Practical effect: GitHub is
+essentially always current within moments of any change, so anyone
+watching the repo (owner on a tablet, a Claude Code *Web* session, anyone
+else) sees real state. **A genuinely GitHub-only, no-local-checkout
+workflow means Claude Code on the web (claude.ai/code) instead of this
+CLI** — a different product entry point, browser-based, each session
+gets its own working branch merged via PR. Confirmed working on a tablet
+browser for *monitoring* (GitHub.com's own UI and the deployed site at
+`madrasatul-muslimeen.github.io` are both standard responsive web — no
+different from any other site on a tablet); *driving* a session from a
+tablet via Claude Code on the web hasn't been tested by anyone on this
+project and shouldn't be assumed smooth without trying it first.
 
 **`PHASE-5-PARITY-CHECKLIST.md` is the actual cutover-gate document** —
 built 9 Aug 2026, consolidating all 14 rounds into the single sign-off
