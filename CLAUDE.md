@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.21.** Cutover to production happened
+**Current milestone: QuranRevival v07.22.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -374,6 +374,42 @@ quranrevival.html content, not introduced by shell round 4, but far more
 visible now that this page is the default first screen. That's squarely
 the "Quran Study module's own layout" conversation the owner already asked
 to have separately, once shell round 4 shipped.
+v07.22 (12 Aug 2026, on the CLI) is Shell round 5 — the owner reported
+that after v07.21 the landing page still looked exactly like their
+original screenshot, and they were right: v07.21 only stopped the Study
+category auto-opening, which was never the thing eating the screen.
+**Measured before touching anything** (headless Chromium, 390×700 phone
+viewport, `#app` forced visible and the owner's own real tenant state
+simulated): the `Mastery Wheel` heading sat at **661px on a 700px-tall
+screen** — the wheel was entirely below the fold on the app's own landing
+page. The cost was almost all in two pre-existing pieces of
+`quranrevival.html`, neither introduced by shell round 4 but both newly
+prominent now that this page is the first screen: the seven stacked
+pickers (Tenant/Person/Surah/Ayah/Approach/Language/Study Unit, ~375px on
+a phone) and the tenant-editable `#globalBanner` (~90px, and in Ahsan's
+tenant its text happens to echo the app's own title/tagline, so it read as
+the same banner printed twice). Fixed by collapsing all the pickers into a
+single `<details id="studyOptions">` closed by default — deliberately the
+same disclosure idiom, and near-identical styling, to the nav bar's own
+category buttons, so the one collapsible thing on the page has one visual
+language and needs no new JS or click handlers. Every control keeps its id
+and its order within the form, so all existing wiring is untouched; only
+the wrapper is new. `#unitLabel` ("Tracking: Surah 1, Ayah 1") stays
+OUTSIDE the disclosure so the current selection is always readable without
+opening anything. `#globalBanner` was compacted from a second hero (1.5rem
+title + its own 2px rule) to an eyebrow, and `renderBanner()` now hides the
+whole strip when the tenant has set no banner text at all rather than
+leaving an empty ruled block; the "Edit banner" button moved inside Study
+options, so an owner/prime-only control stops costing every visitor a row
+of landing height — and so hiding the empty strip never hides the only way
+back in to set one. **Result, measured the same way: 661px → 293px with
+the tenant banner still set, 241px if the owner clears it** — the wheel is
+comfortably on the first screen either way. Verified in the same run that
+the disclosure starts closed and that all nine controls are still present
+and visible once it's opened. The owner's own duplicate banner text was
+deliberately NOT cleared from Firestore — it's their tenant content (I4/D6),
+and it's now a compact two-line strip they can clear themselves from Study
+options → Edit banner if they want the extra ~50px.
 
 ---
 
