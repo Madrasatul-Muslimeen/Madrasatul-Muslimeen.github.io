@@ -1,23 +1,20 @@
-/* ---------- Shared shell (shell round 3, 11 Aug 2026) ----------
-   Home bar (Legacy App link, sign-in status, Sign in/out -- each page's own
-   static markup, this file only styles it) and the categorized nav bar
-   (Admin / Study Module / Operation / Bookmark / Settings) rendered by
-   js/nav.js. Pulled out of every page's own <style> block, where this was
-   copy-pasted 15x since shell round 1 -- the flat ~19-link list this
-   replaces had outgrown that duplication, so the replacement isn't
-   copy-pasted again. Linked from every page that renders the nav bar; no
-   other page-specific CSS lives here. */
-
-.app-home-bar {
-  display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap;
-  margin-bottom: 0.8rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5;
-  font-size: 0.9rem;
-}
-.app-home-bar .nav-home-label {
-  font-weight: 700; color: #1F3A6E; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em;
-}
-.app-home-bar #who { color: #555; }
-.app-home-bar button { font-size: 0.85rem; padding: 0.3rem 0.75rem; }
+/* ---------- Shared shell (shell round 3, 11 Aug 2026; revised shell round 4,
+   12 Aug 2026) ----------
+   One nav bar, everywhere: four main buttons -- Home / Study / Operation /
+   Bookmark -- sized to fit a single line on a phone. Study/Operation/
+   Bookmark are rendered by js/nav.js's renderNavBar() into `#navBar`, which
+   sits as a flex sibling of Home (`display:contents` below makes its
+   <details> children lay out as if they were direct children of `.app-nav`,
+   without another wrapping box). Home itself is the one category that isn't
+   JS-rendered from scratch -- it's each page's own static `.nav-cat-home`
+   <details>, present before any script runs (sign-in status, Sign In/Out,
+   the Legacy App link), with its role-gated contents (Admin, About,
+   Settings) injected by js/nav.js's renderHomeExtras() into the
+   `#navHomeExtra` container inside it once roles are known -- see nav.js's
+   own comment for why that split exists (the v07.08 sign-in-flash fix).
+   Pulled out of every page's own <style> block, where this was copy-pasted
+   15x since shell round 1. Linked from every page that renders the nav bar;
+   no other page-specific CSS lives here. */
 
 .nav-legacy-link {
   font-size: 0.78rem; color: #888; text-decoration: none;
@@ -26,13 +23,23 @@
 .nav-legacy-link:hover { color: #1F3A6E; border-color: #1F3A6E; }
 
 .app-nav {
-  display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: flex-start;
+  display: flex; gap: 0.4rem; flex-wrap: wrap; align-items: flex-start;
   margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5;
 }
-.nav-cat { border: 1px solid #ddd; border-radius: 0.5rem; background: white; }
+/* Lets renderNavBar()'s <details> categories sit as direct flex items of
+   .app-nav even though they're actually children of the #navBar div -- so
+   Home (outside #navBar) and Study/Operation/Bookmark (inside it) form one
+   even row instead of Home sitting apart from a nested sub-row. */
+#navBar { display: contents; }
+
+.nav-cat {
+  border: 1px solid #ddd; border-radius: 0.5rem; background: white;
+  flex: 1 1 0; min-width: 0;
+}
 .nav-cat > summary {
-  cursor: pointer; padding: 0.4rem 0.9rem; font-weight: 700; font-size: 0.85rem;
-  color: #1F3A6E; list-style: none; user-select: none;
+  cursor: pointer; padding: 0.42rem 0.1rem; font-weight: 700; font-size: 0.7rem;
+  color: #1F3A6E; list-style: none; user-select: none; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .nav-cat > summary::-webkit-details-marker { display: none; }
 .nav-cat > summary::after { content: " \25BE"; font-size: 0.7em; color: #888; }
@@ -45,4 +52,15 @@
 .nav-preview-notice {
   margin-left: auto; align-self: center; font-size: 0.82rem; color: #8a6220;
   background: #f5ebd6; padding: 0.15rem 0.6rem; border-radius: 0.7rem;
+}
+
+/* ---------- Home (the one static category) ---------- */
+.nav-cat-home .nav-cat-links { gap: 0.4rem; }
+.nav-cat-home #who { color: #555; font-size: 0.85rem; }
+.nav-cat-home button { font-size: 0.82rem; padding: 0.3rem 0.7rem; }
+.nav-cat-group { display: flex; flex-direction: column; gap: 0.25rem; }
+.nav-cat-group + .nav-cat-group { margin-top: 0.4rem; padding-top: 0.5rem; border-top: 1px dashed #e5e5e5; }
+.nav-cat-group-label {
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  color: #999; margin-bottom: 0.2rem;
 }

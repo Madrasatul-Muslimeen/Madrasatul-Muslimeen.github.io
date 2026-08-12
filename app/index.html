@@ -4,153 +4,25 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>QuranRevival</title>
-<style>
-  body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 3rem auto; padding: 0 1rem; color: #222; }
-  h1 { font-size: 1.4rem; }
-  #status { font-size: 1rem; padding: 1rem; border-radius: 0.5rem; background: #eee; margin-top: 1rem; }
-  #status.fail { background: #f8d7da; }
-  button {
-    font-size: 1rem; padding: 0.5rem 1rem; border-radius: 0.4rem; border: 1px solid #ccc;
-    background: #1F3A6E; color: white; cursor: pointer; margin-top: 1rem;
-  }
-  a { color: #1F3A6E; }
-  .app-version { font-size: 0.85rem; font-weight: 400; color: #888; vertical-align: middle; }
-
-  /* ---------- Splash screens (shell round 2, ported from index.html) ---------- */
-  .app-splash-overlay { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%); font-family: 'Inter', system-ui, sans-serif; }
-  .splash-slide { display: none; text-align: center; padding: 40px 24px; max-width: 560px; }
-  .splash-slide.show { display: block; animation: splashFade .6s ease; }
-  @keyframes splashFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-  .splash-arabic { font-family: 'Amiri', serif; font-size: 44px; color: #C9A24B; line-height: 1.6; margin-bottom: 18px; direction: rtl; }
-  .splash-translit { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: #b9c2d4; font-style: italic; margin-bottom: 10px; }
-  .splash-english { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: #F2E8D5; line-height: 1.5; }
-  .splash-gear { position: absolute; top: 18px; right: 18px; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: #e2e8f0; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-  .splash-gear:hover { background: rgba(255,255,255,.16); }
-  .splash-panel { display: none; position: absolute; top: 60px; right: 18px; width: 230px; background: #13192a; border: 1px solid rgba(201,162,75,.3); border-radius: 10px; padding: 14px; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
-  .splash-panel.open { display: block; }
-  .splash-panel h4 { margin: 0 0 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #C9A24B; }
-  .splash-panel label { display: block; font-size: 13px; color: #e2e8f0; margin-bottom: 8px; cursor: pointer; }
-  .splash-panel input { margin-right: 8px; }
-  .splash-qs-wrap { max-width: 640px; padding: 40px 28px; text-align: center; }
-  .splash-qs-item { opacity: 0; transform: translateY(10px); animation: splashQsFade .9s ease forwards; }
-  @keyframes splashQsFade { to { opacity: 1; transform: translateY(0); } }
-  .splash-qs-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: clamp(36px,6vw,58px); color: #C9A24B; letter-spacing: .01em; margin: 0 0 12px; }
-  .splash-qs-tagline1 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: clamp(16px,2.4vw,21px); color: #F2E8D5; margin: 0 0 30px; }
-  .splash-qs-divider { width: 70px; height: 1px; background: linear-gradient(to right, transparent, #C9A24B, transparent); margin: 0 auto 30px; position: relative; }
-  .splash-qs-divider:after { content: ""; position: absolute; left: 50%; top: -3px; width: 6px; height: 6px; background: #C9A24B; transform: translateX(-50%) rotate(45deg); }
-  .splash-qs-project { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .16em; font-size: 12px; color: #b9c2d4; margin: 0 0 14px; }
-  .splash-qs-tagline2 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: clamp(14px,1.8vw,17px); color: #c7cfe0; line-height: 1.5; margin: 0 auto 28px; max-width: 480px; }
-  .splash-qs-motto { font-family: 'Inter', sans-serif; font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase; color: #A4823A; }
-</style>
+<script>
+  // Shell round 4 (12 Aug 2026, owner's own layout discussion) -- this page
+  // used to render its own banner + sign-in check, then location.replace()
+  // into quranrevival.html once signed in. That produced a visible flash of
+  // this page's own banner followed by quranrevival.html's own banner --
+  // "two banners", per the owner. quranrevival.html already handles the
+  // full sign-in flow independently (not signed in / no account / signed in
+  // -- it has to, since every other page links to it directly), so this
+  // page no longer needs any Firebase logic of its own at all. It is now
+  // purely a redirect stub: synchronous, in <head>, before body paints, so
+  // there is nothing here to flash. location.replace() (not a normal
+  // navigation) keeps this page out of browser history, so the back button
+  // doesn't bounce the user into a redirect loop.
+  location.replace("quranrevival.html");
+</script>
 </head>
 <body>
-  <h1>QuranRevival <span id="appVersion" class="app-version"></span></h1>
-  <div id="who">Checking sign-in…</div>
-  <button id="signInBtn" style="display:none;">Sign in with Google</button>
-  <button id="signOutBtn" style="display:none; background:white; color:#1F3A6E;">Sign out</button>
-  <div id="status" style="display:none;"></div>
-
-  <script type="module">
-    import { auth, db } from "./js/firebase-init.js";
-    import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import { TENANT } from "./js/collections.js";
-    import { getMyMemberships, initializeActiveContext } from "./js/session-context.js";
-    import { showBootSplash } from "./js/splash.js";
-    import { APP_VERSION } from "./js/version.js";
-
-    document.getElementById("appVersion").textContent = `v${APP_VERSION}`;
-
-    // Fires immediately on load, independent of sign-in state -- same as the
-    // old app, where this was the very first thing in <body>. Nothing below
-    // waits on it; auth/context loading proceeds underneath in parallel, the
-    // same as the old app never gated its own auth flow on the splash either.
-    showBootSplash();
-
-    // Shell round 1 (option A, agreed with the owner 8 Aug 2026) — the real
-    // entry point, replacing the old F-001 connection-test stub that used to
-    // live at this path.
-    //
-    // Architecture s5's "landing rule, computed not configured": a person
-    // using one module opens straight into it; two or more get a card grid
-    // (Phase 7 -- Bookmarks, programs, routines -- not built yet). QuranRevival
-    // is the only module that exists today, so that computation is trivial
-    // for now -- there is nothing yet to branch on. This file exists so that
-    // trivial case is still real code, in the real place, ready for Phase 7
-    // to extend into an actual branch rather than a rewrite.
-
-    const whoEl = document.getElementById("who");
-    const signInBtn = document.getElementById("signInBtn");
-    const signOutBtn = document.getElementById("signOutBtn");
-    const statusEl = document.getElementById("status");
-
-    function showStatus(message, isFail = false) {
-      statusEl.style.display = "block";
-      statusEl.className = isFail ? "fail" : "";
-      statusEl.innerHTML = message;
-    }
-
-    // Round 10 fix (8 Aug 2026): the old wording ("no account found -- create
-    // one on onboarding.html") was actively wrong advice for someone who has
-    // a real pending invite they just haven't clicked yet -- onboarding.html
-    // creates a BRAND NEW madrasah, not a way to join one you were invited
-    // to. Surfaces the invite path first now.
-    const NO_ACCOUNT_MESSAGE = `No account found yet for this Google sign-in.
-      <br>If someone invited you to join an existing madrasah, use the invite
-      link they sent you (check your email) — don't create a new one here.
-      <br>Starting fresh instead? <a href="onboarding.html">Create a new account
-      on the onboarding page</a>.`;
-
-    signInBtn.addEventListener("click", () => {
-      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
-        whoEl.textContent = `Sign-in failed: ${err.message}`;
-      });
-    });
-    signOutBtn.addEventListener("click", () => signOut(auth));
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        whoEl.textContent = "Not signed in.";
-        signInBtn.style.display = "inline-block";
-        signOutBtn.style.display = "none";
-        statusEl.style.display = "none";
-        return;
-      }
-      whoEl.textContent = `Signed in as ${user.email}`;
-      signInBtn.style.display = "none";
-      signOutBtn.style.display = "inline-block";
-
-      // I15: a failure here must reach the user, not just console.error --
-      // tags which step failed the same way every other page's bootstrap does.
-      async function step(name, fn) {
-        try { return await fn(); }
-        catch (err) { err.stepName = err.stepName ?? name; throw err; }
-      }
-
-      try {
-        showStatus("Loading your account…");
-        const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
-        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
-
-        const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
-        if (!context) {
-          showStatus(NO_ACCOUNT_MESSAGE);
-          return;
-        }
-
-        const myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
-        if (!myMemberships.length) {
-          showStatus(NO_ACCOUNT_MESSAGE);
-          return;
-        }
-
-        showStatus("Taking you to Study…");
-        location.replace("quranrevival.html");
-      } catch (err) {
-        showStatus(`Couldn't load your account — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`, true);
-        console.error(err);
-      }
-    });
-  </script>
+  <noscript>
+    <p>JavaScript is required. <a href="quranrevival.html">Continue to QuranRevival</a>.</p>
+  </noscript>
 </body>
 </html>

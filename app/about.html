@@ -29,16 +29,21 @@
      app's own feature registry, never restated by hand, so this page can't
      drift out of sync with the real code.</p>
 
-  <div class="app-home-bar">
-    <span class="nav-home-label">Home</span>
-    <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
-    <div id="who">Checking sign-in…</div>
-    <button id="signInBtn" style="display:none;">Sign in with Google</button>
-    <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
-  </div>
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
 
   <div id="app" style="display:none;">
-    <div id="navBar"></div>
 
     <div id="versionLine" style="margin:1rem 0; font-size:0.95rem; color:#555;"></div>
 
@@ -64,7 +69,7 @@
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { getMyMemberships, initializeActiveContext } from "./js/session-context.js";
-    import { renderNavBar } from "./js/nav.js";
+    import { renderNavBar, renderHomeExtras } from "./js/nav.js";
     import { getFullRegistry } from "./js/feature-registry.js";
     import { APP_VERSION } from "./js/version.js";
 
@@ -73,6 +78,11 @@
     const signOutBtn = document.getElementById("signOutBtn");
     const appEl = document.getElementById("app");
     const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+    }
 
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
@@ -113,7 +123,7 @@
         if (context) {
           const myMemberships = await getMyMemberships(db, user.uid);
           const roles = myMemberships.find((m) => m.tenantId === context.tenantId)?.roles ?? [];
-          navBar.innerHTML = renderNavBar(roles, null);
+          renderNav(roles, null);
         }
       } catch (err) {
         console.error(err);

@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
 <title>QuranRevival — Classes (Phase 10)</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
@@ -33,13 +34,6 @@
   #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
   .contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; font-size: 0.9rem; }
   .contextBar label { margin: 0; }
-
-  /* ---------- Shared nav ---------- */
-  .app-nav { display: flex; gap: 1rem; margin-bottom: 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid #e5e5e5; }
-  .app-nav .nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.9rem; font-weight: 600; }
-  .app-nav .nav-link:hover { text-decoration: underline; }
-  .app-nav .nav-current { color: #888; cursor: default; pointer-events: none; }
-  .nav-preview-notice { margin-left: auto; font-size: 0.82rem; color: #8a6220; background: #f5ebd6; padding: 0.15rem 0.6rem; border-radius: 0.7rem; }
 </style>
 </head>
 <body>
@@ -51,12 +45,21 @@
      clears every pending entry for every actively-enrolled student in one
      pass.</p>
 
-  <div id="who">Checking sign-in…</div>
-  <button id="signInBtn" style="display:none;">Sign in with Google</button>
-  <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
 
   <div id="app" style="display:none;">
-    <div id="navBar"></div>
     <div class="contextBar">
       <label>Tenant
         <select id="tenantSelect" style="width:auto;"></select>
@@ -103,13 +106,18 @@
     import { createClass, listClasses, setClassStatus } from "./js/classes.js";
     import { enrolPerson, endEnrollment, listEnrollmentsForOffer } from "./js/course-offers.js";
     import { bulkConfirmClass } from "./js/records.js";
-    import { renderNavBar } from "./js/nav.js";
+    import { renderNavBar, renderHomeExtras } from "./js/nav.js";
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
     const signOutBtn = document.getElementById("signOutBtn");
     const appEl = document.getElementById("app");
     const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+    }
     const tenantSelect = document.getElementById("tenantSelect");
     const createFieldset = document.getElementById("createFieldset");
     const classNameInput = document.getElementById("classNameInput");
@@ -156,7 +164,7 @@
       const preview = currentPreview();
       const { viewAsRole, effRoles } = preview;
       myPersonId = preview.myPersonId;
-      navBar.innerHTML = renderNavBar(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
+      renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
 
       visibleRoster = scopedRoster(roster, effRoles, myPersonId);
       canAdmin = effRoles.some((r) => ["owner", "prime"].includes(r));
