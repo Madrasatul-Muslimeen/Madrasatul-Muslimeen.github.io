@@ -49,7 +49,10 @@ import {
 } from "./way-modal.js";
 import { getBookmarks, touchResume, recentResumeEntries, NO_PROGRAM } from "./bookmarks.js";
 import { renderContinueStrip } from "./continue-strip.js";
-import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./course-offers.js";
+import {
+  listEnrollmentsForPerson, listCourseOffers, programSubjectMapFromEnrollments, allowedSubjectIdsForTeacherStudent,
+} from "./course-offers.js";
+import { listClasses } from "./classes.js";
 
 function todayIso() {
   return new Date().toISOString().slice(0, 10);
@@ -105,6 +108,11 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
   // contextId) for the selected person -- see course-offers.js's
   // programSubjectMapFromEnrollments().
   let programBySubjectId = new Map();
+  // Follow-up round (subject-level teacher scoping, same as topic-study.js):
+  // null = no restriction; an array = a pure-teacher actor viewing someone
+  // else, restricted to the subjectIds they're actually assigned to teach.
+  // Client-side only -- see course-offers.js's allowedSubjectIdsForTeacherStudent().
+  let allowedSubjectIds = null;
 
   function currentPreview() {
     const context = getActiveContext();
@@ -150,6 +158,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     await refreshChunk();
     await refreshWeekActivity();
     await refreshProgramMap();
+    await refreshSubjectScoping(effRoles, myPersonId);
     renderBrowser();
     await refreshContinueStrip();
 
@@ -178,6 +187,22 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     if (!selectedPersonId) { programBySubjectId = new Map(); return; }
     const enrollments = await listEnrollmentsForPerson(db, activeTenantId, selectedPersonId);
     programBySubjectId = programSubjectMapFromEnrollments(enrollments);
+  }
+
+  /** Follow-up round (subject-level teacher scoping) -- same conservative condition as topic-study.js's own version: only restricts when effRoles is EXACTLY ["teacher"] and the person being viewed isn't the actor themself. */
+  async function refreshSubjectScoping(effRoles, myPersonId) {
+    const isPureTeacher = effRoles.length === 1 && effRoles[0] === "teacher";
+    if (!isPureTeacher || !myPersonId || !selectedPersonId || selectedPersonId === myPersonId) {
+      allowedSubjectIds = null;
+      return;
+    }
+    const [teacherEnrollments, studentEnrollments, classes, offers] = await Promise.all([
+      listEnrollmentsForPerson(db, activeTenantId, myPersonId),
+      listEnrollmentsForPerson(db, activeTenantId, selectedPersonId),
+      listClasses(db, activeTenantId),
+      listCourseOffers(db, activeTenantId),
+    ]);
+    allowedSubjectIds = allowedSubjectIdsForTeacherStudent(teacherEnrollments, studentEnrollments, [...classes, ...offers]);
   }
 
   async function refreshContinueStrip() {
@@ -210,8 +235,12 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
       return;
     }
     breadcrumbContainer.innerHTML = renderTopicBreadcrumb(ancestorPath(currentParentId), rootLabel);
+    // Follow-up round (subject-level teacher scoping): branches always stay
+    // visible for navigation -- only LEAF routines outside allowedSubjectIds
+    // are hidden.
     const children = moduleSubjects
       .filter((n) => n.parentId === currentParentId)
+      .filter((n) => !n.isTrackable || !allowedSubjectIds || allowedSubjectIds.includes(n.id))
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
     const statusByNodeId = new Map();
@@ -253,6 +282,13 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
   async function openRoutineDetail(nodeId) {
     const node = moduleSubjects.find((n) => n.id === nodeId);
     if (!node) return;
+
+    // Follow-up round (subject-level teacher scoping): blocks a
+    // direct-navigation bypass of the grid filter above.
+    if (node.isTrackable && allowedSubjectIds && !allowedSubjectIds.includes(node.id)) {
+      detailContainer.innerHTML = `<div class="topic-detail"><p class="topic-empty">You're not assigned to teach this routine for this student.</p></div>`;
+      return;
+    }
 
     if (selectedPersonId) {
       await touchResume(db, {
@@ -441,9 +477,11 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
   personSelect.addEventListener("change", async () => {
     selectedPersonId = personSelect.value;
+    const { effRoles, myPersonId } = currentPreview();
     await refreshChunk();
     await refreshWeekActivity();
     await refreshProgramMap();
+    await refreshSubjectScoping(effRoles, myPersonId);
     renderBrowser();
     await refreshContinueStrip();
   });
