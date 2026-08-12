@@ -325,3 +325,52 @@ carries the course offer's real id under `viaProgramId` (visible via the
 Firebase Console, not yet surfaced in any screen's own UI — Monitor/reports
 don't break this out per-program yet either, a further follow-up if the
 owner wants it).
+
+---
+
+## Round 4 — wiring QuranRevival and Asma ul Husna into `programId` too (11 Aug 2026, v07.19)
+
+Closes the two exceptions round 3 explicitly named. Both modules turned out
+straightforward once actually looked at, despite round 3's own caution:
+
+- **QuranRevival** — its subject tree really is just the single `"quran"`
+  leaf for course-offer purposes (no per-Approach subject breakdown), which
+  IS already `isTrackable` and DOES already show up in the same subject
+  checkbox picker `classes.html`/`course-offers.html` use — round 3's worry
+  ("their subjectId shape doesn't map cleanly") turned out to be about
+  Quran's own INTERNAL granularity (ayah/surah/juz/ruku all chunk under
+  `"quran"` for non-surah types), not about whether `"quran"` itself is a
+  valid course-offer subject -- it always was.
+- **Asma ul Husna** — same shape: `asma_ul_husna` is the one anchor
+  subject, already `isTrackable`, already offerable.
+
+`quranrevival.html` (its own inline controller, ~1550 lines, no separate
+`.js` file the way every other module has) gained `refreshProgramMap()`
+(same shape as `topic-study.js`'s own), called from `loadContextData()` and
+the `personSelect` change handler, feeding `viaProgramId` into its two
+`logActivity()` call sites (the whole-Quran claim modal and the per-unit
+one). **`bookmarks.resume` is NOT wired for QuranRevival** — not because of
+any subjectId mismatch, but because a real, separate, pre-existing gap was
+found while doing this: `quranrevival.html` never calls `touchResume()` at
+all, for any reason -- Phase 7 round 1's own Continue-strip rollout never
+reached this module. Flagged here rather than silently patched in as a
+drive-by fix; the page has no `continueStrip` container in its markup
+either, so wiring it properly is its own real round, not a one-line add.
+
+`asma-study.js` gained the identical `refreshProgramMap()` pattern already
+proven in `topic-study.js`/`routine-study.js`, feeding both `touchResume()`
+(it already had a working Continue strip since Phase 13 round 1) and
+`logActivity()`.
+
+### Verified this round
+
+- `node --check` on `asma-study.js`, `course-offers.js` — parses cleanly.
+- `quranrevival.html`'s inline `<script type="module">` extracted and
+  `node --check`ed — parses cleanly.
+- No `firestore.rules` change — nothing to deploy for this round.
+
+**Not yet owner-verified**: enrol a person into a course offer covering
+`"quran"` or `"asma_ul_husna"`, study through QuranRevival or Asma ul Husna,
+confirm the resulting `activity` entry carries the real `viaProgramId`
+(same Firebase-Console-only visibility as round 3's own check — no screen
+surfaces this yet).

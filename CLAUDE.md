@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.18.** Cutover to production happened
+**Current milestone: QuranRevival v07.19.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -272,11 +272,37 @@ list-query concern never applied. `firestore.rules` still NOT deployed —
 this round's version supersedes v07.17's; deploy v07.18's rules, not an
 earlier copy. See `PHASE-9-STATUS.md`'s "Round 2" section (rewritten
 in place to describe the corrected design, with the original flaw
-recorded rather than erased) for the full build log. **Check this line's
-version number every session** — it's manually updated per
-`app/js/version.js`'s own scheme (first two digits = big overhaul, last
-two = each new feature) and will drift if a future round forgets to bump
-it here too.
+recorded rather than erased) for the full build log.
+v07.19 (12 Aug 2026, on Claude Code on the web) closes two more
+already-flagged follow-ups in one sitting, both picked over Phase 14
+(Operations, still excluded unless asked) and Phase 13's messaging (still
+blocked on a real teacher account): **QuranRevival and Asma ul Husna are
+now wired into the `programId` mechanism** Phase 7 round 3 built for the
+other modules — both turned out straightforward (their one anchor subject
+is already offerable in a course offer's own subject picker); along the
+way, found that `quranrevival.html` never calls `touchResume()` at all —
+a real, separate, pre-existing gap in Phase 7 round 1's own Continue-strip
+rollout, flagged rather than silently patched in. **Subject-level teacher
+scoping is also built** — the SUBJECT half of the access-control question
+CLAUDE.md has carried since 31 Jul 2026 (the STUDENT half closed in Phase
+10). This is explicitly a CLIENT-SIDE restriction, not a new
+`firestore.rules` boundary — `canRecordFor()` is unchanged, since records
+chunk a whole module's claims under one document and rules can't safely
+inspect which one key of that map a write touched, same limitation this
+codebase already accepts elsewhere. A real data-model finding along the
+way: `enrolPerson()`'s own per-enrolment `subjectIds[]` is never actually
+populated by any screen (checked every real call site) — the first draft
+of this round read from it and would have locked every teacher out of
+every subject; the shipped version reads subjects off the CLASS/COURSE
+OFFER itself instead, where an admin actually names them, and falls back
+to no restriction when a context never named any (an empty result almost
+always means "didn't bother," not "assigned to nothing"). No
+`firestore.rules` change either round — nothing to deploy this time. See
+`PHASE-7-STATUS.md`'s "Round 4" and `PHASE-10-STATUS.md`'s "Round 2" for
+the full build logs. **Check this line's version number every session** —
+it's manually updated per `app/js/version.js`'s own scheme (first two
+digits = big overhaul, last two = each new feature) and will drift if a
+future round forgets to bump it here too.
 
 ---
 
@@ -491,7 +517,11 @@ external-student use is now actually on the horizon, reversing round 1's
 own deferral on purpose) **and round 3** (11 Aug 2026, v07.16 — wires
 `bookmarks.resume.programId`/`activity.viaProgramId` into `topic-study.js`/
 `routine-study.js` for real, closing part of the gap round 2 flagged;
-QuranRevival/Asma ul Husna still not wired, see `PHASE-7-STATUS.md`).
+QuranRevival/Asma ul Husna not wired yet at the time) **and round 4**
+(12 Aug 2026, v07.19 — wires QuranRevival and Asma ul Husna too, closing
+that gap for real; also surfaces that `quranrevival.html` never calls
+`touchResume()` at all, a separate pre-existing gap, see
+`PHASE-7-STATUS.md`).
 **Phase 8
 (Monitor & reports) round 1 is also built, not yet owner-verified** — see
 `PHASE-8-STATUS.md`. **Phase 9 (Homework & feedback) round 1 is also
@@ -511,7 +541,10 @@ CLI — see that phase's own paragraph above for why; version badge,
 `classes.html`, and a real class + enrolment all confirmed working; the
 actual teacher-scoping enforcement itself still needs a second real
 `teacher`-only account to prove, since owner/prime's own login bypasses
-it) — see `PHASE-10-STATUS.md` for the full build log, the remaining
+it) **and round 2** (12 Aug 2026, v07.19 — the SUBJECT half of the same
+long-parked access-control question, client-side only, no rules change;
+see that round's own note on `enrolPerson()`'s dead `subjectIds[]` param)
+— see `PHASE-10-STATUS.md` for the full build log, the remaining
 verification checklist, and a real gap found and fixed in the same
 sitting, before it ever shipped. **Phase 11 (Curriculum, grades &
 resources, Stage C) round 1 is built, `firestore.rules` deployed via the

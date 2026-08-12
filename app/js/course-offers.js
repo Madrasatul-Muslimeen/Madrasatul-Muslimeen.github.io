@@ -173,6 +173,65 @@ export function activeTeacherContextIdsFromEnrollments(enrollments) {
 }
 
 /**
+ * Follow-up round (subject-level teacher scoping -- the SUBJECT half of
+ * CLAUDE.md's own long-parked "second open access-control question," the
+ * STUDENT half having been closed in Phase 10). `canRecordFor()` in
+ * firestore.rules grants a co-enrolled teacher record/confirm authority
+ * over EVERY subject for a student, not just the ones they're actually
+ * assigned to teach -- the same "Firestore rules can't safely inspect one
+ * key of an arbitrarily-keyed map" limitation this codebase already
+ * accepts for subjects/trackables/records entries (see CLAUDE.md's own
+ * note on this). Closing it FOR REAL needs client-side filtering in the
+ * study screens -- this is that filter, not a new security rule. It
+ * narrows what the HONEST client shows/offers; it is not, and cannot
+ * cheaply be, a hard server-side boundary the way `isCoEnrolledTeacherOf()`
+ * (the student half) is.
+ *
+ * Reads subjects off the CONTEXT (classes.js's `createClass()` /
+ * course-offers.js's `createCourseOffer()` own `subjectIds[]`), not the
+ * per-enrolment `subjectIds[]` `enrolPerson()` also accepts -- checked
+ * against every real enrol call site (classes.html/course-offers.html) and
+ * found that field is ALWAYS written `[]`; no screen has ever populated it.
+ * Scoping against a field that's always empty would lock every teacher out
+ * of everything, the opposite of "narrower, not broken" -- so this uses the
+ * field that's actually populated when an admin bothers to name subjects
+ * for a class/offer.
+ *
+ * `contexts`: every class + course offer in the tenant (merged), each
+ * `{id, subjectIds}` -- callers already fetch these for other reasons
+ * (`listClasses()`/`listCourseOffers()`).
+ *
+ * Returns every subjectId the teacher is assigned to teach this student,
+ * across every context where BOTH are actively enrolled (teacher as
+ * teacher, student as student) -- the union of each such context's own
+ * `subjectIds[]`. Returns `null` (not `[]`) if that union comes out empty
+ * -- an admin who never named specific subjects for a shared class/offer
+ * almost certainly meant "no restriction," not "assigned to nothing";
+ * treating an empty result as "show nothing" would be a real regression
+ * for the common case, not a safety improvement.
+ */
+export function allowedSubjectIdsForTeacherStudent(teacherEnrollments, studentEnrollments, contexts) {
+  const contextSubjectIds = new Map(contexts.map((c) => [c.id, c.subjectIds ?? []]));
+  const teacherContextIds = new Set(
+    teacherEnrollments
+      .filter((e) => e.roleInClass === "teacher" && e.status === "active")
+      .map((e) => e.contextId)
+  );
+  const studentContextIds = new Set(
+    studentEnrollments
+      .filter((e) => e.roleInClass === "student" && e.status === "active")
+      .map((e) => e.contextId)
+  );
+  const allowed = new Set();
+  for (const contextId of teacherContextIds) {
+    if (studentContextIds.has(contextId)) {
+      (contextSubjectIds.get(contextId) ?? []).forEach((id) => allowed.add(id));
+    }
+  }
+  return allowed.size > 0 ? [...allowed] : null;
+}
+
+/**
  * Follow-up round: Map(subjectId -> courseOffer contextId) for one person --
  * every subject covered by an active course-offer enrolment of theirs. Only
  * contextType "courseOffer" counts as a "program" (bookmarks.js's own
