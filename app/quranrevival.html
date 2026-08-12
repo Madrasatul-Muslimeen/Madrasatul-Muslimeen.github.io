@@ -50,13 +50,35 @@
   .splash-qs-tagline2 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: clamp(14px,1.8vw,17px); color: #c7cfe0; line-height: 1.5; margin: 0 auto 28px; max-width: 480px; }
   .splash-qs-motto { font-family: 'Inter', sans-serif; font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase; color: #A4823A; }
 
-  /* ---------- Global banner (Phase 5) ---------- */
-  #globalBanner { border-bottom: 2px solid #DDE4F0; padding-bottom: 0.6rem; margin-bottom: 0.6rem; }
-  #bannerTitle { font-size: 1.5rem; margin: 0; }
-  #bannerSub { color: #555; margin: 0.2rem 0 0; }
+  /* ---------- Global banner (Phase 5; compacted shell round 5) ----------
+     The tenant's own editable announcement strip. Used to be a second hero
+     (1.5rem title, its own 2px rule) sitting directly under the app's own
+     banner -- on a tenant whose banner text happens to echo the app name,
+     that read as the same title printed twice. Now a compact eyebrow, and
+     the whole block is hidden outright when the tenant has set no text
+     (renderBanner() toggles it) rather than holding empty space. */
+  #globalBanner { border-bottom: 1px solid #e8ecf4; padding-bottom: 0.4rem; margin-bottom: 0.5rem; }
+  #bannerTitle { font-size: 1.02rem; margin: 0; color: #1F3A6E; }
+  #bannerSub { color: #666; margin: 0.1rem 0 0; font-size: 0.85rem; }
   #bannerEditForm { display: none; gap: 0.5rem; flex-direction: column; max-width: 30rem; }
   #bannerEditForm input { width: 100%; box-sizing: border-box; }
   #bannerEditBtn { font-size: 0.75rem; padding: 0.2rem 0.5rem; }
+  .banner-admin { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed #e5e5e5; }
+
+  /* ---------- Study options disclosure (shell round 5) ----------
+     Deliberately styled to read like the nav bar's own category buttons --
+     same border, radius, weight and caret -- so a collapsed control panel
+     looks like the one other collapsible thing on the page, not a novelty. */
+  #studyOptions { border: 1px solid #ddd; border-radius: 0.5rem; background: white; margin-bottom: 0.5rem; }
+  #studyOptions > summary {
+    cursor: pointer; padding: 0.45rem 0.9rem; font-weight: 700; font-size: 0.85rem;
+    color: #1F3A6E; list-style: none; user-select: none;
+  }
+  #studyOptions > summary::-webkit-details-marker { display: none; }
+  #studyOptions > summary::after { content: " \25BE"; font-size: 0.7em; color: #888; }
+  #studyOptions[open] > summary::after { content: " \25B4"; }
+  .study-options-body { padding: 0 0.9rem 0.7rem; }
+  .study-options-body .row:first-child { margin-top: 0; }
 
   /* ---------- Mastery Wheel (Phase 5 round 12) ----------
      Dark navy/gold theme, restyled to match index.html's wheel page --
@@ -205,52 +227,73 @@
   </nav>
 
   <div id="app" style="display:none;">
-    <div id="globalBanner">
+    <div id="globalBanner" style="display:none;">
       <h2 id="bannerTitle" style="display:none;"></h2>
       <p id="bannerSub" style="display:none;"></p>
-      <button type="button" class="secondary" id="bannerEditBtn" style="display:none;">Edit banner</button>
-      <div id="bannerEditForm">
-        <label>Title <input type="text" id="bannerTitleInput" /></label>
-        <label>Subtitle <input type="text" id="bannerSubInput" /></label>
-        <div class="row"><button type="button" id="bannerSaveBtn">Save</button><button type="button" class="secondary" id="bannerCancelBtn">Cancel</button></div>
-      </div>
     </div>
 
-    <div class="row">
-      <div><label>Tenant</label><select id="tenantSelect"></select></div>
-      <div><label>Person</label><select id="personSelect"></select></div>
-      <div><label>Surah</label><select id="surahSelect"></select></div>
-      <div id="ayahSelectControl"><label>Ayah</label><select id="ayahSelect"></select></div>
-      <div><label>Approach</label><select id="trackableSelect"></select></div>
-      <div><label>Language</label><select id="langSelect">
-        <option value="en">English</option>
-        <option value="bn">English + বাংলা (Bangla)</option>
-      </select></div>
-      <div id="wbwLangControl" style="display:none;"><label>Word by Word</label><select id="wbwLangSelect">
-        <option value="auto">Follow language above</option>
-        <option value="en">English only</option>
-        <option value="bn">বাংলা only</option>
-        <option value="both">English + বাংলা</option>
-      </select></div>
-    </div>
+    <!-- Shell round 5 (12 Aug 2026) -- these seven pickers used to sit open
+         between the nav and the Mastery Wheel. Measured on a 390x700 phone,
+         that pushed the wheel heading to 661px, i.e. entirely below the fold
+         on the app's own landing page. Collapsed into a <details> (the same
+         disclosure idiom the nav bar already uses -- no new JS, no click
+         handlers) so the wheel is the first real content again. Every control
+         keeps its id and its position within the form, so all existing wiring
+         is untouched; only the wrapper is new. #unitLabel stays OUTSIDE the
+         disclosure so "Tracking: Surah 1, Ayah 1" is always visible without
+         opening anything. -->
+    <details id="studyOptions">
+      <summary>Study options</summary>
+      <div class="study-options-body">
+        <div class="row">
+          <div><label>Tenant</label><select id="tenantSelect"></select></div>
+          <div><label>Person</label><select id="personSelect"></select></div>
+          <div><label>Surah</label><select id="surahSelect"></select></div>
+          <div id="ayahSelectControl"><label>Ayah</label><select id="ayahSelect"></select></div>
+          <div><label>Approach</label><select id="trackableSelect"></select></div>
+          <div><label>Language</label><select id="langSelect">
+            <option value="en">English</option>
+            <option value="bn">English + বাংলা (Bangla)</option>
+          </select></div>
+          <div id="wbwLangControl" style="display:none;"><label>Word by Word</label><select id="wbwLangSelect">
+            <option value="auto">Follow language above</option>
+            <option value="en">English only</option>
+            <option value="bn">বাংলা only</option>
+            <option value="both">English + বাংলা</option>
+          </select></div>
+        </div>
 
-    <div class="row">
-      <div><label>Study Unit</label><select id="unitTypeSelect">
-        <option value="ayah">Single Ayah</option>
-        <option value="range">Range of Ayahs</option>
-        <option value="surah">Whole Surah</option>
-        <option value="ruku">Ruku'</option>
-        <option value="juz">Juz</option>
-        <option value="page">Page</option>
-      </select></div>
-      <div id="rangeControls" style="display:none;">
-        <label>From ayah</label><select id="rangeFromSelect"></select>
+        <div class="row">
+          <div><label>Study Unit</label><select id="unitTypeSelect">
+            <option value="ayah">Single Ayah</option>
+            <option value="range">Range of Ayahs</option>
+            <option value="surah">Whole Surah</option>
+            <option value="ruku">Ruku'</option>
+            <option value="juz">Juz</option>
+            <option value="page">Page</option>
+          </select></div>
+          <div id="rangeControls" style="display:none;">
+            <label>From ayah</label><select id="rangeFromSelect"></select>
+          </div>
+          <div id="rangeToControls" style="display:none;">
+            <label>To ayah</label><select id="rangeToSelect"></select>
+          </div>
+          <div><button type="button" class="secondary" id="trackUnitBtn">Track this unit</button></div>
+        </div>
+
+        <!-- Owner/prime only (renderBanner() gates the button's display).
+             Moved in here from #globalBanner itself so an admin-only control
+             stops costing every visitor a row of landing-page height. -->
+        <div class="banner-admin">
+          <button type="button" class="secondary" id="bannerEditBtn" style="display:none;">Edit banner</button>
+          <div id="bannerEditForm">
+            <label>Title <input type="text" id="bannerTitleInput" /></label>
+            <label>Subtitle <input type="text" id="bannerSubInput" /></label>
+            <div class="row"><button type="button" id="bannerSaveBtn">Save</button><button type="button" class="secondary" id="bannerCancelBtn">Cancel</button></div>
+          </div>
+        </div>
       </div>
-      <div id="rangeToControls" style="display:none;">
-        <label>To ayah</label><select id="rangeToSelect"></select>
-      </div>
-      <div><button type="button" class="secondary" id="trackUnitBtn">Track this unit</button></div>
-    </div>
+    </details>
     <div id="unitLabel"></div>
 
     <h2 class="wheel-heading">Mastery Wheel</h2>
@@ -423,6 +466,7 @@
     const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
     const exploreSidebarContainer = document.getElementById("exploreSidebarContainer");
 
+    const globalBannerEl = document.getElementById("globalBanner");
     const bannerTitleEl = document.getElementById("bannerTitle");
     const bannerSubEl = document.getElementById("bannerSub");
     const bannerEditBtn = document.getElementById("bannerEditBtn");
@@ -580,6 +624,11 @@
       bannerTitleEl.style.display = title ? "" : "none";
       bannerSubEl.textContent = sub || "";
       bannerSubEl.style.display = sub ? "" : "none";
+      // Shell round 5: hide the whole strip (border and spacing included) when
+      // the tenant has set no banner at all, instead of leaving an empty ruled
+      // block above the wheel. The Edit button now lives in Study options, so
+      // hiding this never hides the only way back in to set one.
+      globalBannerEl.style.display = title || sub ? "" : "none";
       bannerEditBtn.style.display = canAdminCatalogueClientSide() ? "" : "none";
     }
 
