@@ -45,16 +45,21 @@
      data every later module reads from. Reading is open to anyone in the
      tenant; editing is restricted to owner/prime.</p>
 
-  <div class="app-home-bar">
-    <span class="nav-home-label">Home</span>
-    <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
-    <div id="who">Checking sign-in…</div>
-    <button id="signInBtn" style="display:none;">Sign in with Google</button>
-    <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
-  </div>
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
 
   <div id="app" style="display:none;">
-    <div id="navBar"></div>
     <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
       <label style="margin:0;">Tenant
         <select id="tenantSelect" style="width:auto;"></select>
@@ -180,13 +185,18 @@
       ensureLifeSkillReparented,
       ensureLdogReparented,
     } from "./js/catalogue.js";
-    import { renderNavBar } from "./js/nav.js";
+    import { renderNavBar, renderHomeExtras } from "./js/nav.js";
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
     const signOutBtn = document.getElementById("signOutBtn");
     const appEl = document.getElementById("app");
     const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+    }
     const tenantSelect = document.getElementById("tenantSelect");
     const seedStatusEl = document.getElementById("seedStatus");
     const modulesBody = document.getElementById("modulesBody");
@@ -862,7 +872,7 @@
         const viewAsRole = getActiveContext()?.viewAsRole ?? null;
         const effRoles = effectiveRoles(activeMembership?.roles ?? [], viewAsRole);
         canEdit = effRoles.includes("owner") || effRoles.includes("prime");
-        navBar.innerHTML = renderNavBar(activeMembership?.roles ?? [], viewAsRole);
+        renderNav(activeMembership?.roles ?? [], viewAsRole);
         moduleActionsHead.style.display = canEdit ? "" : "none";
         subjActionsHead.style.display = canEdit ? "" : "none";
         trkActionsHead.style.display = canEdit ? "" : "none";
@@ -887,7 +897,7 @@
       if (!chosen) return;
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
-      navBar.innerHTML = renderNavBar(chosen.roles, null); // switching tenants resets any active preview
+      renderNav(chosen.roles, null); // switching tenants resets any active preview
       canEdit = chosen.roles.includes("owner") || chosen.roles.includes("prime");
       moduleActionsHead.style.display = canEdit ? "" : "none";
       subjActionsHead.style.display = canEdit ? "" : "none";

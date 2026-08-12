@@ -67,16 +67,21 @@
      progress through them. Open the screensaver to slowly cycle through the
      Names for reflection.</p>
 
-  <div class="app-home-bar">
-    <span class="nav-home-label">Home</span>
-    <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
-    <div id="who">Checking sign-in…</div>
-    <button id="signInBtn" style="display:none;">Sign in with Google</button>
-    <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
-  </div>
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
 
   <div id="app" style="display:none;">
-    <div id="navBar"></div>
     <div id="continueStrip"></div>
     <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
       <label style="margin:0;">Tenant

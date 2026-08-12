@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.19.** Cutover to production happened
+**Current milestone: QuranRevival v07.20.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -303,6 +303,56 @@ the full build logs. **Check this line's version number every session** —
 it's manually updated per `app/js/version.js`'s own scheme (first two
 digits = big overhaul, last two = each new feature) and will drift if a
 future round forgets to bump it here too.
+v07.20 (12 Aug 2026, on the CLI) is Shell round 4, from a real layout
+discussion with the owner (see the "Layout Discussion" session) rather
+than a build-phase deliverable. Two things changed together:
+**QuranRevival is also the whole app's name, not only one module's** — so
+the app no longer shows a separate landing page before the Quran Study
+content. `app/index.html` is now a pure, silent, synchronous redirect into
+`quranrevival.html` with no banner or Firebase logic of its own (it never
+needed any — `quranrevival.html` already handles sign-in/no-account/
+signed-in independently, since every other page already links to it
+directly). This is what the owner meant by "the landing page should be
+like [the Mastery Wheel screenshot]": banner, then nav, then the wheel,
+with no visible hop between two differently-chromed pages — achieved by
+retiring the second page's own chrome rather than merging the ~1500 lines
+of wheel/Explore/drill code into two places. Every other file that already
+referenced `quranrevival.html` by name (`continue-strip.js`,
+`feature-registry.js`, `mastery-wheel.js`, `course-offers.js`,
+`asma-posters.js`, `monitor.js`) needed no changes — the canonical URL
+never moved. Caught and fixed along the way: `index.html` used to fire the
+boot splash (Ta'awwudh/Basmala) before its own sign-in check; stripping
+its UI would have silently dropped that splash from the real app entirely,
+since nothing else called it. It now fires from `quranrevival.html`,
+chained before the existing Quran-entry splash, each still keyed to its
+own independent Every-time/Once-a-day/Once-a-week preference.
+**The shared nav bar (`js/nav.js`, shell round 3's five categories) is down
+to four main buttons — Home / Study / Operation / Bookmark — sized to fit
+one line on a phone**, per the owner's own follow-up ("a mobile can hold 4
+buttons in one line... Settings could go under Main [Home]... Home button
+is one of the main buttons"). Admin, About and Settings all fold inside
+Home now instead of being their own top-level entries. Home itself is
+still split the same way it always was for the v07.08 sign-in-flash fix —
+sign-in status, Sign In/Out and the Legacy App link stay static markup
+each page renders before any script runs (now a `.nav-cat-home` `<details>`
+sitting in the nav row itself instead of a separate bar above it);
+`renderHomeExtras()` (new, alongside the existing `renderNavBar()`) renders
+only the role-gated Admin/About/Settings portion, injected into that same
+`<details>` once roles are known — exactly Admin's old timing, one level
+deeper. The Study category's first entry is renamed "Study" → "Quran
+Study". Applied identically across every page that carries the nav bar
+(confirmed with the owner: same bar everywhere, not just the two pages
+above) — including `classes.html` and `curriculum.html`, which turned out
+to have missed shell round 3 entirely (built concurrently, merged in
+after): no `shell.css` link, no Legacy App link, and their own stale local
+`.app-nav`/`.nav-link` CSS left over from before the `<details>`-based
+category redesign, silently unstyled ever since. Brought in line with
+every other page as part of this same round rather than left as a second,
+separate gap. No `firestore.rules` or schema changes — layout and shared
+JS/CSS only. See the "Layout Discussion" session transcript for the full
+back-and-forth (a mockup artifact was used mid-discussion to confirm the
+shape before building) rather than a phase status file, since this wasn't
+phase-numbered work.
 
 ---
 

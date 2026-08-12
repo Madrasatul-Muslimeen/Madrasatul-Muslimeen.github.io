@@ -4,8 +4,14 @@
 // opener: Every time / Once a day / Once a week" preference panel.
 //
 // Two call sites, same distinction the old app made:
-//   showBootSplash()  — app/index.html, on first load (the old app showed
-//                        this before/independent of sign-in; same here).
+//   showBootSplash()  — app/quranrevival.html, chained before showQuranSplash()
+//                        on every load. Originally fired from app/index.html
+//                        (before/independent of sign-in); shell round 4
+//                        (12 Aug 2026) turned index.html into a pure, silent
+//                        redirect with no UI of its own, so quranrevival.html
+//                        -- the real first page anyone sees now -- fires it
+//                        instead. Each splash still respects its own Every
+//                        time/Once a day/Once a week preference independently.
 //   showQuranSplash() — app/quranrevival.html, on load. The old app fired
 //                        this on every SPA tab-switch into Quran; this is a
 //                        multi-page site, not an SPA, so every real page

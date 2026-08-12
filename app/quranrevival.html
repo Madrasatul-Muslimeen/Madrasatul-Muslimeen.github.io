@@ -190,13 +190,19 @@
   <h1>QuranRevival <span id="appVersion" class="app-version"></span></h1>
   <p class="app-tagline">Reviving the Quran, abandoned.</p>
 
-  <div class="app-home-bar">
-    <span class="nav-home-label">Home</span>
-    <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
-    <div id="who">Checking sign-in…</div>
-    <button id="signInBtn" style="display:none;">Sign in with Google</button>
-    <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
-  </div>
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
 
   <div id="app" style="display:none;">
     <div id="globalBanner">
@@ -209,7 +215,6 @@
         <div class="row"><button type="button" id="bannerSaveBtn">Save</button><button type="button" class="secondary" id="bannerCancelBtn">Cancel</button></div>
       </div>
     </div>
-    <div id="navBar"></div>
 
     <div class="row">
       <div><label>Tenant</label><select id="tenantSelect"></select></div>
@@ -312,16 +317,21 @@
     import { getSurah, getSurahIndex, getJuzIndex, getPageIndex } from "./js/quran-data.js";
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootDerivativePanel, renderTranslationPanel } from "./js/ayah-renderer.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
-    import { renderNavBar } from "./js/nav.js";
-    import { showQuranSplash } from "./js/splash.js";
+    import { renderNavBar, renderHomeExtras } from "./js/nav.js";
+    import { showBootSplash, showQuranSplash } from "./js/splash.js";
     import { APP_VERSION } from "./js/version.js";
 
     document.getElementById("appVersion").textContent = `v${APP_VERSION}`;
 
-    // Fires on every real load of this page -- the multi-page equivalent of
-    // the old app's "each time the Quran tab is entered" trigger, since
-    // there's no SPA tab-switch here to hook instead.
-    showQuranSplash();
+    // Shell round 4 (12 Aug 2026) -- index.html used to fire the boot splash
+    // (Ta'awwudh/Basmala) on first load, independent of sign-in, then
+    // location.replace() here, which fired the Quran-entry splash on top.
+    // index.html is now a pure, silent redirect with no UI of its own (see
+    // its own comment -- the "two banners" fix), so this page is the real
+    // first thing anyone sees. Chained so the boot splash still plays first
+    // -- each respects its own Every time/Once a day/Once a week preference
+    // independently, same as when they were two separate page loads.
+    showBootSplash(() => showQuranSplash());
     import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler } from "./js/mastery-wheel.js";
     import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab, renderWayModalShell, attachWayModalHandlers } from "./js/way-modal.js";
     import {
@@ -367,6 +377,11 @@
     const signOutBtn = document.getElementById("signOutBtn");
     const appEl = document.getElementById("app");
     const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+    }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
     const surahSelect = document.getElementById("surahSelect");
@@ -1541,7 +1556,7 @@
         tenantSelect.innerHTML = myMemberships
           .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
           .join("");
-        navBar.innerHTML = renderNavBar(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], getActiveContext()?.viewAsRole ?? null);
+        renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], getActiveContext()?.viewAsRole ?? null);
 
         appEl.style.display = "block";
         await step("load context data", loadContextData);
@@ -1556,7 +1571,7 @@
       if (!chosen) return;
       activeTenantId = chosen.tenantId;
       setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
-      navBar.innerHTML = renderNavBar(chosen.roles, null); // switching tenants resets any active preview
+      renderNav(chosen.roles, null); // switching tenants resets any active preview
       await loadContextData();
     });
   </script>

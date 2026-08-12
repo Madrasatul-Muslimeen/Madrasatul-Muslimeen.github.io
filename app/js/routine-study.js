@@ -41,7 +41,7 @@ import {
   logActivity, weekKeyFor, getWeekActivity, hasLoggedOn, getRecentWeeksActivity, computeStreak,
 } from "./activity.js";
 import { getResourcesByIds } from "./resources.js";
-import { renderNavBar } from "./nav.js";
+import { renderNavBar, renderHomeExtras } from "./nav.js";
 import { renderTopicBreadcrumb, renderTopicChildList, renderTopicResource } from "./topic-renderer.js";
 import {
   renderGuideTab, renderTrackTab, renderBreakdownTab, renderStreakTab,
@@ -69,6 +69,11 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
   const signOutBtn = document.getElementById("signOutBtn");
   const appEl = document.getElementById("app");
   const navBar = document.getElementById("navBar");
+  const navHomeExtra = document.getElementById("navHomeExtra");
+  function renderNav(roles, viewAsRole) {
+    navBar.innerHTML = renderNavBar(roles, viewAsRole);
+    navHomeExtra.innerHTML = renderHomeExtras(roles);
+  }
   const tenantSelect = document.getElementById("tenantSelect");
   const personSelect = document.getElementById("personSelect");
   const breadcrumbContainer = document.getElementById("breadcrumbContainer");
@@ -136,7 +141,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     tenantWeekStartsOn = tenantSnap.exists() ? (tenantSnap.data().weekStartsOn ?? 6) : 6;
 
     const { viewAsRole, effRoles, myPersonId } = currentPreview();
-    navBar.innerHTML = renderNavBar(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
+    renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
 
     const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
     personSelect.innerHTML = visibleRoster
@@ -468,7 +473,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     if (!chosen) return;
     activeTenantId = chosen.tenantId;
     setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
-    navBar.innerHTML = renderNavBar(chosen.roles, null);
+    renderNav(chosen.roles, null);
     await ensureModulesSeeded(db, auth.currentUser.uid);
     await ensureSubjectTemplatesSeeded(db, auth.currentUser.uid);
     await ensureTenantCatalogueSeeded(db, activeTenantId, auth.currentUser.uid);

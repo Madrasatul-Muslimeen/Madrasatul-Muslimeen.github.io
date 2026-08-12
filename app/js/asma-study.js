@@ -28,7 +28,7 @@ import { ensureModulesSeeded } from "./modules.js";
 import { buildUnitKey } from "./unit-keys.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
 import { logActivity } from "./activity.js";
-import { renderNavBar } from "./nav.js";
+import { renderNavBar, renderHomeExtras } from "./nav.js";
 import { ASMA_NAMES } from "./asma-data.js";
 import { ASMA_POSTERS } from "./asma-posters.js";
 import { renderAsmaGrid, renderAsmaDetail, renderAsmaScreensaverSlide } from "./asma-renderer.js";
@@ -48,6 +48,11 @@ export function initAsmaStudyPage() {
   const signOutBtn = document.getElementById("signOutBtn");
   const appEl = document.getElementById("app");
   const navBar = document.getElementById("navBar");
+  const navHomeExtra = document.getElementById("navHomeExtra");
+  function renderNav(roles, viewAsRole) {
+    navBar.innerHTML = renderNavBar(roles, viewAsRole);
+    navHomeExtra.innerHTML = renderHomeExtras(roles);
+  }
   const tenantSelect = document.getElementById("tenantSelect");
   const personSelect = document.getElementById("personSelect");
   const gridContainer = document.getElementById("gridContainer");
@@ -103,7 +108,7 @@ export function initAsmaStudyPage() {
     const viewAsRole = context?.viewAsRole ?? null;
     const effRoles = effectiveRoles(realRoles, viewAsRole);
     const myPersonId = activeMembership?.personId ?? null;
-    navBar.innerHTML = renderNavBar(realRoles, viewAsRole);
+    renderNav(realRoles, viewAsRole);
 
     const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
     personSelect.innerHTML = visibleRoster
@@ -317,7 +322,7 @@ export function initAsmaStudyPage() {
     if (!chosen) return;
     activeTenantId = chosen.tenantId;
     setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
-    navBar.innerHTML = renderNavBar(chosen.roles, null);
+    renderNav(chosen.roles, null);
     await ensureModulesSeeded(db, auth.currentUser.uid);
     await ensureSubjectTemplatesSeeded(db, auth.currentUser.uid);
     await ensureTenantCatalogueSeeded(db, activeTenantId, auth.currentUser.uid);

@@ -42,16 +42,21 @@
      note about a student for yourself. A teacher must assign through a
      class or course offer they actively teach.</p>
 
-  <div class="app-home-bar">
-    <span class="nav-home-label">Home</span>
-    <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
-    <div id="who">Checking sign-in…</div>
-    <button id="signInBtn" style="display:none;">Sign in with Google</button>
-    <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
-  </div>
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
 
   <div id="app" style="display:none;">
-    <div id="navBar"></div>
     <div class="contextBar">
       <label>Tenant
         <select id="tenantSelect" style="width:auto;"></select>
@@ -132,7 +137,7 @@
       createAssignment, listAssignmentsForPerson, listAssignmentsForReader, getSubmission,
       markSubmitted, scoreSubmission, createTeachingNote, listMyTeachingNotes,
     } from "./js/homework.js";
-    import { renderNavBar } from "./js/nav.js";
+    import { renderNavBar, renderHomeExtras } from "./js/nav.js";
     import { listClasses } from "./js/classes.js";
     import {
       listCourseOffers, listEnrollmentsForPerson, listEnrollmentsForOffer,
@@ -144,6 +149,11 @@
     const signOutBtn = document.getElementById("signOutBtn");
     const appEl = document.getElementById("app");
     const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+    }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
     const createFieldset = document.getElementById("createFieldset");
@@ -213,7 +223,7 @@
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
       const { viewAsRole, effRoles, myPersonId: myPersonIdFromPreview } = currentPreview();
-      navBar.innerHTML = renderNavBar(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
+      renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
 
       visibleRoster = scopedRoster(roster, effRoles, myPersonIdFromPreview);
       personSelect.innerHTML = visibleRoster
