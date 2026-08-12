@@ -6,7 +6,26 @@
 <link rel="stylesheet" href="./css/shell.css" />
 <title>QuranRevival — Phase 4/5</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 60rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  /* Shell round 7 (12 Aug 2026) -- this page is now a real app shell rather
+     than a plain scrolling document: a header, a stage that STRETCHES to
+     whatever height is left, and a docked bar pinned to the bottom. That is
+     what lets the wheel card grow into the leftover space instead of ending
+     early and leaving a gap above the dock (the owner's own ask this round),
+     and it is why the approaches list can show more rows before scrolling --
+     it inherits every pixel the wheel doesn't use. */
+  html { height: 100%; }
+  body {
+    font-family: system-ui, sans-serif; max-width: 60rem; margin: 0 auto;
+    padding: 1rem 1rem 0; color: #222; box-sizing: border-box;
+    /* A FIXED height, not a minimum: the stage can only stretch into leftover
+       space if there is a known total to subtract from. With min-height the
+       column just grew past the viewport and the approaches list took its
+       full 30-row height again, which is the very thing this round removes.
+       Nothing is lost by not scrolling the page -- the only long list on the
+       landing screen is the approaches list, and it scrolls inside itself. */
+    height: 100vh; height: 100dvh; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
   /* Shell round 6: h1's default bottom margin (0.67em ~= 15px at this size)
      left the tagline sitting visibly adrift from the title it belongs to,
      while the tenant banner's own title/subtitle pair sat tight together --
@@ -69,19 +88,47 @@
   #bannerEditBtn { font-size: 0.75rem; padding: 0.2rem 0.5rem; }
   .banner-admin { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed #e5e5e5; }
 
-  /* ---------- Study options disclosure (shell round 5) ----------
-     Deliberately styled to read like the nav bar's own category buttons --
-     same border, radius, weight and caret -- so a collapsed control panel
-     looks like the one other collapsible thing on the page, not a novelty. */
-  #studyOptions { border: 1px solid #ddd; border-radius: 0.5rem; background: white; margin-bottom: 0.5rem; }
-  #studyOptions > summary {
-    cursor: pointer; padding: 0.45rem 0.9rem; font-weight: 700; font-size: 0.85rem;
-    color: #1F3A6E; list-style: none; user-select: none;
+  /* ---------- App shell: stage + docked bottom bar (shell round 7) ----------
+     Shell round 5 collapsed the seven pickers into a <details> to get the
+     wheel above the fold. This round goes further, on the owner's ask: the
+     pickers AND the Study screen move off the page entirely into a panel
+     that slides up from a docked bar, so the landing screen is the wheel and
+     nothing else. #stage takes all the height the header and dock don't. */
+  #app { flex: 1 1 auto; min-height: 0; flex-direction: column; } /* display:flex set by JS when it un-hides the app */
+  #stage { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  #stage > .wheel-heading { flex: 0 0 auto; margin-top: 0.35rem; }
+
+  #dock {
+    flex: 0 0 auto; position: sticky; bottom: 0; z-index: 60; background: white;
+    border-top: 1px solid #e3e8f2; padding: 0.5rem 0 0.55rem; margin-top: 0.55rem;
   }
-  #studyOptions > summary::-webkit-details-marker { display: none; }
-  #studyOptions > summary::after { content: " \25BE"; font-size: 0.7em; color: #888; }
-  #studyOptions[open] > summary::after { content: " \25B4"; }
-  .study-options-body { padding: 0 0.9rem 0.7rem; }
+  #tabRow { display: flex; gap: 0.4rem; }
+  /* Same border/radius/weight/caret language as the nav bar's own category
+     buttons and shell round 5's disclosure -- one collapsible idiom on this
+     page, not a third novelty. */
+  .qr-tab {
+    flex: 1 1 0; background: white; color: #1F3A6E; border: 1px solid #ddd;
+    border-radius: 0.5rem; font-weight: 700; font-size: 0.85rem; padding: 0.5rem 0.3rem;
+  }
+  .qr-tab::after { content: " \25B4"; font-size: 0.7em; color: #888; }
+  .qr-tab[aria-expanded="true"] { background: #1F3A6E; color: white; border-color: #1F3A6E; }
+  .qr-tab[aria-expanded="true"]::after { content: " \25BE"; color: #cfe0ff; }
+
+  .qr-panel {
+    position: absolute; left: 0; right: 0; bottom: 100%;
+    background: white; border: 1px solid #ddd; border-bottom: none;
+    border-radius: 0.8rem 0.8rem 0 0; box-shadow: 0 -12px 30px rgba(20,30,55,0.16);
+    max-height: 74vh; max-height: 74dvh; overflow-y: auto; padding: 0 0.9rem 0.9rem;
+  }
+  .qr-panel[hidden] { display: none; }
+  .qr-panel-head {
+    position: sticky; top: 0; background: white; z-index: 1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.55rem 0 0.4rem; margin-bottom: 0.3rem;
+    border-bottom: 1px solid #eef1f7; font-weight: 700; font-size: 0.9rem; color: #1F3A6E;
+  }
+  .qr-panel-x { background: #f2f5fa; color: #667; border: none; border-radius: 50%; width: 26px; height: 26px; font-size: 15px; line-height: 1; padding: 0; }
+  .qr-panel h2 { margin-top: 1rem; }
   .study-options-body .row:first-child { margin-top: 0; }
 
   /* ---------- Mastery Wheel (Phase 5 round 12) ----------
@@ -101,7 +148,43 @@
   }
   .wheel-col { display: flex; flex-direction: column; align-items: center; gap: 0.8rem; flex: 1 1 320px; min-width: 0; }
   .wheel-box .hint { color: #8fa0c2; font-size: 0.8rem; text-align: center; margin: 0; }
-  .mastery-wheel { max-width: 320px; overflow: visible; }
+  /* height:auto matters (shell round 7): renderMasteryWheel() emits width AND
+     height attributes on the <svg>, so on a phone the width was being capped
+     by max-width while the height stayed at its full attribute value -- the
+     viewBox then centred a smaller wheel inside a taller box, i.e. real blank
+     space inside the card, on exactly the screens with least room to spare. */
+  .mastery-wheel { max-width: 320px; height: auto; overflow: visible; }
+
+  /* Shell round 7: the landing wheel card stretches to fill the stage, and
+     the approaches list -- not the dark background -- absorbs the leftover
+     height, so more Approaches show before any scrolling starts. Scoped to
+     #wheelSection on purpose: Explore's own copy of .wheel-box now lives
+     inside a dock panel and must keep its natural height. */
+  #wheelSection { flex: 1 1 auto; min-height: 0; align-items: stretch; align-content: stretch; }
+  #wheelSection .wheel-col { justify-content: center; min-height: 0; }
+  #wheelSection .wheel-sidebar { display: flex; flex-direction: column; min-height: 0; }
+  #wheelSection .ways-list { flex: 1 1 auto; max-height: none; }
+
+  @media (max-width: 720px) {
+    /* One column, no wrapping: every leftover pixel goes to the approaches
+       list rather than being shared out between two wrapped flex lines.
+       The wheel is capped in vh (not just px) and the legend is compacted,
+       because on a phone those two are what the approaches list is competing
+       against -- every pixel taken off them becomes another visible row. */
+    #wheelSection { flex-direction: column; flex-wrap: nowrap; gap: 0.55rem; padding: 0.7rem; }
+    #wheelSection .wheel-col { flex: 0 0 auto; gap: 0.5rem; }
+    #wheelSection .wheel-sidebar { flex: 1 1 auto; max-width: none; min-width: 0; }
+    #wheelSection .mastery-wheel { max-width: min(320px, 27vh); }
+    #wheelSection .wheel-legend { font-size: 0.68rem; gap: 4px 9px; }
+    #wheelSection .legend-swatch { width: 9px; height: 9px; }
+    #stage > .wheel-heading { margin-top: 0.15rem; margin-bottom: 0.3rem; font-size: 1rem; }
+    /* Tighter rows on a phone -- same 13px name, just less padding around it,
+       which buys roughly one extra visible Approach per screen. */
+    #wheelSection .ways-list { gap: 4px; }
+    #wheelSection .way-row { padding: 5px 8px; gap: 8px; }
+    #wheelSection .way-row .badge { width: 20px; height: 20px; font-size: 10px; }
+    #wheelSection .way-row .status-chip { font-size: 9.5px; padding: 2px 7px; }
+  }
   .wheel-seg { cursor: pointer; stroke: #0c1320; stroke-width: 1; transition: stroke .15s, stroke-width .15s; }
   .wheel-seg:hover { stroke: #F2E8D5; stroke-width: 1.5; }
   .wheel-seg-num { font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 600; fill: #F2E8D5; }
@@ -134,10 +217,12 @@
   .explore-crumb-sep { color: #556; opacity: 0.6; }
 
   /* ---------- Study Unit picker (Phase 5) ---------- */
-  #unitLabel { font-size: 0.85rem; color: #1F3A6E; font-weight: 600; margin: 0.3rem 0; }
+  /* Shell round 7: now the dock's second line, under the tab row -- always
+     readable without opening anything, exactly as in shell round 5. */
+  #unitLabel { font-size: 0.85rem; color: #1F3A6E; font-weight: 600; margin: 0.4rem 0 0; text-align: center; }
 
   /* ---------- Explore (Phase 5) ---------- */
-  #explorePanel { margin-top: 0.6rem; } /* border/background/padding now come from .wheel-box (Phase 5 round 12) */
+  #explorePanel { margin-top: 0; } /* border/background/padding come from .wheel-box (Phase 5 round 12); lives inside the Explore dock panel since shell round 7 */
 
   /* ---------- Study screen ---------- */
   #studyScreen { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 1rem; margin-top: 1rem; }
@@ -236,19 +321,31 @@
       <p id="bannerSub" style="display:none;"></p>
     </div>
 
-    <!-- Shell round 5 (12 Aug 2026) -- these seven pickers used to sit open
-         between the nav and the Mastery Wheel. Measured on a 390x700 phone,
-         that pushed the wheel heading to 661px, i.e. entirely below the fold
-         on the app's own landing page. Collapsed into a <details> (the same
-         disclosure idiom the nav bar already uses -- no new JS, no click
-         handlers) so the wheel is the first real content again. Every control
-         keeps its id and its position within the form, so all existing wiring
-         is untouched; only the wrapper is new. #unitLabel stays OUTSIDE the
-         disclosure so "Tracking: Surah 1, Ayah 1" is always visible without
-         opening anything. -->
-    <details id="studyOptions">
-      <summary>Study options</summary>
-      <div class="study-options-body">
+    <!-- Shell round 7 (12 Aug 2026) -- the landing stage: the Mastery Wheel
+         and nothing else. Shell round 5 had collapsed the seven pickers into
+         a <details> here to get the wheel above the fold; this round moves
+         them (and the Study screen) off the page entirely, into the dock
+         panel below, on the owner's ask. Every control still keeps its id and
+         its position within the form, so all existing wiring is untouched --
+         only the wrapper moved. -->
+    <div id="stage">
+      <h2 class="wheel-heading">Mastery Wheel</h2>
+      <div id="wheelSection" class="wheel-box">
+        <div class="wheel-col">
+          <div id="wheelContainer">Loading&hellip;</div>
+          <div id="wheelLegendContainer"></div>
+        </div>
+        <div id="wheelSidebarContainer" class="wheel-sidebar"></div>
+      </div>
+    </div>
+
+    <!-- The dock: two tabs on one line (they fit a phone), then the always-on
+         "Tracking: ..." readout. Panels slide up from here, above the bar, so
+         the tabs stay reachable to switch or close. -->
+    <div id="dock">
+      <div id="panelStudyOptions" class="qr-panel" hidden>
+        <div class="qr-panel-head">Study options <button type="button" class="qr-panel-x" data-close-panel aria-label="Close">&times;</button></div>
+        <div class="study-options-body">
         <div class="row">
           <div><label>Tenant</label><select id="tenantSelect"></select></div>
           <div><label>Person</label><select id="personSelect"></select></div>
@@ -296,32 +393,13 @@
             <div class="row"><button type="button" id="bannerSaveBtn">Save</button><button type="button" class="secondary" id="bannerCancelBtn">Cancel</button></div>
           </div>
         </div>
-      </div>
-    </details>
-    <div id="unitLabel"></div>
 
-    <h2 class="wheel-heading">Mastery Wheel</h2>
-    <div id="wheelSection" class="wheel-box">
-      <div class="wheel-col">
-        <div id="wheelContainer">Loading…</div>
-        <div id="wheelLegendContainer"></div>
-      </div>
-      <div id="wheelSidebarContainer" class="wheel-sidebar"></div>
-    </div>
-
-    <h2 class="wheel-heading">Explore <button type="button" class="secondary" id="exploreToggleBtn">Whole Quran ▾</button></h2>
-    <div id="explorePanel" class="wheel-box" style="display:none;">
-      <div class="wheel-col">
-        <div id="exploreBreadcrumb"></div>
-        <div id="exploreWheelContainer">Loading…</div>
-        <div id="exploreWheelLegendContainer"></div>
-        <p class="hint">Click a segment to drill in — Quran → Juz → Surah → Ruku' → an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment — it only turns fully green once every ayah inside it is Mastered.</p>
-      </div>
-      <div id="exploreSidebarContainer" class="wheel-sidebar"></div>
-    </div>
-
-    <h2>Study</h2>
-    <div id="studyScreen">
+        <!-- Owner's call this round: the Study screen reads better as part of
+             Study options than as a tab of its own -- "user do not have to
+             click more for those things." Organising what sits inside this
+             panel is a deliberate next round. -->
+        <h2>Study</h2>
+        <div id="studyScreen">
       <div class="row" id="pageViewToggleRow" style="display:none;">
         <div><label>Page view</label><select id="pageViewModeSelect">
           <option value="mushaf">Mushaf (real page)</option>
@@ -340,8 +418,30 @@
       <div id="drillControls"></div>
       <div id="ayahPanels"></div>
       <div id="pageViewContainer" style="display:none;"></div>
-    </div>
-  </div>
+        </div><!-- /#studyScreen -->
+        </div><!-- /.study-options-body -->
+      </div><!-- /#panelStudyOptions -->
+
+      <div id="panelExplore" class="qr-panel" hidden>
+        <div class="qr-panel-head">Explore <button type="button" class="qr-panel-x" data-close-panel aria-label="Close">&times;</button></div>
+        <div id="explorePanel" class="wheel-box">
+          <div class="wheel-col">
+            <div id="exploreBreadcrumb"></div>
+            <div id="exploreWheelContainer">Loading&hellip;</div>
+            <div id="exploreWheelLegendContainer"></div>
+            <p class="hint">Click a segment to drill in &mdash; Quran &rarr; Juz &rarr; Surah &rarr; Ruku' &rarr; an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment &mdash; it only turns fully green once every ayah inside it is Mastered.</p>
+          </div>
+          <div id="exploreSidebarContainer" class="wheel-sidebar"></div>
+        </div>
+      </div>
+
+      <div id="tabRow">
+        <button type="button" class="qr-tab" id="tabStudyOptionsBtn" data-panel="panelStudyOptions" aria-controls="panelStudyOptions" aria-expanded="false">Study options</button>
+        <button type="button" class="qr-tab" id="tabExploreBtn" data-panel="panelExplore" aria-controls="panelExplore" aria-expanded="false">Explore</button>
+      </div>
+      <div id="unitLabel"></div>
+    </div><!-- /#dock -->
+  </div><!-- /#app -->
 
   <div id="wayModalOverlay"><div id="wayModalMount"></div></div>
 
@@ -463,8 +563,7 @@
     const trackUnitBtn = document.getElementById("trackUnitBtn");
     const unitLabelEl = document.getElementById("unitLabel");
 
-    const exploreToggleBtn = document.getElementById("exploreToggleBtn");
-    const explorePanel = document.getElementById("explorePanel");
+    const dockTabs = Array.from(document.querySelectorAll(".qr-tab"));
     const exploreBreadcrumb = document.getElementById("exploreBreadcrumb");
     const exploreWheelContainer = document.getElementById("exploreWheelContainer");
     const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
@@ -924,10 +1023,19 @@
     // exempts About/resources/screensaver.
     // -----------------------------------------------------------------------
 
-    exploreToggleBtn.addEventListener("click", async () => {
-      const opening = explorePanel.style.display === "none";
-      explorePanel.style.display = opening ? "block" : "none";
-      if (!opening) return;
+    /** Shell round 7: the dock's two tabs. One panel open at a time -- tapping
+        the open tab closes it, tapping the other swaps. Explore still loads
+        nothing until it is actually opened (the on-first-use exemption above);
+        opening it resets the drill-down to the whole-Quran level exactly as
+        the old toggle button did. */
+    function closeAllPanels() {
+      dockTabs.forEach((tab) => {
+        tab.setAttribute("aria-expanded", "false");
+        document.getElementById(tab.dataset.panel).hidden = true;
+      });
+    }
+
+    async function openExplore() {
       exploreLevel = "quran";
       exploreJuzNum = null;
       exploreSurahNum = null;
@@ -935,6 +1043,21 @@
       exploreWheelContainer.innerHTML = "Loading whole-Quran progress — this reads every surah's saved progress once, so it can take a few seconds…";
       await ensureExploreChunksLoaded();
       await renderExplore();
+    }
+
+    dockTabs.forEach((tab) => {
+      tab.addEventListener("click", async () => {
+        const wasOpen = tab.getAttribute("aria-expanded") === "true";
+        closeAllPanels();
+        if (wasOpen) return;
+        tab.setAttribute("aria-expanded", "true");
+        document.getElementById(tab.dataset.panel).hidden = false;
+        if (tab.dataset.panel === "panelExplore") await openExplore();
+      });
+    });
+
+    document.querySelectorAll("[data-close-panel]").forEach((btn) => {
+      btn.addEventListener("click", closeAllPanels);
     });
 
     /** Which (surah, ayah-range) pairs a boundary spans, using only surah-index.json's ayah counts -- never loads full surah text just to find this out. Generic over Juz/Page/Ruku' -- any {startSurah,startAyah,endSurah,endAyah} shape works. */
@@ -1015,7 +1138,7 @@
 
     /** Closes Explore and jumps the Study screen to one specific ayah -- the drill-down's final step, from either a short Surah-wheel or a Ruku'-wheel. */
     async function goToAyahFromExplore(surahNum, ayahNum) {
-      explorePanel.style.display = "none";
+      closeAllPanels(); // the drill-down lands on an ayah in Study -- close the dock so the wheel is visible again
       currentUnitType = "ayah";
       unitTypeSelect.value = "ayah";
       updateUnitControlsVisibility();
@@ -1611,7 +1734,7 @@
           .join("");
         renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], getActiveContext()?.viewAsRole ?? null);
 
-        appEl.style.display = "block";
+        appEl.style.display = "flex"; // flex, not block: #app is the shell column (stage + dock) since shell round 7
         await step("load context data", loadContextData);
       } catch (err) {
         whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
