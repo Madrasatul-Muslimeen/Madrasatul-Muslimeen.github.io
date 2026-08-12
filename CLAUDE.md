@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.20.** Cutover to production happened
+**Current milestone: QuranRevival v07.21.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -353,6 +353,27 @@ JS/CSS only. See the "Layout Discussion" session transcript for the full
 back-and-forth (a mockup artifact was used mid-discussion to confirm the
 shape before building) rather than a phase status file, since this wasn't
 phase-numbered work.
+v07.21 (12 Aug 2026, on the CLI) is a same-day correction to v07.20, from
+the owner's own phone screenshot of the live result: on quranrevival.html
+(now the landing page too), the "Study" category was auto-opening on every
+visit — `renderCategory()` had always opened a category by default when
+the current page was one of its own links, harmless when quranrevival.html
+was one destination among several, but with it now also serving as the
+landing page, that meant Study's full module list was expanded on
+effectively every load, pushing the real content (the wheel) further down
+the screen than intended. Removed entirely, for every category including
+Home — they all start closed now and stay closed until tapped; the
+current-page link itself still gets the `nav-current` highlight once a
+category is opened, so nothing about "where am I" is lost. Also flagged to
+the owner, not yet acted on pending their steer: quranrevival.html's own
+tenant-editable `#globalBanner` (Ahsan's tenant has it set to literally
+repeat "QuranRevival" / "Reviving the Quran, abandoned.", the app banner's
+own wording) plus the Tenant/Person/Surah/Ayah/Approach/Language/Study
+Unit control row both sit between the nav and the wheel — both pre-existing
+quranrevival.html content, not introduced by shell round 4, but far more
+visible now that this page is the default first screen. That's squarely
+the "Quran Study module's own layout" conversation the owner already asked
+to have separately, once shell round 4 shipped.
 
 ---
 

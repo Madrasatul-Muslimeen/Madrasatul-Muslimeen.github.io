@@ -19,10 +19,14 @@
 //     Settings) as HTML the caller injects into that same <details>, once
 //     roles are known — the exact same timing Admin already had before this
 //     round, just nested one level deeper now.
-// applyHomeAutoOpen() (called automatically, see bottom of file) opens that
-// <details> by default when the current page is one of the links living
-// inside it, matching the auto-open behaviour every other category already
-// had.
+// Every category, including Home, starts closed and stays closed until the
+// user taps it -- an earlier version of this round auto-opened a category
+// when the current page was one of its own links (e.g. Study auto-expanding
+// on quranrevival.html), which meant Study was open on effectively every
+// visit once quranrevival.html became the landing page too, pushing real
+// content down the screen. Removed per the owner's own report. The
+// current-page link itself still gets highlighted (nav-current class) once
+// a category is opened, so which page you're on is never actually lost.
 //
 // Each category (Study / Operation / Bookmark, and the page's own Home) is
 // a native <details>/<summary> disclosure — no click-handler wiring needed.
@@ -85,10 +89,6 @@ const SETTINGS_PLACEHOLDERS = ["Language", "Appearance"];
 // Phase 13 round 1: About reads the feature registry live (getFullRegistry()).
 const ABOUT_LINKS = [{ href: "about.html", label: "About" }];
 
-// Every link that now lives inside the Home dropdown -- used by
-// applyHomeAutoOpen() to decide whether Home should start open on this page.
-const HOME_SUB_LINKS = [...ADMIN_LINKS, ...ABOUT_LINKS];
-
 // Kept exported for reuse -- the literal link lives in each page's own
 // static Home markup (see quranrevival.html etc.), not in this renderer's
 // output, so it's visible before sign-in resolves same as "who".
@@ -108,9 +108,16 @@ function renderPlaceholders(labels) {
   return labels.map((label) => `<span class="nav-link-disabled">${label} (coming soon)</span>`).join("");
 }
 
-function renderCategory(name, linksHtml, currentFile, links) {
-  const isCurrentCategory = links?.some((l) => l.href === currentFile) ?? false;
-  return `<details class="nav-cat"${isCurrentCategory ? " open" : ""}><summary>${name}</summary><div class="nav-cat-links">${linksHtml}</div></details>`;
+// Shell round 4 (12 Aug 2026) -- used to auto-open a category when the
+// current page was one of its own links (e.g. Study auto-expanding on
+// quranrevival.html). Fine when quranrevival.html was one destination among
+// several; now that it's also the landing page, that meant Study was open
+// on effectively every visit, pushing the actual content down -- exactly
+// what the owner asked to stop. Categories now always start closed; the
+// current-page link itself still gets highlighted via renderLinks()'s own
+// `nav-current` class, so you can still tell where you are once you open one.
+function renderCategory(name, linksHtml) {
+  return `<details class="nav-cat"><summary>${name}</summary><div class="nav-cat-links">${linksHtml}</div></details>`;
 }
 
 /** roles: this person's roles in the currently-active tenant (e.g. ["owner","prime"]). The Classes/Curriculum links inside Operation only show for owner/prime -- everyone else gets the rest of Operation (+ the always-shown Bookmark placeholder). viewAsRole (round 11): when set, shows a "Previewing as" notice so it's never ambiguous why the page looks scoped down -- change/exit it from the People page's own dropdown. Returns the Study/Operation/Bookmark categories only -- Home is the caller's own static markup; call renderHomeExtras() separately for its role-gated contents. */
@@ -119,9 +126,9 @@ export function renderNavBar(roles = [], viewAsRole = null) {
   const currentFile = location.pathname.split("/").pop();
 
   const cats = [];
-  cats.push(renderCategory("Study", renderLinks(STUDY_LINKS, currentFile, canAdmin), currentFile, STUDY_LINKS));
-  cats.push(renderCategory("Operation", renderLinks(OPERATION_LINKS, currentFile, canAdmin), currentFile, OPERATION_LINKS));
-  cats.push(renderCategory("Bookmark", renderPlaceholders(BOOKMARK_PLACEHOLDERS), currentFile, null));
+  cats.push(renderCategory("Study", renderLinks(STUDY_LINKS, currentFile, canAdmin)));
+  cats.push(renderCategory("Operation", renderLinks(OPERATION_LINKS, currentFile, canAdmin)));
+  cats.push(renderCategory("Bookmark", renderPlaceholders(BOOKMARK_PLACEHOLDERS)));
 
   // Phase 10: real per-student teacher assignment now exists (classes.html
   // + teacherStudentLinks) -- a teacher preview is scoped to whoever
@@ -157,18 +164,3 @@ export function renderHomeExtras(roles = []) {
   const settingsHtml = `<div class="nav-cat-group"><div class="nav-cat-group-label">Settings</div>${renderPlaceholders(SETTINGS_PLACEHOLDERS)}</div>`;
   return adminHtml + aboutHtml + settingsHtml;
 }
-
-// Opens the page's own static `.nav-cat-home` <details> by default when the
-// current page is one of the links that now live inside it (People,
-// Catalogue, About) -- matching the auto-open behaviour every other
-// category already has. Runs once, automatically, as soon as this module
-// loads -- by the time a `type="module"` script executes the DOM has
-// already been parsed, so no page needs to call this itself.
-function applyHomeAutoOpen() {
-  if (typeof document === "undefined") return;
-  const homeDetails = document.querySelector(".nav-cat-home");
-  if (!homeDetails) return;
-  const currentFile = location.pathname.split("/").pop();
-  if (HOME_SUB_LINKS.some((l) => l.href === currentFile)) homeDetails.open = true;
-}
-applyHomeAutoOpen();
