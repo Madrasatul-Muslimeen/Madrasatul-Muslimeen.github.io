@@ -46,16 +46,21 @@
      section below since it's the only subject with structured trackable
      data today.</p>
 
-  <div class="app-home-bar">
-    <span class="nav-home-label">Home</span>
-    <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
-    <div id="who">Checking sign-in…</div>
-    <button id="signInBtn" style="display:none;">Sign in with Google</button>
-    <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
-  </div>
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
 
   <div id="app" style="display:none;">
-    <div id="navBar"></div>
     <div class="contextBar">
       <label>Tenant
         <select id="tenantSelect" style="width:auto;"></select>
@@ -122,13 +127,18 @@
     import { activityForRoster, monthWeekKeys, filterEntriesToMonth, summarizeByStudent, summarizeBySubject, summarizeQuranApproaches, entriesToCsvRows, downloadCsv, printReportHtml } from "./js/monitor.js";
     import { weekKeyFor } from "./js/activity.js";
     import { listAllRecordsForPerson } from "./js/records.js";
-    import { renderNavBar } from "./js/nav.js";
+    import { renderNavBar, renderHomeExtras } from "./js/nav.js";
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
     const signOutBtn = document.getElementById("signOutBtn");
     const appEl = document.getElementById("app");
     const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+    }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
     const wholeRoster = document.getElementById("wholeRoster");
@@ -192,7 +202,7 @@
       tenantWeekStartsOn = tenantSnap.exists() ? (tenantSnap.data().weekStartsOn ?? 6) : 6;
 
       const { viewAsRole, effRoles, myPersonId } = currentPreview();
-      navBar.innerHTML = renderNavBar(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
+      renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
 
       // Always scoped to what this login can actually see, real roles or
       // previewed -- unlike records.html's own personSelect (which lists
