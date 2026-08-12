@@ -308,6 +308,7 @@
     import { buildUnitKey, STATUSES, rukuIndexInSurah } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
+    import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
     import { getSurah, getSurahIndex, getJuzIndex, getPageIndex } from "./js/quran-data.js";
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootDerivativePanel, renderTranslationPanel } from "./js/ayah-renderer.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
@@ -438,6 +439,13 @@
     let selectedPersonId = null;
     let tenantWeekStartsOn = 6;
     let currentTenantDoc = null;
+    // Follow-up round: Map(subjectId -> courseOffer contextId) for
+    // selectedPersonId -- same mechanism topic-study.js/routine-study.js
+    // already use (course-offers.js's programSubjectMapFromEnrollments()).
+    // Only ever looked up under the single key "quran" here -- QuranRevival's
+    // whole subject tree is the one "quran" leaf, unlike the per-topic
+    // modules -- see refreshProgramMap()'s own comment.
+    let programBySubjectId = new Map();
 
     let quranTrackables = [];
     let surahIndex = [];
@@ -678,6 +686,7 @@
       tenantWeekStartsOn = currentTenantDoc?.weekStartsOn ?? 6;
       renderPersonSelectOptions();
       selectedPersonId = personSelect.value || null; // whichever person is actually visible/selected (round 11: may be scoped by an active "View as" preview)
+      await refreshProgramMap();
 
       // Backfills newly-added language keys (e.g. Bangla) onto this tenant's
       // own unedited trackable copies -- best-effort: only owner/prime can
@@ -730,6 +739,13 @@
       const chunkKey = `surah_${currentSurahNum}`;
       currentChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, chunkKey);
       renderWheel();
+    }
+
+    /** Follow-up round: which of selectedPersonId's active course-offer enrolments cover "quran" -- QuranRevival's whole subject tree is that one leaf (unlike topic-renderer modules), so this only ever needs the one key. Best-effort, same risk tolerance as refreshChunkAndWheel -- a lookup failure here shouldn't block studying. */
+    async function refreshProgramMap() {
+      if (!selectedPersonId) { programBySubjectId = new Map(); return; }
+      const enrollments = await listEnrollmentsForPerson(db, activeTenantId, selectedPersonId);
+      programBySubjectId = programSubjectMapFromEnrollments(enrollments);
     }
 
     function ayahStatusesForCurrentTrackable() {
@@ -1351,7 +1367,7 @@
 
     surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); });
     trackableSelect.addEventListener("change", async () => { currentTrackableId = trackableSelect.value; renderWheel(); renderStudyScreen(); });
-    personSelect.addEventListener("change", async () => { selectedPersonId = personSelect.value; await refreshChunkAndWheel(); });
+    personSelect.addEventListener("change", async () => { selectedPersonId = personSelect.value; await refreshChunkAndWheel(); await refreshProgramMap(); });
 
     // ---------------------------------------------------------------------
     // Way modal -- ayah-level (unchanged from Phase 4: wheel-click always
@@ -1409,6 +1425,7 @@
             tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
             weekStartsOn: tenantWeekStartsOn, subjectId: "quran", unitKey,
             trackableId: trackable.id, action: "claimed", uid: auth.currentUser.uid,
+            viaProgramId: programBySubjectId.get("quran") ?? null,
           });
           const message = outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.";
           await refreshChunkAndWheel();
@@ -1473,6 +1490,7 @@
           await logActivity(db, {
             tenantId: activeTenantId, personId: selectedPersonId, date: new Date(), weekStartsOn: tenantWeekStartsOn,
             subjectId: "quran", unitKey: info.unitKey, trackableId: trackable.id, action: "claimed", uid: auth.currentUser.uid,
+            viaProgramId: programBySubjectId.get("quran") ?? null,
           });
           const message = outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.";
           if (info.chunkKey === surahChunkKey) await refreshChunkAndWheel();

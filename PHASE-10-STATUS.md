@@ -216,3 +216,94 @@ real access, so neither proves the restriction actually holds):
    silently broken if it had gone out unfixed.
 4. Try the class-wide bulk confirm button after a couple of students have
    pending entries; confirm the count matches.
+
+---
+
+## Round 2 — subject-level teacher scoping (11 Aug 2026, v07.19)
+
+Closes the SUBJECT half of CLAUDE.md's own long-parked "second open
+access-control question" — the STUDENT half (a teacher only gets authority
+over their own co-enrolled students, not the whole roster) was closed in
+round 1 above; this round is the other half: **a co-enrolled teacher
+currently gets full record/confirm authority over EVERY subject for that
+student, not just the ones they're actually assigned to teach.**
+
+**This is explicitly a client-side restriction, not a new security rule.**
+`canRecordFor()` in `firestore.rules` is unchanged. The reason, stated
+plainly rather than left implicit: records/activity/bookmarks chunk an
+entire topic-renderer module's worth of claims under ONE document
+(`subject_${moduleRootId}`, not per-leaf-topic — see `records.js`'s own
+chunking comment), so a write touches one key inside a shared map. Firestore
+rules can't safely inspect "which key changed" the way `resource.data`
+exposes whole-document state, the same "can't inspect one key of an
+arbitrarily-keyed map" limitation this codebase already accepts for
+subjects/trackables/records entries elsewhere. Real server-side enforcement
+would need re-chunking records per-leaf-subject or a different schema
+entirely — out of scope for a follow-up round. What's buildable now, and
+what this round builds, is the same trust-boundary shape already used for
+Homework's context-scoped roster: the HONEST client only shows/offers what
+the teacher is assigned to, the server still only guarantees the coarser
+"is this teacher even co-enrolled with this student at all" boundary.
+
+**A real data-model finding along the way**: `enrolPerson()`'s own
+per-enrolment `subjectIds[]` parameter — which the first draft of this
+round's own code read from — is **never actually populated by any screen**.
+Checked every real enrol call site (`classes.html`, `course-offers.html`):
+both always pass `subjectIds: []` on the actual person-enrolment write; the
+only place `subjectIds[]` is genuinely collected from an admin is at
+**class/course-offer creation time** (`createClass()`/`createCourseOffer()`,
+via the subject checkboxes in `classes.html`/`course-offers.html`'s own
+create forms). Scoping against the always-empty per-enrolment field would
+have locked every teacher out of every subject — the opposite of the
+intended "narrower, not broken" result. Caught before shipping; the final
+version reads subjects off the CONTEXT (class/course offer) instead.
+
+**`app/js/course-offers.js`** — new `allowedSubjectIdsForTeacherStudent(
+teacherEnrollments, studentEnrollments, contexts)`: for every context where
+the teacher is an active teacher AND the student is an active student,
+unions that context's own `subjectIds[]`. Returns `null` (not `[]`) when
+that union is empty — an admin who never named specific subjects for a
+shared class/offer almost certainly meant "no restriction," not "assigned
+to nothing," so an empty result falls back to unrestricted rather than
+silently hiding everything.
+
+**`app/js/topic-study.js` / `app/js/routine-study.js`** — both gain
+`refreshSubjectScoping(effRoles, myPersonId)`, called alongside
+`refreshChunk()`/`refreshProgramMap()` whenever the selected person or
+tenant changes. Same conservative gate Homework's own teacher-scoping round
+used: only restricts when `effRoles` is EXACTLY `["teacher"]` (no
+owner/prime/guardian/self overlap for this login in this tenant) and the
+person being viewed isn't the actor themself -- a mixed-role actor's
+broader, contextId-independent access is never wrongly narrowed. When
+active, `renderBrowser()` hides LEAF topics/routines outside the allowed
+set while always keeping branches visible for navigation (a pruned tree,
+not a broken one), and `openTopicDetail()`/`openRoutineDetail()` block a
+direct-navigation bypass (e.g. a stale `?resume=` link) with a clear
+message instead of silently allowing the claim through.
+
+**Not wired**: QuranRevival and Asma ul Husna — same reasoning as Phase 7
+round 3's `programId` wiring (their subject shape doesn't decompose into
+distinct teachable leaf topics the same way), so subject-level scoping
+doesn't meaningfully apply to them.
+
+### Verified this round
+
+- `node --check` on `course-offers.js`, `topic-study.js`, `routine-study.js`,
+  `classes.js` — parses cleanly.
+- No `firestore.rules` change — nothing to deploy for this round.
+
+**Not yet owner-verified** (needs the same real second `teacher`-only
+account round 1 is still waiting on):
+
+1. Create a class/course offer with specific subjects named at creation
+   time, enrol a teacher and a student into it.
+2. As that teacher, confirm the study screen for a module those subjects
+   belong to shows ONLY the assigned subjects as leaf topics (branches
+   still navigable, other leaves hidden).
+3. Confirm a class/course offer created WITHOUT naming any subjects (the
+   common "didn't bother filling that in" case) shows NO restriction for
+   its teacher — the safety fallback this round was built around.
+4. Confirm the SAME teacher, viewing a DIFFERENT student they have no
+   shared context with, still sees nothing at all (unaffected by this
+   round — that's round 1's own student-level boundary, still enforced at
+   the rules level).

@@ -34,7 +34,10 @@ import {
   getSubjectTree, getTrackables, ensureSubjectTemplatesSeeded, ensureTenantCatalogueSeeded,
 } from "./catalogue.js";
 import { ensureModulesSeeded } from "./modules.js";
-import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./course-offers.js";
+import {
+  listEnrollmentsForPerson, listCourseOffers, programSubjectMapFromEnrollments, allowedSubjectIdsForTeacherStudent,
+} from "./course-offers.js";
+import { listClasses } from "./classes.js";
 import { NO_PROGRAM } from "./bookmarks.js";
 import { buildUnitKey } from "./unit-keys.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
@@ -114,6 +117,14 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
   // selected person, refreshed alongside the records chunk whenever the
   // person changes -- see course-offers.js's programSubjectMapFromEnrollments().
   let programBySubjectId = new Map();
+  // Follow-up round (subject-level teacher scoping): null = no restriction
+  // (admin/guardian/self, or a mixed-role actor whose OTHER role already
+  // grants full access); an array = a pure-teacher actor viewing someone
+  // else, restricted to the subjectIds they're actually assigned to teach
+  // this person. Client-side only -- see course-offers.js's
+  // allowedSubjectIdsForTeacherStudent() for why this can't be a hard
+  // server-side rule the same way student-level scoping is.
+  let allowedSubjectIds = null;
 
   function currentPreview() {
     const context = getActiveContext();
@@ -158,6 +169,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
     await refreshChunk();
     await refreshProgramMap();
+    await refreshSubjectScoping(effRoles, myPersonId);
     renderBrowser();
     await refreshContinueStrip();
 
@@ -188,6 +200,31 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     if (!selectedPersonId) { programBySubjectId = new Map(); return; }
     const enrollments = await listEnrollmentsForPerson(db, activeTenantId, selectedPersonId);
     programBySubjectId = programSubjectMapFromEnrollments(enrollments);
+  }
+
+  /**
+   * Follow-up round (subject-level teacher scoping). Conservative on
+   * purpose: only restricts when effRoles is EXACTLY ["teacher"] (no
+   * owner/prime/guardian/self overlap for this login in this tenant) AND
+   * the person being viewed isn't the actor themself -- the same
+   * conservative condition Homework's own teacher-scoping round used, so a
+   * mixed-role actor's broader (contextId-independent) access is never
+   * wrongly narrowed. Sets allowedSubjectIds back to null (no restriction)
+   * for every other case.
+   */
+  async function refreshSubjectScoping(effRoles, myPersonId) {
+    const isPureTeacher = effRoles.length === 1 && effRoles[0] === "teacher";
+    if (!isPureTeacher || !myPersonId || !selectedPersonId || selectedPersonId === myPersonId) {
+      allowedSubjectIds = null;
+      return;
+    }
+    const [teacherEnrollments, studentEnrollments, classes, offers] = await Promise.all([
+      listEnrollmentsForPerson(db, activeTenantId, myPersonId),
+      listEnrollmentsForPerson(db, activeTenantId, selectedPersonId),
+      listClasses(db, activeTenantId),
+      listCourseOffers(db, activeTenantId),
+    ]);
+    allowedSubjectIds = allowedSubjectIdsForTeacherStudent(teacherEnrollments, studentEnrollments, [...classes, ...offers]);
   }
 
   async function refreshChunk() {
@@ -221,8 +258,13 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       return;
     }
     breadcrumbContainer.innerHTML = renderTopicBreadcrumb(ancestorPath(currentParentId), rootLabel);
+    // Follow-up round (subject-level teacher scoping): branches always stay
+    // visible for navigation -- only LEAF topics outside allowedSubjectIds
+    // are hidden, same "graceful narrowing, not a broken tree" shape
+    // Homework's own context-scoped roster uses.
     const children = moduleSubjects
       .filter((n) => n.parentId === currentParentId)
+      .filter((n) => !n.isTrackable || !allowedSubjectIds || allowedSubjectIds.includes(n.id))
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
     const statusByNodeId = new Map();
@@ -254,6 +296,15 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
   async function openTopicDetail(nodeId) {
     const node = moduleSubjects.find((n) => n.id === nodeId);
     if (!node) return;
+
+    // Follow-up round (subject-level teacher scoping): blocks a direct-navigation
+    // bypass of the grid filter above (e.g. a stale ?resume= link from before
+    // an assignment changed) -- renderBrowser() already hides this row, but
+    // this is the actual gate.
+    if (node.isTrackable && allowedSubjectIds && !allowedSubjectIds.includes(node.id)) {
+      detailContainer.innerHTML = `<div class="topic-detail"><p class="topic-empty">You're not assigned to teach this subject for this student.</p></div>`;
+      return;
+    }
 
     // Phase 7 auto-resume: overwrite this module's one "where was I"
     // position every time a topic is opened. Best-effort, same risk
@@ -415,8 +466,10 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
   personSelect.addEventListener("change", async () => {
     selectedPersonId = personSelect.value;
+    const { effRoles, myPersonId } = currentPreview();
     await refreshChunk();
     await refreshProgramMap();
+    await refreshSubjectScoping(effRoles, myPersonId);
     renderBrowser();
     await refreshContinueStrip();
   });

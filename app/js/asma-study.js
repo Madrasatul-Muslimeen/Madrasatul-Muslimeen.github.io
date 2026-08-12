@@ -33,8 +33,9 @@ import { ASMA_NAMES } from "./asma-data.js";
 import { ASMA_POSTERS } from "./asma-posters.js";
 import { renderAsmaGrid, renderAsmaDetail, renderAsmaScreensaverSlide } from "./asma-renderer.js";
 import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderWayModalShell, attachWayModalHandlers } from "./way-modal.js";
-import { getBookmarks, touchResume, recentResumeEntries } from "./bookmarks.js";
+import { getBookmarks, touchResume, recentResumeEntries, NO_PROGRAM } from "./bookmarks.js";
 import { renderContinueStrip } from "./continue-strip.js";
+import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./course-offers.js";
 
 const MODULE_ID = "asma";
 const TRACKABLE_ID = "studied_asma";
@@ -79,6 +80,11 @@ export function initAsmaStudyPage() {
   let studiedTrackable = null;
   let currentChunk = null;
   const chunkKey = chunkKeyFor(buildUnitKey.name(1), SUBJECT_ID); // any number resolves the same subject_asma_ul_husna chunk
+  // Follow-up round: Map(subjectId -> courseOffer contextId) for
+  // selectedPersonId -- same mechanism topic-study.js/routine-study.js/
+  // quranrevival.html already use. Only ever looked up under SUBJECT_ID
+  // here -- Asma ul Husna's whole tree is that one anchor node.
+  let programBySubjectId = new Map();
 
   function currentActingPersonId() {
     const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
@@ -109,8 +115,16 @@ export function initAsmaStudyPage() {
     studiedTrackable = trackables.find((t) => t.id === TRACKABLE_ID) ?? null;
 
     await refreshChunk();
+    await refreshProgramMap();
     renderGrid();
     await refreshContinueStrip();
+  }
+
+  /** Follow-up round: which of selectedPersonId's active course-offer enrolments cover SUBJECT_ID -- Asma ul Husna's whole tree is that one anchor node, so this only ever needs the one key. Best-effort, same risk tolerance as refreshContinueStrip. */
+  async function refreshProgramMap() {
+    if (!selectedPersonId) { programBySubjectId = new Map(); return; }
+    const enrollments = await listEnrollmentsForPerson(db, activeTenantId, selectedPersonId);
+    programBySubjectId = programSubjectMapFromEnrollments(enrollments);
   }
 
   async function refreshContinueStrip() {
@@ -150,6 +164,7 @@ export function initAsmaStudyPage() {
     if (selectedPersonId) {
       await touchResume(db, {
         tenantId: activeTenantId, personId: selectedPersonId, moduleId: MODULE_ID,
+        programId: programBySubjectId.get(SUBJECT_ID) ?? NO_PROGRAM,
         subjectId: SUBJECT_ID, position: String(number), uid: auth.currentUser.uid,
       });
       await refreshContinueStrip();
@@ -207,6 +222,7 @@ export function initAsmaStudyPage() {
           tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
           weekStartsOn: 6, subjectId: SUBJECT_ID, unitKey,
           trackableId: TRACKABLE_ID, action: "claimed", uid: auth.currentUser.uid,
+          viaProgramId: programBySubjectId.get(SUBJECT_ID) ?? null,
         });
         const message = outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.";
         await refreshChunk();
@@ -311,6 +327,7 @@ export function initAsmaStudyPage() {
   personSelect.addEventListener("change", async () => {
     selectedPersonId = personSelect.value;
     await refreshChunk();
+    await refreshProgramMap();
     renderGrid();
     await refreshContinueStrip();
   });
