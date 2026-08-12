@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.22.** Cutover to production happened
+**Current milestone: QuranRevival v07.23.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -410,6 +410,31 @@ and visible once it's opened. The owner's own duplicate banner text was
 deliberately NOT cleared from Firestore — it's their tenant content (I4/D6),
 and it's now a compact two-line strip they can clear themselves from Study
 options → Edit banner if they want the extra ~50px.
+v07.23 (12 Aug 2026, on the CLI) is Shell round 6, a small typographic
+follow-up: the app banner's tagline ("Reviving the Quran, abandoned.") sat
+~15px below the `QuranRevival` title — `h1`'s own default bottom margin
+(0.67em) — while the tenant banner's title/subtitle pair sat ~1.6px apart,
+so the owner read the app banner as two loose lines rather than one unit
+and asked for it "closer, like how it shows in the Module." `h1` on
+`quranrevival.html` now carries `margin-bottom: 0.15rem` and
+`.app-tagline` drops its own top margin: **measured 15px → 2px**, matching
+the tenant banner's pairing. Page-local, so no other page's `h1` moved.
+**The owner also asked for their tenant's duplicate banner text to be
+cleared** — authorized explicitly, but NOT done from here: this session
+ran on Claude Code on the web, a cloud sandbox with no Firebase
+credentials, no `firebase` CLI, and no browser reachability to Firestore,
+so the write is genuinely impossible from this environment rather than
+merely skipped. Handed back as three taps in the app itself (Study options
+→ Edit banner → empty both fields → Save); v07.22's `renderBanner()`
+already hides the whole strip once empty, verified in the same run (wheel
+heading lands at 228px with it cleared, vs 293px with it set). **A future
+session with real Firebase access should check whether the owner ever did
+it, and offer again if not.** Also confirmed while testing, since the
+owner asked directly: with the tenant banner cleared, the Quran Study
+module still carries the app banner (title + tagline) — that IS the
+module's banner, per the owner's own "either the same banner to carry or a
+similar new but distinct one, whatever easy as builder" call back in shell
+round 4, so clearing the tenant strip never leaves the module bannerless.
 
 ---
 
