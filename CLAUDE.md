@@ -435,6 +435,57 @@ module still carries the app banner (title + tagline) — that IS the
 module's banner, per the owner's own "either the same banner to carry or a
 similar new but distinct one, whatever easy as builder" call back in shell
 round 4, so clearing the tenant strip never leaves the module bannerless.
+v07.24 (12 Aug 2026, on Claude Code on the web) is Shell round 7, from the
+same "Layout Discussion" session as rounds 4-6 and again driven by the
+owner's own reading of the live landing page rather than a build phase.
+Two owner decisions, both taken after a mockup artifact was shown and
+discussed: **the Study screen moves INSIDE Study options** (their call,
+overriding the recommendation to give Study its own third tab -- "the
+stuff inside the 'Study' can even better make sense within the 'Study
+Options', user do not have to click more for those things"; organising
+what sits inside that panel is explicitly deferred to a next round), and
+**the wheel card must leave no blank space above the bottom bar**, so more
+Approaches show before scrolling. `quranrevival.html` is now a real app
+shell instead of a plain scrolling document: a header, a `#stage` that
+stretches, and a `#dock` pinned at the bottom carrying a two-button tab
+row (Study options / Explore) plus the always-visible `#unitLabel`
+("Tracking: Surah 1, Ayah 1") on its own line -- exactly the two bottom
+lines the owner sketched. Shell round 5's `<details id="studyOptions">`
+disclosure is retired; its seven pickers, the banner-admin block and the
+whole Study screen now live in `#panelStudyOptions`, and Explore's
+`#explorePanel` in `#panelExplore`, each sliding up from the dock with the
+tabs still reachable above it. **The key layout fix was `height`, not
+`min-height`**: the first attempt used `min-height: 100dvh`, and the
+column simply grew past the viewport so the approaches list took its full
+30-row height again -- the very thing the round removes. A fixed
+`height: 100dvh` + `overflow: hidden` on `body` is what lets the stage
+stretch into leftover space; nothing is lost by the page not scrolling,
+since the only long list on the landing screen scrolls inside itself.
+Also fixed along the way, a real pre-existing defect: `.mastery-wheel` had
+no `height: auto`, and `renderMasteryWheel()` emits BOTH `width` and
+`height` attributes on its `<svg>` -- so on a phone the width was capped by
+`max-width` while the height stayed at its full attribute value, and the
+viewBox centred a smaller wheel inside a taller box, i.e. genuine blank
+space inside the card on exactly the screens with least room to spare.
+**Measured** (headless Chromium, the owner's real tenant state simulated,
+same method as v07.22): gap between the wheel card and the dock is 9px at
+every size tested (390x700, 390x844, 360x640, 768x1024) -- that 9px is the
+dock's own `margin-top`, i.e. deliberate separation, not leftover space --
+and the dock is fully visible in all four. Approaches visible before
+scrolling on a 390x700 phone: **3 with the owner's tenant banner still
+set, 5 with it cleared**; 6 on a 390x844 phone, all 30 on a tablet.
+Verified with the page's own handlers really running (Firebase modules
+stubbed at the network layer, not the page's JS bypassed -- a first
+attempt that merely blocked the imports silently tested nothing, since
+the module script never ran at all): both panels open/close, tapping the
+open tab closes it, switching tabs swaps them, the x button resets
+`aria-expanded`, and all 61 of the page's `getElementById` targets still
+resolve after the move. No `firestore.rules`, schema or JS-module changes
+-- this page's own markup, CSS and inline script only. **The owner's
+duplicate tenant banner text is STILL not cleared** (authorized back in
+v07.23, still impossible from a cloud sandbox with no Firebase
+credentials) and it now costs a visible Approach row, so it is worth
+offering again: Study options -> Edit banner -> empty both fields -> Save.
 
 ---
 
