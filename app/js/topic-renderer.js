@@ -13,6 +13,7 @@
 // can carry a resource and be claimed against.
 
 import { langText } from "./lang.js";
+import { getAppLang } from "./prefs.js";
 import { STATUS_COLORS } from "./mastery-wheel.js";
 import { STATUSES } from "./unit-keys.js";
 
@@ -25,7 +26,7 @@ export function renderTopicBreadcrumb(path, rootLabel) {
   const crumbs = [{ id: null, name: { en: rootLabel } }, ...path];
   return `<nav class="topic-breadcrumb">${crumbs
     .map((c, i) => {
-      const label = escapeHtml(langText(c.name, "en", rootLabel));
+      const label = escapeHtml(langText(c.name, getAppLang(), rootLabel));
       return i === crumbs.length - 1
         ? `<span class="topic-crumb topic-crumb-current">${label}</span>`
         : `<button type="button" class="topic-crumb-btn" data-id="${c.id ?? ""}">${label}</button>`;
@@ -51,8 +52,8 @@ export function renderTopicChildList(children, statusByNodeId = new Map(), logge
     return `<p class="topic-empty">Nothing under here yet.</p>`;
   }
   const rows = children.map((node) => {
-    const name = escapeHtml(langText(node.name, "en", node.id));
-    const gloss = node.gloss ? `<span class="topic-gloss">${escapeHtml(langText(node.gloss, "en", ""))}</span>` : "";
+    const name = escapeHtml(langText(node.name, getAppLang(), node.id));
+    const gloss = node.gloss ? `<span class="topic-gloss">${escapeHtml(langText(node.gloss, getAppLang(), ""))}</span>` : "";
     if (!node.isTrackable) {
       return `<button type="button" class="topic-row topic-row-branch" data-id="${node.id}">
         <span class="topic-row-name">${name}</span>${gloss}

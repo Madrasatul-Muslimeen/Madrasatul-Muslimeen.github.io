@@ -160,6 +160,7 @@
     import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
+    import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
       getMyMemberships,
@@ -193,6 +194,7 @@
     function renderNav(roles, viewAsRole) {
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountAppLangControl(navHomeExtra); // shell round 13 -- Settings -> Language; default handler reloads so every name comes back translated
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
@@ -309,14 +311,14 @@
 
       const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
       personSelect.innerHTML = visibleRoster
-        .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
         .join("");
       selectedPersonId = visibleRoster[0]?.id ?? null;
 
       subjectTree = await getSubjectTree(db, activeTenantId);
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       subjectSelect.innerHTML = leaves
-        .map((n) => `<option value="${n.id}">${langText(n.name, "en", n.id)}</option>`)
+        .map((n) => `<option value="${n.id}">${langText(n.name, getAppLang(), n.id)}</option>`)
         .join("");
 
       trackableList = await getTrackables(db, activeTenantId);
@@ -330,7 +332,7 @@
     function renderDomainChips() {
       const active = domainList.filter((d) => d.status !== "archived");
       domainChips.innerHTML = active.length
-        ? active.map((d) => `<label><input type="checkbox" value="${d.id}" /> ${langText(d.name, "en", d.id)}</label>`).join("")
+        ? active.map((d) => `<label><input type="checkbox" value="${d.id}" /> ${langText(d.name, getAppLang(), d.id)}</label>`).join("")
         : "<span style='color:#888; font-size:0.85rem;'>No domain tags yet.</span>";
     }
 
@@ -338,7 +340,7 @@
       const subjectId = subjectSelect.value;
       const options = trackableList.filter((t) => t.subjectId === subjectId && t.status !== "archived");
       trackableSelect.innerHTML = options.length
-        ? options.map((t) => `<option value="${t.id}">${langText(t.name, "en", t.id)}</option>`).join("")
+        ? options.map((t) => `<option value="${t.id}">${langText(t.name, getAppLang(), t.id)}</option>`).join("")
         : `<option value="">(no Approaches for this subject yet)</option>`;
     }
 
@@ -428,7 +430,7 @@
     function entryRowHtml(chunkKey, entryKey, e) {
       const trackableName = trackableList.find((t) => t.id === e.trackableId);
       const domainNames = (e.domainIds ?? []).map((id) => domainList.find((d) => d.id === id)).filter(Boolean)
-        .map((d) => `<span class="tag">${langText(d.name, "en", d.id)}</span>`).join("");
+        .map((d) => `<span class="tag">${langText(d.name, getAppLang(), d.id)}</span>`).join("");
       const pillClass = `pill pill-${e.confirmState}`;
       // Round 11 -- "View as" wired up for real: a Student preview can't
       // confirm their own attainment (Architecture s6's role table), so
@@ -443,7 +445,7 @@
             : "";
       return `<tr>
         <td>${entryKey.split("::")[0]}</td>
-        <td>${trackableName ? langText(trackableName.name, "en", e.trackableId) : e.trackableId}</td>
+        <td>${trackableName ? langText(trackableName.name, getAppLang(), e.trackableId) : e.trackableId}</td>
         <td class="status-${e.claimedStatus}">${statusLabel(e.claimedStatus)}</td>
         <td class="status-${e.confirmedStatus}">${e.confirmedStatus ? statusLabel(e.confirmedStatus) : "—"}</td>
         <td><span class="${pillClass}">${e.confirmState}</span>${e.returnNote ? `<div style="font-size:0.78rem; color:#9c3b2e;">${e.returnNote}</div>` : ""}</td>
@@ -470,9 +472,9 @@
             const trk = trackableList.find((t) => t.id === e.trackableId);
             return `<tr>
               <td>${e.date}</td>
-              <td>${subj ? langText(subj.name, "en", e.subjectId) : e.subjectId}</td>
+              <td>${subj ? langText(subj.name, getAppLang(), e.subjectId) : e.subjectId}</td>
               <td>${e.unitKey}</td>
-              <td>${trk ? langText(trk.name, "en", e.trackableId) : e.trackableId}</td>
+              <td>${trk ? langText(trk.name, getAppLang(), e.trackableId) : e.trackableId}</td>
               <td>${e.action}</td>
             </tr>`;
           }).join("")

@@ -103,6 +103,7 @@
     import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
+    import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
       getMyMemberships,
@@ -128,6 +129,7 @@
     function renderNav(roles, viewAsRole) {
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountAppLangControl(navHomeExtra); // shell round 13 -- Settings -> Language; default handler reloads so every name comes back translated
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
@@ -185,7 +187,7 @@
 
       visibleRoster = scopedRoster(roster, effRoles, myPersonId);
       personSelect.innerHTML = visibleRoster
-        .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
         .join("");
 
       canAdmin = effRoles.some((r) => ["owner", "prime"].includes(r));
@@ -194,15 +196,15 @@
       subjectTree = await getSubjectTree(db, activeTenantId);
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       subjectChecks.innerHTML = leaves
-        .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, "en", n.id)}</label>`)
+        .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, getAppLang(), n.id)}</label>`)
         .join("") || `<span class="muted">No subjects yet.</span>`;
 
       await refreshOffers();
       await refreshEnrolments();
     }
 
-    function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, "en", id) : id; }
-    function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, "en", id) : id; }
+    function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
+    function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; }
     function routineLine(routine) {
       const days = (routine?.daysOfWeek ?? []).map((d) => DAY_NAMES[d]).join(", ");
       const range = [routine?.startDate, routine?.endDate].filter(Boolean).join(" – ");
@@ -235,7 +237,7 @@
         ? `<button class="small secondary archiveOfferBtn" data-offer="${o.id}">Archive</button>`
         : "";
       return `<div class="card">
-        <h3>${langText(o.name, "en", o.id)} <span class="pill pill-${o.status}">${o.status}</span></h3>
+        <h3>${langText(o.name, getAppLang(), o.id)} <span class="pill pill-${o.status}">${o.status}</span></h3>
         <div class="muted">${subjectsLine}</div>
         <div class="muted">${routineLine(o.routine)}</div>
         ${o.status === "active" ? `<div style="margin-top:0.5rem;">${enrolBtn} ${archiveBtn}</div>` : ""}
@@ -334,7 +336,7 @@
         enrolmentsBody.innerHTML = active.length
           ? active.map((e) => {
               const offer = offers.find((o) => o.id === e.contextId);
-              return `<div class="card"><strong>${offer ? langText(offer.name, "en", e.contextId) : e.contextId}</strong> — ${e.roleInClass}</div>`;
+              return `<div class="card"><strong>${offer ? langText(offer.name, getAppLang(), e.contextId) : e.contextId}</strong> — ${e.roleInClass}</div>`;
             }).join("")
           : `<p class="muted">Not enrolled in anything yet.</p>`;
       } catch (err) {

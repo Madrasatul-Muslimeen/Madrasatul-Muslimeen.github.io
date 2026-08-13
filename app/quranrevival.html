@@ -415,17 +415,16 @@
              heard, and claiming it. Every control keeps its own id and its own
              event wiring -- only the wrapper around it changed. -->
 
-        <!-- Bar 1: WHO is studying. Language sits here on the owner's own
-             call: it belongs globally (a Settings-level, all-modules choice we
-             still have to build), but until that exists it stays with the
-             module it actually drives, next to Tenant/Person. -->
+        <!-- Bar 1: WHO is studying. Shell round 13 (13 Aug 2026) -- Language
+             has LEFT this bar. It was only ever here because nothing global
+             existed to put it in; it now lives under Home -> Settings and
+             applies to every module, not just this one. What used to be its
+             other half -- whether the Bangla ayah translation shows -- is a
+             Quran reading choice, so it moved the other way, into the
+             Reading view card below. Three cells now, not four. -->
         <div class="opt-bar">
           <div class="opt-cell"><label for="tenantSelect">Tenant</label><select id="tenantSelect"></select></div>
           <div class="opt-cell"><label for="personSelect">Person</label><select id="personSelect"></select></div>
-          <div class="opt-cell"><label for="langSelect">Language</label><select id="langSelect">
-            <option value="en">English</option>
-            <option value="bn">English + বাংলা (Bangla)</option>
-          </select></div>
           <div class="opt-cell"><label for="trackableSelect">Approach</label><select id="trackableSelect"></select></div>
         </div>
 
@@ -487,9 +486,20 @@
           <div class="row" id="tajweedControl">
             <div><label style="display:inline-block; margin:0;"><input type="checkbox" id="tajweedToggle" /> Tajweed colours</label></div>
           </div>
+          <!-- Shell round 13 (13 Aug 2026): the reading half of what the old
+               single "Language" picker used to do. Bangla is ADDITIVE here --
+               it appears alongside the English translation, never instead of
+               it (the F-060 design note in ayah-renderer.js) -- which is why
+               the option says "English + বাংলা" rather than "বাংলা". -->
+          <div class="row">
+            <div><label for="translationLangSelect">Translation language</label><select id="translationLangSelect">
+              <option value="en">English</option>
+              <option value="bn">English + বাংলা (Bangla)</option>
+            </select></div>
+          </div>
           <div class="row" id="wbwLangControl" style="display:none;">
             <div><label for="wbwLangSelect">Word by Word</label><select id="wbwLangSelect">
-              <option value="auto">Follow language above</option>
+              <option value="auto">Follow translation language</option>
               <option value="en">English only</option>
               <option value="bn">বাংলা only</option>
               <option value="both">English + বাংলা</option>
@@ -589,6 +599,7 @@
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootDerivativePanel, renderTranslationPanel } from "./js/ayah-renderer.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras } from "./js/nav.js";
+    import { getAppLang, getQuranTranslationLang, setQuranTranslationLang, mountAppLangControl } from "./js/prefs.js";
     import { showBootSplash, showQuranSplash } from "./js/splash.js";
     import { APP_VERSION } from "./js/version.js";
 
@@ -652,6 +663,23 @@
     function renderNav(roles, viewAsRole) {
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
+      // Shell round 13 -- Home -> Settings -> Language. Every other page
+      // takes prefs.js's default handler, which simply reloads; this page
+      // re-renders in place instead, because it already had exactly that
+      // code for the picker that used to sit in bar 1, and because reloading
+      // the landing page would re-fire the boot and Quran-entry splashes.
+      mountAppLangControl(navHomeExtra, applyAppLangChange);
+    }
+
+    /** Re-render everything on this page that shows a language-keyed NAME.
+        Deliberately does not touch the reading panels' translation language
+        -- that is its own preference now (Reading view card). */
+    function applyAppLangChange() {
+      renderPersonSelectOptions();
+      renderTrackableSelectOptions();
+      renderBanner();
+      renderStudyScreen();
+      renderOptionsSummary();
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
@@ -659,7 +687,7 @@
     const ayahSelectControl = document.getElementById("ayahSelectControl");
     const ayahSelect = document.getElementById("ayahSelect");
     const trackableSelect = document.getElementById("trackableSelect");
-    const langSelect = document.getElementById("langSelect");
+    const translationLangSelect = document.getElementById("translationLangSelect"); // shell round 13 -- Reading view card; replaces the old bar-1 "Language" picker's reading half
     const wbwLangControl = document.getElementById("wbwLangControl");
     const wbwLangSelect = document.getElementById("wbwLangSelect");
     const wheelContainer = document.getElementById("wheelContainer");
@@ -746,8 +774,16 @@
     let currentTrackableId = null;
     let currentAyahNum = 1;
     let currentChunk = null;
-    let currentLang = "en"; // drives translation panel, word-by-word (unless overridden below), Approach/section names, person names, Guide tab
-    let wbwLangMode = "auto"; // "auto" follows currentLang; "en"/"bn"/"both" is an explicit per-panel override (owner request, 5 Aug 2026)
+    // Shell round 13 (13 Aug 2026) -- `currentLang` is gone. It used to be
+    // declared here and nowhere else in the app, doing two unrelated jobs at
+    // once: which language NAMES appear in (Approach/section names, person
+    // names, the Guide tab -- global, every module) and whether the Bangla
+    // ayah TRANSLATION shows (Quran reading only). Those are now two separate
+    // stored preferences in js/prefs.js: getAppLang(), set under Home ->
+    // Settings, and getQuranTranslationLang(), set in the Reading view card.
+    // Both are read live at render time rather than copied into a local, so
+    // there is no second copy to keep in sync.
+    let wbwLangMode = "auto"; // "auto" follows the translation language; "en"/"bn"/"both" is an explicit per-panel override (owner request, 5 Aug 2026)
     let currentReciterId = "ar"; // persisted across renderAudioControls() rebuilds -- a fresh <select> is built on every ayah nav/toggle, so without this the choice silently reverts to the first option each time
     let loopIsOn = false;
 
@@ -811,7 +847,7 @@
       const prev = personSelect.value;
       const { viewAsRole, effRoles, myPersonId } = currentPreview();
       const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
-      personSelect.innerHTML = visibleRoster.map((p) => `<option value="${p.id}">${langText(p.name, currentLang, p.id)}</option>`).join("");
+      personSelect.innerHTML = visibleRoster.map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`).join("");
       if (visibleRoster.some((p) => p.id === prev)) personSelect.value = prev;
     }
 
@@ -831,9 +867,9 @@
       trackableSelect.innerHTML = [...bySection.entries()]
         .sort((a, b) => a[0] - b[0])
         .map(([, { groupName, items }]) => {
-          const label = groupName ? langText(groupName, currentLang) : "";
+          const label = groupName ? langText(groupName, getAppLang()) : "";
           const options = items
-            .map((t) => `<option value="${t.id}">${langText(t.name, currentLang, t.id)}</option>`)
+            .map((t) => `<option value="${t.id}">${langText(t.name, getAppLang(), t.id)}</option>`)
             .join("");
           return label ? `<optgroup label="${label}">${options}</optgroup>` : options;
         })
@@ -851,8 +887,8 @@
     // -----------------------------------------------------------------------
 
     function renderBanner() {
-      const title = langText(currentTenantDoc?.bannerTitle, currentLang);
-      const sub = langText(currentTenantDoc?.bannerSub, currentLang);
+      const title = langText(currentTenantDoc?.bannerTitle, getAppLang());
+      const sub = langText(currentTenantDoc?.bannerSub, getAppLang());
       bannerTitleEl.textContent = title || "";
       bannerTitleEl.style.display = title ? "" : "none";
       bannerSubEl.textContent = sub || "";
@@ -1062,11 +1098,16 @@
       const readingMode = isPageUnit
         ? (pageViewModeSelect.selectedOptions[0]?.textContent ?? "Mushaf (real page)")
         : (tajweedToggle.checked ? "Single ayah · Tajweed colours" : "Single ayah");
+      // Shell round 13 -- the translation language is one more thing that
+      // now lives behind a button, so the strip names it too. Only when it
+      // is Bangla: "Reading: Single ayah · English" would be noise, since
+      // English is the default everything already shows.
+      const readingBits = getQuranTranslationLang() === "bn" ? `${readingMode} · + বাংলা` : readingMode;
       const bits = [
         ["Person", personSelect.selectedOptions[0]?.textContent],
         ["Unit", currentSurahData ? currentUnitInfo().label : null],
         ["Approach", trackableSelect.selectedOptions[0]?.textContent],
-        ["Reading", readingMode],
+        ["Reading", readingBits],
         ["Listening", listeningBtn.disabled ? "not used by this Approach" : `${RECITERS[currentReciterId]?.label ?? "—"}${loopIsOn ? " · Loop on" : ""}`],
       ];
       optionsSummaryEl.replaceChildren(
@@ -1194,7 +1235,7 @@
         key: trackable.id,
         number: trackable.order ?? "",
         statusId,
-        title: `${langText(trackable.name, currentLang, trackable.id)} — ${statusId.replace(/_/g, " ")}`,
+        title: `${langText(trackable.name, getAppLang(), trackable.id)} — ${statusId.replace(/_/g, " ")}`,
       }));
       wheelContainer.innerHTML = renderScopedWheel(items, {
         centerArabic: ayah?.uthmaniText,
@@ -1219,7 +1260,7 @@
       const sidebarItems = approachStatuses.map(({ trackable, statusId }) => ({
         key: trackable.id,
         number: trackable.order ?? "",
-        label: langText(trackable.name, currentLang, trackable.id),
+        label: langText(trackable.name, getAppLang(), trackable.id),
         statusId,
       }));
       wheelSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
@@ -1426,7 +1467,7 @@
         renderExplore();
       };
 
-      const approachName = langText(trackable.name, currentLang, trackable.id);
+      const approachName = langText(trackable.name, getAppLang(), trackable.id);
       exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: "Whole Quran", centerSub: approachName });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToJuz);
 
@@ -1465,7 +1506,7 @@
         renderExplore();
       };
 
-      const approachName = langText(trackable.name, currentLang, trackable.id);
+      const approachName = langText(trackable.name, getAppLang(), trackable.id);
       exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `Juz ${exploreJuzNum}`, centerSub: approachName });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurahForPage);
 
@@ -1483,7 +1524,7 @@
       exploreWheelContainer.innerHTML = "Loading this surah…";
       const surahData = await getSurah(exploreSurahNum);
       const surahName = surahIndex.find((s) => s.surahNumber === exploreSurahNum)?.nameEnglish ?? `Surah ${exploreSurahNum}`;
-      const approachName = langText(trackable.name, currentLang, trackable.id);
+      const approachName = langText(trackable.name, getAppLang(), trackable.id);
       const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
       const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
 
@@ -1543,7 +1584,7 @@
         return { key: a.ayah, number: a.ayah, statusId, title: `Ayah ${a.ayah} — ${statusId.replace(/_/g, " ")}` };
       });
       const surahName = surahIndex.find((s) => s.surahNumber === exploreSurahNum)?.nameEnglish ?? `Surah ${exploreSurahNum}`;
-      const approachName = langText(trackable.name, currentLang, trackable.id);
+      const approachName = langText(trackable.name, getAppLang(), trackable.id);
       const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
 
       exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `${surahName} · Ruku' ${exploreRukuIndex}`, centerSub: approachName });
@@ -1557,7 +1598,7 @@
 
     /** Ayah translation panel: additive when Bangla is chosen (English stays visible alongside it), per the F-060 design note in ayah-renderer.js. */
     function translationLangs() {
-      return currentLang === "bn" ? ["en", "bn"] : ["en"];
+      return getQuranTranslationLang() === "bn" ? ["en", "bn"] : ["en"];
     }
 
     /** Word-by-word panel: "auto" follows the language above; otherwise the owner's explicit choice wins (owner request, 5 Aug 2026 -- an explicit fallback alongside the automatic behaviour, not instead of it). */
@@ -1701,12 +1742,17 @@
         // never replaces it) -- switching to a different reciter afterwards
         // does not take Bangla back off, since the owner only asked for the
         // "audio implies text" direction, not the reverse.
-        if (currentReciterId === "bn" && currentLang !== "bn") {
-          currentLang = "bn";
-          langSelect.value = "bn";
-          renderPersonSelectOptions();
-          renderTrackableSelectOptions();
-          renderBanner();
+        //
+        // Shell round 13 (13 Aug 2026): this now flips the QURAN TRANSLATION
+        // language only, not the whole app's language. That is the same
+        // behaviour the owner actually asked for -- Bangla audio, Bangla text
+        // on the page -- and it no longer has the side effect of silently
+        // renaming every person, Approach and subject across every module
+        // just because a reciter was chosen. Person/Approach/banner
+        // re-rendering is gone with it; only the reading panels change.
+        if (currentReciterId === "bn" && getQuranTranslationLang() !== "bn") {
+          setQuranTranslationLang("bn");
+          translationLangSelect.value = "bn";
           renderStudyScreen();
         }
         renderOptionsSummary(); // shell round 11 -- the summary strip names the reciter
@@ -1799,12 +1845,14 @@
     nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount) { stopDrill(); currentAyahNum++; renderStudyScreen(); renderWheel(); } });
     ayahSelect.addEventListener("change", () => { stopDrill(); currentAyahNum = Number(ayahSelect.value); renderStudyScreen(); renderWheel(); });
     tajweedToggle.addEventListener("change", renderStudyScreen);
-    langSelect.addEventListener("change", () => {
-      currentLang = langSelect.value;
-      renderPersonSelectOptions();
-      renderTrackableSelectOptions();
-      renderBanner();
+    // Shell round 13 -- the reading half of the old bar-1 "Language" picker.
+    // Only the reading panels depend on it, so only they re-render; names on
+    // this page follow the app language instead (see applyAppLangChange()).
+    translationLangSelect.value = getQuranTranslationLang();
+    translationLangSelect.addEventListener("change", () => {
+      setQuranTranslationLang(translationLangSelect.value);
       renderStudyScreen();
+      renderOptionsSummary();
     });
     wbwLangSelect.addEventListener("change", () => {
       wbwLangMode = wbwLangSelect.value;
@@ -1832,10 +1880,10 @@
         .map((e) => e.claimedStatus);
       const ayahStatuses = ayahStatusesForCurrentTrackable();
 
-      const title = `${langText(trackable.name, currentLang, trackable.id)} — Surah ${currentSurahNum}, Ayah ${currentAyahNum}`;
+      const title = `${langText(trackable.name, getAppLang(), trackable.id)} — Surah ${currentSurahNum}, Ayah ${currentAyahNum}`;
       const tabBodies = {
         Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
-        Guide: renderGuideTab(trackable, currentLang),
+        Guide: renderGuideTab(trackable, getAppLang()),
         Breakdown: renderBreakdownTab(statusIdsForTrackable),
         Coverage: renderCoverageTab(ayahStatuses),
       };
@@ -1906,10 +1954,10 @@
         .filter((e) => e.trackableId === trackable.id)
         .map((e) => e.claimedStatus);
 
-      const title = `${langText(trackable.name, currentLang, trackable.id)} — ${info.label}`;
+      const title = `${langText(trackable.name, getAppLang(), trackable.id)} — ${info.label}`;
       const tabBodies = {
         Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
-        Guide: renderGuideTab(trackable, currentLang),
+        Guide: renderGuideTab(trackable, getAppLang()),
         Breakdown: renderBreakdownTab(statusIdsForTrackable),
         Coverage: info.chunkKey === surahChunkKey
           ? renderCoverageTab(ayahStatusesForCurrentTrackable())

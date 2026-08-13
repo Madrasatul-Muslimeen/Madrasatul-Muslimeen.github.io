@@ -17,6 +17,7 @@ import { weekKeyFor, getWeekActivity } from "./activity.js";
 import { listAllRecordsForPerson } from "./records.js";
 import { summarizeStatuses } from "./unit-keys.js";
 import { langText } from "./lang.js";
+import { getAppLang } from "./prefs.js";
 
 // ---------------------------------------------------------------------------
 // Fetching -- bounded to the date range actually asked for, never "the
@@ -69,7 +70,7 @@ export function filterEntriesToMonth(entries, year, month) {
 /** One row per roster student (roster order preserved, zero-entry students included so a quiet week/month is visible, not just absent): distinct days with any activity, entry count, and a subjectId -> count breakdown. */
 export function summarizeByStudent(entries, roster) {
   const byPerson = new Map(
-    roster.map((p) => [p.id, { personId: p.id, name: langText(p.name, "en", p.id), days: new Set(), entryCount: 0, subjects: new Map() }])
+    roster.map((p) => [p.id, { personId: p.id, name: langText(p.name, getAppLang(), p.id), days: new Set(), entryCount: 0, subjects: new Map() }])
   );
   for (const e of entries) {
     const s = byPerson.get(e.personId);
@@ -99,7 +100,7 @@ export function summarizeBySubject(entries, subjectTree) {
   }
   const nameFor = (id) => {
     const node = subjectTree.find((n) => n.id === id);
-    return node ? langText(node.name, "en", id) : id;
+    return node ? langText(node.name, getAppLang(), id) : id;
   };
   return [...bySubject.values()]
     .map((s) => ({ subjectId: s.subjectId, name: nameFor(s.subjectId), entryCount: s.entryCount, studentCount: s.students.size, unitCount: s.units.size }))
@@ -150,8 +151,8 @@ export function summarizeQuranApproaches(personRecordsEntries, trackables) {
     const statusIds = byTrackable.get(t.id) ?? [];
     return {
       trackableId: t.id,
-      name: langText(t.name, "en", t.id),
-      groupName: langText(t.groupName, "en", ""),
+      name: langText(t.name, getAppLang(), t.id),
+      groupName: langText(t.groupName, getAppLang(), ""),
       byStatus: statusHistogram(statusIds),
       ...summarizeStatuses(statusIds),
     };
@@ -170,9 +171,9 @@ function csvEscape(v) {
 
 /** Flat CSV rows (header row first) for a set of activity entries -- one row per entry, names resolved from the caller's already-loaded roster/subjectTree/trackables (no extra reads here). */
 export function entriesToCsvRows(entries, { roster, subjectTree, trackables }) {
-  const personNameOf = (id) => { const p = roster.find((r) => r.id === id); return p ? langText(p.name, "en", id) : id; };
-  const subjectNameOf = (id) => { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, "en", id) : id; };
-  const trackableNameOf = (id) => { const t = trackables.find((tr) => tr.id === id); return t ? langText(t.name, "en", id) : (id ?? ""); };
+  const personNameOf = (id) => { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; };
+  const subjectNameOf = (id) => { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; };
+  const trackableNameOf = (id) => { const t = trackables.find((tr) => tr.id === id); return t ? langText(t.name, getAppLang(), id) : (id ?? ""); };
 
   const rows = [["Date", "Student", "Subject", "Unit", "Approach", "Action"]];
   for (const e of entries) {
