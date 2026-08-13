@@ -34,7 +34,7 @@
      body's own padding, so the banner floated roughly a bar's height down the
      screen for no reason. Halved, per the owner -- that space is now an
      Approach row instead. */
-  h1 { font-size: 1.4rem; margin-top: 0.35rem; margin-bottom: 0.15rem; }
+  h1 { font-size: 1.4rem; margin-top: 0; margin-bottom: 0.15rem; }
   h2 { font-size: 1.1rem; margin-top: 1.6rem; }
   h3 { font-size: 1rem; }
   h4 { font-size: 0.88rem; margin: 0.6rem 0 0.15rem; color: #555; }
@@ -49,7 +49,7 @@
 
   /* ---------- App banner (shell round 3) ---------- */
   .app-version { font-size: 0.85rem; font-weight: 400; color: #888; vertical-align: middle; }
-  .app-tagline { font-style: italic; color: #666; margin: 0 0 0.8rem; font-size: 0.95rem; }
+  .app-tagline { font-style: italic; color: #666; margin: 0 0 0.35rem; font-size: 0.95rem; }
 
   /* ---------- Splash screens (shell round 2, ported from index.html) ---------- */
   .app-splash-overlay { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%); font-family: 'Inter', system-ui, sans-serif; }
@@ -77,6 +77,12 @@
   .splash-qs-tagline2 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: clamp(14px,1.8vw,17px); color: #c7cfe0; line-height: 1.5; margin: 0 auto 28px; max-width: 480px; }
   .splash-qs-motto { font-family: 'Inter', sans-serif; font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase; color: #A4823A; }
 
+  /* Shell round 10: page-local override of shell.css's shared .app-nav
+     spacing (1rem + 0.6rem). Overridden by id here, NOT edited in shell.css --
+     that rule is shared by all 16 pages and only THIS page is fighting for
+     landing height. */
+  #topNav.app-nav { margin-bottom: 0.4rem; padding-bottom: 0.45rem; }
+
   /* ---------- Global banner (Phase 5; compacted shell round 5) ----------
      The tenant's own editable announcement strip. Used to be a second hero
      (1.5rem title, its own 2px rule) sitting directly under the app's own
@@ -84,7 +90,7 @@
      that read as the same title printed twice. Now a compact eyebrow, and
      the whole block is hidden outright when the tenant has set no text
      (renderBanner() toggles it) rather than holding empty space. */
-  #globalBanner { border-bottom: 1px solid #e8ecf4; padding-bottom: 0.4rem; margin-bottom: 0.5rem; }
+  #globalBanner { border-bottom: 1px solid #e8ecf4; padding-bottom: 0.25rem; margin-bottom: 0.2rem; }
   #bannerTitle { font-size: 1.02rem; margin: 0; color: #1F3A6E; }
   #bannerSub { color: #666; margin: 0.1rem 0 0; font-size: 0.85rem; }
   #bannerEditForm { display: none; gap: 0.5rem; flex-direction: column; max-width: 30rem; }
@@ -175,8 +181,8 @@
        The wheel is capped in vh (not just px) and the legend is compacted,
        because on a phone those two are what the approaches list is competing
        against -- every pixel taken off them becomes another visible row. */
-    #wheelSection { flex-direction: column; flex-wrap: nowrap; gap: 0.5rem; padding: 0.55rem 0.4rem; }
-    #wheelSection .wheel-col { flex: 0 0 auto; gap: 0.45rem; align-self: stretch; }
+    #wheelSection { flex-direction: column; flex-wrap: nowrap; gap: 0.35rem; padding: 0.4rem 0.4rem; }
+    #wheelSection .wheel-col { flex: 0 0 auto; gap: 0.3rem; align-self: stretch; }
     #wheelSection .wheel-sidebar { flex: 1 1 auto; max-width: none; min-width: 0; }
     /* Owner's ask (shell round 8): the wheel reaches both screen edges. The
        card breaks out of body's own 1rem gutter so the limit is the screen,
@@ -191,7 +197,7 @@
     #wheelSection .mastery-wheel { width: min(100%, calc(100dvh - 420px)); max-width: none; }
     #wheelSection .wheel-legend { font-size: 0.68rem; gap: 4px 9px; }
     #wheelSection .legend-swatch { width: 9px; height: 9px; }
-    #stage > .wheel-heading { margin-top: 0.15rem; margin-bottom: 0.3rem; font-size: 1rem; }
+    #stage > .wheel-heading { margin-top: 0; margin-bottom: 0.15rem; font-size: 1rem; }
     /* Tighter rows on a phone -- same 13px name, just less padding around it,
        which buys roughly one extra visible Approach per screen. */
     #wheelSection .ways-list { gap: 4px; }
