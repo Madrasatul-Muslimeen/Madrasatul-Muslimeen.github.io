@@ -294,7 +294,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     // Follow-up round (subject-level teacher scoping): blocks a
     // direct-navigation bypass of the grid filter above.
     if (node.isTrackable && allowedSubjectIds && !allowedSubjectIds.includes(node.id)) {
-      detailContainer.innerHTML = `<div class="topic-detail"><p class="topic-empty">You're not assigned to teach this routine for this student.</p></div>`;
+      detailContainer.innerHTML = `<div class="topic-detail"><p class="topic-empty">${t("You're not assigned to teach this routine for this student.")}</p></div>`;
       return;
     }
 
@@ -322,8 +322,8 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
       <h2>${langText(node.name, getAppLang(), node.id)}</h2>
       ${renderTopicResource(resource)}
       <p>${statusLine}</p>
-      <p>${loggedToday ? "Logged today ✓" : "Not logged today yet."}</p>
-      <button type="button" id="trackTopicBtn" ${resource ? "" : "disabled"}>Track my progress</button>
+      <p>${loggedToday ? t("Logged today ✓") : t("Not logged today yet.")}</p>
+      <button type="button" id="trackTopicBtn" ${resource ? "" : "disabled"}>${t("Track my progress")}</button>
     </div>`;
 
     const trackBtn = document.getElementById("trackTopicBtn");
@@ -356,7 +356,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const streakCount = computeStreak(recentWeeks, node.id);
     const loggedToday = hasLoggedOn(currentWeekActivity, node.id, todayIso());
 
-    const title = `${langText(node.name, getAppLang(), node.id)} — Practised`;
+    const title = `${langText(node.name, getAppLang(), node.id)} — ${t("Practised")}`;
     const tabBodies = {
       Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
       Guide: renderGuideTab(practisedTrackable, getAppLang()),
