@@ -1,0 +1,149 @@
+// Translation coverage report — how much of the app's own English has
+// Bangla yet, and exactly which strings are still missing.
+//
+// The owner cannot read code, so "is the translation finished?" has to be
+// a number someone can print, not a judgement call. Run:
+//
+//   node tools/i18n-coverage.mjs            # summary per area
+//   node tools/i18n-coverage.mjs --missing  # every untranslated string
+//   node tools/i18n-coverage.mjs --area shell --missing
+//
+// It reads the SAME catalogue the app reads (app/js/i18n/bn.js), so the
+// number can never drift from what a phone actually shows.
+
+import { readFileSync, readdirSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const APP = join(dirname(fileURLToPath(import.meta.url)), "..", "app");
+const { BN } = await import(join(APP, "js", "i18n", "bn.js"));
+
+// Pages and modules a real user never opens: developer/admin diagnostics
+// and one-off migration tools. Counting them would understate real
+// coverage against strings nobody needs translated.
+const NOT_USER_FACING = new Set([
+  "quranrevival-render-test.html",
+  "admin-self-check.html",
+  "migrate.html",
+  "js/self-check.js",
+]);
+
+// Which phase owns which file, so progress can be reported the way the
+// work was actually planned. Anything unlisted lands in "later phases".
+const AREAS = {
+  shell: ["js/nav.js", "js/splash.js", "js/unit-keys.js", "about.html", "index.html", "onboarding.html", "accept-invite.html"],
+  quran: ["quranrevival.html", "js/mastery-wheel.js", "js/way-modal.js", "js/ayah-renderer.js", "js/hifz-renderer.js", "js/audio-player.js", "js/quran-data.js"],
+  modules: ["deen-study.html", "arabic-study.html", "hadith-study.html", "general-study.html", "naturelife-study.html", "life-skill.html", "health-study.html", "ldog-study.html", "asma-study.html", "js/topic-study.js", "js/routine-study.js", "js/asma-study.js", "js/topic-renderer.js", "js/asma-renderer.js"],
+  tracking: ["records.html", "monitor.html", "homework.html", "course-offers.html", "js/monitor.js", "js/continue-strip.js", "js/bookmarks.js", "js/records.js", "js/activity.js"],
+  admin: ["people.html", "catalogue.html", "curriculum.html", "classes.html", "js/catalogue.js", "js/people.js", "js/curriculum.js", "js/classes.js", "js/grades.js", "js/invites.js", "js/identity.js", "js/resources.js"],
+  asma: ["js/asma-data.js", "js/asma-posters.js"],
+};
+
+function areaOf(file) {
+  for (const [area, files] of Object.entries(AREAS)) if (files.includes(file)) return area;
+  return "later phases";
+}
+
+function listFiles() {
+  const out = [];
+  for (const f of readdirSync(APP)) if (f.endsWith(".html")) out.push(f);
+  for (const f of readdirSync(join(APP, "js"))) if (f.endsWith(".js")) out.push(`js/${f}`);
+  return out.filter((f) => !NOT_USER_FACING.has(f) && !f.startsWith("js/i18n"));
+}
+
+const STRIP_COMMENTS = (s) => s.replace(/^\s*\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+const LOOKS_USER_FACING = (s) =>
+  /[A-Za-z]{3,}/.test(s) &&
+  // A ${...} template placeholder means the string was assembled in code.
+  // Those are never catalogue keys -- a translatable one is rewritten as
+  // t("... {name} ...", { name }) first, which this then picks up properly.
+  !s.includes("${") &&
+  !/^[a-z_]+$/.test(s) && // identifiers, statuses, collection names
+  !/^https?:|\.(js|html|css|json)$|^#|^[A-Za-z-]+\/[A-Za-z-]+$/.test(s);
+
+/** Every English string a user could see in one file. */
+function extract(file) {
+  const src = readFileSync(join(APP, file), "utf8");
+  const found = new Set();
+
+  if (file.endsWith(".html")) {
+    const markup = src
+      .replace(/<script[\s\S]*?<\/script>/g, "")
+      .replace(/<style[\s\S]*?<\/style>/g, "")
+      .replace(/<!--[\s\S]*?-->/g, "");
+    for (const m of markup.matchAll(/>([^<>]+)</g)) {
+      const s = m[1].trim();
+      if (s && !s.startsWith("&") && LOOKS_USER_FACING(s)) found.add(s);
+    }
+    for (const m of markup.matchAll(/(?:placeholder|title|aria-label|alt)="([^"]+)"/g)) {
+      const s = m[1].trim();
+      if (LOOKS_USER_FACING(s)) found.add(s);
+    }
+  }
+
+  const js = file.endsWith(".html")
+    ? [...src.matchAll(/<script type="module">([\s\S]*?)<\/script>/g)].map((m) => m[1]).join("\n")
+    : src;
+  const code = STRIP_COMMENTS(js);
+  // Anything already routed through t() is, by definition, a string we
+  // intend to translate — the authoritative list for converted files.
+  for (const m of code.matchAll(/\bt\(\s*"([^"]+)"/g)) found.add(m[1]);
+  for (const m of code.matchAll(/>([A-Z][^<>{}`$]{2,70})</g)) {
+    const s = m[1].trim();
+    if (LOOKS_USER_FACING(s)) found.add(s);
+  }
+  for (const m of code.matchAll(/(?:textContent|innerText|alert|confirm|label|placeholder|title)\s*[=(:]\s*["'`]([A-Z][^"'`]{2,90})["'`]/g)) {
+    const s = m[1].trim();
+    if (LOOKS_USER_FACING(s)) found.add(s);
+  }
+  for (const m of code.matchAll(/label:\s*"([^"]{2,70})"/g)) {
+    const s = m[1].trim();
+    if (LOOKS_USER_FACING(s)) found.add(s);
+  }
+  return found;
+}
+
+const wantArea = process.argv.includes("--area") ? process.argv[process.argv.indexOf("--area") + 1] : null;
+const showMissing = process.argv.includes("--missing");
+
+const byArea = new Map();
+for (const file of listFiles()) {
+  const area = areaOf(file);
+  if (wantArea && area !== wantArea) continue;
+  if (!byArea.has(area)) byArea.set(area, { all: new Set(), missing: new Set() });
+  const bucket = byArea.get(area);
+  for (const s of extract(file)) {
+    bucket.all.add(s);
+    // A string counts as translated if the catalogue has it, either plain
+    // or under a context suffix ("Track|verb").
+    const translated = BN[s] !== undefined || Object.keys(BN).some((k) => k.startsWith(`${s}|`));
+    if (!translated) bucket.missing.add(s);
+  }
+}
+
+const ORDER = ["shell", "quran", "modules", "tracking", "admin", "asma", "later phases"];
+let totalAll = 0;
+let totalMissing = 0;
+console.log(`\n${"area".padEnd(16)}${"strings".padStart(9)}${"bangla".padStart(9)}${"missing".padStart(9)}${"".padStart(3)}done`);
+for (const area of ORDER) {
+  const b = byArea.get(area);
+  if (!b) continue;
+  const all = b.all.size;
+  const missing = b.missing.size;
+  totalAll += all;
+  totalMissing += missing;
+  const pct = all === 0 ? 100 : Math.round(((all - missing) / all) * 100);
+  console.log(`${area.padEnd(16)}${String(all).padStart(9)}${String(all - missing).padStart(9)}${String(missing).padStart(9)}${"".padStart(3)}${pct}%`);
+}
+const donePct = totalAll === 0 ? 100 : Math.round(((totalAll - totalMissing) / totalAll) * 100);
+console.log(`${"TOTAL".padEnd(16)}${String(totalAll).padStart(9)}${String(totalAll - totalMissing).padStart(9)}${String(totalMissing).padStart(9)}${"".padStart(3)}${donePct}%`);
+console.log(`\ncatalogue entries: ${Object.keys(BN).length}`);
+
+if (showMissing) {
+  for (const area of ORDER) {
+    const b = byArea.get(area);
+    if (!b || b.missing.size === 0) continue;
+    console.log(`\n--- ${area}: ${b.missing.size} missing ---`);
+    for (const s of [...b.missing].sort()) console.log(`  ${JSON.stringify(s)}: "",`);
+  }
+}

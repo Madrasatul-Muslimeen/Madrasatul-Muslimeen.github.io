@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.30.** Cutover to production happened
+**Current milestone: QuranRevival v07.31.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -742,6 +742,71 @@ owner's own Bangla wording, now recorded as `LAYOUT-BACKLOG.md` item 6.
 preference now, so if the Bangla reciter turns it on it stays on across
 reloads until it is changed back in Reading view — previously it reset on
 every load. Say so if the owner asks why Bangla text keeps appearing.
+
+v07.31 (13 Aug 2026, on Claude Code on the web) is **full app translation,
+phase 1 of 6 — THE SHELL.** The owner asked for this directly, minutes after
+v07.30 shipped, and their framing is the whole specification: *"when we
+change the language, the entire app (except the Banner) should turn into
+that language … A person only reads Bangla, nothing in English. He must find
+things in Bangla otherwise he won't use the app."* So the test is not "is it
+translated" but "could someone who reads no English use it". **Measured
+first, before proposing anything: 641 unique English strings across the 19
+user-facing pages and shared modules, plus ~360 platform-data items with no
+Bangla (31 subject names, 90 Approach Guide paragraphs, 114 surah names, 99
+Asma meanings) — ~1,000 in total.** The honest headline given to the owner:
+the code is mechanical, the WRITING is the bottleneck. **Three decisions were
+put to them and answered before any code: (a) Claude drafts all the Bangla
+and the owner corrects it** — uncertain lines are marked `// ?` in the
+catalogue, concentrated on religious/technical wording where a wrong Bangla
+word is worse than English; **(b) Bengali numerals (১২৩) when the app is in
+Bangla**, via `num()` applied at each render point, never by rewriting the
+DOM, so ids/versions/URLs can never be mangled; **(c) admin screens ARE
+included** (phase 5), so a Bangla-only person could run a tenant, not only
+study in one. **The mechanism, which every later phase depends on: THE KEY IS
+THE ENGLISH TEXT ITSELF.** `t("Sign out")` looks up `"Sign out"` in
+`app/js/i18n/bn.js`; there are no invented key names. That choice is
+deliberate and load-bearing — a missing translation returns the English, so
+the usual i18n failure (a screen showing `nav.signOut`) is impossible by
+construction, which matters because the app will be part-translated for
+several phases. `translateStatic()` walks the page's own text nodes on load
+and swaps what it recognises, so ~500 static headings/labels/buttons across
+19 pages are translated **without editing their HTML at all**; it remembers
+each node's original English in a WeakMap, which is what makes switching
+BACK to English work (a one-way DOM swap would have been a real trap, caught
+before shipping). Dynamic output keeps its own `t()` calls. **Phase 1
+delivers:** `js/i18n.js`, `js/i18n/bn.js` (116 entries), `tools/i18n-coverage.mjs`
+(prints per-phase progress — `node tools/i18n-coverage.mjs`, reading the same
+catalogue the app reads so the number can't drift from the phone), the whole
+nav/Home/Settings/sign-in strip, splashes, About, onboarding, accept-invite,
+and the six shared progress statuses (now via `statusLabel()`/
+`statusLabelsById()` in `unit-keys.js`, translated at CALL time so a language
+change mid-session isn't stuck). **Shell area: 94/94 strings, 100%. App-wide:
+174/641, 27%.** Two things settled here that later phases inherit: **a
+Bengali font stack app-wide** (`system-ui` can resolve to a font with no
+Bengali glyphs — empty boxes, i.e. unusable for exactly the person this is
+for; also added to `accept-invite.html`/`onboarding.html`, which have no nav
+but are often the first screen a new person sees), and **Bangla line-height
+1.3, measured not guessed** — 1.55 cost a visible Approach row at 390px and
+412px, 1.35 still cost one at 412px, 1.3 gives exact parity with English at
+320/360/390/412/768px, so Bangla costs the layout nothing. **Verified: 212
+behaviour checks in both languages** (English untouched on all 19 nav pages;
+nav, links, sign-in strip and Settings label all Bangla on all 19; the
+en→bn→en round trip in place with no reload; statuses in the wheel legend
+and sidebar; invite/onboarding; `num()` giving ২৫৫ while the version badge
+stays `07.31`) **plus the standard landing-page layout regression: byte-for-byte
+identical at all five viewports in both banner states.** Three test failures
+during the run were investigated and proved to be WRONG ASSERTIONS, not
+defects — every language picker names Bangla in Bangla in every language on
+purpose (it is how a Bangla-only reader finds the setting), and page `<h1>`s
+belong to their own later phase. **Two real pre-existing findings, recorded
+not silently patched:** page headings still carry developer noise ("People
+(F-012)", "Records (Phase 3)") which is meaningless in either language and
+should be cleaned by whichever phase owns each page; and at 320px the
+ENGLISH nav truncates "Operation"/"Bookmark" (73px of text in a 65px box) —
+confirmed identical on the previous commit, and notably Bangla does NOT
+truncate there. **See `TRANSLATION-PLAN.md`** for the full six-phase plan,
+the measured sizing, and what each phase owns. Phase 2 is the Quran module
+(89 strings + 114 surah names).
 
 ---
 

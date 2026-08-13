@@ -6,7 +6,7 @@
 // this file never imports records.js itself.
 
 import { langText } from "./lang.js";
-import { summarizeStatuses, STATUSES } from "./unit-keys.js";
+import { summarizeStatuses, STATUSES, statusLabel } from "./unit-keys.js";
 import { STATUS_COLORS } from "./mastery-wheel.js";
 
 function escapeHtml(s) {
@@ -29,7 +29,7 @@ export function renderTrackTab(entry, currentStatusId) {
     .map((s) => `<option value="${s.id}" ${s.id === currentStatusId ? "selected" : ""}>${s.label}</option>`)
     .join("");
   const confirmLine = entry
-    ? `<p class="way-track-state">Confirmed: <strong>${entry.confirmedStatus ? STATUSES.find((s) => s.id === entry.confirmedStatus)?.label : "—"}</strong> &middot; <span class="pill pill-${entry.confirmState}">${entry.confirmState}</span></p>`
+    ? `<p class="way-track-state">Confirmed: <strong>${entry.confirmedStatus ? statusLabel(entry.confirmedStatus) : "—"}</strong> &middot; <span class="pill pill-${entry.confirmState}">${entry.confirmState}</span></p>`
     : `<p class="way-track-state">Not claimed yet.</p>`;
   return `<div class="way-track">
     ${confirmLine}

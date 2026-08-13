@@ -4,6 +4,11 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>QuranRevival — Accept invite (F-014)</title>
+  <!-- Full translation, phase 1: shell.css carries the Bengali font stack.
+       These two pages have no nav bar, but an invited person may well land
+       here FIRST and read only Bangla -- boxes instead of glyphs here would
+       stop them before they ever reach the app. -->
+  <link rel="stylesheet" href="css/shell.css" />
 <style>
   body { font-family: system-ui, sans-serif; max-width: 30rem; margin: 3rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.3rem; }
@@ -47,6 +52,12 @@
     import { langText } from "./js/lang.js";
     import { getAppLang } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
+    import { translateStatic, t } from "./js/i18n.js";
+
+    // Phase 1 of the full translation: turn this page's own static markup
+    // (headings, labels, buttons) into the chosen language before anything
+    // else runs, so a Bangla reader never sees an English frame first.
+    translateStatic();
 
     const boxEl = document.getElementById("box");
     const signInArea = document.getElementById("signInArea");
@@ -63,7 +74,7 @@
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
         boxEl.className = "fail";
-        boxEl.textContent = `Sign-in failed: ${err.message}`;
+        boxEl.textContent = t("Sign-in failed: {message}", { message: err.message });
       });
     });
     // Round 10 fix (8 Aug 2026): the wrong-account message below has always
@@ -75,7 +86,7 @@
     async function init() {
       if (!token) {
         boxEl.className = "fail";
-        boxEl.textContent = "This link is missing its invite code. Ask whoever invited you to send it again.";
+        boxEl.textContent = t("This link is missing its invite code. Ask whoever invited you to send it again.");
         return;
       }
 
@@ -85,12 +96,12 @@
       peeked = await peekInviteToken(db, token);
       if (!peeked) {
         boxEl.className = "fail";
-        boxEl.textContent = "This invite link is no longer valid — it may have already been used.";
+        boxEl.textContent = t("This invite link is no longer valid — it may have already been used.");
         return;
       }
 
       boxEl.className = "info";
-      boxEl.textContent = `This invite is for ${peeked.email}. Please sign in with that account to continue.`;
+      boxEl.textContent = t("This invite is for {email}. Please sign in with that account to continue.", { email: peeked.email });
       signInArea.style.display = "block";
 
       onAuthStateChanged(auth, async (user) => {
@@ -105,7 +116,7 @@
 
         if (user.email.toLowerCase() !== peeked.email) {
           boxEl.className = "fail";
-          boxEl.textContent = `This invite was sent to ${peeked.email}, but you're signed in as ${user.email}. Sign out below and sign in with the invited email instead.`;
+          boxEl.textContent = t("This invite was sent to {invited}, but you are signed in as {current}. Sign out below and sign in with the invited email instead.", { invited: peeked.email, current: user.email });
           acceptArea.style.display = "none";
           return;
         }
@@ -115,14 +126,14 @@
         invite = await resolveInviteToken(db, token);
         if (!invite) {
           boxEl.className = "fail";
-          boxEl.textContent = "This invite is no longer valid — it may have already been used.";
+          boxEl.textContent = t("This invite is no longer valid — it may have already been used.");
           acceptArea.style.display = "none";
           return;
         }
 
         const tenantName = langText(invite.tenantName, getAppLang(), "this account");
         boxEl.className = "info";
-        boxEl.textContent = `You're invited to join ${tenantName} as ${invite.role}.`;
+        boxEl.textContent = t("You are invited to join {tenant} as {role}.", { tenant: tenantName, role: invite.role });
         acceptArea.style.display = "block";
       });
     }
@@ -138,7 +149,7 @@
 
       if (outcome.ok) {
         boxEl.className = "ok";
-        boxEl.textContent = `Welcome! You've joined as ${outcome.result.role}. Your person ID: ${outcome.result.personId}.`;
+        boxEl.textContent = t("Welcome! You have joined as {role}. Your person ID: {personId}.", { role: outcome.result.role, personId: outcome.result.personId });
         acceptArea.style.display = "none";
       } else {
         boxEl.className = "fail";

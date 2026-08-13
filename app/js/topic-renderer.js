@@ -15,7 +15,7 @@
 import { langText } from "./lang.js";
 import { getAppLang } from "./prefs.js";
 import { STATUS_COLORS } from "./mastery-wheel.js";
-import { STATUSES } from "./unit-keys.js";
+import { statusLabel } from "./unit-keys.js";
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -63,7 +63,7 @@ export function renderTopicChildList(children, statusByNodeId = new Map(), logge
     const statusId = statusByNodeId.get(node.id) ?? null;
     const hasResource = (node.resourceIds ?? []).length > 0;
     const chip = statusId
-      ? `<span class="topic-status-chip" style="background:${STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started}">${STATUSES.find((s) => s.id === statusId)?.label ?? statusId}</span>`
+      ? `<span class="topic-status-chip" style="background:${STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started}">${statusLabel(statusId)}</span>`
       : hasResource
         ? `<span class="topic-status-chip topic-status-unclaimed">Not started</span>`
         : `<span class="topic-status-chip topic-status-noresource">No resource yet</span>`;

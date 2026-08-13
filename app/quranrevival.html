@@ -591,7 +591,7 @@
     import { safeWrite } from "./js/errors.js";
     import { getMyMemberships, initializeActiveContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames } from "./js/catalogue.js";
-    import { buildUnitKey, STATUSES, rukuIndexInSurah } from "./js/unit-keys.js";
+    import { buildUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
@@ -620,6 +620,12 @@
       RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
     } from "./js/audio-player.js";
+    import { translateStatic, t } from "./js/i18n.js";
+
+    // Phase 1 of the full translation: turn this page's own static markup
+    // (headings, labels, buttons) into the chosen language before anything
+    // else runs, so a Bangla reader never sees an English frame first.
+    translateStatic();
 
     // Async playback failures (network drop mid-file, a source that turns
     // out not to exist, etc.) never reject play()'s own promise -- without
@@ -660,7 +666,15 @@
     const appEl = document.getElementById("app");
     const navBar = document.getElementById("navBar");
     const navHomeExtra = document.getElementById("navHomeExtra");
+    // Full translation, phase 1: the nav's own labels are translated at
+    // render time now, so changing the language has to re-render it. Keeping
+    // the last roles it was rendered with means that re-render never has to
+    // re-derive them (or wait on sign-in) just to change a language.
+    let lastRenderedRoles = [];
+    let lastRenderedViewAsRole = null;
     function renderNav(roles, viewAsRole) {
+      lastRenderedRoles = roles;
+      lastRenderedViewAsRole = viewAsRole;
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       // Shell round 13 -- Home -> Settings -> Language. Every other page
@@ -673,8 +687,16 @@
 
     /** Re-render everything on this page that shows a language-keyed NAME.
         Deliberately does not touch the reading panels' translation language
-        -- that is its own preference now (Reading view card). */
+        -- that is its own preference now (Reading view card).
+
+        Full translation, phase 1: the app's OWN words now change too, so
+        this also re-translates the page's static markup and re-renders the
+        nav (whose category and link labels are translated at render time).
+        translateStatic() remembers each node's original English, so this
+        works in both directions -- Bangla back to English included. */
     function applyAppLangChange() {
+      translateStatic();
+      renderNav(lastRenderedRoles, lastRenderedViewAsRole);
       renderPersonSelectOptions();
       renderTrackableSelectOptions();
       renderBanner();
@@ -748,7 +770,7 @@
 
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
-        whoEl.textContent = `Sign-in failed: ${err.message}`;
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
       });
     });
     signOutBtn.addEventListener("click", () => signOut(auth));
@@ -1254,7 +1276,7 @@
       };
       attachScopedWheelClickHandler(wheelContainer, jumpToApproach);
 
-      const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
+      const labelsById = statusLabelsById();
       wheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
 
       const sidebarItems = approachStatuses.map(({ trackable, statusId }) => ({
@@ -1471,7 +1493,7 @@
       exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: "Whole Quran", centerSub: approachName });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToJuz);
 
-      const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
+      const labelsById = statusLabelsById();
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
       const sidebarItems = items.map((it) => ({ ...it, label: `Juz ${it.key}` }));
       exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
@@ -1510,7 +1532,7 @@
       exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `Juz ${exploreJuzNum}`, centerSub: approachName });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurahForPage);
 
-      const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
+      const labelsById = statusLabelsById();
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
       const sidebarItems = items.map((it) => ({ ...it, label: `Page ${it.key}` }));
       exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
@@ -1526,7 +1548,7 @@
       const surahName = surahIndex.find((s) => s.surahNumber === exploreSurahNum)?.nameEnglish ?? `Surah ${exploreSurahNum}`;
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
       const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
-      const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
+      const labelsById = statusLabelsById();
 
       if (surahData.ayahCount <= SURAH_WHEEL_THRESHOLD) {
         const items = surahData.ayahs.map((a) => {
@@ -1589,7 +1611,7 @@
 
       exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `${surahName} · Ruku' ${exploreRukuIndex}`, centerSub: approachName });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToStudy);
-      const labelsById = Object.fromEntries(STATUSES.map((s) => [s.id, s.label]));
+      const labelsById = statusLabelsById();
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
       const sidebarItems = items.map((it) => ({ ...it, label: `Ayah ${it.key}` }));
       exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
@@ -2006,13 +2028,13 @@
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        whoEl.textContent = "Not signed in.";
+        whoEl.textContent = t("Not signed in.");
         signInBtn.style.display = "inline-block";
         signOutBtn.style.display = "none";
         appEl.style.display = "none";
         return;
       }
-      whoEl.textContent = `Signed in as ${user.email}`;
+      whoEl.textContent = t("Signed in as {email}", { email: user.email });
       signInBtn.style.display = "none";
       signOutBtn.style.display = "inline-block";
 
