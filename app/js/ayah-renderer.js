@@ -6,6 +6,8 @@
 // out. It never calls records.js/activity.js itself; the page wiring it up
 // does that.
 
+import { t } from "./i18n.js";
+
 /** Escapes then re-expands only the exact tajweed tags quran.com emits — never trusts raw HTML beyond that whitelist. */
 export function tajweedRawToSafeHtml(raw) {
   if (!raw) return "";
@@ -48,7 +50,7 @@ export function renderTranslationPanel(ayah, langs = ["en"]) {
  * separate panel over the same word list.
  */
 export function renderWordByWordPanel(ayah, { langs = ["en"] } = {}) {
-  if (!ayah.words?.length) return `<div class="wbw-empty">No word-by-word data for this ayah.</div>`;
+  if (!ayah.words?.length) return `<div class="wbw-empty">${t("No word-by-word data for this ayah.")}</div>`;
   const chips = ayah.words
     .map((w) => {
       const glosses = langs
@@ -79,7 +81,7 @@ export function renderWordByWordPanel(ayah, { langs = ["en"] } = {}) {
  * (a bounded, separate static file) for that lookup once built.
  */
 export function renderRootDerivativePanel(ayah) {
-  if (!ayah.words?.length) return `<div class="wbw-empty">No morphology data for this ayah.</div>`;
+  if (!ayah.words?.length) return `<div class="wbw-empty">${t("No morphology data for this ayah.")}</div>`;
   const rows = ayah.words
     .filter((w) => w.morphology)
     .map(
@@ -91,7 +93,7 @@ export function renderRootDerivativePanel(ayah) {
       </div>`
     )
     .join("");
-  return `<div class="root-deriv-strip">${rows || '<div class="wbw-empty">No morphology data for this ayah.</div>'}</div>`;
+  return `<div class="root-deriv-strip">${rows || `<div class="wbw-empty">${t("No morphology data for this ayah.")}</div>`}</div>`;
 }
 
 /**
@@ -108,9 +110,9 @@ const PANEL_RENDERERS = {
   // caller offer an explicit word-by-word language choice independent of
   // the ayah translation panel's language (owner request, 5 Aug 2026).
   wordByWord: (ayah, opts) => renderWordByWordPanel(ayah, { langs: opts.wbwLangs ?? opts.langs }) + renderRootDerivativePanel(ayah),
-  notes: () => `<textarea class="panel-notes" placeholder="Notes"></textarea>`,
-  reflection: () => `<textarea class="panel-reflection" placeholder="Reflection"></textarea>`,
-  writing: () => `<div class="panel-writing"><textarea placeholder="Write it out here"></textarea></div>`,
+  notes: () => `<textarea class="panel-notes" placeholder="${t("Notes")}"></textarea>`,
+  reflection: () => `<textarea class="panel-reflection" placeholder="${t("Reflection")}"></textarea>`,
+  writing: () => `<div class="panel-writing"><textarea placeholder="${t("Write it out here")}"></textarea></div>`,
   checklist: () => `<label class="panel-checklist"><input type="checkbox" /> Done</label>`,
   // audio/loop/timer are transport controls wired up by audio-player.js, not
   // static HTML blocks -- the caller mounts them separately, keyed off the
