@@ -606,10 +606,18 @@ first question this round -- should Language move to Home -> Settings
 instead? -- is answered "not yet, and here is why":** it genuinely is a
 global, all-modules choice, but no such setting exists anywhere yet (nav's
 Settings category is still a disabled placeholder from shell round 3), and
-`currentLang` is this page's own local state that eight other study pages
-each hold their own copy of. So Language stays in bar 1 where the owner put
-it, and **"one global language preference, read by every module" is now a
-named, still-unbuilt item** -- do not let it drift out of this file.
+`currentLang` is this page's own local state. So Language stays in bar 1
+where the owner put it, and **"one global language preference, read by
+every module" is now a named, still-unbuilt item** -- do not let it drift
+out of this file. **Correction, made 13 Aug 2026 in the same session:** this
+paragraph first said eight other study pages "each hold their own copy" of
+`currentLang`. That is wrong, and the truth matters for whoever builds the
+round -- `grep` finds `currentLang` in `quranrevival.html` and NOWHERE else.
+Every other page and module passes the literal `"en"` into `langText()`, so
+Bangla today works in the Quran module alone and nothing else in the app can
+show it at all. The round is therefore not "consolidate nine copies" but
+"give eight pages a language they never had," which is more valuable and a
+different shape of work. See `LAYOUT-BACKLOG.md` item 1.
 **Measured** (headless Chromium, Firebase stubbed at the network layer so
 the page's own module script really runs, the owner's tenant state
 simulated, same method as v07.22-07.27): the LANDING page is
@@ -668,6 +676,7 @@ decision-oriented. Corrections come promptly when framing drifts.
 | `QuranRevival_Subject_Catalogue_v3.md` | 31 subjects, 30 Approaches in 7 sections. **Approved as-is (D11).** Phase 2 input. |
 | `QuranRevival_Parked_Items_Register.html` | 36 deferred items. **Do not build these.** |
 | `index.html` | The pre-cutover production app. **REFERENCE ONLY — NEVER EDIT.** No longer live at the production URL as of 9 Aug 2026 (cutover) — archived, reachable at `https://madrasatul-muslimeen.github.io/legacy/index.html`. |
+| `LAYOUT-BACKLOG.md` | **The pick-up list for outstanding layout work** (opened 13 Aug 2026, after shell round 11), ordered as the owner wants it taken. Item 1 (one global Language preference) is agreed and ready to build in its own session. Read it before starting any layout round — it also records the measure-before-and-after method every round since v07.22 has used. |
 
 Do not re-derive or re-propose the architecture. If a request appears to
 conflict with it, **ask** — do not assume.
@@ -1077,13 +1086,16 @@ mid-build:
 
 - **One global language preference, read by every module.** The owner
   asked whether Language should live under Home → Settings instead of
-  inside the Quran module. It should, eventually — it is not a Quran-only
-  choice — but nothing global exists to put it in yet (nav's Settings
-  category is still a disabled placeholder from shell round 3) and
-  `currentLang` is per-page local state that eight other study pages each
-  duplicate. Language stays in bar 1 meanwhile. Building this means a real
-  stored preference plus a shared reader, then removing eight local
-  copies — a proper small round, not a move.
+  inside the Quran module. It should — it is not a Quran-only choice — but
+  nothing global exists to put it in yet (nav's Settings category is still
+  a disabled placeholder from shell round 3). **Confirmed by the owner
+  later the same day as the next thing to build, in its own session.**
+  Fully specified as item 1 of `LAYOUT-BACKLOG.md`, including the two
+  decisions that must be put to the owner before any code is written
+  (where the preference is stored, given I9 and the load-speed contract;
+  and whether "language" is one setting or two, since `currentLang` today
+  drives both which NAMES are shown and whether the Bangla ayah
+  TRANSLATION appears).
 - **Choosing a translation by the translator's name.** Asked for, and
   explicitly parked by the owner in the same message ("that build we can do
   later ... we now concentrate on organising the layout only"). The
