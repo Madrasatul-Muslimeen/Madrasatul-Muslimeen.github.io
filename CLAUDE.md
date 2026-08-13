@@ -627,6 +627,20 @@ sizes itself to its longest option name and overflowed its container --
 invisible before because it sat in an unbordered part of the Study screen,
 obvious once it had a card edge to cross. No `firestore.rules`, schema or
 shared-CSS changes -- this page's own markup, CSS and inline script only.
+**Pushed to the production mirror the same day** (`madrasatul-muslimeen.
+github.io`, `app/js/version.js` + `app/quranrevival.html` -- the only two
+files that differed, so the mirror had no unrelated drift), on the owner's
+explicit go-ahead, per this file's own "ask before pushing there" rule.
+**One decision closed on the owner's own follow-up:** they asked whether
+the summary strip is needed at all, since "the choices are already visible
+in the buttons." Half true, and the half that isn't is why it stays --
+**their call, asked and answered, do not re-open it unprompted.** Bar 3's
+two buttons show no value at all (nothing on screen names the reading mode
+or the reciter until you open the card), and on a 390px phone the four
+`<select>`s in bars 1-2 truncate to "Madrasa...", "Approac...", "1. Al-Fa..."
+-- so the strip is the only place a tenant-authored person or Approach name
+is readable in full. Offered as three options (trim to Reading+Listening /
+remove entirely / keep); the owner chose keep, unchanged.
 
 ---
 
