@@ -171,10 +171,20 @@
        The wheel is capped in vh (not just px) and the legend is compacted,
        because on a phone those two are what the approaches list is competing
        against -- every pixel taken off them becomes another visible row. */
-    #wheelSection { flex-direction: column; flex-wrap: nowrap; gap: 0.55rem; padding: 0.7rem; }
-    #wheelSection .wheel-col { flex: 0 0 auto; gap: 0.5rem; }
+    #wheelSection { flex-direction: column; flex-wrap: nowrap; gap: 0.5rem; padding: 0.55rem 0.4rem; }
+    #wheelSection .wheel-col { flex: 0 0 auto; gap: 0.45rem; align-self: stretch; }
     #wheelSection .wheel-sidebar { flex: 1 1 auto; max-width: none; min-width: 0; }
-    #wheelSection .mastery-wheel { max-width: min(320px, 27vh); }
+    /* Owner's ask (shell round 8): the wheel reaches both screen edges. The
+       card breaks out of body's own 1rem gutter so the limit is the screen,
+       not the page padding, and the wheel fills the card. The calc() is the
+       only thing still holding it back, and only on SHORT screens: it is the
+       height left once the header, the dock and the legend have taken theirs,
+       so a small phone shrinks the wheel rather than pushing the dock off the
+       bottom. On a normal-height phone 100% wins and the wheel is genuinely
+       edge to edge. */
+    #wheelSection { margin-left: -1rem; margin-right: -1rem; border-left: none; border-right: none; border-radius: 0; }
+    #wheelSection #wheelContainer { width: 100%; display: flex; justify-content: center; }
+    #wheelSection .mastery-wheel { width: min(100%, calc(100dvh - 420px)); max-width: none; }
     #wheelSection .wheel-legend { font-size: 0.68rem; gap: 4px 9px; }
     #wheelSection .legend-swatch { width: 9px; height: 9px; }
     #stage > .wheel-heading { margin-top: 0.15rem; margin-bottom: 0.3rem; font-size: 1rem; }
