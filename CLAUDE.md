@@ -511,6 +511,36 @@ reachable were unaffected by the change. Tablet/desktop are untouched --
 they keep the side-by-side wheel-and-list card at the pre-round 320px.
 Page handlers re-verified with the Firebase-stubbed harness (both panels,
 tab switching, the x button, no page errors).
+v07.26 (13 Aug 2026, on Claude Code on the web) is Shell round 9, two more
+owner-spotted wastes of landing height, both from reading the live screen.
+**The dock's "Tracking: Surah 1, Ayah 1" line is gone for the default unit**
+-- the owner's point was exact: the wheel's own centre disc already reads
+"SURAH 1 - AYAH 1", so the line printed the same thing twice. It is NOT
+deleted outright, though, and the reason matters: `renderWheel()` hardcodes
+`centerRef` to the CURRENT AYAH, and the wheel's segments are always that
+one ayah's statuses -- so for Range, Whole Surah, Ruku', Juz and Page the
+Tracking line is the only place on screen naming what "Track this unit"
+would actually claim. `renderUnitLabel()` now hides the line when
+`unitType === "ayah"` (the default, and the overwhelmingly common case) and
+brings it back for the other five. Checked against `currentUnitInfo()`'s
+own five non-ayah branches rather than assumed. **The space above the app
+banner is halved** -- `h1`'s UA default top margin (0.67em, ~15px) was
+sitting on top of `body`'s own 1rem padding, so the banner floated roughly
+a nav-bar's height down the screen for nothing; body padding-top 1rem ->
+0.5rem and an explicit `h1 { margin-top: 0.35rem }`. **Measured before and
+after by loading the previous commit's own copy of the page side by side
+with the new one: 31px -> 14px.** Together the two changes are worth 1-2
+Approach rows depending on where row boundaries fall -- on a 390x844 phone
+with the owner's tenant banner still set, 2 -> 4 rows; cleared, 4 -> 5;
+412x915 gives 5 and 7; 390x700 gives 2 and 4; 360x640 gives 2 and 4. Gap
+above the dock stays 9px, dock fully visible, no overflow at any size,
+including with the Tracking line forced back on (Juz unit), which costs at
+most one row and never breaks the layout. The wheel itself is untouched at
+every size -- its `calc(100dvh - 420px)` floor is expressed against the
+viewport, not against leftover card height, so shrinking the chrome hands
+every reclaimed pixel to the approaches list rather than growing the
+wheel. That was deliberate: the owner asked for Approaches this round, not
+a bigger wheel.
 
 ---
 

@@ -16,7 +16,7 @@
   html { height: 100%; }
   body {
     font-family: system-ui, sans-serif; max-width: 60rem; margin: 0 auto;
-    padding: 1rem 1rem 0; color: #222; box-sizing: border-box;
+    padding: 0.5rem 1rem 0; color: #222; box-sizing: border-box;
     /* A FIXED height, not a minimum: the stage can only stretch into leftover
        space if there is a known total to subtract from. With min-height the
        column just grew past the viewport and the approaches list took its
@@ -30,7 +30,11 @@
      left the tagline sitting visibly adrift from the title it belongs to,
      while the tenant banner's own title/subtitle pair sat tight together --
      the owner asked for the app banner to read as one unit the same way. */
-  h1 { font-size: 1.4rem; margin-bottom: 0.15rem; }
+  /* Shell round 9: h1's UA default top margin (0.67em ~= 15px) sat on top of
+     body's own padding, so the banner floated roughly a bar's height down the
+     screen for no reason. Halved, per the owner -- that space is now an
+     Approach row instead. */
+  h1 { font-size: 1.4rem; margin-top: 0.35rem; margin-bottom: 0.15rem; }
   h2 { font-size: 1.1rem; margin-top: 1.6rem; }
   h3 { font-size: 1rem; }
   h4 { font-size: 0.88rem; margin: 0.6rem 0 0.15rem; color: #555; }
@@ -227,9 +231,13 @@
   .explore-crumb-sep { color: #556; opacity: 0.6; }
 
   /* ---------- Study Unit picker (Phase 5) ---------- */
-  /* Shell round 7: now the dock's second line, under the tab row -- always
-     readable without opening anything, exactly as in shell round 5. */
-  #unitLabel { font-size: 0.85rem; color: #1F3A6E; font-weight: 600; margin: 0.4rem 0 0; text-align: center; }
+  /* Shell round 9: hidden by default. The wheel's own centre disc already
+     reads "SURAH 1 - AYAH 1", so for the default Single Ayah unit this line
+     was printing the same thing twice and costing an Approach row. It comes
+     back only for the units the wheel centre CANNOT show -- Range, Whole
+     Surah, Ruku', Juz, Page -- where "what will Track this unit claim?" is
+     genuinely not on screen anywhere else. */
+  #unitLabel { display: none; font-size: 0.85rem; color: #1F3A6E; font-weight: 600; margin: 0.4rem 0 0; text-align: center; }
 
   /* ---------- Explore (Phase 5) ---------- */
   #explorePanel { margin-top: 0; } /* border/background/padding come from .wheel-box (Phase 5 round 12); lives inside the Explore dock panel since shell round 7 */
@@ -819,7 +827,14 @@
 
     function renderUnitLabel() {
       if (!currentSurahData) return;
-      unitLabelEl.textContent = `Tracking: ${currentUnitInfo().label}`;
+      const info = currentUnitInfo();
+      // The wheel's centre disc already shows the current surah and ayah, and
+      // the wheel's segments are always that one ayah's statuses -- so for the
+      // Single Ayah unit this line is pure duplication. For every other unit
+      // type it is the only place the tracked unit is named, so it reappears.
+      const duplicatesTheWheel = info.unitType === "ayah";
+      unitLabelEl.style.display = duplicatesTheWheel ? "none" : "block";
+      unitLabelEl.textContent = duplicatesTheWheel ? "" : `Tracking: ${info.label}`;
     }
 
     function renderRangeSelects() {
