@@ -486,6 +486,31 @@ duplicate tenant banner text is STILL not cleared** (authorized back in
 v07.23, still impossible from a cloud sandbox with no Firebase
 credentials) and it now costs a visible Approach row, so it is worth
 offering again: Study options -> Edit banner -> empty both fields -> Save.
+v07.25 (13 Aug 2026, on Claude Code on the web) is Shell round 8, a
+same-thread correction to v07.24: the owner asked why the wheel had been
+made smaller and said it should "cover the entire edge left and right."
+Fair -- v07.24 had capped it at `min(320px, 27vh)` (189px on a 390x700
+phone) purely to buy approach rows, which was a trade made on the owner's
+behalf without asking. Reversed. On phones the wheel card now breaks out
+of `body`'s own 1rem gutter (negative margins, square corners, no side
+borders) so it is genuinely full-bleed, and the wheel fills it:
+`width: min(100%, calc(100dvh - 420px))`. The calc is a floor, not a
+preference -- it only binds on SHORT screens, where it shrinks the wheel
+rather than pushing the dock off the bottom; on any normal-height phone
+100% wins and the wheel really does touch both edges. **Measured** (same
+headless method as v07.22/07.24, both banner states): 390x844 and 412x915
+give a genuinely edge-to-edge wheel (377px and 399px, a 6px card gutter
+each side) with 2-4 and 4-6 Approaches still visible; 390x700 falls back
+to 280px with 1-3 rows, 360x640 to 220px with 1-3. Gap above the dock
+stays 9px and the dock stays fully visible at every size, with no card
+overflow anywhere. The `- 420px` reserve was tuned deliberately: at
+`- 380px` the wheel hit its full width one size sooner but a 390x700
+phone's approaches list collapsed to a 0-row sliver, which looked broken
+for no real gain, since the phones where edge-to-edge is actually
+reachable were unaffected by the change. Tablet/desktop are untouched --
+they keep the side-by-side wheel-and-list card at the pre-round 320px.
+Page handlers re-verified with the Firebase-stubbed harness (both panels,
+tab switching, the x button, no page errors).
 
 ---
 
