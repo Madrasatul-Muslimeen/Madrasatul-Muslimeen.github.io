@@ -988,4 +988,31 @@ records read. That lands on the landing page's own startup path, so it is
 an I9 / load-speed-contract conversation (Architecture Part 8: "Landing
 page — card information only"), not just a rendering change. Also
 undecided: what the centre's Arabic text should be when a unit spans many
-ayahs (today it is that one ayah's `uthmaniText`).
+ayahs (today it is that one ayah's `uthmaniText`). **Owner's steer, 13 Aug 2026: that
+last part is not one decision but six — treat the centre as configurable
+per unit type, deciding for EACH of `ayah` / `range` / `surah` / `ruku` /
+`juz` / `page` separately what it should show and how it should be
+written.** So the fix is a small per-unit table (what Arabic, if any; what
+reference text), not one global rule bolted onto `renderWheel()`. Ask the
+owner for their six answers when the round is actually picked up — do not
+infer them.
+
+**Next round already agreed, not yet started: organise the inside of
+`#panelStudyOptions`.** Deferred by the owner in v07.24 ("organising the
+stuff inside the 'Study Options' ... we can later") and confirmed again
+13 Aug 2026. Nothing about it is designed yet — this is a layout
+conversation to have with the owner first, exactly like shell rounds 4-10
+were, not a spec to build from. What is in that panel today, in DOM order:
+Tenant, Person, Surah, Ayah, Approach, Language, Word by Word (hidden
+unless the language needs it), Study Unit, From/To ayah (only for the
+`range` unit), the "Track this unit" button, the owner/prime-only
+banner-admin block (Edit banner + its form), then an `<h2>Study</h2>` and
+the whole `#studyScreen` — page-view toggle, Previous/Next + Tajweed,
+audio controls, drill controls, `#ayahPanels`, `#pageViewContainer`. Worth
+noting when it is planned: those first eight are a mix of three different
+KINDS of control — who is studying (Tenant/Person), what is being studied
+(Surah/Ayah/Approach/Study Unit), and how it is displayed
+(Language/Word by Word/Tajweed/page view) — and they are currently
+interleaved in none of those orders. The banner-admin block is the one
+genuinely unrelated item in the panel; it lives there only because shell
+round 5 moved it off the landing page to save height.
