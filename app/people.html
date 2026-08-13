@@ -154,6 +154,7 @@
     import { addPersonToTenant } from "./js/people.js";
     import { createInvite, listInvitesForTenant, getTokenForPendingInvite } from "./js/invites.js";
     import { langText } from "./js/lang.js";
+    import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
       getMyMemberships,
@@ -176,6 +177,7 @@
     function renderNav(roles, viewAsRole) {
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountAppLangControl(navHomeExtra); // shell round 13 -- Settings -> Language; default handler reloads so every name comes back translated
     }
     const rosterBody = document.getElementById("rosterBody");
     const isMinorEl = document.getElementById("isMinor");
@@ -253,19 +255,19 @@
       for (const person of visibleRoster) {
         const tr = document.createElement("tr");
         const managerName = person.managedByPersonId
-          ? langText(roster.find((p) => p.id === person.managedByPersonId)?.name, "en", "—")
+          ? langText(roster.find((p) => p.id === person.managedByPersonId)?.name, getAppLang(), "—")
           : "—";
-        tr.innerHTML = `<td>${langText(person.name, "en", person.id)}</td><td>${person.roles ?? ""}</td><td>${managerName}</td>`;
+        tr.innerHTML = `<td>${langText(person.name, getAppLang(), person.id)}</td><td>${person.roles ?? ""}</td><td>${managerName}</td>`;
         rosterBody.appendChild(tr);
       }
 
       managedBySelect.innerHTML = roster
-        .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
         .join("");
 
       const children = roster.filter((p) => p.isMinor);
       studyPersonSelect.innerHTML = children
-        .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
         .join("");
       renderStudyLockState();
     }
@@ -279,7 +281,7 @@
       const lock = getStudyLock();
       if (lock) {
         const person = roster.find((p) => p.id === lock.personId);
-        studyResultEl.textContent = `Currently studying as: ${langText(person?.name, "en", lock.personId)}. Pick someone else and click "Start studying" to see the block, or "End session" to release it.`;
+        studyResultEl.textContent = `Currently studying as: ${langText(person?.name, getAppLang(), lock.personId)}. Pick someone else and click "Start studying" to see the block, or "End session" to release it.`;
         endStudyBtn.style.display = "inline-block";
       } else {
         studyResultEl.textContent = "";

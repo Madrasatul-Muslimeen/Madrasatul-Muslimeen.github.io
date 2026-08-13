@@ -64,3 +64,10 @@
   font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
   color: #999; margin-bottom: 0.2rem;
 }
+
+/* Settings -> Language (shell round 13). A real control among links, so it
+   needs to read as one: label above, full-width select, sized to match the
+   0.88rem .nav-link next to it rather than the browser's own default. */
+.nav-setting { display: flex; flex-direction: column; gap: 0.15rem; padding: 0.1rem 0; }
+.nav-setting label { font-size: 0.88rem; font-weight: 600; color: #1F3A6E; }
+.nav-setting select { font-size: 0.85rem; padding: 0.2rem 0.3rem; max-width: 100%; }

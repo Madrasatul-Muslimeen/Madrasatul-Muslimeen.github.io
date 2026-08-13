@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.29.** Cutover to production happened
+**Current milestone: QuranRevival v07.30.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -683,6 +683,66 @@ six removed banner-edit elements) with none missing, no page errors, all
 four nav buttons on one line at 320/360/390/412/768px, and the landing page
 otherwise unchanged.
 
+v07.30 (13 Aug 2026, on Claude Code on the web) is **Shell round 13 — one
+global Language preference, `LAYOUT-BACKLOG.md` item 1**, the thing v07.28
+named and the owner confirmed as the next round to build in its own session.
+Three decisions were put to the owner first and answered before any code was
+written, as that item required. **(a) Storage: localStorage now, a Firestore
+sync layered on later.** So there is NO new startup read, no new collection
+and no `firestore.rules` change — the load-speed contract and I9 are untouched,
+which was the whole reason the question had to be asked. `js/prefs.js` is
+shaped so the later sync slots in behind the same `getAppLang()` getter
+without a single call site changing. The accepted trade is that the choice is
+per browser: set it on the phone and the tablet still shows English until it
+is set there too. **(b) "Language" is now TWO settings, not one.** `currentLang`
+had been doing two unrelated jobs at once — which language user-visible NAMES
+appear in (global, every module, the I11 concern) and whether the Bangla ayah
+TRANSLATION shows next to the English (a Quran *reading* choice). They are
+split: **app language** lives under Home → Settings and applies everywhere;
+**translation language** lives in the Quran module's Reading view card. The
+owner's own 8 Aug 2026 rule — picking the Bangla reciter brings Bangla text on
+screen — still works, but now flips the translation setting ONLY; it no longer
+renames every person, Approach and subject across the whole app as a side
+effect of choosing a reciter. **(c) All modules at once**, the owner's call
+over going module by module, on the stated grounds that a Settings control
+which silently fails to translate most of the app reads as a bug rather than a
+staged rollout. Concretely: `currentLang` is gone; **100 hardcoded `"en"`
+arguments across 15 files now read `getAppLang()`**, and all 13 pages/shared
+modules that render the nav mount the control (the 8 module pages come free
+via `topic-study.js`/`routine-study.js`/`asma-study.js`). Before this round
+**Bangla worked in the Quran module alone** and was unreachable everywhere
+else no matter what the tenant had stored — so this is "give 18 pages a
+language they never had," not "consolidate copies of one." `js/nav.js` stays
+a pure renderer (I2): it emits the `<select>` and nothing else — reading the
+stored value and wiring the change is `mountAppLangControl()`'s job in
+`prefs.js`, one line per page. Every page takes that helper's default
+handler, which reloads; `quranrevival.html` alone passes its own in-place
+re-render, because reloading the landing page would re-fire the boot and
+Quran-entry splashes. Bar 1 of Study options is down to three cells
+(Tenant/Person/Approach) — **measured: still one line each at 320/360/390/412/
+768px, nav still four buttons on one line, no overflow.** **Verified with 151
+behaviour checks** (the control present and defaulting to English on all 19
+nav-bearing pages; Bangla names really appearing on every one of them; the
+in-place re-render vs the reload path; the split proven in both directions —
+app language bn does NOT turn the ayah translation on, translation bn does NOT
+rename anything; the Bangla-reciter auto-switch; an unknown stored value
+falling back to English rather than wedging) **plus the standard landing-page
+layout regression run against the previous commit's own copy of the page: byte-for-byte
+identical at all five viewports in both banner states** — same wheel-heading
+top, same wheel width, same Approach-row count, same 9px dock gap, 65
+`getElementById` targets with none missing, no page errors. That is the
+expected result, since everything this round moved lives inside containers
+that start closed. **Deliberately NOT done, and said to the owner up front
+rather than discovered afterwards: the app's own words are still English** —
+`nav.js`'s labels ("Modules", "Operation", "Quran Study"…) and every page's
+headings and buttons are hardcoded strings, so Bangla today means Bangla
+names inside an English frame. That is a real translation project needing the
+owner's own Bangla wording, now recorded as `LAYOUT-BACKLOG.md` item 6.
+**One behaviour change worth knowing:** the translation language is a stored
+preference now, so if the Bangla reciter turns it on it stays on across
+reloads until it is changed back in Reading view — previously it reset on
+every load. Say so if the owner asks why Bangla text keeps appearing.
+
 ---
 
 ## What this is
@@ -1117,18 +1177,12 @@ three-bar mockup. See v07.28's paragraph above. What it left behind, all
 of it the owner's own explicit deferral rather than anything discovered
 mid-build:
 
-- **One global language preference, read by every module.** The owner
-  asked whether Language should live under Home → Settings instead of
-  inside the Quran module. It should — it is not a Quran-only choice — but
-  nothing global exists to put it in yet (nav's Settings category is still
-  a disabled placeholder from shell round 3). **Confirmed by the owner
-  later the same day as the next thing to build, in its own session.**
-  Fully specified as item 1 of `LAYOUT-BACKLOG.md`, including the two
-  decisions that must be put to the owner before any code is written
-  (where the preference is stored, given I9 and the load-speed contract;
-  and whether "language" is one setting or two, since `currentLang` today
-  drives both which NAMES are shown and whether the Bangla ayah
-  TRANSLATION appears).
+- ~~**One global language preference, read by every module.**~~ **BUILT in
+  v07.30 (shell round 13)** — see that version's own paragraph above. Both
+  decisions this item said had to be put to the owner were put to them and
+  answered (localStorage now with a Firestore sync later; and two settings,
+  not one). What it left open is `LAYOUT-BACKLOG.md` item 6: the app's own
+  chrome (nav labels, page headings, buttons) is still hardcoded English.
 - **Choosing a translation by the translator's name.** Asked for, and
   explicitly parked by the owner in the same message ("that build we can do
   later ... we now concentrate on organising the layout only"). The

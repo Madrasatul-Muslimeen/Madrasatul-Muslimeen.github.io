@@ -11,13 +11,46 @@ verification has to be mechanical, and layout rounds on `quranrevival.html`
 are measured in headless Chromium before and after (see "How these rounds are
 verified" at the bottom).
 
-Items are in the order the owner wants them picked up. Item 1 is agreed and
-ready to build; item 2 is agreed in principle with the shape worked out;
-items 3–5 are parked with the owner's own reasons recorded.
+Items are in the order the owner wants them picked up. Item 1 is **built**
+(13 Aug 2026, v07.30); item 2 is agreed in principle with the shape worked
+out; items 3–5 are parked with the owner's own reasons recorded; item 6 was
+opened by item 1's own build and flagged to the owner at the time.
 
 ---
 
-## 1. One global Language preference — AGREED, READY TO BUILD
+## 1. One global Language preference — BUILT, 13 Aug 2026 (v07.30)
+
+**Done.** Shell round 13. The owner's three decisions, asked before any code
+was written, exactly as this item required:
+
+- **(a) Storage: localStorage now, Firestore sync layered on later.** No
+  startup read, no new collection, no `firestore.rules` change (I9 /
+  load-speed contract intact). `js/prefs.js` is deliberately shaped so the
+  sync can be added behind the same `getAppLang()` getter without touching
+  a single call site.
+- **(b) Two settings, not one.** App language (which NAMES appear in) lives
+  under Home → Settings and applies to every module. The Quran ayah
+  TRANSLATION language is its own control in the Reading view card. The
+  8 Aug 2026 Bangla-reciter auto-switch now flips the translation setting
+  only — it no longer renames every person and Approach app-wide as a side
+  effect of choosing a reciter.
+- **(c) All modules at once**, not module by module — the owner's call, on
+  the grounds that a Settings control that silently fails to translate most
+  of the app reads as a bug.
+
+`currentLang` is gone. 100 hardcoded `"en"` call sites across 15 files now
+read `getAppLang()`; all 13 pages/modules that render the nav mount the
+control. Verified with 151 behaviour checks plus the layout regression run
+described at the bottom of this file (landing page byte-for-byte unchanged
+at all five viewports in both banner states).
+
+**What it deliberately did NOT do — see item 6 below:** the nav bar's own
+words are still English.
+
+<details>
+<summary>The original specification, kept for the record</summary>
+
+### (original) 1. One global Language preference — AGREED, READY TO BUILD
 
 **Owner's ask, 13 Aug 2026:** *"about taking the Language button to the app's
 home button under settings … because that doesn't belong here."* They are
@@ -109,6 +142,8 @@ do not let it be discovered afterwards.
   three cells — or gains a fourth from item 2 below. **Check the bars still
   hold one line each afterwards.**
 
+</details>
+
 ---
 
 ## 2. The rest of the Study options organising — OWNER CONTINUING
@@ -194,6 +229,41 @@ nobody re-opens it, and as the reason item 2's Edit-banner note exists.
 
 ---
 
+## 6. Translating the app's own words — NOT BUILT, FLAGGED UP FRONT
+
+Opened 13 Aug 2026 by shell round 13, and **stated to the owner before that
+round was built rather than discovered afterwards**, exactly as item 1's own
+"scope boundary" section required.
+
+Item 1 translates **tenant-authored NAMES** — people, subjects, Approaches,
+topics, ladders, levels, course offers, the tenant banner — everywhere in the
+app. It does **not** translate the app's own chrome:
+
+- `js/nav.js`'s link and category labels ("Modules", "Operation", "Quran
+  Study", "Homework", "Bookmark", "Settings", "Appearance"…) are hardcoded
+  English strings.
+- So is every page's own heading, button, table header and helper text.
+
+Setting the app to Bangla today gives Bangla names inside an English frame.
+That is a real, honest partial — the names are the part that is
+language-keyed in the data (I11); the chrome has never had a second language
+anywhere to draw from.
+
+**Why it is its own item, not a loose end of item 1:** doing it properly
+means an English/Bangla string table for every user-visible literal in 19
+pages plus the shared JS modules, and a lookup helper threaded through all of
+them. That is a translation project, not a preference. It also needs the
+owner to actually supply (or approve) the Bangla wording — nothing in the
+repo can be guessed at for this.
+
+**One measurement caution if it is ever built:** `.nav-cat > summary` is
+`white-space: nowrap` + `text-overflow: ellipsis`, so a longer translated
+category label fails **silently** by truncating. v07.29 already hit this with
+an English rename ("Study Module" → "Modules"). Re-measure with the
+`navcheck` method below any time a category label changes length.
+
+---
+
 ## How these rounds are verified
 
 Every `quranrevival.html` layout round since v07.22 has been measured, not
@@ -216,3 +286,18 @@ eyeballed, and the next one should be too. The method that works:
   Approach-row count, the 9px gap above the dock, dock fully visible, no
   horizontal overflow, every `getElementById` target still resolving, and no
   page errors.
+
+### Two practical notes added by shell round 13
+
+- **Controls inside the nav's Home menu, and inside the dock panels, are not
+  clickable until their container is opened.** Both are native `<details>` /
+  hidden panels that start closed (shell rounds 4/7/12). A Playwright
+  `click`/`selectOption` on `#navAppLangSelect` or `#readingViewBtn` will
+  simply time out on "element is not visible" — open `.nav-cat-home` and
+  press `#tabStudyOptionsBtn` first. That is the real user flow anyway.
+- **The Firebase stub needs `panels: [...]` on its trackables**, or the
+  Listening settings button correctly disables itself (v07.28 behaviour) and
+  any audio test times out against a disabled button.
+- `navcheck`: measure a nav category label by comparing the `<summary>`'s
+  `scrollWidth` against its `clientWidth` at 320/360/390/412px — ellipsis
+  truncation is silent otherwise.
