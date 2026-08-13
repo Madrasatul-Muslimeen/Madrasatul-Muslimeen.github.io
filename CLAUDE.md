@@ -541,6 +541,35 @@ viewport, not against leftover card height, so shrinking the chrome hands
 every reclaimed pixel to the approaches list rather than growing the
 wheel. That was deliberate: the owner asked for Approaches this round, not
 a bigger wheel.
+v07.27 (13 Aug 2026, on Claude Code on the web) is Shell round 10, the
+owner's follow-up to round 9: reclaim the small gap above the "Mastery
+Wheel" heading and a little more above the app banner, with the explicit
+target of **5 Approaches visible** and the explicit caution "check
+carefully, not to mess up anything else." **Measured the requirement
+first** rather than trimming by feel: a fifth row needed exactly 37px, and
+the approaches list had -1px of slack, so seven separate gaps were costed
+before any were touched. Trimmed: `h1` margin-top 0.35rem -> 0, the
+tagline's bottom margin 0.8rem -> 0.35rem, `#globalBanner`'s
+padding-bottom/margin-bottom 0.4/0.5rem -> 0.25/0.2rem, the wheel
+heading's own margins (mobile) 0.15/0.3rem -> 0/0.15rem, and the wheel
+card's internal padding/gaps 0.55/0.5/0.45rem -> 0.4/0.35/0.3rem. The
+eighth and largest saving, ~10px, is the nav bar's `margin-bottom: 1rem` +
+`padding-bottom: 0.6rem` -- and it is taken as a **page-local `#topNav.app-nav`
+override, deliberately NOT an edit to `css/shell.css`**, because that rule
+is shared by all 16 pages and only this one is fighting for landing height
+(verified after the change that `shell.css` is untouched and that all five
+edited rules live inside this page's own `<style>`). **Result, measured:
+the gap above "Mastery Wheel" 10px -> 3px, above the banner 14px -> 8px,
+and the approaches list 139px -> 186px, i.e. 4 -> 5 rows with the owner's
+tenant banner still set, with 10px of slack left over.** Every other size
+gained a row too: 412x915 5 -> 7, 390x700 2 -> 4, 360x640 2 -> 4; cleared-
+banner states are 6/8/5/5. **The wheel is byte-for-byte the same size at
+every viewport tested** (377/399/280/220px, tablet 320px) -- as in round 9,
+the `calc(100dvh - 420px)` floor is expressed against the viewport, so
+reclaimed chrome goes to the list and never to the wheel. Gap above the
+dock stays 9px, dock fully visible, no overflow anywhere, including with
+the Tracking line forced back on for a Juz unit (costs one row, never
+breaks). Page handlers re-verified with the Firebase-stubbed harness.
 
 ---
 

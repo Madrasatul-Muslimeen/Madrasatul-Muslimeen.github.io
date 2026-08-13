@@ -3,4 +3,4 @@
 // 9 Aug 2026), last two digits bump on every new feature after that.
 // Single source of truth -- every place that shows the version imports
 // this, never retypes the string.
-export const APP_VERSION = "07.26";
+export const APP_VERSION = "07.27";
