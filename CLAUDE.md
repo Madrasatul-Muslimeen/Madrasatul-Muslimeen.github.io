@@ -965,3 +965,27 @@ one key of an arbitrarily-keyed map" limitation this codebase already
 accepts elsewhere (subjects/trackables/records entries) — enforcing it for
 real needs client-side filtering in the study screens/records.js keyed off
 `subjectIds`, not attempted this round. See `PHASE-10-STATUS.md`.
+
+**Parked, owner-approved 13 Aug 2026 (shell round 9/10): make the Mastery
+Wheel itself reflect the selected Study Unit.** Surfaced while removing the
+duplicated "Tracking:" line from the dock. Today `renderWheel()` is
+hardcoded to the CURRENT AYAH on both axes — its segments come from
+`approachStatusesForCurrentAyah()` (which builds `buildUnitKey.ayah(...)`
+directly) and its centre disc from a literal `SURAH n · AYAH n`. So when
+the Study Unit is Range, Whole Surah, Ruku', Juz or Page, the wheel keeps
+showing the single ayah while "Track this unit" claims against something
+else entirely. v07.26 handled this by keeping the dock's Tracking line
+alive for exactly those five units (hidden only for `ayah`), which is a
+correct stopgap, not the fix. The owner asked for the real thing "later",
+explicitly deferring it — **do not build it unprompted, but do not lose
+it either.** The shape of the fix, worked out at the time: drive the wheel
+off `currentUnitInfo().unitKey` instead of the hardcoded ayah key, and
+label the centre from `currentUnitInfo().label`. **Three of the five are
+free** — range/surah/ruku already chunk to `surah_${n}`, which
+`refreshChunkAndWheel()` has loaded anyway — **but juz and page chunk to
+`subject_quran`**, a different document, so those two need a second
+records read. That lands on the landing page's own startup path, so it is
+an I9 / load-speed-contract conversation (Architecture Part 8: "Landing
+page — card information only"), not just a rendering change. Also
+undecided: what the centre's Arabic text should be when a unit spans many
+ayahs (today it is that one ayah's `uthmaniText`).
