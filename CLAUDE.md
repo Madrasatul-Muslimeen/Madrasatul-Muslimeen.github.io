@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.23.** Cutover to production happened
+**Current milestone: QuranRevival v07.28.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -570,6 +570,63 @@ reclaimed chrome goes to the list and never to the wheel. Gap above the
 dock stays 9px, dock fully visible, no overflow anywhere, including with
 the Tracking line forced back on for a Juz unit (costs one row, never
 breaks). Page handlers re-verified with the Firebase-stubbed harness.
+v07.28 (13 Aug 2026, on Claude Code on the web) is Shell round 11 -- the
+round v07.24 parked and CLAUDE.md has carried as "next round already
+agreed" ever since: **organising the inside of `#panelStudyOptions`**, built
+to the owner's own drawn mockup rather than to a shape proposed here. The
+panel's controls were a flat wrap-as-it-fits `.row` of nine pickers; they
+are now **three bars, grouped by what KIND of choice each one is** --
+bar 1 WHO is studying (Tenant, Person, Language, Approach), bar 2 WHAT is
+being studied (Study Unit, Surah, Ayah, "Go to"), bar 3 HOW it is read /
+heard / claimed (Reading view, Listening settings, Track this unit). Each
+bar is a CSS grid whose `minmax(0,1fr)` columns are what actually make four
+labelled `<select>`s share one line on a 390px phone -- verified, not
+assumed. Four new things, all owner-asked: **(a)** a "Go to" typing field --
+`2:255` jumps to that ayah, `2:255-260` switches to the Range unit and sets
+both ends, a bare `2` opens that surah; anything it cannot read (or an ayah
+past the surah's end) says so in place rather than doing nothing. **(b)**
+**Reading view** and **(c)** **Listening settings**, two buttons that each
+open a card below rather than each spending a permanent row: Reading view
+holds Page display (renamed from "Page view" per the owner), the Tajweed
+checkbox and the Word-by-Word language, all keeping the exact visibility
+rules they already had -- plus a deliberately DISABLED "Translation"
+placeholder, since choosing a translation by translator's name is real
+scope the owner asked to defer, and a disabled control with a plain note
+beats an invisible promise. Listening settings holds the reciter picker,
+Play ayah / Play whole surah, Loop and the whole multi-reciter drill; the
+button disables itself when the selected Approach has no audio panel, so
+it can never open an empty card. **(d)** a summary strip under the bars
+naming what the choices add up to (Person / Unit / Approach / Reading /
+Listening), built with `textContent` since person and Approach names are
+tenant-authored. **This is a move, not a rewrite**: every control kept its
+id and its handler, and the one piece of new JS wiring in the study screen
+is `tajweedControl`'s own visibility rule, which the checkbox used to
+inherit from `#singleAyahNavRow` before it moved out of it. **The owner's
+first question this round -- should Language move to Home -> Settings
+instead? -- is answered "not yet, and here is why":** it genuinely is a
+global, all-modules choice, but no such setting exists anywhere yet (nav's
+Settings category is still a disabled placeholder from shell round 3), and
+`currentLang` is this page's own local state that eight other study pages
+each hold their own copy of. So Language stays in bar 1 where the owner put
+it, and **"one global language preference, read by every module" is now a
+named, still-unbuilt item** -- do not let it drift out of this file.
+**Measured** (headless Chromium, Firebase stubbed at the network layer so
+the page's own module script really runs, the owner's tenant state
+simulated, same method as v07.22-07.27): the LANDING page is
+byte-for-byte unchanged from v07.27 at all five viewports in both banner
+states -- same wheel-heading top, same wheel width, same Approach-row
+count, same 9px gap above the dock, no horizontal overflow -- which is the
+point, since this round only ever touches what is inside a panel that
+starts closed. Inside the panel: all three bars hold one line each with no
+overflow, all 71 of the page's `getElementById` targets still resolve, and
+26 behaviour checks pass, including both cards opening/closing one at a
+time, the typing field's three good shapes and two bad ones, the range
+flow-through onto From/To, Prev/Next, the Juz Tracking line and Explore.
+One real pre-existing defect fixed in passing: the reciter `<select>`
+sizes itself to its longest option name and overflowed its container --
+invisible before because it sat in an unbordered part of the Study screen,
+obvious once it had a card edge to cross. No `firestore.rules`, schema or
+shared-CSS changes -- this page's own markup, CSS and inline script only.
 
 ---
 
@@ -997,22 +1054,31 @@ reference text), not one global rule bolted onto `renderWheel()`. Ask the
 owner for their six answers when the round is actually picked up — do not
 infer them.
 
-**Next round already agreed, not yet started: organise the inside of
-`#panelStudyOptions`.** Deferred by the owner in v07.24 ("organising the
-stuff inside the 'Study Options' ... we can later") and confirmed again
-13 Aug 2026. Nothing about it is designed yet — this is a layout
-conversation to have with the owner first, exactly like shell rounds 4-10
-were, not a spec to build from. What is in that panel today, in DOM order:
-Tenant, Person, Surah, Ayah, Approach, Language, Word by Word (hidden
-unless the language needs it), Study Unit, From/To ayah (only for the
-`range` unit), the "Track this unit" button, the owner/prime-only
-banner-admin block (Edit banner + its form), then an `<h2>Study</h2>` and
-the whole `#studyScreen` — page-view toggle, Previous/Next + Tajweed,
-audio controls, drill controls, `#ayahPanels`, `#pageViewContainer`. Worth
-noting when it is planned: those first eight are a mix of three different
-KINDS of control — who is studying (Tenant/Person), what is being studied
-(Surah/Ayah/Approach/Study Unit), and how it is displayed
-(Language/Word by Word/Tajweed/page view) — and they are currently
-interleaved in none of those orders. The banner-admin block is the one
-genuinely unrelated item in the panel; it lives there only because shell
-round 5 moved it off the landing page to save height.
+**Done in v07.28 (shell round 11): organise the inside of
+`#panelStudyOptions`.** This was CLAUDE.md's own "next round already
+agreed" item from v07.24 onwards; it is built, to the owner's drawn
+three-bar mockup. See v07.28's paragraph above. What it left behind, all
+of it the owner's own explicit deferral rather than anything discovered
+mid-build:
+
+- **One global language preference, read by every module.** The owner
+  asked whether Language should live under Home → Settings instead of
+  inside the Quran module. It should, eventually — it is not a Quran-only
+  choice — but nothing global exists to put it in yet (nav's Settings
+  category is still a disabled placeholder from shell round 3) and
+  `currentLang` is per-page local state that eight other study pages each
+  duplicate. Language stays in bar 1 meanwhile. Building this means a real
+  stored preference plus a shared reader, then removing eight local
+  copies — a proper small round, not a move.
+- **Choosing a translation by the translator's name.** Asked for, and
+  explicitly parked by the owner in the same message ("that build we can do
+  later ... we now concentrate on organising the layout only"). The
+  Reading view card carries a DISABLED `#translationChoiceSelect` and a
+  plain note so the place it will live is visible and honest. The data
+  question comes first: `tools/quran-data-pull` currently packages one
+  English and one Bangla translation per ayah, so more translators means
+  re-pulling and re-packaging the surah files, not just a picker.
+- **The banner-admin block is still the one unrelated thing in the panel.**
+  It sits between the summary strip and `<h2>Study</h2>` only because shell
+  round 5 moved it off the landing page to save height. Not worth its own
+  round; worth remembering if a real Settings surface ever lands.
