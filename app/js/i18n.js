@@ -36,6 +36,7 @@
 
 import { getAppLang } from "./prefs.js";
 import { BN } from "./i18n/bn.js";
+import { SURAH_NAMES_BN } from "./i18n/surah-names-bn.js";
 
 const CATALOGUES = { bn: BN };
 
@@ -91,6 +92,38 @@ export function num(value) {
   const s = String(value);
   if (getAppLang() !== "bn") return s;
   return s.replace(/[0-9]/g, (d) => BENGALI_DIGITS[Number(d)]);
+}
+
+/**
+ * The other direction: read Bengali digits back as ordinary numbers.
+ *
+ * Needed because a Bangla-only reader typing into the "Go to" box on a
+ * Bangla keyboard will type ২:২৫৫, not 2:255 -- and a box that silently
+ * refuses what its own interface taught them to type is exactly the kind of
+ * dead end that makes someone stop using an app. Always safe to call: a
+ * string with no Bengali digits comes back unchanged.
+ */
+export function parseNum(value) {
+  if (value == null) return "";
+  return String(value).replace(/[০-৯]/g, (d) => String(BENGALI_DIGITS.indexOf(d)));
+}
+
+// ---------------------------------------------------------------------
+// Surah names
+// ---------------------------------------------------------------------
+
+/**
+ * A surah's name in the reader's language. Falls back to the English name
+ * the Quran data already carries, so an unlisted number can never render
+ * blank.
+ *
+ * Deliberately NOT prefixed with the number -- callers format that
+ * themselves, because the picker wants "২. আল-বাকারা" while a heading wants
+ * the bare name.
+ */
+export function surahName(surahNumber, englishName) {
+  if (getAppLang() === "bn") return SURAH_NAMES_BN[surahNumber] ?? englishName ?? "";
+  return englishName ?? "";
 }
 
 // ---------------------------------------------------------------------

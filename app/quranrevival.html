@@ -620,7 +620,7 @@
       RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
     } from "./js/audio-player.js";
-    import { translateStatic, t } from "./js/i18n.js";
+    import { translateStatic, t, num, parseNum, surahName } from "./js/i18n.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
@@ -955,23 +955,23 @@
       const surahChunkKey = `surah_${currentSurahNum}`;
       if (currentUnitType === "range") {
         const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
-        return { unitType: "range", unitKey: buildUnitKey.range(currentSurahNum, from, to), chunkKey: surahChunkKey, label: `Ayahs ${from}–${to} of Surah ${currentSurahNum}` };
+        return { unitType: "range", unitKey: buildUnitKey.range(currentSurahNum, from, to), chunkKey: surahChunkKey, label: t("Ayahs {from}–{to} of Surah {surah}", { from: num(from), to: num(to), surah: num(currentSurahNum) }) };
       }
       if (currentUnitType === "surah") {
-        return { unitType: "surah", unitKey: buildUnitKey.surah(currentSurahNum), chunkKey: surahChunkKey, label: `Whole Surah ${currentSurahNum}` };
+        return { unitType: "surah", unitKey: buildUnitKey.surah(currentSurahNum), chunkKey: surahChunkKey, label: t("Whole Surah {surah}", { surah: num(currentSurahNum) }) };
       }
       if (currentUnitType === "ruku") {
         const idx = rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku);
         const [from, to] = currentUnitAyahBounds();
-        return { unitType: "ruku", unitKey: buildUnitKey.ruku(currentSurahNum, idx), chunkKey: surahChunkKey, label: `Ruku' ${idx} of Surah ${currentSurahNum} (ayahs ${from}–${to})` };
+        return { unitType: "ruku", unitKey: buildUnitKey.ruku(currentSurahNum, idx), chunkKey: surahChunkKey, label: t("Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})", { ruku: num(idx), surah: num(currentSurahNum), from: num(from), to: num(to) }) };
       }
       if (currentUnitType === "juz") {
-        return { unitType: "juz", unitKey: buildUnitKey.juz(ayah.juz), chunkKey: "subject_quran", label: `Juz ${ayah.juz}` };
+        return { unitType: "juz", unitKey: buildUnitKey.juz(ayah.juz), chunkKey: "subject_quran", label: t("Juz {juz}", { juz: num(ayah.juz) }) };
       }
       if (currentUnitType === "page") {
-        return { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), chunkKey: "subject_quran", label: `Page ${ayah.page}` };
+        return { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), chunkKey: "subject_quran", label: t("Page {page}", { page: num(ayah.page) }) };
       }
-      return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, currentAyahNum), chunkKey: surahChunkKey, label: `Surah ${currentSurahNum}, Ayah ${currentAyahNum}` };
+      return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, currentAyahNum), chunkKey: surahChunkKey, label: t("Surah {surah}, Ayah {ayah}", { surah: num(currentSurahNum), ayah: num(currentAyahNum) }) };
     }
 
     function renderUnitLabel() {
@@ -983,12 +983,12 @@
       // type it is the only place the tracked unit is named, so it reappears.
       const duplicatesTheWheel = info.unitType === "ayah";
       unitLabelEl.style.display = duplicatesTheWheel ? "none" : "block";
-      unitLabelEl.textContent = duplicatesTheWheel ? "" : `Tracking: ${info.label}`;
+      unitLabelEl.textContent = duplicatesTheWheel ? "" : t("Tracking: {unit}", { unit: info.label });
     }
 
     function renderRangeSelects() {
       const count = currentSurahData?.ayahCount ?? 1;
-      const options = Array.from({ length: count }, (_, i) => i + 1).map((n) => `<option value="${n}">${n}</option>`).join("");
+      const options = Array.from({ length: count }, (_, i) => i + 1).map((n) => `<option value="${n}">${num(n)}</option>`).join("");
       rangeFromSelect.innerHTML = options;
       rangeToSelect.innerHTML = options;
       rangeFromSelect.value = String(rangeFrom);
@@ -1066,21 +1066,24 @@
     }
 
     async function applyJump() {
-      const parsed = parseJumpText(jumpInput.value);
+      // parseNum() first: a Bangla-only reader typing on a Bangla keyboard
+      // types ২:২৫৫, not 2:255 -- and a box that refuses what the interface
+      // itself taught them to type is exactly where someone gives up.
+      const parsed = parseJumpText(parseNum(jumpInput.value));
       if (!parsed) {
-        showJumpMessage(`Couldn't read "${jumpInput.value.trim()}". Try 2:255 for one ayah, or 2:255-260 for a range.`);
+        showJumpMessage(t("Couldn't read \"{text}\". Try 2:255 for one ayah, or 2:255-260 for a range.", { text: jumpInput.value.trim() }));
         return;
       }
       const surahMeta = surahIndex.find((s) => s.surahNumber === parsed.surah);
       if (!surahMeta) {
-        showJumpMessage(`There is no Surah ${parsed.surah}. Surah numbers run 1–114.`);
+        showJumpMessage(t("There is no Surah {surah}. Surah numbers run 1–114.", { surah: num(parsed.surah) }));
         return;
       }
       const lastAyah = surahMeta.ayahCount;
       const from = parsed.from;
       const to = parsed.to;
       if (from < 1 || from > lastAyah || (to !== null && (to < 1 || to > lastAyah))) {
-        showJumpMessage(`Surah ${parsed.surah} has ${lastAyah} ayahs.`);
+        showJumpMessage(t("Surah {surah} has {count} ayahs.", { surah: num(parsed.surah), count: num(lastAyah) }));
         return;
       }
       showJumpMessage(null);
@@ -1176,7 +1179,9 @@
 
       surahIndex = await getSurahIndex();
       surahSelect.innerHTML = surahIndex
-        .map((s) => `<option value="${s.surahNumber}">${s.surahNumber}. ${s.nameEnglish}</option>`)
+        // The option's VALUE stays a plain number -- it is parsed back with
+        // Number() on every change. Only the text a person reads is translated.
+        .map((s) => `<option value="${s.surahNumber}">${num(s.surahNumber)}. ${surahName(s.surahNumber, s.nameEnglish)}</option>`)
         .join("");
       currentSurahNum = surahIndex[0]?.surahNumber ?? 1;
 
@@ -1190,7 +1195,7 @@
       // 200 of a 286-ayah surah impractical -- a direct Ayah picker next to
       // Surah, same shape as the range unit's own From/To ayah selects.
       ayahSelect.innerHTML = Array.from({ length: currentSurahData.ayahCount }, (_, i) => i + 1)
-        .map((n) => `<option value="${n}">${n}</option>`)
+        .map((n) => `<option value="${n}">${num(n)}</option>`)
         .join("");
       // Owner round-2 ask: "Arabic should be playing first." Reset ONLY on
       // an actual surah change -- ayah navigation and tajweed/language
@@ -1247,7 +1252,7 @@
         playback ayah-change handler, and Explore's jumpToJuz below). */
     function renderWheel() {
       if (!quranTrackables.length || !currentSurahData) {
-        wheelContainer.innerHTML = `<p style="color:#8fa0c2;">No Approaches yet.</p>`;
+        wheelContainer.innerHTML = `<p style="color:#8fa0c2;">${t("No Approaches yet.")}</p>`;
         wheelSidebarContainer.innerHTML = "";
         return;
       }
@@ -1261,7 +1266,7 @@
       }));
       wheelContainer.innerHTML = renderScopedWheel(items, {
         centerArabic: ayah?.uthmaniText,
-        centerRef: `SURAH ${currentSurahNum} · AYAH ${currentAyahNum}`,
+        centerRef: t("SURAH {surah} · AYAH {ayah}", { surah: num(currentSurahNum), ayah: num(currentAyahNum) }),
       });
 
       // Matches the old app's own wheel-click behaviour exactly: clicking a
@@ -1419,7 +1424,8 @@
       const crumbs = [{ label: "Whole Quran", level: "quran" }];
       if (exploreJuzNum != null) crumbs.push({ label: `Juz ${exploreJuzNum}`, level: "juz" });
       if (exploreSurahNum != null) {
-        const name = surahIndex.find((s) => s.surahNumber === exploreSurahNum)?.nameEnglish ?? `Surah ${exploreSurahNum}`;
+        const found = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
+        const name = found ? surahName(found.surahNumber, found.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
         crumbs.push({ label: name, level: "surah" });
       }
       if (exploreRukuIndex != null) crumbs.push({ label: `Ruku' ${exploreRukuIndex}`, level: "ruku" });
@@ -1469,7 +1475,7 @@
     async function renderExploreQuranLevel() {
       const trackable = currentTrackable();
       if (!trackable) {
-        exploreWheelContainer.innerHTML = `<p style="color:#8fa0c2;">Pick an Approach first.</p>`;
+        exploreWheelContainer.innerHTML = `<p style="color:#8fa0c2;">${t("Pick an Approach first.")}</p>`;
         exploreWheelLegendContainer.innerHTML = "";
         exploreSidebarContainer.innerHTML = "";
         return;
@@ -1543,9 +1549,10 @@
     async function renderExploreSurahLevel() {
       const trackable = currentTrackable();
       if (!trackable || exploreSurahNum == null) return;
-      exploreWheelContainer.innerHTML = "Loading this surah…";
+      exploreWheelContainer.innerHTML = t("Loading this surah…");
       const surahData = await getSurah(exploreSurahNum);
-      const surahName = surahIndex.find((s) => s.surahNumber === exploreSurahNum)?.nameEnglish ?? `Surah ${exploreSurahNum}`;
+      const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
+      const currentSurahName = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
       const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
       const labelsById = statusLabelsById();
@@ -1556,7 +1563,7 @@
           return { key: a.ayah, number: a.ayah, statusId, title: `Ayah ${a.ayah} — ${statusId.replace(/_/g, " ")}` };
         });
         const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
-        exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: surahName, centerSub: approachName });
+        exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: currentSurahName, centerSub: approachName });
         attachScopedWheelClickHandler(exploreWheelContainer, jumpToStudy);
         exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
         const sidebarItems = items.map((it) => ({ ...it, label: `Ayah ${it.key}` }));
@@ -1586,7 +1593,7 @@
         exploreLevel = "ruku";
         renderExplore();
       };
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: surahName, centerSub: approachName });
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: currentSurahName, centerSub: approachName });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToRuku);
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
       const sidebarItems = items.map((it) => ({ ...it, label: `Ruku' ${it.key}` }));
@@ -1605,11 +1612,12 @@
         const statusId = entries[`${buildUnitKey.ayah(exploreSurahNum, a.ayah)}::${trackable.id}`]?.claimedStatus ?? "not_started";
         return { key: a.ayah, number: a.ayah, statusId, title: `Ayah ${a.ayah} — ${statusId.replace(/_/g, " ")}` };
       });
-      const surahName = surahIndex.find((s) => s.surahNumber === exploreSurahNum)?.nameEnglish ?? `Surah ${exploreSurahNum}`;
+      const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
+      const currentSurahName = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
       const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
 
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `${surahName} · Ruku' ${exploreRukuIndex}`, centerSub: approachName });
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `${currentSurahName} · Ruku' ${exploreRukuIndex}`, centerSub: approachName });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToStudy);
       const labelsById = statusLabelsById();
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
@@ -1653,7 +1661,7 @@
       for (let a = from; a <= to; a++) ayahKeys.push(`${currentSurahNum}:${a}`);
 
       if (pageDisplayMode === "mushaf") {
-        pageViewContainer.innerHTML = `<p style="color:#888;">Loading Mushaf page…</p>`;
+        pageViewContainer.innerHTML = `<p style="color:#888;">${t("Loading Mushaf page…")}</p>`;
         try {
           await ensureMushafData();
           const pages = getMushafPagesForKeys(ayahKeys);
@@ -1664,7 +1672,7 @@
             (surahNum) => surahIndex.find((s) => s.surahNumber === surahNum)?.nameArabic ?? null
           );
         } catch (err) {
-          pageViewContainer.innerHTML = `<p style="color:#a33;">Couldn't load Mushaf page data (${err.message}).</p>`;
+          pageViewContainer.innerHTML = `<p style="color:#a33;">${t("Couldn't load Mushaf page data ({reason}).", { reason: err.message })}</p>`;
         }
         return;
       }
@@ -1706,7 +1714,7 @@
       } else {
         const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
         if (!ayah) return;
-        ayahPosition.textContent = `Surah ${currentSurahNum} — Ayah ${currentAyahNum} of ${currentSurahData.ayahCount}`;
+        ayahPosition.textContent = t("Surah {surah} — Ayah {ayah} of {total}", { surah: num(currentSurahNum), ayah: num(currentAyahNum), total: num(currentSurahData.ayahCount) });
         ayahSelect.value = String(currentAyahNum);
         prevAyahBtn.disabled = currentAyahNum <= 1;
         nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount;
@@ -1823,11 +1831,11 @@
 
       drillControlsEl.innerHTML = `
         <div class="row">
-          <div><label>Drill reciters</label><div id="drillReciterChecks">
+          <div><label>${t("Drill reciters")}</label><div id="drillReciterChecks">
             ${drillReciters.map((r) => `<label><input type="checkbox" class="drill-reciter-check" value="${r.id}" ${drillSelectedReciterIds.includes(r.id) ? "checked" : ""}/> ${r.label}</label>`).join("")}
           </div></div>
-          <div><label>Repeat</label><select id="drillRepeatSelect">${[1, 2, 3, 5, 10].map((n) => `<option value="${n}">${n}×</option>`).join("")}</select></div>
-          <div><label>Mode</label><select id="drillModeSelect"><option value="each">Each Ayah</option><option value="whole">Whole Unit</option></select></div>
+          <div><label>${t("Repeat")}</label><select id="drillRepeatSelect">${[1, 2, 3, 5, 10].map((n) => `<option value="${n}">${num(n)}×</option>`).join("")}</select></div>
+          <div><label>${t("Mode")}</label><select id="drillModeSelect"><option value="each">${t("Each Ayah")}</option><option value="whole">${t("Whole Unit")}</option></select></div>
           <div><button type="button" class="secondary" id="drillPlayBtn">▶ Play Drill</button></div>
           <div><button type="button" class="secondary" id="drillStopBtn">■ Stop Drill</button></div>
         </div>
@@ -1849,7 +1857,7 @@
       drillModeSelect.addEventListener("change", () => { drillMode = drillModeSelect.value; });
 
       drillPlayBtn.addEventListener("click", async () => {
-        if (!drillSelectedReciterIds?.length) { alert("Pick at least one reciter to drill."); return; }
+        if (!drillSelectedReciterIds?.length) { alert(t("Pick at least one reciter to drill.")); return; }
         const [fromAyah, toAyah] = currentUnitAyahBounds();
         drillPlayBtn.disabled = true;
         try {

@@ -36,6 +36,8 @@
 //              That file is already a small (460KB), static, GitHub-hosted
 //              JSON, so it's left in place rather than re-hosted.
 
+import { t } from "./i18n.js";
+
 const ENGLISH_FILENAMES = [
   "001 - Al-Fatihah ( The Opening ) - سورة الفاتحة.mp3",
   "002 - Al-Baqarah ( The Cow ) - سورة البقرة.mp3",
@@ -286,7 +288,7 @@ function ensureAudioEl() {
     audioEl = new Audio();
     audioEl.addEventListener("ended", handleEnded);
     audioEl.addEventListener("error", () => {
-      const message = `Couldn't play this audio: ${describeMediaError(audioEl.error?.code)}.`;
+      const message = t("Couldn't play this audio: {reason}.", { reason: describeMediaError(audioEl.error?.code) });
       currentPlaylist = null;
       currentRange = null;
       clearBoundaryListener();
