@@ -156,6 +156,7 @@
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
+    import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
       getMyMemberships,
@@ -196,6 +197,7 @@
     function renderNav(roles, viewAsRole) {
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountAppLangControl(navHomeExtra); // shell round 13 -- Settings -> Language; default handler reloads so every name comes back translated
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const seedStatusEl = document.getElementById("seedStatus");
@@ -276,7 +278,7 @@
               </td>`
             : "";
           return `<tr class="module-row" data-module-id="${m.id}" title="Click to jump to this module's subjects below">
-            <td>${m.icon ?? ""} ${langText(m.name, "en", m.id)}</td><td>${m.renderer}</td><td>${m.status}</td>${moveCell}
+            <td>${m.icon ?? ""} ${langText(m.name, getAppLang(), m.id)}</td><td>${m.renderer}</td><td>${m.status}</td>${moveCell}
           </tr>`;
         })
         .join("");
@@ -348,7 +350,7 @@
       // branch without noticing).
       const options = subjectTree
         .filter((n) => !excludeIds.has(n.id) && (n.status !== "archived" || n.id === selectedParentId))
-        .map((n) => `<option value="${n.id}" ${n.id === selectedParentId ? "selected" : ""}>${"— ".repeat(depthOf(n))}${langText(n.name, "en", n.id)} [${(n.moduleIds ?? []).join(", ") || "no module"}]</option>`)
+        .map((n) => `<option value="${n.id}" ${n.id === selectedParentId ? "selected" : ""}>${"— ".repeat(depthOf(n))}${langText(n.name, getAppLang(), n.id)} [${(n.moduleIds ?? []).join(", ") || "no module"}]</option>`)
         .join("");
       return `<option value="" ${!selectedParentId ? "selected" : ""}>(top level)</option>${options}`;
     }
@@ -356,7 +358,7 @@
     function parentDisplayName(node) {
       if (!node.parentId) return "(top level)";
       const parent = subjectTree.find((n) => n.id === node.parentId);
-      return parent ? langText(parent.name, "en", parent.id) : node.parentId;
+      return parent ? langText(parent.name, getAppLang(), parent.id) : node.parentId;
     }
 
     // confirmationRequired: null/undefined = "auto" (Architecture s6's
@@ -408,8 +410,8 @@
 
       if (canEdit && movingSubjectId === node.id) {
         return `<tr id="subj-row-${node.id}">
-          <td class="depth-${depthOf(node)}">${langText(node.name, "en", node.id)}</td>
-          <td>${node.gloss ? langText(node.gloss, "en", "") : ""}</td>
+          <td class="depth-${depthOf(node)}">${langText(node.name, getAppLang(), node.id)}</td>
+          <td>${node.gloss ? langText(node.gloss, getAppLang(), "") : ""}</td>
           <td>${modules}</td>
           <td><select class="movingParentSelect">${parentOptionsHtml(node.parentId, node.id)}</select></td>
           <td>${node.status}</td>
@@ -423,10 +425,10 @@
       }
 
       if (canEdit && editingSubjectId === node.id) {
-        const escapedName = langText(node.name, "en", node.id).replace(/"/g, "&quot;");
+        const escapedName = langText(node.name, getAppLang(), node.id).replace(/"/g, "&quot;");
         return `<tr id="subj-row-${node.id}">
           <td class="depth-${depthOf(node)}"><input type="text" class="editNameInput" value="${escapedName}" /></td>
-          <td>${node.gloss ? langText(node.gloss, "en", "") : ""}</td>
+          <td>${node.gloss ? langText(node.gloss, getAppLang(), "") : ""}</td>
           <td>${modules}</td>
           <td><select class="editParentSelect">${parentOptionsHtml(node.parentId, node.id)}</select></td>
           <td>${node.status}</td>
@@ -458,8 +460,8 @@
         ? `<td>${moveButtons}<button class="small secondary editSubjBtn" data-id="${node.id}">Edit</button> ${archiveBtn}</td>`
         : "";
       return `<tr id="subj-row-${node.id}">
-        <td class="depth-${depthOf(node)}">${subjectToggleHtml(node)}${langText(node.name, "en", node.id)}</td>
-        <td>${node.gloss ? langText(node.gloss, "en", "") : ""}</td>
+        <td class="depth-${depthOf(node)}">${subjectToggleHtml(node)}${langText(node.name, getAppLang(), node.id)}</td>
+        <td>${node.gloss ? langText(node.gloss, getAppLang(), "") : ""}</td>
         <td>${modules}</td>
         <td>${parentDisplayName(node)}</td>
         <td>${node.status}</td>
@@ -586,7 +588,7 @@
             ? ` It has ${childCount} sub-item(s) underneath it — they'll stay active, just nested under an archived subject.`
             : "";
           const label = nextStatus === "archived" ? "Archive" : "Restore";
-          if (!confirm(`${label} "${langText(node.name, "en", node.id)}"?${warning}`)) return;
+          if (!confirm(`${label} "${langText(node.name, getAppLang(), node.id)}"?${warning}`)) return;
 
           btn.disabled = true;
           const outcome = await safeWrite(
@@ -615,7 +617,7 @@
           }
 
           btn.disabled = true;
-          if (nextName !== langText(node.name, "en", node.id)) {
+          if (nextName !== langText(node.name, getAppLang(), node.id)) {
             const outcome = await safeWrite(
               () => editCatalogueNode(db, TENANT.SUBJECTS, activeTenantId, node.id, { name: { ...node.name, en: nextName } }, auth.currentUser.uid),
               { collection: "subjects", action: "editName", id: node.id }
@@ -666,15 +668,15 @@
         : "";
       return `<tr>
         <td>${t.order}</td>
-        <td>${langText(t.name, "en", t.id)}</td>
-        <td>${langText(t.groupName, "en", `Section ${t.group}`)}</td>
+        <td>${langText(t.name, getAppLang(), t.id)}</td>
+        <td>${langText(t.groupName, getAppLang(), `Section ${t.group}`)}</td>
         <td>${t.status}</td>
         <td>
           <button class="small secondary guideBtn" data-id="${t.id}">Guide</button>
           <div class="guideBox" id="guide-${t.id}" style="display:none;">
-            <strong>What:</strong> ${langText(t.guide?.what, "en", "")}<br/>
-            <strong>How:</strong> ${langText(t.guide?.how, "en", "")}<br/>
-            <strong>Measure:</strong> ${langText(t.guide?.measure, "en", "")}
+            <strong>What:</strong> ${langText(t.guide?.what, getAppLang(), "")}<br/>
+            <strong>How:</strong> ${langText(t.guide?.how, getAppLang(), "")}<br/>
+            <strong>Measure:</strong> ${langText(t.guide?.measure, getAppLang(), "")}
           </div>
         </td>
         ${actionCell}
@@ -704,7 +706,7 @@
       trackablesBody.querySelectorAll(".editTrkBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {
           const t = trackableList.find((x) => x.id === btn.dataset.id);
-          const nextName = prompt("New name for this Approach:", langText(t.name, "en", t.id));
+          const nextName = prompt("New name for this Approach:", langText(t.name, getAppLang(), t.id));
           if (nextName == null || nextName.trim() === "") return;
           const outcome = await safeWrite(
             () => editCatalogueNode(db, TENANT.TRACKABLES, activeTenantId, t.id, { name: { ...t.name, en: nextName.trim() } }, auth.currentUser.uid),
@@ -720,7 +722,7 @@
           const t = trackableList.find((x) => x.id === btn.dataset.id);
           const nextStatus = btn.dataset.next;
           const label = nextStatus === "archived" ? "Archive" : "Restore";
-          if (!confirm(`${label} "${langText(t.name, "en", t.id)}"?`)) return;
+          if (!confirm(`${label} "${langText(t.name, getAppLang(), t.id)}"?`)) return;
 
           btn.disabled = true;
           const outcome = await safeWrite(
@@ -743,7 +745,7 @@
 
       levelLadderSelect.innerHTML = allLadders
         .filter((l) => l.status !== "archived")
-        .map((l) => `<option value="${l.id}">${langText(l.name, "en", l.id)}</option>`)
+        .map((l) => `<option value="${l.id}">${langText(l.name, getAppLang(), l.id)}</option>`)
         .join("");
 
       const rows = [];
@@ -755,14 +757,14 @@
               const archiveBtn = canEdit
                 ? `<button class="small secondary archiveLevelBtn" data-id="${lv.id}" data-next="${lv.status === "archived" ? "active" : "archived"}">${lv.status === "archived" ? "Restore" : "Archive"}</button>`
                 : "";
-              return `<span style="display:inline-block; margin:0.15rem 0.4rem 0.15rem 0;">${langText(lv.name, "en", lv.id)}${lv.status === "archived" ? " (archived)" : ""} ${archiveBtn}</span>`;
+              return `<span style="display:inline-block; margin:0.15rem 0.4rem 0.15rem 0;">${langText(lv.name, getAppLang(), lv.id)}${lv.status === "archived" ? " (archived)" : ""} ${archiveBtn}</span>`;
             }).join("")
           : "(no levels yet)";
         const ladderArchiveBtn = canEdit
           ? `<button class="small secondary archiveLadderBtn" data-id="${ladder.id}" data-next="${ladder.status === "archived" ? "active" : "archived"}">${ladder.status === "archived" ? "Restore" : "Archive"}</button>`
           : "";
         rows.push(`<tr>
-          <td>${langText(ladder.name, "en", ladder.id)}${ladder.status === "archived" ? " (archived)" : ""}</td>
+          <td>${langText(ladder.name, getAppLang(), ladder.id)}${ladder.status === "archived" ? " (archived)" : ""}</td>
           <td>${ladderArchiveBtn}</td>
           <td>${levelChips}</td>
         </tr>`);

@@ -93,6 +93,7 @@
     import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
+    import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
       getMyMemberships,
@@ -117,6 +118,7 @@
     function renderNav(roles, viewAsRole) {
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountAppLangControl(navHomeExtra); // shell round 13 -- Settings -> Language; default handler reloads so every name comes back translated
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const createFieldset = document.getElementById("createFieldset");
@@ -173,14 +175,14 @@
       subjectTree = await getSubjectTree(db, activeTenantId);
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       subjectChecks.innerHTML = leaves
-        .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, "en", n.id)}</label>`)
+        .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, getAppLang(), n.id)}</label>`)
         .join("") || `<span class="muted">No subjects yet.</span>`;
 
       await refreshClasses();
     }
 
-    function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, "en", id) : id; }
-    function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, "en", id) : id; }
+    function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
+    function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; }
 
     // -----------------------------------------------------------------------
     // Classes.
@@ -211,7 +213,7 @@
         : "";
       const enrolControls = canAdmin && c.status === "active" ? renderEnrolControls(c) : "";
       return `<div class="card">
-        <h3>${langText(c.name, "en", c.id)} <span class="pill pill-${c.status}">${c.status}</span></h3>
+        <h3>${langText(c.name, getAppLang(), c.id)} <span class="pill pill-${c.status}">${c.status}</span></h3>
         <div class="muted">${subjectsLine}</div>
         ${c.gloss?.en ? `<div class="muted">${c.gloss.en}</div>` : ""}
         ${enrolControls}
@@ -222,7 +224,7 @@
     }
 
     function renderEnrolControls(c) {
-      const personOptions = roster.map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`).join("");
+      const personOptions = roster.map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`).join("");
       return `<div class="row" style="margin-top:0.5rem;">
         <div><label>Person</label><select class="enrolPersonSelect" data-class="${c.id}">${personOptions}</select></div>
         <div><label>Role</label><select class="enrolRoleSelect" data-class="${c.id}">

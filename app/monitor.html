@@ -115,6 +115,7 @@
     import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
+    import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import {
       getMyMemberships,
       initializeActiveContext,
@@ -138,6 +139,7 @@
     function renderNav(roles, viewAsRole) {
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountAppLangControl(navHomeExtra); // shell round 13 -- Settings -> Language; default handler reloads so every name comes back translated
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
@@ -211,7 +213,7 @@
       // front avoids a batch of denied reads breaking the whole report.
       visibleRoster = scopedRoster(roster, effRoles, myPersonId);
       personSelect.innerHTML = visibleRoster
-        .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
         .join("");
 
       if (!weekAnchor.value) weekAnchor.value = toDateInputValue(new Date());
@@ -307,9 +309,9 @@
       `;
     }
 
-    function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, "en", id) : id; }
-    function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, "en", id) : id; }
-    function trackableName(id) { const t = trackableList.find((tr) => tr.id === id); return t ? langText(t.name, "en", id) : (id ?? "—"); }
+    function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; }
+    function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
+    function trackableName(id) { const t = trackableList.find((tr) => tr.id === id); return t ? langText(t.name, getAppLang(), id) : (id ?? "—"); }
 
     weekTabBtn.addEventListener("click", () => {
       reportMode = "week";

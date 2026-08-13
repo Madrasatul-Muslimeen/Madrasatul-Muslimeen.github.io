@@ -45,6 +45,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { peekInviteToken, resolveInviteToken, acceptInvite } from "./js/invites.js";
     import { langText } from "./js/lang.js";
+    import { getAppLang } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
 
     const boxEl = document.getElementById("box");
@@ -119,7 +120,7 @@
           return;
         }
 
-        const tenantName = langText(invite.tenantName, "en", "this account");
+        const tenantName = langText(invite.tenantName, getAppLang(), "this account");
         boxEl.className = "info";
         boxEl.textContent = `You're invited to join ${tenantName} as ${invite.role}.`;
         acceptArea.style.display = "block";

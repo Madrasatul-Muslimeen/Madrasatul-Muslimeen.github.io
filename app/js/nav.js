@@ -47,6 +47,12 @@
 // I2: a renderer, not a module -- takes roles in, HTML out. Never touches
 // Firebase, never computes roles itself; the caller already knows them from
 // its own sign-in bootstrap.
+//
+// Shell round 13 (13 Aug 2026): Settings -> Language is now a real control.
+// The one import below is a constant list of languages, not state -- see
+// renderSettings() for why that keeps this file's purity intact.
+
+import { APP_LANGS } from "./prefs.js";
 
 const STUDY_LINKS = [
   { href: "quranrevival.html", label: "Quran Study" }, // renamed from "Study" -- see shell round 4
@@ -79,12 +85,13 @@ const ADMIN_LINKS = [
   { href: "catalogue.html", label: "Catalogue" },
 ];
 
-// Bookmark and Settings: placeholders only this round, per the owner
-// (11 Aug 2026) -- Bookmark's real design (per-subject, multiple named
-// bookmarks, its own page, resume-where-left-off) and Settings (Language,
-// Appearance) are both explicit future work, not oversights.
+// Bookmark: placeholder only -- its real design (per-subject, multiple
+// named bookmarks, its own page, resume-where-left-off) is explicit future
+// work, not an oversight.
 const BOOKMARK_PLACEHOLDERS = ["Bookmark"];
-const SETTINGS_PLACEHOLDERS = ["Language", "Appearance"];
+// Settings: Language became real in shell round 13 (13 Aug 2026) -- see
+// renderSettings() below. Appearance is still a placeholder.
+const SETTINGS_PLACEHOLDERS = ["Appearance"];
 
 // Phase 13 round 1: About reads the feature registry live (getFullRegistry()).
 const ABOUT_LINKS = [{ href: "about.html", label: "About" }];
@@ -169,6 +176,28 @@ export function renderHomeExtras(roles = []) {
     ? `<div class="nav-cat-group"><div class="nav-cat-group-label">Admin</div>${renderLinks(ADMIN_LINKS, currentFile, canAdmin)}</div>`
     : "";
   const aboutHtml = `<div class="nav-cat-group">${renderLinks(ABOUT_LINKS, currentFile, canAdmin)}</div>`;
-  const settingsHtml = `<div class="nav-cat-group"><div class="nav-cat-group-label">Settings</div>${renderPlaceholders(SETTINGS_PLACEHOLDERS)}</div>`;
-  return adminHtml + aboutHtml + settingsHtml;
+  return adminHtml + aboutHtml + renderSettings();
+}
+
+// Shell round 13 (13 Aug 2026) -- Language is a real control now, not the
+// disabled placeholder it had been since shell round 3. It sits here, under
+// Home -> Settings, because it is an ALL-MODULES choice about which language
+// user-visible names appear in; it used to live inside the Quran module's
+// own Study options purely because nothing global existed to put it in.
+//
+// This function stays a PURE renderer, exactly like everything else in this
+// file (I2): it emits the <select> and nothing more. It does NOT read the
+// stored preference and does NOT attach a change handler -- the caller does
+// both, in one line, via mountAppLangControl() from js/prefs.js. That keeps
+// nav.js free of state and side effects, which is what lets any page render
+// it before sign-in resolves without consequence.
+//
+// APP_LANGS is imported rather than re-typed so the option list and the
+// preference reader can never disagree about what languages exist. It is a
+// constant, not state -- importing it does not compromise the purity above.
+function renderSettings() {
+  const options = APP_LANGS.map((l) => `<option value="${l.id}">${l.label}</option>`).join("");
+  return `<div class="nav-cat-group"><div class="nav-cat-group-label">Settings</div>
+    <div class="nav-setting"><label for="navAppLangSelect">Language</label><select id="navAppLangSelect">${options}</select></div>
+    ${renderPlaceholders(SETTINGS_PLACEHOLDERS)}</div>`;
 }

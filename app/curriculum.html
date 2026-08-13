@@ -204,6 +204,7 @@
     import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
+    import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
       getMyMemberships,
@@ -232,6 +233,7 @@
     function renderNav(roles, viewAsRole) {
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountAppLangControl(navHomeExtra); // shell round 13 -- Settings -> Language; default handler reloads so every name comes back translated
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const noAdminNote = document.getElementById("noAdminNote");
@@ -305,14 +307,14 @@
       return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: activeMembership?.personId ?? null };
     }
 
-    function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, "en", id) : id; }
-    function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, "en", id) : id; }
-    function ladderName(id) { const l = ladders.find((x) => x.id === id); return l ? langText(l.name, "en", id) : id; }
+    function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
+    function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; }
+    function ladderName(id) { const l = ladders.find((x) => x.id === id); return l ? langText(l.name, getAppLang(), id) : id; }
     function levelName(ladderId, id) {
       const lv = (levelsByLadder.get(ladderId) ?? []).find((x) => x.id === id);
-      return lv ? langText(lv.name, "en", id) : id;
+      return lv ? langText(lv.name, getAppLang(), id) : id;
     }
-    function unitName(id) { const u = units.find((x) => x.id === id); return u ? langText(u.name, "en", id) : id; }
+    function unitName(id) { const u = units.find((x) => x.id === id); return u ? langText(u.name, getAppLang(), id) : id; }
     function ladderIdForLevel(levelId) {
       for (const [ladderId, levels] of levelsByLadder.entries()) {
         if (levels.some((l) => l.id === levelId)) return ladderId;
@@ -337,16 +339,16 @@
       subjectTree = await getSubjectTree(db, activeTenantId);
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       unitSubjectChecks.innerHTML = leaves
-        .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, "en", n.id)}</label>`)
+        .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, getAppLang(), n.id)}</label>`)
         .join("") || `<span class="muted">No subjects yet.</span>`;
 
       ladders = (await listLadders(db, activeTenantId)).filter((l) => l.status === "active");
       levelsByLadder = new Map();
       for (const l of ladders) levelsByLadder.set(l.id, await listLevels(db, activeTenantId, l.id));
 
-      const ladderOptions = `<option value="">—</option>` + ladders.map((l) => `<option value="${l.id}">${langText(l.name, "en", l.id)}</option>`).join("");
+      const ladderOptions = `<option value="">—</option>` + ladders.map((l) => `<option value="${l.id}">${langText(l.name, getAppLang(), l.id)}</option>`).join("");
       unitLadderSelect.innerHTML = ladderOptions;
-      gradeLadderSelect.innerHTML = ladders.map((l) => `<option value="${l.id}">${langText(l.name, "en", l.id)}</option>`).join("")
+      gradeLadderSelect.innerHTML = ladders.map((l) => `<option value="${l.id}">${langText(l.name, getAppLang(), l.id)}</option>`).join("")
         || `<option value="">No ladders yet — create one on the Catalogue page</option>`;
       refreshUnitLevelOptions();
       refreshGradeLevelOptions();
@@ -356,7 +358,7 @@
       planTermSelect.innerHTML = [1, 2, 3, 4].map((t) => `<option value="${t}">Term ${t}</option>`).join("");
       planWeekSelect.innerHTML = Array.from({ length: 10 }, (_, i) => i + 1).map((w) => `<option value="${w}">Week ${w}</option>`).join("");
 
-      gradePersonSelect.innerHTML = roster.map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`).join("");
+      gradePersonSelect.innerHTML = roster.map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`).join("");
       gradeFromDateInput.value = new Date().toISOString().slice(0, 10);
 
       refreshPlanContextOptions();
@@ -368,7 +370,7 @@
       unitLevelSelect.innerHTML = `<option value="">—</option>` + levels
         .filter((l) => l.status === "active")
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-        .map((l) => `<option value="${l.id}">${langText(l.name, "en", l.id)}</option>`).join("");
+        .map((l) => `<option value="${l.id}">${langText(l.name, getAppLang(), l.id)}</option>`).join("");
     }
     unitLadderSelect.addEventListener("change", refreshUnitLevelOptions);
 
@@ -377,7 +379,7 @@
       gradeLevelSelect.innerHTML = levels
         .filter((l) => l.status === "active")
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-        .map((l) => `<option value="${l.id}">${langText(l.name, "en", l.id)}</option>`).join("")
+        .map((l) => `<option value="${l.id}">${langText(l.name, getAppLang(), l.id)}</option>`).join("")
         || `<option value="">No levels yet</option>`;
     }
     gradeLadderSelect.addEventListener("change", refreshGradeLevelOptions);
@@ -414,7 +416,7 @@
       const existingOptions = resources.filter((r) => r.status === "active" && !(u.resourceIds ?? []).includes(r.id))
         .map((r) => `<option value="${r.id}">${r.type === "link" ? r.url : (r.body ?? "").slice(0, 40)}</option>`).join("");
       return `<div class="card">
-        <h3>${langText(u.name, "en", u.id)} <span class="pill pill-${u.status}">${u.status}</span></h3>
+        <h3>${langText(u.name, getAppLang(), u.id)} <span class="pill pill-${u.status}">${u.status}</span></h3>
         <div class="muted">${subjectsLine}</div>
         ${levelLine ? `<div class="muted">${levelLine}</div>` : ""}
         ${attached}
@@ -487,15 +489,15 @@
     function refreshPlanContextOptions() {
       const type = planContextTypeSelect.value;
       planContextSelect.innerHTML = type === "class"
-        ? classes.map((c) => `<option value="${c.id}">${langText(c.name, "en", c.id)}</option>`).join("") || `<option value="">No classes yet</option>`
-        : roster.map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`).join("");
+        ? classes.map((c) => `<option value="${c.id}">${langText(c.name, getAppLang(), c.id)}</option>`).join("") || `<option value="">No classes yet</option>`
+        : roster.map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`).join("");
     }
     planContextTypeSelect.addEventListener("change", async () => { refreshPlanContextOptions(); await refreshPlan(); });
     planContextSelect.addEventListener("change", refreshPlan);
 
     function refreshPlanUnitOptions() {
       const active = units.filter((u) => u.status === "active");
-      planUnitSelect.innerHTML = active.map((u) => `<option value="${u.id}">${langText(u.name, "en", u.id)}</option>`).join("")
+      planUnitSelect.innerHTML = active.map((u) => `<option value="${u.id}">${langText(u.name, getAppLang(), u.id)}</option>`).join("")
         || `<option value="">No units yet</option>`;
     }
 
@@ -631,7 +633,7 @@
         ]);
         const currentLines = ladders.map((l) => {
           const row = current.get(l.id);
-          return `<div>${langText(l.name, "en", l.id)}: ${row ? levelName(l.id, row.levelId) : "<span class=\"muted\">not assigned</span>"}</div>`;
+          return `<div>${langText(l.name, getAppLang(), l.id)}: ${row ? levelName(l.id, row.levelId) : "<span class=\"muted\">not assigned</span>"}</div>`;
         }).join("") || `<p class="muted">No ladders yet.</p>`;
         const historyLines = history.length
           ? history.map((row) => `<div class="muted">${ladderName(row.ladderId)} — ${levelName(row.ladderId, row.levelId)}, from ${row.fromDate}${row.effectiveToDate ? ` to ${row.effectiveToDate}` : " (current)"}</div>`).join("")

@@ -26,6 +26,7 @@ import {
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { langText } from "./lang.js";
+import { getAppLang, mountAppLangControl } from "./prefs.js";
 import { safeWrite } from "./errors.js";
 import {
   getMyMemberships, initializeActiveContext, getActiveContext, setActiveContext,
@@ -73,6 +74,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
   function renderNav(roles, viewAsRole) {
     navBar.innerHTML = renderNavBar(roles, viewAsRole);
     navHomeExtra.innerHTML = renderHomeExtras(roles);
+    mountAppLangControl(navHomeExtra); // shell round 13 -- Settings -> Language; default handler reloads so every name comes back translated
   }
   const tenantSelect = document.getElementById("tenantSelect");
   const personSelect = document.getElementById("personSelect");
@@ -145,7 +147,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
     const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
     personSelect.innerHTML = visibleRoster
-      .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+      .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
       .join("");
     selectedPersonId = visibleRoster[0]?.id ?? null;
 
@@ -158,7 +160,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const root = moduleSubjects.find((n) => n.id === rootSubjectId);
     currentParentId = rootSubjectId;
     chunkSubjectId = rootSubjectId;
-    rootLabel = root ? langText(root.name, "en", moduleId) : moduleId;
+    rootLabel = root ? langText(root.name, getAppLang(), moduleId) : moduleId;
 
     await refreshChunk();
     await refreshWeekActivity();
@@ -215,7 +217,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
     const entries = recentResumeEntries(bookmarksDoc, 5).map((e) => {
       const node = e.moduleId === moduleId ? moduleSubjects.find((n) => n.id === e.subjectId) : null;
-      return { ...e, subjectLabel: node ? langText(node.name, "en", node.id) : null };
+      return { ...e, subjectLabel: node ? langText(node.name, getAppLang(), node.id) : null };
     });
     continueStripContainer.innerHTML = renderContinueStrip(entries);
   }
@@ -316,7 +318,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const loggedToday = hasLoggedOn(currentWeekActivity, node.id, todayIso());
 
     detailContainer.innerHTML = `<div class="topic-detail">
-      <h2>${langText(node.name, "en", node.id)}</h2>
+      <h2>${langText(node.name, getAppLang(), node.id)}</h2>
       ${renderTopicResource(resource)}
       <p>${statusLine}</p>
       <p>${loggedToday ? "Logged today ✓" : "Not logged today yet."}</p>
@@ -353,10 +355,10 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const streakCount = computeStreak(recentWeeks, node.id);
     const loggedToday = hasLoggedOn(currentWeekActivity, node.id, todayIso());
 
-    const title = `${langText(node.name, "en", node.id)} — Practised`;
+    const title = `${langText(node.name, getAppLang(), node.id)} — Practised`;
     const tabBodies = {
       Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
-      Guide: renderGuideTab(practisedTrackable, "en"),
+      Guide: renderGuideTab(practisedTrackable, getAppLang()),
       Streak: renderStreakTab(streakCount, loggedToday),
       Breakdown: renderBreakdownTab(statusIdsForTrackable),
     };

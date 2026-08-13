@@ -18,6 +18,7 @@ import {
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { langText } from "./lang.js";
+import { getAppLang, mountAppLangControl } from "./prefs.js";
 import { safeWrite } from "./errors.js";
 import {
   getMyMemberships, initializeActiveContext, getActiveContext, setActiveContext,
@@ -52,6 +53,7 @@ export function initAsmaStudyPage() {
   function renderNav(roles, viewAsRole) {
     navBar.innerHTML = renderNavBar(roles, viewAsRole);
     navHomeExtra.innerHTML = renderHomeExtras(roles);
+    mountAppLangControl(navHomeExtra); // shell round 13 -- Settings -> Language; default handler reloads so every name comes back translated
   }
   const tenantSelect = document.getElementById("tenantSelect");
   const personSelect = document.getElementById("personSelect");
@@ -112,7 +114,7 @@ export function initAsmaStudyPage() {
 
     const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
     personSelect.innerHTML = visibleRoster
-      .map((p) => `<option value="${p.id}">${langText(p.name, "en", p.id)}</option>`)
+      .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
       .join("");
     selectedPersonId = visibleRoster[0]?.id ?? null;
 
@@ -193,7 +195,7 @@ export function initAsmaStudyPage() {
     const title = `${name.transliteration} — Studied`;
     const tabBodies = {
       Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
-      Guide: renderGuideTab(studiedTrackable, "en"),
+      Guide: renderGuideTab(studiedTrackable, getAppLang()),
       Breakdown: renderBreakdownTab(statusIdsForTrackable),
     };
     wayModalMount.innerHTML = renderWayModalShell(title, tabBodies, ["Track", "Guide", "Breakdown"]);

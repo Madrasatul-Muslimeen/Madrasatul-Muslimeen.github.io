@@ -15,6 +15,7 @@
 import { collection, query, where, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { langText } from "./lang.js";
+import { getAppLang } from "./prefs.js";
 
 const STORAGE_KEY = "qr.sessionContext";
 
@@ -61,7 +62,7 @@ export async function getMyMemberships(db, uid) {
         tenantId: m.tenantId,
         personId: m.personId,
         roles: m.roles,
-        tenantName: tenantSnap.exists() ? langText(tenantSnap.data().name, "en", m.tenantId) : m.tenantId,
+        tenantName: tenantSnap.exists() ? langText(tenantSnap.data().name, getAppLang(), m.tenantId) : m.tenantId,
       };
     })
   );
