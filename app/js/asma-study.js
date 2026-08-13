@@ -193,7 +193,7 @@ export function initAsmaStudyPage() {
       .filter((e) => e.trackableId === TRACKABLE_ID)
       .map((e) => e.claimedStatus);
 
-    const title = `${name.transliteration} — Studied`;
+    const title = `${name.transliteration} — ${t("Studied")}`;
     const tabBodies = {
       Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
       Guide: renderGuideTab(studiedTrackable, getAppLang()),

@@ -33,7 +33,7 @@ const NOT_USER_FACING = new Set([
 const AREAS = {
   shell: ["js/nav.js", "js/splash.js", "js/unit-keys.js", "about.html", "index.html", "onboarding.html", "accept-invite.html"],
   quran: ["quranrevival.html", "js/mastery-wheel.js", "js/way-modal.js", "js/ayah-renderer.js", "js/hifz-renderer.js", "js/audio-player.js", "js/quran-data.js"],
-  modules: ["deen-study.html", "arabic-study.html", "hadith-study.html", "general-study.html", "naturelife-study.html", "life-skill.html", "health-study.html", "ldog-study.html", "asma-study.html", "js/topic-study.js", "js/routine-study.js", "js/asma-study.js", "js/topic-renderer.js", "js/asma-renderer.js"],
+  modules: ["deen-study.html", "arabic-study.html", "hadith-study.html", "general-study.html", "naturelife-study.html", "life-skill.html", "health-study.html", "ldog-study.html", "asma-study.html", "js/topic-study.js", "js/routine-study.js", "js/asma-study.js", "js/topic-renderer.js", "js/asma-renderer.js", "js/catalogue-data.js"],
   tracking: ["records.html", "monitor.html", "homework.html", "course-offers.html", "js/monitor.js", "js/continue-strip.js", "js/bookmarks.js", "js/records.js", "js/activity.js"],
   admin: ["people.html", "catalogue.html", "curriculum.html", "classes.html", "js/catalogue.js", "js/people.js", "js/curriculum.js", "js/classes.js", "js/grades.js", "js/invites.js", "js/identity.js", "js/resources.js"],
   asma: ["js/asma-data.js", "js/asma-posters.js"],
@@ -52,6 +52,19 @@ function listFiles() {
 }
 
 const STRIP_COMMENTS = (s) => s.replace(/^\s*\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+
+// HTML entities must be decoded before a markup string can be used as a
+// catalogue key. translateStatic() reads TEXT NODES from the live DOM, where
+// `&amp;` has already become `&` and `&mdash;` has become `—`. A key written
+// in the raw source form can therefore never match at runtime -- the report
+// would say the string was translated while the page still showed English.
+// Found by probing a real rendered page, not by reading the report.
+const ENTITIES = {
+  "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'", "&apos;": "'",
+  "&nbsp;": " ", "&hellip;": "…", "&mdash;": "—", "&ndash;": "–",
+  "&bull;": "•", "&middot;": "·", "&rarr;": "→", "&larr;": "←", "&times;": "×",
+};
+const decodeEntities = (s) => s.replace(/&[a-z]+;|&#\d+;/gi, (e) => ENTITIES[e] ?? e);
 const LOOKS_USER_FACING = (s) =>
   // Two letters, not three. "Go to" is a real on-screen label with no
   // three-letter word in it, and a {3,} rule silently excluded it -- the
@@ -81,11 +94,16 @@ function extract(file) {
       .replace(/<style[\s\S]*?<\/style>/g, "")
       .replace(/<!--[\s\S]*?-->/g, "");
     for (const m of markup.matchAll(/>([^<>]+)</g)) {
-      const s = m[1].trim();
-      if (s && !s.startsWith("&") && LOOKS_USER_FACING(s)) found.add(s);
+      const raw = m[1].trim();
+      // A node that is ONLY an entity (&times;, &nbsp;) is punctuation, not
+      // wording -- skip it, but decode everything else so the key matches
+      // the text node the app will actually look up.
+      if (!raw || /^(?:&[a-z]+;|&#\d+;)+$/i.test(raw)) continue;
+      const s = decodeEntities(raw);
+      if (LOOKS_USER_FACING(s)) found.add(s);
     }
     for (const m of markup.matchAll(/(?:placeholder|title|aria-label|alt)="([^"]+)"/g)) {
-      const s = m[1].trim();
+      const s = decodeEntities(m[1].trim());
       if (LOOKS_USER_FACING(s)) found.add(s);
     }
   }
@@ -118,6 +136,18 @@ function extract(file) {
   }
   for (const m of code.matchAll(/label:\s*"([^"]{2,70})"/g)) {
     const s = m[1].trim();
+    if (LOOKS_USER_FACING(s)) found.add(s);
+  }
+
+  // PLATFORM DATA (phase 3). catalogue-data.js and asma-data.js wrap every
+  // user-visible string in a small language-key helper -- en("Deen Study"),
+  // nameLang("Memorise", "..."), m("The Most Merciful"). These are seeded
+  // into each tenant's Firestore documents, and langText() now falls back
+  // through the same catalogue for them, so they are translatable and must
+  // be counted. Without this the report would call an area finished while
+  // every subject name on the screen was still English.
+  for (const m of code.matchAll(/\b(?:en|nameLang|m)\(\s*"((?:[^"\\]|\\.)*)"/g)) {
+    const s = m[1].replace(/\\(["'\\])/g, "$1").trim();
     if (LOOKS_USER_FACING(s)) found.add(s);
   }
   return found;
