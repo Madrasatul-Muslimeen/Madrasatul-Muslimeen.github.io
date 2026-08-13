@@ -141,6 +141,47 @@
   .qr-panel h2 { margin-top: 1rem; }
   .study-options-body .row:first-child { margin-top: 0; }
 
+  /* ---------- Study options: the owner's three bars (shell round 11) --------
+     Four cells to a line on bars 1-2, three buttons on bar 3, each line fitting
+     a phone without wrapping -- minmax(0,1fr) is what makes a <select> shrink
+     inside its column instead of pushing the line wider. Bars 1-2 are the
+     choices themselves; bar 3's first two open a card below rather than each
+     costing a permanent row. */
+  .opt-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem 0.4rem; align-items: end; margin: 0.45rem 0; }
+  .opt-bar-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+  .study-options-body > .opt-bar:first-child { margin-top: 0; }
+  .opt-cell { min-width: 0; }
+  .opt-cell > label { margin: 0 0 0.15rem; font-size: 0.72rem; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .opt-cell > select, .opt-cell input[type="text"] { width: 100%; box-sizing: border-box; font-size: 0.82rem; padding: 0.3rem 0.25rem; }
+  /* One shared control height, so a text input and a <select> sitting in
+     neighbouring columns line up instead of missing each other by 2px. */
+  .opt-cell > select, .opt-cell input[type="text"], .opt-jump button { height: 1.85rem; }
+  .opt-jump { display: flex; gap: 0.2rem; }
+  .opt-jump input { flex: 1 1 auto; min-width: 0; }
+  .opt-jump button { flex: 0 0 auto; padding: 0.3rem 0.45rem; font-size: 0.78rem; }
+  .opt-msg { font-size: 0.78rem; color: #a33; margin: 0 0 0.35rem; }
+  .opt-msg[hidden] { display: none; }
+  /* Same border/radius/weight and same open-state colouring as the dock tabs
+     and the nav bar's categories -- one disclosure language on this page. */
+  .opt-btn { width: 100%; background: white; color: #1F3A6E; border: 1px solid #ddd; border-radius: 0.5rem; font-weight: 700; font-size: 0.82rem; padding: 0.5rem 0.3rem; }
+  .opt-btn[aria-expanded="true"] { background: #1F3A6E; color: white; border-color: #1F3A6E; }
+  .opt-btn[aria-expanded="true"]::after { content: " \25B4"; font-size: 0.7em; color: #cfe0ff; }
+  .opt-btn[aria-expanded="false"]::after { content: " \25BE"; font-size: 0.7em; color: #888; }
+  .opt-btn-primary { background: #1F3A6E; color: white; border-color: #1F3A6E; }
+  .opt-card { border: 1px solid #dde3ef; border-left: 3px solid #C9A24B; border-radius: 0.6rem; background: #fbfcfe; padding: 0.4rem 0.7rem 0.6rem; margin: 0 0 0.5rem; box-shadow: 0 6px 18px rgba(20,30,55,0.08); }
+  .opt-card[hidden] { display: none; }
+  .opt-card h4 { margin: 0.4rem 0 0.1rem; }
+  .opt-card .row { margin: 0.35rem 0; }
+  /* The reciter <select> sizes itself to its longest option name, which is
+     wider than a phone -- it used to overflow the Study screen the same way,
+     it just has a visible card edge to overflow now. */
+  .opt-card select { max-width: 100%; }
+  .opt-note { font-size: 0.75rem; color: #777; margin: 0.3rem 0 0; }
+  .opt-note[hidden] { display: none; }
+  .opt-summary { display: flex; flex-wrap: wrap; gap: 0.25rem 0.35rem; font-size: 0.76rem; color: #445; border-top: 1px solid #eef1f7; padding-top: 0.45rem; margin-top: 0.1rem; }
+  .opt-sum-item { background: #f2f5fa; border-radius: 0.8rem; padding: 0.12rem 0.55rem; }
+  .opt-sum-item b { color: #1F3A6E; font-weight: 700; }
+
   /* ---------- Mastery Wheel (Phase 5 round 12) ----------
      Dark navy/gold theme, restyled to match index.html's wheel page --
      fonts, palette and ring geometry read from its CSS/JS, never imported
@@ -370,26 +411,33 @@
       <div id="panelStudyOptions" class="qr-panel" hidden>
         <div class="qr-panel-head">Study options <button type="button" class="qr-panel-x" data-close-panel aria-label="Close">&times;</button></div>
         <div class="study-options-body">
-        <div class="row">
-          <div><label>Tenant</label><select id="tenantSelect"></select></div>
-          <div><label>Person</label><select id="personSelect"></select></div>
-          <div><label>Surah</label><select id="surahSelect"></select></div>
-          <div id="ayahSelectControl"><label>Ayah</label><select id="ayahSelect"></select></div>
-          <div><label>Approach</label><select id="trackableSelect"></select></div>
-          <div><label>Language</label><select id="langSelect">
+        <!-- Shell round 11 (13 Aug 2026) -- the owner's own three-bar layout,
+             from their mockup. The controls are grouped by WHAT KIND of choice
+             they are, which is the thing the old flat wrap-as-it-fits row
+             never showed: bar 1 = who is studying (and in which language),
+             bar 2 = what is being studied, bar 3 = how it is read, how it is
+             heard, and claiming it. Every control keeps its own id and its own
+             event wiring -- only the wrapper around it changed. -->
+
+        <!-- Bar 1: WHO is studying. Language sits here on the owner's own
+             call: it belongs globally (a Settings-level, all-modules choice we
+             still have to build), but until that exists it stays with the
+             module it actually drives, next to Tenant/Person. -->
+        <div class="opt-bar">
+          <div class="opt-cell"><label for="tenantSelect">Tenant</label><select id="tenantSelect"></select></div>
+          <div class="opt-cell"><label for="personSelect">Person</label><select id="personSelect"></select></div>
+          <div class="opt-cell"><label for="langSelect">Language</label><select id="langSelect">
             <option value="en">English</option>
             <option value="bn">English + বাংলা (Bangla)</option>
           </select></div>
-          <div id="wbwLangControl" style="display:none;"><label>Word by Word</label><select id="wbwLangSelect">
-            <option value="auto">Follow language above</option>
-            <option value="en">English only</option>
-            <option value="bn">বাংলা only</option>
-            <option value="both">English + বাংলা</option>
-          </select></div>
+          <div class="opt-cell"><label for="trackableSelect">Approach</label><select id="trackableSelect"></select></div>
         </div>
 
-        <div class="row">
-          <div><label>Study Unit</label><select id="unitTypeSelect">
+        <!-- Bar 2: WHAT is being studied. The From/To ayah cells are still the
+             same elements with the same ids -- they simply flow onto a second
+             grid line when the Range unit turns them on. -->
+        <div class="opt-bar">
+          <div class="opt-cell"><label for="unitTypeSelect">Study Unit</label><select id="unitTypeSelect">
             <option value="ayah">Single Ayah</option>
             <option value="range">Range of Ayahs</option>
             <option value="surah">Whole Surah</option>
@@ -397,14 +445,81 @@
             <option value="juz">Juz</option>
             <option value="page">Page</option>
           </select></div>
-          <div id="rangeControls" style="display:none;">
-            <label>From ayah</label><select id="rangeFromSelect"></select>
+          <div class="opt-cell"><label for="surahSelect">Surah</label><select id="surahSelect"></select></div>
+          <div class="opt-cell" id="ayahSelectControl"><label for="ayahSelect">Ayah</label><select id="ayahSelect"></select></div>
+          <!-- Owner's ask this round: type the unit you want instead of
+               hunting for it in two dropdowns. "2:255" jumps to that ayah;
+               "2:255-260" switches to the Range unit and sets both ends. -->
+          <div class="opt-cell"><label for="jumpInput">Go to</label>
+            <div class="opt-jump">
+              <input type="text" id="jumpInput" placeholder="2:255" autocomplete="off" spellcheck="false" />
+              <button type="button" id="jumpGoBtn">Go</button>
+            </div>
           </div>
-          <div id="rangeToControls" style="display:none;">
-            <label>To ayah</label><select id="rangeToSelect"></select>
+          <div class="opt-cell" id="rangeControls" style="display:none;">
+            <label for="rangeFromSelect">From ayah</label><select id="rangeFromSelect"></select>
           </div>
-          <div><button type="button" class="secondary" id="trackUnitBtn">Track this unit</button></div>
+          <div class="opt-cell" id="rangeToControls" style="display:none;">
+            <label for="rangeToSelect">To ayah</label><select id="rangeToSelect"></select>
+          </div>
         </div>
+        <p class="opt-msg" id="jumpMsg" hidden></p>
+
+        <!-- Bar 3: HOW it reads, HOW it sounds, and claiming it. The first two
+             open a card below rather than spending a permanent row each --
+             same disclosure idiom (and same open/closed colouring) as the
+             dock's own tabs and the nav bar's categories. -->
+        <div class="opt-bar opt-bar-3">
+          <button type="button" class="opt-btn" id="readingViewBtn" aria-controls="readingViewCard" aria-expanded="false">Reading view</button>
+          <button type="button" class="opt-btn" id="listeningBtn" aria-controls="listeningCard" aria-expanded="false">Listening settings</button>
+          <button type="button" class="opt-btn opt-btn-primary" id="trackUnitBtn">Track this unit</button>
+        </div>
+
+        <!-- Reading view card: everything that decides how the text is shown.
+             Each control keeps the visibility rule it already had -- Page
+             display only applies to Whole Surah/Range, Tajweed colours only to
+             a single ayah, Word by Word only when the Approach uses it. -->
+        <div class="opt-card" id="readingViewCard" hidden>
+          <div class="row" id="pageViewToggleRow" style="display:none;">
+            <div><label for="pageViewModeSelect">Page display (Whole Surah / Range)</label><select id="pageViewModeSelect">
+              <option value="mushaf">Mushaf (real page)</option>
+              <option value="tajweed">Tajweed</option>
+              <option value="wordByWord">Word by Word</option>
+              <option value="translation">Translation</option>
+            </select></div>
+          </div>
+          <div class="row" id="tajweedControl">
+            <div><label style="display:inline-block; margin:0;"><input type="checkbox" id="tajweedToggle" /> Tajweed colours</label></div>
+          </div>
+          <div class="row" id="wbwLangControl" style="display:none;">
+            <div><label for="wbwLangSelect">Word by Word</label><select id="wbwLangSelect">
+              <option value="auto">Follow language above</option>
+              <option value="en">English only</option>
+              <option value="bn">বাংলা only</option>
+              <option value="both">English + বাংলা</option>
+            </select></div>
+          </div>
+          <div class="row">
+            <div><label for="translationChoiceSelect">Translation</label><select id="translationChoiceSelect" disabled>
+              <option>Default translation</option>
+            </select></div>
+          </div>
+          <p class="opt-note">Choosing a translation by translator's name is not built yet — it is on the list.</p>
+        </div>
+
+        <!-- Listening settings card: the reciter picker, play buttons, Loop
+             and the whole multi-reciter drill, all of which used to sit loose
+             inside the Study screen. Both containers are the same elements
+             renderAudioControls()/renderDrillControls() already write into. -->
+        <div class="opt-card" id="listeningCard" hidden>
+          <h4>Recitation</h4>
+          <div class="row" id="audioControls"></div>
+          <div id="drillControls"></div>
+          <p class="opt-note" id="listeningEmpty" hidden>This Approach has no listening panel, so there is nothing to set here.</p>
+        </div>
+
+        <!-- Owner's ask: show what all those choices actually add up to. -->
+        <div class="opt-summary" id="optionsSummary"></div>
 
         <!-- Owner/prime only (renderBanner() gates the button's display).
              Moved in here from #globalBanner itself so an admin-only control
@@ -424,22 +539,11 @@
              panel is a deliberate next round. -->
         <h2>Study</h2>
         <div id="studyScreen">
-      <div class="row" id="pageViewToggleRow" style="display:none;">
-        <div><label>Page view</label><select id="pageViewModeSelect">
-          <option value="mushaf">Mushaf (real page)</option>
-          <option value="tajweed">Tajweed</option>
-          <option value="wordByWord">Word by Word</option>
-          <option value="translation">Translation</option>
-        </select></div>
-      </div>
       <div class="row" id="singleAyahNavRow">
         <button class="secondary" id="prevAyahBtn">◂ Previous</button>
         <div id="ayahPosition" style="align-self:center; font-size:0.85rem; color:#666;"></div>
         <button class="secondary" id="nextAyahBtn">Next ▸</button>
-        <div><label style="display:inline-block; margin:0 0 0 1rem;"><input type="checkbox" id="tajweedToggle" /> Tajweed colours</label></div>
       </div>
-      <div class="row" id="audioControls"></div>
-      <div id="drillControls"></div>
       <div id="ayahPanels"></div>
       <div id="pageViewContainer" style="display:none;"></div>
         </div><!-- /#studyScreen -->
@@ -569,6 +673,7 @@
     const prevAyahBtn = document.getElementById("prevAyahBtn");
     const nextAyahBtn = document.getElementById("nextAyahBtn");
     const tajweedToggle = document.getElementById("tajweedToggle");
+    const tajweedControl = document.getElementById("tajweedControl");
     const audioControls = document.getElementById("audioControls");
     const drillControlsEl = document.getElementById("drillControls");
     const ayahPanels = document.getElementById("ayahPanels");
@@ -586,6 +691,17 @@
     const rangeToSelect = document.getElementById("rangeToSelect");
     const trackUnitBtn = document.getElementById("trackUnitBtn");
     const unitLabelEl = document.getElementById("unitLabel");
+
+    // Shell round 11 -- the three-bar Study options layout.
+    const jumpInput = document.getElementById("jumpInput");
+    const jumpGoBtn = document.getElementById("jumpGoBtn");
+    const jumpMsg = document.getElementById("jumpMsg");
+    const readingViewBtn = document.getElementById("readingViewBtn");
+    const readingViewCard = document.getElementById("readingViewCard");
+    const listeningBtn = document.getElementById("listeningBtn");
+    const listeningCard = document.getElementById("listeningCard");
+    const listeningEmpty = document.getElementById("listeningEmpty");
+    const optionsSummaryEl = document.getElementById("optionsSummary");
 
     const dockTabs = Array.from(document.querySelectorAll(".qr-tab"));
     const exploreBreadcrumb = document.getElementById("exploreBreadcrumb");
@@ -872,6 +988,131 @@
       pageDisplayMode = pageViewModeSelect.value;
       renderStudyScreen();
     });
+
+    // -----------------------------------------------------------------------
+    // Shell round 11 (13 Aug 2026) -- Study options' own three bars.
+    // Layout only: every control below still runs exactly the handler it ran
+    // before. What is new here is the two cards (Reading view / Listening
+    // settings), the "Go to" typing field, and the summary strip.
+    // -----------------------------------------------------------------------
+
+    const optionCards = [
+      { btn: readingViewBtn, card: readingViewCard },
+      { btn: listeningBtn, card: listeningCard },
+    ];
+
+    /** One card open at a time, and tapping the open one closes it -- the same
+        rule the dock's own two tabs follow, so the page has one behaviour for
+        every "button that reveals a panel," not two. */
+    function setOpenOptionCard(target) {
+      for (const { btn, card } of optionCards) {
+        const open = card === target;
+        btn.setAttribute("aria-expanded", open ? "true" : "false");
+        card.hidden = !open;
+      }
+    }
+    optionCards.forEach(({ btn, card }) => {
+      btn.addEventListener("click", () => {
+        setOpenOptionCard(btn.getAttribute("aria-expanded") === "true" ? null : card);
+      });
+    });
+
+    /** "2:255" -> that ayah. "2:255-260" -> the Range unit, both ends set.
+        A bare "2" -> that surah's first ayah. Returns null on anything else,
+        so the caller can say so rather than silently doing nothing (I15's
+        spirit: a failed action has to reach the person who asked for it). */
+    function parseJumpText(text) {
+      const t = String(text ?? "").replace(/[‐-―]/g, "-").replace(/\s+/g, "");
+      if (!t) return null;
+      let m = /^(\d{1,3})[:.](\d{1,3})-(\d{1,3})$/.exec(t);
+      if (m) return { surah: Number(m[1]), from: Number(m[2]), to: Number(m[3]) };
+      m = /^(\d{1,3})[:.](\d{1,3})$/.exec(t);
+      if (m) return { surah: Number(m[1]), from: Number(m[2]), to: null };
+      m = /^(\d{1,3})$/.exec(t);
+      if (m) return { surah: Number(m[1]), from: 1, to: null };
+      return null;
+    }
+
+    function showJumpMessage(message) {
+      jumpMsg.textContent = message ?? "";
+      jumpMsg.hidden = !message;
+    }
+
+    async function applyJump() {
+      const parsed = parseJumpText(jumpInput.value);
+      if (!parsed) {
+        showJumpMessage(`Couldn't read "${jumpInput.value.trim()}". Try 2:255 for one ayah, or 2:255-260 for a range.`);
+        return;
+      }
+      const surahMeta = surahIndex.find((s) => s.surahNumber === parsed.surah);
+      if (!surahMeta) {
+        showJumpMessage(`There is no Surah ${parsed.surah}. Surah numbers run 1–114.`);
+        return;
+      }
+      const lastAyah = surahMeta.ayahCount;
+      const from = parsed.from;
+      const to = parsed.to;
+      if (from < 1 || from > lastAyah || (to !== null && (to < 1 || to > lastAyah))) {
+        showJumpMessage(`Surah ${parsed.surah} has ${lastAyah} ayahs.`);
+        return;
+      }
+      showJumpMessage(null);
+
+      if (parsed.surah !== currentSurahNum) {
+        currentSurahNum = parsed.surah;
+        surahSelect.value = String(parsed.surah);
+        await loadSurah(); // resets currentAyahNum to 1 and reloads this surah's records chunk
+      }
+      if (to !== null && to !== from) {
+        currentUnitType = "range";
+        unitTypeSelect.value = "range";
+        rangeFrom = Math.min(from, to);
+        rangeTo = Math.max(from, to);
+        currentAyahNum = rangeFrom;
+      } else {
+        currentUnitType = "ayah";
+        unitTypeSelect.value = "ayah";
+        currentAyahNum = from;
+      }
+      ayahSelect.value = String(currentAyahNum);
+      updateUnitControlsVisibility();
+      renderStudyScreen();
+      renderWheel();
+    }
+
+    jumpGoBtn.addEventListener("click", () => { applyJump(); });
+    jumpInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); applyJump(); }
+    });
+
+    /** The owner's "show what all those choices add up to" strip, under the
+        three bars. Built with textContent, never innerHTML -- person and
+        Approach names are tenant-authored text. */
+    function renderOptionsSummary() {
+      const isPageUnit = currentUnitType === "surah" || currentUnitType === "range";
+      const readingMode = isPageUnit
+        ? (pageViewModeSelect.selectedOptions[0]?.textContent ?? "Mushaf (real page)")
+        : (tajweedToggle.checked ? "Single ayah · Tajweed colours" : "Single ayah");
+      const bits = [
+        ["Person", personSelect.selectedOptions[0]?.textContent],
+        ["Unit", currentSurahData ? currentUnitInfo().label : null],
+        ["Approach", trackableSelect.selectedOptions[0]?.textContent],
+        ["Reading", readingMode],
+        ["Listening", listeningBtn.disabled ? "not used by this Approach" : `${RECITERS[currentReciterId]?.label ?? "—"}${loopIsOn ? " · Loop on" : ""}`],
+      ];
+      optionsSummaryEl.replaceChildren(
+        ...bits
+          .filter(([, value]) => value)
+          .map(([label, value]) => {
+            const chip = document.createElement("span");
+            chip.className = "opt-sum-item";
+            const strong = document.createElement("b");
+            strong.textContent = `${label}: `;
+            chip.append(strong, document.createTextNode(value));
+            return chip;
+          })
+      );
+    }
 
     async function loadContextData() {
       const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -1422,6 +1663,11 @@
       const trackable = currentTrackable();
       const panels = trackable?.panels ?? ["text"];
       wbwLangControl.style.display = panels.includes("wordByWord") && (!isPageUnit || pageDisplayMode === "wordByWord") ? "" : "none";
+      // Shell round 11: the Tajweed checkbox moved into the Reading view card,
+      // so it needs its own visibility rule -- it used to inherit
+      // singleAyahNavRow's. Same rule, unchanged: on a whole-surah/range unit
+      // the Tajweed READING MODE is a Page display option instead.
+      tajweedControl.style.display = isPageUnit ? "none" : "";
 
       if (isPageUnit) {
         renderPageView();
@@ -1441,10 +1687,18 @@
 
       renderAudioControls(panels);
       renderUnitLabel();
+      renderOptionsSummary();
     }
 
     function renderAudioControls(panels) {
-      if (!panels.includes("audio")) { audioControls.innerHTML = ""; drillControlsEl.innerHTML = ""; return; }
+      // Shell round 11: these controls now live behind the Listening settings
+      // button, so when an Approach has no audio panel the button itself has
+      // to say so -- otherwise it would open an empty card.
+      const hasAudio = panels.includes("audio");
+      listeningBtn.disabled = !hasAudio;
+      listeningEmpty.hidden = hasAudio;
+      if (!hasAudio && listeningBtn.getAttribute("aria-expanded") === "true") setOpenOptionCard(null);
+      if (!hasAudio) { audioControls.innerHTML = ""; drillControlsEl.innerHTML = ""; return; }
       const options = Object.values(RECITERS)
         .map((r) => {
           const label = reciterIsReady(r.id) && !reciterSupportsSingleAyah(r.id) ? `${r.label} (whole surah only)` : r.label;
@@ -1486,8 +1740,9 @@
           renderBanner();
           renderStudyScreen();
         }
+        renderOptionsSummary(); // shell round 11 -- the summary strip names the reciter
       });
-      if (loopToggle) loopToggle.addEventListener("change", () => { loopIsOn = loopToggle.checked; setLoop(loopIsOn); });
+      if (loopToggle) loopToggle.addEventListener("change", () => { loopIsOn = loopToggle.checked; setLoop(loopIsOn); renderOptionsSummary(); });
       playBtn.addEventListener("click", async () => {
         // Always stop whatever's currently loaded first -- switching reciters
         // (or a running drill) and pressing Play again must never leave
@@ -1589,7 +1844,7 @@
 
     surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); });
     trackableSelect.addEventListener("change", async () => { currentTrackableId = trackableSelect.value; renderWheel(); renderStudyScreen(); });
-    personSelect.addEventListener("change", async () => { selectedPersonId = personSelect.value; await refreshChunkAndWheel(); await refreshProgramMap(); });
+    personSelect.addEventListener("change", async () => { selectedPersonId = personSelect.value; renderOptionsSummary(); await refreshChunkAndWheel(); await refreshProgramMap(); });
 
     // ---------------------------------------------------------------------
     // Way modal -- ayah-level (unchanged from Phase 4: wheel-click always
