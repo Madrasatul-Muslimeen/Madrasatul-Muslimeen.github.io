@@ -27,6 +27,7 @@ import { doc, getDoc, collection, query, where, getDocs } from "https://www.gsta
 import { TENANT } from "./collections.js";
 import { langText } from "./lang.js";
 import { getAppLang, mountAppLangControl } from "./prefs.js";
+import { t, translateStatic } from "./i18n.js";
 import { safeWrite } from "./errors.js";
 import {
   getMyMemberships, initializeActiveContext, getActiveContext, setActiveContext,
@@ -94,7 +95,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
   signInBtn.addEventListener("click", () => {
     signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
-      whoEl.textContent = `Sign-in failed: ${err.message}`;
+      whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
     });
   });
   signOutBtn.addEventListener("click", () => signOut(auth));
@@ -429,13 +430,13 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      whoEl.textContent = "Not signed in.";
+      whoEl.textContent = t("Not signed in.");
       signInBtn.style.display = "inline-block";
       signOutBtn.style.display = "none";
       appEl.style.display = "none";
       return;
     }
-    whoEl.textContent = `Signed in as ${user.email}`;
+    whoEl.textContent = t("Signed in as {email}", { email: user.email });
     signInBtn.style.display = "none";
     signOutBtn.style.display = "inline-block";
 

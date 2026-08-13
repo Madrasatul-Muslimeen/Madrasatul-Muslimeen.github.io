@@ -7,7 +7,7 @@
 // asma_ul_husna is a single anchor subject, not 99 subject nodes).
 
 import { STATUS_COLORS } from "./mastery-wheel.js";
-import { STATUSES } from "./unit-keys.js";
+import { statusLabel } from "./unit-keys.js";
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -18,7 +18,7 @@ export function renderAsmaGrid(names, statusByNumber = new Map()) {
   const cards = names.map((n) => {
     const statusId = statusByNumber.get(n.number) ?? null;
     const chip = statusId
-      ? `<span class="asma-status-chip" style="background:${STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started}">${STATUSES.find((s) => s.id === statusId)?.label ?? statusId}</span>`
+      ? `<span class="asma-status-chip" style="background:${STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started}">${statusLabel(statusId)}</span>`
       : `<span class="asma-status-chip asma-status-unclaimed">Not started</span>`;
     return `<button type="button" class="asma-card" data-number="${n.number}">
       <span class="asma-card-number">${n.number}</span>

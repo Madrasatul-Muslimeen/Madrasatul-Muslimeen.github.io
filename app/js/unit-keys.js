@@ -9,6 +9,8 @@
 // unit key is recorded, so "show all page-based progress" is one query/filter
 // without re-parsing every key string.
 
+import { t } from "./i18n.js";
+
 export const UNIT_TYPES = Object.freeze([
   "ayah", "range", "surah", "page", "ruku", "juz", "hizb", "rub", "manzil",
   "hadith", "topic", "name",
@@ -78,6 +80,28 @@ export const STATUSES = Object.freeze([
 ]);
 
 export const STATUS_IDS = Object.freeze(STATUSES.map((s) => s.id));
+
+/**
+ * The display name of a status, in the reader's own language (full app
+ * translation, phase 1). STATUSES above keeps its English `label` as the
+ * stored, canonical value -- it is the translation key, and it is what a
+ * CSV export or a saved record should carry -- so this is the one place a
+ * status becomes text a person reads. Every screen that shows a status
+ * should call this rather than reading `.label` directly.
+ *
+ * Translating at CALL time, not at module load: the language can change
+ * while a page is open (Home -> Settings), and a frozen constant built at
+ * import time would be stuck in whatever language the page started in.
+ */
+export function statusLabel(statusId) {
+  const found = STATUSES.find((s) => s.id === statusId);
+  return found ? t(found.label) : statusId;
+}
+
+/** id -> translated label, the shape the wheel legend and sidebar want. */
+export function statusLabelsById() {
+  return Object.fromEntries(STATUSES.map((s) => [s.id, t(s.label)]));
+}
 
 export function isValidStatus(statusId) {
   return STATUS_IDS.includes(statusId);

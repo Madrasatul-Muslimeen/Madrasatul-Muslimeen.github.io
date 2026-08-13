@@ -53,6 +53,7 @@
 // renderSettings() for why that keeps this file's purity intact.
 
 import { APP_LANGS } from "./prefs.js";
+import { t } from "./i18n.js";
 
 const STUDY_LINKS = [
   { href: "quranrevival.html", label: "Quran Study" }, // renamed from "Study" -- see shell round 4
@@ -106,13 +107,13 @@ function renderLinks(links, currentFile, canAdmin) {
     .filter((l) => !l.ownerPrimeOnly || canAdmin)
     .map((l) => {
       const isCurrent = l.href === currentFile;
-      return `<a href="${l.href}" class="nav-link${isCurrent ? " nav-current" : ""}"${isCurrent ? ' aria-current="page"' : ""}>${l.label}</a>`;
+      return `<a href="${l.href}" class="nav-link${isCurrent ? " nav-current" : ""}"${isCurrent ? ' aria-current="page"' : ""}>${t(l.label)}</a>`;
     })
     .join("");
 }
 
 function renderPlaceholders(labels) {
-  return labels.map((label) => `<span class="nav-link-disabled">${label} (coming soon)</span>`).join("");
+  return labels.map((label) => `<span class="nav-link-disabled">${t(label)} ${t("(coming soon)")}</span>`).join("");
 }
 
 // Shell round 4 (12 Aug 2026) -- used to auto-open a category when the
@@ -124,7 +125,7 @@ function renderPlaceholders(labels) {
 // current-page link itself still gets highlighted via renderLinks()'s own
 // `nav-current` class, so you can still tell where you are once you open one.
 function renderCategory(name, linksHtml) {
-  return `<details class="nav-cat"><summary>${name}</summary><div class="nav-cat-links">${linksHtml}</div></details>`;
+  return `<details class="nav-cat"><summary>${t(name)}</summary><div class="nav-cat-links">${linksHtml}</div></details>`;
 }
 
 /** roles: this person's roles in the currently-active tenant (e.g. ["owner","prime"]). The Classes/Curriculum links inside Operation only show for owner/prime -- everyone else gets the rest of Operation (+ the always-shown Bookmark placeholder). viewAsRole (round 11): when set, shows a "Previewing as" notice so it's never ambiguous why the page looks scoped down -- change/exit it from the People page's own dropdown. Returns the Study/Operation/Bookmark categories only -- Home is the caller's own static markup; call renderHomeExtras() separately for its role-gated contents. */
@@ -158,7 +159,7 @@ export function renderNavBar(roles = [], viewAsRole = null) {
   // found the same way deserves the same kind of note.
   const teacherGapNote = "";
   const previewNotice = viewAsRole
-    ? `<span class="nav-preview-notice">Previewing as: ${viewAsRole}${teacherGapNote} — change this on the People page</span>`
+    ? `<span class="nav-preview-notice">${t("Previewing as: {role} — change this on the People page", { role: viewAsRole })}${teacherGapNote}</span>`
     : "";
   return `${cats.join("")}${previewNotice}`;
 }
@@ -173,7 +174,7 @@ export function renderHomeExtras(roles = []) {
   const currentFile = location.pathname.split("/").pop();
 
   const adminHtml = canAdmin
-    ? `<div class="nav-cat-group"><div class="nav-cat-group-label">Admin</div>${renderLinks(ADMIN_LINKS, currentFile, canAdmin)}</div>`
+    ? `<div class="nav-cat-group"><div class="nav-cat-group-label">${t("Admin")}</div>${renderLinks(ADMIN_LINKS, currentFile, canAdmin)}</div>`
     : "";
   const aboutHtml = `<div class="nav-cat-group">${renderLinks(ABOUT_LINKS, currentFile, canAdmin)}</div>`;
   return adminHtml + aboutHtml + renderSettings();
@@ -197,7 +198,7 @@ export function renderHomeExtras(roles = []) {
 // constant, not state -- importing it does not compromise the purity above.
 function renderSettings() {
   const options = APP_LANGS.map((l) => `<option value="${l.id}">${l.label}</option>`).join("");
-  return `<div class="nav-cat-group"><div class="nav-cat-group-label">Settings</div>
-    <div class="nav-setting"><label for="navAppLangSelect">Language</label><select id="navAppLangSelect">${options}</select></div>
+  return `<div class="nav-cat-group"><div class="nav-cat-group-label">${t("Settings")}</div>
+    <div class="nav-setting"><label for="navAppLangSelect">${t("Language")}</label><select id="navAppLangSelect">${options}</select></div>
     ${renderPlaceholders(SETTINGS_PLACEHOLDERS)}</div>`;
 }
