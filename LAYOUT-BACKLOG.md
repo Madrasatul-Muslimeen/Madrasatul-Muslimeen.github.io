@@ -229,7 +229,24 @@ nobody re-opens it, and as the reason item 2's Edit-banner note exists.
 
 ---
 
-## 6. Translating the app's own words — NOT BUILT, FLAGGED UP FRONT
+## 6. Translating the app's own words — IN PROGRESS, see `TRANSLATION-PLAN.md`
+
+**The owner asked for this directly, 13 Aug 2026, immediately after v07.30
+shipped:** *"when we change the language, the entire app (except the Banner)
+should turn into that language … A person only reads Bangla, nothing in
+English. He must find things in Bangla otherwise he won't use the app."*
+
+So this is no longer a flagged limitation — it is a six-phase build with its
+own plan document. **Read `TRANSLATION-PLAN.md`**, not the description below,
+which is kept only as the record of how the item was first written.
+
+**Phase 1 (the shell) is DONE in v07.31.** Progress is measurable at any
+time with `node tools/i18n-coverage.mjs`.
+
+<details>
+<summary>The original description, kept for the record</summary>
+
+### (original) 6. Translating the app's own words — NOT BUILT, FLAGGED UP FRONT
 
 Opened 13 Aug 2026 by shell round 13, and **stated to the owner before that
 round was built rather than discovered afterwards**, exactly as item 1's own
@@ -261,6 +278,8 @@ repo can be guessed at for this.
 category label fails **silently** by truncating. v07.29 already hit this with
 an English rename ("Study Module" → "Modules"). Re-measure with the
 `navcheck` method below any time a category label changes length.
+
+</details>
 
 ---
 

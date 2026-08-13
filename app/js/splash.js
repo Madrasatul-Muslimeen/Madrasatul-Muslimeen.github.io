@@ -27,6 +27,8 @@
 // implementation, parameterized by key, instead — same behaviour, no
 // content or timing difference from what's on record.
 
+import { t } from "./i18n.js";
+
 function pad2(n) { return n < 10 ? `0${n}` : `${n}`; }
 function todayStr() {
   const d = new Date();
@@ -64,13 +66,16 @@ function makePrefStore(prefKey, lastKey) {
 }
 
 function prefPanelHtml(gearId, panelId, radioName) {
+  // Full translation, phase 1. The splash is the very first thing a person
+  // sees, before any page chrome -- so if anything in the app has to be in
+  // their language, it is this.
   return `
-    <div class="splash-gear" id="${gearId}" title="Opener settings">&#9881;&#65039;</div>
+    <div class="splash-gear" id="${gearId}" title="${t("Opener settings")}">&#9881;&#65039;</div>
     <div class="splash-panel" id="${panelId}">
-      <h4>Show this opener</h4>
-      <label><input type="radio" name="${radioName}" value="always"> Every time</label>
-      <label><input type="radio" name="${radioName}" value="daily"> Once a day</label>
-      <label><input type="radio" name="${radioName}" value="weekly"> Once a week</label>
+      <h4>${t("Show this opener")}</h4>
+      <label><input type="radio" name="${radioName}" value="always"> ${t("Every time")}</label>
+      <label><input type="radio" name="${radioName}" value="daily"> ${t("Once a day")}</label>
+      <label><input type="radio" name="${radioName}" value="weekly"> ${t("Once a week")}</label>
     </div>`;
 }
 

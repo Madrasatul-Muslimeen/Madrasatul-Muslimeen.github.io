@@ -4,6 +4,11 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>QuranRevival — Create your account (F-011)</title>
+  <!-- Full translation, phase 1: shell.css carries the Bengali font stack.
+       These two pages have no nav bar, but an invited person may well land
+       here FIRST and read only Bangla -- boxes instead of glyphs here would
+       stop them before they ever reach the app. -->
+  <link rel="stylesheet" href="css/shell.css" />
 <style>
   body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
@@ -68,6 +73,12 @@
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { createTenantWithOwner, upsertUserIndex } from "./js/identity.js";
     import { safeWrite } from "./js/errors.js";
+    import { translateStatic, t } from "./js/i18n.js";
+
+    // Phase 1 of the full translation: turn this page's own static markup
+    // (headings, labels, buttons) into the chosen language before anything
+    // else runs, so a Bangla reader never sees an English frame first.
+    translateStatic();
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
@@ -78,19 +89,19 @@
 
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
-        whoEl.textContent = `Sign-in failed: ${err.message}`;
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
       });
     });
     signOutBtn.addEventListener("click", () => signOut(auth));
 
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        whoEl.textContent = `Signed in as ${user.email}`;
+        whoEl.textContent = t("Signed in as {email}", { email: user.email });
         signInBtn.style.display = "none";
         signOutBtn.style.display = "inline-block";
         form.style.display = "block";
       } else {
-        whoEl.textContent = "Not signed in.";
+        whoEl.textContent = t("Not signed in.");
         signInBtn.style.display = "inline-block";
         signOutBtn.style.display = "none";
         form.style.display = "none";
@@ -100,7 +111,7 @@
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       createBtn.disabled = true;
-      createBtn.textContent = "Creating…";
+      createBtn.textContent = t("Creating…");
       resultEl.style.display = "none";
 
       const uid = auth.currentUser.uid;
@@ -121,7 +132,7 @@
         // showing success even if this second step fails.
         await upsertUserIndex(db, uid, { addTenantId: tenantId, makeDefault: true }).catch(() => {});
         resultEl.className = "ok";
-        resultEl.innerHTML = `Account created.<br>Account ID: <code>${tenantId}</code><br>Your person ID: <code>${personId}</code><br>Write these down. Now run the self-check screen again to confirm everything is reachable.`;
+        resultEl.innerHTML = `${t("Account created.")}<br>${t("Account ID:")} <code>${tenantId}</code><br>${t("Your person ID:")} <code>${personId}</code><br>${t("Write these down.")}`;
       } else {
         resultEl.className = "fail";
         resultEl.textContent = outcome.entry.message;

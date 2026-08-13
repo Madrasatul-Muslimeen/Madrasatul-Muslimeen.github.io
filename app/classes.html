@@ -108,6 +108,12 @@
     import { enrolPerson, endEnrollment, listEnrollmentsForOffer } from "./js/course-offers.js";
     import { bulkConfirmClass } from "./js/records.js";
     import { renderNavBar, renderHomeExtras } from "./js/nav.js";
+    import { translateStatic, t } from "./js/i18n.js";
+
+    // Phase 1 of the full translation: turn this page's own static markup
+    // (headings, labels, buttons) into the chosen language before anything
+    // else runs, so a Bangla reader never sees an English frame first.
+    translateStatic();
 
     const whoEl = document.getElementById("who");
     const signInBtn = document.getElementById("signInBtn");
@@ -131,7 +137,7 @@
 
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
-        whoEl.textContent = `Sign-in failed: ${err.message}`;
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
       });
     });
     signOutBtn.addEventListener("click", () => signOut(auth));
@@ -329,13 +335,13 @@
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
-        whoEl.textContent = "Not signed in.";
+        whoEl.textContent = t("Not signed in.");
         signInBtn.style.display = "inline-block";
         signOutBtn.style.display = "none";
         appEl.style.display = "none";
         return;
       }
-      whoEl.textContent = `Signed in as ${user.email}`;
+      whoEl.textContent = t("Signed in as {email}", { email: user.email });
       signInBtn.style.display = "none";
       signOutBtn.style.display = "inline-block";
 
