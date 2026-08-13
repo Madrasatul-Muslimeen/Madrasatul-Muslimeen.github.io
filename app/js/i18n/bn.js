@@ -197,6 +197,143 @@ export const BN = {
   "A project of Madrasatul Muslimeen": "মাদরাসাতুল মুসলিমীন-এর একটি প্রকল্প",
   "Akhlaq &bull; Ilm &bull; Tawheed &bull; Dawah &bull; Hukm": "Akhlaq &bull; Ilm &bull; Tawheed &bull; Dawah &bull; Hukm",
 
+  // =====================================================================
+  // Phase 2 of 6 — THE QURAN MODULE (13 Aug 2026)
+  // =====================================================================
+  // The module the app is named after. Surah NAMES are not here -- all 114
+  // live in their own file, js/i18n/surah-names-bn.js, because they are
+  // data, not interface wording.
+
+  // --- The landing screen and its two dock tabs -------------------------
+  "QuranRevival — Phase 4/5": "কুরআনরিভাইভাল",
+  "Mastery Wheel": "দক্ষতার চাকা", // ?
+  "Study options": "অধ্যয়নের সেটিংস",
+  "Explore": "অন্বেষণ",
+  "Study": "অধ্যয়ন",
+  "Loading&hellip;": "লোড হচ্ছে…",
+  "Loading this surah…": "এই সূরা লোড হচ্ছে…",
+  "No Approaches yet.": "এখনো কোনো পদ্ধতি নেই।",
+  "Pick an Approach first.": "প্রথমে একটি পদ্ধতি বেছে নিন।",
+  "Click a segment to drill in &mdash; Quran &rarr; Juz &rarr; Surah &rarr; Ruku' &rarr; an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment &mdash; it only turns fully green once every ayah inside it is Mastered.":
+    "ভেতরে যেতে যেকোনো অংশে চাপ দিন &mdash; কুরআন &rarr; জুয &rarr; সূরা &rarr; রুকু' &rarr; অধ্যয়নে একটি আয়াত। রঙগুলো এই পদ্ধতিতে আয়াতভিত্তিক প্রকৃত অগ্রগতি একত্র করে দেখায় &mdash; ভেতরের প্রতিটি আয়াতে পূর্ণ দক্ষতা অর্জিত হলেই কেবল এটি সম্পূর্ণ সবুজ হয়।",
+
+  // --- Choosing what to study -------------------------------------------
+  "Study Unit": "অধ্যয়নের একক",
+  "Single Ayah": "একটি আয়াত",
+  "Range of Ayahs": "আয়াতের পরিসর",
+  "Whole Surah": "সম্পূর্ণ সূরা",
+  "Ruku'": "রুকু'",
+  "Ruku": "রুকু",
+  "Juz": "জুয",
+  "Page": "পৃষ্ঠা",
+  "Surah": "সূরা",
+  "Ayah": "আয়াত",
+  "Go to": "যেখানে যাবেন",
+  "Go": "যান",
+  "From ayah": "যে আয়াত থেকে",
+  "To ayah": "যে আয়াত পর্যন্ত",
+  "Whole Quran": "সম্পূর্ণ কুরআন",
+
+  // --- What is being tracked, and where you are -------------------------
+  "Tracking: {unit}": "চিহ্নিত করা হচ্ছে: {unit}",
+  "Surah {surah}, Ayah {ayah}": "সূরা {surah}, আয়াত {ayah}",
+  "Surah {surah}": "সূরা {surah}",
+  "Surah {surah} — Ayah {ayah} of {total}": "সূরা {surah} — আয়াত {ayah} / {total}",
+  "SURAH {surah} · AYAH {ayah}": "সূরা {surah} · আয়াত {ayah}",
+  "Ayahs {from}–{to} of Surah {surah}": "সূরা {surah}-এর {from}–{to} নং আয়াত",
+  "Whole Surah {surah}": "সম্পূর্ণ সূরা {surah}",
+  "Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})":
+    "সূরা {surah}-এর {ruku} নং রুকু' ({from}–{to} নং আয়াত)",
+  "Juz {juz}": "জুয {juz}",
+  "Page {page}": "পৃষ্ঠা {page}",
+  "◂ Previous": "◂ পূর্ববর্তী",
+  "Next ▸": "পরবর্তী ▸",
+
+  // --- The "Go to" box, including what it says when it cannot read you ---
+  "Couldn't read \"{text}\". Try 2:255 for one ayah, or 2:255-260 for a range.":
+    "\"{text}\" বোঝা গেল না। একটি আয়াতের জন্য ২:২৫৫, বা পরিসরের জন্য ২:২৫৫-২৬০ লিখুন।",
+  "There is no Surah {surah}. Surah numbers run 1–114.":
+    "{surah} নম্বর কোনো সূরা নেই। সূরার নম্বর ১ থেকে ১১৪ পর্যন্ত।",
+  "Surah {surah} has {count} ayahs.": "সূরা {surah}-এ {count}টি আয়াত আছে।",
+
+  // --- Reading view ------------------------------------------------------
+  "Reading view": "পড়ার ধরন",
+  "Page display (Whole Surah / Range)": "পৃষ্ঠা প্রদর্শন (সম্পূর্ণ সূরা / পরিসর)",
+  "Mushaf (real page)": "মুসহাফ (প্রকৃত পৃষ্ঠা)",
+  "Tajweed": "তাজবীদ",
+  "Tajweed colours": "তাজবীদের রঙ",
+  "Word by Word": "শব্দে শব্দে",
+  "Translation": "অনুবাদ",
+  "Translation language": "অনুবাদের ভাষা",
+  "Default translation": "সাধারণ অনুবাদ",
+  "Follow translation language": "অনুবাদের ভাষা অনুসরণ করুন",
+  "English": "ইংরেজি",
+  "English only": "শুধু ইংরেজি",
+  // These three already contain Bangla, because they NAME Bangla -- they are
+  // how a Bangla reader spots the option. Only the English half is
+  // translated; "বাংলা" stays exactly as it is.
+  "English + বাংলা (Bangla)": "ইংরেজি + বাংলা",
+  "English + বাংলা": "ইংরেজি + বাংলা",
+  "বাংলা only": "শুধু বাংলা",
+  "Choosing a translation by translator's name is not built yet — it is on the list.":
+    "অনুবাদকের নাম দেখে অনুবাদ বেছে নেওয়ার সুবিধা এখনো তৈরি হয়নি — এটি তালিকায় আছে।",
+  "Loading Mushaf page…": "মুসহাফের পৃষ্ঠা লোড হচ্ছে…",
+  // Failure messages matter as much as anything else here (I15): an error a
+  // Bangla-only reader cannot read is nearly as useless as no error at all.
+  // The {reason} inside is the browser's own technical detail and stays as
+  // it comes -- it is for whoever is helping them, not for them.
+  "Couldn't load Mushaf page data ({reason}).": "মুসহাফের পৃষ্ঠার তথ্য লোড করা যায়নি ({reason})।",
+  "Couldn't load this page's data.": "এই পৃষ্ঠার তথ্য লোড করা যায়নি।",
+  "Couldn't play this audio: {reason}.": "এই অডিওটি বাজানো যায়নি: {reason}।",
+  "Couldn't find a Mushaf page for this selection.":
+    "এই নির্বাচনের জন্য মুসহাফের পৃষ্ঠা পাওয়া যায়নি।",
+  "No word-by-word data for this ayah.": "এই আয়াতের জন্য শব্দে-শব্দে তথ্য নেই।",
+  "No morphology data for this ayah.": "এই আয়াতের জন্য শব্দগঠনের তথ্য নেই।",
+  "Reflection": "চিন্তা-ভাবনা", // ?
+  "Write it out here": "এখানে লিখুন",
+
+  // --- Listening ---------------------------------------------------------
+  "Listening settings": "শোনার সেটিংস",
+  "Recitation": "তিলাওয়াত",
+  "This Approach has no listening panel, so there is nothing to set here.":
+    "এই পদ্ধতিতে শোনার কোনো অংশ নেই, তাই এখানে সেট করার কিছু নেই।",
+  "Drill reciters": "অনুশীলনের ক্বারী",
+  "Repeat": "পুনরাবৃত্তি",
+  "Mode": "ধরন",
+  "Each Ayah": "প্রতিটি আয়াত",
+  "Whole Unit": "সম্পূর্ণ একক",
+  "Pick at least one reciter to drill.": "অনুশীলনের জন্য অন্তত একজন ক্বারী বেছে নিন।",
+  // Reciters are PEOPLE. A person's name is not translated -- only the
+  // language note in brackets, which is what actually helps someone choose.
+  "Abdullah Basfar (Arabic)": "Abdullah Basfar (আরবি)",
+  "Ibraheem Walk (English)": "Ibraheem Walk (ইংরেজি)",
+  "Kevan Brighting (English, whole surah only)": "Kevan Brighting (ইংরেজি, শুধু সম্পূর্ণ সূরা)",
+  "Shareef Bayezid Mahmud (Bangla)": "শরীফ বায়েজিদ মাহমুদ (বাংলা)",
+
+  // --- Claiming, and the Approach modal ----------------------------------
+  "Track this unit": "এই এককটি চিহ্নিত করুন",
+  "Claim": "দাবি করুন", // ?
+  "Claim a status": "একটি অবস্থা দাবি করুন", // ?
+  "Confirmed:": "নিশ্চিত করা হয়েছে:",
+  "Not claimed yet.": "এখনো দাবি করা হয়নি।",
+  "Nothing claimed yet for this Approach here.": "এখানে এই পদ্ধতিতে এখনো কিছু দাবি করা হয়নি।",
+  "What": "কী",
+  "How": "কীভাবে",
+  "How to measure your progress": "আপনার অগ্রগতি কীভাবে মাপবেন",
+  // The confirm-state pills (records.js writes these values).
+  "pending": "অপেক্ষমাণ",
+  "confirmed": "নিশ্চিত",
+  "rejected": "প্রত্যাখ্যাত",
+
+  // --- The routine renderer's streak line (shared with Health/LDOG) ------
+  "Logged today ✓": "আজ লিপিবদ্ধ হয়েছে ✓",
+  "Not logged today yet.": "আজ এখনো লিপিবদ্ধ হয়নি।",
+  "No streak yet — log it to start one.": "এখনো কোনো ধারা নেই — শুরু করতে লিপিবদ্ধ করুন।",
+
+  // --- Signed out / no account (shown by every study page) --------------
+  "Starting fresh instead?": "নতুন করে শুরু করতে চান?",
+  "Create a new account\n      on the onboarding page": "নতুন অ্যাকাউন্ট তৈরি করুন",
+
   // --- About page, the long blurb ---------------------------------------
   "What's actually built versus only planned — read directly from this\n     app's own feature registry, never restated by hand, so this page can't\n     drift out of sync with the real code.":
     "কী কী সত্যিই তৈরি হয়েছে আর কী কেবল পরিকল্পনায় আছে — সরাসরি অ্যাপের নিজস্ব বৈশিষ্ট্য-নথি থেকে পড়া, হাতে লেখা নয়, তাই এই পাতাটি কখনো প্রকৃত কোড থেকে আলাদা হয়ে যেতে পারে না।",

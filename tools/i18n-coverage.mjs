@@ -53,11 +53,20 @@ function listFiles() {
 
 const STRIP_COMMENTS = (s) => s.replace(/^\s*\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
 const LOOKS_USER_FACING = (s) =>
-  /[A-Za-z]{3,}/.test(s) &&
+  // Two letters, not three. "Go to" is a real on-screen label with no
+  // three-letter word in it, and a {3,} rule silently excluded it -- the
+  // report then claimed the Quran module was 100% translated while that
+  // label sat there in English. Short words are exactly the ones a
+  // half-finished translation leaves behind, so they must be counted.
+  /[A-Za-z]{2,}/.test(s) &&
   // A ${...} template placeholder means the string was assembled in code.
   // Those are never catalogue keys -- a translatable one is rewritten as
   // t("... {name} ...", { name }) first, which this then picks up properly.
   !s.includes("${") &&
+  // A stray backslash means the loose heuristics below tore a string at an
+  // escape sequence. The precise t() matcher above already caught the real
+  // key, so this is always a fragment of one.
+  !s.includes("\\") &&
   !/^[a-z_]+$/.test(s) && // identifiers, statuses, collection names
   !/^https?:|\.(js|html|css|json)$|^#|^[A-Za-z-]+\/[A-Za-z-]+$/.test(s);
 
@@ -87,7 +96,18 @@ function extract(file) {
   const code = STRIP_COMMENTS(js);
   // Anything already routed through t() is, by definition, a string we
   // intend to translate — the authoritative list for converted files.
-  for (const m of code.matchAll(/\bt\(\s*"([^"]+)"/g)) found.add(m[1]);
+  //
+  // The (?:[^"\\]|\\.)* form matters: a key may legitimately contain an
+  // ESCAPED quote (Couldn't read \"{text}\"...). A naive [^"]+ stops at that
+  // backslash-quote and reports a truncated fragment as a missing string,
+  // which is a phantom the owner would then be asked to translate.
+  // Unescaping afterwards is what makes the reported key match the source.
+  for (const m of code.matchAll(/\bt\(\s*"((?:[^"\\]|\\.)*)"/g)) {
+    found.add(m[1].replace(/\\(["'\\])/g, "$1"));
+  }
+  for (const m of code.matchAll(/\bt\(\s*'((?:[^'\\]|\\.)*)'/g)) {
+    found.add(m[1].replace(/\\(["'\\])/g, "$1"));
+  }
   for (const m of code.matchAll(/>([A-Z][^<>{}`$]{2,70})</g)) {
     const s = m[1].trim();
     if (LOOKS_USER_FACING(s)) found.add(s);

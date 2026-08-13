@@ -82,8 +82,8 @@ what a phone actually shows.
 
 | # | Phase | Strings | State |
 |---|---|---|---|
-| 1 | **The shell** — nav, Home/Settings, sign-in, splashes, About, onboarding, accept-invite, the six shared statuses | 94 | **DONE, v07.31** |
-| 2 | **The Quran module** — `quranrevival.html` end to end, the wheel, the way modal, + 114 surah names | 89 + 114 | next |
+| 1 | **The shell** — nav, Home/Settings, sign-in, splashes, About, onboarding, accept-invite, the six shared statuses | 95 | **DONE, v07.31** |
+| 2 | **The Quran module** — `quranrevival.html` end to end, the wheel, the way modal, the reading/listening cards, + 114 surah names | 107 + 114 | **DONE, v07.32** |
 | 3 | **The nine other modules** — topic/routine/asma renderers and their pages, + 31 subject names & 10 glosses, + 90 Approach Guide paragraphs | 50 + 131 | |
 | 4 | **Tracking & feedback** — Records, Monitor, Homework, Course Offers, Continue strip | 138 | |
 | 5 | **Admin** — People, Catalogue, Curriculum, Classes | 179 | |
@@ -116,6 +116,46 @@ suite in both languages, and the landing-page layout regression from
 - **The language pickers name Bangla in Bangla, in every language.** That is
   how a Bangla-only reader finds the setting at all, and it is why a naive
   "no Bangla on an English page" check reports a false alarm.
+
+## What phase 2 added to the method
+
+- **`surahName(n, englishName)` and 114 Bangla names** in
+  `js/i18n/surah-names-bn.js`. Kept out of `bn.js` because it is *data*, not
+  interface wording. Not added to the pulled Quran data either — that folder
+  is generated, and re-pulling would overwrite it.
+- **`num()` is applied at the point a number is drawn, never to a value.**
+  `<option value="2">২. আল-বাকারা</option>` — the text is Bengali, the value
+  stays `2` because it is read back with `Number()`. Getting this backwards
+  would break every picker on the page.
+- **`parseNum()` reads Bengali digits back.** The "Go to" box now accepts
+  `২:২৫৫`. A Bangla-only reader on a Bangla keyboard types Bengali digits,
+  and a box that refuses what the interface itself taught them to type is
+  exactly where someone gives up. Later phases should use it on **any** field
+  where a person types a number.
+- **Failure messages count (I15).** An error a Bangla-only reader cannot read
+  is nearly as useless as no error at all. Messages shown *on screen* are
+  translated; `throw new Error(...)` diagnostics with HTTP codes are left in
+  English on purpose — they are for whoever is helping, not for the reader.
+- **People's names are not translated.** Reciters keep their own names; only
+  the language note in brackets changes — "Abdullah Basfar (আরবি)". The one
+  exception is the Bangla reciter, whose name is Bangla anyway.
+
+## Two tool bugs phase 2 exposed, both fixed
+
+Worth knowing, because both made the report **overstate** progress:
+
+1. **The filter required a three-letter word.** "Go to" has none, so the
+   label was skipped entirely — the report said the Quran module was 100%
+   translated while "Go to" sat there in English. Caught by a behaviour test,
+   not by the report. Now two letters.
+2. **Escaped quotes inside a key truncated it.** `t("Couldn't read \"{text}\"…")`
+   was reported as a phantom missing string called `"Couldn"`. The `t()`
+   matcher now understands escapes, and fragments containing a stray
+   backslash are dropped.
+
+**The lesson for later phases: the coverage number is a guide, not proof.**
+Only a behaviour test that reads the actual rendered page can tell you a
+screen is really translated.
 
 ## Known, and deliberately left
 

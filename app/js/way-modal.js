@@ -7,6 +7,7 @@
 
 import { langText } from "./lang.js";
 import { summarizeStatuses, STATUSES, statusLabel } from "./unit-keys.js";
+import { t, num } from "./i18n.js";
 import { STATUS_COLORS } from "./mastery-wheel.js";
 
 function escapeHtml(s) {
@@ -17,26 +18,26 @@ function escapeHtml(s) {
 export function renderGuideTab(trackable, lang = "en") {
   const guide = trackable.guide ?? {};
   return `<div class="way-guide">
-    <h4>What</h4><p>${escapeHtml(langText(guide.what, lang))}</p>
-    <h4>How</h4><p>${escapeHtml(langText(guide.how, lang))}</p>
-    <h4>How to measure your progress</h4><p>${escapeHtml(langText(guide.measure, lang))}</p>
+    <h4>${t("What")}</h4><p>${escapeHtml(langText(guide.what, lang))}</p>
+    <h4>${t("How")}</h4><p>${escapeHtml(langText(guide.how, lang))}</p>
+    <h4>${t("How to measure your progress")}</h4><p>${escapeHtml(langText(guide.measure, lang))}</p>
   </div>`;
 }
 
 /** Track tab -- current claimed/confirmed status for one unit + a status picker the caller wires to records.js claimStatus(). */
 export function renderTrackTab(entry, currentStatusId) {
   const options = STATUSES
-    .map((s) => `<option value="${s.id}" ${s.id === currentStatusId ? "selected" : ""}>${s.label}</option>`)
+    .map((s) => `<option value="${s.id}" ${s.id === currentStatusId ? "selected" : ""}>${statusLabel(s.id)}</option>`)
     .join("");
   const confirmLine = entry
-    ? `<p class="way-track-state">Confirmed: <strong>${entry.confirmedStatus ? statusLabel(entry.confirmedStatus) : "—"}</strong> &middot; <span class="pill pill-${entry.confirmState}">${entry.confirmState}</span></p>`
-    : `<p class="way-track-state">Not claimed yet.</p>`;
+    ? `<p class="way-track-state">${t("Confirmed:")} <strong>${entry.confirmedStatus ? statusLabel(entry.confirmedStatus) : "—"}</strong> &middot; <span class="pill pill-${entry.confirmState}">${t(entry.confirmState)}</span></p>`
+    : `<p class="way-track-state">${t("Not claimed yet.")}</p>`;
   return `<div class="way-track">
     ${confirmLine}
-    <label>Claim a status
+    <label>${t("Claim a status")}
       <select class="way-status-select">${options}</select>
     </label>
-    <button type="button" class="way-claim-btn">Claim</button>
+    <button type="button" class="way-claim-btn">${t("Claim")}</button>
     <div class="way-claim-result"></div>
   </div>`;
 }
@@ -45,7 +46,7 @@ export function renderTrackTab(entry, currentStatusId) {
 export function renderBreakdownTab(statusIds) {
   const summary = summarizeStatuses(statusIds);
   if (summary.countedTotal === 0) {
-    return `<div class="way-breakdown"><p>Nothing claimed yet for this Approach here.</p></div>`;
+    return `<div class="way-breakdown"><p>${t("Nothing claimed yet for this Approach here.")}</p></div>`;
   }
   const counts = {};
   for (const s of statusIds) counts[s] = (counts[s] ?? 0) + 1;
@@ -54,9 +55,9 @@ export function renderBreakdownTab(statusIds) {
       const count = counts[s.id] ?? 0;
       const pct = summary.countedTotal ? Math.round((count / summary.countedTotal) * 100) : 0;
       return `<div class="breakdown-row">
-        <span class="breakdown-label">${s.label}</span>
+        <span class="breakdown-label">${statusLabel(s.id)}</span>
         <div class="breakdown-bar-track"><div class="breakdown-bar" style="width:${pct}%; background:${STATUS_COLORS[s.id]}"></div></div>
-        <span class="breakdown-count">${count}</span>
+        <span class="breakdown-count">${num(count)}</span>
       </div>`;
     })
     .join("");

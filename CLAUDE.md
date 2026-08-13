@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.31.** Cutover to production happened
+**Current milestone: QuranRevival v07.32.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -807,6 +807,51 @@ confirmed identical on the previous commit, and notably Bangla does NOT
 truncate there. **See `TRANSLATION-PLAN.md`** for the full six-phase plan,
 the measured sizing, and what each phase owns. Phase 2 is the Quran module
 (89 strings + 114 surah names).
+
+v07.32 (13 Aug 2026, on Claude Code on the web) is **full app translation,
+phase 2 of 6 — THE QURAN MODULE**, the module the app is named after.
+**Area coverage 107/107 (100%); app-wide 273/658 (41%).** Delivers
+`quranrevival.html` end to end (both dock tabs, all three Study-options bars,
+the Reading view and Listening cards, the Explore drill, the way modal, the
+wheel legend and centre disc) plus `way-modal.js`, `ayah-renderer.js`,
+`hifz-renderer.js` and `audio-player.js`. **The 114 surah names are in
+Bangla**, in their own file `js/i18n/surah-names-bn.js` — kept out of `bn.js`
+because they are DATA not interface wording, and out of
+`tools/quran-data-pull/output` because that folder is generated and a re-pull
+would overwrite them. Three method points later phases must follow: **(a)
+`num()` is applied where a number is DRAWN, never to a value** — the surah
+picker reads "২. আল-বাকারা" while its `<option value>` stays `2`, because
+every change handler parses it back with `Number()`; getting this backwards
+would break every picker on the page. **(b) New `parseNum()` reads Bengali
+digits BACK**, so the "Go to" box accepts `২:২৫৫` — a Bangla-only reader on a
+Bangla keyboard types Bengali digits, and a box that refuses what the
+interface itself taught them to type is exactly where someone gives up; use
+it on any field where a person types a number. **(c) Failure messages are
+translated too (I15)** — an error a Bangla reader cannot read is nearly as
+useless as no error; on-screen messages are translated, while `throw new
+Error(...)` diagnostics carrying HTTP codes stay English on purpose, since
+they are for whoever is helping rather than for the reader. Reciters keep
+their own names (a person's name is not translated); only the bracketed
+language note changes. Two `renderExplore*` functions declared a local
+`const surahName` that would have **shadowed the imported helper** — found
+and renamed before it could bite. **Verified: 232 behaviour checks** (all of
+phase 1's, plus surah names and Bengali numerals in the pickers with option
+VALUES proven still plain, the wheel centre, dock tabs, all bar labels, unit
+types, Reading view, typing `২:২৫৫` really jumping to 2:255, a bad reference
+explaining itself in Bangla, and English proven byte-unchanged) **plus the
+landing-page layout regression (identical at all five viewports in both
+banner states) and a nav check in BOTH languages: Bangla now has exact parity
+with English at 320/360/390/412/768px** (7/6/5/5/10 Approach rows either way).
+**Two real bugs in `tools/i18n-coverage.mjs` were found and fixed — both made
+it OVERSTATE progress**, which is the dangerous direction: its filter required
+a three-letter word, so "Go to" was skipped entirely and the report claimed
+100% while that label sat in English (caught by a behaviour test, not by the
+report); and an escaped quote inside a key truncated it into a phantom
+missing string called `"Couldn"`. **The standing lesson, now recorded in
+`TRANSLATION-PLAN.md`: the coverage number is a guide, not proof — only a
+behaviour test that reads the rendered page can show a screen is really
+translated.** Phase 3 is the nine other study modules (50 strings + 31 subject
+names and glosses + 90 Approach Guide paragraphs).
 
 ---
 

@@ -20,6 +20,8 @@
 // Fetched lazily, once per session — never bundled, per the load-speed
 // contract (Architecture s8: "Screensaver, About, resources: on first use").
 
+import { t } from "./i18n.js";
+
 const MUSHAF_JSON_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/mushaf-madani-v2.json";
 const MUSHAF_FONT_BASE = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/fonts/";
 const SURAH_HEADER_FONT_URL = "https://raw.githubusercontent.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/main/mushaf/QCF_SurahHeader_COLOR-Regular.woff2";
@@ -184,7 +186,7 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName) {
   if (!pageData) {
     const err = document.createElement("div");
     err.className = "hifz-line-error";
-    err.textContent = "Couldn't load this page's data.";
+    err.textContent = t("Couldn't load this page's data.");
     pageEl.appendChild(err);
     container.appendChild(pageEl);
     return;
@@ -235,7 +237,7 @@ export async function renderMushafPages(container, pages, highlightSet, surahAra
   wordRegistry = new Map();
   activeAyahKey = null;
   if (!pages.length) {
-    container.innerHTML = `<p style="color:#888;">Couldn't find a Mushaf page for this selection.</p>`;
+    container.innerHTML = `<p style="color:#888;">${t("Couldn't find a Mushaf page for this selection.")}</p>`;
     return;
   }
   for (const p of pages) await renderPage(p, highlightSet, container, surahArabicName);
