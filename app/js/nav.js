@@ -126,7 +126,15 @@ export function renderNavBar(roles = [], viewAsRole = null) {
   const currentFile = location.pathname.split("/").pop();
 
   const cats = [];
-  cats.push(renderCategory("Study", renderLinks(STUDY_LINKS, currentFile, canAdmin)));
+  // Owner, 13 Aug 2026: "Study" -> "Modules". They asked for "Study Module"
+  // and asked whether it would fit; measured, it does not -- it needs 97px
+  // and gets 75-83px on a phone, so it ellipsised to "Study Mo...", and was
+  // still clipped even at an unreadable 8.8px. Wrapping it to two lines cost
+  // 13px of nav height and one visible Approach row, which is exactly what
+  // shell rounds 9-10 spent themselves reclaiming. Offered both; the owner
+  // chose the short word. It still separates the category from its own first
+  // link ("Quran Study") and matches the word catalogue.html already uses.
+  cats.push(renderCategory("Modules", renderLinks(STUDY_LINKS, currentFile, canAdmin)));
   cats.push(renderCategory("Operation", renderLinks(OPERATION_LINKS, currentFile, canAdmin)));
   cats.push(renderCategory("Bookmark", renderPlaceholders(BOOKMARK_PLACEHOLDERS)));
 

@@ -93,10 +93,6 @@
   #globalBanner { border-bottom: 1px solid #e8ecf4; padding-bottom: 0.25rem; margin-bottom: 0.2rem; }
   #bannerTitle { font-size: 1.02rem; margin: 0; color: #1F3A6E; }
   #bannerSub { color: #666; margin: 0.1rem 0 0; font-size: 0.85rem; }
-  #bannerEditForm { display: none; gap: 0.5rem; flex-direction: column; max-width: 30rem; }
-  #bannerEditForm input { width: 100%; box-sizing: border-box; }
-  #bannerEditBtn { font-size: 0.75rem; padding: 0.2rem 0.5rem; }
-  .banner-admin { margin-top: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed #e5e5e5; }
 
   /* ---------- App shell: stage + docked bottom bar (shell round 7) ----------
      Shell round 5 collapsed the seven pickers into a <details> to get the
@@ -370,7 +366,7 @@
     <details class="nav-cat nav-cat-home">
       <summary>Home</summary>
       <div class="nav-cat-links">
-        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Old app ↗</a>
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
         <div id="who">Checking sign-in…</div>
         <button id="signInBtn" style="display:none;">Sign in with Google</button>
         <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
@@ -521,17 +517,18 @@
         <!-- Owner's ask: show what all those choices actually add up to. -->
         <div class="opt-summary" id="optionsSummary"></div>
 
-        <!-- Owner/prime only (renderBanner() gates the button's display).
-             Moved in here from #globalBanner itself so an admin-only control
-             stops costing every visitor a row of landing-page height. -->
-        <div class="banner-admin">
-          <button type="button" class="secondary" id="bannerEditBtn" style="display:none;">Edit banner</button>
-          <div id="bannerEditForm">
-            <label>Title <input type="text" id="bannerTitleInput" /></label>
-            <label>Subtitle <input type="text" id="bannerSubInput" /></label>
-            <div class="row"><button type="button" id="bannerSaveBtn">Save</button><button type="button" class="secondary" id="bannerCancelBtn">Cancel</button></div>
-          </div>
-        </div>
+        <!-- Shell round 12 (13 Aug 2026): the "Edit banner" block used to sit
+             here -- an owner/prime-only control with nothing to do with
+             studying, parked in this panel only because shell round 5 moved
+             it off the landing page to save height. The owner cleared their
+             tenant's banner text and asked for the button gone: "it is only
+             showing 'edit banner' and taking space."
+             REMOVED FROM THIS SCREEN ONLY -- nothing was destroyed. The
+             tenant's own bannerTitle/bannerSub fields are untouched in
+             Firestore, and renderBanner() still displays them if they are
+             ever set again (I4). What is gone is the editing UI, which needs
+             a real home: see LAYOUT-BACKLOG.md. Until a Settings surface
+             exists, a banner can only be set from the Firebase console. -->
 
         <!-- Owner's call this round: the Study screen reads better as part of
              Study options than as a tab of its own -- "user do not have to
@@ -582,7 +579,6 @@
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
     import { safeWrite } from "./js/errors.js";
-    import { updateDocument } from "./js/envelope.js";
     import { getMyMemberships, initializeActiveContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames } from "./js/catalogue.js";
     import { buildUnitKey, STATUSES, rukuIndexInSurah } from "./js/unit-keys.js";
@@ -712,12 +708,6 @@
     const globalBannerEl = document.getElementById("globalBanner");
     const bannerTitleEl = document.getElementById("bannerTitle");
     const bannerSubEl = document.getElementById("bannerSub");
-    const bannerEditBtn = document.getElementById("bannerEditBtn");
-    const bannerEditForm = document.getElementById("bannerEditForm");
-    const bannerTitleInput = document.getElementById("bannerTitleInput");
-    const bannerSubInput = document.getElementById("bannerSubInput");
-    const bannerSaveBtn = document.getElementById("bannerSaveBtn");
-    const bannerCancelBtn = document.getElementById("bannerCancelBtn");
 
     // Round 10 fix (8 Aug 2026): old wording told anyone with no account to
     // create one on onboarding.html -- wrong for someone with a real pending
@@ -869,33 +859,12 @@
       bannerSubEl.style.display = sub ? "" : "none";
       // Shell round 5: hide the whole strip (border and spacing included) when
       // the tenant has set no banner at all, instead of leaving an empty ruled
-      // block above the wheel. The Edit button now lives in Study options, so
-      // hiding this never hides the only way back in to set one.
+      // block above the wheel.
+      // Shell round 12: this READ half is untouched -- a tenant that has a
+      // banner set still shows it exactly as before. Only the edit form is
+      // gone (see the markup comment where it used to live).
       globalBannerEl.style.display = title || sub ? "" : "none";
-      bannerEditBtn.style.display = canAdminCatalogueClientSide() ? "" : "none";
     }
-
-    bannerEditBtn.addEventListener("click", () => {
-      bannerTitleInput.value = langText(currentTenantDoc?.bannerTitle, "en") || "";
-      bannerSubInput.value = langText(currentTenantDoc?.bannerSub, "en") || "";
-      bannerEditForm.style.display = "flex";
-    });
-    bannerCancelBtn.addEventListener("click", () => { bannerEditForm.style.display = "none"; });
-    bannerSaveBtn.addEventListener("click", async () => {
-      const bannerTitle = { ...(currentTenantDoc?.bannerTitle ?? {}), en: bannerTitleInput.value };
-      const bannerSub = { ...(currentTenantDoc?.bannerSub ?? {}), en: bannerSubInput.value };
-      const outcome = await safeWrite(
-        () => updateDocument(db, TENANT.TENANTS, activeTenantId, { bannerTitle, bannerSub }),
-        { collection: "tenants", action: "saveBanner" }
-      );
-      if (outcome.ok) {
-        currentTenantDoc = { ...(currentTenantDoc ?? {}), bannerTitle, bannerSub };
-        bannerEditForm.style.display = "none";
-        renderBanner();
-      } else {
-        alert(outcome.entry.message);
-      }
-    });
 
     // -----------------------------------------------------------------------
     // Phase 5 -- Study Unit picker.

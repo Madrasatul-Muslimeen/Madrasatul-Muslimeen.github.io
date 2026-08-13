@@ -118,11 +118,16 @@ Then I can do the rest of the layout organising."* Not yet specified — this
 is a conversation to have with them, the same way shell rounds 4–11 were.
 What is already known to be odd, so it does not have to be rediscovered:
 
-- **The banner-admin block is the one genuinely unrelated thing in the
-  panel.** "Edit banner" plus its form sits between the summary strip and
-  `<h2>Study</h2>`, purely because shell round 5 moved it off the landing
-  page to save height. Owner/prime only. It has no relationship to studying.
-  If a real Settings surface lands in item 1, that is where it belongs.
+- ~~The banner-admin block is the one genuinely unrelated thing in the
+  panel.~~ **Removed in v07.29 (shell round 12)** at the owner's request,
+  after they cleared their tenant's banner text themselves. **But it left a
+  real gap: the "Edit banner" control now has no home anywhere in the app.**
+  A tenant banner can currently only be set from the Firebase console.
+  Nothing was destroyed — `tenants.bannerTitle`/`bannerSub` are untouched
+  and `renderBanner()` still displays them (I4) — but **whoever builds the
+  Settings surface in item 1 should give "Edit banner" a place in it**, and
+  it is owner/prime-gated (`canAdminCatalogueClientSide()`). The old markup,
+  handler and CSS are recoverable from the v07.29 commit.
 - **The Study screen underneath the bars has not been organised at all.**
   Only the *controls* were grouped in round 11. Below them sit
   `#singleAyahNavRow` (Previous / position / Next), `#ayahPanels` and
@@ -174,18 +179,18 @@ served from), not adding a dropdown. Scope that before promising a picker.
 
 ---
 
-## 5. The owner's own tenant banner — ONE-LINE, NOT A BUILD
+## 5. The owner's own tenant banner — DONE, 13 Aug 2026
 
-Their tenant's banner text still repeats the app's own title and tagline
+Their tenant's banner text used to repeat the app's own title and tagline
 ("QuranRevival" / "Reviving the Quran, abandoned."), so the landing page
-prints it twice and it costs a visible Approach row. **Authorized by the
-owner to be cleared since v07.23**, but it is tenant content in Firestore
-and every session since has run without Firebase credentials, so it has
-never actually been done.
+printed it twice and it cost a visible Approach row. Carried as an open item
+from v07.23 onwards, because every session since ran without Firebase
+credentials and could not do it.
 
-**A session with real Firebase access should offer again.** Otherwise it is
-three taps for the owner: Study options → Edit banner → empty both fields →
-Save. `renderBanner()` already hides the whole strip once it is empty.
+**The owner cleared it themselves, 13 Aug 2026.** `renderBanner()` hides the
+whole strip once it is empty, so the landing page now starts ~45px higher —
+worth one more Approach row on a phone. Nothing further to do. Kept here so
+nobody re-opens it, and as the reason item 2's Edit-banner note exists.
 
 ---
 

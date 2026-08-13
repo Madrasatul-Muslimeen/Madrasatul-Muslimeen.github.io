@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.28.** Cutover to production happened
+**Current milestone: QuranRevival v07.29.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -649,6 +649,39 @@ or the reciter until you open the card), and on a 390px phone the four
 -- so the strip is the only place a tenant-authored person or Approach name
 is readable in full. Offered as three options (trim to Reading+Listening /
 remove entirely / keep); the owner chose keep, unchanged.
+v07.29 (13 Aug 2026, on Claude Code on the web) is Shell round 12 -- three
+small owner-asked cleanups, no new mechanism. **(a)** The shared nav's
+"Old app" link is now **"Legacy App - v06"**, changed in all 19 pages that
+carry it (it is static pre-JS markup per v07.08's anti-flash fix, not
+`nav.js` output, so it genuinely lives 19 times). **(b)** The nav's
+**"Study" category is now "Modules"** -- the owner asked for "Study Module"
+and, to their credit, asked in the same breath whether it would fit.
+**Measured: it does not.** The summary needs 97px and gets 75-83px on a
+phone, so it ellipsised to "Study Mo...", and was still clipped at an
+unreadable 8.8px on a 360px screen; letting it wrap to two lines cost 13px
+of nav height and **one visible Approach row** at 360x640 and 390x844,
+which is precisely what shell rounds 9-10 spent themselves reclaiming. Both
+options were put to the owner with those numbers and they chose the short
+word. Note `.nav-cat > summary` is `white-space: nowrap` + `text-overflow:
+ellipsis`, so a too-long category label fails SILENTLY by truncating --
+worth re-measuring (`navcheck` pattern in `LAYOUT-BACKLOG.md`) any time one
+is renamed. **(c)** The **"Edit banner" block is removed from Study
+options** -- the owner had already cleared their tenant's banner text
+themselves (closing the item CLAUDE.md had carried since v07.23), leaving
+just a button taking space: "it is only showing 'edit banner' and taking
+space." **Removed from that SCREEN only, nothing destroyed (I4):** the
+tenant's `bannerTitle`/`bannerSub` fields are untouched in Firestore and
+`renderBanner()` still displays them if ever set again -- verified in the
+same run, a tenant with a banner still renders it. What is gone is the
+editing UI, and it now has **no home in the app at all** -- until a real
+Settings surface exists a banner can only be set from the Firebase console.
+That is a deliberate, recorded consequence, not an oversight: see
+`LAYOUT-BACKLOG.md`. Also dropped the then-unused `updateDocument` import
+and the three now-dead CSS rules. Re-verified with the same harness: all 26
+behaviour checks still pass, `getElementById` targets 71 -> 65 (exactly the
+six removed banner-edit elements) with none missing, no page errors, all
+four nav buttons on one line at 320/360/390/412/768px, and the landing page
+otherwise unchanged.
 
 ---
 
