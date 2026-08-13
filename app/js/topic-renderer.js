@@ -16,6 +16,7 @@ import { langText } from "./lang.js";
 import { getAppLang } from "./prefs.js";
 import { STATUS_COLORS } from "./mastery-wheel.js";
 import { statusLabel } from "./unit-keys.js";
+import { t } from "./i18n.js";
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -49,7 +50,7 @@ export function renderTopicBreadcrumb(path, rootLabel) {
  */
 export function renderTopicChildList(children, statusByNodeId = new Map(), loggedTodayByNodeId = new Map()) {
   if (children.length === 0) {
-    return `<p class="topic-empty">Nothing under here yet.</p>`;
+    return `<p class="topic-empty">${t("Nothing under here yet.")}</p>`;
   }
   const rows = children.map((node) => {
     const name = escapeHtml(langText(node.name, getAppLang(), node.id));
@@ -66,15 +67,15 @@ export function renderTopicChildList(children, statusByNodeId = new Map(), logge
       ? `<span class="topic-status-chip" style="background:${STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started}">${statusLabel(statusId)}</span>`
       : hasResource
         ? `<span class="topic-status-chip topic-status-unclaimed">Not started</span>`
-        : `<span class="topic-status-chip topic-status-noresource">No resource yet</span>`;
+        : `<span class="topic-status-chip topic-status-noresource">${t("No resource yet")}</span>`;
     // loggedTodayByNodeId only carries entries when the caller is the
     // routine renderer (routine-study.js sets true/false for every
     // trackable child it loads) -- .has() is the signal, not .size, so a
     // topic-renderer caller's default empty Map never shows this badge.
     const reminderBadge = hasResource && loggedTodayByNodeId.has(node.id)
       ? (loggedTodayByNodeId.get(node.id)
-        ? `<span class="topic-reminder-badge topic-reminder-done">Logged today</span>`
-        : `<span class="topic-reminder-badge topic-reminder-due">Due today</span>`)
+        ? `<span class="topic-reminder-badge topic-reminder-done">${t("Logged today")}</span>`
+        : `<span class="topic-reminder-badge topic-reminder-due">${t("Due today")}</span>`)
       : "";
     return `<button type="button" class="topic-row topic-row-leaf" data-id="${node.id}">
       <span class="topic-row-name">${name}</span>${gloss}

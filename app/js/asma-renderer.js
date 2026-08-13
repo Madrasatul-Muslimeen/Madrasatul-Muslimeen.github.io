@@ -8,6 +8,7 @@
 
 import { STATUS_COLORS } from "./mastery-wheel.js";
 import { statusLabel } from "./unit-keys.js";
+import { t } from "./i18n.js";
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -19,7 +20,7 @@ export function renderAsmaGrid(names, statusByNumber = new Map()) {
     const statusId = statusByNumber.get(n.number) ?? null;
     const chip = statusId
       ? `<span class="asma-status-chip" style="background:${STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started}">${statusLabel(statusId)}</span>`
-      : `<span class="asma-status-chip asma-status-unclaimed">Not started</span>`;
+      : `<span class="asma-status-chip asma-status-unclaimed">${statusLabel("not_started")}</span>`;
     return `<button type="button" class="asma-card" data-number="${n.number}">
       <span class="asma-card-number">${n.number}</span>
       <span class="asma-card-arabic">${escapeHtml(n.arabic)}</span>
@@ -41,7 +42,7 @@ export function renderAsmaDetail(name, entry) {
     <h2>${escapeHtml(name.transliteration)}</h2>
     <p class="asma-detail-meaning">${escapeHtml(name.meaning.en)}</p>
     <p>${statusLine}</p>
-    <button type="button" id="trackAsmaBtn">Track my progress</button>
+    <button type="button" id="trackAsmaBtn">${t("Track my progress")}</button>
   </div>`;
 }
 

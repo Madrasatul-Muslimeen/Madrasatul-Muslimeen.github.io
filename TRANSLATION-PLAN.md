@@ -84,7 +84,7 @@ what a phone actually shows.
 |---|---|---|---|
 | 1 | **The shell** — nav, Home/Settings, sign-in, splashes, About, onboarding, accept-invite, the six shared statuses | 95 | **DONE, v07.31** |
 | 2 | **The Quran module** — `quranrevival.html` end to end, the wheel, the way modal, the reading/listening cards, + 114 surah names | 107 + 114 | **DONE, v07.32** |
-| 3 | **The nine other modules** — topic/routine/asma renderers and their pages, + 31 subject names & 10 glosses, + 90 Approach Guide paragraphs | 50 + 131 | |
+| 3 | **The nine other modules** — topic/routine/asma renderers and their pages, + 55 subject names & glosses, + the 30 Approach Guide sets | 242 | **DONE, v07.33** |
 | 4 | **Tracking & feedback** — Records, Monitor, Homework, Course Offers, Continue strip | 138 | |
 | 5 | **Admin** — People, Catalogue, Curriculum, Classes | 179 | |
 | 6 | **Asma ul Husna** — 99 meanings + the poster screensaver | 89 + 99 | |
@@ -156,6 +156,47 @@ Worth knowing, because both made the report **overstate** progress:
 **The lesson for later phases: the coverage number is a guide, not proof.**
 Only a behaviour test that reads the actual rendered page can tell you a
 screen is really translated.
+
+## What phase 3 added to the method — the most reusable finding yet
+
+**Platform data is translated at READ time, not at seed time.** The 55
+subject-tree names, their glosses and the 30 Approach Guide sets are written
+in `js/catalogue-data.js`, but that file is a **seed**: its text was copied
+into each tenant's own Firestore documents when the tenant was created, and
+it is never re-read afterwards. Adding `bn` there would have translated the
+app for a madrasah created tomorrow and done **nothing** for the owner's own
+tenant, seeded weeks ago — the one tenant that actually matters today.
+
+So `langText()` in `js/lang.js` now falls back through the same Bangla
+catalogue, keyed by the English it finds stored:
+
+```
+value[lang]  →  t(value.en)  →  value.bn  →  value.en  →  fallback
+```
+
+That fixes every existing tenant at once, with **no data migration, no
+Firestore write and no rules change**. A tenant that has authored its own
+Bangla still wins, because `value[lang]` is checked first.
+
+**Phase 4, 5 and 6 should assume the same shape** — anything already seeded
+into Firestore in English becomes translatable by adding a catalogue entry,
+not by editing the seed.
+
+## A third tool bug, and the one that proves the rule
+
+The report said the modules area was **100% translated while the intro
+paragraph on every module page was still in English.**
+
+The cause: the extractor read `Islamic History &amp; Story` from the HTML
+source, but `translateStatic()` reads text nodes from the live DOM, where
+that has already become `Islamic History & Story`. The catalogue key could
+never match at runtime. Now the extractor decodes entities (`&amp;`,
+`&mdash;`, `&hellip;`, `&rarr;` …) so its keys are what the app will actually
+look up, and the affected catalogue keys were rewritten.
+
+**It was found by opening a real rendered page and reading it — not by the
+report, which was confidently wrong.** That is now three times the coverage
+number has overstated progress. Treat it as a to-do list, never as evidence.
 
 ## Known, and deliberately left
 

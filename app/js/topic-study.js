@@ -310,7 +310,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     // an assignment changed) -- renderBrowser() already hides this row, but
     // this is the actual gate.
     if (node.isTrackable && allowedSubjectIds && !allowedSubjectIds.includes(node.id)) {
-      detailContainer.innerHTML = `<div class="topic-detail"><p class="topic-empty">You're not assigned to teach this subject for this student.</p></div>`;
+      detailContainer.innerHTML = `<div class="topic-detail"><p class="topic-empty">${t("You're not assigned to teach this subject for this student.")}</p></div>`;
       return;
     }
 
@@ -343,7 +343,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       <h2>${langText(node.name, getAppLang(), node.id)}</h2>
       ${renderTopicResource(resource)}
       <p>${statusLine}</p>
-      <button type="button" id="trackTopicBtn" ${resource ? "" : "disabled"}>Track my progress</button>
+      <button type="button" id="trackTopicBtn" ${resource ? "" : "disabled"}>${t("Track my progress")}</button>
     </div>`;
 
     const trackBtn = document.getElementById("trackTopicBtn");
@@ -359,7 +359,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       .filter((e) => e.trackableId === trackableId)
       .map((e) => e.claimedStatus);
 
-    const title = `${langText(node.name, getAppLang(), node.id)} — Studied`;
+    const title = `${langText(node.name, getAppLang(), node.id)} — ${t("Studied")}`;
     const tabBodies = {
       Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
       Guide: renderGuideTab(studiedTrackable, getAppLang()),

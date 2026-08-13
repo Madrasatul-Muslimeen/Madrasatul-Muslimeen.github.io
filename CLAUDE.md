@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.32.** Cutover to production happened
+**Current milestone: QuranRevival v07.33.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -852,6 +852,47 @@ missing string called `"Couldn"`. **The standing lesson, now recorded in
 behaviour test that reads the rendered page can show a screen is really
 translated.** Phase 3 is the nine other study modules (50 strings + 31 subject
 names and glosses + 90 Approach Guide paragraphs).
+
+v07.33 (13 Aug 2026, on Claude Code on the web) is **full app translation,
+phase 3 of 6 — THE NINE OTHER STUDY MODULES.** **Area 242/242 (100%);
+app-wide 497/949 (52%) — past halfway.** Covers the nine module pages (Deen
+Study, Arabic, Hadith, General Study, Nature-Life, Life Skill, Health, LDOG,
+Asma ul Husna), `topic-study.js`/`routine-study.js`/`asma-study.js` and the
+`topic-renderer`/`asma-renderer`, **plus the platform content itself: 55
+subject-tree names and glosses, and all 30 Approach Guide sets (What / How /
+How to measure) — roughly 90 paragraphs of religious and technical Bangla,
+the heaviest writing in the whole project.** **The most reusable finding of
+this phase, which phases 4-6 must assume: PLATFORM DATA IS TRANSLATED AT READ
+TIME, NOT AT SEED TIME.** `js/catalogue-data.js` is a *seed* — its text was
+copied into each tenant's Firestore documents at tenant-creation and is never
+re-read, so adding `bn` there would have translated the app for a madrasah
+created tomorrow and done nothing at all for the owner's own tenant, seeded
+weeks ago. Instead `langText()` (`js/lang.js`) now falls back through the same
+Bangla catalogue keyed by the English it finds stored — `value[lang] →
+t(value.en) → value.bn → value.en` — which fixes **every existing tenant at
+once with no data migration, no Firestore write and no `firestore.rules`
+change**; a tenant that authored its own Bangla still wins, since
+`value[lang]` is checked first. **Also cleaned, as `TRANSLATION-PLAN.md` says
+each phase should: developer noise in three page titles** ("Deen Study (Phase
+6)", "Health (Phase 7)", "Learn Deen On-the-Go (Phase 7)") — meaningless in
+either language; a test now fails if `(Phase n)` or `(F-nnn)` reappears in a
+module page's title or heading. **A THIRD coverage-tool bug was found, and it
+is the one that proves the standing rule:** the report said the modules area
+was 100% translated **while the intro paragraph on every module page was
+still English** — the extractor read `Islamic History &amp; Story` from the
+HTML source, but `translateStatic()` reads text nodes from the live DOM where
+that is already `Islamic History & Story`, so the key could never match. The
+extractor now decodes HTML entities and the affected keys were rewritten.
+**It was found by opening a real rendered page and reading it, not by the
+report** — three phases, three times the number has overstated progress.
+**Verified: 282 behaviour checks** (all of phases 1-2, plus every one of the
+nine pages' heading/title/intro in Bangla with no developer noise, and
+specifically **that a SEEDED English-only subject name and gloss render in
+Bangla with no English left in the list** — the test that proves the
+read-time fallback really works — plus English module pages proven unchanged)
+**plus the landing-page layout regression (identical at all five viewports in
+both banner states) and the nav check in both languages (still exact parity).**
+Phase 4 is tracking & feedback (Records, Monitor, Homework, Course Offers).
 
 ---
 
