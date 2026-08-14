@@ -14,10 +14,20 @@ Read `../../TRANSLATION-PLAN.md` first for what is being verified and why.
 npm install playwright          # once, anywhere outside the repo is fine
 node serve.js &                 # from the repo root, serves on :8080
 
-node tools/i18n-verify/behaviour.mjs   # ~282 checks, both languages
+node tools/i18n-verify/behaviour.mjs   # ~341 checks, both languages
 node tools/i18n-verify/navcheck.mjs    # nav fits at 320-768px, both languages
 node tools/i18n-verify/layout.mjs      # landing page vs the previous commit
+
+node tools/i18n-verify/probe.mjs /app/records.html bn   # READ a rendered page
 ```
+
+`probe.mjs` (added in phase 4) is not a test -- it dumps what a page really
+renders: its title, its whole innerText, every `<select>`'s options and every
+placeholder, in either language. It exists because the standing rule below is
+easy to agree with and easy to skip, and skipping it has cost every phase so
+far. Phase 4's own finds came out of it: a status picker still in English, an
+"About" label that had picked up the About PAGE's translation, and a tenant
+picker reading "(owner, prime)" on all thirteen signed-in pages.
 
 `layout.mjs` compares against the previous commit's copy of the page, so
 write that first:
@@ -47,6 +57,15 @@ reason phase 3 was built that way.
 **Trackables carry `panels: [...]`**, or the Listening button correctly
 disables itself and any audio test times out against a disabled button.
 
+**Every collection carries at least one real ROW** (added in phase 4). A
+status pill, an activity action, a submission state or an enrolment role can
+only be proved translated if something actually renders it, and empty
+collections render an empty-state message instead. Two details there are
+load-bearing: a `tenantPeople` doc id is the BARE personId (people.js writes
+it that way, and every screen builds records/activity/submission ids from the
+snapshot id), and the seeded `activity` doc id carries whichever week the
+suite is being run in -- a fixed date silently falls out of range tomorrow.
+
 ## Three things that will look like failures but are not
 
 1. **Every language picker names Bangla in Bangla, in every language.** That
@@ -64,10 +83,13 @@ disables itself and any audio test times out against a disabled button.
 ## The standing rule
 
 `tools/i18n-coverage.mjs` prints a percentage. **It has been wrong, in the
-optimistic direction, in all three phases so far** — a filter that skipped
-short labels, an escaped quote that invented a phantom string, and an HTML
-entity that meant a key could never match at runtime. Every one of those was
-caught by opening a real rendered page, never by the report.
+optimistic direction, in all four phases so far** — a filter that skipped
+short labels, an escaped quote that invented a phantom string, an HTML entity
+that meant a key could never match at runtime, and (phase 4) three whole
+shapes of string it could not see at all: label maps handed to `t()` through a
+variable, singular/plural pairs picked at run time, and `js/errors.js`, which
+belonged to no area and so was never even counted as missing. Every one of
+those was caught by opening a real rendered page, never by the report.
 
 **Treat the coverage number as a to-do list, never as evidence.** Only a
 behaviour check that reads the rendered DOM shows a screen is truly

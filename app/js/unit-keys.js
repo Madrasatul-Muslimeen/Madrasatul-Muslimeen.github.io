@@ -9,7 +9,7 @@
 // unit key is recorded, so "show all page-based progress" is one query/filter
 // without re-parsing every key string.
 
-import { t } from "./i18n.js";
+import { t, num } from "./i18n.js";
 
 export const UNIT_TYPES = Object.freeze([
   "ayah", "range", "surah", "page", "ruku", "juz", "hizb", "rub", "manzil",
@@ -53,6 +53,47 @@ export function parseUnitKey(unitKey) {
 export function rukuIndexInSurah(surahAyahs, globalRuku) {
   const firstRuku = surahAyahs[0]?.ruku;
   return firstRuku == null ? globalRuku : globalRuku - firstRuku + 1;
+}
+
+// ---------------------------------------------------------------------------
+// Reading a unit key out loud (full app translation, phase 4)
+// ---------------------------------------------------------------------------
+// Records and Monitor both print raw unit keys -- "ayah:1:1", "topic:t42" --
+// straight into a table. In English that is terse but decipherable; to a
+// Bangla-only reader it is a column of Latin gibberish, which is exactly the
+// test this translation work is measured against.
+//
+// The KEY ITSELF never changes: it is the stored, canonical value (I5), and
+// a CSV export still carries it verbatim. Same split as STATUSES, whose
+// English `label` stays the stored value while statusLabel() is what a
+// person reads.
+
+const UNIT_TYPE_LABELS = Object.freeze({
+  ayah: "Ayah", range: "Range", surah: "Surah", page: "Page", ruku: "Ruku",
+  juz: "Juz", hizb: "Hizb", rub: "Rub", manzil: "Manzil", hadith: "Hadith",
+  topic: "Topic", name: "Name",
+});
+
+/** A unit type's display name, in the reader's own language. Falls back to the raw id, so an unrecognised type can never render blank. */
+export function unitTypeLabel(unitType) {
+  const label = UNIT_TYPE_LABELS[unitType];
+  return label ? t(label) : unitType;
+}
+
+/**
+ * A whole unit key as readable text: "ayah:1:1" -> "Ayah 1:1" / "আয়াত ১:১".
+ *
+ * num() is applied to the REFERENCE ONLY, and only when it is genuinely
+ * numeric -- a topic id ("topic:topic_0042") is an identifier, and turning
+ * its digits into Bengali would make it unrecognisable next to the same id
+ * shown anywhere else.
+ */
+export function unitKeyLabel(unitKey) {
+  if (!unitKey) return "";
+  const { unitType, parts } = parseUnitKey(unitKey);
+  const ref = parts.join(":");
+  if (!ref) return unitTypeLabel(unitType);
+  return `${unitTypeLabel(unitType)} ${/^[0-9:\-]+$/.test(ref) ? num(ref) : ref}`;
 }
 
 /** The surah number for unit types that carry one as their first part (ayah/range/surah/ruku) — null for types that don't (juz/hizb/rub/manzil/page/hadith/topic/name), since those are Quran-wide or non-Quran and have no single surah. */

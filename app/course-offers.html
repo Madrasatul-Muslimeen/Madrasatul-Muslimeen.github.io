@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
-<title>QuranRevival — Course Offers (Phase 7 round 2)</title>
+<title>QuranRevival — Course Offers</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
@@ -36,12 +36,9 @@
 </style>
 </head>
 <body>
-  <h1>Course Offers (Phase 7 round 2)</h1>
-  <p>A shared schedule multiple people follow together — the piece of Phase
-     7 deferred until external-student use was actually on the horizon.
-     Studying through an enrolled offer isn't wired into the study screens
-     yet (that's its own follow-up round) — this page is the offer +
-     enrolment data itself: create an offer, enrol people, see who's in it.</p>
+  <h1>Course Offers</h1>
+  <p>A shared schedule several people follow together: create an offer, enrol
+     people, and see who is in it.</p>
 
   <nav class="app-nav" id="topNav">
     <details class="nav-cat nav-cat-home">
@@ -88,7 +85,7 @@
     <h2>Course offers</h2>
     <div id="offersBody"><p class="muted">Loading…</p></div>
 
-    <h2><span id="enrolmentsPersonName"></span>'s enrolments</h2>
+    <h2 id="enrolmentsHeading">Enrolments</h2>
     <div id="enrolmentsBody"><p class="muted">Loading…</p></div>
   </div>
 
@@ -103,6 +100,7 @@
     import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
+    import { roleListLabel } from "./js/roles.js";
     import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
@@ -118,8 +116,9 @@
       createCourseOffer, listCourseOffers, setCourseOfferStatus,
       enrolPerson, endEnrollment, listEnrollmentsForOffer, listEnrollmentsForPerson,
     } from "./js/course-offers.js";
-    import { renderNavBar, renderHomeExtras } from "./js/nav.js";
-    import { translateStatic, t } from "./js/i18n.js";
+    import { contextStatusLabel, roleInClassLabel } from "./js/course-offers.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
@@ -149,11 +148,16 @@
     const createOfferBtn = document.getElementById("createOfferBtn");
     const createResult = document.getElementById("createResult");
     const offersBody = document.getElementById("offersBody");
-    const enrolmentsPersonName = document.getElementById("enrolmentsPersonName");
+    const enrolmentsHeading = document.getElementById("enrolmentsHeading");
     const enrolmentsBody = document.getElementById("enrolmentsBody");
 
-    const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    dayChecks.innerHTML = DAY_NAMES.map((d, i) => `<label><input type="checkbox" value="${i}" /> ${d}</label>`).join("");
+    // English short day names are the translation KEYS; the checkbox VALUE
+    // stays the day number, which is what gets stored and read back.
+    // Named *_LABELS so tools/i18n-coverage.mjs counts these seven words --
+    // see its own note on the label-map convention.
+    const DAY_NAME_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const dayName = (i) => t(DAY_NAME_LABELS[i] ?? "");
+    dayChecks.innerHTML = DAY_NAME_LABELS.map((d, i) => `<label><input type="checkbox" value="${i}" /> ${t(d)}</label>`).join("");
 
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
@@ -162,11 +166,6 @@
     });
     signOutBtn.addEventListener("click", () => signOut(auth));
 
-    const NO_ACCOUNT_MESSAGE = ` — no account found yet.
-      <br>If someone invited you to join an existing madrasah, use the invite
-      link they sent you (check your email) — don't create a new one here.
-      <br>Starting fresh instead? <a href="onboarding.html">Create a new account
-      on the onboarding page</a>.`;
 
     let activeTenantId = null;
     let myMemberships = [];
@@ -203,7 +202,7 @@
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       subjectChecks.innerHTML = leaves
         .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, getAppLang(), n.id)}</label>`)
-        .join("") || `<span class="muted">No subjects yet.</span>`;
+        .join("") || `<span class="muted">${t("No subjects yet.")}</span>`;
 
       await refreshOffers();
       await refreshEnrolments();
@@ -212,9 +211,9 @@
     function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
     function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; }
     function routineLine(routine) {
-      const days = (routine?.daysOfWeek ?? []).map((d) => DAY_NAMES[d]).join(", ");
-      const range = [routine?.startDate, routine?.endDate].filter(Boolean).join(" – ");
-      return [days, range].filter(Boolean).join(" · ") || "No schedule set";
+      const days = (routine?.daysOfWeek ?? []).map(dayName).join(", ");
+      const range = [routine?.startDate, routine?.endDate].filter(Boolean).map(num).join(" – ");
+      return [days, range].filter(Boolean).join(" · ") || t("No schedule set");
     }
 
     // -----------------------------------------------------------------------
@@ -222,28 +221,30 @@
     // -----------------------------------------------------------------------
 
     async function refreshOffers() {
-      offersBody.innerHTML = `<p class="muted">Loading…</p>`;
+      offersBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         offers = (await listCourseOffers(db, activeTenantId)).filter((o) => canAdmin || o.status === "active");
         offersBody.innerHTML = offers.length
           ? (await Promise.all(offers.map(renderOfferCard))).join("")
-          : `<p class="muted">No course offers yet.</p>`;
+          : `<p class="muted">${t("No course offers yet.")}</p>`;
         wireOfferCardActions();
       } catch (err) {
-        offersBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load course offers: ${err.code ?? ""} ${err.message}</p>`;
+        offersBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load course offers:")} ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
       }
     }
 
     async function renderOfferCard(o) {
-      const subjectsLine = (o.subjectIds ?? []).map(subjectName).join(", ") || "(no subjects set)";
+      const subjectsLine = (o.subjectIds ?? []).map(subjectName).join(", ") || t("(no subjects set)");
       const rosterHtml = canAdmin ? await renderOfferRoster(o) : "";
-      const enrolBtn = `<button class="small enrolBtn" data-offer="${o.id}">Enrol <span class="targetName"></span></button>`;
+      // The whole button caption is one translatable sentence -- Bangla puts
+      // the name before the verb, so "Enrol " + name cannot be assembled.
+      const enrolBtn = `<button class="small enrolBtn" data-offer="${o.id}"></button>`;
       const archiveBtn = canAdmin && o.status === "active"
-        ? `<button class="small secondary archiveOfferBtn" data-offer="${o.id}">Archive</button>`
+        ? `<button class="small secondary archiveOfferBtn" data-offer="${o.id}">${t("Archive")}</button>`
         : "";
       return `<div class="card">
-        <h3>${langText(o.name, getAppLang(), o.id)} <span class="pill pill-${o.status}">${o.status}</span></h3>
+        <h3>${langText(o.name, getAppLang(), o.id)} <span class="pill pill-${o.status}">${contextStatusLabel(o.status)}</span></h3>
         <div class="muted">${subjectsLine}</div>
         <div class="muted">${routineLine(o.routine)}</div>
         ${o.status === "active" ? `<div style="margin-top:0.5rem;">${enrolBtn} ${archiveBtn}</div>` : ""}
@@ -254,14 +255,14 @@
     async function renderOfferRoster(o) {
       const enrolled = await listEnrollmentsForOffer(db, activeTenantId, o.id);
       const active = enrolled.filter((e) => e.status === "active");
-      if (!active.length) return `<div class="muted" style="margin-top:0.4rem;">No one enrolled yet.</div>`;
-      const rows = active.map((e) => `<div class="muted">${personName(e.personId)} (${e.roleInClass}) <button class="small secondary endEnrolBtn" data-offer="${o.id}" data-person="${e.personId}">End</button></div>`).join("");
+      if (!active.length) return `<div class="muted" style="margin-top:0.4rem;">${t("No one enrolled yet.")}</div>`;
+      const rows = active.map((e) => `<div class="muted">${personName(e.personId)} (${roleInClassLabel(e.roleInClass)}) <button class="small secondary endEnrolBtn" data-offer="${o.id}" data-person="${e.personId}">${t("End")}</button></div>`).join("");
       return `<div style="margin-top:0.5rem;">${rows}</div>`;
     }
 
     function wireOfferCardActions() {
       offersBody.querySelectorAll(".enrolBtn").forEach((btn) => {
-        btn.querySelector(".targetName").textContent = personName(personSelect.value);
+        btn.textContent = t("Enrol {name}", { name: personName(personSelect.value) });
         btn.addEventListener("click", async () => {
           btn.disabled = true;
           const outcome = await safeWrite(
@@ -301,7 +302,7 @@
 
     createOfferBtn.addEventListener("click", async () => {
       createResult.textContent = "";
-      if (!offerNameInput.value.trim()) { createResult.textContent = "Enter a name first."; return; }
+      if (!offerNameInput.value.trim()) { createResult.textContent = t("Enter a name first."); return; }
       const subjectIds = Array.from(subjectChecks.querySelectorAll("input:checked")).map((c) => c.value);
       const daysOfWeek = Array.from(dayChecks.querySelectorAll("input:checked")).map((c) => Number(c.value));
 
@@ -317,7 +318,7 @@
       );
       createOfferBtn.disabled = false;
       if (outcome.ok) {
-        createResult.textContent = "Course offer created.";
+        createResult.textContent = t("Course offer created.");
         offerNameInput.value = ""; startDateInput.value = ""; endDateInput.value = ""; notesInput.value = "";
         subjectChecks.querySelectorAll("input:checked").forEach((c) => (c.checked = false));
         dayChecks.querySelectorAll("input:checked").forEach((c) => (c.checked = false));
@@ -333,20 +334,20 @@
 
     async function refreshEnrolments() {
       const personId = personSelect.value;
-      if (!personId) { enrolmentsBody.innerHTML = `<p class="muted">Pick a person first.</p>`; return; }
-      enrolmentsPersonName.textContent = personName(personId);
-      enrolmentsBody.innerHTML = `<p class="muted">Loading…</p>`;
+      if (!personId) { enrolmentsBody.innerHTML = `<p class="muted">${t("Pick a person first.")}</p>`; return; }
+      enrolmentsHeading.textContent = t("{name}'s enrolments", { name: personName(personId) });
+      enrolmentsBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         const enrolments = await listEnrollmentsForPerson(db, activeTenantId, personId);
         const active = enrolments.filter((e) => e.status === "active");
         enrolmentsBody.innerHTML = active.length
           ? active.map((e) => {
               const offer = offers.find((o) => o.id === e.contextId);
-              return `<div class="card"><strong>${offer ? langText(offer.name, getAppLang(), e.contextId) : e.contextId}</strong> — ${e.roleInClass}</div>`;
+              return `<div class="card"><strong>${offer ? langText(offer.name, getAppLang(), e.contextId) : e.contextId}</strong> — ${roleInClassLabel(e.roleInClass)}</div>`;
             }).join("")
-          : `<p class="muted">Not enrolled in anything yet.</p>`;
+          : `<p class="muted">${t("Not enrolled in anything yet.")}</p>`;
       } catch (err) {
-        enrolmentsBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load enrolments: ${err.code ?? ""} ${err.message}</p>`;
+        enrolmentsBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load enrolments:")} ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
       }
     }
@@ -376,14 +377,14 @@
 
         const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
         if (!context) {
-          whoEl.innerHTML += NO_ACCOUNT_MESSAGE;
+          whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
         myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
         tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
           .join("");
 
         appEl.style.display = "block";

@@ -204,6 +204,7 @@
     import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
+    import { roleListLabel } from "./js/roles.js";
     import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
@@ -222,7 +223,7 @@
     } from "./js/curriculum.js";
     import { assignPersonLevel, listPersonLevelHistory, getCurrentPersonLevels } from "./js/grades.js";
     import { createResource, listResources, setResourceStatus } from "./js/resources.js";
-    import { renderNavBar, renderHomeExtras } from "./js/nav.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { translateStatic, t } from "./js/i18n.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
@@ -287,11 +288,6 @@
     });
     signOutBtn.addEventListener("click", () => signOut(auth));
 
-    const NO_ACCOUNT_MESSAGE = ` — no account found yet.
-      <br>If someone invited you to join an existing madrasah, use the invite
-      link they sent you (check your email) — don't create a new one here.
-      <br>Starting fresh instead? <a href="onboarding.html">Create a new account
-      on the onboarding page</a>.`;
 
     let activeTenantId = null;
     let myMemberships = [];
@@ -690,14 +686,14 @@
 
         const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
         if (!context) {
-          whoEl.innerHTML += NO_ACCOUNT_MESSAGE;
+          whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
         myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
         tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
           .join("");
 
         appEl.style.display = "block";

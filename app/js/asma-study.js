@@ -18,6 +18,7 @@ import {
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { langText } from "./lang.js";
+import { roleListLabel } from "./roles.js";
 import { getAppLang, mountAppLangControl } from "./prefs.js";
 import { t, translateStatic } from "./i18n.js";
 import { safeWrite } from "./errors.js";
@@ -30,7 +31,7 @@ import { ensureModulesSeeded } from "./modules.js";
 import { buildUnitKey } from "./unit-keys.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
 import { logActivity } from "./activity.js";
-import { renderNavBar, renderHomeExtras } from "./nav.js";
+import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./nav.js";
 import { ASMA_NAMES } from "./asma-data.js";
 import { ASMA_POSTERS } from "./asma-posters.js";
 import { renderAsmaGrid, renderAsmaDetail, renderAsmaScreensaverSlide } from "./asma-renderer.js";
@@ -68,11 +69,6 @@ export function initAsmaStudyPage() {
   const screensaverMount = document.getElementById("screensaverMount");
   const screensaverCloseBtn = document.getElementById("screensaverCloseBtn");
 
-  const NO_ACCOUNT_MESSAGE = ` — no account found yet.
-    <br>If someone invited you to join an existing madrasah, use the invite
-    link they sent you (check your email) — don't create a new one here.
-    <br>Starting fresh instead? <a href="onboarding.html">Create a new account
-    on the onboarding page</a>.`;
 
   signInBtn.addEventListener("click", () => {
     signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
@@ -299,14 +295,14 @@ export function initAsmaStudyPage() {
 
       const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
       if (!context) {
-        whoEl.innerHTML += NO_ACCOUNT_MESSAGE;
+        whoEl.innerHTML += noAccountMessageHtml();
         return;
       }
       activeTenantId = context.tenantId;
 
       myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
       tenantSelect.innerHTML = myMemberships
-        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
         .join("");
 
       appEl.style.display = "block";

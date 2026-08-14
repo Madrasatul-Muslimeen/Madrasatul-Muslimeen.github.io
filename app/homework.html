@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
-<title>QuranRevival — Homework (Phase 9)</title>
+<title>QuranRevival — Homework</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
@@ -37,7 +37,7 @@
 </style>
 </head>
 <body>
-  <h1>Homework (Phase 9)</h1>
+  <h1>Homework</h1>
   <p>Assign to a person, mark with a score and comment, and keep a private
      note about a student for yourself. A teacher must assign through a
      class or course offer they actively teach.</p>
@@ -95,14 +95,14 @@
       <div id="createResult" class="muted"></div>
     </fieldset>
 
-    <h2>Assignments for <span id="assignmentsStudentName"></span></h2>
+    <h2 id="assignmentsHeading">Assignments</h2>
     <div id="assignmentsBody"><p class="muted">Loading…</p></div>
 
     <h2>My private teaching notes</h2>
     <p class="muted">Only you can ever see these — never shown to the student, guardian, or anyone else.</p>
     <fieldset id="noteFieldset" style="display:none;">
       <legend>New note</legend>
-      <label for="noteAboutSelect">About</label>
+      <label for="noteAboutSelect" data-i18n-ctx="person">About</label>
       <select id="noteAboutSelect"></select>
       <label for="noteBodyInput">Note</label>
       <textarea id="noteBodyInput" rows="2"></textarea>
@@ -123,6 +123,7 @@
     import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
+    import { roleListLabel } from "./js/roles.js";
     import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
@@ -138,13 +139,14 @@
       createAssignment, listAssignmentsForPerson, listAssignmentsForReader, getSubmission,
       markSubmitted, scoreSubmission, createTeachingNote, listMyTeachingNotes,
     } from "./js/homework.js";
-    import { renderNavBar, renderHomeExtras } from "./js/nav.js";
+    import { submissionStatusLabel } from "./js/homework.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { listClasses } from "./js/classes.js";
     import {
       listCourseOffers, listEnrollmentsForPerson, listEnrollmentsForOffer,
       activeTeacherContextIdsFromEnrollments,
     } from "./js/course-offers.js";
-    import { translateStatic, t } from "./js/i18n.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
@@ -175,7 +177,7 @@
     const instructionsInput = document.getElementById("instructionsInput");
     const createAssignmentBtn = document.getElementById("createAssignmentBtn");
     const createResult = document.getElementById("createResult");
-    const assignmentsStudentName = document.getElementById("assignmentsStudentName");
+    const assignmentsHeading = document.getElementById("assignmentsHeading");
     const assignmentsBody = document.getElementById("assignmentsBody");
     const noteFieldset = document.getElementById("noteFieldset");
     const noteAboutSelect = document.getElementById("noteAboutSelect");
@@ -191,11 +193,6 @@
     });
     signOutBtn.addEventListener("click", () => signOut(auth));
 
-    const NO_ACCOUNT_MESSAGE = ` — no account found yet.
-      <br>If someone invited you to join an existing madrasah, use the invite
-      link they sent you (check your email) — don't create a new one here.
-      <br>Starting fresh instead? <a href="onboarding.html">Create a new account
-      on the onboarding page</a>.`;
 
     let activeTenantId = null;
     let myMemberships = [];
@@ -265,7 +262,7 @@
 
       subjectTree = await getSubjectTree(db, activeTenantId);
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
-      subjectSelect.innerHTML = `<option value="">(none)</option>` + leaves
+      subjectSelect.innerHTML = `<option value="">${t("(none)")}</option>` + leaves
         .map((n) => `<option value="${n.id}">${langText(n.name, getAppLang(), n.id)}</option>`)
         .join("");
 
@@ -302,14 +299,14 @@
       availableContexts = isAdmin ? allContexts : allContexts.filter((c) => myActiveTeacherContextIds.includes(c.id));
 
       const options = availableContexts
-        .map((c) => `<option value="${c.id}">${c.name} (${c.type === "class" ? "Class" : "Course Offer"})</option>`)
+        .map((c) => `<option value="${c.id}">${c.name} (${c.type === "class" ? t("Class") : t("Course Offer")})</option>`)
         .join("");
-      contextSelect.innerHTML = isPureTeacher ? options : `<option value="">(none — any visible person)</option>${options}`;
+      contextSelect.innerHTML = isPureTeacher ? options : `<option value="">${t("(none — any visible person)")}</option>${options}`;
 
       contextHint.textContent = isPureTeacher
         ? (availableContexts.length
-          ? "Required — pick the class/course offer you're assigning this through."
-          : "You have no active class/course offer to assign homework through yet — ask an admin to enrol you as a teacher first.")
+          ? t("Required — pick the class/course offer you're assigning this through.")
+          : t("You have no active class/course offer to assign homework through yet — ask an admin to enrol you as a teacher first."))
         : "";
       createAssignmentBtn.disabled = isPureTeacher && availableContexts.length === 0;
     }
@@ -329,7 +326,7 @@
       }
       assignToChecks.innerHTML = contextRoster
         .map((p) => `<label><input type="checkbox" value="${p.id}" /> ${langText(p.name, getAppLang(), p.id)}</label>`)
-        .join("") || `<span class="muted">No students in this context yet.</span>`;
+        .join("") || `<span class="muted">${t("No students in this context yet.")}</span>`;
     }
 
     contextSelect.addEventListener("change", refreshAssignToChecks);
@@ -340,9 +337,9 @@
 
     async function refreshAssignments() {
       const personId = personSelect.value;
-      if (!personId) { assignmentsBody.innerHTML = `<p class="muted">Pick a student first.</p>`; return; }
-      assignmentsStudentName.textContent = personName(personId);
-      assignmentsBody.innerHTML = `<p class="muted">Loading…</p>`;
+      if (!personId) { assignmentsBody.innerHTML = `<p class="muted">${t("Pick a student first.")}</p>`; return; }
+      assignmentsHeading.textContent = t("Assignments for {name}", { name: personName(personId) });
+      assignmentsBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         // Follow-up round (Homework teacher-scoping + guardian-scoping):
         // admin, or viewing your OWN assignments (personId === myPersonId,
@@ -359,13 +356,13 @@
           : (await listAssignmentsForReader(db, activeTenantId, myPersonId))
               .filter((a) => a.assignedToPersonIds.includes(personId));
         const active = assignments.filter((a) => a.status !== "archived");
-        if (!active.length) { assignmentsBody.innerHTML = `<p class="muted">No assignments yet.</p>`; return; }
+        if (!active.length) { assignmentsBody.innerHTML = `<p class="muted">${t("No assignments yet.")}</p>`; return; }
 
         const cards = await Promise.all(active.map((a) => renderAssignmentCard(a, personId)));
         assignmentsBody.innerHTML = cards.join("");
         wireAssignmentCardActions();
       } catch (err) {
-        assignmentsBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load assignments: ${err.code ?? ""} ${err.message}</p>`;
+        assignmentsBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load assignments:")} ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
       }
     }
@@ -373,32 +370,32 @@
     async function renderAssignmentCard(a, personId) {
       const sub = await getSubmission(db, `${activeTenantId}__${a.id}`, personId);
       const status = sub?.status ?? "not_submitted";
-      const subjectLine = a.subjectId ? `<div class="muted">Subject: ${subjectName(a.subjectId)}</div>` : "";
-      const dueLine = a.dueDate ? `<div class="muted">Due: ${a.dueDate}</div>` : "";
-      const maxLine = a.maxScore != null ? `<div class="muted">Max score: ${a.maxScore}</div>` : "";
+      const subjectLine = a.subjectId ? `<div class="muted">${t("Subject:")} ${subjectName(a.subjectId)}</div>` : "";
+      const dueLine = a.dueDate ? `<div class="muted">${t("Due:")} ${num(a.dueDate)}</div>` : "";
+      const maxLine = a.maxScore != null ? `<div class="muted">${t("Max score:")} ${num(a.maxScore)}</div>` : "";
       const scoreLine = sub?.status === "marked"
-        ? `<div>Score: <strong>${sub.score ?? "—"}${sub.maxScoreAtMark != null ? ` / ${sub.maxScoreAtMark}` : ""}</strong>${sub.comment ? ` — ${sub.comment}` : ""}</div>`
+        ? `<div>${t("Score:")} <strong>${sub.score == null ? "—" : num(sub.score)}${sub.maxScoreAtMark != null ? ` / ${num(sub.maxScoreAtMark)}` : ""}</strong>${sub.comment ? ` — ${sub.comment}` : ""}</div>`
         : "";
 
       const submitAction = status === "not_submitted"
         ? `<div style="margin-top:0.5rem;">
-             <textarea class="submitNote" rows="1" placeholder="Optional note" style="margin-bottom:0.3rem;"></textarea>
-             <button class="small markSubmittedBtn" data-full-id="${activeTenantId}__${a.id}" data-person="${personId}">Mark as submitted</button>
+             <textarea class="submitNote" rows="1" placeholder="${t("Optional note")}" style="margin-bottom:0.3rem;"></textarea>
+             <button class="small markSubmittedBtn" data-full-id="${activeTenantId}__${a.id}" data-person="${personId}">${t("Mark as submitted")}</button>
            </div>`
         : "";
 
       const scoreAction = canCreate && status !== "marked"
         ? `<div style="margin-top:0.5rem;">
              <div class="row">
-               <div><input type="number" class="scoreInput" placeholder="Score" ${a.maxScore != null ? `max="${a.maxScore}"` : ""} /></div>
-               <div><input type="text" class="commentInput" placeholder="Comment (optional)" /></div>
+               <div><input type="number" class="scoreInput" placeholder="${t("Score")}" ${a.maxScore != null ? `max="${a.maxScore}"` : ""} /></div>
+               <div><input type="text" class="commentInput" placeholder="${t("Comment (optional)")}" /></div>
              </div>
-             <button class="small secondary saveScoreBtn" data-full-id="${activeTenantId}__${a.id}" data-person="${personId}" data-max="${a.maxScore ?? ""}">Save score</button>
+             <button class="small secondary saveScoreBtn" data-full-id="${activeTenantId}__${a.id}" data-person="${personId}" data-max="${a.maxScore ?? ""}">${t("Save score")}</button>
            </div>`
         : "";
 
       return `<div class="card">
-        <h3>${a.instructions ? langText(a.instructions, getAppLang(), "") : "(no instructions)"} <span class="pill pill-${status}">${status.replace("_", " ")}</span></h3>
+        <h3>${a.instructions ? langText(a.instructions, getAppLang(), "") : t("(no instructions)")} <span class="pill pill-${status}">${submissionStatusLabel(status)}</span></h3>
         ${subjectLine}${dueLine}${maxLine}${scoreLine}
         ${submitAction}${scoreAction}
       </div>`;
@@ -443,15 +440,15 @@
     createAssignmentBtn.addEventListener("click", async () => {
       createResult.textContent = "";
       const assignedToPersonIds = Array.from(assignToChecks.querySelectorAll("input:checked")).map((c) => c.value);
-      if (!assignedToPersonIds.length) { createResult.textContent = "Pick at least one student."; return; }
-      if (!instructionsInput.value.trim()) { createResult.textContent = "Enter instructions first."; return; }
+      if (!assignedToPersonIds.length) { createResult.textContent = t("Pick at least one student."); return; }
+      if (!instructionsInput.value.trim()) { createResult.textContent = t("Enter instructions first."); return; }
       const contextId = contextSelect.value || null;
       // Follow-up round (Homework teacher-scoping): firestore.rules'
       // isActiveTeacherInContext() requires a real contextId for the teacher
       // branch -- catch it here with a clear message rather than a raw
       // permission-denied from the write.
       if (isPureTeacher && !contextId) {
-        createResult.textContent = "Pick a class or course offer first — required for a teacher-created assignment.";
+        createResult.textContent = t("Pick a class or course offer first — required for a teacher-created assignment.");
         return;
       }
 
@@ -485,7 +482,10 @@
       );
       createAssignmentBtn.disabled = isPureTeacher && availableContexts.length === 0;
       if (outcome.ok) {
-        createResult.textContent = `Assigned to ${assignedToPersonIds.length} student${assignedToPersonIds.length === 1 ? "" : "s"}.`;
+        createResult.textContent = t(
+          assignedToPersonIds.length === 1 ? "Assigned to {count} student." : "Assigned to {count} students.",
+          { count: num(assignedToPersonIds.length) }
+        );
         instructionsInput.value = ""; dueDateInput.value = ""; maxScoreInput.value = "";
         assignToChecks.querySelectorAll("input:checked").forEach((c) => (c.checked = false));
         await refreshAssignments();
@@ -499,21 +499,21 @@
     // -----------------------------------------------------------------------
 
     async function refreshMyNotes() {
-      notesBody.innerHTML = `<p class="muted">Loading…</p>`;
+      notesBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         const notes = await listMyTeachingNotes(db, activeTenantId, currentUser.uid);
         notesBody.innerHTML = notes.length
-          ? notes.map((n) => `<div class="card"><div class="muted">About: ${personName(n.aboutPersonId)}</div><div>${n.body}</div></div>`).join("")
-          : `<p class="muted">No notes yet.</p>`;
+          ? notes.map((n) => `<div class="card"><div class="muted">${t("About|person")}: ${personName(n.aboutPersonId)}</div><div>${n.body}</div></div>`).join("")
+          : `<p class="muted">${t("No notes yet.")}</p>`;
       } catch (err) {
-        notesBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load notes: ${err.code ?? ""} ${err.message}</p>`;
+        notesBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load notes:")} ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
       }
     }
 
     saveNoteBtn.addEventListener("click", async () => {
       noteResult.textContent = "";
-      if (!noteBodyInput.value.trim()) { noteResult.textContent = "Write a note first."; return; }
+      if (!noteBodyInput.value.trim()) { noteResult.textContent = t("Write a note first."); return; }
       saveNoteBtn.disabled = true;
       const outcome = await safeWrite(
         () => createTeachingNote(db, activeTenantId, {
@@ -552,14 +552,14 @@
 
         const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
         if (!context) {
-          whoEl.innerHTML += NO_ACCOUNT_MESSAGE;
+          whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
         myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
         tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
           .join("");
 
         appEl.style.display = "block";

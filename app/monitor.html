@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
-<title>QuranRevival — Monitor (Phase 8)</title>
+<title>QuranRevival — Monitor</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 62rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
@@ -40,11 +40,10 @@
 </style>
 </head>
 <body>
-  <h1>Monitor (Phase 8)</h1>
-  <p>One report, reading whatever's actually been claimed/logged across every
-     module (records + activity). Quran gets an extra Approach-status
-     section below since it's the only subject with structured trackable
-     data today.</p>
+  <h1>Monitor</h1>
+  <p>One report covering every module — whatever has actually been claimed or
+     logged. Quran gets an extra Approach-status section below, since it is
+     the only subject with structured progress data today.</p>
 
   <nav class="app-nav" id="topNav">
     <details class="nav-cat nav-cat-home">
@@ -115,6 +114,7 @@
     import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
+    import { roleListLabel } from "./js/roles.js";
     import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import {
       getMyMemberships,
@@ -128,8 +128,10 @@
     import { activityForRoster, monthWeekKeys, filterEntriesToMonth, summarizeByStudent, summarizeBySubject, summarizeQuranApproaches, entriesToCsvRows, downloadCsv, printReportHtml } from "./js/monitor.js";
     import { weekKeyFor } from "./js/activity.js";
     import { listAllRecordsForPerson } from "./js/records.js";
-    import { renderNavBar, renderHomeExtras } from "./js/nav.js";
-    import { translateStatic, t } from "./js/i18n.js";
+    import { statusLabel, unitKeyLabel } from "./js/unit-keys.js";
+    import { activityActionLabel } from "./js/activity.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
@@ -174,11 +176,6 @@
     });
     signOutBtn.addEventListener("click", () => signOut(auth));
 
-    const NO_ACCOUNT_MESSAGE = ` — no account found yet.
-      <br>If someone invited you to join an existing madrasah, use the invite
-      link they sent you (check your email) — don't create a new one here.
-      <br>Starting fresh instead? <a href="onboarding.html">Create a new account
-      on the onboarding page</a>.`;
 
     let activeTenantId = null;
     let myMemberships = [];
@@ -200,6 +197,16 @@
     }
 
     function toDateInputValue(d) { return d.toISOString().slice(0, 10); }
+
+    // Full app translation, phase 4. Two shapes of date appear on this page:
+    // an ISO string that IS the stored value (an activity entry's date, a
+    // weekKey) -- num() only, so it stays recognisable next to what is
+    // stored -- and a human-formatted one, which takes the reader's own
+    // locale so month names come out in their language too. The <input
+    // type="date"/"month"> values are never touched: the browser parses
+    // those back, and they must stay plain.
+    const dateLocale = () => (getAppLang() === "bn" ? "bn-BD" : undefined);
+    const fmtDate = (d) => num(d.toLocaleDateString(dateLocale()));
 
     async function loadContextData() {
       const [rosterSnap, tenantSnap] = await Promise.all([
@@ -245,14 +252,17 @@
       const wk = weekKeyFor(new Date(anchorDateIso + "T00:00:00Z"), tenantWeekStartsOn);
       const start = new Date(wk + "T00:00:00Z");
       const end = new Date(start); end.setUTCDate(end.getUTCDate() + 6);
-      return { weekKey: wk, label: `Week of ${wk} — ${start.toLocaleDateString()} to ${end.toLocaleDateString()}` };
+      return {
+        weekKey: wk,
+        label: t("Week of {weekKey} — {start} to {end}", { weekKey: num(wk), start: fmtDate(start), end: fmtDate(end) }),
+      };
     }
 
     async function refreshReport() {
       const personIds = scopedPersonIds();
-      if (personIds.length === 0) { reportBody.innerHTML = `<p class="muted">Pick a student first.</p>`; lastEntries = []; return; }
+      if (personIds.length === 0) { reportBody.innerHTML = `<p class="muted">${t("Pick a student first.")}</p>`; lastEntries = []; return; }
 
-      reportBody.innerHTML = `<p class="muted">Loading…</p>`;
+      reportBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         let entries;
         if (reportMode === "week") {
@@ -261,7 +271,7 @@
           entries = await activityForRoster(db, activeTenantId, personIds, [weekKey]);
         } else {
           const [y, m] = (monthAnchor.value || new Date().toISOString().slice(0, 7)).split("-").map(Number);
-          rangeLabel.textContent = `${new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(undefined, { month: "long", year: "numeric" })}`;
+          rangeLabel.textContent = num(new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(dateLocale(), { month: "long", year: "numeric" }));
           const weekKeys = monthWeekKeys(y, m, tenantWeekStartsOn);
           const raw = await activityForRoster(db, activeTenantId, personIds, weekKeys);
           entries = filterEntriesToMonth(raw, y, m);
@@ -269,7 +279,7 @@
         lastEntries = entries;
         renderReport(entries, personIds);
       } catch (err) {
-        reportBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load the report: ${err.code ?? ""} ${err.message}</p>`;
+        reportBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load the report:")} ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
       }
     }
@@ -283,34 +293,34 @@
       const studentRows = byStudent.length
         ? byStudent.map((s) => `<tr>
             <td>${s.name}</td>
-            <td>${s.dayCount}</td>
-            <td>${s.entryCount}</td>
-            <td>${s.subjectBreakdown.map(([id, n]) => `${subjectName(id)} (${n})`).join(", ") || "—"}</td>
+            <td>${num(s.dayCount)}</td>
+            <td>${num(s.entryCount)}</td>
+            <td>${s.subjectBreakdown.map(([id, n]) => `${subjectName(id)} (${num(n)})`).join(", ") || "—"}</td>
           </tr>`).join("")
-        : `<tr><td colspan="4" class="muted">No students in scope.</td></tr>`;
+        : `<tr><td colspan="4" class="muted">${t("No students in scope.")}</td></tr>`;
 
       const subjectRows = bySubject.length
-        ? bySubject.map((s) => `<tr><td>${s.name}</td><td>${s.entryCount}</td><td>${s.studentCount}</td><td>${s.unitCount}</td></tr>`).join("")
-        : `<tr><td colspan="4" class="muted">Nothing logged in this range.</td></tr>`;
+        ? bySubject.map((s) => `<tr><td>${s.name}</td><td>${num(s.entryCount)}</td><td>${num(s.studentCount)}</td><td>${num(s.unitCount)}</td></tr>`).join("")
+        : `<tr><td colspan="4" class="muted">${t("Nothing logged in this range.")}</td></tr>`;
 
       const entryRows = entries.length
         ? [...entries].sort((a, b) => a.date.localeCompare(b.date)).map((e) => `<tr>
-            <td>${e.date}</td><td>${personName(e.personId)}</td><td>${subjectName(e.subjectId)}</td>
-            <td>${e.unitKey}</td><td>${trackableName(e.trackableId)}</td><td>${e.action}</td>
+            <td>${num(e.date)}</td><td>${personName(e.personId)}</td><td>${subjectName(e.subjectId)}</td>
+            <td>${unitKeyLabel(e.unitKey)}</td><td>${trackableName(e.trackableId)}</td><td>${activityActionLabel(e.action)}</td>
           </tr>`).join("")
-        : `<tr><td colspan="6" class="muted">Nothing logged in this range.</td></tr>`;
+        : `<tr><td colspan="6" class="muted">${t("Nothing logged in this range.")}</td></tr>`;
 
       reportBody.innerHTML = `
-        <h3 style="font-size:1rem;">Per student</h3>
-        <table><thead><tr><th>Student</th><th>Days active</th><th>Entries</th><th>By subject</th></tr></thead>
+        <h3 style="font-size:1rem;">${t("Per student")}</h3>
+        <table><thead><tr><th>${t("Student")}</th><th>${t("Days active")}</th><th>${t("Entries")}</th><th>${t("By subject")}</th></tr></thead>
         <tbody>${studentRows}</tbody></table>
 
-        <h3 style="font-size:1rem; margin-top:1.4rem;">Per subject</h3>
-        <table><thead><tr><th>Subject</th><th>Entries</th><th>Students</th><th>Distinct units</th></tr></thead>
+        <h3 style="font-size:1rem; margin-top:1.4rem;">${t("Per subject")}</h3>
+        <table><thead><tr><th>${t("Subject")}</th><th>${t("Entries")}</th><th>${t("Students")}</th><th>${t("Distinct units")}</th></tr></thead>
         <tbody>${subjectRows}</tbody></table>
 
-        <h3 style="font-size:1rem; margin-top:1.4rem;">Raw entries</h3>
-        <table><thead><tr><th>Date</th><th>Student</th><th>Subject</th><th>Unit</th><th>Approach</th><th>Action</th></tr></thead>
+        <h3 style="font-size:1rem; margin-top:1.4rem;">${t("Raw entries")}</h3>
+        <table><thead><tr><th>${t("Date")}</th><th>${t("Student")}</th><th>${t("Subject")}</th><th>${t("Unit")}</th><th>${t("Approach")}</th><th>${t("Action")}</th></tr></thead>
         <tbody>${entryRows}</tbody></table>
       `;
     }
@@ -361,7 +371,8 @@
       downloadCsv(filename, lastCsvRows);
     });
     printBtn.addEventListener("click", () => {
-      printReportHtml(`Monitor report — ${rangeLabel.textContent}`, `<h1>Monitor report</h1><p>${rangeLabel.textContent}</p>${reportBody.innerHTML}`);
+      const heading = t("Monitor report");
+      printReportHtml(`${heading} — ${rangeLabel.textContent}`, `<h1>${heading}</h1><p>${rangeLabel.textContent}</p>${reportBody.innerHTML}`);
     });
 
     // ---------------------------------------------------------------------
@@ -370,18 +381,21 @@
 
     async function refreshQuranBreakdown() {
       const personId = personSelect.value;
-      if (!personId) { quranBody.innerHTML = `<p class="muted">Pick a student first.</p>`; quranStudentName.textContent = ""; return; }
+      if (!personId) { quranBody.innerHTML = `<p class="muted">${t("Pick a student first.")}</p>`; quranStudentName.textContent = ""; return; }
       quranStudentName.textContent = personName(personId);
-      quranBody.innerHTML = `<p class="muted">Loading…</p>`;
+      quranBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         const entries = await listAllRecordsForPerson(db, activeTenantId, personId);
         const rows = summarizeQuranApproaches(entries, trackableList);
         quranBody.innerHTML = rows.length
-          ? `<table><thead><tr><th>Approach</th><th>Section</th><th>Not started</th><th>Learning</th><th>Practising</th><th>Achieved</th><th>Mastered</th><th>Achieved+</th></tr></thead>
+          ? `<table><thead><tr><th>${t("Approach")}</th><th>${t("Section")}</th>
+               <th>${statusLabel("not_started")}</th><th>${statusLabel("learning")}</th>
+               <th>${statusLabel("practising")}</th><th>${statusLabel("achieved")}</th>
+               <th>${statusLabel("mastered")}</th><th>${t("Achieved+")}</th></tr></thead>
              <tbody>${rows.map(approachRowHtml).join("")}</tbody></table>`
-          : `<p class="muted">No Quran Approaches set up for this tenant yet.</p>`;
+          : `<p class="muted">${t("No Quran Approaches set up for this tenant yet.")}</p>`;
       } catch (err) {
-        quranBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load the breakdown: ${err.code ?? ""} ${err.message}</p>`;
+        quranBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load the breakdown:")} ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
       }
     }
@@ -390,12 +404,14 @@
       return `<tr>
         <td>${r.name}</td>
         <td>${r.groupName}</td>
-        <td class="status-not_started">${r.byStatus.not_started}</td>
-        <td class="status-learning">${r.byStatus.learning}</td>
-        <td class="status-practising">${r.byStatus.practising}</td>
-        <td class="status-achieved">${r.byStatus.achieved}</td>
-        <td class="status-mastered">${r.byStatus.mastered}</td>
-        <td>${r.achievedOrBetter}${r.ratio != null ? ` (${Math.round(r.ratio * 100)}%)` : ""} of ${r.countedTotal}</td>
+        <td class="status-not_started">${num(r.byStatus.not_started)}</td>
+        <td class="status-learning">${num(r.byStatus.learning)}</td>
+        <td class="status-practising">${num(r.byStatus.practising)}</td>
+        <td class="status-achieved">${num(r.byStatus.achieved)}</td>
+        <td class="status-mastered">${num(r.byStatus.mastered)}</td>
+        <td>${r.ratio != null
+          ? t("{count} ({percent}%) of {total}", { count: num(r.achievedOrBetter), percent: num(Math.round(r.ratio * 100)), total: num(r.countedTotal) })
+          : t("{count} of {total}", { count: num(r.achievedOrBetter), total: num(r.countedTotal) })}</td>
       </tr>`;
     }
 
@@ -422,14 +438,14 @@
 
         const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
         if (!context) {
-          whoEl.innerHTML += NO_ACCOUNT_MESSAGE;
+          whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
         myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
         tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
           .join("");
 
         appEl.style.display = "block";
