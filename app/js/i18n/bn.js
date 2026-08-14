@@ -741,7 +741,7 @@ export const BN = {
   "That save did not go through ({code}). Please try again, and tell the admin if it keeps happening.":
     "সংরক্ষণটি সম্পন্ন হয়নি ({code})। অনুগ্রহ করে আবার চেষ্টা করুন, এবং বারবার হতে থাকলে প্রশাসককে জানান।",
 
-  // --- Role names (js/roles.js) -----------------------------------------
+  // --- Role names (js/labels.js) -----------------------------------------
   // Shown in every page's tenant picker -- "Madrasatul Muslimeen (Owner,
   // Prime)" -- and in the nav's "Previewing as" notice.
   "Owner": "মালিক", // ?
@@ -967,4 +967,231 @@ export const BN = {
   //     Every language picker names Bangla in Bangla, in every language --
   //     it is how a Bangla-only reader finds the setting at all.
   "বাংলা (Bangla)": "বাংলা (Bangla)",
+
+  // =====================================================================
+  // PHASE 5 — ADMIN
+  // People, Catalogue, Curriculum, Classes: the screens that let someone
+  // RUN a madrasah in Bangla, not only study in one.
+  // =====================================================================
+
+  // --- Entity status (js/labels.js), shared by everything archivable ----
+  // Active / Archived / Ended already have their Bangla from phase 4.
+  "Pending": "অপেক্ষমাণ",
+  "Planned": "পরিকল্পিত",
+  "Accepted": "গৃহীত",
+  "Revoked": "বাতিল করা হয়েছে",
+  "Draft": "খসড়া",
+
+  // --- Page titles, headings and intros ---------------------------------
+  "QuranRevival — People": "কুরআনরিভাইভাল — ব্যক্তিবর্গ",
+  "QuranRevival — Catalogue": "কুরআনরিভাইভাল — তালিকা",
+  "QuranRevival — Curriculum": "কুরআনরিভাইভাল — পাঠ্যক্রম",
+  "QuranRevival — Classes": "কুরআনরিভাইভাল — ক্লাস",
+  "Everyone in this madrasah: add a person, invite someone who signs in\n     themselves, and see who looks after whom.":
+    "এই মাদরাসার সবাই: একজন ব্যক্তি যোগ করুন, কাউকে আমন্ত্রণ জানান যিনি নিজেই সাইন ইন করবেন, এবং কে কার দেখাশোনা করেন তা দেখুন।",
+  "Modules, the subject tree, the 30 Approaches, and ladders and levels —\n     the data every study screen reads from. Anyone in the madrasah can look;\n     only the owner and a prime can edit.":
+    "মডিউল, বিষয়ের তালিকা, ৩০টি পদ্ধতি এবং ধাপ ও স্তর — প্রতিটি অধ্যয়ন পর্দা যে তথ্য থেকে পড়ে। মাদরাসার যে কেউ দেখতে পারেন; কেবল মালিক ও প্রাইম সম্পাদনা করতে পারেন।",
+  "A curriculum unit is WHAT to study, and it can span several subjects.\n     The plan below is WHEN — which term and week it falls in, for a class or\n     for one person. The two are kept apart, so moving a unit to a different\n     week never changes the unit itself. Resources and grades are managed\n     here too.":
+    "পাঠ্যক্রমের একক হলো কী পড়তে হবে, এবং তা একাধিক বিষয়জুড়ে হতে পারে। নিচের পরিকল্পনা হলো কখন — কোন টার্ম ও সপ্তাহে, কোনো ক্লাসের বা একজন ব্যক্তির জন্য। দুটি আলাদা রাখা হয়েছে, তাই কোনো একককে অন্য সপ্তাহে সরালে এককটি নিজে বদলায় না। উপকরণ ও গ্রেডও এখান থেকেই পরিচালিত হয়।",
+  "Create a class, then enrol students and teachers into it. A teacher\n     enrolled here can record and confirm progress for this class's students\n     — and only them. Class-wide bulk confirm clears every pending entry for\n     every actively-enrolled student in one go.":
+    "একটি ক্লাস তৈরি করুন, তারপর তাতে শিক্ষার্থী ও শিক্ষক ভর্তি করুন। এখানে ভর্তি হওয়া একজন শিক্ষক এই ক্লাসের শিক্ষার্থীদের — এবং কেবল তাদেরই — অগ্রগতি লিপিবদ্ধ ও নিশ্চিত করতে পারেন। ক্লাস-ব্যাপী একসাথে নিশ্চিতকরণ সক্রিয়ভাবে ভর্তি থাকা প্রতিটি শিক্ষার্থীর সব অপেক্ষমাণ এন্ট্রি একবারে সম্পন্ন করে।",
+
+  // --- People ------------------------------------------------------------
+  "Roles": "ভূমিকা",
+  "Role": "ভূমিকা",
+  "Managed by": "যিনি দেখাশোনা করেন",
+  "View as": "যেভাবে দেখছেন",
+  "(your real role)": "(আপনার প্রকৃত ভূমিকা)",
+  "Add a person": "একজন ব্যক্তি যোগ করুন",
+  "Add person": "ব্যক্তি যোগ করুন",
+  "This is a child (no login of their own)": "ইনি একজন শিশু (নিজের কোনো লগইন নেই)",
+  "Added. Person ID: {personId}": "যোগ করা হয়েছে। ব্যক্তি আইডি: {personId}",
+  "Invite someone (they sign in themselves)": "কাউকে আমন্ত্রণ জানান (তিনি নিজেই সাইন ইন করবেন)",
+  "Their email": "তাঁর ইমেইল",
+  "Email": "ইমেইল",
+  "Invite": "আমন্ত্রণ জানান",
+  "Invite created — use \"Copy link\" below to get the link.":
+    "আমন্ত্রণ তৈরি হয়েছে — নিচের \"লিংক কপি করুন\" থেকে লিংকটি নিন।",
+  "Link": "লিংক",
+  "Copy link": "লিংক কপি করুন",
+  "Copied!": "কপি হয়েছে!",
+  "Link not found": "লিংক পাওয়া যায়নি",
+  "Hand the device to a child": "ডিভাইসটি কোনো শিশুর হাতে দিন",
+  "For leaving a child to study on their own on a shared device: pick\n        the child, and the device stays theirs until you end the session.\n        Recording progress for several people yourself, one after another,\n        is not affected — that never needs a session at all.":
+    "একটি ভাগ করা ডিভাইসে কোনো শিশুকে একা পড়তে দেওয়ার জন্য: শিশুটিকে বেছে নিন, আপনি সেশন শেষ না করা পর্যন্ত ডিভাইসটি তারই থাকবে। আপনি নিজে একের পর এক কয়েকজনের অগ্রগতি লিপিবদ্ধ করলে তাতে কোনো প্রভাব পড়ে না — তার জন্য কখনোই কোনো সেশন লাগে না।",
+  "Child": "শিশু",
+  "Start studying": "পড়া শুরু করুন",
+  "End session": "সেশন শেষ করুন",
+  "This device is studying as {name}. It stays with them until you end the session.":
+    "এই ডিভাইসটি এখন {name}-এর জন্য ব্যবহৃত হচ্ছে। আপনি সেশন শেষ না করা পর্যন্ত এটি তারই থাকবে।",
+  "No child in the roster yet — add one above first.":
+    "তালিকায় এখনো কোনো শিশু নেই — আগে উপরে একজন যোগ করুন।",
+  "A study session is in progress for another person. End that session first before switching.":
+    "অন্য একজনের জন্য একটি অধ্যয়ন সেশন চলছে। বদলানোর আগে সেই সেশনটি শেষ করুন।",
+
+  // --- Catalogue: modules, subject tree, Approaches ---------------------
+  "Module": "মডিউল",
+  "Renderer": "যেভাবে দেখানো হয়", // ?
+  "Move": "সরান",
+  "Move up": "উপরে সরান",
+  "Move down": "নিচে সরান",
+  "Move to…": "যেখানে সরাবেন…",
+  "Move to a different parent": "অন্য কোনো মূল বিষয়ের নিচে সরান",
+  "Move here": "এখানে সরান",
+  "Expand": "খুলুন",
+  "Collapse": "গুটিয়ে নিন",
+  "Click to jump to this module's subjects below": "নিচে এই মডিউলের বিষয়গুলোতে যেতে ক্লিক করুন",
+  // The four study-screen renderers a module can use.
+  "Ayah by ayah": "আয়াতভিত্তিক",
+  "Routine": "রুটিন",
+  "Subject tree": "বিষয়ের তালিকা",
+  "Show archived subjects": "সংরক্ষণাগারে রাখা বিষয় দেখান",
+  "Show archived Approaches": "সংরক্ষণাগারে রাখা পদ্ধতি দেখান",
+  "Show archived ladders/levels": "সংরক্ষণাগারে রাখা ধাপ/স্তর দেখান",
+  "Gloss": "সংক্ষিপ্ত পরিচয়", // ?
+  "Gloss (optional)": "সংক্ষিপ্ত পরিচয় (ঐচ্ছিক)", // ?
+  "Level (parent)": "স্তর (মূল বিষয়)",
+  "Parent": "মূল বিষয়",
+  "(top level)": "(সর্বোচ্চ স্তর)",
+  "no module": "কোনো মডিউল নেই",
+  "Confirmation": "নিশ্চিতকরণ",
+  "Always required": "সর্বদা আবশ্যক",
+  "Never required": "কখনো আবশ্যক নয়",
+  "Auto (computed)": "স্বয়ংক্রিয় (নিজে থেকে নির্ধারিত)",
+  "Resource": "উপকরণ",
+  "Resources": "উপকরণসমূহ",
+  "Yes": "হ্যাঁ",
+  "archived": "সংরক্ষণাগারে",
+  "Restore": "ফিরিয়ে আনুন",
+  "Archive \"{name}\"?": "\"{name}\" সংরক্ষণাগারে রাখবেন?",
+  "Restore \"{name}\"?": "\"{name}\" ফিরিয়ে আনবেন?",
+  "It has {count} item(s) underneath it — they stay active, just nested under an archived subject.":
+    "এর নিচে {count}টি বিষয় আছে — সেগুলো সক্রিয়ই থাকবে, কেবল একটি সংরক্ষণাগারে রাখা বিষয়ের নিচে থাকবে।",
+  "Name can't be empty.": "নাম খালি রাখা যাবে না।",
+  "Add a tenant-specific subject": "এই প্রতিষ্ঠানের নিজস্ব একটি বিষয় যোগ করুন",
+  "Add subject": "বিষয় যোগ করুন",
+  "Resource (optional — leave blank to add later, once you have the content ready)":
+    "উপকরণ (ঐচ্ছিক — পরে যোগ করতে চাইলে খালি রাখুন, যখন বিষয়বস্তু প্রস্তুত হবে)",
+  "No resource yet": "এখনো কোনো উপকরণ নেই",
+  "Link (URL)": "লিংক (ইউআরএল)",
+  "Text (typed in directly)": "লেখা (সরাসরি টাইপ করা)",
+  "What this topic actually covers…": "এই বিষয়ে আসলে কী কী আছে…",
+  "The 30 Approaches": "৩০টি পদ্ধতি",
+  "Guide": "নির্দেশিকা",
+  "What:": "কী:",
+  "How:": "কীভাবে:",
+  "Measure:": "মাপকাঠি:",
+  "Section {n}": "বিভাগ {n}",
+  "New name for this Approach:": "এই পদ্ধতির নতুন নাম:",
+  "Checking catalogue…": "তালিকা যাচাই করা হচ্ছে…",
+  "Catalogue set up: {subjects} subjects and {approaches} Approaches.":
+    "তালিকা তৈরি হয়েছে: {subjects}টি বিষয় ও {approaches}টি পদ্ধতি।",
+  "Catalogue is already set up.": "তালিকা আগে থেকেই তৈরি আছে।",
+  "Could not set up the catalogue:": "তালিকা তৈরি করা যায়নি:",
+  "You're viewing as a role that cannot edit the catalogue (owner/prime\n      only). Everything above is read-only for you.":
+    "আপনি এমন একটি ভূমিকায় দেখছেন যা তালিকা সম্পাদনা করতে পারে না (কেবল মালিক/প্রাইম পারেন)। উপরের সবকিছু আপনার জন্য কেবল পড়ার যোগ্য।",
+
+  // --- Catalogue: ladders and levels ------------------------------------
+  "Ladders & levels": "ধাপ ও স্তর", // ?
+  "Ladder": "ধাপ", // ?
+  "Ladder (optional)": "ধাপ (ঐচ্ছিক)", // ?
+  "Level": "স্তর",
+  "Levels": "স্তরসমূহ",
+  "Level (optional)": "স্তর (ঐচ্ছিক)",
+  "Level name": "স্তরের নাম",
+  "Add a ladder": "একটি ধাপ যোগ করুন",
+  "Add ladder": "ধাপ যোগ করুন",
+  "Add a level to": "যেখানে স্তর যোগ করবেন",
+  "Add level": "স্তর যোগ করুন",
+  "Ladder added.": "ধাপ যোগ করা হয়েছে।",
+  "Level added.": "স্তর যোগ করা হয়েছে।",
+  "Add a ladder first, then name the level.": "আগে একটি ধাপ যোগ করুন, তারপর স্তরের নাম দিন।",
+  "Archive this ladder?": "এই ধাপটি সংরক্ষণাগারে রাখবেন?",
+  "Restore this ladder?": "এই ধাপটি ফিরিয়ে আনবেন?",
+  "Archive this level?": "এই স্তরটি সংরক্ষণাগারে রাখবেন?",
+  "Restore this level?": "এই স্তরটি ফিরিয়ে আনবেন?",
+  "No ladders yet.": "এখনো কোনো ধাপ নেই।",
+  "(no levels yet)": "(এখনো কোনো স্তর নেই)",
+  "e.g. General Grades": "যেমন সাধারণ গ্রেড",
+  "e.g. Year 1": "যেমন ১ম বর্ষ",
+
+  // --- Classes -----------------------------------------------------------
+  "New class": "নতুন ক্লাস",
+  "Enrol": "ভর্তি করুন",
+  "Create class": "ক্লাস তৈরি করুন",
+  "Class created.": "ক্লাস তৈরি হয়েছে।",
+  "Couldn't load classes:": "ক্লাসগুলো লোড করা যায়নি:",
+  "No classes yet.": "এখনো কোনো ক্লাস নেই।",
+  "No classes yet": "এখনো কোনো ক্লাস নেই",
+  "Bulk confirm all pending for this class": "এই ক্লাসের সব অপেক্ষমাণ একসাথে নিশ্চিত করুন",
+  "Confirmed {count} pending entry across {students} students.":
+    "{students} জন শিক্ষার্থীর {count}টি অপেক্ষমাণ এন্ট্রি নিশ্চিত করা হয়েছে।",
+  "Confirmed {count} pending entries across {students} students.":
+    "{students} জন শিক্ষার্থীর {count}টি অপেক্ষমাণ এন্ট্রি নিশ্চিত করা হয়েছে।",
+
+  // --- Curriculum: units, plan, resources, grades -----------------------
+  "Curriculum units": "পাঠ্যক্রমের এককসমূহ",
+  "Curriculum unit": "পাঠ্যক্রমের একক",
+  "Curriculum plan": "পাঠ্যক্রমের পরিকল্পনা",
+  "New unit": "নতুন একক",
+  "Create unit": "একক তৈরি করুন",
+  "Unit created.": "একক তৈরি হয়েছে।",
+  "Archive unit": "একক সংরক্ষণাগারে রাখুন",
+  "Order": "ক্রম",
+  "Subjects (cross-subject — pick as many as apply)":
+    "বিষয়সমূহ (একাধিক বিষয়জুড়ে — যতগুলো প্রযোজ্য বেছে নিন)",
+  "(no subjects)": "(কোনো বিষয় নেই)",
+  "No curriculum units yet.": "এখনো কোনো পাঠ্যক্রমের একক নেই।",
+  "Couldn't load curriculum units:": "পাঠ্যক্রমের এককগুলো লোড করা যায়নি:",
+  "No units yet": "এখনো কোনো একক নেই",
+  "Attach existing resource": "বিদ্যমান উপকরণ যুক্ত করুন",
+  "4 terms × 10 weeks. Pick who the plan is for — a\n         class, or one person on their own — then place a unit into a term\n         and week.":
+    "৪টি টার্ম × ১০টি সপ্তাহ। পরিকল্পনাটি কার জন্য তা বেছে নিন — একটি ক্লাস, নাকি একা একজন ব্যক্তি — তারপর একটি একককে কোনো টার্ম ও সপ্তাহে বসান।",
+  "Context": "যার জন্য", // ?
+  "Which one": "কোনটি",
+  "Term": "টার্ম", // ?
+  "Term {n}": "টার্ম {n}", // ?
+  "Week {n}": "সপ্তাহ {n}",
+  "Add unit to plan": "পরিকল্পনায় একক যোগ করুন",
+  "Pick a context and a unit first.": "আগে কার জন্য এবং কোন একক তা বেছে নিন।",
+  "Pick a context above.": "উপরে কার জন্য তা বেছে নিন।",
+  "No context to plan for yet.": "পরিকল্পনা করার মতো এখনো কিছু নেই।",
+  "Nothing planned yet.": "এখনো কিছু পরিকল্পনা করা হয়নি।",
+  "Couldn't load the plan:": "পরিকল্পনা লোড করা যায়নি:",
+  "Remove": "সরিয়ে ফেলুন",
+  "Added.": "যোগ করা হয়েছে।",
+  "New resource": "নতুন উপকরণ",
+  "Create resource": "উপকরণ তৈরি করুন",
+  "Resource created.": "উপকরণ তৈরি হয়েছে।",
+  "Type": "ধরন",
+  "Text": "লেখা",
+  "URL": "ইউআরএল",
+  "Enter a URL first.": "আগে একটি ইউআরএল লিখুন।",
+  "Enter some text first.": "আগে কিছু লেখা লিখুন।",
+  "No resources yet.": "এখনো কোনো উপকরণ নেই।",
+  "Couldn't load resources:": "উপকরণগুলো লোড করা যায়নি:",
+  "added by {name}": "যোগ করেছেন {name}",
+  "Links and text, written ahead of time and attached to\n         a curriculum unit above, or to a subject from the Catalogue page.":
+    "লিংক ও লেখা, আগেভাগে তৈরি করে উপরের কোনো পাঠ্যক্রমের এককের সাথে, অথবা তালিকা পাতা থেকে কোনো বিষয়ের সাথে যুক্ত করা।",
+  "Grades": "গ্রেড",
+  "A person's level on a ladder, over time. Correcting a\n         mistake never edits an old entry — it adds a new dated one, the same\n         way every other confirmed record in this app works.":
+    "সময়ের সাথে কোনো ধাপে একজন ব্যক্তির স্তর। ভুল সংশোধন করতে পুরোনো কোনো এন্ট্রি বদলানো হয় না — নতুন তারিখসহ একটি এন্ট্রি যোগ হয়, এই অ্যাপের অন্য প্রতিটি নিশ্চিত রেকর্ড যেভাবে কাজ করে ঠিক সেভাবেই।",
+  "Assign a level": "একটি স্তর নির্ধারণ করুন",
+  "Assign": "নির্ধারণ করুন",
+  "Assigned.": "নির্ধারণ করা হয়েছে।",
+  "From date": "যে তারিখ থেকে",
+  "Current": "বর্তমান",
+  "History": "ইতিহাস",
+  "not assigned": "নির্ধারণ করা হয়নি",
+  "from {from} to {to}": "{from} থেকে {to} পর্যন্ত",
+  "from {from} (current)": "{from} থেকে (বর্তমান)",
+  "No level history yet.": "স্তরের এখনো কোনো ইতিহাস নেই।",
+  "No levels yet": "এখনো কোনো স্তর নেই",
+  "No ladders yet — create one on the Catalogue page":
+    "এখনো কোনো ধাপ নেই — তালিকা পাতা থেকে একটি তৈরি করুন",
+  "Pick a person above.": "উপরে একজন ব্যক্তি বেছে নিন।",
+  "Pick a person, ladder and level first.": "আগে একজন ব্যক্তি, একটি ধাপ ও একটি স্তর বেছে নিন।",
+  "Couldn't load grades:": "গ্রেড লোড করা যায়নি:",
+  "Curriculum, resources and grades are written by the owner or a prime — you can browse ladders and levels on the Catalogue page, but this page has nothing to show you yet.":
+    "পাঠ্যক্রম, উপকরণ ও গ্রেড লেখেন মালিক বা প্রাইম — আপনি তালিকা পাতায় ধাপ ও স্তর দেখতে পারেন, তবে এই পাতায় আপনার জন্য এখনো কিছু নেই।",
 };

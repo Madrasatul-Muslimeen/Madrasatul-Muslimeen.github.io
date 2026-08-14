@@ -43,8 +43,8 @@ const DATA = {
   // writes it that way (docId: personId), and every screen uses the snapshot
   // id as the personId when building a records/activity/submission doc id.
   tenantPeople: [
-    { _id: "p1", tenantId: TENANT_ID, personId: "p1", name: lang("Ahsan", "আহসান") },
-    { _id: "p2", tenantId: TENANT_ID, personId: "p2", name: lang("Maryam", "মারইয়াম"), managedByPersonId: "p1" },
+    { _id: "p1", tenantId: TENANT_ID, personId: "p1", name: lang("Ahsan", "আহসান"), roles: ["owner", "prime"] },
+    { _id: "p2", tenantId: TENANT_ID, personId: "p2", name: lang("Maryam", "মারইয়াম"), managedByPersonId: "p1", isMinor: true, roles: ["student"] },
   ],
   trackables: APPROACHES.map((a, i) => ({
     _id: TENANT_ID + "__" + a[0], tenantId: TENANT_ID, subjectId: "quran", order: i, status: "active",
@@ -122,9 +122,51 @@ const DATA = {
       aboutPersonId: "p2", body: "Doing well on tajweed.", status: "active" },
   ],
   bookmarks: [],
-  classes: [], resources: [],
-  ladders: [], levels: [], personLevels: [], curriculumUnits: [], curriculumPlan: [],
-  modules: [], userIndex: [], memberships: [], teacherStudentLinks: [],
+  // PHASE 5 (admin) needs the same treatment: an entity status, a renderer
+  // name or an invite state can only be proved translated if a row renders.
+  classes: [
+    { _id: TENANT_ID + "__c1", tenantId: TENANT_ID, name: lang("Morning Class"),
+      gloss: lang("Before Fajr group", "ফজরের আগের দল"), subjectIds: ["quran"], levelId: null, status: "active" },
+  ],
+  resources: [
+    { _id: TENANT_ID + "__r1", tenantId: TENANT_ID, type: "link", url: "https://example.org/lesson",
+      body: null, addedByPersonId: "p1", status: "active" },
+  ],
+  ladders: [
+    { _id: TENANT_ID + "__l1", tenantId: TENANT_ID, name: lang("General Grades"), status: "active" },
+  ],
+  levels: [
+    { _id: TENANT_ID + "__lv1", tenantId: TENANT_ID, ladderId: "l1", name: lang("Year 1"), order: 1, status: "active" },
+    { _id: TENANT_ID + "__lv2", tenantId: TENANT_ID, ladderId: "l1", name: lang("Year 2"), order: 2, status: "active" },
+  ],
+  personLevels: [
+    { _id: TENANT_ID + "__p1__l1__2026-08-01", tenantId: TENANT_ID, personId: "p1", ladderId: "l1",
+      levelId: "lv1", fromDate: "2026-08-01", effectiveToDate: null, status: "active" },
+  ],
+  curriculumUnits: [
+    { _id: TENANT_ID + "__u1", tenantId: TENANT_ID, name: lang("Surah Al-Fatiha"), subjectIds: ["quran"],
+      levelId: "lv1", resourceIds: ["r1"], order: 1, status: "active" },
+  ],
+  curriculumPlan: [
+    { _id: TENANT_ID + "__pl1", tenantId: TENANT_ID, contextType: "class", contextId: "c1",
+      curriculumUnitId: "u1", term: 1, week: 2, order: 0, status: "active" },
+  ],
+  // Platform-wide (Architecture Layer 1) -- not tenantId-scoped, and the doc
+  // id IS the moduleId. One per renderer, so every Renderer cell is covered.
+  modules: [
+    { _id: "quranrevival", name: lang("QuranRevival"), icon: "📖", renderer: "ayah", order: 1, status: "active" },
+    { _id: "deen", name: lang("Deen Study"), icon: "🕌", renderer: "topic", order: 2, status: "active" },
+    { _id: "health", name: lang("Health"), icon: "🩺", renderer: "routine", order: 3, status: "active" },
+    { _id: "asma", name: lang("Asma ul Husna"), icon: "🕋", renderer: "asma", order: 4, status: "planned" },
+  ],
+  tenantInvites: [
+    { _id: TENANT_ID + "__invited@example.com", tenantId: TENANT_ID, email: "invited@example.com",
+      role: "teacher", status: "pending" },
+    { _id: TENANT_ID + "__gone@example.com", tenantId: TENANT_ID, email: "gone@example.com",
+      role: "student", status: "consumed" },
+  ],
+  subjectTemplates: [],
+  userIndex: [], memberships: [], teacherStudentLinks: [],
 };
 
 function snapDoc(d) {

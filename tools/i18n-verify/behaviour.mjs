@@ -527,6 +527,184 @@ console.log("\n=== 17. PHASE 4: the same four pages are still exactly English ==
   await ctx.close();
 }
 
+
+console.log("\n=== 18. PHASE 5: the four admin pages in Bangla ===");
+{
+  const ADMIN_PAGES = ["/app/people.html", "/app/catalogue.html", "/app/curriculum.html", "/app/classes.html"];
+  const ctx = await ctxFor({ banner: true, appLang: "bn" });
+  for (const p of ADMIN_PAGES) {
+    const { page, errors } = await openPage(ctx, p);
+    const r = await page.evaluate(() => ({
+      title: document.title,
+      h1: document.querySelector("h1")?.textContent?.trim(),
+      intro: [...document.querySelectorAll("p")].map((x) => x.textContent.trim()).find((x) => x.length > 40),
+      // A header that is only a symbol ("#") is punctuation, not wording --
+      // it reads the same in both languages, so requiring Bangla there is a
+      // wrong assertion, not a finding. Same class as the language-picker
+      // false alarm the README already warns about.
+      headers: [...document.querySelectorAll("th")].map((h) => h.textContent.trim()).filter((x) => /[A-Za-z\u0980-\u09FF]/.test(x)),
+      legends: [...document.querySelectorAll("legend")].map((l) => l.textContent.trim()),
+      h2s: [...document.querySelectorAll("h2")].map((h) => h.textContent.trim()),
+    }));
+    check(`${p} heading is Bangla`, BANGLA.test(r.h1 || ""), r.h1);
+    check(`${p} browser-tab title is Bangla`, BANGLA.test(r.title || ""), r.title);
+    check(`${p} intro paragraph is Bangla`, !r.intro || BANGLA.test(r.intro), (r.intro || "").slice(0, 60));
+    check(`${p} carries no developer noise like "(Phase 11)"`,
+          !/\(Phase \d|\(F-\d|round \d|Stage [A-C]\d|\bI\d\/I\d/.test(`${r.title} ${r.h1} ${r.intro ?? ""}`), `${r.title} | ${r.h1}`);
+    check(`${p} every table header is Bangla`, r.headers.every((x) => BANGLA.test(x)), JSON.stringify(r.headers));
+    check(`${p} every fieldset legend is Bangla`, r.legends.every((x) => BANGLA.test(x)), JSON.stringify(r.legends));
+    check(`${p} every section heading is Bangla`, r.h2s.every((x) => BANGLA.test(x)), JSON.stringify(r.h2s));
+    check(`${p} no page errors under bn`, errors.length === 0, errors.slice(0, 2).join(" | "));
+    await page.close();
+  }
+  await ctx.close();
+}
+
+console.log("\n=== 19. PHASE 5: People — roles, invites and the handover lock ===");
+{
+  const ctx = await ctxFor({ banner: true, appLang: "bn" });
+  const { page, errors } = await openPage(ctx, "/app/people.html");
+  const r = await page.evaluate(() => ({
+    roster: [...document.querySelectorAll("#rosterBody tr")].map((tr) => tr.innerText.replace(/\s+/g, " ").trim()),
+    invites: [...document.querySelectorAll("#inviteBody tr")].map((tr) => tr.innerText.replace(/\s+/g, " ").trim()),
+    viewAs: [...document.getElementById("viewAsSelect").options].map((o) => o.textContent.trim()),
+    viewAsVals: [...document.getElementById("viewAsSelect").options].map((o) => o.value),
+    inviteRoles: [...document.getElementById("inviteRole").options].map((o) => o.textContent.trim()),
+    inviteRoleVals: [...document.getElementById("inviteRole").options].map((o) => o.value),
+  }));
+  // The Roles column printed the raw array, comma-joined by toString().
+  check("19a the roster's Roles column is Bangla, not a raw array",
+        r.roster.length === 2 && !/owner|prime|student/i.test(r.roster.join(" ")), JSON.stringify(r.roster));
+  check("19b an invite's role AND state are both Bangla",
+        r.invites.length === 2 && !/teacher|pending|consumed|student/i.test(r.invites.join(" ")), JSON.stringify(r.invites));
+  check("19b ...while the email address is left exactly as it is",
+        r.invites.join(" ").includes("invited@example.com"), JSON.stringify(r.invites));
+  check("19c View as options are Bangla", r.viewAs.every((x) => BANGLA.test(x)), JSON.stringify(r.viewAs));
+  check("19c ...with option VALUES still the bare role ids",
+        r.viewAsVals.join() === ",prime,teacher,guardian,student", JSON.stringify(r.viewAsVals));
+  check("19c the invite Role picker too", r.inviteRoles.every((x) => BANGLA.test(x)) && r.inviteRoleVals.join() === "teacher,student,guardian,prime",
+        JSON.stringify([r.inviteRoles, r.inviteRoleVals]));
+
+  // The handover lock's refusal message lives in js/study-lock.js and is the
+  // only explanation a person gets for a blocked switch.
+  const lock = await page.evaluate(async () => {
+    const { acquireStudyLock, canSwitchTo, releaseStudyLock } = await import("/app/js/study-lock.js");
+    acquireStudyLock("p2");
+    const refused = canSwitchTo("someone-else");
+    releaseStudyLock();
+    return refused.reason;
+  });
+  check("19d a refused handover explains itself in Bangla", BANGLA.test(lock || ""), lock);
+  check("19 no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+console.log("\n=== 20. PHASE 5: Catalogue, Curriculum and Classes ===");
+{
+  const ctx = await ctxFor({ banner: true, appLang: "bn" });
+
+  const cat = await openPage(ctx, "/app/catalogue.html");
+  const c = await cat.page.evaluate(() => ({
+    seed: document.getElementById("seedStatus")?.textContent?.trim(),
+    modules: [...document.querySelectorAll("#modulesBody tr")].map((tr) => tr.innerText.replace(/\s+/g, " ").trim()),
+    subjects: [...document.querySelectorAll("#subjectsBody tr")].map((tr) => tr.innerText.replace(/\s+/g, " ").trim()),
+    tags: [...document.querySelectorAll("#subjectsBody .tag")].map((e) => e.textContent.trim()),
+    approach: document.querySelector("#trackablesBody tr")?.innerText.replace(/\s+/g, " ").trim(),
+    guide: (() => {
+      const b = document.querySelector("#trackablesBody .guideBox");
+      return b ? b.textContent.replace(/\s+/g, " ").trim() : "";
+    })(),
+    parentOpts: [...document.getElementById("newSubjParent").options].map((o) => o.textContent.trim()),
+  }));
+  check("20a the seed status line is Bangla with Bengali digits",
+        BANGLA.test(c.seed || "") && /[০-৯]/.test(c.seed || ""), c.seed);
+  // "planned" is a module status modules.js seeds and nothing else uses --
+  // exactly the kind of value a status map quietly misses.
+  check("20b Renderer and Status cells are Bangla, `planned` included",
+        c.modules.length === 4 && !/\bayah\b|\btopic\b|\broutine\b|\bactive\b|\bplanned\b/i.test(c.modules.join(" ")),
+        JSON.stringify(c.modules));
+  check("20b the app's own name is deliberately NOT translated",
+        c.modules.join(" ").includes("QuranRevival"), JSON.stringify(c.modules[0]));
+  check("20c a subject row's status and confirmation rule are Bangla",
+        c.subjects.length > 0 && !/\bactive\b|\bAuto\b|\barchived\b/i.test(c.subjects.join(" ")), JSON.stringify(c.subjects.slice(0, 1)));
+  // The module tags printed the raw moduleId ("deen", "quranrevival").
+  check("20d module tags show module NAMES, not their ids",
+        c.tags.length > 0 && !c.tags.some((x) => /^(deen|arabic|hadith|general|health|naturelife|lifeskill|ldog)$/.test(x)),
+        JSON.stringify(c.tags));
+  check("20e the Approach list uses Bengali digits and Bangla section names",
+        /[০-৯]/.test(c.approach || "") && BANGLA.test(c.approach || ""), c.approach);
+  check("20e the Guide's What/How/Measure labels are Bangla",
+        BANGLA.test(c.guide) && !/What:|How:|Measure:/.test(c.guide), c.guide.slice(0, 60));
+  check("20f the parent picker's top-level option is Bangla",
+        BANGLA.test(c.parentOpts[0] || ""), c.parentOpts[0]);
+  await cat.page.close();
+
+  const cur = await openPage(ctx, "/app/curriculum.html");
+  const u = await cur.page.evaluate(() => ({
+    terms: [...document.getElementById("planTermSelect").options].map((o) => o.textContent.trim()),
+    termVals: [...document.getElementById("planTermSelect").options].map((o) => o.value),
+    weeks: [...document.getElementById("planWeekSelect").options].map((o) => o.textContent.trim()),
+    weekVals: [...document.getElementById("planWeekSelect").options].map((o) => o.value),
+    plan: document.getElementById("planBody")?.innerText.replace(/\s+/g, " ").trim(),
+    unit: document.querySelector("#unitsBody .pill")?.textContent?.trim(),
+    grades: document.getElementById("gradesBody")?.innerText.replace(/\s+/g, " ").trim(),
+    resources: document.getElementById("resourcesBody")?.innerText.replace(/\s+/g, " ").trim(),
+  }));
+  check("20g Term/Week options are Bangla with Bengali digits",
+        u.terms.every((x) => BANGLA.test(x) && /[০-৯]/.test(x)) && u.weeks.every((x) => BANGLA.test(x)),
+        JSON.stringify([u.terms[0], u.weeks[9]]));
+  check("20g ...with option VALUES still plain numbers (Number() reads them back)",
+        u.termVals.join() === "1,2,3,4" && u.weekVals[9] === "10", JSON.stringify([u.termVals, u.weekVals[9]]));
+  check("20h a planned row reads in Bangla", BANGLA.test(u.plan || "") && !/\bWeek\b|\bTerm\b/.test(u.plan || ""), u.plan);
+  check("20h a unit's status pill is Bangla", BANGLA.test(u.unit || ""), u.unit);
+  check("20i the grade history's dates use Bengali digits and read in Bangla",
+        BANGLA.test(u.grades || "") && /[০-৯]/.test(u.grades || "") && !/\bfrom\b|\bcurrent\b/i.test(u.grades || ""), u.grades);
+  check("20j a resource's 'added by' line is Bangla, its URL untouched",
+        BANGLA.test(u.resources || "") && u.resources.includes("https://example.org/lesson"), u.resources);
+  await cur.page.close();
+
+  const cls = await openPage(ctx, "/app/classes.html");
+  const k = await cls.page.evaluate(() => ({
+    card: document.querySelector("#classesBody .card")?.innerText.replace(/\s+/g, " ").trim(),
+    pill: document.querySelector("#classesBody .pill")?.textContent?.trim(),
+    roleOpts: [...(document.querySelector(".enrolRoleSelect")?.options ?? [])].map((o) => o.textContent.trim()),
+    roleVals: [...(document.querySelector(".enrolRoleSelect")?.options ?? [])].map((o) => o.value),
+  }));
+  check("20k a class's status pill is Bangla", BANGLA.test(k.pill || ""), k.pill);
+  // The gloss was read straight off .en, so a tenant that HAD authored
+  // Bangla for it still saw English -- a real pre-existing bug (I11).
+  check("20l a tenant-authored Bangla gloss really renders in Bangla",
+        (k.card || "").includes("ফজরের আগের দল"), k.card);
+  check("20m the enrol Role picker is Bangla with bare values",
+        k.roleOpts.every((x) => BANGLA.test(x)) && k.roleVals.join() === "student,teacher",
+        JSON.stringify([k.roleOpts, k.roleVals]));
+  await cls.page.close();
+  await ctx.close();
+}
+
+console.log("\n=== 21. PHASE 5: the admin pages are still exactly English ===");
+{
+  const ctx = await ctxFor({ banner: true });
+  const { page, errors } = await openPage(ctx, "/app/catalogue.html");
+  const r = await page.evaluate(() => ({
+    title: document.title,
+    h1: document.querySelector("h1")?.textContent?.trim(),
+    modules: [...document.querySelectorAll("#modulesBody tr")].map((tr) => tr.innerText.replace(/\s+/g, " ").trim()),
+  }));
+  check("21 English title and heading intact", r.title === "QuranRevival — Catalogue" && r.h1 === "Catalogue", `${r.title} | ${r.h1}`);
+  check("21 renderer and status read as English words",
+        /Ayah by ayah/.test(r.modules[0] || "") && /Active/.test(r.modules[0] || ""), r.modules[0]);
+  check("21 no page errors in English", errors.length === 0, errors.slice(0, 2).join(" | "));
+
+  const cls = await openPage(ctx, "/app/classes.html");
+  const k = await cls.page.evaluate(() => document.querySelector("#classesBody .card")?.innerText.replace(/\s+/g, " ").trim());
+  check("21 the English gloss still shows in English", (k || "").includes("Before Fajr group"), k);
+  await cls.page.close();
+  await page.close();
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);

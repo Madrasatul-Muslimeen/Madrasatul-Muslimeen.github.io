@@ -325,23 +325,12 @@ async function syncTeacherStudentLinksForContext(db, tenantId, contextId, change
 // Shared with classes.html, which shows exactly the same two things.
 // ---------------------------------------------------------------------------
 
-const CONTEXT_STATUS_LABELS = Object.freeze({
-  active: "Active",
-  ended: "Ended",
-  archived: "Archived",
-});
+// Phase 5 folded the status wording into js/labels.js, where every other
+// archivable thing in the app now reads it from -- kept exported here under
+// its original name so this module's own callers are unchanged.
+export { entityStatusLabel as contextStatusLabel } from "./labels.js";
 
-export function contextStatusLabel(status) {
-  const label = CONTEXT_STATUS_LABELS[status];
-  return label ? t(label) : (status ?? "");
-}
-
-const ROLE_IN_CLASS_LABELS = Object.freeze({
-  student: "Student",
-  teacher: "Teacher",
-});
-
-export function roleInClassLabel(role) {
-  const label = ROLE_IN_CLASS_LABELS[role];
-  return label ? t(label) : (role ?? "");
-}
+// An enrolment's roleInClass is "student" or "teacher" -- the same two words
+// js/labels.js already names for app roles, so it reads them from there
+// rather than keeping a second map that could drift.
+export { roleLabel as roleInClassLabel } from "./labels.js";

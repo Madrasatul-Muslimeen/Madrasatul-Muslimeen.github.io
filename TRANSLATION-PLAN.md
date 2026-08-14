@@ -86,7 +86,7 @@ what a phone actually shows.
 | 2 | **The Quran module** — `quranrevival.html` end to end, the wheel, the way modal, the reading/listening cards, + 114 surah names | 107 + 114 | **DONE, v07.32** |
 | 3 | **The nine other modules** — topic/routine/asma renderers and their pages, + 55 subject names & glosses, + the 30 Approach Guide sets | 242 | **DONE, v07.33** |
 | 4 | **Tracking & feedback** — Records, Monitor, Homework, Course Offers, Continue strip | 205 | **DONE, v07.34** |
-| 5 | **Admin** — People, Catalogue, Curriculum, Classes | 179 | |
+| 5 | **Admin** — People, Catalogue, Curriculum, Classes | 219 | **DONE, v07.35** |
 | 6 | **Asma ul Husna** — 99 meanings + the poster screensaver | 89 + 99 | |
 
 Each phase ends the same way: coverage at 100% for its area, a behaviour
@@ -266,14 +266,60 @@ evidence. `tools/i18n-verify/probe.mjs` (added in phase 4) exists to make the
 honest check cheap: it prints a page's whole rendered text, its pickers and
 its placeholders, in either language.
 
+## What phase 5 added to the method
+
+Phase 5 was the first phase whose coverage report was **very nearly honest** —
+one missing string, not a whole invisible category. The `_LABELS` convention
+phase 4 introduced is why: every new identifier map this phase added was
+counted the moment it was written. That is the convention paying for itself.
+
+Reading the rendered pages still found things the report could not:
+
+- **A status value nothing else uses.** `modules.js` seeds a module as
+  `"planned"` and flips it to `"active"` when that module's UI ships. Every
+  other status in the app is active/archived, so `planned` sat outside the
+  map and printed raw in the Catalogue's Modules table. A label map is only
+  as complete as the values that actually reach it — check the *writer*, not
+  only the screens.
+- **Two `t` shadows waiting to happen.** `trackableRowHtml(t)` took the
+  trackable as a parameter named `t`, and a filter callback did the same, so
+  any `t("…")` added inside either would have silently called the wrong
+  thing. Phase 2 hit this exact shape with `surahName`. Renamed to `row`
+  before translating those bodies.
+- **A real pre-existing I11 bug**, not a translation gap: `classes.html` read
+  a class's gloss straight off `.en`, so a tenant that HAD authored Bangla
+  for it still saw English. Now through `langText()`, and a behaviour check
+  proves it with a stub row whose two languages actually differ.
+
+Method points phase 6 inherits:
+
+- **`js/labels.js` is where an identifier's wording goes when no single
+  domain module owns it.** It holds role names and the lifecycle status
+  (active / archived / ended / pending / accepted / revoked / planned /
+  draft) shared by subjects, trackables, modules, ladders, levels, curriculum
+  units, classes, course offers, enrolments and invites. It imports only
+  `i18n.js`, so even a pure renderer like `nav.js` can use it without gaining
+  a Firebase dependency (I2). `roleInClassLabel` and `contextStatusLabel` in
+  `course-offers.js` are now re-exports of it rather than second copies.
+- **A confirm() dialog is a screen too.** `Archive "{name}"?` was built by
+  concatenating an English verb onto a quoted name — which reverses in
+  Bangla. Each branch is now its own whole sentence, the same rule phase 4
+  set for possessives.
+- **An identifier shown as a tag should be resolved to a name.** The subject
+  tree printed raw moduleIds (`deen`, `quranrevival`) as tags. They are now
+  looked up in the modules the page has already loaded, so they follow
+  `langText()` and any admin rename — never a second hardcoded list.
+
+
 ## Known, and deliberately left
 
-- **Page headings still carry developer noise** — "People (F-012)",
-  "Catalogue (Phase 2)". Those are meaningless to any user in *either*
-  language. Each phase should clean its own pages' headings as it translates
-  them, rather than translating the noise. Phase 4 cleaned its own four
-  ("Records (Phase 3)", "Monitor (Phase 8)", "Homework (Phase 9)", "Course
-  Offers (Phase 7 round 2)"); phase 5 owns the two above.
+- ~~**Page headings still carry developer noise**~~ — **done.** Phase 4
+  cleaned "Records (Phase 3)", "Monitor (Phase 8)", "Homework (Phase 9)" and
+  "Course Offers (Phase 7 round 2)"; phase 5 cleaned "People (F-012)",
+  "Catalogue (Phase 2)", "Curriculum (Phase 11)", "Classes (Phase 10)" and
+  the "Study Mode handover lock — test only (F-016)" block. A behaviour check
+  now fails if `(Phase n)`, `(F-nnn)`, `round n`, `Stage B2` or an invariant
+  reference reappears in any page's title, heading or intro.
 - **At 320px wide the English nav truncates** "Operation" and "Bookmark" to
   73px of text in a 65px box. **Pre-existing** — measured identically on the
   commit before this round — and *not* a Bangla problem: Bangla fits at

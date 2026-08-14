@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.34.** Cutover to production happened
+**Current milestone: QuranRevival v07.35.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -985,6 +985,83 @@ leaking into the interface, meaningless in either language, but rewording it
 is an English-copy decision rather than a translation one — raised for the
 owner rather than decided here. Phase 5 is Admin (People, Catalogue,
 Curriculum, Classes).
+
+v07.35 (14 Aug 2026, on Claude Code on the web) is **full app translation,
+phase 5 of 6 — ADMIN.** **Area 219/219 (100%); app-wide 899/1086 (83%).**
+Covers `people.html`, `catalogue.html`, `curriculum.html`, `classes.html` and
+`js/study-lock.js`, and cleans the last of the developer noise this project
+has carried in its page headings: "People (F-012)", "Catalogue (Phase 2)",
+"Curriculum (Phase 11)", "Classes (Phase 10)", plus the whole **"Study Mode
+handover lock — test only (F-016)"** block, whose paragraph was a builder's
+note ("throwaway demo of the LOCK MECHANISM", "D10", "Phase 3/4") rather than
+anything a user could act on — rewritten as plain instructions. Four intro
+paragraphs got the same treatment (Stage B2, I4/I6 and "cross-subject" jargon
+all removed). A behaviour check now fails if `(Phase n)`, `(F-nnn)`,
+`round n`, `Stage B2` or an invariant reference reappears in **any** page's
+title, heading or intro. **This closes the "page headings still carry
+developer noise" item `TRANSLATION-PLAN.md` has carried since phase 1.**
+
+**The coverage report was very nearly honest this time** — one missing string,
+not a whole invisible category, the first phase of five where that is true.
+The `_LABELS` convention phase 4 introduced is exactly why: every identifier
+map added this round was counted the moment it was written. Reading the
+rendered pages still found what the report could not. **A status value
+nothing else uses:** `modules.js` seeds a module as `"planned"` and flips it
+to `"active"` when that module's UI ships, so `planned` sat outside the status
+map and printed raw in the Catalogue's Modules table — the standing lesson in
+its narrower form, **a label map is only as complete as the values that
+actually reach it, so check the writer, not only the screens.** **Two `t`
+shadows waiting to happen:** `trackableRowHtml(t)` took the trackable as a
+parameter named `t`, and a filter callback did the same, so any `t("…")`
+added inside either would have silently called the wrong thing (phase 2 hit
+this exact shape with `surahName`) — renamed to `row` before translating
+those bodies. **And one real pre-existing I11 bug, not a translation gap:**
+`classes.html` read a class's gloss straight off `.en`, so a tenant that HAD
+authored Bangla for it still saw English; now through `langText()`, proved by
+a stub row whose two languages actually differ.
+
+**`app/js/roles.js` (new in v07.34) is renamed `app/js/labels.js`** and is now
+the one place an identifier's wording lives when no single domain module owns
+it: role names **plus** the lifecycle status shared by subjects, trackables,
+modules, ladders, levels, curriculum units, classes, course offers,
+enrolments and invites (active / archived / ended / pending / accepted /
+revoked / planned / draft). It imports only `i18n.js`, so `nav.js` can use it
+while staying the pure, Firebase-free renderer its own contract (I2) requires.
+`course-offers.js`'s `contextStatusLabel` and `roleInClassLabel` are now
+**re-exports** of it rather than second copies — `roleInClassLabel` in
+particular was mapping the same two words ("Student", "Teacher") as
+`roleLabel`, so one concept now has one helper. Two more method points phase 6
+inherits: **a `confirm()` dialog is a screen too** — `Archive "{name}"?` was
+an English verb concatenated onto a quoted name, which reverses in Bangla, so
+each branch is its own whole sentence now (the same rule phase 4 set for
+possessives); and **an identifier shown as a tag should be resolved to a
+name** — the subject tree printed raw moduleIds (`deen`, `quranrevival`) as
+tags, now looked up in the modules the page has already loaded, so they follow
+`langText()` and any admin rename rather than a second hardcoded list.
+
+**Verified: 402 behaviour checks** (all of phases 1-4, plus every admin page's
+heading/title/intro/table-header/legend/section-heading in Bangla with no
+developer noise; the roster's Roles column no longer a raw array; an invite's
+role and state Bangla while the email address is left exactly as it is; the
+View-as and invite-Role pickers Bangla with option VALUES proven still the
+bare role ids; a refused device handover explained in Bangla; the Modules
+table's Renderer and Status cells Bangla including `planned`, with
+"QuranRevival" proven still untranslated; module tags showing names not ids;
+Bengali digits in the Approach list and the seed line; Term/Week pickers
+Bangla with values still plain numbers; the grade history's dates in Bengali
+digits; a tenant-authored Bangla gloss really rendering; and the admin pages
+proven still byte-for-byte English) **plus the landing-page layout regression
+and the nav check in both languages, both unchanged.** One test failure during
+the run was investigated and proved a WRONG ASSERTION, not a defect — a table
+header that is only "#" is punctuation, not wording, and reads the same in
+both languages. **One harness note worth keeping:** `layout.mjs` compares
+against the previous commit's copy of `quranrevival.html`, so a round that
+RENAMES a module that page imports makes the old copy 404 and score 0
+everywhere, which looks like a catastrophic regression and is not — drop a
+shim at the old path for the length of the comparison. Recorded in the
+harness README. **No `firestore.rules`, schema or data changes** — nothing to
+deploy but the static files. Phase 6 is Asma ul Husna (89 strings + the 99
+Names' meanings), the last one.
 
 ---
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
-<title>QuranRevival — Curriculum (Phase 11)</title>
+<title>QuranRevival — Curriculum</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
@@ -38,12 +38,12 @@
 </style>
 </head>
 <body>
-  <h1>Curriculum (Phase 11)</h1>
-  <p>Curriculum units are the CONTENT (what to study, cross-subject);
-     the plan below is the SCHEDULE (which term/week it falls in, for a
-     class or a person) — the two stay separate, so re-planning a unit into
-     a different week never touches the unit itself. Resources and grades
-     (dated level history per ladder) are also managed here.</p>
+  <h1>Curriculum</h1>
+  <p>A curriculum unit is WHAT to study, and it can span several subjects.
+     The plan below is WHEN — which term and week it falls in, for a class or
+     for one person. The two are kept apart, so moving a unit to a different
+     week never changes the unit itself. Resources and grades are managed
+     here too.</p>
 
   <nav class="app-nav" id="topNav">
     <details class="nav-cat nav-cat-home">
@@ -65,7 +65,7 @@
         <select id="tenantSelect" style="width:auto;"></select>
       </label>
     </div>
-    <div id="noAdminNote" class="muted" style="display:none;">Curriculum, resources and grades are authored by the owner/prime — you can browse the Catalogue page's ladders and levels, but this page has nothing to show you yet.</div>
+    <div id="noAdminNote" class="muted" style="display:none;">Curriculum, resources and grades are written by the owner or a prime — you can browse ladders and levels on the Catalogue page, but this page has nothing to show you yet.</div>
 
     <div id="adminArea" style="display:none;">
       <h2>Curriculum units</h2>
@@ -95,10 +95,9 @@
       <div id="unitsBody"><p class="muted">Loading…</p></div>
 
       <h2>Curriculum plan</h2>
-      <p class="muted">4 terms × 10 weeks. Pick a context (a class, or an
-         individual person — Family/Individual tenants have no classes, so a
-         person is a real, first-class context here too), then place a unit
-         into a term/week slot.</p>
+      <p class="muted">4 terms × 10 weeks. Pick who the plan is for — a
+         class, or one person on their own — then place a unit into a term
+         and week.</p>
       <div class="row">
         <div>
           <label for="planContextTypeSelect">Context</label>
@@ -134,8 +133,8 @@
       <div id="planBody"><p class="muted">Pick a context above.</p></div>
 
       <h2>Resources</h2>
-      <p class="muted">Links and text, authored ahead of time and attached to
-         a curriculum unit above (or a subject, from the Catalogue page).</p>
+      <p class="muted">Links and text, written ahead of time and attached to
+         a curriculum unit above, or to a subject from the Catalogue page.</p>
       <fieldset>
         <legend>New resource</legend>
         <div class="row">
@@ -162,8 +161,8 @@
 
       <h2>Grades</h2>
       <p class="muted">A person's level on a ladder, over time. Correcting a
-         mistake never edits an old row — it's a new dated row, same as every
-         other confirmed record in this app (I4/I6).</p>
+         mistake never edits an old entry — it adds a new dated one, the same
+         way every other confirmed record in this app works.</p>
       <div class="row">
         <div>
           <label for="gradePersonSelect">Person</label>
@@ -204,7 +203,7 @@
     import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
-    import { roleListLabel } from "./js/roles.js";
+    import { roleListLabel, entityStatusLabel } from "./js/labels.js";
     import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
@@ -224,7 +223,7 @@
     import { assignPersonLevel, listPersonLevelHistory, getCurrentPersonLevels } from "./js/grades.js";
     import { createResource, listResources, setResourceStatus } from "./js/resources.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
-    import { translateStatic, t } from "./js/i18n.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
@@ -342,7 +341,7 @@
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       unitSubjectChecks.innerHTML = leaves
         .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, getAppLang(), n.id)}</label>`)
-        .join("") || `<span class="muted">No subjects yet.</span>`;
+        .join("") || `<span class="muted">${t("No subjects yet.")}</span>`;
 
       ladders = (await listLadders(db, activeTenantId)).filter((l) => l.status === "active");
       levelsByLadder = new Map();
@@ -351,14 +350,18 @@
       const ladderOptions = `<option value="">—</option>` + ladders.map((l) => `<option value="${l.id}">${langText(l.name, getAppLang(), l.id)}</option>`).join("");
       unitLadderSelect.innerHTML = ladderOptions;
       gradeLadderSelect.innerHTML = ladders.map((l) => `<option value="${l.id}">${langText(l.name, getAppLang(), l.id)}</option>`).join("")
-        || `<option value="">No ladders yet — create one on the Catalogue page</option>`;
+        || `<option value="">${t("No ladders yet — create one on the Catalogue page")}</option>`;
       refreshUnitLevelOptions();
       refreshGradeLevelOptions();
 
       classes = (await listClasses(db, activeTenantId)).filter((c) => c.status === "active");
 
-      planTermSelect.innerHTML = [1, 2, 3, 4].map((t) => `<option value="${t}">Term ${t}</option>`).join("");
-      planWeekSelect.innerHTML = Array.from({ length: 10 }, (_, i) => i + 1).map((w) => `<option value="${w}">Week ${w}</option>`).join("");
+      // The loop variable is deliberately NOT called `t` here -- that would
+      // shadow the imported translate function for the whole callback.
+      planTermSelect.innerHTML = [1, 2, 3, 4]
+        .map((n) => `<option value="${n}">${t("Term {n}", { n: num(n) })}</option>`).join("");
+      planWeekSelect.innerHTML = Array.from({ length: 10 }, (_, i) => i + 1)
+        .map((w) => `<option value="${w}">${t("Week {n}", { n: num(w) })}</option>`).join("");
 
       gradePersonSelect.innerHTML = roster.map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`).join("");
       gradeFromDateInput.value = new Date().toISOString().slice(0, 10);
@@ -382,7 +385,7 @@
         .filter((l) => l.status === "active")
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
         .map((l) => `<option value="${l.id}">${langText(l.name, getAppLang(), l.id)}</option>`).join("")
-        || `<option value="">No levels yet</option>`;
+        || `<option value="">${t("No levels yet")}</option>`;
     }
     gradeLadderSelect.addEventListener("change", refreshGradeLevelOptions);
 
@@ -391,23 +394,23 @@
     // -----------------------------------------------------------------------
 
     async function refreshUnits() {
-      unitsBody.innerHTML = `<p class="muted">Loading…</p>`;
+      unitsBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         units = await listCurriculumUnits(db, activeTenantId);
         const visible = units.filter((u) => u.status === "active");
         unitsBody.innerHTML = visible.length
           ? (await Promise.all(visible.map(renderUnitCard))).join("")
-          : `<p class="muted">No curriculum units yet.</p>`;
+          : `<p class="muted">${t("No curriculum units yet.")}</p>`;
         wireUnitCardActions();
         refreshPlanUnitOptions();
       } catch (err) {
-        unitsBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load curriculum units: ${err.code ?? ""} ${err.message}</p>`;
+        unitsBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load curriculum units:")} ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
       }
     }
 
     function renderUnitCard(u) {
-      const subjectsLine = (u.subjectIds ?? []).map(subjectName).join(", ") || "(no subjects)";
+      const subjectsLine = (u.subjectIds ?? []).map(subjectName).join(", ") || t("(no subjects)");
       const unitLadderId = u.levelId ? ladderIdForLevel(u.levelId) : null;
       const levelLine = u.levelId && unitLadderId ? `${ladderName(unitLadderId)} — ${levelName(unitLadderId, u.levelId)}` : "";
       const attached = (u.resourceIds ?? []).map((rid) => {
@@ -418,16 +421,16 @@
       const existingOptions = resources.filter((r) => r.status === "active" && !(u.resourceIds ?? []).includes(r.id))
         .map((r) => `<option value="${r.id}">${r.type === "link" ? r.url : (r.body ?? "").slice(0, 40)}</option>`).join("");
       return `<div class="card">
-        <h3>${langText(u.name, getAppLang(), u.id)} <span class="pill pill-${u.status}">${u.status}</span></h3>
+        <h3>${langText(u.name, getAppLang(), u.id)} <span class="pill pill-${u.status}">${entityStatusLabel(u.status)}</span></h3>
         <div class="muted">${subjectsLine}</div>
         ${levelLine ? `<div class="muted">${levelLine}</div>` : ""}
         ${attached}
         ${existingOptions ? `<div class="row" style="margin-top:0.4rem;">
           <div><select class="attachResourceSelect" data-unit="${u.id}">${existingOptions}</select></div>
-          <div><button class="small secondary attachResourceBtn" data-unit="${u.id}">Attach existing resource</button></div>
+          <div><button class="small secondary attachResourceBtn" data-unit="${u.id}">${t("Attach existing resource")}</button></div>
         </div>` : ""}
         <div style="margin-top:0.5rem;">
-          <button class="small secondary archiveUnitBtn" data-unit="${u.id}">Archive unit</button>
+          <button class="small secondary archiveUnitBtn" data-unit="${u.id}">${t("Archive unit")}</button>
         </div>
       </div>`;
     }
@@ -461,7 +464,7 @@
 
     createUnitBtn.addEventListener("click", async () => {
       createUnitResult.textContent = "";
-      if (!unitNameInput.value.trim()) { createUnitResult.textContent = "Enter a name first."; return; }
+      if (!unitNameInput.value.trim()) { createUnitResult.textContent = t("Enter a name first."); return; }
       const subjectIds = Array.from(unitSubjectChecks.querySelectorAll("input:checked")).map((c) => c.value);
       createUnitBtn.disabled = true;
       const outcome = await safeWrite(
@@ -475,7 +478,7 @@
       );
       createUnitBtn.disabled = false;
       if (outcome.ok) {
-        createUnitResult.textContent = "Unit created.";
+        createUnitResult.textContent = t("Unit created.");
         unitNameInput.value = ""; unitOrderInput.value = "0";
         unitSubjectChecks.querySelectorAll("input:checked").forEach((c) => (c.checked = false));
         await refreshUnits();
@@ -491,7 +494,7 @@
     function refreshPlanContextOptions() {
       const type = planContextTypeSelect.value;
       planContextSelect.innerHTML = type === "class"
-        ? classes.map((c) => `<option value="${c.id}">${langText(c.name, getAppLang(), c.id)}</option>`).join("") || `<option value="">No classes yet</option>`
+        ? classes.map((c) => `<option value="${c.id}">${langText(c.name, getAppLang(), c.id)}</option>`).join("") || `<option value="">${t("No classes yet")}</option>`
         : roster.map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`).join("");
     }
     planContextTypeSelect.addEventListener("change", async () => { refreshPlanContextOptions(); await refreshPlan(); });
@@ -500,16 +503,16 @@
     function refreshPlanUnitOptions() {
       const active = units.filter((u) => u.status === "active");
       planUnitSelect.innerHTML = active.map((u) => `<option value="${u.id}">${langText(u.name, getAppLang(), u.id)}</option>`).join("")
-        || `<option value="">No units yet</option>`;
+        || `<option value="">${t("No units yet")}</option>`;
     }
 
     async function refreshPlan() {
-      if (!planContextSelect.value) { planBody.innerHTML = `<p class="muted">No context to plan for yet.</p>`; return; }
-      planBody.innerHTML = `<p class="muted">Loading…</p>`;
+      if (!planContextSelect.value) { planBody.innerHTML = `<p class="muted">${t("No context to plan for yet.")}</p>`; return; }
+      planBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         const entries = (await listCurriculumPlanForContext(db, activeTenantId, planContextTypeSelect.value, planContextSelect.value))
           .filter((e) => e.status === "active");
-        if (!entries.length) { planBody.innerHTML = `<p class="muted">Nothing planned yet.</p>`; return; }
+        if (!entries.length) { planBody.innerHTML = `<p class="muted">${t("Nothing planned yet.")}</p>`; return; }
         const byTerm = new Map();
         for (const e of entries) {
           if (!byTerm.has(e.term)) byTerm.set(e.term, []);
@@ -519,10 +522,10 @@
           const rows = byTerm.get(term)
             .sort((a, b) => a.week - b.week)
             .map((e) => `<div class="plan-row">
-              <span>Week ${e.week} — ${unitName(e.curriculumUnitId)}</span>
-              <button class="small secondary removePlanEntryBtn" data-plan="${e.id}">Remove</button>
+              <span>${t("Week {n}", { n: num(e.week) })} — ${unitName(e.curriculumUnitId)}</span>
+              <button class="small secondary removePlanEntryBtn" data-plan="${e.id}">${t("Remove")}</button>
             </div>`).join("");
-          return `<div class="term-block"><h4>Term ${term}</h4>${rows}</div>`;
+          return `<div class="term-block"><h4>${t("Term {n}", { n: num(term) })}</h4>${rows}</div>`;
         }).join("");
         planBody.querySelectorAll(".removePlanEntryBtn").forEach((btn) => {
           btn.addEventListener("click", async () => {
@@ -536,14 +539,14 @@
           });
         });
       } catch (err) {
-        planBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load the plan: ${err.code ?? ""} ${err.message}</p>`;
+        planBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load the plan:")} ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
       }
     }
 
     addPlanEntryBtn.addEventListener("click", async () => {
       addPlanResult.textContent = "";
-      if (!planUnitSelect.value || !planContextSelect.value) { addPlanResult.textContent = "Pick a context and a unit first."; return; }
+      if (!planUnitSelect.value || !planContextSelect.value) { addPlanResult.textContent = t("Pick a context and a unit first."); return; }
       addPlanEntryBtn.disabled = true;
       const outcome = await safeWrite(
         () => createCurriculumPlanEntry(db, activeTenantId, {
@@ -556,7 +559,7 @@
         { collection: "curriculumPlan", action: "createCurriculumPlanEntry" }
       );
       addPlanEntryBtn.disabled = false;
-      if (outcome.ok) { addPlanResult.textContent = "Added."; await refreshPlan(); }
+      if (outcome.ok) { addPlanResult.textContent = t("Added."); await refreshPlan(); }
       else addPlanResult.textContent = outcome.entry.message;
     });
 
@@ -571,17 +574,17 @@
     });
 
     async function refreshResources() {
-      resourcesBody.innerHTML = `<p class="muted">Loading…</p>`;
+      resourcesBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         resources = await listResources(db, activeTenantId);
         const visible = resources.filter((r) => r.status === "active");
         resourcesBody.innerHTML = visible.length
           ? visible.map((r) => `<div class="card">
               <div>${r.type === "link" ? `<a href="${r.url}" target="_blank" rel="noopener">${r.url}</a>` : (r.body ?? "")}</div>
-              <div class="muted">by ${personName(r.addedByPersonId)}</div>
-              <button class="small secondary archiveResourceBtn" data-resource="${r.id}" style="margin-top:0.4rem;">Archive</button>
+              <div class="muted">${t("added by {name}", { name: personName(r.addedByPersonId) })}</div>
+              <button class="small secondary archiveResourceBtn" data-resource="${r.id}" style="margin-top:0.4rem;">${t("Archive")}</button>
             </div>`).join("")
-          : `<p class="muted">No resources yet.</p>`;
+          : `<p class="muted">${t("No resources yet.")}</p>`;
         resourcesBody.querySelectorAll(".archiveResourceBtn").forEach((btn) => {
           btn.addEventListener("click", async () => {
             btn.disabled = true;
@@ -594,7 +597,7 @@
           });
         });
       } catch (err) {
-        resourcesBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load resources: ${err.code ?? ""} ${err.message}</p>`;
+        resourcesBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load resources:")} ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
       }
     }
@@ -604,8 +607,8 @@
       const type = resourceTypeSelect.value;
       const url = resourceUrlInput.value.trim();
       const body = resourceBodyInput.value.trim();
-      if (type === "link" && !url) { createResourceResult.textContent = "Enter a URL first."; return; }
-      if (type === "text" && !body) { createResourceResult.textContent = "Enter some text first."; return; }
+      if (type === "link" && !url) { createResourceResult.textContent = t("Enter a URL first."); return; }
+      if (type === "text" && !body) { createResourceResult.textContent = t("Enter some text first."); return; }
       createResourceBtn.disabled = true;
       const outcome = await safeWrite(
         () => createResource(db, activeTenantId, { type, url: type === "link" ? url : null, body: type === "text" ? body : null }, myPersonId, auth.currentUser.uid),
@@ -613,7 +616,7 @@
       );
       createResourceBtn.disabled = false;
       if (outcome.ok) {
-        createResourceResult.textContent = "Resource created.";
+        createResourceResult.textContent = t("Resource created.");
         resourceUrlInput.value = ""; resourceBodyInput.value = "";
         await refreshResources();
       } else {
@@ -626,8 +629,8 @@
     // -----------------------------------------------------------------------
 
     async function refreshGrades() {
-      if (!gradePersonSelect.value) { gradesBody.innerHTML = `<p class="muted">Pick a person above.</p>`; return; }
-      gradesBody.innerHTML = `<p class="muted">Loading…</p>`;
+      if (!gradePersonSelect.value) { gradesBody.innerHTML = `<p class="muted">${t("Pick a person above.")}</p>`; return; }
+      gradesBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         const [current, history] = await Promise.all([
           getCurrentPersonLevels(db, activeTenantId, gradePersonSelect.value),
@@ -635,14 +638,20 @@
         ]);
         const currentLines = ladders.map((l) => {
           const row = current.get(l.id);
-          return `<div>${langText(l.name, getAppLang(), l.id)}: ${row ? levelName(l.id, row.levelId) : "<span class=\"muted\">not assigned</span>"}</div>`;
-        }).join("") || `<p class="muted">No ladders yet.</p>`;
+          return `<div>${langText(l.name, getAppLang(), l.id)}: ${row ? levelName(l.id, row.levelId) : `<span class="muted">${t("not assigned")}</span>`}</div>`;
+        }).join("") || `<p class="muted">${t("No ladders yet.")}</p>`;
+        // fromDate/effectiveToDate are stored ISO strings, so they get num()
+        // only -- the same rule phase 4 set for a value that IS the record.
         const historyLines = history.length
-          ? history.map((row) => `<div class="muted">${ladderName(row.ladderId)} — ${levelName(row.ladderId, row.levelId)}, from ${row.fromDate}${row.effectiveToDate ? ` to ${row.effectiveToDate}` : " (current)"}</div>`).join("")
-          : `<p class="muted">No level history yet.</p>`;
-        gradesBody.innerHTML = `<h3>Current</h3>${currentLines}<h3 style="margin-top:0.8rem;">History</h3>${historyLines}`;
+          ? history.map((row) => `<div class="muted">${ladderName(row.ladderId)} — ${levelName(row.ladderId, row.levelId)}, ${
+              row.effectiveToDate
+                ? t("from {from} to {to}", { from: num(row.fromDate), to: num(row.effectiveToDate) })
+                : t("from {from} (current)", { from: num(row.fromDate) })
+            }</div>`).join("")
+          : `<p class="muted">${t("No level history yet.")}</p>`;
+        gradesBody.innerHTML = `<h3>${t("Current")}</h3>${currentLines}<h3 style="margin-top:0.8rem;">${t("History")}</h3>${historyLines}`;
       } catch (err) {
-        gradesBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load grades: ${err.code ?? ""} ${err.message}</p>`;
+        gradesBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load grades:")} ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
       }
     }
@@ -651,7 +660,7 @@
     assignLevelBtn.addEventListener("click", async () => {
       assignLevelResult.textContent = "";
       if (!gradePersonSelect.value || !gradeLadderSelect.value || !gradeLevelSelect.value) {
-        assignLevelResult.textContent = "Pick a person, ladder and level first."; return;
+        assignLevelResult.textContent = t("Pick a person, ladder and level first."); return;
       }
       assignLevelBtn.disabled = true;
       const outcome = await safeWrite(
@@ -659,7 +668,7 @@
         { collection: "personLevels", action: "assignPersonLevel" }
       );
       assignLevelBtn.disabled = false;
-      if (outcome.ok) { assignLevelResult.textContent = "Assigned."; await refreshGrades(); }
+      if (outcome.ok) { assignLevelResult.textContent = t("Assigned."); await refreshGrades(); }
       else assignLevelResult.textContent = outcome.entry.message;
     });
 
