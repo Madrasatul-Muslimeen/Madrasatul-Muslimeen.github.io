@@ -37,6 +37,7 @@
 import { getAppLang } from "./prefs.js";
 import { BN } from "./i18n/bn.js";
 import { SURAH_NAMES_BN } from "./i18n/surah-names-bn.js";
+import { ASMA_NAMES_BN } from "./i18n/asma-names-bn.js";
 
 const CATALOGUES = { bn: BN };
 
@@ -124,6 +125,30 @@ export function parseNum(value) {
 export function surahName(surahNumber, englishName) {
   if (getAppLang() === "bn") return SURAH_NAMES_BN[surahNumber] ?? englishName ?? "";
   return englishName ?? "";
+}
+
+// ---------------------------------------------------------------------
+// The 99 Names
+// ---------------------------------------------------------------------
+
+/**
+ * One of the 99 Names, written in the reader's own script (phase 6).
+ *
+ * Exactly the same shape as surahName() above, and for the same reason:
+ * a Latin transliteration ("Ar-Rahman") is unreadable to someone who
+ * only reads Bangla, so on that person's screen it is a wasted line on a
+ * card that only has three.
+ *
+ * Falls back to the Latin transliteration asma-data.js already carries,
+ * so an unlisted number can never render blank.
+ *
+ * Deliberately NOT prefixed with the number -- callers format that
+ * themselves and run it through num(), because a card wants "১. আর-রহমান"
+ * while the way modal's title wants the bare Name.
+ */
+export function asmaName(number, transliteration) {
+  if (getAppLang() === "bn") return ASMA_NAMES_BN[number] ?? transliteration ?? "";
+  return transliteration ?? "";
 }
 
 // ---------------------------------------------------------------------

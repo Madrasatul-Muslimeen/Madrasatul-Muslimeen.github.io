@@ -1947,7 +1947,7 @@
             trackableId: trackable.id, action: "claimed", uid: auth.currentUser.uid,
             viaProgramId: programBySubjectId.get("quran") ?? null,
           });
-          const message = outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.";
+          const message = t(outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.");
           await refreshChunkAndWheel();
           openWayModal(); // refresh the modal's own tabs against the new chunk -- this replaces resultEl, so the message has to be applied to the NEW element below, not the one captured above
           const freshResultEl = wayModalMount.querySelector(".way-claim-result");
@@ -2012,7 +2012,7 @@
             subjectId: "quran", unitKey: info.unitKey, trackableId: trackable.id, action: "claimed", uid: auth.currentUser.uid,
             viaProgramId: programBySubjectId.get("quran") ?? null,
           });
-          const message = outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.";
+          const message = t(outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.");
           if (info.chunkKey === surahChunkKey) await refreshChunkAndWheel();
           await openUnitWayModal();
           const freshResultEl = wayModalMount.querySelector(".way-claim-result");

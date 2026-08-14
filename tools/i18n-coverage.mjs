@@ -151,8 +151,26 @@ function extract(file) {
     const s = m[1].trim();
     if (LOOKS_USER_FACING(s)) found.add(s);
   }
-  for (const m of code.matchAll(/label:\s*"([^"]{2,70})"/g)) {
-    const s = m[1].trim();
+  // A `label:` field, in either quote style, ESCAPE-AWARE (phase 6).
+  //
+  // The fourth time this tool has been wrong, and the first time it was
+  // wrong about the DENOMINATOR rather than the numerator. The generic
+  // matcher above reads `label: 'Al-Ahad'` with a [^"'`] body, which stops
+  // dead at the backslash in `label: 'Al-Mu\'mim'`; the fragment then
+  // carries a stray backslash, so LOOKS_USER_FACING drops it and the
+  // string vanishes from the report entirely -- never counted, therefore
+  // never reported missing. Five of asma-posters.js's captions are
+  // apostrophised, so the area could have reached "100%" with five
+  // captions still in English and no line anywhere saying so.
+  //
+  // Same (?:[^'\\]|\\.)* form the t() matcher already uses, unescaped
+  // afterwards so the reported key matches what the app looks up.
+  for (const m of code.matchAll(/\blabel:\s*"((?:[^"\\]|\\.)*)"/g)) {
+    const s = m[1].replace(/\\(["'\\])/g, "$1").trim();
+    if (LOOKS_USER_FACING(s)) found.add(s);
+  }
+  for (const m of code.matchAll(/\blabel:\s*'((?:[^'\\]|\\.)*)'/g)) {
+    const s = m[1].replace(/\\(["'\\])/g, "$1").trim();
     if (LOOKS_USER_FACING(s)) found.add(s);
   }
 

@@ -14,7 +14,7 @@ Read `../../TRANSLATION-PLAN.md` first for what is being verified and why.
 npm install playwright          # once, anywhere outside the repo is fine
 node serve.js &                 # from the repo root, serves on :8080
 
-node tools/i18n-verify/behaviour.mjs   # ~402 checks, both languages
+node tools/i18n-verify/behaviour.mjs   # ~424 checks, both languages
 node tools/i18n-verify/navcheck.mjs    # nav fits at 320-768px, both languages
 node tools/i18n-verify/layout.mjs      # landing page vs the previous commit
 
@@ -101,6 +101,25 @@ identifier map is counted the moment it is written. It still missed a status
 value (`planned`) that only `modules.js` ever writes, which is the standing
 lesson in its narrower form: **a label map is only as complete as the values
 that actually reach it, so check the writer, not only the screens.**
+
+Phase 6 made it **five for five**, and in a new direction: its bug hid five
+strings from the *denominator* entirely (an apostrophe inside a `label:`
+value tore the match at the backslash), so the area could have reported a
+confident 100% with five poster captions still in English and nothing
+anywhere listing them. Phase 6 also found `"Claimed and confirmed."` — the
+message shown after every successful claim, on every study screen in the app
+— sitting in English at five call sites that never wrapped it in `t()`, in
+two areas both reporting 100% since phases 2 and 3.
+
+Two harness notes from that round:
+
+- **`firebase-stub.mjs` is one big template literal.** A backtick inside a
+  comment you add to it ends the string, and the suite dies with a syntax
+  error pointing at an innocent-looking line. No backticks in that file.
+- **A collection needs a row that the screen under test actually reads.**
+  The Asma detail panel prints "Not started yet." until a claim exists, and
+  `asma-study.js` returns early from the way modal when its one trackable is
+  missing — so both had to be seeded before either could be checked at all.
 
 **Treat the coverage number as a to-do list, never as evidence.** Only a
 behaviour check that reads the rendered DOM shows a screen is truly

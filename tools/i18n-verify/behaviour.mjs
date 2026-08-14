@@ -705,6 +705,147 @@ console.log("\n=== 21. PHASE 5: the admin pages are still exactly English ===");
   await ctx.close();
 }
 
+console.log("\n=== 22. PHASE 6: Asma ul Husna reads entirely in Bangla ===");
+{
+  const ctx = await ctxFor({ appLang: "bn", banner: true });
+  const { page, errors } = await openPage(ctx, "/app/asma-study.html");
+
+  const grid = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll(".asma-card")];
+    const cell = (c, s) => c?.querySelector(s)?.textContent?.trim();
+    return {
+      count: cards.length,
+      first: {
+        number: cell(cards[0], ".asma-card-number"),
+        arabic: cell(cards[0], ".asma-card-arabic"),
+        name: cell(cards[0], ".asma-card-translit"),
+        meaning: cell(cards[0], ".asma-card-meaning"),
+        chip: cell(cards[0], ".asma-status-chip"),
+        // The value read back by openNameDetail() with Number(). num() must
+        // never have touched it -- the phase 2 rule, restated.
+        dataNumber: cards[0]?.dataset.number,
+      },
+      last: {
+        number: cell(cards[98], ".asma-card-number"),
+        name: cell(cards[98], ".asma-card-translit"),
+        meaning: cell(cards[98], ".asma-card-meaning"),
+      },
+      // No Latin transliteration should survive anywhere in the grid. This
+      // is the check that would have caught phase 6 shipping half-done.
+      latinLeft: cards.map((c) => cell(c, ".asma-card-translit")).filter((x) => /[A-Za-z]/.test(x || "")),
+      meaningsLeft: cards.map((c) => cell(c, ".asma-card-meaning")).filter((x) => /[A-Za-z]/.test(x || "")),
+      digitsLeft: cards.map((c) => cell(c, ".asma-card-number")).filter((x) => /[0-9]/.test(x || "")),
+    };
+  });
+  check("22a all 99 cards render", grid.count === 99, String(grid.count));
+  check("22a the first card is Bangla end to end",
+        BANGLA.test(grid.first.name) && BANGLA.test(grid.first.meaning) && BANGLA.test(grid.first.chip),
+        JSON.stringify(grid.first));
+  check("22a the Arabic is untouched", grid.first.arabic === "الرَّحْمَٰن", grid.first.arabic);
+  check("22b Bengali digits are drawn, data-number stays plain",
+        grid.first.number === "১" && grid.first.dataNumber === "1" && grid.last.number === "৯৯",
+        `${grid.first.number}/${grid.first.dataNumber}/${grid.last.number}`);
+  check("22c NOT ONE of the 99 Names is left in Latin script",
+        grid.latinLeft.length === 0, grid.latinLeft.slice(0, 3).join(" | "));
+  check("22c NOT ONE of the 99 meanings is left in English",
+        grid.meaningsLeft.length === 0, grid.meaningsLeft.slice(0, 3).join(" | "));
+  check("22c no card number is left in Latin digits", grid.digitsLeft.length === 0, grid.digitsLeft.slice(0, 3).join(" | "));
+  check("22c the 99th Name and meaning are Bangla too",
+        BANGLA.test(grid.last.name) && BANGLA.test(grid.last.meaning),
+        `${grid.last.name} — ${grid.last.meaning}`);
+
+  // The detail panel. Its status line used to print a raw claimedStatus
+  // with underscores swapped for spaces, plus a raw confirmState id.
+  await page.click(".asma-card[data-number='1']");
+  await page.waitForTimeout(150);
+  const detail = await page.evaluate(() => ({
+    number: document.querySelector(".asma-detail-number")?.textContent?.trim(),
+    heading: document.querySelector(".asma-detail h2")?.textContent?.trim(),
+    meaning: document.querySelector(".asma-detail-meaning")?.textContent?.trim(),
+    status: document.querySelector(".asma-detail p:not(.asma-detail-meaning)")?.textContent?.trim(),
+    btn: document.getElementById("trackAsmaBtn")?.textContent?.trim(),
+  }));
+  check("22d '1 of 99' reads in Bangla with Bengali digits, not a number glued to a word",
+        BANGLA.test(detail.number || "") && /১/.test(detail.number || "") && /৯৯/.test(detail.number || "") && !/\bof\b/.test(detail.number || ""),
+        detail.number);
+  check("22d the detail heading is the Bangla Name", BANGLA.test(detail.heading || "") && !/[A-Za-z]/.test(detail.heading || ""), detail.heading);
+  check("22d the detail meaning is Bangla", BANGLA.test(detail.meaning || "") && !/[A-Za-z]/.test(detail.meaning || ""), detail.meaning);
+  check("22e the status line is Bangla, with NO raw status or confirmState id",
+        BANGLA.test(detail.status || "") && !/practising|pending|Status:/i.test(detail.status || ""), detail.status);
+  check("22e the track button is Bangla", BANGLA.test(detail.btn || ""), detail.btn);
+
+  // The way modal's title is the only other place the Name is drawn.
+  await page.click("#trackAsmaBtn");
+  await page.waitForTimeout(200);
+  const modal = await page.evaluate(() => document.querySelector("#wayModalMount .way-modal-header h3")?.textContent?.trim());
+  check("22f the way modal's title carries the Bangla Name",
+        BANGLA.test(modal || "") && !/Ar-Rahman/.test(modal || ""), modal);
+
+  // The screensaver. Its captions are the poster set's own filenames, on a
+  // different transliteration convention from the 99 -- their own catalogue.
+  // The overlay intercepts pointer events while open, so close it the way
+  // the page itself does rather than clicking through it.
+  await page.evaluate(() => document.getElementById("wayModalOverlay")?.classList.remove("open"));
+  await page.waitForTimeout(80);
+  await page.click("#screensaverBtn");
+  await page.waitForTimeout(200);
+  const saver = await page.evaluate(() => ({
+    caption: document.querySelector(".asma-screensaver-caption")?.textContent?.trim(),
+    alt: document.querySelector(".asma-screensaver-img")?.getAttribute("alt"),
+    src: document.querySelector(".asma-screensaver-img")?.getAttribute("src"),
+  }));
+  check("22g the screensaver caption is Bangla", BANGLA.test(saver.caption || ""), saver.caption);
+  check("22g its alt text is translated too (a Bangla screen reader)", BANGLA.test(saver.alt || ""), saver.alt);
+  check("22g the poster URL is untouched", (saver.src || "").startsWith("https://archive.org/download/"), saver.src);
+  check("22h no page errors in Bangla", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+console.log("\n=== 23. PHASE 6: the Asma page is still exactly English ===");
+{
+  const ctx = await ctxFor({ banner: true });
+  const { page, errors } = await openPage(ctx, "/app/asma-study.html");
+  const r = await page.evaluate(() => {
+    const c = document.querySelector(".asma-card");
+    const cell = (s) => c?.querySelector(s)?.textContent?.trim();
+    return {
+      title: document.title,
+      h1: document.querySelector("h1")?.textContent?.trim(),
+      number: cell(".asma-card-number"),
+      name: cell(".asma-card-translit"),
+      meaning: cell(".asma-card-meaning"),
+      count: document.querySelectorAll(".asma-card").length,
+    };
+  });
+  check("23 English title, heading and all 99 cards intact",
+        r.title === "QuranRevival — Asma ul Husna" && r.h1 === "Asma ul Husna" && r.count === 99,
+        `${r.title} | ${r.h1} | ${r.count}`);
+  check("23 the card still reads Ar-Rahman / The Most Merciful, in Latin digits",
+        r.number === "1" && r.name === "Ar-Rahman" && r.meaning === "The Most Merciful",
+        JSON.stringify(r));
+  check("23 no page errors in English", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+console.log("\n=== 24. PHASE 6: the claim message every module shows ===");
+{
+  // Untranslated at FIVE call sites (the Quran module twice, topic-study,
+  // routine-study, asma-study) right through phases 1-5, because none of
+  // them ever wrapped the ternary in t(). The coverage report could not
+  // see it: its plural/ternary matcher only fires INSIDE t(...).
+  const src = await (await fetch("http://localhost:8080/app/js/topic-study.js")).text();
+  const quran = await (await fetch("http://localhost:8080/app/quranrevival.html")).text();
+  const routine = await (await fetch("http://localhost:8080/app/js/routine-study.js")).text();
+  const asma = await (await fetch("http://localhost:8080/app/js/asma-study.js")).text();
+  const bare = /(?<!t\()(?:^|[^(])outcome\.result\.needsConfirmation \? "Claimed/;
+  const all = [src, quran, routine, asma];
+  check("24 every claim-confirmation message goes through t()",
+        all.every((f) => !bare.test(f)) && (quran.match(/t\(outcome\.result\.needsConfirmation/g) || []).length === 2,
+        "one or more call sites still bare");
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);
