@@ -59,3 +59,20 @@ export function entityStatusLabel(status) {
   const label = ENTITY_STATUS_LABELS[status];
   return label ? t(label) : (status ?? "");
 }
+
+// Confirmation state (I6: frozen when marked, never recalculated). Moved
+// here in phase 6 from records.js, which owns the WRITING of it but not
+// the wording -- asma-renderer.js needs to print it and is, by the same
+// contract nav.js holds (I2), a pure renderer that must never gain a
+// Firebase dependency. records.js re-exports this rather than keeping a
+// second copy, the same way course-offers.js does for the role labels.
+const CONFIRM_STATE_LABELS = Object.freeze({
+  pending: "Awaiting confirmation",
+  confirmed: "Confirmed",
+  returned: "Returned",
+});
+
+export function confirmStateLabel(confirmState) {
+  const label = CONFIRM_STATE_LABELS[confirmState];
+  return label ? t(label) : (confirmState ?? "");
+}

@@ -396,7 +396,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
           trackableId, action: "claimed", uid: auth.currentUser.uid,
           viaProgramId: programBySubjectId.get(node.id) ?? null,
         });
-        const message = outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.";
+        const message = t(outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.");
         await refreshChunk();
         renderBrowser();
         await openTopicDetail(node.id);

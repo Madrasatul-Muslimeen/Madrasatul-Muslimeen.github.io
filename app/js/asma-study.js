@@ -20,7 +20,7 @@ import { TENANT } from "./collections.js";
 import { langText } from "./lang.js";
 import { roleListLabel } from "./labels.js";
 import { getAppLang, mountAppLangControl } from "./prefs.js";
-import { t, translateStatic } from "./i18n.js";
+import { t, num, asmaName, translateStatic } from "./i18n.js";
 import { safeWrite } from "./errors.js";
 import {
   getMyMemberships, initializeActiveContext, getActiveContext, setActiveContext,
@@ -116,7 +116,10 @@ export function initAsmaStudyPage() {
     selectedPersonId = visibleRoster[0]?.id ?? null;
 
     const trackables = await getTrackables(db, activeTenantId);
-    studiedTrackable = trackables.find((t) => t.id === TRACKABLE_ID) ?? null;
+    // Parameter renamed off `t` in phase 6: it shadowed the imported
+    // translator, so any t("…") added inside this callback would silently
+    // have called the trackable instead. Phases 2 and 5 each hit this.
+    studiedTrackable = trackables.find((tr) => tr.id === TRACKABLE_ID) ?? null;
 
     await refreshChunk();
     await refreshProgramMap();
@@ -135,9 +138,11 @@ export function initAsmaStudyPage() {
     if (!continueStripContainer || !selectedPersonId) return;
     const bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
     const entries = recentResumeEntries(bookmarksDoc, 5).map((e) => {
-      const num = e.moduleId === MODULE_ID ? Number(e.position) : null;
-      const name = num ? ASMA_NAMES.find((n) => n.number === num) : null;
-      return { ...e, subjectLabel: name ? `${name.transliteration} (${name.number})` : null };
+      // Local `number`, not `num` -- phase 6 imports num() from i18n.js and
+      // the old name would have shadowed it exactly where it is needed.
+      const number = e.moduleId === MODULE_ID ? Number(e.position) : null;
+      const name = number ? ASMA_NAMES.find((n) => n.number === number) : null;
+      return { ...e, subjectLabel: name ? `${asmaName(name.number, name.transliteration)} (${num(name.number)})` : null };
     });
     continueStripContainer.innerHTML = renderContinueStrip(entries);
   }
@@ -189,7 +194,7 @@ export function initAsmaStudyPage() {
       .filter((e) => e.trackableId === TRACKABLE_ID)
       .map((e) => e.claimedStatus);
 
-    const title = `${name.transliteration} — ${t("Studied")}`;
+    const title = `${asmaName(name.number, name.transliteration)} — ${t("Studied")}`;
     const tabBodies = {
       Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
       Guide: renderGuideTab(studiedTrackable, getAppLang()),
@@ -228,7 +233,7 @@ export function initAsmaStudyPage() {
           trackableId: TRACKABLE_ID, action: "claimed", uid: auth.currentUser.uid,
           viaProgramId: programBySubjectId.get(SUBJECT_ID) ?? null,
         });
-        const message = outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.";
+        const message = t(outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.");
         await refreshChunk();
         renderGrid();
         await openNameDetail(name.number);

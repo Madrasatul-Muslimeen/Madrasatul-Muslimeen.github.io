@@ -33,7 +33,10 @@
 export const ASMA_POSTERS = [
   { label: 'Al-A\'laa', url: 'https://archive.org/download/NamesAndAttributesOfAllah/%28A%27laa%29%20Al-A%27laa.jpg' },
   { label: 'Al-Aleem', url: 'https://archive.org/download/NamesAndAttributesOfAllah/%28Aaleem%29%20Al-Aleem.png' },
-  { label: 'Al-Aleem3', url: 'https://archive.org/download/NamesAndAttributesOfAllah/%28Aaleem%29%20Al-Aleem3.png' },
+  // Caption fixed in phase 6: the filename's own "3" (a second poster of
+  // the same Name) was printing on screen as "Al-Aleem3". The URL keeps
+  // the real filename -- only the caption changed.
+  { label: 'Al-Aleem', url: 'https://archive.org/download/NamesAndAttributesOfAllah/%28Aaleem%29%20Al-Aleem3.png' },
   { label: 'Al-Aalim', url: 'https://archive.org/download/NamesAndAttributesOfAllah/%28Aalim%29%20Al-Aalim.png' },
   { label: 'Al-Afuww', url: 'https://archive.org/download/NamesAndAttributesOfAllah/%28Afuww%29%20Al-Afuww.jpg' },
   { label: 'Al-Ahad', url: 'https://archive.org/download/NamesAndAttributesOfAllah/%28Ahad%29%20Al-Ahad.jpg' },

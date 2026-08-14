@@ -386,13 +386,8 @@ export async function listPendingForPerson(db, tenantId, personId) {
 // is picked up.
 // ---------------------------------------------------------------------------
 
-const CONFIRM_STATE_LABELS = Object.freeze({
-  pending: "Awaiting confirmation",
-  confirmed: "Confirmed",
-  returned: "Returned",
-});
-
-export function confirmStateLabel(confirmState) {
-  const label = CONFIRM_STATE_LABELS[confirmState];
-  return label ? t(label) : (confirmState ?? "");
-}
+// Moved to js/labels.js in phase 6 and RE-EXPORTED here, not copied: this
+// module owns writing a confirmState, but asma-renderer.js has to print
+// one and is a pure renderer (I2) that must never import Firebase, which
+// this file does. Same shape as course-offers.js's role-label re-exports.
+export { confirmStateLabel } from "./labels.js";

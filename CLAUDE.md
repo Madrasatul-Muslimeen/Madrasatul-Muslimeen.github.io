@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.35.** Cutover to production happened
+**Current milestone: QuranRevival v07.36.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -1062,6 +1062,107 @@ shim at the old path for the length of the comparison. Recorded in the
 harness README. **No `firestore.rules`, schema or data changes** — nothing to
 deploy but the static files. Phase 6 is Asma ul Husna (89 strings + the 99
 Names' meanings), the last one.
+
+v07.36 (14 Aug 2026, on Claude Code on the web) is **full app translation,
+phase 6 of 6 — ASMA UL HUSNA. The last phase: the app is now translated end
+to end.** **Area 191/191 (100%); app-wide 1,099/1,099 (100%).** Covers the 99
+meanings, the 99 Names in Bangla script, the 92 screensaver poster captions,
+`js/asma-renderer.js` and the Asma parts of `js/asma-study.js`.
+
+**Three decisions were put to the owner before a word of Bangla was written**
+— the Names have established renderings in Bangladeshi Islamic literature and
+drafting 99 of them from scratch would have been the wrong move. The owner
+chose: **(a)** base the meanings on the **standard Bangladeshi wording** (the
+Islamic Foundation Bangladesh Bangla Qur'an and the 99-Names lists circulated
+by IFB and As-Sunnah Foundation) rather than translating this app's own
+English glosses, and they intend to **supply their own prepared list later** —
+confirmed to them that replacing it is a single edit per Name in one file, no
+schema change, no Firestore write; **(b)** add the **Name itself in Bangla
+script** (আর-রহমান), not just the meaning — a card showed Arabic, a Latin
+transliteration and an English meaning, so a Bangla-only reader could read one
+line of three and the Latin line was dead space on exactly the screen this
+whole project is for; **(c)** caption the **posters in Bangla** where the Name
+is recognisable, noting they are a WIDER, older list on a different
+transliteration convention.
+
+**The mechanism, for whoever touches this next: the Bangla lives in two files
+and NEITHER of them is `asma-data.js`.** Meanings are interface wording, so
+they are in `js/i18n/bn.js` keyed by their English, where the coverage report
+counts them; the Names are data indexed by number, so they are in a new
+`js/i18n/asma-names-bn.js` reached through a new `asmaName()` helper — an
+exact copy of phase 2's `surahName()`, for the same reason. `asma-data.js`'s
+99 `bn: null` slots were **deliberately left empty**, and its header now says
+why: `langText()` checks `value[lang]` FIRST, so a `bn` filled there would
+silently override any later correction made in `bn.js`, and the report (which
+reads `bn.js` and nothing else) would show 0% while the screen showed Bangla.
+One source, not two. Note this is the opposite call from phase 3's — that
+file genuinely is never seeded to Firestore, so filling it *would* have
+worked; it was rejected on drift grounds, not on reachability.
+
+**The coverage tool was wrong for the FIFTH time in six phases, and in a new
+direction — it hid strings from the denominator.** An apostrophe inside a
+`label:` value (`label: 'Al-Mu\'mim'`) tore the match at the backslash, and
+the fragment was then discarded as a stray-backslash artifact, so five of the
+93 poster captions were **never counted and therefore could never be reported
+missing** — the area could have shown a confident 100% with five captions in
+English and no line anywhere saying so. Fixed, escape-aware in both quote
+styles. **The standing rule is unchanged and is the most reusable thing this
+project has learned: the coverage number is a to-do list, never evidence.**
+
+**Two real defects outside this phase's own area, both found by reading a
+rendered page.** `"Claimed and confirmed."` — **the message shown after every
+successful claim, on every study screen in the app** — was English at five
+call sites (`quranrevival.html` twice, `topic-study.js`, `routine-study.js`,
+`asma-study.js`); none ever wrapped the ternary in `t()`, and the report's
+plural matcher only fires *inside* `t(...)`, so the quran and modules areas
+both read 100% from phases 2 and 3 onward. Its sibling string had been sitting
+translated in `bn.js`, unused, since phase 1. And the **Asma detail panel
+printed raw identifiers** — a `claimedStatus` with its underscores swapped for
+spaces, plus a bare `confirmState` id, meaningless in either language. Both go
+through the shared label helpers now; **`confirmStateLabel` moved from
+`records.js` to `js/labels.js` and is re-exported**, because `asma-renderer.js`
+has to print it and is a pure renderer (I2) that must never gain a Firebase
+dependency — the same move, for the same reason, that created `labels.js`.
+Also fixed: a poster caption reading `Al-Aleem3`, straight off a filename (the
+URL keeps the real filename). And **two `t`/`num` shadows caught before they
+could bite**, by grepping for them *before* translating anything nearby — one
+of them a local `const num =` on the very line that then needed the imported
+`num()`.
+
+**Verified: 424 behaviour checks** (all of phases 1-5, plus all 99 cards
+proven Bangla end to end with **not one** Name left in Latin script, not one
+meaning in English and not one number in Latin digits; `data-number` proven
+still plain so `Number()` reads it back; the Arabic untouched; the detail
+panel's "১ of ৯৯" reading as one Bangla sentence rather than a number glued to
+an English word; the status line with no raw status or confirmState id; the
+way modal's title; the screensaver's caption AND its `alt` text with the
+archive.org URL untouched; the claim message at all five sites; and the whole
+page proven still byte-for-byte English) **plus the landing-page layout
+regression (identical at all five viewports in both banner states, 65
+`getElementById` targets, none missing) and the nav check in both languages
+(Bangla still at exact parity; the only reported problem is the pre-existing
+320px ENGLISH truncation of "Operation"/"Bookmark", which Bangla does not
+have).** The harness gained a `subject_asma_ul_husna` records chunk and a
+`studied_asma` trackable — without the trackable `asma-study.js` returns early
+from the way modal and its title never renders at all.
+
+**What is NOT translated, now that all six phases are through** — each a
+deliberate decision, written up in full in `TRANSLATION-PLAN.md`'s new "Where
+this actually stands" section: **the language is per BROWSER, not per person**
+(localStorage `mm_app_lang`, the owner's own v07.30 call, taken so the setting
+needs no new startup read, no new collection and no `firestore.rules` change —
+so Bangla set on the phone leaves the tablet in English until set there too;
+`prefs.js` is shaped for a Firestore sync to slot in behind the same
+`getAppLang()` getter, and **that sync is the most likely next request**); the
+tenant banner (excluded by the owner's own original wording); people's and
+reciters' own names; Arabic anywhere; CSV export values; `throw new Error()`
+diagnostics; and a handful of strings mapped to themselves on purpose so the
+report counts them as decided rather than forgotten. **The Bangla wording is a
+first draft throughout** — lines marked `// ?` are the ones worth the owner's
+eye first, and in this phase those are Al-Waliyy/Al-Wali (two distinct Names
+most Bangla lists render identically) and Ad-Darr (the most theologically
+sensitive line in the project). **No `firestore.rules`, schema or data
+changes** — nothing to deploy but the static files.
 
 ---
 

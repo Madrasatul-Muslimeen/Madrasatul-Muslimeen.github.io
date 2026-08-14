@@ -51,7 +51,18 @@ const DATA = {
     name: lang(a[1], a[2]), groupName: lang(a[3], a[4]),
     guide: { what: lang("What it is", "এটি কী"), how: lang("How to do it", "কীভাবে করবেন"), measure: lang("How to measure", "কীভাবে মাপবেন") },
     panels: ["text", "audio", "loop", "tajweed", "wordByWord"],
-  })),
+  })).concat([
+    // PHASE 6. asma-study.js bails out of the way modal entirely when its
+    // one trackable is missing, so without this row the modal title -- the
+    // one place the Name is drawn outside the grid -- could never be
+    // proved translated. (No backticks anywhere in this file: the whole
+    // stub is one template literal, and a stray one would end it early.)
+    { _id: TENANT_ID + "__studied_asma", tenantId: TENANT_ID, subjectId: "asma_ul_husna",
+      order: 0, status: "active", name: lang("Studied", "অধ্যয়ন করা হয়েছে"),
+      groupName: lang("Understanding", "অনুধাবন"),
+      guide: { what: lang("What it is", "এটি কী"), how: lang("How to do it", "কীভাবে করবেন"), measure: lang("How to measure", "কীভাবে মাপবেন") },
+      panels: ["text"] },
+  ]),
   subjects: [
     { _id: TENANT_ID + "__quran", tenantId: TENANT_ID, subjectId: "quran", parentId: null,
       name: lang("Quran", "কুরআন"), moduleIds: ["quranrevival"], ancestorIds: [], status: "active", isTrackable: true },
@@ -82,6 +93,18 @@ const DATA = {
         "ayah:1:3::tajweed": { unitType: "ayah", subjectId: "quran", trackableId: "tajweed",
           claimedStatus: "practising", claimedByPersonId: "p1", confirmedStatus: null,
           confirmState: "returned", returnNote: "Try again", domainIds: [], notes: "" },
+      } },
+    // PHASE 6. The Asma detail panel prints "Not started yet." unless a
+    // claim exists, so the status line -- which used to render a raw
+    // claimedStatus with its underscores swapped for spaces, and a raw
+    // confirmState id -- needs one real entry to be provable. D12: a
+    // name: unit key chunks by SUBJECT, not by surah.
+    { _id: TENANT_ID + "__p1__subject_asma_ul_husna", tenantId: TENANT_ID, personId: "p1",
+      chunkKey: "subject_asma_ul_husna",
+      entries: {
+        "name:1::studied_asma": { unitType: "name", subjectId: "asma_ul_husna", trackableId: "studied_asma",
+          claimedStatus: "practising", claimedByPersonId: "p1", confirmedStatus: null,
+          confirmState: "pending", domainIds: [], notes: "" },
       } },
   ],
   activity: [
