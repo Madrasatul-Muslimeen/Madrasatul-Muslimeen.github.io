@@ -8,6 +8,14 @@
 // Scoped here instead as a strip embedded directly in every study page's
 // own shell, right under the nav bar -- delivers the same "jump back to
 // where I left off" value without also being the landing-page rebuild.
+//
+// Full app translation, phase 4: the chip's own wording and the module name
+// in it are translated at render time. MODULE_LABELS below stays English --
+// it is the translation KEY (the same eight module names phase 3 already put
+// in the catalogue), not the text drawn on screen. Importing t() does not
+// cost this file its I2 purity: still HTML in, HTML out, no Firebase.
+
+import { t } from "./i18n.js";
 
 // Every module's own study page -- kept here (not in nav.js) since this is
 // the one place that needs to turn a moduleId back into a URL.
@@ -56,9 +64,11 @@ export function renderContinueStrip(entries) {
       const href = MODULE_PAGES[e.moduleId];
       const moduleLabel = MODULE_LABELS[e.moduleId];
       if (!href || !moduleLabel) return "";
-      const label = e.subjectLabel ? `${moduleLabel} — ${e.subjectLabel}` : moduleLabel;
+      // subjectLabel is already tenant-authored text the caller resolved
+      // through langText(), so it is in the reader's language already.
+      const label = e.subjectLabel ? `${t(moduleLabel)} — ${e.subjectLabel}` : t(moduleLabel);
       return `<a class="continue-chip" href="${href}?resume=${encodeURIComponent(e.subjectId ?? "")}">
-        <span class="continue-chip-label">Continue: ${escapeHtml(label)}</span>
+        <span class="continue-chip-label">${escapeHtml(t("Continue: {what}", { what: label }))}</span>
       </a>`;
     })
     .filter(Boolean);

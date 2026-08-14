@@ -12,3 +12,7 @@ Thumbs.db
 # the app itself has no build step and no dependencies (D4).
 node_modules/
 package-lock.json
+
+# Playwright is installed as a symlink in some sandboxes, which the
+# trailing-slash rule above does not match.
+node_modules

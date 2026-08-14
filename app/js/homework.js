@@ -37,6 +37,7 @@
 
 import { collection, doc, getDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
+import { t } from "./i18n.js";
 import { createDocument, updateDocument, commitEnvelopeBatch } from "./envelope.js";
 
 // Same reasoning as catalogue.js's SEED_CHUNK_SIZE: a batch's total
@@ -274,4 +275,24 @@ export async function listMyTeachingNotes(db, tenantId, authUid) {
 
 export async function setTeachingNoteStatus(db, tenantId, noteId, status) {
   return updateDocument(db, TENANT.TEACHING_NOTES, `${tenantId}__${noteId}`, { status });
+}
+
+// ---------------------------------------------------------------------------
+// Reading a submission state out loud (full app translation, phase 4).
+//
+// homework.html printed `status.replace("_", " ")` straight into the card's
+// pill -- readable-ish in English, three English words in an otherwise
+// Bangla card. Same split used everywhere else in this codebase: the stored
+// identifier stays canonical, and this is the one place it becomes text.
+// ---------------------------------------------------------------------------
+
+const SUBMISSION_STATUS_LABELS = Object.freeze({
+  not_submitted: "Not submitted",
+  submitted: "Submitted",
+  marked: "Marked",
+});
+
+export function submissionStatusLabel(status) {
+  const label = SUBMISSION_STATUS_LABELS[status];
+  return label ? t(label) : (status ?? "");
 }

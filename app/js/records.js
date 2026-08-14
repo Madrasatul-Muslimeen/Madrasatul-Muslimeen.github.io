@@ -30,6 +30,7 @@ import {
 import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
 import { parseUnitKey, isValidStatus } from "./unit-keys.js";
+import { t } from "./i18n.js";
 import { listEnrollmentsForOffer } from "./course-offers.js";
 
 // ---------------------------------------------------------------------------
@@ -371,4 +372,27 @@ export async function listAllRecordsForPerson(db, tenantId, personId) {
 export async function listPendingForPerson(db, tenantId, personId) {
   const all = await listAllRecordsForPerson(db, tenantId, personId);
   return all.filter((e) => e.confirmState === "pending");
+}
+
+// ---------------------------------------------------------------------------
+// Reading a confirmation state out loud (full app translation, phase 4).
+//
+// The three states are stored as bare identifiers -- pending / confirmed /
+// returned -- and Records printed them straight into its State column, so a
+// Bangla-only reader saw three English words in an otherwise Bangla table.
+// Same split as STATUSES in unit-keys.js: the identifier stays the stored,
+// canonical value (I6 freezes it), and this is the one place it becomes text
+// a person reads. Translated at call time, so a mid-session language change
+// is picked up.
+// ---------------------------------------------------------------------------
+
+const CONFIRM_STATE_LABELS = Object.freeze({
+  pending: "Awaiting confirmation",
+  confirmed: "Confirmed",
+  returned: "Returned",
+});
+
+export function confirmStateLabel(confirmState) {
+  const label = CONFIRM_STATE_LABELS[confirmState];
+  return label ? t(label) : (confirmState ?? "");
 }

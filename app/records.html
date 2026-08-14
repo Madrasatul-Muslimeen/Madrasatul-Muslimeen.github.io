@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
-<title>QuranRevival — Records (Phase 3)</title>
+<title>QuranRevival — Records</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
@@ -42,10 +42,9 @@
 </style>
 </head>
 <body>
-  <h1>Records (Phase 3)</h1>
-  <p>Claim a status against a unit, see it confirmed/returned, and bulk-confirm
-     a surah/subject or a week. There's no Quran/topic renderer yet (that's
-     Phase 4) — unit keys are typed in directly here for testing.</p>
+  <h1>Records</h1>
+  <p>Claim a status against a unit of study, see it confirmed or returned, and
+     confirm a whole surah, subject or week in one go.</p>
 
   <nav class="app-nav" id="topNav">
     <details class="nav-cat nav-cat-home">
@@ -86,20 +85,10 @@
       <div class="row">
         <div>
           <label for="unitTypeSelect">Unit type</label>
-          <select id="unitTypeSelect">
-            <option value="ayah">ayah</option>
-            <option value="range">range</option>
-            <option value="surah">surah</option>
-            <option value="page">page</option>
-            <option value="ruku">ruku</option>
-            <option value="juz">juz</option>
-            <option value="hizb">hizb</option>
-            <option value="rub">rub</option>
-            <option value="manzil">manzil</option>
-            <option value="hadith">hadith</option>
-            <option value="topic">topic</option>
-            <option value="name">name</option>
-          </select>
+          <!-- Options are rendered from UNIT_TYPES by the script below, so the
+               list and its labels have one source of truth and turn over with
+               the language. The VALUES stay the bare identifiers. -->
+          <select id="unitTypeSelect"></select>
         </div>
         <div>
           <label for="unitRef">Reference</label>
@@ -160,6 +149,7 @@
     import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
+    import { roleListLabel } from "./js/roles.js";
     import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
@@ -171,7 +161,10 @@
       scopedRoster,
     } from "./js/session-context.js";
     import { getSubjectTree, getTrackables } from "./js/catalogue.js";
-    import { buildUnitKey, STATUSES, statusLabel as translatedStatusLabel } from "./js/unit-keys.js";
+    import {
+      buildUnitKey, STATUSES, UNIT_TYPES,
+      statusLabel as translatedStatusLabel, unitTypeLabel, unitKeyLabel,
+    } from "./js/unit-keys.js";
     import {
       chunkKeyFor,
       getRecordsChunk,
@@ -180,11 +173,12 @@
       returnEntry,
       bulkConfirmChunk,
       bulkConfirmWeek,
+      confirmStateLabel,
     } from "./js/records.js";
-    import { weekKeyFor, getWeekActivity, logActivity } from "./js/activity.js";
+    import { weekKeyFor, getWeekActivity, logActivity, activityActionLabel } from "./js/activity.js";
     import { createDomain, listDomains } from "./js/domains.js";
-    import { renderNavBar, renderHomeExtras } from "./js/nav.js";
-    import { translateStatic, t } from "./js/i18n.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+    import { translateStatic, t, num, parseNum } from "./js/i18n.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
@@ -225,30 +219,48 @@
     const activityBody = document.getElementById("activityBody");
     const activityResult = document.getElementById("activityResult");
 
+    // Full app translation, phase 4. Each hint is a sentence plus an EXAMPLE
+    // reference; the example's digits go through num(), because a Bangla
+    // reader is about to type into a box that accepts Bengali digits
+    // (parseNum below) and the hint should show them what to type.
     const UNIT_HINTS = {
-      ayah: "surah:ayah — e.g. 2:255",
-      range: "surah:from-to — e.g. 2:255-257",
-      surah: "surah — e.g. 2",
-      page: "edition:page — e.g. madani:127",
-      ruku: "surah:ruku — e.g. 2:34",
-      juz: "juz — e.g. 3",
-      hizb: "hizb — e.g. 5",
-      rub: "rub — e.g. 20",
-      manzil: "manzil — e.g. 2",
-      hadith: "collection:number — e.g. bukhari:5678",
-      topic: "topicId — e.g. topic_0042",
-      name: "number — e.g. 17",
+      ayah: () => t("surah:ayah — e.g. {example}", { example: num("2:255") }),
+      range: () => t("surah:from-to — e.g. {example}", { example: num("2:255-257") }),
+      surah: () => t("surah — e.g. {example}", { example: num("2") }),
+      page: () => t("edition:page — e.g. {example}", { example: `madani:${num("127")}` }),
+      ruku: () => t("surah:ruku — e.g. {example}", { example: num("2:34") }),
+      juz: () => t("juz — e.g. {example}", { example: num("3") }),
+      hizb: () => t("hizb — e.g. {example}", { example: num("5") }),
+      rub: () => t("rub — e.g. {example}", { example: num("20") }),
+      manzil: () => t("manzil — e.g. {example}", { example: num("2") }),
+      hadith: () => t("collection:number — e.g. {example}", { example: `bukhari:${num("5678")}` }),
+      topic: () => t("topicId — e.g. {example}", { example: "topic_0042" }),
+      name: () => t("number — e.g. {example}", { example: num("17") }),
     };
 
-    statusSelect.innerHTML = STATUSES.map((s) => `<option value="${s.id}">${s.label}</option>`).join("");
+    // The option TEXT is translated; the option VALUE stays the bare
+    // identifier, because every handler below reads it back as one.
+    unitTypeSelect.innerHTML = UNIT_TYPES
+      .map((u) => `<option value="${u}">${unitTypeLabel(u)}</option>`)
+      .join("");
+    // ...and the status picker goes through the shared translated helper
+    // rather than STATUSES' own English `label`, which is the stored value.
+    // It was reading the raw label, so this picker stayed English in Bangla
+    // even after phase 1 translated statuses everywhere else.
+    statusSelect.innerHTML = STATUSES.map((s) => `<option value="${s.id}">${translatedStatusLabel(s.id)}</option>`).join("");
     unitTypeSelect.addEventListener("change", updateUnitHint);
     function updateUnitHint() {
-      unitRefHint.textContent = UNIT_HINTS[unitTypeSelect.value] ?? "";
+      unitRefHint.textContent = UNIT_HINTS[unitTypeSelect.value]?.() ?? "";
     }
     updateUnitHint();
 
     function buildUnitKeyFromInput(unitType, reference) {
-      const ref = reference.trim();
+      // parseNum: a Bangla-only reader on a Bangla keyboard types ২:২৫৫, and
+      // the hint above has just shown them Bengali digits. A box that then
+      // refuses what the interface taught them to type is where someone
+      // gives up. Always safe -- a reference with no Bengali digits (or a
+      // non-numeric one like topic_0042) comes back unchanged.
+      const ref = parseNum(reference.trim());
       switch (unitType) {
         case "ayah": { const [s, a] = ref.split(":"); return buildUnitKey.ayah(s, a); }
         case "range": { const [s, rest] = ref.split(":"); const [from, to] = (rest ?? "").split("-"); return buildUnitKey.range(s, from, to); }
@@ -269,11 +281,6 @@
     // Round 10 fix (8 Aug 2026): old wording told anyone with no account to
     // create one on onboarding.html -- wrong for someone with a real pending
     // invite who hasn't clicked their invite link yet. Points there first.
-    const NO_ACCOUNT_MESSAGE = ` — no account found yet.
-      <br>If someone invited you to join an existing madrasah, use the invite
-      link they sent you (check your email) — don't create a new one here.
-      <br>Starting fresh instead? <a href="onboarding.html">Create a new account
-      on the onboarding page</a>.`;
 
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
@@ -339,7 +346,7 @@
       const active = domainList.filter((d) => d.status !== "archived");
       domainChips.innerHTML = active.length
         ? active.map((d) => `<label><input type="checkbox" value="${d.id}" /> ${langText(d.name, getAppLang(), d.id)}</label>`).join("")
-        : "<span style='color:#888; font-size:0.85rem;'>No domain tags yet.</span>";
+        : `<span style='color:#888; font-size:0.85rem;'>${t("No domain tags yet.")}</span>`;
     }
 
     function renderTrackableOptions() {
@@ -347,7 +354,7 @@
       const options = trackableList.filter((t) => t.subjectId === subjectId && t.status !== "archived");
       trackableSelect.innerHTML = options.length
         ? options.map((t) => `<option value="${t.id}">${langText(t.name, getAppLang(), t.id)}</option>`).join("")
-        : `<option value="">(no Approaches for this subject yet)</option>`;
+        : `<option value="">${t("(no Approaches for this subject yet)")}</option>`;
     }
 
     subjectSelect.addEventListener("change", async () => {
@@ -390,7 +397,10 @@
       const unitKey = (() => { try { return buildUnitKeyFromInput(unitTypeSelect.value, unitRef.value || placeholderFor(unitTypeSelect.value)); } catch { return null; } })();
       if (!unitKey) return;
       const chunkKey = chunkKeyFor(unitKey, subjectSelect.value);
-      chunkLabel.textContent = `Chunk: ${chunkKey}`;
+      // The chunk key itself is an identifier (surah_1 / subject_quran),
+      // so only the word around it is translated -- turning the key into
+      // Bengali digits would stop it matching what is stored.
+      chunkLabel.textContent = t("Chunk: {chunkKey}", { chunkKey });
       const chunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, chunkKey);
       renderEntries(chunk, chunkKey);
     }
@@ -401,7 +411,7 @@
       if (pendingOnly.checked) rows = rows.filter(([, e]) => e.confirmState === "pending");
       entriesBody.innerHTML = rows.length
         ? rows.map(([entryKey, e]) => entryRowHtml(chunkKey, entryKey, e)).join("")
-        : `<tr><td colspan="8" style="color:#888;">Nothing here yet.</td></tr>`;
+        : `<tr><td colspan="8" style="color:#888;">${t("Nothing here yet.")}</td></tr>`;
 
       entriesBody.querySelectorAll(".confirmBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {
@@ -420,7 +430,7 @@
       });
       entriesBody.querySelectorAll(".returnBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {
-          const note = prompt("Note for the return (optional):", "");
+          const note = prompt(t("Note for the return (optional):"), "");
           if (note === null) return;
           btn.disabled = true;
           const outcome = await safeWrite(
@@ -447,17 +457,17 @@
       const actions = !canConfirm
         ? ""
         : e.confirmState === "pending"
-          ? `<button class="small confirmBtn" data-chunk="${chunkKey}" data-entry="${entryKey}">Confirm</button>
-             <button class="small secondary returnBtn" data-chunk="${chunkKey}" data-entry="${entryKey}">Return</button>`
+          ? `<button class="small confirmBtn" data-chunk="${chunkKey}" data-entry="${entryKey}">${t("Confirm")}</button>
+             <button class="small secondary returnBtn" data-chunk="${chunkKey}" data-entry="${entryKey}">${t("Return")}</button>`
           : e.confirmState === "returned"
-            ? `<button class="small confirmBtn" data-chunk="${chunkKey}" data-entry="${entryKey}">Confirm anyway</button>`
+            ? `<button class="small confirmBtn" data-chunk="${chunkKey}" data-entry="${entryKey}">${t("Confirm anyway")}</button>`
             : "";
       return `<tr>
-        <td>${entryKey.split("::")[0]}</td>
+        <td>${unitKeyLabel(entryKey.split("::")[0])}</td>
         <td>${trackableName ? langText(trackableName.name, getAppLang(), e.trackableId) : e.trackableId}</td>
         <td class="status-${e.claimedStatus}">${statusLabel(e.claimedStatus)}</td>
         <td class="status-${e.confirmedStatus}">${e.confirmedStatus ? statusLabel(e.confirmedStatus) : "—"}</td>
-        <td><span class="${pillClass}">${e.confirmState}</span>${e.returnNote ? `<div style="font-size:0.78rem; color:#9c3b2e;">${e.returnNote}</div>` : ""}</td>
+        <td><span class="${pillClass}">${confirmStateLabel(e.confirmState)}</span>${e.returnNote ? `<div style="font-size:0.78rem; color:#9c3b2e;">${e.returnNote}</div>` : ""}</td>
         <td>${domainNames || "—"}</td>
         <td>${e.notes || ""}</td>
         <td>${actions}</td>
@@ -472,7 +482,7 @@
     async function refreshWeek() {
       if (!selectedPersonId) return;
       const weekKey = weekKeyFor(new Date(), tenantWeekStartsOn);
-      weekLabel.textContent = `Week starting: ${weekKey}`;
+      weekLabel.textContent = t("Week starting: {weekKey}", { weekKey: num(weekKey) });
       const week = await getWeekActivity(db, activeTenantId, selectedPersonId, weekKey);
       const entries = week?.entries ?? [];
       activityBody.innerHTML = entries.length
@@ -480,29 +490,29 @@
             const subj = subjectTree.find((n) => n.id === e.subjectId);
             const trk = trackableList.find((t) => t.id === e.trackableId);
             return `<tr>
-              <td>${e.date}</td>
+              <td>${num(e.date)}</td>
               <td>${subj ? langText(subj.name, getAppLang(), e.subjectId) : e.subjectId}</td>
-              <td>${e.unitKey}</td>
+              <td>${unitKeyLabel(e.unitKey)}</td>
               <td>${trk ? langText(trk.name, getAppLang(), e.trackableId) : e.trackableId}</td>
-              <td>${e.action}</td>
+              <td>${activityActionLabel(e.action)}</td>
             </tr>`;
           }).join("")
-        : `<tr><td colspan="5" style="color:#888;">Nothing logged this week yet.</td></tr>`;
+        : `<tr><td colspan="5" style="color:#888;">${t("Nothing logged this week yet.")}</td></tr>`;
     }
 
     claimBtn.addEventListener("click", async () => {
       claimResult.textContent = "";
-      if (!selectedPersonId) { claimResult.textContent = "Add a person first."; return; }
-      if (!unitRef.value.trim()) { claimResult.textContent = "Enter a reference first."; return; }
+      if (!selectedPersonId) { claimResult.textContent = t("Add a person first."); return; }
+      if (!unitRef.value.trim()) { claimResult.textContent = t("Enter a reference first."); return; }
       let unitKey;
       try {
         unitKey = buildUnitKeyFromInput(unitTypeSelect.value, unitRef.value);
       } catch (err) {
-        claimResult.textContent = `Couldn't read that reference: ${err.message}`;
+        claimResult.textContent = t("Couldn't read that reference: {message}", { message: err.message });
         return;
       }
       const trackableId = trackableSelect.value;
-      if (!trackableId) { claimResult.textContent = "No Approach selected — pick a subject that has Approaches (Quran, for now)."; return; }
+      if (!trackableId) { claimResult.textContent = t("No Approach selected — pick a subject that has Approaches (Quran, for now)."); return; }
       const domainIds = Array.from(domainChips.querySelectorAll("input[type=checkbox]:checked")).map((c) => c.value);
 
       claimBtn.disabled = true;
@@ -535,8 +545,8 @@
           uid: auth.currentUser.uid,
         });
         claimResult.textContent = outcome.result.needsConfirmation
-          ? "Claimed — waiting for confirmation."
-          : "Claimed and confirmed (self-confirmed).";
+          ? t("Claimed — waiting for confirmation.")
+          : t("Claimed and confirmed (self-confirmed).");
         notesInput.value = "";
         await refreshChunk();
         await refreshWeek();
@@ -578,7 +588,14 @@
         { collection: "records", action: "bulkConfirmChunk" }
       );
       bulkConfirmChunkBtn.disabled = false;
-      if (outcome.ok) { claimResult.textContent = `Confirmed ${outcome.result.confirmedCount} entr${outcome.result.confirmedCount === 1 ? "y" : "ies"} in this chunk.`; await refreshChunk(); }
+      if (outcome.ok) {
+        const n = outcome.result.confirmedCount;
+        claimResult.textContent = t(
+          n === 1 ? "Confirmed {count} entry in this chunk." : "Confirmed {count} entries in this chunk.",
+          { count: num(n) }
+        );
+        await refreshChunk();
+      }
       else alert(outcome.entry.message);
     });
 
@@ -594,7 +611,12 @@
       );
       bulkConfirmWeekBtn.disabled = false;
       activityResult.textContent = outcome.ok
-        ? `Confirmed ${outcome.result.confirmedCount} entr${outcome.result.confirmedCount === 1 ? "y" : "ies"} touched this week.`
+        ? t(
+            outcome.result.confirmedCount === 1
+              ? "Confirmed {count} entry touched this week."
+              : "Confirmed {count} entries touched this week.",
+            { count: num(outcome.result.confirmedCount) }
+          )
         : outcome.entry.message;
       if (outcome.ok) await refreshChunk();
     });
@@ -622,14 +644,14 @@
 
         const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
         if (!context) {
-          whoEl.innerHTML += NO_ACCOUNT_MESSAGE;
+          whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
         myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
         tenantSelect.innerHTML = myMemberships
-          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
           .join("");
 
         appEl.style.display = "block";

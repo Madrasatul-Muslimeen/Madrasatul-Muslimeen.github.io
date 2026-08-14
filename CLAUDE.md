@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.33.** Cutover to production happened
+**Current milestone: QuranRevival v07.34.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -893,6 +893,98 @@ read-time fallback really works — plus English module pages proven unchanged)
 **plus the landing-page layout regression (identical at all five viewports in
 both banner states) and the nav check in both languages (still exact parity).**
 Phase 4 is tracking & feedback (Records, Monitor, Homework, Course Offers).
+
+v07.34 (14 Aug 2026, on Claude Code on the web) is **full app translation,
+phase 4 of 6 — TRACKING & FEEDBACK.** **Area 205/205 (100%); app-wide
+711/1039 (68%).** Covers `records.html`, `monitor.html`, `homework.html`,
+`course-offers.html`, `js/monitor.js` and `js/continue-strip.js`, and cleans
+the four developer-noise headings this phase owned ("Records (Phase 3)",
+"Monitor (Phase 8)", "Homework (Phase 9)", "Course Offers (Phase 7 round
+2)") — a test now fails if `(Phase n)`/`(F-nnn)`/`round n` reappears in any
+of them. Two of those pages' intro paragraphs were also **factually stale**,
+not just noisy — Records still said "there's no Quran/topic renderer yet
+(that's Phase 4)" and Course Offers still said studying through an enrolled
+offer "isn't wired into the study screens yet", both untrue since Phase 4 and
+v07.16/v07.19 respectively — so they were rewritten as plain user-facing
+sentences rather than translated as-is.
+
+**The real finding this phase is about the coverage TOOL, not the writing:
+three whole shapes of user-visible string were invisible to it**, so it could
+report an area at 100% while a picker, a table column and every save-failure
+message in the app sat there in English. **(a) Label maps** — a stored
+identifier becomes readable text via a small map whose values are the English
+keys (`t()` receives a *variable*, which no extractor pattern could see);
+`*_LABELS` is now a **naming convention the report depends on**, and eight
+such maps were introduced (confirm state, activity action, unit type,
+submission state, offer/class status, role in class, app role, weekday).
+**(b) Singular/plural pairs** — `t(n === 1 ? "…entry…" : "…entries…")`; only
+a quote sitting immediately after `t(` was ever matched, so the plural half
+went uncounted. **(c) `js/errors.js` belonged to no area at all** — its eight
+plain-language write-failure sentences are the entire visible surface of I15,
+shown on every screen in the app, and were therefore neither translated nor
+reported as missing. Now in the `shell` area, written as `() => t("…")`
+thunks so they are translated at call time *and* countable. **That is four
+phases, four times the number has overstated progress** — the standing rule
+in `TRANSLATION-PLAN.md` holds, and `tools/i18n-verify/probe.mjs` (new,
+checked in) now makes the honest check cheap by dumping a page's whole
+rendered text, its pickers and its placeholders in either language.
+
+**Two things phases 1-3 shipped past, found by reading a rendered page and
+fixed here.** The **"no account found yet" dead end** — the screen a
+signed-in person with no tenant sees — was English in **twelve** separate
+copies (nine pages plus `topic-study.js`/`routine-study.js`/`asma-study.js`),
+each a template literal no extractor could see; now one
+`noAccountMessageHtml()` in `nav.js`, which every one of them already
+imports. And the **role names in every page's tenant picker**
+("Madrasatul Muslimeen (owner, prime)") plus the nav's "Previewing as"
+notice. Those live in a **new three-line `app/js/roles.js`** rather than in
+`session-context.js`, deliberately: `nav.js` needs them and is by its own
+contract (I2) a pure renderer that never touches Firebase, while
+`session-context.js` imports the Firestore SDK. Also fixed: `records.html`'s
+**Status picker was built from `STATUSES`' own English `label`**, so it stayed
+English in Bangla even after phase 1 translated statuses everywhere else.
+
+**Method points phases 5-6 inherit.** **The first real use of the context
+suffix** — Homework's note form has a label meaning "about WHICH student" and
+it was picking up the nav's translation of the About *page*; `t("About|person")`
+plus `data-i18n-ctx="person"` is what i18n.js reserved that mechanism for, and
+more collisions should be expected as the admin screens land. **A possessive
+cannot be assembled**: `<span>{name}</span>'s enrolments` and `Assignments for
+<span>{name}</span>` both reverse in Bangla, so each became one
+`t("{name}'s enrolments", { name })` sentence rendered by JS (same for
+`Enrol {name}`). **Identifiers keep a reader-facing twin**: `unitKeyLabel()`
+turns `ayah:1:1` into "Ayah 1:1"/"আয়াত ১:১" while the key, the chunk key and
+the CSV export stay canonical. **A CSV is a data export, not a screen** — its
+header row is translated, its dates/unit keys/action ids are not. **Dates come
+in two shapes** — an ISO string that *is* the stored value gets `num()` only;
+a human-formatted one takes the reader's locale (`bn-BD`) so month names
+translate too; an `<input type="date">` value is never touched.
+
+**Verified: 341 behaviour checks** (all of phases 1-3, plus the four pages'
+heading/title/intro in Bangla with no developer noise; the unit-type and
+status pickers Bangla with option VALUES proven still the bare identifiers;
+every table header, confirmation-state pill and activity action Bangla;
+Bengali digits throughout; **typing `২:২৫৫` into the Reference box really
+resolving to surah 2**, the `parseNum()` rule phase 2 set; the CSV *header*
+translated; the About-collision fix; both possessive headings reading
+name-first; a real write failure explained in Bangla, including an unmapped
+error code with the code left readable; and all four pages proven still
+byte-for-byte English) **plus the landing-page layout regression (identical at
+all five viewports in both banner states, 65 `getElementById` targets, none
+missing) and the nav check in both languages (unchanged parity).** The
+verification harness's Firebase stub gained **real rows** for records,
+activity, domains, course offers, enrolments, assignments, submissions and
+teaching notes — a status pill or a role label can only be proved translated
+if something actually renders it; two details there are load-bearing and are
+now documented in its README (a `tenantPeople` doc id is the BARE personId,
+and the seeded `activity` doc id must carry whichever week the suite runs in).
+**No `firestore.rules`, schema or data changes** — nothing to deploy but the
+static files. **Flagged, not changed:** Records still says "chunk" on screen
+("Entries in this chunk", "Chunk: surah_1"). That is a storage concept
+leaking into the interface, meaningless in either language, but rewording it
+is an English-copy decision rather than a translation one — raised for the
+owner rather than decided here. Phase 5 is Admin (People, Catalogue,
+Curriculum, Classes).
 
 ---
 

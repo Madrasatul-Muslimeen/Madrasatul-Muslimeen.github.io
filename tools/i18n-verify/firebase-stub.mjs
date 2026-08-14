@@ -8,6 +8,17 @@ const UID = "test-uid";
 
 function lang(en, bn) { return bn ? { en, bn } : { en }; }
 
+// activity documents are fetched by an EXACT id containing the week key, so
+// the seeded week has to be whichever week the suite is being run in.
+// Mirrors activity.js's own weekKeyFor(date, weekStartsOn: 6).
+const TODAY = new Date().toISOString().slice(0, 10);
+const THIS_WEEK = (() => {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() - 6 + 7) % 7));
+  return d.toISOString().slice(0, 10);
+})();
+
 const APPROACHES = [
   ["memorise", "Memorise (Hifz)", "মুখস্থ করা", "Preservation", "সংরক্ষণ"],
   ["recite", "Recite correctly", "সঠিকভাবে তিলাওয়াত", "Preservation", "সংরক্ষণ"],
@@ -28,9 +39,12 @@ const DATA = {
   tenants: [
     { _id: TENANT_ID, name: lang("Madrasatul Muslimeen", "মাদরাসাতুল মুসলিমীন"), weekStartsOn: 6, __BANNER__ },
   ],
+  // The doc id is the BARE personId, not tenantId-prefixed -- people.js
+  // writes it that way (docId: personId), and every screen uses the snapshot
+  // id as the personId when building a records/activity/submission doc id.
   tenantPeople: [
-    { _id: TENANT_ID + "__p1", tenantId: TENANT_ID, personId: "p1", name: lang("Ahsan", "আহসান") },
-    { _id: TENANT_ID + "__p2", tenantId: TENANT_ID, personId: "p2", name: lang("Maryam", "মারইয়াম"), managedByPersonId: "p1" },
+    { _id: "p1", tenantId: TENANT_ID, personId: "p1", name: lang("Ahsan", "আহসান") },
+    { _id: "p2", tenantId: TENANT_ID, personId: "p2", name: lang("Maryam", "মারইয়াম"), managedByPersonId: "p1" },
   ],
   trackables: APPROACHES.map((a, i) => ({
     _id: TENANT_ID + "__" + a[0], tenantId: TENANT_ID, subjectId: "quran", order: i, status: "active",
@@ -40,19 +54,75 @@ const DATA = {
   })),
   subjects: [
     { _id: TENANT_ID + "__quran", tenantId: TENANT_ID, subjectId: "quran", parentId: null,
-      name: lang("Quran", "কুরআন"), moduleIds: ["quranrevival"], ancestorIds: [], status: "active" },
+      name: lang("Quran", "কুরআন"), moduleIds: ["quranrevival"], ancestorIds: [], status: "active", isTrackable: true },
     // ENGLISH-ONLY on purpose: this is the shape real seeded tenant data has.
     // If these render in Bangla, the langText() catalogue fallback works and
     // no data migration was needed.
     { _id: TENANT_ID + "__deen_study", tenantId: TENANT_ID, subjectId: "deen_study", parentId: null,
       name: lang("Deen Study"), moduleIds: ["deen"], ancestorIds: [], status: "active", order: 1 },
     { _id: TENANT_ID + "__deen_ethics", tenantId: TENANT_ID, subjectId: "deen_ethics", parentId: "deen_study",
-      name: lang("Ethics"), gloss: lang("Social conduct"), moduleIds: ["deen"], ancestorIds: ["deen_study"], status: "active", order: 1 },
+      name: lang("Ethics"), gloss: lang("Social conduct"), moduleIds: ["deen"], ancestorIds: ["deen_study"], status: "active", order: 1, isTrackable: true },
     { _id: TENANT_ID + "__deen_akhlaq", tenantId: TENANT_ID, subjectId: "deen_akhlaq", parentId: "deen_study",
-      name: lang("Akhlaq"), gloss: lang("Behaviour — personal character"), moduleIds: ["deen"], ancestorIds: ["deen_study"], status: "active", order: 2 },
+      name: lang("Akhlaq"), gloss: lang("Behaviour — personal character"), moduleIds: ["deen"], ancestorIds: ["deen_study"], status: "active", order: 2, isTrackable: true },
   ],
-  records: [], activity: [], bookmarks: [], enrollments: [], courseOffers: [],
-  classes: [], domains: [], resources: [], assignments: [], submissions: [],
+  // PHASE 4 (tracking & feedback) needs real ROWS, not empty collections --
+  // a status pill, an activity action or a submission state can only be
+  // proved translated if something actually renders it. Everything below is
+  // the smallest set that makes records/monitor/homework/course-offers draw
+  // at least one row of each kind.
+  records: [
+    { _id: TENANT_ID + "__p1__surah_1", tenantId: TENANT_ID, personId: "p1", chunkKey: "surah_1",
+      entries: {
+        "ayah:1:1::memorise": { unitType: "ayah", subjectId: "quran", trackableId: "memorise",
+          claimedStatus: "learning", claimedByPersonId: "p1", confirmedStatus: null,
+          confirmState: "pending", domainIds: ["d1"], notes: "" },
+        "ayah:1:2::recite": { unitType: "ayah", subjectId: "quran", trackableId: "recite",
+          claimedStatus: "achieved", claimedByPersonId: "p1", confirmedStatus: "achieved",
+          confirmState: "confirmed", domainIds: [], notes: "" },
+        "ayah:1:3::tajweed": { unitType: "ayah", subjectId: "quran", trackableId: "tajweed",
+          claimedStatus: "practising", claimedByPersonId: "p1", confirmedStatus: null,
+          confirmState: "returned", returnNote: "Try again", domainIds: [], notes: "" },
+      } },
+  ],
+  activity: [
+    // The doc id carries THIS week's key, computed the same way activity.js
+    // does it (weekStartsOn 6), or a fixed date would fall out of range the
+    // moment the suite is run on another day.
+    { _id: TENANT_ID + "__p1__" + THIS_WEEK, tenantId: TENANT_ID, personId: "p1", weekKey: THIS_WEEK,
+      entries: [
+        { date: TODAY, subjectId: "quran", unitKey: "ayah:1:1", unitType: "ayah", trackableId: "memorise", action: "claimed" },
+        { date: TODAY, subjectId: "deen_ethics", unitKey: "topic:t42", unitType: "topic", trackableId: "reflect", action: "practised" },
+      ] },
+  ],
+  domains: [
+    { _id: TENANT_ID + "__d1", tenantId: TENANT_ID, name: lang("Tajweed"), status: "active" },
+  ],
+  courseOffers: [
+    { _id: TENANT_ID + "__o1", tenantId: TENANT_ID, name: lang("Evening Quran"), moduleIds: [],
+      subjectIds: ["quran"], status: "active",
+      routine: { daysOfWeek: [0, 2, 4], startDate: "2026-08-01", endDate: null, notes: null } },
+  ],
+  enrollments: [
+    { _id: TENANT_ID + "__o1__p2", tenantId: TENANT_ID, contextType: "courseOffer", contextId: "o1",
+      personId: "p2", roleInClass: "student", subjectIds: [], status: "active" },
+  ],
+  assignments: [
+    { _id: TENANT_ID + "__a1", tenantId: TENANT_ID, createdByPersonId: "p1",
+      assignedToPersonIds: ["p1"], extraReadersPersonIds: [], contextId: null, moduleId: null,
+      subjectId: "quran", unitKeys: [], dueDate: "2026-08-20",
+      instructions: lang("Memorise Surah Al-Fatiha"), maxScore: 10, status: "active" },
+  ],
+  submissions: [
+    { _id: TENANT_ID + "__a1__p1", tenantId: TENANT_ID, assignmentId: TENANT_ID + "__a1",
+      personId: "p1", status: "not_submitted", submittedAt: null, submittedNote: null,
+      score: null, maxScoreAtMark: null, comment: null, markedByPersonId: null, markedAt: null },
+  ],
+  teachingNotes: [
+    { _id: TENANT_ID + "__n1", tenantId: TENANT_ID, authorPersonId: "p1", authorUid: UID,
+      aboutPersonId: "p2", body: "Doing well on tajweed.", status: "active" },
+  ],
+  bookmarks: [],
+  classes: [], resources: [],
   ladders: [], levels: [], personLevels: [], curriculumUnits: [], curriculumPlan: [],
   modules: [], userIndex: [], memberships: [], teacherStudentLinks: [],
 };
