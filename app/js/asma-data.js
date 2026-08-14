@@ -10,9 +10,25 @@
 // this out, not reconstructed from memory alone, given how much accuracy
 // matters for content like this).
 //
-// meaning is language-keyed per I11 (English filled now, Bangla later, same
-// "first draft, correctable" status catalogue-data.js's own Guide text
-// already carries).
+// meaning is language-keyed per I11.
+//
+// WHERE THE BANGLA ACTUALLY LIVES (full app translation, phase 6) — do not
+// fill the `bn: null` slots below. They are deliberately empty, and a
+// second copy of the Bangla here would be a source of drift, not a
+// convenience. langText() resolves `value[lang] -> t(value.en) -> ...`, so
+// the meanings are translated at READ time from js/i18n/bn.js, keyed by
+// the English text exactly as written here. Two consequences worth
+// knowing: tools/i18n-coverage.mjs counts them (it reads bn.js and nothing
+// else, so Bangla put here would report as 0% while the screen showed
+// Bangla), and a `bn` filled here would WIN over the catalogue, silently
+// overriding any correction made in bn.js.
+//
+//   meaning  ("The Most Merciful" -> "পরম করুণাময়")   js/i18n/bn.js
+//   the Name ("Ar-Rahman"        -> "আর-রহমান")      js/i18n/asma-names-bn.js
+//
+// The Name is split off because it is data indexed by number, exactly like
+// the 114 surah names -- see that file's header for the owner's decision
+// on which Bangla renderings both follow.
 //
 // This is deliberately separate from the screensaver's poster set
 // (asma-posters.js) -- that's a different, wider collection of Names beyond
