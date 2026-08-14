@@ -37,3 +37,25 @@ export function roleLabel(role) {
 export function roleListLabel(roles) {
   return (roles ?? []).map(roleLabel).join(", ");
 }
+
+// Lifecycle status, shared by every archivable thing in the app. I4 is why
+// the list looks like this: nothing is ever deleted, so a status is how a
+// thing leaves active use -- archived, ended, revoked or consumed.
+const ENTITY_STATUS_LABELS = Object.freeze({
+  active: "Active",
+  archived: "Archived",
+  ended: "Ended",
+  // modules.js seeds a module as "planned" and flips it to "active" when
+  // that module's real UI ships -- so the Catalogue's Modules table shows
+  // this one on any module not yet built.
+  planned: "Planned",
+  pending: "Pending",
+  consumed: "Accepted",
+  revoked: "Revoked",
+  draft: "Draft",
+});
+
+export function entityStatusLabel(status) {
+  const label = ENTITY_STATUS_LABELS[status];
+  return label ? t(label) : (status ?? "");
+}
