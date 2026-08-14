@@ -420,16 +420,12 @@ progress, and run a tenant without meeting English.
 
 **Not covered, and each of these is a deliberate decision, not an oversight:**
 
-- **The language is per browser, not per person.** It is stored in
-  `localStorage` (`mm_app_lang`), which was the owner's own call in v07.30,
-  taken so the setting needed **no new startup read, no new collection and
-  no `firestore.rules` change** — the load-speed contract and I9 stay
-  untouched. The accepted cost: set Bangla on the phone and the tablet still
-  opens in English until it is set there too, and a new device starts in
-  English. `js/prefs.js` is deliberately shaped so a Firestore sync can slot
-  in behind the same `getAppLang()` getter with no call site changing. **That
-  sync is the single most likely next request** once more than one person
-  uses the app on more than one device.
+- ~~**The language is per browser, not per person.**~~ **Built in v07.37** —
+  the owner asked for it the moment phase 6 landed ("setting again is just
+  annoying"). The language now lives on `userIndex/{uid}.appLang` and follows
+  the person to any device they sign in on. See "The account sync" below for
+  how it avoids costing a single extra read. localStorage is still what
+  decides the first paint, and that is deliberate, not a leftover.
 - **The tenant banner.** Excluded by the owner in the original requirement
   ("the entire app (except the Banner)"). It is tenant-authored content;
   `langText()` will render a Bangla banner if a tenant writes one.
@@ -457,6 +453,49 @@ progress, and run a tenant without meeting English.
 - **Pre-existing, and not a translation problem:** at 320px the *English*
   nav truncates "Operation" and "Bookmark" (73px of text in a 65px box).
   Bangla fits there where English does not. Worth fixing on its own.
+
+## The account sync (v07.37)
+
+The owner's ask, straight after phase 6: *"A setting user does in one device
+should reflect in any device when signing, setting again is just annoying."*
+
+**It rides on a document every signed-in page already reads.** The language is
+one extra field on `userIndex/{uid}` — the same document the auth bootstrap
+fetches on all fourteen signed-in pages to find the person's default tenant.
+So the sync adds **no new read, no new collection, and nothing whatsoever to
+the pre-first-paint path**. The load-speed contract's three-reads-after-paint
+budget is unchanged, which is why this needed no I9 conversation.
+
+**localStorage still decides what paints, and that is the point.** The
+language has to be known *synchronously*, before first paint, or a Bangla
+reader watches an English page appear and change under them. A network read
+cannot happen there. So:
+
+1. localStorage paints the page — instant, no network.
+2. After sign-in resolves, the account's value is compared against it. If they
+   differ, the account wins and the page reloads **once**. That device now
+   agrees and never reloads again.
+3. Changing the language writes both, so the last change made on any device is
+   what every other device picks up next time it loads.
+
+**The one visible cost:** on a device that has never opened the app, the first
+paint is English even for a Bangla reader, until the account read returns and
+the page reloads. Once per device. The alternative — blocking first paint on a
+network read — is exactly what Part 8 forbids.
+
+**Two design points worth keeping.** `js/prefs.js` stays Firebase-free and
+imports nothing, because pure renderers (`asma-renderer.js`, and `nav.js` via
+`APP_LANGS`) import `getAppLang()` from it and must never gain a Firebase
+dependency (I2) — the Firestore half is a separate `js/lang-sync.js`, imported
+only by page controllers that already talk to Firebase. And `adoptAppLang()`
+refuses to adopt when localStorage cannot be written (private browsing), because
+otherwise the next load would read the old value, adopt again, and reload
+forever. A behaviour check covers each of those.
+
+**It needed one `firestore.rules` change** — `userIndex`'s update rule pins the
+writable fields with `hasOnly()`, so `'appLang'` had to join that list. Nothing
+else moved; the `platformAdmin` guard (I10) is untouched, and a display
+preference carries no authority.
 
 **How to check any of this yourself, in one command each:**
 

@@ -3,9 +3,12 @@ import { stubFor } from "./firebase-stub.mjs";
 
 export const BASE = "http://localhost:8080";
 
-export async function newContext(browser, { banner = true, appLang = null, viewport } = {}) {
+// appLang seeds THIS DEVICE (localStorage); accountLang seeds the ACCOUNT
+// (userIndex/{uid}.appLang) -- v07.37. Setting them differently is what
+// exercises the sync: the account's value should win and reload the page.
+export async function newContext(browser, { banner = true, appLang = null, accountLang = null, viewport } = {}) {
   const ctx = await browser.newContext({ viewport });
-  const stub = stubFor({ banner });
+  const stub = stubFor({ banner, accountLang });
   await ctx.route("https://www.gstatic.com/firebasejs/**", (route) =>
     route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: stub })
   );
@@ -25,7 +28,12 @@ export async function newContext(browser, { banner = true, appLang = null, viewp
     try {
       localStorage.setItem("mm_splash_pref", "never");
       localStorage.setItem("mm_qs_splash_pref", "never");
-      if (lang) localStorage.setItem("mm_app_lang", lang);
+      // Only if ABSENT. addInitScript runs on every navigation, including
+      // the reload the v07.37 account-language sync does -- so setting it
+      // unconditionally re-imposed the device's value after every adopt
+      // and the pair looped forever. A real device stores the preference
+      // once and keeps it; nothing re-asserts it on each load.
+      if (lang && !localStorage.getItem("mm_app_lang")) localStorage.setItem("mm_app_lang", lang);
     } catch {}
   }, appLang);
   return ctx;

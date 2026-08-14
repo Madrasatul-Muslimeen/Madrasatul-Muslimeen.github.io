@@ -846,6 +846,105 @@ console.log("\n=== 24. PHASE 6: the claim message every module shows ===");
         "one or more call sites still bare");
 }
 
+console.log("\n=== 25. v07.37: the language follows the ACCOUNT, not the browser ===");
+{
+  // A device that has never chosen a language, signing in to an account
+  // whose language is Bangla. This is the case the owner actually hit:
+  // "setting again is just annoying."
+  const ctx = await ctxFor({ banner: true, accountLang: "bn" });
+  const { page, errors } = await openPage(ctx, "/app/records.html");
+  await page.waitForTimeout(400); // the adopt reload
+  const r = await page.evaluate(() => ({
+    stored: localStorage.getItem("mm_app_lang"),
+    h1: document.querySelector("h1")?.textContent?.trim(),
+    cats: [...document.querySelectorAll(".nav-cat > summary")].map((s) => s.textContent.trim()),
+  }));
+  check("25a a fresh device adopts the account's language", r.stored === "bn", String(r.stored));
+  check("25a ...and the page really renders in it",
+        BANGLA.test(r.h1 || "") && r.cats.every((c) => BANGLA.test(c)),
+        `${r.h1} | ${r.cats.join(",")}`);
+  check("25a no page errors while adopting", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+{
+  // The other direction: this device says Bangla, the account says English.
+  // The ACCOUNT wins -- that is what makes "set it once, anywhere" true.
+  const ctx = await ctxFor({ banner: true, appLang: "bn", accountLang: "en" });
+  const { page } = await openPage(ctx, "/app/people.html");
+  await page.waitForTimeout(400);
+  const r = await page.evaluate(() => ({
+    stored: localStorage.getItem("mm_app_lang"),
+    h1: document.querySelector("h1")?.textContent?.trim(),
+  }));
+  check("25b the account overrides a disagreeing device", r.stored === "en", String(r.stored));
+  check("25b ...and the page is back in English", r.h1 === "People", r.h1);
+  await page.close();
+  await ctx.close();
+}
+{
+  // Agreement must NOT reload -- otherwise every page load on every device
+  // reloads once, forever. Proved by marking the window and checking the
+  // mark survives.
+  const ctx = await ctxFor({ banner: true, appLang: "bn", accountLang: "bn" });
+  const { page } = await openPage(ctx, "/app/monitor.html");
+  await page.evaluate(() => { window.__notReloaded = true; });
+  await page.waitForTimeout(500);
+  const survived = await page.evaluate(() => window.__notReloaded === true);
+  check("25c a device that already agrees does NOT reload", survived === true, String(survived));
+  await page.close();
+  await ctx.close();
+}
+{
+  // An account with no language set at all (everyone, before this round)
+  // must leave the device's own choice alone.
+  const ctx = await ctxFor({ banner: true, appLang: "bn" });
+  const { page } = await openPage(ctx, "/app/records.html");
+  await page.waitForTimeout(300);
+  const stored = await page.evaluate(() => localStorage.getItem("mm_app_lang"));
+  check("25d an account with no language set leaves the device alone", stored === "bn", String(stored));
+  await page.close();
+  await ctx.close();
+}
+{
+  // Changing it must SAVE to the account, or the whole round does nothing.
+  const ctx = await ctxFor({ banner: true });
+  const { page } = await openPage(ctx, "/app/records.html");
+  await openHome(page);
+  await page.evaluate(() => document.querySelectorAll(".nav-cat").forEach((d) => (d.open = true)));
+  await page.waitForTimeout(120);
+  await page.selectOption("#navAppLangSelect", "bn");
+  await page.waitForTimeout(600);
+  const writes = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
+  const langWrite = writes.find((w) => w.col === "userIndex" && w.appLang);
+  check("25e choosing a language writes it to the account",
+        Boolean(langWrite) && langWrite.appLang === "bn", JSON.stringify(writes.slice(0, 2)));
+  // hasOnly(['tenantIds','defaultTenantId','appLang','updatedAt']) in
+  // firestore.rules REJECTS the write if it carries anything else, so the
+  // field list is as load-bearing as the value.
+  check("25e ...writing only appLang + updatedAt, which is all the rules allow",
+        langWrite && langWrite.data.join() === "appLang,updatedAt",
+        langWrite ? langWrite.data.join() : "no write");
+  await page.close();
+  await ctx.close();
+}
+{
+  // prefs.js is imported by PURE RENDERERS (asma-renderer.js reads
+  // getAppLang, nav.js reads APP_LANGS). If the Firestore half ever lands
+  // in it they gain a Firebase dependency and I2 breaks -- so this is
+  // checked as SOURCE, not behaviour. Comments are stripped first: both
+  // files legitimately discuss Firebase in their own headers, and matching
+  // prose would fail on the explanation rather than on the code.
+  const stripped = (s) => s.replace(/^\s*\/\/.*$/gm, "").replace(/\/\*[\s\S]*?\*\//g, "");
+  const prefs = stripped(await (await fetch("http://localhost:8080/app/js/prefs.js")).text());
+  check("25f prefs.js still imports nothing at all",
+        !/^\s*import\s/m.test(prefs) && !/firebase|firestore/i.test(prefs),
+        "prefs.js gained an import");
+  const renderer = stripped(await (await fetch("http://localhost:8080/app/js/asma-renderer.js")).text());
+  check("25f the pure renderer still has no Firebase dependency",
+        !/firebase|firestore|lang-sync/i.test(renderer), "asma-renderer.js gained one");
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);

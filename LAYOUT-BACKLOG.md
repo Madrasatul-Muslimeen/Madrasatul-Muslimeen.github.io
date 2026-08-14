@@ -99,6 +99,19 @@ path, which the load-speed contract says must be flagged to the owner before
 it happens (I9)** — so it cannot be slipped in quietly. Recommend shipping
 localStorage first and offering the sync as its own later round.
 
+> **RESOLVED, and the table's second row turned out to be wrong** (v07.30
+> shipped localStorage; v07.37 added the sync, which the owner asked for as
+> soon as phase 6 landed). The sync needed **neither a new startup read nor a
+> new collection**: the language is one field on `userIndex/{uid}`, which
+> every signed-in page's auth bootstrap *already* fetches to find the default
+> tenant. It did need one `firestore.rules` change — `'appLang'` added to that
+> document's `hasOnly()` allowlist. localStorage remains what decides the
+> first paint, because the language must be known synchronously or a Bangla
+> reader sees an English page appear and change under them. See
+> `TRANSLATION-PLAN.md` → "The account sync". **The lesson worth carrying:
+> before proposing a new collection for a preference, check what the startup
+> path already reads.**
+
 **(b) Does "language" mean one thing or two?** This is the sharper question,
 and it is easy to miss. In `quranrevival.html`, `currentLang` does **two
 different jobs**:

@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.36.** Cutover to production happened
+**Current milestone: QuranRevival v07.37.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -1163,6 +1163,83 @@ eye first, and in this phase those are Al-Waliyy/Al-Wali (two distinct Names
 most Bangla lists render identically) and Ad-Darr (the most theologically
 sensitive line in the project). **No `firestore.rules`, schema or data
 changes** — nothing to deploy but the static files.
+
+v07.37 (14 Aug 2026, on Claude Code on the web) is **the app language synced
+to the ACCOUNT** — asked for by the owner the moment phase 6 landed, in their
+own words: *"A setting user does in one device should reflect in any device
+when signing, setting again is just annoying."* v07.30 had deliberately made
+it per-BROWSER (localStorage), and `TRANSLATION-PLAN.md` had flagged this sync
+as the most likely next request; it was.
+
+**The design point that matters, and it reverses `LAYOUT-BACKLOG.md`'s own
+prediction: this needed neither a new startup read nor a new collection.**
+That file's decision table said a Firestore-backed language preference would
+cost both, which is why v07.30 chose localStorage. It was wrong. The language
+is now one extra field on **`userIndex/{uid}`** — the document every one of
+the fourteen signed-in pages ALREADY fetches in its auth bootstrap to resolve
+the person's default tenant. So the snapshot is in hand, the read is free, and
+**nothing at all was added to the pre-first-paint path**; the load-speed
+contract's three-reads-after-paint budget is untouched and there was no I9
+conversation to have. **The lesson recorded in both files: before proposing a
+new collection for a preference, check what the startup path already reads.**
+
+**localStorage still decides what paints, and that is deliberate, not a
+leftover.** The language must be known SYNCHRONOUSLY or a Bangla reader
+watches an English page appear and change under them — a network read cannot
+happen before first paint. So localStorage paints; then, once sign-in
+resolves, the account's value is compared and, if it differs, adopted with a
+single reload; that device then agrees and never reloads again. Changing the
+language writes both, so **the last change made on any device is what every
+other device picks up next time it loads** — no timestamps compared, no
+per-device precedence, nothing to merge. The one visible cost, stated plainly
+rather than discovered later: on a device that has NEVER opened the app the
+first paint is English even for a Bangla reader, until the account read
+returns and the page reloads. Once per device.
+
+**`firestore.rules` DID change, and it must be deployed** — `userIndex`'s
+update rule pins the writable fields with `hasOnly()`, so `'appLang'` joined
+that list. One word. The `platformAdmin` guard (I10) is untouched and a
+display preference carries no authority. **Until the owner deploys it via the
+Firebase Console** (same copy-paste route as every recent round — this owner's
+machine can't keep the CLI installed), changing the language still works on
+the device but the save is denied, and `safeWrite()` shows the reason on
+screen (I15). That is why the failure path deliberately does NOT reload: a
+reload would throw the message away before it could be read.
+
+**Two structural points a later round must not undo.** `js/prefs.js` stays
+Firebase-free and imports NOTHING — pure renderers (`asma-renderer.js`, and
+`nav.js` via `APP_LANGS`) import `getAppLang()` from it and must never gain a
+Firebase dependency (I2) — so the Firestore half lives in a new
+**`js/lang-sync.js`**, imported only by page controllers that already talk to
+Firebase. A behaviour check now fails if either file gains one. And
+`adoptAppLang()` **refuses to adopt when localStorage cannot be written**
+(private browsing): otherwise the next load would read the old value, adopt
+again and reload, forever. That loop is not hypothetical — the verification
+harness hit exactly it, because `addInitScript` re-imposed the device value on
+every navigation including the adopt reload; the harness now seeds the
+preference only when absent, which is what a real device does.
+
+The read side is one line per page (`if (adoptAppLangFromUserIndex(userIndexSnap)) return;`,
+straight after the existing `getDoc`) and the write side is one swapped call
+(`mountSyncedAppLangControl` for `mountAppLangControl`), across all 14
+signed-in pages/controllers. `onboarding.html` and `accept-invite.html` are
+deliberately left alone — there is no account to sync with yet.
+
+**Verified: 435 behaviour checks** (all of phases 1-6, plus a fresh device
+adopting the account's Bangla and really rendering in it; the account
+overriding a device that disagrees, in both directions; a device that already
+agrees **not** reloading — which is what stops every load reloading forever;
+an account with no language set leaving the device alone, i.e. everyone's
+behaviour before this round; choosing a language really writing to
+`userIndex`, carrying `appLang` + `updatedAt` and **nothing else**, since
+`hasOnly()` would reject anything more; and the two I2 source checks above)
+**plus the landing-page layout regression (identical at all five viewports in
+both banner states) and the nav check in both languages, both unchanged.** The
+stub's `updateDoc` now records writes to sessionStorage rather than memory —
+the sync reloads on success, which would wipe an in-memory record and make a
+real write look as though it never happened. **No schema change beyond the one
+additive field, and no data migration** — an account with no `appLang` simply
+keeps using its device's own setting.
 
 ---
 

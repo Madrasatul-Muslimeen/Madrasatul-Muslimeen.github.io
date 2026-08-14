@@ -600,7 +600,8 @@
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootDerivativePanel, renderTranslationPanel } from "./js/ayah-renderer.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
-    import { getAppLang, getQuranTranslationLang, setQuranTranslationLang, mountAppLangControl } from "./js/prefs.js";
+    import { getAppLang, getQuranTranslationLang, setQuranTranslationLang } from "./js/prefs.js";
+    import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { showBootSplash, showQuranSplash } from "./js/splash.js";
     import { APP_VERSION } from "./js/version.js";
 
@@ -683,7 +684,7 @@
       // re-renders in place instead, because it already had exactly that
       // code for the picker that used to sit in bar 1, and because reloading
       // the landing page would re-fire the boot and Quran-entry splashes.
-      mountAppLangControl(navHomeExtra, applyAppLangChange);
+      mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid, onChange: applyAppLangChange });
     }
 
     /** Re-render everything on this page that shows a language-keyed NAME.
@@ -2048,6 +2049,9 @@
 
       try {
         const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
+        // v07.37: if this account has a language set on another device, take it
+        // and reload. Costs no extra read -- the snapshot is already in hand.
+        if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
         const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));

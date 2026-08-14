@@ -515,8 +515,15 @@ service cloud.firestore {
       // I10: platformAdmin can NEVER be set true by a client write.
       allow create: if signedIn() && myUid() == uid
                     && request.resource.data.get('platformAdmin', false) == false;
+      // 'appLang' joined this list in v07.37 (the app language, synced to
+      // the account so it follows a person between devices). It rides on
+      // this document precisely because every signed-in page already reads
+      // it -- no new collection, no new read, nothing added to the startup
+      // path. It is a display preference and carries no authority: the
+      // platformAdmin guard below is untouched, and hasOnly() still pins
+      // the writable set to these four fields.
       allow update: if signedIn() && myUid() == uid
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tenantIds', 'defaultTenantId', 'updatedAt'])
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tenantIds', 'defaultTenantId', 'appLang', 'updatedAt'])
                     && request.resource.data.get('platformAdmin', false) == resource.data.get('platformAdmin', false);
       allow update: if isPlatformAdmin();
       // Only the Firebase console, or a future admin-only server-side

@@ -189,7 +189,13 @@ const DATA = {
       role: "student", status: "consumed" },
   ],
   subjectTemplates: [],
-  userIndex: [], memberships: [], teacherStudentLinks: [],
+  // v07.37 (the app language synced to the account). Seeded ONLY when a
+  // test asks for it via newContext({ accountLang }) -- an appLang here by
+  // default would make every English page adopt Bangla and reload, and the
+  // ~200 "English is untouched" checks would all fail. Deliberately carries
+  // no defaultTenantId, so the bootstrap behaves exactly as it does with no
+  // userIndex document at all and this row changes nothing else.
+  userIndex: [__USER_INDEX__], memberships: [], teacherStudentLinks: [],
 };
 
 function snapDoc(d) {
@@ -236,7 +242,19 @@ export async function getDoc(ref) {
   return row ? snapDoc(row) : { id: ref.__id, exists: () => false, data: () => undefined };
 }
 export async function setDoc() {}
-export async function updateDoc() {}
+// Records what was written so a test can prove the save really happened and
+// carried the right field. A no-op before v07.37; the language sync is the
+// first thing here whose whole point IS the write.
+// Kept in sessionStorage, not on window: the language sync RELOADS the page
+// on success, which would wipe an in-memory array before a test could read
+// it -- the write would look as though it never happened.
+export async function updateDoc(ref, data) {
+  try {
+    const prior = JSON.parse(sessionStorage.getItem("__stubWrites") || "[]");
+    prior.push({ col: ref && ref.__col, id: ref && ref.__id, data: Object.keys(data).sort(), appLang: data.appLang });
+    sessionStorage.setItem("__stubWrites", JSON.stringify(prior));
+  } catch {}
+}
 export async function getCountFromServer() { return { data: () => ({ count: 0 }) }; }
 export async function waitForPendingWrites() {}
 export function serverTimestamp() { return new Date(); }
@@ -244,9 +262,12 @@ export function arrayUnion(...v) { return v; }
 export function writeBatch() { return { set() {}, update() {}, async commit() {} }; }
 `;
 
-export function stubFor({ banner }) {
+export function stubFor({ banner, accountLang = null }) {
+  const userIndexRow = accountLang
+    ? `{ _id: UID, appLang: ${JSON.stringify(accountLang)} }`
+    : "";
   const bannerFields = banner
     ? 'bannerTitle: { en: "QuranRevival" }, bannerSub: { en: "Reviving the Quran, abandoned." }'
     : "";
-  return STUB.replace("__BANNER__", bannerFields);
+  return STUB.replace("__BANNER__", bannerFields).replace("__USER_INDEX__", userIndexRow);
 }
