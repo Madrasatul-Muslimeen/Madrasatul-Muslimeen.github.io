@@ -7,3 +7,8 @@ Git-*.exe
 # OS clutter
 Thumbs.db
 .DS_Store
+
+# Playwright, installed only to run tools/i18n-verify. Not part of the app --
+# the app itself has no build step and no dependencies (D4).
+node_modules/
+package-lock.json
