@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
-<title>QuranRevival — Catalogue (Phase 2)</title>
+<title>QuranRevival — Catalogue</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
@@ -40,10 +40,10 @@
 </style>
 </head>
 <body>
-  <h1>Catalogue (Phase 2)</h1>
-  <p>Modules, the subject tree, the 30 Approaches, and ladders/levels — the
-     data every later module reads from. Reading is open to anyone in the
-     tenant; editing is restricted to owner/prime.</p>
+  <h1>Catalogue</h1>
+  <p>Modules, the subject tree, the 30 Approaches, and ladders and levels —
+     the data every study screen reads from. Anyone in the madrasah can look;
+     only the owner and a prime can edit.</p>
 
   <nav class="app-nav" id="topNav">
     <details class="nav-cat nav-cat-home">
@@ -156,7 +156,7 @@
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
-    import { roleListLabel } from "./js/roles.js";
+    import { roleListLabel, entityStatusLabel } from "./js/labels.js";
     import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
@@ -188,7 +188,7 @@
       ensureLdogReparented,
     } from "./js/catalogue.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
-    import { translateStatic, t } from "./js/i18n.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
@@ -269,18 +269,36 @@
       return Math.min(node.ancestorIds?.length ?? 0, 3);
     }
 
+    // A module's own name, for the tags in the subject rows below. Built
+    // from the modules actually loaded (so it follows langText and any admin
+    // rename) rather than from a second hardcoded list.
+    let moduleNameById = new Map();
+    function moduleName(id) { return moduleNameById.get(id) ?? id; }
+
+    // "ayah" / "topic" / "routine" / "asma" -- which study screen a module
+    // draws with. A stored identifier, so it gets a label map like every
+    // other one (see js/labels.js's note on the convention).
+    const RENDERER_LABELS = Object.freeze({
+      ayah: "Ayah by ayah",
+      topic: "Topic",
+      routine: "Routine",
+      asma: "Asma ul Husna",
+    });
+    const rendererLabel = (r) => (RENDERER_LABELS[r] ? t(RENDERER_LABELS[r]) : (r ?? ""));
+
     async function loadModules() {
       const modules = await listModules(db);
+      moduleNameById = new Map(modules.map((m) => [m.id, langText(m.name, getAppLang(), m.id)]));
       modulesBody.innerHTML = modules
         .map((m, i) => {
           const moveCell = canEdit
             ? `<td>
-                <button type="button" class="small secondary moduleMoveUpBtn" data-id="${m.id}" ${i === 0 ? "disabled" : ""} title="Move up">▲</button>
-                <button type="button" class="small secondary moduleMoveDownBtn" data-id="${m.id}" ${i === modules.length - 1 ? "disabled" : ""} title="Move down">▼</button>
+                <button type="button" class="small secondary moduleMoveUpBtn" data-id="${m.id}" ${i === 0 ? "disabled" : ""} title="${t("Move up")}">▲</button>
+                <button type="button" class="small secondary moduleMoveDownBtn" data-id="${m.id}" ${i === modules.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button>
               </td>`
             : "";
-          return `<tr class="module-row" data-module-id="${m.id}" title="Click to jump to this module's subjects below">
-            <td>${m.icon ?? ""} ${langText(m.name, getAppLang(), m.id)}</td><td>${m.renderer}</td><td>${m.status}</td>${moveCell}
+          return `<tr class="module-row" data-module-id="${m.id}" title="${t("Click to jump to this module's subjects below")}">
+            <td>${m.icon ?? ""} ${langText(m.name, getAppLang(), m.id)}</td><td>${rendererLabel(m.renderer)}</td><td>${entityStatusLabel(m.status)}</td>${moveCell}
           </tr>`;
         })
         .join("");
@@ -352,13 +370,13 @@
       // branch without noticing).
       const options = subjectTree
         .filter((n) => !excludeIds.has(n.id) && (n.status !== "archived" || n.id === selectedParentId))
-        .map((n) => `<option value="${n.id}" ${n.id === selectedParentId ? "selected" : ""}>${"— ".repeat(depthOf(n))}${langText(n.name, getAppLang(), n.id)} [${(n.moduleIds ?? []).join(", ") || "no module"}]</option>`)
+        .map((n) => `<option value="${n.id}" ${n.id === selectedParentId ? "selected" : ""}>${"— ".repeat(depthOf(n))}${langText(n.name, getAppLang(), n.id)} [${(n.moduleIds ?? []).map(moduleName).join(", ") || t("no module")}]</option>`)
         .join("");
-      return `<option value="" ${!selectedParentId ? "selected" : ""}>(top level)</option>${options}`;
+      return `<option value="" ${!selectedParentId ? "selected" : ""}>${t("(top level)")}</option>${options}`;
     }
 
     function parentDisplayName(node) {
-      if (!node.parentId) return "(top level)";
+      if (!node.parentId) return t("(top level)");
       const parent = subjectTree.find((n) => n.id === node.parentId);
       return parent ? langText(parent.name, getAppLang(), parent.id) : node.parentId;
     }
@@ -368,23 +386,23 @@
     // true/false is an explicit per-subject override ("confirmation can be
     // switched on or off per subject").
     function confirmationLabel(node) {
-      if (node.confirmationRequired === true) return "Always required";
-      if (node.confirmationRequired === false) return "Never required";
-      return "Auto (computed)";
+      if (node.confirmationRequired === true) return t("Always required");
+      if (node.confirmationRequired === false) return t("Never required");
+      return t("Auto (computed)");
     }
 
     function confirmationOptionsHtml(node) {
       const v = node.confirmationRequired === true ? "true" : node.confirmationRequired === false ? "false" : "auto";
-      return `<option value="auto" ${v === "auto" ? "selected" : ""}>Auto (computed)</option>
-        <option value="true" ${v === "true" ? "selected" : ""}>Always required</option>
-        <option value="false" ${v === "false" ? "selected" : ""}>Never required</option>`;
+      return `<option value="auto" ${v === "auto" ? "selected" : ""}>${t("Auto (computed)")}</option>
+        <option value="true" ${v === "true" ? "selected" : ""}>${t("Always required")}</option>
+        <option value="false" ${v === "false" ? "selected" : ""}>${t("Never required")}</option>`;
     }
 
     // Only meaningful for leaf/topic nodes -- a branch with children isn't
     // itself claimable, so "no resource" there isn't a gap to flag.
     function resourceLabel(node) {
       if (!node.isTrackable) return "";
-      return (node.resourceIds ?? []).length > 0 ? "Yes" : "—";
+      return (node.resourceIds ?? []).length > 0 ? t("Yes") : "—";
     }
 
     // Owner ask: the subject list is collapsible per-subject -- a toggle
@@ -399,7 +417,7 @@
     function subjectToggleHtml(node) {
       if (!subjectHasChildren(node.id)) return "";
       const collapsed = collapsedSubjectIds.has(node.id);
-      return `<button type="button" class="subj-toggle-btn" data-toggle-id="${node.id}" title="${collapsed ? "Expand" : "Collapse"}">${collapsed ? "▸" : "▾"}</button>`;
+      return `<button type="button" class="subj-toggle-btn" data-toggle-id="${node.id}" title="${collapsed ? t("Expand") : t("Collapse")}">${collapsed ? "▸" : "▾"}</button>`;
     }
 
     /** Same-parent siblings, sorted by order -- the scope "move up/down" operates within. */
@@ -408,7 +426,7 @@
     }
 
     function subjectRowHtml(node) {
-      const modules = (node.moduleIds ?? []).map((id) => `<span class="tag">${id}</span>`).join("");
+      const modules = (node.moduleIds ?? []).map((id) => `<span class="tag">${moduleName(id)}</span>`).join("");
 
       if (canEdit && movingSubjectId === node.id) {
         return `<tr id="subj-row-${node.id}">
@@ -416,12 +434,12 @@
           <td>${node.gloss ? langText(node.gloss, getAppLang(), "") : ""}</td>
           <td>${modules}</td>
           <td><select class="movingParentSelect">${parentOptionsHtml(node.parentId, node.id)}</select></td>
-          <td>${node.status}</td>
+          <td>${entityStatusLabel(node.status)}</td>
           <td>${confirmationLabel(node)}</td>
           <td>${resourceLabel(node)}</td>
           <td>
-            <button class="small moveSaveBtn" data-id="${node.id}">Move here</button>
-            <button class="small secondary moveCancelBtn" data-id="${node.id}">Cancel</button>
+            <button class="small moveSaveBtn" data-id="${node.id}">${t("Move here")}</button>
+            <button class="small secondary moveCancelBtn" data-id="${node.id}">${t("Cancel")}</button>
           </td>
         </tr>`;
       }
@@ -433,18 +451,18 @@
           <td>${node.gloss ? langText(node.gloss, getAppLang(), "") : ""}</td>
           <td>${modules}</td>
           <td><select class="editParentSelect">${parentOptionsHtml(node.parentId, node.id)}</select></td>
-          <td>${node.status}</td>
+          <td>${entityStatusLabel(node.status)}</td>
           <td><select class="editConfirmSelect">${confirmationOptionsHtml(node)}</select></td>
           <td>${resourceLabel(node)}</td>
           <td>
-            <button class="small saveSubjBtn" data-id="${node.id}">Save</button>
-            <button class="small secondary cancelSubjBtn" data-id="${node.id}">Cancel</button>
+            <button class="small saveSubjBtn" data-id="${node.id}">${t("Save")}</button>
+            <button class="small secondary cancelSubjBtn" data-id="${node.id}">${t("Cancel")}</button>
           </td>
         </tr>`;
       }
 
       const archiveBtn = canEdit
-        ? `<button class="small secondary archiveSubjBtn" data-id="${node.id}" data-next="${node.status === "archived" ? "active" : "archived"}">${node.status === "archived" ? "Restore" : "Archive"}</button>`
+        ? `<button class="small secondary archiveSubjBtn" data-id="${node.id}" data-next="${node.status === "archived" ? "active" : "archived"}">${node.status === "archived" ? t("Restore") : t("Archive")}</button>`
         : "";
       // Owner ask (10 Aug 2026): move up/down among siblings (auto-renumbers
       // via a simple order swap) plus a one-click "Move to..." for
@@ -454,19 +472,19 @@
       if (canEdit) {
         const siblings = siblingsOf(node);
         const idx = siblings.findIndex((n) => n.id === node.id);
-        moveButtons = `<button class="small secondary moveUpBtn" data-id="${node.id}" ${idx <= 0 ? "disabled" : ""} title="Move up">▲</button>
-          <button class="small secondary moveDownBtn" data-id="${node.id}" ${idx === -1 || idx >= siblings.length - 1 ? "disabled" : ""} title="Move down">▼</button>
-          <button class="small secondary moveToBtn" data-id="${node.id}" title="Move to a different parent">Move to…</button><br/>`;
+        moveButtons = `<button class="small secondary moveUpBtn" data-id="${node.id}" ${idx <= 0 ? "disabled" : ""} title="${t("Move up")}">▲</button>
+          <button class="small secondary moveDownBtn" data-id="${node.id}" ${idx === -1 || idx >= siblings.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button>
+          <button class="small secondary moveToBtn" data-id="${node.id}" title="${t("Move to a different parent")}">${t("Move to…")}</button><br/>`;
       }
       const actionCell = canEdit
-        ? `<td>${moveButtons}<button class="small secondary editSubjBtn" data-id="${node.id}">Edit</button> ${archiveBtn}</td>`
+        ? `<td>${moveButtons}<button class="small secondary editSubjBtn" data-id="${node.id}">${t("Edit")}</button> ${archiveBtn}</td>`
         : "";
       return `<tr id="subj-row-${node.id}">
         <td class="depth-${depthOf(node)}">${subjectToggleHtml(node)}${langText(node.name, getAppLang(), node.id)}</td>
         <td>${node.gloss ? langText(node.gloss, getAppLang(), "") : ""}</td>
         <td>${modules}</td>
         <td>${parentDisplayName(node)}</td>
-        <td>${node.status}</td>
+        <td>${entityStatusLabel(node.status)}</td>
         <td>${confirmationLabel(node)}</td>
         <td>${resourceLabel(node)}</td>
         ${actionCell}
@@ -587,10 +605,13 @@
           const nextStatus = btn.dataset.next;
           const childCount = subjectTree.filter((n) => n.parentId === node.id).length;
           const warning = childCount > 0
-            ? ` It has ${childCount} sub-item(s) underneath it — they'll stay active, just nested under an archived subject.`
+            ? " " + t("It has {count} item(s) underneath it — they stay active, just nested under an archived subject.", { count: num(childCount) })
             : "";
-          const label = nextStatus === "archived" ? "Archive" : "Restore";
-          if (!confirm(`${label} "${langText(node.name, getAppLang(), node.id)}"?${warning}`)) return;
+          const name = langText(node.name, getAppLang(), node.id);
+          const question = nextStatus === "archived"
+            ? t("Archive \"{name}\"?", { name })
+            : t("Restore \"{name}\"?", { name });
+          if (!confirm(`${question}${warning}`)) return;
 
           btn.disabled = true;
           const outcome = await safeWrite(
@@ -614,7 +635,7 @@
           const nextConfirmRaw = row.querySelector(".editConfirmSelect").value;
           const nextConfirm = nextConfirmRaw === "true" ? true : nextConfirmRaw === "false" ? false : null;
           if (!nextName) {
-            alert("Name can't be empty.");
+            alert(t("Name can't be empty."));
             return;
           }
 
@@ -661,24 +682,24 @@
       });
     }
 
-    function trackableRowHtml(t) {
+    function trackableRowHtml(row) {
       const archiveBtn = canEdit
-        ? `<button class="small secondary archiveTrkBtn" data-id="${t.id}" data-next="${t.status === "archived" ? "active" : "archived"}">${t.status === "archived" ? "Restore" : "Archive"}</button>`
+        ? `<button class="small secondary archiveTrkBtn" data-id="${row.id}" data-next="${row.status === "archived" ? "active" : "archived"}">${row.status === "archived" ? t("Restore") : t("Archive")}</button>`
         : "";
       const actionCell = canEdit
-        ? `<td><button class="small secondary editTrkBtn" data-id="${t.id}">Edit</button> ${archiveBtn}</td>`
+        ? `<td><button class="small secondary editTrkBtn" data-id="${row.id}">${t("Edit")}</button> ${archiveBtn}</td>`
         : "";
       return `<tr>
-        <td>${t.order}</td>
-        <td>${langText(t.name, getAppLang(), t.id)}</td>
-        <td>${langText(t.groupName, getAppLang(), `Section ${t.group}`)}</td>
-        <td>${t.status}</td>
+        <td>${num(row.order)}</td>
+        <td>${langText(row.name, getAppLang(), row.id)}</td>
+        <td>${langText(row.groupName, getAppLang(), t("Section {n}", { n: num(row.group) }))}</td>
+        <td>${entityStatusLabel(row.status)}</td>
         <td>
-          <button class="small secondary guideBtn" data-id="${t.id}">Guide</button>
-          <div class="guideBox" id="guide-${t.id}" style="display:none;">
-            <strong>What:</strong> ${langText(t.guide?.what, getAppLang(), "")}<br/>
-            <strong>How:</strong> ${langText(t.guide?.how, getAppLang(), "")}<br/>
-            <strong>Measure:</strong> ${langText(t.guide?.measure, getAppLang(), "")}
+          <button class="small secondary guideBtn" data-id="${row.id}">${t("Guide")}</button>
+          <div class="guideBox" id="guide-${row.id}" style="display:none;">
+            <strong>${t("What:")}</strong> ${langText(row.guide?.what, getAppLang(), "")}<br/>
+            <strong>${t("How:")}</strong> ${langText(row.guide?.how, getAppLang(), "")}<br/>
+            <strong>${t("Measure:")}</strong> ${langText(row.guide?.measure, getAppLang(), "")}
           </div>
         </td>
         ${actionCell}
@@ -695,7 +716,7 @@
     function renderTrackables() {
       const visible = showArchivedTrackables.checked
         ? trackableList
-        : trackableList.filter((t) => t.status !== "archived");
+        : trackableList.filter((row) => row.status !== "archived");
       trackablesBody.innerHTML = visible.map(trackableRowHtml).join("");
 
       trackablesBody.querySelectorAll(".guideBtn").forEach((btn) => {
@@ -707,12 +728,12 @@
 
       trackablesBody.querySelectorAll(".editTrkBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {
-          const t = trackableList.find((x) => x.id === btn.dataset.id);
-          const nextName = prompt("New name for this Approach:", langText(t.name, getAppLang(), t.id));
+          const row = trackableList.find((x) => x.id === btn.dataset.id);
+          const nextName = prompt(t("New name for this Approach:"), langText(row.name, getAppLang(), row.id));
           if (nextName == null || nextName.trim() === "") return;
           const outcome = await safeWrite(
-            () => editCatalogueNode(db, TENANT.TRACKABLES, activeTenantId, t.id, { name: { ...t.name, en: nextName.trim() } }, auth.currentUser.uid),
-            { collection: "trackables", action: "editName", id: t.id }
+            () => editCatalogueNode(db, TENANT.TRACKABLES, activeTenantId, row.id, { name: { ...row.name, en: nextName.trim() } }, auth.currentUser.uid),
+            { collection: "trackables", action: "editName", id: row.id }
           );
           if (outcome.ok) await loadTrackables();
           else alert(outcome.entry.message);
@@ -721,15 +742,15 @@
 
       trackablesBody.querySelectorAll(".archiveTrkBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {
-          const t = trackableList.find((x) => x.id === btn.dataset.id);
+          const row = trackableList.find((x) => x.id === btn.dataset.id);
           const nextStatus = btn.dataset.next;
-          const label = nextStatus === "archived" ? "Archive" : "Restore";
-          if (!confirm(`${label} "${langText(t.name, getAppLang(), t.id)}"?`)) return;
+          const name = langText(row.name, getAppLang(), row.id);
+          if (!confirm(nextStatus === "archived" ? t("Archive \"{name}\"?", { name }) : t("Restore \"{name}\"?", { name }))) return;
 
           btn.disabled = true;
           const outcome = await safeWrite(
-            () => setTrackableStatus(db, activeTenantId, t.id, nextStatus, auth.currentUser.uid),
-            { collection: "trackables", action: "setStatus", id: t.id }
+            () => setTrackableStatus(db, activeTenantId, row.id, nextStatus, auth.currentUser.uid),
+            { collection: "trackables", action: "setStatus", id: row.id }
           );
           if (outcome.ok) await loadTrackables();
           else {
@@ -757,26 +778,26 @@
         const levelChips = levels.length
           ? levels.map((lv) => {
               const archiveBtn = canEdit
-                ? `<button class="small secondary archiveLevelBtn" data-id="${lv.id}" data-next="${lv.status === "archived" ? "active" : "archived"}">${lv.status === "archived" ? "Restore" : "Archive"}</button>`
+                ? `<button class="small secondary archiveLevelBtn" data-id="${lv.id}" data-next="${lv.status === "archived" ? "active" : "archived"}">${lv.status === "archived" ? t("Restore") : t("Archive")}</button>`
                 : "";
-              return `<span style="display:inline-block; margin:0.15rem 0.4rem 0.15rem 0;">${langText(lv.name, getAppLang(), lv.id)}${lv.status === "archived" ? " (archived)" : ""} ${archiveBtn}</span>`;
+              return `<span style="display:inline-block; margin:0.15rem 0.4rem 0.15rem 0;">${langText(lv.name, getAppLang(), lv.id)}${lv.status === "archived" ? ` (${t("archived")})` : ""} ${archiveBtn}</span>`;
             }).join("")
-          : "(no levels yet)";
+          : t("(no levels yet)");
         const ladderArchiveBtn = canEdit
-          ? `<button class="small secondary archiveLadderBtn" data-id="${ladder.id}" data-next="${ladder.status === "archived" ? "active" : "archived"}">${ladder.status === "archived" ? "Restore" : "Archive"}</button>`
+          ? `<button class="small secondary archiveLadderBtn" data-id="${ladder.id}" data-next="${ladder.status === "archived" ? "active" : "archived"}">${ladder.status === "archived" ? t("Restore") : t("Archive")}</button>`
           : "";
         rows.push(`<tr>
-          <td>${langText(ladder.name, getAppLang(), ladder.id)}${ladder.status === "archived" ? " (archived)" : ""}</td>
+          <td>${langText(ladder.name, getAppLang(), ladder.id)}${ladder.status === "archived" ? ` (${t("archived")})` : ""}</td>
           <td>${ladderArchiveBtn}</td>
           <td>${levelChips}</td>
         </tr>`);
       }
-      laddersBody.innerHTML = rows.join("") || `<tr><td colspan="3">No ladders yet.</td></tr>`;
+      laddersBody.innerHTML = rows.join("") || `<tr><td colspan="3">${t("No ladders yet.")}</td></tr>`;
 
       laddersBody.querySelectorAll(".archiveLadderBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {
           const nextStatus = btn.dataset.next;
-          if (!confirm(`${nextStatus === "archived" ? "Archive" : "Restore"} this ladder?`)) return;
+          if (!confirm(nextStatus === "archived" ? t("Archive this ladder?") : t("Restore this ladder?"))) return;
           btn.disabled = true;
           const outcome = await safeWrite(
             () => setLadderStatus(db, activeTenantId, btn.dataset.id, nextStatus, auth.currentUser.uid),
@@ -793,7 +814,7 @@
       laddersBody.querySelectorAll(".archiveLevelBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {
           const nextStatus = btn.dataset.next;
-          if (!confirm(`${nextStatus === "archived" ? "Archive" : "Restore"} this level?`)) return;
+          if (!confirm(nextStatus === "archived" ? t("Archive this level?") : t("Restore this level?"))) return;
           btn.disabled = true;
           const outcome = await safeWrite(
             () => setLevelStatus(db, activeTenantId, btn.dataset.id, nextStatus, auth.currentUser.uid),
@@ -811,7 +832,7 @@
     async function runSeedIfNeeded() {
       seedStatusEl.style.display = "block";
       seedStatusEl.className = "";
-      seedStatusEl.textContent = "Checking catalogue…";
+      seedStatusEl.textContent = t("Checking catalogue…");
       try {
         await ensureModulesSeeded(db, auth.currentUser.uid);
         await ensureSubjectTemplatesSeeded(db, auth.currentUser.uid);
@@ -821,11 +842,12 @@
         await ensureLdogReparented(db, activeTenantId, auth.currentUser.uid);
         seedStatusEl.className = "ok";
         seedStatusEl.textContent = result.seeded
-          ? `Catalogue set up for this tenant: ${result.subjectCount} subjects, ${result.trackableCount} Approaches.`
-          : "Catalogue already set up for this tenant.";
+          ? t("Catalogue set up: {subjects} subjects and {approaches} Approaches.",
+              { subjects: num(result.subjectCount), approaches: num(result.trackableCount) })
+          : t("Catalogue is already set up.");
       } catch (err) {
         seedStatusEl.className = "fail";
-        seedStatusEl.textContent = `Could not set up the catalogue: ${err.code ?? ""} ${err.message}`;
+        seedStatusEl.textContent = `${t("Could not set up the catalogue:")} ${err.code ?? ""} ${err.message}`;
         console.error(err);
         throw err;
       }
@@ -929,7 +951,7 @@
       const parentId = newSubjParent.value || null;
       const gloss = document.getElementById("newSubjGloss").value.trim();
       if (!name) {
-        addSubjResult.textContent = "Enter a name first.";
+        addSubjResult.textContent = t("Enter a name first.");
         return;
       }
       const parentNode = parentId ? subjectTree.find((n) => n.id === parentId) : null;
@@ -957,7 +979,7 @@
       );
       addSubjBtn.disabled = false;
       if (outcome.ok) {
-        addSubjResult.textContent = "Added.";
+        addSubjResult.textContent = t("Added.");
         document.getElementById("newSubjName").value = "";
         document.getElementById("newSubjGloss").value = "";
         newSubjResourceType.value = "";
@@ -981,7 +1003,7 @@
       addLadderBtn.disabled = false;
       if (outcome.ok) {
         document.getElementById("newLadderName").value = "";
-        ladderResult.textContent = "Ladder added.";
+        ladderResult.textContent = t("Ladder added.");
         await loadLadders();
       } else {
         ladderResult.textContent = outcome.entry.message;
@@ -993,7 +1015,7 @@
       const name = document.getElementById("newLevelName").value.trim();
       const order = Number(document.getElementById("newLevelOrder").value) || 1;
       if (!ladderId || !name) {
-        ladderResult.textContent = "Add a ladder first, then name the level.";
+        ladderResult.textContent = t("Add a ladder first, then name the level.");
         return;
       }
       addLevelBtn.disabled = true;
@@ -1004,7 +1026,7 @@
       addLevelBtn.disabled = false;
       if (outcome.ok) {
         document.getElementById("newLevelName").value = "";
-        ladderResult.textContent = "Level added.";
+        ladderResult.textContent = t("Level added.");
         await loadLadders();
       } else {
         ladderResult.textContent = outcome.entry.message;

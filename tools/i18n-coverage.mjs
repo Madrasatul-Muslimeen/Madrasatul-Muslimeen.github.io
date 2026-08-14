@@ -34,14 +34,17 @@ const AREAS = {
   // js/errors.js joined in phase 4: its eight plain-language write-failure
   // sentences are shown on EVERY screen in the app and were counted by no
   // area at all, so they were neither translated nor reported as missing.
-  shell: ["js/nav.js", "js/splash.js", "js/unit-keys.js", "js/errors.js", "js/roles.js", "about.html", "index.html", "onboarding.html", "accept-invite.html"],
+  shell: ["js/nav.js", "js/splash.js", "js/unit-keys.js", "js/errors.js", "js/labels.js", "about.html", "index.html", "onboarding.html", "accept-invite.html"],
   quran: ["quranrevival.html", "js/mastery-wheel.js", "js/way-modal.js", "js/ayah-renderer.js", "js/hifz-renderer.js", "js/audio-player.js", "js/quran-data.js"],
   modules: ["deen-study.html", "arabic-study.html", "hadith-study.html", "general-study.html", "naturelife-study.html", "life-skill.html", "health-study.html", "ldog-study.html", "asma-study.html", "js/topic-study.js", "js/routine-study.js", "js/asma-study.js", "js/topic-renderer.js", "js/asma-renderer.js", "js/catalogue-data.js"],
   // js/homework.js and js/course-offers.js joined in phase 4 -- both hold
   // label maps this area's own pages render (submission state, offer status,
   // role in class), so counting them anywhere else understated the area.
   tracking: ["records.html", "monitor.html", "homework.html", "course-offers.html", "js/monitor.js", "js/continue-strip.js", "js/bookmarks.js", "js/records.js", "js/activity.js", "js/homework.js", "js/course-offers.js"],
-  admin: ["people.html", "catalogue.html", "curriculum.html", "classes.html", "js/catalogue.js", "js/people.js", "js/curriculum.js", "js/classes.js", "js/grades.js", "js/invites.js", "js/identity.js", "js/resources.js"],
+  // js/modules.js and js/study-lock.js joined in phase 5: the module
+  // registry is what catalogue.html's own Modules table renders, and the
+  // handover lock's refusal message is shown on people.html.
+  admin: ["people.html", "catalogue.html", "curriculum.html", "classes.html", "js/catalogue.js", "js/people.js", "js/curriculum.js", "js/classes.js", "js/grades.js", "js/invites.js", "js/identity.js", "js/resources.js", "js/modules.js", "js/study-lock.js"],
   asma: ["js/asma-data.js", "js/asma-posters.js"],
 };
 

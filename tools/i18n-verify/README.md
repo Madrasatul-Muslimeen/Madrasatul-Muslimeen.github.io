@@ -14,7 +14,7 @@ Read `../../TRANSLATION-PLAN.md` first for what is being verified and why.
 npm install playwright          # once, anywhere outside the repo is fine
 node serve.js &                 # from the repo root, serves on :8080
 
-node tools/i18n-verify/behaviour.mjs   # ~341 checks, both languages
+node tools/i18n-verify/behaviour.mjs   # ~402 checks, both languages
 node tools/i18n-verify/navcheck.mjs    # nav fits at 320-768px, both languages
 node tools/i18n-verify/layout.mjs      # landing page vs the previous commit
 
@@ -30,7 +30,11 @@ far. Phase 4's own finds came out of it: a status picker still in English, an
 picker reading "(owner, prime)" on all thirteen signed-in pages.
 
 `layout.mjs` compares against the previous commit's copy of the page, so
-write that first:
+write that first. **If this round renamed or moved a module the page
+imports, the OLD copy will 404 on it and its script will never run** — every
+measurement comes back 0 and the diff looks like a catastrophic regression.
+Drop a shim at the old path for the length of the comparison (phase 5 hit
+this renaming `js/roles.js` to `js/labels.js`).
 
 ```bash
 git show HEAD:app/quranrevival.html > app/_prev-quranrevival.html
@@ -82,14 +86,21 @@ suite is being run in -- a fixed date silently falls out of range tomorrow.
 
 ## The standing rule
 
-`tools/i18n-coverage.mjs` prints a percentage. **It has been wrong, in the
-optimistic direction, in all four phases so far** — a filter that skipped
+`tools/i18n-coverage.mjs` prints a percentage. **It was wrong, in the
+optimistic direction, in each of the first four phases** — a filter that skipped
 short labels, an escaped quote that invented a phantom string, an HTML entity
 that meant a key could never match at runtime, and (phase 4) three whole
 shapes of string it could not see at all: label maps handed to `t()` through a
 variable, singular/plural pairs picked at run time, and `js/errors.js`, which
 belonged to no area and so was never even counted as missing. Every one of
 those was caught by opening a real rendered page, never by the report.
+
+Phase 5 was the first phase it got very nearly right — one missing string,
+no invisible category — because the `_LABELS` convention means a new
+identifier map is counted the moment it is written. It still missed a status
+value (`planned`) that only `modules.js` ever writes, which is the standing
+lesson in its narrower form: **a label map is only as complete as the values
+that actually reach it, so check the writer, not only the screens.**
 
 **Treat the coverage number as a to-do list, never as evidence.** Only a
 behaviour check that reads the rendered DOM shows a screen is truly

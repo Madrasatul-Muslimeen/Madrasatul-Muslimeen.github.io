@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
-<title>QuranRevival — Classes (Phase 10)</title>
+<title>QuranRevival — Classes</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
@@ -37,13 +37,11 @@
 </style>
 </head>
 <body>
-  <h1>Classes (Phase 10)</h1>
-  <p>A class is a real, scoped context: create it, enrol students and
-     teachers into it, and a teacher enrolled here gains real record/confirm
-     authority over just this class's students — not the whole tenant
-     (Stage B2, "safeguarding rules at scale"). Class-wide bulk confirm
-     clears every pending entry for every actively-enrolled student in one
-     pass.</p>
+  <h1>Classes</h1>
+  <p>Create a class, then enrol students and teachers into it. A teacher
+     enrolled here can record and confirm progress for this class's students
+     — and only them. Class-wide bulk confirm clears every pending entry for
+     every actively-enrolled student in one go.</p>
 
   <nav class="app-nav" id="topNav">
     <details class="nav-cat nav-cat-home">
@@ -93,7 +91,7 @@
     import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
-    import { roleListLabel } from "./js/roles.js";
+    import { roleListLabel, roleLabel as roleInClassLabel, entityStatusLabel } from "./js/labels.js";
     import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
@@ -109,7 +107,7 @@
     import { enrolPerson, endEnrollment, listEnrollmentsForOffer } from "./js/course-offers.js";
     import { bulkConfirmClass } from "./js/records.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
-    import { translateStatic, t } from "./js/i18n.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
     // (headings, labels, buttons) into the chosen language before anything
@@ -178,7 +176,7 @@
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       subjectChecks.innerHTML = leaves
         .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, getAppLang(), n.id)}</label>`)
-        .join("") || `<span class="muted">No subjects yet.</span>`;
+        .join("") || `<span class="muted">${t("No subjects yet.")}</span>`;
 
       await refreshClasses();
     }
@@ -191,33 +189,37 @@
     // -----------------------------------------------------------------------
 
     async function refreshClasses() {
-      classesBody.innerHTML = `<p class="muted">Loading…</p>`;
+      classesBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
       try {
         classes = (await listClasses(db, activeTenantId)).filter((c) => canAdmin || c.status === "active");
         classesBody.innerHTML = classes.length
           ? (await Promise.all(classes.map(renderClassCard))).join("")
-          : `<p class="muted">No classes yet.</p>`;
+          : `<p class="muted">${t("No classes yet.")}</p>`;
         wireClassCardActions();
       } catch (err) {
-        classesBody.innerHTML = `<p style="color:#9c3b2e;">Couldn't load classes: ${err.code ?? ""} ${err.message}</p>`;
+        classesBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load classes:")} ${err.code ?? ""} ${err.message}</p>`;
         console.error(err);
       }
     }
 
     async function renderClassCard(c) {
-      const subjectsLine = (c.subjectIds ?? []).map(subjectName).join(", ") || "(no subjects set)";
+      const subjectsLine = (c.subjectIds ?? []).map(subjectName).join(", ") || t("(no subjects set)");
       const rosterHtml = await renderClassRoster(c);
       const archiveBtn = canAdmin && c.status === "active"
-        ? `<button class="small secondary archiveClassBtn" data-class="${c.id}">Archive</button>`
+        ? `<button class="small secondary archiveClassBtn" data-class="${c.id}">${t("Archive")}</button>`
         : "";
       const bulkConfirmBtn = canAdmin && c.status === "active"
-        ? `<button class="small secondary bulkConfirmClassBtn" data-class="${c.id}">Bulk confirm all pending for this class</button>`
+        ? `<button class="small secondary bulkConfirmClassBtn" data-class="${c.id}">${t("Bulk confirm all pending for this class")}</button>`
         : "";
       const enrolControls = canAdmin && c.status === "active" ? renderEnrolControls(c) : "";
       return `<div class="card">
-        <h3>${langText(c.name, getAppLang(), c.id)} <span class="pill pill-${c.status}">${c.status}</span></h3>
+        <h3>${langText(c.name, getAppLang(), c.id)} <span class="pill pill-${c.status}">${entityStatusLabel(c.status)}</span></h3>
         <div class="muted">${subjectsLine}</div>
-        ${c.gloss?.en ? `<div class="muted">${c.gloss.en}</div>` : ""}
+        <!-- The gloss is tenant-authored, language-keyed data (I11). It was
+             read straight off .en, so a tenant that HAD authored Bangla for
+             it still saw English -- a real pre-existing bug, not a
+             translation gap. -->
+        ${c.gloss ? `<div class="muted">${langText(c.gloss, getAppLang(), "")}</div>` : ""}
         ${enrolControls}
         ${rosterHtml}
         ${c.status === "active" ? `<div style="margin-top:0.5rem;">${bulkConfirmBtn} ${archiveBtn}</div>` : ""}
@@ -228,22 +230,22 @@
     function renderEnrolControls(c) {
       const personOptions = roster.map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`).join("");
       return `<div class="row" style="margin-top:0.5rem;">
-        <div><label>Person</label><select class="enrolPersonSelect" data-class="${c.id}">${personOptions}</select></div>
-        <div><label>Role</label><select class="enrolRoleSelect" data-class="${c.id}">
-          <option value="student">Student</option>
-          <option value="teacher">Teacher</option>
+        <div><label>${t("Person")}</label><select class="enrolPersonSelect" data-class="${c.id}">${personOptions}</select></div>
+        <div><label>${t("Role")}</label><select class="enrolRoleSelect" data-class="${c.id}">
+          <option value="student">${t("Student")}</option>
+          <option value="teacher">${t("Teacher")}</option>
         </select></div>
-        <div><button class="small enrolBtn" data-class="${c.id}">Enrol</button></div>
+        <div><button class="small enrolBtn" data-class="${c.id}">${t("Enrol")}</button></div>
       </div>`;
     }
 
     async function renderClassRoster(c) {
       const enrolled = await listEnrollmentsForOffer(db, activeTenantId, c.id); // generic by contextId
       const active = enrolled.filter((e) => e.status === "active");
-      if (!active.length) return `<div class="muted" style="margin-top:0.4rem;">No one enrolled yet.</div>`;
+      if (!active.length) return `<div class="muted" style="margin-top:0.4rem;">${t("No one enrolled yet.")}</div>`;
       const rows = active.map((e) => {
-        const endBtn = canAdmin ? `<button class="small secondary endEnrolBtn" data-class="${c.id}" data-person="${e.personId}">End</button>` : "";
-        return `<div class="muted">${personName(e.personId)} <span class="pill pill-${e.roleInClass}">${e.roleInClass}</span> ${endBtn}</div>`;
+        const endBtn = canAdmin ? `<button class="small secondary endEnrolBtn" data-class="${c.id}" data-person="${e.personId}">${t("End")}</button>` : "";
+        return `<div class="muted">${personName(e.personId)} <span class="pill pill-${e.roleInClass}">${roleInClassLabel(e.roleInClass)}</span> ${endBtn}</div>`;
       }).join("");
       return `<div style="margin-top:0.5rem;">${rows}</div>`;
     }
@@ -298,7 +300,14 @@
             { collection: "records", action: "bulkConfirmClass" }
           );
           btn.disabled = false;
-          if (outcome.ok) resultEl.textContent = `Confirmed ${outcome.result.totalConfirmed} pending entr${outcome.result.totalConfirmed === 1 ? "y" : "ies"} across ${outcome.result.perStudent.length} student${outcome.result.perStudent.length === 1 ? "" : "s"}.`;
+          if (outcome.ok) {
+            resultEl.textContent = t(
+              outcome.result.totalConfirmed === 1
+                ? "Confirmed {count} pending entry across {students} students."
+                : "Confirmed {count} pending entries across {students} students.",
+              { count: num(outcome.result.totalConfirmed), students: num(outcome.result.perStudent.length) }
+            );
+          }
           else resultEl.textContent = outcome.entry.message;
         });
       });
@@ -306,7 +315,7 @@
 
     createClassBtn.addEventListener("click", async () => {
       createResult.textContent = "";
-      if (!classNameInput.value.trim()) { createResult.textContent = "Enter a name first."; return; }
+      if (!classNameInput.value.trim()) { createResult.textContent = t("Enter a name first."); return; }
       const subjectIds = Array.from(subjectChecks.querySelectorAll("input:checked")).map((c) => c.value);
 
       createClassBtn.disabled = true;
@@ -320,7 +329,7 @@
       );
       createClassBtn.disabled = false;
       if (outcome.ok) {
-        createResult.textContent = "Class created.";
+        createResult.textContent = t("Class created.");
         classNameInput.value = ""; classGlossInput.value = "";
         subjectChecks.querySelectorAll("input:checked").forEach((c) => (c.checked = false));
         await refreshClasses();

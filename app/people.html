@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
-<title>QuranRevival — People (F-012)</title>
+<title>QuranRevival — People</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
   h1 { font-size: 1.4rem; }
@@ -29,7 +29,9 @@
 </style>
 </head>
 <body>
-  <h1>People (F-012)</h1>
+  <h1>People</h1>
+  <p>Everyone in this madrasah: add a person, invite someone who signs in
+     themselves, and see who looks after whom.</p>
   <nav class="app-nav" id="topNav">
     <details class="nav-cat nav-cat-home">
       <summary>Home</summary>
@@ -115,16 +117,12 @@
     </fieldset>
 
     <fieldset>
-      <legend>Study Mode handover lock — test only (F-016)</legend>
+      <legend>Hand the device to a child</legend>
       <p style="margin-top:0; font-size:0.9rem;">
-        This is a throwaway demo of the LOCK MECHANISM only, not how real
-        teaching/recording will work. It simulates a shared device where a
-        child is left to study independently: pick a child to "start
-        studying" as, and switching to a DIFFERENT child is blocked until
-        you end that session. This is deliberately separate from — and
-        will never apply to — quickly logging progress for several
-        people yourself in one sitting (D10), which the real records
-        screen (Phase 3/4) will let you do freely from a simple dropdown.
+        For leaving a child to study on their own on a shared device: pick
+        the child, and the device stays theirs until you end the session.
+        Recording progress for several people yourself, one after another,
+        is not affected — that never needs a session at all.
       </p>
       <label for="studyPersonSelect">Child</label>
       <select id="studyPersonSelect"></select>
@@ -154,7 +152,7 @@
     import { addPersonToTenant } from "./js/people.js";
     import { createInvite, listInvitesForTenant, getTokenForPendingInvite } from "./js/invites.js";
     import { langText } from "./js/lang.js";
-    import { roleListLabel } from "./js/roles.js";
+    import { roleListLabel, roleLabel, entityStatusLabel } from "./js/labels.js";
     import { getAppLang, mountAppLangControl } from "./js/prefs.js";
     import { safeWrite } from "./js/errors.js";
     import {
@@ -259,7 +257,7 @@
         const managerName = person.managedByPersonId
           ? langText(roster.find((p) => p.id === person.managedByPersonId)?.name, getAppLang(), "—")
           : "—";
-        tr.innerHTML = `<td>${langText(person.name, getAppLang(), person.id)}</td><td>${person.roles ?? ""}</td><td>${managerName}</td>`;
+        tr.innerHTML = `<td>${langText(person.name, getAppLang(), person.id)}</td><td>${roleListLabel(person.roles)}</td><td>${managerName}</td>`;
         rosterBody.appendChild(tr);
       }
 
@@ -283,7 +281,10 @@
       const lock = getStudyLock();
       if (lock) {
         const person = roster.find((p) => p.id === lock.personId);
-        studyResultEl.textContent = `Currently studying as: ${langText(person?.name, getAppLang(), lock.personId)}. Pick someone else and click "Start studying" to see the block, or "End session" to release it.`;
+        studyResultEl.textContent = t(
+          "This device is studying as {name}. It stays with them until you end the session.",
+          { name: langText(person?.name, getAppLang(), lock.personId) }
+        );
         endStudyBtn.style.display = "inline-block";
       } else {
         studyResultEl.textContent = "";
@@ -301,9 +302,12 @@
       const invites = await listInvitesForTenant(db, activeTenantId);
       inviteBody.innerHTML = "";
       for (const inv of invites) {
-        const linkCell = inv.status === "pending" ? `<button data-email="${inv.email}" class="getLinkBtn">Copy link</button>` : "—";
+        const linkCell = inv.status === "pending" ? `<button data-email="${inv.email}" class="getLinkBtn">${t("Copy link")}</button>` : "—";
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${inv.email}</td><td>${inv.role}</td><td>${inv.status}</td><td>${linkCell}</td>`;
+        // The email address is the person's own -- never translated. The role
+        // and the invite's state are stored identifiers, so both go through
+        // their shared label helpers.
+        tr.innerHTML = `<td>${inv.email}</td><td>${roleLabel(inv.role)}</td><td>${entityStatusLabel(inv.status)}</td><td>${linkCell}</td>`;
         inviteBody.appendChild(tr);
       }
       inviteBody.querySelectorAll(".getLinkBtn").forEach((btn) => {
@@ -311,12 +315,12 @@
           btn.disabled = true;
           const token = await getTokenForPendingInvite(db, activeTenantId, btn.dataset.email);
           if (!token) {
-            btn.textContent = "Link not found";
+            btn.textContent = t("Link not found");
             return;
           }
           const link = new URL(`accept-invite.html?token=${token}`, location.href).href;
           await navigator.clipboard.writeText(link);
-          btn.textContent = "Copied!";
+          btn.textContent = t("Copied!");
           btn.disabled = false;
         });
       });
@@ -420,7 +424,9 @@
       resultEl.style.display = "block";
       if (outcome.ok) {
         resultEl.className = "ok";
-        resultEl.textContent = `Added. Person ID: ${outcome.result.personId}`;
+        // The person id is an identifier (I5/I16 -- four legacy shapes all
+        // still valid), so it is printed exactly as stored, never through num().
+        resultEl.textContent = t("Added. Person ID: {personId}", { personId: outcome.result.personId });
         document.getElementById("name").value = "";
         isMinorEl.checked = false;
         managedByWrap.style.display = "none";
@@ -447,7 +453,7 @@
       );
 
       if (outcome.ok) {
-        inviteResultEl.textContent = "Invite created — click \"Copy link\" below to get it.";
+        inviteResultEl.textContent = t("Invite created — use \"Copy link\" below to get the link.");
         inviteEmailEl.value = "";
         await loadInvites();
       } else {
@@ -460,7 +466,7 @@
     startStudyBtn.addEventListener("click", () => {
       const personId = studyPersonSelect.value;
       if (!personId) {
-        studyResultEl.textContent = "No child in the roster yet — add one above first.";
+        studyResultEl.textContent = t("No child in the roster yet — add one above first.");
         return;
       }
       const check = canSwitchTo(personId);

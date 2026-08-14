@@ -20,6 +20,8 @@
 // dropdown should not call acquireStudyLock() at all; only a genuine
 // "start independent study session" action should.
 
+import { t } from "./i18n.js";
+
 const STORAGE_KEY = "qr.studyLock";
 
 /** { personId, acquiredAt } or null if no lock is currently held. */
@@ -51,6 +53,8 @@ export function canSwitchTo(targetPersonId) {
   if (lock.personId === targetPersonId) return { allowed: true };
   return {
     allowed: false,
-    reason: `A study session is in progress for another person. End that session first before switching.`,
+    // I15's spirit: the ONLY explanation the person gets for a refused
+    // switch, so it has to be readable in their own language.
+    reason: t("A study session is in progress for another person. End that session first before switching."),
   };
 }

@@ -25,7 +25,7 @@ import {
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { langText } from "./lang.js";
-import { roleListLabel } from "./roles.js";
+import { roleListLabel } from "./labels.js";
 import { getAppLang, mountAppLangControl } from "./prefs.js";
 import { t, translateStatic } from "./i18n.js";
 import { safeWrite } from "./errors.js";

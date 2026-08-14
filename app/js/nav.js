@@ -54,7 +54,7 @@
 
 import { APP_LANGS } from "./prefs.js";
 import { t } from "./i18n.js";
-import { roleLabel } from "./roles.js";
+import { roleLabel } from "./labels.js";
 
 const STUDY_LINKS = [
   { href: "quranrevival.html", label: "Quran Study" }, // renamed from "Study" -- see shell round 4
