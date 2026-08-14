@@ -17,6 +17,7 @@ import { doc, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.1
 import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
 import { parseUnitKey } from "./unit-keys.js";
+import { t } from "./i18n.js";
 
 /**
  * ISO date (YYYY-MM-DD) of the start of the week containing `date`, per the
@@ -131,4 +132,27 @@ export function computeStreak(weekDocs, subjectId, todayDate = new Date()) {
     cursor.setUTCDate(cursor.getUTCDate() - 1);
   }
   return streak;
+}
+
+// ---------------------------------------------------------------------------
+// Reading an action out loud (full app translation, phase 4).
+//
+// `action` is a stored identifier -- "claimed" when a status is claimed
+// against a unit, "practised" when a routine's Log button is pressed -- and
+// both Records' week table and Monitor's raw-entry table printed it raw.
+// Same split as statusLabel()/confirmStateLabel(): the identifier stays the
+// canonical stored value and a CSV export carries it verbatim; this is the
+// one place it becomes text a person reads.
+// ---------------------------------------------------------------------------
+
+const ACTION_LABELS = Object.freeze({
+  claimed: "Claimed",
+  practised: "Practised",
+  confirmed: "Confirmed",
+  returned: "Returned",
+});
+
+export function activityActionLabel(action) {
+  const label = ACTION_LABELS[action];
+  return label ? t(label) : (action ?? "");
 }

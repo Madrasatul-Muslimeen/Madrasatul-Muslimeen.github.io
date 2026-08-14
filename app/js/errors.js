@@ -12,22 +12,44 @@
 //      banner has been dismissed)
 //   3. get shown on screen immediately, not just written to the console
 
+import { t } from "./i18n.js";
+
 const sessionErrorBuffer = [];
 
+// Full app translation, phase 4: these eight sentences are the ONLY thing a
+// person ever sees when a save fails, on every screen in the app -- so a
+// Bangla-only reader seeing them in English is I15 half-done: the failure
+// reaches them, but not in a language they can act on.
+//
+// They were invisible to tools/i18n-coverage.mjs (a plain object literal
+// matches none of its extractor patterns), which is the fourth time the
+// report has been quietly optimistic. Routing them through t() is what makes
+// them countable as well as translated.
+//
+// Each message is a FUNCTION, not a string, for two reasons: it is
+// translated at CALL time (the language can change while a page is open,
+// same reason statusLabel() is a function), and writing the English inside a
+// literal t("...") is what makes tools/i18n-coverage.mjs able to see it at
+// all -- a bare object of strings handed to t() through a variable is
+// invisible to every one of its extractor patterns.
 const PLAIN_MESSAGES = {
-  "permission-denied": "That save was blocked by a permissions rule. Nothing was lost, but it did not save — please tell the admin.",
-  unavailable: "Could not reach the server. This will save automatically once the connection is back.",
-  unauthenticated: "You're signed out, so that could not be saved. Please sign in again.",
-  "not-found": "That record could not be found to update. Please refresh and try again.",
-  "deadline-exceeded": "That save took too long and was stopped. Please try again.",
-  cancelled: "That save was interrupted before it finished. Please try again.",
-  "resource-exhausted": "The server is too busy right now. Please try again in a moment.",
-  "quota-exceeded": "You've used all the invites allowed for this account. Ask the admin to raise the limit if you need more.",
+  "permission-denied": () => t("That save was blocked by a permissions rule. Nothing was lost, but it did not save — please tell the admin."),
+  unavailable: () => t("Could not reach the server. This will save automatically once the connection is back."),
+  unauthenticated: () => t("You're signed out, so that could not be saved. Please sign in again."),
+  "not-found": () => t("That record could not be found to update. Please refresh and try again."),
+  "deadline-exceeded": () => t("That save took too long and was stopped. Please try again."),
+  cancelled: () => t("That save was interrupted before it finished. Please try again."),
+  "resource-exhausted": () => t("The server is too busy right now. Please try again in a moment."),
+  "quota-exceeded": () => t("You've used all the invites allowed for this account. Ask the admin to raise the limit if you need more."),
 };
 
 function plainMessageFor(error) {
   const code = error?.code ?? "unknown";
-  return PLAIN_MESSAGES[code] ?? `That save did not go through (${code}). Please try again, and tell the admin if it keeps happening.`;
+  const known = PLAIN_MESSAGES[code];
+  if (known) return known();
+  // The code itself stays as-is: it is a diagnostic for whoever is helping,
+  // and it is the one part of this sentence that must not be translated.
+  return t("That save did not go through ({code}). Please try again, and tell the admin if it keeps happening.", { code });
 }
 
 /**

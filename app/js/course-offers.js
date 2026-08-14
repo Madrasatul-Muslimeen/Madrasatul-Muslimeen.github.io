@@ -52,6 +52,7 @@
 
 import { collection, doc, getDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
+import { t } from "./i18n.js";
 import { createDocument, updateDocument } from "./envelope.js";
 
 // ---------------------------------------------------------------------------
@@ -310,4 +311,37 @@ async function syncTeacherStudentLinksForContext(db, tenantId, contextId, change
     const [teacherPersonId, studentPersonId] = changedRole === "teacher" ? [changedPersonId, otherId] : [otherId, changedPersonId];
     return recomputeTeacherStudentLink(db, tenantId, teacherPersonId, studentPersonId, uid);
   }));
+}
+
+// ---------------------------------------------------------------------------
+// Reading an offer/class status and an enrolment role out loud
+// (full app translation, phase 4).
+//
+// Both are stored identifiers -- "active"/"ended"/"archived" and
+// "student"/"teacher" -- printed raw into course-offers.html's cards, so a
+// Bangla reader saw English words inside an otherwise Bangla card. Same
+// split as everywhere else: the identifier stays the canonical stored value
+// (and still drives the pill's CSS class), this is where it becomes text.
+// Shared with classes.html, which shows exactly the same two things.
+// ---------------------------------------------------------------------------
+
+const CONTEXT_STATUS_LABELS = Object.freeze({
+  active: "Active",
+  ended: "Ended",
+  archived: "Archived",
+});
+
+export function contextStatusLabel(status) {
+  const label = CONTEXT_STATUS_LABELS[status];
+  return label ? t(label) : (status ?? "");
+}
+
+const ROLE_IN_CLASS_LABELS = Object.freeze({
+  student: "Student",
+  teacher: "Teacher",
+});
+
+export function roleInClassLabel(role) {
+  const label = ROLE_IN_CLASS_LABELS[role];
+  return label ? t(label) : (role ?? "");
 }

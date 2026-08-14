@@ -18,6 +18,7 @@ import { listAllRecordsForPerson } from "./records.js";
 import { summarizeStatuses } from "./unit-keys.js";
 import { langText } from "./lang.js";
 import { getAppLang } from "./prefs.js";
+import { t } from "./i18n.js";
 
 // ---------------------------------------------------------------------------
 // Fetching -- bounded to the date range actually asked for, never "the
@@ -175,7 +176,14 @@ export function entriesToCsvRows(entries, { roster, subjectTree, trackables }) {
   const subjectNameOf = (id) => { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; };
   const trackableNameOf = (id) => { const t = trackables.find((tr) => tr.id === id); return t ? langText(t.name, getAppLang(), id) : (id ?? ""); };
 
-  const rows = [["Date", "Student", "Subject", "Unit", "Approach", "Action"]];
+  // Full app translation, phase 4: the HEADER row is translated (it is a
+  // label someone reads), but the date, the unit key and the action are
+  // left exactly as stored. A CSV is a data export -- it gets opened in a
+  // spreadsheet, filtered and sorted, and possibly read back -- so the
+  // canonical identifier is the right thing to carry, the same reason
+  // STATUSES keeps its English label as the stored value. Names are already
+  // language-keyed tenant data (I11), so those follow the reader.
+  const rows = [[t("Date"), t("Student"), t("Subject"), t("Unit"), t("Approach"), t("Action")]];
   for (const e of entries) {
     rows.push([e.date, personNameOf(e.personId), subjectNameOf(e.subjectId), e.unitKey, trackableNameOf(e.trackableId), e.action]);
   }
@@ -197,7 +205,7 @@ export function downloadCsv(filename, rows) {
 export function printReportHtml(title, innerHtml) {
   const win = window.open("", "_blank", "width=1050,height=780");
   if (!win) {
-    alert("Print pop-up blocked. Allow pop-ups for this site, then try again.");
+    alert(t("Print pop-up blocked. Allow pop-ups for this site, then try again."));
     return;
   }
   win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title><style>

@@ -25,6 +25,7 @@ import {
 import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { langText } from "./lang.js";
+import { roleListLabel } from "./roles.js";
 import { getAppLang, mountAppLangControl } from "./prefs.js";
 import { t, translateStatic } from "./i18n.js";
 import { safeWrite } from "./errors.js";
@@ -45,7 +46,7 @@ import { buildUnitKey } from "./unit-keys.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
 import { logActivity } from "./activity.js";
 import { getResourcesByIds } from "./resources.js";
-import { renderNavBar, renderHomeExtras } from "./nav.js";
+import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./nav.js";
 import { renderTopicBreadcrumb, renderTopicChildList, renderTopicResource } from "./topic-renderer.js";
 import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderWayModalShell, attachWayModalHandlers } from "./way-modal.js";
 import { getBookmarks, touchResume, recentResumeEntries } from "./bookmarks.js";
@@ -91,11 +92,6 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
   const wayModalMount = document.getElementById("wayModalMount");
   const continueStripContainer = document.getElementById("continueStrip"); // optional -- Phase 7; older shells without this id just skip the strip
 
-  const NO_ACCOUNT_MESSAGE = ` — no account found yet.
-    <br>If someone invited you to join an existing madrasah, use the invite
-    link they sent you (check your email) — don't create a new one here.
-    <br>Starting fresh instead? <a href="onboarding.html">Create a new account
-    on the onboarding page</a>.`;
 
   signInBtn.addEventListener("click", () => {
     signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
@@ -436,14 +432,14 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
       const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
       if (!context) {
-        whoEl.innerHTML += NO_ACCOUNT_MESSAGE;
+        whoEl.innerHTML += noAccountMessageHtml();
         return;
       }
       activeTenantId = context.tenantId;
 
       myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
       tenantSelect.innerHTML = myMemberships
-        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${m.roles.join(", ")})</option>`)
+        .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
         .join("");
 
       appEl.style.display = "block";

@@ -706,4 +706,265 @@ export const BN = {
     "কী কী সত্যিই তৈরি হয়েছে আর কী কেবল পরিকল্পনায় আছে — সরাসরি অ্যাপের নিজস্ব বৈশিষ্ট্য-নথি থেকে পড়া, হাতে লেখা নয়, তাই এই পাতাটি কখনো প্রকৃত কোড থেকে আলাদা হয়ে যেতে পারে না।",
   "Phase 0 & 1 — individually tracked features":
     "পর্যায় ০ ও ১ — আলাদাভাবে চিহ্নিত বৈশিষ্ট্যসমূহ",
+
+  // =====================================================================
+  // PHASE 4 — TRACKING & FEEDBACK
+  // Records, Monitor, Homework, Course Offers, the Continue strip, and the
+  // shared write-failure sentences every screen in the app can show.
+  // =====================================================================
+
+  // --- Shell strings phases 1-3 missed, found by reading a real page -----
+  // The "no account yet" dead end (12 pages carried their own English copy)
+  // and errors.js's eight plain-language write-failure sentences, which no
+  // area of the coverage report counted at all.
+  "no account found yet.": "এখনো কোনো অ্যাকাউন্ট পাওয়া যায়নি।",
+  "If someone invited you to join an existing madrasah, use the invite link they sent you (check your email) — don't create a new one here.":
+    "কেউ যদি আপনাকে বিদ্যমান কোনো মাদরাসায় যোগ দিতে আমন্ত্রণ জানিয়ে থাকেন, তবে তাঁদের পাঠানো আমন্ত্রণ-লিংকটি ব্যবহার করুন (আপনার ইমেইল দেখুন) — এখানে নতুন করে অ্যাকাউন্ট তৈরি করবেন না।",
+  "Create a new account on the onboarding page": "সূচনা পাতায় নতুন অ্যাকাউন্ট তৈরি করুন",
+
+  "That save was blocked by a permissions rule. Nothing was lost, but it did not save — please tell the admin.":
+    "অনুমতির নিয়মে সংরক্ষণটি আটকে গেছে। কিছুই হারায়নি, তবে সংরক্ষণ হয়নি — অনুগ্রহ করে প্রশাসককে জানান।",
+  "Could not reach the server. This will save automatically once the connection is back.":
+    "সার্ভারে পৌঁছানো যায়নি। সংযোগ ফিরে এলে এটি নিজে থেকেই সংরক্ষিত হবে।",
+  "You're signed out, so that could not be saved. Please sign in again.":
+    "আপনি সাইন আউট অবস্থায় আছেন, তাই এটি সংরক্ষণ করা যায়নি। অনুগ্রহ করে আবার সাইন ইন করুন।",
+  "That record could not be found to update. Please refresh and try again.":
+    "হালনাগাদ করার মতো রেকর্ডটি খুঁজে পাওয়া যায়নি। অনুগ্রহ করে পাতাটি রিফ্রেশ করে আবার চেষ্টা করুন।",
+  "That save took too long and was stopped. Please try again.":
+    "সংরক্ষণে অনেক বেশি সময় লাগায় তা থামিয়ে দেওয়া হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+  "That save was interrupted before it finished. Please try again.":
+    "সংরক্ষণটি শেষ হওয়ার আগেই বাধাগ্রস্ত হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।",
+  "The server is too busy right now. Please try again in a moment.":
+    "সার্ভার এই মুহূর্তে অত্যন্ত ব্যস্ত। অনুগ্রহ করে একটু পরে আবার চেষ্টা করুন।",
+  "You've used all the invites allowed for this account. Ask the admin to raise the limit if you need more.":
+    "এই অ্যাকাউন্টের জন্য অনুমোদিত সব আমন্ত্রণ ব্যবহার হয়ে গেছে। আরও প্রয়োজন হলে প্রশাসককে সীমা বাড়াতে বলুন।",
+  "That save did not go through ({code}). Please try again, and tell the admin if it keeps happening.":
+    "সংরক্ষণটি সম্পন্ন হয়নি ({code})। অনুগ্রহ করে আবার চেষ্টা করুন, এবং বারবার হতে থাকলে প্রশাসককে জানান।",
+
+  // --- Role names (js/roles.js) -----------------------------------------
+  // Shown in every page's tenant picker -- "Madrasatul Muslimeen (Owner,
+  // Prime)" -- and in the nav's "Previewing as" notice.
+  "Owner": "মালিক", // ?
+  "Prime": "প্রাইম", // ? no settled Bangla term; kept as the app's own coined role name
+  "Guardian": "অভিভাবক",
+  "Platform admin": "প্ল্যাটফর্ম প্রশাসক",
+
+  // --- Unit types (unit-keys.js) ----------------------------------------
+  // Ayah / Surah / Juz / Page / Ruku already have their Bangla from phase 2.
+  "Range": "পরিসর",
+  "Hizb": "হিযব",
+  "Rub": "রুব",
+  "Manzil": "মানযিল",
+  "Topic": "বিষয়বস্তু", // ? distinct from "Subject" (বিষয়) on purpose
+
+  // --- Page titles and headings -----------------------------------------
+  "QuranRevival — Records": "কুরআনরিভাইভাল — রেকর্ড",
+  "QuranRevival — Monitor": "কুরআনরিভাইভাল — পর্যবেক্ষণ",
+  "QuranRevival — Homework": "কুরআনরিভাইভাল — বাড়ির কাজ",
+  "QuranRevival — Course Offers": "কুরআনরিভাইভাল — কোর্স অফার",
+  "Claim a status against a unit of study, see it confirmed or returned, and\n     confirm a whole surah, subject or week in one go.":
+    "অধ্যয়নের কোনো একটি এককের বিপরীতে একটি অবস্থা দাবি করুন, তা নিশ্চিত হলো নাকি ফেরত এলো দেখুন, এবং একটি পূর্ণ সূরা, বিষয় বা সপ্তাহ একসাথে নিশ্চিত করুন।",
+  "One report covering every module — whatever has actually been claimed or\n     logged. Quran gets an extra Approach-status section below, since it is\n     the only subject with structured progress data today.":
+    "সব মডিউল মিলিয়ে একটি প্রতিবেদন — যা কিছু সত্যিই দাবি করা বা লিপিবদ্ধ হয়েছে। নিচে কুরআনের জন্য পদ্ধতি-ভিত্তিক একটি বাড়তি অংশ আছে, কারণ আজ কেবল এই বিষয়টিরই সুবিন্যস্ত অগ্রগতির তথ্য আছে।",
+  "Assign to a person, mark with a score and comment, and keep a private\n     note about a student for yourself. A teacher must assign through a\n     class or course offer they actively teach.":
+    "একজন ব্যক্তিকে কাজ দিন, নম্বর ও মন্তব্যসহ মূল্যায়ন করুন, এবং কোনো শিক্ষার্থী সম্পর্কে নিজের জন্য ব্যক্তিগত নোট রাখুন। একজন শিক্ষককে অবশ্যই তিনি সক্রিয়ভাবে পড়ান এমন কোনো ক্লাস বা কোর্স অফারের মাধ্যমে কাজ দিতে হবে।",
+  "A shared schedule several people follow together: create an offer, enrol\n     people, and see who is in it.":
+    "একটি যৌথ সময়সূচি যা কয়েকজন একসাথে অনুসরণ করেন: একটি অফার তৈরি করুন, লোক ভর্তি করুন, এবং কারা আছেন দেখুন।",
+
+  // --- Records: the claim form ------------------------------------------
+  "Unit type": "এককের ধরন", // ?
+  "Unit": "একক", // ?
+  "Reference": "সূত্র", // ?
+  "Domain tags": "ক্ষেত্রের ট্যাগ", // ?
+  "Domains": "ক্ষেত্রসমূহ", // ?
+  "New domain tag": "নতুন ক্ষেত্রের ট্যাগ", // ?
+  "+ Add": "+ যোগ করুন",
+  "Notes (optional)": "নোট (ঐচ্ছিক)",
+  "No domain tags yet.": "এখনো কোনো ক্ষেত্রের ট্যাগ নেই।",
+  "(no Approaches for this subject yet)": "(এই বিষয়ের জন্য এখনো কোনো পদ্ধতি নেই)",
+  "Add a person first.": "আগে একজন ব্যক্তি যোগ করুন।",
+  "Enter a reference first.": "আগে একটি সূত্র লিখুন।",
+  "Couldn't read that reference: {message}": "সূত্রটি পড়া যায়নি: {message}",
+  "No Approach selected — pick a subject that has Approaches (Quran, for now).":
+    "কোনো পদ্ধতি নির্বাচন করা হয়নি — এমন একটি বিষয় বেছে নিন যাতে পদ্ধতি আছে (আপাতত কুরআন)।",
+  "Claimed — waiting for confirmation.": "দাবি করা হয়েছে — নিশ্চিতকরণের অপেক্ষায়।",
+  "Claimed and confirmed (self-confirmed).": "দাবি করা হয়েছে এবং নিশ্চিত হয়েছে (নিজেই নিশ্চিত করেছেন)।",
+
+  // The reference hints. The example itself is filled in by num(), so a
+  // Bangla reader is shown Bengali digits -- which the box accepts back.
+  "surah:ayah — e.g. {example}": "সূরা:আয়াত — যেমন {example}",
+  "surah:from-to — e.g. {example}": "সূরা:শুরু-শেষ — যেমন {example}",
+  "surah — e.g. {example}": "সূরা — যেমন {example}",
+  "edition:page — e.g. {example}": "সংস্করণ:পৃষ্ঠা — যেমন {example}",
+  "surah:ruku — e.g. {example}": "সূরা:রুকু — যেমন {example}",
+  "juz — e.g. {example}": "জুয — যেমন {example}",
+  "hizb — e.g. {example}": "হিযব — যেমন {example}",
+  "rub — e.g. {example}": "রুব — যেমন {example}",
+  "manzil — e.g. {example}": "মানযিল — যেমন {example}",
+  "collection:number — e.g. {example}": "সংকলন:নম্বর — যেমন {example}",
+  "topicId — e.g. {example}": "বিষয়বস্তুর আইডি — যেমন {example}",
+  "number — e.g. {example}": "নম্বর — যেমন {example}",
+
+  // --- Records: the two tables ------------------------------------------
+  "Entries in this chunk": "এই খণ্ডের এন্ট্রিসমূহ", // ?
+  "Chunk: {chunkKey}": "খণ্ড: {chunkKey}", // ?
+  "Pending only": "শুধু অপেক্ষমাণ",
+  "Bulk confirm all pending here": "এখানকার সব অপেক্ষমাণ একসাথে নিশ্চিত করুন",
+  "Bulk confirm all pending this week": "এই সপ্তাহের সব অপেক্ষমাণ একসাথে নিশ্চিত করুন",
+  "This week's activity": "এই সপ্তাহের কার্যকলাপ",
+  "Week starting: {weekKey}": "সপ্তাহ শুরু: {weekKey}",
+  "Claimed": "দাবি করা হয়েছে",
+  "Practised": "অনুশীলন করা হয়েছে",
+  "Confirmed": "নিশ্চিত",
+  "Awaiting confirmation": "নিশ্চিতকরণের অপেক্ষায়",
+  "Returned": "ফেরত পাঠানো হয়েছে",
+  "State": "নিশ্চিতকরণ", // ? the column showing pending/confirmed/returned
+  "Action": "কার্যক্রম", // ?
+  "Actions": "কার্যক্রম", // ?
+  "Confirm": "নিশ্চিত করুন",
+  "Return": "ফেরত পাঠান",
+  "Confirm anyway": "তবুও নিশ্চিত করুন",
+  "Note for the return (optional):": "ফেরত পাঠানোর কারণ (ঐচ্ছিক):",
+  "Nothing here yet.": "এখানে এখনো কিছু নেই।",
+  "Nothing logged this week yet.": "এই সপ্তাহে এখনো কিছু লিপিবদ্ধ হয়নি।",
+  "Confirmed {count} entry in this chunk.": "এই খণ্ডের {count}টি এন্ট্রি নিশ্চিত করা হয়েছে।",
+  "Confirmed {count} entries in this chunk.": "এই খণ্ডের {count}টি এন্ট্রি নিশ্চিত করা হয়েছে।",
+  "Confirmed {count} entry touched this week.": "এই সপ্তাহে ছোঁয়া {count}টি এন্ট্রি নিশ্চিত করা হয়েছে।",
+  "Confirmed {count} entries touched this week.": "এই সপ্তাহে ছোঁয়া {count}টি এন্ট্রি নিশ্চিত করা হয়েছে।",
+
+  // --- Monitor -----------------------------------------------------------
+  "Student": "শিক্ষার্থী",
+  "Students": "শিক্ষার্থী",
+  "Whole roster (weekly/monthly report only)": "সম্পূর্ণ তালিকা (কেবল সাপ্তাহিক/মাসিক প্রতিবেদনে)",
+  "Weekly / monthly report": "সাপ্তাহিক / মাসিক প্রতিবেদন",
+  "Week": "সপ্তাহ",
+  "Month": "মাস",
+  "Week of {weekKey} — {start} to {end}": "{weekKey} তারিখের সপ্তাহ — {start} থেকে {end}",
+  "📥 Download CSV": "📥 CSV ডাউনলোড করুন",
+  "🖨 Print report": "🖨 প্রতিবেদন প্রিন্ট করুন",
+  "Monitor report": "পর্যবেক্ষণ প্রতিবেদন",
+  "Per student": "শিক্ষার্থীভিত্তিক",
+  "Per subject": "বিষয়ভিত্তিক",
+  "Raw entries": "মূল এন্ট্রিসমূহ",
+  "Entries": "এন্ট্রি", // ?
+  "Days active": "সক্রিয় দিন",
+  "By subject": "বিষয় অনুযায়ী",
+  "Distinct units": "স্বতন্ত্র একক",
+  "No students in scope.": "পরিধির মধ্যে কোনো শিক্ষার্থী নেই।",
+  "Nothing logged in this range.": "এই সময়সীমায় কিছু লিপিবদ্ধ হয়নি।",
+  "Pick a student first.": "আগে একজন শিক্ষার্থী বেছে নিন।",
+  "Couldn't load the report:": "প্রতিবেদন লোড করা যায়নি:",
+  "Couldn't load the breakdown:": "বিশ্লেষণ লোড করা যায়নি:",
+  "Quran Approach breakdown —": "কুরআন পদ্ধতির বিশ্লেষণ —",
+  "Current claimed status per Approach, across every ayah/juz/page this student has ever touched — not scoped to the week/month above (this is a status snapshot, not an activity log).":
+    "এই শিক্ষার্থী আজ পর্যন্ত যত আয়াত/জুয/পৃষ্ঠা ছুঁয়েছেন, তার সবটিতে প্রতিটি পদ্ধতির বর্তমান দাবিকৃত অবস্থা — উপরের সপ্তাহ/মাসের সীমায় আবদ্ধ নয় (এটি অবস্থার একটি চিত্র, কার্যকলাপের তালিকা নয়)।",
+  "Section": "বিভাগ",
+  "Achieved+": "অর্জিত+",
+  "{count} ({percent}%) of {total}": "{total}-এর মধ্যে {count} ({percent}%)",
+  "{count} of {total}": "{total}-এর মধ্যে {count}",
+  "No Quran Approaches set up for this tenant yet.": "এই প্রতিষ্ঠানের জন্য এখনো কোনো কুরআন পদ্ধতি নির্ধারণ করা হয়নি।",
+  "Print pop-up blocked. Allow pop-ups for this site, then try again.":
+    "প্রিন্ট পপ-আপ আটকে দেওয়া হয়েছে। এই সাইটের জন্য পপ-আপ চালু করে আবার চেষ্টা করুন।",
+
+  // --- Homework ----------------------------------------------------------
+  "New assignment": "নতুন নির্ধারিত কাজ", // ?
+  "Create assignment": "কাজ তৈরি করুন",
+  "Assignments for {name}": "{name}-এর কাজসমূহ",
+  "Assignments": "কাজসমূহ",
+  "Class / Course Offer": "ক্লাস / কোর্স অফার",
+  "Class": "ক্লাস",
+  "Course Offer": "কোর্স অফার",
+  "Assign to": "যাকে দেওয়া হবে",
+  "Subject (optional)": "বিষয় (ঐচ্ছিক)",
+  "(none)": "(কিছু নয়)",
+  "(none — any visible person)": "(কিছু নয় — দৃশ্যমান যেকোনো ব্যক্তি)",
+  "Due date (optional)": "জমা দেওয়ার তারিখ (ঐচ্ছিক)",
+  "Max score (optional)": "সর্বোচ্চ নম্বর (ঐচ্ছিক)",
+  "Instructions": "নির্দেশনা",
+  "(no instructions)": "(কোনো নির্দেশনা নেই)",
+  "Subject:": "বিষয়:",
+  "Due:": "জমার তারিখ:",
+  "Max score:": "সর্বোচ্চ নম্বর:",
+  "Score": "নম্বর",
+  "Score:": "নম্বর:",
+  "Save score": "নম্বর সংরক্ষণ করুন",
+  "Comment (optional)": "মন্তব্য (ঐচ্ছিক)",
+  "Optional note": "ঐচ্ছিক নোট",
+  "Mark as submitted": "জমা দেওয়া হয়েছে চিহ্নিত করুন",
+  "Not submitted": "জমা দেওয়া হয়নি",
+  "Submitted": "জমা দেওয়া হয়েছে",
+  "Marked": "মূল্যায়ন করা হয়েছে",
+  "No assignments yet.": "এখনো কোনো কাজ নেই।",
+  "Couldn't load assignments:": "কাজগুলো লোড করা যায়নি:",
+  "No students in this context yet.": "এই প্রসঙ্গে এখনো কোনো শিক্ষার্থী নেই।",
+  "Pick at least one student.": "অন্তত একজন শিক্ষার্থী বেছে নিন।",
+  "Enter instructions first.": "আগে নির্দেশনা লিখুন।",
+  "Pick a class or course offer first — required for a teacher-created assignment.":
+    "আগে একটি ক্লাস বা কোর্স অফার বেছে নিন — শিক্ষকের দেওয়া কাজের জন্য এটি আবশ্যক।",
+  "Required — pick the class/course offer you're assigning this through.":
+    "আবশ্যক — যে ক্লাস/কোর্স অফারের মাধ্যমে এটি দিচ্ছেন তা বেছে নিন।",
+  "You have no active class/course offer to assign homework through yet — ask an admin to enrol you as a teacher first.":
+    "বাড়ির কাজ দেওয়ার মতো সক্রিয় কোনো ক্লাস/কোর্স অফার এখনো আপনার নেই — প্রশাসককে বলুন আগে আপনাকে শিক্ষক হিসেবে যুক্ত করতে।",
+  "Assigned to {count} student.": "{count} জন শিক্ষার্থীকে দেওয়া হয়েছে।",
+  "Assigned to {count} students.": "{count} জন শিক্ষার্থীকে দেওয়া হয়েছে।",
+  "My private teaching notes": "আমার ব্যক্তিগত শিক্ষণ-নোট",
+  "Only you can ever see these — never shown to the student, guardian, or anyone else.":
+    "এগুলো কেবল আপনিই দেখতে পাবেন — শিক্ষার্থী, অভিভাবক বা অন্য কাউকে কখনোই দেখানো হয় না।",
+  "New note": "নতুন নোট",
+  // "About" alone is the nav's own About PAGE (পরিচিতি). Here it labels
+  // "about WHICH student", so it carries a context suffix -- the first real
+  // use of the mechanism i18n.js reserved for exactly this collision.
+  "About|person": "কার সম্পর্কে",
+  "Note": "নোট",
+  "Save note": "নোট সংরক্ষণ করুন",
+  "No notes yet.": "এখনো কোনো নোট নেই।",
+  "Couldn't load notes:": "নোটগুলো লোড করা যায়নি:",
+  "Write a note first.": "আগে একটি নোট লিখুন।",
+
+  // --- Course offers -----------------------------------------------------
+  "New course offer": "নতুন কোর্স অফার",
+  "Subjects (optional)": "বিষয়সমূহ (ঐচ্ছিক)",
+  "Runs on": "যেসব দিনে চলে",
+  "Start date (optional)": "শুরুর তারিখ (ঐচ্ছিক)",
+  "End date (optional)": "শেষের তারিখ (ঐচ্ছিক)",
+  "Create offer": "অফার তৈরি করুন",
+  "Course offers": "কোর্স অফারসমূহ",
+  "Enrolments": "ভর্তিসমূহ",
+  "{name}'s enrolments": "{name}-এর ভর্তিসমূহ",
+  "Enrol {name}": "{name}-কে ভর্তি করুন",
+  "End": "শেষ করুন",
+  "Active": "সক্রিয়",
+  "Ended": "শেষ হয়েছে",
+  "Archived": "সংরক্ষণাগারে",
+  "Teacher": "শিক্ষক",
+  "No schedule set": "কোনো সময়সূচি নির্ধারিত নেই",
+  "(no subjects set)": "(কোনো বিষয় নির্ধারিত নেই)",
+  "No one enrolled yet.": "এখনো কেউ ভর্তি হয়নি।",
+  "No course offers yet.": "এখনো কোনো কোর্স অফার নেই।",
+  "Not enrolled in anything yet.": "এখনো কোথাও ভর্তি হননি।",
+  "No subjects yet.": "এখনো কোনো বিষয় নেই।",
+  "Enter a name first.": "আগে একটি নাম লিখুন।",
+  "Course offer created.": "কোর্স অফার তৈরি হয়েছে।",
+  "Pick a person first.": "আগে একজন ব্যক্তি বেছে নিন।",
+  "Couldn't load course offers:": "কোর্স অফারগুলো লোড করা যায়নি:",
+  "Couldn't load enrolments:": "ভর্তির তথ্য লোড করা যায়নি:",
+
+  // Short day names, as a weekday checkbox row shows them.
+  "Sun": "রবি",
+  "Mon": "সোম",
+  "Tue": "মঙ্গল",
+  "Wed": "বুধ",
+  "Thu": "বৃহঃ",
+  "Fri": "শুক্র",
+  "Sat": "শনি",
+
+  // --- Continue strip (every study page) ---------------------------------
+  "Continue: {what}": "চালিয়ে যান: {what}",
+
+  // --- Deliberately NOT translated, mapped to itself so the report counts
+  //     it as decided rather than forgotten (same treatment phase 1 gave
+  //     the app's own name and the Ta'awwudh transliteration).
+  //     Every language picker names Bangla in Bangla, in every language --
+  //     it is how a Bangla-only reader finds the setting at all.
+  "বাংলা (Bangla)": "বাংলা (Bangla)",
 };

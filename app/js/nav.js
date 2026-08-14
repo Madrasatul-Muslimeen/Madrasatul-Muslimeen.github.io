@@ -54,6 +54,7 @@
 
 import { APP_LANGS } from "./prefs.js";
 import { t } from "./i18n.js";
+import { roleLabel } from "./roles.js";
 
 const STUDY_LINKS = [
   { href: "quranrevival.html", label: "Quran Study" }, // renamed from "Study" -- see shell round 4
@@ -159,7 +160,9 @@ export function renderNavBar(roles = [], viewAsRole = null) {
   // found the same way deserves the same kind of note.
   const teacherGapNote = "";
   const previewNotice = viewAsRole
-    ? `<span class="nav-preview-notice">${t("Previewing as: {role} — change this on the People page", { role: viewAsRole })}${teacherGapNote}</span>`
+    // phase 4: the role id itself is translated too -- the sentence around
+    // it was Bangla while the word inside it stayed "teacher".
+    ? `<span class="nav-preview-notice">${t("Previewing as: {role} — change this on the People page", { role: roleLabel(viewAsRole) })}${teacherGapNote}</span>`
     : "";
   return `${cats.join("")}${previewNotice}`;
 }
@@ -201,4 +204,25 @@ function renderSettings() {
   return `<div class="nav-cat-group"><div class="nav-cat-group-label">${t("Settings")}</div>
     <div class="nav-setting"><label for="navAppLangSelect">${t("Language")}</label><select id="navAppLangSelect">${options}</select></div>
     ${renderPlaceholders(SETTINGS_PLACEHOLDERS)}</div>`;
+}
+
+// Full app translation, phase 4 (13 Aug 2026). Twelve pages/modules each
+// carried their OWN identical copy of this sentence, and every one of them
+// was still in English -- a signed-in Bangla reader with no account yet got
+// the app's most important dead-end explained in a language they cannot
+// read. It was invisible to tools/i18n-coverage.mjs (a template literal
+// assigned to a const matches none of its extractor patterns), and it was
+// found by opening the page, not by the report.
+//
+// Centralised here rather than translated twelve times: nav.js is already
+// imported by every one of those files, and this is shell chrome, which is
+// exactly what this file renders. Still a pure renderer (I2) -- HTML out, no
+// state, no Firebase.
+//
+// The caller appends it to the sign-in status line, so it deliberately opens
+// with the same " — " continuation the twelve copies did.
+export function noAccountMessageHtml() {
+  return ` — ${t("no account found yet.")}
+    <br>${t("If someone invited you to join an existing madrasah, use the invite link they sent you (check your email) — don't create a new one here.")}
+    <br>${t("Starting fresh instead?")} <a href="onboarding.html">${t("Create a new account on the onboarding page")}</a>.`;
 }
