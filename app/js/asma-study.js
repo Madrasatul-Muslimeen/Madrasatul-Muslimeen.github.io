@@ -19,7 +19,8 @@ import { doc, getDoc, collection, query, where, getDocs } from "https://www.gsta
 import { TENANT } from "./collections.js";
 import { langText } from "./lang.js";
 import { roleListLabel } from "./labels.js";
-import { getAppLang, mountAppLangControl } from "./prefs.js";
+import { getAppLang } from "./prefs.js";
+import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./lang-sync.js";
 import { t, num, asmaName, translateStatic } from "./i18n.js";
 import { safeWrite } from "./errors.js";
 import {
@@ -55,7 +56,7 @@ export function initAsmaStudyPage() {
   function renderNav(roles, viewAsRole) {
     navBar.innerHTML = renderNavBar(roles, viewAsRole);
     navHomeExtra.innerHTML = renderHomeExtras(roles);
-    mountAppLangControl(navHomeExtra); // shell round 13 -- Settings -> Language; default handler reloads so every name comes back translated
+    mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
   }
   const tenantSelect = document.getElementById("tenantSelect");
   const personSelect = document.getElementById("personSelect");
@@ -296,6 +297,9 @@ export function initAsmaStudyPage() {
 
     try {
       const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
+      // v07.37: if this account has a language set on another device, take it
+      // and reload. Costs no extra read -- the snapshot is already in hand.
+      if (adoptAppLangFromUserIndex(userIndexSnap)) return;
       const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
       const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));

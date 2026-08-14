@@ -20,25 +20,37 @@
 //      an app-language one, so it lives in that module's own Reading view
 //      card. That is QURAN TRANSLATION LANGUAGE.
 //
-// STORAGE: localStorage, per browser (owner's call — "localStorage now,
-// Firestore sync layered on later"). This costs NOTHING on the startup
-// path, which matters: a Firestore-backed preference would add a network
-// read before first paint, and the load-speed contract (Architecture
-// Part 8) says nothing joins the startup path without being flagged first
-// (I9). It also needs no new collection and no firestore.rules change.
-// Precedent: js/splash.js already keeps its own preferences exactly this
-// way. The trade the owner accepted is that the choice does not follow the
-// account across devices — set it on the phone and the tablet still shows
-// English until it is set there too.
+// STORAGE: localStorage is the FIRST source, and js/lang-sync.js layers the
+// account on top of it (v07.37 — the owner asked for the choice to follow
+// them between devices: "setting again is just annoying").
 //
-// The Firestore sync is meant to be layered on later WITHOUT redoing this
-// work, so the shape below is deliberate: every caller goes through
-// getAppLang() and never touches localStorage itself, and the cached value
-// is updated through one setter that notifies subscribers. A later round
-// adds a second source behind that same getter (read the stored doc after
-// sign-in, call setAppLang() if it differs) and no call site changes.
+// localStorage still comes first, and that is not a leftover — it is what
+// keeps the load-speed contract intact. The language has to be known
+// BEFORE first paint, or a Bangla reader watches an English page appear
+// and then change under them. A network read cannot happen before first
+// paint (Architecture Part 8; I9), and localStorage is synchronous, so:
 //
-// I2: a shared helper, not a module — never touches Firebase, no imports.
+//   1. localStorage decides what paints. Instant, no network, no flash.
+//   2. After sign-in resolves, the account's stored language is compared
+//      against it -- read off the userIndex document every signed-in page
+//      ALREADY fetches, so this costs ZERO extra reads and needs no new
+//      collection. If they disagree, adoptAppLang() below takes the
+//      account's value and the page reloads once. From then on this device
+//      agrees and nothing reloads again.
+//   3. Changing the language writes both, so the last change made on any
+//      device is what every other device picks up next time it loads.
+//
+// The cost of that shape, worth knowing: on a device that has NEVER opened
+// the app, the first paint is in English even for a Bangla reader, until
+// the account read comes back and the page reloads. One reload, once per
+// device. The alternative -- blocking first paint on a network read -- is
+// exactly what the load-speed contract forbids.
+//
+// I2: this file still never touches Firebase and imports nothing. That is
+// load-bearing, not habit: pure renderers (asma-renderer.js, and nav.js
+// via APP_LANGS) import getAppLang() from here, and they must never gain a
+// Firebase dependency. The Firestore half lives in js/lang-sync.js, which
+// hands this module a plain string.
 
 const APP_LANG_KEY = "mm_app_lang";
 const QURAN_TRANSLATION_LANG_KEY = "mm_quran_translation_lang";
@@ -108,6 +120,31 @@ export function setAppLang(lang) {
     }
   }
   return cachedAppLang;
+}
+
+/**
+ * Take the language stored on the ACCOUNT, if it differs from this
+ * device's. Returns true when the caller should reload the page.
+ *
+ * Deliberately does NOT notify listeners: this runs mid-way through a
+ * page's own bootstrap, after translateStatic() has already swapped the
+ * static markup, so re-rendering only the dynamic half would leave the
+ * page half in each language. A reload is the honest fix and is what the
+ * caller does with the `true`.
+ *
+ * Returns false, changing nothing, when localStorage cannot be written --
+ * private browsing, storage disabled. Otherwise the next load would read
+ * the old value, adopt again, and reload again, forever. Better that the
+ * sync quietly does not apply on such a browser than that the app spins.
+ *
+ * Takes a plain string, never a Firestore snapshot, so this file stays
+ * Firebase-free (see the header).
+ */
+export function adoptAppLang(lang) {
+  if (!APP_LANG_IDS.includes(lang) || lang === cachedAppLang) return false;
+  if (!writeStored(APP_LANG_KEY, lang)) return false;
+  cachedAppLang = lang;
+  return true;
 }
 
 /** Subscribe to app-language changes. Returns an unsubscribe function.

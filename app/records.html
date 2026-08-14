@@ -150,7 +150,8 @@
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
     import { roleListLabel } from "./js/labels.js";
-    import { getAppLang, mountAppLangControl } from "./js/prefs.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
     import {
       getMyMemberships,
@@ -194,7 +195,7 @@
     function renderNav(roles, viewAsRole) {
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
-      mountAppLangControl(navHomeExtra); // shell round 13 -- Settings -> Language; default handler reloads so every name comes back translated
+      mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
@@ -640,6 +641,9 @@
 
       try {
         const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
+        // v07.37: if this account has a language set on another device, take it
+        // and reload. Costs no extra read -- the snapshot is already in hand.
+        if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
         const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
