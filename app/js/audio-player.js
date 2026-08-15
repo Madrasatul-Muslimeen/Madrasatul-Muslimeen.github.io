@@ -421,18 +421,38 @@ async function getTimestamps(reciterId) {
   return timestampsCache;
 }
 
-// Fetches the (small, ~460KB) Bangla timestamp map in the background as soon
-// as this module loads, rather than on the user's first Play click. Browsers
-// only allow audio.play() without being blocked when it runs inside (or very
-// soon after) a real user gesture -- an `await` on a real network fetch
-// in between the click and el.play() can break that association and get the
-// play() promise silently rejected. Warming the cache ahead of time means
-// the `await getTimestamps()` inside playSegmentedAyah below resolves
-// immediately from memory (a microtask, not a network round trip) by the
-// time anyone actually clicks Play.
-for (const reciter of Object.values(RECITERS)) {
-  if (reciter.kind === "segmented" && reciter.timestampsUrl) {
-    getTimestamps(reciter.id).catch(() => {}); // best-effort warm-up; a real failure still surfaces to the user at click time
+/**
+ * Warms the (~460KB) Bangla ayah-timing map so that the `await
+ * getTimestamps()` inside playSegmentedAyah() resolves from memory -- a
+ * microtask, not a network round trip -- by the time anyone taps Play.
+ *
+ * WHY THAT MATTERS, and why this is not simply deleted: browsers only allow
+ * audio.play() through without blocking it when it runs inside (or very soon
+ * after) a real user gesture. An `await` on a genuine network fetch between
+ * the Play tap and el.play() can break that association and get the play()
+ * promise silently rejected. So the fetch has to happen BEFORE the tap.
+ *
+ * LOAD SPEED (v07.39, owner's call: "giving priority in loading speed").
+ * This used to run automatically the moment this module loaded -- which
+ * meant 460KB downloaded on every single visit to the app's landing page,
+ * whether or not the person ever played Bangla audio, competing for a
+ * phone's bandwidth with everything the page actually needed to draw.
+ *
+ * Now the page calls it on a real user gesture that always PRECEDES a Play
+ * tap: opening the Listening settings card (which is the only place Play
+ * lives) and choosing a reciter. Both leave ample time for a 460KB fetch,
+ * and neither is on the load path -- so someone who never opens Listening
+ * settings never downloads it at all.
+ *
+ * Idempotent and best-effort: getTimestamps() caches the in-flight promise,
+ * so calling this repeatedly costs nothing, and a real failure still
+ * surfaces to the person at click time rather than being swallowed here.
+ */
+export function warmSegmentedTimestamps() {
+  for (const reciter of Object.values(RECITERS)) {
+    if (reciter.kind === "segmented" && reciter.timestampsUrl) {
+      getTimestamps(reciter.id).catch(() => {});
+    }
   }
 }
 

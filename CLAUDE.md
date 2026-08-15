@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.38.** Cutover to production happened
+**Current milestone: QuranRevival v07.39.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -1341,6 +1341,29 @@ cost could not be measured — this sandbox cannot reach that host. See
 contract now genuinely stands (5–12 reads, but **5–6 waits** — a study screen
 showing real progress needs more than three documents by nature; what the
 contract is really protecting against is waiting for them one at a time).
+
+v07.39 (15 Aug 2026, same day) closes the item v07.38 flagged, on the owner's
+one-line answer — *"Giving priority in loading speed."* **The Bangla
+reciter's ayah-timing map (measured: 460,531 bytes, 450KB) is no longer
+fetched on every landing-page load.** `audio-player.js` used to fetch it the
+moment the module loaded, for anyone, whether or not they ever played audio.
+**It could not simply be deleted, and that is the whole difficulty:** browsers
+only let `audio.play()` through when it runs inside (or very soon after) a
+real user gesture, so an `await` on a network fetch between the Play tap and
+`play()` can get playback silently rejected — the fetch has to happen BEFORE
+the tap. So the eager module-load warm-up became an exported
+`warmSegmentedTimestamps()`, called from the two gestures that ALWAYS precede
+Play: **opening the Listening settings card** (the only place Play lives) and
+**changing the reciter**. Idempotent, so calling both costs nothing, and a
+real failure still surfaces at click time rather than being swallowed early.
+Someone who never opens Listening settings never downloads it at all.
+Time-to-usable is unchanged (0.93s @150ms, 6 round trips) — as expected, since
+the fetch was never blocking; the win is 450KB of a phone's bandwidth on every
+visit. **Both halves are verified, because either alone would be wrong**
+(`behaviour.mjs` section 26, suite now **437**): nothing requests it during
+load, AND opening Listening settings really does. A test checking only the
+first would have passed on a build where Bangla playback had quietly stopped
+working. Layout, navcheck and coverage (1,099/1,099) all unchanged.
 
 ---
 
