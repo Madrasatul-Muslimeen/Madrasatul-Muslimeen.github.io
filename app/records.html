@@ -154,8 +154,7 @@
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
     import {
-      getMyMemberships,
-      initializeActiveContext,
+      bootstrapContext,
       getActiveContext,
       setActiveContext,
       effectiveRoles,
@@ -310,9 +309,16 @@
     }
 
     async function loadContextData() {
-      const [rosterSnap, tenantSnap] = await Promise.all([
+      // LOAD SPEED (Aug 2026): the subject tree, the trackables and the
+      // domains were each awaited in turn after this pair had already come
+      // back -- five round trips in a row for five reads that do not depend
+      // on one another.
+      const [rosterSnap, tenantSnap, loadedTree, loadedTrackables, loadedDomains] = await Promise.all([
         getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
         getDoc(doc(db, TENANT.TENANTS, activeTenantId)),
+        getSubjectTree(db, activeTenantId),
+        getTrackables(db, activeTenantId),
+        listDomains(db, activeTenantId),
       ]);
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
       tenantWeekStartsOn = tenantSnap.exists() ? (tenantSnap.data().weekStartsOn ?? 6) : 6;
@@ -329,18 +335,19 @@
         .join("");
       selectedPersonId = visibleRoster[0]?.id ?? null;
 
-      subjectTree = await getSubjectTree(db, activeTenantId);
+      subjectTree = loadedTree;
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
       subjectSelect.innerHTML = leaves
         .map((n) => `<option value="${n.id}">${langText(n.name, getAppLang(), n.id)}</option>`)
         .join("");
 
-      trackableList = await getTrackables(db, activeTenantId);
-      domainList = await listDomains(db, activeTenantId);
+      trackableList = loadedTrackables;
+      domainList = loadedDomains;
       renderDomainChips();
       renderTrackableOptions();
-      await refreshChunk();
-      await refreshWeek();
+      // The records chunk and this week's activity are independent of each
+      // other -- fired together instead of one after the other.
+      await Promise.all([refreshChunk(), refreshWeek()]);
     }
 
     function renderDomainChips() {
@@ -646,14 +653,17 @@
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-        const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
+        // One membership load, not two: bootstrapContext() hands back the
+        // list it used to choose the context, which this page then used to
+        // fetch a second time, one round trip later, for the tenant picker.
+        const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
-        myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
+        myMemberships = memberships;
         tenantSelect.innerHTML = myMemberships
           .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
           .join("");

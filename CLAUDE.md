@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.37.** Cutover to production happened
+**Current milestone: QuranRevival v07.38.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -1240,6 +1240,107 @@ the sync reloads on success, which would wipe an in-memory record and make a
 real write look as though it never happened. **No schema change beyond the one
 additive field, and no data migration** — an account with no `appLang` simply
 keeps using its device's own setting.
+
+v07.38 (15 Aug 2026, on Claude Code on the web) is **real load speed,
+measured** — the owner's own report, in their words: *"the app is live and I
+use it daily; it feels slow to open."* Their framing set the method: measure
+before changing anything, and deliver numbers a non-coder can read.
+
+**The measurement problem had to be solved before the speed problem, and it
+is the most reusable thing this round produced. `tools/i18n-verify`'s Firebase
+stub ANSWERS INSTANTLY** — run naively it would have reported every page
+loading in a few milliseconds no matter how many Firestore reads it makes: a
+comforting number and a false one. Said to the owner up front rather than
+discovered later. So the stub was instrumented (additively — default latency
+0, so all 435 translation checks are untouched): **every Firestore call now
+logs itself and waits a set number of milliseconds before answering.** That
+gives two honest measurements — the **call log**, which is a fact about the
+CODE and does not change with connection speed, and a **wall clock** that
+shows what that log costs a person. The headline figure is **round trips IN
+SEQUENCE**: reads fired together cost one wait, reads fired one after another
+cost one wait each. A second method point future rounds must copy: **the
+tenant is measured in the state the owner's real one is in** (seeded weeks
+ago, `newContext({ seedTemplates })`) — the stub's default data is a
+HALF-seeded tenant, which makes the seeding paths write on every load, so
+measuring against it would flatter or damn the wrong thing. See
+`tools/perf/README.md`.
+
+**Baseline, phone viewport, 150ms per round trip:** Quran Study 10 sequential
+round trips / 1.70s; Deen Study **14 / 2.09s**; Health 15 / 2.24s; Asma 13 /
+1.94s; Records 11 / 1.62s. The app frame did not appear until ~0.9s. Against
+the load-speed contract's three-reads-after-first-paint budget, the app was
+making 11–17, nearly all strictly one after another.
+
+**The owner's own lead was confirmed** — the three `ensure*Seeded()` checks do
+run on every page load of every page for a tenant seeded weeks ago, finding
+nothing to do. **Three findings beyond it, all pure waste: memberships were
+loaded TWICE on every page load of every page** (`initializeActiveContext()`
+fetched the list, used it, threw it away, and the page then fetched the
+identical list again for its tenant picker); **subjects and trackables were
+read twice** (the seed check read them, then `loadContextData()` read them
+again); and **the tail was needlessly serial** — records, then enrolments,
+then bookmarks, each waiting for the last though none depends on another. Plus
+one data-model finding: **`subjectTemplates` is written and never read** — no
+screen displays it and even `ensureTenantCatalogueSeeded()` builds from the
+bundled constant, so that full-collection read fed nothing.
+
+**Two decisions were put to the owner with the numbers attached, per I9 and
+their own "let me choose" instruction, and answered before any code:** scope =
+**remove the waste** (they did NOT take the third option, which would also
+have repainted the frame earlier at the cost of touching render order on 14
+pages — still available); and **both registry reads off the startup path**,
+with the stated and accepted trade-off that **an admin's edit to a module or
+subject now reaches a study page on the NEXT load rather than the current
+one.**
+
+**Built:** `bootstrapContext()` in `session-context.js` (returns the context
+AND the memberships it used to pick it — `initializeActiveContext()` kept,
+unchanged, sharing one `pickContext()` helper); new **`js/catalogue-repair.js`**,
+whose header carries the whole reasoning; the three seed calls removed from
+`topic-study.js`/`routine-study.js`/`asma-study.js` and their tenant-switch
+handlers, replaced by **seed-only-if-the-page's-own-data-is-absent** plus a
+background drift check that runs at most once per browser tab; one-wave reads
+in every `loadContextData()`; and on `quranrevival.html`,
+`syncUnneditedTrackableNames()` moved off the blocking path entirely (it was
+the cause of the second trackables read). **Nothing deleted or reshaped
+(I4)** — every seeding function is untouched and still writes exactly what it
+wrote; only WHEN they are called changed. **No `firestore.rules`, schema or
+data changes.**
+
+**Result, measured the same way: Deen Study 14 round trips → 6, 2.09s →
+0.89s; Quran Study 10 → 6, 1.70s → 0.93s; Health 15 → 6; Asma 13 → 6; Records
+11 → 5, 1.62s → 0.87s.** On a poor connection (300ms) Deen Study goes 4.03s →
+1.65s. The frame appears at ~0.6s instead of ~0.9s. The sequence is now
+userIndex → memberships → tenant name → {roster, tenant, subjects,
+trackables} → {records, activity, enrolments, bookmarks}: six waits instead of
+fourteen, for the same data. **Why it stops at 6 and not 5:** the records
+chunk depends on which person is selected, which depends on the roster —
+going below that means guessing the person before the roster lands, a
+different and riskier change, not attempted.
+
+**Verified: all 435 behaviour checks pass, `layout.mjs` reports NO LAYOUT
+REGRESSIONS** (landing page byte-for-byte identical at all five viewports in
+both banner states, 65 `getElementById` targets, none missing), **navcheck
+unchanged in both languages, translation coverage still 1,099/1,099** — plus
+a new suite, **`tools/perf/new-tenant.mjs`, 10/10**, which is not optional
+reassurance but the test the round had to pass: each study page run against a
+tenant with NO catalogue at all seeds and then renders real content, and a
+tenant already set up is proved NOT written to on a normal load. All 19
+nav-bearing pages load clean.
+
+**Flagged for the owner, deliberately NOT changed: every load of Quran Study
+downloads ~460KB from `raw.githubusercontent.com`** — `audio-player.js` warms
+the Bangla reciter's ayah-timing map at module load, for a real documented
+reason (an `await` between a Play click and `audio.play()` can break the
+browser's user-gesture association and get playback silently rejected). It is
+fire-and-forget so it does NOT delay time-to-usable, but it is 460KB of mobile
+data on every landing-page visit whether or not anyone plays Bangla audio.
+Both fixes have a user-visible downside, so it is the owner's call. Its real
+cost could not be measured — this sandbox cannot reach that host. See
+`LOAD-SPEED-STATUS.md` for the full round, including where the load-speed
+contract now genuinely stands (5–12 reads, but **5–6 waits** — a study screen
+showing real progress needs more than three documents by nature; what the
+contract is really protecting against is waiting for them one at a time).
 
 ---
 

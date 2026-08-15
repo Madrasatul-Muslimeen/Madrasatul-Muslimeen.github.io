@@ -16,3 +16,6 @@ package-lock.json
 # Playwright is installed as a symlink in some sandboxes, which the
 # trailing-slash rule above does not match.
 node_modules
+
+# Load-speed measurement output, regenerated on every run
+tools/perf/results/
