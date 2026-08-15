@@ -118,13 +118,11 @@ export function scopedRoster(roster, effRoles, myPersonId) {
 }
 
 /**
- * Picks a sensible starting context: whatever's already stored in this
- * tab's session if it's still valid, otherwise the user's userIndex
- * default tenant if they belong to it, otherwise their first membership.
- * Returns null if the user belongs to no tenant at all.
+ * Picks a starting context out of memberships ALREADY loaded -- no reads of
+ * its own. Split out of initializeActiveContext() by the load-speed round so
+ * the same choice can be made without paying for a second membership load.
  */
-export async function initializeActiveContext(db, uid, defaultTenantId) {
-  const memberships = await getMyMemberships(db, uid);
+function pickContext(memberships, defaultTenantId) {
   if (memberships.length === 0) return null;
 
   const existing = getActiveContext();
@@ -140,4 +138,37 @@ export async function initializeActiveContext(db, uid, defaultTenantId) {
   };
   setActiveContext(context);
   return context;
+}
+
+/**
+ * Picks a sensible starting context: whatever's already stored in this
+ * tab's session if it's still valid, otherwise the user's userIndex
+ * default tenant if they belong to it, otherwise their first membership.
+ * Returns null if the user belongs to no tenant at all.
+ *
+ * Kept exported and unchanged in behaviour. Every page's own bootstrap now
+ * calls bootstrapContext() below instead -- see its comment for why.
+ */
+export async function initializeActiveContext(db, uid, defaultTenantId) {
+  return pickContext(await getMyMemberships(db, uid), defaultTenantId);
+}
+
+/**
+ * LOAD SPEED (Aug 2026) -- the same work as initializeActiveContext(), but it
+ * also HANDS BACK the memberships it loaded.
+ *
+ * Every page used to do this:
+ *
+ *   const context = await initializeActiveContext(...);   // loads memberships
+ *   myMemberships = await getMyMemberships(db, uid);      // loads them AGAIN
+ *
+ * -- two identical trips to Firestore on every page load of every page, one
+ * after the other, because initializeActiveContext() threw away the list it
+ * had just fetched. Measured at 2 of the 14 sequential round trips a module
+ * page made before showing anything. Nothing about WHAT is fetched changes;
+ * the second fetch is simply no longer made.
+ */
+export async function bootstrapContext(db, uid, defaultTenantId) {
+  const memberships = await getMyMemberships(db, uid);
+  return { context: pickContext(memberships, defaultTenantId), memberships };
 }

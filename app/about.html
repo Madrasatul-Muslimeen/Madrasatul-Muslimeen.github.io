@@ -68,7 +68,7 @@
     import { db } from "./js/firebase-init.js";
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
-    import { getMyMemberships, initializeActiveContext } from "./js/session-context.js";
+    import { bootstrapContext } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras } from "./js/nav.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { getFullRegistry } from "./js/feature-registry.js";
@@ -130,10 +130,12 @@
         // and reload. Costs no extra read -- the snapshot is already in hand.
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
-        const context = await initializeActiveContext(db, user.uid, defaultTenantId);
+        // One membership load, not two: bootstrapContext() hands back the
+        // list it used to choose the context, which this page then used to
+        // fetch a second time, one round trip later, just to read a role off.
+        const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
         if (context) {
-          const myMemberships = await getMyMemberships(db, user.uid);
-          const roles = myMemberships.find((m) => m.tenantId === context.tenantId)?.roles ?? [];
+          const roles = memberships.find((m) => m.tenantId === context.tenantId)?.roles ?? [];
           renderNav(roles, null);
         }
       } catch (err) {

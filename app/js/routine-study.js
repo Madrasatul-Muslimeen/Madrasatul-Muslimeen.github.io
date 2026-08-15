@@ -32,13 +32,11 @@ import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./lang-syn
 import { t, translateStatic } from "./i18n.js";
 import { safeWrite } from "./errors.js";
 import {
-  getMyMemberships, initializeActiveContext, getActiveContext, setActiveContext,
+  bootstrapContext, getActiveContext, setActiveContext,
   effectiveRoles, scopedRoster,
 } from "./session-context.js";
-import {
-  getSubjectTree, getTrackables, ensureSubjectTemplatesSeeded, ensureTenantCatalogueSeeded,
-} from "./catalogue.js";
-import { ensureModulesSeeded } from "./modules.js";
+import { getSubjectTree, getTrackables } from "./catalogue.js";
+import { catalogueNeedsSeeding, seedCatalogueNow, repairCatalogueInBackground } from "./catalogue-repair.js";
 import { buildUnitKey } from "./unit-keys.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
 import {
@@ -133,10 +131,22 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
   }
 
   async function loadContextData() {
-    const [rosterSnap, tenantSnap] = await Promise.all([
+    // LOAD SPEED (Aug 2026): one wave, not three -- see topic-study.js's own
+    // copy of this comment. The subject tree and trackables do not depend on
+    // the roster, so there was never a reason to wait for it first.
+    let [rosterSnap, tenantSnap, tree, trackables] = await Promise.all([
       getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
       getDoc(doc(db, TENANT.TENANTS, activeTenantId)),
+      getSubjectTree(db, activeTenantId),
+      getTrackables(db, activeTenantId),
     ]);
+    if (catalogueNeedsSeeding(tree, rootSubjectId)) {
+      await seedCatalogueNow(db, activeTenantId, auth.currentUser.uid);
+      [tree, trackables] = await Promise.all([
+        getSubjectTree(db, activeTenantId),
+        getTrackables(db, activeTenantId),
+      ]);
+    }
     roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
     tenantWeekStartsOn = tenantSnap.exists() ? (tenantSnap.data().weekStartsOn ?? 6) : 6;
 
@@ -149,10 +159,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
       .join("");
     selectedPersonId = visibleRoster[0]?.id ?? null;
 
-    const tree = await getSubjectTree(db, activeTenantId);
     moduleSubjects = tree.filter((n) => (n.moduleIds ?? []).includes(moduleId) && n.status !== "archived");
-
-    const trackables = await getTrackables(db, activeTenantId);
     practisedTrackable = trackables.find((t) => t.id === trackableId) ?? null;
 
     const root = moduleSubjects.find((n) => n.id === rootSubjectId);
@@ -160,12 +167,18 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     chunkSubjectId = rootSubjectId;
     rootLabel = root ? langText(root.name, getAppLang(), moduleId) : moduleId;
 
-    await refreshChunk();
-    await refreshWeekActivity();
-    await refreshProgramMap();
-    await refreshSubjectScoping(effRoles, myPersonId);
+    // Five independent reads (records, this week's activity, enrolments,
+    // teacher scoping, bookmarks) -- fired together instead of one at a
+    // time. refreshWeekActivity() needs tenantWeekStartsOn, which the wave
+    // above has already resolved.
+    await Promise.all([
+      refreshChunk(),
+      refreshWeekActivity(),
+      refreshProgramMap(),
+      refreshSubjectScoping(effRoles, myPersonId),
+      refreshContinueStrip(),
+    ]);
     renderBrowser();
-    await refreshContinueStrip();
 
     const resumeId = new URLSearchParams(location.search).get("resume");
     if (resumeId) {
@@ -448,23 +461,30 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
       if (adoptAppLangFromUserIndex(userIndexSnap)) return;
       const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-      const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
+      // One membership load, not two. bootstrapContext() hands back the very
+      // list it used to choose the context -- the page used to fetch that
+      // same list a second time, one round trip later, for the tenant picker.
+      const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
       if (!context) {
         whoEl.innerHTML += noAccountMessageHtml();
         return;
       }
       activeTenantId = context.tenantId;
-
-      myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
+      myMemberships = memberships;
       tenantSelect.innerHTML = myMemberships
         .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
         .join("");
 
       appEl.style.display = "block";
-      await step("set up modules", () => ensureModulesSeeded(db, user.uid));
-      await step("set up subject templates", () => ensureSubjectTemplatesSeeded(db, user.uid));
-      await step("set up this tenant's catalogue", () => ensureTenantCatalogueSeeded(db, activeTenantId, user.uid));
+      // Still self-repairing, but no longer at the person's expense. The
+      // three seeding checks used to run here, one after another, before
+      // anything was drawn -- three round trips that found nothing to do for
+      // any tenant already set up. loadContextData() now seeds only if the
+      // data it reads for itself turns out to be missing, and the full drift
+      // check runs in the background once the page is usable. See
+      // catalogue-repair.js for the whole reasoning.
       await step("load this module", loadContextData);
+      repairCatalogueInBackground(db, activeTenantId, user.uid, loadContextData);
     } catch (err) {
       whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
       console.error(err);
@@ -477,20 +497,27 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     activeTenantId = chosen.tenantId;
     setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
     renderNav(chosen.roles, null);
-    await ensureModulesSeeded(db, auth.currentUser.uid);
-    await ensureSubjectTemplatesSeeded(db, auth.currentUser.uid);
-    await ensureTenantCatalogueSeeded(db, activeTenantId, auth.currentUser.uid);
+    // Switching tenants: same rule as first load -- loadContextData() seeds
+    // if the tenant it is switching to has nothing, and the drift check runs
+    // behind the page rather than in front of it.
     await loadContextData();
+    repairCatalogueInBackground(db, activeTenantId, auth.currentUser.uid, loadContextData);
   });
 
   personSelect.addEventListener("change", async () => {
     selectedPersonId = personSelect.value;
     const { effRoles, myPersonId } = currentPreview();
-    await refreshChunk();
-    await refreshWeekActivity();
-    await refreshProgramMap();
-    await refreshSubjectScoping(effRoles, myPersonId);
+    // Five independent reads (records, this week's activity, enrolments,
+    // teacher scoping, bookmarks) -- fired together instead of one at a
+    // time. refreshWeekActivity() needs tenantWeekStartsOn, which the wave
+    // above has already resolved.
+    await Promise.all([
+      refreshChunk(),
+      refreshWeekActivity(),
+      refreshProgramMap(),
+      refreshSubjectScoping(effRoles, myPersonId),
+      refreshContinueStrip(),
+    ]);
     renderBrowser();
-    await refreshContinueStrip();
   });
 }
