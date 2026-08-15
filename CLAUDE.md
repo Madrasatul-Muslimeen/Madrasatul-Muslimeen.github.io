@@ -1400,9 +1400,11 @@ round) but **the whole Qur'an in all three languages.** Built as
 three rather than one is the load-bearing decision: **the language is picked
 by the SCRIPT the person typed in**, not by the app's language setting, so a
 search downloads exactly one index (Latin → `search-en.json`, Bengali → `bn`,
-Arabic → `ar`) instead of all three. Measured over the wire, GitHub Pages
-gzipping (confirmed against the live site, which already serves the 27MB of
-packaged surah data): **272KB / 363KB / 278KB.** **Nothing is fetched on the
+Arabic → `ar`) instead of all three. **Measured against the deployed site
+after pushing, not estimated: 284KB / 450KB / 323KB on the wire** (4.3MB raw).
+Worth knowing for the next round that sizes a file this way — `gzip -9`
+locally predicted 272/363/278, and GitHub Pages compresses less aggressively
+than that, so a local gzip estimate runs ~5–25% light. **Nothing is fetched on the
 startup path** — the index loads the first time a search actually runs, the
 same "on first use" treatment v07.39 gave the reciter timing map, and a visit
 that never searches downloads nothing. Perf re-measured to prove it: Quran
