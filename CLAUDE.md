@@ -1479,6 +1479,69 @@ would undo exactly what v07.29 was for; it belongs in the Settings surface
 changes written and **still not deployed** (v07.18 Homework teacher-scoping,
 v07.37 `appLang`) are unaffected by this round and still pending.
 
+v07.41 (15 Aug 2026, same day) is **shell round 15 — three tightenings of
+round 14's own panel, from the owner reading it straight after it shipped.**
+No new mechanism; all three are things round 14 left on the table.
+
+**(a) Search and Go are one control now.** The field was already dual-purpose,
+so a "Go" button, a "Go to" title and a separate "Search" button were **three
+names for two things** — the owner's point exactly. Bar 3 is now one
+full-width field titled **Search** with one **Search** button, and the button
+is smart rather than two buttons in a trenchcoat: a reference jumps, words
+search, a mistyped reference still explains itself. `jumpGoBtn` is **gone**
+(the one id this round retires — merging two controls means one id has to go;
+`searchBtn` was kept because it is what the control now is, and it already
+carried the `aria-controls`). Measured: the field's line goes from 216px + a
+105px button cell to **327px** at 390px.
+
+**(b) "Track this unit" → "Track"**, and bar 4 stops splitting 50/50 — it is
+`minmax(0,1fr) auto`, so the button takes only its own word and Approach
+takes the rest. **Measured at 390px: Approach 160px → 275px**, against the
+93px "Memorise (Hifz)" actually needs, so a tenant-authored Approach name is
+now readable in full on a phone rather than merely less clipped.
+
+**(c) With Range on, "To ayah" no longer drops to its own line.** The fix is
+that **bar 2 is FLEX now, not grid**, and that is the whole point: a grid has
+to declare its column count up front, but this bar holds three cells normally
+and four with Range on — so a 3-column grid pushed "To" down, and a 4-column
+one would have left a dead column the rest of the time, i.e. exactly the PC
+waste round 14 had just removed. Flex sizes itself to what is visible. The
+ayah-number cells are pinned narrow (`.opt-cell-num`, 4.1rem) since three
+digits never need a share of the line, which also hands Study Unit and Surah
+**105px → 124px each** when Range is off. `From ayah`/`To ayah` shortened to
+**From**/**To** — at the width three digits need, the longer labels were
+silently ellipsised, and these labels are `nowrap` + `text-overflow: ellipsis`,
+so that failure is invisible. **Measured at every width in both languages,
+both unit types: all five bars on one line, nothing truncated, no overflow.**
+
+**One real cost, found by measuring rather than after the fact:** at **320px**
+fitting four cells on one line left English's "Study Unit" needing 69px in a
+65px box. Fixed with the page's **second** media query (`max-width: 340px`),
+which trims the number cells to 3.4rem and the labels of that one bar to
+0.67rem. Bangla already fitted at 320px and still does. Worth knowing that
+320px is *below every viewport in the harness* (which starts at 360) — it was
+caught by a deliberate one-off sweep, not by the suite.
+
+**Verified: 475 behaviour checks** (was 468 — seven new: the merged control,
+the one-word claim button, Approach measurably winning its line, and the four
+Range-on-one-line assertions) **plus `layout.mjs` NO LAYOUT REGRESSIONS at all
+eight viewports in both banner states** (`getElementById` targets 68 → 67,
+exactly the retired `jumpGoBtn`, none missing), **navcheck unchanged**,
+**coverage 1,107/1,107 (100%)** — the total *fell* by 2 because "Go" and "Go to"
+stopped being used on any screen; both keys are kept in `bn.js` rather than
+deleted, as are "Track this unit", "From ayah" and "To ayah" — **and perf
+unchanged** (6 round trips, 0.89–0.91s).
+
+**One stale test was found and fixed, and it is the useful lesson here:**
+`behaviour.mjs`'s "the version badge is NOT mangled into Bengali digits"
+asserted the literal `/v?0?7\.3/`, which quietly made it a test of *which
+release we were on* — it failed the moment v07.39 became v07.40, reporting the
+correct value as wrong. It is written against the *shape* now
+(`/^v?\d+\.\d+$/` plus no Bengali digits), so a version bump can never fail it
+again. Note this means round 14's reported "468 passed, 0 failed" was run
+**before** its own version bump; the bump surfaced this, and nothing about the
+app was wrong.
+
 ---
 
 ## What this is

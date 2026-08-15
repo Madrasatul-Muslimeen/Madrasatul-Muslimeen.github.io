@@ -191,7 +191,14 @@ console.log("\n=== 6. Bengali numerals available, and never applied to identifie
   });
   check("6 num() gives Bengali digits", r.digits === "২৫৫", r.digits);
   check("6 num() converts inside a reference too", r.mixed === "২:২৫৫", r.mixed);
-  check("6 the version badge is NOT mangled into Bengali digits", /v?0?7\.3/.test(r.version || ""), r.version);
+  // The POINT of this check is that num() never touches the version string --
+  // Bengali digits in an id, a URL or a version number would be a real bug.
+  // It used to assert the literal /v?0?7\.3/, which quietly turned it into a
+  // test of what release we were on: it failed the moment v07.39 became
+  // v07.40, reporting the correct value as wrong. Written against the shape
+  // now, so a version bump can never fail it again.
+  check("6 the version badge is NOT mangled into Bengali digits",
+        /^v?\d+\.\d+$/.test(r.version || "") && !/[০-৯]/.test(r.version || ""), r.version);
   await page.close();
   await ctx.close();
 }
@@ -252,7 +259,7 @@ console.log("\n=== 8. PHASE 2: the Quran module in Bangla ===");
 
   // The "Go to" box must accept Bengali digits — a Bangla keyboard types ২:২৫৫.
   await page.fill("#jumpInput", "২:২৫৫");
-  await page.click("#jumpGoBtn");
+  await page.click("#searchBtn");
   await page.waitForTimeout(600);
   const jumped = await page.evaluate(() => ({
     surah: document.getElementById("surahSelect").value,
@@ -264,7 +271,7 @@ console.log("\n=== 8. PHASE 2: the Quran module in Bangla ===");
 
   // And a bad one still explains itself, in Bangla.
   await page.fill("#jumpInput", "৯৯৯");
-  await page.click("#jumpGoBtn");
+  await page.click("#searchBtn");
   await page.waitForTimeout(300);
   const badMsg = await page.evaluate(() => document.getElementById("jumpMsg").textContent.trim());
   check("8f a bad reference explains itself in Bangla", BANGLA.test(badMsg), badMsg);
@@ -1006,18 +1013,34 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
   check("27b bar 1 is User Role + Student", JSON.stringify(bars[0]) === '["tenantSelect","personSelect"]', JSON.stringify(bars[0]));
   check("27b bar 2 is Study Unit + Surah + Ayah",
         JSON.stringify(bars[1]) === '["unitTypeSelect","surahSelect","ayahSelect","rangeFromSelect","rangeToSelect"]', JSON.stringify(bars[1]));
-  check("27b bar 3 is Go to + Go + Search", JSON.stringify(bars[2]) === '["jumpInput","jumpGoBtn","searchBtn"]', JSON.stringify(bars[2]));
-  check("27b bar 4 is Approach + Track this unit", JSON.stringify(bars[3]) === '["trackableSelect","trackUnitBtn"]', JSON.stringify(bars[3]));
+  check("27b bar 3 is one Search field and one Search button", JSON.stringify(bars[2]) === '["jumpInput","searchBtn"]', JSON.stringify(bars[2]));
+  check("27b bar 4 is Approach + Track", JSON.stringify(bars[3]) === '["trackableSelect","trackUnitBtn"]', JSON.stringify(bars[3]));
   check("27b bar 5 is Reading view + Listening settings", JSON.stringify(bars[4]) === '["readingViewBtn","listeningBtn"]', JSON.stringify(bars[4]));
 
   const labels = await page.evaluate(() => ({
     tenant: document.querySelector('label[for="tenantSelect"]').textContent.trim(),
     person: document.querySelector('label[for="personSelect"]').textContent.trim(),
+    jump: document.querySelector('label[for="jumpInput"]').textContent.trim(),
+    track: document.getElementById("trackUnitBtn").textContent.trim(),
     summaryGone: !document.getElementById("optionsSummary"),
+    noGoBtn: !document.getElementById("jumpGoBtn"),
   }));
   check("27c the tenant picker is labelled User Role", labels.tenant === "User Role", labels.tenant);
   check("27c the person picker is labelled Student", labels.person === "Student", labels.person);
+  check("27c the field is titled Search, and the separate Go button is gone",
+        labels.jump === "Search" && labels.noGoBtn, JSON.stringify(labels));
+  check("27c the claim button is one word", labels.track === "Track", labels.track);
   check("27c the summary strip is gone", labels.summaryGone);
+
+  // The owner's ask: Approach should get the room, not an even split with a
+  // one-word button. Measured, not eyeballed.
+  const claim = await page.evaluate(() => {
+    const sel = document.getElementById("trackableSelect").getBoundingClientRect().width;
+    const btn = document.getElementById("trackUnitBtn").getBoundingClientRect().width;
+    return { sel: Math.round(sel), btn: Math.round(btn) };
+  });
+  check("27c Approach gets more of its line than the Track button does",
+        claim.sel > claim.btn * 1.5, JSON.stringify(claim));
 
   // Search: a real English word, against the real packaged index.
   await page.fill("#jumpInput", "patience");
@@ -1051,19 +1074,19 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
 
   // The owner's own suggestion: the Go box takes words as well as references.
   await page.fill("#jumpInput", "mercy");
-  await page.click("#jumpGoBtn");
+  await page.click("#searchBtn");
   await page.waitForTimeout(1200);
   const viaGo = await page.evaluate(() => ({
     open: !document.getElementById("searchCard").hidden,
     hits: document.querySelectorAll(".search-hit").length,
     jumpMsgShown: !document.getElementById("jumpMsg").hidden,
   }));
-  check("27f a word typed into Go searches instead of erroring", viaGo.open && viaGo.hits > 0 && !viaGo.jumpMsgShown, JSON.stringify(viaGo));
+  check("27f a word typed into the box searches instead of erroring", viaGo.open && viaGo.hits > 0 && !viaGo.jumpMsgShown, JSON.stringify(viaGo));
 
   // ...but a mistyped REFERENCE still explains itself, rather than silently
   // searching for "2:" and finding nothing.
   await page.fill("#jumpInput", "2:");
-  await page.click("#jumpGoBtn");
+  await page.click("#searchBtn");
   await page.waitForTimeout(400);
   const badRef = await page.evaluate(() => ({
     shown: !document.getElementById("jumpMsg").hidden,
@@ -1073,7 +1096,7 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
 
   // A real reference still jumps, exactly as before this round.
   await page.fill("#jumpInput", "2:255");
-  await page.click("#jumpGoBtn");
+  await page.click("#searchBtn");
   await page.waitForTimeout(900);
   const ref = await page.evaluate(() => ({
     surah: document.getElementById("surahSelect").value,
@@ -1099,6 +1122,39 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
   check("27h the Arabic index was fetched, and only now",
         searchRequests.some((u) => u.includes("search-ar.json")) && !searchRequests.some((u) => u.includes("search-bn.json")),
         JSON.stringify(searchRequests));
+
+  // Range: "To" used to be pushed onto a line of its own, because a
+  // three-column grid could not hold four cells. Both range fields must now
+  // sit beside Study Unit and Surah, on ONE line, with nothing truncated.
+  await page.selectOption("#unitTypeSelect", "range");
+  await page.waitForTimeout(500);
+  const range = await page.evaluate(() => {
+    const bar = document.querySelectorAll(".study-options-body > .opt-bar")[1];
+    const cells = [...bar.children].filter((c) => c.getBoundingClientRect().height > 0);
+    const rows = [];
+    for (const c of cells) {
+      const r = c.getBoundingClientRect();
+      const row = rows.find((x) => r.top < x.bottom - 1 && r.bottom > x.top + 1);
+      if (row) { row.top = Math.min(row.top, r.top); row.bottom = Math.max(row.bottom, r.bottom); }
+      else rows.push({ top: r.top, bottom: r.bottom });
+    }
+    return {
+      ids: cells.map((c) => c.querySelector("select")?.id),
+      lines: rows.length,
+      cutLabels: [...bar.querySelectorAll("label")]
+        .filter((l) => l.scrollWidth > l.clientWidth + 1)
+        .map((l) => l.textContent.trim()),
+      fromW: Math.round(document.getElementById("rangeFromSelect").getBoundingClientRect().width),
+    };
+  });
+  check("27i with Range on, all four cells are Unit/Surah/From/To",
+        JSON.stringify(range.ids) === '["unitTypeSelect","surahSelect","rangeFromSelect","rangeToSelect"]', JSON.stringify(range.ids));
+  check("27i ...on ONE line, not two", range.lines === 1, `${range.lines} line(s)`);
+  check("27i ...with no label silently truncated", range.cutLabels.length === 0, JSON.stringify(range.cutLabels));
+  check("27i ...and the ayah fields kept narrow", range.fromW < 80, `${range.fromW}px`);
+  await page.selectOption("#unitTypeSelect", "ayah");
+  await page.waitForTimeout(400);
+
   await page.close();
   await ctx.close();
 }
