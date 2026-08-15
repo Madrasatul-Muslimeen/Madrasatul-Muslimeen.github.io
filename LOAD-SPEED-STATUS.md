@@ -1,4 +1,4 @@
-# Load speed — round 1 (v07.38, 15 August 2026)
+# Load speed — rounds 1 and 2 (v07.38 / v07.39, 15 August 2026)
 
 The owner's report: *"The app is live and I use it daily; it feels slow to
 open."* Their instruction: measure first, deliverable in numbers, tell me the
@@ -198,6 +198,45 @@ here — this sandbox cannot reach that host.
 
 **The frame still waits for sign-in and memberships** (~0.6 s @150 ms). That
 was Option 3, which the owner did not take this round. It remains available.
+
+---
+
+## 7b. Round 2 (v07.39, same day) — the 460 KB is off the load path
+
+The owner answered the flagged decision above in three words: **"Giving
+priority in loading speed."** So it is done.
+
+**Measured, not estimated: the file is 460,531 bytes (450 KB).** It was
+fetched by `audio-player.js` the moment the module loaded — on every visit to
+the app's landing page, whether or not anyone ever played Bangla audio.
+
+It could **not** simply be deleted, and the reason is the whole difficulty:
+browsers only let `audio.play()` through when it runs inside (or very soon
+after) a real user gesture, so an `await` on a genuine network fetch between
+the Play tap and `play()` can get playback silently rejected. The fetch has to
+happen *before* the tap.
+
+So it moved to the gestures that **always precede** a Play tap:
+
+- **opening the Listening settings card** — the only place Play lives, and
+- **changing the reciter** — belt and braces, and the one gesture that names
+  Bangla directly.
+
+`warmSegmentedTimestamps()` is idempotent (the in-flight promise is cached),
+so calling it twice costs nothing, and a real failure still surfaces to the
+person at click time rather than being swallowed early.
+
+**Effect: someone who never opens Listening settings never downloads it at
+all.** Time-to-usable is unchanged (0.93 s @150 ms, 6 round trips) — as
+expected, since the fetch was never blocking; the win is 450 KB of a phone's
+bandwidth on every landing-page visit, which on mobile data was competing
+with everything the page did need.
+
+**Both halves are verified, because either one alone would be wrong**
+(`behaviour.mjs` section 26, bringing the suite to **437**): nothing requests
+the timing map during load, **and** opening Listening settings really does
+request it. A test that only checked the first would have passed on a build
+where Bangla playback had quietly stopped working.
 
 ---
 

@@ -945,6 +945,38 @@ console.log("\n=== 25. v07.37: the language follows the ACCOUNT, not the browser
         !/firebase|firestore|lang-sync/i.test(renderer), "asma-renderer.js gained one");
 }
 
+console.log("\n=== 26. v07.39: the 460KB reciter timing map is not on the load path ===");
+{
+  // audio-player.js used to fetch the Bangla ayah-timing map (~460KB from
+  // raw.githubusercontent.com) the moment the module loaded -- on every
+  // visit to the app's landing page, whether or not anyone played audio.
+  // It cannot simply be dropped: it has to be in memory BEFORE a Play tap
+  // or the browser can reject playback. So it moved to the gestures that
+  // always precede Play, and BOTH halves of that need proving.
+  const ctx = await ctxFor({ banner: true });
+  const page = await ctx.newPage();
+  const timingRequests = [];
+  await page.route("**/gtaf_bangla_timestamps.json", (route) => {
+    timingRequests.push(route.request().url());
+    return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+  });
+  await page.goto("http://localhost:8080/app/quranrevival.html", { waitUntil: "networkidle" });
+  await page.waitForTimeout(900);
+  check("26a nothing fetches the timing map on load", timingRequests.length === 0,
+        `${timingRequests.length} request(s) during load`);
+
+  // Opening Listening settings is the earliest gesture that always precedes
+  // a Play tap -- if this does not warm it, playback can be blocked later.
+  await page.click("#tabStudyOptionsBtn");
+  await page.waitForTimeout(200);
+  await page.click("#listeningBtn");
+  await page.waitForTimeout(700);
+  check("26b opening Listening settings warms it", timingRequests.length >= 1,
+        `${timingRequests.length} request(s) after opening the card`);
+  await page.close();
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);
