@@ -152,16 +152,44 @@
      which is the difference between "Madrasatul Muslimeen (Owner, Prime)"
      being readable and being cut to "Madrasatul Mus...". */
   .opt-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem 0.4rem; align-items: end; margin: 0.45rem 0; }
+  .opt-bar-1 { grid-template-columns: minmax(0, 1fr); }
   .opt-bar-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .opt-bar-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  /* Bar 4: Approach takes the room, "Track" takes only what its own word
+     needs. The owner's ask -- an even 50/50 split spent half the line on a
+     one-word button while the Approach name beside it was being cut. */
+  .opt-bar-claim { grid-template-columns: minmax(0, 1fr) auto; }
+  /* Bar 2 is FLEX, not grid, and that is the whole fix for the Range case.
+     A grid has to declare its column count up front, but this bar holds
+     three cells normally (Unit, Surah, Ayah) and four with Range on (Unit,
+     Surah, From, To) -- so a 3-column grid pushed "To ayah" onto its own
+     line, and a 4-column one would have left a dead column the rest of the
+     time, which is exactly the PC waste this round set out to remove.
+     Flex sizes itself to whatever is actually visible. */
+  .opt-bar-units { display: flex; flex-wrap: nowrap; }
+  .opt-bar-units > .opt-cell { flex: 1 1 0; }
+  /* An ayah number is at most three digits, so these never need a share of
+     the line -- they take a fixed sliver and hand the rest to Study Unit and
+     Surah, whose names are long and were being truncated for their sake. */
+  .opt-cell-num { flex: 0 0 4.1rem !important; }
+  /* On the very narrowest phones, four cells on one line left "Study Unit"
+     62px of label in a 53px box -- and these labels fail SILENTLY, by
+     ellipsis. Measured: giving the number fields 0.7rem less each buys the
+     two named cells 12px apiece, which clears it in both languages. Only
+     this bar, only below 340px; every other size keeps the roomier fields. */
+  @media (max-width: 340px) {
+    .opt-cell-num { flex-basis: 3.4rem !important; }
+    /* Even then English's "Study Unit" came up 4px short (69px of label in
+       65px). A hair off the label type clears it; the controls themselves
+       are untouched. Bangla already fitted, and still does. */
+    .opt-bar-units .opt-cell > label { font-size: 0.67rem; }
+  }
   /* Buttons-only bars stretch; bars holding a label over a control align on
-     the control's own bottom edge. Round 11 had these two facts tangled up
-     in .opt-bar-3, which only worked while the three-column bar was the
-     buttons one -- it is not, as of this round. */
+     the control's own bottom edge. Round 11 had these two facts tangled
+     together in its own three-column rule, which only worked for as long as
+     the three-column bar happened to be the buttons one. */
   .opt-bar-btns { align-items: stretch; }
   .study-options-body > .opt-bar:first-child { margin-top: 0; }
   .opt-cell { min-width: 0; }
-  .opt-cell-wide { grid-column: span 2; }
   /* A bare button sharing a line with a labelled control: same height as the
      control beside it, so the two bottom edges really meet. */
   .opt-btn-inline { height: 1.85rem; padding: 0.2rem 0.3rem; }
@@ -476,7 +504,7 @@
         <!-- Bar 2: WHAT is being studied. The From/To ayah cells are still the
              same elements with the same ids -- they simply flow onto a second
              grid line when the Range unit turns them on. -->
-        <div class="opt-bar opt-bar-3">
+        <div class="opt-bar opt-bar-units">
           <div class="opt-cell"><label for="unitTypeSelect">Study Unit</label><select id="unitTypeSelect">
             <option value="ayah">Single Ayah</option>
             <option value="range">Range of Ayahs</option>
@@ -486,30 +514,34 @@
             <option value="page">Page</option>
           </select></div>
           <div class="opt-cell"><label for="surahSelect">Surah</label><select id="surahSelect"></select></div>
-          <div class="opt-cell" id="ayahSelectControl"><label for="ayahSelect">Ayah</label><select id="ayahSelect"></select></div>
-          <div class="opt-cell" id="rangeControls" style="display:none;">
-            <label for="rangeFromSelect">From ayah</label><select id="rangeFromSelect"></select>
+          <div class="opt-cell opt-cell-num" id="ayahSelectControl"><label for="ayahSelect">Ayah</label><select id="ayahSelect"></select></div>
+          <!-- "From ayah"/"To ayah" shortened to "From"/"To": the bar they sit
+               in already says Ayah, and at the width three digits actually
+               need the longer labels were silently ellipsised, which is the
+               failure this page's own labels are nowrap+ellipsis prone to. -->
+          <div class="opt-cell opt-cell-num" id="rangeControls" style="display:none;">
+            <label for="rangeFromSelect">From</label><select id="rangeFromSelect"></select>
           </div>
-          <div class="opt-cell" id="rangeToControls" style="display:none;">
-            <label for="rangeToSelect">To ayah</label><select id="rangeToSelect"></select>
+          <div class="opt-cell opt-cell-num" id="rangeToControls" style="display:none;">
+            <label for="rangeToSelect">To</label><select id="rangeToSelect"></select>
           </div>
         </div>
 
-        <!-- Bar 3: FINDING it. Round 11's typing field, now on its own line
-             and doing double duty, which is the owner's own suggestion this
-             round ("you may enable 'Go To' field instead of a separate search
-             field"). A reference -- "2:255", "2:255-260", a bare "2" -- still
-             jumps exactly as before. Anything else is a word or phrase, and
-             Go searches for it rather than refusing it. Search always
-             searches, whatever is in the box. -->
-        <div class="opt-bar opt-bar-3">
-          <div class="opt-cell opt-cell-wide"><label for="jumpInput">Go to</label>
+        <!-- Bar 3: FINDING it. ONE field and ONE button, both called Search
+             (the owner's follow-up: the field was already doing both jobs, so
+             a separate "Go" button and a "Go to" title beside a "Search"
+             button were three names for two things).
+             The button is smart, not two buttons in a trenchcoat: a reference
+             -- "2:255", "2:255-260", a bare "2" -- jumps straight there, and
+             anything else is a word or phrase and gets searched. A mistyped
+             reference still says so rather than searching for nonsense. -->
+        <div class="opt-bar opt-bar-1">
+          <div class="opt-cell"><label for="jumpInput">Search</label>
             <div class="opt-jump">
               <input type="text" id="jumpInput" placeholder="2:255 or a word" autocomplete="off" spellcheck="false" />
-              <button type="button" id="jumpGoBtn">Go</button>
+              <button type="button" id="searchBtn" aria-controls="searchCard" aria-expanded="false">Search</button>
             </div>
           </div>
-          <button type="button" class="opt-btn opt-btn-inline" id="searchBtn" aria-controls="searchCard" aria-expanded="false">Search</button>
         </div>
         <p class="opt-msg" id="jumpMsg" hidden></p>
 
@@ -524,9 +556,9 @@
         <!-- Bar 4: CLAIMING it. The owner's ask: Approach comes down out of
              bar 1 to sit beside the button that claims with it, since the two
              only ever mean anything together. -->
-        <div class="opt-bar opt-bar-2">
+        <div class="opt-bar opt-bar-claim">
           <div class="opt-cell"><label for="trackableSelect">Approach</label><select id="trackableSelect"></select></div>
-          <button type="button" class="opt-btn opt-btn-primary opt-btn-inline" id="trackUnitBtn">Track this unit</button>
+          <button type="button" class="opt-btn opt-btn-primary opt-btn-inline" id="trackUnitBtn">Track</button>
         </div>
 
         <!-- Bar 5: HOW it reads and HOW it sounds. The owner's words: "keep as
@@ -822,7 +854,6 @@
 
     // Shell round 11 -- the three-bar Study options layout.
     const jumpInput = document.getElementById("jumpInput");
-    const jumpGoBtn = document.getElementById("jumpGoBtn");
     const jumpMsg = document.getElementById("jumpMsg");
     const readingViewBtn = document.getElementById("readingViewBtn");
     const readingViewCard = document.getElementById("readingViewCard");
@@ -1120,11 +1151,12 @@
       }
     }
     optionCards.forEach(({ btn, card }) => {
-      // Search is the one card that does something when its button is
-      // pressed, so it opens rather than toggles -- pressing Search again
-      // after editing the box must run the new search, not close the results.
+      // Search is the one of these that DOES something rather than revealing
+      // something, so it never toggles: pressing it again after editing the
+      // box must run the new search, not close the results. It is still in
+      // this list so that opening Reading view or Listening closes it.
       if (btn === searchBtn) {
-        btn.addEventListener("click", () => { setOpenOptionCard(searchCard); runSearch(); });
+        btn.addEventListener("click", () => { applyJump(); });
         return;
       }
       btn.addEventListener("click", () => {
@@ -1226,7 +1258,8 @@
       renderWheel();
     }
 
-    jumpGoBtn.addEventListener("click", () => { applyJump(); });
+    // One button, one Enter key, one behaviour -- applyJump() is what decides
+    // whether what was typed is a reference to jump to or words to search for.
     jumpInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); applyJump(); }
     });
