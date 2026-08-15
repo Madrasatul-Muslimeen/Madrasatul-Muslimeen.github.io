@@ -621,6 +621,7 @@
     import {
       RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
+      warmSegmentedTimestamps,
     } from "./js/audio-player.js";
     import { translateStatic, t, num, parseNum, surahName } from "./js/i18n.js";
 
@@ -1037,6 +1038,14 @@
     }
     optionCards.forEach(({ btn, card }) => {
       btn.addEventListener("click", () => {
+        // v07.39 (load speed): the Bangla reciter needs a ~460KB ayah-timing
+        // map, and it must be in memory BEFORE a Play tap or the browser can
+        // reject playback (see warmSegmentedTimestamps' own comment). It used
+        // to be fetched on every page load, costing every visitor 460KB even
+        // if they never played audio. Opening this card is the earliest real
+        // gesture that always precedes Play, and it is nowhere near the load
+        // path -- so the cost is now paid only by someone about to listen.
+        if (btn === listeningBtn) warmSegmentedTimestamps();
         setOpenOptionCard(btn.getAttribute("aria-expanded") === "true" ? null : card);
       });
     });
@@ -1773,6 +1782,8 @@
 
       reciterSelect.addEventListener("change", () => {
         currentReciterId = reciterSelect.value;
+        warmSegmentedTimestamps(); // v07.39: second, surer chance to have the timing map ready before Play -- idempotent, so this costs nothing if the card open already started it
+
         // Owner request, 8 Aug 2026: picking the Bangla reciter should bring
         // the Bangla translation on screen automatically, not leave the
         // reader looking at English while Bangla audio plays. One-way and
