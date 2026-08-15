@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.39.** Cutover to production happened
+**Current milestone: QuranRevival v07.43.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -1605,6 +1605,98 @@ behind a disclosure (the page already has that idiom three times over, do not
 invent a fourth), and the owner must be asked one question first — whether it
 belongs inside Study options or on the landing screen near the dock, the
 latter costing landing height that rounds 9-12 spent themselves reclaiming.
+
+v07.43 (15 Aug 2026, on Claude Code on the web) is **shell round 17 — the
+reading screen. The Qur'an itself stops being displayed inside a drawer.**
+The owner's own words, and the whole specification: *"When all
+selections/choices are picked, then what happens? The outcome — the Quran,
+Translations, the word-by-word — displays inside the same palette. How absurd!
+Once the selection is done, the outcome should now show and take the entire
+mobile screen except the Banner, the top menu and the bottom menu. And that
+also should have an option to hide (tapping on screen should show it again)."*
+
+**This undoes a v07.24 decision, deliberately and with the owner's own
+reversal.** Shell round 7 put the Study screen inside `#panelStudyOptions` on
+their call at the time ("the stuff inside the 'Study' can even better make
+sense within the 'Study Options', user do not have to click more for those
+things"). **Measured, that put the Qur'an 447px down inside a panel capped at
+`74dvh`, under five bars of controls: 193px of visible ayah content on a
+390×844 phone, 87px at 390×700 and 42px at 360×640.** Forty-two pixels of
+Qur'an. The reading is now a **stage view of its own**, reached from a third
+dock tab.
+
+**The shape was the owner's decision, taken from a working two-phone demo
+rather than a description** (an artifact, as rounds 4–14 have used), with the
+pixel cost of each option measured and attached. Two were offered: reading as
+its own screen you switch to (A), or reading replacing the wheel until closed
+(B). **The recommendation here was B; the owner chose A, and their reason was
+better than the recommendation:** in B, once reading is open the Study options
+tab is the natural place to put "back to reading", which costs a tap to reach
+the settings — and **the settings change per child**, which is the app's most
+common real workflow (D10). A keeps Study options one tap away at all times.
+Recorded because it is the second time this project has had a "reading vs
+options" trade decided by how the owner actually teaches, not by layout logic.
+
+**What was built.** `#stage` now holds two views and shows one: the Mastery
+Wheel (the landing screen, untouched) or `#readView`. The wheel heading and
+`#wheelSection` stay **direct children of `#stage`** on purpose — every
+measured sizing rule this page has keys off that, so the wheel's own layout is
+byte-for-byte what rounds 9–14 left it. `#readView` carries a read bar
+(◂ Mastery Wheel · what is being read · ⤢ Full screen) that does NOT scroll,
+over `#readScroll`, which is the only thing that does — so Previous/Next and
+the way back stay reachable however long the ayah is. The dock's third tab is
+`#tabReadBtn`, a **view switch, not a disclosure**: `aria-pressed`, no caret,
+and excluded from `dockTabs` (which `closeAllPanels()` resolves by
+`data-panel` and would have thrown on).
+
+**The three answers the owner gave, all asked before building.** *Full screen*
+is exactly their shape: **a button hides** the title, tagline, banner, nav and
+dock, and **a tap on the reading restores them** — nothing ever hides on a
+stray tap, and a tap on a button, checkbox or notes box inside the reading is
+left alone. *Page display* (a real mushaf page) **opens immersive**, since a
+page is a page. *A multi-ayah unit opens at its **first** ayah* — read from
+`currentUnitAyahBounds()`, which is already what "Track this unit" claims
+against, so the reading opens on the same ayah the claim starts from with no
+second source of truth. *Explore stays exactly as it is.*
+
+**Two real defects were found by measuring, before either shipped, and both
+were invisible in a screenshot.** `hidden` on `#wheelSection` **did nothing** —
+`.wheel-box` sets `display:flex`, and a class rule beats the UA's own
+`[hidden] { display: none }` — so the wheel stayed on screen and pushed the
+reading **632px down an 844px phone**, which is the exact defect this round
+exists to remove, reappearing in a new place. And the phone full-bleed rule,
+copied from the wheel card, was put on `#studyScreen` **inside** the scroller
+rather than on the scroller itself, giving every phone a sideways scrollbar.
+Both are now their own assertions in `reading.mjs`.
+
+**Measured result** (`tools/i18n-verify/reading.mjs`, new and checked in — the
+first tool this project has had that measures the reading at all, which is why
+the defect survived ten layout rounds). Banner cleared, English: **390×844,
+ayah content visible 193px → 432px, i.e. the whole ayah, with 643px of reading
+area (798px in Full screen); 412×915 → 714px; 390×700 87px → 426px; 360×640
+42px → 306px of 432px needed, 594px in Full screen.** The reading starts 214px
+down instead of 447px. Bangla measures the same. **`layout.mjs` reports NO
+LAYOUT REGRESSIONS at all eight viewports in both banner states** — landing
+page byte-for-byte identical, same wheel, same Approach rows, same 9px dock
+gap, `getElementById` targets 67 → 74 with none missing — **navcheck unchanged
+in both languages** (the only reported problem is still the pre-existing 320px
+ENGLISH truncation of "Operation"/"Bookmark"), **coverage 1,110/1,110 (100%)**,
+and **`tools/perf/measure.mjs` unchanged at 6 sequential round trips / 0.89s**,
+which is the check that proves a layout round added no Firestore reads.
+**Verified: 505 behaviour checks** (was 479 — 26 new, section 29: the Study
+screen proven gone from the panel and present on the stage, the wheel proven
+hidden by *computed display* rather than by the `hidden` property alone, Study
+options still one tap away while reading, Full screen hiding all three strips
+with the Qur'an still there, a tap restoring them, a button press inside the
+reading *not* exiting Full screen, tapping Read again returning to a really
+redrawn wheel, a Ruku' opening at its own first ayah, and all of it in
+Bangla). One failure during the run was a **wrong assertion, not a defect** —
+ayah 10 of Surah 2 sits in Ruku' 2, which runs 8–20, so "the first ayah of the
+unit" is 8 and not 1; the check now reads the unit's start out of the
+reference line instead of hardcoding a number. No `firestore.rules`, schema or
+Firestore data changes — nothing to deploy but the static files. (The two
+rules changes still pending from earlier rounds — v07.18 Homework
+teacher-scoping and v07.37 `appLang` — are unaffected and still not deployed.)
 
 ---
 

@@ -1248,6 +1248,169 @@ console.log("\n=== 28. Shell round 14: the new controls read in Bangla too ===")
   await ctx.close();
 }
 
+// ---------------------------------------------------------------------------
+// 29. Shell round 17: the reading screen.
+//
+// The owner's brief was that the Qur'an must stop being displayed inside the
+// Study options drawer. reading.mjs measures how much room it gets; this
+// section checks the BEHAVIOUR -- that the reading is a stage view of its own,
+// that the wheel really gives way to it and comes back, that Full screen hides
+// the app's three strips and a tap on the text restores them, that a
+// multi-ayah unit opens at its first ayah, and that all of it reads in Bangla.
+// ---------------------------------------------------------------------------
+console.log("\n=== 29. Shell round 17: the reading screen ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+
+  const before = await page.evaluate(() => ({
+    readHidden: document.getElementById("readView").hidden,
+    wheelShown: !document.getElementById("wheelSection").hidden,
+    studyInPanel: !!document.getElementById("panelStudyOptions").querySelector("#studyScreen"),
+    studyOnStage: !!document.querySelector("#stage #studyScreen"),
+    tabs: [...document.querySelectorAll(".qr-tab")].map((b) => b.textContent.trim()),
+  }));
+  check("29a the landing screen is still the wheel", before.wheelShown && before.readHidden);
+  check("29a the Study screen has LEFT the Study options drawer", !before.studyInPanel);
+  check("29a ...and lives on the stage", before.studyOnStage);
+  check("29a the dock carries three tabs", before.tabs.length === 3 && before.tabs[1] === "Read", JSON.stringify(before.tabs));
+
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+  const reading = await page.evaluate(() => ({
+    readShown: !document.getElementById("readView").hidden,
+    wheelHidden: getComputedStyle(document.getElementById("wheelSection")).display === "none",
+    pressed: document.getElementById("tabReadBtn").getAttribute("aria-pressed"),
+    ref: document.getElementById("readRef").textContent.trim(),
+    ayahs: document.querySelectorAll("#ayahPanels .ayah-arabic").length,
+    navVisible: getComputedStyle(document.getElementById("singleAyahNavRow")).display !== "none",
+    dockVisible: getComputedStyle(document.getElementById("dock")).display !== "none",
+  }));
+  check("29b tapping Read shows the reading", reading.readShown && reading.pressed === "true");
+  // The wheel carries display:flex from .wheel-box, so `hidden` alone does not
+  // hide it -- this is the check that caught it before it shipped.
+  check("29b ...and the wheel really goes (computed display, not just [hidden])", reading.wheelHidden);
+  check("29b the ayah text is on the stage", reading.ayahs > 0);
+  check("29b Previous/Next came with it", reading.navVisible);
+  check("29b the reading names what is being read", /Surah/.test(reading.ref), reading.ref);
+  check("29b the bottom bar is still there", reading.dockVisible);
+
+  // Study options is ONE tap away while reading -- the owner's own reason for
+  // choosing this shape over "reading replaces the wheel".
+  await page.click("#tabStudyOptionsBtn");
+  await page.waitForTimeout(300);
+  const opts = await page.evaluate(() => ({
+    panelOpen: !document.getElementById("panelStudyOptions").hidden,
+    stillReading: !document.getElementById("readView").hidden,
+  }));
+  check("29c Study options opens over the reading in one tap", opts.panelOpen && opts.stillReading);
+  await page.click("#tabStudyOptionsBtn");
+  await page.waitForTimeout(250);
+
+  // Full screen, and the tap that brings the menus back.
+  await page.click("#hideChromeBtn");
+  await page.waitForTimeout(350);
+  const full = await page.evaluate(() => ({
+    nav: getComputedStyle(document.getElementById("topNav")).display,
+    dock: getComputedStyle(document.getElementById("dock")).display,
+    h1: getComputedStyle(document.querySelector("h1")).display,
+    ayahs: document.querySelectorAll("#ayahPanels .ayah-arabic").length,
+    hint: !document.getElementById("readHint").hidden,
+  }));
+  check("29d Full screen hides the top menu, the bottom menu and the title",
+        full.nav === "none" && full.dock === "none" && full.h1 === "none", JSON.stringify(full));
+  check("29d ...the Qur'an is still there", full.ayahs > 0);
+  check("29d ...and it says how to get back", full.hint);
+
+  await page.click("#ayahPanels", { position: { x: 5, y: 5 } });
+  await page.waitForTimeout(300);
+  const restored = await page.evaluate(() => getComputedStyle(document.getElementById("dock")).display !== "none");
+  check("29d a tap on the text brings the menus back", restored);
+
+  // A tap on something you meant to press must NOT be swallowed as "show the
+  // menus again" -- and must not hide them either, since nothing hides on a tap.
+  await page.click("#hideChromeBtn");
+  await page.waitForTimeout(300);
+  const stillFull = await page.evaluate(() => {
+    const b = document.querySelector("#readScroll button:not([disabled])");
+    b?.click();
+    return document.body.classList.contains("immersive-read");
+  });
+  check("29d pressing a button inside the reading does not exit Full screen", stillFull);
+
+  // Back out of Full screen the only way there is -- a tap on the text. The
+  // dock is genuinely gone until then, which is why this line is not optional.
+  await page.click("#ayahPanels", { position: { x: 5, y: 5 } });
+  await page.waitForTimeout(300);
+
+  await page.click("#tabReadBtn"); // tapping the open tab returns to the wheel
+  await page.waitForTimeout(350);
+  const back = await page.evaluate(() => ({
+    wheel: getComputedStyle(document.getElementById("wheelSection")).display !== "none",
+    readHidden: document.getElementById("readView").hidden,
+    immersive: document.body.classList.contains("immersive-read"),
+    wheelSvg: !!document.querySelector("#wheelContainer svg"),
+  }));
+  check("29e tapping Read again returns to the wheel", back.wheel && back.readHidden);
+  check("29e ...the wheel is really redrawn, not an empty box", back.wheelSvg);
+  check("29e ...and Full screen is dropped on the way out", !back.immersive);
+
+  // The owner's answer to "where does a multi-ayah unit open?": the first ayah.
+  await page.click("#tabStudyOptionsBtn");
+  await page.waitForTimeout(250);
+  await page.selectOption("#surahSelect", "2");
+  await page.waitForTimeout(1200);
+  await page.selectOption("#ayahSelect", "10");
+  await page.waitForTimeout(400);
+  await page.selectOption("#unitTypeSelect", "ruku");
+  await page.waitForTimeout(400);
+  await page.click("#tabStudyOptionsBtn");
+  await page.waitForTimeout(200);
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(600);
+  const firstAyah = await page.evaluate(() => ({
+    position: document.getElementById("ayahPosition").textContent.trim(),
+    ref: document.getElementById("readRef").textContent.trim(),
+  }));
+  // Ayah 10 of Surah 2 sits in Ruku' 2, which runs 8-20 -- so "the first ayah
+  // of the unit" is 8, NOT 1. Read the unit's own start out of the reference
+  // line rather than hardcoding a number: the assertion then survives any
+  // future change to the ruku boundaries, and cannot pass by accident.
+  const unitStart = Number(firstAyah.ref.match(/ayahs (\d+)/)?.[1]);
+  const openedAt = Number(firstAyah.position.match(/Ayah (\d+) of/)?.[1]);
+  check("29f a Ruku' opens at the ruku's FIRST ayah, not where you last were",
+        unitStart > 1 && openedAt === unitStart, JSON.stringify(firstAyah));
+
+  check("29g no page errors anywhere in the reading screen", errors.length === 0, errors.join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+console.log("\n=== 29h. The reading screen in Bangla ===");
+{
+  const ctx = await ctxFor({ banner: false, appLang: "bn" });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const tab = await page.evaluate(() => document.getElementById("tabReadBtn").textContent.trim());
+  check("29h the Read tab is Bangla", BANGLA.test(tab), tab);
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+  const bn = await page.evaluate(() => ({
+    back: document.getElementById("backToWheelBtn").textContent.trim(),
+    full: document.getElementById("hideChromeBtn").textContent.trim(),
+    ref: document.getElementById("readRef").textContent.trim(),
+  }));
+  check("29h the way back to the wheel is Bangla", BANGLA.test(bn.back), bn.back);
+  check("29h Full screen is Bangla", BANGLA.test(bn.full), bn.full);
+  check("29h what is being read is Bangla, in Bengali digits",
+        BANGLA.test(bn.ref) && !/[0-9]/.test(bn.ref), bn.ref);
+  await page.click("#hideChromeBtn");
+  await page.waitForTimeout(350);
+  const hint = await page.evaluate(() => document.getElementById("readHint").textContent.trim());
+  check("29h the how-to-get-back line is Bangla", BANGLA.test(hint), hint);
+  await page.close();
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);

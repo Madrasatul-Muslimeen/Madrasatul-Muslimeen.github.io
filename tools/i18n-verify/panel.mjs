@@ -114,7 +114,11 @@ export async function measurePanel(ctx, path) {
       selects,
       summaryH: summary ? Math.round(summary.getBoundingClientRect().height) : 0,
       summaryPresent: !!summary && summary.getBoundingClientRect().height > 0,
-      // How far into the panel's own scroll the Study heading sits.
+      // How far into the panel's own scroll the Study heading sits. Shell
+      // round 17 moved the Study screen OUT of this panel and onto the stage,
+      // so null is now the correct answer -- and a number reappearing here
+      // means the reading has fallen back into the drawer. reading.mjs is what
+      // measures the reading screen itself.
       studyHeadingOffset: studyH2 && panelRect ? Math.round(studyH2.getBoundingClientRect().top - panelRect.top + panel.scrollTop) : null,
       horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
       panelOverflowsX: panel ? panel.scrollWidth > panel.clientWidth + 1 : null,
@@ -133,7 +137,7 @@ function report(name, m) {
   console.log(`  labels ${m.labels.length}, truncated: ${cutL.length ? cutL.map((l) => `"${l.text}" ${l.w}px needs ${l.need}px`).join("; ") : "none"}`);
   const cutS = m.selects.filter((s) => s.cut);
   console.log(`  selects truncated: ${cutS.length ? cutS.map((s) => `${s.id} "${s.text}" ${s.w}px needs ${s.need}px`).join("; ") : "none"}`);
-  console.log(`  summary strip ${m.summaryPresent ? m.summaryH + "px" : "absent"} | Study heading at +${m.studyHeadingOffset}px into panel`);
+  console.log(`  summary strip ${m.summaryPresent ? m.summaryH + "px" : "absent"} | Study screen in panel: ${m.studyHeadingOffset === null ? "no (round 17: it owns the stage)" : "YES at +" + m.studyHeadingOffset + "px -- REGRESSION"}`);
   if (m.horizontalOverflow) console.log("  !! HORIZONTAL OVERFLOW (page)");
   if (m.panelOverflowsX) console.log("  !! PANEL OVERFLOWS SIDEWAYS");
   if (m.errors.length) console.log(`  !! PAGE ERRORS: ${m.errors.slice(0, 2).join(" | ")}`);

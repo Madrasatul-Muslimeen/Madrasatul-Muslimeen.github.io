@@ -20,6 +20,7 @@ node tools/i18n-verify/layout.mjs      # landing page vs the previous commit
 
 node tools/i18n-verify/probe.mjs /app/records.html bn   # READ a rendered page
 node tools/i18n-verify/panel.mjs en                     # inside the Study options panel
+node tools/i18n-verify/reading.mjs en                   # the reading screen itself
 ```
 
 `panel.mjs` (added by shell round 14) measures what is INSIDE the dock panel,
@@ -27,7 +28,21 @@ which nothing did before it: the panel's own box and whether its content
 overflows, each bar's height and whether its cells really sit on one line,
 every label and `<select>` that is being silently ellipsised, and how far down
 the panel the Study screen starts. It presses `#tabStudyOptionsBtn` itself,
-because the panel is hidden until then.
+because the panel is hidden until then. Since shell round 17 the Study screen
+is no longer in that panel, so `Study screen in panel: no` is the correct
+answer there — a number reappearing means the reading has fallen back into
+the drawer.
+
+`reading.mjs` (added by shell round 17) measures the reading screen, which
+nothing did before it either — the reason the defect it fixed survived ten
+layout rounds. It presses `#tabReadBtn`, then reports the height the reading
+area really gets, how much of the ayah content that shows, and the same again
+with Full screen on, at all eight viewports in both banner states. It also
+fails on the two things that are easy to get wrong here and invisible in a
+screenshot: a `hidden` view that is still displayed (`#wheelSection` carries
+`display:flex` from `.wheel-box`, which beats the UA's own `[hidden]` rule —
+this caught it before it shipped) and a full-bleed card overflowing its own
+scroller sideways.
 
 **Do not measure a bar's "lines" by comparing top edges.** A labelled
 `<select>` and a bare button beside it are bottom-aligned on purpose, so they

@@ -119,6 +119,10 @@
   .qr-tab::after { content: " \25B4"; font-size: 0.7em; color: #888; }
   .qr-tab[aria-expanded="true"] { background: #1F3A6E; color: white; border-color: #1F3A6E; }
   .qr-tab[aria-expanded="true"]::after { content: " \25BE"; color: #cfe0ff; }
+  /* The Read tab is a view switch, not a drawer -- no caret to point at a
+     panel that never slides up, and its "on" state is aria-pressed. */
+  .qr-tab-view::after { content: none; }
+  .qr-tab[aria-pressed="true"] { background: #1F3A6E; color: white; border-color: #1F3A6E; }
 
   .qr-panel {
     position: absolute; left: 0; right: 0; bottom: 100%;
@@ -306,6 +310,16 @@
     #wheelSection .way-row { padding: 5px 8px; gap: 8px; }
     #wheelSection .way-row .badge { width: 20px; height: 20px; font-size: 10px; }
     #wheelSection .way-row .status-chip { font-size: 9.5px; padding: 2px 7px; }
+    /* Shell round 17: on a phone the reading is the screen, so the study card
+       gives its gutter back to the text -- full-bleed sides, the same trick
+       the wheel card uses one rule above. The negative margin goes on the
+       SCROLLER, not on the card inside it: put it on the card and the card
+       ends up 2rem wider than the box that scrolls it, which is a sideways
+       scrollbar on every phone (measured, before shipping). */
+    #readScroll { margin-left: -1rem; margin-right: -1rem; }
+    #studyScreen { border-left: none; border-right: none; border-radius: 0; padding: 0.6rem 0.7rem; }
+    #readBar button { font-size: 0.74rem; padding: 0.25rem 0.45rem; }
+    #readRef { font-size: 0.75rem; }
   }
   .wheel-seg { cursor: pointer; stroke: #0c1320; stroke-width: 1; transition: stroke .15s, stroke-width .15s; }
   .wheel-seg:hover { stroke: #F2E8D5; stroke-width: 1.5; }
@@ -350,8 +364,43 @@
   /* ---------- Explore (Phase 5) ---------- */
   #explorePanel { margin-top: 0; } /* border/background/padding come from .wheel-box (Phase 5 round 12); lives inside the Explore dock panel since shell round 7 */
 
+  /* ---------- Reading screen (shell round 17) ----------
+     #readView is the stage's second occupant. It fills whatever the header
+     and dock leave, and the ONLY thing that scrolls is #readScroll -- the
+     read bar stays put, so Previous/Next and the way back to the wheel are
+     reachable however long the ayah is. */
+  #readView { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  /* The stage's two views take turns, and `hidden` has to actually win here:
+     #wheelSection carries display:flex from .wheel-box, and a class rule beats
+     the UA's own [hidden] { display: none }. Measured consequence of missing
+     this, caught by reading.mjs before it shipped: the wheel stayed on screen
+     and pushed the reading 632px down a 844px phone -- the exact defect this
+     round exists to remove, in a new place. */
+  #stage > [hidden] { display: none !important; }
+  #readBar {
+    flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+    gap: 0.4rem; padding: 0.25rem 0 0.4rem; border-bottom: 1px solid #eef1f7;
+  }
+  #readBar button { font-size: 0.78rem; padding: 0.3rem 0.55rem; margin: 0; white-space: nowrap; }
+  #readRef { font-size: 0.8rem; color: #1F3A6E; font-weight: 600; text-align: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #readScroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  #readHint {
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: 1.5rem; z-index: 70;
+    background: rgba(20,30,55,0.88); color: white; font-size: 0.78rem;
+    padding: 0.35rem 0.8rem; border-radius: 1rem; pointer-events: none;
+  }
+  #readHint[hidden] { display: none; }
+  /* Full screen: the owner's own shape -- a button hides the app's three
+     strips, and a tap on the reading brings them back. Nothing hides itself
+     on a stray tap, which is why the tap only ever restores. */
+  body.immersive-read > h1,
+  body.immersive-read > .app-tagline,
+  body.immersive-read > #topNav,
+  body.immersive-read #globalBanner,
+  body.immersive-read #dock { display: none; }
+
   /* ---------- Study screen ---------- */
-  #studyScreen { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 1rem; margin-top: 1rem; }
+  #studyScreen { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 1rem; margin-top: 0.5rem; }
   .ayah-arabic { font-family: 'Traditional Arabic', 'Amiri', serif; font-size: 1.7rem; line-height: 2.6rem; text-align: right; margin: 0.6rem 0; }
   .ayah-num { color: #B8862F; font-size: 1rem; }
   .ayah-translation { font-size: 0.95rem; color: #333; margin: 0.3rem 0; }
@@ -463,6 +512,37 @@
         </div>
         <div id="wheelSidebarContainer" class="wheel-sidebar"></div>
       </div>
+
+      <!-- Shell round 17 (15 Aug 2026) -- the reading itself, moved out of the
+           Study options drawer and given the stage. The wheel heading and
+           #wheelSection stay DIRECT children of #stage on purpose: every
+           measured sizing rule this page has (#stage > .wheel-heading, the
+           #wheelSection flex/media-query block) keys off that, so the wheel's
+           own layout is untouched byte for byte -- the two views simply take
+           turns being the one that is not hidden.
+           The owner chose this shape (option A) over "reading replaces the
+           wheel until closed", for a reason worth keeping: with a Read tab of
+           its own, Study options is still ONE tap away while reading, which
+           matters when the settings change per child. -->
+      <div id="readView" hidden>
+        <div id="readBar">
+          <button type="button" class="secondary" id="backToWheelBtn">◂ Mastery Wheel</button>
+          <div id="readRef"></div>
+          <button type="button" class="secondary" id="hideChromeBtn">⤢ Full screen</button>
+        </div>
+        <div id="readScroll">
+          <div id="studyScreen">
+            <div class="row" id="singleAyahNavRow">
+              <button class="secondary" id="prevAyahBtn">◂ Previous</button>
+              <div id="ayahPosition" style="align-self:center; font-size:0.85rem; color:#666;"></div>
+              <button class="secondary" id="nextAyahBtn">Next ▸</button>
+            </div>
+            <div id="ayahPanels"></div>
+            <div id="pageViewContainer" style="display:none;"></div>
+          </div><!-- /#studyScreen -->
+        </div>
+        <div id="readHint" hidden>Tap the text to bring the menus back.</div>
+      </div><!-- /#readView -->
     </div>
 
     <!-- The dock: two tabs on one line (they fit a phone), then the always-on
@@ -649,20 +729,17 @@
              a real home: see LAYOUT-BACKLOG.md. Until a Settings surface
              exists, a banner can only be set from the Firebase console. -->
 
-        <!-- Owner's call this round: the Study screen reads better as part of
-             Study options than as a tab of its own -- "user do not have to
-             click more for those things." Organising what sits inside this
-             panel is a deliberate next round. -->
-        <h2>Study</h2>
-        <div id="studyScreen">
-      <div class="row" id="singleAyahNavRow">
-        <button class="secondary" id="prevAyahBtn">◂ Previous</button>
-        <div id="ayahPosition" style="align-self:center; font-size:0.85rem; color:#666;"></div>
-        <button class="secondary" id="nextAyahBtn">Next ▸</button>
-      </div>
-      <div id="ayahPanels"></div>
-      <div id="pageViewContainer" style="display:none;"></div>
-        </div><!-- /#studyScreen -->
+        <!-- Shell round 17 (15 Aug 2026): the Study screen used to sit HERE,
+             inside this panel, on shell round 7's own call ("the stuff inside
+             the Study can even better make sense within the Study Options").
+             Measured, that put the Qur'an itself 447px down inside a drawer
+             capped at 74dvh: 193px of visible ayah content on a 390x844 phone
+             and 42px on a 360x640 one. The owner's words: "the outcome should
+             now show and take the entire mobile screen except the Banner, the
+             top menu and the bottom menu." It is now a stage view of its own
+             (#readView, above), reached from the dock's third tab. This panel
+             keeps ONLY the choices -- which is what its five bars always
+             were. -->
         </div><!-- /.study-options-body -->
       </div><!-- /#panelStudyOptions -->
 
@@ -681,6 +758,10 @@
 
       <div id="tabRow">
         <button type="button" class="qr-tab" id="tabStudyOptionsBtn" data-panel="panelStudyOptions" aria-controls="panelStudyOptions" aria-expanded="false">Study options</button>
+        <!-- Not a disclosure: this one switches the stage between the wheel and
+             the reading, so it carries aria-pressed rather than aria-expanded
+             and drops the caret the two panel tabs share. -->
+        <button type="button" class="qr-tab qr-tab-view" id="tabReadBtn" aria-controls="readView" aria-pressed="false">Read</button>
         <button type="button" class="qr-tab" id="tabExploreBtn" data-panel="panelExplore" aria-controls="panelExplore" aria-expanded="false">Explore</button>
       </div>
       <div id="unitLabel"></div>
@@ -865,7 +946,18 @@
     const searchStatus = document.getElementById("searchStatus");
     const searchResults = document.getElementById("searchResults");
 
-    const dockTabs = Array.from(document.querySelectorAll(".qr-tab"));
+    // Panel tabs only. The Read tab (shell round 17) is a stage-view switch
+    // with no panel behind it, so it must NOT be in this list -- closeAllPanels()
+    // looks each of these up by data-panel.
+    const dockTabs = Array.from(document.querySelectorAll(".qr-tab[data-panel]"));
+    const tabReadBtn = document.getElementById("tabReadBtn");
+    const readView = document.getElementById("readView");
+    const readBarRef = document.getElementById("readRef");
+    const readHint = document.getElementById("readHint");
+    const backToWheelBtn = document.getElementById("backToWheelBtn");
+    const hideChromeBtn = document.getElementById("hideChromeBtn");
+    const wheelHeadingEl = document.querySelector("#stage > .wheel-heading");
+    const wheelSectionEl = document.getElementById("wheelSection");
     const exploreBreadcrumb = document.getElementById("exploreBreadcrumb");
     const exploreWheelContainer = document.getElementById("exploreWheelContainer");
     const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
@@ -1256,6 +1348,11 @@
       updateUnitControlsVisibility();
       renderStudyScreen();
       renderWheel();
+      // Shell round 17: a jump or a search hit is a request to READ something,
+      // so the stage is switched underneath. The panel is deliberately left
+      // open -- clicking a second search result has to keep working, and the
+      // reading is right there the moment it is closed or Read is tapped.
+      setStageView("read");
     }
 
     // One button, one Enter key, one behaviour -- applyJump() is what decides
@@ -1572,11 +1669,86 @@
       tab.addEventListener("click", async () => {
         const wasOpen = tab.getAttribute("aria-expanded") === "true";
         closeAllPanels();
+        setImmersive(false); // a panel over a hidden dock would be unreachable
         if (wasOpen) return;
         tab.setAttribute("aria-expanded", "true");
         document.getElementById(tab.dataset.panel).hidden = false;
         if (tab.dataset.panel === "panelExplore") await openExplore();
       });
+    });
+
+    // -----------------------------------------------------------------------
+    // Shell round 17 (15 Aug 2026) -- the reading screen.
+    //
+    // The stage holds two views and shows one: the Mastery Wheel (the landing
+    // screen, unchanged) or the reading. The wheel heading and #wheelSection
+    // are hidden rather than moved, so every measured rule that keys off them
+    // being direct children of #stage still applies exactly as before.
+    // -----------------------------------------------------------------------
+    let stageView = "wheel";
+
+    function setStageView(view) {
+      stageView = view;
+      const reading = view === "read";
+      wheelHeadingEl.hidden = reading;
+      wheelSectionEl.hidden = reading;
+      readView.hidden = !reading;
+      tabReadBtn.setAttribute("aria-pressed", reading ? "true" : "false");
+      if (!reading) setImmersive(false);
+    }
+
+    function setImmersive(on) {
+      document.body.classList.toggle("immersive-read", on);
+      readHint.hidden = !on;
+      if (on) {
+        clearTimeout(readHint._timer);
+        readHint._timer = setTimeout(() => { readHint.hidden = true; }, 3500);
+      }
+    }
+
+    /** Owner's answer, asked before building: a multi-ayah unit opens at its
+        FIRST ayah, not wherever the last single-ayah reading left off. Bounds
+        come from currentUnitAyahBounds(), which is already what "Track this
+        unit" claims against -- so the reading opens on the same ayah the claim
+        starts from, for every unit type, with no second source of truth. */
+    function startOfCurrentUnit() {
+      if (!currentSurahData || currentUnitType === "ayah") return currentAyahNum;
+      const [from] = currentUnitAyahBounds();
+      return from;
+    }
+
+    tabReadBtn.addEventListener("click", () => {
+      if (stageView === "read") { setStageView("wheel"); return; } // same "tap the open tab to close it" idiom as the panels
+      closeAllPanels();
+      const first = startOfCurrentUnit();
+      if (first !== currentAyahNum) {
+        stopDrill();
+        currentAyahNum = first;
+        if (ayahSelect.querySelector(`option[value="${first}"]`)) ayahSelect.value = String(first);
+        renderStudyScreen();
+        renderWheel();
+      }
+      setStageView("read");
+      // Owner's answer to "Page display -- full screen the same way, or
+      // immersive only?": immersive. A real mushaf page is a page, so it opens
+      // with the app's strips already out of the way; one tap brings them back.
+      if (currentUnitType === "surah" || currentUnitType === "range") {
+        if (pageDisplayMode === "mushaf") setImmersive(true);
+      }
+    });
+
+    backToWheelBtn.addEventListener("click", () => setStageView("wheel"));
+    hideChromeBtn.addEventListener("click", () => setImmersive(true));
+
+    // A tap on the reading only ever RESTORES the menus -- the owner's own
+    // shape ("that also should have an option to hide, tapping on screen
+    // should show it again"). Nothing hides on a stray tap, and a tap on
+    // something you meant to press (a button, a checkbox, a notes box, a
+    // word chip) is left alone.
+    readView.addEventListener("click", (e) => {
+      if (!document.body.classList.contains("immersive-read")) return;
+      if (e.target.closest("button, a, input, select, textarea, label, [role='button']")) return;
+      setImmersive(false);
     });
 
     document.querySelectorAll("[data-close-panel]").forEach((btn) => {
@@ -1662,7 +1834,8 @@
 
     /** Closes Explore and jumps the Study screen to one specific ayah -- the drill-down's final step, from either a short Surah-wheel or a Ruku'-wheel. */
     async function goToAyahFromExplore(surahNum, ayahNum) {
-      closeAllPanels(); // the drill-down lands on an ayah in Study -- close the dock so the wheel is visible again
+      closeAllPanels(); // the drill-down lands on an ayah -- close the dock and show it (shell round 17: that is the reading screen now, not the wheel)
+      setStageView("read");
       currentUnitType = "ayah";
       unitTypeSelect.value = "ayah";
       updateUnitControlsVisibility();
@@ -1941,6 +2114,10 @@
 
       renderAudioControls(panels);
       renderUnitLabel();
+      // The reading screen's own "what am I reading" line -- the same sentence
+      // currentUnitInfo() already writes for the dock, translated, so a Range
+      // or a Ruku' names itself here instead of only the one ayah showing.
+      readBarRef.textContent = currentUnitInfo().label;
     }
 
     function renderAudioControls(panels) {

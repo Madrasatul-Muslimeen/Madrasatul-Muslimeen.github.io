@@ -185,7 +185,14 @@ whole-Qur'an word/phrase search added on bar 3. See v07.40's paragraph in
   **doable and small**, it just needs somewhere to live that is not the study
   panel.
 - **The "current study" readout** the owner asked to keep a note about is
-  item 8 below. It is NOT the old summary strip coming back.
+  item 8 below. It is NOT the old summary strip coming back. **Note round 17
+  has partly answered it**: the reading screen's own bar now names what is
+  being read (`#readRef`, from `currentUnitInfo().label`), so a Range or a
+  Ruku' names itself while you read it. What item 8 asks for beyond that is a
+  fuller readout including the person and the Approach.
+- ~~The Study screen underneath the bars has not been organised at all.~~
+  **BUILT — shell round 17 (v07.43): it is no longer under the bars at all.**
+  See item 9 below for what that round deliberately left.
 
 <details>
 <summary>The original item, kept for the record</summary>
@@ -398,6 +405,33 @@ pixel cost measured and put in front of them first.
 
 ---
 
+## 9. What shell round 17 left behind — SMALL, NOT URGENT
+
+The reading screen is built (v07.43). Four things were noticed while building
+it and deliberately not done, so they are written down rather than lost:
+
+- **The reading screen's own contents have never been organised**, only
+  relocated. `#singleAyahNavRow`, `#ayahPanels` and `#pageViewContainer` are in
+  the shape Phase 5 gave them. Now that they have a whole screen instead of a
+  drawer, that shape is worth a look with the owner — the same conversation
+  rounds 11 and 14 had about the controls. **Ask before rearranging**; nothing
+  about it is broken.
+- **`#readRef` and the dock's `#unitLabel` now both name the unit.** The dock
+  line (v07.26) exists because the wheel's centre cannot show a multi-ayah
+  unit, and it is on the *wheel* screen, so they are never both visible at
+  once. Not a duplication today — but if item 3 ever makes the wheel show the
+  unit, re-check both.
+- **Full screen has one way out: a tap on the reading.** That is the owner's
+  own design ("tapping on screen should show it again") and it is verified. If
+  it ever confuses a real user, the fix is a small always-visible affordance,
+  not a change of gesture.
+- **A search result opens the reading underneath the still-open panel.** That
+  was deliberate — clicking a second result has to keep working — so the
+  reading is there the moment the panel is closed. If the owner would rather
+  the panel closed on a result click, it is one line.
+
+---
+
 ## How these rounds are verified
 
 Every `quranrevival.html` layout round since v07.22 has been measured, not
@@ -420,6 +454,13 @@ eyeballed, and the next one should be too. The method that works:
   permanent: before it, nothing had ever measured this page above 768px, and
   `quranrevival.html` has exactly one media query (`max-width: 720px`) — so
   every PC size took a single path no test covered.
+- **The landing page is not the whole page, and neither is the panel.**
+  `reading.mjs` (shell round 17) measures the reading screen — the height it
+  really gets, how much ayah content that shows, and the same with Full screen
+  on. It exists because **nothing measured the reading for ten layout rounds**,
+  which is exactly how it ended up with 42px of Qur'an on a 360×640 phone
+  while every round reported itself green. If a round touches `#readView`,
+  `#stage` or the dock, run it.
 - **The landing page is not the whole page.** `panel.mjs` (shell round 14)
   measures what is inside the Study options panel — bar heights, whether cells
   really share one line, and which labels and `<select>`s are being silently
