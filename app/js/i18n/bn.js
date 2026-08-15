@@ -259,6 +259,12 @@ export const BN = {
   "◂ Previous": "◂ পূর্ববর্তী",
   "Next ▸": "পরবর্তী ▸",
 
+  // --- The reading screen (shell round 17) ---
+  "Read": "পড়ুন",
+  "◂ Mastery Wheel": "◂ দক্ষতার চাকা",
+  "⤢ Full screen": "⤢ পূর্ণ স্ক্রিন",
+  "Tap the text to bring the menus back.": "মেনু ফিরিয়ে আনতে লেখায় স্পর্শ করুন।",
+
   // --- The "Go to" box, including what it says when it cannot read you ---
   "Couldn't read \"{text}\". Try 2:255 for one ayah, or 2:255-260 for a range.":
     "\"{text}\" বোঝা গেল না। একটি আয়াতের জন্য ২:২৫৫, বা পরিসরের জন্য ২:২৫৫-২৬০ লিখুন।",
