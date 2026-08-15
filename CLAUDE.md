@@ -1365,6 +1365,118 @@ load, AND opening Listening settings really does. A test checking only the
 first would have passed on a build where Bangla playback had quietly stopped
 working. Layout, navcheck and coverage (1,099/1,099) all unchanged.
 
+v07.40 (15 Aug 2026, on Claude Code on the web) is **Shell round 14 — the
+inside of Study options rebuilt to the owner's own four tablines, plus real
+whole-Qur'an search, plus the first measurements this page has ever had at a
+PC size.** Written from the owner's own brief, and three decisions were put to
+them with numbers attached (a mockup artifact was used again, as rounds 4–11
+did) and answered before any code.
+
+**The layout.** Round 11's three bars become five, grouped the way the owner
+drew them: **1** WHO — *User Role*, *Student* (their words, replacing "Tenant"
+and "Person"; the element ids are deliberately unchanged, `tenantSelect`
+really does still switch tenant); **2** WHAT — Study Unit, Surah, Ayah; **3**
+FIND IT — Go to, Go, **Search**; **4** CLAIM IT — Approach (brought down out
+of bar 1) beside *Track this unit*; **5** Reading view + Listening settings,
+untouched per their "keep as it is for now". Bar order was the one genuine
+ambiguity in the brief — their numbering said tabline 4, their words said
+"below Tabline2" — **asked, and they chose the numbering.** Every control kept
+its id and its handler; moving them was this round, rewiring them was not.
+**The summary strip is removed**, as asked ("don't need to show the above
+choices in words below again"). Round 11 had put that exact question to them
+and they chose keep, on the stated grounds that a 77px cell cut the tenant and
+Approach names to "Madrasatul Mus…" and the strip was the only place they read
+in full — **so the strip was only worth removing because this round's own bars
+fix that at source.** Measured: two cells to a line is **160px each instead of
+77px** at 390px, and the tenant name goes from needing 224px in a 77px box to
+needing it in a 160px one (still clipped on a phone, fully readable from 768px
+up; in Bangla it fits outright at 390px and above). Nothing was destroyed —
+the selects, their handlers and their values are all untouched (I4).
+
+**Search is the only genuinely new mechanism, and the owner chose the widest
+of four options offered.** Not "this surah only" (free, buildable inside the
+round) but **the whole Qur'an in all three languages.** Built as
+`tools/quran-data-pull/build-search-index.js` → three files, and the choice of
+three rather than one is the load-bearing decision: **the language is picked
+by the SCRIPT the person typed in**, not by the app's language setting, so a
+search downloads exactly one index (Latin → `search-en.json`, Bengali → `bn`,
+Arabic → `ar`) instead of all three. Measured over the wire, GitHub Pages
+gzipping (confirmed against the live site, which already serves the 27MB of
+packaged surah data): **272KB / 363KB / 278KB.** **Nothing is fetched on the
+startup path** — the index loads the first time a search actually runs, the
+same "on first use" treatment v07.39 gave the reciter timing map, and a visit
+that never searches downloads nothing. Perf re-measured to prove it: Quran
+Study still 6 sequential round trips / 0.89s at 150ms latency, unchanged.
+`js/quran-search.js` is pure logic (no DOM, no Firebase — I2); the fetch lives
+in `quran-data.js`, which stays the only place that reads these static files.
+
+**Two details in the search worth not undoing.** Arabic is matched with the
+small marks stripped from *both* sides — nobody types them — but the result is
+**highlighted in the properly-pointed original**, via an `originalRange()`
+that walks the original counting only the characters that survived
+normalisation; the stripped form is what matches and is never what is shown.
+And **the Go box now takes words as well as references**, which is the owner's
+own suggestion ("you may enable 'Go To' field instead of a separate search
+field"): a reference still jumps exactly as before, but only text made of
+digits and reference punctuation can still produce "Couldn't read…" — real
+words search instead of erroring. `goToReference()` was split out of
+`applyJump()` so clicking a result navigates without overwriting what was
+searched for.
+
+**PC, measured for the first time.** The owner's own note said phone now, PC
+later, and asked for the harness widened first — **so this round takes the
+baseline and fixes only what the new bars needed anyway.** `layout.mjs` and
+the new `tools/i18n-verify/panel.mjs` now both run at **1280×800, 1440×900 and
+1920×1080** as well as the phones; nothing had ever measured this page above
+768px, and it has exactly one media query (`max-width: 720px`), so every PC
+size took a single untested path. Two findings, reported to the owner rather
+than acted on: **the panel stops growing at 928px on any screen** (the page's
+own 60rem cap — half a 1920px monitor is empty), and **every bar was a
+four-column grid whatever it held**, leaving a dead 220px column beside any
+three-cell bar at 1280, 1440 and 1920 alike. The second is fixed, because a
+bar now declares its own column count (`.opt-bar-2` / `.opt-bar-3`, and
+`align-items: stretch` moved out of `.opt-bar-3` into a new `.opt-bar-btns` —
+round 11 had those two facts tangled together, which only worked while the
+three-column bar was the buttons one). The first is left alone; a real PC
+layout is a design change, not a fix. **A measurement trap worth keeping:**
+panel.mjs's first version reported two false wraps because it compared cells'
+TOP edges — a labelled `<select>` and a bare button beside it are
+bottom-aligned on purpose. It groups by overlapping vertical range now.
+
+**Verified: 468 behaviour checks** (all 437 of v07.39's, plus the five bars
+asserted by control ID rather than position; both renamed labels; the summary
+strip proven gone; a real English search finding real ayahs, naming the surah,
+highlighting the matched word, and fetching **exactly one** index; clicking a
+result moving the screen and leaving the box alone; a word in the Go box
+searching while a mistyped reference still explains itself; a real reference
+still jumping; unpointed Arabic matching pointed text, right-to-left, with the
+vowel marks intact in the highlight; and the whole thing again in Bangla,
+including Bengali script really reaching the Bangla index while the app is in
+Bangla — the case that proves search language and app language are separate)
+**plus `layout.mjs` reporting NO LAYOUT REGRESSIONS at all eight viewports in
+both banner states** — landing page byte-for-byte identical, same wheel, same
+Approach rows (5/7/4/4/10), same 9px dock gap, `getElementById` targets 65 →
+68 with none missing — **navcheck unchanged in both languages** (the only
+reported problem is still the pre-existing 320px ENGLISH truncation of
+"Operation"/"Bookmark", which Bangla does not have), **translation coverage
+1,109/1,109 (100%)** — the total grew by 10 because this round adds ten
+strings, not because anything slipped — **and `tools/perf/measure.mjs`
+unchanged**, which is the check that proves a layout round added no Firestore
+reads. One real defect was found by reading a rendered result and not by any
+report: `surahName()` needs the English name handed to it, so results first
+read "2:45" — a bare number, in the one feature whose whole point is finding
+what you cannot number.
+
+**Flagged, not changed:** the **"Edit banner" control still has no home
+anywhere in the app** (removed from this panel in v07.29). This round was
+asked to raise it if a natural place appeared — it did not. The rebuilt panel
+is now tightly about studying, and putting a tenant-admin control back into it
+would undo exactly what v07.29 was for; it belongs in the Settings surface
+`LAYOUT-BACKLOG.md` item 1 describes, which still does not exist. No
+`firestore.rules`, schema or Firestore data changes — but note the two rules
+changes written and **still not deployed** (v07.18 Homework teacher-scoping,
+v07.37 `appLang`) are unaffected by this round and still pending.
+
 ---
 
 ## What this is

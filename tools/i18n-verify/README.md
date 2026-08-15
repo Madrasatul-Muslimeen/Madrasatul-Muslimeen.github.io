@@ -19,7 +19,27 @@ node tools/i18n-verify/navcheck.mjs    # nav fits at 320-768px, both languages
 node tools/i18n-verify/layout.mjs      # landing page vs the previous commit
 
 node tools/i18n-verify/probe.mjs /app/records.html bn   # READ a rendered page
+node tools/i18n-verify/panel.mjs en                     # inside the Study options panel
 ```
+
+`panel.mjs` (added by shell round 14) measures what is INSIDE the dock panel,
+which nothing did before it: the panel's own box and whether its content
+overflows, each bar's height and whether its cells really sit on one line,
+every label and `<select>` that is being silently ellipsised, and how far down
+the panel the Study screen starts. It presses `#tabStudyOptionsBtn` itself,
+because the panel is hidden until then.
+
+**Do not measure a bar's "lines" by comparing top edges.** A labelled
+`<select>` and a bare button beside it are bottom-aligned on purpose, so they
+start at different heights while sharing one line; panel.mjs groups cells by
+overlapping vertical range instead. The first version of it reported two
+false wraps.
+
+**`layout.mjs` and `panel.mjs` both run at 1280×800, 1440×900 and 1920×1080
+as well as the phones.** Before shell round 14 nothing had ever measured this
+page above 768px, and `quranrevival.html` has exactly one media query
+(`max-width: 720px`) — so every PC size takes a single path that no test
+covered. Keep the desktop rows.
 
 `probe.mjs` (added in phase 4) is not a test -- it dumps what a page really
 renders: its title, its whole innerText, every `<select>`'s options and every

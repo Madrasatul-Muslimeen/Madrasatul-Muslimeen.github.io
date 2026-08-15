@@ -72,6 +72,37 @@ export async function getSurahIndex() {
   return surahIndexPromise;
 }
 
+const searchIndexPromises = new Map(); // lang -> Promise<{lang, count, refs, texts}>
+
+/**
+ * Shell round 14 — one language's whole-Qur'an search index, 6,236 ayahs of
+ * plain text plus a packed surah/ayah reference per row. Built by
+ * tools/quran-data-pull/build-search-index.js; see that script's header for
+ * why there are three files rather than one.
+ *
+ * NEVER on the startup path. This is fetched the first time someone presses
+ * Search, and only for the language they typed in — the load-speed contract's
+ * "screensaver, About, resources: on first use" row. ~272-363KB over the wire
+ * (GitHub Pages gzips it), then cached by the browser like every other file
+ * here. The search logic itself lives in js/quran-search.js; this stays the
+ * only place that reads these static files.
+ */
+export async function getSearchIndex(lang) {
+  if (!searchIndexPromises.has(lang)) {
+    searchIndexPromises.set(
+      lang,
+      fetch(`${BASE_URL}/search-${lang}.json`).then((res) => {
+        if (!res.ok) throw new Error(`Couldn't load the ${lang} search index (HTTP ${res.status}).`);
+        return res.json();
+      }).catch((err) => {
+        searchIndexPromises.delete(lang); // don't cache a failed load — let the next search retry
+        throw err;
+      })
+    );
+  }
+  return searchIndexPromises.get(lang);
+}
+
 /**
  * Phase 5 — Explore navigator's Quran-wheel. 30 entries, {juz, startSurah,
  * startAyah, endSurah, endAyah} — where each Juz begins and ends. Computed

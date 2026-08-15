@@ -977,6 +977,178 @@ console.log("\n=== 26. v07.39: the 460KB reciter timing map is not on the load p
   await ctx.close();
 }
 
+console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
+{
+  const ctx = await ctxFor({ banner: true });
+  const page = await ctx.newPage();
+  const searchRequests = [];
+  page.on("request", (r) => { if (/\/search-(en|bn|ar)\.json/.test(r.url())) searchRequests.push(r.url()); });
+  await page.goto("http://localhost:8080/app/quranrevival.html", { waitUntil: "networkidle" });
+  await page.waitForTimeout(700);
+
+  // The whole point of fetching the index on first use: a visit that never
+  // searches must not pay for it. This is the load-speed half of the round,
+  // and it is the half a test that only checked "search works" would miss --
+  // exactly the trap section 26 was written for.
+  check("27a no search index is fetched on load", searchRequests.length === 0,
+        `${searchRequests.length} request(s) during load`);
+
+  await page.click("#tabStudyOptionsBtn");
+  await page.waitForTimeout(200);
+
+  // The owner's four tablines. Ids are asserted, not positions: the round's
+  // own rule was that moving a control is fine and rewiring it is not.
+  const bars = await page.evaluate(() =>
+    [...document.querySelectorAll(".study-options-body > .opt-bar")].map((bar) =>
+      [...bar.querySelectorAll("select, input, button")].map((el) => el.id)
+    )
+  );
+  check("27b bar 1 is User Role + Student", JSON.stringify(bars[0]) === '["tenantSelect","personSelect"]', JSON.stringify(bars[0]));
+  check("27b bar 2 is Study Unit + Surah + Ayah",
+        JSON.stringify(bars[1]) === '["unitTypeSelect","surahSelect","ayahSelect","rangeFromSelect","rangeToSelect"]', JSON.stringify(bars[1]));
+  check("27b bar 3 is Go to + Go + Search", JSON.stringify(bars[2]) === '["jumpInput","jumpGoBtn","searchBtn"]', JSON.stringify(bars[2]));
+  check("27b bar 4 is Approach + Track this unit", JSON.stringify(bars[3]) === '["trackableSelect","trackUnitBtn"]', JSON.stringify(bars[3]));
+  check("27b bar 5 is Reading view + Listening settings", JSON.stringify(bars[4]) === '["readingViewBtn","listeningBtn"]', JSON.stringify(bars[4]));
+
+  const labels = await page.evaluate(() => ({
+    tenant: document.querySelector('label[for="tenantSelect"]').textContent.trim(),
+    person: document.querySelector('label[for="personSelect"]').textContent.trim(),
+    summaryGone: !document.getElementById("optionsSummary"),
+  }));
+  check("27c the tenant picker is labelled User Role", labels.tenant === "User Role", labels.tenant);
+  check("27c the person picker is labelled Student", labels.person === "Student", labels.person);
+  check("27c the summary strip is gone", labels.summaryGone);
+
+  // Search: a real English word, against the real packaged index.
+  await page.fill("#jumpInput", "patience");
+  await page.click("#searchBtn");
+  await page.waitForTimeout(2500);
+  const en = await page.evaluate(() => ({
+    open: !document.getElementById("searchCard").hidden,
+    status: document.getElementById("searchStatus").textContent.trim(),
+    hits: document.querySelectorAll(".search-hit").length,
+    firstRef: document.querySelector(".search-hit .ref")?.textContent.trim(),
+    firstMark: document.querySelector(".search-hit mark")?.textContent.trim(),
+  }));
+  check("27d Search opens its card and finds real ayahs", en.open && en.hits > 0, JSON.stringify(en));
+  check("27d ...says how many", /\d/.test(en.status), en.status);
+  check("27d ...highlights the word that matched", (en.firstMark || "").toLowerCase() === "patience", en.firstMark);
+  check("27d ...and names the surah, not just a number", /[A-Za-z]/.test(en.firstRef || ""), en.firstRef);
+  check("27d exactly one index was fetched, the English one",
+        searchRequests.length === 1 && searchRequests[0].includes("search-en.json"), JSON.stringify(searchRequests));
+
+  // Clicking a result navigates -- and must NOT overwrite what was searched
+  // for, or the remaining results become unreadable in context.
+  await page.click(".search-hit");
+  await page.waitForTimeout(900);
+  const afterClick = await page.evaluate(() => ({
+    surah: document.getElementById("surahSelect").value,
+    ayah: document.getElementById("ayahSelect").value,
+    box: document.getElementById("jumpInput").value,
+  }));
+  check("27e clicking a result really moves the screen", Number(afterClick.surah) >= 1 && Number(afterClick.ayah) >= 1, JSON.stringify(afterClick));
+  check("27e ...and leaves the search box alone", afterClick.box === "patience", afterClick.box);
+
+  // The owner's own suggestion: the Go box takes words as well as references.
+  await page.fill("#jumpInput", "mercy");
+  await page.click("#jumpGoBtn");
+  await page.waitForTimeout(1200);
+  const viaGo = await page.evaluate(() => ({
+    open: !document.getElementById("searchCard").hidden,
+    hits: document.querySelectorAll(".search-hit").length,
+    jumpMsgShown: !document.getElementById("jumpMsg").hidden,
+  }));
+  check("27f a word typed into Go searches instead of erroring", viaGo.open && viaGo.hits > 0 && !viaGo.jumpMsgShown, JSON.stringify(viaGo));
+
+  // ...but a mistyped REFERENCE still explains itself, rather than silently
+  // searching for "2:" and finding nothing.
+  await page.fill("#jumpInput", "2:");
+  await page.click("#jumpGoBtn");
+  await page.waitForTimeout(400);
+  const badRef = await page.evaluate(() => ({
+    shown: !document.getElementById("jumpMsg").hidden,
+    text: document.getElementById("jumpMsg").textContent.trim(),
+  }));
+  check("27f a mistyped reference still explains itself", badRef.shown && /2:255/.test(badRef.text), JSON.stringify(badRef));
+
+  // A real reference still jumps, exactly as before this round.
+  await page.fill("#jumpInput", "2:255");
+  await page.click("#jumpGoBtn");
+  await page.waitForTimeout(900);
+  const ref = await page.evaluate(() => ({
+    surah: document.getElementById("surahSelect").value,
+    ayah: document.getElementById("ayahSelect").value,
+  }));
+  check("27g a reference still jumps", ref.surah === "2" && ref.ayah === "255", JSON.stringify(ref));
+
+  // Arabic: typed WITHOUT the small marks, which is how anyone types it, and
+  // matched against the fully-pointed uthmani text.
+  await page.fill("#jumpInput", "الرحمن");
+  await page.click("#searchBtn");
+  await page.waitForTimeout(3000);
+  const ar = await page.evaluate(() => ({
+    hits: document.querySelectorAll(".search-hit").length,
+    dir: document.querySelector(".search-hit .snip")?.getAttribute("dir"),
+    mark: document.querySelector(".search-hit mark")?.textContent.trim(),
+  }));
+  check("27h unpointed Arabic matches the pointed text", ar.hits > 0, JSON.stringify(ar));
+  check("27h ...is shown right to left", ar.dir === "rtl", ar.dir);
+  // The highlight must come back with its vowel marks intact -- the stripped
+  // form is what MATCHES, never what is shown.
+  check("27h ...and highlights properly-pointed Arabic", /[ؐ-ٰ]/.test(ar.mark || ""), ar.mark);
+  check("27h the Arabic index was fetched, and only now",
+        searchRequests.some((u) => u.includes("search-ar.json")) && !searchRequests.some((u) => u.includes("search-bn.json")),
+        JSON.stringify(searchRequests));
+  await page.close();
+  await ctx.close();
+}
+
+console.log("\n=== 28. Shell round 14: the new controls read in Bangla too ===");
+{
+  const ctx = await ctxFor({ banner: true, appLang: "bn" });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await openStudyOptions(page);
+  const l = await page.evaluate(() => ({
+    tenant: document.querySelector('label[for="tenantSelect"]').textContent.trim(),
+    person: document.querySelector('label[for="personSelect"]').textContent.trim(),
+    search: document.getElementById("searchBtn").textContent.trim(),
+    placeholder: document.getElementById("jumpInput").placeholder,
+  }));
+  check("28a User Role is Bangla", BANGLA.test(l.tenant), l.tenant);
+  check("28a Student is Bangla", BANGLA.test(l.person), l.person);
+  check("28a Search is Bangla", BANGLA.test(l.search), l.search);
+  check("28a the box's own hint is Bangla, and teaches that a word works",
+        BANGLA.test(l.placeholder) && !/[0-9]/.test(l.placeholder), l.placeholder);
+
+  // A Bangla reader typing Bengali script must get the Bangla index, not the
+  // English one -- the search language follows what was TYPED, not the app's
+  // setting, and this is the case that proves the two are separate.
+  await page.fill("#jumpInput", "ধৈর্য");
+  await page.click("#searchBtn");
+  await page.waitForTimeout(3000);
+  const bn = await page.evaluate(() => ({
+    hits: document.querySelectorAll(".search-hit").length,
+    status: document.getElementById("searchStatus").textContent.trim(),
+    mark: document.querySelector(".search-hit mark")?.textContent.trim(),
+  }));
+  check("28b Bengali script searches the Bangla text", bn.hits > 0, JSON.stringify(bn));
+  check("28b ...and says so in Bangla, with Bengali digits",
+        BANGLA.test(bn.status) && !/[0-9]/.test(bn.status), bn.status);
+  check("28b ...highlighting the Bangla word", BANGLA.test(bn.mark || ""), bn.mark);
+
+  // Nothing found is a real answer, and it has to be readable.
+  await page.fill("#jumpInput", "কখনোইনয়এমনশব্দ");
+  await page.click("#searchBtn");
+  await page.waitForTimeout(1200);
+  const none = await page.evaluate(() => ({
+    status: document.getElementById("searchStatus").textContent.trim(),
+    hits: document.querySelectorAll(".search-hit").length,
+  }));
+  check("28c nothing found says so in Bangla", none.hits === 0 && BANGLA.test(none.status), JSON.stringify(none));
+  await page.close();
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);
