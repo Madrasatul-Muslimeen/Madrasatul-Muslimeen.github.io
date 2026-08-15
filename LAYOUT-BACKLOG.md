@@ -159,7 +159,36 @@ do not let it be discovered afterwards.
 
 ---
 
-## 2. The rest of the Study options organising — OWNER CONTINUING
+## 2. The rest of the Study options organising — LARGELY DONE, 15 Aug 2026 (v07.40)
+
+**Shell round 14 built the owner's own four-tabline brief.** Five bars now
+(WHO / WHAT / FIND IT / CLAIM IT / reading-and-listening), "Tenant" and
+"Person" renamed to **User Role** and **Student** at their request, Approach
+moved down beside *Track this unit*, the summary strip removed, and a real
+whole-Qur'an word/phrase search added on bar 3. See v07.40's paragraph in
+`CLAUDE.md`. Two items from the list below are now closed and one is not:
+
+- ~~The summary strip stays as it is.~~ **Removed at the owner's ask.** It is
+  worth recording *why* the earlier "do not re-open this" no longer applied:
+  round 11 offered trim / remove / keep and they chose keep, on the stated
+  grounds that a 77px cell cut the tenant and Approach names and the strip was
+  the only place they read in full. Round 14's two-cells-to-a-line bars fix
+  that at source (160px at 390px), so the strip's remaining argument had gone.
+  **Do not re-add it unprompted.**
+- ~~Bars leave a dead column on a PC.~~ Fixed — a bar declares its own column
+  count now. But **the panel still stops growing at 928px on any screen**
+  (the page's own 60rem cap), so a 1920px monitor is half empty. Measured, put
+  to the owner, and deliberately left: a real PC layout is a design change.
+  **This is the live PC item.**
+- **"Edit banner" still has no home.** Round 14 was asked to raise it if a
+  natural place appeared in the rebuilt panel. It did not — the panel is now
+  tightly about studying, and putting a tenant-admin control back in would
+  undo what v07.29 was for. It belongs in item 1's Settings surface.
+
+<details>
+<summary>The original item, kept for the record</summary>
+
+### (original) 2. The rest of the Study options organising — OWNER CONTINUING
 
 The owner's words, 13 Aug 2026: *"There's more layout organising needed …
 Then I can do the rest of the layout organising."* Not yet specified — this
@@ -186,6 +215,8 @@ What is already known to be odd, so it does not have to be rediscovered:
   *Do not re-open this unprompted.* If Language leaves bar 1 (item 1), the
   strip's Person and Approach chips become slightly more valuable, not less,
   since those are the two truncating selects.
+
+</details>
 
 ---
 
@@ -312,8 +343,18 @@ eyeballed, and the next one should be too. The method that works:
   surah loading, Prev/Next and the typing field all work for real.
 - Measure **before and after** by serving the previous commit's copy of the
   page alongside the new one (`git show HEAD:app/quranrevival.html`).
-- Five viewports, both banner states: 390×844, 412×915, 390×700, 360×640,
-  768×1024, with the tenant banner set and cleared.
+- **Eight** viewports, both banner states: 390×844, 412×915, 390×700, 360×640,
+  768×1024, **1280×800, 1440×900, 1920×1080**, with the tenant banner set and
+  cleared. The three desktop rows were added by shell round 14 and are
+  permanent: before it, nothing had ever measured this page above 768px, and
+  `quranrevival.html` has exactly one media query (`max-width: 720px`) — so
+  every PC size took a single path no test covered.
+- **The landing page is not the whole page.** `panel.mjs` (shell round 14)
+  measures what is inside the Study options panel — bar heights, whether cells
+  really share one line, and which labels and `<select>`s are being silently
+  ellipsised. A round that only changes what is inside a closed panel will
+  show as byte-for-byte identical in `layout.mjs`, which is the right answer
+  but is not evidence that the panel itself is right.
 - What to assert every time: wheel-heading top, wheel width, visible
   Approach-row count, the 9px gap above the dock, dock fully visible, no
   horizontal overflow, every `getElementById` target still resolving, and no

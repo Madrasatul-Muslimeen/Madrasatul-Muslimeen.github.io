@@ -6,12 +6,20 @@ import { chromium, newContext, openPage } from "./harness.mjs";
 // Chromium: use whatever this machine has. CHROMIUM_PATH overrides;
 // otherwise Playwright finds its own download, which is the normal case.
 const EXE = process.env.CHROMIUM_PATH || undefined;
+// Shell round 14 (15 Aug 2026): the three desktop rows are new. Every layout
+// round from v07.22 to v07.39 measured phones and one tablet, so nothing above
+// 768px had ever been checked -- and quranrevival.html has exactly one media
+// query, @media (max-width: 720px), meaning every PC size takes a single
+// untested path. They are permanent now, not a one-off for this round.
 const VIEWPORTS = [
   ["390x844", { width: 390, height: 844 }],
   ["412x915", { width: 412, height: 915 }],
   ["390x700", { width: 390, height: 700 }],
   ["360x640", { width: 360, height: 640 }],
   ["768x1024", { width: 768, height: 1024 }],
+  ["1280x800", { width: 1280, height: 800 }],
+  ["1440x900", { width: 1440, height: 900 }],
+  ["1920x1080", { width: 1920, height: 1080 }],
 ];
 
 async function measure(ctx, path) {

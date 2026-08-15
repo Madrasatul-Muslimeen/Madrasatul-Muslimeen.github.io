@@ -120,6 +120,11 @@ export const BN = {
   "Loading…": "লোড হচ্ছে…",
   "Person": "ব্যক্তি",
   "Tenant": "প্রতিষ্ঠান", // ?
+  // The owner's own word for the tenant picker on the Quran screen, where its
+  // options read "Madrasatul Muslimeen (Owner, Prime)" -- what they see there
+  // is the role they hold, not an abstract "tenant". "Tenant" above is kept:
+  // other screens still use it, and this is a second label, not a rename.
+  "User Role": "ব্যবহারকারীর ভূমিকা", // ?
   "Subject": "বিষয়",
   "Approach": "পদ্ধতি", // ?
   "Notes": "নোট",
@@ -254,6 +259,24 @@ export const BN = {
   "There is no Surah {surah}. Surah numbers run 1–114.":
     "{surah} নম্বর কোনো সূরা নেই। সূরার নম্বর ১ থেকে ১১৪ পর্যন্ত।",
   "Surah {surah} has {count} ayahs.": "সূরা {surah}-এ {count}টি আয়াত আছে।",
+  "2:255 or a word": "২:২৫৫ বা একটি শব্দ",
+
+  // --- Search (shell round 14) -------------------------------------------
+  // The box now takes words as well as references, so its own wording has to
+  // teach that in Bangla too -- a Bangla-only reader who is only ever told
+  // "২:২৫৫" will never discover that a word works.
+  "Search": "খুঁজুন",
+  "Search the Qur'an": "কুরআনে খুঁজুন",
+  "Type a word or phrase in the box above, then press Search.":
+    "উপরের ঘরে একটি শব্দ বা বাক্যাংশ লিখুন, তারপর খুঁজুন চাপুন।",
+  "Searching for \"{query}\"…": "\"{query}\" খোঁজা হচ্ছে…",
+  "Nothing found for \"{query}\".": "\"{query}\"-এর কিছু পাওয়া যায়নি।",
+  "1 ayah found.": "১টি আয়াত পাওয়া গেছে।",
+  "{total} ayahs found.": "{total}টি আয়াত পাওয়া গেছে।",
+  "{total} ayahs found — showing the first {shown}.":
+    "{total}টি আয়াত পাওয়া গেছে — প্রথম {shown}টি দেখানো হচ্ছে।",
+  "Couldn't load the search index. Check your connection and try again.":
+    "খোঁজার তালিকা লোড করা যায়নি। ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।",
 
   // --- Reading view ------------------------------------------------------
   "Reading view": "পড়ার ধরন",
