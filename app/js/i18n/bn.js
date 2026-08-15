@@ -236,6 +236,12 @@ export const BN = {
   "Go": "যান",
   "From ayah": "যে আয়াত থেকে",
   "To ayah": "যে আয়াত পর্যন্ত",
+  // Shortened in shell round 14 so both range fields fit on one line beside
+  // Study Unit and Surah. The two above are kept: they are still correct
+  // wording, and nothing in this file is deleted just because one screen
+  // stopped asking for it.
+  "From": "থেকে",
+  "To": "পর্যন্ত",
   "Whole Quran": "সম্পূর্ণ কুরআন",
 
   // --- What is being tracked, and where you are -------------------------
@@ -334,6 +340,9 @@ export const BN = {
 
   // --- Claiming, and the Approach modal ----------------------------------
   "Track this unit": "এই এককটি চিহ্নিত করুন",
+  // Shortened to one word in shell round 14, so the Approach name beside it
+  // gets the room instead. The longer wording above is kept, unused here.
+  "Track": "চিহ্নিত করুন",
   "Claim": "দাবি করুন", // ?
   "Claim a status": "একটি অবস্থা দাবি করুন", // ?
   "Confirmed:": "নিশ্চিত করা হয়েছে:",
