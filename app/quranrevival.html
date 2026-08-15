@@ -170,19 +170,19 @@
   /* An ayah number is at most three digits, so these never need a share of
      the line -- they take a fixed sliver and hand the rest to Study Unit and
      Surah, whose names are long and were being truncated for their sake. */
-  .opt-cell-num { flex: 0 0 4.1rem !important; }
-  /* On the very narrowest phones, four cells on one line left "Study Unit"
-     62px of label in a 53px box -- and these labels fail SILENTLY, by
-     ellipsis. Measured: giving the number fields 0.7rem less each buys the
-     two named cells 12px apiece, which clears it in both languages. Only
-     this bar, only below 340px; every other size keeps the roomier fields. */
-  @media (max-width: 340px) {
-    .opt-cell-num { flex-basis: 3.4rem !important; }
-    /* Even then English's "Study Unit" came up 4px short (69px of label in
-       65px). A hair off the label type clears it; the controls themselves
-       are untouched. Bangla already fitted, and still does. */
-    .opt-bar-units .opt-cell > label { font-size: 0.67rem; }
-  }
+  /* 3.1rem, squeezed once more in round 16 on the owner's ask -- "they can
+     be squeezed a little to make more room for the Surah name". MEASURED
+     floor: three digits need 22px of text plus the dropdown arrow's ~18px
+     and 8px of padding, so ~48px is the point below which the arrow starts
+     crowding the number. 3.1rem is 50px, just above it.
+     The LABEL, not the box, was the binding constraint at that width --
+     "From" needs ~58px at the normal 0.72rem -- so these two cells take a
+     slightly smaller label. That is what buys Surah its extra 16px, and it
+     also made the narrow-screen media query this round replaced unnecessary:
+     nothing truncates at 320px any more, so the page is back to ONE screen-
+     size rule, which is where it started. */
+  .opt-cell-num { flex: 0 0 3.1rem !important; }
+  .opt-cell-num > label { font-size: 0.66rem; }
   /* Buttons-only bars stretch; bars holding a label over a control align on
      the control's own bottom edge. Round 11 had these two facts tangled
      together in its own three-column rule, which only worked for as long as

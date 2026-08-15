@@ -180,10 +180,12 @@ whole-Qur'an word/phrase search added on bar 3. See v07.40's paragraph in
   (the page's own 60rem cap), so a 1920px monitor is half empty. Measured, put
   to the owner, and deliberately left: a real PC layout is a design change.
   **This is the live PC item.**
-- **"Edit banner" still has no home.** Round 14 was asked to raise it if a
-  natural place appeared in the rebuilt panel. It did not — the panel is now
-  tightly about studying, and putting a tenant-admin control back in would
-  undo what v07.29 was for. It belongs in item 1's Settings surface.
+- **"Edit banner" still has no home** — see item 7 below, which the owner
+  asked to have written down properly (15 Aug 2026). Short version: it is
+  **doable and small**, it just needs somewhere to live that is not the study
+  panel.
+- **The "current study" readout** the owner asked to keep a note about is
+  item 8 below. It is NOT the old summary strip coming back.
 
 <details>
 <summary>The original item, kept for the record</summary>
@@ -324,6 +326,75 @@ an English rename ("Study Module" → "Modules"). Re-measure with the
 `navcheck` method below any time a category label changes length.
 
 </details>
+
+---
+
+## 7. "Edit banner" needs a home — DOABLE, SMALL, JUST HOMELESS
+
+**The owner asked for this to be written down properly (15 Aug 2026), so:
+this is not hard, and nothing is lost while it waits.**
+
+**What is true right now.** A tenant's banner (`tenants.bannerTitle` /
+`bannerSub`) still displays perfectly — `renderBanner()` reads it on every
+load, and it is verified by a behaviour check. What is missing is only the
+*editing* UI, removed from the Study options panel in v07.29 at the owner's
+own request ("it is only showing 'edit banner' and taking space"). Nothing
+was destroyed (I4): the fields are untouched in Firestore, and the markup,
+handler and CSS are all recoverable from the v07.29 commit.
+
+**So the only real cost of the gap** is that a banner can currently be set
+only from the Firebase console. The owner has no banner set today, so nothing
+is broken for them; it would bite the first *other* tenant who wants one.
+
+**Why round 14 did not just put it back**, having been asked to raise it if a
+natural place appeared: the rebuilt panel is now tightly about studying —
+five bars that are all "what am I studying, how, and claiming it". A
+tenant-admin control in the middle of that would undo exactly what v07.29 was
+for. It does not belong there; it belongs in a Settings surface.
+
+**Shape of the work when it is picked up** (roughly half an hour, no schema
+change, no `firestore.rules` change):
+
+- It is owner/prime-only — gate it with `canAdminCatalogueClientSide()`, the
+  same check the old block used.
+- Two text inputs and a Save, writing the two existing fields through
+  `safeWrite()` so a failure reaches the user (I15).
+- Both fields are language-keyed (I11), so the form should edit the reader's
+  current language, not blindly overwrite `en`.
+- Natural home: **Home → Settings**, beside the app-language control that
+  item 1 built. That menu already exists and is already role-aware.
+
+---
+
+## 8. A "current study" readout, under a toggle — OWNER'S ASK, NOT BUILT
+
+**Owner, 15 Aug 2026:** bring the choice-status writing back "as a display of
+'current study/content' under a toggle button."
+
+**This is NOT the old summary strip returning, and the difference matters** —
+whoever builds it should not simply revert v07.41. The old strip was
+*always on* and repeated what the controls beside it already said, which is
+why it was removed. What is being asked for now is:
+
+- **A reading of what is currently being studied**, not an echo of the five
+  pickers — person, the unit in words ("Ayah 2:255", "Ruku' 3 of Surah 2"),
+  the Approach, and whatever else names the *content* rather than the widget.
+- **Behind a toggle**, so it costs nothing until it is asked for — the same
+  disclosure idiom the page already uses three times over (dock tabs, Reading
+  view / Listening cards, nav categories). Do not invent a fourth.
+- Off by default, since the panel it lives in is itself already closed.
+
+**What can be reused:** `renderOptionsSummary()` in the v07.41 commit is a
+working, translated, `textContent`-safe builder for exactly this kind of
+readout, and `currentUnitInfo().label` already produces the unit sentence in
+both languages. Take the guts, not the placement.
+
+**Ask the owner one thing before building it:** whether this readout belongs
+*inside* Study options (where the old strip was) or on the landing screen
+near the dock, where it would be visible without opening a panel at all. The
+second is closer to "current study" as a phrase, but it costs landing height,
+which rounds 9-12 spent themselves reclaiming — so it is their call, with the
+pixel cost measured and put in front of them first.
 
 ---
 
