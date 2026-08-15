@@ -1123,6 +1123,37 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
         searchRequests.some((u) => u.includes("search-ar.json")) && !searchRequests.some((u) => u.includes("search-bn.json")),
         JSON.stringify(searchRequests));
 
+  // PHRASES, not just single words -- the owner asked directly whether the
+  // box does them. A phrase is several words in a row, so this only passes
+  // if the match really spans the whole thing.
+  await page.fill("#jumpInput", "Lord of the worlds");
+  await page.click("#searchBtn");
+  await page.waitForTimeout(1500);
+  const phrase = await page.evaluate(() => ({
+    hits: document.querySelectorAll(".search-hit").length,
+    mark: document.querySelector(".search-hit mark")?.textContent.trim(),
+  }));
+  check("27j an English phrase matches as a phrase",
+        phrase.hits > 0 && /^lord of the worlds$/i.test(phrase.mark || ""), JSON.stringify(phrase));
+
+  // The Arabic phrase that was silently finding NOTHING before this round:
+  // the Uthmani text writes the long A of the last word as a superscript
+  // alef, so a reader typing a full alef matched nothing at all.
+  await page.fill("#jumpInput", "رب العالمين");
+  await page.click("#searchBtn");
+  await page.waitForTimeout(2500);
+  const arPhrase = await page.evaluate(() => ({
+    hits: document.querySelectorAll(".search-hit").length,
+    ref: document.querySelector(".search-hit .ref")?.textContent.trim(),
+    mark: document.querySelector(".search-hit mark")?.textContent.trim(),
+  }));
+  check("27j an Arabic phrase matches across a superscript alef", arPhrase.hits > 0, JSON.stringify(arPhrase));
+  // The highlight must cover BOTH words, with their marks, and must start at
+  // the start of the first word rather than one letter into it.
+  check("27j ...highlighting the whole phrase, pointed, from its first letter",
+        /\s/.test(arPhrase.mark || "") && /[ؐ-ٰ]/.test(arPhrase.mark || "") && /^[ا-يٱ]/.test(arPhrase.mark || ""),
+        arPhrase.mark);
+
   // Range: "To" used to be pushed onto a line of its own, because a
   // three-column grid could not hold four cells. Both range fields must now
   // sit beside Study Unit and Surah, on ONE line, with nothing truncated.
@@ -1191,6 +1222,18 @@ console.log("\n=== 28. Shell round 14: the new controls read in Bangla too ===")
   check("28b ...and says so in Bangla, with Bengali digits",
         BANGLA.test(bn.status) && !/[0-9]/.test(bn.status), bn.status);
   check("28b ...highlighting the Bangla word", BANGLA.test(bn.mark || ""), bn.mark);
+
+  // A Bangla PHRASE, for the same reason the English and Arabic ones are
+  // checked: the owner asked whether phrases work, in every language.
+  await page.fill("#jumpInput", "সাহায্য প্রার্থনা কর");
+  await page.click("#searchBtn");
+  await page.waitForTimeout(2000);
+  const bnPhrase = await page.evaluate(() => ({
+    hits: document.querySelectorAll(".search-hit").length,
+    mark: document.querySelector(".search-hit mark")?.textContent.trim(),
+  }));
+  check("28b a Bangla phrase matches as a phrase",
+        bnPhrase.hits > 0 && /\s/.test(bnPhrase.mark || "") && BANGLA.test(bnPhrase.mark || ""), JSON.stringify(bnPhrase));
 
   // Nothing found is a real answer, and it has to be readable.
   await page.fill("#jumpInput", "কখনোইনয়এমনশব্দ");

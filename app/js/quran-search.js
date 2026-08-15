@@ -29,6 +29,21 @@ export function searchLangFor(query) {
 // are stripped before matching. Everything here either REMOVES a character
 // or swaps one for one -- which is what lets a match found in the stripped
 // text be mapped back to its place in the original (see originalRange).
+//
+// THE ALEF IS DROPPED TOO, and that is not tidiness -- it is the fix for a
+// real miss found while checking whether phrase search worked. The Uthmani
+// script writes some long A sounds as a SUPERSCRIPT alef rather than a full
+// one, so the text of 1:2 contains no plain alef in its last word at all. A
+// reader types it WITH the alef, and got nothing back. Stripping the mark
+// alone cannot fix that -- the two sides still differ by a letter -- and
+// folding the mark INTO an alef breaks the opposite case, a word people type
+// WITHOUT an alef against a text that carries the superscript one.
+//
+// Dropping every alef from the comparison makes both work, and it is the
+// same alef-insensitive matching Qur'an search tools generally use. The
+// accepted cost: two words differing only by an alef stop being told apart,
+// so Arabic search is slightly broader than literal. Broader beats silently
+// empty, which is what it was.
 const AR_STRIP = /[ؐ-ًؚ-ٰٟۖ-ۭـ​-‏﻿]/;
 const AR_FOLD = new Map([
   ["آ", "ا"], ["أ", "ا"], ["إ", "ا"], ["ٱ", "ا"], // آ أ إ ٱ -> ا
@@ -36,9 +51,17 @@ const AR_FOLD = new Map([
   ["ة", "ه"], // ة -> ه
 ]);
 
-/** True when this character disappears during normalisation for this language. */
+const ALEF = "\u0627";
+
+/** True when this character disappears during normalisation for this language.
+    Checked in the same order normalize() applies things -- strip first, then
+    fold, then drop anything that folded to an alef -- so the two can never
+    disagree about which characters survived. originalRange() depends on that
+    agreement to map a match back onto the pointed original. */
 function isDropped(lang, ch) {
-  return lang === "ar" && AR_STRIP.test(ch);
+  if (lang !== "ar") return false;
+  if (AR_STRIP.test(ch)) return true;
+  return (AR_FOLD.get(ch) ?? ch) === ALEF;
 }
 
 /** The form both the query and the ayah text are compared in. */
@@ -47,7 +70,7 @@ export function normalize(lang, text) {
   if (lang !== "ar") return s.toLowerCase();
   let out = "";
   for (const ch of s) {
-    if (AR_STRIP.test(ch)) continue;
+    if (isDropped("ar", ch)) continue;
     out += AR_FOLD.get(ch) ?? ch;
   }
   return out;
@@ -79,6 +102,10 @@ export function originalRange(lang, original, normFrom, normLength) {
   // Include any trailing marks that belong to the last matched letter --
   // cutting them off would render a bare letter next to its own vowel sign.
   while (i < chars.length && isDropped(lang, chars[i])) i++;
+  // ...and the same backwards, or a word whose first letter is a dropped
+  // alef gets highlighted from its SECOND letter, leaving a stray character
+  // outside the highlight.
+  while (from > 0 && isDropped(lang, chars[from - 1])) from--;
   // Character offsets, not code-unit offsets: the caller slices with [...str].
   return { from, to: i };
 }

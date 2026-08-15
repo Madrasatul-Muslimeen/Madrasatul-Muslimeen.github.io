@@ -1542,6 +1542,70 @@ again. Note this means round 14's reported "468 passed, 0 failed" was run
 **before** its own version bump; the bump surfaced this, and nothing about the
 app was wrong.
 
+v07.42 (15 Aug 2026, same day) is **shell round 16 — a second squeeze, and a
+real Arabic search defect found by the owner's own question.**
+
+**The owner asked whether Search does PHRASES or only single words. The
+honest answer needed testing, not reading the code — and testing found a
+genuine miss.** English and Bangla phrases worked (the match is a plain
+substring, so several words in a row match as one). **Arabic phrases largely
+did not, and silently.** The Uthmani script writes some long A sounds as a
+**superscript alef** rather than a full one: 1:2's `ٱلْعَٰلَمِينَ` contains no
+plain alef at all, so `رب العالمين` — typed the only way anyone would type it
+— returned **nothing**. Not an error, not "0 results because it isn't there":
+a correct query answered wrongly. Stripping the mark cannot fix it (the two
+sides still differ by a letter) and folding the mark INTO an alef breaks the
+opposite case (`الرحمن`, typed without one against a text carrying the
+superscript one — the case round 14's own test happened to cover, which is
+why it passed). **Fixed by dropping the alef entirely from the comparison on
+both sides**, the alef-insensitive matching Qur'an search tools generally
+use. `رب العالمين` now returns 42, `مالك يوم الدين` returns 1. The accepted
+cost, stated rather than hidden: two words differing only by an alef stop
+being told apart (قال/قل), so Arabic search is slightly broader than literal
+— which beats silently empty. `originalRange()` needed one more line for it:
+the highlight now extends BACKWARDS over dropped characters too, or a word
+beginning with a dropped alef was highlighted from its second letter.
+**`isDropped()` is now the single source of truth** that `normalize()` itself
+calls, so the two can never disagree about which characters survived — that
+agreement is what the whole highlight mapping rests on.
+
+**The squeeze (the owner's ask: "'to' and 'from' can be squeezed a little to
+make more room for the Surah name").** Measured the floor first rather than
+trimming by feel: three digits need 22px of text plus the dropdown arrow's
+~18px and 8px of padding, so ~48px is where the arrow starts crowding the
+number. `.opt-cell-num` goes **4.1rem → 3.1rem (50px)**. **The LABEL, not the
+box, turned out to be the binding constraint** — "From" needs ~58px at the
+normal 0.72rem — so those two cells take a 0.66rem label, and that is what
+actually buys the width. **Measured at 390px: Surah 124px → 132px with Range
+off, 104px with it on; at 412px, 143px/115px — so the longest English surah
+name (113px) now fits outright.** Bangla's longest needs 95px and fits from
+390px. **And it removed the media query round 15 added:** nothing truncates at
+320px any more, so the page is back to **one** screen-size rule, where it
+started.
+
+**Verified: 479 behaviour checks** (was 475 — four new, all phrase cases: an
+English phrase matching as a phrase, the Arabic phrase that used to find
+nothing, its highlight proven to cover both words with their marks and to
+start at the first letter, and a Bangla phrase) **plus `layout.mjs` NO LAYOUT
+REGRESSIONS at all eight viewports in both banner states** (`getElementById`
+67 → 67), **navcheck unchanged**, **coverage 1,107/1,107**, **perf unchanged**.
+A full sweep at 320/360/390/412/768/1280/1920 in both languages and both unit
+types confirms five bars, one line each, nothing truncated, no overflow.
+
+**Two notes the owner asked to have recorded properly, now `LAYOUT-BACKLOG.md`
+items 7 and 8** — read them there before acting on either. In short: **(7)
+"Edit banner" is doable and small** (~half an hour, no schema or rules change,
+owner/prime-gated, markup recoverable from the v07.29 commit) and is only
+homeless because the rebuilt study panel is the wrong place for a tenant-admin
+control; its natural home is Home → Settings. **(8) The "choice status
+writing" comes back as a "current study" readout under a toggle** — and the
+item is explicit that this is **not** a revert of the removed summary strip:
+it should name the CONTENT being studied rather than echo the pickers, sit
+behind a disclosure (the page already has that idiom three times over, do not
+invent a fourth), and the owner must be asked one question first — whether it
+belongs inside Study options or on the landing screen near the dock, the
+latter costing landing height that rounds 9-12 spent themselves reclaiming.
+
 ---
 
 ## What this is
