@@ -143,10 +143,28 @@
      inside its column instead of pushing the line wider. Bars 1-2 are the
      choices themselves; bar 3's first two open a card below rather than each
      costing a permanent row. */
+  /* Shell round 14 (15 Aug 2026): a bar now declares HOW MANY columns it
+     actually has, instead of every bar being a four-column grid whatever it
+     holds. Measured reason, at last measured: on a PC the old fixed four
+     columns left a dead 220px column to the right of any bar with three
+     things in it, at 1280, 1440 and 1920 alike. On a phone it is worth more
+     than tidiness -- two cells to a line is 172px each instead of 77px,
+     which is the difference between "Madrasatul Muslimeen (Owner, Prime)"
+     being readable and being cut to "Madrasatul Mus...". */
   .opt-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.35rem 0.4rem; align-items: end; margin: 0.45rem 0; }
-  .opt-bar-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; }
+  .opt-bar-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .opt-bar-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  /* Buttons-only bars stretch; bars holding a label over a control align on
+     the control's own bottom edge. Round 11 had these two facts tangled up
+     in .opt-bar-3, which only worked while the three-column bar was the
+     buttons one -- it is not, as of this round. */
+  .opt-bar-btns { align-items: stretch; }
   .study-options-body > .opt-bar:first-child { margin-top: 0; }
   .opt-cell { min-width: 0; }
+  .opt-cell-wide { grid-column: span 2; }
+  /* A bare button sharing a line with a labelled control: same height as the
+     control beside it, so the two bottom edges really meet. */
+  .opt-btn-inline { height: 1.85rem; padding: 0.2rem 0.3rem; }
   .opt-cell > label { margin: 0 0 0.15rem; font-size: 0.72rem; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .opt-cell > select, .opt-cell input[type="text"] { width: 100%; box-sizing: border-box; font-size: 0.82rem; padding: 0.3rem 0.25rem; }
   /* One shared control height, so a text input and a <select> sitting in
@@ -174,9 +192,28 @@
   .opt-card select { max-width: 100%; }
   .opt-note { font-size: 0.75rem; color: #777; margin: 0.3rem 0 0; }
   .opt-note[hidden] { display: none; }
-  .opt-summary { display: flex; flex-wrap: wrap; gap: 0.25rem 0.35rem; font-size: 0.76rem; color: #445; border-top: 1px solid #eef1f7; padding-top: 0.45rem; margin-top: 0.1rem; }
-  .opt-sum-item { background: #f2f5fa; border-radius: 0.8rem; padding: 0.12rem 0.55rem; }
-  .opt-sum-item b { color: #1F3A6E; font-weight: 700; }
+  /* Shell round 14: the summary strip that used to sit here is GONE, on the
+     owner's own ask -- "don't need to show the above choices in words below
+     again." Round 11 had asked them the same question and they chose to keep
+     it; what changed is this round's own bars. The strip's real remaining
+     job was that a tenant or Approach name was unreadable in a 77px cell and
+     the strip was the only place it appeared in full. Two cells to a line
+     ends that, so the strip was repeating what is now legible above it.
+     Nothing else was removed with it: the underlying selects, their handlers
+     and their values are untouched. */
+
+  /* ---------- Search results (shell round 14) ---------- */
+  .search-results { display: flex; flex-direction: column; gap: 0.3rem; max-height: 40vh; overflow-y: auto; margin-top: 0.35rem; }
+  /* Overrides this page's own navy-filled button base -- a result is a line
+     of scripture to read, not a call to action. */
+  .search-hit { display: block; width: 100%; text-align: left; background: white; color: #222; border: 1px solid #e6eaf3; border-radius: 0.45rem; padding: 0.35rem 0.5rem; font-size: 0.8rem; }
+  .search-hit:hover { border-color: #C9A24B; background: #fffdf7; }
+  .search-hit .ref { display: block; font-size: 0.72rem; font-weight: 700; color: #1F3A6E; margin-bottom: 0.1rem; }
+  .search-hit .snip { display: block; color: #444; line-height: 1.45; }
+  .search-hit mark { background: #fbeec2; color: inherit; border-radius: 2px; padding: 0 1px; }
+  /* An Arabic hit is read right to left and deserves the same face the ayah
+     panels use, not the interface's own sans at interface size. */
+  .search-hit .snip[dir="rtl"] { font-family: 'Amiri', serif; font-size: 1.05rem; line-height: 1.9; }
 
   /* ---------- Mastery Wheel (Phase 5 round 12) ----------
      Dark navy/gold theme, restyled to match index.html's wheel page --
@@ -415,23 +452,31 @@
              heard, and claiming it. Every control keeps its own id and its own
              event wiring -- only the wrapper around it changed. -->
 
-        <!-- Bar 1: WHO is studying. Shell round 13 (13 Aug 2026) -- Language
-             has LEFT this bar. It was only ever here because nothing global
-             existed to put it in; it now lives under Home -> Settings and
-             applies to every module, not just this one. What used to be its
-             other half -- whether the Bangla ayah translation shows -- is a
-             Quran reading choice, so it moved the other way, into the
-             Reading view card below. Three cells now, not four. -->
-        <div class="opt-bar">
-          <div class="opt-cell"><label for="tenantSelect">Tenant</label><select id="tenantSelect"></select></div>
-          <div class="opt-cell"><label for="personSelect">Person</label><select id="personSelect"></select></div>
-          <div class="opt-cell"><label for="trackableSelect">Approach</label><select id="trackableSelect"></select></div>
+        <!-- Shell round 14 (15 Aug 2026) -- the owner's own four tablines,
+             from their written brief, replacing round 11's three bars:
+               1  WHO  -- User Role, Student
+               2  WHAT -- Study Unit, Surah, Ayah
+               3  FIND IT -- Go to, Go, Search
+               4  CLAIM IT -- Approach, Track this unit
+               5  (unchanged, their words: "keep as it is for now")
+             Approach came DOWN out of bar 1 and now sits beside the button
+             that claims with it, which is the pairing the owner asked for.
+             Every control still keeps its own id and its own handler --
+             moving them is this round, rewiring them is not. -->
+
+        <!-- Bar 1: WHO is studying. "User Role" and "Student" are the owner's
+             own words for these two, replacing "Tenant" and "Person". The
+             element ids are deliberately unchanged: tenantSelect really does
+             still switch tenant, and everything that reads it still works. -->
+        <div class="opt-bar opt-bar-2">
+          <div class="opt-cell"><label for="tenantSelect">User Role</label><select id="tenantSelect"></select></div>
+          <div class="opt-cell"><label for="personSelect">Student</label><select id="personSelect"></select></div>
         </div>
 
         <!-- Bar 2: WHAT is being studied. The From/To ayah cells are still the
              same elements with the same ids -- they simply flow onto a second
              grid line when the Range unit turns them on. -->
-        <div class="opt-bar">
+        <div class="opt-bar opt-bar-3">
           <div class="opt-cell"><label for="unitTypeSelect">Study Unit</label><select id="unitTypeSelect">
             <option value="ayah">Single Ayah</option>
             <option value="range">Range of Ayahs</option>
@@ -442,15 +487,6 @@
           </select></div>
           <div class="opt-cell"><label for="surahSelect">Surah</label><select id="surahSelect"></select></div>
           <div class="opt-cell" id="ayahSelectControl"><label for="ayahSelect">Ayah</label><select id="ayahSelect"></select></div>
-          <!-- Owner's ask this round: type the unit you want instead of
-               hunting for it in two dropdowns. "2:255" jumps to that ayah;
-               "2:255-260" switches to the Range unit and sets both ends. -->
-          <div class="opt-cell"><label for="jumpInput">Go to</label>
-            <div class="opt-jump">
-              <input type="text" id="jumpInput" placeholder="2:255" autocomplete="off" spellcheck="false" />
-              <button type="button" id="jumpGoBtn">Go</button>
-            </div>
-          </div>
           <div class="opt-cell" id="rangeControls" style="display:none;">
             <label for="rangeFromSelect">From ayah</label><select id="rangeFromSelect"></select>
           </div>
@@ -458,16 +494,49 @@
             <label for="rangeToSelect">To ayah</label><select id="rangeToSelect"></select>
           </div>
         </div>
+
+        <!-- Bar 3: FINDING it. Round 11's typing field, now on its own line
+             and doing double duty, which is the owner's own suggestion this
+             round ("you may enable 'Go To' field instead of a separate search
+             field"). A reference -- "2:255", "2:255-260", a bare "2" -- still
+             jumps exactly as before. Anything else is a word or phrase, and
+             Go searches for it rather than refusing it. Search always
+             searches, whatever is in the box. -->
+        <div class="opt-bar opt-bar-3">
+          <div class="opt-cell opt-cell-wide"><label for="jumpInput">Go to</label>
+            <div class="opt-jump">
+              <input type="text" id="jumpInput" placeholder="2:255 or a word" autocomplete="off" spellcheck="false" />
+              <button type="button" id="jumpGoBtn">Go</button>
+            </div>
+          </div>
+          <button type="button" class="opt-btn opt-btn-inline" id="searchBtn" aria-controls="searchCard" aria-expanded="false">Search</button>
+        </div>
         <p class="opt-msg" id="jumpMsg" hidden></p>
 
-        <!-- Bar 3: HOW it reads, HOW it sounds, and claiming it. The first two
-             open a card below rather than spending a permanent row each --
-             same disclosure idiom (and same open/closed colouring) as the
-             dock's own tabs and the nav bar's categories. -->
-        <div class="opt-bar opt-bar-3">
+        <!-- Search results. Same card idiom as Reading view and Listening
+             settings, and it obeys the same one-open-at-a-time rule. -->
+        <div class="opt-card" id="searchCard" hidden>
+          <h4>Search the Qur'an</h4>
+          <p class="opt-note" id="searchStatus"></p>
+          <div class="search-results" id="searchResults"></div>
+        </div>
+
+        <!-- Bar 4: CLAIMING it. The owner's ask: Approach comes down out of
+             bar 1 to sit beside the button that claims with it, since the two
+             only ever mean anything together. -->
+        <div class="opt-bar opt-bar-2">
+          <div class="opt-cell"><label for="trackableSelect">Approach</label><select id="trackableSelect"></select></div>
+          <button type="button" class="opt-btn opt-btn-primary opt-btn-inline" id="trackUnitBtn">Track this unit</button>
+        </div>
+
+        <!-- Bar 5: HOW it reads and HOW it sounds. The owner's words: "keep as
+             it is for now." Both still open a card below rather than spending
+             a permanent row each -- same disclosure idiom (and same
+             open/closed colouring) as the dock's own tabs and the nav bar's
+             categories. -->
+        <div class="opt-bar opt-bar-2 opt-bar-btns">
           <button type="button" class="opt-btn" id="readingViewBtn" aria-controls="readingViewCard" aria-expanded="false">Reading view</button>
           <button type="button" class="opt-btn" id="listeningBtn" aria-controls="listeningCard" aria-expanded="false">Listening settings</button>
-          <button type="button" class="opt-btn opt-btn-primary" id="trackUnitBtn">Track this unit</button>
         </div>
 
         <!-- Reading view card: everything that decides how the text is shown.
@@ -524,8 +593,16 @@
           <p class="opt-note" id="listeningEmpty" hidden>This Approach has no listening panel, so there is nothing to set here.</p>
         </div>
 
-        <!-- Owner's ask: show what all those choices actually add up to. -->
-        <div class="opt-summary" id="optionsSummary"></div>
+        <!-- Shell round 14 (15 Aug 2026): the summary strip used to sit here
+             ("Person: … · Unit: … · Approach: …"). The owner asked for it
+             gone -- "don't need to show the above choices in words below
+             again." Round 11 had put the same question to them and they chose
+             to keep it, on the stated grounds that a 77px cell cut the tenant
+             and Approach names to "Madrasatul Mus…" and the strip was the
+             only place they read in full. This round's own bars fix that at
+             source (two cells to a line, 172px each), so the strip had
+             nothing left to add. Nothing underneath it changed: the selects,
+             their handlers and their values are all untouched. -->
 
         <!-- Shell round 12 (13 Aug 2026): the "Edit banner" block used to sit
              here -- an owner/prime-only control with nothing to do with
@@ -597,6 +674,9 @@
     import { weekKeyFor, logActivity } from "./js/activity.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
     import { getSurah, getSurahIndex, getJuzIndex, getPageIndex } from "./js/quran-data.js";
+    // Shell round 14 -- word/phrase search. Importing the module costs
+    // nothing at load: it fetches its index only when a search actually runs.
+    import { searchQuran } from "./js/quran-search.js";
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootDerivativePanel, renderTranslationPanel } from "./js/ayah-renderer.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
@@ -704,7 +784,6 @@
       renderTrackableSelectOptions();
       renderBanner();
       renderStudyScreen();
-      renderOptionsSummary();
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
@@ -750,7 +829,10 @@
     const listeningBtn = document.getElementById("listeningBtn");
     const listeningCard = document.getElementById("listeningCard");
     const listeningEmpty = document.getElementById("listeningEmpty");
-    const optionsSummaryEl = document.getElementById("optionsSummary");
+    const searchBtn = document.getElementById("searchBtn");
+    const searchCard = document.getElementById("searchCard");
+    const searchStatus = document.getElementById("searchStatus");
+    const searchResults = document.getElementById("searchResults");
 
     const dockTabs = Array.from(document.querySelectorAll(".qr-tab"));
     const exploreBreadcrumb = document.getElementById("exploreBreadcrumb");
@@ -1024,6 +1106,7 @@
     const optionCards = [
       { btn: readingViewBtn, card: readingViewCard },
       { btn: listeningBtn, card: listeningCard },
+      { btn: searchBtn, card: searchCard },
     ];
 
     /** One card open at a time, and tapping the open one closes it -- the same
@@ -1037,6 +1120,13 @@
       }
     }
     optionCards.forEach(({ btn, card }) => {
+      // Search is the one card that does something when its button is
+      // pressed, so it opens rather than toggles -- pressing Search again
+      // after editing the box must run the new search, not close the results.
+      if (btn === searchBtn) {
+        btn.addEventListener("click", () => { setOpenOptionCard(searchCard); runSearch(); });
+        return;
+      }
       btn.addEventListener("click", () => {
         // v07.39 (load speed): the Bangla reciter needs a ~460KB ayah-timing
         // map, and it must be in memory BEFORE a Play tap or the browser can
@@ -1077,7 +1167,20 @@
       // itself taught them to type is exactly where someone gives up.
       const parsed = parseJumpText(parseNum(jumpInput.value));
       if (!parsed) {
-        showJumpMessage(t("Couldn't read \"{text}\". Try 2:255 for one ayah, or 2:255-260 for a range.", { text: jumpInput.value.trim() }));
+        // Shell round 14 -- the box takes words as well as references now, so
+        // "not a reference" is no longer automatically a mistake. Only text
+        // made of digits and reference punctuation can have been MEANT as a
+        // reference; that still explains itself the way it always did. Real
+        // words are a search, which is the owner's own "you may enable 'Go
+        // To' field instead of a separate search field".
+        const typed = jumpInput.value.trim();
+        if (REFERENCE_SHAPED.test(typed)) {
+          showJumpMessage(t("Couldn't read \"{text}\". Try 2:255 for one ayah, or 2:255-260 for a range.", { text: typed }));
+          return;
+        }
+        showJumpMessage(null);
+        setOpenOptionCard(searchCard);
+        await runSearch();
         return;
       }
       const surahMeta = surahIndex.find((s) => s.surahNumber === parsed.surah);
@@ -1093,10 +1196,17 @@
         return;
       }
       showJumpMessage(null);
+      await goToReference(parsed.surah, from, to);
+    }
 
-      if (parsed.surah !== currentSurahNum) {
-        currentSurahNum = parsed.surah;
-        surahSelect.value = String(parsed.surah);
+    /** Move the screen to a surah and ayah (or a range). Split out of
+        applyJump in shell round 14 so a search result can use exactly the
+        same path without going back through the typing box -- clicking a
+        result must not overwrite the words the person searched for. */
+    async function goToReference(surah, from, to) {
+      if (surah !== currentSurahNum) {
+        currentSurahNum = surah;
+        surahSelect.value = String(surah);
         await loadSurah(); // resets currentAyahNum to 1 and reloads this surah's records chunk
       }
       if (to !== null && to !== from) {
@@ -1121,38 +1231,92 @@
       if (e.key === "Enter") { e.preventDefault(); applyJump(); }
     });
 
-    /** The owner's "show what all those choices add up to" strip, under the
-        three bars. Built with textContent, never innerHTML -- person and
-        Approach names are tenant-authored text. */
-    function renderOptionsSummary() {
-      const isPageUnit = currentUnitType === "surah" || currentUnitType === "range";
-      const readingMode = isPageUnit
-        ? (pageViewModeSelect.selectedOptions[0]?.textContent ?? "Mushaf (real page)")
-        : (tajweedToggle.checked ? "Single ayah · Tajweed colours" : "Single ayah");
-      // Shell round 13 -- the translation language is one more thing that
-      // now lives behind a button, so the strip names it too. Only when it
-      // is Bangla: "Reading: Single ayah · English" would be noise, since
-      // English is the default everything already shows.
-      const readingBits = getQuranTranslationLang() === "bn" ? `${readingMode} · + বাংলা` : readingMode;
-      const bits = [
-        ["Person", personSelect.selectedOptions[0]?.textContent],
-        ["Unit", currentSurahData ? currentUnitInfo().label : null],
-        ["Approach", trackableSelect.selectedOptions[0]?.textContent],
-        ["Reading", readingBits],
-        ["Listening", listeningBtn.disabled ? "not used by this Approach" : `${RECITERS[currentReciterId]?.label ?? "—"}${loopIsOn ? " · Loop on" : ""}`],
-      ];
-      optionsSummaryEl.replaceChildren(
-        ...bits
-          .filter(([, value]) => value)
-          .map(([label, value]) => {
-            const chip = document.createElement("span");
-            chip.className = "opt-sum-item";
-            const strong = document.createElement("b");
-            strong.textContent = `${label}: `;
-            chip.append(strong, document.createTextNode(value));
-            return chip;
-          })
+    // -----------------------------------------------------------------------
+    // Shell round 14 (15 Aug 2026) -- word and phrase search, whole Qur'an,
+    // all three languages. The owner chose the widest of the four options
+    // offered, with the sizes attached.
+    //
+    // NOT on the startup path, and deliberately so: js/quran-search.js
+    // fetches its index the first time a search actually runs, and only for
+    // the language the person typed in (Latin -> English, Bengali -> Bangla,
+    // Arabic -> Arabic). So a visit that never searches downloads nothing,
+    // and one that does downloads one file of ~272-363KB over the wire, once,
+    // then cached. That is the load-speed contract's "on first use" row, the
+    // same treatment v07.39 gave the reciter timing map.
+    // -----------------------------------------------------------------------
+
+    // Digits (Latin or Bengali) and the punctuation a reference is written
+    // with, and nothing else. Used to tell "2:" (a mistyped reference, worth
+    // an error) from "patience" (a search, worth results).
+    const REFERENCE_SHAPED = /^[0-9০-৯\s:.,\-‐-―]+$/;
+    let searchRunId = 0;
+
+    function setSearchStatus(message) {
+      searchStatus.textContent = message ?? "";
+      searchStatus.hidden = !message;
+    }
+
+    /** One result row. textContent throughout -- this is scripture text out
+        of a data file, and it is never built into HTML by hand. */
+    function searchHitButton(hit) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "search-hit";
+      const ref = document.createElement("span");
+      ref.className = "ref";
+      // surahName() needs the English name handed to it (it only knows the
+      // Bangla list); the surah index the page already holds is where that
+      // lives. Without it a result read "2:45" -- a bare number, in an app
+      // whose whole point this round is finding things you cannot number.
+      const meta = surahIndex.find((s) => s.surahNumber === hit.surah);
+      ref.textContent = `${surahName(hit.surah, meta?.nameEnglish)} — ${num(hit.surah)}:${num(hit.ayah)}`;
+      const snip = document.createElement("span");
+      snip.className = "snip";
+      // Arabic reads right to left, and its own line-height and face; the
+      // translations take the interface's.
+      if (/[؀-ۿ]/.test(hit.match || hit.text)) snip.dir = "rtl";
+      const mark = document.createElement("mark");
+      mark.textContent = hit.match;
+      snip.append(document.createTextNode(hit.before), mark, document.createTextNode(hit.after));
+      btn.append(ref, snip);
+      // The same navigation the typing field uses, not a second copy of it --
+      // and it leaves the search box alone, so the results stay meaningful
+      // after following one of them.
+      btn.addEventListener("click", () => { goToReference(hit.surah, hit.ayah, null); });
+      return btn;
+    }
+
+    async function runSearch() {
+      const query = jumpInput.value.trim();
+      searchResults.replaceChildren();
+      if (!query) {
+        setSearchStatus(t("Type a word or phrase in the box above, then press Search."));
+        return;
+      }
+      // A stale run must never overwrite a newer one's results -- the index
+      // fetch takes as long as the connection takes, and someone can press
+      // Search again while it is still in the air.
+      const runId = ++searchRunId;
+      setSearchStatus(t("Searching for \"{query}\"…", { query }));
+      let found;
+      try {
+        found = await searchQuran(query, { limit: 50 });
+      } catch (err) {
+        // I15: a failed fetch has to reach the person who asked for it.
+        if (runId === searchRunId) setSearchStatus(t("Couldn't load the search index. Check your connection and try again."));
+        return;
+      }
+      if (runId !== searchRunId) return;
+      if (found.total === 0) {
+        setSearchStatus(t("Nothing found for \"{query}\".", { query }));
+        return;
+      }
+      setSearchStatus(
+        found.truncated
+          ? t("{total} ayahs found — showing the first {shown}.", { total: num(found.total), shown: num(found.results.length) })
+          : t(found.total === 1 ? "1 ayah found." : "{total} ayahs found.", { total: num(found.total) })
       );
+      searchResults.replaceChildren(...found.results.map(searchHitButton));
     }
 
     async function loadContextData() {
@@ -1744,7 +1908,6 @@
 
       renderAudioControls(panels);
       renderUnitLabel();
-      renderOptionsSummary();
     }
 
     function renderAudioControls(panels) {
@@ -1804,9 +1967,8 @@
           translationLangSelect.value = "bn";
           renderStudyScreen();
         }
-        renderOptionsSummary(); // shell round 11 -- the summary strip names the reciter
       });
-      if (loopToggle) loopToggle.addEventListener("change", () => { loopIsOn = loopToggle.checked; setLoop(loopIsOn); renderOptionsSummary(); });
+      if (loopToggle) loopToggle.addEventListener("change", () => { loopIsOn = loopToggle.checked; setLoop(loopIsOn); });
       playBtn.addEventListener("click", async () => {
         // Always stop whatever's currently loaded first -- switching reciters
         // (or a running drill) and pressing Play again must never leave
@@ -1901,7 +2063,6 @@
     translationLangSelect.addEventListener("change", () => {
       setQuranTranslationLang(translationLangSelect.value);
       renderStudyScreen();
-      renderOptionsSummary();
     });
     wbwLangSelect.addEventListener("change", () => {
       wbwLangMode = wbwLangSelect.value;
@@ -1910,7 +2071,7 @@
 
     surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); });
     trackableSelect.addEventListener("change", async () => { currentTrackableId = trackableSelect.value; renderWheel(); renderStudyScreen(); });
-    personSelect.addEventListener("change", async () => { selectedPersonId = personSelect.value; renderOptionsSummary(); await refreshChunkAndWheel(); await refreshProgramMap(); });
+    personSelect.addEventListener("change", async () => { selectedPersonId = personSelect.value; await refreshChunkAndWheel(); await refreshProgramMap(); });
 
     // ---------------------------------------------------------------------
     // Way modal -- ayah-level (unchanged from Phase 4: wheel-click always
