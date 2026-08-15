@@ -6,6 +6,30 @@ export const STUB = `
 const TENANT_ID = "t1";
 const UID = "test-uid";
 
+// ---------------------------------------------------------------------------
+// Round-trip instrumentation (added by the load-speed round, Aug 2026).
+//
+// A stub answers instantly, so on its own it can never show real latency --
+// it would report every page as taking ~0ms no matter how many reads it
+// makes. So every function here that is a real NETWORK call in production
+// goes through __trip(): it records the call (name, collection, start, end)
+// on window.__fsLog, and waits __LATENCY__ ms before resolving. With the
+// latency set to a realistic mobile round trip, wall-clock time becomes
+// meaningful again, and the log shows which calls waited on which.
+//
+// Default latency is 0, so the translation suites behave exactly as before.
+// ---------------------------------------------------------------------------
+const LATENCY = __LATENCY__;
+try { window.__fsLog = []; } catch (e) {}
+let __seq = 0;
+async function __trip(kind, col, id, produce) {
+  const rec = { n: ++__seq, kind: kind, col: col, id: id || null, t0: performance.now(), t1: null };
+  try { window.__fsLog.push(rec); } catch (e) {}
+  if (LATENCY > 0) await new Promise(function (r) { setTimeout(r, LATENCY); });
+  rec.t1 = performance.now();
+  return produce();
+}
+
 function lang(en, bn) { return bn ? { en, bn } : { en }; }
 
 // activity documents are fetched by an EXACT id containing the week key, so
@@ -234,14 +258,20 @@ function matches(d, c) {
 }
 
 export async function getDocs(q) {
-  const rows = (DATA[q.__col] || []).filter((d) => (q.__clauses || []).every((c) => matches(d, c)));
-  return { docs: rows.map(snapDoc), empty: rows.length === 0, size: rows.length, forEach(f) { this.docs.forEach(f); } };
+  return __trip("getDocs", q.__col, null, function () {
+    const rows = (DATA[q.__col] || []).filter((d) => (q.__clauses || []).every((c) => matches(d, c)));
+    return { docs: rows.map(snapDoc), empty: rows.length === 0, size: rows.length, forEach(f) { this.docs.forEach(f); } };
+  });
 }
 export async function getDoc(ref) {
-  const row = (DATA[ref.__col] || []).find((d) => d._id === ref.__id);
-  return row ? snapDoc(row) : { id: ref.__id, exists: () => false, data: () => undefined };
+  return __trip("getDoc", ref.__col, ref.__id, function () {
+    const row = (DATA[ref.__col] || []).find((d) => d._id === ref.__id);
+    return row ? snapDoc(row) : { id: ref.__id, exists: () => false, data: () => undefined };
+  });
 }
-export async function setDoc() {}
+export async function setDoc(ref) {
+  return __trip("setDoc", ref && ref.__col, ref && ref.__id, function () {});
+}
 // Records what was written so a test can prove the save really happened and
 // carried the right field. A no-op before v07.37; the language sync is the
 // first thing here whose whole point IS the write.
@@ -249,25 +279,103 @@ export async function setDoc() {}
 // on success, which would wipe an in-memory array before a test could read
 // it -- the write would look as though it never happened.
 export async function updateDoc(ref, data) {
-  try {
-    const prior = JSON.parse(sessionStorage.getItem("__stubWrites") || "[]");
-    prior.push({ col: ref && ref.__col, id: ref && ref.__id, data: Object.keys(data).sort(), appLang: data.appLang });
-    sessionStorage.setItem("__stubWrites", JSON.stringify(prior));
-  } catch {}
+  return __trip("updateDoc", ref && ref.__col, ref && ref.__id, function () {
+    try {
+      const prior = JSON.parse(sessionStorage.getItem("__stubWrites") || "[]");
+      prior.push({ col: ref && ref.__col, id: ref && ref.__id, data: Object.keys(data).sort(), appLang: data.appLang });
+      sessionStorage.setItem("__stubWrites", JSON.stringify(prior));
+    } catch (e) {}
+  });
 }
-export async function getCountFromServer() { return { data: () => ({ count: 0 }) }; }
+export async function getCountFromServer(q) {
+  return __trip("getCount", q && q.__col, null, function () { return { data: () => ({ count: 0 }) }; });
+}
 export async function waitForPendingWrites() {}
 export function serverTimestamp() { return new Date(); }
 export function arrayUnion(...v) { return v; }
-export function writeBatch() { return { set() {}, update() {}, async commit() {} }; }
+export function writeBatch() {
+  let n = 0;
+  return { set() { n++; }, update() { n++; }, async commit() { return __trip("batchCommit", "(batch of " + n + ")", null, function () {}); } };
+}
 `;
 
-export function stubFor({ banner, accountLang = null }) {
+// A tenant seeded weeks ago -- the owner's real situation, and the one the
+// load-speed round is about. The default stub deliberately carries only a
+// handful of subjects/modules (enough to prove translation), which makes the
+// seeding paths think they have work to do and write on every load. That is
+// the shape of a HALF-seeded tenant, not a live one, so measuring against it
+// would flatter or damn the wrong thing. This fills DATA out from the same
+// catalogue-data.js the app seeds from, so ensure*Seeded() finds nothing
+// missing and returns without writing -- exactly what happens for the owner.
+function fullySeededAppendix(SUBJECT_TEMPLATES, MODULE_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES) {
+  const subjects = SUBJECT_TEMPLATES.map((n) => ({
+    _id: `t1__${n.id}`, tenantId: "t1", subjectId: n.id, parentId: n.parentId,
+    name: n.name, gloss: n.gloss ?? null, moduleIds: n.moduleIds, ancestorIds: [],
+    status: "active", order: n.order, isTrackable: !SUBJECT_TEMPLATES.some((c) => c.parentId === n.id),
+    sourceTemplateId: n.id, edited: false,
+  }));
+  const templates = SUBJECT_TEMPLATES.map((n) => ({
+    _id: n.id, name: n.name, gloss: n.gloss ?? null, parentId: n.parentId,
+    ancestorIds: [], moduleIds: n.moduleIds, order: n.order,
+  }));
+  const modules = MODULE_TEMPLATES.map((m) => ({
+    _id: m.id, name: m.name, icon: m.icon, renderer: m.renderer, order: m.order, status: "active",
+  }));
+  const trackables = APPROACH_TEMPLATES.map((t, i) => ({
+    _id: `t1__${t.id}`, tenantId: "t1", moduleId: "quranrevival", subjectId: "quran",
+    name: t.name, groupName: t.sectionName, guide: t.guide ?? null, panels: t.panels ?? ["text"],
+    order: t.order ?? i, status: "active", sourceTemplateId: t.id, edited: false,
+  })).concat(TOPIC_TRACKABLE_TEMPLATES.map((t, i) => ({
+    _id: `t1__${t.id}`, tenantId: "t1", moduleId: t.moduleId, subjectId: t.subjectId,
+    name: t.name, groupName: t.groupName ?? null, guide: t.guide ?? null, panels: ["text"],
+    order: t.order ?? i, status: "active", sourceTemplateId: t.id, edited: false,
+  })));
+  // Merged, not replaced: the default rows the translation suites rely on
+  // (the Asma trackable, the deliberately English-only Deen subjects) stay.
+  return `
+(function () {
+  const add = (name, rows) => {
+    const have = new Set((DATA[name] || []).map((d) => d._id));
+    DATA[name] = (DATA[name] || []).concat(rows.filter((r) => !have.has(r._id)));
+  };
+  add("subjects", ${JSON.stringify(subjects)});
+  add("subjectTemplates", ${JSON.stringify(templates)});
+  add("modules", ${JSON.stringify(modules)});
+  add("trackables", ${JSON.stringify(trackables)});
+})();
+`;
+}
+
+// latencyMs simulates one Firestore round trip. 0 (the default) keeps the
+// translation suites exactly as they were; the load-speed measurement passes
+// a real number so wall-clock time means something.
+export function stubFor({ banner, accountLang = null, latencyMs = 0, emptyTenant = false, seedTemplates = null }) {
   const userIndexRow = accountLang
     ? `{ _id: UID, appLang: ${JSON.stringify(accountLang)} }`
     : "";
   const bannerFields = banner
     ? 'bannerTitle: { en: "QuranRevival" }, bannerSub: { en: "Reviving the Quran, abandoned." }'
     : "";
-  return STUB.replace("__BANNER__", bannerFields).replace("__USER_INDEX__", userIndexRow);
+  let out = STUB
+    .replace("__BANNER__", bannerFields)
+    .replace("__USER_INDEX__", userIndexRow)
+    // replaceAll, not replace: the placeholder is named in the comment above
+    // it as well, and replacing only the first occurrence patches the comment
+    // and leaves the real one undefined.
+    .replaceAll("__LATENCY__", String(Number(latencyMs) || 0));
+  if (seedTemplates) {
+    out += fullySeededAppendix(
+      seedTemplates.SUBJECT_TEMPLATES, seedTemplates.MODULE_TEMPLATES,
+      seedTemplates.APPROACH_TEMPLATES, seedTemplates.TOPIC_TRACKABLE_TEMPLATES
+    );
+  }
+  if (emptyTenant) {
+    // A genuinely NEW tenant: signed in, a membership, but no catalogue
+    // seeded yet. Proves the seeding path still runs and still writes.
+    out += `
+DATA.subjects = []; DATA.trackables = []; DATA.modules = []; DATA.subjectTemplates = [];
+DATA.records = []; DATA.activity = [];
+`;
+  }
+  return out;
 }

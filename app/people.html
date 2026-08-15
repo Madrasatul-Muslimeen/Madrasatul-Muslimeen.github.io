@@ -157,8 +157,7 @@
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
     import {
-      getMyMemberships,
-      initializeActiveContext,
+      bootstrapContext,
       getActiveContext,
       setActiveContext,
       canUseViewAs,
@@ -358,14 +357,17 @@
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-        const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
+        // One membership load, not two: bootstrapContext() hands back the
+        // list it used to choose the context, which this page then used to
+        // fetch a second time, one round trip later, for the tenant picker.
+        const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
-        myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
+        myMemberships = memberships;
         tenantSelect.innerHTML = myMemberships
           .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
           .join("");

@@ -590,7 +590,7 @@
     import { langText } from "./js/lang.js";
     import { roleListLabel } from "./js/labels.js";
     import { safeWrite } from "./js/errors.js";
-    import { getMyMemberships, initializeActiveContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster } from "./js/session-context.js";
+    import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames } from "./js/catalogue.js";
     import { buildUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
@@ -1148,33 +1148,29 @@
 
     async function loadContextData() {
       const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-      const [rosterSnap, tenantSnap] = await Promise.all([
+      // LOAD SPEED (Aug 2026): one wave, not three. The trackables read used
+      // to happen twice -- once inside syncUnneditedTrackableNames() and
+      // again right after it -- and both waited on the roster read first,
+      // which none of them depends on. The surah index is a bundled JSON
+      // file, not Firestore, but it was also being waited for in turn.
+      const [rosterSnap, tenantSnap, allTrackables, loadedSurahIndex] = await Promise.all([
         getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
         getDoc(doc(db, TENANT.TENANTS, activeTenantId)),
+        getTrackables(db, activeTenantId),
+        getSurahIndex(),
       ]);
       roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
       currentTenantDoc = tenantSnap.exists() ? tenantSnap.data() : null;
       tenantWeekStartsOn = currentTenantDoc?.weekStartsOn ?? 6;
       renderPersonSelectOptions();
       selectedPersonId = personSelect.value || null; // whichever person is actually visible/selected (round 11: may be scoped by an active "View as" preview)
-      await refreshProgramMap();
-
-      // Backfills newly-added language keys (e.g. Bangla) onto this tenant's
-      // own unedited trackable copies -- best-effort: only owner/prime can
-      // write catalogue data, and a viewer without that role should still
-      // see the page fine on whatever names are already there.
-      if (canAdminCatalogueClientSide()) {
-        try { await syncUnneditedTrackableNames(db, activeTenantId, auth.currentUser.uid); }
-        catch (err) { console.warn("Trackable name sync skipped:", err.message); }
-      }
       renderBanner();
 
-      const allTrackables = await getTrackables(db, activeTenantId);
       quranTrackables = allTrackables.filter((t) => t.subjectId === "quran" && t.status !== "archived");
       renderTrackableSelectOptions();
       currentTrackableId = quranTrackables[0]?.id ?? null;
 
-      surahIndex = await getSurahIndex();
+      surahIndex = loadedSurahIndex;
       surahSelect.innerHTML = surahIndex
         // The option's VALUE stays a plain number -- it is parsed back with
         // Number() on every change. Only the text a person reads is translated.
@@ -1182,7 +1178,22 @@
         .join("");
       currentSurahNum = surahIndex[0]?.surahNumber ?? 1;
 
-      await loadSurah();
+      await Promise.all([refreshProgramMap(), loadSurah()]);
+
+      // Backfills newly-added language keys (e.g. Bangla) onto this tenant's
+      // own unedited trackable copies -- best-effort: only owner/prime can
+      // write catalogue data, and a viewer without that role should still
+      // see the page fine on whatever names are already there.
+      //
+      // Moved OFF the blocking path by the load-speed round: it is a
+      // background repair, not something the person is waiting to see, and
+      // it used to cost a whole extra trackables read before the wheel could
+      // be drawn. Deliberately not awaited -- the names already on screen are
+      // correct, they are simply refreshed a moment later if they drifted.
+      if (canAdminCatalogueClientSide()) {
+        syncUnneditedTrackableNames(db, activeTenantId, auth.currentUser.uid)
+          .catch((err) => console.warn("Trackable name sync skipped:", err.message));
+      }
     }
 
     async function loadSurah() {
@@ -2054,14 +2065,17 @@
         if (adoptAppLangFromUserIndex(userIndexSnap)) return;
         const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-        const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
+        // One membership load, not two: bootstrapContext() hands back the
+        // list it used to choose the context, which this page then used to
+        // fetch a second time, one round trip later, for the tenant picker.
+        const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
         if (!context) {
           whoEl.innerHTML += noAccountMessageHtml();
           return;
         }
         activeTenantId = context.tenantId;
 
-        myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
+        myMemberships = memberships;
         tenantSelect.innerHTML = myMemberships
           .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
           .join("");

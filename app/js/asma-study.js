@@ -24,11 +24,11 @@ import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./lang-syn
 import { t, num, asmaName, translateStatic } from "./i18n.js";
 import { safeWrite } from "./errors.js";
 import {
-  getMyMemberships, initializeActiveContext, getActiveContext, setActiveContext,
+  bootstrapContext, getActiveContext, setActiveContext,
   effectiveRoles, scopedRoster,
 } from "./session-context.js";
-import { ensureSubjectTemplatesSeeded, ensureTenantCatalogueSeeded, getTrackables } from "./catalogue.js";
-import { ensureModulesSeeded } from "./modules.js";
+import { getTrackables } from "./catalogue.js";
+import { seedCatalogueNow, repairCatalogueInBackground } from "./catalogue-repair.js";
 import { buildUnitKey } from "./unit-keys.js";
 import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
 import { logActivity } from "./activity.js";
@@ -97,9 +97,20 @@ export function initAsmaStudyPage() {
   }
 
   async function loadContextData() {
-    const [rosterSnap] = await Promise.all([
+    // LOAD SPEED (Aug 2026): the trackables read used to sit on its own,
+    // after the roster had already come back, and behind three seeding
+    // checks before that. It depends on neither.
+    let [rosterSnap, trackables] = await Promise.all([
       getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+      getTrackables(db, activeTenantId),
     ]);
+    // Asma's 99 Names are fixed platform data, not a tenant-authored tree,
+    // so the thing that has to exist for this page is its own trackable --
+    // that absence is what "this tenant is not set up yet" means here.
+    if (!trackables.some((tr) => tr.id === TRACKABLE_ID)) {
+      await seedCatalogueNow(db, activeTenantId, auth.currentUser.uid);
+      trackables = await getTrackables(db, activeTenantId);
+    }
     roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
 
     const context = getActiveContext();
@@ -116,16 +127,15 @@ export function initAsmaStudyPage() {
       .join("");
     selectedPersonId = visibleRoster[0]?.id ?? null;
 
-    const trackables = await getTrackables(db, activeTenantId);
     // Parameter renamed off `t` in phase 6: it shadowed the imported
     // translator, so any t("…") added inside this callback would silently
     // have called the trackable instead. Phases 2 and 5 each hit this.
     studiedTrackable = trackables.find((tr) => tr.id === TRACKABLE_ID) ?? null;
 
-    await refreshChunk();
-    await refreshProgramMap();
+    // Three independent reads (records, enrolments, bookmarks) -- fired
+    // together instead of one at a time.
+    await Promise.all([refreshChunk(), refreshProgramMap(), refreshContinueStrip()]);
     renderGrid();
-    await refreshContinueStrip();
   }
 
   /** Follow-up round: which of selectedPersonId's active course-offer enrolments cover SUBJECT_ID -- Asma ul Husna's whole tree is that one anchor node, so this only ever needs the one key. Best-effort, same risk tolerance as refreshContinueStrip. */
@@ -302,23 +312,30 @@ export function initAsmaStudyPage() {
       if (adoptAppLangFromUserIndex(userIndexSnap)) return;
       const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
 
-      const context = await step("initialize active context", () => initializeActiveContext(db, user.uid, defaultTenantId));
+      // One membership load, not two. bootstrapContext() hands back the very
+      // list it used to choose the context -- the page used to fetch that
+      // same list a second time, one round trip later, for the tenant picker.
+      const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
       if (!context) {
         whoEl.innerHTML += noAccountMessageHtml();
         return;
       }
       activeTenantId = context.tenantId;
-
-      myMemberships = await step("load your memberships", () => getMyMemberships(db, user.uid));
+      myMemberships = memberships;
       tenantSelect.innerHTML = myMemberships
         .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
         .join("");
 
       appEl.style.display = "block";
-      await step("set up modules", () => ensureModulesSeeded(db, user.uid));
-      await step("set up subject templates", () => ensureSubjectTemplatesSeeded(db, user.uid));
-      await step("set up this tenant's catalogue", () => ensureTenantCatalogueSeeded(db, activeTenantId, user.uid));
+      // Still self-repairing, but no longer at the person's expense. The
+      // three seeding checks used to run here, one after another, before
+      // anything was drawn -- three round trips that found nothing to do for
+      // any tenant already set up. loadContextData() now seeds only if the
+      // data it reads for itself turns out to be missing, and the full drift
+      // check runs in the background once the page is usable. See
+      // catalogue-repair.js for the whole reasoning.
       await step("load Asma ul Husna", loadContextData);
+      repairCatalogueInBackground(db, activeTenantId, user.uid, loadContextData);
     } catch (err) {
       whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
       console.error(err);
@@ -331,10 +348,11 @@ export function initAsmaStudyPage() {
     activeTenantId = chosen.tenantId;
     setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
     renderNav(chosen.roles, null);
-    await ensureModulesSeeded(db, auth.currentUser.uid);
-    await ensureSubjectTemplatesSeeded(db, auth.currentUser.uid);
-    await ensureTenantCatalogueSeeded(db, activeTenantId, auth.currentUser.uid);
+    // Switching tenants: same rule as first load -- loadContextData() seeds
+    // if the tenant it is switching to has nothing, and the drift check runs
+    // behind the page rather than in front of it.
     await loadContextData();
+    repairCatalogueInBackground(db, activeTenantId, auth.currentUser.uid, loadContextData);
   });
 
   personSelect.addEventListener("change", async () => {
