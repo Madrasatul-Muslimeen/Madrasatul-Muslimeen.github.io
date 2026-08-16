@@ -21,6 +21,7 @@ const surahCache = new Map(); // surahNumber -> Promise<surah data>
 let surahIndexPromise = null;
 let juzIndexPromise = null;
 let pageIndexPromise = null;
+let hizbIndexPromise = null;
 
 function surahFileUrl(surahNumber) {
   const padded = String(surahNumber).padStart(3, "0");
@@ -146,4 +147,24 @@ export async function getPageIndex() {
     });
   }
   return pageIndexPromise;
+}
+/**
+ * Shell round 18 — the Study Unit picker's Hizb option. 60 entries,
+ * {hizb, startSurah, startAyah, endSurah, endAyah, juz}, same shape as the
+ * juz index above and built the same way: from the real pulled per-ayah
+ * `hizbQuarter` field (a hizb is four quarters), never a hand-typed table —
+ * see tools/quran-data-pull/build-hizb-index.js. Loaded on first use, like
+ * the two above: nothing here is on the startup path (I9).
+ */
+export async function getHizbIndex() {
+  if (!hizbIndexPromise) {
+    hizbIndexPromise = fetch(`${BASE_URL}/hizb-index.json`).then((res) => {
+      if (!res.ok) throw new Error(`Couldn't load the hizb index (HTTP ${res.status}).`);
+      return res.json();
+    }).catch((err) => {
+      hizbIndexPromise = null;
+      throw err;
+    });
+  }
+  return hizbIndexPromise;
 }
