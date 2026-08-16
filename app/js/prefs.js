@@ -231,7 +231,10 @@ export function getQuranTranslationLangs() {
  *  older single-value preference in step, so whichever one a caller reads
  *  they get the same answer: it is "bn" whenever Bangla is among them. */
 export function setQuranTranslationLangs(langs) {
-  const clean = APP_LANG_IDS.filter((id) => Array.isArray(langs) && langs.includes(id));
+  // Order is the CALLER's, not this file's: which translation appears above
+  // which is a real preference the owner has already asked about, and keeping
+  // the given order means that round is a UI job rather than a data one.
+  const clean = (Array.isArray(langs) ? langs : []).filter((id, i, a) => APP_LANG_IDS.includes(id) && a.indexOf(id) === i);
   cachedQuranTranslationSet = clean;
   writeStored(QURAN_TRANSLATION_SET_KEY, JSON.stringify(clean));
   setQuranTranslationLang(clean.includes("bn") ? "bn" : "en");

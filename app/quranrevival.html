@@ -393,8 +393,19 @@
   #readScroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
   /* The Reading view ticks: one line each on a phone, wrapping as needed --
      four short labels, no grid needed. */
-  .reading-ticks { display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; margin: 0.35rem 0 0.45rem; }
-  .reading-ticks label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 400; margin: 0; }
+  /* Reciter names are people's names and are never translated, so they get
+     their own class rather than sharing .reading-ticks -- a check reads that
+     class to prove every reading choice IS translated, and mixing the two
+     made it read reciters as untranslated labels. */
+  .reading-ticks, .reciter-ticks { display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; margin: 0.35rem 0 0.45rem; }
+  /* Repeat / Mode / Loop / Play on one line, the way the bars above do it:
+     Mode takes the room, the rest take only what they need. */
+  .opt-bar-listen { display: flex; flex-wrap: nowrap; gap: 0.35rem 0.4rem; align-items: end; margin: 0.35rem 0 0.1rem; }
+  .opt-bar-listen > .opt-cell { flex: 1 1 0; }
+  .opt-bar-listen > .opt-cell-num { flex: 0 0 3.6rem; }
+  .opt-bar-listen > .opt-cell-loop, .opt-bar-listen > .opt-cell-play { flex: 0 0 auto; }
+  .loop-inline { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 400; white-space: nowrap; height: 1.85rem; margin: 0; }
+  .reading-ticks label, .reciter-ticks label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 400; margin: 0; }
   .reading-ticks label[hidden] { display: none; }
   /* What a chosen Page/Juz/Hizb/Ruku' covers, in words. Top and bottom surah
      only when it spans several -- the owner's own rule. */
@@ -697,20 +708,22 @@
              purpose, and the reason is load speed, not layout: opening it is
              what fetches the Bangla reciter's 460KB timing map (v07.39), and
              that map must not be fetched by anyone who never listens. -->
-        <div class="opt-bar opt-bar-1 opt-bar-btns">
-          <button type="button" class="opt-btn" id="listeningBtn" aria-controls="listeningCard" aria-expanded="false">Listening settings</button>
-        </div>
-
-        <!-- Reading view card: everything that decides how the text is shown.
-             Each control keeps the visibility rule it already had -- Page
-             display only applies to Whole Surah/Range, Tajweed colours only to
-             a single ayah, Word by Word only when the Approach uses it. -->
+        <!-- Shell round 19 (16 Aug 2026) -- the owner's standing rule, stated
+             as a correction to how this page had always worked: "No approach
+             blocks the regular study process, therefore all study options
+             (including listening) always remain active whatever approach is
+             chosen." An Approach is one special way of studying the Qur'an; it
+             does not own the module. So both sections below are ALWAYS on
+             screen and ALWAYS live -- no button, nothing disabled, nothing
+             greyed out by the Approach. Measured reason it mattered: of the 32
+             Approaches in the catalogue, 12 declared no text panel (picking one
+             took the Qur'an off the reading screen), 25 no audio (Listening
+             disabled itself), 26 no loop and 31 no word-by-word. -->
         <div class="opt-card" id="readingViewCard">
           <h4>Reading view</h4>
-          <!-- Shell round 18, the owner's ask: Tajweed, Word-by-Word and the
-               translations are all tickable AT THE SAME TIME, and they ADD to
-               whatever the chosen Approach already shows rather than replacing
-               it (their call, asked before building) -- so an Approach still
+          <!-- Tajweed, Word-by-Word and the translations are tickable AT THE
+               SAME TIME (shell round 18), and they ADD to whatever the chosen
+               Approach shows rather than replacing it -- so an Approach still
                means what it always meant, and what "Track this unit" claims is
                untouched. -->
           <div class="reading-ticks">
@@ -718,14 +731,14 @@
             <label id="wbwShowControl"><input type="checkbox" id="wbwShowToggle" /> Word by Word</label>
             <label id="trEnControl"><input type="checkbox" id="trEnToggle" checked /> English translation</label>
             <label id="trBnControl"><input type="checkbox" id="trBnToggle" /> বাংলা translation</label>
-          </div>
-          <div class="row" id="pageViewToggleRow" style="display:none;">
-            <div><label for="pageViewModeSelect">Page display (Whole Surah / Range)</label><select id="pageViewModeSelect">
-              <option value="mushaf">Mushaf (real page)</option>
-              <option value="tajweed">Tajweed</option>
-              <option value="wordByWord">Word by Word</option>
-              <option value="translation">Translation</option>
-            </select></div>
+            <!-- Mushaf is the one choice that cannot share the screen: it is a
+                 photograph of a printed page, not a stack of panels. So it is a
+                 tick like the others (never hidden, never blocked -- it works on
+                 a Single Ayah too, showing the page that ayah sits on with the
+                 ayah highlighted, which is exactly what the owner's one-ayah
+                 memorising programme needs) and ticking it greys the other four
+                 out rather than hiding them. -->
+            <label id="mushafControl"><input type="checkbox" id="mushafToggle" /> Mushaf view</label>
           </div>
           <div class="row" id="wbwLangControl" style="display:none;">
             <div><label for="wbwLangSelect">Word by Word language</label><select id="wbwLangSelect">
@@ -735,23 +748,18 @@
               <option value="both">English + বাংলা</option>
             </select></div>
           </div>
-          <div class="row">
-            <div><label for="translationChoiceSelect">Translator</label><select id="translationChoiceSelect" disabled>
-              <option>Default translation</option>
-            </select></div>
-          </div>
-          <p class="opt-note">Two translations are packaged with the app, one English and one Bangla, and both can be shown at once. Choosing BETWEEN translators by name needs their texts packaged first — it is on the list.</p>
+          <p class="opt-note" id="mushafNote" hidden>Mushaf view shows the printed page, so the other reading choices do not apply while it is on.</p>
         </div>
 
-        <!-- Listening settings card: the reciter picker, play buttons, Loop
-             and the whole multi-reciter drill, all of which used to sit loose
-             inside the Study screen. Both containers are the same elements
-             renderAudioControls()/renderDrillControls() already write into. -->
-        <div class="opt-card" id="listeningCard" hidden>
-          <h4>Recitation</h4>
-          <div class="row" id="audioControls"></div>
+        <!-- Listening: the same shape as Reading view above, on the owner's
+             ask -- one heading, no button, no second "Recitation" heading, and
+             no Stop here (Stop lives on the reading screen, where the listener
+             actually is). One reciter list, then Repeat / Mode / Loop / Play on
+             one line. -->
+        <div class="opt-card" id="listeningCard">
+          <h4>Listening</h4>
+          <div id="audioControls"></div>
           <div id="drillControls"></div>
-          <p class="opt-note" id="listeningEmpty" hidden>This Approach has no listening panel, so there is nothing to set here.</p>
         </div>
 
         <!-- Shell round 14 (15 Aug 2026): the summary strip used to sit here
@@ -863,7 +871,7 @@
     import {
       RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
-      warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused,
+      warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused, unlockAudio,
     } from "./js/audio-player.js";
     import { translateStatic, t, num, parseNum, surahName } from "./js/i18n.js";
 
@@ -892,8 +900,10 @@
       // visibly jank during a fast drill. setActiveAyah() is a cheap class
       // toggle on already-rendered word spans instead. Every other mode keeps
       // the existing round-3 full-rerender behaviour, already owner-verified.
-      const isPageUnit = currentUnitType === "surah" || currentUnitType === "range";
-      if (isPageUnit && pageDisplayMode === "mushaf") {
+      // Mushaf mode re-justifies a whole printed page and loads its font, so
+      // a full re-render on every ayah tick would visibly jank during a drill.
+      // A class toggle on already-rendered word spans instead.
+      if (mushafToggle.checked) {
         setActiveAyah(`${surahNum}:${ayahNum}`);
       } else {
         renderStudyScreen();
@@ -984,8 +994,8 @@
     const audioControls = document.getElementById("audioControls");
     const drillControlsEl = document.getElementById("drillControls");
     const ayahPanels = document.getElementById("ayahPanels");
-    const pageViewToggleRow = document.getElementById("pageViewToggleRow");
-    const pageViewModeSelect = document.getElementById("pageViewModeSelect");
+    const mushafToggle = document.getElementById("mushafToggle");
+    const mushafNote = document.getElementById("mushafNote");
     const singleAyahNavRow = document.getElementById("singleAyahNavRow");
     const pageViewContainer = document.getElementById("pageViewContainer");
     const wayModalOverlay = document.getElementById("wayModalOverlay");
@@ -1003,9 +1013,7 @@
     const jumpInput = document.getElementById("jumpInput");
     const jumpMsg = document.getElementById("jumpMsg");
     const readingViewCard = document.getElementById("readingViewCard");
-    const listeningBtn = document.getElementById("listeningBtn");
     const listeningCard = document.getElementById("listeningCard");
-    const listeningEmpty = document.getElementById("listeningEmpty");
     const searchBtn = document.getElementById("searchBtn");
     const searchCard = document.getElementById("searchCard");
     const searchStatus = document.getElementById("searchStatus");
@@ -1089,7 +1097,11 @@
     // true page-for-page glyph replica; the other three reuse the existing,
     // already-verified single-ayah panels from ayah-renderer.js, looped over
     // every ayah in scope.
-    let pageDisplayMode = "mushaf"; // mushaf | tajweed | wordByWord | translation
+    // Shell round 19: `pageDisplayMode` is gone. Its four values (mushaf /
+    // tajweed / wordByWord / translation) were a second, parallel set of
+    // reading choices that only existed for Whole Surah and Range; they are
+    // now the ordinary Reading view ticks plus the Mushaf tick, which work the
+    // same way whatever the unit.
     const PAGE_EDITION = "madani"; // the pulled data's `page` field is standard 604-page Madani mushaf numbering
 
     // Phase 5 -- Explore navigator state.
@@ -1428,10 +1440,7 @@
     });
     rangeFromSelect.addEventListener("change", () => { rangeFrom = Number(rangeFromSelect.value); renderStudyScreen(); });
     rangeToSelect.addEventListener("change", () => { rangeTo = Number(rangeToSelect.value); renderStudyScreen(); });
-    pageViewModeSelect.addEventListener("change", () => {
-      pageDisplayMode = pageViewModeSelect.value;
-      renderStudyScreen();
-    });
+    mushafToggle.addEventListener("change", renderStudyScreen);
 
     // -----------------------------------------------------------------------
     // Shell round 11 (13 Aug 2026) -- Study options' own three bars.
@@ -1440,11 +1449,11 @@
     // settings), the "Go to" typing field, and the summary strip.
     // -----------------------------------------------------------------------
 
-    // Shell round 18: Reading view left this list -- it is always visible
-    // now (the owner: "displayed visible to enable less tap instead of
-    // pop-up"), so it has no button to toggle and never closes.
+    // Shell round 18 took Reading view out of this list and round 19 took
+    // Listening out of it too -- both are always-visible sections now. Search
+    // is the only one left, and it was never really a disclosure: it is a
+    // button that DOES something and shows its results.
     const optionCards = [
-      { btn: listeningBtn, card: listeningCard },
       { btn: searchBtn, card: searchCard },
     ];
 
@@ -1468,14 +1477,6 @@
         return;
       }
       btn.addEventListener("click", () => {
-        // v07.39 (load speed): the Bangla reciter needs a ~460KB ayah-timing
-        // map, and it must be in memory BEFORE a Play tap or the browser can
-        // reject playback (see warmSegmentedTimestamps' own comment). It used
-        // to be fetched on every page load, costing every visitor 460KB even
-        // if they never played audio. Opening this card is the earliest real
-        // gesture that always precedes Play, and it is nowhere near the load
-        // path -- so the cost is now paid only by someone about to listen.
-        if (btn === listeningBtn) warmSegmentedTimestamps();
         setOpenOptionCard(btn.getAttribute("aria-expanded") === "true" ? null : card);
       });
     });
@@ -1889,6 +1890,9 @@
         if (wasOpen) return;
         tab.setAttribute("aria-expanded", "true");
         document.getElementById(tab.dataset.panel).hidden = false;
+        // Study options holds the reciters, so opening it is another real
+        // gesture that may precede Play -- warm the timing map here too.
+        if (tab.dataset.panel === "panelStudyOptions") warmSegmentedTimestamps();
         if (tab.dataset.panel === "panelExplore") await openExplore();
       });
     });
@@ -1936,6 +1940,11 @@
     tabReadBtn.addEventListener("click", () => {
       if (stageView === "read") { setStageView("wheel"); return; } // same "tap the open tab to close it" idiom as the panels
       closeAllPanels();
+      // Opening the reading screen is the last gesture before Play for anyone
+      // who never opens Study options -- one of the places round 19 warms the
+      // Bangla timing map now that the Listening card that used to do it is
+      // gone. Idempotent, so warming from several gestures costs one fetch.
+      warmSegmentedTimestamps();
       const first = startOfCurrentUnit();
       if (first !== currentAyahNum) {
         stopDrill();
@@ -1948,9 +1957,11 @@
       // Owner's answer to "Page display -- full screen the same way, or
       // immersive only?": immersive. A real mushaf page is a page, so it opens
       // with the app's strips already out of the way; one tap brings them back.
-      if (currentUnitType === "surah" || currentUnitType === "range") {
-        if (pageDisplayMode === "mushaf") setImmersive(true);
-      }
+      // A real mushaf page is a page: it opens with the app's strips already
+      // out of the way (the owner's answer, round 18), and one tap brings them
+      // back. Now that Mushaf is a tick rather than a unit-type accident, this
+      // applies to a single ayah's page too.
+      if (mushafToggle.checked) setImmersive(true);
     });
 
     backToWheelBtn.addEventListener("click", () => setStageView("wheel"));
@@ -2243,11 +2254,6 @@
     }
 
     /** Whole surah -> every ayah; range -> just the selected ayahs. Same bounds logic as currentUnitAyahBounds() for those two unit types, kept separate since that function also has to handle ruku/juz/page. */
-    function pageViewAyahBounds() {
-      if (currentUnitType === "range") return [Math.min(rangeFrom, rangeTo), Math.max(rangeFrom, rangeTo)];
-      return [1, currentSurahData.ayahCount];
-    }
-
     /**
      * Phase 5 round 7 -- Whole Surah / Range page view (PHASE-5-STATUS.md
      * round 6 spec). "mushaf" renders the true page-for-page glyph replica
@@ -2258,12 +2264,16 @@
      * replaces the whole view, reusing the existing single-ayah panels from
      * ayah-renderer.js looped over every ayah in scope.
      */
-    async function renderPageView() {
-      const [from, to] = pageViewAyahBounds();
+    /** Every ayah of the current unit, one after another -- or, in Mushaf
+        mode, the real printed page(s) those ayahs sit on, with them
+        highlighted. Mushaf works for a SINGLE ayah too (the owner's own ask:
+        a one-ayah memorising programme needs to see where that ayah sits on
+        the page), because getMushafPagesForKeys() is happy with one key. */
+    async function renderFlowView(fromAyah, toAyah, panels, isMushaf) {
       const ayahKeys = [];
-      for (let a = from; a <= to; a++) ayahKeys.push(`${currentSurahNum}:${a}`);
+      for (let a = fromAyah; a <= toAyah; a++) ayahKeys.push(`${currentSurahNum}:${a}`);
 
-      if (pageDisplayMode === "mushaf") {
+      if (isMushaf) {
         pageViewContainer.innerHTML = `<p style="color:#888;">${t("Loading Mushaf page…")}</p>`;
         try {
           await ensureMushafData();
@@ -2280,52 +2290,68 @@
         return;
       }
 
-      const ayahs = currentSurahData.ayahs.filter((a) => a.ayah >= from && a.ayah <= to);
+      // Not Mushaf: the same panels the single-ayah view would draw, once per
+      // ayah. Round 19 folded the old four-way "Page display" picker into the
+      // ordinary Reading view ticks -- one set of choices, whatever the unit.
+      const ayahs = currentSurahData.ayahs.filter((a) => a.ayah >= fromAyah && a.ayah <= toAyah);
       pageViewContainer.innerHTML = ayahs
-        .map((ayah) => {
-          let body;
-          if (pageDisplayMode === "tajweed") body = renderArabicPanel(ayah, { tajweedOn: true });
-          else if (pageDisplayMode === "wordByWord") body = renderWordByWordPanel(ayah, { langs: wbwLangs() }) + renderRootDerivativePanel(ayah);
-          else body = renderArabicPanel(ayah, { tajweedOn: false }) + renderTranslationPanel(ayah, translationLangs());
-          return `<div class="page-flow-ayah">${body}</div>`;
-        })
+        .map((ayah) => `<div class="page-flow-ayah">${renderLayoutA(ayah, panels, {
+          tajweedOn: tajweedToggle.checked,
+          langs: translationLangs(),
+          wbwLangs: wbwLangs(),
+        })}</div>`)
         .join("");
     }
 
     function renderStudyScreen() {
       if (!currentSurahData) return;
+      // Shell round 19: "page view" is no longer a unit-type accident. What
+      // decides whether the flow renderer or the single-ayah renderer runs is
+      // simply whether the chosen unit covers more than one ayah -- and Mushaf
+      // is its own mode over the top of either.
+      const [unitFrom, unitTo] = currentUnitAyahBounds();
+      const isMushaf = mushafToggle.checked;
+      // WHICH units read as a flow is unchanged from before this round: Whole
+      // Surah and Range. A Ruku'/Juz/Hizb/Page still reads ayah by ayah with
+      // Previous/Next, which is round 18's own behaviour and what the owner
+      // has been using -- Mushaf is the only thing round 19 adds on top, and
+      // it works over any unit including a single ayah.
       const isPageUnit = currentUnitType === "surah" || currentUnitType === "range";
-      pageViewToggleRow.style.display = isPageUnit ? "" : "none";
-      singleAyahNavRow.style.display = isPageUnit ? "none" : "";
-      // range already has its own From/To ayah selects; whole-surah has no
-      // single ayah to pick -- same visibility rule as singleAyahNavRow.
+      const usesFlow = isMushaf || isPageUnit;
+
+      singleAyahNavRow.style.display = usesFlow ? "none" : "";
       ayahSelectControl.style.display = isPageUnit ? "none" : "";
-      ayahPanels.style.display = isPageUnit ? "none" : "";
-      pageViewContainer.style.display = isPageUnit ? "" : "none";
+      ayahPanels.style.display = usesFlow ? "none" : "";
+      pageViewContainer.style.display = usesFlow ? "" : "none";
 
       const trackable = currentTrackable();
-      // Shell round 18 -- the reader's own ticks ADD to whatever the Approach
-      // declares (the owner's call, asked before building): an Approach still
-      // shows everything it always showed, and Tajweed / Word-by-Word /
-      // either translation can be turned on over the top. What "Track this
-      // unit" claims is untouched -- this changes what is on screen, never
-      // what is recorded.
-      const approachPanels = trackable?.panels ?? ["text"];
-      const panels = [...approachPanels];
+      // Shell round 19 -- the owner's standing rule: an Approach is one way of
+      // studying, not a gate on the module. So the Qur'an text is ALWAYS
+      // available whatever the Approach declares (12 of the 32 declare no text
+      // panel at all), and the reader's own ticks add to it. The Approach's own
+      // working panels -- notes, reflection, writing, the checklist -- still
+      // come from the Approach, because those are its METHOD rather than the
+      // view (the owner's own call: "we will design that later according to the
+      // nature of the approach").
+      const approachPanels = trackable?.panels ?? [];
+      const panels = ["text", ...approachPanels.filter((p) => p !== "text")];
       if (wbwShowToggle.checked && !panels.includes("wordByWord")) panels.push("wordByWord");
-      // The translation is drawn INSIDE the text panel, so a reader who ticks
-      // a translation on an Approach that shows no text panel would otherwise
-      // tick it into nowhere.
-      if (translationLangs().length && !panels.includes("text")) panels.push("text");
-      wbwLangControl.style.display = panels.includes("wordByWord") && (!isPageUnit || pageDisplayMode === "wordByWord") ? "" : "none";
-      // Shell round 11: the Tajweed checkbox moved into the Reading view card,
-      // so it needs its own visibility rule -- it used to inherit
-      // singleAyahNavRow's. Same rule, unchanged: on a whole-surah/range unit
-      // the Tajweed READING MODE is a Page display option instead.
-      tajweedControl.style.display = isPageUnit ? "none" : "";
 
-      if (isPageUnit) {
-        renderPageView();
+      // Mushaf is a photograph of a printed page: nothing else can share it.
+      // The other reading choices are DISABLED rather than hidden, so the
+      // reader can see what they would get back by turning Mushaf off.
+      [tajweedToggle, wbwShowToggle, trEnToggle, trBnToggle].forEach((el) => { el.disabled = isMushaf; });
+      [tajweedControl, wbwShowControl, trEnControl, trBnControl].forEach((el) => { el.style.opacity = isMushaf ? "0.45" : ""; });
+      mushafNote.hidden = !isMushaf;
+      wbwLangControl.style.display = !isMushaf && panels.includes("wordByWord") ? "" : "none";
+
+      if (usesFlow) {
+        // Mushaf over a single ayah means THAT ayah's page, with it
+        // highlighted -- the owner's one-ayah memorising case. Every other
+        // unit hands over its own bounds, as before.
+        const from = isMushaf && !isPageUnit ? currentAyahNum : unitFrom;
+        const to = isMushaf && !isPageUnit ? currentAyahNum : unitTo;
+        renderFlowView(from, to, panels, isMushaf);
       } else {
         const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
         if (!ayah) return;
@@ -2340,7 +2366,7 @@
         });
       }
 
-      renderAudioControls(approachPanels); // the transport follows the APPROACH, not a reading tick -- ticking Word-by-Word must not conjure an audio panel
+      renderListeningControls();
       renderUnitLabel();
       renderReadTransport();
       renderUnitSpanReadout();
@@ -2350,88 +2376,71 @@
       readBarRef.textContent = currentUnitInfo().label;
     }
 
-    function renderAudioControls(panels) {
-      // Shell round 11: these controls now live behind the Listening settings
-      // button, so when an Approach has no audio panel the button itself has
-      // to say so -- otherwise it would open an empty card.
-      const hasAudio = panels.includes("audio");
-      listeningBtn.disabled = !hasAudio;
-      listeningEmpty.hidden = hasAudio;
-      if (!hasAudio && listeningBtn.getAttribute("aria-expanded") === "true") setOpenOptionCard(null);
-      if (!hasAudio) { audioControls.innerHTML = ""; drillControlsEl.innerHTML = ""; return; }
-      // Shell round 18 -- the owner, reading this card: "'Listening Settings'
-      // shows reciters names multiple times. 'Drill Reciters' already shows
-      // the reciters, redundant is the top pop-up one." They were right: a
-      // <select> of every reciter sat directly above a checkbox list of the
-      // same reciters. The SELECT is the one that went, because the checkbox
-      // list is the one that can express "these three" -- so there is now one
-      // reciter list, and the single-reciter actions read the first ticked
-      // one. Their other two points fall out of the same change: the play
-      // buttons now sit below the reciters (the drill's own do), and the pair
-      // that duplicated them moved to the reading screen, where the owner
-      // asked for play/pause/stop in the first place.
-      audioControls.innerHTML = panels.includes("loop")
-        ? `<label style="display:inline-flex; align-items:center; gap:0.3rem; font-weight:400;"><input type="checkbox" id="loopToggle" /> Loop</label>`
-        : "";
-      const loopToggle = document.getElementById("loopToggle");
-      if (loopToggle) {
-        // Rebuilt on every ayah nav, so the persisted choice has to be
-        // re-applied here or Loop would silently uncheck itself while
-        // playback carried on looping underneath.
-        loopToggle.checked = loopIsOn;
-        setLoop(loopIsOn);
-        loopToggle.addEventListener("change", () => { loopIsOn = loopToggle.checked; setLoop(loopIsOn); });
-      }
-
-      renderDrillControls();
-    }
-
-    /**
-     * Phase 5 -- multi-reciter drill/repeat playback (legacy parity gap):
-     * pick several reciters, a repeat count (1/2/3/5/10x) and a repeat mode
-     * ("Each Ayah" drills one ayah across every chosen reciter N times
-     * before advancing; "Whole Unit" plays the whole current Study Unit once
-     * per reciter, and that whole pass repeats N times). Uses
-     * currentUnitAyahBounds() so the drill range always matches whatever
-     * Study Unit is currently selected above.
-     */
-    function renderDrillControls() {
-      const drillReciters = Object.values(RECITERS).filter((r) => reciterIsReady(r.id) && reciterSupportsSingleAyah(r.id));
+    // -----------------------------------------------------------------------
+    // Shell round 19 -- ONE listening section, always on screen and always
+    // live. It used to be a card behind a button that DISABLED itself on any
+    // Approach without an "audio" panel: 25 of the 32. The owner's rule is
+    // that an Approach never blocks the regular study process, listening
+    // included, so nothing here consults the Approach any more.
+    //
+    // Reciters first (one list -- round 18), then Repeat / Mode / Loop / Play
+    // on one line. No "Recitation" heading (this section has its own), and no
+    // Stop: Stop lives on the reading screen, where the listener actually is.
+    // -----------------------------------------------------------------------
+    function renderListeningControls() {
+      const reciters = Object.values(RECITERS).filter((r) => reciterIsReady(r.id));
       if (drillSelectedReciterIds === null) drillSelectedReciterIds = [currentReciterId].filter((id) => reciterSupportsSingleAyah(id));
 
+      audioControls.innerHTML = `
+        <div id="drillReciterChecks" class="reciter-ticks">
+          ${reciters.map((r) => {
+            const note = reciterSupportsSingleAyah(r.id) ? "" : ` <span style="color:#888;">${t("(whole surah only)")}</span>`;
+            return `<label><input type="checkbox" class="drill-reciter-check" value="${r.id}" ${drillSelectedReciterIds.includes(r.id) ? "checked" : ""}/> ${r.label}${note}</label>`;
+          }).join("")}
+        </div>`;
+
       drillControlsEl.innerHTML = `
-        <div class="row">
-          <div><label>${t("Reciters")}</label><div id="drillReciterChecks">
-            ${drillReciters.map((r) => `<label><input type="checkbox" class="drill-reciter-check" value="${r.id}" ${drillSelectedReciterIds.includes(r.id) ? "checked" : ""}/> ${r.label}</label>`).join("")}
-          </div></div>
-          <div><label>${t("Repeat")}</label><select id="drillRepeatSelect">${[1, 2, 3, 5, 10].map((n) => `<option value="${n}">${num(n)}×</option>`).join("")}</select></div>
-          <div><label>${t("Mode")}</label><select id="drillModeSelect"><option value="each">${t("Each Ayah")}</option><option value="whole">${t("Whole Unit")}</option></select></div>
-          <div><button type="button" class="secondary" id="drillPlayBtn">▶ Play Drill</button></div>
-          <div><button type="button" class="secondary" id="drillStopBtn">■ Stop Drill</button></div>
-        </div>
-      `;
+        <div class="opt-bar opt-bar-listen">
+          <div class="opt-cell opt-cell-num"><label for="drillRepeatSelect">${t("Repeat")}</label><select id="drillRepeatSelect">${[1, 2, 3, 5, 10].map((n) => `<option value="${n}">${num(n)}×</option>`).join("")}</select></div>
+          <div class="opt-cell"><label for="drillModeSelect">${t("Mode")}</label><select id="drillModeSelect"><option value="each">${t("Each Ayah")}</option><option value="whole">${t("Whole Unit")}</option></select></div>
+          <div class="opt-cell opt-cell-loop"><label>&nbsp;</label><label class="loop-inline"><input type="checkbox" id="loopToggle" /> ${t("Loop")}</label></div>
+          <div class="opt-cell opt-cell-play"><label>&nbsp;</label><button type="button" class="opt-btn-inline" id="drillPlayBtn">▶ ${t("Play")}</button></div>
+        </div>`;
+
       const drillReciterChecks = document.getElementById("drillReciterChecks");
       const drillRepeatSelect = document.getElementById("drillRepeatSelect");
       const drillModeSelect = document.getElementById("drillModeSelect");
       const drillPlayBtn = document.getElementById("drillPlayBtn");
-      const drillStopBtn = document.getElementById("drillStopBtn");
+      const loopToggle = document.getElementById("loopToggle");
 
+      // This block is rebuilt on every ayah nav, so every persisted choice has
+      // to be re-applied here or it would silently revert while playback
+      // carried on with the old one underneath.
       drillRepeatSelect.value = String(drillRepeatCount);
       drillModeSelect.value = drillMode;
+      loopToggle.checked = loopIsOn;
+      setLoop(loopIsOn);
 
       drillReciterChecks.addEventListener("change", (e) => {
         if (!e.target.classList.contains("drill-reciter-check")) return;
-        drillSelectedReciterIds = [...drillReciterChecks.querySelectorAll(".drill-reciter-check:checked")].map((c) => c.value);
-        // Shell round 18: this is now the app's ONE reciter list, so the
-        // single-reciter actions (the reading screen's Play / Whole surah)
-        // follow it -- the first one ticked.
+        // Kept in the order they were TICKED, not the order they are listed.
+        // Nothing shows that order yet, but it is what "play this reciter
+        // before that one" will read when the owner asks for it -- recording
+        // it now costs nothing and means that round is a UI job, not a data one.
+        const id = e.target.value;
+        drillSelectedReciterIds = e.target.checked
+          ? [...drillSelectedReciterIds.filter((x) => x !== id), id]
+          : drillSelectedReciterIds.filter((x) => x !== id);
         adoptFirstTickedReciter();
+        warmSegmentedTimestamps(); // a real gesture that precedes Play
       });
       drillRepeatSelect.addEventListener("change", () => { drillRepeatCount = Number(drillRepeatSelect.value); });
       drillModeSelect.addEventListener("change", () => { drillMode = drillModeSelect.value; });
+      loopToggle.addEventListener("change", () => { loopIsOn = loopToggle.checked; setLoop(loopIsOn); });
 
       drillPlayBtn.addEventListener("click", async () => {
         if (!drillSelectedReciterIds?.length) { alert(t("Pick at least one reciter to drill.")); return; }
+        unlockAudio(); // inside the gesture, before any await -- see audio-player.js
         const [fromAyah, toAyah] = currentUnitAyahBounds();
         drillPlayBtn.disabled = true;
         try {
@@ -2442,7 +2451,6 @@
           drillPlayBtn.disabled = false;
         }
       });
-      drillStopBtn.addEventListener("click", () => stopDrill());
     }
 
     /** The reading screen's Play and Whole-surah buttons need exactly one
@@ -2473,10 +2481,10 @@
     // restarting. Stop ends the run.
     // -----------------------------------------------------------------------
     function renderReadTransport() {
-      const trackable = currentTrackable();
-      const hasAudio = (trackable?.panels ?? []).includes("audio");
-      readTransport.hidden = !hasAudio;
-      if (!hasAudio) return;
+      // Round 19: always there. An Approach declaring no "audio" panel used to
+      // hide this whole row -- 25 of the 32 -- which is exactly the blocking
+      // the owner's rule forbids.
+      readTransport.hidden = false;
       const reciter = RECITERS[currentReciterId];
       readReciterName.textContent = reciter ? reciter.label : "";
       readPlaySurahBtn.hidden = false;
@@ -2484,6 +2492,12 @@
     }
 
     readPlayBtn.addEventListener("click", async () => {
+      // SYNCHRONOUS, before any await: marks the shared <audio> element as
+      // user-activated so the timing-map fetch below cannot cost us the
+      // gesture. The owner's own case for this: arriving at the reading screen
+      // from a bookmark and pressing Play without ever opening Study options.
+      unlockAudio();
+      warmSegmentedTimestamps();
       // Something paused part-way is resumed, not restarted -- restarting an
       // ayah someone deliberately paused is the wrong answer to the same tap.
       if (isPaused()) { await resumeAudio(); renderReadTransport(); return; }
@@ -2501,6 +2515,8 @@
     });
 
     readPlaySurahBtn.addEventListener("click", async () => {
+      unlockAudio();
+      warmSegmentedTimestamps();
       stopDrill();
       try {
         await playSurah(currentSurahNum, currentReciterId, currentSurahData.ayahCount);

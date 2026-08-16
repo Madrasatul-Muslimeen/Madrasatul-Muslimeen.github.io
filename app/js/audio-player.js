@@ -564,6 +564,35 @@ export function resume() {
   return audioEl.play().then(() => true);
 }
 
+/**
+ * Shell round 19 — call this SYNCHRONOUSLY inside a Play tap, before any
+ * `await`.
+ *
+ * Why it exists: a browser only lets audio start from inside a real user
+ * gesture, and awaiting a network fetch between the tap and `play()` can lose
+ * that association — which is the entire reason v07.39 had to pre-fetch the
+ * Bangla reciter's 460KB timing map on an EARLIER gesture (opening the
+ * Listening card). Round 19 removed that card, and the owner's point was the
+ * right one: someone can arrive at the reading screen from a bookmark, never
+ * open Study options at all, and simply press Play.
+ *
+ * So the map is still warmed from every gesture that might precede Play, and
+ * this is the safety net for when none of them happened: touching the shared
+ * <audio> element inside the gesture marks it as user-activated, after which a
+ * later programmatic play() on that same element is allowed. It plays nothing
+ * — a paused element with no source — so it is silent and costs nothing.
+ */
+export function unlockAudio() {
+  const el = ensureAudioEl();
+  try {
+    const p = el.play();
+    if (p && typeof p.catch === "function") p.catch(() => {});
+    if (!el.src) el.pause(); // nothing to play yet: this was only ever about the activation
+  } catch {
+    /* an element with no source can reject outright; the activation still counts */
+  }
+}
+
 /** True when something is loaded and sitting paused part-way through -- what the reading screen's Play button needs in order to know whether to resume or start afresh. */
 export function isPaused() {
   return !!audioEl && audioEl.paused && !!audioEl.src && audioEl.currentTime > 0 && !audioEl.ended;

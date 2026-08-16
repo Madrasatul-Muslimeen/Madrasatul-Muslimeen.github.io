@@ -277,6 +277,13 @@ export const BN = {
   "{reciter} only has whole-surah audio — use Whole surah instead.":
     "{reciter}-এর কেবল পুরো সূরার অডিও আছে — এর বদলে 'পুরো সূরা' ব্যবহার করুন।",
   "Reciters": "ক্বারীগণ",
+  "Listening": "শ্রবণ",
+  "Loop": "পুনরাবৃত্তি চক্র",
+  "Play": "চালান",
+  "Mushaf view": "মুসহাফ দৃশ্য",
+  "(whole surah only)": "(কেবল পুরো সূরা)",
+  "Mushaf view shows the printed page, so the other reading choices do not apply while it is on.":
+    "মুসহাফ দৃশ্যে ছাপা পৃষ্ঠাই দেখানো হয়, তাই এটি চালু থাকলে পাঠের অন্য পছন্দগুলো প্রযোজ্য নয়।",
   "Reading view": "পাঠের ধরন",
   "Word by Word language": "শব্দে শব্দে ভাষা",
   "English translation": "ইংরেজি অনুবাদ",
