@@ -248,7 +248,11 @@ console.log("\n=== 8. PHASE 2: the Quran module in Bangla ===");
   await openStudyOptions(page);
   const panel = await page.evaluate(() => ({
     tabs: [...document.querySelectorAll(".qr-tab")].map((b) => b.textContent.trim()),
-    labels: [...document.querySelectorAll("#panelStudyOptions .opt-cell label")].map((l) => l.textContent.trim()),
+    // Spacer labels (&nbsp;, keeping a bare button or checkbox aligned with
+    // the control beside it) carry no words, so they are skipped rather than
+    // reported as untranslated.
+    labels: [...document.querySelectorAll("#panelStudyOptions .opt-cell > label")]
+      .map((l) => l.textContent.replace(/\u00a0/g, "").trim()).filter(Boolean),
     buttons: [...document.querySelectorAll("#panelStudyOptions .opt-btn")].map((b) => b.textContent.trim()),
     unitOpts: [...document.getElementById("unitTypeSelect").options].map((o) => o.textContent.trim()),
   }));
@@ -970,14 +974,13 @@ console.log("\n=== 26. v07.39: the 460KB reciter timing map is not on the load p
   check("26a nothing fetches the timing map on load", timingRequests.length === 0,
         `${timingRequests.length} request(s) during load`);
 
-  // Opening Listening settings is the earliest gesture that always precedes
-  // a Play tap -- if this does not warm it, playback can be blocked later.
+  // Shell round 19 retired the Listening card, so the gestures that warm the
+  // map are Study options, the Read tab, ticking a reciter and Play itself.
+  // Opening Study options is the first of them.
   await page.click("#tabStudyOptionsBtn");
-  await page.waitForTimeout(200);
-  await page.click("#listeningBtn");
   await page.waitForTimeout(700);
-  check("26b opening Listening settings warms it", timingRequests.length >= 1,
-        `${timingRequests.length} request(s) after opening the card`);
+  check("26b opening Study options warms it", timingRequests.length >= 1,
+        `${timingRequests.length} request(s) after opening the panel`);
   await page.close();
   await ctx.close();
 }
@@ -1013,10 +1016,10 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
         JSON.stringify(bars[1]) === '["unitTypeSelect","unitNumSelect","surahSelect","ayahSelect","rangeFromSelect","rangeToSelect"]', JSON.stringify(bars[1]));
   check("27b bar 3 is one Search field and one Search button", JSON.stringify(bars[2]) === '["jumpInput","searchBtn"]', JSON.stringify(bars[2]));
   check("27b bar 4 is Approach + Track", JSON.stringify(bars[3]) === '["trackableSelect","trackUnitBtn"]', JSON.stringify(bars[3]));
-  // Shell round 18: Reading view left this bar entirely -- it is always
-  // visible now, so only Listening settings still hides behind a button (and
-  // deliberately so: opening it is what fetches the 460KB timing map).
-  check("27b bar 5 is Listening settings alone", JSON.stringify(bars[4]) === '["listeningBtn"]', JSON.stringify(bars[4]));
+  // Shell round 19: there is no fifth bar. Reading view (round 18) and
+  // Listening (round 19) are both always-visible sections now, so neither
+  // spends a button on the bars.
+  check("27b there is no button bar left", bars.length === 4, JSON.stringify(bars.map((b) => b.length)));
 
   const labels = await page.evaluate(() => ({
     tenant: document.querySelector('label[for="tenantSelect"]').textContent.trim(),
@@ -1559,8 +1562,7 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   await page.waitForTimeout(300);
 
   // Listening settings: ONE reciter list, and no second set of play buttons.
-  await page.click("#listeningBtn");
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(300);
   const listening = await page.evaluate(() => {
     const card = document.getElementById("listeningCard");
     const names = [...card.querySelectorAll(".drill-reciter-check")].map((c) => c.parentElement.textContent.trim());
@@ -1575,9 +1577,7 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   check("30i the duplicate reciter picker is gone", listening.oldSelectGone);
   check("30i each reciter is named exactly once", listening.listCount > 0 && !listening.duplicated, JSON.stringify(listening));
   check("30i the duplicated play buttons are gone from the card",
-        listening.oldPlayGone && JSON.stringify(listening.playButtons) === '["drillPlayBtn","drillStopBtn"]', JSON.stringify(listening.playButtons));
-  await page.click("#listeningBtn");
-  await page.waitForTimeout(250);
+        listening.oldPlayGone && JSON.stringify(listening.playButtons) === '["drillPlayBtn"]', JSON.stringify(listening.playButtons));
 
   // The transport itself, on the reading screen where the owner asked for it.
   await page.click("#tabReadBtn");
@@ -1617,11 +1617,125 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
         !/[0-9]/.test(bn.firstOption || "") && bn.optionValue === "1", JSON.stringify(bn));
   check("30l ...and what it covers reads in Bangla with Bengali digits",
         BANGLA.test(bn.span) && !/[0-9]/.test(bn.span), bn.span);
-  check("30l every Reading view tick is Bangla", bn.ticks.length === 4 && bn.ticks.every((x) => BANGLA.test(x)), JSON.stringify(bn.ticks));
+  check("30l every Reading view tick is Bangla", bn.ticks.length === 5 && bn.ticks.every((x) => BANGLA.test(x)), JSON.stringify(bn.ticks));
   await page.click("#tabReadBtn");
   await page.waitForTimeout(500);
   const t18 = await page.evaluate(() => [...document.querySelectorAll("#readTransport button")].map((b) => b.textContent.trim()));
   check("30l the transport buttons are Bangla", t18.length === 4 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
+  await page.close();
+  await ctx.close();
+}
+
+// ---------------------------------------------------------------------------
+// 31. Shell round 19: an Approach never blocks the regular study process.
+//
+// The owner's standing rule, stated as a correction: "No approach blocks the
+// regular study process, therefore all study options (including listening)
+// always remain active whatever approach is chosen." Measured before the
+// round: 12 of the 32 Approaches declared no text panel, 25 no audio.
+// ---------------------------------------------------------------------------
+console.log("\n=== 31. Shell round 19: no Approach blocks anything ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await openStudyOptions(page);
+
+  const sections = await page.evaluate(() => ({
+    readingVisible: !document.getElementById("readingViewCard").hidden,
+    listeningVisible: !document.getElementById("listeningCard").hidden,
+    noListeningButton: !document.getElementById("listeningBtn"),
+    noRecitationHeading: !/Recitation/.test(document.getElementById("listeningCard").textContent),
+    noStopHere: !document.getElementById("drillStopBtn"),
+    playLabel: document.getElementById("drillPlayBtn")?.textContent.trim(),
+    noTranslator: !document.getElementById("translationChoiceSelect"),
+    noPageDisplay: !document.getElementById("pageViewModeSelect"),
+  }));
+  check("31a Listening is a section, not a button", sections.listeningVisible && sections.noListeningButton, JSON.stringify(sections));
+  check("31a ...with no second 'Recitation' heading", sections.noRecitationHeading);
+  check("31a ...and no Stop (it lives on the reading screen)", sections.noStopHere);
+  check("31a Play is just Play", /Play/.test(sections.playLabel || "") && !/Drill/.test(sections.playLabel || ""), sections.playLabel);
+  check("31a the disabled Translator placeholder is gone", sections.noTranslator);
+  check("31a the old Page display picker is gone", sections.noPageDisplay);
+
+  // THE RULE. The stub's second Approach declares panels: ["text"] only -- no
+  // audio, no loop, no word-by-word -- which before this round disabled the
+  // whole listening card and hid Loop entirely.
+  const approaches = await page.evaluate(() => [...document.getElementById("trackableSelect").options].map((o) => o.value));
+  if (approaches.length > 1) {
+    await page.selectOption("#trackableSelect", approaches[1]);
+    await page.waitForTimeout(700);
+    const live = await page.evaluate(() => ({
+      reciters: document.querySelectorAll(".drill-reciter-check").length,
+      recitersDisabled: [...document.querySelectorAll(".drill-reciter-check")].some((c) => c.disabled),
+      loop: !!document.getElementById("loopToggle"),
+      play: !!document.getElementById("drillPlayBtn") && !document.getElementById("drillPlayBtn").disabled,
+      ticks: [...document.querySelectorAll(".reading-ticks input")].filter((i) => !i.disabled).length,
+      arabic: document.querySelectorAll("#ayahPanels .ayah-arabic").length,
+    }));
+    check("31b an Approach with no audio panel still offers every reciter",
+          live.reciters > 0 && !live.recitersDisabled, JSON.stringify(live));
+    check("31b ...still offers Loop and Play", live.loop && live.play, JSON.stringify(live));
+    check("31b ...and every reading choice stays live", live.ticks === 5, String(live.ticks));
+    check("31b the Qur'an text is on screen whatever the Approach declares", live.arabic > 0, String(live.arabic));
+  }
+
+  // Mushaf: a tick like the others, available on a SINGLE ayah, and the one
+  // choice that cannot share the screen -- so it greys the rest rather than
+  // hiding them.
+  await page.check("#mushafToggle");
+  await page.waitForTimeout(1500);
+  const mushaf = await page.evaluate(() => ({
+    othersDisabled: [...document.querySelectorAll(".reading-ticks input")].filter((i) => i.id !== "mushafToggle").every((i) => i.disabled),
+    stillVisible: [...document.querySelectorAll(".reading-ticks label")].every((l) => l.offsetParent !== null),
+    noteShown: !document.getElementById("mushafNote").hidden,
+    pageShown: getComputedStyle(document.getElementById("pageViewContainer")).display !== "none",
+    panelsHidden: getComputedStyle(document.getElementById("ayahPanels")).display === "none",
+  }));
+  check("31c Mushaf greys the other reading choices rather than hiding them",
+        mushaf.othersDisabled && mushaf.stillVisible, JSON.stringify(mushaf));
+  check("31c ...says why, in words", mushaf.noteShown);
+  check("31c ...and it works on a SINGLE ayah unit", mushaf.pageShown && mushaf.panelsHidden, JSON.stringify(mushaf));
+
+  await page.uncheck("#mushafToggle");
+  await page.waitForTimeout(500);
+  const back = await page.evaluate(() => ({
+    enabled: [...document.querySelectorAll(".reading-ticks input")].every((i) => !i.disabled),
+    arabic: document.querySelectorAll("#ayahPanels .ayah-arabic").length,
+  }));
+  check("31c turning Mushaf off gives the reading choices back", back.enabled && back.arabic > 0, JSON.stringify(back));
+
+  // A Ruku' still reads ayah by ayah -- round 19 changed WHAT is available,
+  // never which units use the flow renderer. This is the check that caught a
+  // real regression during the build.
+  await page.selectOption("#unitTypeSelect", "ruku");
+  await page.waitForTimeout(900);
+  const ruku = await page.evaluate(() => ({
+    navVisible: getComputedStyle(document.getElementById("singleAyahNavRow")).display !== "none",
+    position: document.getElementById("ayahPosition").textContent.trim(),
+  }));
+  check("31d a Ruku' still reads ayah by ayah, with Previous/Next",
+        ruku.navVisible && /Ayah \d+ of/.test(ruku.position), JSON.stringify(ruku));
+
+  check("31e no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+// The 460KB timing map: round 19 removed the card that used to warm it, so
+// the gestures that warm it now are the ones that can precede Play.
+console.log("\n=== 31f. The timing map still cannot reach the load path ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const hits = [];
+  page.on("request", (r) => { if (/gtaf_bangla_timestamps\.json/.test(r.url())) hits.push(r.url()); });
+  await page.waitForTimeout(600);
+  check("31f nothing fetches it on load", hits.length === 0, String(hits.length));
+  // Opening the READING screen warms it -- the owner's own case: arriving
+  // from a bookmark and pressing Play without ever opening Study options.
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(900);
+  check("31f opening the reading screen warms it", hits.length >= 1, String(hits.length));
   await page.close();
   await ctx.close();
 }

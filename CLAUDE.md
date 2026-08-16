@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.44.** Cutover to production happened
+**Current milestone: QuranRevival v07.45.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -1795,6 +1795,91 @@ packages exactly one English and one Bangla translation per ayah, so "multiple
 translations at the same time" means those two — which now really can both be
 on. The disabled Translator control says so in plain words on screen rather
 than promising something the data cannot do. See `LAYOUT-BACKLOG.md` item 4.
+
+v07.45 (16 Aug 2026, on Claude Code on the web) is **shell round 19 — an
+Approach is a way of studying, not a gate on it.** The owner stated this as a
+standing correction, and it is worth treating as a rule rather than a round:
+*"The Approaches are meant to be only one special way of using this app, study
+the Quran. It doesn't dominate the entire Quran Study Module. So no approach
+blocks the regular study process; therefore all study options (including
+listening) always remain active whatever approach is chosen."*
+
+**The code disagreed with them, and by a lot. Measured before building, from
+`catalogue-data.js`: of the 32 Approaches, 12 declare no `text` panel** — pick
+one and the Qur'an itself vanished from the reading screen — **25 no `audio`**,
+so Listening settings disabled itself and opened to "this Approach has no
+listening panel", **26 no `loop`, 31 no `wordByWord`.** So on most Approaches
+the app quietly took the Qur'an, the recitation and the loop away. One rule
+change fixes all of it: **an Approach's `panels` list is what the screen OPENS
+with, never what it permits.** Concretely, `renderStudyScreen()` now always
+includes `text`, the reader's ticks add on top, and nothing anywhere consults
+`panels` to decide whether a control is available. The Approach's own working
+panels — notes, reflection, writing, the checklist — still come from the
+Approach, which is the owner's own call ("we will design that later according
+to the nature of the approach").
+
+**The panel is reorganised to match, from a demo they approved.** Listening is
+now a section exactly like Reading view: **no button, no second "Recitation"
+heading, no Stop** (Stop lives on the reading screen, where the listener
+actually is), one reciter list, then **Repeat / Mode / Loop / Play on one
+line** — "Play", not "Play Drill". **There is no fifth bar of buttons left at
+all.** The disabled **Translator** placeholder is gone too, on their
+instruction: when real translations exist it returns as a Translation toggle
+with the languages inside it.
+
+**Mushaf view is a reading tick now, and it works on a single ayah** — their
+own ask, for a one-ayah memorising programme: "I need to see where it sits in
+the Mushaf view, grey out the rest makes it focused." So the old four-value
+"Page display" picker (mushaf / tajweed / wordByWord / translation), which only
+appeared for Whole Surah and Range, is **retired** — `pageDisplayMode` is gone
+and those choices are the ordinary Reading view ticks, which now work the same
+way whatever the unit. Mushaf is the one choice that cannot share the screen,
+so ticking it **disables the other four rather than hiding them**, with a line
+saying why. `getMushafPagesForKeys()` needed nothing new: it was always happy
+with one ayah key.
+
+**The one real cost this round had, and how it was paid.** v07.39 stopped
+fetching the Bangla reciter's 460KB timing map on every visit by tying it to
+*opening the Listening card* — and this round deletes that card. The owner saw
+the gap themselves and named the case: someone arrives at the reading screen
+from a bookmark, never opens Study options, and presses Play. **Fixed in two
+halves.** The map is warmed from every gesture that can precede Play (opening
+Study options, opening the reading screen, ticking a reciter, and Play itself),
+and `audio-player.js` gained **`unlockAudio()`**, called SYNCHRONOUSLY inside
+the Play tap before any `await`: touching the shared `<audio>` element inside
+the gesture marks it user-activated, after which a later programmatic `play()`
+is allowed even though a fetch happened in between. That is what makes Play
+safe from a cold start without putting 460KB back on the load path — proven by
+a check that fails if anything requests it during load, and another that it IS
+requested when the reading screen opens.
+
+**Ordering — "a translation should show above another, a recitation to play
+before another" — is NOT built, deliberately, but the data now supports it.**
+`setQuranTranslationLangs()` keeps the caller's order instead of forcing its
+own, and ticked reciters are stored in the order they were TICKED rather than
+the order they are listed. Nothing shows that order yet; when the owner asks,
+it is a UI job rather than a data migration. See `LAYOUT-BACKLOG.md` item 11.
+
+**One real regression was caught by the suite during the build, before it
+shipped:** the first version made *every* multi-ayah unit render as a flow, so
+a Ruku'/Juz/Hizb/Page stopped reading ayah by ayah and lost Previous/Next —
+beyond what was asked, and it left a stale position readout on screen. Which
+units use the flow renderer is unchanged from round 18 (Whole Surah and Range);
+Mushaf is the only thing layered on top. There is now a check for exactly that.
+
+**Verified: 557 behaviour checks** (was 538 — 19 new, sections 31 and 31f:
+Listening proven a section with no button, no "Recitation", no Stop, Play
+renamed, Translator and Page-display gone; **an Approach declaring no audio
+proven to still offer every reciter, Loop, Play and all five reading ticks,
+with the Qur'an on screen** — the rule itself; Mushaf greying rather than
+hiding the others, saying why, and working on a single ayah; a Ruku' still
+reading ayah by ayah; and the timing map absent from the load path but warmed
+by opening the reading screen). **`layout.mjs` NO LAYOUT REGRESSIONS**
+(`getElementById` targets 83 → 80 — exactly the three removed controls — none
+missing), **`reading.mjs` OK**, **`panel.mjs` no truncation and no wrapped bar
+at any of the eight viewports in either language**, **navcheck unchanged**,
+**coverage 1,121/1,121 (100%)**, **perf unchanged at 6 sequential round
+trips**. No `firestore.rules`, schema or Firestore data changes.
 
 ---
 

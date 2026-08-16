@@ -461,6 +461,36 @@ it and deliberately not done, so they are written down rather than lost:
 
 ---
 
+## 11. Ordering: which translation above which, which reciter first — DATA READY, UI NOT BUILT
+
+**Owner's ask, 16 Aug 2026** (raised in the same message as shell round 19, and
+explicitly parked by them if it did not fit): *"Enabling choices of a
+translation should show above another, a recitation to play before another."*
+
+**Round 19 made this a UI job rather than a data one, at no cost:**
+
+- `setQuranTranslationLangs()` (`js/prefs.js`) keeps **the caller's order**
+  rather than forcing its own, so `["bn","en"]` really means Bangla first.
+  `translationLangs()` hands that order straight to `renderTranslationPanel()`,
+  which already renders in the order it is given.
+- `drillSelectedReciterIds` records reciters **in the order they were ticked**,
+  not the order they are listed, and `playDrill()` already plays them in array
+  order. So "play this one before that one" is already true — it is just not
+  visible or re-orderable yet.
+
+**What is left is the control**: some way to see and change the order — drag
+handles, or small up/down arrows beside each ticked item (the Catalogue page's
+Modules/Subjects tables already use move-up/move-down arrows, v07.08, so that
+idiom exists in this codebase and should be reused rather than a new one
+invented). Two ticked things do not need a UI at all; this becomes worth
+building when there are several translations (item 4) or several reciters.
+
+**Do not "fix" the order-preserving code as if it were a bug.** It looks
+redundant today because there are only two translations and the list order
+usually matches. It is deliberate.
+
+---
+
 ## How these rounds are verified
 
 Every `quranrevival.html` layout round since v07.22 has been measured, not
