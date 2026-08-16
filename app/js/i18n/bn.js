@@ -259,6 +259,32 @@ export const BN = {
   "◂ Previous": "◂ পূর্ববর্তী",
   "Next ▸": "পরবর্তী ▸",
 
+  // --- The Study Unit number pickers and the reading transport (round 18) ---
+  "Hizb": "হিযব",
+  "Number": "নম্বর",
+  "Hizb {hizb}": "হিযব {hizb}",
+  "Ruku' №": "রুকু' নং",
+  "Juz №": "জুয নং",
+  "Hizb №": "হিযব নং",
+  "Page №": "পৃষ্ঠা নং",
+  "Surah {n} {name}": "সূরা {n} {name}",
+  "{surah} · Ayahs {from}–{to}": "{surah} · আয়াত {from}–{to}",
+  "{fromSurah} {fromAyah} → {toSurah} {toAyah}": "{fromSurah} {fromAyah} → {toSurah} {toAyah}",
+  "▶ Play": "▶ চালান",
+  "⏸ Pause": "⏸ থামান",
+  "■ Stop": "■ বন্ধ",
+  "▶ Whole surah": "▶ পুরো সূরা",
+  "{reciter} only has whole-surah audio — use Whole surah instead.":
+    "{reciter}-এর কেবল পুরো সূরার অডিও আছে — এর বদলে 'পুরো সূরা' ব্যবহার করুন।",
+  "Reciters": "ক্বারীগণ",
+  "Reading view": "পাঠের ধরন",
+  "Word by Word language": "শব্দে শব্দে ভাষা",
+  "English translation": "ইংরেজি অনুবাদ",
+  "বাংলা translation": "বাংলা অনুবাদ",
+  "Translator": "অনুবাদক",
+  "Two translations are packaged with the app, one English and one Bangla, and both can be shown at once. Choosing BETWEEN translators by name needs their texts packaged first — it is on the list.":
+    "অ্যাপের সাথে দুটি অনুবাদ দেওয়া আছে — একটি ইংরেজি, একটি বাংলা — এবং দুটিই একসাথে দেখানো যায়। অনুবাদকের নাম ধরে বেছে নিতে হলে আগে সেই অনুবাদগুলো যুক্ত করতে হবে — সেটি তালিকায় আছে।",
+
   // --- The reading screen (shell round 17) ---
   "Read": "পড়ুন",
   "◂ Mastery Wheel": "◂ দক্ষতার চাকা",

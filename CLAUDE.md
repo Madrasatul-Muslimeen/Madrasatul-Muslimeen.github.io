@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.43.** Cutover to production happened
+**Current milestone: QuranRevival v07.44.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -1697,6 +1697,104 @@ reference line instead of hardcoding a number. No `firestore.rules`, schema or
 Firestore data changes — nothing to deploy but the static files. (The two
 rules changes still pending from earlier rounds — v07.18 Homework
 teacher-scoping and v07.37 `appLang` — are unaffected and still not deployed.)
+
+v07.44 (16 Aug 2026, on Claude Code on the web) is **shell round 18 — the
+owner's own fix list after using round 17's reading screen.** Five asks, all
+from real use, all built. Three decisions were put to them first and answered.
+
+**(a) A Ruku', Juz, Hizb or Page is now CHOSEN BY ITS NUMBER.** Before this
+those units were only ever *inferred* from whichever ayah happened to be open:
+choosing "Juz" claimed the juz the current ayah sat in, and there was no way
+to say "Juz 17" without first finding an ayah inside it. Bar 2 gains one cell
+whose label rewrites itself per unit type (Ruku' № / Juz № / Hizb № / Page №)
+— one cell doing four jobs is what keeps the bar on one line — plus a readout
+naming what the chosen unit covers. **The owner's own rule for a unit spanning
+several surahs: name the TOP and the BOTTOM only, never the ones in between**
+("Surah 2 142 → Surah 3 9"). Picking a number loads that unit's own surah if
+it is a different one and lands on its FIRST ayah, the same rule round 17 set
+for the Read tab. **They chose "also pickable" over a read-only readout**, so
+the Surah picker stays alongside and the two agree in both directions.
+
+**(b) Hizb is a real Study Unit at last** — `unit-keys.js` has listed it in
+`UNIT_TYPES` since Phase 5 with nothing able to select it. **No re-pull was
+needed and that is why it fitted in this round:** every pulled ayah already
+carries `hizbQuarter`, and a hizb is four quarters, so
+`tools/quran-data-pull/build-hizb-index.js` derives the 60-row table offline
+from data already on disk — the same discipline as the juz and page tables
+(scan the real field, never hand-type boundaries), and it refuses to write if
+the quarters do not run 1–240 without gaps or the hizbs do not come out at
+exactly 60. Records chunking needed no decision: hizb is Quran-wide, so it
+falls to `subject_quran` exactly as juz and page already do.
+**None of the three tables joins the startup path (I9)** — each is fetched the
+first time that unit type is actually chosen (4KB / 12KB / 64KB), so someone
+who never picks one downloads none of them. Verified by a check that fails if
+any of them is requested during load.
+
+**(c) Play / Pause / Stop / Whole surah are ON the reading screen**, not two
+taps away inside Listening settings. This needed a real `pause()`/`resume()`
+in `audio-player.js`, and **the difference from `stop()` is the whole reason
+both exist**: `stop()` clears the playlist, so a whole-surah run ends and Play
+restarts it from the top; `pause()` deliberately leaves the position and the
+queue alone, so Play resumes mid-ayah and the surah carries on. Play resumes
+rather than restarts whenever something is sitting paused — restarting an ayah
+someone deliberately paused is the wrong answer to the same tap.
+
+**(d) Reading view is always visible now** (the owner: "displayed visible to
+enable less tap instead of pop-up") **and Tajweed, Word-by-Word and the
+translations are all tickable at the same time**. Their call, asked first:
+**the ticks ADD to whatever the Approach declares rather than replacing it**,
+so an Approach still means what it always meant and what "Track this unit"
+claims is untouched — this changes what is on screen, never what is recorded.
+**Listening settings deliberately STAYS behind its button, and the reason is
+load speed, not layout**: opening it is what fetches the Bangla reciter's
+460KB timing map (v07.39), which must not reach anyone who never listens.
+`prefs.js` gained an additive `getQuranTranslationLangs()`/`setQuranTranslationLangs()`
+pair, because the old single-value preference **could not express two of the
+four answers** — Bangla alone, or neither (Arabic on its own). The old getter
+and setter are untouched and still mean what they meant, so the 8 Aug 2026
+Bangla-reciter rule and anything else reading them keep working; the set is
+stored under its own key and starts, on a device that has never seen it, from
+whatever the old preference already said. **No migration.**
+
+**(e) One reciter list, not two.** The owner, reading the Listening card:
+*"'Listening Settings' shows reciters names multiple times. 'Drill Reciters'
+already shows the reciters, redundant is the top pop-up one."* They were
+right — a `<select>` of every reciter sat directly above a checkbox list of
+the same reciters. **The select is what went**, because the checkbox list is
+the one that can express "these three"; the single-reciter actions now read
+the first ticked one. Their other two points fall out of the same change: the
+play buttons sit below the reciters (the drill's own do), and the pair that
+duplicated them moved to the reading screen, which is (c).
+
+**Verified: 538 behaviour checks** (was 505 — 33 new, sections 30 and 30l:
+every unit type's picker with its real count (30 juz / 60 hizb / 604 pages /
+a surah's own rukus), option VALUES proven still plain numbers, Juz 5 really
+loading Surah 4 and landing on ayah 24, a two-surah juz reading top → bottom
+while a one-surah juz does not, the boundary tables proven absent from the
+load path and present on first use, all four reading ticks rendering at once,
+**Bangla alone proven expressible** — the thing the old picker could not say —
+the duplicate reciter picker and play buttons proven gone with each reciter
+named exactly once, the transport present with Pause correctly disabled while
+nothing plays, and all of it again in Bangla with Bengali digits).
+**`panel.mjs` now measures bar 2 under THREE unit types** (three cells for
+Single Ayah, four for a numbered unit, five for Range) — measuring only the
+default measured the easiest case and proved nothing about the other two; all
+three hold one line with nothing truncated at all eight viewports in both
+languages. **`layout.mjs` NO LAYOUT REGRESSIONS** (landing page byte-for-byte
+identical, `getElementById` targets 74 → 83, none missing), **`reading.mjs`
+OK in both languages**, **navcheck unchanged** (still only the pre-existing
+320px English truncation), **coverage 1,126/1,126 (100%)**, **perf unchanged
+at 6 sequential round trips**. One failure in one run was the sandbox's proxy
+blocking archive.org's poster images (section 22h), environmental and
+unrelated — it passes when that host is reachable. No `firestore.rules`,
+schema or Firestore data changes.
+
+**Flagged, not built: choosing a translation by TRANSLATOR is still not
+possible, and it is a data job, not a picker.** `tools/quran-data-pull`
+packages exactly one English and one Bangla translation per ayah, so "multiple
+translations at the same time" means those two — which now really can both be
+on. The disabled Translator control says so in plain words on screen rather
+than promising something the data cannot do. See `LAYOUT-BACKLOG.md` item 4.
 
 ---
 

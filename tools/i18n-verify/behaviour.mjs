@@ -54,7 +54,7 @@ console.log("\n=== 1. English is untouched (nothing regressed for today's users)
         // purpose -- that is how a Bangla-only reader finds the setting at all.
         // (The Quran module's translation/word-by-word pickers have done this
         // since long before this round.) Excluded rather than counted as a leak.
-        clone.querySelectorAll("#navAppLangSelect, #translationLangSelect, #wbwLangSelect, script, style").forEach((el) => el.remove());
+        clone.querySelectorAll("#navAppLangSelect, #trBnControl, #wbwLangSelect, script, style").forEach((el) => el.remove());
         return /[ঀ-৿]/.test(clone.innerText || clone.textContent || "");
       })(),
     }));
@@ -130,7 +130,7 @@ console.log("\n=== 3. Switching language works BOTH ways, in place ===");
         // purpose -- that is how a Bangla-only reader finds the setting at all.
         // (The Quran module's translation/word-by-word pickers have done this
         // since long before this round.) Excluded rather than counted as a leak.
-        clone.querySelectorAll("#navAppLangSelect, #translationLangSelect, #wbwLangSelect, script, style").forEach((el) => el.remove());
+        clone.querySelectorAll("#navAppLangSelect, #trBnControl, #wbwLangSelect, script, style").forEach((el) => el.remove());
       return /[ঀ-৿]/.test(clone.innerText || clone.textContent || "");
     })(),
   }));
@@ -276,9 +276,7 @@ console.log("\n=== 8. PHASE 2: the Quran module in Bangla ===");
   const badMsg = await page.evaluate(() => document.getElementById("jumpMsg").textContent.trim());
   check("8f a bad reference explains itself in Bangla", BANGLA.test(badMsg), badMsg);
 
-  // Reading view + Listening cards.
-  await page.click("#readingViewBtn");
-  await page.waitForTimeout(150);
+  // Reading view is always visible since shell round 18 -- no button to press.
   const reading = await page.evaluate(() => [...document.querySelectorAll("#readingViewCard label")].map((l) => l.textContent.trim()));
   check("8g Reading view labels are Bangla", reading.every((x) => BANGLA.test(x)), JSON.stringify(reading));
 
@@ -1011,11 +1009,14 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
     )
   );
   check("27b bar 1 is User Role + Student", JSON.stringify(bars[0]) === '["tenantSelect","personSelect"]', JSON.stringify(bars[0]));
-  check("27b bar 2 is Study Unit + Surah + Ayah",
-        JSON.stringify(bars[1]) === '["unitTypeSelect","surahSelect","ayahSelect","rangeFromSelect","rangeToSelect"]', JSON.stringify(bars[1]));
+  check("27b bar 2 is Study Unit + unit number + Surah + Ayah",
+        JSON.stringify(bars[1]) === '["unitTypeSelect","unitNumSelect","surahSelect","ayahSelect","rangeFromSelect","rangeToSelect"]', JSON.stringify(bars[1]));
   check("27b bar 3 is one Search field and one Search button", JSON.stringify(bars[2]) === '["jumpInput","searchBtn"]', JSON.stringify(bars[2]));
   check("27b bar 4 is Approach + Track", JSON.stringify(bars[3]) === '["trackableSelect","trackUnitBtn"]', JSON.stringify(bars[3]));
-  check("27b bar 5 is Reading view + Listening settings", JSON.stringify(bars[4]) === '["readingViewBtn","listeningBtn"]', JSON.stringify(bars[4]));
+  // Shell round 18: Reading view left this bar entirely -- it is always
+  // visible now, so only Listening settings still hides behind a button (and
+  // deliberately so: opening it is what fetches the 460KB timing map).
+  check("27b bar 5 is Listening settings alone", JSON.stringify(bars[4]) === '["listeningBtn"]', JSON.stringify(bars[4]));
 
   const labels = await page.evaluate(() => ({
     tenant: document.querySelector('label[for="tenantSelect"]').textContent.trim(),
@@ -1407,6 +1408,220 @@ console.log("\n=== 29h. The reading screen in Bangla ===");
   await page.waitForTimeout(350);
   const hint = await page.evaluate(() => document.getElementById("readHint").textContent.trim());
   check("29h the how-to-get-back line is Bangla", BANGLA.test(hint), hint);
+  await page.close();
+  await ctx.close();
+}
+
+// ---------------------------------------------------------------------------
+// 30. Shell round 18: picking a unit BY NUMBER, the reading transport, the
+// always-visible Reading view, and one reciter list instead of two.
+// ---------------------------------------------------------------------------
+console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+
+  // I9: the three boundary tables are on-first-use, never on the load path.
+  const indexRequests = [];
+  page.on("request", (r) => {
+    if (/(juz|page|hizb)-index\.json/.test(r.url())) indexRequests.push(r.url().split("/").pop());
+  });
+  await page.waitForTimeout(400);
+  check("30a no boundary table is fetched on load", indexRequests.length === 0, JSON.stringify(indexRequests));
+
+  await openStudyOptions(page);
+  const unitOptions = await page.evaluate(() => [...document.querySelectorAll("#unitTypeSelect option")].map((o) => o.value));
+  check("30a Hizb is a Study Unit now", unitOptions.includes("hizb"), JSON.stringify(unitOptions));
+  const hiddenAtFirst = await page.evaluate(() => getComputedStyle(document.getElementById("unitNumControl")).display === "none");
+  check("30a the number cell stays out of the way for Single Ayah", hiddenAtFirst);
+
+  // Juz: the picker appears, names itself, and offers all 30.
+  await page.selectOption("#unitTypeSelect", "juz");
+  await page.waitForTimeout(900);
+  const juz = await page.evaluate(() => ({
+    shown: getComputedStyle(document.getElementById("unitNumControl")).display !== "none",
+    label: document.getElementById("unitNumLabel").textContent.trim(),
+    count: document.querySelectorAll("#unitNumSelect option").length,
+    values: [...document.querySelectorAll("#unitNumSelect option")].slice(0, 3).map((o) => o.value),
+    span: document.getElementById("unitSpanReadout").textContent.trim(),
+  }));
+  check("30b choosing Juz reveals a Juz number picker", juz.shown && /Juz/.test(juz.label), JSON.stringify(juz));
+  check("30b ...with all 30", juz.count === 30, String(juz.count));
+  check("30b ...whose option VALUES are plain numbers", JSON.stringify(juz.values) === '["1","2","3"]', JSON.stringify(juz.values));
+  check("30b ...and it says what the juz covers", /Surah/.test(juz.span), juz.span);
+  check("30b the table was fetched only when the unit was chosen", indexRequests.includes("juz-index.json"), JSON.stringify(indexRequests));
+
+  // Picking Juz 5 must LOAD a different surah and land on that juz's own
+  // first ayah -- the whole point of picking by number.
+  await page.selectOption("#unitNumSelect", "5");
+  await page.waitForTimeout(1500);
+  const juz5 = await page.evaluate(() => ({
+    surah: document.getElementById("surahSelect").value,
+    position: document.getElementById("ayahPosition").textContent.trim(),
+    span: document.getElementById("unitSpanReadout").textContent.trim(),
+    label: document.getElementById("unitLabel").textContent.trim(),
+  }));
+  check("30c picking Juz 5 really moves to its own surah and first ayah",
+        juz5.surah === "4" && /Ayah 24 of/.test(juz5.position), JSON.stringify(juz5));
+  check("30c ...and the dock says Juz 5", /Juz 5/.test(juz5.label), juz5.label);
+  // Juz 5 runs 4:24 -> 4:147, one surah: the readout names it once.
+  check("30c a single-surah juz reads as one surah and a range",
+        /Surah 4/.test(juz5.span) && !/→/.test(juz5.span), juz5.span);
+
+  // A juz that spans two surahs names only the TOP and the BOTTOM -- the
+  // owner's own rule, and the reason the readout is not a list.
+  await page.selectOption("#unitNumSelect", "2");
+  await page.waitForTimeout(1500);
+  const juz2 = await page.evaluate(() => document.getElementById("unitSpanReadout").textContent.trim());
+  await page.selectOption("#unitNumSelect", "6");
+  await page.waitForTimeout(1500);
+  const juz6 = await page.evaluate(() => document.getElementById("unitSpanReadout").textContent.trim());
+  check("30d a juz spanning two surahs shows top → bottom only",
+        /→/.test(juz6) && (juz6.match(/Surah/g) || []).length === 2, juz6);
+  check("30d ...while one inside a single surah does not", !/→/.test(juz2), juz2);
+
+  // Hizb, built this round from the pulled hizbQuarter field.
+  await page.selectOption("#unitTypeSelect", "hizb");
+  await page.waitForTimeout(1200);
+  const hizb = await page.evaluate(() => ({
+    label: document.getElementById("unitNumLabel").textContent.trim(),
+    count: document.querySelectorAll("#unitNumSelect option").length,
+  }));
+  check("30e Hizb offers all 60", /Hizb/.test(hizb.label) && hizb.count === 60, JSON.stringify(hizb));
+  await page.selectOption("#unitNumSelect", "3");
+  await page.waitForTimeout(1500);
+  const hizb3 = await page.evaluate(() => ({
+    label: document.getElementById("unitLabel").textContent.trim(),
+    span: document.getElementById("unitSpanReadout").textContent.trim(),
+    position: document.getElementById("ayahPosition").textContent.trim(),
+  }));
+  check("30e picking Hizb 3 claims Hizb 3, not the one the old ayah sat in",
+        /Hizb 3/.test(hizb3.label), JSON.stringify(hizb3));
+  check("30e ...and lands on its first ayah", /Ayah 142 of/.test(hizb3.position), hizb3.position);
+
+  // Page: 604 of them, and the same landing rule.
+  await page.selectOption("#unitTypeSelect", "page");
+  await page.waitForTimeout(1200);
+  const pageCount = await page.evaluate(() => document.querySelectorAll("#unitNumSelect option").length);
+  check("30f Page offers all 604", pageCount === 604, String(pageCount));
+  await page.selectOption("#unitNumSelect", "22");
+  await page.waitForTimeout(1500);
+  const page22 = await page.evaluate(() => ({
+    surah: document.getElementById("surahSelect").value,
+    span: document.getElementById("unitSpanReadout").textContent.trim(),
+    label: document.getElementById("unitLabel").textContent.trim(),
+  }));
+  check("30f picking Page 22 lands in its own surah and says so",
+        page22.surah === "2" && /Surah 2/.test(page22.span) && /Page 22/.test(page22.label), JSON.stringify(page22));
+
+  // Ruku' numbering is per-surah and needs no table at all.
+  await page.selectOption("#unitTypeSelect", "ruku");
+  await page.waitForTimeout(900);
+  const ruku = await page.evaluate(() => ({
+    label: document.getElementById("unitNumLabel").textContent.trim(),
+    count: document.querySelectorAll("#unitNumSelect option").length,
+    first: document.querySelector("#unitNumSelect option")?.value,
+  }));
+  check("30g Ruku' numbers are this surah's own, starting at 1",
+        /Ruku/.test(ruku.label) && ruku.first === "1" && ruku.count > 1, JSON.stringify(ruku));
+
+  // Reading view: always visible, and the three ticks work together.
+  await page.selectOption("#unitTypeSelect", "ayah");
+  await page.waitForTimeout(600);
+  const cardVisible = await page.evaluate(() => ({
+    noButton: !document.getElementById("readingViewBtn"),
+    visible: !document.getElementById("readingViewCard").hidden,
+  }));
+  check("30h Reading view is on screen, not behind a button", cardVisible.noButton && cardVisible.visible, JSON.stringify(cardVisible));
+
+  await page.check("#tajweedToggle");
+  await page.check("#wbwShowToggle");
+  await page.check("#trBnToggle");
+  await page.waitForTimeout(600);
+  const all = await page.evaluate(() => ({
+    tajweed: document.querySelectorAll("#ayahPanels .ayah-arabic [class^='tajweed-']").length,
+    wbw: document.querySelectorAll("#ayahPanels .wbw-word").length,
+    en: document.querySelectorAll("#ayahPanels .ayah-translation").length,
+    bn: document.querySelectorAll("#ayahPanels .ayah-translation-bn").length,
+  }));
+  check("30h Tajweed, Word-by-Word and BOTH translations show at the same time",
+        all.tajweed > 0 && all.wbw > 0 && all.en > 0 && all.bn > 0, JSON.stringify(all));
+
+  await page.uncheck("#trEnToggle");
+  await page.waitForTimeout(400);
+  const bnOnly = await page.evaluate(() => ({
+    en: document.querySelectorAll("#ayahPanels .ayah-translation:not(.ayah-translation-bn)").length,
+    bn: document.querySelectorAll("#ayahPanels .ayah-translation-bn").length,
+  }));
+  check("30h Bangla alone is now expressible, which the old one-of-two picker could not say",
+        bnOnly.bn > 0 && bnOnly.en === 0, JSON.stringify(bnOnly));
+  await page.check("#trEnToggle");
+  await page.waitForTimeout(300);
+
+  // Listening settings: ONE reciter list, and no second set of play buttons.
+  await page.click("#listeningBtn");
+  await page.waitForTimeout(500);
+  const listening = await page.evaluate(() => {
+    const card = document.getElementById("listeningCard");
+    const names = [...card.querySelectorAll(".drill-reciter-check")].map((c) => c.parentElement.textContent.trim());
+    return {
+      oldSelectGone: !document.getElementById("reciterSelect"),
+      oldPlayGone: !document.getElementById("playBtn") && !document.getElementById("playSurahBtn"),
+      listCount: names.length,
+      duplicated: names.length !== new Set(names).size,
+      playButtons: [...card.querySelectorAll("button")].map((b) => b.id),
+    };
+  });
+  check("30i the duplicate reciter picker is gone", listening.oldSelectGone);
+  check("30i each reciter is named exactly once", listening.listCount > 0 && !listening.duplicated, JSON.stringify(listening));
+  check("30i the duplicated play buttons are gone from the card",
+        listening.oldPlayGone && JSON.stringify(listening.playButtons) === '["drillPlayBtn","drillStopBtn"]', JSON.stringify(listening.playButtons));
+  await page.click("#listeningBtn");
+  await page.waitForTimeout(250);
+
+  // The transport itself, on the reading screen where the owner asked for it.
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(600);
+  const transport = await page.evaluate(() => ({
+    visible: !document.getElementById("readTransport").hidden,
+    buttons: [...document.querySelectorAll("#readTransport button")].map((b) => b.id),
+    pauseDisabled: document.getElementById("readPauseBtn").disabled,
+    reciter: document.getElementById("readReciterName").textContent.trim(),
+  }));
+  check("30j play, pause, stop and whole-surah are on the reading screen",
+        transport.visible && JSON.stringify(transport.buttons) === '["readPlayBtn","readPauseBtn","readStopBtn","readPlaySurahBtn"]', JSON.stringify(transport));
+  check("30j Pause is disabled while nothing is playing", transport.pauseDisabled);
+  check("30j the reading names the reciter it would use", transport.reciter.length > 0, transport.reciter);
+
+  check("30k no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+console.log("\n=== 30l. Round 18's own controls in Bangla ===");
+{
+  const ctx = await ctxFor({ banner: false, appLang: "bn" });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await openStudyOptions(page);
+  await page.selectOption("#unitTypeSelect", "hizb");
+  await page.waitForTimeout(1200);
+  const bn = await page.evaluate(() => ({
+    unitLabel: document.getElementById("unitNumLabel").textContent.trim(),
+    firstOption: document.querySelector("#unitNumSelect option")?.textContent.trim(),
+    optionValue: document.querySelector("#unitNumSelect option")?.value,
+    span: document.getElementById("unitSpanReadout").textContent.trim(),
+    ticks: [...document.querySelectorAll(".reading-ticks label")].map((l) => l.textContent.trim()),
+  }));
+  check("30l the Hizb picker is Bangla", BANGLA.test(bn.unitLabel), bn.unitLabel);
+  check("30l ...its numbers are Bengali digits while the VALUE stays plain",
+        !/[0-9]/.test(bn.firstOption || "") && bn.optionValue === "1", JSON.stringify(bn));
+  check("30l ...and what it covers reads in Bangla with Bengali digits",
+        BANGLA.test(bn.span) && !/[0-9]/.test(bn.span), bn.span);
+  check("30l every Reading view tick is Bangla", bn.ticks.length === 4 && bn.ticks.every((x) => BANGLA.test(x)), JSON.stringify(bn.ticks));
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(500);
+  const t18 = await page.evaluate(() => [...document.querySelectorAll("#readTransport button")].map((b) => b.textContent.trim()));
+  check("30l the transport buttons are Bangla", t18.length === 4 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
   await ctx.close();
 }

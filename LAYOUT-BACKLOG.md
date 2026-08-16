@@ -259,6 +259,12 @@ build we can do later … we now concentrate on organising the layout only."*
 The Reading view card already carries a **disabled** `#translationChoiceSelect`
 and a plain note, so the place it will live is visible and honest.
 
+**Round 18 update (16 Aug 2026):** the two translations that ARE packaged can
+now both be shown at once (independent ticks in Reading view, replacing the
+one-of-two picker), and the disabled Translator control now says in plain
+words why choosing by name is not possible yet. **The remaining work is
+entirely the data job below** — nothing in the interface is blocking it.
+
 **The data question comes first, and it is the whole job.**
 `tools/quran-data-pull` packages one English and one Bangla translation per
 ayah into the per-surah JSON files. More translators means re-pulling and
@@ -429,6 +435,29 @@ it and deliberately not done, so they are written down rather than lost:
   was deliberate — clicking a second result has to keep working — so the
   reading is there the moment the panel is closed. If the owner would rather
   the panel closed on a result click, it is one line.
+
+---
+
+## 10. What shell round 18 left behind
+
+- **Ruku' numbering is per-surah**, which is what `buildUnitKey.ruku` has
+  always recorded (I5). So the Ruku' picker lists *this surah's* rukus, and
+  changing surah changes the list. That is correct and deliberate, but it
+  means there is no "Ruku' 240 of the whole Qur'an" anywhere — say so if the
+  owner ever asks for one.
+- **Juz/Hizb/Page pickers move the surah; the surah picker does not move
+  them.** Picking Juz 5 loads Surah 4 and lands on 4:24. Picking Surah 4
+  directly leaves the juz number wherever the landed ayah puts it, which is
+  usually right but is not a deliberate "jump to this surah's first juz".
+  The owner chose "also pickable" for both, and this is as far as that goes
+  without a second, guessier rule.
+- **The transport follows the APPROACH, not a reading tick.** Ticking
+  Word-by-Word cannot conjure an audio panel: `renderAudioControls()` is
+  still handed the Approach's own panel list. Deliberate — an Approach with
+  no listening panel should not sprout a Play button.
+- **Pause has no visible "paused" state beyond the button being enabled.**
+  Play resumes it. If the owner reports confusion, the fix is a label swap
+  (Play ⇄ Resume), not a new control.
 
 ---
 

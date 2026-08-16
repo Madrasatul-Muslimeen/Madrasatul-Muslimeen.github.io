@@ -44,6 +44,11 @@ screenshot: a `hidden` view that is still displayed (`#wheelSection` carries
 this caught it before it shipped) and a full-bleed card overflowing its own
 scroller sideways.
 
+**`panel.mjs` measures bar 2 under three unit types** (`ayah`, `page`,
+`range`), because that bar holds a different number of cells in each — three,
+four and five. Round 18 added the four-cell case with its Ruku'/Juz/Hizb/Page
+number picker; measuring only the default measures the easiest case.
+
 **Do not measure a bar's "lines" by comparing top edges.** A labelled
 `<select>` and a bare button beside it are bottom-aligned on purpose, so they
 start at different heights while sharing one line; panel.mjs groups cells by
@@ -109,8 +114,8 @@ suite is being run in -- a fixed date silently falls out of range tomorrow.
 
 1. **Every language picker names Bangla in Bangla, in every language.** That
    is how a Bangla-only reader finds the setting at all. A naive "no Bangla
-   on an English page" check will flag `#navAppLangSelect`,
-   `#translationLangSelect` and `#wbwLangSelect` — exclude them.
+   on an English page" check will flag `#navAppLangSelect`, `#wbwLangSelect`
+   and (since round 18) the `#trBnControl` tick — exclude them.
 2. **Controls inside the nav's Home menu and the dock panels are not
    clickable until opened.** Both are `<details>` / hidden panels that start
    closed. Playwright times out on "element is not visible" — open them

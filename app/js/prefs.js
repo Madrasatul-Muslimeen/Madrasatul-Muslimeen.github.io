@@ -167,6 +167,9 @@ try {
     if (e.key === QURAN_TRANSLATION_LANG_KEY) {
       cachedQuranTranslationLang = readStored(QURAN_TRANSLATION_LANG_KEY, APP_LANG_IDS, "en");
     }
+    // Same treatment for round 18's set, so two open tabs cannot disagree
+    // about which translations are on.
+    if (e.key === QURAN_TRANSLATION_SET_KEY) cachedQuranTranslationSet = readTranslationSet();
   });
 } catch {
   /* no window (shouldn't happen in this app) — the cached values still work */
@@ -185,6 +188,54 @@ export function setQuranTranslationLang(lang) {
   cachedQuranTranslationLang = lang;
   writeStored(QURAN_TRANSLATION_LANG_KEY, lang);
   return cachedQuranTranslationLang;
+}
+
+// ---------------------------------------------------------------------------
+// Shell round 18 — which ayah translations are shown, as a SET.
+//
+// The pair above can only say "English" or "English + Bangla", because it was
+// built when the choice was one <select>. The owner asked for the translations
+// to be tickable independently, which needs three more answers than that one
+// can give: Bangla on its own, and neither (Arabic alone).
+//
+// Additive, and deliberately so: the old getter/setter still exist, still
+// mean what they meant, and still read and write their own key — anything
+// calling them (the Bangla-reciter rule, any later module) keeps working. The
+// set is stored under its own key and, on a device that has never seen it,
+// starts from whatever the old preference already said. Nothing to migrate.
+// ---------------------------------------------------------------------------
+const QURAN_TRANSLATION_SET_KEY = "mm_quran_translation_set";
+
+function readTranslationSet() {
+  try {
+    const raw = localStorage.getItem(QURAN_TRANSLATION_SET_KEY);
+    if (raw === null) return cachedQuranTranslationLang === "bn" ? ["en", "bn"] : ["en"];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return ["en"];
+    // Filtered against the known ids, so a hand-edited or stale entry can
+    // never put an unsupported language into a render loop.
+    return parsed.filter((l) => APP_LANG_IDS.includes(l));
+  } catch {
+    return ["en"];
+  }
+}
+
+let cachedQuranTranslationSet = readTranslationSet();
+
+/** Which ayah translations to show, in display order — [] means Arabic alone. */
+export function getQuranTranslationLangs() {
+  return cachedQuranTranslationSet.slice();
+}
+
+/** Replaces the set. Unknown ids are dropped rather than stored. Keeps the
+ *  older single-value preference in step, so whichever one a caller reads
+ *  they get the same answer: it is "bn" whenever Bangla is among them. */
+export function setQuranTranslationLangs(langs) {
+  const clean = APP_LANG_IDS.filter((id) => Array.isArray(langs) && langs.includes(id));
+  cachedQuranTranslationSet = clean;
+  writeStored(QURAN_TRANSLATION_SET_KEY, JSON.stringify(clean));
+  setQuranTranslationLang(clean.includes("bn") ? "bn" : "en");
+  return getQuranTranslationLangs();
 }
 
 /** The default reaction to the language changing: reload, so every name on

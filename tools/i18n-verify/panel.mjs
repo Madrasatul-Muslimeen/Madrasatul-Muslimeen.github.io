@@ -35,11 +35,24 @@ export const VIEWPORTS = [
   ["1920x1080", { width: 1920, height: 1080 }],
 ];
 
-export async function measurePanel(ctx, path) {
+/**
+ * @param unitType which Study Unit to measure the bars under. Bar 2 holds a
+ *   DIFFERENT number of cells per unit type -- three for Single Ayah, four for
+ *   a numbered unit (round 18's Ruku'/Juz/Hizb/Page number picker) and five
+ *   for Range -- so measuring only the default measures the easiest case and
+ *   proves nothing about the other two.
+ */
+export async function measurePanel(ctx, path, unitType = "ayah") {
   const { page, errors } = await openPage(ctx, path);
   // The panel is a hidden dock panel; press its tab, which is the real flow.
   await page.click("#tabStudyOptionsBtn");
   await page.waitForTimeout(250);
+  if (unitType !== "ayah") {
+    await page.selectOption("#unitTypeSelect", unitType);
+    // A numbered unit fetches its boundary table on first use, so this wait
+    // has to outlast a real fetch or the bar is measured while still empty.
+    await page.waitForTimeout(1200);
+  }
   const m = await page.evaluate(() => {
     const q = (s) => document.querySelector(s);
     const box = (el) => {
@@ -150,9 +163,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     for (const [name, viewport] of VIEWPORTS) {
       const ctx = await newContext(browser, { banner, viewport, appLang: LANG });
       await ctx.route("**/gtaf_bangla_timestamps.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
-      const m = await measurePanel(ctx, "/app/quranrevival.html");
+      // Three passes: the default, a numbered unit (four cells on bar 2) and
+      // Range (five). Round 18 added the middle one.
+      for (const unitType of ["ayah", "page", "range"]) {
+        const m = await measurePanel(ctx, "/app/quranrevival.html", unitType);
+        report(`${name} · unit=${unitType}`, m);
+      }
       await ctx.close();
-      report(name, m);
     }
   }
   await browser.close();

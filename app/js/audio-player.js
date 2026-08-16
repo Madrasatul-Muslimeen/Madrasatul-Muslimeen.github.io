@@ -546,6 +546,29 @@ export function isPlaying() {
   return !!audioEl && !audioEl.paused;
 }
 
+/**
+ * Shell round 18 — Pause and Stop are NOT the same button, and the difference
+ * is the whole reason both exist on the reading screen. stop() above clears
+ * currentPlaylist/currentRange, so a whole-surah run ends and Play starts it
+ * again from the top. pause() deliberately leaves both alone: the element
+ * keeps its position and its queue, so resume() carries on mid-ayah and the
+ * surah playlist continues to the next ayah exactly as if nothing happened.
+ */
+export function pause() {
+  if (audioEl && !audioEl.paused) audioEl.pause();
+}
+
+/** Resumes whatever pause() left loaded. Safe to call when nothing is paused. */
+export function resume() {
+  if (!audioEl || !audioEl.paused || !audioEl.src) return Promise.resolve(false);
+  return audioEl.play().then(() => true);
+}
+
+/** True when something is loaded and sitting paused part-way through -- what the reading screen's Play button needs in order to know whether to resume or start afresh. */
+export function isPaused() {
+  return !!audioEl && audioEl.paused && !!audioEl.src && audioEl.currentTime > 0 && !audioEl.ended;
+}
+
 // ---------------------------------------------------------------------------
 // Phase 5 — multi-reciter drill/repeat playback (legacy parity: select
 // several reciters, Repeat count 1/2/3/5/10x, Repeat mode "Each Ayah" vs
