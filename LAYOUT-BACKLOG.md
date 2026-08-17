@@ -553,6 +553,105 @@ were agreed, and **five decisions were taken before any code was written:**
 
 ---
 
+## 13. The reading screen's Prev and Next, and full screen as a choice — BUILT, 17 Aug 2026 (v07.48)
+
+**Shell round 21.** Two owner asks from real use, and one of the answers turned
+a yes/no question into a small feature.
+
+- **A tap on the reading TOGGLES full screen**, both ways — their words: "tapping
+  on the screen will take the entire mobile screen edge to edge, tapping again
+  will move it back to normal with the top and bottom menu bars." This
+  deliberately **reverses round 17's own rule** that a tap only ever restores
+  ("nothing hides on a stray tap"). A tap on a control is still left alone, and
+  so is a tap that is really the end of selecting text — otherwise highlighting
+  an ayah to copy it would flip the screen away.
+- **Prev and Next move THE UNIT**, whatever the unit is: the next ayah, the next
+  five, the next surah, ruku', juz, hizb or page. They sit either side of the
+  line naming what is being read, which is where the owner asked for them.
+- **The '◂ Mastery Wheel' button is gone**, on the owner's own reasoning: the
+  dock's Read tab already toggles the stage back, so it was a second way to do
+  one thing. **Full screen survives**, in the slot the separate Pause button
+  vacated when Play was merged with it — their own plan, and measured to cost
+  nothing (four buttons still hold one line at 360px).
+
+**Full screen is now five independent choices, not one behaviour.** Asked
+whether it should also hide the reading screen's own two bars, the owner
+answered neither yes nor no: *"enable the options to hide everything, show
+banner, show top and bottom menu, show only top menu, only bottom menu, show
+the next buttons, play button, enable all choices to show individually or
+together."* So Reading view carries a **"Full screen hides"** group — Banner /
+Top menu / Prev and Next / Play controls / Bottom menu — all ticked by default,
+which is their original "the entire mobile screen edge to edge". Stored in
+localStorage (`mm_reading_fullscreen_hides`), the same additive shape round
+18's translation set took: **no new startup read, no collection, no
+`firestore.rules` change.** An empty set is legal and the card says so, rather
+than leaving a gesture that silently does nothing.
+
+**Measured** (`reading.mjs`, banner cleared, English): full screen goes
+**742 → 836px at 390×844** (99% of the phone, from 88%), 813 → 907 at 412×915,
+598 → 692 at 390×700, 538 → 632 at 360×640. Ordinary reading gained too, because
+the Single-Ayah inner buttons are now hidden as duplicates: **ayah content
+visible at 360×640 goes 205 → 263px**, and the reading starts 13px higher
+everywhere. `#studyScreen`'s own 17px side padding comes off in full screen, so
+"edge to edge" is literal.
+
+**A real pre-existing defect this round fixes, found by measuring and invisible
+in a screenshot:** `#readRef` — the line naming what you are reading — is
+`nowrap` + `text-overflow: ellipsis`, so it **fails silently**. With Surah 2
+open it had 139px at 390px and needed **220px** for "Ruku' 1 of Surah 2 (ayahs
+1–7)", i.e. "Ruku' 1 of Sur…"; at 360px even "Surah 2, Ayah 1" was cut. Dropping
+the two flanking buttons hands it 245px. It has its own check now.
+
+**Three decisions taken with the owner before building**, beyond the full-screen
+one above:
+
+- **Next carries on into the next surah.** It used to stop dead at a surah's last
+  ayah, while Juz/Hizb/Page crossed by nature — so Next meant two different
+  things. The only real ends are 1:1 and the last ayah of 114.
+- **Both prev/next pairs are kept.** The read bar moves the UNIT; the row under
+  the text still moves the AYAH inside a Ruku'/Juz/Hizb/Page. For Single Ayah
+  the two would be identical, so **only the two buttons hide** — the row stays,
+  because `#ayahPosition` beside them is the one place the surah's total is
+  written ("Ayah 1 of 286"). Hiding the row outright would have removed real
+  information to remove a repetition.
+- **Play doubles as Pause**, reading the audio's real state via a new additive
+  `setPlaybackStateHandler()` in `audio-player.js` — fired on play/pause/ended
+  from ANY cause, so the button can never sit there reading "Pause" with nothing
+  playing. The Play handler checks `isPlaying()` **before** `unlockAudio()`,
+  which would otherwise undo the very pause it was asked for.
+
+**Two things worth not undoing:**
+
+- **The new ticks are `.fs-ticks`, deliberately NOT `.reading-ticks`.** Three
+  behaviour checks read that class as "the five reading choices", so sharing it
+  made them count ten and made "Mushaf greys the others" fail — these five
+  correctly stay live under Mushaf. This is the **second** time this class has
+  had to be split for exactly this reason; the CSS comment already recorded the
+  first (`.reciter-ticks`). Treat `.reading-ticks` as a name with meaning.
+- **`rangeSpan` is remembered separately from `rangeFrom`/`rangeTo`.** The suite
+  caught a real defect before it shipped: Surah 1 has seven ayahs, so Next on a
+  five-wide window gives a short tail (6–7) — and stepping back by the
+  *truncated* width of two landed on 4–5, silently reducing the reader's own
+  choice of five. It looks redundant; it is not.
+
+**Verified: 645 behaviour checks** (was 613 — 32 new, section 33), `layout.mjs`
+**NO LAYOUT REGRESSIONS** at all eight viewports in both banner states
+(`getElementById` targets 81 → 83, none missing), `reading.mjs` OK in both
+languages, `panel.mjs` no wrapped bar, navcheck unchanged (still only the
+pre-existing 320px ENGLISH truncation of "Operation"/"Bookmark"), coverage
+**1,179/1,179**, perf unchanged at **6 sequential round trips**. Three older
+checks were updated rather than deleted, each because this round deliberately
+removed what they asserted (29h's back button, 30j's separate Pause, 29b's
+inner Prev/Next). No `firestore.rules`, schema or Firestore data changes.
+
+**Left for a later round:** a Range that crosses a surah boundary still gives a
+short tail rather than reaching into the next surah mid-window — deliberate,
+since `buildUnitKey.range` keys a range to one surah, so a two-surah window
+could not be claimed at all. And **Prev/Next do not yet appear anywhere except
+the Quran module's reading screen**; the other study modules have no equivalent.
+
+---
+
 ## How these rounds are verified
 
 Every `quranrevival.html` layout round since v07.22 has been measured, not

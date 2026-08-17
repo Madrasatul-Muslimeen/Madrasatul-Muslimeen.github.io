@@ -1295,7 +1295,10 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   // hide it -- this is the check that caught it before it shipped.
   check("29b ...and the wheel really goes (computed display, not just [hidden])", reading.wheelHidden);
   check("29b the ayah text is on the stage", reading.ayahs > 0);
-  check("29b Previous/Next came with it", reading.navVisible);
+  // Round 21: the inner Previous/Next buttons hide for a Single Ayah (the read
+  // bar's own pair is exactly them), but the row itself stays because
+  // #ayahPosition is the only place the surah's total is written.
+  check("29b the ayah position readout came with it", reading.navVisible);
   check("29b the reading names what is being read", /Surah/.test(reading.ref), reading.ref);
   check("29b the bottom bar is still there", reading.dockVisible);
 
@@ -1398,12 +1401,16 @@ console.log("\n=== 29h. The reading screen in Bangla ===");
   check("29h the Read tab is Bangla", BANGLA.test(tab), tab);
   await page.click("#tabReadBtn");
   await page.waitForTimeout(400);
+  // Shell round 21 removed the "◂ Mastery Wheel" button from this bar on the
+  // owner's own reasoning (the dock's Read tab already returns to the wheel),
+  // so what used to be asserted here is now Prev/Next -- see 33h. Everything
+  // else in this section is unchanged.
   const bn = await page.evaluate(() => ({
-    back: document.getElementById("backToWheelBtn").textContent.trim(),
+    noBack: !document.getElementById("backToWheelBtn"),
     full: document.getElementById("hideChromeBtn").textContent.trim(),
     ref: document.getElementById("readRef").textContent.trim(),
   }));
-  check("29h the way back to the wheel is Bangla", BANGLA.test(bn.back), bn.back);
+  check("29h the way back to the wheel is the Read tab, not a button", bn.noBack);
   check("29h Full screen is Bangla", BANGLA.test(bn.full), bn.full);
   check("29h what is being read is Bangla, in Bengali digits",
         BANGLA.test(bn.ref) && !/[0-9]/.test(bn.ref), bn.ref);
@@ -1582,15 +1589,20 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   // The transport itself, on the reading screen where the owner asked for it.
   await page.click("#tabReadBtn");
   await page.waitForTimeout(600);
+  // Shell round 21 merged Pause INTO Play (one button reading the audio's real
+  // state) and gave the freed slot to Full screen -- the owner's own plan. So
+  // the row is four buttons still, and "Pause disabled while nothing plays"
+  // became "the button reads Play while nothing plays".
   const transport = await page.evaluate(() => ({
     visible: !document.getElementById("readTransport").hidden,
     buttons: [...document.querySelectorAll("#readTransport button")].map((b) => b.id),
-    pauseDisabled: document.getElementById("readPauseBtn").disabled,
+    playLabel: document.getElementById("readPlayBtn").textContent.trim(),
     reciter: document.getElementById("readReciterName").textContent.trim(),
   }));
-  check("30j play, pause, stop and whole-surah are on the reading screen",
-        transport.visible && JSON.stringify(transport.buttons) === '["readPlayBtn","readPauseBtn","readStopBtn","readPlaySurahBtn"]', JSON.stringify(transport));
-  check("30j Pause is disabled while nothing is playing", transport.pauseDisabled);
+  check("30j play, stop, whole-surah and full screen are on the reading screen",
+        transport.visible && JSON.stringify(transport.buttons) === '["readPlayBtn","readStopBtn","readPlaySurahBtn","hideChromeBtn"]', JSON.stringify(transport));
+  check("30j the merged button reads Play while nothing is playing",
+        /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
   check("30j the reading names the reciter it would use", transport.reciter.length > 0, transport.reciter);
 
   check("30k no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
@@ -2105,6 +2117,295 @@ console.log("\n=== 32i. Taglines: the editing screen ===");
   await ctx.close();
 }
 
+// ---------------------------------------------------------------------------
+// 33. Shell round 21: Prev/Next move the UNIT, and Full screen is a choice.
+//
+// Two owner asks. (1) "Tapping on the screen will take the entire mobile
+// screen edge to edge, tapping again will move it back to normal" -- so the
+// tap TOGGLES now, reversing round 17's one-way rule. (2) "Any choice which
+// reflects in the reading screen should have a button to choose next of the
+// same choice (example, if a range of 5 Ayat is chosen, then the 'next'
+// button should bring the next 5 Ayat)."
+//
+// Plus their answer to what full screen hides, which was neither yes nor no:
+// "enable all choices to show individually or together."
+// ---------------------------------------------------------------------------
+console.log("\n=== 33. Shell round 21: unit Prev/Next, and configurable full screen ===");
+
+const openRead = async (page) => {
+  const reading = await page.evaluate(() => !document.getElementById("readView").hidden);
+  if (!reading) { await page.click("#tabReadBtn"); await page.waitForTimeout(350); }
+};
+const setUnit = async (page, unit) => {
+  await openStudyOptions(page);
+  await page.selectOption("#unitTypeSelect", unit);
+  await page.waitForTimeout(450);
+  await page.click("#tabStudyOptionsBtn"); // close it again
+  await page.waitForTimeout(150);
+};
+const readRef = (page) => page.evaluate(() => document.getElementById("readRef").textContent.trim());
+
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await openRead(page);
+
+  // --- 33a the bar itself -------------------------------------------------
+  const bar = await page.evaluate(() => {
+    const ids = [...document.querySelectorAll("#readBar > *")].map((el) => el.id);
+    return {
+      ids,
+      noBack: !document.getElementById("backToWheelBtn"),
+      fullInTransport: !!document.querySelector("#readTransport #hideChromeBtn"),
+      noSeparatePause: !document.getElementById("readPauseBtn"),
+      playLabel: document.getElementById("readPlayBtn").textContent.trim(),
+    };
+  });
+  check("33a the read bar is Prev · what is being read · Next",
+        bar.ids.join() === "prevUnitBtn,readRef,nextUnitBtn", JSON.stringify(bar.ids));
+  check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
+  check("33a Full screen moved to the transport row", bar.fullInTransport);
+  check("33a the separate Pause button is gone", bar.noSeparatePause);
+  check("33a Play reads 'Play' while nothing is playing", /Play/.test(bar.playLabel) && !/Pause/.test(bar.playLabel), bar.playLabel);
+
+  // The measured reason the two buttons had to leave: #readRef ellipsises
+  // SILENTLY, and a Ruku' label needs 220px. Flanked by the old pair it had
+  // 139px at 390px -- "Ruku' 1 of Sur...".
+  await setUnit(page, "ruku");
+  await openRead(page);
+  const ref = await page.evaluate(() => {
+    const el = document.getElementById("readRef");
+    return { has: el.clientWidth, needs: el.scrollWidth, text: el.textContent.trim() };
+  });
+  check("33a the Ruku' line is no longer silently clipped",
+        ref.needs <= ref.has + 1, `${ref.needs}px needed, ${ref.has}px given — "${ref.text}"`);
+
+  // --- 33b Next moves the unit, per unit type -----------------------------
+  await setUnit(page, "range");
+  await openRead(page);
+  const rangeBefore = await readRef(page);
+  await page.click("#nextUnitBtn");
+  await page.waitForTimeout(450);
+  const rangeAfter = await readRef(page);
+  // The stub opens on Surah 1 (7 ayahs); the default range is 5 wide, so
+  // Next gives a short tail rather than a full window -- read the numbers out
+  // of the line rather than hardcoding them.
+  const nums = (s) => (s.match(/\d+/g) || []).map(Number);
+  const before = nums(rangeBefore), after = nums(rangeAfter);
+  check("33b Next on a Range moves past the window it was showing",
+        after.length >= 2 && before.length >= 2 && after[0] > before[1],
+        `${rangeBefore} -> ${rangeAfter}`);
+  await page.click("#prevUnitBtn");
+  await page.waitForTimeout(450);
+  const rangeBack = await readRef(page);
+  // This is the check that caught a real defect during the build. Surah 1 has
+  // seven ayahs, so Next on a five-wide window gives a SHORT TAIL (6-7) -- and
+  // the first version then stepped back by the truncated width of two, landing
+  // on 4-5 and silently reducing the reader's own choice of five. The window
+  // the reader asked for has to survive a truncation.
+  check("33b Prev brings back the window the reader actually chose", rangeBack === rangeBefore,
+        `${rangeBefore} -> ${rangeAfter} -> ${rangeBack}`);
+
+  await setUnit(page, "surah");
+  await openRead(page);
+  const surahBefore = await readRef(page);
+  await page.click("#nextUnitBtn");
+  await page.waitForTimeout(900);
+  const surahAfter = await page.evaluate(() => ({
+    ref: document.getElementById("readRef").textContent.trim(),
+    picker: document.getElementById("surahSelect").value,
+  }));
+  check("33b Next on Whole Surah opens the next surah, picker and all",
+        surahAfter.picker === "2" && surahAfter.ref !== surahBefore,
+        `${surahBefore} -> ${surahAfter.ref} (picker ${surahAfter.picker})`);
+
+  // --- 33c Prev is disabled at the very beginning of the Qur'an -----------
+  await setUnit(page, "ayah");
+  await openRead(page);
+  const atStart = await page.evaluate(async () => {
+    document.getElementById("surahSelect").value = "1";
+    document.getElementById("surahSelect").dispatchEvent(new Event("change"));
+    await new Promise((r) => setTimeout(r, 900));
+    return {
+      prev: document.getElementById("prevUnitBtn").disabled,
+      next: document.getElementById("nextUnitBtn").disabled,
+    };
+  });
+  check("33c at 1:1 Prev is greyed out and Next is not", atStart.prev && !atStart.next, JSON.stringify(atStart));
+
+  // --- 33d Next crosses the surah boundary (the owner's own answer) -------
+  const crossed = await page.evaluate(async () => {
+    // Straight to the last ayah of Surah 1, then one more Next.
+    const ayah = document.getElementById("ayahSelect");
+    ayah.value = ayah.options[ayah.options.length - 1].value;
+    ayah.dispatchEvent(new Event("change"));
+    await new Promise((r) => setTimeout(r, 400));
+    const beforeSurah = document.getElementById("surahSelect").value;
+    document.getElementById("nextUnitBtn").click();
+    await new Promise((r) => setTimeout(r, 1200));
+    return { beforeSurah, afterSurah: document.getElementById("surahSelect").value,
+             ref: document.getElementById("readRef").textContent.trim() };
+  });
+  check("33d Next at a surah's last ayah carries on into the next surah",
+        crossed.beforeSurah === "1" && crossed.afterSurah === "2", JSON.stringify(crossed));
+
+  // --- 33e the inner ayah row: kept where it does a different job ---------
+  await setUnit(page, "ayah");
+  await openRead(page);
+  const innerAyah = await page.evaluate(() => ({
+    prevHidden: document.getElementById("prevAyahBtn").hidden,
+    nextHidden: document.getElementById("nextAyahBtn").hidden,
+    positionShown: !!document.getElementById("ayahPosition").offsetParent,
+  }));
+  check("33e for Single Ayah the inner buttons hide (the bar already is them)",
+        innerAyah.prevHidden && innerAyah.nextHidden, JSON.stringify(innerAyah));
+  check("33e ...but 'Ayah n of total' stays, so nothing is lost", innerAyah.positionShown);
+
+  await setUnit(page, "ruku");
+  await openRead(page);
+  const innerRuku = await page.evaluate(() => ({
+    prevHidden: document.getElementById("prevAyahBtn").hidden,
+    nextHidden: document.getElementById("nextAyahBtn").hidden,
+  }));
+  check("33e inside a Ruku' the inner ayah buttons stay (the owner's 'keep both')",
+        !innerRuku.prevHidden && !innerRuku.nextHidden, JSON.stringify(innerRuku));
+
+  check("33 no page errors", errors.length === 0, errors.join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 33f full screen is a set of choices, not one behaviour -------------
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await openStudyOptions(page);
+  const ticks = await page.evaluate(() => {
+    const boxes = [...document.querySelectorAll("#fullScreenHides input[data-fs-hide]")];
+    return { ids: boxes.map((b) => b.dataset.fsHide), allOn: boxes.every((b) => b.checked) };
+  });
+  check("33f all five strips are offered separately",
+        ticks.ids.join() === "banner,topnav,readbar,transport,dock", JSON.stringify(ticks.ids));
+  check("33f ...and all are on by default (the owner's 'entire mobile screen')", ticks.allOn);
+
+  await page.click("#tabStudyOptionsBtn");
+  await openRead(page);
+  await page.click("#hideChromeBtn");
+  await page.waitForTimeout(350);
+  const everything = await page.evaluate(() => {
+    const shown = (s) => { const e = document.querySelector(s); return !!e && getComputedStyle(e).display !== "none"; };
+    return {
+      banner: shown("body > h1"), nav: shown("#topNav"), dock: shown("#dock"),
+      readbar: shown("#readBar"), transport: shown("#readTransport"),
+      quran: shown("#studyScreen"),
+      label: document.getElementById("hideChromeBtn").textContent.trim(),
+    };
+  });
+  check("33f with everything ticked, full screen leaves only the Qur'an",
+        !everything.banner && !everything.nav && !everything.dock
+        && !everything.readbar && !everything.transport && everything.quran,
+        JSON.stringify(everything));
+  check("33f ...and the button says how to get out", /Exit/i.test(everything.label), everything.label);
+
+  // The owner's own example of a partial choice: "show only bottom menu".
+  const partial = await page.evaluate(async () => {
+    // Bring the menus back so Study options is reachable, then retick.
+    document.getElementById("studyScreen").click();
+    await new Promise((r) => setTimeout(r, 250));
+    document.getElementById("tabStudyOptionsBtn").click();
+    await new Promise((r) => setTimeout(r, 250));
+    for (const b of document.querySelectorAll("#fullScreenHides input[data-fs-hide]")) {
+      const want = b.dataset.fsHide !== "dock" && b.dataset.fsHide !== "transport";
+      if (b.checked !== want) { b.checked = want; b.dispatchEvent(new Event("change", { bubbles: true })); }
+    }
+    await new Promise((r) => setTimeout(r, 200));
+    document.getElementById("tabStudyOptionsBtn").click();
+    await new Promise((r) => setTimeout(r, 250));
+    document.getElementById("hideChromeBtn").click();
+    await new Promise((r) => setTimeout(r, 350));
+    const shown = (s) => { const e = document.querySelector(s); return !!e && getComputedStyle(e).display !== "none"; };
+    return { banner: shown("body > h1"), nav: shown("#topNav"), dock: shown("#dock"),
+             readbar: shown("#readBar"), transport: shown("#readTransport") };
+  });
+  check("33f 'keep the bottom menu and the play buttons' really keeps just those",
+        !partial.banner && !partial.nav && !partial.readbar && partial.dock && partial.transport,
+        JSON.stringify(partial));
+
+  check("33f no page errors", errors.length === 0, errors.join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 33g the tap toggles BOTH ways (the ask that reverses round 17) -----
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await openRead(page);
+  const imm = () => page.evaluate(() => document.body.classList.contains("immersive-read"));
+  check("33g the reading opens with the menus showing", !(await imm()));
+  await page.click("#studyScreen", { position: { x: 8, y: 8 } });
+  await page.waitForTimeout(350);
+  check("33g a tap goes full screen", await imm());
+  await page.click("#studyScreen", { position: { x: 8, y: 8 } });
+  await page.waitForTimeout(350);
+  check("33g a second tap brings the menus back", !(await imm()));
+
+  // A tap on something you meant to press must not flip the screen. With the
+  // menus hidden the transport is gone too, so this is tested with the ticks
+  // set to keep it -- pressed via the button that is always in the reading.
+  await page.click("#studyScreen", { position: { x: 8, y: 8 } });
+  await page.waitForTimeout(300);
+  const afterButton = await page.evaluate(async () => {
+    const btn = document.querySelector("#studyScreen button, #studyScreen input");
+    if (btn) { btn.click(); await new Promise((r) => setTimeout(r, 300)); }
+    return { had: !!btn, immersive: document.body.classList.contains("immersive-read") };
+  });
+  check("33g pressing a control inside the reading does not exit full screen",
+        !afterButton.had || afterButton.immersive, JSON.stringify(afterButton));
+
+  // Edge to edge, taken literally: the study screen's own side padding goes.
+  const bleed = await page.evaluate(() => {
+    const cs = getComputedStyle(document.getElementById("studyScreen"));
+    return { padL: cs.paddingLeft, padR: cs.paddingRight };
+  });
+  check("33g the Qur'an really reaches both edges in full screen",
+        bleed.padL === "0px" && bleed.padR === "0px", JSON.stringify(bleed));
+
+  check("33g no page errors", errors.length === 0, errors.join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 33h all of it in Bangla ------------------------------------------
+  const ctx = await ctxFor({ banner: false, appLang: "bn" });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await openRead(page);
+  const bn = await page.evaluate(() => ({
+    prev: document.getElementById("prevUnitBtn").textContent.trim(),
+    next: document.getElementById("nextUnitBtn").textContent.trim(),
+    full: document.getElementById("hideChromeBtn").textContent.trim(),
+    play: document.getElementById("readPlayBtn").textContent.trim(),
+  }));
+  const BN = /[ঀ-৿]/;
+  check("33h Prev and Next read in Bangla", BN.test(bn.prev) && BN.test(bn.next), JSON.stringify(bn));
+  check("33h Full screen and Play read in Bangla", BN.test(bn.full) && BN.test(bn.play), JSON.stringify(bn));
+
+  await openStudyOptions(page);
+  const bnTicks = await page.evaluate(() => ({
+    heading: [...document.querySelectorAll("#readingViewCard h5")].map((h) => h.textContent.trim()).join("|"),
+    labels: [...document.querySelectorAll("#fullScreenHides label")].map((l) => l.textContent.trim()),
+    values: [...document.querySelectorAll("#fullScreenHides input")].map((i) => i.dataset.fsHide),
+  }));
+  check("33h the Full-screen ticks read in Bangla", BN.test(bnTicks.heading) && bnTicks.labels.every((l) => BN.test(l)),
+        JSON.stringify(bnTicks.labels));
+  check("33h ...while their stored values stay plain ids",
+        bnTicks.values.join() === "banner,topnav,readbar,transport,dock", JSON.stringify(bnTicks.values));
+
+  check("33h no page errors", errors.length === 0, errors.join(" | "));
+  await page.close();
+  await ctx.close();
+}
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);

@@ -240,6 +240,7 @@ let currentBoundaryListener = null; // the one active timeupdate listener for se
 let timestampsCache = null; // Promise<raw Bangla timestamp map> -- same shape for every segmented reciter for now
 let onPlaybackError = null;
 let onAyahChange = null;
+let onPlaybackState = null; // shell round 21 -- see setPlaybackStateHandler()
 let oneShotActive = false; // true only while playOneAndWait() owns the shared <audio> element -- see handleEnded() below
 
 /**
@@ -268,6 +269,21 @@ export function setPlaybackErrorHandler(fn) {
   onPlaybackError = fn;
 }
 
+/**
+ * Shell round 21 — registers a callback fired whenever playback starts,
+ * pauses or ends, from ANY cause: a click, a clip finishing on its own, a
+ * playlist advancing, a drill step. It exists because the reading screen's
+ * Play button now doubles as Pause, and a merged button that only updates
+ * when it is clicked lies the moment audio stops by itself.
+ *
+ * Deliberately argument-free: the caller already has isPlaying()/isPaused()
+ * and should read the truth rather than be handed a snapshot that could be
+ * one event out of date.
+ */
+export function setPlaybackStateHandler(fn) {
+  onPlaybackState = fn;
+}
+
 function describeMediaError(code) {
   switch (code) {
     case 1: return "playback was aborted";
@@ -287,6 +303,13 @@ function ensureAudioEl() {
   if (!audioEl) {
     audioEl = new Audio();
     audioEl.addEventListener("ended", handleEnded);
+    // Shell round 21: one button is Play AND Pause now, so its label has to
+    // follow the audio's REAL state rather than whatever the last click
+    // implied. Without this it goes stale the moment a clip finishes on its
+    // own -- the button would sit there reading "Pause" with nothing playing.
+    for (const ev of ["play", "playing", "pause", "ended", "emptied"]) {
+      audioEl.addEventListener(ev, () => { if (onPlaybackState) onPlaybackState(); });
+    }
     audioEl.addEventListener("error", () => {
       const message = t("Couldn't play this audio: {reason}.", { reason: describeMediaError(audioEl.error?.code) });
       currentPlaylist = null;
