@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.46.** Cutover to production happened
+**Current milestone: QuranRevival v07.47.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -1992,6 +1992,50 @@ field alongside `ayahRef` is where it hangs), a line attached to a RANGE rather
 than a single ayah, and the fact that **Settings now has a real screen in it**,
 which makes it the natural home for "Edit banner" (item 7) whenever that is
 picked up.
+
+v07.47 (17 Aug 2026, same day) is a **correction to v07.46, from the owner's
+own screenshot of the live page:** *"The top menu bar jumps up after 1 sec of
+loading and covers the tagline, in mob and tab it covers 70%."* They were
+right, and the measurement found a real defect **plus a wrong number in
+v07.46's own report.**
+
+**The defect.** `body` is a flex column (shell round 7), and the strip shipped
+as a flex item with `height: 19px` — so it was **shrunk** whenever the column
+was tight. Measured at 390×844: the strip was given **16px for a 19px line**,
+and its own `overflow: hidden` cut the bottom off the words. It shrank further
+the moment `renderNavBar()` filled `#navBar` a second into the load, which is
+exactly what the owner saw as the menu jumping up and covering the tagline. The
+old `<p>` could be shrunk too, but its overflow was visible, so nothing was
+ever clipped — the clipping is what the fixed height introduced. **Fixed with
+`flex: none` and a content-derived `min-height: 1.3em` instead of a px height**,
+so the box cannot be wrong at any font size, in any language, or if a phone's
+own text-size setting scales the page. The line that is ARRIVING now stays in
+normal flow (it is what holds the strip open); only the line that is LEAVING is
+taken out of flow, for the ~0.3s it animates away.
+
+**And the number v07.46 got wrong.** That round reported the strip as "3–6px
+cheaper than the paragraph it replaces, gaining an Approach row at 390×844".
+**That gain was the bug** — the strip only looked shorter because it was being
+squeezed. Measured against **v07.45**, the last build before the strip: the
+landing page is now **identical at 390×844, 412×915, 390×700 and 360×640 in
+both banner states** — same wheel-heading top (148px / 103px), same Approach
+rows (5/7/4/4 and 6/8/5/5), same wheel width, same 9px dock gap. Desktop is
+1px lower. So the honest position is **exact parity: the strip costs nothing
+and gains nothing**, which is still the right answer to the owner's original
+"don't add a line", but it is not the bonus row that was claimed. The
+`tagline-cost.mjs` prediction was sound; what shipped did not match it, and the
+regression suite could not see the difference because **it compares against the
+previous commit, which by then was the clipped build**. Worth remembering:
+`layout.mjs` proves "nothing changed since last time", never "this is right" —
+when a round is a correction, re-measure against the last KNOWN-GOOD commit
+(`git show <sha>:app/quranrevival.html`), not just `HEAD`.
+
+**Verified: 613 behaviour checks** (was 601 — 12 new: at 390×844, 768×1024 and
+1280×800, in both languages, the words are proven not clipped by the strip AND
+the strip proven to stay one line tall while a change is in flight, which is the
+new risk the in-flow fix introduces). `layout.mjs` **NO LAYOUT REGRESSIONS**
+against v07.45's own copy of the page. No `firestore.rules`, schema or data
+changes.
 
 ---
 

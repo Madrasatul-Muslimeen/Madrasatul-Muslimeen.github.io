@@ -1777,6 +1777,45 @@ console.log("\n=== 32. The tagline strip ===");
   check("32a it still reads the page's own tagline before the tenant's lines arrive",
         early.text === "Reviving the Quran, abandoned.", String(early.text));
   check("32a and it is no taller than the paragraph it replaced (19px)", early.height <= 19, String(early.height));
+  await page.close();
+  await ctx.close();
+}
+{
+  // THE STRIP MUST NEVER CLIP ITS OWN WORDS. body is a flex column (shell
+  // round 7), so the strip's first version -- a flex item with height: 19px --
+  // was SHRUNK to 16px on a phone and overflow:hidden cut the bottom off the
+  // tagline; it shrank further the moment the nav bar gained its real height,
+  // which read to the owner as "the menu jumps up and covers the tagline".
+  // Measured at three sizes in both languages, because the phone was the only
+  // one that showed it.
+  for (const [name, viewport] of [["390x844", { width: 390, height: 844 }], ["768x1024", { width: 768, height: 1024 }], ["1280x800", { width: 1280, height: 800 }]]) {
+    for (const lang of ["en", "bn"]) {
+      const ctx = await ctxFor({ banner: false, viewport, appLang: lang, taglines: { lines: TL_LINES, settings: TL_SETTINGS } });
+      const { page } = await openPage(ctx, "/app/quranrevival.html");
+      const fit = await page.evaluate(() => {
+        const s = document.getElementById("taglineStrip");
+        const l = s.querySelector(".tagline-line");
+        const sr = s.getBoundingClientRect(), lr = l.getBoundingClientRect();
+        return { clipped: Math.round(lr.bottom - sr.bottom), stripH: Math.round(sr.height), lineH: Math.round(lr.height) };
+      });
+      check(`32a${name}/${lang} the words are not clipped by the strip`,
+            fit.clipped <= 0 && fit.stripH >= fit.lineH, JSON.stringify(fit));
+      // And it stays ONE line tall while a change is in flight -- the incoming
+      // line is in normal flow now, so two in-flow lines would double it.
+      await page.waitForTimeout(2600);
+      const during = await page.evaluate(() => {
+        const s = document.getElementById("taglineStrip");
+        return { lines: s.querySelectorAll(".tagline-line").length, h: Math.round(s.getBoundingClientRect().height) };
+      });
+      check(`32a${name}/${lang} ...and stays one line tall through a change`, during.h <= 20, JSON.stringify(during));
+      await page.close();
+      await ctx.close();
+    }
+  }
+}
+{
+  const ctx = await tlCtx();
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   // No stored state: the first line's turn. It arrives ONCE, after the
   // owner's own "change after" delay -- not instantly, which would read as
   // a flash rather than a movement.

@@ -501,11 +501,16 @@ options, side by side, with the pixel cost attached), the same way rounds 4–14
 were agreed, and **five decisions were taken before any code was written:**
 
 - **It stands where the tagline stood** — not an extra line. Their own call,
-  and also the cheap one. **Measured: the strip is 19px against the
-  paragraph's 23–24px**, so the landing page starts 3–6px HIGHER on every
-  phone and **gains an Approach row at 390×844** (6 → 7 with the banner
-  cleared). An extra line would have cost one row on three of the four
-  phones. Desktop is 1px lower, which changes no row count anywhere.
+  and also the cheap one. **Measured against v07.45, the last build before the
+  strip: exact parity** — same wheel-heading top and same Approach-row count at
+  390×844, 412×915, 390×700 and 360×640 in both banner states; desktop 1px
+  lower. An extra line would have cost one row on three of the four phones.
+  **v07.46 first reported a 3–6px saving and a bonus row; that was a bug, not a
+  saving** — the strip was a flex item with a px height, so the flex column
+  squeezed it and `overflow: hidden` clipped the words. Corrected in v07.47
+  with `flex: none` + `min-height: 1.3em`. The lesson: `layout.mjs` compares
+  against the PREVIOUS commit, so on a correction round re-measure against the
+  last known-good one too.
 - **Quran Study page only, for now.** Module-tagging a line is round 2 —
   nothing in `js/taglines.js` is Quran-specific except the ayah targeting.
 - **Flip, Fade and Slide up all ship**, and the owner picks which is used

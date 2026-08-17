@@ -41,8 +41,9 @@
   /* The preview is the same strip the landing page shows, at the same size,
      so what is chosen here can be seen here rather than after a reload. */
   .preview-box { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 0.8rem; margin-top: 0.6rem; }
-  .tagline-strip { position: relative; height: 19px; overflow: hidden; margin: 0; font-size: 0.92rem; line-height: 1.3; font-style: italic; }
-  .tagline-line { position: absolute; left: 0; right: 0; top: 0; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #666; }
+  .tagline-strip { position: relative; flex: none; min-height: 1.3em; overflow: hidden; margin: 0; font-size: 0.92rem; line-height: 1.3; font-style: italic; }
+  .tagline-line { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #666; }
+  .tagline-line.tagline-leaving { position: absolute; left: 0; right: 0; top: 0; }
   a.tagline-line { color: #1F3A6E; text-decoration: none; }
   .tagline-ext { font-style: normal; font-size: 0.72rem; color: #B8862F; margin-left: 0.25rem; }
   .tagline-strip[data-motion="flip"] { perspective: 300px; }
@@ -392,6 +393,8 @@
       previewStrip.appendChild(el);
       if (old) {
         if (animate) {
+          old.classList.add("tagline-leaving");
+          old.classList.remove(`tagline-in-${settings.motion}`);
           old.classList.add(`tagline-out-${settings.motion}`);
           old.addEventListener("animationend", () => old.remove());
           setTimeout(() => old.remove(), 800);
