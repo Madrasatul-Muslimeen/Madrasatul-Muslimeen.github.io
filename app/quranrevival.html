@@ -452,8 +452,12 @@
   /* Reciter names are people's names and are never translated, so they get
      their own class rather than sharing .reading-ticks -- a check reads that
      class to prove every reading choice IS translated, and mixing the two
-     made it read reciters as untranslated labels. */
-  .reading-ticks, .reciter-ticks { display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; margin: 0.35rem 0 0.45rem; }
+     made it read reciters as untranslated labels.
+     Shell round 21's Full-screen ticks are separated for the SAME reason,
+     found the same way: three checks read `.reading-ticks` as "the five
+     reading choices", so sharing the class made them count ten, and made
+     "Mushaf greys the others" fail because these five correctly stay live. */
+  .reading-ticks, .reciter-ticks, .fs-ticks { display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; margin: 0.35rem 0 0.45rem; }
   /* Repeat / Mode / Loop / Play on one line, the way the bars above do it:
      Mode takes the room, the rest take only what they need. */
   .opt-bar-listen { display: flex; flex-wrap: nowrap; gap: 0.35rem 0.4rem; align-items: end; margin: 0.35rem 0 0.1rem; }
@@ -461,8 +465,12 @@
   .opt-bar-listen > .opt-cell-num { flex: 0 0 3.6rem; }
   .opt-bar-listen > .opt-cell-loop, .opt-bar-listen > .opt-cell-play { flex: 0 0 auto; }
   .loop-inline { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.8rem; font-weight: 400; white-space: nowrap; height: 1.85rem; margin: 0; }
-  .reading-ticks label, .reciter-ticks label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 400; margin: 0; }
+  .reading-ticks label, .reciter-ticks label, .fs-ticks label { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 400; margin: 0; }
   .reading-ticks label[hidden] { display: none; }
+  /* A second heading INSIDE a card (shell round 21) -- quieter than the card's
+     own <h4>, so "Full screen hides" reads as part of Reading view rather
+     than as a card of its own. */
+  .opt-subhead { font-size: 0.78rem; font-weight: 600; color: #555; margin: 0.55rem 0 0; text-transform: none; }
   /* What a chosen Page/Juz/Hizb/Ruku' covers, in words. Top and bottom surah
      only when it spans several -- the owner's own rule. */
   #unitSpanReadout { font-size: 0.78rem; color: #1F3A6E; margin: 0.1rem 0 0.35rem; }
@@ -473,14 +481,26 @@
     padding: 0.35rem 0.8rem; border-radius: 1rem; pointer-events: none;
   }
   #readHint[hidden] { display: none; }
-  /* Full screen: the owner's own shape -- a button hides the app's three
-     strips, and a tap on the reading brings them back. Nothing hides itself
-     on a stray tap, which is why the tap only ever restores. */
-  body.immersive-read > h1,
-  body.immersive-read > .app-tagline,
-  body.immersive-read > #topNav,
-  body.immersive-read #globalBanner,
-  body.immersive-read #dock { display: none; }
+  /* Full screen (shell round 17, made configurable in round 21).
+     Round 17 hid a fixed three strips. Asked whether the reading screen's own
+     two bars should go too, the owner answered neither yes nor no: "enable the
+     options to hide everything, show banner, show top and bottom menu, show
+     only top menu, only bottom menu, show the next buttons, play button,
+     enable all choices to show individually or together."
+     So each strip has its own class, set from the stored preference at the
+     moment full screen goes on. `immersive-read` alone now means only "full
+     screen is on"; WHAT that hides is the five classes beside it. */
+  body.immersive-read.fs-hide-banner > h1,
+  body.immersive-read.fs-hide-banner > .app-tagline,
+  body.immersive-read.fs-hide-banner #globalBanner { display: none; }
+  body.immersive-read.fs-hide-topnav > #topNav { display: none; }
+  body.immersive-read.fs-hide-dock #dock { display: none; }
+  body.immersive-read.fs-hide-readbar #readBar { display: none; }
+  body.immersive-read.fs-hide-transport #readTransport { display: none; }
+  /* "Edge to edge" taken literally, the owner's own words. #studyScreen's own
+     1rem padding and its border are the last thing between the Arabic and the
+     side of the phone once the strips are gone -- measured at 17px a side. */
+  body.immersive-read #studyScreen { padding-left: 0; padding-right: 0; border-left: none; border-right: none; border-radius: 0; margin-top: 0; }
 
   /* ---------- Study screen ---------- */
   #studyScreen { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 1rem; margin-top: 0.5rem; }
@@ -620,21 +640,34 @@
            its own, Study options is still ONE tap away while reading, which
            matters when the settings change per child. -->
       <div id="readView" hidden>
+        <!-- Shell round 21 -- the read bar is Prev · what is being read · Next.
+             The owner's own reasoning for what left: "we don't need the
+             'Mastery Wheel' [button] (because clicking on the 'Read' button
+             (at the bottom) brings the wheel anyway)" -- right, the dock's
+             Read tab already toggles the stage back, so the button was a
+             second way to do one thing. Full screen moved to the transport
+             row, into the slot the separate Pause button vacated.
+             Measured reason this matters beyond tidiness: #readRef ellipsises
+             SILENTLY, and flanked by those two buttons it had 139px at 390px
+             for a Ruku' label needing 220px -- "Ruku' 1 of Sur…". Prev/Next
+             are narrower, so the line now gets 245px and the sentence fits. -->
         <div id="readBar">
-          <button type="button" class="secondary" id="backToWheelBtn">◂ Mastery Wheel</button>
+          <button type="button" class="secondary" id="prevUnitBtn">◂ Prev</button>
           <div id="readRef"></div>
-          <button type="button" class="secondary" id="hideChromeBtn">⤢ Full screen</button>
+          <button type="button" class="secondary" id="nextUnitBtn">Next ▸</button>
         </div>
         <!-- Shell round 18, the owner's ask: play/pause/stop belong ON the
              reading screen, not two taps away inside Listening settings.
-             Pause is a real pause (audio-player.js keeps the position and the
-             queue); Stop ends the run. The reciter is whichever one is ticked
-             first in Listening settings -- one list, named once. -->
+             Round 21 merges Play and Pause into one button -- the owner's own
+             suggestion, and it pays for Full screen's seat here. Pause is
+             still a real pause underneath (audio-player.js keeps the position
+             and the queue); Stop ends the run. The reciter is whichever one is
+             ticked first in Listening settings -- one list, named once. -->
         <div id="readTransport">
           <button type="button" class="secondary" id="readPlayBtn">▶ Play</button>
-          <button type="button" class="secondary" id="readPauseBtn">⏸ Pause</button>
           <button type="button" class="secondary" id="readStopBtn">■ Stop</button>
           <button type="button" class="secondary" id="readPlaySurahBtn">▶ Whole surah</button>
+          <button type="button" class="secondary" id="hideChromeBtn">⤢ Full screen</button>
           <span id="readReciterName"></span>
         </div>
         <div id="readScroll">
@@ -817,6 +850,23 @@
             </select></div>
           </div>
           <p class="opt-note" id="mushafNote" hidden>Mushaf view shows the printed page, so the other reading choices do not apply while it is on.</p>
+          <!-- Shell round 21 -- WHAT Full screen takes away, the owner's own
+               answer when asked whether it should hide the reading screen's
+               own two bars: not yes or no, but "enable all choices to show
+               individually or together". Five independent ticks, all on by
+               default, which is their original "the entire mobile screen edge
+               to edge". Ticked = hidden, matching the heading, so an empty set
+               means Full screen changes nothing -- and says so rather than
+               leaving a gesture that silently does nothing. -->
+          <h5 class="opt-subhead">Full screen hides</h5>
+          <div class="fs-ticks" id="fullScreenHides">
+            <label><input type="checkbox" data-fs-hide="banner" /> Banner</label>
+            <label><input type="checkbox" data-fs-hide="topnav" /> Top menu</label>
+            <label><input type="checkbox" data-fs-hide="readbar" /> Prev and Next</label>
+            <label><input type="checkbox" data-fs-hide="transport" /> Play controls</label>
+            <label><input type="checkbox" data-fs-hide="dock" /> Bottom menu</label>
+          </div>
+          <p class="opt-note" id="fullScreenNote" hidden>Nothing is ticked, so Full screen will leave the screen as it is.</p>
         </div>
 
         <!-- Listening: the same shape as Reading view above, on the owner's
@@ -918,7 +968,10 @@
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootDerivativePanel, renderTranslationPanel } from "./js/ayah-renderer.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
-    import { getAppLang, getQuranTranslationLangs, setQuranTranslationLangs } from "./js/prefs.js";
+    import {
+      getAppLang, getQuranTranslationLangs, setQuranTranslationLangs,
+      getFullScreenHides, setFullScreenHides, FULLSCREEN_HIDEABLE,
+    } from "./js/prefs.js";
     import {
       taglinesFrom, taglineSettingsFrom, taglineText, pickTagline,
       readTaglineState, writeTaglineState, TAGLINE_SETTING_DEFAULTS,
@@ -944,6 +997,7 @@
       RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
       warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused, unlockAudio,
+      setPlaybackStateHandler,
     } from "./js/audio-player.js";
     import { translateStatic, t, num, parseNum, surahName } from "./js/i18n.js";
 
@@ -1054,7 +1108,6 @@
     const unitSpanReadout = document.getElementById("unitSpanReadout");
     const readTransport = document.getElementById("readTransport");
     const readPlayBtn = document.getElementById("readPlayBtn");
-    const readPauseBtn = document.getElementById("readPauseBtn");
     const readStopBtn = document.getElementById("readStopBtn");
     const readPlaySurahBtn = document.getElementById("readPlaySurahBtn");
     const readReciterName = document.getElementById("readReciterName");
@@ -1104,8 +1157,11 @@
     const readView = document.getElementById("readView");
     const readBarRef = document.getElementById("readRef");
     const readHint = document.getElementById("readHint");
-    const backToWheelBtn = document.getElementById("backToWheelBtn");
     const hideChromeBtn = document.getElementById("hideChromeBtn");
+    const prevUnitBtn = document.getElementById("prevUnitBtn");
+    const nextUnitBtn = document.getElementById("nextUnitBtn");
+    const fullScreenHidesBox = document.getElementById("fullScreenHides");
+    const fullScreenNote = document.getElementById("fullScreenNote");
     const wheelHeadingEl = document.querySelector("#stage > .wheel-heading");
     const wheelSectionEl = document.getElementById("wheelSection");
     const exploreBreadcrumb = document.getElementById("exploreBreadcrumb");
@@ -1168,6 +1224,13 @@
     let currentUnitType = "ayah"; // ayah | range | surah | ruku | juz | page
     let rangeFrom = 1;
     let rangeTo = 1;
+    // Shell round 21 -- how many ayahs the reader ASKED for, which is not
+    // always how many are on screen. A window truncated at the end of a surah
+    // (1-5 becoming 6-7 in a 7-ayah surah) must still step back by five, or
+    // Prev silently reduces the reader's own choice to two. Found by the
+    // behaviour suite before this shipped, not by reading the code.
+    let rangeSpan = 1;
+    function rememberRangeSpan() { rangeSpan = Math.abs(rangeTo - rangeFrom) + 1; }
 
     // Phase 5 round 7 -- page-view display mode, only meaningful when
     // currentUnitType is "surah" or "range" (PHASE-5-STATUS.md round 6:
@@ -1677,14 +1740,172 @@
 
     unitNumSelect.addEventListener("change", () => { goToUnitNumber(Number(unitNumSelect.value)); });
 
+    // -----------------------------------------------------------------------
+    // Shell round 21 -- Prev and Next move THE UNIT, whatever the unit is.
+    //
+    // The owner's rule, in their words: "any choice which reflects in the
+    // reading screen should have a button to choose next of the same choice
+    // (example, if a range of 5 Ayat is chosen, then the 'next' button should
+    // bring the next 5 Ayat)." So Next means the next ayah, the next five, the
+    // next surah, the next ruku', juz, hizb or page -- one button, seven
+    // meanings, read off currentUnitType.
+    //
+    // It CROSSES SURAH BOUNDARIES, which is the owner's own answer to a
+    // question put to them before building: reading does not stop at the end
+    // of a surah, and Juz/Hizb/Page cross by nature anyway, so stopping only
+    // Ayah and Range there made Next mean two different things. The only real
+    // ends are 1:1 and the last ayah of 114.
+    //
+    // Note this is NOT the same pair as Previous/Next under the text: that one
+    // still walks a single ayah inside a multi-ayah unit (the owner's answer to
+    // the other question -- "keep both", two different jobs). For Single Ayah
+    // the two would be identical, so the inner row hides; see renderStudyScreen.
+    // -----------------------------------------------------------------------
+    const LAST_SURAH = 114;
+
+    /** Open a different surah and land on a chosen ayah -- "last" for its
+        final one. loadSurah() resets currentAyahNum to 1, so the landing is
+        always applied after it, never before. */
+    async function openSurahAt(surahNum, ayahTarget) {
+      currentSurahNum = surahNum;
+      surahSelect.value = String(surahNum);
+      await loadSurah();
+      const count = currentSurahData.ayahCount;
+      currentAyahNum = ayahTarget === "last" ? count : Math.min(Math.max(1, ayahTarget), count);
+    }
+
+    /** This surah's ruku' numbers, ascending. Per-surah numbering (I5, and
+        buildUnitKey.ruku has always recorded it that way), so the "next ruku'"
+        after a surah's last one is ruku' 1 of the next surah. */
+    function rukuNumbersInCurrentSurah() {
+      const seen = new Set(currentSurahData.ayahs.map((a) => rukuIndexInSurah(currentSurahData.ayahs, a.ruku)));
+      return [...seen].sort((a, b) => a - b);
+    }
+
+    function firstAyahOfRuku(idx) {
+      return currentSurahData.ayahs.find((a) => rukuIndexInSurah(currentSurahData.ayahs, a.ruku) === idx)?.ayah ?? 1;
+    }
+
+    async function stepUnit(dir) {
+      if (!currentSurahData) return;
+      stopDrill();
+      const count = currentSurahData.ayahCount;
+
+      if (currentUnitType === "ayah") {
+        const target = currentAyahNum + dir;
+        if (target >= 1 && target <= count) currentAyahNum = target;
+        else if (dir > 0 && currentSurahNum < LAST_SURAH) await openSurahAt(currentSurahNum + 1, 1);
+        else if (dir < 0 && currentSurahNum > 1) await openSurahAt(currentSurahNum - 1, "last");
+        else return;
+
+      } else if (currentUnitType === "range") {
+        // The window keeps its own length. At a surah's end it gives a short
+        // tail rather than reaching into the next surah mid-window -- a range
+        // is keyed to one surah (buildUnitKey.range), so a window spanning two
+        // could not be claimed at all.
+        const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
+        // The REMEMBERED span, not (to - from + 1): those differ exactly when
+        // the last step was truncated by the end of a surah, and stepping by
+        // the truncated width would quietly shrink the reader's window.
+        const span = Math.max(1, rangeSpan);
+        if (dir > 0) {
+          if (to < count) { rangeFrom = to + 1; rangeTo = Math.min(to + span, count); }
+          else if (currentSurahNum < LAST_SURAH) {
+            await openSurahAt(currentSurahNum + 1, 1);
+            rangeFrom = 1; rangeTo = Math.min(span, currentSurahData.ayahCount);
+          } else return;
+        } else {
+          if (from > 1) { rangeTo = from - 1; rangeFrom = Math.max(1, from - span); }
+          else if (currentSurahNum > 1) {
+            await openSurahAt(currentSurahNum - 1, "last");
+            const c = currentSurahData.ayahCount;
+            rangeTo = c; rangeFrom = Math.max(1, c - span + 1);
+          } else return;
+        }
+        currentAyahNum = rangeFrom; // the wheel and the claim both start at the window's first ayah
+
+      } else if (currentUnitType === "surah") {
+        const target = currentSurahNum + dir;
+        if (target < 1 || target > LAST_SURAH) return;
+        await openSurahAt(target, 1);
+
+      } else if (currentUnitType === "ruku") {
+        const numbers = rukuNumbersInCurrentSurah();
+        const target = numbers[numbers.indexOf(currentUnitNumber()) + dir];
+        if (target !== undefined) currentAyahNum = firstAyahOfRuku(target);
+        else if (dir > 0 && currentSurahNum < LAST_SURAH) await openSurahAt(currentSurahNum + 1, 1);
+        else if (dir < 0 && currentSurahNum > 1) {
+          await openSurahAt(currentSurahNum - 1, 1);
+          const numbersThere = rukuNumbersInCurrentSurah();
+          currentAyahNum = firstAyahOfRuku(numbersThere[numbersThere.length - 1]);
+        } else return;
+
+      } else {
+        // Juz / Hizb / Page: their own boundary tables already cross surahs,
+        // and goToUnitNumber() already knows how to load the surah a number
+        // lands in. Fetched on first use, never on the startup path (I9).
+        const rows = await ensureUnitIndex(currentUnitType);
+        if (!rows) return;
+        const numbers = rows.map((r) => unitRowNumber(r));
+        const target = numbers[numbers.indexOf(currentUnitNumber()) + dir];
+        if (target === undefined) return;
+        await goToUnitNumber(target); // does its own re-render
+        renderUnitNav();
+        return;
+      }
+
+      if (ayahSelect.querySelector(`option[value="${currentAyahNum}"]`)) ayahSelect.value = String(currentAyahNum);
+      updateUnitControlsVisibility();
+      renderStudyScreen();
+      renderWheel();
+    }
+
+    /** Greys the two buttons out at the real ends rather than leaving a button
+        that does nothing when pressed. Only 1:1 and 114's last ayah are ends
+        now for the surah-based units; Juz/Hizb/Page end at their own counts. */
+    function renderUnitNav() {
+      if (!currentSurahData) return;
+      let atStart, atEnd;
+      if (currentUnitType === "juz" || currentUnitType === "hizb" || currentUnitType === "page") {
+        const rows = unitRows();
+        if (!rows) { atStart = atEnd = false; } // the table has not arrived yet; stepUnit awaits it
+        else {
+          const numbers = rows.map((r) => unitRowNumber(r));
+          const at = numbers.indexOf(currentUnitNumber());
+          atStart = at <= 0;
+          atEnd = at < 0 || at >= numbers.length - 1;
+        }
+      } else {
+        const first = currentSurahNum === 1;
+        const last = currentSurahNum === LAST_SURAH;
+        if (currentUnitType === "surah") { atStart = first; atEnd = last; }
+        else if (currentUnitType === "range") {
+          atStart = first && Math.min(rangeFrom, rangeTo) <= 1;
+          atEnd = last && Math.max(rangeFrom, rangeTo) >= currentSurahData.ayahCount;
+        } else if (currentUnitType === "ruku") {
+          const numbers = rukuNumbersInCurrentSurah();
+          atStart = first && currentUnitNumber() === numbers[0];
+          atEnd = last && currentUnitNumber() === numbers[numbers.length - 1];
+        } else {
+          atStart = first && currentAyahNum <= 1;
+          atEnd = last && currentAyahNum >= currentSurahData.ayahCount;
+        }
+      }
+      prevUnitBtn.disabled = atStart;
+      nextUnitBtn.disabled = atEnd;
+    }
+
+    prevUnitBtn.addEventListener("click", () => stepUnit(-1));
+    nextUnitBtn.addEventListener("click", () => stepUnit(1));
+
     unitTypeSelect.addEventListener("change", () => {
       currentUnitType = unitTypeSelect.value;
-      if (currentUnitType === "range") { rangeFrom = currentAyahNum; rangeTo = Math.min(currentAyahNum + 4, currentSurahData?.ayahCount ?? currentAyahNum); }
+      if (currentUnitType === "range") { rangeFrom = currentAyahNum; rangeTo = Math.min(currentAyahNum + 4, currentSurahData?.ayahCount ?? currentAyahNum); rememberRangeSpan(); }
       updateUnitControlsVisibility();
       renderStudyScreen();
     });
-    rangeFromSelect.addEventListener("change", () => { rangeFrom = Number(rangeFromSelect.value); renderStudyScreen(); });
-    rangeToSelect.addEventListener("change", () => { rangeTo = Number(rangeToSelect.value); renderStudyScreen(); });
+    rangeFromSelect.addEventListener("change", () => { rangeFrom = Number(rangeFromSelect.value); rememberRangeSpan(); renderStudyScreen(); });
+    rangeToSelect.addEventListener("change", () => { rangeTo = Number(rangeToSelect.value); rememberRangeSpan(); renderStudyScreen(); });
     mushafToggle.addEventListener("change", renderStudyScreen);
 
     // -----------------------------------------------------------------------
@@ -1800,6 +2021,7 @@
         unitTypeSelect.value = "range";
         rangeFrom = Math.min(from, to);
         rangeTo = Math.max(from, to);
+        rememberRangeSpan();
         currentAyahNum = rangeFrom;
       } else {
         currentUnitType = "ayah";
@@ -2165,14 +2387,50 @@
       if (!reading) setImmersive(false);
     }
 
+    /** Shell round 21 -- WHICH strips full screen takes away is the reader's
+        own stored choice, so the class that hides each one is applied here
+        rather than being baked into the CSS. `immersive-read` alone now means
+        only "full screen is on"; the five `fs-hide-*` classes beside it say
+        what that means today. Re-read on every call, so a tick changed in
+        Study options takes effect the very next time full screen goes on. */
     function setImmersive(on) {
+      const hides = on ? getFullScreenHides() : [];
       document.body.classList.toggle("immersive-read", on);
-      readHint.hidden = !on;
-      if (on) {
+      for (const id of FULLSCREEN_HIDEABLE) {
+        document.body.classList.toggle(`fs-hide-${id}`, hides.includes(id));
+      }
+      // The hint is the only thing telling a first-time reader that a tap
+      // brings the menus back, so it is pointless when nothing was hidden.
+      readHint.hidden = !on || hides.length === 0;
+      if (!readHint.hidden) {
         clearTimeout(readHint._timer);
         readHint._timer = setTimeout(() => { readHint.hidden = true; }, 3500);
       }
+      hideChromeBtn.textContent = on ? t("⤢ Exit full screen") : t("⤢ Full screen");
+      hideChromeBtn.setAttribute("aria-pressed", on ? "true" : "false");
     }
+
+    // ---- Full screen: what it hides (Reading view card) --------------------
+    function renderFullScreenHideTicks() {
+      const hides = getFullScreenHides();
+      fullScreenHidesBox.querySelectorAll("input[data-fs-hide]").forEach((box) => {
+        box.checked = hides.includes(box.dataset.fsHide);
+      });
+      fullScreenNote.hidden = hides.length > 0;
+    }
+
+    fullScreenHidesBox.addEventListener("change", (e) => {
+      if (!e.target.matches("input[data-fs-hide]")) return;
+      // Stored in FULLSCREEN_HIDEABLE's own order rather than tick order, so
+      // the value is stable however the ticks are clicked.
+      const chosen = FULLSCREEN_HIDEABLE.filter((id) =>
+        fullScreenHidesBox.querySelector(`input[data-fs-hide="${id}"]`)?.checked);
+      setFullScreenHides(chosen);
+      renderFullScreenHideTicks();
+      // If full screen is on right now, the change should be visible at once
+      // rather than only on the next toggle.
+      if (document.body.classList.contains("immersive-read")) setImmersive(true);
+    });
 
     /** Owner's answer, asked before building: a multi-ayah unit opens at its
         FIRST ayah, not wherever the last single-ayah reading left off. Bounds
@@ -2212,18 +2470,20 @@
       if (mushafToggle.checked) setImmersive(true);
     });
 
-    backToWheelBtn.addEventListener("click", () => setStageView("wheel"));
-    hideChromeBtn.addEventListener("click", () => setImmersive(true));
+    hideChromeBtn.addEventListener("click", () => setImmersive(!document.body.classList.contains("immersive-read")));
 
-    // A tap on the reading only ever RESTORES the menus -- the owner's own
-    // shape ("that also should have an option to hide, tapping on screen
-    // should show it again"). Nothing hides on a stray tap, and a tap on
-    // something you meant to press (a button, a checkbox, a notes box, a
-    // word chip) is left alone.
+    // Shell round 21 -- a tap on the reading TOGGLES full screen, both ways.
+    // The owner's own ask, and it reverses round 17's deliberate one-way rule
+    // ("nothing hides on a stray tap"): "tapping on the screen will take the
+    // entire mobile screen edge to edge, tapping again will move it back to
+    // normal with the top and bottom menu bars."
+    // A tap on something you meant to press is still left alone, and so is a
+    // tap that is really the end of selecting text to copy -- otherwise
+    // highlighting an ayah would flip the screen out from under you.
     readView.addEventListener("click", (e) => {
-      if (!document.body.classList.contains("immersive-read")) return;
       if (e.target.closest("button, a, input, select, textarea, label, [role='button']")) return;
-      setImmersive(false);
+      if (String(window.getSelection?.() ?? "").length > 0) return;
+      setImmersive(!document.body.classList.contains("immersive-read"));
     });
 
     document.querySelectorAll("[data-close-panel]").forEach((btn) => {
@@ -2571,7 +2831,20 @@
       const isPageUnit = currentUnitType === "surah" || currentUnitType === "range";
       const usesFlow = isMushaf || isPageUnit;
 
+      // Shell round 21 -- the owner's answer to "keep both, or bar only?" was
+      // keep both: the read bar moves the UNIT, this row moves the AYAH inside
+      // it. For Single Ayah those two are the same thing, so this row would be
+      // a second copy of the bar's own buttons -- it hides. Every other
+      // ayah-by-ayah unit (Ruku'/Juz/Hizb/Page) keeps it, which is where the
+      // two really do different jobs.
+      // Only the two BUTTONS are the duplicate. #ayahPosition beside them is
+      // the one place the surah's total is written ("Ayah 1 of 286"), so the
+      // row itself stays -- hiding it outright would take real information off
+      // the screen to remove a repetition.
+      const duplicatesUnitNav = currentUnitType === "ayah";
       singleAyahNavRow.style.display = usesFlow ? "none" : "";
+      prevAyahBtn.hidden = duplicatesUnitNav;
+      nextAyahBtn.hidden = duplicatesUnitNav;
       ayahSelectControl.style.display = isPageUnit ? "none" : "";
       ayahPanels.style.display = usesFlow ? "none" : "";
       pageViewContainer.style.display = usesFlow ? "" : "none";
@@ -2622,6 +2895,7 @@
       renderUnitLabel();
       renderReadTransport();
       renderUnitSpanReadout();
+      renderUnitNav(); // shell round 21 -- the read bar's own Prev/Next ends
       // The reading screen's own "what am I reading" line -- the same sentence
       // currentUnitInfo() already writes for the dock, translated, so a Range
       // or a Ruku' names itself here instead of only the one ayah showing.
@@ -2740,10 +3014,26 @@
       const reciter = RECITERS[currentReciterId];
       readReciterName.textContent = reciter ? reciter.label : "";
       readPlaySurahBtn.hidden = false;
-      readPauseBtn.disabled = !isPlaying();
+      // Shell round 21 -- ONE button for Play and Pause, the owner's own
+      // suggestion, which is what pays for Full screen's seat on this row.
+      // The label follows the audio's real state (setPlaybackStateHandler
+      // below re-renders on every play/pause/end from ANY cause), so it can
+      // never sit there reading "Pause" with nothing playing.
+      const playing = isPlaying();
+      readPlayBtn.textContent = playing ? t("⏸ Pause") : t("▶ Play");
+      readPlayBtn.setAttribute("aria-label", playing ? t("⏸ Pause") : t("▶ Play"));
     }
 
+    // A clip finishing on its own, a playlist advancing, a drill step ending:
+    // none of those are clicks, and all of them change what this button means.
+    setPlaybackStateHandler(() => renderReadTransport());
+
     readPlayBtn.addEventListener("click", async () => {
+      // Shell round 21 -- the same button pauses what is already sounding.
+      // Checked FIRST, and deliberately before unlockAudio(): that helper
+      // calls play() on the shared element to claim the gesture, which would
+      // undo the pause we are here to perform.
+      if (isPlaying()) { pauseAudio(); renderReadTransport(); return; }
       // SYNCHRONOUS, before any await: marks the shared <audio> element as
       // user-activated so the timing-map fetch below cannot cost us the
       // gesture. The owner's own case for this: arriving at the reading screen
@@ -2778,7 +3068,6 @@
       renderReadTransport();
     });
 
-    readPauseBtn.addEventListener("click", () => { pauseAudio(); renderReadTransport(); });
     readStopBtn.addEventListener("click", () => { stopDrill(); stopAudio(); renderReadTransport(); });
 
     prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopDrill(); currentAyahNum--; renderStudyScreen(); renderWheel(); } });
@@ -2792,6 +3081,7 @@
     // below and anything else reading it keep working exactly as before.
     trEnToggle.checked = getQuranTranslationLangs().includes("en");
     trBnToggle.checked = getQuranTranslationLangs().includes("bn");
+    renderFullScreenHideTicks(); // shell round 21 -- the stored Full-screen choice
     function applyTranslationTicks() {
       const langs = [];
       if (trEnToggle.checked) langs.push("en");

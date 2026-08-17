@@ -298,6 +298,22 @@ export const BN = {
   "⤢ Full screen": "⤢ পূর্ণ স্ক্রিন",
   "Tap the text to bring the menus back.": "মেনু ফিরিয়ে আনতে লেখায় স্পর্শ করুন।",
 
+  // --- Shell round 21: Prev/Next move the whole unit, and Full screen is a
+  //     set of choices rather than one fixed behaviour. "◂ Mastery Wheel"
+  //     above is kept although nothing renders it any more (I4): the button
+  //     left the read bar, the words are not deleted.
+  "◂ Prev": "◂ আগের",
+  "Next ▸": "পরের ▸",
+  "⤢ Exit full screen": "⤢ পূর্ণ স্ক্রিন বন্ধ",
+  "Full screen hides": "পূর্ণ স্ক্রিনে লুকাবে",
+  "Banner": "ব্যানার",
+  "Top menu": "উপরের মেনু",
+  "Bottom menu": "নিচের মেনু",
+  "Prev and Next": "আগের ও পরের",
+  "Play controls": "বাজানোর বোতাম",
+  "Nothing is ticked, so Full screen will leave the screen as it is.":
+    "কিছুই চিহ্নিত নেই, তাই পূর্ণ স্ক্রিন পর্দাটি যেমন আছে তেমনই রাখবে।",
+
   // --- The "Go to" box, including what it says when it cannot read you ---
   "Couldn't read \"{text}\". Try 2:255 for one ayah, or 2:255-260 for a range.":
     "\"{text}\" বোঝা গেল না। একটি আয়াতের জন্য ২:২৫৫, বা পরিসরের জন্য ২:২৫৫-২৬০ লিখুন।",

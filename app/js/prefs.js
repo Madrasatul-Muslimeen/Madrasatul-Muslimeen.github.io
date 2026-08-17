@@ -280,3 +280,61 @@ export function mountAppLangControl(container, onChange = reloadOnAppLangChange)
   });
   return select;
 }
+
+// ---------------------------------------------------------------------------
+// Shell round 21 — what Full screen actually hides.
+//
+// Round 17 shipped Full screen as one boolean: it hid the app's own three
+// strips (title/tagline/banner, nav, dock) and left the reading screen's own
+// two bars alone. The owner's answer when asked whether those two should go
+// as well was neither yes nor no: "enable the options to hide everything,
+// show banner, show top and bottom menu, show only top menu, only bottom
+// menu, show the next buttons, play button, enable all choices to show
+// individually or together."
+//
+// So this is a SET, exactly like the translations above, and for the same
+// reason — a single flag cannot say "keep the bottom menu but hide the top
+// one". Five things can be hidden; each is independent.
+//
+// localStorage, no new startup read, no collection, no firestore.rules
+// change — the same shape round 18's translation set took. The default is
+// all five, which is the owner's own original ask ("the entire mobile
+// screen edge to edge") and what round 17's single flag would have meant.
+// ---------------------------------------------------------------------------
+const FULLSCREEN_HIDES_KEY = "mm_reading_fullscreen_hides";
+
+/** The five strips Full screen can take away, in the order they appear down
+ *  the screen. `banner` covers the app title, the tagline strip and the
+ *  tenant's own banner — they are one visual block, and the owner named them
+ *  as one ("show banner"). */
+export const FULLSCREEN_HIDEABLE = ["banner", "topnav", "readbar", "transport", "dock"];
+
+function readFullScreenHides() {
+  try {
+    const raw = localStorage.getItem(FULLSCREEN_HIDES_KEY);
+    if (raw === null) return FULLSCREEN_HIDEABLE.slice();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return FULLSCREEN_HIDEABLE.slice();
+    // Filtered against the known ids so a hand-edited or stale entry can
+    // never put an unknown class name onto <body>.
+    return parsed.filter((id) => FULLSCREEN_HIDEABLE.includes(id));
+  } catch {
+    return FULLSCREEN_HIDEABLE.slice();
+  }
+}
+
+let cachedFullScreenHides = readFullScreenHides();
+
+/** Which strips Full screen hides. An empty set is legal and means Full
+ *  screen changes nothing — the reading screen says so rather than leaving a
+ *  gesture that silently does nothing. */
+export function getFullScreenHides() {
+  return cachedFullScreenHides.slice();
+}
+
+export function setFullScreenHides(ids) {
+  const clean = (Array.isArray(ids) ? ids : []).filter((id, i, a) => FULLSCREEN_HIDEABLE.includes(id) && a.indexOf(id) === i);
+  cachedFullScreenHides = clean;
+  writeStored(FULLSCREEN_HIDES_KEY, JSON.stringify(clean));
+  return getFullScreenHides();
+}
