@@ -652,6 +652,72 @@ the Quran module's reading screen**; the other study modules have no equivalent.
 
 ---
 
+## 14. The pickers on the reading screen, and a three-state full screen — BUILT, 17 Aug 2026 (v07.49)
+
+**Shell round 22.** The owner's phone screenshot plus three points. Four
+decisions were answered before any code, from a demo artifact with the
+measurements attached.
+
+**A round-21 regression, fixed.** "Edge to edge" had been applied to the TEXT:
+`#studyScreen`'s horizontal padding went to 0 in full screen, so the Arabic sat
+on the glass. **Measured 17px → 0px at every phone width.** The card is what
+goes edge to edge; the text keeps **8px**. Nothing overflowed, which is why no
+check caught it — `reading.mjs` measures the gutter now.
+
+**Three full-screen states, one gesture** (owner's choice A): normal → reading
+only → bare → normal. State 2 is a fixed set (banner, top menu, bottom menu),
+because that is the owner's own description of the option they were missing;
+the five switches from round 21 keep defining state 3, and state 3 is skipped
+when nothing is ticked so the cycle never appears to do nothing.
+
+**The pickers moved onto the reading screen**, kept in BOTH places for now
+(owner's choice — "will decide later if should keep only one"). They are
+**mirrors**: each copies its options and value from the matching Study options
+control and forwards a change straight back to it, so there is one source of
+truth for behaviour even with two sets of boxes. **Measured: the picker row plus
+the icon control row are 68px against the 94px they replace**, one line each at
+360/390/412px with five cells showing. Reading area 587 → 610px at 390×844.
+
+**`#readRef` is gone.** The owner spotted it printed the same sentence as the
+dock's "Tracking:" line — **measured: five of the six unit types**. Item 9 above
+had assumed the two were never visible together; that was wrong. The pickers are
+the readout now, and the dock keeps the sentence because a picker reading "5"
+cannot say "Juz 5 covers 4:24 → 5:81".
+
+**Play follows the chosen unit** (owner's choice), so `readPlaySurahBtn` is
+genuinely redundant and gone. A reciter with no per-ayah files now plays its
+whole-surah file rather than erroring. Prev/Next stayed at the top with the
+pickers: they change what is READ, like the pickers, while Play/Stop change what
+is HEARD.
+
+**Two defects the suite caught during the build:** Juz/Hizb/Page fill their
+number list only after the boundary table arrives, i.e. after the mirrors were
+last synced, so the reading screen showed an empty number cell —
+`renderUnitNumberPicker()` re-syncs now. And **an `<audio>` element in the error
+state is not "playing"**: a failed load fires `play` then `error`, leaving the
+merged button reading "Pause" with nothing sounding. `isPlaying()` checks
+`.error` too.
+
+**Verified: 667 behaviour checks** (was 645), layout NO REGRESSIONS at eight
+viewports (`getElementById` 83 → 86, none missing), reading/panel/navcheck
+clean, coverage 1,180/1,180, perf unchanged at 6 round trips. The one failure is
+environmental — section 22h's archive.org poster images, which this sandbox
+blocks.
+
+**Still open, both the owner's own deferrals:**
+
+- **Play does not work on their phone.** This round did not break it — the
+  button reaches the audio layer and requests the right file. **Every recitation
+  is served from archive.org**; if that host is unreachable from their network,
+  all four reciters fail identically and there is nothing in this code to fix.
+  Ask them whether archive.org opens at all before spending a session on it.
+- **The Arabic font.** The stack is `'Traditional Arabic', 'Amiri', serif` and
+  **neither is bundled**, so every phone shows whatever it happens to have — the
+  reason it looks different on different devices. Bundling one proper mushaf
+  face is the real fix, and it is a file-size question worth measuring first.
+
+---
+
 ## How these rounds are verified
 
 Every `quranrevival.html` layout round since v07.22 has been measured, not

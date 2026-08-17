@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.48.** Cutover to production happened
+**Current milestone: QuranRevival v07.49.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -2168,6 +2168,110 @@ since `buildUnitKey.range` keys a range to ONE surah, so a two-surah window
 could not be claimed at all. And **Prev/Next exist only on the Quran module's
 reading screen**; the other nine study modules have no equivalent. See
 `LAYOUT-BACKLOG.md` item 13.
+
+v07.49 (17 Aug 2026, on Claude Code on the web) is **shell round 22 — the
+pickers move to where the reading actually happens, full screen becomes a
+three-state cycle, and a real display defect from round 21 is fixed.** The
+owner sent a phone screenshot and three points; a demo artifact was shown with
+the measurements attached and four decisions were answered before any code.
+
+**The defect first, because it was live.** Round 21 read the owner's "edge to
+edge" as applying to the TEXT and set `#studyScreen`'s horizontal padding to
+0 in full screen. **Measured, reproduced on Surah 107 at every phone width:
+the gutter went 17px → 0px**, putting the Arabic's diacritics and end-of-ayah
+marks hard against the glass — which is exactly what their screenshot showed.
+**Nothing technically overflowed, which is why no check caught it**:
+`reading.mjs` only asked whether the scroller scrolls sideways. The card is
+what goes edge to edge now — no border, no corner, background all the way out
+— while the text keeps **8px**; `reading.mjs` measures the gutter from this
+round on.
+
+**(1) Three full-screen states, walked by one gesture.** The owner's reply to
+round 21: *"one was no bar stays (you did that), 2nd, 2 bars only (next and
+play bars), how we have that option? ... the 2nd option is missing."* It was
+in fact expressible — untick two of the five switches — but **a setting you
+have to go and find is a chore, not an option**, so the tap now walks
+**normal → reading only → bare → normal**. State 2 is a FIXED set (banner, top
+menu, bottom menu) because that is the owner's own description of it; the five
+switches keep defining state 3. A tick set that is empty makes state 3
+identical to state 1, so it is skipped rather than making every third tap
+appear to do nothing.
+
+**(2) The pickers are on the reading screen.** The owner's reasoning:
+*"an user might not go to study option, straight will go to read. There the
+user has last session, or pulls a bookmark, anyways user stays on read."*
+Study Unit, Surah, Ayah, the unit number, and From/To now sit above the
+reading. **Measured with the real page's own fonts: the new picker row plus
+the icon control row come to 68px against the 94px they replace** — one line
+each at 360/390/412px with five cells showing, nothing clipped. So this gains
+26px of Qur'an rather than costing any; the reading area went 587 → 610px at
+390×844 and the ayah content visible at 360×640 went 308 → 330px.
+**They are MIRRORS, not a second source of truth** — the owner chose to keep
+both places for now ("will decide later if should keep only one"), and each
+reading-screen control copies its options and value from the matching control
+in Study options and forwards a change straight back to it, so the canonical
+handler remains the only code that decides anything.
+
+**The owner spotted a real duplication and they were right.** `#readRef` (the
+read bar) and `#unitLabel` (the dock) printed **the same sentence, measured
+across every unit type: five of the six**. A note in `LAYOUT-BACKLOG.md` had
+assumed the two were never visible together; that assumption was wrong.
+`#readRef` is gone — the pickers say it better, because they are the readout
+AND the control — and the dock keeps the sentence, which is the only place a
+span like "Juz 5 covers 4:24 → 5:81" can be written.
+
+**(3) Play follows the chosen unit.** The owner said "Whole surah play becomes
+redundant"; it was nearly true and the honest version is better. Play used to
+sound exactly ONE ayah whatever unit was chosen, so only the separate button
+could play more. Now a Range plays the range, a Ruku' plays the ruku', Whole
+Surah plays the surah — and `readPlaySurahBtn` is genuinely redundant and
+gone. A reciter with no per-ayah files (English Kevan Brighting, Bangla
+Shareef Bayezid Mahmud) now plays its whole-surah file instead of erroring
+with a message telling the reader to press a button that no longer exists.
+**Prev/Next stayed at the top with the pickers rather than moving down with
+Play** — they change WHAT IS READ, like the pickers, while Play and Stop
+change what is HEARD.
+
+**Two real defects found by the suite during the build, neither visible in a
+screenshot.** Juz/Hizb/Page fill their number list only once the boundary
+table arrives, which is AFTER `renderStudyScreen()` has already synced the
+mirrors — so the reading screen showed an empty number cell for those three
+units until `renderUnitNumberPicker()` was made to re-sync. And **an
+`<audio>` element in the error state is not "playing"**: a source that fails
+to load fires `play` optimistically and `error` afterwards, leaving the merged
+button reading "Pause" with nothing sounding. `isPlaying()` now checks
+`.error` too, and `error`/`abort` joined the state-handler's event list.
+
+**Play was investigated and this round did NOT break it** — the button reaches
+the audio layer and requests the right file. **Every recitation is served from
+archive.org**; if that host is unreachable, all four reciters fail identically
+and there is nothing in this code to fix. Flagged to the owner to check
+whether archive.org opens on their network at all. The Arabic FONT is their
+own separate session — the current stack is `'Traditional Arabic', 'Amiri',
+serif`, neither of which is bundled, so each phone shows whatever it happens
+to have.
+
+**Verified: 667 behaviour checks pass** (was 645 — sections 33 and 34 grew by
+22: every picker present and named, the mirror proven to drive the real
+control AND to follow it back, all five cells on one line with no overflow, a
+numbered unit's 30 juz, Play proven to request one ayah's file for a Single
+Ayah and to start a range for a Range, "Whole surah" proven gone, all three
+full-screen states asserted by what each keeps — **including the owner's
+missing middle one** — and the whole thing again in Bangla with option VALUES
+proven still plain ids). **The one failure is environmental**: section 22h's
+Asma poster images come from archive.org, which this sandbox's proxy blocks —
+the same failure v07.44 already recorded. **`layout.mjs` NO LAYOUT
+REGRESSIONS** at all eight viewports in both banner states (`getElementById`
+targets 83 → 86, none missing), **`reading.mjs` OK in both languages**,
+**`panel.mjs` no wrapped bar and no truncated label**, **navcheck unchanged**
+(still only the pre-existing 320px ENGLISH truncation of "Operation"/
+"Bookmark"), **coverage 1,180/1,180 (100%)**, **perf unchanged at 6 sequential
+round trips / 0.92s**. Several older checks were **updated rather than
+deleted**, each because this round deliberately removed what they asserted
+(`#readRef`, `#readTransport`, `readPlaySurahBtn`, the two-way toggle, and
+round 21's own button-text assertions now that the controls are icons whose
+name lives in `aria-label`) — the reason is recorded in each. No
+`firestore.rules`, schema or Firestore data changes.
 
 ---
 

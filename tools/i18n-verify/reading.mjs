@@ -52,6 +52,14 @@ function readMetrics() {
     horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
     readScrollOverflowsX: scroll ? scroll.scrollWidth > scroll.clientWidth + 1 : null,
     immersive: document.body.classList.contains("immersive-read"),
+    // Clear space between the Arabic and the side of the phone. Round 22 added
+    // this because round 21 shipped a zero gutter and nothing noticed: nothing
+    // OVERFLOWED, so every existing check passed while the text sat on the glass.
+    textGutter: (() => {
+      const a = [...document.querySelectorAll(".ayah-arabic, .ayah-translation")]
+        .find((e) => e.getBoundingClientRect().width > 0);
+      return a ? Math.round(a.getBoundingClientRect().left) : 0;
+    })(),
   };
 }
 
@@ -66,11 +74,19 @@ for (const banner of [true, false]) {
     await page.click("#tabReadBtn");
     await page.waitForTimeout(400);
     const m = await page.evaluate(readMetrics);
+    // Shell round 22: full screen is a THREE-state cycle now (normal ->
+    // reading only -> bare), so one press is the middle state and two presses
+    // is the bare one. Both are measured; `f` stays the bare state, which is
+    // what this report has always compared against.
+    await page.click("#hideChromeBtn");
+    await page.waitForTimeout(300);
+    const mid = await page.evaluate(readMetrics);
     await page.click("#hideChromeBtn");
     await page.waitForTimeout(350);
     const f = await page.evaluate(readMetrics);
-    // A tap on the ayah text must bring the menus back -- and must not need a
-    // button, which is the whole point of the owner's own shape.
+    // A tap on the ayah text carries the cycle round to the start -- the owner
+    // asked for the tap to walk all three states, so from the bare one the
+    // next tap is back to normal.
     await page.click("#ayahPanels", { position: { x: 5, y: 5 } }).catch(() => {});
     await page.waitForTimeout(300);
     const back = await page.evaluate(() => document.body.classList.contains("immersive-read"));
@@ -82,7 +98,12 @@ for (const banner of [true, false]) {
     if (m.readScrollOverflowsX) bad.push("reading scrolls sideways");
     if (!f.immersive) bad.push("Full screen did nothing");
     if (f.readScrollH <= m.readScrollH) bad.push("Full screen gained nothing");
-    if (back) bad.push("tap did not bring the menus back");
+    if (back) bad.push("the tap did not carry the cycle back to normal");
+    if (mid.readScrollH <= m.readScrollH) bad.push("the middle state gained nothing");
+    if (f.readScrollH <= mid.readScrollH) bad.push("the bare state gained nothing over the middle one");
+    // Round 22's own regression: "edge to edge" must reach the CARD, not the
+    // text -- a zero gutter puts the Arabic's diacritics on the glass.
+    if (f.textGutter < 4) bad.push(`text gutter only ${f.textGutter}px in full screen`);
     if (errors.length) bad.push("page errors: " + errors.join(" | "));
     if (bad.length) problems++;
 
@@ -90,7 +111,7 @@ for (const banner of [true, false]) {
       `  ${name.padEnd(9)} reading ${String(m.readScrollH).padStart(4)}px` +
       ` | ayah visible ${String(m.ayahVisible).padStart(4)}px of ${String(m.ayahNeeds).padStart(4)}px needed` +
       ` | starts ${String(m.startsAt).padStart(3)}px down` +
-      ` | full screen ${String(f.readScrollH).padStart(4)}px` +
+      ` | mid ${String(mid.readScrollH).padStart(4)}px | bare ${String(f.readScrollH).padStart(4)}px (gutter ${f.textGutter}px)` +
       ` | ${bad.length ? "PROBLEM: " + bad.join("; ") : "ok"}`
     );
     await ctx.close();

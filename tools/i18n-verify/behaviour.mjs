@@ -8,6 +8,18 @@ let pass = 0, fail = 0;
 const check = (n, ok, d = "") => ok ? (pass++, console.log(`  PASS  ${n}`)) : (fail++, console.log(`  FAIL  ${n} ${d}`));
 const BANGLA = /[ঀ-৿]/;
 
+// Shell round 22 retired #readRef -- the owner spotted it printed the same
+// sentence as the dock's "Tracking:" line for five of the six unit types, and
+// the pickers now say it better because they are the readout AND the control.
+// This reads whichever of the two is actually on screen.
+const readingRef = (page) => page.evaluate(() => {
+  const dock = document.getElementById("unitLabel");
+  if (dock && dock.textContent.trim() && getComputedStyle(dock).display !== "none") return dock.textContent.trim();
+  const s = document.getElementById("readSurahSelect"), a = document.getElementById("readAyahSelect");
+  return `Surah ${s.value}, Ayah ${a.value}`;
+});
+
+
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 async function ctxFor(o) {
   const ctx = await newContext(browser, { viewport: { width: 390, height: 844 }, ...o });
@@ -1285,7 +1297,7 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
     readShown: !document.getElementById("readView").hidden,
     wheelHidden: getComputedStyle(document.getElementById("wheelSection")).display === "none",
     pressed: document.getElementById("tabReadBtn").getAttribute("aria-pressed"),
-    ref: document.getElementById("readRef").textContent.trim(),
+    ref: document.getElementById("readSurahSelect").value + ":" + document.getElementById("readAyahSelect").value,
     ayahs: document.querySelectorAll("#ayahPanels .ayah-arabic").length,
     navVisible: getComputedStyle(document.getElementById("singleAyahNavRow")).display !== "none",
     dockVisible: getComputedStyle(document.getElementById("dock")).display !== "none",
@@ -1299,7 +1311,9 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   // bar's own pair is exactly them), but the row itself stays because
   // #ayahPosition is the only place the surah's total is written.
   check("29b the ayah position readout came with it", reading.navVisible);
-  check("29b the reading names what is being read", /Surah/.test(reading.ref), reading.ref);
+  // Round 22: the pickers ARE the readout now, so "what is being read" is the
+  // surah and ayah they are set to rather than a sentence in a bar.
+  check("29b the reading names what is being read", /^\d+:\d+$/.test(reading.ref), reading.ref);
   check("29b the bottom bar is still there", reading.dockVisible);
 
   // Study options is ONE tap away while reading -- the owner's own reason for
@@ -1314,7 +1328,9 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   await page.click("#tabStudyOptionsBtn");
   await page.waitForTimeout(250);
 
-  // Full screen, and the tap that brings the menus back.
+  // Full screen, and the tap that carries the cycle round. Round 22 made this
+  // three states, and the app's own chrome goes at the FIRST one -- which is
+  // exactly what this check has always been about.
   await page.click("#hideChromeBtn");
   await page.waitForTimeout(350);
   const full = await page.evaluate(() => ({
@@ -1329,10 +1345,16 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   check("29d ...the Qur'an is still there", full.ayahs > 0);
   check("29d ...and it says how to get back", full.hint);
 
-  await page.click("#ayahPanels", { position: { x: 5, y: 5 } });
-  await page.waitForTimeout(300);
+  // Round 22: the tap CYCLES, so from the middle state it goes to bare and
+  // only then back to normal. Tap until the menus really are back.
+  for (let i = 0; i < 3; i++) {
+    const back = await page.evaluate(() => getComputedStyle(document.getElementById("dock")).display !== "none");
+    if (back) break;
+    await page.click("#ayahPanels", { position: { x: 5, y: 5 } });
+    await page.waitForTimeout(300);
+  }
   const restored = await page.evaluate(() => getComputedStyle(document.getElementById("dock")).display !== "none");
-  check("29d a tap on the text brings the menus back", restored);
+  check("29d tapping the text carries the cycle back to the menus", restored);
 
   // A tap on something you meant to press must NOT be swallowed as "show the
   // menus again" -- and must not hide them either, since nothing hides on a tap.
@@ -1345,10 +1367,16 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   });
   check("29d pressing a button inside the reading does not exit Full screen", stillFull);
 
-  // Back out of Full screen the only way there is -- a tap on the text. The
-  // dock is genuinely gone until then, which is why this line is not optional.
-  await page.click("#ayahPanels", { position: { x: 5, y: 5 } });
-  await page.waitForTimeout(300);
+  // Back out of Full screen the only way there is -- taps on the text. Round 22
+  // made that a THREE-state cycle, so one tap is not always enough, and the
+  // dock is genuinely gone until it completes: without this loop every action
+  // after it fails on an invisible #tabReadBtn.
+  for (let i = 0; i < 3; i++) {
+    const back = await page.evaluate(() => getComputedStyle(document.getElementById("dock")).display !== "none");
+    if (back) break;
+    await page.click("#ayahPanels", { position: { x: 5, y: 5 } });
+    await page.waitForTimeout(300);
+  }
 
   await page.click("#tabReadBtn"); // tapping the open tab returns to the wheel
   await page.waitForTimeout(350);
@@ -1377,7 +1405,7 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   await page.waitForTimeout(600);
   const firstAyah = await page.evaluate(() => ({
     position: document.getElementById("ayahPosition").textContent.trim(),
-    ref: document.getElementById("readRef").textContent.trim(),
+    ref: document.getElementById("unitLabel").textContent.trim(), // round 22: the dock is the one sentence now
   }));
   // Ayah 10 of Surah 2 sits in Ruku' 2, which runs 8-20 -- so "the first ayah
   // of the unit" is 8, NOT 1. Read the unit's own start out of the reference
@@ -1407,10 +1435,12 @@ console.log("\n=== 29h. The reading screen in Bangla ===");
   // else in this section is unchanged.
   const bn = await page.evaluate(() => ({
     noBack: !document.getElementById("backToWheelBtn"),
-    full: document.getElementById("hideChromeBtn").textContent.trim(),
-    ref: document.getElementById("readRef").textContent.trim(),
+    full: document.getElementById("hideChromeBtn").getAttribute("aria-label") || "",
+    ref: document.getElementById("unitLabel").textContent.trim()
+       || document.getElementById("readAyahSelect").selectedOptions[0]?.textContent.trim() || "",
   }));
   check("29h the way back to the wheel is the Read tab, not a button", bn.noBack);
+  // Round 22: an icon has no words, so its NAME is what has to be in Bangla.
   check("29h Full screen is Bangla", BANGLA.test(bn.full), bn.full);
   check("29h what is being read is Bangla, in Bengali digits",
         BANGLA.test(bn.ref) && !/[0-9]/.test(bn.ref), bn.ref);
@@ -1593,15 +1623,21 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   // state) and gave the freed slot to Full screen -- the owner's own plan. So
   // the row is four buttons still, and "Pause disabled while nothing plays"
   // became "the button reads Play while nothing plays".
+  // Round 22 merged the two control rows into one and retired "Whole surah"
+  // entirely, once Play started following the chosen unit -- so the row is
+  // Prev / Next / Play / Stop / Full screen, and the buttons are icons whose
+  // NAME lives in aria-label.
   const transport = await page.evaluate(() => ({
-    visible: !document.getElementById("readTransport").hidden,
-    buttons: [...document.querySelectorAll("#readTransport button")].map((b) => b.id),
-    playLabel: document.getElementById("readPlayBtn").textContent.trim(),
+    visible: !document.getElementById("readBar").hidden,
+    buttons: [...document.querySelectorAll("#readBar button")].map((b) => b.id),
+    noWholeSurah: !document.getElementById("readPlaySurahBtn"),
+    playLabel: document.getElementById("readPlayBtn").getAttribute("aria-label") || "",
     reciter: document.getElementById("readReciterName").textContent.trim(),
   }));
-  check("30j play, stop, whole-surah and full screen are on the reading screen",
-        transport.visible && JSON.stringify(transport.buttons) === '["readPlayBtn","readStopBtn","readPlaySurahBtn","hideChromeBtn"]', JSON.stringify(transport));
-  check("30j the merged button reads Play while nothing is playing",
+  check("30j prev, next, play, stop and full screen are on the reading screen",
+        transport.visible && JSON.stringify(transport.buttons) === '["prevUnitBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn"]', JSON.stringify(transport));
+  check("30j the separate 'Whole surah' button is gone (Play follows the unit)", transport.noWholeSurah);
+  check("30j the merged button is named Play while nothing is playing",
         /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
   check("30j the reading names the reciter it would use", transport.reciter.length > 0, transport.reciter);
 
@@ -1632,8 +1668,10 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   check("30l every Reading view tick is Bangla", bn.ticks.length === 5 && bn.ticks.every((x) => BANGLA.test(x)), JSON.stringify(bn.ticks));
   await page.click("#tabReadBtn");
   await page.waitForTimeout(500);
-  const t18 = await page.evaluate(() => [...document.querySelectorAll("#readTransport button")].map((b) => b.textContent.trim()));
-  check("30l the transport buttons are Bangla", t18.length === 4 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
+  // Round 22: icons carry no words, so what must be in Bangla is their name.
+  const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar button")].map((b) => b.getAttribute("aria-label") || ""));
+  check("30l every reading-screen control is NAMED in Bangla",
+        t18.length === 5 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
   await ctx.close();
 }
@@ -2143,7 +2181,7 @@ const setUnit = async (page, unit) => {
   await page.click("#tabStudyOptionsBtn"); // close it again
   await page.waitForTimeout(150);
 };
-const readRef = (page) => page.evaluate(() => document.getElementById("readRef").textContent.trim());
+const readRef = readingRef; // round 22: #readRef is retired, see readingRef above
 
 {
   const ctx = await ctxFor({ banner: false });
@@ -2151,34 +2189,23 @@ const readRef = (page) => page.evaluate(() => document.getElementById("readRef")
   await openRead(page);
 
   // --- 33a the bar itself -------------------------------------------------
-  const bar = await page.evaluate(() => {
-    const ids = [...document.querySelectorAll("#readBar > *")].map((el) => el.id);
-    return {
-      ids,
-      noBack: !document.getElementById("backToWheelBtn"),
-      fullInTransport: !!document.querySelector("#readTransport #hideChromeBtn"),
-      noSeparatePause: !document.getElementById("readPauseBtn"),
-      playLabel: document.getElementById("readPlayBtn").textContent.trim(),
-    };
-  });
-  check("33a the read bar is Prev · what is being read · Next",
-        bar.ids.join() === "prevUnitBtn,readRef,nextUnitBtn", JSON.stringify(bar.ids));
+  // Round 22 rebuilt this row again: the pickers took the name line's place
+  // (they say what is being read AND change it), and Play/Stop/Full screen
+  // came up from the retired transport row. All five are icons now.
+  const bar = await page.evaluate(() => ({
+    ids: [...document.querySelectorAll("#readBar > *")].map((el) => el.id),
+    noBack: !document.getElementById("backToWheelBtn"),
+    noSeparatePause: !document.getElementById("readPauseBtn"),
+    noRef: !document.getElementById("readRef"),
+    playLabel: document.getElementById("readPlayBtn").getAttribute("aria-label") || "",
+  }));
+  check("33a the read bar is Prev · Next · Play · Stop · Full screen · reciter",
+        bar.ids.join() === "prevUnitBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readReciterName",
+        JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
-  check("33a Full screen moved to the transport row", bar.fullInTransport);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
-  check("33a Play reads 'Play' while nothing is playing", /Play/.test(bar.playLabel) && !/Pause/.test(bar.playLabel), bar.playLabel);
-
-  // The measured reason the two buttons had to leave: #readRef ellipsises
-  // SILENTLY, and a Ruku' label needs 220px. Flanked by the old pair it had
-  // 139px at 390px -- "Ruku' 1 of Sur...".
-  await setUnit(page, "ruku");
-  await openRead(page);
-  const ref = await page.evaluate(() => {
-    const el = document.getElementById("readRef");
-    return { has: el.clientWidth, needs: el.scrollWidth, text: el.textContent.trim() };
-  });
-  check("33a the Ruku' line is no longer silently clipped",
-        ref.needs <= ref.has + 1, `${ref.needs}px needed, ${ref.has}px given — "${ref.text}"`);
+  check("33a the duplicated name line is gone (the pickers say it)", bar.noRef);
+  check("33a Play is named 'Play' while nothing is playing", /Play/.test(bar.playLabel) && !/Pause/.test(bar.playLabel), bar.playLabel);
 
   // --- 33b Next moves the unit, per unit type -----------------------------
   await setUnit(page, "range");
@@ -2212,7 +2239,7 @@ const readRef = (page) => page.evaluate(() => document.getElementById("readRef")
   await page.click("#nextUnitBtn");
   await page.waitForTimeout(900);
   const surahAfter = await page.evaluate(() => ({
-    ref: document.getElementById("readRef").textContent.trim(),
+    ref: document.getElementById("unitLabel").textContent.trim(),
     picker: document.getElementById("surahSelect").value,
   }));
   check("33b Next on Whole Surah opens the next surah, picker and all",
@@ -2244,7 +2271,7 @@ const readRef = (page) => page.evaluate(() => document.getElementById("readRef")
     document.getElementById("nextUnitBtn").click();
     await new Promise((r) => setTimeout(r, 1200));
     return { beforeSurah, afterSurah: document.getElementById("surahSelect").value,
-             ref: document.getElementById("readRef").textContent.trim() };
+             ref: document.getElementById("unitLabel").textContent.trim() };
   });
   check("33d Next at a surah's last ayah carries on into the next surah",
         crossed.beforeSurah === "1" && crossed.afterSurah === "2", JSON.stringify(crossed));
@@ -2290,22 +2317,26 @@ const readRef = (page) => page.evaluate(() => document.getElementById("readRef")
 
   await page.click("#tabStudyOptionsBtn");
   await openRead(page);
+  // Round 22: three states, so the bare one is two presses away.
+  await page.click("#hideChromeBtn");
+  await page.waitForTimeout(250);
   await page.click("#hideChromeBtn");
   await page.waitForTimeout(350);
   const everything = await page.evaluate(() => {
     const shown = (s) => { const e = document.querySelector(s); return !!e && getComputedStyle(e).display !== "none"; };
     return {
       banner: shown("body > h1"), nav: shown("#topNav"), dock: shown("#dock"),
-      readbar: shown("#readBar"), transport: shown("#readTransport"),
+      readbar: shown("#readPickers") || shown("#prevUnitBtn"),
+      transport: shown("#readPlayBtn"),
       quran: shown("#studyScreen"),
-      label: document.getElementById("hideChromeBtn").textContent.trim(),
+      label: document.getElementById("hideChromeBtn").getAttribute("aria-label") || "",
     };
   });
   check("33f with everything ticked, full screen leaves only the Qur'an",
         !everything.banner && !everything.nav && !everything.dock
         && !everything.readbar && !everything.transport && everything.quran,
         JSON.stringify(everything));
-  check("33f ...and the button says how to get out", /Exit/i.test(everything.label), everything.label);
+  check("33f ...and the button says how to get out", /Show/i.test(everything.label), everything.label);
 
   // The owner's own example of a partial choice: "show only bottom menu".
   const partial = await page.evaluate(async () => {
@@ -2322,10 +2353,13 @@ const readRef = (page) => page.evaluate(() => document.getElementById("readRef")
     document.getElementById("tabStudyOptionsBtn").click();
     await new Promise((r) => setTimeout(r, 250));
     document.getElementById("hideChromeBtn").click();
+    await new Promise((r) => setTimeout(r, 250));
+    document.getElementById("hideChromeBtn").click(); // round 22: two presses reach the bare state
     await new Promise((r) => setTimeout(r, 350));
     const shown = (s) => { const e = document.querySelector(s); return !!e && getComputedStyle(e).display !== "none"; };
     return { banner: shown("body > h1"), nav: shown("#topNav"), dock: shown("#dock"),
-             readbar: shown("#readBar"), transport: shown("#readTransport") };
+             readbar: shown("#readPickers") || shown("#prevUnitBtn"),
+             transport: shown("#readPlayBtn") };
   });
   check("33f 'keep the bottom menu and the play buttons' really keeps just those",
         !partial.banner && !partial.nav && !partial.readbar && partial.dock && partial.transport,
@@ -2348,7 +2382,10 @@ const readRef = (page) => page.evaluate(() => document.getElementById("readRef")
   check("33g a tap goes full screen", await imm());
   await page.click("#studyScreen", { position: { x: 8, y: 8 } });
   await page.waitForTimeout(350);
-  check("33g a second tap brings the menus back", !(await imm()));
+  check("33g a second tap hides more, rather than coming straight back", await imm());
+  await page.click("#studyScreen", { position: { x: 8, y: 8 } });
+  await page.waitForTimeout(350);
+  check("33g a third tap completes the cycle and the menus are back", !(await imm()));
 
   // A tap on something you meant to press must not flip the screen. With the
   // menus hidden the transport is gone too, so this is tested with the ticks
@@ -2364,12 +2401,17 @@ const readRef = (page) => page.evaluate(() => document.getElementById("readRef")
         !afterButton.had || afterButton.immersive, JSON.stringify(afterButton));
 
   // Edge to edge, taken literally: the study screen's own side padding goes.
+  // Round 22's correction: the CARD goes edge to edge (no border, no corner),
+  // but the TEXT keeps a gutter. Round 21 set this to 0 and put the Arabic's
+  // diacritics on the glass -- the owner's phone screenshot showed it, and no
+  // check caught it because nothing actually overflowed.
   const bleed = await page.evaluate(() => {
     const cs = getComputedStyle(document.getElementById("studyScreen"));
-    return { padL: cs.paddingLeft, padR: cs.paddingRight };
+    return { padL: parseFloat(cs.paddingLeft), borderL: cs.borderLeftStyle, radius: cs.borderTopLeftRadius };
   });
-  check("33g the Qur'an really reaches both edges in full screen",
-        bleed.padL === "0px" && bleed.padR === "0px", JSON.stringify(bleed));
+  check("33g the card is full-bleed but the text still has a gutter",
+        bleed.padL >= 4 && bleed.padL <= 12 && bleed.borderL === "none" && parseFloat(bleed.radius) === 0,
+        JSON.stringify(bleed));
 
   check("33g no page errors", errors.length === 0, errors.join(" | "));
   await page.close();
@@ -2381,15 +2423,16 @@ const readRef = (page) => page.evaluate(() => document.getElementById("readRef")
   const ctx = await ctxFor({ banner: false, appLang: "bn" });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await openRead(page);
-  const bn = await page.evaluate(() => ({
-    prev: document.getElementById("prevUnitBtn").textContent.trim(),
-    next: document.getElementById("nextUnitBtn").textContent.trim(),
-    full: document.getElementById("hideChromeBtn").textContent.trim(),
-    play: document.getElementById("readPlayBtn").textContent.trim(),
-  }));
+  // Round 22 made all five of these ICONS, so what has to be in Bangla is
+  // their spoken name, not their face -- an arrow reads the same either way.
+  const bn = await page.evaluate(() => {
+    const name = (id) => document.getElementById(id).getAttribute("aria-label") || "";
+    return { prev: name("prevUnitBtn"), next: name("nextUnitBtn"),
+             full: name("hideChromeBtn"), play: name("readPlayBtn") };
+  });
   const BN = /[ঀ-৿]/;
-  check("33h Prev and Next read in Bangla", BN.test(bn.prev) && BN.test(bn.next), JSON.stringify(bn));
-  check("33h Full screen and Play read in Bangla", BN.test(bn.full) && BN.test(bn.play), JSON.stringify(bn));
+  check("33h Prev and Next are NAMED in Bangla", BN.test(bn.prev) && BN.test(bn.next), JSON.stringify(bn));
+  check("33h Full screen and Play are NAMED in Bangla", BN.test(bn.full) && BN.test(bn.play), JSON.stringify(bn));
 
   await openStudyOptions(page);
   const bnTicks = await page.evaluate(() => ({
@@ -2406,6 +2449,203 @@ const readRef = (page) => page.evaluate(() => document.getElementById("readRef")
   await page.close();
   await ctx.close();
 }
+// ---------------------------------------------------------------------------
+// 34. Shell round 22: the pickers move onto the reading screen, full screen
+// becomes a three-state cycle, and Play follows the chosen unit.
+//
+// The owner's reasoning for the pickers: "an user might not go to study
+// option, straight will go to read ... so what about placing the Surah, Ayah,
+// Range, Juzz, Page, Ruku, Hizb, From and To picker in the Reading Screen?"
+// They chose to keep BOTH places for now, so these are mirrors with one
+// source of truth for behaviour.
+// ---------------------------------------------------------------------------
+console.log("\n=== 34. Shell round 22: pickers on the reading screen ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await openRead(page);
+
+  const pickers = await page.evaluate(() => {
+    const ids = [...document.querySelectorAll("#readPickers > *")].map((e) => e.id);
+    const visible = ids.filter((id) => !document.getElementById(id).hidden);
+    return { ids, visible, rows: document.querySelectorAll("#readPickers, #readBar").length };
+  });
+  check("34a every picker has a home on the reading screen",
+        pickers.ids.join() === "readUnitTypeSelect,readSurahSelect,readAyahSelect,readUnitNumSelect,readRangeFromSelect,readRangeToSelect",
+        JSON.stringify(pickers.ids));
+  check("34a for a Single Ayah, three of them show", pickers.visible.length === 3, JSON.stringify(pickers.visible));
+
+  // The mirror really drives the real control, and the real control's own
+  // handler is what does the work -- that is the whole safety of keeping both.
+  const surahMoved = await page.evaluate(async () => {
+    const m = document.getElementById("readSurahSelect");
+    m.value = "3";
+    m.dispatchEvent(new Event("change"));
+    await new Promise((r) => setTimeout(r, 1400));
+    return {
+      canonical: document.getElementById("surahSelect").value,
+      mirror: document.getElementById("readSurahSelect").value,
+      arabic: document.querySelectorAll("#ayahPanels .ayah-arabic").length,
+    };
+  });
+  check("34b changing the reading screen's Surah really loads that surah",
+        surahMoved.canonical === "3" && surahMoved.arabic > 0, JSON.stringify(surahMoved));
+
+  // ...and the other way: Study options still drives the mirror.
+  const backwards = await page.evaluate(async () => {
+    document.getElementById("tabStudyOptionsBtn").click();
+    await new Promise((r) => setTimeout(r, 250));
+    const c = document.getElementById("surahSelect");
+    c.value = "5";
+    c.dispatchEvent(new Event("change"));
+    await new Promise((r) => setTimeout(r, 1400));
+    document.getElementById("tabStudyOptionsBtn").click();
+    await new Promise((r) => setTimeout(r, 200));
+    return { mirror: document.getElementById("readSurahSelect").value };
+  });
+  check("34b ...and changing it in Study options moves the reading screen's copy",
+        backwards.mirror === "5", JSON.stringify(backwards));
+
+  // The owner's answer to "From and To only, or all three?" was all three.
+  const rangeCells = await page.evaluate(async () => {
+    const m = document.getElementById("readUnitTypeSelect");
+    m.value = "range";
+    m.dispatchEvent(new Event("change"));
+    await new Promise((r) => setTimeout(r, 700));
+    const ids = [...document.querySelectorAll("#readPickers > *")].filter((e) => !e.hidden).map((e) => e.id);
+    const boxes = [...document.querySelectorAll("#readPickers > *")].filter((e) => !e.hidden)
+      .map((e) => e.getBoundingClientRect());
+    const oneLine = boxes.every((b) => Math.abs(b.top - boxes[0].top) < 3);
+    return { ids, oneLine, overflow: document.documentElement.scrollWidth > innerWidth + 1 };
+  });
+  check("34c with a Range on, Ayah AND From AND To all show — the owner's 'all 3'",
+        rangeCells.ids.join() === "readUnitTypeSelect,readSurahSelect,readAyahSelect,readRangeFromSelect,readRangeToSelect",
+        JSON.stringify(rangeCells.ids));
+  check("34c ...all five on one line, with no sideways overflow",
+        rangeCells.oneLine && !rangeCells.overflow, JSON.stringify(rangeCells));
+
+  const numbered = await page.evaluate(async () => {
+    const m = document.getElementById("readUnitTypeSelect");
+    m.value = "juz";
+    m.dispatchEvent(new Event("change"));
+    await new Promise((r) => setTimeout(r, 1200));
+    const numSel = document.getElementById("readUnitNumSelect");
+    return { shown: !numSel.hidden, options: numSel.options.length, name: numSel.getAttribute("aria-label") };
+  });
+  check("34c a numbered unit shows its own number cell, with all 30 juz",
+        numbered.shown && numbered.options === 30, JSON.stringify(numbered));
+
+  check("34 no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 34d Play follows the chosen unit ----------------------------------
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  // Watch what is actually requested rather than trusting the button.
+  const wanted = [];
+  await ctx.route("**/archive.org/**", (r) => { wanted.push(r.request().url()); r.abort(); });
+  await openRead(page);
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+
+  const single = await page.evaluate(async () => {
+    document.getElementById("readPlayBtn").click();
+    await new Promise((r) => setTimeout(r, 900));
+    return true;
+  });
+  const afterSingle = wanted.length;
+  check("34d Play on a Single Ayah asks for that one ayah's file",
+        afterSingle >= 1 && /001001\.mp3$/.test(wanted[0] || ""), JSON.stringify(wanted.slice(0, 2)));
+
+  const noWholeSurah = await page.evaluate(() => !document.getElementById("readPlaySurahBtn"));
+  check("34d the separate 'Whole surah' button is gone", noWholeSurah);
+
+  // A Range must ask for the range's FIRST ayah, not the current one only --
+  // playAyahRange walks the window.
+  wanted.length = 0;
+  const ranged = await page.evaluate(async () => {
+    document.getElementById("readStopBtn").click();
+    const m = document.getElementById("readUnitTypeSelect");
+    m.value = "range";
+    m.dispatchEvent(new Event("change"));
+    await new Promise((r) => setTimeout(r, 700));
+    document.getElementById("readPlayBtn").click();
+    await new Promise((r) => setTimeout(r, 900));
+    return document.getElementById("readAyahSelect").value;
+  });
+  check("34d Play on a Range starts the range rather than refusing",
+        wanted.length >= 1, JSON.stringify(wanted.slice(0, 2)));
+
+  // And the label must not lie after a failed load -- round 22's own fix.
+  await page.waitForTimeout(600);
+  const label = await page.evaluate(() => document.getElementById("readPlayBtn").getAttribute("aria-label") || "");
+  check("34d after playback fails the button does not still say Pause",
+        /Play/.test(label), label);
+
+  check("34d no page errors", errors.filter((e) => !/archive\.org|ERR_/.test(e)).length === 0,
+        errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 34e the three-state cycle, and its middle stop --------------------
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await openRead(page);
+  const stateOf = () => page.evaluate(() => {
+    const shown = (s) => { const e = document.querySelector(s); return !!e && getComputedStyle(e).display !== "none"; };
+    return { banner: shown("body > h1"), nav: shown("#topNav"), dock: shown("#dock"),
+             pickers: shown("#readPickers"), play: shown("#readPlayBtn"), quran: shown("#studyScreen") };
+  });
+  const s0 = await stateOf();
+  await page.click("#studyScreen", { position: { x: 8, y: 8 } });
+  await page.waitForTimeout(320);
+  const s1 = await stateOf();
+  await page.click("#studyScreen", { position: { x: 8, y: 8 } });
+  await page.waitForTimeout(320);
+  const s2 = await stateOf();
+  await page.click("#studyScreen", { position: { x: 8, y: 8 } });
+  await page.waitForTimeout(320);
+  const s3 = await stateOf();
+
+  check("34e state 1 is everything", s0.banner && s0.nav && s0.dock && s0.pickers && s0.play);
+  check("34e state 2 is THE OWNER'S MISSING ONE: two bars only, no app chrome",
+        !s1.banner && !s1.nav && !s1.dock && s1.pickers && s1.play && s1.quran, JSON.stringify(s1));
+  check("34e state 3 is bare — nothing but the Qur'an",
+        !s2.banner && !s2.nav && !s2.dock && !s2.pickers && !s2.play && s2.quran, JSON.stringify(s2));
+  check("34e a fourth tap is back where it started",
+        s3.banner && s3.nav && s3.dock && s3.pickers && s3.play, JSON.stringify(s3));
+
+  check("34e no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 34f all of it in Bangla ------------------------------------------
+  const ctx = await ctxFor({ banner: false, appLang: "bn" });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await openRead(page);
+  const bn = await page.evaluate(() => ({
+    names: [...document.querySelectorAll("#readPickers select")].map((s) => s.getAttribute("aria-label") || ""),
+    unitOption: document.querySelector("#readUnitTypeSelect option")?.textContent.trim(),
+    unitValue: document.querySelector("#readUnitTypeSelect option")?.value,
+    ayahOption: document.querySelector("#readAyahSelect option")?.textContent.trim(),
+    ayahValue: document.querySelector("#readAyahSelect option")?.value,
+  }));
+  check("34f every picker is NAMED in Bangla", bn.names.every((n) => BANGLA.test(n)), JSON.stringify(bn.names));
+  check("34f the unit options read in Bangla while their values stay plain ids",
+        BANGLA.test(bn.unitOption || "") && bn.unitValue === "ayah", JSON.stringify(bn));
+  check("34f the ayah numbers are Bengali digits while the value stays plain",
+        !/[0-9]/.test(bn.ayahOption || "") && bn.ayahValue === "1", JSON.stringify(bn));
+  check("34f no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);

@@ -438,14 +438,37 @@
     gap: 0.4rem; padding: 0.25rem 0 0.4rem; border-bottom: 1px solid #eef1f7;
   }
   #readBar button { font-size: 0.78rem; padding: 0.3rem 0.55rem; margin: 0; white-space: nowrap; }
-  #readRef { font-size: 0.8rem; color: #1F3A6E; font-weight: 600; text-align: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  #readTransport {
-    flex: 0 0 auto; display: flex; align-items: center; gap: 0.3rem;
-    padding: 0.3rem 0 0.35rem; flex-wrap: wrap;
+  /* Shell round 22 -- icon-only controls, the owner's ask ("previous and full
+     screen can be shown as an icon only, takes minimal space"). Every one
+     carries an aria-label and a title, so the icon has a spoken name and a
+     long-press tooltip: an icon row with no names is a wall of symbols. The
+     reciter's name is deliberately left as plain text beside them, so the row
+     always has one thing that reads as words. */
+  #readBar .qr-ico { font-size: 0.95rem; line-height: 1; padding: 0.3rem 0.5rem; flex: 0 0 auto; }
+  #readBar button[disabled] { opacity: 0.45; }
+  /* One line, always. Round 22 put this on the same row as five buttons, and a
+     two-line reciter name makes the whole reading screen taller for nothing --
+     it is a caption, so it clips rather than wraps. It is also the one thing in
+     an otherwise all-icon row that reads as words, which is why it stays. */
+  #readReciterName { font-size: 0.72rem; color: #667; margin-left: auto; min-width: 0;
+                     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Shell round 22 -- the pickers, mirroring Study options. minmax(0,1fr) via
+     flex:1 1 0 + min-width:0 is what actually lets the two wide selects share a
+     line with up to three narrow ones on a 360px phone. */
+  #readPickers {
+    display: flex; align-items: center; gap: 0.25rem;
+    padding: 0.25rem 0.4rem; border-bottom: 1px solid #eee; flex: none;
   }
-  #readTransport button { font-size: 0.78rem; padding: 0.3rem 0.5rem; margin: 0; }
-  #readTransport button[disabled] { opacity: 0.45; }
-  #readReciterName { font-size: 0.72rem; color: #667; margin-left: auto; }
+  #readPickers select { margin: 0; font-size: 0.78rem; padding: 0.2rem 0.25rem; min-width: 0; flex: 1 1 0; }
+  #readPickers select[hidden] { display: none; }
+  /* Three digits never need a share of the line -- same rule as the Study
+     options bar's own .opt-cell-num. */
+  #readPickers #readAyahSelect,
+  #readPickers #readUnitNumSelect,
+  #readPickers #readRangeFromSelect,
+  #readPickers #readRangeToSelect { flex: 0 0 3.1rem; }
+/* Round 22 retired #readTransport: Play and Stop moved up into #readBar, and
+     "Whole surah" went entirely once Play started following the chosen unit. */
   #readScroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
   /* The Reading view ticks: one line each on a phone, wrapping as needed --
      four short labels, no grid needed. */
@@ -495,12 +518,26 @@
   body.immersive-read.fs-hide-banner #globalBanner { display: none; }
   body.immersive-read.fs-hide-topnav > #topNav { display: none; }
   body.immersive-read.fs-hide-dock #dock { display: none; }
-  body.immersive-read.fs-hide-readbar #readBar { display: none; }
-  body.immersive-read.fs-hide-transport #readTransport { display: none; }
-  /* "Edge to edge" taken literally, the owner's own words. #studyScreen's own
-     1rem padding and its border are the last thing between the Arabic and the
-     side of the phone once the strips are gone -- measured at 17px a side. */
-  body.immersive-read #studyScreen { padding-left: 0; padding-right: 0; border-left: none; border-right: none; border-radius: 0; margin-top: 0; }
+  /* Round 22 merged the two control rows into one, so these two switches now
+     hide their own BUTTONS rather than a whole row -- otherwise the owner's
+     "show the next buttons, play button ... individually or together" would
+     have quietly become one switch. The row itself only goes when both do. */
+  body.immersive-read.fs-hide-readbar #readPickers,
+  body.immersive-read.fs-hide-readbar #prevUnitBtn,
+  body.immersive-read.fs-hide-readbar #nextUnitBtn { display: none; }
+  body.immersive-read.fs-hide-transport #readPlayBtn,
+  body.immersive-read.fs-hide-transport #readStopBtn,
+  body.immersive-read.fs-hide-transport #readReciterName { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar { display: none; }
+  /* Round 21 read "edge to edge" as applying to the TEXT and set this to 0,
+     which put the Arabic hard against the glass -- diacritics and end-of-ayah
+     marks on the edge, which is what the owner's phone screenshot showed.
+     Measured: 17px a side normally, 0px in full screen, and nothing technically
+     overflowed, which is why no check caught it (reading.mjs only asked whether
+     the scroller scrolls sideways; it measures the gutter now).
+     The CARD is what goes edge to edge -- no border, no corner, background all
+     the way out -- while the text keeps a small gutter to breathe in. */
+  body.immersive-read #studyScreen { padding-left: 0.5rem; padding-right: 0.5rem; border-left: none; border-right: none; border-radius: 0; margin-top: 0; }
 
   /* ---------- Study screen ---------- */
   #studyScreen { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 1rem; margin-top: 0.5rem; }
@@ -651,23 +688,40 @@
              SILENTLY, and flanked by those two buttons it had 139px at 390px
              for a Ruku' label needing 220px -- "Ruku' 1 of Sur…". Prev/Next
              are narrower, so the line now gets 245px and the sentence fits. -->
-        <div id="readBar">
-          <button type="button" class="secondary" id="prevUnitBtn">◂ Prev</button>
-          <div id="readRef"></div>
-          <button type="button" class="secondary" id="nextUnitBtn">Next ▸</button>
+        <!-- Shell round 22 -- the pickers, on the screen where the reading
+             actually happens. The owner's reasoning: "an user might not go to
+             study option, straight will go to read. There the user has last
+             session, or pulls a bookmark, anyways user stays on read." So the
+             one thing they could not do from here was change what they read.
+             These are MIRRORS, not a second source of truth: every one of them
+             copies its options and value from the matching control in Study
+             options and forwards a change straight back to it, so the existing
+             handler is still the only code that decides anything. The owner
+             chose to keep both places for now.
+             Measured: this row plus the icon row below come to 68px against
+             the 94px they replace, one line each at 360/390/412px with five
+             cells showing (Range), nothing clipped. -->
+        <div id="readPickers">
+          <select id="readUnitTypeSelect" aria-label="Study Unit"></select>
+          <select id="readSurahSelect" aria-label="Surah"></select>
+          <select id="readAyahSelect" aria-label="Ayah"></select>
+          <select id="readUnitNumSelect" aria-label="Number" hidden></select>
+          <select id="readRangeFromSelect" aria-label="From" hidden></select>
+          <select id="readRangeToSelect" aria-label="To" hidden></select>
         </div>
-        <!-- Shell round 18, the owner's ask: play/pause/stop belong ON the
-             reading screen, not two taps away inside Listening settings.
-             Round 21 merges Play and Pause into one button -- the owner's own
-             suggestion, and it pays for Full screen's seat here. Pause is
-             still a real pause underneath (audio-player.js keeps the position
-             and the queue); Stop ends the run. The reciter is whichever one is
-             ticked first in Listening settings -- one list, named once. -->
-        <div id="readTransport">
-          <button type="button" class="secondary" id="readPlayBtn">▶ Play</button>
-          <button type="button" class="secondary" id="readStopBtn">■ Stop</button>
-          <button type="button" class="secondary" id="readPlaySurahBtn">▶ Whole surah</button>
-          <button type="button" class="secondary" id="hideChromeBtn">⤢ Full screen</button>
+        <!-- Prev and Next stay HERE, beside the pickers, rather than moving
+             down with Play: they change WHAT IS READ, like the pickers, while
+             Play and Stop change what is HEARD. Grouped by what a control does
+             rather than by leftover space. #readRef is gone -- the owner spotted
+             it printed the same sentence as the dock's "Tracking:" line for five
+             of the six unit types, and the pickers now say it better, because
+             they are the readout AND the control. -->
+        <div id="readBar">
+          <button type="button" class="secondary qr-ico" id="prevUnitBtn" aria-label="Previous" title="Previous">◂</button>
+          <button type="button" class="secondary qr-ico" id="nextUnitBtn" aria-label="Next" title="Next">▸</button>
+          <button type="button" class="secondary qr-ico" id="readPlayBtn" aria-label="Play" title="Play">▶</button>
+          <button type="button" class="secondary qr-ico" id="readStopBtn" aria-label="Stop" title="Stop">■</button>
+          <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
           <span id="readReciterName"></span>
         </div>
         <div id="readScroll">
@@ -862,7 +916,7 @@
           <div class="fs-ticks" id="fullScreenHides">
             <label><input type="checkbox" data-fs-hide="banner" /> Banner</label>
             <label><input type="checkbox" data-fs-hide="topnav" /> Top menu</label>
-            <label><input type="checkbox" data-fs-hide="readbar" /> Prev and Next</label>
+            <label><input type="checkbox" data-fs-hide="readbar" /> Pickers, Prev and Next</label>
             <label><input type="checkbox" data-fs-hide="transport" /> Play controls</label>
             <label><input type="checkbox" data-fs-hide="dock" /> Bottom menu</label>
           </div>
@@ -994,7 +1048,7 @@
     import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler } from "./js/mastery-wheel.js";
     import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab, renderWayModalShell, attachWayModalHandlers } from "./js/way-modal.js";
     import {
-      RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah,
+      RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah, playAyahRange,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
       warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused, unlockAudio,
       setPlaybackStateHandler,
@@ -1106,10 +1160,8 @@
     const unitNumLabel = document.getElementById("unitNumLabel");
     const unitNumSelect = document.getElementById("unitNumSelect");
     const unitSpanReadout = document.getElementById("unitSpanReadout");
-    const readTransport = document.getElementById("readTransport");
     const readPlayBtn = document.getElementById("readPlayBtn");
     const readStopBtn = document.getElementById("readStopBtn");
-    const readPlaySurahBtn = document.getElementById("readPlaySurahBtn");
     const readReciterName = document.getElementById("readReciterName");
     const wbwLangControl = document.getElementById("wbwLangControl");
     const wbwLangSelect = document.getElementById("wbwLangSelect");
@@ -1155,7 +1207,30 @@
     const dockTabs = Array.from(document.querySelectorAll(".qr-tab[data-panel]"));
     const tabReadBtn = document.getElementById("tabReadBtn");
     const readView = document.getElementById("readView");
-    const readBarRef = document.getElementById("readRef");
+    // Shell round 22 -- the reading screen's own pickers. Each one MIRRORS the
+    // control of the same name in Study options: it copies that control's
+    // options and value, and forwards a change straight back to it, so the
+    // canonical handler stays the only code that decides anything. The owner
+    // chose to keep both places for now ("will decide later if should keep
+    // only one"), and this shape is what makes that safe -- there is one
+    // source of truth for behaviour even though there are two sets of boxes.
+    const READ_PICKER_MIRRORS = [
+      ["readUnitTypeSelect", "unitTypeSelect"],
+      ["readSurahSelect", "surahSelect"],
+      ["readAyahSelect", "ayahSelect"],
+      ["readUnitNumSelect", "unitNumSelect"],
+      ["readRangeFromSelect", "rangeFromSelect"],
+      ["readRangeToSelect", "rangeToSelect"],
+    ].map(([mirrorId, sourceId]) => ({
+      mirror: document.getElementById(mirrorId),
+      source: document.getElementById(sourceId),
+    }));
+    const readUnitTypeSelect = document.getElementById("readUnitTypeSelect");
+    const readAyahSelect = document.getElementById("readAyahSelect");
+    const readSurahSelect = document.getElementById("readSurahSelect");
+    const readUnitNumSelect = document.getElementById("readUnitNumSelect");
+    const readRangeFromSelect = document.getElementById("readRangeFromSelect");
+    const readRangeToSelect = document.getElementById("readRangeToSelect");
     const readHint = document.getElementById("readHint");
     const hideChromeBtn = document.getElementById("hideChromeBtn");
     const prevUnitBtn = document.getElementById("prevUnitBtn");
@@ -1678,6 +1753,11 @@
       const current = currentUnitNumber();
       if (current !== null && numbers.includes(current)) unitNumSelect.value = String(current);
       renderUnitSpanReadout();
+      // Round 22: Juz/Hizb/Page fill this list only once their boundary table
+      // has arrived, which is AFTER renderStudyScreen() has already synced the
+      // reading screen's copy -- so it has to be told again here, or the
+      // reading screen shows an empty number cell for those three units.
+      syncReadPickers();
     }
 
     /** What the chosen unit covers, in words. The owner's own rule for a unit
@@ -1893,10 +1973,29 @@
       }
       prevUnitBtn.disabled = atStart;
       nextUnitBtn.disabled = atEnd;
+      // Icon-only since round 22, so the name lives in the attributes.
+      for (const [btn, key] of [[prevUnitBtn, "Previous"], [nextUnitBtn, "Next"]]) {
+        btn.setAttribute("aria-label", t(key));
+        btn.setAttribute("title", t(key));
+      }
+      readStopBtn.setAttribute("aria-label", t("Stop"));
+      readStopBtn.setAttribute("title", t("Stop"));
     }
 
     prevUnitBtn.addEventListener("click", () => stepUnit(-1));
     nextUnitBtn.addEventListener("click", () => stepUnit(1));
+
+    // A mirror decides nothing: it writes the value onto the control it copies
+    // and fires that control's own "change", so every rule about loading a
+    // surah, remembering a range's width or jumping to a unit number keeps
+    // living in exactly one place.
+    for (const { mirror, source } of READ_PICKER_MIRRORS) {
+      if (!mirror || !source) continue;
+      mirror.addEventListener("change", () => {
+        source.value = mirror.value;
+        source.dispatchEvent(new Event("change"));
+      });
+    }
 
     unitTypeSelect.addEventListener("change", () => {
       currentUnitType = unitTypeSelect.value;
@@ -2387,27 +2486,72 @@
       if (!reading) setImmersive(false);
     }
 
-    /** Shell round 21 -- WHICH strips full screen takes away is the reader's
-        own stored choice, so the class that hides each one is applied here
-        rather than being baked into the CSS. `immersive-read` alone now means
-        only "full screen is on"; the five `fs-hide-*` classes beside it say
-        what that means today. Re-read on every call, so a tick changed in
-        Study options takes effect the very next time full screen goes on. */
-    function setImmersive(on) {
-      const hides = on ? getFullScreenHides() : [];
-      document.body.classList.toggle("immersive-read", on);
+    // -----------------------------------------------------------------------
+    // Shell round 22 -- THREE full-screen states, walked by one gesture.
+    //
+    // Round 21 built five switches for what full screen hides, and the owner's
+    // reply was that the middle setting they wanted was unreachable: "one was
+    // no bar stays (you did that), 2nd, 2 bars only (next and play bars), how
+    // do we have that option?" It WAS expressible -- untick two boxes in
+    // Reading view -- but a setting you have to go and find is a chore, not an
+    // option. So the tap walks all three instead:
+    //
+    //   0 NORMAL   everything
+    //   1 READING  the app's own chrome goes, the reading's own controls stay
+    //   2 BARE     whatever the five switches say (all of them, by default)
+    //
+    // State 1 is a FIXED set on purpose -- it is the owner's own description
+    // of it ("2 bars only"), and making it configurable too would be two
+    // settings for one idea. The switches keep defining state 2.
+    // -----------------------------------------------------------------------
+    const READING_ONLY_HIDES = ["banner", "topnav", "dock"];
+    let readChromeState = 0;
+
+    /** The states worth stopping at. State 2 is skipped when the reader has
+        unticked everything, because it would then be identical to state 0 and
+        the cycle would appear to do nothing every third tap. */
+    function readChromeStates() {
+      return getFullScreenHides().length ? [0, 1, 2] : [0, 1];
+    }
+
+    function setReadChrome(state) {
+      readChromeState = state;
+      const hides = state === 1 ? READING_ONLY_HIDES : state === 2 ? getFullScreenHides() : [];
+      document.body.classList.toggle("immersive-read", state !== 0);
       for (const id of FULLSCREEN_HIDEABLE) {
         document.body.classList.toggle(`fs-hide-${id}`, hides.includes(id));
       }
-      // The hint is the only thing telling a first-time reader that a tap
-      // brings the menus back, so it is pointless when nothing was hidden.
-      readHint.hidden = !on || hides.length === 0;
+      // The hint is the only thing telling a first-time reader that the tap
+      // keeps going, so it says what the NEXT tap will do rather than what the
+      // last one did.
+      const states = readChromeStates();
+      const next = states[(states.indexOf(state) + 1) % states.length];
+      readHint.textContent = next === 0
+        ? t("Tap the text to bring the menus back.")
+        : t("Tap again to hide more.");
+      readHint.hidden = state === 0;
       if (!readHint.hidden) {
         clearTimeout(readHint._timer);
         readHint._timer = setTimeout(() => { readHint.hidden = true; }, 3500);
       }
-      hideChromeBtn.textContent = on ? t("⤢ Exit full screen") : t("⤢ Full screen");
-      hideChromeBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      // The button advances the same cycle, and names what pressing it does.
+      const btnLabel = next === 0 ? t("Show the menus") : next === 1 ? t("Full screen") : t("Hide everything");
+      hideChromeBtn.setAttribute("aria-label", btnLabel);
+      hideChromeBtn.setAttribute("title", btnLabel);
+      hideChromeBtn.setAttribute("aria-pressed", state !== 0 ? "true" : "false");
+    }
+
+    /** One step round the cycle -- what both the tap and the button do. */
+    function advanceReadChrome() {
+      const states = readChromeStates();
+      const at = states.indexOf(readChromeState);
+      setReadChrome(states[(at + 1) % states.length]);
+    }
+
+    /** Kept for the callers that only ever mean "on" or "off": opening a panel
+        over a hidden dock, leaving the reading screen, opening Mushaf. */
+    function setImmersive(on) {
+      setReadChrome(on ? (readChromeStates().includes(2) ? 2 : 1) : 0);
     }
 
     // ---- Full screen: what it hides (Reading view card) --------------------
@@ -2429,7 +2573,7 @@
       renderFullScreenHideTicks();
       // If full screen is on right now, the change should be visible at once
       // rather than only on the next toggle.
-      if (document.body.classList.contains("immersive-read")) setImmersive(true);
+      if (readChromeState !== 0) setReadChrome(readChromeState);
     });
 
     /** Owner's answer, asked before building: a multi-ayah unit opens at its
@@ -2470,7 +2614,7 @@
       if (mushafToggle.checked) setImmersive(true);
     });
 
-    hideChromeBtn.addEventListener("click", () => setImmersive(!document.body.classList.contains("immersive-read")));
+    hideChromeBtn.addEventListener("click", advanceReadChrome);
 
     // Shell round 21 -- a tap on the reading TOGGLES full screen, both ways.
     // The owner's own ask, and it reverses round 17's deliberate one-way rule
@@ -2483,7 +2627,7 @@
     readView.addEventListener("click", (e) => {
       if (e.target.closest("button, a, input, select, textarea, label, [role='button']")) return;
       if (String(window.getSelection?.() ?? "").length > 0) return;
-      setImmersive(!document.body.classList.contains("immersive-read"));
+      advanceReadChrome();
     });
 
     document.querySelectorAll("[data-close-panel]").forEach((btn) => {
@@ -2896,10 +3040,40 @@
       renderReadTransport();
       renderUnitSpanReadout();
       renderUnitNav(); // shell round 21 -- the read bar's own Prev/Next ends
-      // The reading screen's own "what am I reading" line -- the same sentence
-      // currentUnitInfo() already writes for the dock, translated, so a Range
-      // or a Ruku' names itself here instead of only the one ayah showing.
-      readBarRef.textContent = currentUnitInfo().label;
+      syncReadPickers(); // shell round 22 -- the reading screen's own copies
+    }
+
+    /** Shell round 22 -- bring the reading screen's pickers into line with the
+        Study options controls they mirror. Options are only rebuilt when they
+        have actually changed: a surah's ayah list can be 286 entries, and this
+        runs on every render. */
+    function syncReadPickers() {
+      for (const { mirror, source } of READ_PICKER_MIRRORS) {
+        if (!mirror || !source) continue;
+        const stale = mirror.options.length !== source.options.length
+          || mirror.options[0]?.value !== source.options[0]?.value
+          || mirror.options[mirror.options.length - 1]?.value !== source.options[source.options.length - 1]?.value;
+        if (stale) mirror.innerHTML = source.innerHTML;
+        if (mirror.value !== source.value) mirror.value = source.value;
+      }
+      // Which cells are showing. The number cell follows the unit type exactly
+      // as Study options' own does; From/To appear for a Range. The Ayah cell
+      // stays visible for EVERY unit -- the owner's answer to "From and To
+      // only, or all three?" was all three, so it is here even alongside a
+      // range, where it moves the tracked ayah within the window.
+      const numbered = NUMBERED_UNITS.includes(currentUnitType);
+      const isRange = currentUnitType === "range";
+      readUnitNumSelect.hidden = !numbered;
+      readRangeFromSelect.hidden = !isRange;
+      readRangeToSelect.hidden = !isRange;
+      // An aria-label is an ATTRIBUTE, so translateStatic() -- which walks the
+      // page's text nodes -- never sees it. These are named here instead, and
+      // the number cell borrows the same per-unit wording Study options uses.
+      for (const [el, key] of [
+        [readUnitTypeSelect, "Study Unit"], [readSurahSelect, "Surah"], [readAyahSelect, "Ayah"],
+        [readRangeFromSelect, "From"], [readRangeToSelect, "To"],
+      ]) el.setAttribute("aria-label", t(key));
+      readUnitNumSelect.setAttribute("aria-label", numbered ? t(UNIT_NUM_LABELS[currentUnitType]) : t("Number"));
     }
 
     // -----------------------------------------------------------------------
@@ -3007,21 +3181,18 @@
     // restarting. Stop ends the run.
     // -----------------------------------------------------------------------
     function renderReadTransport() {
-      // Round 19: always there. An Approach declaring no "audio" panel used to
-      // hide this whole row -- 25 of the 32 -- which is exactly the blocking
-      // the owner's rule forbids.
-      readTransport.hidden = false;
       const reciter = RECITERS[currentReciterId];
       readReciterName.textContent = reciter ? reciter.label : "";
-      readPlaySurahBtn.hidden = false;
       // Shell round 21 -- ONE button for Play and Pause, the owner's own
-      // suggestion, which is what pays for Full screen's seat on this row.
-      // The label follows the audio's real state (setPlaybackStateHandler
-      // below re-renders on every play/pause/end from ANY cause), so it can
-      // never sit there reading "Pause" with nothing playing.
+      // suggestion. The label follows the audio's REAL state
+      // (setPlaybackStateHandler below re-renders on every play/pause/end/error
+      // from ANY cause), so it can never sit there reading "Pause" with nothing
+      // playing -- including after a failed load, which is round 22's own fix.
       const playing = isPlaying();
-      readPlayBtn.textContent = playing ? t("⏸ Pause") : t("▶ Play");
-      readPlayBtn.setAttribute("aria-label", playing ? t("⏸ Pause") : t("▶ Play"));
+      readPlayBtn.textContent = playing ? "⏸" : "▶";
+      const label = playing ? t("⏸ Pause") : t("▶ Play");
+      readPlayBtn.setAttribute("aria-label", label);
+      readPlayBtn.setAttribute("title", label);
     }
 
     // A clip finishing on its own, a playlist advancing, a drill step ending:
@@ -3046,22 +3217,26 @@
       stopDrill();
       const reciterId = currentReciterId;
       const reciter = RECITERS[reciterId];
+      // Shell round 22 -- Play SOUNDS WHAT IS ON SCREEN. The owner's own words
+      // were that "Whole surah" becomes redundant, which was nearly true: Play
+      // always played exactly one ayah whatever unit was chosen, so only the
+      // separate button could play more. Now a Range plays the range, a Ruku'
+      // plays the ruku', Whole Surah plays the surah -- and the separate button
+      // is genuinely redundant and gone.
+      const [from, to] = currentUnitAyahBounds();
       try {
-        if (!reciterSupportsSingleAyah(reciterId)) throw new Error(t("{reciter} only has whole-surah audio — use Whole surah instead.", { reciter: reciter?.label ?? reciterId }));
-        if (reciter.kind === "segmented") await playSegmentedAyah(currentSurahNum, currentAyahNum, reciterId);
-        else await playAyah(currentSurahNum, currentAyahNum, reciterId);
-      } catch (err) {
-        alert(err.message);
-      }
-      renderReadTransport();
-    });
-
-    readPlaySurahBtn.addEventListener("click", async () => {
-      unlockAudio();
-      warmSegmentedTimestamps();
-      stopDrill();
-      try {
-        await playSurah(currentSurahNum, currentReciterId, currentSurahData.ayahCount);
+        // A reciter with no per-ayah files (English Kevan Brighting, Bangla
+        // Shareef Bayezid Mahmud) can only ever play its one whole-surah file.
+        // That used to be an error telling the reader to press a button that
+        // no longer exists; playing the surah is the useful answer instead.
+        if (!reciterSupportsSingleAyah(reciterId) || currentUnitType === "surah") {
+          await playSurah(currentSurahNum, reciterId, currentSurahData.ayahCount);
+        } else if (from === to) {
+          if (reciter.kind === "segmented") await playSegmentedAyah(currentSurahNum, from, reciterId);
+          else await playAyah(currentSurahNum, from, reciterId);
+        } else {
+          await playAyahRange(currentSurahNum, from, to, reciterId);
+        }
       } catch (err) {
         alert(err.message);
       }
