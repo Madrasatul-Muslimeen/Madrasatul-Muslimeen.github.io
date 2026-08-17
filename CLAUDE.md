@@ -638,7 +638,8 @@ shared-CSS changes -- this page's own markup, CSS and inline script only.
 **Pushed to the production mirror the same day** (`madrasatul-muslimeen.
 github.io`, `app/js/version.js` + `app/quranrevival.html` -- the only two
 files that differed, so the mirror had no unrelated drift), on the owner's
-explicit go-ahead, per this file's own "ask before pushing there" rule.
+explicit go-ahead, per this file's own "ask before pushing there" rule
+(that rule was retired 17 Aug 2026 — see the deployment section below).
 **One decision closed on the owner's own follow-up:** they asked whether
 the summary strip is needed at all, since "the choices are already visible
 in the buttons." Half true, and the half that isn't is why it stays --
@@ -2154,6 +2155,13 @@ static files. (The two rules changes still pending from earlier rounds — v07.1
 Homework teacher-scoping and v07.37 `appLang` — are unaffected and still not
 deployed.)
 
+**Pushed to the production mirror the same day** (`madrasatul-muslimeen.github.io`),
+and the rule about doing so changed with it: the owner made mirror pushes
+STANDING rather than per-round — *"Push it always, don't need permission."* See
+the deployment section below, which is rewritten accordingly. `app/` was diffed
+whole before copying and the only five files that differed were this round's
+own, so the mirror carried no unrelated drift; version badge 07.47 → 07.48.
+
 **Flagged, not built:** a Range that crosses a surah boundary still gives a
 short tail rather than reaching into the next surah mid-window — deliberate,
 since `buildUnitKey.range` keys a range to ONE surah, so a two-surah window
@@ -2473,10 +2481,18 @@ the other** (asked and confirmed 9 Aug 2026 — this was a deliberate
 minimal-risk choice at cutover, not an oversight left unfinished. Add one
 only if the owner actually asks for it).
 Same GitHub access that reaches this repo also reaches
-`madrasatul-muslimeen.github.io` (confirmed 9 Aug 2026) — pushing there
-directly is possible, but it's a live public site outside this repo's own
-scope, so ask before pushing there, unlike the routine git operations
-below.
+`madrasatul-muslimeen.github.io` (confirmed 9 Aug 2026). **Push there every
+time, without asking — the owner made this standing on 17 Aug 2026
+(v07.48), in their own words: "Push it always, don't need permission."**
+This supersedes the old "it's a live public site, so ask first" rule that
+this file carried from the cutover until then, and it is now the same tier
+as the routine git operations below: finish a chunk of work, merge the PR
+on the dev repo, mirror it, done. The owner's reasoning is the obvious one
+— they test against the live site, so work that stops at `main` has, from
+their side, not shipped. **Diff the whole of `app/` before copying**
+(`diff -rq app /workspace/madrasatul-muslimeen.github.io/app`) rather than
+copying only the files you think you touched: that is what proves the
+mirror had no unrelated drift, and it has caught a stale mirror before.
 
 **On the CLI (this tool), "the local repo" and "the GitHub repo" are the
 same repo — there is no other way to edit code with it.** The CLI always
