@@ -94,6 +94,9 @@ const BOOKMARK_PLACEHOLDERS = ["Bookmark"];
 // Settings: Language became real in shell round 13 (13 Aug 2026) -- see
 // renderSettings() below. Appearance is still a placeholder.
 const SETTINGS_PLACEHOLDERS = ["Appearance"];
+// Shell round 20: the moving tagline strip's own editing screen. Tenant
+// content, so owner/prime only -- see renderSettings().
+const SETTINGS_LINKS = [{ href: "taglines.html", label: "Taglines", ownerPrimeOnly: true }];
 
 // Phase 13 round 1: About reads the feature registry live (getFullRegistry()).
 const ABOUT_LINKS = [{ href: "about.html", label: "About" }];
@@ -180,7 +183,7 @@ export function renderHomeExtras(roles = []) {
     ? `<div class="nav-cat-group"><div class="nav-cat-group-label">${t("Admin")}</div>${renderLinks(ADMIN_LINKS, currentFile, canAdmin)}</div>`
     : "";
   const aboutHtml = `<div class="nav-cat-group">${renderLinks(ABOUT_LINKS, currentFile, canAdmin)}</div>`;
-  return adminHtml + aboutHtml + renderSettings();
+  return adminHtml + aboutHtml + renderSettings(canAdmin);
 }
 
 // Shell round 13 (13 Aug 2026) -- Language is a real control now, not the
@@ -199,10 +202,19 @@ export function renderHomeExtras(roles = []) {
 // APP_LANGS is imported rather than re-typed so the option list and the
 // preference reader can never disagree about what languages exist. It is a
 // constant, not state -- importing it does not compromise the purity above.
-function renderSettings() {
+// Shell round 20 (17 Aug 2026): Settings gains its first real LINK, alongside
+// the Language control. Taglines edits tenant content (the moving line under
+// the app banner), so it is owner/prime-only -- the same gate the Admin group
+// above uses. It goes in Settings rather than Admin deliberately: Admin is the
+// catalogue and the roster, i.e. what the madrasah teaches and who is in it,
+// while this is how this tenant's own app presents itself. That is also where
+// LAYOUT-BACKLOG.md item 7 says "Edit banner" belongs when it gets a home, so
+// this group is now the natural place for it rather than an empty promise.
+function renderSettings(canAdmin = false) {
   const options = APP_LANGS.map((l) => `<option value="${l.id}">${l.label}</option>`).join("");
   return `<div class="nav-cat-group"><div class="nav-cat-group-label">${t("Settings")}</div>
     <div class="nav-setting"><label for="navAppLangSelect">${t("Language")}</label><select id="navAppLangSelect">${options}</select></div>
+    ${renderLinks(SETTINGS_LINKS, location.pathname.split("/").pop(), canAdmin)}
     ${renderPlaceholders(SETTINGS_PLACEHOLDERS)}</div>`;
 }
 
