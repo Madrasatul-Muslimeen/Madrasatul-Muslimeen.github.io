@@ -307,7 +307,10 @@ function ensureAudioEl() {
     // follow the audio's REAL state rather than whatever the last click
     // implied. Without this it goes stale the moment a clip finishes on its
     // own -- the button would sit there reading "Pause" with nothing playing.
-    for (const ev of ["play", "playing", "pause", "ended", "emptied"]) {
+    // "error" is in this list for a reason found in round 22: a failed load
+    // fires `play` first and `error` after, so without it the button sat there
+    // reading "Pause" while nothing was playing and nothing ever would.
+    for (const ev of ["play", "playing", "pause", "ended", "emptied", "error", "abort"]) {
       audioEl.addEventListener(ev, () => { if (onPlaybackState) onPlaybackState(); });
     }
     audioEl.addEventListener("error", () => {
@@ -566,7 +569,11 @@ export function stop() {
 }
 
 export function isPlaying() {
-  return !!audioEl && !audioEl.paused;
+  // `error` is part of this answer (round 22): a source that fails to load
+  // fires `play` optimistically and `error` afterwards, and the element can be
+  // left un-paused with nothing sounding -- which made the reading screen's
+  // merged button sit there reading "Pause" after every failed playback.
+  return !!audioEl && !audioEl.paused && !audioEl.error;
 }
 
 /**

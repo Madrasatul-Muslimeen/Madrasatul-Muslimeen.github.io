@@ -314,6 +314,21 @@ export const BN = {
   "Nothing is ticked, so Full screen will leave the screen as it is.":
     "কিছুই চিহ্নিত নেই, তাই পূর্ণ স্ক্রিন পর্দাটি যেমন আছে তেমনই রাখবে।",
 
+  // --- Shell round 22: three full-screen states, and the pickers moved onto
+  //     the reading screen. "Prev and Next" above became "Pickers, Prev and
+  //     Next" when the two control rows merged; the old key stays (I4).
+  "Pickers, Prev and Next": "পিকার, আগের ও পরের",
+  "Tap again to hide more.": "আরও লুকাতে আবার স্পর্শ করুন।",
+  "Show the menus": "মেনু দেখান",
+  "Full screen": "পূর্ণ স্ক্রিন",
+  "Hide everything": "সব লুকান",
+  "Previous": "আগের",
+  "Next": "পরের",
+  "Play": "চালান",
+  "Stop": "বন্ধ",
+  "Study Unit": "অধ্যয়নের একক",
+  "Number": "সংখ্যা",
+
   // --- The "Go to" box, including what it says when it cannot read you ---
   "Couldn't read \"{text}\". Try 2:255 for one ayah, or 2:255-260 for a range.":
     "\"{text}\" বোঝা গেল না। একটি আয়াতের জন্য ২:২৫৫, বা পরিসরের জন্য ২:২৫৫-২৬০ লিখুন।",
