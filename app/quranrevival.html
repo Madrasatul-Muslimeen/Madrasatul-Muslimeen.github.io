@@ -60,12 +60,26 @@
      Kept at or below the <p> it replaces (0.92rem/1.3 = 19px + 0.3rem margin
      vs the paragraph's 18px + 0.35rem), so the landing height rounds 9-14
      fought for is not spent here. */
-  .tagline-strip { position: relative; height: 19px; overflow: hidden; margin: 0 0 0.3rem; font-size: 0.92rem; line-height: 1.3; }
+  /* flex: none and a min-height rather than a fixed height, and BOTH matter.
+     body is a flex column (shell round 7), so a flex item with a px height is
+     shrunk when the column is tight -- measured at 390px, the strip was given
+     16px for a 19px line and overflow:hidden cut the bottom 3px off the
+     words. It shrank FURTHER the moment the nav bar gained its real height a
+     second into the load, which is what read as "the menu jumps up and covers
+     the tagline". The old <p> could be shrunk too, but its overflow was
+     visible, so nothing was ever clipped.
+     The height now comes from the line itself (1.3em = the line-height), so it
+     cannot be wrong at any font size, in any language, or if a phone's own
+     text-size setting scales the page up. */
+  .tagline-strip { position: relative; flex: none; min-height: 1.3em; overflow: hidden; margin: 0 0 0.3rem; font-size: 0.92rem; line-height: 1.3; }
+  /* The line that is ARRIVING stays in normal flow -- that is what gives the
+     strip its height. Only the line that is LEAVING is taken out of flow, for
+     the ~0.3s it takes to animate away. */
   .tagline-line {
-    position: absolute; left: 0; right: 0; top: 0;
     display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     color: #666;
   }
+  .tagline-line.tagline-leaving { position: absolute; left: 0; right: 0; top: 0; }
   /* A line that links is a real <a>: long-press, middle-click, "open in new
      tab" and a screen reader all behave the way they should, which a
      click-handler on a <span> would have quietly broken. */
@@ -1335,6 +1349,10 @@
           // timeout below swept it up (measured: ~800ms of the OLD line
           // still on screen). Dropping the in class first is what makes the
           // out animation actually run.
+          // Out of flow first: the incoming line is what holds the strip
+          // open now, and two in-flow lines would double its height for the
+          // length of the animation.
+          old.classList.add("tagline-leaving");
           old.classList.remove(`tagline-in-${motion}`);
           old.classList.add(`tagline-out-${motion}`);
           old.addEventListener("animationend", () => old.remove());
