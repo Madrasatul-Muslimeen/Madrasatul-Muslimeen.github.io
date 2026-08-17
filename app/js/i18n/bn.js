@@ -1500,4 +1500,77 @@ export const BN = {
   // module, all nine other modules and this one. It reached phase 6 in
   // English because none of the five call sites ever wrapped it in t().
   "Claimed and confirmed.": "দাবি করা হয়েছে এবং নিশ্চিত হয়েছে।",
+
+  // =====================================================================
+  // Shell round 20 (17 Aug 2026) -- the moving tagline strip and its own
+  // editing screen (taglines.html, js/taglines.js).
+  // =====================================================================
+
+  // --- The six lines the app ships with. These reach the screen through
+  // langText() -> t(value.en), the same read-time path phase 3 built for
+  // seeded subject names, so a tenant that has never opened the editor
+  // still sees them in Bangla. The owner is expected to rewrite these in
+  // their own words -- and once they save their own list, these keys stop
+  // being used at all.
+  "30 Approaches — one Ayah, thirty ways": "৩০টি পদ্ধতি — এক আয়াত, ত্রিশ উপায়", // ?
+  "The 99 Names of Allah": "আল্লাহর ৯৯টি নাম",
+  "Names & Attributes posters on archive.org": "archive.org-এ নাম ও গুণাবলির পোস্টার", // ?
+  "Today's Hadith": "আজকের হাদীস",
+  "Quran (calls) for Critical Reasoning": "কুরআন গভীর চিন্তার আহ্বান জানায়", // ?
+
+  // --- How it moves (js/taglines.js) ------------------------------------
+  "Flip": "উল্টে যাওয়া", // ?
+  "Fade": "মিলিয়ে যাওয়া", // ?
+  "Slide up": "উপরে সরে যাওয়া", // ?
+  "Every visit": "প্রতিবার খোলার সময়",
+  "One day": "এক দিন",
+  "Three days": "তিন দিন",
+  "One week": "এক সপ্তাহ",
+  "One month": "এক মাস",
+
+  // --- The strip itself (quranrevival.html) -----------------------------
+  // The whole sentence, not "opens in a new tab" glued onto a name -- the
+  // same rule phases 4 and 5 set for possessives and confirm() dialogs.
+  "{text} — opens in a new tab": "{text} — নতুন ট্যাবে খোলে",
+
+  // --- The editing screen (taglines.html) -------------------------------
+  "Taglines": "ট্যাগলাইন",
+  "QuranRevival — Taglines": "কুরআনরিভাইভাল — ট্যাগলাইন",
+  "The moving line under the app's name on the Quran Study page. Write the lines, say where each one links, choose the order and how long each one holds the strip. Only you can change these.":
+    "কুরআন অধ্যয়ন পাতায় অ্যাপের নামের নিচের চলমান লাইন। লাইনগুলো লিখুন, কোনটি কোথায় নিয়ে যাবে তা বলুন, ক্রম ঠিক করুন এবং প্রতিটি কত সময় থাকবে তা বেছে নিন। কেবল আপনিই এগুলো বদলাতে পারেন।",
+  "Only the account owner can change the taglines.": "কেবল অ্যাকাউন্টের মালিকই ট্যাগলাইন বদলাতে পারেন।",
+  "These are the lines the app ships with. Change anything and save, and they become yours — after that you can retire any of them.":
+    "এগুলো অ্যাপের সঙ্গে আসা লাইন। যেকোনো কিছু বদলে সংরক্ষণ করলেই এগুলো আপনার হয়ে যাবে — এরপর যেকোনোটিকে অবসরে পাঠাতে পারবেন।",
+  "How it moves": "কীভাবে চলবে",
+  "Movement": "চলন",
+  "Change after (seconds)": "কত সেকেন্ড পরে বদলাবে",
+  "Pause while held": "চেপে ধরে রাখলে থেমে থাকবে",
+  "The line changes at most once each time the app is opened — it is not a carousel. \"Change after\" is how long the line already on screen stays before the next one takes over.":
+    "অ্যাপ একবার খোলার সময় লাইনটি সর্বোচ্চ একবার বদলায় — এটি ঘুরতে থাকা তালিকা নয়। “কত সেকেন্ড পরে বদলাবে” মানে পর্দায় থাকা লাইনটি পরেরটির আগে কতক্ষণ থাকবে।",
+  "Show the movement": "চলন দেখুন",
+  "Preview only — it does not change what anyone sees.": "কেবল দেখানোর জন্য — এতে কারও পর্দা বদলায় না।",
+  "The lines": "লাইনগুলো",
+  "Links to": "যেখানে নিয়ে যাবে",
+  "Opens": "যেভাবে খুলবে",
+  "Holds for": "কত সময় থাকবে",
+  "Only on ayah": "কেবল এই আয়াতে",
+  "Showing": "দেখানো হচ্ছে",
+  "Line": "লাইন",
+  "Leave \"Links to\" empty for a line that is only words. An address starting with http opens in a new tab; anything else is treated as a page inside the app. \"Only on ayah\" (written like 2:255) shows that line only while that ayah is open — for an article about that ayah.":
+    "কেবল কথার লাইনের জন্য “যেখানে নিয়ে যাবে” ফাঁকা রাখুন। http দিয়ে শুরু হওয়া ঠিকানা নতুন ট্যাবে খোলে; অন্য যেকোনো কিছুকে অ্যাপের ভেতরের পাতা ধরা হয়। “কেবল এই আয়াতে” (২:২৫৫ এভাবে লেখা) সেই লাইনটি কেবল ওই আয়াত খোলা থাকা অবস্থায় দেখায় — ওই আয়াত নিয়ে লেখা প্রবন্ধের জন্য।",
+  "Add a line": "নতুন লাইন যোগ করুন",
+  "Add line": "লাইন যোগ করুন",
+  "What it says": "কী লেখা থাকবে",
+  "Leave empty for none": "না থাকলে ফাঁকা রাখুন",
+  "Inside the app": "অ্যাপের ভেতরে",
+  "New tab": "নতুন ট্যাবে",
+  "Retired": "অবসরে",
+  "No changes yet.": "এখনো কিছু বদলানো হয়নি।",
+  "Not saved yet.": "এখনো সংরক্ষণ করা হয়নি।",
+  "Saving…": "সংরক্ষণ করা হচ্ছে…",
+  "Saved. The Quran Study page will show this next time it loads.": "সংরক্ষণ হয়েছে। কুরআন অধ্যয়ন পাতা পরের বার খুললেই এটি দেখাবে।",
+  "Not saved — see the message above.": "সংরক্ষণ হয়নি — উপরের বার্তাটি দেখুন।",
+  "Could not load the taglines.": "ট্যাগলাইনগুলো আনা যায়নি।",
+  "Write an ayah like 2:255.": "২:২৫৫ এভাবে একটি আয়াত লিখুন।",
+  "Write the line first.": "আগে লাইনটি লিখুন।",
 };

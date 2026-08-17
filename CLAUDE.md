@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.45.** Cutover to production happened
+**Current milestone: QuranRevival v07.46.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -1880,6 +1880,118 @@ missing), **`reading.mjs` OK**, **`panel.mjs` no truncation and no wrapped bar
 at any of the eight viewports in either language**, **navcheck unchanged**,
 **coverage 1,121/1,121 (100%)**, **perf unchanged at 6 sequential round
 trips**. No `firestore.rules`, schema or Firestore data changes.
+
+v07.46 (17 Aug 2026, on Claude Code on the web) is **shell round 20 — the
+moving tagline strip, and the first screen the owner edits their own app
+content from.** Their ask: a single line under the app banner that cycles
+through short taglines, some carrying a link — some opening a page inside the
+app, some an outside site in a new tab — with them as the only person who can
+add or edit them. A demo artifact was shown first (the movement options side by
+side, with the pixel cost attached), the same way rounds 4–14 were agreed, and
+**five decisions were taken before any code was written.**
+
+**(a) The strip stands EXACTLY where the static tagline stood — not an extra
+line.** Their call, and also the cheap one: **measured, the strip is 19px
+against the paragraph's 23–24px**, so the landing page starts 3–6px HIGHER on
+every phone and **gains an Approach row at 390×844** (6 → 7, banner cleared).
+An extra line below the tagline would have cost one row on three of the four
+phones — measured first, in `tools/i18n-verify/tagline-cost.mjs` (new, checked
+in), which is the tool to reuse for the next thing anyone proposes putting up
+there. Desktop sits 1px lower, changing no row count anywhere. **The first line
+is still static markup**, exactly like the sign-in strip (v07.08): with no
+JavaScript, or before the tenant's own lines arrive, the page reads precisely
+as v07.45 did, and if the line whose turn it is already says the same thing,
+nothing moves at all.
+
+**(b) Quran Study page only, for now** — module-tagging a line is round 2.
+**(c) Flip, Fade and Slide up all ship and the owner picks** ("so i can choose
+often, gives a variation"); Ticker was dropped. **(d) It changes ONCE PER
+VISIT**, which is the whole character of the thing and their own words: "No
+change will be frequent. A few might stay for days, a few once a day. maximum 1
+change per session could be." So a line carries a **hold measured in days**
+(Every visit / One day / Three days / One week / One month) and the strip is a
+still line with one noticeable movement, not a carousel. **(e) The lines live
+on the TENANT DOCUMENT**, edited from the new `taglines.html` (Home →
+Settings, owner/prime only). **No extra read, no new collection, no
+`firestore.rules` change** — `loadContextData()` already fetches that document
+and `canAdminIdentity()` already lets owner/prime write it. That is the v07.37
+lesson applied a second time: before adding a read, check what the startup path
+already reads. **Perf re-measured to prove it: 6 sequential round trips, 0.88s
+at 150ms latency, unchanged.**
+
+**`js/taglines.js` is pure (I2)** — no DOM, no Firebase — so the rotation rule
+is testable without a browser, which is exactly how the round's worst defect
+was caught. It ships **six lines**: the five from the approved demo plus the one
+the owner added by name ("Quran (calls) for Critical Reasoning"). Four carry no
+link, because they said they would set them later; two DO, so both kinds are
+demonstrably working on day one (`asma-study.html` inside the app, and the
+archive.org poster page they supplied back in v07.15, in a new tab with
+`rel="noopener"`). A line can also be **attached to one ayah** (`ayahRef`,
+written `2:255`) and appears the moment that ayah is open — their "an article
+about the Ayah" — interrupting the ordinary line without advancing it. **I4:
+there is no delete**, only Retire, which keeps the words and the link; **I5:
+every line has a permanent id and order is separate**, so re-ordering never
+disturbs the remembered state; **I11: text is language-keyed**, and the six
+shipped lines reach Bangla through `langText()` → `t(value.en)`, the read-time
+path phase 3 built, so they are translated with no data migration.
+
+**Two real defects were found by measuring, not by reading, and both are worth
+knowing if this code is touched.** Asked again during the same visit — which
+happens on **every ayah change**, because an ayah-attached line has to be able
+to appear — a line whose hold is "every visit" advanced EVERY time: paging
+through five ayahs walked five lines, i.e. precisely the carousel the owner did
+not want. `pickTagline()`'s new `lockedId` is the fix, and the rule test now
+asserts it in both directions (locked line stays; an ayah's line still
+interrupts). And the outgoing line **kept the `tagline-in-*` class it arrived
+with** — both rules set the `animation` shorthand, so the out animation never
+ran and the old line sat on top of its replacement for ~800ms until the safety
+timeout swept it up. Neither was visible in a screenshot.
+
+**The coverage tool was wrong for the SIXTH time in seven rounds, and again
+about the denominator:** a language-keyed literal written in code
+(`text: { en: "..." }`) matched none of its patterns, so all six shipped
+taglines were invisible — the report would have said 100% with six English
+lines on the landing page of a Bangla reader's app. An `en:` matcher is added,
+escape-aware like the `label:` one phase 6 fixed. **The standing rule holds:
+the coverage number is a to-do list, never evidence.** Also recorded in the
+harness README: `app/_prev-quranrevival.html`, the shim `layout.mjs` compares
+against, is itself a `.html` file in `app/`, so the coverage total reads
+1,171 → 1,277 with 0 missing while it exists — the old page counted twice, not
+106 new strings. Delete the shim before reading the number.
+
+**Verified: 601 behaviour checks** (was 557 — 44 new, sections 32–32l: the
+strip present and no taller than what it replaced; the page still reading its
+own tagline before the tenant's lines land; nothing moving a second in, then
+the line arriving once after the owner's own delay; a held line NOT giving way
+and its hold not silently restarted; an expired hold handing over; an outside
+address proven a real `<a target="_blank" rel="noopener">` marked in words as
+well as an arrow, and an in-app one proven to stay in the same tab; an ayah's
+own line appearing as soon as that ayah is open and the ordinary line — the
+SAME one — coming back after; nine assertions on the pure rule including the
+lock and a remembered line that no longer exists; a tenant's Bangla line and a
+shipped English-in-code line both really rendering in Bangla; and the editing
+screen end to end — every line listed with retired ones included, Save inert
+until something changes, adding, retiring-not-deleting, re-ordering, a mistyped
+ayah explaining itself, the write landing on the tenant document carrying
+exactly `taglineSettings,taglines,updatedAt`, the whole screen in Bangla with
+option VALUES proven still bare ids, and the link offered to owner/prime
+only). **`layout.mjs` reports NO LAYOUT REGRESSIONS** at all eight viewports in
+both banner states (`getElementById` targets 80 → 81, none missing),
+**`reading.mjs` OK**, **`panel.mjs` no truncation and no wrapped bar**,
+**navcheck unchanged** (still only the pre-existing 320px ENGLISH truncation of
+"Operation"/"Bookmark"), **coverage 1,171/1,171 (100%)**, **perf unchanged at 6
+sequential round trips**. No `firestore.rules`, schema or Firestore data
+changes — nothing to deploy but the static files. (The two rules changes still
+pending from earlier rounds — v07.18 Homework teacher-scoping and v07.37
+`appLang` — are unaffected and still not deployed.)
+
+**Flagged for the next round, in `LAYOUT-BACKLOG.md` item 12:** per-module
+lines (the other half of the owner's own "which one to appear with which
+module" — the strip has to reach the other pages first, and a `moduleIds[]`
+field alongside `ayahRef` is where it hangs), a line attached to a RANGE rather
+than a single ayah, and the fact that **Settings now has a real screen in it**,
+which makes it the natural home for "Edit banner" (item 7) whenever that is
+picked up.
 
 ---
 

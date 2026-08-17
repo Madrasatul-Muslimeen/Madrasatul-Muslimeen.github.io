@@ -164,3 +164,26 @@ Two harness notes from that round:
 **Treat the coverage number as a to-do list, never as evidence.** Only a
 behaviour check that reads the rendered DOM shows a screen is truly
 translated.
+
+## tagline-cost.mjs (shell round 20)
+
+What a one-line strip under the app banner costs, before agreeing to it:
+measures the landing page as it ships, with a strip added BELOW the static
+tagline, and with the strip standing IN PLACE of it — four phone sizes, both
+tenant-banner states — and reports both the pixels and the visible
+Approach-row count. It is what turned "a strip costs a row" into "it costs a
+row only if you add a line; replacing the tagline is 2-4px cheaper than
+today". Keep it for the next thing anyone proposes putting up there.
+
+`newContext(browser, { taglines: { lines, settings } })` gives the stub tenant
+its OWN tagline list, which is what the strip really reads in production — the
+six shipped defaults are only what a tenant sees before it first opens
+`taglines.html`. Default off, so every earlier suite measures the tenant it
+always measured.
+
+**One trap worth knowing (shell round 20):** `app/_prev-quranrevival.html`, the
+previous commit's copy `layout.mjs` compares against, is a `.html` file in
+`app/`, so `tools/i18n-coverage.mjs` counts it as a TWENTIETH page while it
+exists — the total jumped 1,171 -> 1,277 with 0 missing, which looks like the
+app grew by 106 strings and is really the old page being scanned twice. Delete
+the shim before reading any coverage number.

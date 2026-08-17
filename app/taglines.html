@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — Taglines</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 60rem; margin: 1.5rem auto; padding: 0 1rem 5rem; color: #222; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+  h2 { font-size: 1.05rem; margin-top: 1.8rem; }
+  p.intro { color: #555; font-size: 0.94rem; }
+  button {
+    font-size: 0.9rem; padding: 0.35rem 0.8rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button.tiny { padding: 0.15rem 0.45rem; font-size: 0.85rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  label { display: block; font-weight: 600; font-size: 0.8rem; margin-bottom: 0.15rem; color: #444; }
+  input[type="text"], select, input[type="number"] {
+    padding: 0.35rem; font-size: 0.9rem; border: 1px solid #ccc; border-radius: 0.35rem; width: 100%;
+  }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.6rem; }
+  th, td { text-align: left; padding: 0.4rem 0.45rem; border-bottom: 1px solid #eee; font-size: 0.86rem; vertical-align: top; }
+  th { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.04em; color: #666; }
+  tr.archived td { opacity: 0.55; }
+  .cell-text { min-width: 12rem; }
+  .cell-narrow { width: 5.5rem; }
+  .cell-link { min-width: 10rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: 0.6rem; align-items: end; }
+  .card { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 0.9rem; margin-top: 0.6rem; }
+  .note { font-size: 0.85rem; color: #666; margin: 0.4rem 0 0; }
+  .warn { background: #fff8e6; border: 1px solid #f0d9a0; border-radius: 0.5rem; padding: 0.6rem 0.8rem; font-size: 0.88rem; }
+  .saveBar {
+    position: sticky; bottom: 0; background: white; border-top: 1px solid #e5e5e5;
+    padding: 0.7rem 0; margin-top: 1.4rem; display: flex; gap: 0.8rem; align-items: center;
+  }
+  #saveState { font-size: 0.88rem; color: #666; }
+  /* The preview is the same strip the landing page shows, at the same size,
+     so what is chosen here can be seen here rather than after a reload. */
+  .preview-box { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 0.8rem; margin-top: 0.6rem; }
+  .tagline-strip { position: relative; height: 19px; overflow: hidden; margin: 0; font-size: 0.92rem; line-height: 1.3; font-style: italic; }
+  .tagline-line { position: absolute; left: 0; right: 0; top: 0; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #666; }
+  a.tagline-line { color: #1F3A6E; text-decoration: none; }
+  .tagline-ext { font-style: normal; font-size: 0.72rem; color: #B8862F; margin-left: 0.25rem; }
+  .tagline-strip[data-motion="flip"] { perspective: 300px; }
+  .tagline-line.tagline-out-flip { animation: taglineFlipOut 0.28s ease-in forwards; }
+  .tagline-line.tagline-in-flip { animation: taglineFlipIn 0.28s ease-out backwards; }
+  @keyframes taglineFlipOut { to { transform: rotateX(-90deg); opacity: 0; } }
+  @keyframes taglineFlipIn { from { transform: rotateX(90deg); opacity: 0; } }
+  .tagline-line.tagline-out-fade { animation: taglineFadeOut 0.32s ease forwards; }
+  .tagline-line.tagline-in-fade { animation: taglineFadeIn 0.32s ease backwards; }
+  @keyframes taglineFadeOut { to { opacity: 0; } }
+  @keyframes taglineFadeIn { from { opacity: 0; } }
+  .tagline-line.tagline-out-slide { animation: taglineSlideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+  .tagline-line.tagline-in-slide { animation: taglineSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards; }
+  @keyframes taglineSlideOut { to { transform: translateY(-100%); opacity: 0; } }
+  @keyframes taglineSlideIn { from { transform: translateY(100%); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .tagline-line { animation-duration: 0.001s !important; } }
+</style>
+</head>
+<body>
+  <h1>Taglines</h1>
+  <p class="intro">The moving line under the app's name on the Quran Study page. Write the lines, say where each one links, choose the order and how long each one holds the strip. Only you can change these.</p>
+
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
+
+  <div id="app" style="display:none;">
+    <div id="noAdmin" class="warn" style="display:none;">Only the account owner can change the taglines.</div>
+
+    <div id="adminArea" style="display:none;">
+      <div id="usingDefaults" class="warn" style="display:none;">These are the lines the app ships with. Change anything and save, and they become yours — after that you can retire any of them.</div>
+
+      <h2>How it moves</h2>
+      <div class="card grid">
+        <div>
+          <label for="motionSelect">Movement</label>
+          <select id="motionSelect"></select>
+        </div>
+        <div>
+          <label for="changeAfterInput">Change after (seconds)</label>
+          <input type="number" id="changeAfterInput" min="2" max="60" step="1" />
+        </div>
+        <div>
+          <label for="pauseOnHoldToggle">Pause while held</label>
+          <input type="checkbox" id="pauseOnHoldToggle" style="width:auto;" />
+        </div>
+      </div>
+      <p class="note">The line changes at most once each time the app is opened — it is not a carousel. "Change after" is how long the line already on screen stays before the next one takes over.</p>
+
+      <div class="preview-box">
+        <div class="tagline-strip" id="previewStrip"><span class="tagline-line"></span></div>
+      </div>
+      <p class="note"><button type="button" class="secondary tiny" id="previewBtn">Show the movement</button> <span>Preview only — it does not change what anyone sees.</span></p>
+
+      <h2>The lines</h2>
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Order</th><th>Line</th><th>Links to</th><th>Opens</th><th>Holds for</th><th>Only on ayah</th><th>Showing</th>
+            </tr>
+          </thead>
+          <tbody id="lineRows"></tbody>
+        </table>
+      </div>
+      <p class="note">Leave "Links to" empty for a line that is only words. An address starting with http opens in a new tab; anything else is treated as a page inside the app. "Only on ayah" (written like 2:255) shows that line only while that ayah is open — for an article about that ayah.</p>
+
+      <h2>Add a line</h2>
+      <div class="card grid">
+        <div style="grid-column: span 2;">
+          <label for="newText">Line</label>
+          <input type="text" id="newText" placeholder="What it says" />
+        </div>
+        <div>
+          <label for="newUrl">Links to</label>
+          <input type="text" id="newUrl" placeholder="Leave empty for none" />
+        </div>
+        <div>
+          <label for="newTarget">Opens</label>
+          <select id="newTarget"></select>
+        </div>
+        <div>
+          <label for="newHold">Holds for</label>
+          <select id="newHold"></select>
+        </div>
+        <div>
+          <label for="newAyah">Only on ayah</label>
+          <input type="text" id="newAyah" placeholder="2:255" />
+        </div>
+        <div><button type="button" id="addBtn">Add line</button></div>
+      </div>
+
+      <div class="saveBar">
+        <button type="button" id="saveBtn" disabled>Save</button>
+        <span id="saveState">No changes yet.</span>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { bootstrapContext } from "./js/session-context.js";
+    import { renderNavBar, renderHomeExtras } from "./js/nav.js";
+    import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { setLangText } from "./js/lang.js";
+    import { updateDocument } from "./js/envelope.js";
+    import { safeWrite } from "./js/errors.js";
+    import { translateStatic, t, num, parseNum } from "./js/i18n.js";
+    import {
+      TAGLINE_MOTIONS, TAGLINE_HOLDS, taglinesFrom, taglineSettingsFrom, taglineText,
+      isUsingDefaultTaglines, addTagline, updateTagline, setTaglineStatus, moveTagline,
+      normalizeAyahRef, activeTaglines,
+    } from "./js/taglines.js";
+
+    translateStatic();
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    const adminArea = document.getElementById("adminArea");
+    const noAdminEl = document.getElementById("noAdmin");
+    const usingDefaultsEl = document.getElementById("usingDefaults");
+    const rowsEl = document.getElementById("lineRows");
+    const saveBtn = document.getElementById("saveBtn");
+    const saveStateEl = document.getElementById("saveState");
+    const motionSelect = document.getElementById("motionSelect");
+    const changeAfterInput = document.getElementById("changeAfterInput");
+    const pauseOnHoldToggle = document.getElementById("pauseOnHoldToggle");
+    const previewStrip = document.getElementById("previewStrip");
+
+    let activeTenantId = null;
+    let lines = [];
+    let settings = null;
+    let dirty = false;
+
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
+    }
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    function markDirty() {
+      dirty = true;
+      saveBtn.disabled = false;
+      saveStateEl.textContent = t("Not saved yet.");
+    }
+
+    // The link target picker and the hold picker are built from the module's
+    // own lists, so this screen and the strip can never disagree about what
+    // values exist. Option VALUES stay the bare ids/numbers -- only the words
+    // a person reads are translated.
+    const TARGETS = [
+      { id: "internal", label: "Inside the app" },
+      { id: "external", label: "New tab" },
+    ];
+    function fillSelect(el, items, selected) {
+      el.innerHTML = items
+        .map((o) => `<option value="${o.id}"${String(o.id) === String(selected) ? " selected" : ""}>${t(o.label)}</option>`)
+        .join("");
+    }
+
+    function renderSettingsControls() {
+      fillSelect(motionSelect, TAGLINE_MOTIONS, settings.motion);
+      fillSelect(document.getElementById("newTarget"), TARGETS, "internal");
+      fillSelect(document.getElementById("newHold"), TAGLINE_HOLDS, 1);
+      changeAfterInput.value = settings.changeAfterSeconds;
+      pauseOnHoldToggle.checked = settings.pauseOnHold;
+      previewStrip.setAttribute("data-motion", settings.motion);
+    }
+
+    function renderRows() {
+      const lang = getAppLang();
+      const sorted = [...lines].sort((a, b) => a.order - b.order);
+      rowsEl.innerHTML = "";
+      for (const [i, line] of sorted.entries()) {
+        const tr = document.createElement("tr");
+        if (line.status === "archived") tr.className = "archived";
+
+        const move = document.createElement("td");
+        move.className = "cell-narrow";
+        for (const [dir, glyph, disabled] of [["up", "▲", i === 0], ["down", "▼", i === sorted.length - 1]]) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "secondary tiny";
+          b.textContent = glyph;
+          b.disabled = disabled;
+          b.addEventListener("click", () => { lines = moveTagline(lines, line.id, dir); markDirty(); renderRows(); });
+          move.appendChild(b);
+        }
+        tr.appendChild(move);
+
+        const textTd = document.createElement("td");
+        textTd.className = "cell-text";
+        const textInput = document.createElement("input");
+        textInput.type = "text";
+        textInput.className = "tl-text";
+        textInput.value = taglineText(line, lang);
+        // I11: editing writes into the language being read, so typing Bangla
+        // here never overwrites the English (or the other way round).
+        textInput.addEventListener("change", () => {
+          lines = updateTagline(lines, line.id, { text: setLangText(line.text, lang, textInput.value.trim()) });
+          markDirty();
+        });
+        textTd.appendChild(textInput);
+        tr.appendChild(textTd);
+
+        const urlTd = document.createElement("td");
+        urlTd.className = "cell-link";
+        const urlInput = document.createElement("input");
+        urlInput.type = "text";
+        urlInput.className = "tl-url";
+        urlInput.value = line.link?.url ?? "";
+        urlInput.addEventListener("change", () => {
+          const url = urlInput.value.trim();
+          lines = updateTagline(lines, line.id, { link: url ? { url, target: line.link?.target ?? "internal" } : null });
+          markDirty();
+          renderRows();
+        });
+        urlTd.appendChild(urlInput);
+        tr.appendChild(urlTd);
+
+        const targetTd = document.createElement("td");
+        targetTd.className = "cell-narrow";
+        const targetSelect = document.createElement("select");
+        fillSelect(targetSelect, TARGETS, line.link?.target ?? "internal");
+        targetSelect.disabled = !line.link?.url;
+        targetSelect.addEventListener("change", () => {
+          lines = updateTagline(lines, line.id, { link: { url: line.link.url, target: targetSelect.value } });
+          markDirty();
+          renderRows();
+        });
+        targetTd.appendChild(targetSelect);
+        tr.appendChild(targetTd);
+
+        const holdTd = document.createElement("td");
+        holdTd.className = "cell-narrow";
+        const holdSelect = document.createElement("select");
+        fillSelect(holdSelect, TAGLINE_HOLDS, line.holdDays);
+        holdSelect.addEventListener("change", () => {
+          lines = updateTagline(lines, line.id, { holdDays: Number(holdSelect.value) });
+          markDirty();
+        });
+        holdTd.appendChild(holdSelect);
+        tr.appendChild(holdTd);
+
+        const ayahTd = document.createElement("td");
+        ayahTd.className = "cell-narrow";
+        const ayahInput = document.createElement("input");
+        ayahInput.type = "text";
+        ayahInput.value = line.ayahRef ? num(line.ayahRef) : "";
+        ayahInput.placeholder = num("2:255");
+        ayahInput.addEventListener("change", () => {
+          // parseNum() reads Bengali digits BACK -- phase 2's rule: a Bangla
+          // reader on a Bangla keyboard types ২:২৫৫, and a field that refuses
+          // what the interface itself taught them to type is exactly where
+          // someone gives up. Shown again in their own digits via num().
+          const typed = parseNum(ayahInput.value.trim());
+          const ref = normalizeAyahRef(typed);
+          if (typed && !ref) {
+            ayahInput.value = line.ayahRef ? num(line.ayahRef) : "";
+            saveStateEl.textContent = t("Write an ayah like 2:255.");
+            return;
+          }
+          lines = updateTagline(lines, line.id, { ayahRef: ref });
+          markDirty();
+          renderRows();
+        });
+        ayahTd.appendChild(ayahInput);
+        tr.appendChild(ayahTd);
+
+        const statusTd = document.createElement("td");
+        statusTd.className = "cell-narrow";
+        const statusBtn = document.createElement("button");
+        statusBtn.type = "button";
+        statusBtn.className = "secondary tiny";
+        statusBtn.textContent = line.status === "active" ? t("Yes") : t("Retired");
+        // I4: retiring never removes the line -- its words and its link are
+        // kept, and turning it back on is this same button.
+        statusBtn.addEventListener("click", () => {
+          lines = setTaglineStatus(lines, line.id, line.status === "active" ? "archived" : "active");
+          markDirty();
+          renderRows();
+        });
+        statusTd.appendChild(statusBtn);
+        tr.appendChild(statusTd);
+
+        rowsEl.appendChild(tr);
+      }
+      renderPreview();
+    }
+
+    function buildPreviewEl(line) {
+      const hasLink = !!line.link?.url;
+      const el = document.createElement(hasLink ? "a" : "span");
+      el.className = "tagline-line";
+      if (hasLink) {
+        el.href = line.link.url;
+        if (line.link.target === "external") { el.target = "_blank"; el.rel = "noopener noreferrer"; }
+      }
+      const label = document.createElement("span");
+      label.textContent = taglineText(line, getAppLang());
+      el.appendChild(label);
+      if (hasLink && line.link.target === "external") {
+        const mark = document.createElement("span");
+        mark.className = "tagline-ext";
+        mark.textContent = "↗";
+        mark.setAttribute("aria-hidden", "true");
+        el.appendChild(mark);
+      }
+      return el;
+    }
+
+    let previewAt = 0;
+    function renderPreview(animate = false) {
+      const shown = activeTaglines(lines);
+      if (!shown.length) { previewStrip.innerHTML = ""; return; }
+      previewAt = previewAt % shown.length;
+      const old = previewStrip.querySelector(".tagline-line");
+      const el = buildPreviewEl(shown[previewAt]);
+      if (animate) el.classList.add(`tagline-in-${settings.motion}`);
+      previewStrip.appendChild(el);
+      if (old) {
+        if (animate) {
+          old.classList.add(`tagline-out-${settings.motion}`);
+          old.addEventListener("animationend", () => old.remove());
+          setTimeout(() => old.remove(), 800);
+        } else old.remove();
+      }
+    }
+
+    document.getElementById("previewBtn").addEventListener("click", () => {
+      previewAt = (previewAt + 1) % Math.max(1, activeTaglines(lines).length);
+      renderPreview(true);
+    });
+
+    motionSelect.addEventListener("change", () => {
+      settings = { ...settings, motion: motionSelect.value };
+      previewStrip.setAttribute("data-motion", settings.motion);
+      markDirty();
+    });
+    changeAfterInput.addEventListener("change", () => {
+      settings = { ...settings, changeAfterSeconds: Number(changeAfterInput.value) };
+      markDirty();
+    });
+    pauseOnHoldToggle.addEventListener("change", () => {
+      settings = { ...settings, pauseOnHold: pauseOnHoldToggle.checked };
+      markDirty();
+    });
+
+    document.getElementById("addBtn").addEventListener("click", () => {
+      const text = document.getElementById("newText").value.trim();
+      if (!text) { saveStateEl.textContent = t("Write the line first."); return; }
+      const url = document.getElementById("newUrl").value.trim();
+      const ayahTyped = parseNum(document.getElementById("newAyah").value.trim());
+      if (ayahTyped && !normalizeAyahRef(ayahTyped)) { saveStateEl.textContent = t("Write an ayah like 2:255."); return; }
+      lines = addTagline(lines, {
+        text: { [getAppLang()]: text },
+        link: url ? { url, target: document.getElementById("newTarget").value } : null,
+        holdDays: Number(document.getElementById("newHold").value),
+        ayahRef: normalizeAyahRef(ayahTyped),
+        status: "active",
+      });
+      document.getElementById("newText").value = "";
+      document.getElementById("newUrl").value = "";
+      document.getElementById("newAyah").value = "";
+      markDirty();
+      renderRows();
+    });
+
+    saveBtn.addEventListener("click", async () => {
+      if (!activeTenantId) return;
+      saveBtn.disabled = true;
+      saveStateEl.textContent = t("Saving…");
+      // One write, one document: the whole list plus the settings onto
+      // tenants/{tenantId}, which owner/prime can already update
+      // (canAdminIdentity in firestore.rules) -- so no rules change was
+      // needed for this screen. I15: a failure reaches the user through
+      // safeWrite() rather than only the console.
+      const res = await safeWrite(
+        () => updateDocument(db, TENANT.TENANTS, activeTenantId, { taglines: lines, taglineSettings: settings }),
+        { collection: TENANT.TENANTS, docId: activeTenantId, action: "save taglines" }
+      );
+      if (res.ok) {
+        dirty = false;
+        saveBtn.disabled = true;
+        usingDefaultsEl.style.display = "none";
+        saveStateEl.textContent = t("Saved. The Quran Study page will show this next time it loads.");
+      } else {
+        saveBtn.disabled = false;
+        saveStateEl.textContent = t("Not saved — see the message above.");
+      }
+    });
+
+    window.addEventListener("beforeunload", (e) => {
+      if (!dirty) return;
+      e.preventDefault();
+      e.returnValue = "";
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = t("Not signed in.");
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = t("Signed in as {email}", { email: user.email });
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+      appEl.style.display = "block";
+
+      try {
+        const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
+        if (adoptAppLangFromUserIndex(userIndexSnap)) return;
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+        const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
+        if (!context) return;
+        activeTenantId = context.tenantId;
+        const roles = memberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [];
+        renderNav(roles, null);
+        const canAdmin = roles.includes("owner") || roles.includes("prime");
+        if (!canAdmin) {
+          noAdminEl.style.display = "block";
+          return;
+        }
+        const tenantSnap = await getDoc(doc(db, TENANT.TENANTS, activeTenantId));
+        const tenantDoc = tenantSnap.exists() ? tenantSnap.data() : null;
+        lines = taglinesFrom(tenantDoc);
+        settings = taglineSettingsFrom(tenantDoc);
+        usingDefaultsEl.style.display = isUsingDefaultTaglines(tenantDoc) ? "block" : "none";
+        adminArea.style.display = "block";
+        renderSettingsControls();
+        renderRows();
+      } catch (err) {
+        console.error(err);
+        saveStateEl.textContent = t("Could not load the taglines.");
+      }
+    });
+  </script>
+</body>
+</html>

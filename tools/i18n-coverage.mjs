@@ -34,7 +34,7 @@ const AREAS = {
   // js/errors.js joined in phase 4: its eight plain-language write-failure
   // sentences are shown on EVERY screen in the app and were counted by no
   // area at all, so they were neither translated nor reported as missing.
-  shell: ["js/nav.js", "js/splash.js", "js/unit-keys.js", "js/errors.js", "js/labels.js", "about.html", "index.html", "onboarding.html", "accept-invite.html"],
+  shell: ["js/nav.js", "js/splash.js", "js/unit-keys.js", "js/errors.js", "js/labels.js", "js/taglines.js", "about.html", "index.html", "onboarding.html", "accept-invite.html"],
   quran: ["quranrevival.html", "js/mastery-wheel.js", "js/way-modal.js", "js/ayah-renderer.js", "js/hifz-renderer.js", "js/audio-player.js", "js/quran-data.js"],
   modules: ["deen-study.html", "arabic-study.html", "hadith-study.html", "general-study.html", "naturelife-study.html", "life-skill.html", "health-study.html", "ldog-study.html", "asma-study.html", "js/topic-study.js", "js/routine-study.js", "js/asma-study.js", "js/topic-renderer.js", "js/asma-renderer.js", "js/catalogue-data.js"],
   // js/homework.js and js/course-offers.js joined in phase 4 -- both hold
@@ -44,7 +44,7 @@ const AREAS = {
   // js/modules.js and js/study-lock.js joined in phase 5: the module
   // registry is what catalogue.html's own Modules table renders, and the
   // handover lock's refusal message is shown on people.html.
-  admin: ["people.html", "catalogue.html", "curriculum.html", "classes.html", "js/catalogue.js", "js/people.js", "js/curriculum.js", "js/classes.js", "js/grades.js", "js/invites.js", "js/identity.js", "js/resources.js", "js/modules.js", "js/study-lock.js"],
+  admin: ["people.html", "catalogue.html", "curriculum.html", "classes.html", "js/catalogue.js", "js/people.js", "js/curriculum.js", "js/classes.js", "js/grades.js", "js/invites.js", "js/identity.js", "js/resources.js", "js/modules.js", "js/study-lock.js", "taglines.html"],
   asma: ["js/asma-data.js", "js/asma-posters.js"],
 };
 
@@ -170,6 +170,18 @@ function extract(file) {
     if (LOOKS_USER_FACING(s)) found.add(s);
   }
   for (const m of code.matchAll(/\blabel:\s*'((?:[^'\\]|\\.)*)'/g)) {
+    const s = m[1].replace(/\\(["'\\])/g, "$1").trim();
+    if (LOOKS_USER_FACING(s)) found.add(s);
+  }
+  // A LANGUAGE-KEYED LITERAL written in code: `{ en: "..." }` (shell round
+  // 20). The FIFTH shape of user-visible string this tool could not see, and
+  // again a denominator problem -- js/taglines.js ships six default taglines
+  // as `text: { en: "..." }`, which reach the screen through langText() ->
+  // t(value.en), exactly like a seeded subject name. Nothing in the patterns
+  // above looks at an `en:` field, so all six were invisible: the report
+  // would have called the area 100% translated with six English lines on the
+  // landing page of a Bangla reader's app.
+  for (const m of code.matchAll(/\ben:\s*"((?:[^"\\]|\\.)*)"/g)) {
     const s = m[1].replace(/\\(["'\\])/g, "$1").trim();
     if (LOOKS_USER_FACING(s)) found.add(s);
   }

@@ -1740,6 +1740,332 @@ console.log("\n=== 31f. The timing map still cannot reach the load path ===");
   await ctx.close();
 }
 
+// ===========================================================================
+// 32. Shell round 20 -- the moving tagline strip, and its editing screen.
+//
+// The strip replaces the static tagline, so two things have to be true at
+// once and BOTH are asserted below: the page still reads exactly as it did
+// before any script runs (nothing flashes, nothing is lost), and the line
+// really does change -- once -- when it is someone else's turn.
+// ===========================================================================
+const TL_SETTINGS = { motion: "fade", changeAfterSeconds: 2, pauseOnHold: true };
+const TL_LINES = [
+  { id: "a", text: { en: "First words", bn: "প্রথম কথা" }, link: null, order: 10, status: "active", holdDays: 7, ayahRef: null },
+  { id: "b", text: { en: "Read the article", bn: "প্রবন্ধটি পড়ুন" }, link: { url: "https://example.org/x", target: "external" }, order: 20, status: "active", holdDays: 0, ayahRef: null },
+  { id: "c", text: { en: "The ninety-nine Names", bn: "নিরানব্বই নাম" }, link: { url: "asma-study.html", target: "internal" }, order: 30, status: "active", holdDays: 0, ayahRef: null },
+  { id: "d", text: { en: "About this ayah", bn: "এই আয়াত সম্পর্কে" }, link: { url: "https://example.org/ayah", target: "external" }, order: 40, status: "active", holdDays: 0, ayahRef: "1:3" },
+  { id: "e", text: { en: "Retired line", bn: "অবসরে যাওয়া লাইন" }, link: null, order: 50, status: "archived", holdDays: 0, ayahRef: null },
+];
+const tlCtx = (o = {}) => ctxFor({ banner: false, taglines: { lines: TL_LINES, settings: TL_SETTINGS }, ...o });
+const seedTaglineState = (ctx, state) =>
+  ctx.addInitScript((s) => { try { localStorage.setItem("mm_tagline_state", JSON.stringify(s)); } catch {} }, state);
+const stripText = (page) => page.evaluate(() => document.querySelector("#taglineStrip .tagline-line")?.textContent.trim() ?? "");
+
+console.log("\n=== 32. The tagline strip ===");
+{
+  const ctx = await tlCtx();
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  const early = await page.evaluate(() => ({
+    strip: Boolean(document.getElementById("taglineStrip")),
+    lines: document.querySelectorAll("#taglineStrip .tagline-line").length,
+    text: document.querySelector("#taglineStrip .tagline-line")?.textContent.trim(),
+    // The strip must not be taller than the paragraph it replaced, or this
+    // round has spent landing height rounds 9-14 fought for.
+    height: Math.round(document.getElementById("taglineStrip").getBoundingClientRect().height),
+  }));
+  check("32a the strip is there, holding exactly one line", early.strip && early.lines === 1, JSON.stringify(early));
+  check("32a it still reads the page's own tagline before the tenant's lines arrive",
+        early.text === "Reviving the Quran, abandoned.", String(early.text));
+  check("32a and it is no taller than the paragraph it replaced (19px)", early.height <= 19, String(early.height));
+  // No stored state: the first line's turn. It arrives ONCE, after the
+  // owner's own "change after" delay -- not instantly, which would read as
+  // a flash rather than a movement.
+  const atOneSecond = await stripText(page);
+  check("32b nothing has moved a second in", atOneSecond === "Reviving the Quran, abandoned.", atOneSecond);
+  await page.waitForTimeout(2600);
+  const afterDelay = await stripText(page);
+  check("32b the first line arrives after the delay", afterDelay === "First words", afterDelay);
+  check("32b no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+{
+  // A line whose turn it is, held for seven days: the strip must NOT advance
+  // to the next one. This is the whole of the owner's "a few might stay for
+  // days" -- and the check that proves the strip is not a carousel.
+  const ctx = await tlCtx();
+  await seedTaglineState(ctx, { id: "a", since: Date.now() });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await page.waitForTimeout(3000);
+  const held = await stripText(page);
+  check("32c a held line does not give way to the next one", held === "First words", held);
+  const state = await page.evaluate(() => JSON.parse(localStorage.getItem("mm_tagline_state") || "null"));
+  check("32c ...and its hold is not silently restarted", state?.id === "a", JSON.stringify(state));
+  await page.close();
+  await ctx.close();
+}
+{
+  // The hold has expired: the next line takes over, and it is the external
+  // one -- a real <a> that opens in a new tab and cannot reach back into
+  // this one.
+  const ctx = await tlCtx();
+  await seedTaglineState(ctx, { id: "a", since: 0 });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await page.waitForTimeout(2800);
+  const ext = await page.evaluate(() => {
+    const el = document.querySelector("#taglineStrip .tagline-line");
+    return {
+      tag: el?.tagName, text: el?.textContent.trim(), href: el?.getAttribute("href"),
+      target: el?.getAttribute("target"), rel: el?.getAttribute("rel"),
+      mark: Boolean(el?.querySelector(".tagline-ext")),
+      label: el?.getAttribute("aria-label"),
+    };
+  });
+  check("32d an expired hold hands over to the next line", ext.text?.startsWith("Read the article"), JSON.stringify(ext));
+  check("32d an outside address is a real link, opening in a new tab",
+        ext.tag === "A" && ext.href === "https://example.org/x" && ext.target === "_blank" && /noopener/.test(ext.rel || ""), JSON.stringify(ext));
+  check("32d ...marked as such, in words as well as an arrow",
+        ext.mark && /opens in a new tab/.test(ext.label || ""), String(ext.label));
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem("mm_tagline_state") || "null"));
+  check("32d the new line's turn is remembered for the next visit", stored?.id === "b", JSON.stringify(stored));
+  await page.close();
+  await ctx.close();
+}
+{
+  // A line pointing at a page inside the app stays in this tab.
+  const ctx = await tlCtx();
+  await seedTaglineState(ctx, { id: "b", since: 0 });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await page.waitForTimeout(2800);
+  const int = await page.evaluate(() => {
+    const el = document.querySelector("#taglineStrip .tagline-line");
+    return { tag: el?.tagName, text: el?.textContent.trim(), href: el?.getAttribute("href"), target: el?.getAttribute("target") };
+  });
+  check("32e a page inside the app opens in the same tab",
+        int.tag === "A" && int.href === "asma-study.html" && !int.target && int.text === "The ninety-nine Names", JSON.stringify(int));
+  await page.close();
+  await ctx.close();
+}
+{
+  // The owner's own case: "I might attach this to particular Ayah, An
+  // article about the Ayah." It has to appear WHILE that ayah is open, and
+  // without waiting for a change delay that belongs to the rotation.
+  const ctx = await tlCtx();
+  await seedTaglineState(ctx, { id: "a", since: Date.now() });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await page.waitForTimeout(2600);
+  await openStudyOptions(page);
+  await page.selectOption("#ayahSelect", "3");
+  await page.waitForTimeout(600); // deliberately less than changeAfterSeconds
+  const onAyah = await stripText(page);
+  check("32f an ayah's own line appears as soon as that ayah is open", onAyah.startsWith("About this ayah"), onAyah);
+  await page.selectOption("#ayahSelect", "1");
+  await page.waitForTimeout(2600);
+  const offAyah = await stripText(page);
+  check("32f leaving the ayah brings the ordinary line back", offAyah === "First words", offAyah);
+  // And the ordinary line is the SAME one as before the detour -- an
+  // ayah-attached line interrupts the rotation, it never advances it.
+  const stateAfter = await page.evaluate(() => JSON.parse(localStorage.getItem("mm_tagline_state") || "null"));
+  check("32f ...the same one, not the next", stateAfter?.id === "a", JSON.stringify(stateAfter));
+  await page.close();
+  await ctx.close();
+}
+{
+  // The rule itself, with no DOM in the way -- the reason js/taglines.js is
+  // pure. Six assertions the rendered page can only show one at a time.
+  const ctx = await tlCtx();
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const rule = await page.evaluate(async (lines) => {
+    const m = await import("/app/js/taglines.js");
+    const day = 86400000;
+    const now = 1000 * day;
+    return {
+      firstRun: m.pickTagline({ lines, state: null, nowMs: now }).current.id,
+      firstRunQuiet: m.pickTagline({ lines, state: null, nowMs: now }).changed,
+      heldStays: m.pickTagline({ lines, state: { id: "a", since: now - day }, nowMs: now }).current.id,
+      expiredMoves: m.pickTagline({ lines, state: { id: "a", since: now - 8 * day }, nowMs: now }).current.id,
+      expiredIsAChange: m.pickTagline({ lines, state: { id: "a", since: now - 8 * day }, nowMs: now }).changed,
+      ayahWins: m.pickTagline({ lines, state: { id: "a", since: now }, nowMs: now, ayahRef: "1:3" }).current.id,
+      archivedNever: m.activeTaglines(lines).some((l) => l.id === "e"),
+      oneLineNeverMoves: m.pickTagline({ lines: [lines[1]], state: { id: "b", since: 0 }, nowMs: now }).changed,
+      // A line whose id is no longer in the list must not wedge the strip.
+      unknownStateRecovers: m.pickTagline({ lines, state: { id: "gone", since: 0 }, nowMs: now }).current.id,
+      // The lock: asked again during the same visit, an expired hold must
+      // NOT walk on to a third line. This is the real bug this check exists
+      // for -- paging through ayahs used to advance the strip each time.
+      lockedHolds: m.pickTagline({ lines, state: { id: "b", since: 0 }, nowMs: now, lockedId: "b" }).current.id,
+      lockedIsQuiet: m.pickTagline({ lines, state: { id: "b", since: 0 }, nowMs: now, lockedId: "b" }).changed,
+      lockedAyahStillWins: m.pickTagline({ lines, state: { id: "b", since: 0 }, nowMs: now, lockedId: "b", ayahRef: "1:3" }).current.id,
+    };
+  }, TL_LINES);
+  check("32g first visit shows the first line, quietly", rule.firstRun === "a" && rule.firstRunQuiet === false, JSON.stringify(rule));
+  check("32g a hold that has not run out keeps its line", rule.heldStays === "a");
+  check("32g a hold that has run out moves on, and that IS the one change", rule.expiredMoves === "b" && rule.expiredIsAChange === true);
+  check("32g an ayah's own line beats whatever was holding", rule.ayahWins === "d");
+  check("32g a retired line is never shown", rule.archivedNever === false);
+  check("32g one line on its own never moves", rule.oneLineNeverMoves === false);
+  check("32g a remembered line that is gone does not wedge the strip", rule.unknownStateRecovers === "a");
+  check("32g asked twice in one visit, it stays on the line it chose",
+        rule.lockedHolds === "b" && rule.lockedIsQuiet === false, JSON.stringify(rule));
+  check("32g ...but an ayah's own line still interrupts it", rule.lockedAyahStillWins === "d");
+  await page.close();
+  await ctx.close();
+}
+{
+  // Bangla. Both halves matter: a line the tenant wrote in Bangla, and the
+  // SHIPPED lines, which carry English only and reach Bangla through
+  // langText() -> t(value.en) -- the read-time path phase 3 built.
+  const ctx = await tlCtx({ appLang: "bn" });
+  await seedTaglineState(ctx, { id: "a", since: Date.now() });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await page.waitForTimeout(2600);
+  const bn = await stripText(page);
+  check("32h a tenant's Bangla line really shows in Bangla", bn === "প্রথম কথা" && BANGLA.test(bn), bn);
+  await page.close();
+  await ctx.close();
+
+  const ctx2 = await ctxFor({ banner: false, appLang: "bn" }); // no tenant list: the shipped six
+  const { page: p2 } = await openPage(ctx2, "/app/quranrevival.html");
+  await p2.waitForTimeout(7000); // the shipped settings use the 6-second default
+  const shipped = await stripText(p2);
+  check("32h a shipped line, English in the code, shows in Bangla too",
+        BANGLA.test(shipped) && !/[A-Za-z]{3}/.test(shipped.replace(/archive\.org/, "")), shipped);
+  await p2.close();
+  await ctx2.close();
+}
+console.log("\n=== 32i. Taglines: the editing screen ===");
+{
+  const ctx = await tlCtx();
+  const { page, errors } = await openPage(ctx, "/app/taglines.html");
+  const shown = await page.evaluate(() => ({
+    rows: document.querySelectorAll("#lineRows tr").length,
+    archived: document.querySelectorAll("#lineRows tr.archived").length,
+    firstText: document.querySelector("#lineRows .tl-text")?.value,
+    motion: document.getElementById("motionSelect")?.value,
+    after: document.getElementById("changeAfterInput")?.value,
+    saveDisabled: document.getElementById("saveBtn")?.disabled,
+    defaultsNotice: getComputedStyle(document.getElementById("usingDefaults")).display,
+  }));
+  check("32i every line is listed, retired ones included", shown.rows === 5 && shown.archived === 1, JSON.stringify(shown));
+  check("32i the tenant's own settings are what the screen shows",
+        shown.motion === "fade" && shown.after === "2", JSON.stringify(shown));
+  check("32i a tenant with its own list is not told it is using the shipped ones",
+        shown.defaultsNotice === "none", shown.defaultsNotice);
+  check("32i Save is inert until something is actually changed", shown.saveDisabled === true);
+
+  await page.fill("#newText", "A brand new line");
+  await page.click("#addBtn");
+  await page.waitForTimeout(150);
+  const added = await page.evaluate(() => ({
+    rows: document.querySelectorAll("#lineRows tr").length,
+    last: [...document.querySelectorAll("#lineRows .tl-text")].pop()?.value,
+    saveDisabled: document.getElementById("saveBtn").disabled,
+  }));
+  check("32i adding a line adds a row and arms Save",
+        added.rows === 6 && added.last === "A brand new line" && added.saveDisabled === false, JSON.stringify(added));
+
+  // Retiring: I4 -- the row stays, greyed, and can be turned back on.
+  await page.click("#lineRows tr:first-child td:last-child button");
+  await page.waitForTimeout(120);
+  const retired = await page.evaluate(() => ({
+    rows: document.querySelectorAll("#lineRows tr").length,
+    firstArchived: document.querySelector("#lineRows tr")?.classList.contains("archived"),
+  }));
+  check("32i retiring a line keeps it, greyed, rather than deleting it",
+        retired.rows === 6 && retired.firstArchived === true, JSON.stringify(retired));
+
+  // Order: the move buttons really renumber.
+  const before = await page.evaluate(() => [...document.querySelectorAll("#lineRows .tl-text")].map((i) => i.value));
+  await page.click("#lineRows tr:nth-child(2) td:first-child button:nth-child(1)"); // move up
+  await page.waitForTimeout(120);
+  const after = await page.evaluate(() => [...document.querySelectorAll("#lineRows .tl-text")].map((i) => i.value));
+  check("32i moving a line up really reorders the list",
+        after[0] === before[1] && after[1] === before[0], JSON.stringify([before.slice(0, 2), after.slice(0, 2)]));
+
+  // A mistyped ayah says so rather than storing rubbish.
+  await page.fill("#newAyah", "not an ayah");
+  await page.fill("#newText", "x");
+  await page.click("#addBtn");
+  await page.waitForTimeout(120);
+  const refused = await page.evaluate(() => document.getElementById("saveState").textContent.trim());
+  check("32i a mistyped ayah reference explains itself", /2:255/.test(refused), refused);
+
+  await page.fill("#newAyah", "");
+  await page.click("#saveBtn");
+  await page.waitForTimeout(500);
+  const writes = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
+  const w = writes.find((x) => x.col === "tenants");
+  check("32i Save writes the list to the tenant document",
+        Boolean(w) && w.data.join() === "taglineSettings,taglines,updatedAt", JSON.stringify(writes));
+  const saidSo = await page.evaluate(() => document.getElementById("saveState").textContent.trim());
+  check("32i ...and says so afterwards", /Saved/.test(saidSo), saidSo);
+  check("32i no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+{
+  // A tenant that has never opened this screen sees the shipped six, and is
+  // told that is what they are.
+  const ctx = await ctxFor({ banner: false });
+  const { page } = await openPage(ctx, "/app/taglines.html");
+  const d = await page.evaluate(() => ({
+    rows: document.querySelectorAll("#lineRows tr").length,
+    notice: getComputedStyle(document.getElementById("usingDefaults")).display,
+  }));
+  check("32j the shipped lines are all there and named as shipped",
+        d.rows === 6 && d.notice !== "none", JSON.stringify(d));
+  await page.close();
+  await ctx.close();
+}
+{
+  // Bangla, and no developer noise -- the standing rule since phase 5.
+  const ctx = await tlCtx({ appLang: "bn" });
+  const { page } = await openPage(ctx, "/app/taglines.html");
+  const bn = await page.evaluate(() => ({
+    h1: document.querySelector("h1").textContent.trim(),
+    title: document.title,
+    intro: document.querySelector("p.intro").textContent.trim(),
+    heads: [...document.querySelectorAll("h2")].map((h) => h.textContent.trim()),
+    ths: [...document.querySelectorAll("th")].map((h) => h.textContent.trim()),
+    opens: [...document.querySelectorAll("#newTarget option")].map((o) => `${o.value}=${o.textContent.trim()}`),
+    holds: [...document.querySelectorAll("#newHold option")].map((o) => `${o.value}=${o.textContent.trim()}`),
+    motions: [...document.querySelectorAll("#motionSelect option")].map((o) => `${o.value}=${o.textContent.trim()}`),
+  }));
+  check("32k the editing screen is in Bangla", BANGLA.test(bn.h1) && BANGLA.test(bn.title) && BANGLA.test(bn.intro), JSON.stringify(bn).slice(0, 200));
+  check("32k every heading and column is in Bangla",
+        bn.heads.every((h) => BANGLA.test(h)) && bn.ths.every((h) => BANGLA.test(h)), JSON.stringify([bn.heads, bn.ths]));
+  check("32k no developer noise anywhere in its headings",
+        ![bn.h1, bn.title, bn.intro, ...bn.heads].some((x) => /\(Phase \d|\(F-\d|round \d/.test(x)), JSON.stringify(bn.heads));
+  // Option VALUES stay the bare ids and numbers -- the same rule every
+  // translated picker in this app follows, because the code reads them back.
+  check("32k the pickers are Bangla with their values left alone",
+        bn.opens.every((o) => BANGLA.test(o.split("=")[1])) && bn.opens.map((o) => o.split("=")[0]).join() === "internal,external"
+        && bn.holds.map((o) => o.split("=")[0]).join() === "0,1,3,7,30"
+        && bn.motions.map((o) => o.split("=")[0]).join() === "flip,fade,slide",
+        JSON.stringify([bn.opens, bn.holds, bn.motions]));
+  await page.close();
+  await ctx.close();
+}
+{
+  // The gate: it is tenant content, so only owner/prime get the link. Tested
+  // on the renderer itself, since the stub's one account always holds owner.
+  const ctx = await ctxFor({ banner: false });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const gate = await page.evaluate(async () => {
+    const m = await import("/app/js/nav.js");
+    return {
+      owner: /taglines\.html/.test(m.renderHomeExtras(["owner"])),
+      prime: /taglines\.html/.test(m.renderHomeExtras(["prime"])),
+      teacher: /taglines\.html/.test(m.renderHomeExtras(["teacher"])),
+      none: /taglines\.html/.test(m.renderHomeExtras([])),
+    };
+  });
+  check("32l only the owner and prime are offered the Taglines screen",
+        gate.owner && gate.prime && !gate.teacher && !gate.none, JSON.stringify(gate));
+  await page.close();
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);

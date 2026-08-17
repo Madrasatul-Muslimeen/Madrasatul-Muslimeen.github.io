@@ -349,7 +349,7 @@ function fullySeededAppendix(SUBJECT_TEMPLATES, MODULE_TEMPLATES, APPROACH_TEMPL
 // latencyMs simulates one Firestore round trip. 0 (the default) keeps the
 // translation suites exactly as they were; the load-speed measurement passes
 // a real number so wall-clock time means something.
-export function stubFor({ banner, accountLang = null, latencyMs = 0, emptyTenant = false, seedTemplates = null }) {
+export function stubFor({ banner, accountLang = null, latencyMs = 0, emptyTenant = false, seedTemplates = null, taglines = null }) {
   const userIndexRow = accountLang
     ? `{ _id: UID, appLang: ${JSON.stringify(accountLang)} }`
     : "";
@@ -368,6 +368,17 @@ export function stubFor({ banner, accountLang = null, latencyMs = 0, emptyTenant
       seedTemplates.SUBJECT_TEMPLATES, seedTemplates.MODULE_TEMPLATES,
       seedTemplates.APPROACH_TEMPLATES, seedTemplates.TOPIC_TRACKABLE_TEMPLATES
     );
+  }
+  if (taglines) {
+    // Shell round 20: a tenant that has authored its OWN tagline list, which
+    // is what the strip really reads in production -- the six shipped
+    // defaults are only what a tenant sees before it ever opens the editor.
+    // Appended rather than baked in so every earlier suite still measures the
+    // tenant it always measured.
+    out += `
+DATA.tenants[0].taglines = ${JSON.stringify(taglines.lines ?? [])};
+DATA.tenants[0].taglineSettings = ${JSON.stringify(taglines.settings ?? {})};
+`;
   }
   if (emptyTenant) {
     // A genuinely NEW tenant: signed in, a membership, but no catalogue

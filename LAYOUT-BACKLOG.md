@@ -491,6 +491,63 @@ usually matches. It is deliberate.
 
 ---
 
+## 12. The moving tagline strip — BUILT, 17 Aug 2026 (v07.46)
+
+**Shell round 20.** The owner's ask: a single line under the app banner that
+cycles through short taglines, some carrying a link — some opening a page
+inside the app, some an outside site in a new tab — with them as the only
+person who can add or edit them. A demo artifact was shown first (the movement
+options, side by side, with the pixel cost attached), the same way rounds 4–14
+were agreed, and **five decisions were taken before any code was written:**
+
+- **It stands where the tagline stood** — not an extra line. Their own call,
+  and also the cheap one. **Measured: the strip is 19px against the
+  paragraph's 23–24px**, so the landing page starts 3–6px HIGHER on every
+  phone and **gains an Approach row at 390×844** (6 → 7 with the banner
+  cleared). An extra line would have cost one row on three of the four
+  phones. Desktop is 1px lower, which changes no row count anywhere.
+- **Quran Study page only, for now.** Module-tagging a line is round 2 —
+  nothing in `js/taglines.js` is Quran-specific except the ayah targeting.
+- **Flip, Fade and Slide up all ship**, and the owner picks which is used
+  ("so i can choose often, gives a variation"). Ticker was dropped.
+- **It changes ONCE PER VISIT**, not every few seconds. Their words: "No
+  change will be frequent. A few might stay for days, a few once a day.
+  maximum 1 change per session could be." So a line has a **hold measured in
+  days** and the strip is mostly a still line with one noticeable movement.
+- **The lines live on the tenant document**, edited from the new
+  `taglines.html` (Home → Settings, owner/prime only). **No extra read, no
+  new collection, no `firestore.rules` change** — `loadContextData()` already
+  fetches that document, and `canAdminIdentity()` already lets owner/prime
+  write it.
+
+**What it left for a later round, all of it deliberate:**
+
+- **Links on four of the six shipped lines are empty**, because the owner said
+  they would set them later ("I will set the links later, add/edit/delete
+  later"). Two carry a real one so both kinds are demonstrably working on day
+  one: `asma-study.html` (inside the app) and the archive.org poster page (new
+  tab).
+- **A line can be attached to ONE ayah** (`ayahRef`, written `2:255`) and shows
+  the moment that ayah is open — the owner's "an article about the Ayah". A
+  RANGE of ayahs, a surah, or a module is not expressible yet.
+- **Per-module lines** are the round-2 half of the owner's original "which one
+  to appear with which module". The field to hang it on does not exist yet;
+  add `moduleIds[]` alongside `ayahRef` when the strip reaches the other pages.
+- **The editing screen saves the whole list in one write.** Fine at six lines
+  or sixty; if it ever grows past that, the array on the tenant document is
+  the thing to reconsider, not the screen.
+- **Two real defects were found by measuring, and both are worth knowing about
+  if this code is touched:** asked again during the same visit (which happens
+  on every ayah change, because an ayah-attached line has to be able to
+  appear), a line whose hold is "every visit" advanced EVERY time — paging
+  through five ayahs walked five lines, i.e. the carousel the owner did not
+  want. `pickTagline()`'s `lockedId` is the fix. And the outgoing line kept
+  the `tagline-in-*` class it arrived with, so the out animation never ran and
+  the old line sat on top of its replacement for ~800ms until a safety
+  timeout swept it up. Both have their own checks now (section 32).
+
+---
+
 ## How these rounds are verified
 
 Every `quranrevival.html` layout round since v07.22 has been measured, not

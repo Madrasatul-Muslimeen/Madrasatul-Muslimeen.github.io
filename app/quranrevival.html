@@ -51,6 +51,48 @@
   .app-version { font-size: 0.85rem; font-weight: 400; color: #888; vertical-align: middle; }
   .app-tagline { font-style: italic; color: #666; margin: 0 0 0.35rem; font-size: 0.95rem; }
 
+  /* ---------- Tagline strip (shell round 20) ----------
+     A fixed height and overflow:hidden are what make flip and slide possible
+     at all -- the outgoing line has to be able to leave the box. The height
+     is set in px rather than left to the line box because the strip holds two
+     absolutely-positioned lines during a change, so it has no natural height
+     of its own at that moment and the page would jump by 19px mid-animation.
+     Kept at or below the <p> it replaces (0.92rem/1.3 = 19px + 0.3rem margin
+     vs the paragraph's 18px + 0.35rem), so the landing height rounds 9-14
+     fought for is not spent here. */
+  .tagline-strip { position: relative; height: 19px; overflow: hidden; margin: 0 0 0.3rem; font-size: 0.92rem; line-height: 1.3; }
+  .tagline-line {
+    position: absolute; left: 0; right: 0; top: 0;
+    display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: #666;
+  }
+  /* A line that links is a real <a>: long-press, middle-click, "open in new
+     tab" and a screen reader all behave the way they should, which a
+     click-handler on a <span> would have quietly broken. */
+  a.tagline-line { color: #1F3A6E; text-decoration: none; }
+  a.tagline-line:hover, a.tagline-line:focus-visible { text-decoration: underline; }
+  .tagline-ext { font-style: normal; font-size: 0.72rem; color: #B8862F; margin-left: 0.25rem; }
+  /* The three motions the owner chose. Two lines exist together only for the
+     ~0.3s of a change; the outgoing one removes itself on animationend. */
+  .tagline-strip[data-motion="flip"] { perspective: 300px; }
+  .tagline-line.tagline-out-flip { animation: taglineFlipOut 0.28s ease-in forwards; }
+  .tagline-line.tagline-in-flip { animation: taglineFlipIn 0.28s ease-out backwards; }
+  @keyframes taglineFlipOut { to { transform: rotateX(-90deg); opacity: 0; } }
+  @keyframes taglineFlipIn { from { transform: rotateX(90deg); opacity: 0; } }
+  .tagline-line.tagline-out-fade { animation: taglineFadeOut 0.32s ease forwards; }
+  .tagline-line.tagline-in-fade { animation: taglineFadeIn 0.32s ease backwards; }
+  @keyframes taglineFadeOut { to { opacity: 0; } }
+  @keyframes taglineFadeIn { from { opacity: 0; } }
+  .tagline-line.tagline-out-slide { animation: taglineSlideOut 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+  .tagline-line.tagline-in-slide { animation: taglineSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) backwards; }
+  @keyframes taglineSlideOut { to { transform: translateY(-100%); opacity: 0; } }
+  @keyframes taglineSlideIn { from { transform: translateY(100%); opacity: 0; } }
+  /* Someone who has asked their system for less movement gets the new line
+     without the animation -- never a strip that silently stops working. */
+  @media (prefers-reduced-motion: reduce) {
+    .tagline-line { animation-duration: 0.001s !important; }
+  }
+
   /* ---------- Splash screens (shell round 2, ported from index.html) ---------- */
   .app-splash-overlay { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%); font-family: 'Inter', system-ui, sans-serif; }
   .splash-slide { display: none; text-align: center; padding: 40px 24px; max-width: 560px; }
@@ -501,7 +543,19 @@
 </head>
 <body>
   <h1>QuranRevival <span id="appVersion" class="app-version"></span></h1>
-  <p class="app-tagline">Reviving the Quran, abandoned.</p>
+  <!-- Shell round 20 (17 Aug 2026) -- the moving tagline strip. It stands
+       EXACTLY where the static tagline stood, which is the owner's own call
+       and also the cheap one: measured at 17-19px against the <p>'s own
+       20-22px, so it costs nothing and gains an Approach row at 390x844.
+       An extra line below the tagline would have cost one row on three of
+       the four phones measured (tools/i18n-verify/tagline-cost.mjs).
+       The first line printed here is static markup on purpose, exactly like
+       the sign-in strip (v07.08): it paints before any script runs, so with
+       no JavaScript, or before the tenant's own lines arrive, this page
+       looks precisely as it did in v07.45. js/taglines.js then decides
+       whose turn it is and, if that is a different line, moves to it ONCE
+       -- see pickTagline(). -->
+  <div class="app-tagline tagline-strip" id="taglineStrip"><span class="tagline-line">Reviving the Quran, abandoned.</span></div>
 
   <nav class="app-nav" id="topNav">
     <details class="nav-cat nav-cat-home">
@@ -851,6 +905,10 @@
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { getAppLang, getQuranTranslationLangs, setQuranTranslationLangs } from "./js/prefs.js";
+    import {
+      taglinesFrom, taglineSettingsFrom, taglineText, pickTagline,
+      readTaglineState, writeTaglineState, TAGLINE_SETTING_DEFAULTS,
+    } from "./js/taglines.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { showBootSplash, showQuranSplash } from "./js/splash.js";
     import { APP_VERSION } from "./js/version.js";
@@ -955,6 +1013,11 @@
       renderPersonSelectOptions();
       renderTrackableSelectOptions();
       renderBanner();
+      // The strip's current line is JS-rendered, so translateStatic() above
+      // cannot reach it (its WeakMap only holds nodes that were in the
+      // markup). Redraw it in the new language, without animating -- a
+      // language change is not one of the strip's own changes.
+      redrawTaglineStrip();
       renderStudyScreen();
     }
     const tenantSelect = document.getElementById("tenantSelect");
@@ -1036,6 +1099,7 @@
     const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
     const exploreSidebarContainer = document.getElementById("exploreSidebarContainer");
 
+    const taglineStripEl = document.getElementById("taglineStrip");
     const globalBannerEl = document.getElementById("globalBanner");
     const bannerTitleEl = document.getElementById("bannerTitle");
     const bannerSubEl = document.getElementById("bannerSub");
@@ -1202,6 +1266,169 @@
       // banner set still shows it exactly as before. Only the edit form is
       // gone (see the markup comment where it used to live).
       globalBannerEl.style.display = title || sub ? "" : "none";
+    }
+
+    // -----------------------------------------------------------------------
+    // Shell round 20 -- the tagline strip.
+    //
+    // The rule about WHICH line shows lives in js/taglines.js (pickTagline);
+    // everything here is about putting it on screen. The division matters:
+    // the rotation is the part with a real rule in it -- holds measured in
+    // days, one change per visit, an ayah-attached line taking priority --
+    // and it is testable without a browser precisely because it is not
+    // tangled up with the DOM.
+    //
+    // Nothing in here ever writes innerHTML: a line's text is tenant-authored
+    // (the owner types it), so it goes on screen through textContent, same
+    // rule the person and Approach names follow everywhere else in this file.
+    // -----------------------------------------------------------------------
+
+    let taglineLines = taglinesFrom(null); // the six shipped defaults until the tenant doc lands
+    let taglineSettings = { ...TAGLINE_SETTING_DEFAULTS };
+    let taglineShownId = null; // null means what is on screen is still the page's own static markup
+    let taglineGeneralId = null; // the general line already decided for THIS visit -- see pickTagline()'s lockedId
+    let taglinePendingLine = null;
+    let taglinePendingTimer = null;
+    let taglineHeld = false;
+
+    function buildTaglineEl(line) {
+      const hasLink = !!line.link?.url;
+      const el = document.createElement(hasLink ? "a" : "span");
+      el.className = "tagline-line";
+      if (hasLink) {
+        el.href = line.link.url;
+        if (line.link.target === "external") {
+          // An outside site opens in a new tab and never gets a handle on
+          // this one -- the owner's own "external browser, new tab".
+          el.target = "_blank";
+          el.rel = "noopener noreferrer";
+        }
+      }
+      const label = document.createElement("span");
+      label.textContent = taglineText(line, getAppLang());
+      el.appendChild(label);
+      if (hasLink && line.link.target === "external") {
+        const mark = document.createElement("span");
+        mark.className = "tagline-ext";
+        mark.textContent = "↗";
+        // The arrow is decoration; the sentence a screen reader gets should
+        // say what actually happens.
+        mark.setAttribute("aria-hidden", "true");
+        el.setAttribute("aria-label", t("{text} — opens in a new tab", { text: taglineText(line, getAppLang()) }));
+        el.appendChild(mark);
+      }
+      return el;
+    }
+
+    function showTaglineLine(line, animate) {
+      const old = taglineStripEl.querySelector(".tagline-line");
+      const el = buildTaglineEl(line);
+      const motion = taglineSettings.motion;
+      if (animate) el.classList.add(`tagline-in-${motion}`);
+      taglineStripEl.appendChild(el);
+      if (old) {
+        if (animate) {
+          // The outgoing line still carries the `tagline-in-*` class it
+          // arrived with, and both rules set the `animation` shorthand -- so
+          // adding the out class changed nothing, the line never animated
+          // away, and it sat on top of its replacement until the safety
+          // timeout below swept it up (measured: ~800ms of the OLD line
+          // still on screen). Dropping the in class first is what makes the
+          // out animation actually run.
+          old.classList.remove(`tagline-in-${motion}`);
+          old.classList.add(`tagline-out-${motion}`);
+          old.addEventListener("animationend", () => old.remove());
+          // Belt and braces: under prefers-reduced-motion the animation is
+          // 1ms and animationend still fires, but a strip left holding two
+          // absolutely-positioned lines would print them on top of each
+          // other, which is worse than a missing animation.
+          setTimeout(() => old.remove(), 800);
+        } else {
+          old.remove();
+        }
+      }
+      taglineShownId = line.id;
+    }
+
+    function runPendingTaglineChange() {
+      taglinePendingTimer = null;
+      if (!taglinePendingLine) return;
+      // Held under a finger: the whole point of the pause is that a line can
+      // be read, or its link tapped, without moving away mid-reach.
+      if (taglineHeld) {
+        taglinePendingTimer = setTimeout(runPendingTaglineChange, 1000);
+        return;
+      }
+      const line = taglinePendingLine;
+      taglinePendingLine = null;
+      showTaglineLine(line, true);
+    }
+
+    function scheduleTaglineChange(line, delaySeconds) {
+      if (taglinePendingTimer) clearTimeout(taglinePendingTimer);
+      taglinePendingLine = line;
+      if (delaySeconds <= 0) {
+        runPendingTaglineChange();
+        return;
+      }
+      taglinePendingTimer = setTimeout(runPendingTaglineChange, delaySeconds * 1000);
+    }
+
+    /** Called when the tenant's lines arrive, when the app language changes,
+     *  and on every ayah change (renderStudyScreen) -- an ayah-attached line
+     *  is about what is on screen right now, so it cannot wait for a reload. */
+    function refreshTaglineStrip() {
+      if (!taglineStripEl) return;
+      const state = readTaglineState();
+      const pick = pickTagline({
+        lines: taglineLines,
+        state,
+        ayahRef: `${currentSurahNum}:${currentAyahNum}`,
+        lockedId: taglineGeneralId,
+      });
+      // No active lines at all: leave the page's own static tagline exactly
+      // where it is rather than emptying the strip.
+      if (!pick.current) return;
+      if (pick.state !== state) writeTaglineState(pick.state);
+      // Whichever ordinary line this visit landed on is this visit's line.
+      // Only an ayah-attached one is allowed to interrupt it, and it never
+      // replaces it.
+      if (!pick.forAyah) taglineGeneralId = pick.current.id;
+      if (taglineShownId === pick.current.id) return;
+      const shownText = taglineStripEl.querySelector(".tagline-line")?.textContent?.trim() ?? "";
+      const targetText = taglineText(pick.current, getAppLang());
+      // First run, and the line whose turn it is already reads the same as
+      // the static markup: adopt it silently. Animating a line into the
+      // place of an identical one would look like a glitch, not a change.
+      if (!taglineShownId && shownText === targetText) {
+        taglineShownId = pick.current.id;
+        return;
+      }
+      scheduleTaglineChange(pick.current, pick.forAyah ? 0 : taglineSettings.changeAfterSeconds);
+    }
+
+    /** Re-render whichever line is on screen, in the language now chosen. No
+     *  animation and no re-decision: same line, different words. */
+    function redrawTaglineStrip() {
+      if (!taglineStripEl || !taglineShownId) return;
+      const line = taglineLines.find((l) => l.id === taglineShownId);
+      if (line) showTaglineLine(line, false);
+    }
+
+    function applyTaglineData(tenantDoc) {
+      taglineLines = taglinesFrom(tenantDoc);
+      taglineSettings = taglineSettingsFrom(tenantDoc);
+      taglineStripEl?.setAttribute("data-motion", taglineSettings.motion);
+      refreshTaglineStrip();
+    }
+
+    if (taglineStripEl) {
+      for (const [ev, held] of [["pointerdown", true], ["pointerup", false], ["pointercancel", false], ["pointerleave", false]]) {
+        taglineStripEl.addEventListener(ev, () => {
+          if (!taglineSettings.pauseOnHold) return;
+          taglineHeld = held;
+        });
+      }
     }
 
     // -----------------------------------------------------------------------
@@ -1685,6 +1912,9 @@
       renderPersonSelectOptions();
       selectedPersonId = personSelect.value || null; // whichever person is actually visible/selected (round 11: may be scoped by an active "View as" preview)
       renderBanner();
+      // Shell round 20: the tenant's own tagline list rides along on the
+      // tenant document this wave already fetches -- no extra read (I9).
+      applyTaglineData(currentTenantDoc);
 
       quranTrackables = allTrackables.filter((t) => t.subjectId === "quran" && t.status !== "archived");
       renderTrackableSelectOptions();
@@ -2305,6 +2535,10 @@
 
     function renderStudyScreen() {
       if (!currentSurahData) return;
+      // Shell round 20: an ayah-attached tagline ("an article about this
+      // Ayah") is about whatever is open right now, so the strip is
+      // re-decided on every ayah change rather than only on load.
+      refreshTaglineStrip();
       // Shell round 19: "page view" is no longer a unit-type accident. What
       // decides whether the flow renderer or the single-ayah renderer runs is
       // simply whether the chosen unit covers more than one ayah -- and Mushaf
