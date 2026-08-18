@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.49.** Cutover to production happened
+**Current milestone: QuranRevival v07.50.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -2271,6 +2271,77 @@ deleted**, each because this round deliberately removed what they asserted
 (`#readRef`, `#readTransport`, `readPlaySurahBtn`, the two-way toggle, and
 round 21's own button-text assertions now that the controls are icons whose
 name lives in `aria-label`) — the reason is recorded in each. No
+`firestore.rules`, schema or Firestore data changes.
+
+v07.50 (18 Aug 2026, on Claude Code on the web) is **shell round 23 — the
+Qur'an gets a real typeface, bundled.** The owner put our reading screen beside
+another Qur'an app and asked for that app's Arabic: *"I want the other one to
+incorporate in our app. Keep the current one as an option to choose from (in
+the Study option). And also same time or you can do it next phase, whatever is
+easy, the Indo/Pak script as well."*
+
+**The diagnosis is the headline: the app had never shipped an Arabic font at
+all.** `.ayah-arabic` asked for `'Traditional Arabic', 'Amiri', serif` and
+**neither was bundled**, so the real rule was "whatever this phone happens to
+have" — which is exactly why their Arabic looked unlike the app they compared
+it with, and why it can differ between their own devices.
+
+**Three faces are bundled now, all OFL, and the old behaviour is KEPT as a
+choice rather than removed (I4)**: Scheherazade New (the default — measured
+against the owner's screenshot as the closest of the candidates), Noto Naskh
+Arabic, Amiri Quran, and "your device's own", which resolves to exactly the
+pre-round-23 stack. The picker sits in Study options → Reading view beside the
+other display choices; the preference is localStorage, the same additive shape
+rounds 18/21 used, so **no new startup read, no collection, no
+`firestore.rules` change**.
+
+**Two build decisions worth not undoing.** **(a) The fonts are SELF-HOSTED,
+not linked from Google Fonts** — the app already depends on one third-party
+host (archive.org, for every recitation) and that host is the prime suspect in
+the owner's own "Play doesn't work" report; a second independently-failing
+host is the last thing the Qur'an *text* needs. Self-hosted means: if the app
+loads, the font loads. **(b) They are subset by `tools/fonts/build-fonts.mjs`
+(new, checked in) from the complete originals, driven by the ACTUAL TEXT we
+ship** — every codepoint in every ayah of `tools/quran-data-pull/output`, which
+came to **74** — keeping **every** OpenType layout feature, because Arabic
+shaping and mark positioning live in those tables. Result: **23KB / 21KB /
+39KB**. Measured during the round and worth knowing: **Google's own woff2
+subsets render Qur'anic marks differently from the complete font**, so taking
+their files would have been the wrong shortcut; the subsets built here were
+verified to render **identically to the full originals**.
+
+**One thing joins the landing page and is flagged per I9: the chosen face,
+~24KB, requested at ~280ms.** It is there because the Mastery Wheel's centre
+disc is Arabic too (the wheel now follows the same setting — one variable,
+`--quran-font`, governs the ayah text, the word-by-word chips and the wheel).
+`font-display: swap` means the ayah is readable immediately in the fallback
+and re-sets when the face arrives — **a blank Qur'an while a font downloads
+would be the worst possible trade.** Perf re-measured to prove nothing else
+moved: **6 sequential round trips / 0.94s, unchanged.**
+
+**Indo-Pak is NOT built, and the reason is a data fact rather than a
+preference: it is a different TEXT, not a different font.** Indo-Pak mushafs
+spell words differently from the Uthmani text this app ships (`uthmaniText` is
+the only Arabic field in the pulled data — checked, not assumed), so rendering
+our text in an Indo-Pak face would produce a hybrid that reads wrong to anyone
+who actually uses that script. Doing it properly means a re-pull adding a
+second per-ayah field, the same shape as the multiple-translations problem in
+`LAYOUT-BACKLOG.md` item 4 — and it **could not even be started from this
+sandbox**, whose proxy blocks `api.quran.com`. The Reading view card says so on
+screen in plain words rather than promising a picker that cannot work.
+
+**Verified: 682 behaviour checks pass, 0 failed** (was 667 — 14 new in section
+35: the picker's four options with values proven still plain ids, the default
+proven to be the face the owner asked for, the device stack proven KEPT rather
+than removed, the choice proven to reach the rendered Qur'an, **the woff2
+proven actually fetched rather than merely referenced**, the choice proven to
+survive a reload, an unknown stored value proven to fall back rather than wedge,
+and the whole thing in Bangla with the typefaces' own names proven left alone —
+they are proper nouns, like the reciters'). **`layout.mjs` NO LAYOUT
+REGRESSIONS** at all eight viewports in both banner states (`getElementById`
+targets 86 → 87, none missing), **`reading.mjs` OK**, **navcheck unchanged**
+(still only the pre-existing 320px ENGLISH truncation of "Operation"/
+"Bookmark"), **coverage 1,186/1,186 (100%)**, **perf unchanged**. No
 `firestore.rules`, schema or Firestore data changes.
 
 ---

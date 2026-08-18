@@ -718,6 +718,66 @@ blocks.
 
 ---
 
+## 15. The Qur'an's typeface — BUILT, 18 Aug 2026 (v07.50); Indo-Pak still open
+
+**Shell round 23.** The owner compared our reading screen with another Qur'an
+app and asked for that app's Arabic, keeping the current one as a choice.
+
+**The diagnosis is the point: the app had never shipped an Arabic font.**
+`.ayah-arabic` named `'Traditional Arabic', 'Amiri', serif` and **neither was
+bundled**, so the rule was "whatever this phone happens to have".
+
+**Built:** three OFL faces bundled — **Scheherazade New** (default, measured as
+the closest to the owner's screenshot), **Noto Naskh Arabic**, **Amiri Quran** —
+plus **"your device's own"**, which resolves to exactly the old stack, so
+nothing was removed (I4). Picker in Study options → Reading view; localStorage,
+so no new startup read, no collection, no rules change. One CSS variable
+(`--quran-font`) governs the ayah text, the word-by-word chips **and the wheel's
+centre disc**.
+
+**Two decisions not to undo:**
+
+- **Self-hosted, not Google Fonts.** The app already depends on archive.org for
+  every recitation, and that host is the prime suspect in the owner's "Play
+  doesn't work" report. A second independently-failing host is the last thing
+  the Qur'an *text* needs.
+- **Subset by `tools/fonts/build-fonts.mjs` from the complete originals**,
+  driven by the 74 codepoints our shipped text actually uses, keeping **every**
+  OpenType layout feature (Arabic shaping and mark positioning live there).
+  23/21/39KB. **Measured: Google's own woff2 subsets render Qur'anic marks
+  differently from the complete font** — the subsets built here were verified to
+  render *identically* to the originals. Re-verify that if the script changes.
+
+**Flagged per I9:** the chosen face is ~24KB and IS requested on the landing
+page (the wheel's centre is Arabic), at ~280ms, `font-display: swap` so it never
+blocks paint. Perf re-measured: 6 sequential round trips, unchanged.
+
+### Still open — Indo-Pak script is a DATA job, not a font job
+
+**This is the part to read before promising it.** Indo-Pak mushafs *spell*
+words differently from the Uthmani text this app ships. `uthmaniText` is the
+only Arabic field in `tools/quran-data-pull/output` (checked, not assumed), so
+rendering our text in an Indo-Pak face gives a hybrid that reads wrong to
+anyone who actually uses that script — it is not "add a fourth option to the
+picker".
+
+Doing it properly means **a re-pull adding a second per-ayah text field**, the
+same shape as the multiple-translations problem in item 4, plus re-packaging
+all 114 surah files and re-building the Arabic search index (which reads
+`uthmaniText`). Note also that a Claude Code **web** sandbox cannot even start
+it: `api.quran.com` is blocked by the proxy there (measured this round), so
+the pull has to run somewhere with real network access.
+
+A suitable free Indo-Pak face also has to be chosen — the common ones
+(Noorehira, PDMS Saleem Quran, Al Qalam) do **not** carry OFL-style licences
+the way the three bundled faces do, so licensing needs checking rather than
+assuming.
+
+The Reading view card says all this on screen in one plain sentence, rather
+than showing a picker option that could not work.
+
+---
+
 ## How these rounds are verified
 
 Every `quranrevival.html` layout round since v07.22 has been measured, not

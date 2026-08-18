@@ -2646,6 +2646,115 @@ console.log("\n=== 34. Shell round 22: pickers on the reading screen ===");
   await ctx.close();
 }
 
+// ---------------------------------------------------------------------------
+// 35. Shell round 23: the Qur'an's own typeface, bundled and choosable.
+//
+// The owner compared our Arabic with another app's and asked for that face,
+// "keep the current one as an option to choose from". Before this the stack
+// named 'Traditional Arabic' and 'Amiri' and NEITHER was bundled, so the real
+// answer was "whatever this phone happens to have".
+// ---------------------------------------------------------------------------
+console.log("\n=== 35. Shell round 23: the bundled Qur'an typefaces ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const fontHits = [];
+  await ctx.route("**/app/fonts/*.woff2", async (r) => {
+    fontHits.push(r.request().url().split("/").pop());
+    await r.continue();
+  });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await openStudyOptions(page);
+
+  const picker = await page.evaluate(() => {
+    const sel = document.getElementById("quranFontSelect");
+    return { values: [...sel.options].map((o) => o.value), value: sel.value,
+             labels: [...sel.options].map((o) => o.textContent.trim()) };
+  });
+  check("35a the Arabic font picker offers the bundled faces and the device's own",
+        picker.values.join() === "scheherazade,notonaskh,amiriquran,device", JSON.stringify(picker.values));
+  check("35a ...and defaults to the one the owner asked for", picker.value === "scheherazade", picker.value);
+  check("35a ...with the old device-decides behaviour KEPT as a choice, not removed",
+        picker.values.includes("device"));
+
+  const applied = await page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue("--quran-font").trim());
+  check("35b the choice really reaches the Qur'an text", /QR Scheherazade/.test(applied), applied);
+
+  // The face must actually be DOWNLOADED, not merely named -- that is the
+  // whole defect this round fixes.
+  await page.click("#tabStudyOptionsBtn");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(900);
+  check("35b the woff2 is really fetched, not just referenced",
+        fontHits.includes("scheherazade.woff2"), JSON.stringify(fontHits));
+
+  const swapped = await page.evaluate(async () => {
+    document.getElementById("tabStudyOptionsBtn").click();
+    await new Promise((r) => setTimeout(r, 250));
+    const sel = document.getElementById("quranFontSelect");
+    sel.value = "device";
+    sel.dispatchEvent(new Event("change"));
+    await new Promise((r) => setTimeout(r, 250));
+    return getComputedStyle(document.documentElement).getPropertyValue("--quran-font").trim();
+  });
+  check("35c choosing 'your device's own' restores exactly the old stack",
+        /Traditional Arabic/.test(swapped) && !/QR /.test(swapped), swapped);
+
+  // A stored preference is worth nothing if it does not survive a reload.
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(600);
+  const kept = await page.evaluate(() => ({
+    sel: document.getElementById("quranFontSelect").value,
+    applied: getComputedStyle(document.documentElement).getPropertyValue("--quran-font").trim(),
+  }));
+  check("35c ...and the choice survives a reload", kept.sel === "device" && /Traditional Arabic/.test(kept.applied),
+        JSON.stringify(kept));
+
+  check("35 no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 35d a stale or hand-edited value can never leave the Qur'an unstyled
+  const ctx = await ctxFor({ banner: false });
+  await ctx.addInitScript(() => { try { localStorage.setItem("mm_quran_font", "not-a-font"); } catch {} });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const fallback = await page.evaluate(() => ({
+    applied: getComputedStyle(document.documentElement).getPropertyValue("--quran-font").trim(),
+    sel: document.getElementById("quranFontSelect").value,
+  }));
+  check("35d an unknown stored font falls back rather than wedging",
+        /QR Scheherazade/.test(fallback.applied) && fallback.sel === "scheherazade", JSON.stringify(fallback));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 35e in Bangla: the wording translates, the face names do not --------
+  const ctx = await ctxFor({ banner: false, appLang: "bn" });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await openStudyOptions(page);
+  const bn = await page.evaluate(() => {
+    const sel = document.getElementById("quranFontSelect");
+    return {
+      label: document.querySelector('label[for="quranFontSelect"]').textContent.trim(),
+      device: [...sel.options].find((o) => o.value === "device").textContent.trim(),
+      face: [...sel.options].find((o) => o.value === "scheherazade").textContent.trim(),
+      values: [...sel.options].map((o) => o.value),
+      note: document.getElementById("quranFontNote").textContent.trim(),
+    };
+  });
+  check("35e the control is named in Bangla", BANGLA.test(bn.label), bn.label);
+  check("35e ...'your device's own' is Bangla", BANGLA.test(bn.device), bn.device);
+  check("35e ...but a typeface's own name is left alone", bn.face === "Scheherazade", bn.face);
+  check("35e ...the Indo-Pak note reads in Bangla", BANGLA.test(bn.note), bn.note.slice(0, 40));
+  check("35e ...and the stored values stay plain ids",
+        bn.values.join() === "scheherazade,notonaskh,amiriquran,device", JSON.stringify(bn.values));
+  await page.close();
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);

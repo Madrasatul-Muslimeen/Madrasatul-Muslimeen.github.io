@@ -97,7 +97,7 @@ function centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabe
       ? `<text x="${cx}" y="${cy + 22}" text-anchor="middle" font-family="Inter" font-size="10" fill="#8fa0c2">${centerRef}</text>`
       : "";
     return `${circle}
-      <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="Amiri, serif" font-size="22" direction="rtl" fill="#fbf3df">${centerArabic}</text>
+      <text x="${cx}" y="${cy - 4}" text-anchor="middle" style="font-family: var(--quran-font, serif)" font-size="22" direction="rtl" fill="#fbf3df">${centerArabic}</text>
       ${ref}`;
   }
   const sub = centerSub

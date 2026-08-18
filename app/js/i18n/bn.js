@@ -329,6 +329,20 @@ export const BN = {
   "Study Unit": "অধ্যয়নের একক",
   "Number": "সংখ্যা",
 
+  // --- Shell round 23: the Qur'an's own typeface, bundled and choosable.
+  //     The face NAMES are proper nouns and are not translated, exactly like
+  //     the reciters' names -- only "your device's own" is wording.
+  "Arabic font": "আরবি ফন্ট",
+  // Typeface names are proper nouns, like the reciters' names -- mapped to
+  // themselves on purpose so the coverage report counts them as DECIDED
+  // rather than forgotten (the convention phase 6 set).
+  "Scheherazade": "Scheherazade",
+  "Noto Naskh": "Noto Naskh",
+  "Amiri Quran": "Amiri Quran",
+  "Your device's own": "আপনার ডিভাইসের নিজস্ব",
+  "Indo-Pak script is not here yet: it is written differently, not only drawn differently, so it needs its own copy of the Qur'an text.":
+    "ইন্দো-পাক লিপি এখনও যুক্ত হয়নি: এটি কেবল আলাদা করে আঁকা নয়, আলাদা করে লেখাও — তাই এর জন্য কুরআনের পাঠের আলাদা একটি অনুলিপি প্রয়োজন।",
+
   // --- The "Go to" box, including what it says when it cannot read you ---
   "Couldn't read \"{text}\". Try 2:255 for one ayah, or 2:255-260 for a range.":
     "\"{text}\" বোঝা গেল না। একটি আয়াতের জন্য ২:২৫৫, বা পরিসরের জন্য ২:২৫৫-২৬০ লিখুন।",
