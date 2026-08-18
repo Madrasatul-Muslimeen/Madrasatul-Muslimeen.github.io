@@ -541,13 +541,31 @@
 
   /* ---------- Study screen ---------- */
   #studyScreen { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 1rem; margin-top: 0.5rem; }
-  .ayah-arabic { font-family: 'Traditional Arabic', 'Amiri', serif; font-size: 1.7rem; line-height: 2.6rem; text-align: right; margin: 0.6rem 0; }
+  /* Shell round 23 -- the Qur'an's own typefaces, BUNDLED. Before this the
+     stack asked for 'Traditional Arabic' and 'Amiri' and neither was shipped,
+     so every phone showed whatever it happened to have -- which is why the
+     owner's Arabic looked different from the app they compared it with.
+     Self-hosted rather than linked from Google Fonts on purpose: the app
+     already depends on one third-party host (archive.org, for every
+     recitation) and that host is the prime suspect in their "Play doesn't
+     work" report. A second independently-failing host is the last thing the
+     Qur'an text needs. See tools/fonts/build-fonts.mjs.
+     `swap` so the ayah is READABLE immediately in the fallback and re-sets
+     when the face arrives -- a blank Qur'an while a font downloads would be
+     the worst possible trade. */
+  @font-face { font-family: 'QR Scheherazade'; src: url('fonts/scheherazade.woff2') format('woff2'); font-display: swap; }
+  @font-face { font-family: 'QR Noto Naskh';   src: url('fonts/notonaskh.woff2')   format('woff2'); font-display: swap; }
+  @font-face { font-family: 'QR Amiri Quran';  src: url('fonts/amiriquran.woff2')  format('woff2'); font-display: swap; }
+  /* One variable, set from the reader's stored choice, so every piece of
+     Arabic on the page follows one setting rather than four hardcoded stacks. */
+  :root { --quran-font: 'QR Scheherazade', serif; }
+  .ayah-arabic { font-family: var(--quran-font); font-size: 1.7rem; line-height: 2.6rem; text-align: right; margin: 0.6rem 0; }
   .ayah-num { color: #B8862F; font-size: 1rem; }
   .ayah-translation { font-size: 0.95rem; color: #333; margin: 0.3rem 0; }
   .ayah-translation-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; }
   .wbw-strip, .root-deriv-strip { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.6rem 0; }
   .wbw-word, .root-row { border: 1px solid #eee; border-radius: 0.4rem; padding: 0.3rem 0.5rem; text-align: center; min-width: 4.5rem; }
-  .wbw-arabic, .root-word, .root-root, .root-lemma { font-family: 'Amiri', serif; font-size: 1.15rem; }
+  .wbw-arabic, .root-word, .root-root, .root-lemma { font-family: var(--quran-font); font-size: 1.15rem; }
   .wbw-translit { font-size: 0.72rem; color: #888; font-style: italic; }
   .wbw-gloss { font-size: 0.8rem; }
   .wbw-gloss-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; }
@@ -904,6 +922,20 @@
             </select></div>
           </div>
           <p class="opt-note" id="mushafNote" hidden>Mushaf view shows the printed page, so the other reading choices do not apply while it is on.</p>
+          <!-- Shell round 23 -- which typeface the Qur'an is set in. The
+               owner's ask, from comparing our Arabic with another app's:
+               "I want the other one to incorporate in our app. Keep the
+               current one as an option to choose from." So the old
+               device-decides behaviour is a CHOICE now, not a removal (I4). -->
+          <div class="row" id="quranFontControl">
+            <div><label for="quranFontSelect">Arabic font</label><select id="quranFontSelect">
+              <option value="scheherazade">Scheherazade</option>
+              <option value="notonaskh">Noto Naskh</option>
+              <option value="amiriquran">Amiri Quran</option>
+              <option value="device">Your device's own</option>
+            </select></div>
+          </div>
+          <p class="opt-note" id="quranFontNote">Indo-Pak script is not here yet: it is written differently, not only drawn differently, so it needs its own copy of the Qur'an text.</p>
           <!-- Shell round 21 -- WHAT Full screen takes away, the owner's own
                answer when asked whether it should hide the reading screen's
                own two bars: not yes or no, but "enable all choices to show
@@ -1025,6 +1057,7 @@
     import {
       getAppLang, getQuranTranslationLangs, setQuranTranslationLangs,
       getFullScreenHides, setFullScreenHides, FULLSCREEN_HIDEABLE,
+      getQuranFont, setQuranFont, quranFontStack,
     } from "./js/prefs.js";
     import {
       taglinesFrom, taglineSettingsFrom, taglineText, pickTagline,
@@ -1235,6 +1268,7 @@
     const hideChromeBtn = document.getElementById("hideChromeBtn");
     const prevUnitBtn = document.getElementById("prevUnitBtn");
     const nextUnitBtn = document.getElementById("nextUnitBtn");
+    const quranFontSelect = document.getElementById("quranFontSelect");
     const fullScreenHidesBox = document.getElementById("fullScreenHides");
     const fullScreenNote = document.getElementById("fullScreenNote");
     const wheelHeadingEl = document.querySelector("#stage > .wheel-heading");
@@ -3257,6 +3291,20 @@
     trEnToggle.checked = getQuranTranslationLangs().includes("en");
     trBnToggle.checked = getQuranTranslationLangs().includes("bn");
     renderFullScreenHideTicks(); // shell round 21 -- the stored Full-screen choice
+
+    // Shell round 23 -- the Qur'an's typeface. Applied as ONE custom property
+    // so every piece of Arabic on the page follows it; nothing re-renders,
+    // because changing a font is a paint, not a rebuild.
+    function applyQuranFont() {
+      document.documentElement.style.setProperty("--quran-font", quranFontStack());
+    }
+    quranFontSelect.value = getQuranFont();
+    applyQuranFont();
+    quranFontSelect.addEventListener("change", () => {
+      setQuranFont(quranFontSelect.value);
+      quranFontSelect.value = getQuranFont(); // an unknown value is refused, so show what really took
+      applyQuranFont();
+    });
     function applyTranslationTicks() {
       const langs = [];
       if (trEnToggle.checked) langs.push("en");

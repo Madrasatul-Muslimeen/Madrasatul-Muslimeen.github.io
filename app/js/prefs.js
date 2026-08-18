@@ -338,3 +338,49 @@ export function setFullScreenHides(ids) {
   writeStored(FULLSCREEN_HIDES_KEY, JSON.stringify(clean));
   return getFullScreenHides();
 }
+
+// ---------------------------------------------------------------------------
+// Shell round 23 — which Arabic typeface the Qur'an is set in.
+//
+// `.ayah-arabic` asked for `'Traditional Arabic', 'Amiri', serif` and NEITHER
+// was bundled, so the answer was "whatever this phone happens to have" — which
+// is exactly why the owner's Arabic looked different from the app they
+// compared it against. Three faces are bundled now (all OFL, all subset to the
+// text we actually ship — see tools/fonts/build-fonts.mjs), and the old
+// behaviour is kept as an explicit choice rather than removed (I4): someone
+// who prefers their own device's face can still have it.
+//
+// localStorage, like every other reading preference since round 18: no new
+// startup read, no collection, no firestore.rules change.
+// ---------------------------------------------------------------------------
+const QURAN_FONT_KEY = "mm_quran_font";
+
+/** id -> the CSS font-family it resolves to. `device` deliberately keeps the
+ *  pre-round-23 stack, so choosing it is genuinely "how it was before". */
+export const QURAN_FONTS = [
+  { id: "scheherazade", stack: "'QR Scheherazade', serif" },
+  { id: "notonaskh", stack: "'QR Noto Naskh', serif" },
+  { id: "amiriquran", stack: "'QR Amiri Quran', serif" },
+  { id: "device", stack: "'Traditional Arabic', 'Amiri', serif" },
+];
+const QURAN_FONT_IDS = QURAN_FONTS.map((f) => f.id);
+const DEFAULT_QURAN_FONT = "scheherazade";
+
+let cachedQuranFont = readStored(QURAN_FONT_KEY, QURAN_FONT_IDS, DEFAULT_QURAN_FONT);
+
+export function getQuranFont() {
+  return cachedQuranFont;
+}
+
+/** The CSS value to put on the Arabic. Always resolves to something real, so
+ *  a hand-edited or stale stored value can never leave the Qur'an unstyled. */
+export function quranFontStack(id = cachedQuranFont) {
+  return (QURAN_FONTS.find((f) => f.id === id) ?? QURAN_FONTS[0]).stack;
+}
+
+export function setQuranFont(id) {
+  if (!QURAN_FONT_IDS.includes(id)) return cachedQuranFont;
+  cachedQuranFont = id;
+  writeStored(QURAN_FONT_KEY, id);
+  return cachedQuranFont;
+}
