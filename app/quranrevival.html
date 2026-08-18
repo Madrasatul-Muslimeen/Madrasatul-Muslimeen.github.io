@@ -563,8 +563,16 @@
   .ayah-num { color: #B8862F; font-size: 1rem; }
   .ayah-translation { font-size: 0.95rem; color: #333; margin: 0.3rem 0; }
   .ayah-translation-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; }
-  .wbw-strip, .root-deriv-strip { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.6rem 0; }
-  .wbw-word, .root-row { border: 1px solid #eee; border-radius: 0.4rem; padding: 0.3rem 0.5rem; text-align: center; min-width: 4.5rem; }
+  /* Shell round 24 -- the words of an ayah run RIGHT TO LEFT. The owner spotted
+     this: the chips were laid out left to right, so the FIRST word of the ayah
+     sat at the left of the row and reading them in order meant reading the
+     Arabic backwards. `direction: rtl` on the flex container is what reverses
+     the order of the chips; wrapping still stacks downward as before. */
+  .wbw-strip, .root-deriv-strip { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.6rem 0; direction: rtl; }
+  /* ...and each chip goes back to normal inside, because its transliteration
+     and its gloss are left-to-right scripts. The Arabic lines carry their own
+     dir="rtl" from the renderer, so they are unaffected. */
+  .wbw-word, .root-row { border: 1px solid #eee; border-radius: 0.4rem; padding: 0.3rem 0.5rem; text-align: center; min-width: 4.5rem; direction: ltr; }
   .wbw-arabic, .root-word, .root-root, .root-lemma { font-family: var(--quran-font); font-size: 1.15rem; }
   .wbw-translit { font-size: 0.72rem; color: #888; font-style: italic; }
   .wbw-gloss { font-size: 0.8rem; }

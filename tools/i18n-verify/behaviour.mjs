@@ -2755,6 +2755,88 @@ console.log("\n=== 35. Shell round 23: the bundled Qur'an typefaces ===");
   await ctx.close();
 }
 
+// ---------------------------------------------------------------------------
+// 36. Shell round 24: the word-by-word chips read right to left, and the
+// transliteration follows the chosen language.
+//
+// Both reported by the owner from the live app. (a) "all selections showing
+// Bangla, yet Transliteration is showing Eng". (b) "The word by word reads
+// from left to right. it has to be right to left."
+// ---------------------------------------------------------------------------
+console.log("\n=== 36. Shell round 24: word-by-word direction and transliteration ===");
+{
+  const ctx = await ctxFor({ banner: false, viewport: { width: 412, height: 915 } });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await openStudyOptions(page);
+  await page.check("#wbwShowToggle");
+  await page.waitForTimeout(400);
+
+  const readChips = () => page.evaluate(() => {
+    const strip = document.querySelector(".wbw-strip");
+    const chips = [...(strip?.querySelectorAll(".wbw-word") ?? [])];
+    return {
+      stripDir: strip ? getComputedStyle(strip).direction : "none",
+      chipDir: chips[0] ? getComputedStyle(chips[0]).direction : "none",
+      arabicDir: chips[0]?.querySelector(".wbw-arabic")
+        ? getComputedStyle(chips[0].querySelector(".wbw-arabic")).direction : "none",
+      count: chips.length,
+      translits: chips.filter((c) => c.querySelector(".wbw-translit")).length,
+      firstLeft: chips[0] ? Math.round(chips[0].getBoundingClientRect().left) : null,
+      secondLeft: chips[1] ? Math.round(chips[1].getBoundingClientRect().left) : null,
+      firstTop: chips[0] ? Math.round(chips[0].getBoundingClientRect().top) : null,
+      secondTop: chips[1] ? Math.round(chips[1].getBoundingClientRect().top) : null,
+    };
+  });
+
+  await page.selectOption("#wbwLangSelect", "both");
+  await page.waitForTimeout(500);
+  await page.click("#tabStudyOptionsBtn");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(700);
+  const both = await readChips();
+
+  check("36a the word strip is right-to-left", both.stripDir === "rtl", both.stripDir);
+  // The property alone proves nothing -- measure where the words REALLY are.
+  // The first word of the ayah must be drawn to the RIGHT of the second.
+  check("36a ...and the first word is really drawn to the right of the second",
+        both.count > 1 && both.firstTop === both.secondTop && both.firstLeft > both.secondLeft,
+        JSON.stringify({ first: both.firstLeft, second: both.secondLeft }));
+  // Each chip goes back to normal inside: its transliteration and gloss are
+  // left-to-right scripts, and only the Arabic line is RTL.
+  check("36a each chip reads normally inside", both.chipDir === "ltr", both.chipDir);
+  check("36a ...while the Arabic inside it stays right-to-left", both.arabicDir === "rtl", both.arabicDir);
+  check("36b with English among the languages, the transliteration is there",
+        both.translits === both.count && both.count > 0, JSON.stringify(both));
+
+  // The owner's own case: every control says Bangla, so nothing Latin should
+  // be left on the chips.
+  const bnOnly = await page.evaluate(async () => {
+    document.getElementById("tabStudyOptionsBtn").click();
+    await new Promise((r) => setTimeout(r, 250));
+    const sel = document.getElementById("wbwLangSelect");
+    sel.value = "bn";
+    sel.dispatchEvent(new Event("change"));
+    await new Promise((r) => setTimeout(r, 450));
+    document.getElementById("tabStudyOptionsBtn").click();
+    await new Promise((r) => setTimeout(r, 250));
+    const chips = [...document.querySelectorAll(".wbw-strip .wbw-word")];
+    return {
+      count: chips.length,
+      translits: chips.filter((c) => c.querySelector(".wbw-translit")).length,
+      glosses: chips.filter((c) => c.querySelector(".wbw-gloss-bn")).length,
+      latin: chips.filter((c) => /[A-Za-z]/.test(c.textContent)).length,
+    };
+  });
+  check("36b 'বাংলা only' really means only Bangla — no Latin transliteration",
+        bnOnly.count > 0 && bnOnly.translits === 0, JSON.stringify(bnOnly));
+  check("36b ...and the Bangla gloss is still there", bnOnly.glosses === bnOnly.count, JSON.stringify(bnOnly));
+  check("36b ...with no Latin letters left on any chip", bnOnly.latin === 0, JSON.stringify(bnOnly));
+
+  check("36 no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);

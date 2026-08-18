@@ -61,9 +61,19 @@ export function renderWordByWordPanel(ayah, { langs = ["en"] } = {}) {
           return `<div class="${cls}" ${lang === "bn" ? 'lang="bn"' : ""}>${escapeHtml(text)}</div>`;
         })
         .join("");
+      // Shell round 24 -- the transliteration is a LATIN-script pronunciation
+      // aid, so it belongs with the English side and follows the same choice.
+      // The owner's report: every control said Bangla, yet the chips still
+      // printed `tabaraka`. "বাংলা only" has to mean only Bangla, and a Latin
+      // line is unreadable to exactly the person this app's Bangla is for.
+      // (A Bangla-script transliteration would be a different thing entirely
+      // -- the pulled data has no such field, only the Latin one.)
+      const translit = langs.includes("en")
+        ? `<div class="wbw-translit">${escapeHtml(w.transliteration)}</div>`
+        : "";
       return `<div class="wbw-word" data-position="${w.position}">
         <div class="wbw-arabic" dir="rtl" lang="ar">${escapeHtml(w.arabic)}</div>
-        <div class="wbw-translit">${escapeHtml(w.transliteration)}</div>
+        ${translit}
         ${glosses}
       </div>`;
     })

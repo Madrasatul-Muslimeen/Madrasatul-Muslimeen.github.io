@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.50.** Cutover to production happened
+**Current milestone: QuranRevival v07.51.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -2342,6 +2342,46 @@ REGRESSIONS** at all eight viewports in both banner states (`getElementById`
 targets 86 → 87, none missing), **`reading.mjs` OK**, **navcheck unchanged**
 (still only the pre-existing 320px ENGLISH truncation of "Operation"/
 "Bookmark"), **coverage 1,186/1,186 (100%)**, **perf unchanged**. No
+`firestore.rules`, schema or Firestore data changes.
+
+v07.51 (18 Aug 2026, on Claude Code on the web) is **shell round 24 — two
+word-by-word defects the owner found in the live app, both real, both
+pre-existing.**
+
+**(a) The words of an ayah were laid out LEFT TO RIGHT.** Their words: *"The
+word by word reads from left to right. it has to be right to left."* Correct,
+and it had been wrong since the panel was built (F-050): `.wbw-strip` is a flex
+row with no `direction`, so the FIRST word of the ayah was drawn at the LEFT of
+the row and reading the chips in order meant reading the Arabic backwards.
+`direction: rtl` on the strip is what reverses the chips; each chip is set back
+to `ltr` inside, because its transliteration and gloss are left-to-right
+scripts, while the Arabic line keeps the `dir="rtl"` the renderer already gave
+it. The root/derivative strip had the same defect and is fixed with it.
+**The check that matters measures GEOMETRY, not the CSS property** — the first
+chip must really be drawn to the right of the second, on the same line.
+
+**(b) The transliteration stayed English when everything else was Bangla.**
+Their report: *"all selections showing Bangla, yet Transliteration is showing
+Eng"* — with Word-by-Word language on "বাংলা only", the chips still printed
+`tabāraka`. The transliteration is a LATIN-script pronunciation aid, so it now
+follows the same language choice: shown when English is among the chosen
+languages, absent otherwise. "বাংলা only" has to mean only Bangla, and a Latin
+line is unreadable to precisely the person the whole Bangla project is for.
+**Worth knowing before anyone "restores" it: a BANGLA-script transliteration
+does not exist in our data** — `tools/quran-data-pull` pulls quran.com's
+`transliteration` word field, which is Latin only. Putting Bangla
+transliteration on screen would be a data job, not a rendering one.
+
+Both fixes are in `app/js/ayah-renderer.js` and this page's own CSS, so they
+reach every screen that renders the word-by-word panel. `quranrevival-render-
+test.html` carries its own copy of that CSS and was kept in step rather than
+left to disagree silently.
+
+**Verified: 691 behaviour checks pass, 0 failed** (was 682 — 9 new in section
+36, including the geometry check above, the Arabic line proven still RTL inside
+an LTR chip, and "no Latin letters left on any chip" for the owner's own
+setting). **`layout.mjs` NO LAYOUT REGRESSIONS** (`getElementById` targets
+unchanged at 87), **`reading.mjs` OK**, **coverage 1,186/1,186**. No
 `firestore.rules`, schema or Firestore data changes.
 
 ---
