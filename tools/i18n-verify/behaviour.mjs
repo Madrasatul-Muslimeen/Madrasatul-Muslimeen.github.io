@@ -2937,6 +2937,268 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   await ctx.close();
 }
 
+// ---------------------------------------------------------------------------
+// 38. Shell round 26: the listening fixes.
+//
+// EVERY other section in this suite has been able to leave audio alone,
+// because archive.org is unreachable from a sandbox and the checks only ever
+// asked WHICH FILE was requested. That is not enough for this round: the
+// owner's complaints are about what happens AFTER a file loads (or fails to),
+// so these tests serve real, playable audio of their own and watch the app's
+// own behaviour rather than its intentions.
+//
+// The wav is silence, one second of it, 8kHz mono -- small enough to make a
+// range finish inside a test, real enough for the browser to decode, play,
+// seek within and fire timeupdate/ended on.
+// ---------------------------------------------------------------------------
+function silentWav(seconds = 1, rate = 8000) {
+  const samples = Math.round(seconds * rate);
+  const dataLen = samples * 2;
+  const buf = Buffer.alloc(44 + dataLen);
+  buf.write("RIFF", 0); buf.writeUInt32LE(36 + dataLen, 4); buf.write("WAVE", 8);
+  buf.write("fmt ", 12); buf.writeUInt32LE(16, 16); buf.writeUInt16LE(1, 20);
+  buf.writeUInt16LE(1, 22); buf.writeUInt32LE(rate, 24); buf.writeUInt32LE(rate * 2, 28);
+  buf.writeUInt16LE(2, 32); buf.writeUInt16LE(16, 34);
+  buf.write("data", 36); buf.writeUInt32LE(dataLen, 40);
+  return buf;
+}
+// Two lengths, because the two reciter shapes need different things: a direct
+// reciter gets one short file per ayah, a segmented one gets a single long
+// file it seeks around inside.
+const WAV_AYAH = silentWav(0.5);
+const WAV_SURAH = silentWav(3);
+// Surah 1's seven ayahs, a third of a second each inside that one file -- the
+// same shape as the real Bangla timing map, small enough that a whole ruku'
+// finishes inside a test.
+const TIMINGS = JSON.stringify({
+  1: Array.from({ length: 7 }, (_, i) => ({
+    verse_key: `1:${i + 1}`, timestamp_from: i * 300, timestamp_to: (i + 1) * 300,
+  })),
+});
+const isSurahFile = (url) => /ShareefBayezidMahmud|al-quran-eng-mp3-audio/.test(url);
+
+/** A context whose audio really plays: archive.org serves the wav above and
+    the Bangla timing map is real. `urls` collects every audio file asked for,
+    which is how "did BOTH reciters play" is answered by fact rather than by
+    reading the button. */
+async function audioCtx({ audio = "ok" } = {}) {
+  const ctx = await ctxFor({ banner: false });
+  const urls = [];
+  await ctx.route("**/gtaf_bangla_timestamps.json", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: TIMINGS }));
+  await ctx.route("**/archive.org/**", (r) => {
+    const url = r.request().url();
+    urls.push(url);
+    if (audio === "fail") return r.abort();
+    return r.fulfill({ status: 200, contentType: "audio/wav", body: isSurahFile(url) ? WAV_SURAH : WAV_AYAH });
+  });
+  return { ctx, urls };
+}
+const tickReciter = async (page, id) => {
+  await openStudyOptions(page);
+  await page.check(`.drill-reciter-check[value="${id}"]`);
+  await page.waitForTimeout(250);
+};
+const playLabel = (page) => page.evaluate(() =>
+  document.getElementById("readPlayBtn").getAttribute("aria-label") || "");
+/** Waiting for a state rather than sleeping a guessed number of milliseconds:
+    a boundary check rides on `timeupdate`, which browsers throttle to about a
+    quarter of a second, so a short ayah takes noticeably longer than its own
+    length and a fixed sleep would make these tests flaky rather than wrong. */
+const waitFor = (page, fn, timeout = 8000) =>
+  page.waitForFunction(fn, null, { timeout }).then(() => true).catch(() => false);
+const ayahNow = (page) => page.evaluate(() => document.getElementById("ayahSelect").value);
+
+console.log("\n=== 38. Shell round 26: listening ===");
+{
+  // --- 38a EVERY ticked reciter plays, not just the first ----------------
+  // The owner's own report: "even Arabic and Bangla is checked for listening
+  // but only Arabic is played not Bangla". The reading screen's Play used a
+  // single currentReciterId while the list beside it took several ticks.
+  const { ctx, urls } = await audioCtx();
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+  await tickReciter(page, "bn");
+  await openRead(page);
+  await page.click("#readPlayBtn");
+  await page.waitForTimeout(3500);
+  const arabic = urls.filter((u) => /001001\.mp3$/.test(u));
+  const bangla = urls.filter((u) => /ShareefBayezidMahmud/.test(u));
+  check("38a Play sounds the Arabic reciter", arabic.length >= 1, JSON.stringify(urls.slice(0, 3)));
+  check("38a Play sounds the Bangla reciter too — the owner's own report",
+        bangla.length >= 1, JSON.stringify(urls.slice(0, 3)));
+  check("38a no page errors", errors.filter((e) => !/ERR_/.test(e)).length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 38b ONE failure, ONE prompt, and it says what failed --------------
+  // The owner's two screenshots are two dialogs for a single file that would
+  // not load: the element's `error` event alerted one sentence and the
+  // rejected play() promise alerted the browser's own wording of the same
+  // thing.
+  const { ctx } = await audioCtx({ audio: "fail" });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const dialogs = [];
+  page.on("dialog", (d) => { dialogs.push(d.message()); d.dismiss().catch(() => {}); });
+  await openRead(page);
+  await page.click("#readPlayBtn");
+  await page.waitForTimeout(2500);
+  check("38b one failure raises exactly one prompt", dialogs.length === 1, JSON.stringify(dialogs));
+  check("38b ...and it names the reciter and the ayah that failed",
+        /Basfar/.test(dialogs[0] || "") && /Ayah/.test(dialogs[0] || ""), dialogs[0]);
+  check("38b ...the Play button is usable again rather than stuck",
+        (await page.evaluate(() => !document.getElementById("readPlayBtn").disabled))
+        && /Play/.test(await playLabel(page)));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 38c a failed SEGMENTED load settles instead of hanging ------------
+  // seekTo() waited for `loadedmetadata` and nothing else, so a load that
+  // failed left its promise pending for ever: the drill never advanced, never
+  // reported and never recovered. The proof is that a second Play, once the
+  // file is reachable, really plays.
+  const ctx = await ctxFor({ banner: false });
+  let audioOk = false;
+  const urls = [];
+  await ctx.route("**/gtaf_bangla_timestamps.json", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: TIMINGS }));
+  await ctx.route("**/archive.org/**", (r) => {
+    const url = r.request().url();
+    urls.push(url);
+    return audioOk
+      ? r.fulfill({ status: 200, contentType: "audio/wav", body: isSurahFile(url) ? WAV_SURAH : WAV_AYAH })
+      : r.abort();
+  });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const dialogs = [];
+  page.on("dialog", (d) => { dialogs.push(d.message()); d.dismiss().catch(() => {}); });
+  await openStudyOptions(page);
+  await page.check('.drill-reciter-check[value="bn"]');
+  await page.uncheck('.drill-reciter-check[value="ar"]');
+  await page.waitForTimeout(250);
+  await openRead(page);
+  await page.click("#readPlayBtn");
+  await page.waitForTimeout(2000);
+  check("38c a failed Bangla load reports once rather than hanging silently",
+        dialogs.length === 1, JSON.stringify(dialogs));
+  audioOk = true;
+  urls.length = 0;
+  await page.click("#readPlayBtn");
+  const playing = await waitFor(page, () =>
+    /Pause|থামান/.test(document.getElementById("readPlayBtn").getAttribute("aria-label") || ""), 6000);
+  check("38c ...and the next Play really plays",
+        playing && urls.length >= 1, `${urls.length} request(s), label ${await playLabel(page)}`);
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 38d switching to the reading screen does not stop the recitation ---
+  // The owner: "moving from Study options to read or vice versa stops the
+  // play". Playback moves the current ayah as it advances, so the Read tab's
+  // "open the unit at its first ayah" rule was jumping backwards AND calling
+  // stopDrill() on the way.
+  const { ctx } = await audioCtx();
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+  // A Ruku' (surah 1: ayahs 1-7), deliberately NOT a Range: Range and Whole
+  // Surah render as a flow, which does not move #ayahSelect, so they cannot
+  // say which ayah is sounding. A Ruku' reads ayah by ayah and does.
+  await setUnit(page, "ruku");
+  await openStudyOptions(page);
+  await page.click("#drillPlayBtn");
+  // Wait until the recitation has really moved off the unit's first ayah --
+  // that is the state in which the old code stopped it.
+  const moved = await waitFor(page, () => Number(document.getElementById("ayahSelect").value) > 1, 15000);
+  check("38d the recitation really advances ayah by ayah", moved, await ayahNow(page));
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(500);
+  check("38d tapping Read mid-recitation keeps it playing",
+        /Pause|থামান/.test(await playLabel(page)), await playLabel(page));
+  // ...and with nothing playing it still opens at the unit's own first ayah,
+  // which is round 17's rule and must survive this fix.
+  await page.click("#readStopBtn");
+  await page.evaluate(() => {
+    const a = document.getElementById("ayahSelect");
+    a.value = "4"; a.dispatchEvent(new Event("change"));
+  });
+  await page.waitForTimeout(400);
+  await page.click("#tabReadBtn"); // leave
+  await page.click("#tabReadBtn"); // and come back
+  await page.waitForTimeout(400);
+  check("38d with nothing playing it still opens at the unit's first ayah",
+        await page.evaluate(() => document.getElementById("ayahSelect").value === "1"),
+        await page.evaluate(() => document.getElementById("ayahSelect").value));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 38e a finished run starts again; it does not "resume" into the rest
+  // of the surah. A segmented reciter stops at an ayah boundary PART-WAY
+  // through a whole-surah file, which looks exactly like a pause -- so the
+  // next Play used to carry straight on past the boundary with no listener
+  // left to stop it.
+  const { ctx } = await audioCtx();
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+  await openStudyOptions(page);
+  await page.check('.drill-reciter-check[value="bn"]');
+  await page.uncheck('.drill-reciter-check[value="ar"]');
+  await page.selectOption("#unitTypeSelect", "ruku");
+  await page.waitForTimeout(400);
+  await page.click("#drillPlayBtn");
+  await waitFor(page, () => Number(document.getElementById("ayahSelect").value) === 7, 20000);
+  const ended = await waitFor(page, () =>
+    /Play|চালান/.test(document.getElementById("readPlayBtn").getAttribute("aria-label") || ""), 8000);
+  check("38e the finished run leaves the button reading Play", ended, await playLabel(page));
+  await page.click("#drillPlayBtn");
+  const restarted = await waitFor(page, () => document.getElementById("ayahSelect").value === "1", 5000);
+  check("38e pressing Play again starts the unit over rather than running on",
+        restarted, await ayahNow(page));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 38f Play still pauses and resumes, and resuming does not refetch ---
+  const { ctx, urls } = await audioCtx();
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+  await setUnit(page, "surah");
+  await openRead(page);
+  await page.click("#readPlayBtn");
+  await page.waitForTimeout(600);
+  check("38f Play starts, and the button becomes Pause",
+        /Pause|থামান/.test(await playLabel(page)), await playLabel(page));
+  await page.click("#readPlayBtn");
+  await page.waitForTimeout(300);
+  check("38f pressing it again pauses", /Play|চালান/.test(await playLabel(page)), await playLabel(page));
+  const before = urls.length;
+  await page.click("#readPlayBtn");
+  await page.waitForTimeout(400);
+  check("38f and pressing it once more resumes rather than restarting",
+        /Pause|থামান/.test(await playLabel(page)) && urls.length === before,
+        `${await playLabel(page)}, ${urls.length - before} extra request(s)`);
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 38g the two Play buttons are one behaviour ------------------------
+  const ctx = await ctxFor({ banner: false });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  await openStudyOptions(page);
+  const repeat = await page.evaluate(() => document.getElementById("drillRepeatSelect").value);
+  check("38g Repeat defaults to once — one Play serves both screens now", repeat === "1", repeat);
+  await page.close();
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);

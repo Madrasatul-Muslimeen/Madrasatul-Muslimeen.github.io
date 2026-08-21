@@ -187,3 +187,32 @@ previous commit's copy `layout.mjs` compares against, is a `.html` file in
 exists — the total jumped 1,171 -> 1,277 with 0 missing, which looks like the
 app grew by 106 strings and is really the old page being scanned twice. Delete
 the shim before reading any coverage number.
+
+## Testing audio for real (shell round 26)
+
+Every section before 38 could leave audio alone, because archive.org is
+unreachable from a sandbox and those checks only ever asked WHICH FILE was
+requested — section 34d aborts every archive.org request on purpose, so
+playback there always fails and that is fine for what it measures.
+
+Section 38 cannot work that way: every defect it covers is about what happens
+AFTER a file loads, or fails to. So it **serves real, playable audio of its
+own** — a generated silent WAV (`silentWav()`), a short one per ayah for a
+direct reciter and a longer one for the segmented reciter to seek around
+inside, plus a real Bangla timing map — and then watches the app's behaviour
+rather than its intentions. `audioCtx()` sets all of that up and hands back the
+list of files actually requested, which is how "did BOTH reciters play" is
+answered by fact.
+
+Three things to keep in mind before adding to it:
+
+- **Wait for a state, never for a guessed number of milliseconds.** An ayah
+  boundary is detected on `timeupdate`, which browsers throttle to about a
+  quarter of a second, so a 300ms ayah really takes ~900ms. `waitFor()` is
+  there for this; a fixed sleep makes the test flaky rather than wrong.
+- **Range and Whole Surah render as a flow, which does not move
+  `#ayahSelect`** — so they cannot tell you which ayah is sounding. A Ruku'
+  reads ayah by ayah and does, which is why these tests use one.
+- **Use `page.click()`, not `page.evaluate(() => el.click())`.** Only a real
+  Playwright click is a trusted user gesture, and a browser will not let audio
+  start without one — an evaluated click tests the unlock path into a wall.

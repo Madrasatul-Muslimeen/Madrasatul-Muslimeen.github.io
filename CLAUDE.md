@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.52.** Cutover to production happened
+**Current milestone: QuranRevival v07.53.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -2437,6 +2437,118 @@ exactly the retired caption, none missing), **`reading.mjs` OK**, **coverage
 1,230/1,230 (100%)**. Two older checks were **updated rather than deleted**
 (30j and 33a, both of which asserted the caption this round removed). No
 `firestore.rules`, schema or Firestore data changes.
+
+v07.53 (21 Aug 2026, on Claude Code on the web) is **shell round 26 — the
+listening fixes.** The owner reported, with two phone screenshots, that
+playback was "mixed problems": sometimes only the Arabic plays and then two
+error prompts appear back to back; unticking and reticking something, or moving
+between Study options and Read, stops the recitation; and **both Arabic and
+Bangla ticked plays only Arabic.** Six separate defects were found behind
+those three sentences. **Five of the six are invisible in a screenshot and
+none of them could be found by reading the coverage or layout reports** — they
+needed a test that actually plays audio, which is new this round.
+
+**The measurement problem came first, again.** Every earlier section of the
+behaviour suite could leave audio alone, because archive.org is unreachable
+from this sandbox and the checks only ever asked WHICH FILE was requested
+(`34d` aborts every archive.org request on purpose). That is not enough here:
+every one of the owner's complaints is about what happens AFTER a file loads,
+or fails to. So section 38 **serves real, playable audio of its own** — a
+generated silent WAV, a short one per ayah for a direct reciter and a longer
+one for the segmented reciter to seek around inside, plus a real Bangla timing
+map — and watches the app's own behaviour. Two method points worth keeping:
+**a boundary check rides on `timeupdate`, which browsers throttle to about a
+quarter of a second**, so a 300ms ayah really takes ~900ms and a fixed sleep
+makes the test flaky rather than wrong — wait for the state, never for a
+guessed number of milliseconds; and **Range and Whole Surah render as a flow,
+which does not move `#ayahSelect`**, so they cannot say which ayah is
+sounding — a Ruku' can, which is why these tests use one.
+
+**The six defects.** **(1) The reading screen's Play used ONE reciter** while
+the list beside it took several ticks: `currentReciterId`, the first ticked.
+That is the owner's own "only Arabic is played not Bangla" — and the two Play
+buttons meant different things, which is the confusion underneath the whole
+report. **There is one Play now**, `playCurrentSelection()`, called by both
+buttons: every ticked reciter, in ticked order, over the chosen unit, honouring
+Repeat, Mode and Loop. `playDrill()` gained loop support so it can be that one
+sequencer without losing what the old single-reciter range player did.
+**(2) One failure raised TWO prompts** — the element's `error` event alerted
+one sentence and the rejected `play()` promise alerted the browser's own
+wording of the same thing, which is exactly the two screenshots. Both roads
+now go through `reportFailure()`, which says one sentence and drops a repeat
+within two seconds; it returns the Error marked `reported`, so a caller that
+must reject (the sequencer, which has to stop rather than spin through the
+rest of the surah) can do so without the page alerting it again.
+**(3) `unlockAudio()` was itself firing a phantom code-4 error.** Calling
+`play()` on an element with NO source does not fail quietly — the browser runs
+its resource-selection algorithm, fails, and fires a real `error` event saying
+"the audio source isn't available", **and the error listener tore down
+`currentRange`/`currentPlaylist` as it went**, killing the playback that tap
+was unlocking. It hands the gesture a one-sample silent clip now, which really
+loads. **(4) `seekTo()` hung for ever on a failed load** — it listened for
+`loadedmetadata` and nothing else, so a Bangla file that would not load left
+its promise pending: the sequence never advanced, never reported and never
+recovered, and the old Play button stayed disabled. It rejects on `error` now,
+and **both listeners are removed together**, which fixes a second bug in the
+same six lines: the surviving `{ once: true }` listener made the NEXT
+successful load seek to the PREVIOUS ayah's position.
+**(5) A segmented reciter's finished ayah looked exactly like a pause** — it
+stops part-way through a whole-surah file — so the next Play "resumed" it and
+ran straight on into the rest of the surah with no boundary listener left to
+stop it. `atEndOfRun` is what tells the two apart.
+**(6) Switching to the reading screen stopped the recitation.** Round 17's
+rule opens a unit at its first ayah, and playback moves the current ayah as it
+advances — so tapping Read mid-listen jumped BACKWARDS and called `stopDrill()`
+on the way. It repositions only when nothing is playing or paused; with
+nothing playing, round 17's rule is untouched.
+
+**One more, found by the tests rather than by reading, and it is the more
+interesting half of an old fix.** After a failed load, a retry made no request
+at all: `seekTo()` asked "is this a different file?" via the element's own
+`currentSrc`, which **lags a source assignment by a task**, so straight after
+the unlock clip was assigned it still named the file that had just failed —
+answer "no", no reload, Play dead for the rest of the session. Round 4 (8 Aug
+2026) had moved TO `currentSrc` precisely because a hand-tracked flag went
+stale; round 26 moves back to a tracked value, `setMediaSource()`, which is now
+**the only place in the module that assigns `el.src`**. Round 4's lesson is
+what makes that safe and is worth restating: one writer, or a tracked value
+goes stale.
+
+**Two deliberate behaviour changes, both stated rather than slipped in.**
+**Repeat now defaults to 1× instead of 5×** — with one Play serving both
+screens, a default of 5 would have meant every ordinary Play silently
+repeating five times; the reader raises it when they want a drill. And **a
+failure now NAMES what failed** ("Couldn't play Shareef Bayezid Mahmud
+(Bangla), Surah 1, Ayah 1: the audio source isn't available…"), so a missing
+file in one reciter's archive stops looking like a broken app. The five reason
+strings were English literals dropped into a translated sentence until now
+(I15) and are translated with it.
+
+**What could NOT be checked from here, and matters:** this sandbox's proxy
+blocks archive.org, so whether the owner's own failing file is genuinely
+missing from that item is **unknown**. Every defect above is real and fixed,
+but if a particular ayah or surah still refuses to play, the new message names
+it — that name is what a future session needs to check the archive item
+itself.
+
+**Verified: 721 behaviour checks pass, 0 failed** (was 704 — 17 new in section
+38: both ticked reciters proven to really sound; one failure proven to raise
+exactly one prompt, naming the reciter and the ayah; a failed Bangla load
+proven to report once and to be recoverable by the next Play; the recitation
+proven to keep playing when Read is tapped mid-listen, while an idle Read tap
+still opens at the unit's first ayah; a finished unit proven to start over
+rather than run on; pause and resume proven not to refetch; and Repeat proven
+to default to once). **`layout.mjs` NO LAYOUT REGRESSIONS** at all eight
+viewports in both banner states — landing page byte-for-byte identical,
+`getElementById` targets unchanged at 86, none missing — **`reading.mjs` OK**,
+**`panel.mjs` no truncation and no wrapped bar**, **navcheck unchanged** (still
+only the pre-existing 320px ENGLISH truncation of "Operation"/"Bookmark"),
+**coverage 1,239/1,239 (100%)**, **`tools/perf/measure.mjs` unchanged at 6
+sequential round trips / 0.91s**, and **`tools/perf/new-tenant.mjs` 10/10**. No
+`firestore.rules`, schema or Firestore data changes — nothing to deploy but the
+static files. (The two rules changes still pending from earlier rounds —
+v07.18 Homework teacher-scoping and v07.37 `appLang` — are unaffected and still
+not deployed.)
 
 ---
 
