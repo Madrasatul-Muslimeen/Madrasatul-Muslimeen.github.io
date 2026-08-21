@@ -448,6 +448,24 @@ export const BN = {
   "Couldn't load Mushaf page data ({reason}).": "মুসহাফের পৃষ্ঠার তথ্য লোড করা যায়নি ({reason})।",
   "Couldn't load this page's data.": "এই পৃষ্ঠার তথ্য লোড করা যায়নি।",
   "Couldn't play this audio: {reason}.": "এই অডিওটি বাজানো যায়নি: {reason}।",
+  // Shell round 26 -- a failure now NAMES what failed (which reciter, which
+  // ayah), so "it didn't play" becomes something that can be acted on rather
+  // than looking like the whole app is broken. The reciter's own name inside
+  // is a person's name and stays exactly as it is.
+  "Couldn't play {what}: {reason}.": "{what} বাজানো যায়নি: {reason}।",
+  "{reciter}, Surah {surah}, Ayah {ayah}": "{reciter}, সূরা {surah}, আয়াত {ayah}",
+  "{reciter}, Surah {surah}": "{reciter}, সূরা {surah}",
+  // The reasons themselves. Until this round they were English literals dropped
+  // into a translated sentence, so a Bangla reader got half a message (I15).
+  "playback was aborted": "বাজানো বন্ধ করে দেওয়া হয়েছে",
+  "a network error interrupted the download": "নেটওয়ার্কের সমস্যায় ডাউনলোড থেমে গেছে",
+  "the file could not be decoded — it may be corrupt or an unsupported format":
+    "ফাইলটি পড়া যায়নি — এটি নষ্ট হতে পারে, বা এই ধরনের ফাইল সমর্থিত নয়",
+  "the audio source isn't available — the file may not exist at that address":
+    "অডিও ফাইলটি পাওয়া যায়নি — ওই ঠিকানায় ফাইলটি না-ও থাকতে পারে",
+  "an unknown playback error occurred": "অজানা একটি সমস্যায় বাজানো যায়নি",
+  "the browser blocked playback until you press play again":
+    "ব্রাউজার বাজানো আটকে দিয়েছে — আবার play চাপুন", // ?
   "Couldn't find a Mushaf page for this selection.":
     "এই নির্বাচনের জন্য মুসহাফের পৃষ্ঠা পাওয়া যায়নি।",
   "No word-by-word data for this ayah.": "এই আয়াতের জন্য শব্দে-শব্দে তথ্য নেই।",

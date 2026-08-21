@@ -36,7 +36,7 @@
 //              That file is already a small (460KB), static, GitHub-hosted
 //              JSON, so it's left in place rather than re-hosted.
 
-import { t } from "./i18n.js";
+import { t, num } from "./i18n.js";
 
 const ENGLISH_FILENAMES = [
   "001 - Al-Fatihah ( The Opening ) - سورة الفاتحة.mp3",
@@ -232,6 +232,17 @@ export function reciterSupportsSingleAyah(reciterId) {
   return r.kind === "segmented" ? !!(r.surahUrl && r.timestampsUrl) : !!r.perAyahUrl;
 }
 
+// Shell round 26 -- a real, valid, zero-length WAV, inline. It exists for
+// unlockAudio() below: calling play() on an <audio> element that has NO source
+// at all does not merely fail quietly, it runs the browser's resource-selection
+// algorithm, which fails and fires a real `error` event carrying code 4 ("the
+// audio source isn't available"). That is a genuine cause of the owner's
+// phantom prompt -- an error dialog for a file nobody ever asked to play -- and
+// it also tore down currentRange/currentPlaylist through the error listener
+// below, killing playback that was about to start. Handing the unlock tap a
+// source that really does load, and finishes instantly, removes both.
+const SILENT_SRC = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+
 let audioEl = null;
 let loopEnabled = false;
 let currentPlaylist = null; // legacy single-shot playlist shape, kept only so playAyah()/playSurah() have something to null out -- currentRange below is what actually drives auto-advance now
@@ -242,6 +253,10 @@ let onPlaybackError = null;
 let onAyahChange = null;
 let onPlaybackState = null; // shell round 21 -- see setPlaybackStateHandler()
 let oneShotActive = false; // true only while playOneAndWait() owns the shared <audio> element -- see handleEnded() below
+let atEndOfRun = false; // shell round 26 -- see isPaused()
+let currentMediaUrl = null; // shell round 26 -- the ONE record of what the shared element was last pointed at; see setMediaSource()
+let nowPlaying = null; // { surahNum, ayahNum, reciterId } -- what a failure message names
+let lastFailure = { key: "", at: 0 }; // shell round 26 -- see reportFailure()
 
 /**
  * Phase 5 fix (owner round-2 click-through, 6 Aug 2026): "on a whole Surah
@@ -284,19 +299,114 @@ export function setPlaybackStateHandler(fn) {
   onPlaybackState = fn;
 }
 
+// Translated (I11/I15): a Bangla-only reader cannot act on an English reason
+// any more than on no reason at all. The reciter's own name inside the message
+// stays as it is -- a person's name is not translated.
 function describeMediaError(code) {
   switch (code) {
-    case 1: return "playback was aborted";
-    case 2: return "a network error interrupted the download";
-    case 3: return "the file could not be decoded -- it may be corrupt or an unsupported format";
-    case 4: return "the audio source isn't available -- the file may not exist at that address";
-    default: return "an unknown playback error occurred";
+    case 1: return t("playback was aborted");
+    case 2: return t("a network error interrupted the download");
+    case 3: return t("the file could not be decoded — it may be corrupt or an unsupported format");
+    case 4: return t("the audio source isn't available — the file may not exist at that address");
+    default: return t("an unknown playback error occurred");
   }
+}
+
+/** What a play() rejection actually means, in the same words as the media-error
+    codes above -- so the SAME failure arriving down both roads (the element's
+    `error` event and the rejected play() promise) produces one identical
+    sentence, which is what lets reportFailure() collapse them into one prompt. */
+function describePlayRejection(err) {
+  if (err?.name === "NotSupportedError") return describeMediaError(4);
+  if (err?.name === "NotAllowedError") return t("the browser blocked playback until you press play again");
+  return err?.message || describeMediaError(0);
+}
+
+/** Names what failed, so "it didn't play" becomes something the owner can act
+    on: which reciter, which ayah. Without this, a missing file in one reciter's
+    archive looks exactly like a broken app. */
+function playbackTarget() {
+  if (!nowPlaying) return null;
+  const { surahNum, ayahNum, reciterId } = nowPlaying;
+  const reciter = RECITERS[reciterId]?.label ?? reciterId;
+  return ayahNum
+    ? t("{reciter}, Surah {surah}, Ayah {ayah}", { reciter, surah: num(surahNum), ayah: num(ayahNum) })
+    : t("{reciter}, Surah {surah}", { reciter, surah: num(surahNum) });
+}
+
+/**
+ * Shell round 26 -- ONE failure, ONE prompt, and the caller can tell it has
+ * already been shown.
+ *
+ * The owner's own screenshots are two dialogs, back to back, for a single file
+ * that would not load: the element's `error` event alerted "the audio source
+ * isn't available", and the play() promise rejecting alerted the browser's own
+ * "Failed to load because no supported source was found". Both roads lead here
+ * now, saying the same sentence, and the second one inside two seconds is
+ * dropped.
+ *
+ * Returns the Error it reported, marked `reported`, so a caller that has to
+ * reject (the drill sequencer, which must stop rather than spin through the
+ * rest of the surah) can do so without the page alerting it a second time.
+ */
+function reportFailure(reason, meta = {}) {
+  const target = playbackTarget();
+  const message = target
+    ? t("Couldn't play {what}: {reason}.", { what: target, reason })
+    : t("Couldn't play this audio: {reason}.", { reason });
+  const err = new Error(message);
+  err.reported = true;
+  err.mediaFailure = true;
+  const now = Date.now();
+  if (message === lastFailure.key && now - lastFailure.at < 2000) return err;
+  lastFailure = { key: message, at: now };
+  if (onPlaybackError) onPlaybackError(message, meta);
+  return err;
+}
+
+/**
+ * Every place this module starts playback goes through here, so a rejected
+ * play() is reported exactly once, in the same words as the error event, and
+ * handed back marked. An AbortError is NOT a failure: it is what the browser
+ * throws when a new load interrupts one already in flight, which is normal
+ * every time playback moves to the next ayah.
+ */
+function startPlayback(el) {
+  atEndOfRun = false;
+  const p = el.play();
+  if (!p || typeof p.catch !== "function") return Promise.resolve();
+  return p.catch((err) => {
+    if (err?.name === "AbortError") return;
+    throw reportFailure(describePlayRejection(err), { name: err?.name });
+  });
 }
 
 function clearBoundaryListener() {
   if (audioEl && currentBoundaryListener) audioEl.removeEventListener("timeupdate", currentBoundaryListener);
   currentBoundaryListener = null;
+}
+
+/**
+ * The ONE place the shared element's source is ever set. Round 4 (Aug 2026)
+ * removed a hand-tracked `dataset.segUrl` flag because other code paths set
+ * `el.src` directly and left it stale, and used the element's own `currentSrc`
+ * instead; round 26 found the other end of that trade. `currentSrc` is only
+ * updated when the browser reaches a stable state, so straight after a source
+ * is assigned it still names the PREVIOUS file -- and seekTo(), asking
+ * "different file?", was answered "no" and skipped the load entirely. That was
+ * reachable in real use: any Play following a failed one.
+ *
+ * A tracked value is right after all -- as long as there is exactly one writer,
+ * which is what this function is. Nothing else in this module assigns el.src.
+ */
+function setMediaSource(el, url) {
+  currentMediaUrl = url;
+  el.src = url;
+}
+
+/** True while the shared element is holding nothing but the silent unlock clip. */
+function isSilentUnlock() {
+  return currentMediaUrl === SILENT_SRC;
 }
 
 function ensureAudioEl() {
@@ -314,11 +424,13 @@ function ensureAudioEl() {
       audioEl.addEventListener(ev, () => { if (onPlaybackState) onPlaybackState(); });
     }
     audioEl.addEventListener("error", () => {
-      const message = t("Couldn't play this audio: {reason}.", { reason: describeMediaError(audioEl.error?.code) });
+      // The silent unlock clip is not a recitation and its troubles are not the
+      // reader's business -- and it must never tear down a run that is starting.
+      if (isSilentUnlock()) return;
       currentPlaylist = null;
       currentRange = null;
       clearBoundaryListener();
-      if (onPlaybackError) onPlaybackError(message, { code: audioEl.error?.code });
+      reportFailure(describeMediaError(audioEl.error?.code), { code: audioEl.error?.code });
     });
   }
   return audioEl;
@@ -336,20 +448,25 @@ function handleEnded() {
   // handling for its own step; this global playlist/range/loop machinery
   // must stay out of the way while it's active.
   if (oneShotActive) return;
+  // The unlock clip is zero-length, so it "ends" the instant it starts. It is
+  // not a recitation: it must not be looped, advanced or counted as a run.
+  if (isSilentUnlock()) return;
   if (currentRange) {
     advanceRange();
     return;
   }
   if (loopEnabled && audioEl) {
     audioEl.currentTime = 0;
-    audioEl.play();
+    startPlayback(audioEl).catch(() => {});
     return;
   }
   if (currentPlaylist && currentPlaylist.index < currentPlaylist.urls.length - 1) {
     currentPlaylist.index++;
-    audioEl.src = currentPlaylist.urls[currentPlaylist.index];
-    audioEl.play();
+    setMediaSource(audioEl, currentPlaylist.urls[currentPlaylist.index]);
+    startPlayback(audioEl).catch(() => {});
+    return;
   }
+  atEndOfRun = true; // nothing left to play: the next Play starts afresh, it does not "resume"
 }
 
 export function setLoop(enabled) {
@@ -366,8 +483,9 @@ export function playAyah(surahNum, ayahNum, reciterId) {
   currentRange = null;
   clearBoundaryListener();
   const el = ensureAudioEl();
-  el.src = reciter.perAyahUrl(surahNum, ayahNum);
-  return el.play();
+  nowPlaying = { surahNum, ayahNum, reciterId };
+  setMediaSource(el, reciter.perAyahUrl(surahNum, ayahNum));
+  return startPlayback(el);
 }
 
 function playCurrentRangeAyah() {
@@ -378,25 +496,27 @@ function playCurrentRangeAyah() {
   if (reciter.kind === "segmented") return playSegmentedAyahInternal(surahNum, ayahNum, reciterId);
   clearBoundaryListener();
   const el = ensureAudioEl();
-  el.src = reciter.perAyahUrl(surahNum, ayahNum);
-  return el.play();
+  nowPlaying = { surahNum, ayahNum, reciterId };
+  setMediaSource(el, reciter.perAyahUrl(surahNum, ayahNum));
+  return startPlayback(el);
 }
 
 function advanceRange() {
   if (!currentRange) return;
   if (currentRange.index < currentRange.ayahs.length - 1) {
     currentRange.index++;
-    playCurrentRangeAyah();
+    playCurrentRangeAyah().catch(() => {}); // already reported; the run has ended either way
     return;
   }
   if (loopEnabled) {
     currentRange.index = 0;
-    playCurrentRangeAyah();
+    playCurrentRangeAyah().catch(() => {});
     return;
   }
   currentRange = null;
   clearBoundaryListener();
   if (audioEl) audioEl.pause();
+  atEndOfRun = true;
 }
 
 /**
@@ -415,6 +535,7 @@ export function playAyahRange(surahNum, fromAyah, toAyah, reciterId) {
   const ayahs = [];
   for (let a = fromAyah; a <= toAyah; a++) ayahs.push(a);
   currentPlaylist = null;
+  atEndOfRun = false;
   currentRange = { surahNum, ayahs, index: 0, reciterId };
   return playCurrentRangeAyah();
 }
@@ -427,8 +548,9 @@ export function playSurah(surahNum, reciterId, ayahCount) {
     currentRange = null;
     clearBoundaryListener();
     const el = ensureAudioEl();
-    el.src = reciter.surahUrl(surahNum);
-    return el.play();
+    nowPlaying = { surahNum, ayahNum: null, reciterId };
+    setMediaSource(el, reciter.surahUrl(surahNum));
+    return startPlayback(el);
   }
   if (!ayahCount) throw new Error("playSurah: no whole-surah file for this reciter, and no ayahCount given to play it ayah by ayah.");
   return playAyahRange(surahNum, 1, ayahCount, reciterId);
@@ -497,14 +619,41 @@ export function warmSegmentedTimestamps() {
  * actually pointing at whatever direct reciter played last. The next
  * Bangla turn compared the (stale-but-matching) flag, decided nothing had
  * changed, and just set currentTime on the wrong loaded file -- audibly,
- * "Bangla doesn't play at all". Checking the element's own `currentSrc`
- * instead of a manually-tracked flag can't go stale like that.
+ * "Bangla doesn't play at all". That fix read the element's own `currentSrc`
+ * instead; round 26 replaced it again with setMediaSource()'s single tracked
+ * value, because `currentSrc` lags a source assignment by a task -- see that
+ * function's own note. The lesson from round 4 still holds and is what makes
+ * this safe: one writer, or a tracked value goes stale.
  */
 function seekTo(el, url, seconds) {
-  if (el.currentSrc !== url) {
-    return new Promise((resolve) => {
-      el.addEventListener("loadedmetadata", () => { el.currentTime = seconds; resolve(); }, { once: true });
-      el.src = url; // setting src triggers the load that will fire loadedmetadata above
+  // `el.error` is part of the question (round 26, found by a test): after a
+  // load FAILS the element still names the file that failed -- so asking only
+  // "is this a different file?" answered no, no reload was attempted, and
+  // pressing Play again did nothing at all for the rest of the session.
+  if (currentMediaUrl !== url || el.error) {
+    return new Promise((resolve, reject) => {
+      // Shell round 26 -- TWO real defects fixed here, both invisible until a
+      // file actually fails to load (which is exactly the owner's case):
+      //
+      //   1. This used to listen for `loadedmetadata` and nothing else. A load
+      //      that FAILS never fires it, so the promise stayed pending for ever:
+      //      the await above it never returned, the drill's Play button stayed
+      //      disabled, and nothing ever told the reader why. Now an `error`
+      //      rejects it, reported once through the same channel as everything
+      //      else.
+      //   2. The `{ once: true }` listener survived a failed load, so the NEXT
+      //      successful load fired it and seeked to the PREVIOUS ayah's
+      //      position -- audibly, Bangla starting in the wrong place.
+      //      Both listeners are removed together now, whichever fires.
+      const cleanup = () => {
+        el.removeEventListener("loadedmetadata", onMeta);
+        el.removeEventListener("error", onErr);
+      };
+      const onMeta = () => { cleanup(); el.currentTime = seconds; resolve(); };
+      const onErr = () => { cleanup(); reject(reportFailure(describeMediaError(el.error?.code), { code: el.error?.code })); };
+      el.addEventListener("loadedmetadata", onMeta);
+      el.addEventListener("error", onErr);
+      setMediaSource(el, url); // setting src triggers the load that will fire one of the two above
     });
   }
   el.currentTime = seconds;
@@ -530,6 +679,7 @@ async function playSegmentedAyahInternal(surahNum, ayahNum, reciterId) {
   clearBoundaryListener(); // never leave the previous ayah's boundary check (with its own stale endMs) attached alongside this one
   const el = ensureAudioEl();
   const url = reciter.surahUrl(surahNum);
+  nowPlaying = { surahNum, ayahNum, reciterId };
   await seekTo(el, url, startMs / 1000);
 
   const stopAtBoundary = () => {
@@ -544,12 +694,17 @@ async function playSegmentedAyahInternal(surahNum, ayahNum, reciterId) {
       currentBoundaryListener = stopAtBoundary;
       el.addEventListener("timeupdate", stopAtBoundary);
     } else {
+      // Shell round 26: this ayah is FINISHED, not paused half-way. Without
+      // saying so, isPaused() saw a paused element part-way through a surah
+      // file and the next Play "resumed" it -- carrying straight on into the
+      // rest of the surah with no boundary listener left to stop it.
       el.pause();
+      atEndOfRun = true;
     }
   };
   currentBoundaryListener = stopAtBoundary;
   el.addEventListener("timeupdate", stopAtBoundary);
-  return el.play();
+  return startPlayback(el);
 }
 
 /** Play one Bangla-style segmented ayah standalone (e.g. the "Play ayah" button) -- not part of a range, just finishes and stops (or loops on itself, if loop is on). */
@@ -558,6 +713,7 @@ export function playSegmentedAyah(surahNum, ayahNum, reciterId) {
   if (!reciter || reciter.kind !== "segmented") throw new Error(`"${reciterId}" is not a segmented reciter.`);
   currentPlaylist = null;
   currentRange = null;
+  atEndOfRun = false;
   return playSegmentedAyahInternal(surahNum, ayahNum, reciterId);
 }
 
@@ -566,6 +722,7 @@ export function stop() {
   currentRange = null;
   clearBoundaryListener();
   if (audioEl) audioEl.pause();
+  atEndOfRun = true; // Stop means stop: the next Play starts the unit again, it does not resume
 }
 
 export function isPlaying() {
@@ -573,7 +730,10 @@ export function isPlaying() {
   // fires `play` optimistically and `error` afterwards, and the element can be
   // left un-paused with nothing sounding -- which made the reading screen's
   // merged button sit there reading "Pause" after every failed playback.
-  return !!audioEl && !audioEl.paused && !audioEl.error;
+  // The silent unlock clip is not playback either (round 26) -- it is a
+  // zero-length placeholder claiming the user gesture, and treating it as
+  // "playing" would make the very next Play tap read as a Pause.
+  return !!audioEl && !audioEl.paused && !audioEl.error && !isSilentUnlock();
 }
 
 /**
@@ -590,8 +750,8 @@ export function pause() {
 
 /** Resumes whatever pause() left loaded. Safe to call when nothing is paused. */
 export function resume() {
-  if (!audioEl || !audioEl.paused || !audioEl.src) return Promise.resolve(false);
-  return audioEl.play().then(() => true);
+  if (!audioEl || !audioEl.paused || !audioEl.src || isSilentUnlock()) return Promise.resolve(false);
+  return startPlayback(audioEl).then(() => true);
 }
 
 /**
@@ -614,18 +774,39 @@ export function resume() {
  */
 export function unlockAudio() {
   const el = ensureAudioEl();
+  // Shell round 26. This used to call play() on an element with NO source at
+  // all, which does not fail quietly: the browser runs its resource-selection
+  // algorithm, fails to find anything, and fires a real `error` event carrying
+  // code 4. That is one of the owner's own phantom prompts ("the audio source
+  // isn't available" for a file nobody asked for), and worse, the error
+  // listener above tore down currentRange/currentPlaylist as it went -- killing
+  // the very playback this tap was unlocking. A one-sample silent clip really
+  // does load, so the gesture is claimed with nothing to go wrong.
+  //
+  // An element that already holds a real recitation is left strictly alone: it
+  // has been played from a gesture before (so it is already unlocked), and
+  // replacing its source would throw away a paused position that Play is about
+  // to resume.
+  if (currentMediaUrl && currentMediaUrl !== SILENT_SRC && !el.error) return;
   try {
+    setMediaSource(el, SILENT_SRC);
     const p = el.play();
     if (p && typeof p.catch === "function") p.catch(() => {});
-    if (!el.src) el.pause(); // nothing to play yet: this was only ever about the activation
   } catch {
-    /* an element with no source can reject outright; the activation still counts */
+    /* the activation still counts even if this rejects outright */
   }
 }
 
-/** True when something is loaded and sitting paused part-way through -- what the reading screen's Play button needs in order to know whether to resume or start afresh. */
+/** True when something is loaded and sitting paused part-way through -- what the
+    reading screen's Play button needs in order to know whether to resume or
+    start afresh. `atEndOfRun` (round 26) is what tells a real mid-ayah pause
+    from a run that has FINISHED: a segmented reciter stops at an ayah boundary
+    part-way through a whole-surah file, which looks identical to a pause and
+    used to make the next Play carry on into the rest of the surah. */
 export function isPaused() {
-  return !!audioEl && audioEl.paused && !!audioEl.src && audioEl.currentTime > 0 && !audioEl.ended;
+  if (isSilentUnlock()) return false;
+  return !!audioEl && audioEl.paused && !!audioEl.src && audioEl.currentTime > 0
+    && !audioEl.ended && !audioEl.error && !atEndOfRun;
 }
 
 // ---------------------------------------------------------------------------
@@ -651,8 +832,10 @@ export function playOneAndWait(surahNum, ayahNum, reciterId, { signal } = {}) {
 
   currentPlaylist = null;
   currentRange = null;
+  atEndOfRun = false;
   clearBoundaryListener();
   if (onAyahChange) onAyahChange(surahNum, ayahNum);
+  nowPlaying = { surahNum, ayahNum, reciterId };
   const el = ensureAudioEl();
 
   return new Promise((resolve, reject) => {
@@ -689,7 +872,7 @@ export function playOneAndWait(surahNum, ayahNum, reciterId, { signal } = {}) {
             };
             currentBoundaryListener = stopAtBoundary;
             el.addEventListener("timeupdate", stopAtBoundary);
-            return el.play();
+            return startPlayback(el);
           });
         })
         .catch((err) => finish(reject, err));
@@ -698,8 +881,8 @@ export function playOneAndWait(surahNum, ayahNum, reciterId, { signal } = {}) {
 
     if (!reciter.perAyahUrl) { finish(reject, new Error(`"${reciterId}" has no per-ayah audio configured.`)); return; }
     el.addEventListener("ended", onEnded);
-    el.src = reciter.perAyahUrl(surahNum, ayahNum);
-    el.play().catch((err) => finish(reject, err));
+    setMediaSource(el, reciter.perAyahUrl(surahNum, ayahNum));
+    startPlayback(el).catch((err) => finish(reject, err));
   });
 }
 
@@ -720,25 +903,38 @@ export async function playDrill({ surahNum, fromAyah, toAyah, reciterIds, repeat
   const { signal } = controller;
   const ayahs = [];
   for (let a = fromAyah; a <= toAyah; a++) ayahs.push(a);
+  // Nothing to play must not become an infinite Loop below, spinning the tab.
+  if (!reciterIds?.length || !ayahs.length || !(repeatCount > 0)) {
+    drillAbortController = null;
+    return;
+  }
 
   try {
-    if (mode === "each") {
-      for (const ayahNum of ayahs) {
+    // Shell round 26 -- Loop applies here too. This is now the ONE sequencer
+    // behind both Play buttons (Study options' and the reading screen's), so a
+    // ticked Loop has to mean the same thing here as it did in the old
+    // single-reciter range player it replaces: when the whole selection has
+    // been through, start it again.
+    do {
+      if (mode === "each") {
+        for (const ayahNum of ayahs) {
+          for (let round = 0; round < repeatCount; round++) {
+            for (const reciterId of reciterIds) {
+              await playOneAndWait(surahNum, ayahNum, reciterId, { signal });
+            }
+          }
+        }
+      } else {
         for (let round = 0; round < repeatCount; round++) {
           for (const reciterId of reciterIds) {
-            await playOneAndWait(surahNum, ayahNum, reciterId, { signal });
+            for (const ayahNum of ayahs) {
+              await playOneAndWait(surahNum, ayahNum, reciterId, { signal });
+            }
           }
         }
       }
-    } else {
-      for (let round = 0; round < repeatCount; round++) {
-        for (const reciterId of reciterIds) {
-          for (const ayahNum of ayahs) {
-            await playOneAndWait(surahNum, ayahNum, reciterId, { signal });
-          }
-        }
-      }
-    }
+    } while (loopEnabled && !signal.aborted);
+    atEndOfRun = true; // finished, not paused: the next Play starts the unit again
   } finally {
     if (drillAbortController === controller) drillAbortController = null;
   }

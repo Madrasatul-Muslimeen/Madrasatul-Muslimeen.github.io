@@ -1091,7 +1091,7 @@
     import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler } from "./js/mastery-wheel.js";
     import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab, renderWayModalShell, attachWayModalHandlers } from "./js/way-modal.js";
     import {
-      RECITERS, reciterIsReady, reciterSupportsSingleAyah, playAyah, playSegmentedAyah, playSurah, playAyahRange,
+      RECITERS, reciterIsReady, reciterSupportsSingleAyah, playSurah,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
       warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused, unlockAudio,
       setPlaybackStateHandler,
@@ -1377,8 +1377,13 @@
     // Phase 5 -- drill playback state (persisted across renderAudioControls()
     // rebuilds, same pattern as currentReciterId/loopIsOn above).
     let drillSelectedReciterIds = null; // null = not yet initialised
-    let drillRepeatCount = 5;
+    // Shell round 26: ONE Play now serves both screens, so this count applies
+    // to an ordinary "play what is on screen" tap as well as to a memorising
+    // drill. A default of 5 would have meant every Play silently repeating
+    // five times; the reader raises it when they want a drill.
+    let drillRepeatCount = 1;
     let drillMode = "each";
+    let lastListeningSignature = null; // see renderListeningControls()
 
     function currentActingPersonId() {
       const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
@@ -2639,7 +2644,14 @@
       // gone. Idempotent, so warming from several gestures costs one fetch.
       warmSegmentedTimestamps();
       const first = startOfCurrentUnit();
-      if (first !== currentAyahNum) {
+      // Shell round 26 -- switching to the reading screen must never interrupt
+      // what is sounding. Playback moves currentAyahNum as it advances, so
+      // "the unit's first ayah" is almost never where the recitation has got
+      // to: tapping Read mid-listen jumped BACKWARDS and called stopDrill() on
+      // the way, which is the owner's own "moving from Study options to Read
+      // stops the play". Nothing is playing? Then open at the unit's start,
+      // exactly as before.
+      if (first !== currentAyahNum && !isPlaying() && !isPaused()) {
         stopDrill();
         currentAyahNum = first;
         if (ayahSelect.querySelector(`option[value="${first}"]`)) ayahSelect.value = String(first);
@@ -3134,6 +3146,18 @@
       const reciters = Object.values(RECITERS).filter((r) => reciterIsReady(r.id));
       if (drillSelectedReciterIds === null) drillSelectedReciterIds = [currentReciterId].filter((id) => reciterSupportsSingleAyah(id));
 
+      // Shell round 26 -- this whole block used to be rebuilt on EVERY render,
+      // and a render happens on every ayah the recitation advances to. So the
+      // reciter ticks were being destroyed and recreated under the reader's
+      // finger several times a minute, which is a real way to lose a tap
+      // ("uncheck and recheck an option" behaving oddly). The markup only
+      // changes when a choice changes, so it is only rebuilt when it changes.
+      const signature = JSON.stringify([
+        drillSelectedReciterIds, drillRepeatCount, drillMode, loopIsOn, getAppLang(),
+      ]);
+      if (signature === lastListeningSignature) { setLoop(loopIsOn); return; }
+      lastListeningSignature = signature;
+
       audioControls.innerHTML = `
         <div id="drillReciterChecks" class="reciter-ticks">
           ${reciters.map((r) => {
@@ -3181,19 +3205,74 @@
       drillModeSelect.addEventListener("change", () => { drillMode = drillModeSelect.value; });
       loopToggle.addEventListener("change", () => { loopIsOn = loopToggle.checked; setLoop(loopIsOn); });
 
-      drillPlayBtn.addEventListener("click", async () => {
-        if (!drillSelectedReciterIds?.length) { alert(t("Pick at least one reciter to drill.")); return; }
-        unlockAudio(); // inside the gesture, before any await -- see audio-player.js
-        const [fromAyah, toAyah] = currentUnitAyahBounds();
-        drillPlayBtn.disabled = true;
-        try {
-          await playDrill({ surahNum: currentSurahNum, fromAyah, toAyah, reciterIds: drillSelectedReciterIds, repeatCount: drillRepeatCount, mode: drillMode });
-        } catch (err) {
-          if (err.name !== "AbortError") alert(err.message);
-        } finally {
-          drillPlayBtn.disabled = false;
+      // Shell round 26 -- the SAME Play as the reading screen's. Two buttons
+      // that looked alike but behaved differently (this one played every
+      // ticked reciter, the reading screen's played only the first) is exactly
+      // what the owner hit as "Arabic and Bangla are both ticked but only
+      // Arabic plays". There is one Play now, wherever it is pressed.
+      drillPlayBtn.addEventListener("click", () => playCurrentSelection());
+    }
+
+    /** The ticked reciters, in ticked order, that can actually play ayah by
+        ayah. A whole-surah-only reciter (Kevan Brighting) has no ayah files to
+        interleave with anyone else's, so it is left out of a sequence rather
+        than being allowed to abort one; on its own it still plays, through the
+        whole-surah branch in playCurrentSelection() below. */
+    function playbackReciterIds() {
+      const ticked = (drillSelectedReciterIds ?? []).filter((id) => RECITERS[id]);
+      return ticked.filter((id) => reciterSupportsSingleAyah(id));
+    }
+
+    /** A failure the audio layer has already put on screen must not be shown a
+        second time (round 26): it marks those `reported`. What is left here is
+        a genuine configuration problem, which is worth saying out loud. */
+    function reportPlayFailure(err) {
+      if (!err || err.name === "AbortError" || err.reported) return;
+      alert(err.message);
+    }
+
+    // -----------------------------------------------------------------------
+    // Shell round 26 -- ONE Play, pressed from either screen.
+    //
+    // It plays every ticked reciter over the chosen unit, honouring Repeat,
+    // Mode and Loop; it pauses what is already sounding; and it resumes what is
+    // sitting paused rather than restarting it.
+    // -----------------------------------------------------------------------
+    async function playCurrentSelection() {
+      // Checked FIRST, and deliberately before unlockAudio(): that helper
+      // touches the shared element to claim the gesture, which would undo the
+      // pause we are here to perform.
+      if (isPlaying()) { pauseAudio(); renderReadTransport(); return; }
+      // SYNCHRONOUS, before any await: marks the shared <audio> element as
+      // user-activated so the timing-map fetch below cannot cost us the
+      // gesture. The owner's own case for this: arriving at the reading screen
+      // from a bookmark and pressing Play without ever opening Study options.
+      unlockAudio();
+      warmSegmentedTimestamps();
+      // Something paused part-way is resumed, not restarted -- restarting an
+      // ayah someone deliberately paused is the wrong answer to the same tap.
+      if (isPaused()) { await resumeAudio(); renderReadTransport(); return; }
+      stopDrill();
+      const [fromAyah, toAyah] = currentUnitAyahBounds();
+      const reciterIds = playbackReciterIds();
+      try {
+        if (!reciterIds.length) {
+          // Nothing ticked can play ayah by ayah. A reciter with only a
+          // whole-surah file still plays that file -- refusing outright would
+          // be a Play button that does nothing.
+          const only = (drillSelectedReciterIds ?? [])[0] ?? currentReciterId;
+          if (!only) { alert(t("Pick at least one reciter to drill.")); return; }
+          await playSurah(currentSurahNum, only, currentSurahData.ayahCount);
+        } else {
+          await playDrill({
+            surahNum: currentSurahNum, fromAyah, toAyah, reciterIds,
+            repeatCount: drillRepeatCount, mode: drillMode,
+          });
         }
-      });
+      } catch (err) {
+        reportPlayFailure(err);
+      }
+      renderReadTransport();
     }
 
     /** The reading screen's Play and Whole-surah buttons need exactly one
@@ -3240,49 +3319,13 @@
     // none of those are clicks, and all of them change what this button means.
     setPlaybackStateHandler(() => renderReadTransport());
 
-    readPlayBtn.addEventListener("click", async () => {
-      // Shell round 21 -- the same button pauses what is already sounding.
-      // Checked FIRST, and deliberately before unlockAudio(): that helper
-      // calls play() on the shared element to claim the gesture, which would
-      // undo the pause we are here to perform.
-      if (isPlaying()) { pauseAudio(); renderReadTransport(); return; }
-      // SYNCHRONOUS, before any await: marks the shared <audio> element as
-      // user-activated so the timing-map fetch below cannot cost us the
-      // gesture. The owner's own case for this: arriving at the reading screen
-      // from a bookmark and pressing Play without ever opening Study options.
-      unlockAudio();
-      warmSegmentedTimestamps();
-      // Something paused part-way is resumed, not restarted -- restarting an
-      // ayah someone deliberately paused is the wrong answer to the same tap.
-      if (isPaused()) { await resumeAudio(); renderReadTransport(); return; }
-      stopDrill();
-      const reciterId = currentReciterId;
-      const reciter = RECITERS[reciterId];
-      // Shell round 22 -- Play SOUNDS WHAT IS ON SCREEN. The owner's own words
-      // were that "Whole surah" becomes redundant, which was nearly true: Play
-      // always played exactly one ayah whatever unit was chosen, so only the
-      // separate button could play more. Now a Range plays the range, a Ruku'
-      // plays the ruku', Whole Surah plays the surah -- and the separate button
-      // is genuinely redundant and gone.
-      const [from, to] = currentUnitAyahBounds();
-      try {
-        // A reciter with no per-ayah files (English Kevan Brighting, Bangla
-        // Shareef Bayezid Mahmud) can only ever play its one whole-surah file.
-        // That used to be an error telling the reader to press a button that
-        // no longer exists; playing the surah is the useful answer instead.
-        if (!reciterSupportsSingleAyah(reciterId) || currentUnitType === "surah") {
-          await playSurah(currentSurahNum, reciterId, currentSurahData.ayahCount);
-        } else if (from === to) {
-          if (reciter.kind === "segmented") await playSegmentedAyah(currentSurahNum, from, reciterId);
-          else await playAyah(currentSurahNum, from, reciterId);
-        } else {
-          await playAyahRange(currentSurahNum, from, to, reciterId);
-        }
-      } catch (err) {
-        alert(err.message);
-      }
-      renderReadTransport();
-    });
+    // Shell round 21 -- the same button pauses what is already sounding.
+    // Shell round 22 -- Play SOUNDS WHAT IS ON SCREEN: a Range plays the range,
+    // a Ruku' plays the ruku', Whole Surah plays the surah.
+    // Shell round 26 -- and it plays every ticked reciter, not just the first.
+    // All three rules live in playCurrentSelection(), which is what BOTH Play
+    // buttons now call.
+    readPlayBtn.addEventListener("click", () => playCurrentSelection());
 
     readStopBtn.addEventListener("click", () => { stopDrill(); stopAudio(); renderReadTransport(); });
 
