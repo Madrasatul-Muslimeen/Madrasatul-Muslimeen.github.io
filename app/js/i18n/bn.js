@@ -332,6 +332,57 @@ export const BN = {
   // --- Shell round 23: the Qur'an's own typeface, bundled and choosable.
   //     The face NAMES are proper nouns and are not translated, exactly like
   //     the reciters' names -- only "your device's own" is wording.
+  // --- Shell round 25: the grammar terms in the root & derivatives panel.
+  //     The owner: "in Bangla means everything should be Bangla." These are
+  //     the 46 ATOMS every one of the data's 359 part-of-speech strings is
+  //     built from -- posLabel() in labels.js splits on " + " and rejoins, so
+  //     translating the atoms covers every combination. Standard Bangla
+  //     grammatical vocabulary (ব্যাকরণ) throughout.
+  "Noun": "বিশেষ্য",
+  "Pronoun": "সর্বনাম",
+  "Verb": "ক্রিয়া",
+  "Preposition": "অব্যয়",
+  "Conjunction": "সংযোজক অব্যয়",
+  "Determiner": "নির্ধারক",
+  "Proper Noun": "নামবাচক বিশেষ্য",
+  "Relative Pronoun": "সম্বন্ধবাচক সর্বনাম",
+  "Resumption Particle": "পুনরারম্ভসূচক অব্যয়", // ?
+  "Negative Particle": "নেতিবাচক অব্যয়",
+  "Accusative Particle": "কর্মকারকসূচক অব্যয়", // ?
+  "Adjective": "বিশেষণ",
+  "Emphatic Particle": "জোরবাচক অব্যয়",
+  "Time Adverb": "কালবাচক ক্রিয়াবিশেষণ",
+  "Conditional": "শর্তবাচক",
+  "Demonstrative Pronoun": "নির্দেশক সর্বনাম",
+  "Interrogative Particle": "প্রশ্নবাচক অব্যয়",
+  "Subordinating Conjunction": "অধীনতাসূচক সংযোজক", // ?
+  "Location Adverb": "স্থানবাচক ক্রিয়াবিশেষণ",
+  "Particle of Certainty": "নিশ্চয়তাসূচক অব্যয়",
+  "Vocative Particle": "সম্বোধনসূচক অব্যয়",
+  "Result Particle": "ফলবাচক অব্যয়",
+  "Purpose Particle": "উদ্দেশ্যবাচক অব্যয়",
+  "Circumstantial": "অবস্থাবাচক",
+  "Supplemental": "সম্পূরক",
+  "Future Particle": "ভবিষ্যৎসূচক অব্যয়",
+  "Retraction Particle": "প্রত্যাহারসূচক অব্যয়", // ?
+  "Exceptive Particle": "ব্যতিক্রমসূচক অব্যয়",
+  "Inceptive Particle": "সূচনাসূচক অব্যয়", // ?
+  "Causative Particle": "কারণবাচক অব্যয়",
+  "Amendment Particle": "সংশোধনসূচক অব্যয়", // ?
+  "Answer Particle": "উত্তরসূচক অব্যয়",
+  "Quranic Initials": "হুরুফুল মুকাত্তাআত",
+  "Imperative Verb": "আদেশসূচক ক্রিয়া",
+  "Restriction Particle": "সীমাবদ্ধতাসূচক অব্যয়", // ?
+  "Prohibition Particle": "নিষেধসূচক অব্যয়",
+  "Preventive Particle": "প্রতিরোধসূচক অব্যয়", // ?
+  "Explanation Particle": "ব্যাখ্যাসূচক অব্যয়",
+  "Interpretation Particle": "তাৎপর্যসূচক অব্যয়", // ?
+  "Exhortation Particle": "উৎসাহসূচক অব্যয়", // ?
+  "Surprise Particle": "বিস্ময়সূচক অব্যয়",
+  "Aversion Particle": "প্রত্যাখ্যানসূচক অব্যয়", // ?
+  "Equalization Particle": "সমতাসূচক অব্যয়", // ?
+  "Comitative Particle": "সঙ্গবাচক অব্যয়", // ?
+
   "Arabic font": "আরবি ফন্ট",
   // Typeface names are proper nouns, like the reciters' names -- mapped to
   // themselves on purpose so the coverage report counts them as DECIDED

@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.51.** Cutover to production happened
+**Current milestone: QuranRevival v07.52.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -2382,6 +2382,60 @@ left to disagree silently.
 an LTR chip, and "no Latin letters left on any chip" for the owner's own
 setting). **`layout.mjs` NO LAYOUT REGRESSIONS** (`getElementById` targets
 unchanged at 87), **`reading.mjs` OK**, **coverage 1,186/1,186**. No
+`firestore.rules`, schema or Firestore data changes.
+
+v07.52 (18 Aug 2026, on Claude Code on the web) is **shell round 25 — the root
+& derivatives panel in Bangla, and the reading controls moved right.** Three
+owner asks from the live app, one of which was a question with a real answer.
+
+**(a) The grammar labels were English on an otherwise Bangla screen** — "what
+about these derivates? in Bangla means everything should be Bangla." **Measured
+before building, and the measurement is what made it tractable: the pulled data
+carries 359 DISTINCT part-of-speech strings, but they are compositions of just
+46 ATOMS joined by " + ".** So `posLabel()` in `js/labels.js` splits on the
+joiner, translates each atom and rejoins — 46 entries expressing all 359
+combinations. The root counts take `num()` too, so they read ৮৭৯× rather than
+879×. **A second thing the measurement showed, fixed for BOTH languages: a
+dozen of those atoms are raw Quranic Arabic Corpus codes — RES, PRO, PREV, EXL,
+INT, EXH, SUR, AVR, EQ, COM, IMPV — which tell an English reader exactly as
+little as they tell a Bangla one.** They are expanded to real words ("RES" →
+"Restriction Particle"), so English gains from this round as well. An unknown
+atom prints as it is rather than vanishing — the data has one such glitch
+entry, and printing it beats inventing a meaning.
+
+**(b) The controls moved to the right of the reading bar**, which only became
+possible because of (c).
+
+**(c) The reciter caption is gone, and the owner's question deserved a real
+answer rather than just compliance.** They asked *"why do we show 'Abdullah
+Basfar' there? What's its function? can we remove that from there?"* Its only
+function was naming which reciter Play would use — which Study options →
+Listening already says, and which the reader chose there in the first place.
+So nothing is lost by removing it, and it was the one thing keeping the control
+row from sitting where the Arabic starts.
+
+**The coverage tool was wrong for the EIGHTH time in nine rounds, and this one
+is a genuine convention bug rather than a missed pattern.** Its `*_LABELS`
+extractor matched EVERY quoted string in the block — which happened to work
+only because every other map in the codebase writes its keys as bare
+identifiers (`pending:`, `teacher:`). `POS_LABELS` must quote its keys, since
+they contain spaces ("Proper Noun"), so the report started demanding Bangla for
+raw corpus codes that never reach `t()` at all. It reads the VALUE side of each
+pair now, falling back to every string only for array-shaped maps.
+
+**A defect caught by measuring, and the measurement itself had to be fixed
+first.** The first attempt at (b) added `justify-content: flex-end` to a rule
+that already carried `justify-content: space-between` LATER in the same block,
+so the stale declaration quietly won. The check did not catch it because it
+measured the LAST button's right edge — and `space-between` also ends at the
+right edge. **Only the FIRST button's position tells the two apart**, which is
+what the check measures now.
+
+**Verified: 704 behaviour checks pass, 0 failed** (was 691 — 13 new in section
+37). **`layout.mjs` NO LAYOUT REGRESSIONS** (`getElementById` targets 87 → 86,
+exactly the retired caption, none missing), **`reading.mjs` OK**, **coverage
+1,230/1,230 (100%)**. Two older checks were **updated rather than deleted**
+(30j and 33a, both of which asserted the caption this round removed). No
 `firestore.rules`, schema or Firestore data changes.
 
 ---

@@ -199,7 +199,16 @@ function extract(file) {
   // tool bugs, and it is why the `_LABELS` name is a CONVENTION, not a
   // coincidence: name a map that way and its wording gets counted.
   for (const block of code.matchAll(/\b[A-Z_]*_LABELS\s*=\s*(?:Object\.freeze\()?[[{]([\s\S]*?)[}\]]/g)) {
-    for (const m of block[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)) {
+    // Only the VALUE side of each pair. Round 25 found this the hard way:
+    // every other map in the codebase writes its keys as bare identifiers
+    // (`pending:`, `teacher:`), so matching all quoted strings happened to
+    // work -- until POS_LABELS arrived, whose keys must be quoted because
+    // they contain spaces ("Proper Noun"). The report then demanded Bangla
+    // for raw corpus codes like "RES" that never reach t() at all.
+    // Array-shaped maps have no pairs, so they still take every string.
+    const pairs = [...block[1].matchAll(/:\s*"((?:[^"\\]|\\.)*)"/g)];
+    const strings = pairs.length ? pairs : [...block[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)];
+    for (const m of strings) {
       const s = m[1].replace(/\\(["'\\])/g, "$1").trim();
       if (LOOKS_USER_FACING(s)) found.add(s);
     }

@@ -1632,14 +1632,16 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
     buttons: [...document.querySelectorAll("#readBar button")].map((b) => b.id),
     noWholeSurah: !document.getElementById("readPlaySurahBtn"),
     playLabel: document.getElementById("readPlayBtn").getAttribute("aria-label") || "",
-    reciter: document.getElementById("readReciterName").textContent.trim(),
+    // Round 25 retired the reciter caption -- its only job was naming which
+    // reciter Play would use, which Study options -> Listening already says.
+    noReciter: !document.getElementById("readReciterName"),
   }));
   check("30j prev, next, play, stop and full screen are on the reading screen",
         transport.visible && JSON.stringify(transport.buttons) === '["prevUnitBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn"]', JSON.stringify(transport));
   check("30j the separate 'Whole surah' button is gone (Play follows the unit)", transport.noWholeSurah);
   check("30j the merged button is named Play while nothing is playing",
         /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
-  check("30j the reading names the reciter it would use", transport.reciter.length > 0, transport.reciter);
+  check("30j the reciter caption is gone (Listening settings names it)", transport.noReciter);
 
   check("30k no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
   await page.close();
@@ -2199,8 +2201,9 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
     noRef: !document.getElementById("readRef"),
     playLabel: document.getElementById("readPlayBtn").getAttribute("aria-label") || "",
   }));
-  check("33a the read bar is Prev · Next · Play · Stop · Full screen · reciter",
-        bar.ids.join() === "prevUnitBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readReciterName",
+  // Round 25 dropped the reciter caption from the end of this row.
+  check("33a the read bar is Prev · Next · Play · Stop · Full screen",
+        bar.ids.join() === "prevUnitBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -2833,6 +2836,103 @@ console.log("\n=== 36. Shell round 24: word-by-word direction and transliteratio
   check("36b ...with no Latin letters left on any chip", bnOnly.latin === 0, JSON.stringify(bnOnly));
 
   check("36 no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+// ---------------------------------------------------------------------------
+// 37. Shell round 25: the root & derivatives panel in Bangla, and the reading
+// controls moved right.
+//
+// The owner, reading the panel with the app in Bangla: "what about these
+// derivates? in Bangla means everything should be Bangla." Also "move the
+// button to right side", and "why do we show 'Abdullah Basfar' there? ... can
+// we remove that from there?"
+// ---------------------------------------------------------------------------
+console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===");
+{
+  const ctx = await ctxFor({ banner: false, viewport: { width: 412, height: 915 }, appLang: "bn" });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await openStudyOptions(page);
+  await page.check("#wbwShowToggle");
+  await page.waitForTimeout(400);
+  await page.click("#tabStudyOptionsBtn");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(900);
+
+  const m = await page.evaluate(() => {
+    const bar = document.getElementById("readBar");
+    const barBox = bar.getBoundingClientRect();
+    const btns = [...bar.querySelectorAll("button")];
+    const rows = [...document.querySelectorAll(".root-deriv-strip .root-row")];
+    return {
+      barKids: [...bar.children].map((e) => e.id),
+      noReciter: !document.getElementById("readReciterName"),
+      firstBtnLeft: Math.round(btns[0].getBoundingClientRect().left),
+      barLeft: Math.round(barBox.left), barRight: Math.round(barBox.right),
+      posCount: rows.length,
+      latinPos: rows.map((r) => r.querySelector(".root-pos")?.textContent || "").filter((x) => /[A-Za-z]/.test(x)).length,
+      samplePos: rows[0]?.querySelector(".root-pos")?.textContent.trim() ?? "",
+      counts: rows.map((r) => r.querySelector(".root-count")?.textContent ?? "").filter(Boolean),
+    };
+  });
+
+  check("37a the reciter caption is gone from the reading controls", m.noReciter);
+  check("37a the row is exactly the five controls",
+        m.barKids.join() === "prevUnitBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn", JSON.stringify(m.barKids));
+  // The honest check is where the group STARTS. `space-between` also ends at
+  // the right edge, so measuring the last button cannot tell the two apart --
+  // which is exactly how a stale `space-between` survived this round's first
+  // attempt.
+  check("37a the controls are grouped at the RIGHT, not spread",
+        m.firstBtnLeft - m.barLeft > (m.barRight - m.barLeft) / 2,
+        JSON.stringify({ firstBtnLeft: m.firstBtnLeft, bar: [m.barLeft, m.barRight] }));
+
+  check("37b the root & derivatives panel has rows to check", m.posCount > 0, String(m.posCount));
+  check("37b every grammar label is Bangla — no English left",
+        m.latinPos === 0 && BANGLA.test(m.samplePos), JSON.stringify({ latin: m.latinPos, sample: m.samplePos }));
+  check("37b ...and the root counts use Bengali digits",
+        m.counts.length > 0 && m.counts.every((c) => !/[0-9]/.test(c)), JSON.stringify(m.counts.slice(0, 3)));
+
+  check("37 no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 37c the composed labels, and the raw corpus codes ------------------
+  // 359 distinct part-of-speech strings in the data, built from 46 atoms:
+  // posLabel() has to translate the atoms and rejoin, and it has to expand
+  // the corpus codes, which are meaningless in ENGLISH too.
+  const ctx = await ctxFor({ banner: false });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const en = await page.evaluate(async () => {
+    const m = await import("/app/js/labels.js");
+    return {
+      composed: m.posLabel("Preposition + Relative Pronoun"),
+      code: m.posLabel("RES"),
+      unknown: m.posLabel("yaAsiyna"),
+      empty: m.posLabel(""),
+    };
+  });
+  check("37c a composed label survives in English", en.composed === "Preposition + Relative Pronoun", en.composed);
+  check("37c a raw corpus code is expanded into real words", en.code === "Restriction Particle", en.code);
+  check("37c an unknown atom prints as it is rather than vanishing", en.unknown === "yaAsiyna", en.unknown);
+  check("37c nothing in, nothing out", en.empty === "", JSON.stringify(en.empty));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  const ctx = await ctxFor({ banner: false, appLang: "bn" });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const bn = await page.evaluate(async () => {
+    const m = await import("/app/js/labels.js");
+    return { composed: m.posLabel("Preposition + Relative Pronoun"), code: m.posLabel("PRO") };
+  });
+  check("37c ...and both sides of a composed label are Bangla",
+        bn.composed.split("+").every((p) => BANGLA.test(p)), bn.composed);
+  check("37c ...including one that started as a corpus code", BANGLA.test(bn.code), bn.code);
   await page.close();
   await ctx.close();
 }
