@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.53.** Cutover to production happened
+**Current milestone: QuranRevival v07.54.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -2549,6 +2549,94 @@ sequential round trips / 0.91s**, and **`tools/perf/new-tenant.mjs` 10/10**. No
 static files. (The two rules changes still pending from earlier rounds —
 v07.18 Homework teacher-scoping and v07.37 `appLang` — are unaffected and still
 not deployed.)
+
+v07.54 (21 Aug 2026, on Claude Code on the web) is **shell round 27 — four
+fixes the owner listed after using round 26.** Small in scope, but two of them
+reverse earlier decisions of this project's own, and one is a fifth playback
+defect that only real use could have surfaced.
+
+**(1) A Range shows From and To, and no third Ayah picker.** Round 22 asked the
+owner "From and To only, or all three?" and they said all three; using it, they
+reversed it — *"the Surah already shows the number, don't need the button to
+choose the number again"*. They are right, and the reversal pays for itself:
+with the third picker gone there is room to widen the number cells, which was
+their second complaint (**"3 digits show cut-off, looks odd"** — measured, and
+true: `3.1rem` is 50px, and "286" plus a dropdown arrow does not fit). Now
+**3.9rem**, with a check that measures the widest option against its own box in
+the select's own font rather than trusting the eye. Worth knowing: **Study
+options has hidden that picker for Range and Whole Surah since round 19**
+(`isPageUnit`) — so this is the reading-screen mirror finally agreeing with the
+control it mirrors, not a new rule.
+
+**(2) The ayah being recited is marked on screen.** A Range or a Whole Surah
+renders as a FLOW — every ayah drawn at once — so as the recitation advanced
+the page genuinely did not move: the owner's *"the Ayah playing should display
+on the screen (now it remains static)"*. `renderStudyScreen()` was being called
+on every ayah, and re-rendering identical content is invisible. Each ayah in
+the flow now carries `data-ayah`, the one being recited takes a tinted band
+with a coloured left edge, and it is scrolled into view (`block: "nearest"`, so
+only when it has gone off screen). **Deliberately a class toggle and a scroll,
+not a re-render** — the flow can be a whole surah, and rebuilding all of it
+hundreds of times would fight the reader's own scrolling; the same reasoning,
+and the same shape, as the Mushaf path's `setActiveAyah()`. The band is behind
+the words rather than a colour on them, because the Arabic already carries
+Tajweed colouring and must not be competed with.
+
+**(3) Word by Word no longer drags the grammar table with it.** They were ONE
+panel in `ayah-renderer.js` — `wordByWord` rendered the word chips *and* the
+root/derivatives table — so asking for the words always got both. They are two
+panels now (`wordByWord`, `rootDerivatives`) and **"Roots & derivatives" is its
+own reading choice** in Study options → Reading view, alongside Tajweed, Word
+by Word and the translations. That is where every other reading choice already
+lives; the owner offered "the read panel, or the Study Setting panel, or both",
+and putting a sixth tick on the reading screen would cost landing/reading
+height that rounds 9–27 have spent themselves reclaiming — say the word and it
+can go in both. Note an Approach that declares `wordByWord` in
+`catalogue-data.js` now means the words alone, which is what that name says.
+**`.reading-ticks` is five choices no longer but six** — three behaviour checks
+read that class as a count, and they are updated rather than worked around;
+this is the third time that class has needed care when something moved near it.
+
+**(4) A missing file for ONE reciter no longer stops the whole recitation.**
+The owner's fourth report: a Range playing Arabic and Bangla, paused, played
+again — and the Bangla file, which had been playing a moment earlier, came back
+"not available" and *"it actually came to a total stop"*. Three changes, in
+order of how much they matter:
+**(a)** every load is now **retried once, silently** — a file that worked and
+then did not is transient (a dropped connection, a range request archive.org
+refused on the way back, a mobile browser releasing a paused media resource),
+and the honest answer to a transient failure is to ask again before telling
+anyone; **(b)** the failure message is **held back 700ms and thrown away if the
+sound starts**, so a hiccup the retry fixes never interrupts the reader at all;
+**(c)** a reciter that really cannot play is **set aside for the rest of that
+run** rather than ending it — the run stops only when there is nobody left who
+can play. So Bangla failing now means Arabic carries on, with one message
+saying why, instead of silence.
+**One detail in (b) is load-bearing and was caught by a test, not by reading:**
+cancelling on *any* playback is wrong. With two reciters, the next thing to
+play after Bangla fails is the ARABIC file — and cancelling then would swallow
+the only explanation the reader gets for why Bangla went quiet. It cancels only
+when the file that failed is the file now playing.
+
+**Verified: 740 behaviour checks pass, 0 failed** (was 721 — 19 new in section
+39: a Range proven to show From and To and no third picker, on one line, with a
+three-digit ayah proven to fit its box; the flow's ayahs proven to carry their
+own numbers, the recited one proven marked and the mark proven to follow the
+recitation, exactly one at a time; the words panel proven to render without the
+derivatives and the derivatives proven to render without the words; a reciter
+whose files are unreachable proven not to stop the other one, and to be
+explained once rather than once per ayah; and a first failure that the retry
+fixes proven to play with the reader never interrupted). Three older checks
+were **updated rather than deleted**, each because this round deliberately
+changed what they asserted (34c's "all 3" for a Range, and two `.reading-ticks`
+counts). **`layout.mjs` NO LAYOUT REGRESSIONS** at all eight viewports in both
+banner states — landing page byte-for-byte identical, `getElementById` targets
+86 → 88 (exactly the new tick and its label), none missing — **`reading.mjs` OK
+in both languages**, **`panel.mjs` no wrapped bar and no truncated label**,
+**navcheck unchanged** (still only the pre-existing 320px ENGLISH truncation of
+"Operation"/"Bookmark"), **coverage 1,240/1,240 (100%)**, **perf unchanged at 6
+sequential round trips**, **`new-tenant.mjs` 10/10**. No `firestore.rules`,
+schema or Firestore data changes.
 
 ---
 

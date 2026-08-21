@@ -113,14 +113,21 @@ export function renderRootDerivativePanel(ayah) {
  * of data, not a build" only holds if this switch never grows per-Approach
  * special cases.
  */
-const PANEL_ORDER = ["text", "tajweed", "wordByWord", "notes", "reflection", "writing", "checklist"];
+// Shell round 27 split "rootDerivatives" out of "wordByWord". They used to be
+// one panel, so asking for word-by-word always got the grammar table with it --
+// the owner's "should show only WbW, not with the entire derivatives at the
+// same time". They are two choices now, and an Approach that declares
+// "wordByWord" (catalogue-data.js) means the words alone, which is what that
+// name says.
+const PANEL_ORDER = ["text", "tajweed", "wordByWord", "rootDerivatives", "notes", "reflection", "writing", "checklist"];
 const PANEL_RENDERERS = {
   text: (ayah, opts) => renderArabicPanel(ayah, opts) + renderTranslationPanel(ayah, opts.langs),
   tajweed: () => "", // tajweed is a toggle on the text panel (opts.tajweedOn), not a separate panel
   // wbwLangs, if given, overrides langs for this panel only -- lets the
   // caller offer an explicit word-by-word language choice independent of
   // the ayah translation panel's language (owner request, 5 Aug 2026).
-  wordByWord: (ayah, opts) => renderWordByWordPanel(ayah, { langs: opts.wbwLangs ?? opts.langs }) + renderRootDerivativePanel(ayah),
+  wordByWord: (ayah, opts) => renderWordByWordPanel(ayah, { langs: opts.wbwLangs ?? opts.langs }),
+  rootDerivatives: (ayah) => renderRootDerivativePanel(ayah),
   notes: () => `<textarea class="panel-notes" placeholder="${t("Notes")}"></textarea>`,
   reflection: () => `<textarea class="panel-reflection" placeholder="${t("Reflection")}"></textarea>`,
   writing: () => `<div class="panel-writing"><textarea placeholder="${t("Write it out here")}"></textarea></div>`,

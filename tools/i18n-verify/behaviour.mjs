@@ -1667,7 +1667,9 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
         !/[0-9]/.test(bn.firstOption || "") && bn.optionValue === "1", JSON.stringify(bn));
   check("30l ...and what it covers reads in Bangla with Bengali digits",
         BANGLA.test(bn.span) && !/[0-9]/.test(bn.span), bn.span);
-  check("30l every Reading view tick is Bangla", bn.ticks.length === 5 && bn.ticks.every((x) => BANGLA.test(x)), JSON.stringify(bn.ticks));
+  // Round 27 made it six: "Roots & derivatives" is its own reading choice now,
+  // split out of Word by Word (they used to render as one panel).
+  check("30l every Reading view tick is Bangla", bn.ticks.length === 6 && bn.ticks.every((x) => BANGLA.test(x)), JSON.stringify(bn.ticks));
   await page.click("#tabReadBtn");
   await page.waitForTimeout(500);
   // Round 22: icons carry no words, so what must be in Bangla is their name.
@@ -1727,7 +1729,7 @@ console.log("\n=== 31. Shell round 19: no Approach blocks anything ===");
     check("31b an Approach with no audio panel still offers every reciter",
           live.reciters > 0 && !live.recitersDisabled, JSON.stringify(live));
     check("31b ...still offers Loop and Play", live.loop && live.play, JSON.stringify(live));
-    check("31b ...and every reading choice stays live", live.ticks === 5, String(live.ticks));
+    check("31b ...and every reading choice stays live", live.ticks === 6, String(live.ticks)); // six since round 27
     check("31b the Qur'an text is on screen whatever the Approach declares", live.arabic > 0, String(live.arabic));
   }
 
@@ -2509,7 +2511,11 @@ console.log("\n=== 34. Shell round 22: pickers on the reading screen ===");
   check("34b ...and changing it in Study options moves the reading screen's copy",
         backwards.mirror === "5", JSON.stringify(backwards));
 
-  // The owner's answer to "From and To only, or all three?" was all three.
+  // Round 22 asked "From and To only, or all three?" and the owner said all
+  // three. Round 27 they reversed it from real use: with From and To on
+  // screen, a third number picker says nothing they do not already say, and it
+  // cost the two that matter their width. Updated rather than deleted, because
+  // the rule it asserts genuinely changed.
   const rangeCells = await page.evaluate(async () => {
     const m = document.getElementById("readUnitTypeSelect");
     m.value = "range";
@@ -2521,8 +2527,8 @@ console.log("\n=== 34. Shell round 22: pickers on the reading screen ===");
     const oneLine = boxes.every((b) => Math.abs(b.top - boxes[0].top) < 3);
     return { ids, oneLine, overflow: document.documentElement.scrollWidth > innerWidth + 1 };
   });
-  check("34c with a Range on, Ayah AND From AND To all show — the owner's 'all 3'",
-        rangeCells.ids.join() === "readUnitTypeSelect,readSurahSelect,readAyahSelect,readRangeFromSelect,readRangeToSelect",
+  check("34c with a Range on it is From and To, with no third Ayah picker (round 27)",
+        rangeCells.ids.join() === "readUnitTypeSelect,readSurahSelect,readRangeFromSelect,readRangeToSelect",
         JSON.stringify(rangeCells.ids));
   check("34c ...all five on one line, with no sideways overflow",
         rangeCells.oneLine && !rangeCells.overflow, JSON.stringify(rangeCells));
@@ -2855,6 +2861,9 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await openStudyOptions(page);
   await page.check("#wbwShowToggle");
+  // Round 27 split the grammar table out of Word by Word into its own reading
+  // choice, so this section has to ask for it explicitly now.
+  await page.check("#rootsToggle");
   await page.waitForTimeout(400);
   await page.click("#tabStudyOptionsBtn");
   await page.click("#tabReadBtn");
@@ -3195,6 +3204,202 @@ console.log("\n=== 38. Shell round 26: listening ===");
   await openStudyOptions(page);
   const repeat = await page.evaluate(() => document.getElementById("drillRepeatSelect").value);
   check("38g Repeat defaults to once — one Play serves both screens now", repeat === "1", repeat);
+  await page.close();
+  await ctx.close();
+}
+
+// ---------------------------------------------------------------------------
+// 39. Shell round 27: the owner's four fixes.
+// ---------------------------------------------------------------------------
+console.log("\n=== 39. Shell round 27: the four fixes ===");
+{
+  // --- 39a a Range shows From and To, and no third number picker ---------
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await setUnit(page, "range");
+  await openRead(page);
+  const range = await page.evaluate(() => {
+    const shown = (id) => {
+      const el = document.getElementById(id);
+      return !!el && !el.hidden && el.getBoundingClientRect().width > 0;
+    };
+    const row = document.getElementById("readPickers");
+    const cells = [...row.querySelectorAll("select")].filter((el) => !el.hidden);
+    const tops = cells.map((c) => Math.round(c.getBoundingClientRect().top));
+    return {
+      ayah: shown("readAyahSelect"), from: shown("readRangeFromSelect"), to: shown("readRangeToSelect"),
+      cells: cells.map((c) => c.id),
+      oneLine: new Set(tops).size === 1,
+      overflow: row.scrollWidth > row.clientWidth + 1,
+      numWidth: Math.round(document.getElementById("readRangeToSelect").getBoundingClientRect().width),
+    };
+  });
+  check("39a a Range shows From and To", range.from && range.to, JSON.stringify(range));
+  check("39a ...and NOT a third Ayah picker beside them", !range.ayah, JSON.stringify(range.cells));
+  check("39a ...all on one line, nothing overflowing", range.oneLine && !range.overflow, JSON.stringify(range));
+
+  // A three-digit ayah must not be clipped -- the owner's "3 digits show
+  // cut-off, looks odd". Surah 2 has 286, so its pickers really carry three
+  // digits; measured against what the widest option needs.
+  const wide = await page.evaluate(async () => {
+    const s = document.getElementById("readSurahSelect");
+    s.value = "2"; s.dispatchEvent(new Event("change"));
+    await new Promise((r) => setTimeout(r, 1400));
+    const sel = document.getElementById("readRangeToSelect");
+    const last = sel.options[sel.options.length - 1]; // the surah's own last ayah: three digits in surah 2
+    sel.value = last.value; sel.dispatchEvent(new Event("change"));
+    await new Promise((r) => setTimeout(r, 700));
+    // What the text alone needs, measured in the select's own font.
+    const probe = document.createElement("span");
+    const cs = getComputedStyle(sel);
+    probe.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${cs.font}`;
+    probe.textContent = last.textContent;
+    document.body.appendChild(probe);
+    const needs = probe.getBoundingClientRect().width;
+    probe.remove();
+    // A <select> spends roughly 18px on its arrow plus its own padding.
+    const pad = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 18;
+    return { box: sel.getBoundingClientRect().width, needs: needs + pad, value: last.textContent };
+  });
+  check("39a a three-digit ayah is not cut off",
+        wide.box >= wide.needs, `${Math.round(wide.box)}px box, needs ${Math.round(wide.needs)}px`);
+  check("39a no page errors", errors.filter((e) => !/ERR_/.test(e)).length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 39b the ayah being recited is marked on screen --------------------
+  // A Range draws every ayah at once, so nothing moved as the audio advanced:
+  // the owner's "the Ayah playing should display on the screen (now it
+  // remains static)".
+  const { ctx } = await audioCtx();
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+  await setUnit(page, "range");
+  await openRead(page);
+  const marked = await page.evaluate(() =>
+    document.querySelectorAll("#pageViewContainer .page-flow-ayah[data-ayah]").length);
+  check("39b every ayah in the flow carries its own number", marked >= 2, String(marked));
+  await page.click("#readPlayBtn");
+  const first = await waitFor(page, () =>
+    document.querySelector("#pageViewContainer .page-flow-ayah.now-playing")?.dataset.ayah === "1", 8000);
+  check("39b the ayah being recited is marked", first);
+  const moved = await waitFor(page, () =>
+    document.querySelector("#pageViewContainer .page-flow-ayah.now-playing")?.dataset.ayah === "2", 12000);
+  check("39b ...and the mark follows the recitation to the next ayah", moved,
+        await page.evaluate(() => document.querySelector("#pageViewContainer .now-playing")?.dataset.ayah));
+  check("39b exactly one ayah is marked at a time",
+        await page.evaluate(() => document.querySelectorAll("#pageViewContainer .now-playing").length === 1));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 39c Word by Word no longer drags the grammar table with it --------
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await openStudyOptions(page);
+  await page.check("#wbwShowToggle");
+  await page.waitForTimeout(600);
+  const wbwOnly = await page.evaluate(() => ({
+    wbw: document.querySelectorAll("#ayahPanels .wbw-strip").length,
+    roots: document.querySelectorAll("#ayahPanels .root-deriv-strip").length,
+  }));
+  check("39c Word by Word shows the words", wbwOnly.wbw > 0, JSON.stringify(wbwOnly));
+  check("39c ...and NOT the derivatives at the same time", wbwOnly.roots === 0, JSON.stringify(wbwOnly));
+
+  await page.check("#rootsToggle");
+  await page.waitForTimeout(600);
+  const both = await page.evaluate(() => ({
+    wbw: document.querySelectorAll("#ayahPanels .wbw-strip").length,
+    roots: document.querySelectorAll("#ayahPanels .root-deriv-strip").length,
+  }));
+  check("39c its own tick brings the derivatives back", both.roots > 0 && both.wbw > 0, JSON.stringify(both));
+
+  // The other direction, asked of the renderer itself. It cannot be asked of
+  // the screen here: EVERY Quran Approach in the stub declares wordByWord, and
+  // an Approach's own panels ADD to the reader's ticks rather than being
+  // overridden by them (round 19) -- so with those Approaches the words are
+  // always on whatever the tick says. What matters is that the two panels are
+  // genuinely independent, which is exactly what this asks.
+  const split = await page.evaluate(async () => {
+    const r = await import("/app/js/ayah-renderer.js");
+    const q = await import("/app/js/quran-data.js");
+    const ayah = (await q.getSurah(1)).ayahs[0];
+    const has = (html, cls) => html.includes(cls);
+    const words = r.renderLayoutA(ayah, ["wordByWord"], {});
+    const roots = r.renderLayoutA(ayah, ["rootDerivatives"], {});
+    return {
+      wordsOnly: has(words, "wbw-strip") && !has(words, "root-deriv-strip"),
+      rootsOnly: has(roots, "root-deriv-strip") && !has(roots, "wbw-strip"),
+    };
+  });
+  check("39c the words panel renders without the derivatives", split.wordsOnly, JSON.stringify(split));
+  check("39c ...and the derivatives can be had WITHOUT the words", split.rootsOnly, JSON.stringify(split));
+  check("39c no page errors", errors.filter((e) => !/ERR_/.test(e)).length === 0, errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 39d one reciter's missing file does not stop the whole recitation --
+  // The owner's fourth report: a Range with Arabic and Bangla, paused, played
+  // again -- Bangla failed and everything "came to a total stop".
+  const ctx = await ctxFor({ banner: false });
+  const urls = [];
+  await ctx.route("**/gtaf_bangla_timestamps.json", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: TIMINGS }));
+  await ctx.route("**/archive.org/**", (r) => {
+    const url = r.request().url();
+    urls.push(url);
+    // Bangla is unreachable; Arabic is fine.
+    return isSurahFile(url)
+      ? r.abort()
+      : r.fulfill({ status: 200, contentType: "audio/wav", body: WAV_AYAH });
+  });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const dialogs = [];
+  page.on("dialog", (d) => { dialogs.push(d.message()); d.dismiss().catch(() => {}); });
+  await tickReciter(page, "bn");
+  await setUnit(page, "ruku");
+  await openRead(page);
+  await page.click("#readPlayBtn");
+  const carriedOn = await waitFor(page, () =>
+    Number(document.getElementById("ayahSelect").value) >= 3, 20000);
+  check("39d a failing reciter does not stop the other one", carriedOn, await ayahNow(page));
+  await page.waitForTimeout(1200); // a held-back message is announced a beat later
+  check("39d ...and it is explained once, not once per ayah",
+        dialogs.length === 1,
+        `${dialogs.length} dialog(s); bangla asked ${urls.filter((u) => isSurahFile(u)).length}x of ${urls.length}`);
+  await page.click("#readStopBtn");
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 39e a load that fails once and works on the retry says nothing -----
+  // A file that was playing a moment ago and then will not load is transient,
+  // and the retry makes it moot -- so the reader must not be interrupted.
+  const ctx = await ctxFor({ banner: false });
+  let refuse = 1;
+  await ctx.route("**/gtaf_bangla_timestamps.json", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: TIMINGS }));
+  await ctx.route("**/archive.org/**", (r) => {
+    if (refuse-- > 0) return r.abort();
+    return r.fulfill({ status: 200, contentType: "audio/wav", body: WAV_AYAH });
+  });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  const dialogs = [];
+  page.on("dialog", (d) => { dialogs.push(d.message()); d.dismiss().catch(() => {}); });
+  await openRead(page);
+  await page.click("#readPlayBtn");
+  const playing = await waitFor(page, () =>
+    /Pause|থামান/.test(document.getElementById("readPlayBtn").getAttribute("aria-label") || ""), 8000);
+  await page.waitForTimeout(1200); // long enough for a held-back prompt to have fired
+  check("39e a first failure that the retry fixes really plays", playing, await playLabel(page));
+  check("39e ...and the reader is never interrupted about it",
+        dialogs.length === 0, JSON.stringify(dialogs));
   await page.close();
   await ctx.close();
 }
