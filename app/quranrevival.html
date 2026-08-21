@@ -465,12 +465,16 @@
   }
   #readPickers select { margin: 0; font-size: 0.78rem; padding: 0.2rem 0.25rem; min-width: 0; flex: 1 1 0; }
   #readPickers select[hidden] { display: none; }
-  /* Three digits never need a share of the line -- same rule as the Study
-     options bar's own .opt-cell-num. */
+  /* A number picker never needs a share of the line -- same rule as the Study
+     options bar's own .opt-cell-num. Round 27 widened it 3.1rem -> 3.9rem:
+     the owner reported a three-digit ayah reading as cut off, and it was --
+     "286" plus the dropdown arrow does not fit 50px. The width is affordable
+     now because a Range no longer carries a third number picker beside From
+     and To (see syncReadPickers). */
   #readPickers #readAyahSelect,
   #readPickers #readUnitNumSelect,
   #readPickers #readRangeFromSelect,
-  #readPickers #readRangeToSelect { flex: 0 0 3.1rem; }
+  #readPickers #readRangeToSelect { flex: 0 0 3.9rem; }
 /* Round 22 retired #readTransport: Play and Stop moved up into #readBar, and
      "Whole surah" went entirely once Play started following the chosen unit. */
   #readScroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
@@ -639,6 +643,13 @@
   .hifz-basmallah { justify-content: center; font-size: 16px; font-size: 4.5cqw; }
   .hifz-line-error { font-size: 13px; color: #a33; text-align: center; }
   .page-flow-ayah { border-bottom: 1px solid #eee; padding-bottom: 0.6rem; margin-bottom: 0.6rem; }
+  /* Round 27 -- the ayah that is sounding. A tinted band and a coloured edge
+     rather than a colour change on the words themselves: the Arabic already
+     carries Tajweed colouring, which must not be competed with. */
+  .page-flow-ayah.now-playing {
+    background: #fff8e1; border-left: 3px solid #c8a227;
+    padding-left: 0.5rem; margin-left: -0.5rem; border-radius: 3px;
+  }
 </style>
 </head>
 <body>
@@ -912,6 +923,10 @@
           <div class="reading-ticks">
             <label id="tajweedControl"><input type="checkbox" id="tajweedToggle" /> Tajweed colours</label>
             <label id="wbwShowControl"><input type="checkbox" id="wbwShowToggle" /> Word by Word</label>
+            <!-- Round 27: its own choice, not a passenger on Word by Word. The
+                 two used to be one panel, so asking for the words always got
+                 the grammar table too -- the owner's own report. -->
+            <label id="rootsControl"><input type="checkbox" id="rootsToggle" /> Roots &amp; derivatives</label>
             <label id="trEnControl"><input type="checkbox" id="trEnToggle" checked /> English translation</label>
             <label id="trBnControl"><input type="checkbox" id="trBnToggle" /> বাংলা translation</label>
             <!-- Mushaf is the one choice that cannot share the screen: it is a
@@ -1128,6 +1143,12 @@
       // A class toggle on already-rendered word spans instead.
       if (mushafToggle.checked) {
         setActiveAyah(`${surahNum}:${ayahNum}`);
+      } else if (markPlayingAyah(ayahNum)) {
+        // Round 27: the flow view (Range / Whole Surah) draws every ayah at
+        // once, so a full re-render changed nothing visible and the screen sat
+        // still while the recitation moved. Marking the ayah and scrolling it
+        // into view is both what the reader wants and far cheaper.
+        refreshTaglineStrip(); // an ayah-attached tagline still follows the ayah (round 20)
       } else {
         renderStudyScreen();
       }
@@ -1198,6 +1219,8 @@
     const trEnToggle = document.getElementById("trEnToggle");
     const trBnToggle = document.getElementById("trBnToggle");
     const wbwShowToggle = document.getElementById("wbwShowToggle");
+    const rootsToggle = document.getElementById("rootsToggle");
+    const rootsControl = document.getElementById("rootsControl");
     const wbwShowControl = document.getElementById("wbwShowControl");
     const unitNumControl = document.getElementById("unitNumControl");
     const unitNumLabel = document.getElementById("unitNumLabel");
@@ -3001,13 +3024,49 @@
       // ayah. Round 19 folded the old four-way "Page display" picker into the
       // ordinary Reading view ticks -- one set of choices, whatever the unit.
       const ayahs = currentSurahData.ayahs.filter((a) => a.ayah >= fromAyah && a.ayah <= toAyah);
+      // data-ayah is what lets the recitation mark its place (round 27). A
+      // Range or a Whole Surah draws every ayah at once, so nothing on screen
+      // moved as the audio advanced -- the owner's "the Ayah playing should
+      // display on the screen (now it remains static)".
       pageViewContainer.innerHTML = ayahs
-        .map((ayah) => `<div class="page-flow-ayah">${renderLayoutA(ayah, panels, {
+        .map((ayah) => `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${renderLayoutA(ayah, panels, {
           tajweedOn: tajweedToggle.checked,
           langs: translationLangs(),
           wbwLangs: wbwLangs(),
         })}</div>`)
         .join("");
+      markPlayingAyah(currentAyahNum, { scroll: false });
+    }
+
+    /**
+     * Shell round 27 -- mark the ayah that is sounding, in the flow view.
+     *
+     * Deliberately a class toggle and a scroll rather than a re-render: the
+     * flow can be a whole surah, and rebuilding all of it on every ayah the
+     * recitation reaches would re-run the renderer hundreds of times and fight
+     * the reader's own scrolling. Same reasoning as the Mushaf path's
+     * setActiveAyah(), which round 7 of Phase 5 introduced for exactly this.
+     *
+     * Returns false when the flow view is not the one on screen, which is the
+     * caller's signal to fall back to a full render (the single-ayah view
+     * really does have to redraw -- it shows one ayah at a time).
+     */
+    function markPlayingAyah(ayahNum, { scroll = true } = {}) {
+      if (getComputedStyle(pageViewContainer).display === "none") return false;
+      const rows = pageViewContainer.querySelectorAll(".page-flow-ayah");
+      if (!rows.length) return false;
+      let target = null;
+      for (const row of rows) {
+        const on = Number(row.dataset.ayah) === ayahNum;
+        row.classList.toggle("now-playing", on);
+        if (on) target = row;
+      }
+      // Only while the reading screen is actually showing: scrolling a hidden
+      // panel would silently move the reader's place for when they come back.
+      if (scroll && target && stageView === "read") {
+        target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+      return true;
     }
 
     function renderStudyScreen() {
@@ -3060,12 +3119,13 @@
       const approachPanels = trackable?.panels ?? [];
       const panels = ["text", ...approachPanels.filter((p) => p !== "text")];
       if (wbwShowToggle.checked && !panels.includes("wordByWord")) panels.push("wordByWord");
+      if (rootsToggle.checked && !panels.includes("rootDerivatives")) panels.push("rootDerivatives");
 
       // Mushaf is a photograph of a printed page: nothing else can share it.
       // The other reading choices are DISABLED rather than hidden, so the
       // reader can see what they would get back by turning Mushaf off.
-      [tajweedToggle, wbwShowToggle, trEnToggle, trBnToggle].forEach((el) => { el.disabled = isMushaf; });
-      [tajweedControl, wbwShowControl, trEnControl, trBnControl].forEach((el) => { el.style.opacity = isMushaf ? "0.45" : ""; });
+      [tajweedToggle, wbwShowToggle, rootsToggle, trEnToggle, trBnToggle].forEach((el) => { el.disabled = isMushaf; });
+      [tajweedControl, wbwShowControl, rootsControl, trEnControl, trBnControl].forEach((el) => { el.style.opacity = isMushaf ? "0.45" : ""; });
       mushafNote.hidden = !isMushaf;
       wbwLangControl.style.display = !isMushaf && panels.includes("wordByWord") ? "" : "none";
 
@@ -3121,6 +3181,14 @@
       readUnitNumSelect.hidden = !numbered;
       readRangeFromSelect.hidden = !isRange;
       readRangeToSelect.hidden = !isRange;
+      // Shell round 27 -- the standalone Ayah picker goes for a Range (and for
+      // Whole Surah), which is the owner's own correction of round 22's "keep
+      // all three": with From and To on screen, a third number picker beside
+      // them says nothing the pair does not already say, and it cost the two
+      // that matter their width. Study options has hidden it for exactly these
+      // two units since round 19 (ayahSelectControl / isPageUnit) -- this is
+      // the mirror finally agreeing with the control it mirrors.
+      readAyahSelect.hidden = isRange || currentUnitType === "surah";
       // An aria-label is an ATTRIBUTE, so translateStatic() -- which walks the
       // page's text nodes -- never sees it. These are named here instead, and
       // the number cell borrows the same per-unit wording Study options uses.
@@ -3365,6 +3433,7 @@
     trEnToggle.addEventListener("change", applyTranslationTicks);
     trBnToggle.addEventListener("change", applyTranslationTicks);
     wbwShowToggle.addEventListener("change", renderStudyScreen);
+    rootsToggle.addEventListener("change", renderStudyScreen);
     wbwLangSelect.addEventListener("change", () => {
       wbwLangMode = wbwLangSelect.value;
       renderStudyScreen();

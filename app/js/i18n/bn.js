@@ -469,6 +469,10 @@ export const BN = {
   "Couldn't find a Mushaf page for this selection.":
     "এই নির্বাচনের জন্য মুসহাফের পৃষ্ঠা পাওয়া যায়নি।",
   "No word-by-word data for this ayah.": "এই আয়াতের জন্য শব্দে-শব্দে তথ্য নেই।",
+  // Round 27 -- its own reading choice now, split out of Word by Word. The key
+  // is the DECODED text (&amp; -> &), because translateStatic() reads text
+  // nodes from the live DOM, not the HTML source (phase 3's own lesson).
+  "Roots & derivatives": "শব্দমূল ও গঠন", // ?
   "No morphology data for this ayah.": "এই আয়াতের জন্য শব্দগঠনের তথ্য নেই।",
   "Reflection": "চিন্তা-ভাবনা", // ?
   "Write it out here": "এখানে লিখুন",

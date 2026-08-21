@@ -257,6 +257,7 @@ let atEndOfRun = false; // shell round 26 -- see isPaused()
 let currentMediaUrl = null; // shell round 26 -- the ONE record of what the shared element was last pointed at; see setMediaSource()
 let nowPlaying = null; // { surahNum, ayahNum, reciterId } -- what a failure message names
 let lastFailure = { key: "", at: 0 }; // shell round 26 -- see reportFailure()
+let pendingFailure = null; // shell round 27 -- a failure held back long enough for a retry to make it moot
 
 /**
  * Phase 5 fix (owner round-2 click-through, 6 Aug 2026): "on a whole Surah
@@ -360,8 +361,56 @@ function reportFailure(reason, meta = {}) {
   const now = Date.now();
   if (message === lastFailure.key && now - lastFailure.at < 2000) return err;
   lastFailure = { key: message, at: now };
-  if (onPlaybackError) onPlaybackError(message, meta);
+  // Shell round 27 -- HELD for a moment rather than shown at once. Every load
+  // here is retried once (see loadRetry below), and a hiccup that the retry
+  // fixes should never have interrupted the reader with a prompt at all: if
+  // sound starts within this window, cancelPendingFailure() throws the message
+  // away. A failure that really is a failure is announced a beat later, which
+  // costs nothing.
+  clearTimeout(pendingFailure?.timer);
+  pendingFailure = {
+    url: currentMediaUrl,
+    timer: setTimeout(() => {
+      pendingFailure = null;
+      if (onPlaybackError) onPlaybackError(message, meta);
+    }, 700),
+  };
   return err;
+}
+
+/**
+ * THE FILE THAT FAILED is really playing now, so whatever went wrong fixed
+ * itself and the reader never needs to hear about it.
+ *
+ * Comparing the url is what makes this correct rather than merely convenient
+ * (caught by a test): with two reciters, the next thing to start playing after
+ * a Bangla file fails is the ARABIC one -- and cancelling on any playback at
+ * all would swallow the explanation for why Bangla went quiet.
+ */
+function cancelPendingFailure() {
+  if (!pendingFailure || pendingFailure.url !== currentMediaUrl) return;
+  clearTimeout(pendingFailure.timer);
+  pendingFailure = null;
+  lastFailure = { key: "", at: 0 }; // it was never shown, so it must not suppress a later repeat
+}
+
+/**
+ * Shell round 27 -- ONE silent retry on a load that fails.
+ *
+ * The owner's case: a Range playing Arabic and Bangla, paused, then played
+ * again -- and the Bangla file, which had been playing perfectly a moment
+ * earlier, came back "not available" and stopped everything. A file that
+ * worked and then did not is a transient failure (a dropped connection, a
+ * range request archive.org refused on the way back, a mobile browser
+ * releasing a paused media resource), and the honest answer to a transient
+ * failure is to ask again before telling anyone.
+ *
+ * Forgetting currentMediaUrl is the point: it is what makes the element
+ * genuinely reload rather than decide it already has the file.
+ */
+function loadRetry(el, url) {
+  currentMediaUrl = null;
+  setMediaSource(el, url);
 }
 
 /**
@@ -371,6 +420,20 @@ function reportFailure(reason, meta = {}) {
  * throws when a new load interrupts one already in flight, which is normal
  * every time playback moves to the next ayah.
  */
+/**
+ * Point the element at a file and play it, asking a second time if the first
+ * attempt fails to load (round 27 -- see loadRetry). Every direct-reciter path
+ * goes through here, so "one retry" is one rule rather than four copies.
+ */
+function playUrl(el, url) {
+  setMediaSource(el, url);
+  return startPlayback(el).catch((err) => {
+    if (err?.name === "AbortError" || !err?.mediaFailure) throw err;
+    loadRetry(el, url);
+    return startPlayback(el);
+  });
+}
+
 function startPlayback(el) {
   atEndOfRun = false;
   const p = el.play();
@@ -423,6 +486,9 @@ function ensureAudioEl() {
     for (const ev of ["play", "playing", "pause", "ended", "emptied", "error", "abort"]) {
       audioEl.addEventListener(ev, () => { if (onPlaybackState) onPlaybackState(); });
     }
+    // Round 27: sound really started, so any failure being held back (see
+    // reportFailure) was a hiccup the retry fixed -- throw it away unshown.
+    audioEl.addEventListener("playing", cancelPendingFailure);
     audioEl.addEventListener("error", () => {
       // The silent unlock clip is not a recitation and its troubles are not the
       // reader's business -- and it must never tear down a run that is starting.
@@ -484,8 +550,7 @@ export function playAyah(surahNum, ayahNum, reciterId) {
   clearBoundaryListener();
   const el = ensureAudioEl();
   nowPlaying = { surahNum, ayahNum, reciterId };
-  setMediaSource(el, reciter.perAyahUrl(surahNum, ayahNum));
-  return startPlayback(el);
+  return playUrl(el, reciter.perAyahUrl(surahNum, ayahNum));
 }
 
 function playCurrentRangeAyah() {
@@ -497,8 +562,7 @@ function playCurrentRangeAyah() {
   clearBoundaryListener();
   const el = ensureAudioEl();
   nowPlaying = { surahNum, ayahNum, reciterId };
-  setMediaSource(el, reciter.perAyahUrl(surahNum, ayahNum));
-  return startPlayback(el);
+  return playUrl(el, reciter.perAyahUrl(surahNum, ayahNum));
 }
 
 function advanceRange() {
@@ -549,8 +613,7 @@ export function playSurah(surahNum, reciterId, ayahCount) {
     clearBoundaryListener();
     const el = ensureAudioEl();
     nowPlaying = { surahNum, ayahNum: null, reciterId };
-    setMediaSource(el, reciter.surahUrl(surahNum));
-    return startPlayback(el);
+    return playUrl(el, reciter.surahUrl(surahNum));
   }
   if (!ayahCount) throw new Error("playSurah: no whole-surah file for this reciter, and no ayahCount given to play it ayah by ayah.");
   return playAyahRange(surahNum, 1, ayahCount, reciterId);
@@ -645,12 +708,20 @@ function seekTo(el, url, seconds) {
       //      successful load fired it and seeked to the PREVIOUS ayah's
       //      position -- audibly, Bangla starting in the wrong place.
       //      Both listeners are removed together now, whichever fires.
+      let tried = 0;
       const cleanup = () => {
         el.removeEventListener("loadedmetadata", onMeta);
         el.removeEventListener("error", onErr);
       };
       const onMeta = () => { cleanup(); el.currentTime = seconds; resolve(); };
-      const onErr = () => { cleanup(); reject(reportFailure(describeMediaError(el.error?.code), { code: el.error?.code })); };
+      const onErr = () => {
+        // Round 27 -- ask once more before giving up. A surah file that was
+        // playing a moment ago and now will not load is the owner's own
+        // pause-then-replay case, and it is usually transient.
+        if (tried++ === 0) { loadRetry(el, url); return; }
+        cleanup();
+        reject(reportFailure(describeMediaError(el.error?.code), { code: el.error?.code }));
+      };
       el.addEventListener("loadedmetadata", onMeta);
       el.addEventListener("error", onErr);
       setMediaSource(el, url); // setting src triggers the load that will fire one of the two above
@@ -881,8 +952,7 @@ export function playOneAndWait(surahNum, ayahNum, reciterId, { signal } = {}) {
 
     if (!reciter.perAyahUrl) { finish(reject, new Error(`"${reciterId}" has no per-ayah audio configured.`)); return; }
     el.addEventListener("ended", onEnded);
-    setMediaSource(el, reciter.perAyahUrl(surahNum, ayahNum));
-    startPlayback(el).catch((err) => finish(reject, err));
+    playUrl(el, reciter.perAyahUrl(surahNum, ayahNum)).catch((err) => finish(reject, err));
   });
 }
 
@@ -909,6 +979,28 @@ export async function playDrill({ surahNum, fromAyah, toAyah, reciterIds, repeat
     return;
   }
 
+  // Shell round 27 -- one reciter's trouble no longer ends everybody's run.
+  //
+  // The owner's report: a Range playing Arabic and Bangla, and when one Bangla
+  // file would not load the whole thing "came to a total stop". A recitation
+  // that stops dead because ONE of two reciters has a missing file is worse
+  // than one that carries on with the other and says so once. So a reciter
+  // that fails is set aside for the rest of this run; the run only ends when
+  // there is nobody left who can play.
+  const failed = new Set();
+  let lastError = null;
+  const step = async (surah, ayahNum, reciterId) => {
+    if (failed.has(reciterId)) return;
+    try {
+      await playOneAndWait(surah, ayahNum, reciterId, { signal });
+    } catch (err) {
+      if (err?.name === "AbortError") throw err;
+      failed.add(reciterId);
+      lastError = err;
+      if (failed.size >= reciterIds.length) throw err; // nobody left to carry the run
+    }
+  };
+
   try {
     // Shell round 26 -- Loop applies here too. This is now the ONE sequencer
     // behind both Play buttons (Study options' and the reading screen's), so a
@@ -920,7 +1012,7 @@ export async function playDrill({ surahNum, fromAyah, toAyah, reciterIds, repeat
         for (const ayahNum of ayahs) {
           for (let round = 0; round < repeatCount; round++) {
             for (const reciterId of reciterIds) {
-              await playOneAndWait(surahNum, ayahNum, reciterId, { signal });
+              await step(surahNum, ayahNum, reciterId);
             }
           }
         }
@@ -928,11 +1020,14 @@ export async function playDrill({ surahNum, fromAyah, toAyah, reciterIds, repeat
         for (let round = 0; round < repeatCount; round++) {
           for (const reciterId of reciterIds) {
             for (const ayahNum of ayahs) {
-              await playOneAndWait(surahNum, ayahNum, reciterId, { signal });
+              await step(surahNum, ayahNum, reciterId);
             }
           }
         }
       }
+      // Every reciter dropped out along the way: looping would only replay the
+      // same silence, so the run ends with the failure that caused it.
+      if (failed.size >= reciterIds.length && lastError) throw lastError;
     } while (loopEnabled && !signal.aborted);
     atEndOfRun = true; // finished, not paused: the next Play starts the unit again
   } finally {
