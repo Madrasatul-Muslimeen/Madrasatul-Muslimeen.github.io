@@ -84,6 +84,9 @@ export function getMushafPagesForKeys(ayahKeys) {
 
 const fontPromises = new Map();
 let headerFontPromise = null;
+// One observer per rendered page, disconnected when the pages are replaced --
+// otherwise every re-render would leave its own watcher running for ever.
+let pageObservers = [];
 
 function ensurePageFont(pageNum) {
   if (fontPromises.has(pageNum)) return fontPromises.get(pageNum);
@@ -144,13 +147,46 @@ function justifyPageLines(pageEl) {
   if (!targetWidth) return;
   pageEl.querySelectorAll(".hifz-line:not(.centered)").forEach((lineEl) => {
     lineEl.style.transform = "";
-    const natural = lineEl.offsetWidth;
+    // Round 28 -- the line's own INTRINSIC width, not the width its box was
+    // allowed to be. `.hifz-line` carries `max-width: 100%`, so offsetWidth
+    // alone can never exceed the target: a line whose glyphs are genuinely
+    // too wide measured as exactly right, scaled by 1.0, and went on
+    // overflowing its page by a few pixels with nothing able to notice.
+    const natural = Math.max(lineEl.offsetWidth, lineEl.scrollWidth);
     if (!natural) return;
     let scale = targetWidth / natural;
     scale = Math.max(0.8, Math.min(1.5, scale));
     lineEl.style.transformOrigin = "right center";
     lineEl.style.transform = `scaleX(${scale.toFixed(4)})`;
   });
+}
+
+/**
+ * Round 28 -- re-justify when the page's width becomes known or changes.
+ *
+ * justifyPageLines() needs a laid-out element: `pageEl.clientWidth` is 0 while
+ * the page is inside a hidden container, and it gives up rather than dividing
+ * by nothing. That is exactly what happens in this app -- Mushaf is ticked in
+ * the Study options panel, which sits over a stage that may still be showing
+ * the wheel -- so the page was rendered, never justified, and then revealed:
+ * lines at their natural width instead of spanning the page. Nothing re-ran
+ * it, because nothing was watching. A ResizeObserver is, and it earns its keep
+ * twice: it also fixes rotating the phone, which had the same silent problem.
+ *
+ * No feedback loop: justification only sets transforms on the LINES, and a
+ * transform changes no layout, so observing the page cannot re-trigger itself.
+ */
+function watchPageWidth(pageEl) {
+  if (typeof ResizeObserver !== "function") return;
+  let lastWidth = 0;
+  const ro = new ResizeObserver(() => {
+    const w = pageEl.clientWidth;
+    if (!w || w === lastWidth) return;
+    lastWidth = w;
+    justifyPageLines(pageEl);
+  });
+  ro.observe(pageEl);
+  pageObservers.push(ro);
 }
 
 // Live registry of rendered word spans, keyed by "surah:ayah", so
@@ -221,7 +257,10 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName) {
   container.appendChild(pageEl);
   // Only justify once the real glyph font is confirmed loaded -- measuring
   // against a fallback font's metrics would produce the wrong scale.
-  if (fontReady) justifyPageLines(pageEl);
+  if (fontReady) {
+    justifyPageLines(pageEl);
+    watchPageWidth(pageEl); // ...and again whenever the page's width becomes known or changes
+  }
 }
 
 /**
@@ -234,6 +273,8 @@ async function renderPage(pageNum, highlightSet, container, surahArabicName) {
  */
 export async function renderMushafPages(container, pages, highlightSet, surahArabicName) {
   container.innerHTML = "";
+  pageObservers.forEach((ro) => ro.disconnect());
+  pageObservers = [];
   wordRegistry = new Map();
   activeAyahKey = null;
   if (!pages.length) {
@@ -250,7 +291,18 @@ export function setActiveAyah(ayahKey) {
     wordRegistry.get(activeAyahKey).forEach((span) => span.classList.remove("playing"));
   }
   activeAyahKey = ayahKey;
-  if (ayahKey && wordRegistry.has(ayahKey)) {
-    wordRegistry.get(ayahKey).forEach((span) => span.classList.add("playing"));
+  if (!ayahKey || !wordRegistry.has(ayahKey)) return;
+  const spans = wordRegistry.get(ayahKey);
+  spans.forEach((span) => span.classList.add("playing"));
+  // Round 28 -- and BRING IT INTO VIEW. A Mushaf page is taller than a phone,
+  // so marking the ayah was only half an answer: the owner asked for the
+  // display to follow the recitation. `block: "nearest"` scrolls only when the
+  // ayah has actually gone off screen, so a reader whose ayah is already
+  // visible is never jolted. offsetParent is the cheap "is this on screen at
+  // all" test -- scrolling a hidden panel would silently move the reader's
+  // place for when they come back to it.
+  const first = spans[0];
+  if (first && first.offsetParent !== null) {
+    first.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
   }
 }

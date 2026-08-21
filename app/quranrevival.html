@@ -478,6 +478,45 @@
 /* Round 22 retired #readTransport: Play and Stop moved up into #readBar, and
      "Whole surah" went entirely once Play started following the chosen unit. */
   #readScroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  /* ---------------------------------------------------------------------
+     Shell round 28 -- THE READING MOVES SIDEWAYS, page by page.
+     The owner's instruction, and their own answer when asked what should
+     move: the whole reading, not only the Mushaf. So a Mushaf page, an ayah
+     of a Range, or an ayah of a whole surah each become a page you move
+     ACROSS, left to right, instead of a strip you scroll down.
+
+     The horizontal scroller is the STRIP (#pageViewContainer), never
+     #readScroll itself -- round 17 put a check on that element scrolling
+     sideways (a full-bleed card overflowing it was a real defect), and that
+     check is worth keeping honest. #pageViewContainer's display is set
+     inline by renderStudyScreen() as "" or "none", and "" falls back to
+     whatever this stylesheet says: which is why the rule below can turn it
+     into a flex row without ever fighting the code that hides it.
+     --------------------------------------------------------------------- */
+  body.read-sideways #readScroll { overflow: hidden; }
+  body.read-sideways #studyScreen { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+  body.read-sideways #ayahPanels { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  body.read-sideways #pageViewContainer {
+    display: flex; flex-direction: row; flex: 1 1 auto; min-height: 0;
+    overflow-x: auto; overflow-y: hidden;
+    scroll-snap-type: x mandatory; scroll-behavior: smooth;
+    gap: 0;
+  }
+  /* Each page is exactly one screen wide and scrolls DOWN inside itself when
+     its own content is taller -- a long ayah with both translations still
+     reads, it simply does not push the next page off the strip. */
+  body.read-sideways #pageViewContainer > * {
+    flex: 0 0 100%; width: 100%; box-sizing: border-box;
+    height: 100%; overflow-y: auto; scroll-snap-align: start;
+  }
+  /* The flow's ayah separator is a bottom rule when pages are stacked; side
+     by side it belongs on the trailing edge instead. */
+  body.read-sideways .page-flow-ayah {
+    border-bottom: none; border-right: 1px solid #eee;
+    margin: 0; padding: 0.2rem 0.5rem 0.6rem;
+  }
+  body.read-sideways .page-flow-ayah.now-playing { margin-left: 0; padding-left: 0.5rem; }
+  body.read-sideways .hifz-page { margin-bottom: 0; }
   /* The Reading view ticks: one line each on a phone, wrapping as needed --
      four short labels, no grid needed. */
   /* Reciter names are people's names and are never translated, so they get
@@ -630,14 +669,24 @@
 
   /* ---------- Mushaf page view (Phase 5 round 7) — Whole Surah / Range ---------- */
   #pageViewContainer { margin-top: 0.6rem; }
-  .hifz-page { background: #fbf6e9; color: #1b1b16; border-radius: 10px; padding: 18px 16px; width: 100%; max-width: 560px; margin: 0 auto 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); container-type: inline-size; }
+  /* box-sizing is the whole of round 28's item 1, and it was measured, not
+     guessed: `width: 100%` plus `padding: 18px 16px` with the page's default
+     content-box sizing makes this element 32px WIDER than the column it sits
+     in -- so the left kept its gutter and the right ran 24px off the screen.
+     The owner's "the right side is cut off ... it should be like the left". */
+  .hifz-page { background: #fbf6e9; color: #1b1b16; border-radius: 10px; padding: 18px 16px; width: 100%; max-width: 560px; margin: 0 auto 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); container-type: inline-size; box-sizing: border-box; }
   .hifz-page-num { font-size: 11px; color: #8a7c55; text-align: center; margin-bottom: 10px; letter-spacing: 0.05em; }
   .hifz-line { display: flex; flex-wrap: nowrap; direction: rtl; gap: 0.12em; padding: 0.15em 0; font-size: 34px; font-size: 6.07cqw; line-height: 2.05; }
   .hifz-line.centered { justify-content: center; }
   .hifz-line:not(.centered) { width: fit-content; max-width: 100%; margin-left: auto; margin-right: 0; }
   .hifz-word { white-space: nowrap; }
   .hifz-word.dim { opacity: 0.32; }
-  .hifz-word.playing { color: #1F3A6E; text-shadow: 0 0 1px rgba(31,58,110,0.4); }
+  /* Round 28 -- a real background band on the ayah being recited, the owner's
+     ask. box-shadow rather than padding on purpose: each word is a flex item,
+     so padding would change the line's width and fight the justification that
+     spans it. The 0.06em spread bridges the 0.12em word gap so the ayah reads
+     as one continuous band rather than a row of separate tiles. */
+  .hifz-word.playing { color: #1F3A6E; background: #ffe9a8; box-shadow: 0 0 0 0.06em #ffe9a8; border-radius: 2px; }
   .hifz-surah-header { justify-content: center; background: rgba(201,162,75,0.14); border: 1px solid rgba(201,162,75,0.4); border-radius: 6px; font-size: 16px; font-size: 4.5cqw; font-family: system-ui, sans-serif; color: #7a5f1e; padding: 0.3em 0.6em; }
   .hifz-surah-header.glyph-loaded { background: none; border: none; padding: 0.2em 0; font-size: 20px; font-size: 6cqw; }
   .hifz-basmallah { justify-content: center; font-size: 16px; font-size: 4.5cqw; }
@@ -927,6 +976,10 @@
                  two used to be one panel, so asking for the words always got
                  the grammar table too -- the owner's own report. -->
             <label id="rootsControl"><input type="checkbox" id="rootsToggle" /> Roots &amp; derivatives</label>
+            <!-- Round 28: the owner's own "let the page move from left to
+                 right". On by default, because that is what they asked; the
+                 tick is the way back for anyone who prefers scrolling. -->
+            <label id="sidewaysControl"><input type="checkbox" id="sidewaysToggle" checked /> Page by page</label>
             <label id="trEnControl"><input type="checkbox" id="trEnToggle" checked /> English translation</label>
             <label id="trBnControl"><input type="checkbox" id="trBnToggle" /> বাংলা translation</label>
             <!-- Mushaf is the one choice that cannot share the screen: it is a
@@ -1083,6 +1136,7 @@
       getAppLang, getQuranTranslationLangs, setQuranTranslationLangs,
       getFullScreenHides, setFullScreenHides, FULLSCREEN_HIDEABLE,
       getQuranFont, setQuranFont, quranFontStack,
+      getSidewaysReading, setSidewaysReading,
     } from "./js/prefs.js";
     import {
       taglinesFrom, taglineSettingsFrom, taglineText, pickTagline,
@@ -1221,6 +1275,7 @@
     const wbwShowToggle = document.getElementById("wbwShowToggle");
     const rootsToggle = document.getElementById("rootsToggle");
     const rootsControl = document.getElementById("rootsControl");
+    const sidewaysToggle = document.getElementById("sidewaysToggle");
     const wbwShowControl = document.getElementById("wbwShowControl");
     const unitNumControl = document.getElementById("unitNumControl");
     const unitNumLabel = document.getElementById("unitNumLabel");
@@ -3063,8 +3118,11 @@
       }
       // Only while the reading screen is actually showing: scrolling a hidden
       // panel would silently move the reader's place for when they come back.
+      // `inline` matters as much as `block` since round 28: with the reading
+      // paged sideways the ayah being recited is in a different COLUMN, not
+      // further down, so following it means moving the strip across.
       if (scroll && target && stageView === "read") {
-        target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        target.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
       }
       return true;
     }
@@ -3434,6 +3492,21 @@
     trBnToggle.addEventListener("change", applyTranslationTicks);
     wbwShowToggle.addEventListener("change", renderStudyScreen);
     rootsToggle.addEventListener("change", renderStudyScreen);
+
+    // Shell round 28 -- sideways paging is one body class, so turning it on or
+    // off is a paint rather than a rebuild. renderStudyScreen() still runs
+    // afterwards because the flow's own separators and the page-start scroll
+    // position both depend on which way it reads.
+    function applySidewaysReading() {
+      document.body.classList.toggle("read-sideways", getSidewaysReading());
+    }
+    sidewaysToggle.checked = getSidewaysReading();
+    applySidewaysReading();
+    sidewaysToggle.addEventListener("change", () => {
+      setSidewaysReading(sidewaysToggle.checked);
+      applySidewaysReading();
+      renderStudyScreen();
+    });
     wbwLangSelect.addEventListener("change", () => {
       wbwLangMode = wbwLangSelect.value;
       renderStudyScreen();

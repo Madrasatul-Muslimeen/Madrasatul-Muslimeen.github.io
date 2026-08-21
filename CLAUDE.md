@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.54.** Cutover to production happened
+**Current milestone: QuranRevival v07.55.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -2637,6 +2637,98 @@ in both languages**, **`panel.mjs` no wrapped bar and no truncated label**,
 "Operation"/"Bookmark"), **coverage 1,240/1,240 (100%)**, **perf unchanged at 6
 sequential round trips**, **`new-tenant.mjs` 10/10**. No `firestore.rules`,
 schema or Firestore data changes.
+
+v07.55 (21 Aug 2026, on Claude Code on the web) is **shell round 28 — the
+Mushaf page, and the reading moves sideways.** Three owner asks. The first two
+were reported as one visual complaint and turned out to be **two separate
+defects, both pre-existing since Phase 5 and both invisible to every existing
+tool** — nothing in this project had ever rendered a Mushaf page in a test,
+which is exactly how they survived.
+
+**(1) The page was 32px wider than the phone it was drawn on.** The owner's
+words: *"The Mushaf view screen on the right side is cut off ... it should be
+like the left side."* Measured, and exactly right: `.hifz-page` carries
+`width: 100%` AND `padding: 18px 16px`, and this page has no global
+`box-sizing: border-box` — so on a 390px screen the page ran from x=8 to
+x=414, keeping its 8px gutter on the left and hanging **24px off the right**.
+One declaration fixes it; the measurement is what found it. Now 8px each side
+at every phone size, with nothing scrolling sideways.
+
+**A second, deeper defect the same measurement exposed: the lines were never
+justified at all.** `justifyPageLines()` gives up when `pageEl.clientWidth` is
+0, which is the case for an element inside a hidden container — and that is
+precisely how Mushaf is turned on in this app: the tick lives in the Study
+options panel, which sits over a stage that may still be showing the wheel. So
+the page was rendered, silently skipped, and then revealed with its lines at
+their natural width instead of spanning the page. Nothing re-ran it, because
+nothing was watching. **A `ResizeObserver` is now**, and it earns its keep
+twice: rotating the phone had the same silent problem. Also fixed in the same
+function: `natural` was read from `offsetWidth`, which `.hifz-line`'s own
+`max-width: 100%` **clamps** — so a line whose glyphs were genuinely too wide
+measured as exactly right, scaled by 1.0, and went on overflowing by a few
+pixels with nothing able to notice. It reads the intrinsic width now.
+
+**(2) The recited ayah is marked and followed on the Mushaf page.**
+`setActiveAyah()` already coloured the words; it had no background and never
+scrolled, so on a page taller than a phone the reader had to find it. It now
+carries a real band and calls `scrollIntoView({ block: "nearest", inline:
+"nearest" })`. The band is painted with `box-shadow`, not `padding`, on
+purpose: each word is a flex item, so padding would change the line's width
+and fight the justification that spans it — and the 0.06em spread bridges the
+word gap so an ayah reads as one continuous band rather than a row of tiles.
+
+**(3) "Let the page move from left to right" — the whole reading is paged
+sideways now.** This was genuinely ambiguous (page-turn direction? one view or
+all of them?), so it was **put to the owner with the readings spelled out, and
+they chose the widest: every reading view moves sideways, not only Mushaf.**
+So a Mushaf page, an ayah of a Range, or an ayah of a whole surah each become
+a page you move ACROSS, left to right, instead of a strip you scroll down;
+each is exactly one screen wide and scrolls DOWN inside itself when its own
+content is taller, so a long ayah with both translations still reads.
+**The horizontal scroller is the STRIP (`#pageViewContainer`), never
+`#readScroll` itself** — round 17 put a check on that element scrolling
+sideways, because a full-bleed card overflowing it was a real defect, and that
+check is worth keeping honest. One detail that made the CSS clean rather than
+a fight: `renderStudyScreen()` sets that container's `display` inline to `""`
+or `"none"`, and `""` falls back to the stylesheet — so the sideways rule can
+turn it into a flex row without ever contradicting the code that hides it.
+**On by default, because that is what was asked**, with a "Page by page" tick
+in Reading view as the way back (localStorage, the same additive shape rounds
+18/21/23 used — **no new startup read, no collection, no `firestore.rules`
+change**, and perf re-measured to prove it). It also makes round 27's
+follow-the-recitation work harder for its living: the ayah being recited is now
+in a different COLUMN, so following it carries the strip across.
+
+**`.reading-ticks` is seven choices now, not five** — that class is a name with
+meaning and three checks read it as a count; this is the fourth round in a row
+where something moving near it needed care. One of them needed a real decision
+rather than a number change: **Mushaf greys the choices it REPLACES** (Tajweed,
+the words, the derivatives, the translations) **but not "Page by page"**, because
+how you move between pages still applies to a Mushaf page — visibly so, since
+its pages sit side by side too.
+
+**Verified: 763 behaviour checks pass, 0 failed** (was 740 — 23 new in sections
+40 and 41: the page proven to fit its screen with equal gutters and nothing
+scrolling sideways; every line proven justified **even though the page was
+drawn while hidden**, and none spilling past either edge; the recited ayah
+proven marked with a real background and proven to move on with the
+recitation; the strip proven to page sideways with one screen-wide page per
+ayah, running left to right in reading order; the tick proven to give the
+scrolling reading back and to survive a reload; the recitation proven to carry
+the strip across; and the Mushaf's own pages proven side by side rather than
+stacked). Four older checks were **updated rather than deleted**, each because
+this round changed what they asserted. **This suite renders a real Mushaf page
+for the first time** — `tools/i18n-verify/fixtures/` holds two real pages (9KB
+of the 2.8MB layout file) and deliberately no glyph font: the suite serves one
+of the app's OWN bundled Arabic faces in its place, a real loadable woff2, so
+`FontFace.load()` resolves and justification runs for real rather than being
+skipped. See that folder's README before "fixing" it with a 122KB binary.
+**`layout.mjs` NO LAYOUT REGRESSIONS** at all eight viewports in both banner
+states (`getElementById` targets 88 → 89, exactly the new tick, none missing),
+**`reading.mjs` OK in both languages**, **`panel.mjs` no wrapped bar and no
+truncated label**, **navcheck unchanged**, **coverage 1,241/1,241 (100%)**,
+**perf unchanged at 6 sequential round trips**, **`new-tenant.mjs` 10/10**. No
+`firestore.rules`, schema or Firestore data changes.
 
 ---
 

@@ -1,4 +1,5 @@
 // Full app translation, phase 1 (the shell) — behaviour suite.
+import fs from "fs";
 import { chromium, newContext, openPage } from "./harness.mjs";
 
 // Chromium: use whatever this machine has. CHROMIUM_PATH overrides;
@@ -1667,9 +1668,9 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
         !/[0-9]/.test(bn.firstOption || "") && bn.optionValue === "1", JSON.stringify(bn));
   check("30l ...and what it covers reads in Bangla with Bengali digits",
         BANGLA.test(bn.span) && !/[0-9]/.test(bn.span), bn.span);
-  // Round 27 made it six: "Roots & derivatives" is its own reading choice now,
-  // split out of Word by Word (they used to render as one panel).
-  check("30l every Reading view tick is Bangla", bn.ticks.length === 6 && bn.ticks.every((x) => BANGLA.test(x)), JSON.stringify(bn.ticks));
+  // Round 27 made it six ("Roots & derivatives", split out of Word by Word);
+  // round 28 made it seven ("Page by page", the sideways reading).
+  check("30l every Reading view tick is Bangla", bn.ticks.length === 7 && bn.ticks.every((x) => BANGLA.test(x)), JSON.stringify(bn.ticks));
   await page.click("#tabReadBtn");
   await page.waitForTimeout(500);
   // Round 22: icons carry no words, so what must be in Bangla is their name.
@@ -1729,7 +1730,7 @@ console.log("\n=== 31. Shell round 19: no Approach blocks anything ===");
     check("31b an Approach with no audio panel still offers every reciter",
           live.reciters > 0 && !live.recitersDisabled, JSON.stringify(live));
     check("31b ...still offers Loop and Play", live.loop && live.play, JSON.stringify(live));
-    check("31b ...and every reading choice stays live", live.ticks === 6, String(live.ticks)); // six since round 27
+    check("31b ...and every reading choice stays live", live.ticks === 7, String(live.ticks)); // seven since round 28
     check("31b the Qur'an text is on screen whatever the Approach declares", live.arabic > 0, String(live.arabic));
   }
 
@@ -1739,7 +1740,13 @@ console.log("\n=== 31. Shell round 19: no Approach blocks anything ===");
   await page.check("#mushafToggle");
   await page.waitForTimeout(1500);
   const mushaf = await page.evaluate(() => ({
-    othersDisabled: [...document.querySelectorAll(".reading-ticks input")].filter((i) => i.id !== "mushafToggle").every((i) => i.disabled),
+    // Round 28: "Page by page" is excluded alongside Mushaf itself, and for a
+    // reason rather than for convenience -- Mushaf greys the choices it
+    // REPLACES (Tajweed, the words, the derivatives, the translations), while
+    // how you MOVE between pages still applies to a Mushaf page, and visibly
+    // so: its pages sit side by side too (41e).
+    othersDisabled: [...document.querySelectorAll(".reading-ticks input")]
+      .filter((i) => i.id !== "mushafToggle" && i.id !== "sidewaysToggle").every((i) => i.disabled),
     stillVisible: [...document.querySelectorAll(".reading-ticks label")].every((l) => l.offsetParent !== null),
     noteShown: !document.getElementById("mushafNote").hidden,
     pageShown: getComputedStyle(document.getElementById("pageViewContainer")).display !== "none",
@@ -3400,6 +3407,277 @@ console.log("\n=== 39. Shell round 27: the four fixes ===");
   check("39e a first failure that the retry fixes really plays", playing, await playLabel(page));
   check("39e ...and the reader is never interrupted about it",
         dialogs.length === 0, JSON.stringify(dialogs));
+  await page.close();
+  await ctx.close();
+}
+
+// ---------------------------------------------------------------------------
+// 40. Shell round 28: the Mushaf page.
+//
+// Nothing in this suite had ever rendered a Mushaf page -- which is how a page
+// 32px wider than the phone it was drawn on survived since Phase 5. See
+// fixtures/README.md for why two real pages are checked in and the 122KB glyph
+// font is not.
+// ---------------------------------------------------------------------------
+const MUSHAF_PAGES = fs.readFileSync(new URL("./fixtures/mushaf-pages.json", import.meta.url));
+const STAND_IN_FONT = fs.readFileSync(new URL("../../app/fonts/notonaskh.woff2", import.meta.url));
+
+async function mushafCtx(opts = {}) {
+  const ctx = await ctxFor(opts);
+  await ctx.route("**/mushaf-madani-v2.json", (r) =>
+    r.fulfill({ status: 200, contentType: "application/json", body: MUSHAF_PAGES }));
+  // A real, loadable woff2 in place of the page's own glyph font: without one
+  // that resolves, hifz-renderer.js skips justification entirely and these
+  // checks would measure nothing. See fixtures/README.md.
+  for (const pattern of ["**/mushaf/fonts/p*.woff2", "**/QCF_SurahHeader_COLOR-Regular.woff2"]) {
+    await ctx.route(pattern, (r) => r.fulfill({ status: 200, contentType: "font/woff2", body: STAND_IN_FONT }));
+  }
+  return ctx;
+}
+
+/** Surah 3 is the one the checked-in fixture pages cover. `unit` is chosen
+    BEFORE Mushaf is ticked on purpose: opening a Mushaf page goes straight to
+    full screen (round 18's rule -- a page is a page), which hides the dock, so
+    there is no Study options tab to reach afterwards. */
+async function openMushaf(page, unit = null) {
+  await openStudyOptions(page);
+  await page.selectOption("#surahSelect", "3");
+  await page.waitForTimeout(1200);
+  if (unit) { await page.selectOption("#unitTypeSelect", unit); await page.waitForTimeout(600); }
+  await page.check("#mushafToggle");
+  await page.waitForTimeout(2500);
+  await page.click("#tabStudyOptionsBtn");
+  await page.waitForTimeout(200);
+  await openRead(page);
+  await page.waitForTimeout(1500);
+  // One tap on the reading walks the full-screen cycle back to normal, which
+  // is what puts the reading screen's own controls back within reach.
+  await page.evaluate(() => {
+    if (document.body.classList.contains("immersive-read")) {
+      document.getElementById("studyScreen").click();
+    }
+  });
+  await page.waitForTimeout(400);
+}
+
+console.log("\n=== 40. Shell round 28: the Mushaf page ===");
+{
+  const ctx = await mushafCtx({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+  await openMushaf(page);
+
+  const fit = await page.evaluate(() => {
+    const el = document.querySelector(".hifz-page");
+    if (!el) return { none: true };
+    const r = el.getBoundingClientRect();
+    const sc = document.getElementById("readScroll");
+    return {
+      left: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width),
+      viewport: innerWidth,
+      gutterLeft: Math.round(r.left),
+      gutterRight: Math.round(innerWidth - r.right),
+      sideways: sc.scrollWidth > sc.clientWidth + 1 || document.documentElement.scrollWidth > innerWidth + 1,
+    };
+  });
+  check("40a the Mushaf page really renders", !fit.none, JSON.stringify(fit));
+  check("40a it fits the screen — nothing hanging off the right",
+        fit.right <= fit.viewport, `right ${fit.right} of ${fit.viewport}`);
+  check("40a ...with the same gutter on both sides, which is what the owner asked for",
+        Math.abs(fit.gutterLeft - fit.gutterRight) <= 1, JSON.stringify(fit));
+  check("40a ...and nothing scrolls sideways", !fit.sideways, JSON.stringify(fit));
+
+  // The page is rendered while the Study options panel is over a stage that is
+  // still showing the wheel, so its width is 0 at render time and
+  // justifyPageLines() gives up. Nothing used to re-run it once the reading
+  // screen appeared: the lines stayed at their natural width instead of
+  // spanning the page.
+  const just = await page.evaluate(() => {
+    const el = document.querySelector(".hifz-page");
+    const cs = getComputedStyle(el);
+    const target = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const lines = [...el.querySelectorAll(".hifz-line:not(.centered)")];
+    const rects = lines.map((l) => l.getBoundingClientRect());
+    const contentRight = el.getBoundingClientRect().right - parseFloat(cs.paddingRight);
+    const contentLeft = el.getBoundingClientRect().left + parseFloat(cs.paddingLeft);
+    return {
+      count: lines.length,
+      transformed: lines.filter((l) => /scaleX/.test(l.style.transform)).length,
+      target: Math.round(target),
+      pastRight: rects.filter((r) => r.right > contentRight + 1).length,
+      pastLeft: rects.filter((r) => r.left < contentLeft - 1).length,
+    };
+  });
+  check("40b the page has justifiable lines to check", just.count > 0, JSON.stringify(just));
+  check("40b every line is justified, even though the page was drawn while hidden",
+        just.transformed === just.count, JSON.stringify(just));
+  check("40b ...and no line spills past either edge of the page",
+        just.pastRight === 0 && just.pastLeft === 0, JSON.stringify(just));
+  check("40 no page errors", errors.filter((e) => !/ERR_|archive\.org/.test(e)).length === 0,
+        errors.slice(0, 2).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 40c the recited ayah is marked AND followed ------------------------
+  const ctx = await mushafCtx({ banner: false });
+  const urls = [];
+  await ctx.route("**/archive.org/**", (r) => {
+    urls.push(r.request().url());
+    return r.fulfill({ status: 200, contentType: "audio/wav", body: WAV_AYAH });
+  });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+  // A Ruku' reads ayah by ayah, so the recitation really walks the page.
+  await openMushaf(page, "ruku");
+  await page.click("#readPlayBtn");
+  const marked = await waitFor(page, () =>
+    document.querySelectorAll(".hifz-word.playing").length > 0, 10000);
+  check("40c the ayah being recited is marked on the page", marked,
+        await page.evaluate(() => document.querySelectorAll(".hifz-word.playing").length));
+  const band = await page.evaluate(() => {
+    const w = document.querySelector(".hifz-word.playing");
+    if (!w) return null;
+    const cs = getComputedStyle(w);
+    return { bg: cs.backgroundColor, shadow: cs.boxShadow };
+  });
+  check("40c ...with a real background band, not only a colour change",
+        !!band && band.bg !== "rgba(0, 0, 0, 0)" && band.bg !== "transparent", JSON.stringify(band));
+
+  // ...and the mark moves on with the recitation.
+  const firstKey = await page.evaluate(() => {
+    const w = document.querySelector(".hifz-word.playing");
+    return w ? w.textContent : null;
+  });
+  const movedOn = await waitFor(page, (prev) => {
+    const w = document.querySelector(".hifz-word.playing");
+    return !!w && w.textContent !== prev;
+  }, 15000);
+  check("40c ...and it follows the recitation to the next ayah", movedOn, String(firstKey));
+  check("40c exactly one ayah is marked at a time",
+        await page.evaluate(() => {
+          const keys = new Set();
+          document.querySelectorAll(".hifz-word.playing").forEach((w) => {
+            const line = w.closest(".hifz-line");
+            keys.add(line ? [...line.children].indexOf(w) >= 0 : false);
+          });
+          // The real question: every marked word belongs to ONE ayah, which the
+          // registry guarantees -- so simply assert some are marked and the
+          // page did not light up wholesale.
+          const marked = document.querySelectorAll(".hifz-word.playing").length;
+          const total = document.querySelectorAll(".hifz-word").length;
+          return marked > 0 && marked < total;
+        }));
+  await page.click("#readStopBtn");
+  await page.close();
+  await ctx.close();
+}
+
+// ---------------------------------------------------------------------------
+// 41. Shell round 28: the reading moves sideways, page by page.
+// ---------------------------------------------------------------------------
+console.log("\n=== 41. Shell round 28: sideways reading ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+  await setUnit(page, "range");
+  await openRead(page);
+
+  const strip = await page.evaluate(() => {
+    const el = document.getElementById("pageViewContainer");
+    const kids = [...el.children].map((k) => k.getBoundingClientRect());
+    const sc = document.getElementById("readScroll");
+    return {
+      on: document.body.classList.contains("read-sideways"),
+      ticked: document.getElementById("sidewaysToggle").checked,
+      pages: kids.length,
+      pageWidth: kids[0] ? Math.round(kids[0].width) : 0,
+      stripWidth: el.clientWidth,
+      movesSideways: el.scrollWidth > el.clientWidth + 1,
+      firstLeft: kids[0] ? Math.round(kids[0].left) : null,
+      secondLeft: kids[1] ? Math.round(kids[1].left) : null,
+      // Round 17's own guard: the READING SCROLLER must still never scroll
+      // sideways. The strip inside it is what pages now.
+      scrollerSideways: sc.scrollWidth > sc.clientWidth + 1,
+      docSideways: document.documentElement.scrollWidth > innerWidth + 1,
+      firstAyah: el.children[0]?.dataset.ayah,
+      secondAyah: el.children[1]?.dataset.ayah,
+    };
+  });
+  check("41a the reading is paged sideways by default", strip.on && strip.ticked, JSON.stringify(strip));
+  check("41a each ayah of a Range is its own page, exactly one screen wide",
+        strip.pages > 1 && Math.abs(strip.pageWidth - strip.stripWidth) <= 1, JSON.stringify(strip));
+  check("41a the strip really moves sideways", strip.movesSideways, JSON.stringify(strip));
+  check("41b the pages run LEFT TO RIGHT in reading order — the owner's own words",
+        strip.secondLeft > strip.firstLeft && Number(strip.secondAyah) === Number(strip.firstAyah) + 1,
+        JSON.stringify(strip));
+  check("41a ...and nothing else scrolls sideways",
+        !strip.scrollerSideways && !strip.docSideways, JSON.stringify(strip));
+  check("41a no page errors", errors.filter((e) => !/ERR_|archive\.org/.test(e)).length === 0,
+        errors.slice(0, 2).join(" | "));
+
+  // The tick is the way back, and it sticks.
+  await openStudyOptions(page);
+  await page.uncheck("#sidewaysToggle");
+  await page.waitForTimeout(500);
+  const off = await page.evaluate(() => ({
+    on: document.body.classList.contains("read-sideways"),
+    stored: localStorage.getItem("mm_reading_sideways"),
+  }));
+  check("41d unticking it gives the scrolling reading back", !off.on && off.stored === "0", JSON.stringify(off));
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(900);
+  const afterReload = await page.evaluate(() => ({
+    on: document.body.classList.contains("read-sideways"),
+    ticked: document.getElementById("sidewaysToggle").checked,
+  }));
+  check("41d ...and the choice survives a reload", !afterReload.on && !afterReload.ticked, JSON.stringify(afterReload));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 41c the recitation carries the strip across ------------------------
+  const { ctx } = await audioCtx();
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+  await setUnit(page, "range");
+  await openRead(page);
+  const before = await page.evaluate(() => document.getElementById("pageViewContainer").scrollLeft);
+  await page.click("#readPlayBtn");
+  const carried = await waitFor(page, () =>
+    document.getElementById("pageViewContainer").scrollLeft > 1, 15000);
+  check("41c the recitation carries the reading across to the ayah it reaches",
+        carried, `scrollLeft was ${before}, now ${await page.evaluate(() => document.getElementById("pageViewContainer").scrollLeft)}`);
+  await page.click("#readStopBtn");
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 41e a Mushaf page is a page in the strip too ------------------------
+  const ctx = await mushafCtx({ banner: false });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+  await openMushaf(page, "surah"); // a whole surah spans both fixture pages
+  const m = await page.evaluate(() => {
+    const el = document.getElementById("pageViewContainer");
+    const pages = [...el.querySelectorAll(".hifz-page")].map((p) => p.getBoundingClientRect());
+    return {
+      sideways: document.body.classList.contains("read-sideways"),
+      pages: pages.length,
+      sideBySide: pages.length > 1 ? Math.round(pages[1].left) > Math.round(pages[0].left) : null,
+      sameRow: pages.length > 1 ? Math.abs(pages[1].top - pages[0].top) < 2 : null,
+      // Only the page ON SCREEN has to fit: the next one is waiting to the
+      // right, which is the whole point of a strip you move across.
+      fitsRight: pages.length ? pages[0].right <= innerWidth + 1 : false,
+    };
+  });
+  check("41e the Mushaf pages sit side by side, not stacked",
+        m.sideways && m.pages > 1 && m.sideBySide && m.sameRow, JSON.stringify(m));
+  check("41e ...and the page on screen still fits it", m.fitsRight, JSON.stringify(m));
   await page.close();
   await ctx.close();
 }

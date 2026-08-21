@@ -473,6 +473,8 @@ export const BN = {
   // is the DECODED text (&amp; -> &), because translateStatic() reads text
   // nodes from the live DOM, not the HTML source (phase 3's own lesson).
   "Roots & derivatives": "শব্দমূল ও গঠন", // ?
+  // Round 28 -- the reading moves sideways, one page at a time.
+  "Page by page": "পাতায় পাতায়", // ?
   "No morphology data for this ayah.": "এই আয়াতের জন্য শব্দগঠনের তথ্য নেই।",
   "Reflection": "চিন্তা-ভাবনা", // ?
   "Write it out here": "এখানে লিখুন",
