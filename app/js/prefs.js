@@ -340,6 +340,44 @@ export function setFullScreenHides(ids) {
 }
 
 // ---------------------------------------------------------------------------
+// Shell round 28 — the reading moves SIDEWAYS, page by page.
+//
+// The owner's own instruction ("let the page move from left to right") and
+// their answer when asked what should move: the whole reading, not only the
+// Mushaf. So a Mushaf page, an ayah of a Range or a whole surah's ayah each
+// become a page you move across rather than a strip you scroll down.
+//
+// Default ON, because that is what was asked; the tick in Reading view is the
+// way back for anyone who prefers scrolling. localStorage, the same additive
+// shape rounds 18/21/23 used: no new startup read, no collection, no
+// firestore.rules change (I9 untouched).
+// ---------------------------------------------------------------------------
+const SIDEWAYS_READING_KEY = "mm_reading_sideways";
+
+function readSidewaysReading() {
+  try {
+    const raw = localStorage.getItem(SIDEWAYS_READING_KEY);
+    if (raw === null) return true; // never set: the owner's own default
+    return raw === "1";
+  } catch {
+    return true;
+  }
+}
+
+let cachedSidewaysReading = readSidewaysReading();
+
+/** True when the reading is paged sideways rather than scrolled down. */
+export function getSidewaysReading() {
+  return cachedSidewaysReading;
+}
+
+export function setSidewaysReading(on) {
+  cachedSidewaysReading = !!on;
+  writeStored(SIDEWAYS_READING_KEY, cachedSidewaysReading ? "1" : "0");
+  return cachedSidewaysReading;
+}
+
+// ---------------------------------------------------------------------------
 // Shell round 23 — which Arabic typeface the Qur'an is set in.
 //
 // `.ayah-arabic` asked for `'Traditional Arabic', 'Amiri', serif` and NEITHER
