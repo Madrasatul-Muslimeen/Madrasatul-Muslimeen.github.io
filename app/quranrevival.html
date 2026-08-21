@@ -434,7 +434,11 @@
      round exists to remove, in a new place. */
   #stage > [hidden] { display: none !important; }
   #readBar {
-    flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+    /* Round 25: the controls sit at the RIGHT, where the Arabic begins -- the
+       owner's ask, and it only became possible once the reciter caption left
+       the row. Note the old `space-between` had to GO rather than just be
+       preceded: it is a later declaration, so it was quietly winning. */
+    flex: 0 0 auto; display: flex; justify-content: flex-end; align-items: center;
     gap: 0.4rem; padding: 0.25rem 0 0.4rem; border-bottom: 1px solid #eef1f7;
   }
   #readBar button { font-size: 0.78rem; padding: 0.3rem 0.55rem; margin: 0; white-space: nowrap; }
@@ -446,12 +450,12 @@
      always has one thing that reads as words. */
   #readBar .qr-ico { font-size: 0.95rem; line-height: 1; padding: 0.3rem 0.5rem; flex: 0 0 auto; }
   #readBar button[disabled] { opacity: 0.45; }
-  /* One line, always. Round 22 put this on the same row as five buttons, and a
-     two-line reciter name makes the whole reading screen taller for nothing --
-     it is a caption, so it clips rather than wraps. It is also the one thing in
-     an otherwise all-icon row that reads as words, which is why it stays. */
-  #readReciterName { font-size: 0.72rem; color: #667; margin-left: auto; min-width: 0;
-                     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Round 25 retired #readReciterName. Its only job was naming which reciter
+     Play would use, which the Listening section in Study options already says
+     -- and it was the one thing keeping this row from sitting where the Arabic
+     starts. The owner asked both questions in the same breath: "why do we show
+     'Abdullah Basfar' there? can we remove that?" and "move the button to
+     right side". Removing the caption is what makes the move clean. */
   /* Shell round 22 -- the pickers, mirroring Study options. minmax(0,1fr) via
      flex:1 1 0 + min-width:0 is what actually lets the two wide selects share a
      line with up to three narrow ones on a 360px phone. */
@@ -526,8 +530,7 @@
   body.immersive-read.fs-hide-readbar #prevUnitBtn,
   body.immersive-read.fs-hide-readbar #nextUnitBtn { display: none; }
   body.immersive-read.fs-hide-transport #readPlayBtn,
-  body.immersive-read.fs-hide-transport #readStopBtn,
-  body.immersive-read.fs-hide-transport #readReciterName { display: none; }
+  body.immersive-read.fs-hide-transport #readStopBtn { display: none; }
   body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar { display: none; }
   /* Round 21 read "edge to edge" as applying to the TEXT and set this to 0,
      which put the Arabic hard against the glass -- diacritics and end-of-ayah
@@ -748,7 +751,6 @@
           <button type="button" class="secondary qr-ico" id="readPlayBtn" aria-label="Play" title="Play">▶</button>
           <button type="button" class="secondary qr-ico" id="readStopBtn" aria-label="Stop" title="Stop">■</button>
           <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
-          <span id="readReciterName"></span>
         </div>
         <div id="readScroll">
           <div id="studyScreen">
@@ -1203,7 +1205,6 @@
     const unitSpanReadout = document.getElementById("unitSpanReadout");
     const readPlayBtn = document.getElementById("readPlayBtn");
     const readStopBtn = document.getElementById("readStopBtn");
-    const readReciterName = document.getElementById("readReciterName");
     const wbwLangControl = document.getElementById("wbwLangControl");
     const wbwLangSelect = document.getElementById("wbwLangSelect");
     const wheelContainer = document.getElementById("wheelContainer");
@@ -3223,8 +3224,6 @@
     // restarting. Stop ends the run.
     // -----------------------------------------------------------------------
     function renderReadTransport() {
-      const reciter = RECITERS[currentReciterId];
-      readReciterName.textContent = reciter ? reciter.label : "";
       // Shell round 21 -- ONE button for Play and Pause, the owner's own
       // suggestion. The label follows the audio's REAL state
       // (setPlaybackStateHandler below re-renders on every play/pause/end/error

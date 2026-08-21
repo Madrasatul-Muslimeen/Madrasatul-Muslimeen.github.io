@@ -6,7 +6,8 @@
 // out. It never calls records.js/activity.js itself; the page wiring it up
 // does that.
 
-import { t } from "./i18n.js";
+import { t, num } from "./i18n.js";
+import { posLabel } from "./labels.js";
 
 /** Escapes then re-expands only the exact tajweed tags quran.com emits — never trusts raw HTML beyond that whitelist. */
 export function tajweedRawToSafeHtml(raw) {
@@ -97,8 +98,8 @@ export function renderRootDerivativePanel(ayah) {
     .map(
       (w) => `<div class="root-row" data-position="${w.position}">
         <div class="root-word" dir="rtl" lang="ar">${escapeHtml(w.arabic)}</div>
-        <div class="root-pos">${escapeHtml(w.morphology.pos)}</div>
-        ${w.morphology.root ? `<div class="root-root" dir="rtl" lang="ar">${escapeHtml(w.morphology.root)}<span class="root-count">${w.morphology.rootCount}×</span></div>` : ""}
+        <div class="root-pos">${escapeHtml(posLabel(w.morphology.pos))}</div>
+        ${w.morphology.root ? `<div class="root-root" dir="rtl" lang="ar">${escapeHtml(w.morphology.root)}<span class="root-count">${num(w.morphology.rootCount)}×</span></div>` : ""}
         ${w.morphology.lemma ? `<div class="root-lemma" dir="rtl" lang="ar">${escapeHtml(w.morphology.lemma)}</div>` : ""}
       </div>`
     )
