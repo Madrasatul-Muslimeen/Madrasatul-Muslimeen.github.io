@@ -757,11 +757,16 @@
      prototype's own popup-note feature, reworked twice on the owner's own
      feedback: the ⋮ two-tier design, then the full-stage/no-× shape).
      ========================================================================= */
-  .ayah-note-anchor { position: relative; padding-right: 2.2rem; }
-  .page-flow-ayah { position: relative; }
-  .page-flow-ayah .ayah-quick-wrap { top: 0; right: 0; }
-
-  .ayah-quick-wrap { position: absolute; top: -0.1rem; right: -0.1rem; z-index: 4; }
+  /* The ⋮ badge sits in its OWN small header row above the ayah content,
+     never overlaid on top of it. A fixed-position overlay was measured to
+     leave only a ~6px gap from the Arabic text's own right edge (RTL,
+     text-align:right) -- fine for a short test āyah, but real āyahs run
+     much longer per line, and that gap is thin enough for ordinary word
+     length, Tajweed spans, and font-rendering differences across platforms
+     to eat into it, which is exactly the "sits on the Arabic word" report.
+     A flow row costs a little vertical space but can never overlap text. */
+  .ayah-quick-header { display: flex; justify-content: flex-end; margin-bottom: 0.25rem; }
+  .ayah-quick-wrap { position: relative; }
   .ayah-quick-btn {
     background: #fff; border: 1px solid #ddd; color: #666; border-radius: 999px;
     width: 1.9rem; height: 1.9rem; font-size: 1.05rem; font-weight: 700; line-height: 1;
@@ -797,21 +802,36 @@
   /* ---- Note & more: full-stage view, dock stays visible underneath ---- */
   #noteView { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   .note-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-  .note-topbar {
-    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
-    background: #1F3A6E; color: #fff; padding: 0.55rem 0.7rem; border-radius: 0.4rem 0.4rem 0 0;
+  /* The Ayah bar: reference + every quick action, one flex-wrap row. Ref
+     takes whatever room it needs (flex-grow 999 -- it wins the room fight
+     over the fixed-size icon buttons) and WRAPS rather than truncating, so
+     it can never be silently cut off (the earlier ellipsis rule is exactly
+     what caused the "cut off for no reason" report on a wide screen -- a
+     flex item shrinks below its own content width whenever the row's total
+     content doesn't perfectly fit, ellipsis or not). Everything else is a
+     small fixed-size icon button; on a phone the widest single item,
+     "Mapping My Journey", is what wraps to its own line when the rest
+     doesn't leave it room -- on a wider screen there is room for all of it
+     on one line, so nothing visibly becomes "a second bar", it is the same
+     row, just not wrapping. */
+  .note-ayahbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+    background: #1F3A6E; color: #fff; padding: 0.5rem 0.6rem; border-radius: 0.4rem 0.4rem 0 0;
     flex: 0 0 auto;
   }
-  .note-ref { font-size: 0.88rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .note-nav { display: flex; gap: 0.3rem; flex: 0 0 auto; }
+  .note-ref {
+    flex: 999 1 140px; min-width: 90px; font-size: 0.88rem; font-weight: 700;
+    white-space: normal; overflow-wrap: break-word; line-height: 1.25;
+  }
   .note-icon-btn {
+    flex: 0 0 auto;
     background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.4); color: #fff;
     border-radius: 0.35rem; padding: 0.3rem 0.5rem; font-size: 0.82rem; cursor: pointer; line-height: 1;
   }
   .note-icon-btn:hover:not(:disabled) { background: rgba(255,255,255,0.3); }
   .note-icon-btn:disabled { opacity: 0.4; cursor: default; }
   .note-icon-btn.active { background: #B8862F; border-color: #B8862F; }
-  .note-journey-btn { font-size: 0.68rem; font-weight: 700; white-space: nowrap; }
+  .note-journey-btn { flex: 0 0 auto; font-size: 0.68rem; font-weight: 700; white-space: nowrap; }
 
   .note-palette {
     display: none; flex-wrap: wrap; gap: 0.35rem; align-items: center;
@@ -840,24 +860,23 @@
   .note-bookmark-btn.active { background: #B8862F; color: #fff; border-color: #B8862F; }
   .note-lang-group { display: flex; gap: 0.55rem; align-items: center; flex-wrap: wrap; }
   .note-lang-group label { display: flex; align-items: center; gap: 0.2rem; cursor: pointer; color: #555; }
-  .note-copy-btn, .note-share-btn, .note-play-btn {
+  /* Copy/Share themselves moved up to the Ayah bar (.note-icon-btn) -- Play
+     is the one action left down here, alongside the bookmark star and the
+     language checkboxes it and Copy/Share on the bar above all read from. */
+  .note-play-btn {
     background: #fff; border: 1px solid #ddd; border-radius: 0.35rem; cursor: pointer;
     padding: 0.25rem 0.55rem; font-size: 0.86rem; color: #222;
   }
-  .note-copy-btn:hover, .note-share-btn:hover { background: #eee; }
 
-  .note-master-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+  /* The Collapse toggle itself moved to the Ayah bar (icon-only, per the
+     owner's ask); this row is now just the 🔖 toggle that reveals bookmark/
+     language checkboxes/Play. */
+  .note-master-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
   .note-actions-toggle {
     background: #fff; border: 1px solid #ddd; color: #B8862F; border-radius: 0.35rem;
     padding: 0.25rem 0.5rem; font-size: 0.92rem; cursor: pointer; line-height: 1;
   }
   .note-actions-toggle.active { background: #f5f0e2; border-color: #B8862F; }
-  .note-master-toggle {
-    background: none; border: 1px solid #ddd; border-radius: 0.35rem; padding: 0.25rem 0.6rem;
-    font-size: 0.76rem; color: #1F3A6E; font-weight: 700; cursor: pointer;
-  }
-  .note-master-toggle:hover { background: #f5f0e2; }
-  .note-master-hint { font-size: 0.68rem; color: #999; font-style: italic; }
 
   .note-field { margin-bottom: 0.55rem; }
   .note-field-label-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.15rem; }
@@ -878,6 +897,18 @@
   .note-notes-editor h3 { font-size: 1.05em; margin: 0.3em 0; }
   .note-notes-editor ul, .note-notes-editor ol { margin: 0.3em 0 0.3em 1.1em; }
   .note-save-status { font-size: 0.7rem; color: #9c3b2e; margin: 0.3rem 0 0; }
+
+  /* Note view's own full screen -- two states only (not the reading
+     screen's three), and a separate mechanism from it on purpose (so
+     opening/leaving a note can never accidentally inherit or leak the
+     reading screen's own full-screen state): hides the banner, top nav and
+     dock; the Ayah bar (and the Notes palette, when open) stay on screen
+     always, since that is what holds the edit controls for notes. */
+  body.note-immersive > h1,
+  body.note-immersive > .app-tagline,
+  body.note-immersive #globalBanner,
+  body.note-immersive #topNav,
+  body.note-immersive #dock { display: none; }
 </style>
 </head>
 <body>
@@ -1584,6 +1615,7 @@
     let bookmarksDoc = { resume: {}, saved: [] };
     let ayahNoteDataLoadedFor = null;
     let openNoteUnitKey = null; // whichever āyah "Note & more" is currently showing, so a data refresh (e.g. after switching person) can re-render it in place
+    let noteFullscreenOn = false; // the Note view's own full-screen state -- see toggleNoteFullscreen()
     let tenantWeekStartsOn = 6;
     let currentTenantDoc = null;
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
@@ -2819,9 +2851,12 @@
       readView.hidden = !reading;
       noteView.hidden = !noting;
       tabReadBtn.setAttribute("aria-pressed", reading || noting ? "true" : "false");
-      // Note view never goes full-screen -- keeps the dock reachable, which is
-      // the one hard requirement the owner set for how it can be left.
+      // The READING screen's own full screen (immersive-read) is unrelated
+      // to the Note view's own (note-immersive, toggleNoteFullscreen()) --
+      // clear whichever one this new view doesn't own, so neither can leak
+      // into a screen the reader didn't ask to see hidden chrome on.
       if (!reading) setImmersive(false);
+      if (!noting && noteFullscreenOn) { noteFullscreenOn = false; document.body.classList.remove("note-immersive"); }
     }
 
     // -----------------------------------------------------------------------
@@ -3306,11 +3341,13 @@
       pageViewContainer.innerHTML = ayahs
         .map((ayah) => {
           const unitKey = buildUnitKey.ayah(currentSurahNum, ayah.ayah);
-          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${renderLayoutA(ayah, panels, {
+          // The ⋮ badge is its own header row, ABOVE the ayah content, not
+          // overlaid on it -- see the .ayah-quick-header CSS comment.
+          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}"><div class="ayah-quick-header">${renderQuickMenu(unitKey, { hasNote: ayahHasNote(ayahNotesDoc, unitKey) })}</div>${renderLayoutA(ayah, panels, {
             tajweedOn: tajweedToggle.checked,
             langs: translationLangs(),
             wbwLangs: wbwLangs(),
-          })}${renderQuickMenu(unitKey, { hasNote: ayahHasNote(ayahNotesDoc, unitKey) })}</div>`;
+          })}</div>`;
         })
         .join("");
       attachAyahQuickMenus(pageViewContainer);
@@ -3469,6 +3506,7 @@
         isBookmarked,
         hasPrev: ayahNum > 1,
         hasNext: ayahNum < currentSurahData.ayahCount,
+        isFullscreen: noteFullscreenOn,
       });
       attachNoteViewHandlers(noteView, {
         buildText: (langs) => buildAyahText(unitKey, langs),
@@ -3492,6 +3530,7 @@
         onPlay: () => quickPlayAyah(unitKey),
         onPrev: () => { if (ayahNum > 1) renderNoteViewNow(buildUnitKey.ayah(surah, ayahNum - 1)); },
         onNext: () => { if (ayahNum < currentSurahData.ayahCount) renderNoteViewNow(buildUnitKey.ayah(surah, ayahNum + 1)); },
+        onToggleFullscreen: toggleNoteFullscreen,
       });
     }
 
@@ -3501,8 +3540,21 @@
       if (auth.currentUser && selectedPersonId) {
         ensureAyahNotesWritable(db, { tenantId: activeTenantId, personId: selectedPersonId, uid: auth.currentUser.uid });
       }
+      noteFullscreenOn = false; // always opens in the normal state -- the owner's own description of state one
+      document.body.classList.remove("note-immersive");
       renderNoteViewNow(unitKey);
       setStageView("note");
+    }
+
+    /** The Note view's own full screen -- two states, a separate mechanism
+        from the reading screen's own (immersive-read) so the two can never
+        leak into each other. Toggled only from the view's own ⤢ button;
+        never resets itself mid-session except when the view is (re)opened
+        or left, both handled by their own callers. */
+    function toggleNoteFullscreen() {
+      noteFullscreenOn = !noteFullscreenOn;
+      document.body.classList.toggle("note-immersive", noteFullscreenOn);
+      if (openNoteUnitKey) renderNoteViewNow(openNoteUnitKey);
     }
 
     function renderStudyScreen() {
@@ -3579,16 +3631,16 @@
         ayahSelect.value = String(currentAyahNum);
         prevAyahBtn.disabled = currentAyahNum <= 1;
         nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount;
-        // Ayah Note panel: the ⋮ badge sits in an anchor wrapper so it can be
-        // positioned in the corner without disturbing renderLayoutA's own
-        // panel markup (I2 -- ayah-renderer.js itself is untouched and still
-        // shared by Hadith/topic/Asma renderers, which don't get this badge).
+        // Ayah Note panel: the ⋮ badge is its own header row, ABOVE the ayah
+        // content -- never overlaid on top of it (I2 -- ayah-renderer.js
+        // itself is untouched and still shared by Hadith/topic/Asma
+        // renderers, which don't get this badge).
         const singleUnitKey = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
-        ayahPanels.innerHTML = `<div class="ayah-note-anchor">${renderLayoutA(ayah, panels, {
+        ayahPanels.innerHTML = `<div class="ayah-note-anchor"><div class="ayah-quick-header">${renderQuickMenu(singleUnitKey, { hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey) })}</div>${renderLayoutA(ayah, panels, {
           tajweedOn: tajweedToggle.checked,
           langs: translationLangs(),
           wbwLangs: wbwLangs(),
-        })}${renderQuickMenu(singleUnitKey, { hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey) })}</div>`;
+        })}</div>`;
         attachAyahQuickMenus(ayahPanels);
       }
 

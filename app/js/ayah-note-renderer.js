@@ -210,18 +210,26 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
  */
 export function renderNoteView({
   unitKey, ref, arabicText, englishText, banglaText, notesHtml,
-  isBookmarked = false, hasPrev = false, hasNext = false,
+  isBookmarked = false, hasPrev = false, hasNext = false, isFullscreen = false,
 }) {
+  // The Ayah bar: reference + every quick action, one flex-wrap row (see
+  // the .note-ayahbar CSS comment for why this is a flex-wrap row rather
+  // than a fixed two-bar split). "Mapping My Journey" is placed LAST
+  // deliberately -- it is the widest single item, so on a narrow screen
+  // it is what wraps to its own line, while everything before it (the
+  // reference and the action icons) stays together on the first line.
   return `
     <div class="note-view" data-unit-key="${escapeHtml(unitKey)}">
-      <div class="note-topbar">
+      <div class="note-ayahbar">
         <span class="note-ref">${escapeHtml(ref)}</span>
-        <div class="note-nav">
-          <button type="button" class="note-icon-btn" data-note-palette-toggle title="${t("Notes formatting")}">Aa</button>
-          <button type="button" class="note-icon-btn note-journey-btn" disabled title="${t("Coming later")}">${t("Mapping My Journey")}</button>
-          <button type="button" class="note-icon-btn" data-note-prev ${hasPrev ? "" : "disabled"} title="${t("Previous āyah")}">←</button>
-          <button type="button" class="note-icon-btn" data-note-next ${hasNext ? "" : "disabled"} title="${t("Next āyah")}">→</button>
-        </div>
+        <button type="button" class="note-icon-btn" data-note-prev ${hasPrev ? "" : "disabled"} title="${t("Previous āyah")}">←</button>
+        <button type="button" class="note-icon-btn" data-note-next ${hasNext ? "" : "disabled"} title="${t("Next āyah")}">→</button>
+        <button type="button" class="note-icon-btn" data-note-palette-toggle title="${t("Notes formatting")}">Aa</button>
+        <button type="button" class="note-icon-btn" data-note-copy title="${t("Copy")}">📋</button>
+        <button type="button" class="note-icon-btn" data-note-share title="${t("Share")}">📤</button>
+        <button type="button" class="note-icon-btn" data-note-master-toggle title="${t("Collapse āyah text")} (${t("Notes always stays open")})">▾</button>
+        <button type="button" class="note-icon-btn${isFullscreen ? " active" : ""}" data-note-fullscreen title="${t("Full screen")}" aria-pressed="${isFullscreen ? "true" : "false"}">⤢</button>
+        <button type="button" class="note-icon-btn note-journey-btn" disabled title="${t("Coming later")}">${t("Mapping My Journey")}</button>
       </div>
 
       <div class="note-palette" data-note-palette>
@@ -242,6 +250,10 @@ export function renderNoteView({
       </div>
 
       <div class="note-body">
+        <!-- Copy and Share themselves moved to the Ayah bar above (the
+             owner's ask); this row keeps only what still needs a value
+             chosen first -- the bookmark, the language checkboxes Copy/
+             Share and Play all read from, and Play itself. -->
         <div class="note-actionsbar" data-note-actionsbar>
           <button type="button" class="note-bookmark-btn${isBookmarked ? " active" : ""}" data-note-bookmark title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}">${isBookmarked ? "★" : "☆"}</button>
           <span class="note-lang-group">
@@ -250,15 +262,11 @@ export function renderNoteView({
             <label><input type="checkbox" class="note-lang" data-lang="bn" checked> BN</label>
             <label><input type="checkbox" class="note-lang" data-lang="notes"> ${t("Notes")}</label>
           </span>
-          <button type="button" class="note-copy-btn" data-note-copy>📋 ${t("Copy")}</button>
-          <button type="button" class="note-share-btn" data-note-share>📤 ${t("Share")}</button>
           <button type="button" class="note-play-btn" data-note-play>▶ ${t("Play")}</button>
         </div>
 
         <div class="note-master-row">
-          <button type="button" class="note-actions-toggle" data-note-actions-toggle title="${t("Bookmark, copy & share")}">🔖</button>
-          <button type="button" class="note-master-toggle" data-note-master-toggle>▾ ${t("Collapse āyah text")}</button>
-          <span class="note-master-hint">(${t("Notes always stays open")})</span>
+          <button type="button" class="note-actions-toggle" data-note-actions-toggle title="${t("Bookmark, play & language options")}">🔖</button>
         </div>
 
         <div data-note-collapsible>
@@ -303,11 +311,12 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
 
 /**
  * `callbacks`:
- *   buildText(langs)     -> string, for the actions row's Copy/Share
- *   onSaveNote(html)     -> Promise<{ok:boolean, message?:string}>, called on Notes blur
+ *   buildText(langs)       -> string, for the Ayah bar's Copy/Share
+ *   onSaveNote(html)       -> Promise<{ok:boolean, message?:string}>, called on Notes blur
  *   onToggleBookmark()
  *   onPlay()
- *   onPrev() / onNext()  -- omit/leave the button disabled when there's nowhere to go
+ *   onPrev() / onNext()    -- omit/leave the button disabled when there's nowhere to go
+ *   onToggleFullscreen()   -- the view's own 2-state full screen (banner/nav/dock hidden, Ayah bar always on)
  */
 export function attachNoteViewHandlers(container, callbacks) {
   const view = container.querySelector(".note-view");
@@ -340,12 +349,17 @@ export function attachNoteViewHandlers(container, callbacks) {
     });
   });
 
+  // Icon-only (the owner's ask) -- the label lives in the title/aria-label
+  // instead of visible text, same as every other Ayah-bar icon.
   const masterToggle = view.querySelector("[data-note-master-toggle]");
   const collapsibleWrap = view.querySelector("[data-note-collapsible]");
   masterToggle?.addEventListener("click", () => {
     const collapsed = collapsibleWrap.style.display === "none";
     collapsibleWrap.style.display = collapsed ? "" : "none";
-    masterToggle.textContent = collapsed ? `▾ ${t("Collapse āyah text")}` : `▸ ${t("Expand āyah text")}`;
+    const label = collapsed ? t("Collapse āyah text") : t("Expand āyah text");
+    masterToggle.textContent = collapsed ? "▾" : "▸";
+    masterToggle.title = collapsed ? `${label} (${t("Notes always stays open")})` : label;
+    masterToggle.setAttribute("aria-label", label);
   });
 
   // Notes: rich-text editing + save-on-blur.
@@ -385,10 +399,13 @@ export function attachNoteViewHandlers(container, callbacks) {
   function checkedLangs() {
     return [...view.querySelectorAll(".note-lang")].filter((cb) => cb.checked).map((cb) => cb.dataset.lang);
   }
+  // Icon-only on the Ayah bar, so the flash is a symbol rather than the
+  // quick menu's own "✓ Copied" text -- there's no room for words in a
+  // button this small.
   const copyBtn = view.querySelector("[data-note-copy]");
   copyBtn?.addEventListener("click", async () => {
     const ok = await copyToClipboard(callbacks.buildText(checkedLangs()));
-    await flashBtn(copyBtn, ok ? t("✓ Copied") : t("Copy failed"));
+    await flashBtn(copyBtn, ok ? "✓" : "✗", 600);
   });
   view.querySelector("[data-note-share]")?.addEventListener("click", () => {
     shareText(callbacks.buildText(checkedLangs()), view.dataset.unitKey);
@@ -396,6 +413,7 @@ export function attachNoteViewHandlers(container, callbacks) {
   view.querySelector("[data-note-play]")?.addEventListener("click", () => callbacks.onPlay?.());
   view.querySelector("[data-note-prev]")?.addEventListener("click", () => callbacks.onPrev?.());
   view.querySelector("[data-note-next]")?.addEventListener("click", () => callbacks.onNext?.());
+  view.querySelector("[data-note-fullscreen]")?.addEventListener("click", () => callbacks.onToggleFullscreen?.());
 
   if (!container._noteOutsideBound) {
     container._noteOutsideBound = true;
