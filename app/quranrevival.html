@@ -749,6 +749,135 @@
     background: #fff8e1; border-left: 3px solid #c8a227;
     padding-left: 0.5rem; margin-left: -0.5rem; border-radius: 3px;
   }
+
+  /* =========================================================================
+     Ayah Note panel -- the ⋮ quick-actions menu on every āyah, and the
+     deeper "Note & more" full-stage view it opens into. See CLAUDE.md's
+     "The Āyah Note panel" for the settled shape (ported from a QCR
+     prototype's own popup-note feature, reworked twice on the owner's own
+     feedback: the ⋮ two-tier design, then the full-stage/no-× shape).
+     ========================================================================= */
+  .ayah-note-anchor { position: relative; padding-right: 2.2rem; }
+  .page-flow-ayah { position: relative; }
+  .page-flow-ayah .ayah-quick-wrap { top: 0; right: 0; }
+
+  .ayah-quick-wrap { position: absolute; top: -0.1rem; right: -0.1rem; z-index: 4; }
+  .ayah-quick-btn {
+    background: #fff; border: 1px solid #ddd; color: #666; border-radius: 999px;
+    width: 1.9rem; height: 1.9rem; font-size: 1.05rem; font-weight: 700; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+  }
+  .ayah-quick-btn:hover, .ayah-quick-btn.active { background: #f5f0e2; color: #1F3A6E; }
+  .ayah-quick-btn.has-note { background: #B8862F; border-color: #B8862F; color: #fff; }
+  .quick-menu {
+    display: none; position: absolute; top: 2.15rem; right: 0; z-index: 8;
+    background: #fff; border: 1px solid #ddd; border-radius: 0.5rem;
+    box-shadow: 0 10px 26px rgba(20,30,60,0.2); width: 12rem; padding: 0.3rem;
+  }
+  .quick-menu.open { display: block; }
+  .qm-item {
+    display: flex; align-items: center; gap: 0.4rem; width: 100%; background: none; border: none;
+    text-align: left; padding: 0.42rem 0.5rem; font-size: 0.8rem; color: #222;
+    border-radius: 0.35rem; cursor: pointer; font-family: inherit;
+  }
+  .qm-item:hover { background: #f5f0e2; }
+  .qm-caret { margin-left: auto; font-size: 0.68rem; color: #999; }
+  .qm-sub { display: none; padding: 0.1rem 0.5rem 0.5rem 1.6rem; }
+  .qm-sub.open { display: block; }
+  .qm-sub label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.73rem; color: #555; padding: 0.1rem 0; }
+  .qm-sub label input:disabled + span { color: #aaa; }
+  .qm-go-btn {
+    margin-top: 0.25rem; width: 100%; background: #1F3A6E; color: #fff; border: none;
+    border-radius: 0.35rem; padding: 0.3rem; font-size: 0.75rem; cursor: pointer; font-family: inherit;
+  }
+  .qm-divider { height: 1px; background: #eee; margin: 0.2rem 0.3rem; }
+  .ayah-note-flash { color: #2e6b4f; font-weight: 700; }
+
+  /* ---- Note & more: full-stage view, dock stays visible underneath ---- */
+  #noteView { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  .note-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+  .note-topbar {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+    background: #1F3A6E; color: #fff; padding: 0.55rem 0.7rem; border-radius: 0.4rem 0.4rem 0 0;
+    flex: 0 0 auto;
+  }
+  .note-ref { font-size: 0.88rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .note-nav { display: flex; gap: 0.3rem; flex: 0 0 auto; }
+  .note-icon-btn {
+    background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.4); color: #fff;
+    border-radius: 0.35rem; padding: 0.3rem 0.5rem; font-size: 0.82rem; cursor: pointer; line-height: 1;
+  }
+  .note-icon-btn:hover:not(:disabled) { background: rgba(255,255,255,0.3); }
+  .note-icon-btn:disabled { opacity: 0.4; cursor: default; }
+  .note-icon-btn.active { background: #B8862F; border-color: #B8862F; }
+  .note-journey-btn { font-size: 0.68rem; font-weight: 700; white-space: nowrap; }
+
+  .note-palette {
+    display: none; flex-wrap: wrap; gap: 0.35rem; align-items: center;
+    background: #f5f0e2; border-bottom: 1px solid #e0d8bd; padding: 0.5rem 0.7rem; flex: 0 0 auto;
+  }
+  .note-palette.open { display: flex; }
+  .note-palette-label { width: 100%; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: #999; }
+  .note-palette button, .note-palette select {
+    background: #fff; border: 1px solid #ddd; border-radius: 0.3rem; min-width: 1.7rem; height: 1.7rem;
+    font-size: 0.8rem; cursor: pointer; padding: 0 0.4rem;
+  }
+  .note-palette button:hover { background: #eee; }
+
+  .note-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.8rem 0.9rem 1.2rem; }
+
+  .note-actionsbar {
+    display: none; flex-wrap: wrap; align-items: center; gap: 0.55rem;
+    background: #f5f0e2; border: 1px solid #e0d8bd; border-radius: 0.4rem;
+    padding: 0.5rem 0.6rem; margin-bottom: 0.7rem; font-size: 0.78rem;
+  }
+  .note-actionsbar.open { display: flex; }
+  .note-bookmark-btn {
+    background: #fff; border: 1px solid #ddd; border-radius: 0.35rem; cursor: pointer;
+    font-size: 1.05rem; padding: 0.15rem 0.5rem; color: #B8862F; line-height: 1;
+  }
+  .note-bookmark-btn.active { background: #B8862F; color: #fff; border-color: #B8862F; }
+  .note-lang-group { display: flex; gap: 0.55rem; align-items: center; flex-wrap: wrap; }
+  .note-lang-group label { display: flex; align-items: center; gap: 0.2rem; cursor: pointer; color: #555; }
+  .note-copy-btn, .note-share-btn, .note-play-btn {
+    background: #fff; border: 1px solid #ddd; border-radius: 0.35rem; cursor: pointer;
+    padding: 0.25rem 0.55rem; font-size: 0.86rem; color: #222;
+  }
+  .note-copy-btn:hover, .note-share-btn:hover { background: #eee; }
+
+  .note-master-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+  .note-actions-toggle {
+    background: #fff; border: 1px solid #ddd; color: #B8862F; border-radius: 0.35rem;
+    padding: 0.25rem 0.5rem; font-size: 0.92rem; cursor: pointer; line-height: 1;
+  }
+  .note-actions-toggle.active { background: #f5f0e2; border-color: #B8862F; }
+  .note-master-toggle {
+    background: none; border: 1px solid #ddd; border-radius: 0.35rem; padding: 0.25rem 0.6rem;
+    font-size: 0.76rem; color: #1F3A6E; font-weight: 700; cursor: pointer;
+  }
+  .note-master-toggle:hover { background: #f5f0e2; }
+  .note-master-hint { font-size: 0.68rem; color: #999; font-style: italic; }
+
+  .note-field { margin-bottom: 0.55rem; }
+  .note-field-label-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.15rem; }
+  .note-field-toggle { background: none; border: none; color: #1F3A6E; font-size: 0.75rem; cursor: pointer; padding: 0.1rem 0.2rem; width: 1.1rem; }
+  .note-field-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: #999; }
+  .note-arabic { font-family: var(--quran-font); direction: rtl; text-align: right; font-size: 1.35rem; line-height: 1.9; color: #1b1b16; margin: 0.15rem 0; }
+  .note-english { font-size: 0.86rem; color: #222; margin: 0.15rem 0; line-height: 1.5; }
+  .note-bangla { font-size: 0.84rem; color: #222; margin: 0.15rem 0; line-height: 1.6; }
+  .note-notes-editor {
+    min-height: 80px; max-height: 260px; overflow-y: auto;
+    border: 1px solid #e0d8bd; border-radius: 0.4rem; padding: 0.55rem 0.65rem;
+    font-size: 0.86rem; background: #fffefb; line-height: 1.5; color: #222;
+  }
+  .note-notes-editor:empty:before { content: attr(data-placeholder); color: #bbb; }
+  .note-notes-editor:focus { outline: 2px solid #C9A24B; outline-offset: 1px; }
+  .note-notes-editor h1 { font-size: 1.25em; margin: 0.3em 0; }
+  .note-notes-editor h2 { font-size: 1.1em; margin: 0.3em 0; }
+  .note-notes-editor h3 { font-size: 1.05em; margin: 0.3em 0; }
+  .note-notes-editor ul, .note-notes-editor ol { margin: 0.3em 0 0.3em 1.1em; }
+  .note-save-status { font-size: 0.7rem; color: #9c3b2e; margin: 0.3rem 0 0; }
 </style>
 </head>
 <body>
@@ -875,6 +1004,13 @@
         </div>
         <div id="readHint" hidden>Tap the text to bring the menus back.</div>
       </div><!-- /#readView -->
+
+      <!-- Ayah Note panel -- "Note & more" from the ⋮ quick menu on any āyah
+           in #readView. A third #stage view, exactly parallel to #readView:
+           #dock stays visible underneath and is the only way out of it (no
+           × button -- settled with the owner: the same navigation model as
+           the rest of the screen, not a second one just for this feature). -->
+      <div id="noteView" hidden></div>
     </div>
 
     <!-- The dock: two tabs on one line (they fit a phone), then the always-on
@@ -1174,6 +1310,9 @@
     import { buildUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
+    import { getBookmarks, saveBookmark, removeSavedBookmark, findSavedBookmark } from "./js/bookmarks.js";
+    import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
+    import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText } from "./js/ayah-note-renderer.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
     import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex } from "./js/quran-data.js";
     // Shell round 14 -- word/phrase search. Importing the module costs
@@ -1213,7 +1352,7 @@
       RECITERS, reciterIsReady, reciterSupportsSingleAyah, playSurah,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
       warmSegmentedTimestamps, pause as pauseAudio, resume as resumeAudio, isPlaying, isPaused, unlockAudio,
-      setPlaybackStateHandler,
+      setPlaybackStateHandler, playOneAndWait,
     } from "./js/audio-player.js";
     import { translateStatic, t, num, parseNum, surahName } from "./js/i18n.js";
 
@@ -1377,6 +1516,7 @@
     const dockTabs = Array.from(document.querySelectorAll(".qr-tab[data-panel]"));
     const tabReadBtn = document.getElementById("tabReadBtn");
     const readView = document.getElementById("readView");
+    const noteView = document.getElementById("noteView");
     // Shell round 22 -- the reading screen's own pickers. Each one MIRRORS the
     // control of the same name in Study options: it copies that control's
     // options and value, and forwards a change straight back to it, so the
@@ -1435,6 +1575,15 @@
     let myMemberships = [];
     let roster = [];
     let selectedPersonId = null;
+    // Ayah Note panel: this person's own notes doc + bookmarks doc, loaded
+    // once (ensureAyahNoteDataLoaded()) rather than per ayah -- both are a
+    // single small document each, same "one doc per person" shape as the
+    // rest of Layer 2. Default to empty so every renderQuickMenu() call has
+    // something to read before the fetch resolves.
+    let ayahNotesDoc = { notes: {} };
+    let bookmarksDoc = { resume: {}, saved: [] };
+    let ayahNoteDataLoadedFor = null;
+    let openNoteUnitKey = null; // whichever āyah "Note & more" is currently showing, so a data refresh (e.g. after switching person) can re-render it in place
     let tenantWeekStartsOn = 6;
     let currentTenantDoc = null;
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
@@ -2652,13 +2801,26 @@
     // -----------------------------------------------------------------------
     let stageView = "wheel";
 
+    // "note" (the Ayah Note panel's "Note & more" view) joins "wheel"/"read"
+    // as a third possible value, reached only from inside #readView's own ⋮
+    // quick menu -- there is no dock tab of its own. tabReadBtn shows pressed
+    // for either "read" or "note" (both are the reading experience, one just
+    // deeper), and its own click handler already does the right thing: its
+    // check is `stageView === "read"`, which is false while noting, so a tap
+    // falls through to the normal open-reading path and leaves note view
+    // exactly the way any other dock tap does (settled with the owner: no ×
+    // button, just the same navigation model as the rest of the screen).
     function setStageView(view) {
       stageView = view;
       const reading = view === "read";
-      wheelHeadingEl.hidden = reading;
-      wheelSectionEl.hidden = reading;
+      const noting = view === "note";
+      wheelHeadingEl.hidden = reading || noting;
+      wheelSectionEl.hidden = reading || noting;
       readView.hidden = !reading;
-      tabReadBtn.setAttribute("aria-pressed", reading ? "true" : "false");
+      noteView.hidden = !noting;
+      tabReadBtn.setAttribute("aria-pressed", reading || noting ? "true" : "false");
+      // Note view never goes full-screen -- keeps the dock reachable, which is
+      // the one hard requirement the owner set for how it can be left.
       if (!reading) setImmersive(false);
     }
 
@@ -2771,6 +2933,11 @@
       // Bangla timing map now that the Listening card that used to do it is
       // gone. Idempotent, so warming from several gestures costs one fetch.
       warmSegmentedTimestamps();
+      // Ayah Note panel: the reading screen is where every ⋮ badge lives, so
+      // this is the gesture that precedes needing hasNote/isBookmarked state
+      // -- fire-and-forget, same "on first use" treatment as the timing map
+      // above rather than something the reading screen waits on.
+      ensureAyahNoteDataLoaded();
       const first = startOfCurrentUnit();
       // Shell round 26 -- switching to the reading screen must never interrupt
       // what is sounding. Playback moves currentAyahNum as it advances, so
@@ -3133,13 +3300,20 @@
       // Range or a Whole Surah draws every ayah at once, so nothing on screen
       // moved as the audio advanced -- the owner's "the Ayah playing should
       // display on the screen (now it remains static)".
+      // Ayah Note panel: the ⋮ badge rides along with each flow ayah -- "any
+      // study-mode", per the owner, EXCEPT Mushaf (this branch never runs for
+      // it), which returns above before reaching here.
       pageViewContainer.innerHTML = ayahs
-        .map((ayah) => `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${renderLayoutA(ayah, panels, {
-          tajweedOn: tajweedToggle.checked,
-          langs: translationLangs(),
-          wbwLangs: wbwLangs(),
-        })}</div>`)
+        .map((ayah) => {
+          const unitKey = buildUnitKey.ayah(currentSurahNum, ayah.ayah);
+          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}">${renderLayoutA(ayah, panels, {
+            tajweedOn: tajweedToggle.checked,
+            langs: translationLangs(),
+            wbwLangs: wbwLangs(),
+          })}${renderQuickMenu(unitKey, { hasNote: ayahHasNote(ayahNotesDoc, unitKey) })}</div>`;
+        })
         .join("");
+      attachAyahQuickMenus(pageViewContainer);
       markPlayingAyah(currentAyahNum, { scroll: false });
     }
 
@@ -3175,6 +3349,150 @@
         target.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
       }
       return true;
+    }
+
+    // -----------------------------------------------------------------------
+    // Ayah Note panel -- the ⋮ quick menu on every āyah and the "Note & more"
+    // view it opens into (see ayah-note-renderer.js for the actual markup/
+    // wiring; this app-side glue is everything that renderer isn't allowed
+    // to know, per I2 -- db reads/writes, records/audio state, translated
+    // strings that need real ayah data).
+    // -----------------------------------------------------------------------
+
+    function parseAyahUnitKey(unitKey) {
+      const [, surah, ayah] = unitKey.split(":");
+      return { surah: Number(surah), ayah: Number(ayah) };
+    }
+
+    function ayahRefLabel(surahNum, ayahNum) {
+      return t("Quran {surah}:{ayah} — Surah {name}", { surah: num(surahNum), ayah: num(ayahNum), name: surahName(surahNum) });
+    }
+
+    /** Both docs are one small document each -- loaded once per acting person, not per ayah. Re-renders the reading screen when the fetch lands so quick-menu badges/checkboxes pick up real hasNote/isBookmarked state instead of staying at their empty defaults. */
+    async function ensureAyahNoteDataLoaded() {
+      if (ayahNoteDataLoadedFor === selectedPersonId) return;
+      ayahNoteDataLoadedFor = selectedPersonId;
+      if (!selectedPersonId) { ayahNotesDoc = { notes: {} }; bookmarksDoc = { resume: {}, saved: [] }; return; }
+      try {
+        [ayahNotesDoc, bookmarksDoc] = await Promise.all([
+          getAyahNotes(db, activeTenantId, selectedPersonId),
+          getBookmarks(db, activeTenantId, selectedPersonId),
+        ]);
+      } catch {
+        ayahNotesDoc = { notes: {} };
+        bookmarksDoc = { resume: {}, saved: [] };
+      }
+      if (stageView === "read") renderStudyScreen();
+      else if (stageView === "note" && openNoteUnitKey) renderNoteViewNow(openNoteUnitKey);
+    }
+
+    /** Ref line + whichever of Arabic/English/Bangla/Notes were checked -- the same shape for the quick menu's Copy/Share and the Note view's own row, so ticking the same boxes in either place produces the same text (spec: "these options also have to be there where they are now for those using the note"). */
+    function buildAyahText(unitKey, langs) {
+      const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
+      const ayah = surah === currentSurahNum ? currentSurahData?.ayahs.find((a) => a.ayah === ayahNum) : null;
+      if (!ayah) return "";
+      const parts = [ayahRefLabel(surah, ayahNum)];
+      if (langs.includes("ar")) parts.push(ayah.uthmaniText);
+      if (langs.includes("en") && ayah.translations?.en) parts.push(ayah.translations.en);
+      if (langs.includes("bn") && ayah.translations?.bn) parts.push(ayah.translations.bn);
+      if (langs.includes("notes")) {
+        const plain = notesToPlainText(ayahNoteHtml(ayahNotesDoc, unitKey));
+        if (plain) parts.push(`${t("Notes:")}\n${plain}`);
+      }
+      return parts.join("\n\n");
+    }
+
+    /** Plays exactly this one āyah with whatever reciter is already ticked/current -- the quick menu's own "just a click away" Play, distinct from playCurrentSelection()'s unit-wide drill. */
+    function quickPlayAyah(unitKey) {
+      const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
+      unlockAudio();
+      warmSegmentedTimestamps();
+      const reciterId = playbackReciterIds()[0] ?? currentReciterId;
+      if (!reciterId) { alert(t("Pick a reciter in Listening settings first.")); return; }
+      playOneAndWait(surah, ayahNum, reciterId).catch(reportPlayFailure);
+      renderReadTransport();
+    }
+
+    /** Wires every ⋮ badge currently in `el` (there may be several -- the flow view renders one per āyah). Re-call after every re-render; attachQuickMenuHandlers itself guards its own outside-click listener against being bound twice. */
+    function attachAyahQuickMenus(el) {
+      attachQuickMenuHandlers(el, {
+        buildText: buildAyahText,
+        onPlay: quickPlayAyah,
+        onOpenNote: openNoteView,
+      });
+    }
+
+    async function toggleAyahBookmark(unitKey) {
+      if (!auth.currentUser || !selectedPersonId) return;
+      const existing = findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
+      const outcome = await safeWrite(async () => {
+        if (existing) {
+          await removeSavedBookmark(db, activeTenantId, selectedPersonId, existing.id);
+        } else {
+          const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
+          await saveBookmark(db, {
+            tenantId: activeTenantId, personId: selectedPersonId, moduleId: "quranrevival", subjectId: "quran",
+            name: ayahRefLabel(surah, ayahNum), position: unitKey, uid: auth.currentUser.uid,
+          });
+        }
+      }, { collection: TENANT.BOOKMARKS, action: "toggleAyahBookmark" });
+      if (!outcome.ok) return;
+      bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
+      renderNoteViewNow(unitKey);
+    }
+
+    /** Builds and mounts the "Note & more" view for one āyah; does NOT switch stageView -- callers decide that (openNoteView() on first open; onPrev/onNext just re-render in place). Prev/Next stay within the current surah for this round -- crossing a surah boundary would need an async fetch mid-navigation, flagged as a real follow-up rather than attempted here. */
+    function renderNoteViewNow(unitKey) {
+      const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
+      if (surah !== currentSurahNum || !currentSurahData) return;
+      const ayah = currentSurahData.ayahs.find((a) => a.ayah === ayahNum);
+      if (!ayah) return;
+      openNoteUnitKey = unitKey;
+      const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
+      noteView.innerHTML = renderNoteView({
+        unitKey,
+        ref: ayahRefLabel(surah, ayahNum),
+        arabicText: ayah.uthmaniText,
+        englishText: ayah.translations?.en ?? "",
+        banglaText: ayah.translations?.bn ?? "",
+        notesHtml: ayahNoteHtml(ayahNotesDoc, unitKey),
+        isBookmarked,
+        hasPrev: ayahNum > 1,
+        hasNext: ayahNum < currentSurahData.ayahCount,
+      });
+      attachNoteViewHandlers(noteView, {
+        buildText: (langs) => buildAyahText(unitKey, langs),
+        onSaveNote: async (html) => {
+          if (!auth.currentUser || !selectedPersonId) {
+            return { ok: false, message: t("You're signed out, so that could not be saved. Please sign in again.") };
+          }
+          const outcome = await safeWrite(
+            () => saveAyahNote(db, { tenantId: activeTenantId, personId: selectedPersonId, unitKey, html, uid: auth.currentUser.uid }),
+            { collection: TENANT.AYAH_NOTES, action: "saveAyahNote" }
+          );
+          if (!outcome.ok) return { ok: false, message: outcome.entry.message };
+          ayahNotesDoc = { ...ayahNotesDoc, notes: { ...(ayahNotesDoc.notes ?? {}), [unitKey]: { html, updatedAt: new Date().toISOString() } } };
+          // The ⋮ badge's own hasNote state lives in ayahPanels/pageViewContainer,
+          // hidden behind this view right now but not stale once shown again --
+          // harmless to refresh a hidden view, and cheap (no network calls).
+          renderStudyScreen();
+          return { ok: true };
+        },
+        onToggleBookmark: () => toggleAyahBookmark(unitKey),
+        onPlay: () => quickPlayAyah(unitKey),
+        onPrev: () => { if (ayahNum > 1) renderNoteViewNow(buildUnitKey.ayah(surah, ayahNum - 1)); },
+        onNext: () => { if (ayahNum < currentSurahData.ayahCount) renderNoteViewNow(buildUnitKey.ayah(surah, ayahNum + 1)); },
+      });
+    }
+
+    /** Entry point from the ⋮ menu's "Note & more…". Confirms the notes doc is really writable (spec item 8) in the background -- opening the view never waits on it, and a failure surfaces the first time an actual save is attempted, via onSaveNote's own safeWrite above. */
+    async function openNoteView(unitKey) {
+      await ensureAyahNoteDataLoaded();
+      if (auth.currentUser && selectedPersonId) {
+        ensureAyahNotesWritable(db, { tenantId: activeTenantId, personId: selectedPersonId, uid: auth.currentUser.uid });
+      }
+      renderNoteViewNow(unitKey);
+      setStageView("note");
     }
 
     function renderStudyScreen() {
@@ -3251,11 +3569,17 @@
         ayahSelect.value = String(currentAyahNum);
         prevAyahBtn.disabled = currentAyahNum <= 1;
         nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount;
-        ayahPanels.innerHTML = renderLayoutA(ayah, panels, {
+        // Ayah Note panel: the ⋮ badge sits in an anchor wrapper so it can be
+        // positioned in the corner without disturbing renderLayoutA's own
+        // panel markup (I2 -- ayah-renderer.js itself is untouched and still
+        // shared by Hadith/topic/Asma renderers, which don't get this badge).
+        const singleUnitKey = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
+        ayahPanels.innerHTML = `<div class="ayah-note-anchor">${renderLayoutA(ayah, panels, {
           tajweedOn: tajweedToggle.checked,
           langs: translationLangs(),
           wbwLangs: wbwLangs(),
-        });
+        })}${renderQuickMenu(singleUnitKey, { hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey) })}</div>`;
+        attachAyahQuickMenus(ayahPanels);
       }
 
       renderListeningControls();
@@ -3564,7 +3888,17 @@
 
     surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); });
     trackableSelect.addEventListener("change", async () => { currentTrackableId = trackableSelect.value; renderWheel(); renderStudyScreen(); });
-    personSelect.addEventListener("change", async () => { selectedPersonId = personSelect.value; await refreshChunkAndWheel(); await refreshProgramMap(); });
+    personSelect.addEventListener("change", async () => {
+      selectedPersonId = personSelect.value;
+      await refreshChunkAndWheel();
+      await refreshProgramMap();
+      // A different acting person has their own notes/bookmarks -- the cache
+      // is keyed by person, so this just lets the next ensureAyahNoteDataLoaded()
+      // (already fired from tabReadBtn's own click) fetch fresh rather than
+      // reusing the previous person's.
+      ayahNoteDataLoadedFor = null;
+      if (stageView === "read" || stageView === "note") ensureAyahNoteDataLoaded();
+    });
 
     // ---------------------------------------------------------------------
     // Way modal -- ayah-level (unchanged from Phase 4: wheel-click always
