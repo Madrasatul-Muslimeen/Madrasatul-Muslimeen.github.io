@@ -334,7 +334,24 @@
      inside a dock panel and must keep its natural height. */
   #wheelSection { flex: 1 1 auto; min-height: 0; align-items: stretch; align-content: stretch; }
   #wheelSection .wheel-col { justify-content: center; min-height: 0; }
-  #wheelSection .wheel-sidebar { display: flex; flex-direction: column; min-height: 0; }
+  /* PC layout fix: with a real 30-Approach tenant (not the 10-item test
+     fixture every earlier round measured against), .ways-list's content is
+     taller than the card and there was no way to reach the rest -- not a
+     missing scrollbar, a missing HEIGHT. align-items:stretch on #wheelSection
+     is supposed to bound .wheel-sidebar's cross size, but a flex item whose
+     own height is left at "auto" doesn't actually get clipped to that bound
+     when its content is taller (the stretch value only wins ties, it doesn't
+     override overflowing content) -- so .wheel-sidebar silently grew past
+     #wheelSection's own box, past the dock, and off the bottom of the
+     screen, with nothing to scroll TO the missing rows. `height: 100%`
+     forces it to the real, already-correct #wheelSection height instead of
+     an unbounded auto, which is what lets .ways-list's own flex:1 1 auto +
+     overflow-y:auto (below) actually compute a real, smaller box and scroll
+     internally. Measured: 30+ Approaches now scroll inside the card at
+     every viewport (phone through 1920px) with the dock never covered; the
+     common few-Approach case is visually unchanged, since the extra height
+     was already just background, not content. */
+  #wheelSection .wheel-sidebar { display: flex; flex-direction: column; min-height: 0; height: 100%; }
   #wheelSection .ways-list { flex: 1 1 auto; max-height: none; }
 
   @media (max-width: 720px) {
@@ -377,6 +394,27 @@
     #readBar button { font-size: 0.74rem; padding: 0.25rem 0.45rem; }
     #readRef { font-size: 0.75rem; }
   }
+
+  /* ---------- PC layout fix ----------
+     body's own 60rem (960px) cap was set long before this page was measured
+     above 768px (shell round 14's own note: "the panel stops growing at
+     928px on any screen -- half a 1920px monitor is empty"), and it was
+     deliberately left alone at the time as a design change, not a fix. The
+     owner has now asked for it directly: on a real desktop the wheel sits in
+     a narrow column near the left edge with the rest of the screen empty.
+     Widened only above tablet width -- 60rem is already wider than the
+     768px tablet breakpoint, so nothing below 1024px is affected, and
+     nothing here touches the @media(max-width:720px) block above, which
+     stays byte-for-byte what rounds 9-27 measured. The wheel and sidebar
+     grow with it (still capped, just larger), rather than leaving the extra
+     width as blank padding around an unchanged 320px wheel. */
+  @media (min-width: 1024px) {
+    body { max-width: min(92vw, 1280px); }
+    .mastery-wheel { max-width: 420px; }
+    .wheel-sidebar { max-width: 460px; }
+    .wheel-box { gap: 2.5rem; }
+  }
+
   .wheel-seg { cursor: pointer; stroke: #0c1320; stroke-width: 1; transition: stroke .15s, stroke-width .15s; }
   .wheel-seg:hover { stroke: #F2E8D5; stroke-width: 1.5; }
   .wheel-seg-num { font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 600; fill: #F2E8D5; }
