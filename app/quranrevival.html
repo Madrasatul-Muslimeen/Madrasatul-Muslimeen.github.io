@@ -3428,16 +3428,26 @@
       const outcome = await safeWrite(async () => {
         if (existing) {
           await removeSavedBookmark(db, activeTenantId, selectedPersonId, existing.id);
-        } else {
-          const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
-          await saveBookmark(db, {
-            tenantId: activeTenantId, personId: selectedPersonId, moduleId: "quranrevival", subjectId: "quran",
-            name: ayahRefLabel(surah, ayahNum), position: unitKey, uid: auth.currentUser.uid,
-          });
+          return null;
         }
+        const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
+        return saveBookmark(db, {
+          tenantId: activeTenantId, personId: selectedPersonId, moduleId: "quranrevival", subjectId: "quran",
+          name: ayahRefLabel(surah, ayahNum), position: unitKey, uid: auth.currentUser.uid,
+        });
       }, { collection: TENANT.BOOKMARKS, action: "toggleAyahBookmark" });
       if (!outcome.ok) return;
-      bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
+      // Update in-memory rather than re-fetching -- same reasoning as
+      // onSaveNote's own ayahNotesDoc update below: the write already tells
+      // us exactly what changed, so a re-fetch is both an unneeded round
+      // trip and, right after a create, a real race against a backend that
+      // may not have caught up to its own write yet.
+      bookmarksDoc = {
+        ...bookmarksDoc,
+        saved: existing
+          ? bookmarksDoc.saved.map((b) => (b.id === existing.id ? { ...b, removed: true } : b))
+          : [...(bookmarksDoc.saved ?? []), outcome.result],
+      };
       renderNoteViewNow(unitKey);
     }
 
