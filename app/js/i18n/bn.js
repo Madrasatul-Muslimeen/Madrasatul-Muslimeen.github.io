@@ -524,6 +524,53 @@ export const BN = {
   "Starting fresh instead?": "নতুন করে শুরু করতে চান?",
   "Create a new account\n      on the onboarding page": "নতুন অ্যাকাউন্ট তৈরি করুন",
 
+  // --- The Ayah Note panel: the ⋮ quick menu and "Note & more" view ------
+  "Quick actions": "দ্রুত কাজ",
+  "Copy": "কপি করুন",
+  "Share": "শেয়ার করুন",
+  "Play this āyah": "এই আয়াতটি চালান",
+  "Note & more…": "নোট ও আরও…",
+  "Copy failed": "কপি ব্যর্থ হয়েছে",
+  "✓ Copied": "✓ কপি হয়েছে",
+  "My note": "আমার নোট",
+  "My note (none saved)": "আমার নোট (এখনো সংরক্ষিত নেই)",
+  "Notes:": "নোট:",
+  "Pick a reciter in Listening settings first.": "প্রথমে শোনার সেটিংসে একজন ক্বারী বেছে নিন।",
+  "Quran {surah}:{ayah} — Surah {name}": "কুরআন {surah}:{ayah} — সূরা {name}",
+  // The Note view's own top bar and body.
+  "Notes formatting": "নোট ফরম্যাটিং",
+  "Coming later": "শীঘ্রই আসছে",
+  "Mapping My Journey": "আমার যাত্রার মানচিত্র", // ? -- placeholder feature name, not yet designed
+  "Previous āyah": "পূর্ববর্তী আয়াত",
+  "Next āyah": "পরবর্তী আয়াত",
+  "Bookmark this āyah": "এই আয়াতটি বুকমার্ক করুন",
+  "Remove bookmark": "বুকমার্ক সরান",
+  "Bookmark, copy & share": "বুকমার্ক, কপি ও শেয়ার",
+  "Collapse āyah text": "আয়াতের লেখা সংক্ষিপ্ত করুন",
+  "Expand āyah text": "আয়াতের লেখা বড় করুন",
+  "Notes always stays open": "নোট সবসময় খোলা থাকে",
+  "Bangla": "বাংলা",
+  "Type notes here…": "এখানে নোট লিখুন…",
+  "Couldn't save — will try again.": "সংরক্ষণ করা যায়নি — আবার চেষ্টা করা হবে।",
+  "Changes aren't reaching the server right now — notes will save once the connection is back.":
+    "এখন পরিবর্তনগুলো সার্ভারে পৌঁছাচ্ছে না — সংযোগ ফিরে এলে নোট সংরক্ষিত হবে।",
+  // The Notes formatting toolbar (execCommand's own vocabulary).
+  "Edit palette — formats the Notes field only": "সম্পাদনা প্যালেট — শুধু নোট ঘরটি ফরম্যাট করে",
+  "Bold": "গাঢ়",
+  "Italic": "তির্যক",
+  "Underline": "আন্ডারলাইন",
+  "Strikethrough": "কাটাকাটি রেখা", // ?
+  "Heading style": "শিরোনামের ধরন",
+  "Normal": "স্বাভাবিক",
+  "Heading 1": "শিরোনাম ১",
+  "Heading 2": "শিরোনাম ২",
+  "Heading 3": "শিরোনাম ৩",
+  "Bullet list": "বুলেট তালিকা",
+  "Numbered list": "নম্বরযুক্ত তালিকা",
+  "List": "তালিকা",
+  "Clear": "মুছুন",
+  "Clear formatting": "ফরম্যাটিং মুছুন",
+
   // =====================================================================
   // Phase 3 of 6 — THE NINE OTHER MODULES (13 Aug 2026)
   // =====================================================================

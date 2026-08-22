@@ -3855,6 +3855,51 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await ctx.close();
 }
 
+// --- 42k the whole panel really renders in Bangla, not just the coverage
+// report -- the standing lesson this project keeps relearning: only a
+// rendered page proves a screen is translated. ------------------------------
+{
+  const ctx = await ctxFor({ banner: false, appLang: "bn" });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+  await page.click("#ayahPanels [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  const menuBn = await page.evaluate(() => {
+    const wrap = document.querySelector("#ayahPanels .ayah-quick-wrap");
+    return {
+      items: [...wrap.querySelectorAll(".qm-item")].map((b) => b.textContent.trim()),
+      // Checkbox VALUES must stay plain "ar"/"en"/"bn"/"notes" -- they are
+      // read back by unit-key-building code, never shown to a reader.
+      langValues: [...wrap.querySelectorAll(".qm-lang-copy")].map((cb) => cb.dataset.lang),
+    };
+  });
+  check("42k the quick menu's own items render in Bangla", menuBn.items.every((t) => BANGLA.test(t)), JSON.stringify(menuBn.items));
+  check("42k ...while the checkbox values stay plain ids", JSON.stringify(menuBn.langValues) === JSON.stringify(["ar", "en", "bn", "notes"]));
+
+  await page.click("#ayahPanels [data-qm-note]");
+  await page.waitForTimeout(300);
+  const noteBn = await page.evaluate(() => {
+    const view = document.querySelector(".note-view");
+    return {
+      topbar: view.querySelector(".note-topbar").textContent,
+      fieldLabels: [...view.querySelectorAll(".note-field-label")].map((s) => s.textContent.trim()),
+      masterToggle: view.querySelector("[data-note-master-toggle]").textContent.trim(),
+      headingOptions: [...view.querySelectorAll("[data-note-heading] option")].map((o) => ({ value: o.value, text: o.textContent.trim() })),
+    };
+  });
+  check("42k Note & more's top bar is in Bangla", BANGLA.test(noteBn.topbar), noteBn.topbar);
+  check("42k ...every field label too (Arabic/English/Bangla/Notes)", noteBn.fieldLabels.every((t) => BANGLA.test(t)), JSON.stringify(noteBn.fieldLabels));
+  check("42k ...and the master toggle's own button", BANGLA.test(noteBn.masterToggle), noteBn.masterToggle);
+  check("42k the heading-style dropdown reads in Bangla with plain option values",
+        noteBn.headingOptions.every((o) => BANGLA.test(o.text)) && noteBn.headingOptions.map((o) => o.value).join() === "p,h1,h2,h3",
+        JSON.stringify(noteBn.headingOptions));
+
+  check("42k no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);
