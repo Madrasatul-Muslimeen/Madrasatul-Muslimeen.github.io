@@ -3783,6 +3783,15 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.click("[data-note-master-toggle]");
   await page.waitForTimeout(100);
 
+  // Bookmark/Copy/Share/Play sit behind their own 🔖 icon toggle, hidden by
+  // default (spec: "Bundle bookmark + language checkboxes + Copy + Share +
+  // Play into a single row that is hidden by default") -- has to be opened
+  // before the star is even clickable, same as the quick menu's own popover.
+  await page.click("[data-note-actions-toggle]");
+  await page.waitForTimeout(150);
+  const actionsOpen = await page.evaluate(() => document.querySelector("[data-note-actionsbar]").classList.contains("open"));
+  check("42f the 🔖 toggle reveals bookmark/copy/share/play", actionsOpen);
+
   // Bookmark -- reuses the existing bookmarks collection (findSavedBookmark).
   await page.click("[data-note-bookmark]");
   await page.waitForTimeout(300);
