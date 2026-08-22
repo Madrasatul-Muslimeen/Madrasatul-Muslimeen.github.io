@@ -3783,14 +3783,15 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.click("[data-note-master-toggle]");
   await page.waitForTimeout(100);
 
-  // Bookmark/Copy/Share/Play sit behind their own 🔖 icon toggle, hidden by
-  // default (spec: "Bundle bookmark + language checkboxes + Copy + Share +
-  // Play into a single row that is hidden by default") -- has to be opened
-  // before the star is even clickable, same as the quick menu's own popover.
+  // Bookmark/language-checkboxes/Play sit behind their own 🔖 icon toggle,
+  // hidden by default (spec: "hidden by default") -- has to be opened
+  // before the star is even clickable, same as the quick menu's own
+  // popover. Copy/Share moved up to the Ayah bar this round (the owner's
+  // ask) and are no longer behind this toggle -- see section 42m.
   await page.click("[data-note-actions-toggle]");
   await page.waitForTimeout(150);
   const actionsOpen = await page.evaluate(() => document.querySelector("[data-note-actionsbar]").classList.contains("open"));
-  check("42f the 🔖 toggle reveals bookmark/copy/share/play", actionsOpen);
+  check("42f the 🔖 toggle reveals bookmark/language checkboxes/play", actionsOpen);
 
   // Bookmark -- reuses the existing bookmarks collection (findSavedBookmark).
   await page.click("[data-note-bookmark]");
@@ -3855,6 +3856,183 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await ctx.close();
 }
 
+// --- 42l the owner's own fixes: the ⋮ badge no longer overlaps the Arabic
+// text (measured, not eyeballed -- a fixed-position overlay left only a
+// ~6px gap from the text's own right edge, thin enough for an ordinary
+// āyah and real font rendering to eat into) -----------------------------
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+  const single = await page.evaluate(() => {
+    const badge = document.querySelector("#ayahPanels .ayah-quick-wrap").getBoundingClientRect();
+    const arabic = document.querySelector("#ayahPanels .ayah-arabic").getBoundingClientRect();
+    return { badgeBottom: badge.bottom, arabicTop: arabic.top, overlapsHorizontally: !(badge.right < arabic.left || badge.left > arabic.right) };
+  });
+  check("42l the ⋮ badge sits ABOVE the Arabic text, single-āyah view (no vertical overlap possible)",
+        single.badgeBottom <= single.arabicTop + 1, JSON.stringify(single));
+
+  await openStudyOptions(page);
+  await page.selectOption("#unitTypeSelect", "surah");
+  await page.waitForTimeout(300);
+  const flow = await page.evaluate(() => {
+    const row = document.querySelector("#pageViewContainer .page-flow-ayah");
+    const badge = row.querySelector(".ayah-quick-wrap").getBoundingClientRect();
+    const arabic = row.querySelector(".ayah-arabic").getBoundingClientRect();
+    return { badgeBottom: badge.bottom, arabicTop: arabic.top };
+  });
+  check("42l ...and in the flow view too (every ayah, not just the first)",
+        flow.badgeBottom <= flow.arabicTop + 1, JSON.stringify(flow));
+  check("42l no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+// --- 42m the Ayah bar: Copy/Share/Collapse (icon-only) and Full screen all
+// live on it now, and the reference text no longer truncates -- the old
+// nowrap+ellipsis rule cut it off "for no reason" any time the row's total
+// content didn't perfectly fit, wide screen or not. ----------------------
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+  await page.click("#ayahPanels [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("#ayahPanels [data-qm-note]");
+  await page.waitForTimeout(300);
+  const bar = await page.evaluate(() => {
+    const view = document.querySelector(".note-view");
+    const bar = view.querySelector(".note-ayahbar");
+    const ref = getComputedStyle(view.querySelector(".note-ref"));
+    return {
+      hasCopy: !!bar.querySelector("[data-note-copy]"),
+      hasShare: !!bar.querySelector("[data-note-share]"),
+      hasCollapse: !!bar.querySelector("[data-note-master-toggle]"),
+      hasFullscreen: !!bar.querySelector("[data-note-fullscreen]"),
+      collapseIsIconOnly: bar.querySelector("[data-note-master-toggle]").textContent.trim() === "▾",
+      refWhiteSpace: ref.whiteSpace,
+      refTextOverflow: ref.textOverflow,
+      noOldCopyShareInActionsRow: !document.querySelector("[data-note-actionsbar] [data-note-copy], [data-note-actionsbar] [data-note-share]"),
+    };
+  });
+  check("42m Copy, Share, Collapse and Full screen all live on the Ayah bar",
+        bar.hasCopy && bar.hasShare && bar.hasCollapse && bar.hasFullscreen, JSON.stringify(bar));
+  check("42m the Collapse button is icon-only, no label text", bar.collapseIsIconOnly, JSON.stringify(bar));
+  check("42m Copy/Share are gone from the actions row -- moved, not duplicated", bar.noOldCopyShareInActionsRow);
+  check("42m the reference can wrap rather than being cut off (no nowrap+ellipsis)",
+        bar.refWhiteSpace !== "nowrap" && bar.refTextOverflow !== "ellipsis", JSON.stringify(bar));
+  check("42m no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+// --- 42n "Mapping My Journey" wraps to its own line on a phone, where the
+// owner asked it to make room for the reference, but joins the same line
+// as everything else on a desktop, where there's no need for a second row
+// at all. -------------------------------------------------------------------
+{
+  async function journeyRow(viewport) {
+    const ctx = await ctxFor({ banner: false, viewport });
+    const { page } = await openPage(ctx, "/app/quranrevival.html");
+    await page.click("#tabReadBtn");
+    await page.waitForTimeout(400);
+    await page.click("#ayahPanels [data-qm-toggle]");
+    await page.waitForTimeout(150);
+    await page.click("#ayahPanels [data-qm-note]");
+    await page.waitForTimeout(300);
+    const rows = await page.evaluate(() => {
+      const view = document.querySelector(".note-view");
+      const ref = view.querySelector(".note-ref").getBoundingClientRect();
+      const journey = view.querySelector(".note-journey-btn").getBoundingClientRect();
+      return { refTop: ref.top, journeyTop: journey.top };
+    });
+    await page.close();
+    await ctx.close();
+    return rows;
+  }
+  const mobile = await journeyRow({ width: 360, height: 640 });
+  const desktop = await journeyRow({ width: 1280, height: 900 });
+  check("42n on a phone, Mapping My Journey wraps to its own line below the reference",
+        mobile.journeyTop > mobile.refTop + 5, JSON.stringify(mobile));
+  check("42n on a desktop, it shares the same line -- no second bar needed",
+        Math.abs(desktop.journeyTop - desktop.refTop) < 5, JSON.stringify(desktop));
+}
+
+// --- 42o the Note view's own full screen: two states, and the Ayah bar
+// (which holds the Notes edit controls) stays on screen in both. -----------
+{
+  const ctx = await ctxFor({ banner: true });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+  await page.click("#ayahPanels [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("#ayahPanels [data-qm-note]");
+  await page.waitForTimeout(300);
+
+  const before = await page.evaluate(() => ({
+    banner: getComputedStyle(document.querySelector("h1")).display,
+    topNav: getComputedStyle(document.getElementById("topNav")).display,
+    dock: getComputedStyle(document.getElementById("dock")).display,
+    ayahbar: getComputedStyle(document.querySelector(".note-ayahbar")).display,
+  }));
+  check("42o state one (default): banner, main menu, dock and the Ayah bar are all visible",
+        before.banner !== "none" && before.topNav !== "none" && before.dock !== "none" && before.ayahbar !== "none",
+        JSON.stringify(before));
+
+  await page.click("[data-note-fullscreen]");
+  await page.waitForTimeout(200);
+  const full = await page.evaluate(() => ({
+    banner: getComputedStyle(document.querySelector("h1")).display,
+    topNav: getComputedStyle(document.getElementById("topNav")).display,
+    dock: getComputedStyle(document.getElementById("dock")).display,
+    ayahbar: getComputedStyle(document.querySelector(".note-ayahbar")).display,
+    pressed: document.querySelector("[data-note-fullscreen]").getAttribute("aria-pressed"),
+  }));
+  check("42o state two (full screen): banner, main menu and dock go",
+        full.banner === "none" && full.topNav === "none" && full.dock === "none", JSON.stringify(full));
+  check("42o ...but the Ayah bar stays -- it holds the Notes edit controls", full.ayahbar !== "none");
+  check("42o the toggle itself reads pressed", full.pressed === "true");
+
+  await page.click("[data-note-fullscreen]");
+  await page.waitForTimeout(200);
+  const restored = await page.evaluate(() => ({
+    banner: getComputedStyle(document.querySelector("h1")).display,
+    dock: getComputedStyle(document.getElementById("dock")).display,
+  }));
+  check("42o tapping it again restores the banner and dock", restored.banner !== "none" && restored.dock !== "none", JSON.stringify(restored));
+
+  // The dock itself is one of the three things full screen hides, so
+  // leaving the note view WHILE full screen is on isn't reachable via the
+  // dock at all -- same convention the reading screen's own full screen
+  // already uses (its own BARE state hides the dock too, and getting back
+  // to it means un-hiding first). Full screen is already off again at this
+  // point (the restore click above), so what's worth proving is that
+  // leaving normally and re-opening later never carries a stale full-
+  // screen flag across -- each open starts in state one, per the owner's
+  // own description of it.
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(300);
+  await page.click("#ayahPanels [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("#ayahPanels [data-qm-note]");
+  await page.waitForTimeout(300);
+  const reopened = await page.evaluate(() => ({
+    bodyClass: document.body.className,
+    dock: getComputedStyle(document.getElementById("dock")).display,
+    pressed: document.querySelector("[data-note-fullscreen]")?.getAttribute("aria-pressed"),
+  }));
+  check("42o re-opening the note view always starts in state one, never carrying a stale full-screen flag",
+        !reopened.bodyClass.includes("note-immersive") && reopened.dock !== "none" && reopened.pressed === "false",
+        JSON.stringify(reopened));
+
+  check("42o no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
 // --- 42k the whole panel really renders in Bangla, not just the coverage
 // report -- the standing lesson this project keeps relearning: only a
 // rendered page proves a screen is translated. ------------------------------
@@ -3882,15 +4060,21 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   const noteBn = await page.evaluate(() => {
     const view = document.querySelector(".note-view");
     return {
-      topbar: view.querySelector(".note-topbar").textContent,
+      ayahbarRef: view.querySelector(".note-ref").textContent,
+      journeyBtn: view.querySelector(".note-journey-btn").textContent,
       fieldLabels: [...view.querySelectorAll(".note-field-label")].map((s) => s.textContent.trim()),
-      masterToggle: view.querySelector("[data-note-master-toggle]").textContent.trim(),
+      // Icon-only now (the owner's ask) -- the Bangla lives in the title,
+      // not the button's own (single-glyph) text.
+      masterToggleTitle: view.querySelector("[data-note-master-toggle]").title,
+      fullscreenTitle: view.querySelector("[data-note-fullscreen]").title,
       headingOptions: [...view.querySelectorAll("[data-note-heading] option")].map((o) => ({ value: o.value, text: o.textContent.trim() })),
     };
   });
-  check("42k Note & more's top bar is in Bangla", BANGLA.test(noteBn.topbar), noteBn.topbar);
+  check("42k Note & more's own ref and Journey placeholder are in Bangla",
+        BANGLA.test(noteBn.ayahbarRef) && BANGLA.test(noteBn.journeyBtn), JSON.stringify(noteBn));
   check("42k ...every field label too (Arabic/English/Bangla/Notes)", noteBn.fieldLabels.every((t) => BANGLA.test(t)), JSON.stringify(noteBn.fieldLabels));
-  check("42k ...and the master toggle's own button", BANGLA.test(noteBn.masterToggle), noteBn.masterToggle);
+  check("42k ...and the icon-only buttons' own titles (Collapse, Full screen)",
+        BANGLA.test(noteBn.masterToggleTitle) && BANGLA.test(noteBn.fullscreenTitle), JSON.stringify(noteBn));
   check("42k the heading-style dropdown reads in Bangla with plain option values",
         noteBn.headingOptions.every((o) => BANGLA.test(o.text)) && noteBn.headingOptions.map((o) => o.value).join() === "p,h1,h2,h3",
         JSON.stringify(noteBn.headingOptions));

@@ -545,6 +545,12 @@ export const BN = {
   "Next āyah": "পরবর্তী আয়াত",
   "Bookmark this āyah": "এই আয়াতটি বুকমার্ক করুন",
   "Remove bookmark": "বুকমার্ক সরান",
+  // Copy/Share moved to the Ayah bar itself; this key is what the 🔖
+  // toggle's title says now that only Bookmark/Play/language checkboxes
+  // are left behind it. "Bookmark, copy & share" above is kept, unused,
+  // rather than deleted -- same rule this project has followed every time
+  // a string stopped being called.
+  "Bookmark, play & language options": "বুকমার্ক, চালান ও ভাষা অপশন",
   "Bookmark, copy & share": "বুকমার্ক, কপি ও শেয়ার",
   "Collapse āyah text": "আয়াতের লেখা সংক্ষিপ্ত করুন",
   "Expand āyah text": "আয়াতের লেখা বড় করুন",
