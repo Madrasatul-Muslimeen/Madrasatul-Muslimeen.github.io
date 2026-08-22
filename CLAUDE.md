@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.57.** Cutover to production happened
+**Current milestone: QuranRevival v07.58.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -2891,6 +2891,123 @@ the SUMMARY label's own text width, not the dropdown), **`panel.mjs`** and
 the static files. (The two rules changes still pending from earlier rounds
 -- v07.18 Homework teacher-scoping and v07.37 `appLang` -- are unaffected
 and still not deployed.)
+
+v07.58 (22 Aug 2026, on Claude Code on the web) is **the Ayah Note panel** --
+built from a QCR prototype's own popup-note feature (its behavior and
+interaction design only, ported by hand, never its code, styling or data
+model, per the owner's own brief), settled with a demo artifact shown and
+reworked at each stage before anything was built, the same "ask before
+building" discipline recent design-call rounds have used. Three real
+decisions were put to the owner and answered before code: **(a) Play is
+wired to real audio**, not the disabled placeholder the QCR spec itself
+called for -- this app already has a working reciter system QCR never had,
+so the literal spec was the wrong default here; **(b) scope is the reading
+screen only this round** -- the single-āyah view and the flow view (Range/
+Whole Surah/Ruku'/Juz/Hizb/Page, everywhere an āyah is shown while
+studying) -- with Mushaf explicitly deferred on the owner's own permission
+("let me know if it is difficult... then leave it"): the āyahs there sit
+inside justified print lines, not discrete blocks, genuinely harder to
+place a badge on; **(c) a two-tier design**, the owner's own follow-up once
+the first mockup was shown -- a **⋮ quick-actions menu** on every āyah
+(Copy and Share each expand in place to their own Arabic/English/Bangla/
+Notes checkboxes, plus Play and "Note & more…") for anyone who only wants
+to grab an āyah, and the deeper **"Note & more" view** for anyone who
+wants it -- collapsible Arabic/English/Bangla/Notes fields, a master
+toggle that never touches Notes, a rich-text Notes editor with its own
+formatting toolbar, and the same Copy/Share/Play/bookmark row a second
+time, reached only through the quick menu's own "Note & more" item, never
+a second badge.
+
+**The Note view's own shape is a real departure from the QCR reference,
+settled with the owner before building**: not a floating modal with a ×
+button, but a THIRD `#stage` view, exactly parallel to `#readView` (shell
+round 17's own shape) -- `#dock` stays visible underneath and is the only
+way out, the same navigation model as switching to Read or Explore today.
+The owner's own words: "so it covers the whole screen... bottom menu bars
+buttons should be visible below, pop-up note should not cover the bottom
+menu bar." `tabReadBtn`'s existing click handler needed no special-casing
+at all for this -- its own check is `stageView === "read"`, false while
+noting, so tapping Read already falls through to the ordinary open-reading
+path and leaves the note view behind exactly like any other dock tap.
+
+**New collection, additive**: `ayahNotes/{tenantId}__{personId}`
+(`js/ayah-notes.js`), one doc per person, `notes{}` keyed by unitKey --
+same resume-shaped "a save overwrites the one entry" pattern as
+`bookmarks.resume`, not an append-only log, so I4 doesn't apply to it any
+differently. The bookmark star deliberately does NOT get a new mechanism
+-- it reuses the *existing* `bookmarks` collection's `saved[]` list (a new
+`findSavedBookmark()` helper), per the spec's own "no separate bookmarks
+list... unless one already exists." `ensureAyahNotesWritable()` is the
+write-capability probe the spec asked for ("verify write capability once
+at startup... rather than discovering failures only when the user edits
+something") -- but it fires the first time the Note view actually opens,
+not at app startup, matching this app's own "on first use" treatment of
+the reciter timing map (v07.39) and the search index (v07.40) rather than
+adding a network round trip to every landing-page visit whether or not
+anyone ever opens a note (I9).
+
+**A real bug the test run itself caught, not a reviewer**: the bookmark
+toggle wrote successfully but the star never flipped on screen, because
+the code re-fetched the bookmarks doc right after writing it instead of
+updating its own copy in memory -- unreliable immediately after a write,
+in the test stub and in real Firestore alike. Fixed to match the pattern
+`onSaveNote`'s own success path already used correctly (update in memory
+from what the write just told it, no re-fetch); `bookmarks.js`'s
+`saveBookmark()` now returns the full bookmark object rather than just its
+id, so the caller never has to reconstruct it.
+
+**Verified: a new section 42 in `tools/i18n-verify/behaviour.mjs`** (this
+project's own real-browser suite, not a one-off script) -- the ⋮ badge on
+the single-āyah view and every āyah of a Whole Surah's flow, the quick
+menu opening with Copy/Share/Play/Note & more, Copy's own checkboxes
+(Arabic/English/Bangla ticked by default, "My note" correctly greyed out
+until one is actually saved), the Note view opening as a full-stage view
+with the dock still visible and no × anywhere, the master toggle
+collapsing Arabic/English/Bangla together while leaving Notes alone, the
+bookmark/copy/share/play row properly hidden behind its own 🔖 toggle,
+bookmarking really writing to the existing `bookmarks` collection, typing
+and saving a note really writing to the new `ayahNotes` collection, and
+leaving via the dock tab returning to ordinary reading. **797 behaviour
+checks pass, 0 failed.** `layout.mjs`/`reading.mjs`/`panel.mjs` all clean;
+`navcheck.mjs` flags only the pre-existing, unrelated 320px English
+truncation this project has carried since v07.29.
+
+**Bangla translation, same round**: 42 new strings in `app/js/i18n/bn.js`
+-- coverage report at 1287/1287 (100%), with `js/ayah-note-renderer.js`/
+`js/ayah-notes.js` registered under the "quran" area rather than the
+generic leftover bucket. Per this project's own standing lesson (the
+coverage tool has been wrong about what it counts eight separate times),
+the number alone was not trusted as proof: a new check (42k) switches the
+app to Bangla, opens the quick menu and the Note view, and reads the real
+rendered text, while confirming checkbox/dropdown VALUES stay plain ids
+("ar"/"en"/"bn"/"notes", "p"/"h1"/"h2"/"h3"). Two lines marked `// ?` for
+the owner's own eye: "Mapping My Journey" (a placeholder name for a
+feature not yet designed, so any translation of it is a guess) and
+"Strikethrough" (plausible, unconfirmed).
+
+**`firestore.rules` for this round -- deployed by the owner 22 Aug 2026**,
+via the Firebase Console (same copy-paste route as every recent round):
+one new `ayahNotes` match block, byte-identical shape to the `bookmarks`
+block beside it. **A real process gap this round exposed and fixed**: the
+whole round had been sitting on its own branch, never merged -- the owner
+compared GitHub's `main` (1076 lines) against what was live in Firebase
+and found them equal, which was the tell. That comparison is also what
+confirms, for the first time in writing, that **the two older pending
+items -- v07.18's Homework teacher-scoping and v07.37's `appLang` -- were
+already deployed at some earlier point**: main's 1076 lines already
+included both before this round added its own 16. Neither needs raising
+as "still pending" again. Branch merged as PR #64, and the production
+mirror (`madrasatul-muslimeen.github.io`) is caught up too -- the whole of
+`app/` was diffed first, confirming only this round's own six files had
+drifted, no unrelated staleness.
+
+**Flagged, not built**: Mushaf-view support (deferred, per the owner's own
+call above); the Note view's own Prev/Next stay within the current surah
+-- crossing a boundary would need an async fetch mid-navigation, a real
+follow-up rather than attempted here; "Mapping My Journey" is still
+exactly the disabled placeholder the spec asked for, with no tagging model
+behind it (spec item 7 -- the owner will design and wire it up
+separately). No schema changes beyond the one additive collection.
 
 ---
 
