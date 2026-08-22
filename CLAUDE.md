@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.58.** Cutover to production happened
+**Current milestone: QuranRevival v07.59.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -3008,6 +3008,98 @@ follow-up rather than attempted here; "Mapping My Journey" is still
 exactly the disabled placeholder the spec asked for, with no tagging model
 behind it (spec item 7 -- the owner will design and wire it up
 separately). No schema changes beyond the one additive collection.
+
+v07.59 (22 Aug 2026, same day) is **shell round 30 -- three layout fixes to
+the Ayah Note panel, from the owner's own use of v07.58 the moment it
+shipped.** No new mechanism; all three are things v07.58 got structurally
+wrong, not settings to tune.
+
+**The ⋮ badge sat on the Arabic word, on every platform.** It was a
+fixed-position overlay reserving 2.2rem of padding on the right -- measured
+against the test suite's own short test āyah, that left a 6.4px gap between
+the text's own right edge (RTL, text-align:right) and the badge. Real
+āyahs run far longer per line than the test one, and 6.4px is thin enough
+for ordinary word length, Tajweed spans, and font-rendering differences
+across browsers/OSes to eat into -- which is exactly "in all platforms."
+**Fixed structurally, not by tuning the gap**: the badge is now a flow
+header row ABOVE the ayah content, on both the single-ayah and flow views,
+so it physically cannot share vertical space with the text again. Costs a
+small amount of vertical room; buys certainty instead of a fragile pixel
+margin.
+
+**Note & more's top bar is rebuilt as one responsive "Ayah bar."** The
+owner's reports, read together, describe one underlying shape: the
+reference was getting cut off on a phone (too many things sharing the row
+with it), AND cut off on a *desktop* too, "for out of no reason" -- which
+turned out to be a real, separate bug: `.note-ref` carried `white-space:
+nowrap; text-overflow: ellipsis`, and a flex item shrinks below its own
+content width the moment the row's total content doesn't perfectly fit,
+wide screen or not. Both are fixed by the same change: `.note-ref` now
+**wraps instead of truncating** (`white-space: normal`), so it can never
+be silently cut off again, on any screen. The owner's own fix for the
+crowding: **take "Mapping My Journey" off the bar on a phone, put it on a
+second row; on desktop, no second row is needed.** Built as ONE flex-wrap
+row rather than two separate bars for two screen sizes -- Journey is
+placed LAST (it's the widest single item), so on a narrow screen it's what
+wraps to its own line while the reference and every icon before it stay
+together on line one; on a wide screen the whole row fits and nothing
+wraps, which is what "no need to make a 2nd bar" looks like from pure
+CSS with no conditional rendering. **Copy and Share moved up from the
+actions row onto the Ayah bar, icon-only** (their language checkboxes stay
+in the 🔖-toggled row below, unchanged -- only the action buttons moved),
+and **Collapse is icon-only too** (was "▾ Collapse āyah text" as a text
+button; now just ▾/▸, with the label living in its `title` instead). The
+🔖 toggle's own row is left holding just Bookmark, the language checkboxes,
+and Play -- its title changed from "Bookmark, copy & share" (now
+inaccurate) to "Bookmark, play & language options"; the old string is kept
+in `bn.js`, unused, same rule this project has followed every time a
+string stopped being called rather than deleted.
+
+**The Note view gets its own full screen -- two states, not the reading
+screen's three, and a deliberately SEPARATE mechanism from it.** The
+owner's own two states: state one is today's default (banner, main menu,
+Note bar, bottom bar all on screen); state two hides the banner, the main
+menu and the bottom menu, and keeps the Ayah bar always on, "as that holds
+the edit menu for notes." Built as a new `body.note-immersive` class with
+its own three-line CSS rule, rather than reusing the reading screen's own
+`immersive-read`/`fs-hide-*` machinery -- both would have produced the
+same visual result here, but sharing state would have meant a full-screen
+toggle flipped in one screen could leak into the other on the next
+navigation, which is exactly the kind of cross-screen surprise this round
+was already fixing two of. Both `noteFullscreenOn` and `immersive-read`
+reset to off whenever `setStageView()` leaves the view that owns them, so
+neither can ever be inherited by a screen the reader didn't ask to see
+hidden chrome on. **One real interaction constraint worth keeping in mind,
+found by the round's own test and not a bug**: the dock is one of the
+three things full screen hides, so leaving the Note view via a dock tap
+isn't reachable while full screen is still on -- exactly the same
+convention the reading screen's own BARE state already uses (a hidden dock
+has to be un-hidden first, from whatever stayed visible). The Ayah bar's
+own ⤢ button, which never hides, is that way back.
+
+**Verified: 17 new checks in `tools/i18n-verify/behaviour.mjs`** (sections
+42l-42o, was 797 -- the badge proven to sit ABOVE the Arabic text with no
+possible vertical overlap, on both the single-ayah and flow views; the
+Ayah bar's own composition (Copy/Share/Collapse/Full screen all present,
+Collapse genuinely icon-only, Copy/Share genuinely gone from the actions
+row rather than duplicated); the reference's computed style proven to
+allow wrapping rather than truncating; Mapping My Journey proven to wrap
+below the reference on a 360px phone and share its line on a 1280px
+desktop; both full-screen states, the Ayah bar staying visible in state
+two, the toggle reading pressed, and re-opening the view later proven to
+never carry a stale full-screen flag across) **plus section 42k's Bangla
+check updated for the icon-only buttons** (their Bangla now lives in
+`title`, not visible text) **and re-verified in full: 814 behaviour checks
+pass, 0 failed.** `layout.mjs` reports **NO LAYOUT REGRESSIONS**,
+`reading.mjs` and `panel.mjs` both clean, `navcheck.mjs` unchanged (still
+only the pre-existing, unrelated 320px English truncation). **One test bug
+the round's own first run caught before it shipped**: the new full-screen
+check tried to tap a dock tab while full screen was still on -- the dock
+being hidden is the intended behaviour above, not a defect, so the test's
+assumption was fixed rather than the app. One new Bangla string
+translated (`"Bookmark, play & language options"`); coverage report
+untouched at 100%. No `firestore.rules` or schema changes -- nothing to
+deploy but the static files.
 
 ---
 
