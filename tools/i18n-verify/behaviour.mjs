@@ -3700,6 +3700,206 @@ console.log("\n=== 41. Shell round 28: sideways reading ===");
   await ctx.close();
 }
 
+// ---------------------------------------------------------------------------
+console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400); // ensureAyahNoteDataLoaded() is fire-and-forget from this same click
+
+  const badge = await page.evaluate(() => {
+    const wrap = document.querySelector("#ayahPanels .ayah-quick-wrap");
+    return {
+      present: !!wrap,
+      unitKey: wrap?.dataset.unitKey ?? null,
+      hasNoteClass: wrap?.querySelector(".ayah-quick-btn")?.classList.contains("has-note") ?? null,
+    };
+  });
+  check("42a the ⋮ badge sits on the single-ayah view", badge.present && badge.unitKey === "ayah:1:1", JSON.stringify(badge));
+  check("42a ...not marked as having a note yet", badge.hasNoteClass === false, JSON.stringify(badge));
+
+  await page.click("#ayahPanels [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  const menu = await page.evaluate(() => {
+    const wrap = document.querySelector("#ayahPanels .ayah-quick-wrap");
+    return {
+      open: wrap.querySelector(".quick-menu").classList.contains("open"),
+      items: [...wrap.querySelectorAll(".qm-item")].map((b) => b.textContent.trim()),
+    };
+  });
+  check("42b the quick menu opens", menu.open);
+  check("42b ...with Copy, Share, Play and Note & more",
+        menu.items.some((t) => t.includes("Copy")) && menu.items.some((t) => t.includes("Share"))
+        && menu.items.some((t) => t.includes("Play")) && menu.items.some((t) => t.includes("Note")),
+        JSON.stringify(menu.items));
+
+  await page.click('#ayahPanels [data-qm-sub-toggle="copy"]');
+  await page.waitForTimeout(120);
+  const copySub = await page.evaluate(() => {
+    const wrap = document.querySelector("#ayahPanels .ayah-quick-wrap");
+    const sub = wrap.querySelector('.qm-sub[data-qm-sub="copy"]');
+    return {
+      open: sub.classList.contains("open"),
+      notesDisabled: sub.querySelector('.qm-lang-copy[data-lang="notes"]')?.disabled,
+      arChecked: sub.querySelector('.qm-lang-copy[data-lang="ar"]')?.checked,
+    };
+  });
+  check("42c Copy expands to its own language checkboxes", copySub.open);
+  check("42c ...Arabic/English/Bangla checked by default", copySub.arChecked === true);
+  check("42c ...and \"My note\" is greyed out -- nothing saved for this ayah yet", copySub.notesDisabled === true);
+
+  // Note & more -- opens the full-stage view, not a floating modal.
+  await page.click("#ayahPanels [data-qm-note]");
+  await page.waitForTimeout(250);
+  const opened = await page.evaluate(() => ({
+    noteShown: !document.getElementById("noteView").hidden,
+    readHidden: document.getElementById("readView").hidden,
+    wheelHidden: getComputedStyle(document.getElementById("wheelSection")).display === "none",
+    dockVisible: getComputedStyle(document.getElementById("dock")).display !== "none",
+    pressed: document.getElementById("tabReadBtn").getAttribute("aria-pressed"),
+    ref: document.querySelector(".note-ref")?.textContent.trim(),
+    arabic: document.querySelector(".note-arabic")?.textContent.trim().length > 0,
+    english: document.querySelector(".note-english")?.textContent.trim().length > 0,
+    bangla: document.querySelector(".note-bangla")?.textContent.trim().length > 0,
+    bookmarkStar: document.querySelector("[data-note-bookmark]")?.textContent.trim(),
+  }));
+  check("42d Note & more opens a full-stage view, not a modal",
+        opened.noteShown && opened.readHidden && opened.wheelHidden, JSON.stringify(opened));
+  check("42d ...with the dock still reachable underneath", opened.dockVisible);
+  check("42d ...and the Read tab still reads as pressed (this IS the reading experience)", opened.pressed === "true");
+  check("42d Arabic, English and Bangla all render", opened.arabic && opened.english && opened.bangla, JSON.stringify(opened));
+  check("42d not bookmarked yet", opened.bookmarkStar === "☆", opened.bookmarkStar);
+
+  // Master toggle collapses Arabic/English/Bangla together -- never Notes.
+  await page.click("[data-note-master-toggle]");
+  await page.waitForTimeout(100);
+  const collapsed = await page.evaluate(() => ({
+    fieldsHidden: getComputedStyle(document.querySelector("[data-note-collapsible]")).display === "none",
+    notesStillThere: getComputedStyle(document.querySelector('[data-note-field="notes"] .note-field-body')).display !== "none",
+  }));
+  check("42e the master toggle collapses Arabic/English/Bangla together", collapsed.fieldsHidden);
+  check("42e ...and Notes is untouched by it", collapsed.notesStillThere);
+  await page.click("[data-note-master-toggle]");
+  await page.waitForTimeout(100);
+
+  // Bookmark/Copy/Share/Play sit behind their own 🔖 icon toggle, hidden by
+  // default (spec: "Bundle bookmark + language checkboxes + Copy + Share +
+  // Play into a single row that is hidden by default") -- has to be opened
+  // before the star is even clickable, same as the quick menu's own popover.
+  await page.click("[data-note-actions-toggle]");
+  await page.waitForTimeout(150);
+  const actionsOpen = await page.evaluate(() => document.querySelector("[data-note-actionsbar]").classList.contains("open"));
+  check("42f the 🔖 toggle reveals bookmark/copy/share/play", actionsOpen);
+
+  // Bookmark -- reuses the existing bookmarks collection (findSavedBookmark).
+  await page.click("[data-note-bookmark]");
+  await page.waitForTimeout(300);
+  const afterBookmark = await page.evaluate(() => ({
+    star: document.querySelector("[data-note-bookmark]")?.textContent.trim(),
+    active: document.querySelector("[data-note-bookmark]")?.classList.contains("active"),
+  }));
+  check("42f bookmarking this ayah flips the star", afterBookmark.star === "★" && afterBookmark.active, JSON.stringify(afterBookmark));
+  const bookmarkWrites = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
+  const bw = bookmarkWrites.find((w) => w.col === "bookmarks" && w.data.includes("saved"));
+  check("42f ...and really writes to the existing bookmarks collection (no new mechanism)", Boolean(bw), JSON.stringify(bookmarkWrites));
+
+  // Notes -- rich-text, saved on blur, through the new ayahNotes collection.
+  await page.click("[data-note-editor]");
+  await page.keyboard.type("Reflect on this daily.");
+  await page.click(".note-ref"); // blur the editor by focusing elsewhere
+  await page.waitForTimeout(400);
+  const noteWrites = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
+  const nw = noteWrites.find((w) => w.col === "ayahNotes" && w.data.some((k) => k.startsWith("notes.")));
+  check("42g typing a note and blurring saves it through ayahNotes", Boolean(nw), JSON.stringify(noteWrites));
+  const status = await page.evaluate(() => document.querySelector("[data-note-save-status]")?.hidden);
+  check("42g ...with no failure notice shown", status === true);
+
+  // Leaving: no × button anywhere in the view -- the dock is the only way out.
+  const hasCloseBtn = await page.evaluate(() => !!document.querySelector(".note-view [data-note-close], .note-view .modal-close, .note-view .close-btn"));
+  check("42h there is no × / close button in the view", !hasCloseBtn);
+  await page.click("#tabReadBtn"); // tapping the SAME tab is how you leave -- same idiom as every other dock tab
+  await page.waitForTimeout(300);
+  const closed = await page.evaluate(() => ({
+    noteHidden: document.getElementById("noteView").hidden,
+    readShown: !document.getElementById("readView").hidden,
+  }));
+  check("42h tapping the Read tab again leaves Note & more, back to reading", closed.noteHidden && closed.readShown, JSON.stringify(closed));
+
+  // The badge itself now reflects the saved note.
+  const badgeAfter = await page.evaluate(() => document.querySelector("#ayahPanels .ayah-quick-wrap .ayah-quick-btn")?.classList.contains("has-note"));
+  check("42i the ⋮ badge now shows this ayah has a note", badgeAfter === true);
+
+  check("42 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+// --- 42j the ⋮ badge also rides along in the flow view (Range/Whole Surah) -
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(300);
+  await openStudyOptions(page);
+  await page.selectOption("#unitTypeSelect", "surah");
+  await page.waitForTimeout(300);
+  const flow = await page.evaluate(() => {
+    const wraps = [...document.querySelectorAll("#pageViewContainer .page-flow-ayah .ayah-quick-wrap")];
+    return { count: wraps.length, keys: wraps.slice(0, 3).map((w) => w.dataset.unitKey) };
+  });
+  check("42j Whole Surah's flow view carries one ⋮ badge per ayah", flow.count > 1, JSON.stringify(flow));
+  check("42j ...each keyed to its own ayah", flow.keys.every((k, i) => k === `ayah:1:${i + 1}`), JSON.stringify(flow.keys));
+  check("42j no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+// --- 42k the whole panel really renders in Bangla, not just the coverage
+// report -- the standing lesson this project keeps relearning: only a
+// rendered page proves a screen is translated. ------------------------------
+{
+  const ctx = await ctxFor({ banner: false, appLang: "bn" });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+  await page.click("#ayahPanels [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  const menuBn = await page.evaluate(() => {
+    const wrap = document.querySelector("#ayahPanels .ayah-quick-wrap");
+    return {
+      items: [...wrap.querySelectorAll(".qm-item")].map((b) => b.textContent.trim()),
+      // Checkbox VALUES must stay plain "ar"/"en"/"bn"/"notes" -- they are
+      // read back by unit-key-building code, never shown to a reader.
+      langValues: [...wrap.querySelectorAll(".qm-lang-copy")].map((cb) => cb.dataset.lang),
+    };
+  });
+  check("42k the quick menu's own items render in Bangla", menuBn.items.every((t) => BANGLA.test(t)), JSON.stringify(menuBn.items));
+  check("42k ...while the checkbox values stay plain ids", JSON.stringify(menuBn.langValues) === JSON.stringify(["ar", "en", "bn", "notes"]));
+
+  await page.click("#ayahPanels [data-qm-note]");
+  await page.waitForTimeout(300);
+  const noteBn = await page.evaluate(() => {
+    const view = document.querySelector(".note-view");
+    return {
+      topbar: view.querySelector(".note-topbar").textContent,
+      fieldLabels: [...view.querySelectorAll(".note-field-label")].map((s) => s.textContent.trim()),
+      masterToggle: view.querySelector("[data-note-master-toggle]").textContent.trim(),
+      headingOptions: [...view.querySelectorAll("[data-note-heading] option")].map((o) => ({ value: o.value, text: o.textContent.trim() })),
+    };
+  });
+  check("42k Note & more's top bar is in Bangla", BANGLA.test(noteBn.topbar), noteBn.topbar);
+  check("42k ...every field label too (Arabic/English/Bangla/Notes)", noteBn.fieldLabels.every((t) => BANGLA.test(t)), JSON.stringify(noteBn.fieldLabels));
+  check("42k ...and the master toggle's own button", BANGLA.test(noteBn.masterToggle), noteBn.masterToggle);
+  check("42k the heading-style dropdown reads in Bangla with plain option values",
+        noteBn.headingOptions.every((o) => BANGLA.test(o.text)) && noteBn.headingOptions.map((o) => o.value).join() === "p,h1,h2,h3",
+        JSON.stringify(noteBn.headingOptions));
+
+  check("42k no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);
