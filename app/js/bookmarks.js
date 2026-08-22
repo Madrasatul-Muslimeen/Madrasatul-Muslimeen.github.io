@@ -91,6 +91,15 @@ export async function saveBookmark(db, {
   return bookmark.id;
 }
 
+/** First non-removed saved[] entry matching this module/subject/position -- lets a caller (e.g. the Ayah Note panel's ⋮ star) check "is this already bookmarked" before rendering a toggle's state, without inventing a second bookmark mechanism (spec: "no separate bookmarks list is required unless one already exists elsewhere in the app"). Generic over any caller's own position value -- the Ayah Note panel passes a unitKey ("ayah:16:36"), matching I5. */
+export function findSavedBookmark(bookmarksDoc, { moduleId, subjectId, position }) {
+  return (
+    (bookmarksDoc?.saved ?? []).find(
+      (b) => !b.removed && b.moduleId === moduleId && b.subjectId === subjectId && b.position === position
+    ) ?? null
+  );
+}
+
 /** Soft-remove (D6: no client-side delete) -- flips removed:true on one saved[] entry, in place. */
 export async function removeSavedBookmark(db, tenantId, personId, bookmarkId) {
   const docId = bookmarksDocId(tenantId, personId);

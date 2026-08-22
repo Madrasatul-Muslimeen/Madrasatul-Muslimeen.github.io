@@ -867,6 +867,22 @@ service cloud.firestore {
       // No delete (I4/D6) -- saved[] entries are soft-removed (removed:true).
     }
 
+    // ayahNotes/{tenantId}__{personId} -- Ayah Note panel: ONE doc per person
+    // (notes{} keyed by unitKey), same canRecordFor shape as bookmarks right
+    // above it -- this is one person's own free-text study notes, not
+    // shared/tenant-wide data. Same S8-class read-before-exists reasoning:
+    // saveAyahNote()/ensureAyahNotesWritable() both getDoc() first to decide
+    // create vs. update, and a nonexistent document has no data to leak.
+    match /ayahNotes/{noteKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/ayahNotes/$(noteKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);
+      allow update: if canRecordFor(resource.data.tenantId, resource.data.personId);
+      // No delete (I4/D6) -- a note is overwritten in place, like bookmarks.resume.
+    }
+
     // resources/{tenantId}__{resourceId} -- Architecture Layer 1, reserved
     // since Phase 0 but never written to until Phase 6 (Deen Study topics
     // need somewhere for their actual content to live). Same

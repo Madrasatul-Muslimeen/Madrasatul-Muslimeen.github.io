@@ -63,6 +63,7 @@ export const TENANT = Object.freeze({
   RECORDS: "records",
   ACTIVITY: "activity",
   BOOKMARKS: "bookmarks",
+  AYAH_NOTES: "ayahNotes", // Ayah Note panel, phase 1: one doc per person (resume-shaped, not append-only) holding free per-ayah rich-text notes, keyed by unitKey. Same "small additive collection, no schema precedent to reuse" shape as D12's domains — nothing existing fits a free per-ayah journal entry.
   DOMAINS: "domains", // Phase 3 addition (D12): tenant-authored tag registry backing records.entries.domainIds[] — the Architecture doc names the domainIds field but never lists a domains collection. Same "not in the original doc, added to support a named field" shape as D9's tenantMemberUids/inviteTokens. Mirrors ladders: tenant-authored, no platform seed, freeform tags (legacy app's "Domains are optional & user-defined").
 
   // Layer 2.5 — communication
