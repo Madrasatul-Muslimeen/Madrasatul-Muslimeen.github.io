@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.55.** Cutover to production happened
+**Current milestone: QuranRevival v07.56.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -2729,6 +2729,50 @@ states (`getElementById` targets 88 → 89, exactly the new tick, none missing),
 truncated label**, **navcheck unchanged**, **coverage 1,241/1,241 (100%)**,
 **perf unchanged at 6 sequential round trips**, **`new-tenant.mjs` 10/10**. No
 `firestore.rules`, schema or Firestore data changes.
+
+v07.56 (21 Aug 2026, same day) is a **same-round correction to v07.55**, from
+the owner's own question: *"Did I say the page movement from left to right or
+right to left? How is the Qur'an read? Arabic is written? It's right to left."*
+They were right, and the mistake was mine, not theirs -- their original
+instruction ("let the page move from left to right") was about the swipe
+GESTURE, and v07.55 read it as the on-screen PAGE ORDER instead, shipping ayah
+1 leftmost and later ayahs running rightward. Plain left-to-right order, which
+is backwards for a language that reads right to left.
+
+**Fixed with one property, `direction: rtl` on the strip (`#pageViewContainer`)
+itself** -- flex lays DOM-order children out from the inline-start edge, and
+RTL's inline-start is the right, so ayah 1 (still the first child in the
+markup; nothing about unit order changed) now renders flush with the right
+edge and ayah 2 sits to its LEFT, off-screen until the reader moves. Exactly
+how a real Mushaf's pages turn. Every child gets `direction: ltr` back, because
+a page's own content -- translation blocks, buttons, the word-by-word strip --
+was built assuming an LTR page and must not be mirrored along with the strip
+itself. The ayah-separator border (round 28's own) moves from the right edge of
+each page to the left, since the TRAILING edge in reading order is now the
+left side.
+
+**One real, measured surprise: `scrollLeft` goes NEGATIVE under `direction:
+rtl`, not positive.** Chromium's own RTL scroll model puts `scrollLeft = 0` at
+the START (the right, for RTL) and counts DOWN as the reading advances toward
+the end (leftward) -- the mirror image of ordinary LTR scrolling. Confirmed
+by loading the real page and reading the number rather than assumed: at ayah 1,
+`scrollLeft` is 0; scrolled to ayah 2, it is -356. The one behaviour check that
+watches the recitation carry the strip across (`41c`) was asserting the wrong
+sign and is corrected to match, with the measurement recorded in its own
+comment so the next person doesn't have to rediscover it.
+
+**Verified: 764 behaviour checks pass, 0 failed** (unchanged in count from
+v07.55 -- this is a direction correction, not new coverage; three existing
+checks in section 41 were updated to assert the corrected right-to-left order
+and the negative-scrollLeft fact, rather than added to or duplicated).
+**`layout.mjs` NO LAYOUT REGRESSIONS** at all eight viewports in both banner
+states (`getElementById` targets unchanged at 89, none missing), **`reading.mjs`
+OK in both languages**, **navcheck unchanged**, **coverage 1,241/1,241 (100%)**
+(no strings changed). Confirmed visually too, not just by the suite: a fresh
+render shows ayah 1/page 50 sitting flush against the right edge on load, with
+later ayahs/pages reachable only by moving left -- screenshotted and read, not
+inferred from the numbers alone. No `firestore.rules`, schema or Firestore data
+changes.
 
 ---
 

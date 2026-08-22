@@ -3610,8 +3610,17 @@ console.log("\n=== 41. Shell round 28: sideways reading ===");
   check("41a each ayah of a Range is its own page, exactly one screen wide",
         strip.pages > 1 && Math.abs(strip.pageWidth - strip.stripWidth) <= 1, JSON.stringify(strip));
   check("41a the strip really moves sideways", strip.movesSideways, JSON.stringify(strip));
-  check("41b the pages run LEFT TO RIGHT in reading order — the owner's own words",
-        strip.secondLeft > strip.firstLeft && Number(strip.secondAyah) === Number(strip.firstAyah) + 1,
+  // Corrected same-round: the owner's own follow-up said the FIRST build had
+  // this backwards -- "left to right" was about the swipe gesture, not the
+  // on-screen order, and the Qur'an itself reads right to left. Ayah 1 sits on
+  // the RIGHT (visible without scrolling, same gutter every other reading
+  // control keeps) and ayah 2 is to its LEFT, off-screen until the reader
+  // moves -- exactly how a real Mushaf's pages turn.
+  check("41b ayah 1 opens visible on screen with a normal gutter, not scrolled off",
+        strip.firstLeft !== null && strip.firstLeft >= 0 && strip.firstLeft < strip.stripWidth,
+        JSON.stringify(strip));
+  check("41b ayah 2 sits to the LEFT of ayah 1, not the right — reading order, not left-to-right order",
+        strip.secondLeft < strip.firstLeft && Number(strip.secondAyah) === Number(strip.firstAyah) + 1,
         JSON.stringify(strip));
   check("41a ...and nothing else scrolls sideways",
         !strip.scrollerSideways && !strip.docSideways, JSON.stringify(strip));
@@ -3647,8 +3656,12 @@ console.log("\n=== 41. Shell round 28: sideways reading ===");
   await openRead(page);
   const before = await page.evaluate(() => document.getElementById("pageViewContainer").scrollLeft);
   await page.click("#readPlayBtn");
+  // Measured directly, not assumed: under the strip's own `direction: rtl`
+  // (see the CSS comment), scrollLeft starts at 0 on ayah 1 and goes NEGATIVE
+  // as the reading advances leftward to ayah 2, 3... -- the reverse of the
+  // ordinary left-to-right scrolling sign.
   const carried = await waitFor(page, () =>
-    document.getElementById("pageViewContainer").scrollLeft > 1, 15000);
+    document.getElementById("pageViewContainer").scrollLeft < -1, 15000);
   check("41c the recitation carries the reading across to the ayah it reaches",
         carried, `scrollLeft was ${before}, now ${await page.evaluate(() => document.getElementById("pageViewContainer").scrollLeft)}`);
   await page.click("#readStopBtn");
@@ -3668,16 +3681,18 @@ console.log("\n=== 41. Shell round 28: sideways reading ===");
     return {
       sideways: document.body.classList.contains("read-sideways"),
       pages: pages.length,
-      sideBySide: pages.length > 1 ? Math.round(pages[1].left) > Math.round(pages[0].left) : null,
+      // Reading order, corrected same-round: page 2 (the later page) sits to
+      // the LEFT of page 1, matching how a real Mushaf turns.
+      sideBySide: pages.length > 1 ? Math.round(pages[1].left) < Math.round(pages[0].left) : null,
       sameRow: pages.length > 1 ? Math.abs(pages[1].top - pages[0].top) < 2 : null,
-      // Only the page ON SCREEN has to fit: the next one is waiting to the
-      // right, which is the whole point of a strip you move across.
-      fitsRight: pages.length ? pages[0].right <= innerWidth + 1 : false,
+      // Only the page ON SCREEN has to fit: the next one is waiting off to
+      // the left, which is the whole point of a strip you move across.
+      fitsScreen: pages.length ? pages[0].left >= -1 && pages[0].right <= innerWidth + 1 : false,
     };
   });
-  check("41e the Mushaf pages sit side by side, not stacked",
+  check("41e the Mushaf pages sit side by side, not stacked, in right-to-left order",
         m.sideways && m.pages > 1 && m.sideBySide && m.sameRow, JSON.stringify(m));
-  check("41e ...and the page on screen still fits it", m.fitsRight, JSON.stringify(m));
+  check("41e ...and the page on screen still fits it", m.fitsScreen, JSON.stringify(m));
   await page.close();
   await ctx.close();
 }
