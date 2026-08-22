@@ -128,8 +128,8 @@ function renderPlaceholders(labels) {
 // what the owner asked to stop. Categories now always start closed; the
 // current-page link itself still gets highlighted via renderLinks()'s own
 // `nav-current` class, so you can still tell where you are once you open one.
-function renderCategory(name, linksHtml) {
-  return `<details class="nav-cat"><summary>${t(name)}</summary><div class="nav-cat-links">${linksHtml}</div></details>`;
+function renderCategory(name, linksHtml, extraClass = "") {
+  return `<details class="nav-cat${extraClass ? " " + extraClass : ""}"><summary>${t(name)}</summary><div class="nav-cat-links">${linksHtml}</div></details>`;
 }
 
 /** roles: this person's roles in the currently-active tenant (e.g. ["owner","prime"]). The Classes/Curriculum links inside Operation only show for owner/prime -- everyone else gets the rest of Operation (+ the always-shown Bookmark placeholder). viewAsRole (round 11): when set, shows a "Previewing as" notice so it's never ambiguous why the page looks scoped down -- change/exit it from the People page's own dropdown. Returns the Study/Operation/Bookmark categories only -- Home is the caller's own static markup; call renderHomeExtras() separately for its role-gated contents. */
@@ -147,8 +147,15 @@ export function renderNavBar(roles = [], viewAsRole = null) {
   // chose the short word. It still separates the category from its own first
   // link ("Quran Study") and matches the word catalogue.html already uses.
   cats.push(renderCategory("Modules", renderLinks(STUDY_LINKS, currentFile, canAdmin)));
-  cats.push(renderCategory("Operation", renderLinks(OPERATION_LINKS, currentFile, canAdmin)));
-  cats.push(renderCategory("Bookmark", renderPlaceholders(BOOKMARK_PLACEHOLDERS)));
+  // nav-cat-end: this category and the one after it sit in the right half
+  // of the four-button row -- see shell.css for why their dropdowns hang
+  // from their own right edge instead of their left. Left-aligned (the
+  // default), Operation's own dropdown ran 35px past the right edge of a
+  // 320px phone (measured) -- its own button already sits past the
+  // midpoint, so a left-anchored dropdown under it has nowhere to grow but
+  // off-screen.
+  cats.push(renderCategory("Operation", renderLinks(OPERATION_LINKS, currentFile, canAdmin), "nav-cat-end"));
+  cats.push(renderCategory("Bookmark", renderPlaceholders(BOOKMARK_PLACEHOLDERS), "nav-cat-end"));
 
   // Phase 10: real per-student teacher assignment now exists (classes.html
   // + teacherStudentLinks) -- a teacher preview is scoped to whoever
@@ -238,3 +245,31 @@ export function noAccountMessageHtml() {
     <br>${t("If someone invited you to join an existing madrasah, use the invite link they sent you (check your email) — don't create a new one here.")}
     <br>${t("Starting fresh instead?")} <a href="onboarding.html">${t("Create a new account on the onboarding page")}</a>.`;
 }
+
+// PC layout fix: each nav category is a native <details>, and native
+// <details> elements never close a sibling just because another one opened
+// -- so Home and Modules (or any two) could sit open at the same time, each
+// spending its own screen space. This is a single capture-phase listener on
+// `document`, added once when this module is first imported (every page
+// that renders the nav bar already imports nav.js), rather than something
+// each of the 19 pages has to wire up individually.
+//
+// It works even though Modules/Operation/Bookmark's own <details> elements
+// don't exist yet at the moment this code runs (renderNavBar() injects them
+// into #navBar later, once roles are known) -- the listener is on
+// `document` itself, not on the elements, so it sees every `.nav-cat` that
+// exists in the DOM at the time someone actually opens one, regardless of
+// when that element was added. `toggle` does not bubble, but a
+// capture-phase listener still fires on the way down to the target even for
+// a non-bubbling event, which is what makes listening at `document` enough.
+document.addEventListener(
+  "toggle",
+  (e) => {
+    const el = e.target;
+    if (!(el instanceof Element) || !el.matches(".nav-cat") || !el.open) return;
+    document.querySelectorAll(".nav-cat").forEach((other) => {
+      if (other !== el) other.open = false;
+    });
+  },
+  true
+);

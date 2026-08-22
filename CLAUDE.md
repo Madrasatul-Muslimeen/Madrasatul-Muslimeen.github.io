@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.56.** Cutover to production happened
+**Current milestone: QuranRevival v07.57.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -2773,6 +2773,124 @@ render shows ayah 1/page 50 sitting flush against the right edge on load, with
 later ayahs/pages reachable only by moving left -- screenshotted and read, not
 inferred from the numbers alone. No `firestore.rules`, schema or Firestore data
 changes.
+
+v07.57 (22 Aug 2026, on Claude Code on the web) is **shell round 29 -- four
+PC/tablet/phone layout fixes the owner reported from a real screenshot on a
+desktop**, none of them build-phase work: where the wheel sits on a wide
+screen, a real 30-Approach tenant with no way to reach the rest of its own
+list, the nav bar pushing the whole page down every time a category opened,
+and every category staying open once opened instead of closing for the next
+one.
+
+**(1) The wheel-and-list card was capped at 60rem (960px)** since shell
+round 7 -- correct at the time (nothing above 768px had a wheel-and-list
+card to widen), but nobody had revisited it since shell round 14 flagged it
+("half a 1920px monitor is empty") and deliberately left it as a design
+question, not a fix. Widened with a `@media (min-width: 1024px)` block only
+-- 60rem is already wider than the 768px tablet breakpoint, so nothing
+below 1024px moves at all (confirmed: 768px body width unchanged at 768px).
+**Measured: body width 1178px at 1280px, 1280px (the cap) at 1440px and
+1920px alike** -- `min(92vw, 1280px)`, so it grows with the window up to a
+point rather than either staying pinned at 960px or running fully edge to
+edge. The wheel and sidebar's own `max-width`s grew alongside it (420px /
+460px); the wheel's actual rendered size only reached 360px because the
+SVG's own native width is what genuinely caps it, not the new CSS ceiling.
+
+**(2) A real 30-Approach tenant could not reach the rest of its own list on
+a desktop or tablet, and this is a real, separate, previously-invisible
+defect, not a symptom of (1).** Every layout round since v07.22 measured
+"Approach rows visible" against this test suite's own 10-item fixture,
+which happens to fit inside the card at almost every size -- so nothing had
+ever actually exercised what happens once a tenant's real Quran subject (30
+Approaches, per the catalogue) genuinely overflows it. Rebuilt the test
+tenant from the real `catalogue-data.js` templates (the same `seedTemplates`
+mechanism the perf suites already use) to check: at 1920x1080 the sidebar's
+own box was 1881px tall inside an 839px-tall card, running 218px past the
+dock and off the bottom of the screen, with **no scrollbar and no way to
+reach the missing rows** -- `canScroll: false`, confirmed by comparing the
+list's own `clientHeight` to its `scrollHeight`. The cause: `align-items:
+stretch` on `#wheelSection` is supposed to bound `.wheel-sidebar`'s height,
+but a stretched flex item whose own height is left at `auto` doesn't
+actually get clipped to that bound when its content is taller than it --
+stretch only wins ties, it doesn't override overflowing content. One
+property fixes it: `#wheelSection .wheel-sidebar` now carries `height:
+100%` (of the already-correctly-computed `#wheelSection` box) instead of
+`auto`, which is what lets `.ways-list`'s own `flex:1 1 auto` +
+`overflow-y:auto` (already there, doing nothing without this) compute a
+real, smaller box and scroll internally. **Measured after: 30+ Approaches
+scroll inside the card, dock never covered, at 1920x1080, 768x1024 and
+390x844 alike** -- this was never a phone-only or desktop-only bug, just
+one the 10-item fixture never triggered at any size. The common few-
+Approach case (today's real tenant) is visually unchanged, since the extra
+height the fix reclaims was already just background, never content.
+
+**(3) and (4) are the same underlying fact: the nav bar's four categories
+are native `<details>`, and native `<details>` neither avoids pushing
+content down nor closes a sibling when another opens.** `.nav-cat-links`
+was a plain block in normal document flow (shell round 3) -- opening it
+grew the whole nav row taller and shoved everything below it (banner,
+wheel, dock) further down the screen, worse the more categories were left
+open, since nothing ever closed one automatically. Screenshotted before
+touching anything: Home and Modules both open at once pushed the "Mastery
+Wheel" heading from y=164 to y=545 on a 1920px screen. Two independent
+fixes, because CSS positioning and JS behaviour solve two different halves
+of this: **`.nav-cat-links` is `position: absolute` now** (shell.css,
+shared by all 19 pages that carry the nav bar), anchored under its own
+button by the new `.nav-cat { position: relative }`, so it overlays
+whatever is below instead of displacing it -- confirmed the wheel's own
+position is untouched at every viewport with any category open. **A single
+capture-phase `toggle` listener on `document`, added once at
+`nav.js`'s module load** (not wired per-page -- every page that renders the
+nav bar already imports this file), closes every other `.nav-cat` the
+moment one opens; `toggle` doesn't bubble, but a capture-phase listener
+still sees it on the way down to the target even so, which is what lets one
+listener on `document` cover categories (Modules/Operation/Bookmark) that
+don't even exist in the DOM yet when this code runs -- `renderNavBar()`
+injects them later, once roles are known.
+
+**One overflow bug caught by measuring rather than assumed away:** absolute
+positioning means each dropdown's own screen edge now matters, and
+left-aligning all four under their own buttons ran Operation's dropdown 35px
+past the right edge of a 320px phone (15px at 360px) -- its own button
+already sits past the row's midpoint, so a left-anchored dropdown under it
+had nowhere to grow but off-screen. Operation and Bookmark (the right half
+of the four-button row) now hang from their own right edge instead
+(`.nav-cat-end`); Home and Modules are unaffected. **Swept all 19 nav-
+bearing pages' worth of category/viewport combinations (4 categories x
+320/360/390/412/768/1280/1920px) for `document.documentElement.scrollWidth
+> window.innerWidth`: zero overflow anywhere**, and the accordion property
+(`exactly one .nav-cat open at a time`) held at every one of those 28
+combinations too.
+
+**One real regression this round caused and caught before it shipped, not
+after:** the accordion listener broke `tools/i18n-verify/behaviour.mjs`'s own
+25e check, which used to force every `.nav-cat` open at once via direct
+`.open = true` writes in a `forEach` -- with the new listener, opening the
+second one in that loop immediately closed the first (Home), so
+`#navAppLangSelect` (which lives inside Home) went invisible and
+`page.selectOption` timed out. The old forced-open-everything pattern was
+never actually necessary here -- `openHome()` alone, already called one line
+above it, is all that control ever needed -- so the redundant line was
+removed rather than the new behaviour worked around. The three OTHER call
+sites of the same `openCats()` helper were checked and left alone: they only
+ever read `.textContent`, which is present in the DOM (and therefore
+readable) whether or not a `<details>` happens to be open, so the accordion
+closing all-but-one of them changes nothing about what those checks see.
+
+**Verified: 764 behaviour checks pass, 0 failed** (unchanged in count --
+this round touched shell chrome and one test's own setup, not translated
+surface), **`layout.mjs` NO LAYOUT REGRESSIONS** at all eight viewports in
+both banner states except the one INTENDED change (wheel width 320px ->
+360px at 1280/1440/1920px only; 768px and below untouched, confirmed body
+width identical to before at 768px), **`navcheck.mjs` unchanged** (still
+only the pre-existing 320px English truncation of "Operation"/"Bookmark",
+which does not affect this round's dropdown-overflow fix -- that is about
+the SUMMARY label's own text width, not the dropdown), **`panel.mjs`** and
+**`reading.mjs`** both clean at all eight viewports in both languages. No
+`firestore.rules`, schema or Firestore data changes -- nothing to deploy but
+the static files. (The two rules changes still pending from earlier rounds
+-- v07.18 Homework teacher-scoping and v07.37 `appLang` -- are unaffected
+and still not deployed.)
 
 ---
 

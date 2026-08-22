@@ -932,8 +932,11 @@ console.log("\n=== 25. v07.37: the language follows the ACCOUNT, not the browser
   // Changing it must SAVE to the account, or the whole round does nothing.
   const ctx = await ctxFor({ banner: true });
   const { page } = await openPage(ctx, "/app/records.html");
+  // PC layout fix (nav accordion): only one nav category can be open at a
+  // time now, so opening every OTHER one right after Home (as this used to)
+  // immediately closes Home again and #navAppLangSelect goes invisible.
+  // openHome() alone is all #navAppLangSelect ever needed.
   await openHome(page);
-  await page.evaluate(() => document.querySelectorAll(".nav-cat").forEach((d) => (d.open = true)));
   await page.waitForTimeout(120);
   await page.selectOption("#navAppLangSelect", "bn");
   await page.waitForTimeout(600);

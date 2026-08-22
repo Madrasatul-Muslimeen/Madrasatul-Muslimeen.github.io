@@ -71,7 +71,7 @@ html[lang="bn"] body { line-height: 1.3; }
 
 .nav-cat {
   border: 1px solid #ddd; border-radius: 0.5rem; background: white;
-  flex: 1 1 0; min-width: 0;
+  flex: 1 1 0; min-width: 0; position: relative;
 }
 .nav-cat > summary {
   cursor: pointer; padding: 0.42rem 0.1rem; font-weight: 700; font-size: 0.7rem;
@@ -81,7 +81,31 @@ html[lang="bn"] body { line-height: 1.3; }
 .nav-cat > summary::-webkit-details-marker { display: none; }
 .nav-cat > summary::after { content: " \25BE"; font-size: 0.7em; color: #888; }
 .nav-cat[open] > summary::after { content: " \25B4"; }
-.nav-cat-links { display: flex; flex-direction: column; gap: 0.25rem; padding: 0.3rem 0.9rem 0.7rem; min-width: 10rem; }
+/* PC/tablet/phone layout fix: these used to be a plain block, in normal
+   document flow -- opening one pushed every category's own links AND
+   everything on the page below the nav bar (banner, wheel, etc.) further
+   down the screen, more the more categories were open at once (nothing
+   closed a sibling automatically, since native <details> doesn't do that).
+   Absolutely positioned as a real dropdown instead: it now overlays
+   whatever is below the nav bar rather than shoving it down, and .nav-cat's
+   own new `position: relative` above is what anchors it under its own
+   button rather than the page's top-left corner. Paired with the
+   accordion listener in nav.js, which is what actually closes a sibling
+   when another opens -- position alone doesn't do that part. */
+.nav-cat-links {
+  position: absolute; top: 100%; left: 0; z-index: 100;
+  display: flex; flex-direction: column; gap: 0.25rem;
+  padding: 0.3rem 0.9rem 0.7rem; min-width: 10rem;
+  background: white; border: 1px solid #ddd; border-top: none;
+  border-radius: 0 0 0.6rem 0.6rem; box-shadow: 0 10px 26px rgba(20,30,55,0.18);
+}
+/* The rightmost category's dropdown would otherwise run off the right edge
+   of the screen on a narrow phone, left-aligned under a button that's
+   itself hard against the right edge -- measured at 320-412px. Flip it to
+   hang from its own right edge instead, which keeps it fully on-screen at
+   every width tested (320-1920px) without needing to know each button's
+   pixel position. */
+.nav-cat-end .nav-cat-links { left: auto; right: 0; }
 .nav-link { color: #1F3A6E; text-decoration: none; font-size: 0.88rem; font-weight: 600; padding: 0.1rem 0; }
 .nav-link:hover { text-decoration: underline; }
 .nav-current { color: #888; cursor: default; pointer-events: none; }
