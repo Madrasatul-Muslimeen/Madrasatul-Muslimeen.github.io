@@ -480,10 +480,20 @@
   #readScroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
   /* ---------------------------------------------------------------------
      Shell round 28 -- THE READING MOVES SIDEWAYS, page by page.
-     The owner's instruction, and their own answer when asked what should
-     move: the whole reading, not only the Mushaf. So a Mushaf page, an ayah
-     of a Range, or an ayah of a whole surah each become a page you move
-     ACROSS, left to right, instead of a strip you scroll down.
+     Corrected same-round (the first build read the owner's "left to right"
+     as the on-screen page ORDER, and shipped ayah 1 leftmost -- backwards.
+     The owner's own correction: the Qur'an is read right to left, so the
+     FIRST ayah sits on the RIGHT and later ayahs are to its LEFT, exactly
+     how a real Mushaf's pages turn. "Left to right" was about the gesture,
+     not the order.
+
+     `direction: rtl` on the STRIP is what does this: flex lays its DOM-order
+     children out from the inline-start edge, and RTL's inline-start is the
+     right. Ayah 1 is still the first child in the markup (nothing about
+     rendering or unit order changed) -- only which edge it renders against.
+     Every child gets `direction: ltr` back, because a page's own content
+     (translation blocks, buttons, the word-by-word strip) was built assuming
+     an LTR page and must not be mirrored along with the strip.
 
      The horizontal scroller is the STRIP (#pageViewContainer), never
      #readScroll itself -- round 17 put a check on that element scrolling
@@ -500,7 +510,7 @@
     display: flex; flex-direction: row; flex: 1 1 auto; min-height: 0;
     overflow-x: auto; overflow-y: hidden;
     scroll-snap-type: x mandatory; scroll-behavior: smooth;
-    gap: 0;
+    gap: 0; direction: rtl;
   }
   /* Each page is exactly one screen wide and scrolls DOWN inside itself when
      its own content is taller -- a long ayah with both translations still
@@ -508,11 +518,13 @@
   body.read-sideways #pageViewContainer > * {
     flex: 0 0 100%; width: 100%; box-sizing: border-box;
     height: 100%; overflow-y: auto; scroll-snap-align: start;
+    direction: ltr; /* undo the strip's rtl -- this page's own content stays as designed */
   }
   /* The flow's ayah separator is a bottom rule when pages are stacked; side
-     by side it belongs on the trailing edge instead. */
+     by side it belongs on the TRAILING edge instead -- which, reading right
+     to left, is the LEFT (the side toward the next, later ayah). */
   body.read-sideways .page-flow-ayah {
-    border-bottom: none; border-right: 1px solid #eee;
+    border-bottom: none; border-left: 1px solid #eee;
     margin: 0; padding: 0.2rem 0.5rem 0.6rem;
   }
   body.read-sideways .page-flow-ayah.now-playing { margin-left: 0; padding-left: 0.5rem; }
