@@ -168,7 +168,12 @@ const DATA = {
     { _id: TENANT_ID + "__n1", tenantId: TENANT_ID, authorPersonId: "p1", authorUid: UID,
       aboutPersonId: "p2", body: "Doing well on tajweed.", status: "active" },
   ],
-  bookmarks: [],
+  // Seeded (not []) so a save/toggle in a test takes the updateDoc path,
+  // which __stubWrites actually records -- setDoc (the create path) is a
+  // pure no-op in this stub and leaves no trace, same reasoning as every
+  // other "seed one real row" collection below.
+  bookmarks: [{ _id: TENANT_ID + "__p1", tenantId: TENANT_ID, personId: "p1", resume: {}, saved: [] }],
+  ayahNotes: [{ _id: TENANT_ID + "__p1", tenantId: TENANT_ID, personId: "p1", notes: {} }],
   // PHASE 5 (admin) needs the same treatment: an entity status, a renderer
   // name or an invite state can only be proved translated if a row renders.
   classes: [
