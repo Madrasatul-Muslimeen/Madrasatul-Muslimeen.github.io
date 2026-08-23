@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.59.** Cutover to production happened
+**Current milestone: QuranRevival v07.60.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -3100,6 +3100,103 @@ assumption was fixed rather than the app. One new Bangla string
 translated (`"Bookmark, play & language options"`); coverage report
 untouched at 100%. No `firestore.rules` or schema changes -- nothing to
 deploy but the static files.
+
+v07.60 (23 Aug 2026, on Claude Code on the web) is **shell round 31 -- the
+owner's own pointed correction of round 30, and a real root-cause fix v07.59
+missed.** Their message opened with *"I want you to use some sense so that
+you can set things in the most elegant way and I don't have waste my time and
+your redoing time to fix again"* -- earned: round 30 reported the Ayah
+reference fixed on the strength of a CSS-property check (`white-space` no
+longer `nowrap`) that never once read the rendered text. **It was still
+broken, and not from layout at all.** `ayahRefLabel()` called `surahName
+(surahNum)` with no second argument -- `surahName()` needs the English name
+handed to it explicitly (it has no internal lookup table), a gotcha this same
+file already had a comment warning about at another call site -- so the
+reference silently rendered `"Quran 1:1 — Surah "` with nothing after it, in
+EVERY language. This time verified by reading the actual `textContent`
+(`refText: "Quran 1:1 — Surah Al-Faatiha"`) and by screenshot, not by
+re-checking a computed style a second time.
+
+**Four more fixes followed from the owner's own reasoning, not a redesign
+proposed here.** **(a) The ⋮ badge on the single-āyah Read screen moved off
+the ayah entirely, onto `#readBar`** (a new `#readQuickMenuSlot`, mounted
+after the ⤢ full-screen icon, in the bar's own empty space) -- their own
+question, *"why should the three dot take space over the Ayah, when the Bar
+has empty spaces?"* The flow view (several āyahs on screen at once, where one
+bar-level button can't say which āyah it means) keeps its own per-āyah badge,
+unchanged from round 30 -- this is a single-āyah-view fix specifically, said
+so rather than left to be discovered. **(b) The Note view is two PERMANENT
+bars now, on every platform, not a mobile-only wrap fallback of one bar**
+(round 30's own shape): bar 1 (the Ayah bar) is stripped down to just the
+reference, Prev/Next, Aa and Collapse/Full screen, so nothing competes with
+the reference for room; bar 2, always its own row below it, holds Copy,
+Share, the new Word by word toggle and Mapping My Journey -- "we need a 2nd
+bar anyways... to house 'Ayah approach' there anyway, which will come later
+soon" is the owner's own reasoning for making it permanent rather than a
+narrow-screen accident. **(c) Copy and Share on bar 2 now open the SAME
+language-checkbox popover the ⋮ quick menu already uses**, rather than acting
+immediately on whatever was left ticked from before -- *"why not the 'copy'
+icon... open a toggle that will show all the copy and share options to choose
+from?"* Built by extracting the quick menu's own checkbox-row markup into a
+shared `langCheckboxRows()` helper in `ayah-note-renderer.js` rather than a
+second, parallel implementation -- one picker, two places it opens from,
+never two things to keep in sync. **(d) A new Word-by-word toggle joins bar
+2**, reusing `renderWordByWordPanel()` (the same helper the ordinary reading
+screen already calls, at whatever language the reader has already chosen
+there) -- *"this Ayah screen would be the main study screen for a user,
+therefore we need to make tools available here."* It's a session-scoped
+reading preference (`noteWbwOn`), not per-āyah state, so it stays on across
+Prev/Next inside the Note view rather than resetting on every āyah.
+
+**Full screen (round 30's own two states) needed no new logic**: neither
+`body.note-immersive`'s CSS rule nor `toggleNoteFullscreen()` ever named
+`.note-ayahbar` specifically, so bar 2 inherited "stays visible in both
+states" for free -- verified rather than assumed, since it's exactly the kind
+of thing that looks right in a screenshot and is wrong underneath.
+
+**Verified properly this time, the owner's own standard**: real Playwright
+screenshots at every step (the badge on the bar with nothing over the ayah;
+the reference rendering in full, "Quran 1:1 — Surah Al-Faatiha"; Copy's
+popover opening before anything is copied; the Word-by-word panel rendering
+real words inside the Note view; both bars surviving full screen) BEFORE
+touching the automated suite, catching the real defect first rather than
+writing tests around an assumption. **835 behaviour checks pass** (was 814 --
+21 new: sections 42m/42p/42q/42r cover bar 1's reduced composition with the
+real rendered reference text, bar 2's permanent presence and full contents on
+a phone AND a desktop, the Copy/Share popovers opening rather than firing
+immediately -- including a real click through Copy's own Go button -- and
+Word-by-word rendering real content and surviving Next; section 42l and 42o
+were rewritten rather than just extended, since round 30's own badge-overlap
+and full-screen assertions described structure that no longer exists).
+**Four PRE-EXISTING checks broke from the `#readBar` restructuring and were
+fixed, not worked around**: three (`30j`, `30l`, `33a`/`37a`) queried `#readBar
+button`/`#readBar > *` and started counting the quick menu's own nested,
+unnamed popover buttons as if they were reading-screen controls -- fixed by
+scoping to `#readBar > button` (direct children) or updating the expected
+list to include the new `readQuickMenuSlot` child, whichever the check's own
+intent called for. The fourth, `37a`'s "controls are grouped at the right,"
+used the FIRST button's left edge against half the bar's width as a proxy for
+"packed together, not spread by `space-between`" -- correct for five items,
+but a sixth item legitimately widens the group and moves its own start point
+left, which isn't a regression. Replaced with a direct measurement of the
+GAP between each consecutive control (large gaps are what `space-between`
+would actually produce), which stays honest regardless of how many controls
+the row holds. **`layout.mjs` NO LAYOUT REGRESSIONS** against a real
+previous-commit shim (landing page byte-for-byte identical at all eight
+viewports in both banner states, `getElementById` targets 90 → 91 -- exactly
+the new `readQuickMenuSlot` -- none missing), **`reading.mjs` OK**,
+**`panel.mjs` no truncation and no wrapped bar**, **navcheck unchanged**
+(still only the pre-existing 320px English truncation of
+"Operation"/"Bookmark"), **coverage 1,287/1,287 (100%)** -- one new string
+("Bookmark & play", replacing "Bookmark, play & language options" now that
+the 🔖 toggle holds only Bookmark and Play) plus "WbW" itself, deliberately
+mapped to itself (the same Latin-abbreviation-icon convention "Aa" already
+uses on bar 1; the coverage tool's own generic-text extractor is just long
+enough to catch a 3-letter button label where it's too short to catch a
+2-letter one, which is worth knowing if a future short label trips the same
+thing) -- **perf unchanged at 6 sequential round trips / ~0.89s**, and
+**`new-tenant.mjs` 10/10**. No `firestore.rules`, schema or Firestore data
+changes -- nothing to deploy but the static files.
 
 ---
 
