@@ -459,6 +459,13 @@
     #studyScreen { border-left: none; border-right: none; border-radius: 0; padding: 0.6rem 0.7rem; }
     #readBar button { font-size: 0.74rem; padding: 0.25rem 0.45rem; }
     #readRef { font-size: 0.75rem; }
+    /* Round 32 -- the owner's own split: on a phone, bar 2 keeps only Copy,
+       Share, Bookmark, Play and Word by word (five icons is already a full
+       line at this width); Approach and Mapping My Journey move to their
+       own row, .note-approach-bar-mobile, instead of wrapping onto a
+       second line of bar 2 itself. */
+    .note-bar2 .note-approach-desktop, .note-bar2 .note-journey-desktop { display: none; }
+    .note-approach-bar-mobile { display: flex; }
   }
 
   /* ---------- PC layout fix ----------
@@ -923,8 +930,13 @@
      as space is not a prob" was about bar 1 staying uncluttered, not about
      there never being a bar 2). Holds the actions that need a CHOICE made
      first -- Copy and Share each open the same picker the ⋮ quick menu
-     already uses -- plus Word by word and Mapping My Journey. This is also
-     where "Ayah Approach" (the owner's own next ask) will live. */
+     already uses. Round 32 (the owner's own ask) moved Bookmark and Play
+     in here too, always visible now rather than hidden behind the old 🔖
+     toggle (retired -- see .note-approach-wrap below for what replaced its
+     spot on a phone), and added the Approach toggle right after Word by
+     word -- it drives currentTrackableId (quranrevival.html's own
+     changeCurrentTrackable()), which is what the Track/Guide/Breakdown/
+     Coverage card further down in .note-body reads. */
   .note-bar2 {
     display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
     background: #1F3A6E; padding: 0.4rem 0.6rem; flex: 0 0 auto;
@@ -940,6 +952,43 @@
   .note-sub-popover label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.73rem; color: #555; padding: 0.15rem 0; }
   .note-sub-popover label input:disabled + span { color: #aaa; }
 
+  /* The Approach toggle -- one instance lives in bar 2 (PC/tablet), a
+     second, identical one lives in .note-approach-bar-mobile (phone only,
+     below). Both are always in the markup; the media query below picks
+     which pair is actually visible, so there's exactly one control on
+     screen at any width -- see attachNoteViewHandlers() in
+     ayah-note-renderer.js, which wires both the same way regardless. */
+  .note-approach-wrap { flex: 0 0 auto; max-width: 11rem; }
+  .note-approach-select {
+    width: 100%; background: #fff; border: 1px solid #ddd; border-radius: 0.35rem;
+    padding: 0.28rem 0.4rem; font-size: 0.8rem; color: #222; font-family: inherit;
+  }
+  /* Round 32 -- "another bar below (where the Bookmark n Play Button now)":
+     on a phone, Approach and Mapping My Journey get their own row rather
+     than crowding bar 2's five other icons onto one line. It sits exactly
+     where the old note-actionsbar/note-master-row (the retired 🔖 toggle)
+     used to, at the top of .note-body, before the collapsible fields.
+     `display` is deliberately NOT set here: it's set only inside the two
+     mutually-exclusive media queries below (phone: flex, PC/tablet: none)
+     -- this rule and #studyScreen's own phone override sit in exactly the
+     shape that bit once already (a max-width:720px rule earlier in the
+     file loses a property tie to an unconditional rule later in it, equal
+     specificity, source order breaks the tie) -- putting BOTH states behind
+     a media condition sidesteps that trap rather than repeating it. */
+  .note-approach-bar-mobile {
+    flex-wrap: wrap; align-items: center; gap: 0.5rem;
+    background: #f5f0e2; border: 1px solid #e0d8bd; border-radius: 0.4rem;
+    padding: 0.5rem 0.6rem; margin: 0.8rem 0.9rem 0; flex: 0 0 auto;
+  }
+  .note-approach-bar-mobile .note-approach-wrap { max-width: none; flex: 1 1 auto; }
+  .note-approach-bar-mobile .note-approach-select { background: #fff; }
+  .note-approach-bar-mobile .note-journey-btn {
+    background: #fff; border: 1px solid #ddd; color: #999; flex: 0 0 auto;
+  }
+  @media (min-width: 721px) {
+    .note-approach-bar-mobile { display: none; }
+  }
+
   .note-palette {
     display: none; flex-wrap: wrap; gap: 0.35rem; align-items: center;
     background: #f5f0e2; border-bottom: 1px solid #e0d8bd; padding: 0.5rem 0.7rem; flex: 0 0 auto;
@@ -953,35 +1002,6 @@
   .note-palette button:hover { background: #eee; }
 
   .note-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.8rem 0.9rem 1.2rem; }
-
-  .note-actionsbar {
-    display: none; flex-wrap: wrap; align-items: center; gap: 0.55rem;
-    background: #f5f0e2; border: 1px solid #e0d8bd; border-radius: 0.4rem;
-    padding: 0.5rem 0.6rem; margin-bottom: 0.7rem; font-size: 0.78rem;
-  }
-  .note-actionsbar.open { display: flex; }
-  .note-bookmark-btn {
-    background: #fff; border: 1px solid #ddd; border-radius: 0.35rem; cursor: pointer;
-    font-size: 1.05rem; padding: 0.15rem 0.5rem; color: #B8862F; line-height: 1;
-  }
-  .note-bookmark-btn.active { background: #B8862F; color: #fff; border-color: #B8862F; }
-  /* Copy/Share moved to bar 2, each with its own language checkboxes now
-     (round 31) -- nothing here reads a shared checkbox group any more, so
-     this row is just the bookmark star and Play. */
-  .note-play-btn {
-    background: #fff; border: 1px solid #ddd; border-radius: 0.35rem; cursor: pointer;
-    padding: 0.25rem 0.55rem; font-size: 0.86rem; color: #222;
-  }
-
-  /* The Collapse toggle itself moved to the Ayah bar (icon-only, per the
-     owner's ask); this row is now just the 🔖 toggle that reveals bookmark/
-     language checkboxes/Play. */
-  .note-master-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; }
-  .note-actions-toggle {
-    background: #fff; border: 1px solid #ddd; color: #B8862F; border-radius: 0.35rem;
-    padding: 0.25rem 0.5rem; font-size: 0.92rem; cursor: pointer; line-height: 1;
-  }
-  .note-actions-toggle.active { background: #f5f0e2; border-color: #B8862F; }
 
   .note-field { margin-bottom: 0.55rem; }
   .note-field-label-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.15rem; }
@@ -1903,29 +1923,33 @@
       if (visibleRoster.some((p) => p.id === prev)) personSelect.value = prev;
     }
 
-    /** Grouped by section (owner request, 5 Aug 2026: section names should show, in whichever language is chosen) -- also just a nicer 30-item dropdown than one flat list. */
-    function renderTrackableSelectOptions() {
-      const prev = trackableSelect.value;
+    /** Grouped by section (owner request, 5 Aug 2026: section names should show, in whichever language is chosen) -- also just a nicer 30-item dropdown than one flat list. Note the loop variable is `item`, not `t` -- shadowing the imported t() here is exactly the trap phase 2/5 already hit at other call sites, and this function now calls t() below. */
+    function buildTrackableOptionsHtml() {
       if (!quranTrackables.length) {
-        trackableSelect.innerHTML = `<option value="">(no Quran Approaches yet)</option>`;
-        return;
+        return `<option value="">${t("(no Quran Approaches yet)")}</option>`;
       }
       const bySection = new Map();
-      for (const t of quranTrackables) {
-        const key = t.group ?? 0;
-        if (!bySection.has(key)) bySection.set(key, { groupName: t.groupName, items: [] });
-        bySection.get(key).items.push(t);
+      for (const item of quranTrackables) {
+        const key = item.group ?? 0;
+        if (!bySection.has(key)) bySection.set(key, { groupName: item.groupName, items: [] });
+        bySection.get(key).items.push(item);
       }
-      trackableSelect.innerHTML = [...bySection.entries()]
+      return [...bySection.entries()]
         .sort((a, b) => a[0] - b[0])
         .map(([, { groupName, items }]) => {
           const label = groupName ? langText(groupName, getAppLang()) : "";
           const options = items
-            .map((t) => `<option value="${t.id}">${langText(t.name, getAppLang(), t.id)}</option>`)
+            .map((item) => `<option value="${item.id}">${langText(item.name, getAppLang(), item.id)}</option>`)
             .join("");
           return label ? `<optgroup label="${label}">${options}</optgroup>` : options;
         })
         .join("");
+    }
+
+    /** The canonical Approach picker (Study options bar 4). Shares its options with the Ayah Note screen's own Approach toggle (round 32) via buildTrackableOptionsHtml() above -- one source of truth for what's offered, wherever it's offered. */
+    function renderTrackableSelectOptions() {
+      const prev = trackableSelect.value;
+      trackableSelect.innerHTML = buildTrackableOptionsHtml();
       if (quranTrackables.some((t) => t.id === prev)) trackableSelect.value = prev;
     }
 
@@ -2958,6 +2982,21 @@
       layoutWheelHub();
     }
 
+    /** Shared by the canonical Study-options Approach picker (trackableSelect)
+        and the Ayah Note screen's own Approach toggle (round 32) -- whichever
+        one is used, currentTrackableId changes, the two stay in sync (each
+        writes the other's value), the wheel re-renders, and whichever stage
+        view is actually open (the reading screen or the Note screen's own
+        Track/Guide/Breakdown/Coverage card) is rebuilt against the new
+        Approach. */
+    function changeCurrentTrackable(id) {
+      currentTrackableId = id;
+      trackableSelect.value = id;
+      renderWheel();
+      if (stageView === "read") renderStudyScreen();
+      else if (stageView === "note" && openNoteUnitKey) renderNoteViewNow(openNoteUnitKey);
+    }
+
     /** Brings the wheel hub's own Surah/Ayah pickers into line with the ones
         they mirror -- same shape as syncReadPickers() (shell round 22), just
         the two controls the hub has room for. Options are only rebuilt when
@@ -3802,7 +3841,17 @@
         // floating pop-up -- see renderApproachEmbedHtml()'s own comment.
         approachHtml: renderApproachEmbedHtml(surah, ayahNum),
         isNotesOpen: noteNotesOpen,
+        // Round 32 -- the Approach toggle (bar 2 on PC/tablet, its own bar
+        // on a phone). Same options buildTrackableOptionsHtml() already
+        // builds for the canonical trackableSelect; the "selected" value
+        // itself is set just below rather than baked into the string, the
+        // same "set .value after inserting" convention trackableSelect's
+        // own render already uses.
+        approachOptionsHtml: buildTrackableOptionsHtml(),
       });
+      if (quranTrackables.some((tr) => tr.id === currentTrackableId)) {
+        noteView.querySelectorAll("[data-note-approach-select]").forEach((sel) => { sel.value = currentTrackableId; });
+      }
       attachNoteViewHandlers(noteView, {
         buildText: (langs) => buildAyahText(unitKey, langs),
         onSaveNote: async (html) => {
@@ -3828,6 +3877,7 @@
         onNext: () => { if (ayahNum < currentSurahData.ayahCount) renderNoteViewNow(buildUnitKey.ayah(surah, ayahNum + 1)); },
         onToggleFullscreen: toggleNoteFullscreen,
         onToggleWbw: toggleNoteWbw,
+        onApproachChange: (id) => changeCurrentTrackable(id),
       });
       // Notes' own toggle isn't wired by attachNoteViewHandlers above (that
       // click is generic, shared by all four fields) -- this listens for the
@@ -4349,7 +4399,7 @@
     });
 
     surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); });
-    trackableSelect.addEventListener("change", async () => { currentTrackableId = trackableSelect.value; renderWheel(); renderStudyScreen(); });
+    trackableSelect.addEventListener("change", () => changeCurrentTrackable(trackableSelect.value));
     personSelect.addEventListener("change", async () => {
       selectedPersonId = personSelect.value;
       await refreshChunkAndWheel();
