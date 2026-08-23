@@ -1805,6 +1805,7 @@
     let openNoteUnitKey = null; // whichever āyah "Note & more" is currently showing, so a data refresh (e.g. after switching person) can re-render it in place
     let noteFullscreenOn = false; // the Note view's own full-screen state -- see toggleNoteFullscreen()
     let noteWbwOn = false; // bar 2's Word-by-word toggle (round 31) -- a reading preference that persists across Prev/Next within the Note view, not reset per āyah
+    let noteRootsOn = false; // bar 2's Root (Roots & derivatives) toggle (enhancement round) -- same "persists across Prev/Next, not reset per āyah" shape as noteWbwOn
     // Whether Notes is open, tracked the same way -- renderNoteViewNow()
     // rebuilds the whole view's innerHTML on every re-render (a claim, a
     // bookmark toggle, a Prev/Next), which would otherwise snap a
@@ -3832,6 +3833,11 @@
         // source of truth, just a second place it's offered.
         wbwHtml: noteWbwOn ? renderWordByWordPanel(ayah, { langs: wbwLangs() }) : "",
         isWbwOn: noteWbwOn,
+        // Enhancement round -- "Root" toggle, right after Word by word,
+        // reusing the same renderRootDerivativePanel() Study options'
+        // "Roots & derivatives" tick already calls.
+        rootsHtml: noteRootsOn ? renderRootDerivativePanel(ayah) : "",
+        isRootsOn: noteRootsOn,
         hasNote,
         isBookmarked,
         hasPrev: ayahNum > 1,
@@ -3877,6 +3883,7 @@
         onNext: () => { if (ayahNum < currentSurahData.ayahCount) renderNoteViewNow(buildUnitKey.ayah(surah, ayahNum + 1)); },
         onToggleFullscreen: toggleNoteFullscreen,
         onToggleWbw: toggleNoteWbw,
+        onToggleRoots: toggleNoteRoots,
         onApproachChange: (id) => changeCurrentTrackable(id),
       });
       // Notes' own toggle isn't wired by attachNoteViewHandlers above (that
@@ -3998,6 +4005,14 @@
         ordinary reading screen's own ticks behave). */
     function toggleNoteWbw() {
       noteWbwOn = !noteWbwOn;
+      if (openNoteUnitKey) renderNoteViewNow(openNoteUnitKey);
+    }
+
+    /** Bar 2's Root (Roots & derivatives) toggle (enhancement round) -- same
+        "reading preference, not per-āyah state" shape as toggleNoteWbw()
+        above: stays on across Prev/Next until the reader clicks it again. */
+    function toggleNoteRoots() {
+      noteRootsOn = !noteRootsOn;
       if (openNoteUnitKey) renderNoteViewNow(openNoteUnitKey);
     }
 
