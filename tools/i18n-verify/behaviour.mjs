@@ -47,6 +47,7 @@ const NAV_PAGES = [
   "/app/asma-study.html", "/app/people.html", "/app/catalogue.html",
   "/app/records.html", "/app/monitor.html", "/app/homework.html",
   "/app/curriculum.html", "/app/classes.html", "/app/course-offers.html", "/app/about.html",
+  "/app/bookmarks.html",
 ];
 
 console.log("\n=== 1. English is untouched (nothing regressed for today's users) ===");
@@ -3839,6 +3840,9 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
         JSON.stringify(barHasBookmarkPlay));
 
   // Bookmark -- reuses the existing bookmarks collection (findSavedBookmark).
+  // Enhancement round: creating one now prompts for a name (item 2) --
+  // accept it here, same as every other naming prompt in this suite.
+  page.once("dialog", (d) => d.accept("Test bookmark name"));
   await page.click("[data-note-bookmark]");
   await page.waitForTimeout(300);
   const afterBookmark = await page.evaluate(() => ({
@@ -4584,6 +4588,223 @@ console.log("\n=== 43i-o. The hub's own content: Ta'awwudh/Bismillah (both perma
   check("43i-l no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
+}
+
+console.log("\n=== 44. The Bookmark Manager (bookmarks.html) -- items 2/3/5 ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/bookmarks.html");
+  await page.waitForTimeout(600);
+
+  const initial = await page.evaluate(() => ({
+    appVisible: getComputedStyle(document.getElementById("app")).display !== "none",
+    rowNames: [...document.querySelectorAll(".bm-row-name")].map((r) => r.textContent.trim()),
+    hasOpenLink: !!document.querySelector('.bm-row[data-bm-id="bm1"] a[href*="bookmark=bm1"]'),
+  }));
+  check("44a the seeded bookmark renders on load, with a real Open link", initial.appVisible && initial.rowNames.includes("Ayat al-Kursi") && initial.hasOpenLink, JSON.stringify(initial));
+
+  page.on("dialog", (d) => (d.type() === "prompt" ? d.accept("Tafsir notes") : d.accept()));
+  await page.click("#newFolderBtn");
+  await page.waitForTimeout(200);
+  const afterFolder = await page.evaluate(() => [...document.querySelectorAll(".bm-folder-name")].map((f) => f.textContent.trim()));
+  check("44b creating a folder (item 3, \"multilayered\") really adds it", afterFolder.includes("Tafsir notes"), JSON.stringify(afterFolder));
+
+  // Move the seeded bookmark into the new folder (item 3: "moveable among layers").
+  const folderOptVal = await page.evaluate(() => {
+    const sel = document.querySelector('.bm-row[data-bm-id="bm1"] [data-bm-move]');
+    return [...sel.options].find((o) => o.textContent.trim() === "Tafsir notes")?.value ?? null;
+  });
+  await page.selectOption('.bm-row[data-bm-id="bm1"] [data-bm-move]', folderOptVal);
+  await page.waitForTimeout(200);
+  const afterMove = await page.evaluate(() => ({
+    insideFolder: !!document.querySelector(".bm-folder .bm-row[data-bm-id='bm1']"),
+    stillInUnfiled: !!document.getElementById("unfiledContainer").querySelector('.bm-row[data-bm-id="bm1"]'),
+  }));
+  check("44c moving a bookmark into a folder relocates it there, out of Unfiled", afterMove.insideFolder && !afterMove.stillInUnfiled, JSON.stringify(afterMove));
+
+  // Rename it (item 2: "enable editing it").
+  await page.click('.bm-row[data-bm-id="bm1"] [data-bm-rename]');
+  await page.waitForTimeout(200);
+  const afterRename = await page.evaluate(() => document.querySelector('.bm-row[data-bm-id="bm1"] .bm-row-name')?.textContent.trim());
+  check("44d renaming a bookmark really changes its name", afterRename === "Tafsir notes", afterRename);
+
+  // Retire, then restore (I4 -- nothing destroyed).
+  await page.click('.bm-row[data-bm-id="bm1"] [data-bm-toggle]');
+  await page.waitForTimeout(200);
+  const retired = await page.evaluate(() => document.querySelector('.bm-row[data-bm-id="bm1"]')?.classList.contains("retired"));
+  check("44e retiring a bookmark greys it out rather than removing it from the list", retired === true);
+  await page.click('.bm-row[data-bm-id="bm1"] [data-bm-toggle]');
+  await page.waitForTimeout(200);
+  const restored = await page.evaluate(() => document.querySelector('.bm-row[data-bm-id="bm1"]')?.classList.contains("retired"));
+  check("44f ...and restoring it brings it back", restored === false);
+
+  // A folder can be retired without losing what's inside it (I4) -- its
+  // bookmarks fall back to Unfiled, grouped by module, rather than vanishing.
+  const folderToggleSel = await page.evaluate(() => {
+    const folderEl = [...document.querySelectorAll(".bm-folder")].find((f) => f.querySelector(".bm-folder-name")?.textContent.trim() === "Tafsir notes");
+    return folderEl ? folderEl.dataset.folderId : null;
+  });
+  await page.click(`.bm-folder[data-folder-id="${folderToggleSel}"] [data-folder-toggle]`);
+  await page.waitForTimeout(200);
+  const afterFolderRetire = await page.evaluate((fid) => ({
+    folderRetired: document.querySelector(`.bm-folder[data-folder-id="${fid}"]`)?.classList.contains("retired"),
+    bookmarkFellBackToUnfiled: !!document.getElementById("unfiledContainer").querySelector('.bm-row[data-bm-id="bm1"]'),
+  }), folderToggleSel);
+  check("44g retiring a folder falls its bookmarks back to Unfiled rather than losing them",
+        afterFolderRetire.folderRetired && afterFolderRetire.bookmarkFellBackToUnfiled, JSON.stringify(afterFolderRetire));
+
+  check("44 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+
+  // Bangla, own context -- the standing lesson this project keeps
+  // relearning: only a rendered page proves a screen is translated.
+  const ctxBn = await ctxFor({ banner: false, appLang: "bn" });
+  const { page: pageBn, errors: errorsBn } = await openPage(ctxBn, "/app/bookmarks.html");
+  await pageBn.waitForTimeout(600);
+  const bn = await pageBn.evaluate(() => ({
+    h1: document.querySelector("h1")?.textContent.trim(),
+    intro: document.querySelector(".intro")?.textContent.trim(),
+    newFolderBtn: document.getElementById("newFolderBtn")?.textContent.trim(),
+    openBtn: document.querySelector(".bm-row button")?.textContent.trim(),
+    renameBtn: document.querySelector("[data-bm-rename]")?.textContent.trim(),
+    retireBtn: document.querySelector("[data-bm-toggle]")?.textContent.trim(),
+    rowModule: document.querySelector(".bm-row-module")?.textContent.trim(), // module NAMEs are proper nouns, not translated
+  }));
+  check("44h the whole page really renders in Bangla, not just the coverage report",
+        [bn.h1, bn.intro, bn.newFolderBtn, bn.openBtn, bn.renameBtn, bn.retireBtn].every((s) => BANGLA.test(s || "")),
+        JSON.stringify(bn));
+  check("44h ...while a module's own name (a proper noun) stays as it is", bn.rowModule === "QuranRevival", bn.rowModule);
+  check("44 no page errors in Bangla", errorsBn.length === 0, errorsBn.slice(0, 3).join(" | "));
+  await pageBn.close();
+  await ctxBn.close();
+}
+
+console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/restore (item 4), and the READ screen's own star (item 3) ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+
+  // The Read screen's own ⋮ menu now offers Bookmark too, not just the Note view.
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  const readMenuItems = await page.evaluate(() => [...document.querySelectorAll("#readQuickMenuSlot .qm-item")].map((b) => b.textContent.trim()));
+  check("45a the plain Read screen's own quick menu offers a Bookmark item", readMenuItems.some((t) => t.includes("Bookmark")), JSON.stringify(readMenuItems));
+
+  // Cancelling the naming prompt (item 2) makes no write and no bookmark.
+  page.once("dialog", (d) => d.dismiss());
+  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  await page.waitForTimeout(200);
+  const afterCancel = await page.evaluate(() => document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.classList.contains("has-note"));
+  check("45b cancelling the name prompt makes no bookmark", afterCancel !== true);
+
+  // Now really bookmark it, naming it, with Tajweed and a non-default Approach on.
+  await openStudyOptions(page);
+  await page.selectOption("#trackableSelect", "tafsir");
+  await page.waitForTimeout(150);
+  await page.click("#tajweedToggle");
+  await page.waitForTimeout(100);
+  await page.click("#tabStudyOptionsBtn"); // close the panel again -- it overlaps #readQuickMenuSlot while open
+  await page.waitForTimeout(150);
+  page.once("dialog", (d) => d.accept("My Fatiha bookmark"));
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  await page.waitForTimeout(300);
+  const writes = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
+  const saveWrite = writes.find((w) => w.col === "bookmarks" && w.data.includes("saved"));
+  check("45c saving really writes to the bookmarks collection", Boolean(saveWrite), JSON.stringify(writes));
+
+  check("45 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+console.log("\n=== 46. Quran's own ?bookmark= deep link restores the full study state (item 4/6) ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html?bookmark=bm1");
+  await page.waitForTimeout(1200);
+  const restored = await page.evaluate(() => ({
+    noteVisible: document.getElementById("noteView")?.hidden === false,
+    surah: document.getElementById("surahSelect")?.value,
+    ayah: document.getElementById("ayahSelect")?.value,
+    trackable: document.getElementById("trackableSelect")?.value,
+    tajweed: document.getElementById("tajweedToggle")?.checked,
+    noteRef: document.querySelector(".note-ref")?.textContent,
+  }));
+  check("46a a Quran bookmark's own surah/ayah are restored, landing on the Note view",
+        restored.noteVisible && restored.surah === "2" && restored.ayah === "255" && restored.noteRef?.includes("2:255"),
+        JSON.stringify(restored));
+  check("46b ...the Approach it was claimed under is restored too", restored.trackable === "tafsir", restored.trackable);
+  check("46c ...and a reading tick (Tajweed) that would otherwise reset comes back on", restored.tajweed === true, restored.tajweed);
+
+  check("46 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+console.log("\n=== 47. Every other module gets a real, named Bookmark star too (item 5) ===");
+{
+  // Deen Study (topic-study.js) -- a real leaf topic, "deen_ethics".
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/deen-study.html");
+  await page.waitForTimeout(800);
+  await page.click('[data-id="deen_ethics"]');
+  await page.waitForTimeout(300);
+  page.once("dialog", (d) => d.accept("Ethics bookmark"));
+  await page.click("#bookmarkTopicBtn");
+  await page.waitForTimeout(300);
+  const topicAfter = await page.evaluate(() => ({
+    text: document.getElementById("bookmarkTopicBtn")?.textContent.trim(),
+    active: document.getElementById("bookmarkTopicBtn")?.classList.contains("active"),
+  }));
+  check("47a Deen Study's own topic detail screen offers a real, named Bookmark star",
+        topicAfter.text === "★" && topicAfter.active, JSON.stringify(topicAfter));
+  const topicWrites = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
+  check("47a ...and really writes it, without re-fetching the whole detail view",
+        topicWrites.some((w) => w.col === "bookmarks" && w.data.includes("saved")), JSON.stringify(topicWrites));
+  // Toggling it off removes it again.
+  await page.click("#bookmarkTopicBtn");
+  await page.waitForTimeout(300);
+  const topicOff = await page.evaluate(() => document.getElementById("bookmarkTopicBtn")?.textContent.trim());
+  check("47a ...and clicking it again removes it", topicOff === "☆", topicOff);
+  await page.close();
+  await ctx.close();
+
+  // Asma ul Husna -- the star, AND the pre-existing ?resume= gap this round closes.
+  const ctx2 = await ctxFor({ banner: false });
+  const { page: page2, errors: errors2 } = await openPage(ctx2, "/app/asma-study.html");
+  await page2.waitForTimeout(800);
+  await page2.click('.asma-card[data-number="1"]');
+  await page2.waitForTimeout(300);
+  page2.once("dialog", (d) => d.accept("Al-Rahman bookmark"));
+  await page2.click("#bookmarkAsmaBtn");
+  await page2.waitForTimeout(300);
+  const asmaAfter = await page2.evaluate(() => ({
+    text: document.getElementById("bookmarkAsmaBtn")?.textContent.trim(),
+    active: document.getElementById("bookmarkAsmaBtn")?.classList.contains("active"),
+  }));
+  check("47b Asma ul Husna's own detail screen offers a real, named Bookmark star too",
+        asmaAfter.text === "★" && asmaAfter.active, JSON.stringify(asmaAfter));
+  await page2.close();
+  await ctx2.close();
+
+  const ctx3 = await ctxFor({ banner: false });
+  const { page: page3, errors: errors3 } = await openPage(ctx3, "/app/asma-study.html?resume=5");
+  await page3.waitForTimeout(1000);
+  const asmaResume = await page3.evaluate(() => ({
+    detailVisible: !!document.querySelector(".asma-detail"),
+    number: document.querySelector(".asma-detail-number")?.textContent.trim(),
+  }));
+  check("47c asma-study.html's own pre-existing ?resume= gap is closed -- it really jumps to that Name now",
+        asmaResume.detailVisible && asmaResume.number === "5 of 99", JSON.stringify(asmaResume));
+  check("47 no page errors", errors.length === 0 && errors2.length === 0 && errors3.length === 0,
+        [...errors, ...errors2, ...errors3].slice(0, 3).join(" | "));
+  await page3.close();
+  await ctx3.close();
 }
 
 await browser.close();

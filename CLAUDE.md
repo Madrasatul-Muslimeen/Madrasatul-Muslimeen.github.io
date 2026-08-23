@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.65.** Cutover to production happened
+**Current milestone: QuranRevival v07.66.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -3589,6 +3589,144 @@ reading screen's settings are shaped nothing alike) before a schema is
 written that would be expensive to redo. Put to the owner as its own,
 separate round rather than guessed at here. No `firestore.rules`, schema or
 Firestore data changes this round -- nothing to deploy but the static files.
+
+v07.66 (23 Aug 2026, on Claude Code on the web) is **shell round 35 -- the
+Bookmark Manager, items 2-6 of the same request v07.65 opened.** Two design
+questions were put to the owner first, with a recommendation attached to
+each, per that round's own "genuine design/scope decision" flag: **layers
+are "Both"** (bookmarks group by module automatically, AND a person can
+create their own folders and move bookmarks into one, nested arbitrarily —
+real multi-layer depth); **rollout is "menu everywhere now, full settings-
+restore for Quran only"** (the recommended option) — every module gets a
+real, named, jump-back-able bookmark this round, but only Quran's star
+captures the fuller reading state, since it is the only module with
+comparable per-position settings to restore in the first place.
+
+**`bookmarks.html` is the real screen behind nav.js's own long-carried
+"Bookmark (coming soon)" placeholder** — its own header comment had named
+this exact shape ("per-subject, multiple named bookmarks, its own page,
+resume-where-left-off") as explicit future work since Phase 7; this round
+is that work. `BOOKMARK_PLACEHOLDERS` becomes a real `BOOKMARK_LINKS` entry
+in `nav.js`, so every one of the 19 nav-bearing pages gets a working
+"Bookmark" link for free (item 5: "accessible from any module, any screen,
+any time") — nothing module-specific needed there, since the nav bar is
+already shared. The page itself follows `taglines.html`'s own list-with-
+add/edit/retire shape and `records.html`'s own Tenant/Person picker (a
+guardian manages a child's bookmarks the same way they already manage that
+child's records), listing every bookmark from every module in one place,
+grouped by module by default or by a person's own folder once moved there.
+
+**Schema, additive only (I4/D6), no new collection:** `bookmarks/{tenantId}
+__{personId}` gains `folders[]{id, name, parentId, removed, createdAt}` and
+`saved[].folderId` (null = unfiled, grouped by its own moduleId). New
+`js/bookmarks.js` exports: `createFolder`/`renameFolder`/`setFolderRemoved`/
+`moveFolder` (folder-to-folder re-parenting, with a new `isFolderOrDescendant()`
+cycle guard — refuses, doesn't corrupt, a move that would nest a folder
+inside its own descendant) and `renameSavedBookmark`/`setSavedBookmarkRemoved`/
+`moveBookmarkToFolder` for bookmarks themselves. No `firestore.rules` change
+at all: `canRecordFor()` already gates the whole `bookmarks` doc by
+tenantId/personId, not by field name, so a new field needs no new rule --
+confirmed by reading the deployed rule before assuming otherwise.
+
+**A folder that is retired keeps its child folders nested under it (I4 --
+retiring is inert, not disowning), but its BOOKMARKS fall back to Unfiled,
+grouped by module, rather than staying invisible inside a folder a person
+might forget about.** That asymmetry was a real design choice, not an
+oversight, and a real ordering bug was caught and fixed while building it:
+the first version treated "parent is retired" the same as "parent is
+missing" when deciding what counts as a root folder, which double-rendered
+a retired folder's own children (once nested under it, once promoted to
+root) -- fixed by only promoting a folder to root when its parent is
+genuinely absent from the data, never merely retired.
+
+**Quran (`quranrevival.html` + `ayah-note-renderer.js`) is where items 2, 4
+and the READ-screen half of item 3 land for real:**
+- **Item 2 (prompt for a name):** `toggleAyahBookmark()` now calls
+  `prompt()` on create (this codebase already uses native `prompt()`/
+  `confirm()` for exactly this kind of admin action -- `catalogue.html`'s
+  own Approach rename, `records.html`'s own return note -- so this matches
+  existing convention rather than inventing a styled dialog). Cancelling
+  makes no write and no bookmark.
+- **Item 4 (reopen ALL settings):** a new `captureQuranBookmarkSettings()`
+  snapshots exactly the session-only state that would otherwise silently
+  reset -- unit type/position, the selected Approach, and the Tajweed/Word-
+  by-word/Roots/Mushaf ticks. Deliberately does NOT capture translation
+  languages, reciters or the Arabic font: those are already device-wide
+  localStorage preferences (`prefs.js`) that come back on their own, and
+  capturing them too would just be redundant. `applyQuranBookmarkSettings()`
+  is the reverse -- restores every field (tolerant of an older bookmark with
+  no `settings` at all, or one missing a field) and lands on the bookmarked
+  āyah's own Note screen, which is item 6's "open the same place it was
+  created from."
+- **The READ screen's own star (item 3's "as well"):** the ⋮ quick menu
+  (`renderQuickMenu()`/`attachQuickMenuHandlers()` in `ayah-note-renderer.js`)
+  gained a Bookmark item, reusing the exact same `toggleAyahBookmark()` the
+  Note view's own star already calls -- one mechanism, reachable from the
+  plain reading screen (single āyah AND the flow view, since the quick menu
+  already renders on both) and from inside Note & more, not two.
+- **The cross-page jump (item 6):** `?bookmark=<id>` is Quran's own query
+  param, read once on load (`openBookmarkFromQueryString()`), distinct from
+  the Continue strip's existing `?resume=<subjectId>` -- Quran needs the
+  richer id-based lookup because only Quran has a `settings` object worth
+  reading back; `bookmarks.html`'s own "Open" link uses whichever the target
+  module actually needs.
+
+**The other 8 modules (topic-study.js: Deen Study/Arabic/Hadith/General
+Study/Nature-Life/Life Skill; routine-study.js: Health/LDOG; asma-study.js:
+Asma ul Husna) each gained a real, named Bookmark star too** -- position-
+only (the topic/routine/Name id itself, exactly what `?resume=` already
+jumps by), no rich `settings`, per the owner's own accepted scope. Reuses
+each page's existing `?resume=` handling for the jump back, so **zero
+changes were needed to topic-study.js's or routine-study.js's own resume
+logic** -- `bookmarks.html` simply links a non-Quran bookmark to
+`page.html?resume=<position>` instead of inventing a second mechanism.
+**One real, separate, pre-existing gap was closed as part of the same
+work: `asma-study.html` never read `?resume=` at all** (topic-study.js and
+routine-study.js have since Phase 7 round 3; Quran's own equivalent gap was
+v07.19's) -- five lines, the same shape those two pages already use.
+
+**A real testability trap was found and designed around, and it is worth
+recording because it would silently mislead any future round that trusts a
+re-fetch:** this project's own Firestore stub (`firebase-stub.mjs`) records
+writes for `__stubWrites` assertions but never actually mutates its `DATA`
+-- so a handler that writes, then calls `getDoc()` again to confirm, sees
+STALE data in the test harness even though the equivalent code is correct
+against real Firestore. Every bookmark-toggle handler across all four
+files, and every action on `bookmarks.html` itself, was written (or, for
+the three module pages, fixed after the first version's own re-open call
+exposed exactly this) to patch its in-memory copy after a successful write
+and re-render from THAT, never re-fetching -- which is also just the
+better production behaviour (`quranrevival.html`'s own `toggleAyahBookmark`
+had already established this pattern; this round is what made it universal).
+The stub's own `bookmarks` seed gained one real `saved[]` entry (Quran,
+surah 2 -- deliberately a DIFFERENT surah from every other test's own
+default of surah 1, so a restore that silently stayed put would be caught)
+so both `bookmarks.html` and the `?bookmark=` restore path had something
+real to render and reload against.
+
+**Verified: 907 behaviour checks pass, 0 failed** (was 872 -- new sections
+44-47 cover the manager screen end to end (seeded bookmark renders, folder
+create/rename/retire/restore, moving a bookmark into and out of a folder,
+a retired folder's own bookmarks falling back to Unfiled, the whole screen
+in Bangla with a module's own name proven NOT translated), Quran's own
+naming prompt (including cancelling making no bookmark), the Read screen's
+new quick-menu item, the full settings capture/restore across a real surah
+change, and a real, named star now working -- and toggling off again -- on
+Deen Study, Asma ul Husna (plus its `?resume=` fix) each proven with a real
+write to the bookmarks collection; section 42f, from before this round,
+was updated (not left broken) to accept the new naming prompt it now
+triggers). **`layout.mjs` reports NO LAYOUT REGRESSIONS** against the real
+previous commit (`getElementById` targets unchanged at 95, none missing),
+**`reading.mjs` OK**, **`navcheck.mjs` unchanged** (still only the pre-
+existing 320px English truncation), **coverage 1,310/1,310 (100%)** --
+`bookmarks.html` joined the `tracking` area alongside `js/bookmarks.js`,
+which already lived there -- and **`tools/perf/measure.mjs` unchanged**
+(still 6 sequential round trips on every page tested; the one `bookmarks`
+read each module already made for the Continue strip is the same read the
+new star now also reads from, not a second one) and **`tools/perf/
+new-tenant.mjs` 10/10**, confirming this round added no Firestore reads
+anywhere. No `firestore.rules` or schema changes to deploy -- the two
+additive fields need no rules change, and nothing else in Firestore moved.
 
 ---
 

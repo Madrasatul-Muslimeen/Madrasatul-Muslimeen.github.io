@@ -37,7 +37,7 @@ import { ASMA_NAMES } from "./asma-data.js";
 import { ASMA_POSTERS } from "./asma-posters.js";
 import { renderAsmaGrid, renderAsmaDetail, renderAsmaScreensaverSlide } from "./asma-renderer.js";
 import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderWayModalShell, attachWayModalHandlers } from "./way-modal.js";
-import { getBookmarks, touchResume, recentResumeEntries, NO_PROGRAM } from "./bookmarks.js";
+import { getBookmarks, touchResume, recentResumeEntries, saveBookmark, removeSavedBookmark, findSavedBookmark, NO_PROGRAM } from "./bookmarks.js";
 import { renderContinueStrip } from "./continue-strip.js";
 import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./course-offers.js";
 
@@ -84,6 +84,8 @@ export function initAsmaStudyPage() {
   let selectedPersonId = null;
   let studiedTrackable = null;
   let currentChunk = null;
+  // Enhancement round -- the Bookmark Manager (same shape as topic-study.js).
+  let bookmarksDoc = { resume: {}, saved: [] };
   const chunkKey = chunkKeyFor(buildUnitKey.name(1), SUBJECT_ID); // any number resolves the same subject_asma_ul_husna chunk
   // Follow-up round: Map(subjectId -> courseOffer contextId) for
   // selectedPersonId -- same mechanism topic-study.js/routine-study.js/
@@ -136,6 +138,16 @@ export function initAsmaStudyPage() {
     // together instead of one at a time.
     await Promise.all([refreshChunk(), refreshProgramMap(), refreshContinueStrip()]);
     renderGrid();
+
+    // Enhancement round -- this page never read ?resume= at all (a real,
+    // separate, pre-existing gap: topic-study.js/routine-study.js have
+    // carried this since Phase 7 round 3). A bookmark made here jumps back
+    // through this exact same param -- bookmarks.html links non-Quran
+    // bookmarks straight to ?resume=<position>, so this module needs no
+    // second query param of its own to support the Bookmark Manager.
+    const resumeId = new URLSearchParams(location.search).get("resume");
+    const number = resumeId ? Number(resumeId) : null;
+    if (number && ASMA_NAMES.some((n) => n.number === number)) await openNameDetail(number);
   }
 
   /** Follow-up round: which of selectedPersonId's active course-offer enrolments cover SUBJECT_ID -- Asma ul Husna's whole tree is that one anchor node, so this only ever needs the one key. Best-effort, same risk tolerance as refreshContinueStrip. */
@@ -145,9 +157,11 @@ export function initAsmaStudyPage() {
     programBySubjectId = programSubjectMapFromEnrollments(enrollments);
   }
 
+  /** Also refreshes the module-level bookmarksDoc (enhancement round), which the detail view's own Bookmark star reads -- see topic-study.js's own version of this comment for why the fetch isn't guarded on continueStripContainer. */
   async function refreshContinueStrip() {
-    if (!continueStripContainer || !selectedPersonId) return;
-    const bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
+    if (!selectedPersonId) return;
+    bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
+    if (!continueStripContainer) return;
     const entries = recentResumeEntries(bookmarksDoc, 5).map((e) => {
       // Local `number`, not `num` -- phase 6 imports num() from i18n.js and
       // the old name would have shadowed it exactly where it is needed.
@@ -192,8 +206,47 @@ export function initAsmaStudyPage() {
 
     const entryKey = `${buildUnitKey.name(number)}::${TRACKABLE_ID}`;
     const entry = currentChunk?.entries?.[entryKey] ?? null;
-    detailContainer.innerHTML = renderAsmaDetail(name, entry);
+    const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: MODULE_ID, subjectId: SUBJECT_ID, position: String(number) });
+    detailContainer.innerHTML = renderAsmaDetail(name, entry, { isBookmarked });
     document.getElementById("trackAsmaBtn").addEventListener("click", () => openWayModal(name));
+    document.getElementById("bookmarkAsmaBtn").addEventListener("click", () => toggleAsmaBookmark(name));
+  }
+
+  /** Enhancement round -- same shape as topic-study.js's toggleTopicBookmark(): a real, named entry under the Bookmark menu, position-only (no rich settings), reusing ?resume='s own restore path (fixed above in loadContextData()). */
+  async function toggleAsmaBookmark(name) {
+    if (!auth.currentUser || !selectedPersonId) return;
+    const position = String(name.number);
+    const existing = findSavedBookmark(bookmarksDoc, { moduleId: MODULE_ID, subjectId: SUBJECT_ID, position });
+    if (existing) {
+      const outcome = await safeWrite(
+        () => removeSavedBookmark(db, activeTenantId, selectedPersonId, existing.id),
+        { collection: TENANT.BOOKMARKS, action: "removeSavedBookmark" }
+      );
+      if (!outcome.ok) return;
+      bookmarksDoc = { ...bookmarksDoc, saved: bookmarksDoc.saved.map((b) => (b.id === existing.id ? { ...b, removed: true } : b)) };
+    } else {
+      const defaultName = asmaName(name.number, name.transliteration);
+      const typed = prompt(t("Name this bookmark:"), defaultName);
+      if (typed === null) return;
+      const outcome = await safeWrite(
+        () => saveBookmark(db, {
+          tenantId: activeTenantId, personId: selectedPersonId, moduleId: MODULE_ID, subjectId: SUBJECT_ID,
+          name: typed.trim() || defaultName, position, uid: auth.currentUser.uid,
+        }),
+        { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
+      );
+      if (!outcome.ok) return;
+      bookmarksDoc = { ...bookmarksDoc, saved: [...(bookmarksDoc.saved ?? []), outcome.result] };
+    }
+    // Patches the star's own DOM directly -- see topic-study.js's own
+    // toggleTopicBookmark() for why this doesn't re-open the whole detail view.
+    const btn = document.getElementById("bookmarkAsmaBtn");
+    if (btn) {
+      const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: MODULE_ID, subjectId: SUBJECT_ID, position });
+      btn.textContent = isBookmarked ? "★" : "☆";
+      btn.classList.toggle("active", isBookmarked);
+      btn.title = isBookmarked ? t("Remove bookmark") : t("Bookmark this");
+    }
   }
 
   function openWayModal(name) {
