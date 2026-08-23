@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.64.** Cutover to production happened
+**Current milestone: QuranRevival v07.65.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -3539,6 +3539,56 @@ latter was a plain, untranslated literal before this round touched the
 function that builds it, so it's translated now rather than left as it
 was found). No `firestore.rules`, schema or Firestore data changes --
 nothing to deploy but the static files.
+
+v07.65 (23 Aug 2026, on Claude Code on the web) is **shell round 34, item 1
+of a 6-item owner request -- the "Root" toggle.** The owner's ask was: "Add
+the Root/derivatives button after the WbW button in all platforms (clicking
+it will open the derivates below the WbW and re-click will close. Name the
+button as 'Root')." Unlike the Approach toggle (round 32), Root does **not**
+split between a PC/tablet bar-2 copy and a phone-only second bar -- it's one
+button, always right after Word by word, on every platform. Reuses
+`renderRootDerivativePanel()`, the same helper Study options' own "Roots &
+derivatives" reading tick already calls (round 27 split it out of Word by
+Word for exactly this kind of reuse) -- no new rendering logic, just a
+second place it's offered, the same shape round 31 gave Word by Word itself.
+A new `noteRootsOn` session flag (parallel to `noteWbwOn`) persists the
+toggle across Prev/Next within the Note view, the same "reading preference,
+not per-āyah state" rule every other Note-view toggle already follows.
+**"Root" is a real word, not an abbreviation-as-icon like "WbW"/"Aa"**, so it
+gets a real Bangla translation ("মূল") rather than being mapped to itself.
+
+**Verified: 872 behaviour checks pass, 0 failed** (was 866 -- new section
+42t: off by default and positioned right after Word by word; clicking it
+opens real derivatives content directly below the Word-by-word field, with
+the toggle itself reading pressed; clicking again closes it; plus 42k's
+Bangla check extended to cover the button's own visible text and title)
+**`layout.mjs` reports NO LAYOUT REGRESSIONS** against the real previous
+commit (`getElementById` targets unchanged at 95, none missing), **`reading.mjs`
+OK**, **coverage 1,291/1,291 (100%)** -- one new string ("Root"). No
+`firestore.rules`, schema or Firestore data changes.
+
+**The other five items in the owner's request are a single connected
+feature -- a real Bookmark Manager -- and are deliberately NOT built in this
+round.** Item 2 (name + edit a bookmark from a real list), item 3 (multi-
+layered folders, editable/deletable/movable), item 3-repeated (a Bookmark
+button on the plain Read screen, not just the Note view), item 4 (reopening
+ALL settings, not just the position), item 5 (one Bookmark menu reachable
+from every module/screen), and item 6 (jump straight to the exact spot from
+the bookmark alone) all touch the same `bookmarks` collection, the same
+`js/bookmarks.js` module, and -- for items 4-6 to mean anything -- every one
+of the 9 study-renderer pages (`quranrevival.html`, `topic-study.js`,
+`routine-study.js`, `asma-study.js`), not just Quran. That is exactly the
+kind of real schema/scope decision CLAUDE.md's own "How to work" section
+reserves for the owner rather than guessing at -- `saved[]` today is a flat,
+per-module list with a free-form `settings` object nobody actually populates
+yet (checked: every `saveBookmark()` call site passes `position` only), so
+"multilayered" and "reopens all settings" both need real answers (what is a
+layer -- a folder? a module grouping? -- and what does "all settings" concretely
+capture per module type, since a topic page's settings and the Quran
+reading screen's settings are shaped nothing alike) before a schema is
+written that would be expensive to redo. Put to the owner as its own,
+separate round rather than guessed at here. No `firestore.rules`, schema or
+Firestore data changes this round -- nothing to deploy but the static files.
 
 ---
 

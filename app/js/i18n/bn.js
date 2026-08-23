@@ -558,6 +558,10 @@ export const BN = {
   // the point of it being a compact glyph. The real, translated name lives
   // in the title/aria-pressed pair, via "Word by Word" below.
   "WbW": "WbW",
+  // Enhancement round -- bar 2's Root (Roots & derivatives) toggle. Unlike
+  // "WbW" this is a real word, not an abbreviation-as-icon, so it gets a
+  // real Bangla word rather than being mapped to itself.
+  "Root": "মূল",
   "Mapping My Journey": "আমার যাত্রার মানচিত্র", // ? -- placeholder feature name, not yet designed
   "Previous āyah": "পূর্ববর্তী আয়াত",
   "Next āyah": "পরবর্তী আয়াত",

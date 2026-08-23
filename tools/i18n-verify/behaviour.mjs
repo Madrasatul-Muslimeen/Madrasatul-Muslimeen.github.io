@@ -4201,6 +4201,73 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await ctx.close();
 }
 
+// --- 42t enhancement round: the Root (Roots & derivatives) toggle -- always
+// right after Word by word, on every platform (no phone/desktop split the
+// way Approach/Journey get), off by default, opening real derivatives
+// content below Word by word and closing again on a second click. ----------
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.waitForTimeout(300);
+
+  const before = await page.evaluate(() => {
+    const bar2 = document.querySelector(".note-bar2");
+    const children = [...bar2.children];
+    const wbwIdx = children.findIndex((c) => c.matches("[data-note-wbw-toggle]"));
+    const rootsIdx = children.findIndex((c) => c.matches("[data-note-roots-toggle]"));
+    const rootsBtn = document.querySelector("[data-note-roots-toggle]");
+    return {
+      fieldPresent: !!document.querySelector('[data-note-field="rootDerivatives"]'),
+      pressed: rootsBtn.getAttribute("aria-pressed"),
+      label: rootsBtn.textContent.trim(),
+      rightAfterWbw: rootsIdx === wbwIdx + 1,
+    };
+  });
+  check("42t Root is off by default, right after Word by word, labelled \"Root\"",
+        !before.fieldPresent && before.pressed === "false" && before.label === "Root" && before.rightAfterWbw,
+        JSON.stringify(before));
+
+  // Turn Word by word on too, so "below Word by word" is a real ordering
+  // check rather than a no-op against a field that isn't even rendered.
+  await page.click("[data-note-wbw-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("[data-note-roots-toggle]");
+  await page.waitForTimeout(200);
+  const on = await page.evaluate(() => {
+    const wbwField = document.querySelector('[data-note-field="wbw"]');
+    const rootsField = document.querySelector('[data-note-field="rootDerivatives"]');
+    const collapsible = document.querySelector("[data-note-collapsible]");
+    const children = [...collapsible.children];
+    return {
+      present: !!rootsField,
+      hasContent: rootsField ? rootsField.textContent.trim().length > 0 : false,
+      pressed: document.querySelector("[data-note-roots-toggle]").getAttribute("aria-pressed"),
+      active: document.querySelector("[data-note-roots-toggle]").classList.contains("active"),
+      belowWbw: wbwField && rootsField ? children.indexOf(rootsField) === children.indexOf(wbwField) + 1 : null,
+    };
+  });
+  check("42t clicking it opens real derivatives content below Word by word",
+        on.present && on.hasContent && on.belowWbw === true, JSON.stringify(on));
+  check("42t ...and the toggle itself reads pressed", on.pressed === "true" && on.active);
+
+  await page.click("[data-note-roots-toggle]");
+  await page.waitForTimeout(200);
+  const off = await page.evaluate(() => ({
+    fieldPresent: !!document.querySelector('[data-note-field="rootDerivatives"]'),
+    pressed: document.querySelector("[data-note-roots-toggle]").getAttribute("aria-pressed"),
+  }));
+  check("42t clicking it again closes the derivatives field", !off.fieldPresent && off.pressed === "false", JSON.stringify(off));
+
+  check("42t no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
 // --- 42o the Note view's own full screen: two states, and both bars
 // (bar 1 and, since round 31, bar 2 -- it holds Copy/Share/WbW now, real
 // edit/action tools, same reasoning as bar 1) stay on screen in both. ------
@@ -4322,6 +4389,10 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
       bookmarkTitle: view.querySelector("[data-note-bookmark]").title,
       playTitle: view.querySelector("[data-note-play]").title,
       approachTitle: view.querySelector("[data-note-approach-select]").title,
+      // Enhancement round -- the Root toggle's own VISIBLE text is real
+      // wording ("Root"), unlike "WbW"/"Aa", so it's asserted in Bangla too.
+      rootsToggleText: view.querySelector("[data-note-roots-toggle]").textContent.trim(),
+      rootsToggleTitle: view.querySelector("[data-note-roots-toggle]").title,
     };
   });
   check("42k Note & more's own ref and Journey placeholder are in Bangla",
@@ -4338,6 +4409,8 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
         BANGLA.test(noteBn.bookmarkTitle) && BANGLA.test(noteBn.playTitle), JSON.stringify(noteBn));
   check("42k the Approach toggle's own title (\"Choose an Approach\") is in Bangla",
         BANGLA.test(noteBn.approachTitle), JSON.stringify(noteBn));
+  check("42k the Root toggle reads a real Bangla word (not left as \"Root\"), title in Bangla too",
+        BANGLA.test(noteBn.rootsToggleText) && BANGLA.test(noteBn.rootsToggleTitle), JSON.stringify(noteBn));
 
   await page.click('.note-bar2 [data-note-sub-toggle="copy"]');
   await page.waitForTimeout(120);
