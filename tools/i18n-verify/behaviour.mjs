@@ -253,9 +253,21 @@ console.log("\n=== 8. PHASE 2: the Quran module in Bangla ===");
   check("8b ayah option value stays plain", ayah.firstVal === "1", ayah.firstVal);
   check("8b position readout is Bangla", BANGLA.test(ayah.position || ""), ayah.position);
 
-  // The wheel's centre disc.
-  const centre = await page.evaluate(() => document.querySelector("#wheelContainer svg")?.textContent ?? "");
-  check("8c wheel centre is Bangla with Bengali digits", BANGLA.test(centre) && /[০-৯]/.test(centre), centre.slice(0, 40));
+  // The wheel's centre disc no longer draws the chosen ayah's own text at
+  // all (a shell round after v07.61/62 -- the hub's own permanent
+  // Ta'awwudh/Bismillah plus its Surah/Ayah pickers replaced it, and a
+  // fragment of the old, unbounded ayah text used to show through behind
+  // the narrower hub overlay). The Bangla surface that check used to be
+  // here now lives in the hub's OWN Surah picker instead -- syncWheelHubPickers()
+  // mirrors it from the canonical control on every renderWheel(), whether or
+  // not the intro's been tapped yet, so its options are already Bangla.
+  const centre = await page.evaluate(() => ({
+    svgText: [...document.querySelectorAll("#wheelContainer svg text:not(.wheel-seg-num)")].map((t) => t.textContent.trim()).filter(Boolean),
+    hubSurah: document.getElementById("wheelHubSurahSelect")?.options[0]?.textContent,
+  }));
+  check("8c the wheel centre draws no ayah text of its own any more", centre.svgText.length === 0, JSON.stringify(centre.svgText));
+  check("8c ...the hub's own Surah picker is Bangla with Bengali numerals instead",
+        BANGLA.test(centre.hubSurah || "") && /[০-৯]/.test(centre.hubSurah || ""), centre.hubSurah);
 
   // The Study options panel and its three bars.
   await openStudyOptions(page);
@@ -309,11 +321,13 @@ console.log("\n=== 9. PHASE 2: English is still exactly English ===");
   const r = await page.evaluate(() => ({
     firstSurah: document.getElementById("surahSelect").options[0]?.textContent,
     position: document.getElementById("ayahPosition")?.textContent?.trim(),
-    centre: document.querySelector("#wheelContainer svg")?.textContent ?? "",
+    centreText: [...document.querySelectorAll("#wheelContainer svg text:not(.wheel-seg-num)")].map((t) => t.textContent.trim()).filter(Boolean),
+    hubSurah: document.getElementById("wheelHubSurahSelect")?.options[0]?.textContent,
   }));
   check("9 surah picker still English with Western digits", r.firstSurah?.startsWith("1.") && !BANGLA.test(r.firstSurah), r.firstSurah);
   check("9 position readout still English", /Surah/.test(r.position || ""), r.position);
-  check("9 wheel centre still English", /SURAH/i.test(r.centre), r.centre.slice(0, 40));
+  check("9 wheel centre still draws no ayah text of its own", r.centreText.length === 0, JSON.stringify(r.centreText));
+  check("9 ...the hub's own Surah picker is still English too", r.hubSurah?.startsWith("1.") && !BANGLA.test(r.hubSurah || ""), r.hubSurah);
   await page.close();
   await ctx.close();
 }
@@ -4347,7 +4361,7 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
   await ctx.close();
 }
 
-console.log("\n=== 43i-o. The hub's own content: Surah top, Ta'awwudh/Bismillah in the middle, Ayah narrow at the bottom ===");
+console.log("\n=== 43i-o. The hub's own content: Ta'awwudh/Bismillah (both permanent) on top, Surah, Ayah narrow at the very bottom ===");
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
@@ -4357,10 +4371,14 @@ console.log("\n=== 43i-o. The hub's own content: Surah top, Ta'awwudh/Bismillah 
 
   const order = await page.evaluate(() => {
     const rect = (id) => document.getElementById(id).getBoundingClientRect();
-    return { surahTop: rect("wheelHubSurahSelect").top, taawwudhTop: rect("wheelHubTaawwudh").top, ayahTop: rect("wheelHubAyahSelect").top };
+    return {
+      taawwudhTop: rect("wheelHubTaawwudh").top, bismillahTop: rect("wheelHubBismillah").top,
+      surahTop: rect("wheelHubSurahSelect").top, ayahTop: rect("wheelHubAyahSelect").top,
+    };
   });
-  check("43i Surah sits above the Arabic lines", order.surahTop < order.taawwudhTop, JSON.stringify(order));
-  check("43i ...which sit above Ayah, at the very bottom", order.taawwudhTop < order.ayahTop, JSON.stringify(order));
+  check("43i Ta'awwudh sits above Bismillah", order.taawwudhTop < order.bismillahTop, JSON.stringify(order));
+  check("43i ...which sits above Surah", order.bismillahTop < order.surahTop, JSON.stringify(order));
+  check("43i ...which sits above Ayah, at the very bottom", order.surahTop < order.ayahTop, JSON.stringify(order));
 
   const surahW = await page.evaluate(() => document.getElementById("wheelHubSurahSelect").getBoundingClientRect().width);
   const ayahW = await page.evaluate(() => document.getElementById("wheelHubAyahSelect").getBoundingClientRect().width);
@@ -4379,22 +4397,30 @@ console.log("\n=== 43i-o. The hub's own content: Surah top, Ta'awwudh/Bismillah 
   check("43j ...286 (the widest real ayah number) fits without clipping", wide.value === "286" && !wide.clipped, JSON.stringify(wide));
   check("43j ...and really drives the canonical Ayah picker too", wide.canonical === "286", wide.canonical);
 
-  // Ta'awwudh is always on; Bismillah only when there's room -- both cases
-  // exist among the project's own breakpoints (see reading.mjs/layout.mjs's
-  // own eight-viewport sweep for the full range), so this checks the two
-  // ends: a roomy phone (Bismillah fits) and the tightest one (it may not).
-  await page.selectOption("#wheelHubSurahSelect", "1"); // back to a short surah/ayah
-  await page.selectOption("#wheelHubAyahSelect", "1");
-  await page.waitForTimeout(200);
-  const wide390 = await page.evaluate(() => ({
+  // Both Ta'awwudh and Bismillah are now PERMANENT -- "these two texts are to
+  // be permanently placed there" -- no more conditional on available room.
+  // Also: the wheel's own centre must no longer show the CHOSEN ayah's own
+  // Arabic text at all (a stray fragment of it used to show through behind/
+  // around the narrower hub overlay) -- picking 2:286, the longest ayah in
+  // the whole Qur'an, is exactly the case that used to spill past the ring.
+  const state = await page.evaluate(() => ({
     taawwudhShown: !document.getElementById("wheelHubTaawwudh").hidden,
     taawwudhText: document.getElementById("wheelHubTaawwudh").textContent,
+    bismillahShown: !document.getElementById("wheelHubBismillah").hidden,
+    bismillahText: document.getElementById("wheelHubBismillah").textContent,
+    // .wheel-seg-num is the ring's own per-slice number labels (1, 2, 3…) --
+    // real, unrelated text this check must not trip on; only the centre's
+    // own text element(s) (centerArabic/centerRef) carry no class at all.
+    centerTexts: [...document.querySelectorAll("#wheelContainer svg text:not(.wheel-seg-num)")].map((t) => t.textContent.trim()).filter(Boolean),
   }));
-  check("43k Ta'awwudh is always shown, regardless of Bismillah's own state", wide390.taawwudhShown && wide390.taawwudhText.includes("أَعُوذُ"), JSON.stringify(wide390));
+  check("43k Ta'awwudh is shown, even with the longest ayah in the Qur'an selected", state.taawwudhShown && state.taawwudhText.includes("أَعُوذُ"), JSON.stringify(state));
+  check("43k ...and so is Bismillah, permanently, not conditionally", state.bismillahShown && state.bismillahText.includes("بِسْمِ"), JSON.stringify(state));
+  check("43k the wheel's own centre draws no ayah text of its own any more", state.centerTexts.length === 0, JSON.stringify(state.centerTexts));
 
   // Nothing here -- select or Arabic line -- may spill past the wheel's own
   // hub circle onto a slice (Pythagoras against the wheel's OWN measured
-  // hub radius, same geometry layoutWheelHub() itself solves).
+  // hub radius, same geometry layoutWheelHub() itself solves), even with
+  // both Arabic lines always in the stack now.
   const fit = await page.evaluate(() => {
     const svg = document.querySelector("#wheelContainer svg.mastery-wheel");
     const svgRect = svg.getBoundingClientRect();

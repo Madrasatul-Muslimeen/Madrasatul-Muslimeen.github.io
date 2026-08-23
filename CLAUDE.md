@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.62.** Cutover to production happened
+**Current milestone: QuranRevival v07.63.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -3378,6 +3378,87 @@ not just the numbers -- caught the crowding-at-small-sizes and the
 box-sizing bug that way before either became a test assertion. No
 `firestore.rules`, schema or Firestore data changes -- nothing to deploy but
 the static files.
+
+v07.63 (23 Aug 2026, same day) is a **same-day correction to v07.62**, from
+the owner's own annotated screenshot: a stray fragment of Arabic text was
+poking out above the hub's own picker box, and the stacking order they'd
+actually asked for (Ayah bottom, Surah above it) had been misread as "Surah
+at the very top" instead of "Surah directly above Ayah." Both are fixed, and
+a third instruction rides along in the same message: Bismillah stops being
+conditional and joins Ta'awwudh as permanent.
+
+**The stray fragment was the wheel's own pre-existing centre text, not a new
+bug.** `renderWheel()` was still passing the CURRENTLY SELECTED ayah's own
+Uthmani text as `centerArabic` to the SVG underneath -- v07.62 only ever
+suppressed `centerRef` (the small "SURAH n · AYAH n" line), never
+`centerArabic` itself, so the chosen ayah's own Arabic kept being drawn by
+the SVG, unbounded by and unaware of the HTML hub overlay's own safe-width
+fitting sitting on top of it. Once the hub covered most but not all of that
+text, whatever didn't fit behind the (deliberately narrower, per v07.62's own
+safety margin) overlay showed through around its edges -- exactly the shape
+circled in the owner's screenshot. **The owner's instruction resolves this
+directly: "No, the chosen Ayah should be displayed there in the centre of
+the circle anymore."** `renderWheel()` now passes `centerArabic: ""` and
+`centerRef: ""` unconditionally (not left out entirely -- `centerLabelMarkup()`
+only draws the dark hub circle + gold ring AT ALL when `centerArabic` is
+defined, so an empty string keeps that backdrop while drawing no text into
+it). The hub overlay is now the WHOLE of what the centre shows, permanently,
+regardless of which ayah is selected -- verified with 2:286, the longest ayah
+in the whole Qur'an and exactly the case that used to spill worst.
+
+**The stacking order, corrected top to bottom: Ta'awwudh, Bismillah, Surah,
+Ayah.** v07.62 read "the Surah drop-down should be placed on top of that
+[Ayah]" as "Surah at the very top of the whole stack" and built Surah-first;
+the owner's own ordering in this message -- bottom (Ayah) named first, then
+each next space named going UP -- settles it the other way: Surah sits
+directly above Ayah, not above Ta'awwudh/Bismillah. Fixed by reordering the
+four elements in the markup (flex-direction: column already does the rest);
+`layoutWheelHub()`'s own sizing math is unchanged, since it works from the
+stack's total measured height regardless of which element is which.
+
+**Bismillah is no longer conditional.** "These two texts are to be
+permanently placed there" reverses v07.62's own "if there's still space
+left" framing -- `layoutWheelHub()`'s two-pass fallback (try both, drop
+Bismillah if too tight, MIN_SAFE_WIDTH=62px) is gone; there is only ever one
+pass now, against both Arabic lines every time, and the width floor is a
+genuine floor rather than a cue to drop something. Not a risky change in
+practice: v07.62's own measurements already had Bismillah fitting at every
+one of the six real breakpoints once font-size scaling was in place, so the
+"if space left" branch had never actually triggered on any screen size this
+project tests against -- removing it removes a code path, not a real
+guarantee.
+
+**Two pre-existing tests, both about the wheel's OWN centre content, needed
+updating rather than deleting** (this project's own standing rule for a
+round that deliberately changes what an old check describes): `8c` used to
+assert the centre showed Bangla with Bengali digits, `9` that it stayed
+English -- both dating to phase 2, before this round removed that text
+entirely. Rewritten to assert the centre draws NO text of its own any more
+(`svg text:not(.wheel-seg-num)` -- scoped past the ring's own per-slice
+number labels, which are real, unrelated text and would otherwise make an
+"is it empty" check fail for the wrong reason) and that the Bangla/English
+surface that check used to cover now lives in the hub's own Surah picker
+instead, which `syncWheelHubPickers()` mirrors from the canonical control on
+every `renderWheel()` regardless of whether the intro's been tapped yet.
+
+**Verified: 857 behaviour checks pass, 1 fails** (the pre-existing,
+environmental archive.org sandbox block recorded since v07.44 -- unrelated).
+Net zero new checks (was 852/853; `8c`/`9` rewritten rather than added to,
+and `43i-o`'s own order/permanence assertions updated in place for the
+corrected stacking and Bismillah's own new unconditional state) --
+**`layout.mjs` reports NO LAYOUT REGRESSIONS** at all eight viewports in both
+banner states (`getElementById` targets 96 → 95, exactly the retired
+`wheelHubBismillahEl` JS reference -- the element itself is untouched, still
+in the markup -- none missing), **`reading.mjs` OK**, **navcheck
+unchanged**, **coverage 1,289/1,289 (100%)** -- the total fell by one because
+`renderWheel()` no longer calls `t("SURAH {surah} · AYAH {ayah}")` at all;
+its Bangla entry stays in `bn.js`, unused, the same rule this project has
+followed every time a string stopped being called -- and **perf unchanged at
+6 sequential round trips**, confirming this stayed pure client-side layout.
+Manually screenshotted at all six real breakpoints, both before and after,
+to see the fragment actually gone and the corrected order actually landed,
+not just trust the numbers. No `firestore.rules`, schema or Firestore data
+changes -- nothing to deploy but the static files.
 
 ---
 
