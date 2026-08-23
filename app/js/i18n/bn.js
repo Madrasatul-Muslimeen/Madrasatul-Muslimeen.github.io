@@ -259,6 +259,11 @@ export const BN = {
   "◂ Previous": "◂ পূর্ববর্তী",
   "Next ▸": "পরবর্তী ▸",
 
+  // --- The Approach picker (Study options bar 4), and the Ayah Note
+  //     screen's own Approach toggle sharing the same options (round 32) ---
+  "(no Quran Approaches yet)": "(এখনো কোনো কুরআন পদ্ধতি নেই)",
+  "Choose an Approach": "একটি পদ্ধতি বেছে নিন",
+
   // --- The Study Unit number pickers and the reading transport (round 18) ---
   "Hizb": "হিযব",
   "Number": "নম্বর",

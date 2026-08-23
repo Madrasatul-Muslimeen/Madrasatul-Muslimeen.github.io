@@ -3823,15 +3823,20 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.click("[data-note-master-toggle]");
   await page.waitForTimeout(100);
 
-  // Bookmark/language-checkboxes/Play sit behind their own 🔖 icon toggle,
-  // hidden by default (spec: "hidden by default") -- has to be opened
-  // before the star is even clickable, same as the quick menu's own
-  // popover. Copy/Share moved up to the Ayah bar this round (the owner's
-  // ask) and are no longer behind this toggle -- see section 42m.
-  await page.click("[data-note-actions-toggle]");
-  await page.waitForTimeout(150);
-  const actionsOpen = await page.evaluate(() => document.querySelector("[data-note-actionsbar]").classList.contains("open"));
-  check("42f the 🔖 toggle reveals bookmark/language checkboxes/play", actionsOpen);
+  // Round 32 -- Bookmark and Play moved up to bar 2, beside Copy/Share/Word
+  // by word, and are always visible now (the old 🔖 reveal toggle, and the
+  // note-actionsbar it revealed, are both retired outright).
+  const barHasBookmarkPlay = await page.evaluate(() => {
+    const bar2 = document.querySelector(".note-bar2");
+    return {
+      bookmarkVisible: getComputedStyle(bar2.querySelector("[data-note-bookmark]")).display !== "none",
+      playVisible: getComputedStyle(bar2.querySelector("[data-note-play]")).display !== "none",
+      noToggleLeft: !document.querySelector("[data-note-actions-toggle], [data-note-actionsbar]"),
+    };
+  });
+  check("42f Bookmark and Play sit in bar 2, always visible -- no 🔖 reveal toggle any more",
+        barHasBookmarkPlay.bookmarkVisible && barHasBookmarkPlay.playVisible && barHasBookmarkPlay.noToggleLeft,
+        JSON.stringify(barHasBookmarkPlay));
 
   // Bookmark -- reuses the existing bookmarks collection (findSavedBookmark).
   await page.click("[data-note-bookmark]");
@@ -3986,10 +3991,16 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await ctx.close();
 }
 
-// --- 42p round 31: bar 2 is a REAL second bar, permanent on every
+// --- 42p round 31/32: bar 2 is a REAL second bar, permanent on every
 // platform (not a mobile-only wrap fallback of bar 1, which was round
-// 30's shape) -- Copy, Share, Word by word and Mapping My Journey, all
-// present on a phone AND a desktop, always as their own row below bar 1.
+// 30's shape) -- Copy, Share, Bookmark, Play and Word by word all present
+// on a phone AND a desktop, always as their own row below bar 1. Round 32
+// added the Approach toggle: on a PC/tablet it (and Mapping My Journey)
+// sit in bar 2 itself; on a phone the owner asked for them in a SEPARATE
+// row instead, so bar 2 doesn't grow past one line -- verified by
+// checking actual computed visibility, not just DOM presence (both
+// desktop and mobile copies of Approach/Journey always exist in the
+// markup; CSS is what decides which pair is actually on screen).
 {
   async function barLayout(viewport) {
     const ctx = await ctxFor({ banner: false, viewport });
@@ -4001,16 +4012,24 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     await page.click("#readQuickMenuSlot [data-qm-note]");
     await page.waitForTimeout(300);
     const info = await page.evaluate(() => {
+      const visible = (el) => !!el && getComputedStyle(el).display !== "none";
       const view = document.querySelector(".note-view");
       const bar1 = view.querySelector(".note-ayahbar").getBoundingClientRect();
       const bar2El = view.querySelector(".note-bar2");
       const bar2 = bar2El.getBoundingClientRect();
+      const mobileBarEl = view.querySelector(".note-approach-bar-mobile");
       return {
         bar2Below: bar2.top >= bar1.bottom - 1,
         hasCopyToggle: !!bar2El.querySelector('[data-note-sub-toggle="copy"]'),
         hasShareToggle: !!bar2El.querySelector('[data-note-sub-toggle="share"]'),
+        hasBookmark: !!bar2El.querySelector("[data-note-bookmark]"),
+        hasPlay: !!bar2El.querySelector("[data-note-play]"),
         hasWbwToggle: !!bar2El.querySelector("[data-note-wbw-toggle]"),
-        hasJourney: !!bar2El.querySelector(".note-journey-btn"),
+        approachVisibleInBar2: visible(bar2El.querySelector(".note-approach-desktop")),
+        journeyVisibleInBar2: visible(bar2El.querySelector(".note-journey-desktop")),
+        mobileBarVisible: visible(mobileBarEl),
+        mobileBarHasApproach: !!mobileBarEl?.querySelector(".note-approach-mobile [data-note-approach-select]"),
+        mobileBarHasJourney: !!mobileBarEl?.querySelector(".note-journey-mobile"),
         overflowX: document.documentElement.scrollWidth > window.innerWidth,
       };
     });
@@ -4022,10 +4041,15 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   const desktop = await barLayout({ width: 1280, height: 900 });
   for (const [label, info] of [["phone", mobile], ["desktop", desktop]]) {
     check(`42p bar 2 sits below bar 1 as its own row on a ${label}`, info.bar2Below, JSON.stringify(info));
-    check(`42p ...with Copy, Share, Word by word and Mapping My Journey all present on a ${label}`,
-          info.hasCopyToggle && info.hasShareToggle && info.hasWbwToggle && info.hasJourney, JSON.stringify(info));
+    check(`42p ...with Copy, Share, Bookmark, Play and Word by word all present on a ${label}`,
+          info.hasCopyToggle && info.hasShareToggle && info.hasBookmark && info.hasPlay && info.hasWbwToggle, JSON.stringify(info));
     check(`42p ...and nothing overflows the ${label} viewport`, !info.overflowX);
   }
+  check("42p on a desktop/tablet, Approach and Mapping My Journey sit IN bar 2, and the mobile-only bar stays hidden",
+        desktop.approachVisibleInBar2 && desktop.journeyVisibleInBar2 && !desktop.mobileBarVisible, JSON.stringify(desktop));
+  check("42p on a phone, bar 2's own Approach/Journey are hidden and a separate bar below carries both instead",
+        !mobile.approachVisibleInBar2 && !mobile.journeyVisibleInBar2 && mobile.mobileBarVisible
+        && mobile.mobileBarHasApproach && mobile.mobileBarHasJourney, JSON.stringify(mobile));
 }
 
 // --- 42q round 31: Copy and Share on bar 2 open the SAME language-checkbox
@@ -4129,6 +4153,50 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42r stays on after Next -- a session preference, not reset per āyah", afterNext);
 
   check("42r no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+// --- 42s round 32: the Approach toggle -- picking a different Approach in
+// the Ayah Note screen changes currentTrackableId app-wide, so the canonical
+// Study-options picker (#trackableSelect) agrees, the wheel re-renders, and
+// -- the owner's own ask -- the Track/Guide/Breakdown/Coverage card further
+// down this same screen updates to name the newly-picked Approach. Default
+// viewport here is the phone size (390x844, ctxFor's own default), so this
+// exercises the MOBILE copy of the toggle, in its own bar below bar 2. -----
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.waitForTimeout(300);
+
+  const before = await page.evaluate(() => ({
+    approachValue: document.querySelector(".note-approach-mobile [data-note-approach-select]")?.value,
+    cardTitle: document.querySelector(".note-approach .way-embed-title")?.textContent.trim(),
+    canonicalValue: document.getElementById("trackableSelect").value,
+  }));
+  check("42s starts on the same Approach the canonical picker already has, card named to match",
+        before.approachValue === before.canonicalValue && before.cardTitle?.includes("Memorise"), JSON.stringify(before));
+
+  await page.selectOption(".note-approach-mobile [data-note-approach-select]", "tafsir");
+  await page.waitForTimeout(250);
+  const after = await page.evaluate(() => ({
+    canonicalValue: document.getElementById("trackableSelect").value,
+    cardTitle: document.querySelector(".note-approach .way-embed-title")?.textContent.trim(),
+    desktopMirrorValue: document.querySelector(".note-approach-desktop [data-note-approach-select]")?.value,
+  }));
+  check("42s picking a different Approach here updates the canonical Study-options picker too",
+        after.canonicalValue === "tafsir", JSON.stringify(after));
+  check("42s ...and the Track/Guide/Breakdown/Coverage card below renames itself to the new Approach",
+        after.cardTitle?.includes("Study tafsir"), JSON.stringify(after));
+  check("42s ...and the OTHER (desktop) copy of the toggle stays in step with it",
+        after.desktopMirrorValue === "tafsir", JSON.stringify(after));
+
+  check("42s no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
 }
@@ -4249,7 +4317,11 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
       // Journey button's title is separate from its own visible text above.
       wbwToggleText: view.querySelector("[data-note-wbw-toggle]").textContent.trim(),
       wbwToggleTitle: view.querySelector("[data-note-wbw-toggle]").title,
-      bookmarkPlayTitle: view.querySelector("[data-note-actions-toggle]").title,
+      // Round 32 -- Bookmark and Play now live directly in bar 2 (no more
+      // 🔖 reveal toggle), each with its own title.
+      bookmarkTitle: view.querySelector("[data-note-bookmark]").title,
+      playTitle: view.querySelector("[data-note-play]").title,
+      approachTitle: view.querySelector("[data-note-approach-select]").title,
     };
   });
   check("42k Note & more's own ref and Journey placeholder are in Bangla",
@@ -4262,8 +4334,10 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
         JSON.stringify(noteBn.headingOptions));
   check("42k bar 2's Word by word toggle stays the Latin abbreviation \"WbW\" (like \"Aa\"), title in Bangla",
         noteBn.wbwToggleText === "WbW" && BANGLA.test(noteBn.wbwToggleTitle), JSON.stringify(noteBn));
-  check("42k the 🔖 toggle's own title is in Bangla now that it's just Bookmark & Play",
-        BANGLA.test(noteBn.bookmarkPlayTitle), JSON.stringify(noteBn));
+  check("42k Bookmark and Play's own titles are in Bangla now that they sit in bar 2 (round 32)",
+        BANGLA.test(noteBn.bookmarkTitle) && BANGLA.test(noteBn.playTitle), JSON.stringify(noteBn));
+  check("42k the Approach toggle's own title (\"Choose an Approach\") is in Bangla",
+        BANGLA.test(noteBn.approachTitle), JSON.stringify(noteBn));
 
   await page.click('.note-bar2 [data-note-sub-toggle="copy"]');
   await page.waitForTimeout(120);
