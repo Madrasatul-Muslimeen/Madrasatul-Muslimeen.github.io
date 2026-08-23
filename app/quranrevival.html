@@ -488,6 +488,11 @@
      always has one thing that reads as words. */
   #readBar .qr-ico { font-size: 0.95rem; line-height: 1; padding: 0.3rem 0.5rem; flex: 0 0 auto; }
   #readBar button[disabled] { opacity: 0.45; }
+  /* Round 31 -- the ⋮ quick menu, mounted here for a single āyah instead of
+     sitting over the text. Empty (flow views clear it) collapses to nothing
+     rather than leaving a dead gap in the row. */
+  #readBar #readQuickMenuSlot { flex: 0 0 auto; }
+  #readBar #readQuickMenuSlot:empty { display: none; }
   /* Round 25 retired #readReciterName. Its only job was naming which reciter
      Play would use, which the Listening section in Study options already says
      -- and it was the one thing keeping this row from sitting where the Arabic
@@ -758,13 +763,18 @@
      feedback: the ⋮ two-tier design, then the full-stage/no-× shape).
      ========================================================================= */
   /* The ⋮ badge sits in its OWN small header row above the ayah content,
-     never overlaid on top of it. A fixed-position overlay was measured to
-     leave only a ~6px gap from the Arabic text's own right edge (RTL,
-     text-align:right) -- fine for a short test āyah, but real āyahs run
-     much longer per line, and that gap is thin enough for ordinary word
-     length, Tajweed spans, and font-rendering differences across platforms
-     to eat into it, which is exactly the "sits on the Arabic word" report.
-     A flow row costs a little vertical space but can never overlap text. */
+     never overlaid on top of it (round 30). A fixed-position overlay was
+     measured to leave only a ~6px gap from the Arabic text's own right
+     edge (RTL, text-align:right) -- fine for a short test āyah, but real
+     āyahs run much longer per line, and that gap is thin enough for
+     ordinary word length, Tajweed spans, and font-rendering differences
+     across platforms to eat into it, which is exactly the "sits on the
+     Arabic word" report. A flow row costs a little vertical space but can
+     never overlap text. Round 31: this header row is FLOW-VIEW ONLY now
+     (several āyahs on screen, so a bar-level ⋮ can't say which one) -- the
+     single-āyah Read screen's own ⋮ moved to #readBar instead (the owner's
+     own ask: "why take space over the Ayah, when the Bar has empty
+     space?"), which sidesteps this whole trade for that case entirely. */
   .ayah-quick-header { display: flex; justify-content: flex-end; margin-bottom: 0.25rem; }
   .ayah-quick-wrap { position: relative; }
   .ayah-quick-btn {
@@ -802,18 +812,15 @@
   /* ---- Note & more: full-stage view, dock stays visible underneath ---- */
   #noteView { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   .note-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-  /* The Ayah bar: reference + every quick action, one flex-wrap row. Ref
-     takes whatever room it needs (flex-grow 999 -- it wins the room fight
-     over the fixed-size icon buttons) and WRAPS rather than truncating, so
-     it can never be silently cut off (the earlier ellipsis rule is exactly
-     what caused the "cut off for no reason" report on a wide screen -- a
-     flex item shrinks below its own content width whenever the row's total
-     content doesn't perfectly fit, ellipsis or not). Everything else is a
-     small fixed-size icon button; on a phone the widest single item,
-     "Mapping My Journey", is what wraps to its own line when the rest
-     doesn't leave it room -- on a wider screen there is room for all of it
-     on one line, so nothing visibly becomes "a second bar", it is the same
-     row, just not wrapping. */
+  /* Round 31 -- the owner's own correction to round 30: bar 1 (the Ayah
+     bar) holds JUST the reference and the controls that change what's on
+     screen (Prev/Next/Aa/Collapse/Full screen). Copy/Share/Journey used to
+     compete with the reference for room here, which is exactly why round
+     30's own fix (letting the reference wrap instead of truncate) still
+     read as cut off -- there wasn't enough room left to wrap INTO. Ref
+     keeps flex-grow 999 (wins the room fight over the icon buttons) and
+     wraps rather than truncates, so it can never be silently cut off
+     again either way. */
   .note-ayahbar {
     display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
     background: #1F3A6E; color: #fff; padding: 0.5rem 0.6rem; border-radius: 0.4rem 0.4rem 0 0;
@@ -832,6 +839,29 @@
   .note-icon-btn:disabled { opacity: 0.4; cursor: default; }
   .note-icon-btn.active { background: #B8862F; border-color: #B8862F; }
   .note-journey-btn { flex: 0 0 auto; font-size: 0.68rem; font-weight: 700; white-space: nowrap; }
+
+  /* Bar 2 (round 31) -- a REAL second bar, permanent on every platform, not
+     a mobile-only wrap fallback of bar 1 (that was round 30's shape, and
+     the owner's own point: "In PC and desktop... no need to make a 2nd bar
+     as space is not a prob" was about bar 1 staying uncluttered, not about
+     there never being a bar 2). Holds the actions that need a CHOICE made
+     first -- Copy and Share each open the same picker the ⋮ quick menu
+     already uses -- plus Word by word and Mapping My Journey. This is also
+     where "Ayah Approach" (the owner's own next ask) will live. */
+  .note-bar2 {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+    background: #1F3A6E; padding: 0.4rem 0.6rem; flex: 0 0 auto;
+    border-top: 1px solid rgba(255,255,255,0.15);
+  }
+  .note-sub-wrap { position: relative; flex: 0 0 auto; }
+  .note-sub-popover {
+    display: none; position: absolute; top: 2.3rem; left: 0; z-index: 8;
+    background: #fff; border: 1px solid #ddd; border-radius: 0.5rem;
+    box-shadow: 0 10px 26px rgba(20,30,60,0.2); width: 11rem; padding: 0.5rem;
+  }
+  .note-sub-popover.open { display: block; }
+  .note-sub-popover label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.73rem; color: #555; padding: 0.15rem 0; }
+  .note-sub-popover label input:disabled + span { color: #aaa; }
 
   .note-palette {
     display: none; flex-wrap: wrap; gap: 0.35rem; align-items: center;
@@ -858,11 +888,9 @@
     font-size: 1.05rem; padding: 0.15rem 0.5rem; color: #B8862F; line-height: 1;
   }
   .note-bookmark-btn.active { background: #B8862F; color: #fff; border-color: #B8862F; }
-  .note-lang-group { display: flex; gap: 0.55rem; align-items: center; flex-wrap: wrap; }
-  .note-lang-group label { display: flex; align-items: center; gap: 0.2rem; cursor: pointer; color: #555; }
-  /* Copy/Share themselves moved up to the Ayah bar (.note-icon-btn) -- Play
-     is the one action left down here, alongside the bookmark star and the
-     language checkboxes it and Copy/Share on the bar above all read from. */
+  /* Copy/Share moved to bar 2, each with its own language checkboxes now
+     (round 31) -- nothing here reads a shared checkbox group any more, so
+     this row is just the bookmark star and Play. */
   .note-play-btn {
     background: #fff; border: 1px solid #ddd; border-radius: 0.35rem; cursor: pointer;
     padding: 0.25rem 0.55rem; font-size: 0.86rem; color: #222;
@@ -1021,6 +1049,14 @@
           <button type="button" class="secondary qr-ico" id="readPlayBtn" aria-label="Play" title="Play">▶</button>
           <button type="button" class="secondary qr-ico" id="readStopBtn" aria-label="Stop" title="Stop">■</button>
           <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
+          <!-- Round 31 -- the owner's own question: "why should the three dot
+               take space over the Ayah? put the dots on the Bar, where there
+               are lots of empty spaces." Mounted here for the single-ayah
+               view only (renderStudyScreen() fills this and empties it again
+               for flow views, where several āyahs are on screen at once and
+               one bar-level button can't say which one it means -- those
+               keep their own per-āyah badge). -->
+          <div id="readQuickMenuSlot"></div>
         </div>
         <div id="readScroll">
           <div id="studyScreen">
@@ -1573,6 +1609,7 @@
     const readRangeFromSelect = document.getElementById("readRangeFromSelect");
     const readRangeToSelect = document.getElementById("readRangeToSelect");
     const readHint = document.getElementById("readHint");
+    const readQuickMenuSlot = document.getElementById("readQuickMenuSlot");
     const hideChromeBtn = document.getElementById("hideChromeBtn");
     const prevUnitBtn = document.getElementById("prevUnitBtn");
     const nextUnitBtn = document.getElementById("nextUnitBtn");
@@ -1616,6 +1653,7 @@
     let ayahNoteDataLoadedFor = null;
     let openNoteUnitKey = null; // whichever āyah "Note & more" is currently showing, so a data refresh (e.g. after switching person) can re-render it in place
     let noteFullscreenOn = false; // the Note view's own full-screen state -- see toggleNoteFullscreen()
+    let noteWbwOn = false; // bar 2's Word-by-word toggle (round 31) -- a reading preference that persists across Prev/Next within the Note view, not reset per āyah
     let tenantWeekStartsOn = 6;
     let currentTenantDoc = null;
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
@@ -3401,8 +3439,15 @@
       return { surah: Number(surah), ayah: Number(ayah) };
     }
 
+    // surahName() needs the English name handed to it -- it only knows the
+    // Bangla side by number, the same call shape surahDisplayName()/the
+    // search results/the surah picker already use. This call site was the
+    // one place in the file that skipped it, which is why the reference
+    // read "Quran 1:1 — Surah " with nothing after it: an English-mode
+    // surahName() with no englishName argument returns "".
     function ayahRefLabel(surahNum, ayahNum) {
-      return t("Quran {surah}:{ayah} — Surah {name}", { surah: num(surahNum), ayah: num(ayahNum), name: surahName(surahNum) });
+      const meta = surahIndex.find((s) => s.surahNumber === surahNum);
+      return t("Quran {surah}:{ayah} — Surah {name}", { surah: num(surahNum), ayah: num(ayahNum), name: surahName(surahNum, meta?.nameEnglish) });
     }
 
     /** Both docs are one small document each -- loaded once per acting person, not per ayah. Re-renders the reading screen when the fetch lands so quick-menu badges/checkboxes pick up real hasNote/isBookmarked state instead of staying at their empty defaults. */
@@ -3496,6 +3541,7 @@
       if (!ayah) return;
       openNoteUnitKey = unitKey;
       const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
+      const hasNote = ayahHasNote(ayahNotesDoc, unitKey);
       noteView.innerHTML = renderNoteView({
         unitKey,
         ref: ayahRefLabel(surah, ayahNum),
@@ -3503,6 +3549,15 @@
         englishText: ayah.translations?.en ?? "",
         banglaText: ayah.translations?.bn ?? "",
         notesHtml: ayahNoteHtml(ayahNotesDoc, unitKey),
+        // Round 31 -- "this Ayah screen would be the main study screen for a
+        // user, therefore we need to make tools available here" (the
+        // owner's own words). Reuses the same renderWordByWordPanel() the
+        // ordinary reading screen already calls, at whatever language the
+        // reader has already chosen there (wbwLangs()) -- one tool, one
+        // source of truth, just a second place it's offered.
+        wbwHtml: noteWbwOn ? renderWordByWordPanel(ayah, { langs: wbwLangs() }) : "",
+        isWbwOn: noteWbwOn,
+        hasNote,
         isBookmarked,
         hasPrev: ayahNum > 1,
         hasNext: ayahNum < currentSurahData.ayahCount,
@@ -3520,9 +3575,10 @@
           );
           if (!outcome.ok) return { ok: false, message: outcome.entry.message };
           ayahNotesDoc = { ...ayahNotesDoc, notes: { ...(ayahNotesDoc.notes ?? {}), [unitKey]: { html, updatedAt: new Date().toISOString() } } };
-          // The ⋮ badge's own hasNote state lives in ayahPanels/pageViewContainer,
-          // hidden behind this view right now but not stale once shown again --
-          // harmless to refresh a hidden view, and cheap (no network calls).
+          // The ⋮ badge's own hasNote state lives in readQuickMenuSlot/
+          // pageViewContainer, hidden behind this view right now but not
+          // stale once shown again -- harmless to refresh a hidden view,
+          // and cheap (no network calls).
           renderStudyScreen();
           return { ok: true };
         },
@@ -3531,6 +3587,7 @@
         onPrev: () => { if (ayahNum > 1) renderNoteViewNow(buildUnitKey.ayah(surah, ayahNum - 1)); },
         onNext: () => { if (ayahNum < currentSurahData.ayahCount) renderNoteViewNow(buildUnitKey.ayah(surah, ayahNum + 1)); },
         onToggleFullscreen: toggleNoteFullscreen,
+        onToggleWbw: toggleNoteWbw,
       });
     }
 
@@ -3554,6 +3611,15 @@
     function toggleNoteFullscreen() {
       noteFullscreenOn = !noteFullscreenOn;
       document.body.classList.toggle("note-immersive", noteFullscreenOn);
+      if (openNoteUnitKey) renderNoteViewNow(openNoteUnitKey);
+    }
+
+    /** Bar 2's Word-by-word toggle (round 31) -- a reading preference, not
+        per-āyah state, so it deliberately stays on across Prev/Next within
+        the Note view rather than resetting each time (matching how the
+        ordinary reading screen's own ticks behave). */
+    function toggleNoteWbw() {
+      noteWbwOn = !noteWbwOn;
       if (openNoteUnitKey) renderNoteViewNow(openNoteUnitKey);
     }
 
@@ -3618,6 +3684,10 @@
       wbwLangControl.style.display = !isMushaf && panels.includes("wordByWord") ? "" : "none";
 
       if (usesFlow) {
+        // Round 31: the bar-mounted ⋮ (below) only ever means "this one
+        // āyah" -- a flow shows several at once, so it stays out of the
+        // way here and the flow view keeps its own per-āyah badge instead.
+        readQuickMenuSlot.innerHTML = "";
         // Mushaf over a single ayah means THAT ayah's page, with it
         // highlighted -- the owner's one-ayah memorising case. Every other
         // unit hands over its own bounds, as before.
@@ -3631,17 +3701,19 @@
         ayahSelect.value = String(currentAyahNum);
         prevAyahBtn.disabled = currentAyahNum <= 1;
         nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount;
-        // Ayah Note panel: the ⋮ badge is its own header row, ABOVE the ayah
-        // content -- never overlaid on top of it (I2 -- ayah-renderer.js
-        // itself is untouched and still shared by Hadith/topic/Asma
-        // renderers, which don't get this badge).
-        const singleUnitKey = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
-        ayahPanels.innerHTML = `<div class="ayah-note-anchor"><div class="ayah-quick-header">${renderQuickMenu(singleUnitKey, { hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey) })}</div>${renderLayoutA(ayah, panels, {
+        ayahPanels.innerHTML = renderLayoutA(ayah, panels, {
           tajweedOn: tajweedToggle.checked,
           langs: translationLangs(),
           wbwLangs: wbwLangs(),
-        })}</div>`;
-        attachAyahQuickMenus(ayahPanels);
+        });
+        // Round 31 -- the owner's own question: "why should the three dot
+        // take space over the Ayah?" Mounted on #readBar instead of a
+        // header row over the text (I2 -- ayah-renderer.js itself is
+        // untouched and still shared by Hadith/topic/Asma renderers, which
+        // don't get this badge).
+        const singleUnitKey = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
+        readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, { hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey) });
+        attachAyahQuickMenus(readQuickMenuSlot);
       }
 
       renderListeningControls();
