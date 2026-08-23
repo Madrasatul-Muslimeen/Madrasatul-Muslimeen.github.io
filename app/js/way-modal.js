@@ -127,3 +127,30 @@ export function attachWayModalHandlers(modalEl, { onClose } = {}) {
   const closeBtn = modalEl.querySelector(".way-close-btn");
   if (closeBtn && onClose) closeBtn.addEventListener("click", onClose);
 }
+
+/**
+ * Embedded variant of the modal shell -- same tab bar/tab bodies, no header,
+ * no close button, no overlay. Housed inline inside the Ayah Note screen
+ * (round after F-047's own Note view), after Notes: reading is study, this
+ * card is assessment, and it stays wherever it is opened from until the
+ * reader leaves that screen -- there is nothing here to close.
+ */
+export function renderWayEmbed(title, tabBodies, tabs = DEFAULT_TABS) {
+  const buttons = tabs.map((tb, i) => `<button type="button" class="way-tab-btn ${i === 0 ? "active" : ""}" data-tab="${tb}">${tb}</button>`).join("");
+  const panels = tabs.map((tb, i) => `<div class="way-tab-panel ${i === 0 ? "active" : ""}" data-tab="${tb}">${tabBodies[tb] ?? ""}</div>`).join("");
+  return `<div class="way-embed">
+    <h4 class="way-embed-title">${escapeHtml(title)}</h4>
+    <div class="way-tab-bar">${buttons}</div>
+    <div class="way-tab-panels">${panels}</div>
+  </div>`;
+}
+
+/** Tab-switching only -- an embedded card has no close button to wire. */
+export function attachWayEmbedHandlers(embedEl) {
+  embedEl.querySelectorAll(".way-tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      embedEl.querySelectorAll(".way-tab-btn").forEach((b) => b.classList.toggle("active", b === btn));
+      embedEl.querySelectorAll(".way-tab-panel").forEach((p) => p.classList.toggle("active", p.dataset.tab === btn.dataset.tab));
+    });
+  });
+}
