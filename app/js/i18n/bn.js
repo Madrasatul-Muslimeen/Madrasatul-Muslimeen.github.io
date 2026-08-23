@@ -631,6 +631,10 @@ export const BN = {
   "No resource yet": "এখনো কোনো উপকরণ নেই",
   "Nothing under here yet.": "এখানে এখনো কিছু নেই।",
   "Track my progress": "আমার অগ্রগতি চিহ্নিত করুন",
+  // Enhancement round -- the Bookmark Manager's own star, now on every
+  // topic/routine/Asma detail screen as well as the Quran Note view.
+  "Bookmark this": "এটি বুকমার্ক করুন",
+  "Name this bookmark:": "এই বুকমার্কের নাম দিন:",
   "Studied": "অধ্যয়ন করা হয়েছে",
   "Practised": "অনুশীলন করা হয়েছে",
   "Logged today": "আজ লিপিবদ্ধ",
@@ -1769,4 +1773,24 @@ export const BN = {
   "Could not load the taglines.": "ট্যাগলাইনগুলো আনা যায়নি।",
   "Write an ayah like 2:255.": "২:২৫৫ এভাবে একটি আয়াত লিখুন।",
   "Write the line first.": "আগে লাইনটি লিখুন।",
+
+  // =====================================================================
+  // Enhancement round -- the Bookmark Manager (bookmarks.html), the real
+  // screen behind nav.js's own long-standing "Bookmark (coming soon)"
+  // placeholder.
+  // =====================================================================
+  "Top level": "সর্বোচ্চ স্তর",
+  "Unfiled": "কোনো ফোল্ডারে নেই",
+  "Open": "খুলুন",
+  "Rename": "নাম বদলান",
+  "Retire": "অবসরে পাঠান",
+  "Rename this bookmark:": "এই বুকমার্কের নাম বদলান:",
+  "Rename this folder:": "এই ফোল্ডারের নাম বদলান:",
+  "Name this folder:": "ফোল্ডারের নাম দিন:",
+  "Bookmarks": "বুকমার্ক",
+  "Every bookmark you have saved, from any module, in one place. Open one to jump straight back to where it was made. Group them into folders however you like.":
+    "আপনার সংরক্ষণ করা প্রতিটি বুকমার্ক, যেকোনো মডিউল থেকে, একই জায়গায়। একটি খুললেই সরাসরি যেখানে তৈরি হয়েছিল সেখানে চলে যাবেন। ইচ্ছেমতো ফোল্ডারে ভাগ করে রাখুন।",
+  "+ New folder": "+ নতুন ফোল্ডার",
+  "No bookmarks saved yet. Look for the ☆/🔖 button on a study screen.": "এখনো কোনো বুকমার্ক সংরক্ষণ করা হয়নি। অধ্যয়ন পাতায় ☆/🔖 বোতামটি খুঁজুন।",
+  "QuranRevival — Bookmarks": "কুরআনরিভাইভাল — বুকমার্ক",
 };

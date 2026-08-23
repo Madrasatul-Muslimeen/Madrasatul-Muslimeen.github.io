@@ -45,7 +45,7 @@ export function renderAsmaGrid(names, statusByNumber = new Map()) {
   return `<div class="asma-grid">${cards.join("")}</div>`;
 }
 
-export function renderAsmaDetail(name, entry) {
+export function renderAsmaDetail(name, entry, { isBookmarked = false } = {}) {
   // Was a raw claimedStatus with its underscores swapped for spaces, and a
   // raw confirmState id -- both meaningless in either language. They go
   // through the shared label helpers now, and the whole line is ONE
@@ -60,7 +60,7 @@ export function renderAsmaDetail(name, entry) {
   return `<div class="asma-detail">
     <div class="asma-detail-number">${t("{n} of {total}", { n: num(name.number), total: num(99) })}</div>
     <div class="asma-detail-arabic">${escapeHtml(name.arabic)}</div>
-    <h2>${escapeHtml(asmaName(name.number, name.transliteration))}</h2>
+    <h2>${escapeHtml(asmaName(name.number, name.transliteration))} <button type="button" id="bookmarkAsmaBtn" class="topic-bookmark-btn${isBookmarked ? " active" : ""}" title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this")}">${isBookmarked ? "★" : "☆"}</button></h2>
     <p class="asma-detail-meaning">${escapeHtml(langText(name.meaning, getAppLang()))}</p>
     <p>${statusLine}</p>
     <button type="button" id="trackAsmaBtn">${t("Track my progress")}</button>

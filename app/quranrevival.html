@@ -3657,7 +3657,8 @@
           const unitKey = buildUnitKey.ayah(currentSurahNum, ayah.ayah);
           // The ⋮ badge is its own header row, ABOVE the ayah content, not
           // overlaid on it -- see the .ayah-quick-header CSS comment.
-          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}"><div class="ayah-quick-header">${renderQuickMenu(unitKey, { hasNote: ayahHasNote(ayahNotesDoc, unitKey) })}</div>${renderLayoutA(ayah, panels, {
+          const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
+          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}"><div class="ayah-quick-header">${renderQuickMenu(unitKey, { hasNote: ayahHasNote(ayahNotesDoc, unitKey), isBookmarked })}</div>${renderLayoutA(ayah, panels, {
             tajweedOn: tajweedToggle.checked,
             langs: translationLangs(),
             wbwLangs: wbwLangs(),
@@ -3777,23 +3778,85 @@
         buildText: buildAyahText,
         onPlay: quickPlayAyah,
         onOpenNote: openNoteView,
+        onToggleBookmark: toggleAyahBookmark,
       });
     }
 
+    /** Enhancement round -- the settings a Quran bookmark restores on reopen (item 4). Only what actually resets on a fresh load/session (checkbox state, unit type/position, Approach) -- device-wide reading prefs (translation languages, reciters, Arabic font) already come back on their own via prefs.js/localStorage, so capturing them here too would be redundant. */
+    function captureQuranBookmarkSettings() {
+      return {
+        unitType: currentUnitType,
+        surahNum: currentSurahNum,
+        ayahNum: currentAyahNum,
+        rangeFrom: currentUnitType === "range" ? rangeFrom : null,
+        rangeTo: currentUnitType === "range" ? rangeTo : null,
+        trackableId: currentTrackableId,
+        tajweedOn: tajweedToggle.checked,
+        wbwOn: wbwShowToggle.checked,
+        rootsOn: rootsToggle.checked,
+        mushafOn: mushafToggle.checked,
+      };
+    }
+
+    /** The other half of captureQuranBookmarkSettings() -- restores every field it captured, then lands on the bookmarked āyah's own Note screen (item 6: "open the same place where the bookmark was created from"). Silently tolerant of a settings object from before this round (null, or missing fields) -- every field is optional and simply left alone. */
+    async function applyQuranBookmarkSettings(settings, position) {
+      if (settings) {
+        if (typeof settings.surahNum === "number" && settings.surahNum !== currentSurahNum && surahIndex.some((s) => s.surahNumber === settings.surahNum)) {
+          currentSurahNum = settings.surahNum;
+          surahSelect.value = String(settings.surahNum);
+          await loadSurah();
+        }
+        if (typeof settings.ayahNum === "number") {
+          currentAyahNum = settings.ayahNum;
+          if (ayahSelect.querySelector(`option[value="${currentAyahNum}"]`)) ayahSelect.value = String(currentAyahNum);
+        }
+        if (settings.unitType) {
+          currentUnitType = settings.unitType;
+          unitTypeSelect.value = currentUnitType;
+        }
+        if (currentUnitType === "range") {
+          rangeFrom = settings.rangeFrom ?? currentAyahNum;
+          rangeTo = settings.rangeTo ?? currentAyahNum;
+          rememberRangeSpan();
+        }
+        if (typeof settings.tajweedOn === "boolean") tajweedToggle.checked = settings.tajweedOn;
+        if (typeof settings.wbwOn === "boolean") wbwShowToggle.checked = settings.wbwOn;
+        if (typeof settings.rootsOn === "boolean") rootsToggle.checked = settings.rootsOn;
+        if (typeof settings.mushafOn === "boolean") mushafToggle.checked = settings.mushafOn;
+        if (typeof settings.trackableId === "string" && quranTrackables.some((tr) => tr.id === settings.trackableId)) {
+          currentTrackableId = settings.trackableId;
+          trackableSelect.value = settings.trackableId;
+        }
+        updateUnitControlsVisibility();
+        renderStudyScreen();
+        renderWheel();
+      }
+      if (position) await openNoteView(position);
+    }
+
+    /** Item 2 ("prompt for naming it") + item 4 (capture the full study state, Quran only -- see captureQuranBookmarkSettings()'s own comment for why). Reachable from both the Note view's own star (bar 2) and the plain Read screen's ⋮ menu (item 3: "enable bookmark button at the READ screen as well") -- same function either way. */
     async function toggleAyahBookmark(unitKey) {
       if (!auth.currentUser || !selectedPersonId) return;
       const existing = findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
-      const outcome = await safeWrite(async () => {
-        if (existing) {
-          await removeSavedBookmark(db, activeTenantId, selectedPersonId, existing.id);
-          return null;
-        }
+      let outcome;
+      if (existing) {
+        outcome = await safeWrite(
+          () => removeSavedBookmark(db, activeTenantId, selectedPersonId, existing.id),
+          { collection: TENANT.BOOKMARKS, action: "removeSavedBookmark" }
+        );
+      } else {
         const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
-        return saveBookmark(db, {
-          tenantId: activeTenantId, personId: selectedPersonId, moduleId: "quranrevival", subjectId: "quran",
-          name: ayahRefLabel(surah, ayahNum), position: unitKey, uid: auth.currentUser.uid,
-        });
-      }, { collection: TENANT.BOOKMARKS, action: "toggleAyahBookmark" });
+        const defaultName = ayahRefLabel(surah, ayahNum);
+        const name = prompt(t("Name this bookmark:"), defaultName);
+        if (name === null) return; // cancelled -- no write, no re-render
+        outcome = await safeWrite(
+          () => saveBookmark(db, {
+            tenantId: activeTenantId, personId: selectedPersonId, moduleId: "quranrevival", subjectId: "quran",
+            name: name.trim() || defaultName, position: unitKey, settings: captureQuranBookmarkSettings(), uid: auth.currentUser.uid,
+          }),
+          { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
+        );
+      }
       if (!outcome.ok) return;
       // Update in-memory rather than re-fetching -- same reasoning as
       // onSaveNote's own ayahNotesDoc update below: the write already tells
@@ -3806,7 +3869,12 @@
           ? bookmarksDoc.saved.map((b) => (b.id === existing.id ? { ...b, removed: true } : b))
           : [...(bookmarksDoc.saved ?? []), outcome.result],
       };
-      renderNoteViewNow(unitKey);
+      // Re-render whichever view actually shows this āyah's own ⋮ badge/star
+      // right now -- the Note view when it's open on this exact āyah, the
+      // ordinary reading screen (its own ⋮ badges) otherwise. Mirrors
+      // changeCurrentTrackable()'s own "whichever stage view is open" rule.
+      if (stageView === "note" && openNoteUnitKey === unitKey) renderNoteViewNow(unitKey);
+      else if (stageView === "read") renderStudyScreen();
     }
 
     /** Builds and mounts the "Note & more" view for one āyah; does NOT switch stageView -- callers decide that (openNoteView() on first open; onPrev/onNext just re-render in place). Prev/Next stay within the current surah for this round -- crossing a surah boundary would need an async fetch mid-navigation, flagged as a real follow-up rather than attempted here. */
@@ -3988,6 +4056,24 @@
       setStageView("note");
     }
 
+    /** Enhancement round -- item 6 ("jump to study by only choosing the
+        bookmark... open the same place where the bookmark was created
+        from"). bookmarks.html links a Quran bookmark to
+        quranrevival.html?bookmark=<id> (every other module keeps using
+        ?resume=<position>, which its own page already reads -- only Quran
+        needs the richer id-based lookup, since only Quran has a `settings`
+        object worth restoring). Silently does nothing for a stale/unknown
+        id or a signed-out/no-person state -- same tolerance ?resume=
+        already has elsewhere in this app. */
+    async function openBookmarkFromQueryString() {
+      const bookmarkId = new URLSearchParams(location.search).get("bookmark");
+      if (!bookmarkId || !selectedPersonId) return;
+      await ensureAyahNoteDataLoaded();
+      const bookmark = (bookmarksDoc.saved ?? []).find((b) => b.id === bookmarkId && !b.removed);
+      if (!bookmark || bookmark.moduleId !== "quranrevival") return;
+      await applyQuranBookmarkSettings(bookmark.settings, bookmark.position);
+    }
+
     /** The Note view's own full screen -- two states, a separate mechanism
         from the reading screen's own (immersive-read) so the two can never
         leak into each other. Toggled only from the view's own ⤢ button;
@@ -4105,7 +4191,8 @@
         // untouched and still shared by Hadith/topic/Asma renderers, which
         // don't get this badge).
         const singleUnitKey = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
-        readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, { hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey) });
+        const singleIsBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: singleUnitKey });
+        readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, { hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey), isBookmarked: singleIsBookmarked });
         attachAyahQuickMenus(readQuickMenuSlot);
       }
 
@@ -4551,6 +4638,7 @@
 
         appEl.style.display = "flex"; // flex, not block: #app is the shell column (stage + dock) since shell round 7
         await step("load context data", loadContextData);
+        await step("open bookmark", openBookmarkFromQueryString);
       } catch (err) {
         whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
         console.error(err);

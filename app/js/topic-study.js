@@ -48,7 +48,7 @@ import { getResourcesByIds } from "./resources.js";
 import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./nav.js";
 import { renderTopicBreadcrumb, renderTopicChildList, renderTopicResource } from "./topic-renderer.js";
 import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderWayModalShell, attachWayModalHandlers } from "./way-modal.js";
-import { getBookmarks, touchResume, recentResumeEntries } from "./bookmarks.js";
+import { getBookmarks, touchResume, recentResumeEntries, saveBookmark, removeSavedBookmark, findSavedBookmark } from "./bookmarks.js";
 import { renderContinueStrip } from "./continue-strip.js";
 
 /**
@@ -128,6 +128,11 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
   // allowedSubjectIdsForTeacherStudent() for why this can't be a hard
   // server-side rule the same way student-level scoping is.
   let allowedSubjectIds = null;
+  // Enhancement round -- the Bookmark Manager. Kept in memory (not re-fetched
+  // per topic) so the detail view's own star can check "is this already
+  // bookmarked" without a round trip every time a topic is opened; refreshed
+  // whenever refreshContinueStrip() runs (person change, tree load).
+  let bookmarksDoc = { resume: {}, saved: [] };
 
   function currentPreview() {
     const context = getActiveContext();
@@ -204,10 +209,11 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     }
   }
 
-  /** Phase 7 — Continue strip: this module's own most-recent position, plus whatever other modules' pages already wrote to this person's bookmarks. Guarded on continueStripContainer so a shell without the id degrades silently. */
+  /** Phase 7 — Continue strip: this module's own most-recent position, plus whatever other modules' pages already wrote to this person's bookmarks. Also refreshes the module-level bookmarksDoc (enhancement round), which the detail view's own Bookmark star reads -- kept here rather than a separate fetch since this already loads the same document. Strip rendering itself stays guarded on continueStripContainer so a shell without the id degrades silently; the bookmarksDoc refresh does not, since the Bookmark star has no such guard. */
   async function refreshContinueStrip() {
-    if (!continueStripContainer || !selectedPersonId) return;
-    const bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
+    if (!selectedPersonId) return;
+    bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
+    if (!continueStripContainer) return;
     const entries = recentResumeEntries(bookmarksDoc, 5).map((e) => {
       const node = e.moduleId === moduleId ? moduleSubjects.find((n) => n.id === e.subjectId) : null;
       return { ...e, subjectLabel: node ? langText(node.name, getAppLang(), node.id) : null };
@@ -351,8 +357,9 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       ? `Status: <strong>${entry.claimedStatus.replace(/_/g, " ")}</strong> &middot; ${entry.confirmState}`
       : "Not started yet.";
 
+    const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId, subjectId: node.id, position: node.id });
     detailContainer.innerHTML = `<div class="topic-detail">
-      <h2>${langText(node.name, getAppLang(), node.id)}</h2>
+      <h2>${langText(node.name, getAppLang(), node.id)} <button type="button" id="bookmarkTopicBtn" class="topic-bookmark-btn${isBookmarked ? " active" : ""}" title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this")}">${isBookmarked ? "★" : "☆"}</button></h2>
       ${renderTopicResource(resource)}
       <p>${statusLine}</p>
       <button type="button" id="trackTopicBtn" ${resource ? "" : "disabled"}>${t("Track my progress")}</button>
@@ -360,6 +367,55 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
     const trackBtn = document.getElementById("trackTopicBtn");
     trackBtn.addEventListener("click", () => openWayModal(node));
+    document.getElementById("bookmarkTopicBtn").addEventListener("click", () => toggleTopicBookmark(node));
+  }
+
+  /**
+   * Enhancement round -- a real, named entry under the Bookmark menu
+   * (bookmarks.html), not just the silent auto-resume touchResume() already
+   * writes above. Position is the topic's own id, the same value ?resume=
+   * already jumps by -- so a bookmark made here opens the same way a
+   * Continue-strip chip already does, no new restore mechanism needed on
+   * this page. Unlike Quran, no rich `settings` snapshot: this module has
+   * no per-topic reading state to capture, so a bookmark here is exactly
+   * "which topic", named by the person.
+   */
+  async function toggleTopicBookmark(node) {
+    if (!auth.currentUser || !selectedPersonId) return;
+    const existing = findSavedBookmark(bookmarksDoc, { moduleId, subjectId: node.id, position: node.id });
+    if (existing) {
+      const outcome = await safeWrite(
+        () => removeSavedBookmark(db, activeTenantId, selectedPersonId, existing.id),
+        { collection: TENANT.BOOKMARKS, action: "removeSavedBookmark" }
+      );
+      if (!outcome.ok) return;
+      bookmarksDoc = { ...bookmarksDoc, saved: bookmarksDoc.saved.map((b) => (b.id === existing.id ? { ...b, removed: true } : b)) };
+    } else {
+      const defaultName = langText(node.name, getAppLang(), node.id);
+      const name = prompt(t("Name this bookmark:"), defaultName);
+      if (name === null) return;
+      const outcome = await safeWrite(
+        () => saveBookmark(db, {
+          tenantId: activeTenantId, personId: selectedPersonId, moduleId, subjectId: node.id,
+          name: name.trim() || defaultName, position: node.id, uid: auth.currentUser.uid,
+        }),
+        { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
+      );
+      if (!outcome.ok) return;
+      bookmarksDoc = { ...bookmarksDoc, saved: [...(bookmarksDoc.saved ?? []), outcome.result] };
+    }
+    // Patches the star's own DOM directly rather than re-opening the whole
+    // detail view: openTopicDetail() would re-fetch bookmarksDoc from
+    // scratch (via refreshContinueStrip()) and re-read resources/records for
+    // no reason a star click needs -- an unnecessary round trip on top of
+    // the one this toggle already made.
+    const btn = document.getElementById("bookmarkTopicBtn");
+    if (btn) {
+      const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId, subjectId: node.id, position: node.id });
+      btn.textContent = isBookmarked ? "★" : "☆";
+      btn.classList.toggle("active", isBookmarked);
+      btn.title = isBookmarked ? t("Remove bookmark") : t("Bookmark this");
+    }
   }
 
   function openWayModal(node) {

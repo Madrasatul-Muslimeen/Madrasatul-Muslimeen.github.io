@@ -109,7 +109,7 @@ function langCheckboxRows(cls, hasNote) {
  * plain one-tap items. `hasNote` greys the "My note" checkbox out when
  * nothing's saved yet, so ticking it can't silently copy an empty line.
  */
-export function renderQuickMenu(unitKey, { hasNote = false } = {}) {
+export function renderQuickMenu(unitKey, { hasNote = false, isBookmarked = false } = {}) {
   return `
     <div class="ayah-quick-wrap" data-unit-key="${escapeHtml(unitKey)}">
       <button type="button" class="ayah-quick-btn${hasNote ? " has-note" : ""}" data-qm-toggle title="${t("Quick actions")}">⋮</button>
@@ -124,6 +124,11 @@ export function renderQuickMenu(unitKey, { hasNote = false } = {}) {
         </div>
         <div class="qm-divider"></div>
         <button type="button" class="qm-item" data-qm-play>▶ ${t("Play this āyah")}</button>
+        <!-- Enhancement round -- item 3's own "enable bookmark on the READ
+             screen as well": this menu already reaches every āyah on the
+             read screen, single or flow view, so one item here covers both
+             rather than a second, screen-specific control. -->
+        <button type="button" class="qm-item" data-qm-bookmark>${isBookmarked ? "★" : "🔖"} ${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}</button>
         <button type="button" class="qm-item" data-qm-note>📝 ${t("Note & more…")}</button>
       </div>
     </div>`;
@@ -143,11 +148,12 @@ function closeAllQuickMenus(container) {
  *   buildText(unitKey, langs)  -> string, for Copy/Share
  *   onPlay(unitKey)
  *   onOpenNote(unitKey)
+ *   onToggleBookmark(unitKey)  -- enhancement round, the READ screen's own Bookmark item
  * Re-call after every re-render (innerHTML replace) -- the per-instance
  * listeners below are cheap to re-attach to fresh nodes; only the outside-
  * click listener is guarded against being bound twice on the same container.
  */
-export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNote }) {
+export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNote, onToggleBookmark }) {
   container.querySelectorAll(".ayah-quick-wrap").forEach((wrap) => {
     const unitKey = wrap.dataset.unitKey;
     const btn = wrap.querySelector("[data-qm-toggle]");
@@ -194,6 +200,10 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
     wrap.querySelector("[data-qm-note]")?.addEventListener("click", () => {
       closeAllQuickMenus(container);
       onOpenNote?.(unitKey);
+    });
+    wrap.querySelector("[data-qm-bookmark]")?.addEventListener("click", () => {
+      closeAllQuickMenus(container);
+      onToggleBookmark?.(unitKey);
     });
   });
 
