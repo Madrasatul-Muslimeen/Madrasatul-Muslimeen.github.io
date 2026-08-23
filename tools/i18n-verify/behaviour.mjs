@@ -3787,6 +3787,16 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42d Arabic, English and Bangla all render", opened.arabic && opened.english && opened.bangla, JSON.stringify(opened));
   check("42d not bookmarked yet", opened.bookmarkStar === "☆", opened.bookmarkStar);
 
+  // Notes starts CLOSED now -- the Approach card moved in right after it, and
+  // the owner asked for the same "closed until asked for" default the field
+  // never had before. Opened explicitly here so the master-toggle and typing
+  // checks below still exercise a visible editor, same as when Notes used to
+  // open on its own.
+  const notesStartsClosed = await page.evaluate(() => getComputedStyle(document.querySelector('[data-note-field="notes"] .note-field-body')).display === "none");
+  check("42d Notes starts closed by default", notesStartsClosed);
+  await page.click('[data-note-field="notes"] [data-note-field-toggle]');
+  await page.waitForTimeout(100);
+
   // Master toggle collapses Arabic/English/Bangla together -- never Notes.
   await page.click("[data-note-master-toggle]");
   await page.waitForTimeout(100);
@@ -4255,6 +4265,84 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42k ...while its checkbox values stay plain ids", JSON.stringify(copyPopBn.langValues) === JSON.stringify(["ar", "en", "bn", "notes"]));
 
   check("42k no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, and the Approach card moving into the Ayah screen ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.waitForSelector("#wheelContainer svg", { timeout: 10000 }).catch(() => {});
+
+  const before = await page.evaluate(() => ({
+    ctaVisible: getComputedStyle(document.getElementById("wheelCtaBtn")).display !== "none",
+    hubHidden: getComputedStyle(document.getElementById("wheelHubPickers")).display === "none",
+    veiled: document.getElementById("wheelStageWrap").classList.contains("wheel-veiled"),
+    settledHidden: document.getElementById("wheelIntroSettled").hidden,
+  }));
+  check("43a the wheel starts covered by the intro button, hub pickers hidden, settled caption hidden",
+        before.ctaVisible && before.hubHidden && before.veiled && before.settledHidden, JSON.stringify(before));
+
+  await page.click("#wheelCtaBtn");
+  await page.waitForTimeout(150);
+  const after = await page.evaluate(() => ({
+    ctaHidden: getComputedStyle(document.getElementById("wheelCtaBtn")).display === "none",
+    hubVisible: getComputedStyle(document.getElementById("wheelHubPickers")).display !== "none",
+    veiled: document.getElementById("wheelStageWrap").classList.contains("wheel-veiled"),
+    settledShown: !document.getElementById("wheelIntroSettled").hidden,
+  }));
+  check("43b tapping it hides the button, lifts the veil, and shows the settled caption -- one time, no way back",
+        after.ctaHidden && after.hubVisible && !after.veiled && after.settledShown, JSON.stringify(after));
+
+  // The hub pickers are MIRRORS (same shape as #readPickers, shell round
+  // 22): changing one drives the canonical control, and the canonical
+  // control changing keeps the hub in sync -- both directions, one source
+  // of truth for what actually happens.
+  await page.selectOption("#wheelHubAyahSelect", "5");
+  await page.waitForTimeout(200);
+  const ayahAfter = await page.evaluate(() => document.getElementById("ayahSelect").value);
+  check("43c the hub Ayah picker really drives the canonical Ayah picker", ayahAfter === "5", ayahAfter);
+
+  // #surahSelect lives inside the Study options panel, hidden until opened.
+  await openStudyOptions(page);
+  await page.selectOption("#surahSelect", "2");
+  await page.waitForTimeout(300);
+  const hubSurahAfter = await page.evaluate(() => document.getElementById("wheelHubSurahSelect").value);
+  check("43d changing the canonical Surah picker keeps the hub mirror in sync", hubSurahAfter === "2", hubSurahAfter);
+  await page.click("#tabStudyOptionsBtn"); // close the panel again -- same tap-to-close idiom every dock tab uses
+  await page.waitForTimeout(150);
+  // Changing surah can bring the Quran-entry splash back; openPage() only
+  // clears it once, right after the initial load.
+  await page.evaluate(() => { for (const el of document.querySelectorAll('[id*="splash"], .mm-splash-overlay')) el.remove(); });
+
+  // Clicking a wheel slice: opens the Ayah Note screen (study first), not
+  // the old floating pop-up -- with the Approach card (assessment) embedded
+  // after Notes, and Notes itself still starting closed even reached this way.
+  await page.click(".wheel-seg");
+  await page.waitForTimeout(300);
+  const clicked = await page.evaluate(() => {
+    const body = document.querySelector(".note-body");
+    const children = [...body.children];
+    const notesIdx = children.findIndex((c) => c.dataset?.noteField === "notes");
+    const approachIdx = children.findIndex((c) => c.classList?.contains("note-approach"));
+    return {
+      noteShown: !document.getElementById("noteView").hidden,
+      modalOpen: document.getElementById("wayModalOverlay").classList.contains("open"),
+      embedPresent: !!document.querySelector(".way-embed"),
+      embedAfterNotes: notesIdx !== -1 && approachIdx !== -1 && approachIdx > notesIdx,
+      notesClosed: getComputedStyle(document.querySelector('[data-note-field="notes"] .note-field-body')).display === "none",
+      trackState: document.querySelector(".way-embed .way-track-state")?.textContent.trim(),
+    };
+  });
+  check("43e clicking a wheel slice opens the Ayah Note screen, not the old floating pop-up",
+        clicked.noteShown && !clicked.modalOpen, JSON.stringify(clicked));
+  check("43f the Approach card (Track/Guide/Breakdown/Coverage) is embedded right after Notes -- study above, assessment below",
+        clicked.embedPresent && clicked.embedAfterNotes, JSON.stringify(clicked));
+  check("43g Notes still starts closed even when the screen is reached from a wheel slice", clicked.notesClosed);
+  check("43h the embedded card shows the real claim state for this āyah/Approach", Boolean(clicked.trackState), clicked.trackState);
+
+  check("43 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
 }

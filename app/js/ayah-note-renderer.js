@@ -222,7 +222,7 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
 export function renderNoteView({
   unitKey, ref, arabicText, englishText, banglaText, notesHtml, wbwHtml,
   isBookmarked = false, hasPrev = false, hasNext = false, isFullscreen = false,
-  isWbwOn = false, hasNote = false,
+  isWbwOn = false, hasNote = false, approachHtml = "", isNotesOpen = false,
 }) {
   // Bar 1, the Ayah bar: JUST the reference and the controls that change
   // what's being read (Prev/Next), how Notes is formatted (Aa), and how
@@ -332,14 +332,29 @@ export function renderNoteView({
 
         <div class="note-field" data-note-field="notes">
           <div class="note-field-label-row">
-            <button type="button" class="note-field-toggle" data-note-field-toggle>▾</button>
+            <button type="button" class="note-field-toggle" data-note-field-toggle>${isNotesOpen ? "▾" : "▸"}</button>
             <span class="note-field-label">${t("Notes")}</span>
           </div>
-          <div class="note-field-body">
+          <div class="note-field-body" style="${isNotesOpen ? "" : "display:none"}">
             <div class="note-notes-editor" contenteditable="true" spellcheck="false" data-note-editor data-placeholder="${escapeHtml(t("Type notes here…"))}">${notesHtml ?? ""}</div>
             <p class="note-save-status" data-note-save-status hidden></p>
           </div>
         </div>
+
+        <!-- The Approach card (Track/Guide/Breakdown/Coverage + Claim),
+             moved in from what used to be a floating pop-up over the wheel.
+             Housed HERE, after Notes, and still INSIDE .note-body so it
+             scrolls with the rest of the screen rather than sitting pinned
+             below it -- the owner's own framing: everything above is for
+             STUDY (reading, word-by-word, notes), this card is for
+             ASSESSMENT (what status has been claimed for this āyah). It does
+             NOT live-update the way the fields above do: it only changes
+             when the reader actually taps Claim inside it, same as it always
+             has. quranrevival.html builds this HTML (way-modal.js's
+             renderWayEmbed) and passes it in already-built -- this file
+             stays I2-pure, it never imports way-modal.js or knows what a
+             "trackable" is. -->
+        ${approachHtml ? `<div class="note-approach">${approachHtml}</div>` : ""}
       </div>
     </div>`;
 }

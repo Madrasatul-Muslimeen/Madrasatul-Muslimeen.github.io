@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.60.** Cutover to production happened
+**Current milestone: QuranRevival v07.61.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -3197,6 +3197,114 @@ enough to catch a 3-letter button label where it's too short to catch a
 thing) -- **perf unchanged at 6 sequential round trips / ~0.89s**, and
 **`new-tenant.mjs` 10/10**. No `firestore.rules`, schema or Firestore data
 changes -- nothing to deploy but the static files.
+
+v07.61 (23 Aug 2026, on Claude Code on the web) is **shell round 31 -- the
+wheel gets a one-time invitation and its own ayah picker, and the wheel-slice
+card moves off the wheel entirely, into the Ayah screen.** The owner's own
+message was the spec, and a demo artifact was shown and confirmed against all
+four of its open points before anything was built.
+
+**(1) A new button, "Study Quran -- ONE Ayah a Day", covers the wheel until
+tapped.** Session-only (a fresh load shows it again) -- there is no new
+localStorage key, no new collection, nothing on the startup path (I9
+untouched, perf re-measured to prove it: still 6 sequential round trips /
+~0.98s). Tapping it hides the button, lifts a blur/dim veil that was always
+sitting over the wheel (never a second copy of it -- the wheel underneath was
+fully rendered and clickable the whole time, only covered), and settles into
+a small caption reading the owner's own second line, "Approach an Ayah in 30
+ways". **One real trap, caught by testing rather than assumed away:** both the
+button and the hub pickers below declare their own `display`, which -- the
+same known shape as `#wheelSection`'s own [hidden] trap (shell round 17) --
+beats the UA's `[hidden]` rule outright; toggling `hidden` from JS silently
+did nothing on the first pass, verified by screenshot before it was fixed
+with one `[hidden]` override rule.
+
+**(2) The wheel's hub carries Surah and Ayah pickers now**, the owner's own
+choice over a below-the-wheel row (asked directly, per last round's demo). A
+MIRROR, the same shape `#readPickers` has used since shell round 22:
+`WHEEL_HUB_MIRRORS` copies `#surahSelect`/`#ayahSelect`'s own options and
+value and forwards a change straight back to them, so `loadSurah()` and every
+ayah-change rule keep living in exactly one place -- picking here re-points
+every slice at the new āyah exactly the way changing it anywhere else already
+does, because it IS changing it anywhere else. Once the intro is dismissed the
+wheel's own centre `SURAH n · AYAH n` line is suppressed (not deleted -- it
+still shows while veiled, before the hub pickers exist on screen) rather than
+printed a second time in the same few square inches as the pickers now
+sitting over it.
+
+**(3) The old wheel-slice pop-up is gone, and its Track/Guide/Breakdown/
+Coverage card now lives inside the Ayah Note screen, after Notes** -- the
+owner's own framing, verbatim: *"the Ayah screen and all its functions is for
+study, and the Approach card is for assessment of the status of the study."*
+`way-modal.js` gained `renderWayEmbed()`/`attachWayEmbedHandlers()`, an
+undressed copy of the existing modal shell with no header and no close button
+(there's nothing here to close); `ayah-note-renderer.js`'s `renderNoteView()`
+takes the built HTML as a plain string (`approachHtml`) and places it as the
+LAST child of `.note-body`, still inside the scrolling region rather than
+pinned below it -- I2 holds, that file still never imports way-modal.js or
+knows what a "trackable" is. Clicking a wheel slice (`jumpToApproach()` in
+`renderWheel()`) now calls `openNoteView()` instead of the retired
+`openWayModal()`, which is deleted outright rather than left as dead code --
+its only caller was the wheel click, and its claim/refresh logic moved,
+unchanged in shape, into a new `wireApproachEmbed()` beside
+`renderNoteViewNow()`. **`openUnitWayModal()` ("Track this unit", bar 4) is
+untouched and still opens the floating overlay** -- deliberately: the Ayah
+Note screen is ayah-scoped only, and a wider Study Unit (Range/Whole Surah/
+Ruku'/Juz/Hizb/Page) has nowhere else to open, so the two paths now diverge on
+purpose rather than by oversight.
+
+**(4) Notes starts closed by default** (the owner's own ask), where it used
+to open automatically like every other field. **A real bug this shipped with
+initially, caught by the suite and not by reading the diff:**
+`renderNoteViewNow()` rebuilds the WHOLE `.note-body` from scratch on every
+re-render -- a claim, a bookmark toggle, Prev/Next, Word-by-word -- so a
+reader who took the extra tap to open Notes had it silently slam shut again
+the moment they touched anything else on the screen, discovered when the
+suite's own "type a note" check (which bookmarks the āyah first) started
+timing out waiting for an editor that had just been closed out from under it.
+Fixed the same way `noteWbwOn`/`noteFullscreenOn` already survive a rebuild:
+a new `noteNotesOpen` session flag, updated by a second listener on the
+Notes toggle (added AFTER `attachNoteViewHandlers()`'s own generic one, so it
+reads the display value the generic handler just set rather than the stale
+one) and threaded back into `renderNoteView({ isNotesOpen })`. Starts closed
+on a fresh visit; once a reader opens it, it stays open through whatever else
+happens on that screen, the same "reading preference, not per-āyah state"
+shape `noteWbwOn` already established -- not reset on re-open either (same
+precedent). Arabic/English/Bangla's own collapse states have the identical
+theoretical gap and were NOT touched -- pre-existing (this round did not
+introduce it, since those three started open regardless of the exact same
+rebuild), out of scope, and flagged rather than silently fixed alongside.
+
+**Verified: 845 behaviour checks pass, 0 failed** (was 835 -- 10 new: `42d`
+gained a check that Notes really starts closed, plus a brand-new **section
+43** covering the whole round -- the wheel starting veiled with the button
+up and the hub/caption hidden; tapping it hiding the button, lifting the
+veil, and showing the caption; the hub Ayah picker really driving the
+canonical Ayah picker AND the canonical Surah picker keeping the hub in sync,
+both directions; a wheel-slice click opening the Ayah Note screen rather than
+the old floating overlay; the embedded card proven to sit AFTER Notes inside
+the scrolling body; Notes proven still closed even reached this way; and the
+embedded card showing the real claimed state for that āyah/Approach) --
+**`layout.mjs` reports NO LAYOUT REGRESSIONS** at all eight viewports in both
+banner states (landing page byte-for-byte identical -- same wheel-heading
+top, same wheel width, same Approach rows, same 9px dock gap;
+`getElementById` targets 91 → 95, none missing), **`reading.mjs` OK**,
+**navcheck unchanged** (still only the pre-existing 320px English truncation
+of "Operation"/"Bookmark"), **coverage 1,290/1,290 (100%)** -- three new
+strings ("Study Quran", "ONE Ayah a Day", "Approach an Ayah in 30 ways"), each
+verified in Bangla by screenshot as well as by the report, since the report
+alone has been wrong eight separate times on this project -- and **perf
+unchanged at 6 sequential round trips / ~0.98s**, confirming the whole round
+added no Firestore reads (it's session-only UI/JS state throughout). The
+untouched "Track this unit" floating modal was re-checked working end to end
+too, not just assumed safe because its own code was never edited. No
+`firestore.rules`, schema or Firestore data changes -- nothing to deploy but
+the static files.
+
+**Flagged, not built:** Arabic/English/Bangla's own collapse state resets on
+every re-render of the Ayah Note screen, same as Notes did before this round
+-- pre-existing, not introduced here, and worth the same `noteNotesOpen`-style
+fix if it ever becomes a real complaint rather than a theoretical one.
 
 ---
 

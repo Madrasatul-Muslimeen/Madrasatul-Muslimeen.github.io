@@ -497,6 +497,11 @@ export const BN = {
   "Kevan Brighting (English, whole surah only)": "Kevan Brighting (ইংরেজি, শুধু সম্পূর্ণ সূরা)",
   "Shareef Bayezid Mahmud (Bangla)": "শরীফ বায়েজিদ মাহমুদ (বাংলা)",
 
+  // --- The wheel's own one-time intro button + settled caption -----------
+  "Study Quran": "কুরআন অধ্যয়ন করুন", // ?
+  "ONE Ayah a Day": "প্রতিদিন একটি আয়াত", // ?
+  "Approach an Ayah in 30 ways": "একটি আয়াতকে ৩০ উপায়ে অধ্যয়ন করুন", // ?
+
   // --- Claiming, and the Approach modal ----------------------------------
   "Track this unit": "এই এককটি চিহ্নিত করুন",
   // Shortened to one word in shell round 14, so the Approach name beside it

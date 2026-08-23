@@ -327,6 +327,47 @@
      space inside the card, on exactly the screens with least room to spare. */
   .mastery-wheel { max-width: 320px; height: auto; overflow: visible; }
 
+  /* ---------- Wheel intro button + in-hub Surah/Ayah pickers ----------
+     .wheel-stage-wrap wraps ONLY #wheelContainer -- not the legend below it
+     -- so 50%/50% inside it lands on the wheel's own centre, not on the
+     taller wheel-col box. It carries no width/display rules of its own
+     beyond position + centring: #wheelContainer keeps every size rule it
+     already had (the phone-only width:min(...) block below, the PC
+     max-width block above), untouched. */
+  .wheel-stage-wrap { position: relative; display: flex; justify-content: center; align-self: stretch; }
+  .wheel-veiled #wheelContainer svg { filter: blur(1.5px) brightness(0.4) saturate(0.55); transition: filter 0.25s ease; }
+  .wheel-intro-settled {
+    text-align: center; font-family: 'Cormorant Garamond', serif; font-style: italic;
+    color: #C9A24B; font-size: 0.92rem; margin: 0 0 0.2rem;
+  }
+  .wheel-cta-btn {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4;
+    display: flex; flex-direction: column; align-items: center; gap: 0.15rem;
+    background: linear-gradient(180deg, #ecd49a, #C9A24B); color: #221904;
+    border: none; border-radius: 999px; padding: 0.85rem 1.3rem; max-width: 78%;
+    font-family: 'Inter', sans-serif; font-weight: 800; line-height: 1.25; text-align: center;
+    cursor: pointer; box-shadow: 0 10px 24px -8px rgba(0,0,0,0.6);
+  }
+  .wheel-cta-btn:hover { filter: brightness(1.06); }
+  .wheel-cta-line1 { font-size: 0.98rem; }
+  .wheel-cta-line2 { font-size: 0.8rem; }
+  .wheel-hub-pickers {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -56%); z-index: 3;
+    display: flex; flex-direction: column; align-items: stretch; gap: 0.26rem;
+    width: min(56%, 128px);
+  }
+  /* Both of the above set their own `display`, which -- exactly like
+     #wheelSection's own known trap (shell round 17) -- beats the UA's
+     [hidden] rule on its own. Without this, toggling the `hidden` attribute
+     from JS silently does nothing: the button never disappears and the
+     pickers never appear from underneath it. */
+  .wheel-cta-btn[hidden], .wheel-hub-pickers[hidden] { display: none; }
+  .wheel-hub-pickers select {
+    font-size: 0.6rem; padding: 0.2rem 0.25rem; border-radius: 6px;
+    border: 1px solid rgba(201,162,75,0.55); background: rgba(8,14,26,0.85);
+    color: #F2E8D5; text-align: center; text-align-last: center;
+  }
+
   /* Shell round 7: the landing wheel card stretches to fill the stage, and
      the approaches list -- not the dark background -- absorbs the leftover
      height, so more Approaches show before any scrolling starts. Scoped to
@@ -710,6 +751,17 @@
   .way-tab-btn.active { color: #1F3A6E; border-bottom-color: #1F3A6E; font-weight: 600; }
   .way-tab-panel { display: none; }
   .way-tab-panel.active { display: block; }
+
+  /* Embedded variant of the same card (F-047 round -- housed inline in the
+     Ayah Note screen instead of the floating overlay above). Reuses every
+     .way-tab-* rule as-is; just its own container/title since it never sits
+     inside .way-modal's white popover shell. */
+  .way-embed {
+    border: 1.5px solid rgba(31,58,110,0.22); border-radius: 10px;
+    padding: 0.7rem 0.85rem 0.85rem; background: #f6f7fb;
+  }
+  .way-embed-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 1.02rem; color: #1F3A6E; margin: 0 0 0.5rem; }
+
   .pill { display: inline-block; padding: 0.05rem 0.4rem; border-radius: 0.7rem; font-size: 0.72rem; }
   .pill-pending { background: #f5ebd6; color: #8a6220; }
   .pill-confirmed { background: #deede4; color: #2e6b4f; }
@@ -925,6 +977,7 @@
   .note-notes-editor h3 { font-size: 1.05em; margin: 0.3em 0; }
   .note-notes-editor ul, .note-notes-editor ol { margin: 0.3em 0 0.3em 1.1em; }
   .note-save-status { font-size: 0.7rem; color: #9c3b2e; margin: 0.3rem 0 0; }
+  .note-approach { margin: 0.9rem 0 0.2rem; padding-top: 0.8rem; border-top: 1px dashed #ddd; }
 
   /* Note view's own full screen -- two states only (not the reading
      screen's three), and a separate mechanism from it on purpose (so
@@ -986,7 +1039,33 @@
       <h2 class="wheel-heading">Mastery Wheel</h2>
       <div id="wheelSection" class="wheel-box">
         <div class="wheel-col">
-          <div id="wheelContainer">Loading&hellip;</div>
+          <!-- The wheel's own one-time intro: a plain invitation over the
+               dial before anything about "30 ways" is asked of a first
+               visit. Tapping it hides the button for the rest of this visit
+               (session-only, not persisted -- a fresh load shows it again),
+               lifts the veil off the wheel, and shows the settled caption.
+               #wheelStageWrap wraps ONLY #wheelContainer (never the legend
+               below it) so the button/pickers centre on the wheel itself,
+               not on the taller wheel-col box. -->
+          <p id="wheelIntroSettled" class="wheel-intro-settled" hidden>Approach an Ayah in 30 ways</p>
+          <div id="wheelStageWrap" class="wheel-stage-wrap wheel-veiled">
+            <div id="wheelContainer">Loading&hellip;</div>
+            <button type="button" id="wheelCtaBtn" class="wheel-cta-btn">
+              <span class="wheel-cta-line1">Study Quran</span>
+              <span class="wheel-cta-line2">ONE Ayah a Day</span>
+            </button>
+            <!-- In-hub Surah/Ayah pickers -- a MIRROR of Study options' own
+                 controls (same shape as #readPickers, shell round 22): each
+                 copies its options/value from the canonical select and
+                 forwards a change straight back to it, so loadSurah() and
+                 every ayah-change rule keep living in exactly one place.
+                 Choosing here re-points every slice at the new āyah, same as
+                 changing it anywhere else already does. -->
+            <div id="wheelHubPickers" class="wheel-hub-pickers" hidden>
+              <select id="wheelHubSurahSelect" aria-label="Surah"></select>
+              <select id="wheelHubAyahSelect" aria-label="Ayah"></select>
+            </div>
+          </div>
           <div id="wheelLegendContainer"></div>
         </div>
         <div id="wheelSidebarContainer" class="wheel-sidebar"></div>
@@ -1414,7 +1493,7 @@
     // independently, same as when they were two separate page loads.
     showBootSplash(() => showQuranSplash());
     import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler } from "./js/mastery-wheel.js";
-    import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab, renderWayModalShell, attachWayModalHandlers } from "./js/way-modal.js";
+    import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab, renderWayModalShell, attachWayModalHandlers, renderWayEmbed, attachWayEmbedHandlers } from "./js/way-modal.js";
     import {
       RECITERS, reciterIsReady, reciterSupportsSingleAyah, playSurah,
       setLoop, setPlaybackErrorHandler, setAyahChangeHandler, stop as stopAudio, playDrill, stopDrill,
@@ -1602,6 +1681,21 @@
       mirror: document.getElementById(mirrorId),
       source: document.getElementById(sourceId),
     }));
+    // The wheel hub's own Surah/Ayah pickers -- same MIRROR shape as
+    // READ_PICKER_MIRRORS just above, just two controls and synced from
+    // renderWheel() (syncWheelHubPickers()) rather than from the reading
+    // screen's own render pass.
+    const WHEEL_HUB_MIRRORS = [
+      ["wheelHubSurahSelect", "surahSelect"],
+      ["wheelHubAyahSelect", "ayahSelect"],
+    ].map(([mirrorId, sourceId]) => ({
+      mirror: document.getElementById(mirrorId),
+      source: document.getElementById(sourceId),
+    }));
+    const wheelStageWrapEl = document.getElementById("wheelStageWrap");
+    const wheelCtaBtn = document.getElementById("wheelCtaBtn");
+    const wheelHubPickers = document.getElementById("wheelHubPickers");
+    const wheelIntroSettledEl = document.getElementById("wheelIntroSettled");
     const readUnitTypeSelect = document.getElementById("readUnitTypeSelect");
     const readAyahSelect = document.getElementById("readAyahSelect");
     const readSurahSelect = document.getElementById("readSurahSelect");
@@ -1654,6 +1748,14 @@
     let openNoteUnitKey = null; // whichever āyah "Note & more" is currently showing, so a data refresh (e.g. after switching person) can re-render it in place
     let noteFullscreenOn = false; // the Note view's own full-screen state -- see toggleNoteFullscreen()
     let noteWbwOn = false; // bar 2's Word-by-word toggle (round 31) -- a reading preference that persists across Prev/Next within the Note view, not reset per āyah
+    // Whether Notes is open, tracked the same way -- renderNoteViewNow()
+    // rebuilds the whole view's innerHTML on every re-render (a claim, a
+    // bookmark toggle, a Prev/Next), which would otherwise snap a
+    // deliberately-opened Notes field shut again mid-write. Notes now
+    // starts closed (the owner's own ask), but once a reader opens it, it
+    // stays open through whatever else happens on this screen until they
+    // close it again.
+    let noteNotesOpen = false;
     let tenantWeekStartsOn = 6;
     let currentTenantDoc = null;
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
@@ -1669,6 +1771,8 @@
     let currentSurahNum = 1;
     let currentSurahData = null;
     let currentTrackableId = null;
+    // The wheel's one-time intro (session-only -- a fresh load starts over).
+    let wheelIntroRevealed = false;
     let currentAyahNum = 1;
     let currentChunk = null;
     // Shell round 13 (13 Aug 2026) -- `currentLang` is gone. It used to be
@@ -2391,6 +2495,26 @@
         source.dispatchEvent(new Event("change"));
       });
     }
+    for (const { mirror, source } of WHEEL_HUB_MIRRORS) {
+      if (!mirror || !source) continue;
+      mirror.addEventListener("change", () => {
+        source.value = mirror.value;
+        source.dispatchEvent(new Event("change"));
+      });
+    }
+
+    // The wheel's own one-time intro (session-only -- a fresh load shows the
+    // button again). Dismissing it just hides the button and lifts the veil;
+    // the wheel underneath was always fully rendered and functional, it was
+    // only covered.
+    wheelCtaBtn?.addEventListener("click", () => {
+      wheelIntroRevealed = true;
+      wheelCtaBtn.hidden = true;
+      wheelHubPickers.hidden = false;
+      wheelIntroSettledEl.hidden = false;
+      wheelStageWrapEl.classList.remove("wheel-veiled");
+      renderWheel(); // redraw without the now-redundant centerRef line, hub pickers in its place
+    });
 
     unitTypeSelect.addEventListener("change", () => {
       currentUnitType = unitTypeSelect.value;
@@ -2758,18 +2882,25 @@
       }));
       wheelContainer.innerHTML = renderScopedWheel(items, {
         centerArabic: ayah?.uthmaniText,
-        centerRef: t("SURAH {surah} · AYAH {ayah}", { surah: num(currentSurahNum), ayah: num(currentAyahNum) }),
+        // Once the intro's dismissed, the hub carries its own Surah/Ayah
+        // pickers right over this spot -- printing the same reference twice
+        // in the same few square inches read as clutter, not confirmation.
+        // Suppressed rather than removed: the reference is still what a
+        // veiled, blurred wheel (before the CTA is tapped) is showing.
+        centerRef: wheelIntroRevealed ? "" : t("SURAH {surah} · AYAH {ayah}", { surah: num(currentSurahNum), ayah: num(currentAyahNum) }),
       });
 
-      // Matches the old app's own wheel-click behaviour exactly: clicking a
-      // segment opens that Approach's Way modal for the ayah on screen --
-      // it does not navigate anywhere. Also focuses the Approach dropdown
-      // on the clicked one, since Explore and "Track this unit" still
-      // operate on a single selected Approach.
+      // Matches the old app's own wheel-click behaviour: clicking a segment
+      // is about that Approach for the ayah on screen -- it does not
+      // navigate anywhere else. It now opens there INSIDE the Ayah Note
+      // screen (the owner's own framing: reading is study, this card is
+      // assessment) rather than a floating pop-up over the wheel. Also
+      // focuses the Approach dropdown on the clicked one, since Explore and
+      // "Track this unit" still operate on a single selected Approach.
       const jumpToApproach = (key) => {
         currentTrackableId = key;
         trackableSelect.value = key;
-        openWayModal();
+        openNoteView(buildUnitKey.ayah(currentSurahNum, currentAyahNum));
       };
       attachScopedWheelClickHandler(wheelContainer, jumpToApproach);
 
@@ -2784,6 +2915,24 @@
       }));
       wheelSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
       attachWheelSidebarClickHandler(wheelSidebarContainer, jumpToApproach);
+
+      syncWheelHubPickers();
+    }
+
+    /** Brings the wheel hub's own Surah/Ayah pickers into line with the ones
+        they mirror -- same shape as syncReadPickers() (shell round 22), just
+        the two controls the hub has room for. Options are only rebuilt when
+        they have actually changed (a surah's ayah list can be 286 entries,
+        and this runs on every renderWheel()). */
+    function syncWheelHubPickers() {
+      for (const { mirror, source } of WHEEL_HUB_MIRRORS) {
+        if (!mirror || !source) continue;
+        const stale = mirror.options.length !== source.options.length
+          || mirror.options[0]?.value !== source.options[0]?.value
+          || mirror.options[mirror.options.length - 1]?.value !== source.options[source.options.length - 1]?.value;
+        if (stale) mirror.innerHTML = source.innerHTML;
+        if (mirror.value !== source.value) mirror.value = source.value;
+      }
     }
 
     // -----------------------------------------------------------------------
@@ -3562,6 +3711,10 @@
         hasPrev: ayahNum > 1,
         hasNext: ayahNum < currentSurahData.ayahCount,
         isFullscreen: noteFullscreenOn,
+        // The wheel-slice card, now housed here after Notes instead of a
+        // floating pop-up -- see renderApproachEmbedHtml()'s own comment.
+        approachHtml: renderApproachEmbedHtml(surah, ayahNum),
+        isNotesOpen: noteNotesOpen,
       });
       attachNoteViewHandlers(noteView, {
         buildText: (langs) => buildAyahText(unitKey, langs),
@@ -3588,6 +3741,94 @@
         onNext: () => { if (ayahNum < currentSurahData.ayahCount) renderNoteViewNow(buildUnitKey.ayah(surah, ayahNum + 1)); },
         onToggleFullscreen: toggleNoteFullscreen,
         onToggleWbw: toggleNoteWbw,
+      });
+      // Notes' own toggle isn't wired by attachNoteViewHandlers above (that
+      // click is generic, shared by all four fields) -- this listens for the
+      // SAME click, added AFTER so the generic handler has already flipped
+      // .note-field-body's display, and just remembers which way it landed,
+      // the same way noteWbwOn/noteFullscreenOn already survive a rebuild.
+      noteView.querySelector('[data-note-field="notes"] [data-note-field-toggle]')?.addEventListener("click", () => {
+        noteNotesOpen = noteView.querySelector('[data-note-field="notes"] .note-field-body').style.display !== "none";
+      });
+      wireApproachEmbed(unitKey);
+    }
+
+    /** The wheel-slice card (Track/Guide/Breakdown/Coverage), now built for
+        embedding inline in the Note view after Notes rather than a floating
+        overlay -- the owner's own framing: everything above this card is
+        STUDY (reading, word-by-word, notes), this card is ASSESSMENT (what
+        status has been claimed for this āyah). Reads currentTrackableId, the
+        same "whichever Approach was last picked" state the wheel-click path
+        and "Track this unit" both already operate on -- empty string when
+        nothing's selected yet, the same guard the old floating card had. */
+    function renderApproachEmbedHtml(surah, ayahNum) {
+      const trackable = currentTrackable();
+      if (!trackable) return "";
+      const unitKey = buildUnitKey.ayah(surah, ayahNum);
+      const entryKey = `${unitKey}::${trackable.id}`;
+      const entry = currentChunk?.entries?.[entryKey] ?? null;
+      const statusIdsForTrackable = Object.values(currentChunk?.entries ?? {})
+        .filter((e) => e.trackableId === trackable.id)
+        .map((e) => e.claimedStatus);
+      const title = `${langText(trackable.name, getAppLang(), trackable.id)} — ${ayahRefLabel(surah, ayahNum)}`;
+      const tabBodies = {
+        Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
+        Guide: renderGuideTab(trackable, getAppLang()),
+        Breakdown: renderBreakdownTab(statusIdsForTrackable),
+        Coverage: renderCoverageTab(ayahStatusesForCurrentTrackable()),
+      };
+      return renderWayEmbed(title, tabBodies);
+    }
+
+    /** Wires the embedded card's tabs + Claim button, right after
+        renderNoteViewNow() has just (re)built the Note view's markup -- same
+        claim/refresh shape the old floating openWayModal() had, just
+        targeting noteView instead of the overlay. A no-op when there's no
+        card on screen (no Approach selected yet). This card deliberately
+        does NOT live-update the way Arabic/English/Bangla/Notes do above it
+        -- it only changes when the reader taps Claim right here, same as it
+        always has. */
+    function wireApproachEmbed(unitKey) {
+      const embedEl = noteView.querySelector(".way-embed");
+      const trackable = currentTrackable();
+      if (!embedEl || !trackable) return;
+      attachWayEmbedHandlers(embedEl);
+      const claimBtn = embedEl.querySelector(".way-claim-btn");
+      const statusSelectEl = embedEl.querySelector(".way-status-select");
+      const resultEl = embedEl.querySelector(".way-claim-result");
+      claimBtn.addEventListener("click", async () => {
+        claimBtn.disabled = true;
+        const outcome = await safeWrite(
+          () => claimStatus(db, {
+            tenantId: activeTenantId,
+            personId: selectedPersonId,
+            subjectId: "quran",
+            unitKey,
+            trackableId: trackable.id,
+            statusId: statusSelectEl.value,
+            notes: "",
+            domainIds: [],
+            claimedByPersonId: currentActingPersonId(),
+            claimedByUid: auth.currentUser.uid,
+          }),
+          { collection: "records", action: "claimStatus" }
+        );
+        if (outcome.ok) {
+          await logActivity(db, {
+            tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
+            weekStartsOn: tenantWeekStartsOn, subjectId: "quran", unitKey,
+            trackableId: trackable.id, action: "claimed", uid: auth.currentUser.uid,
+            viaProgramId: programBySubjectId.get("quran") ?? null,
+          });
+          const message = t(outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.");
+          await refreshChunkAndWheel();
+          renderNoteViewNow(unitKey); // rebuilds the whole Note view, including this card, against the fresh chunk
+          const freshResultEl = noteView.querySelector(".way-claim-result");
+          if (freshResultEl) freshResultEl.textContent = message;
+        } else {
+          resultEl.textContent = outcome.entry.message;
+          claimBtn.disabled = false;
+        }
       });
     }
 
@@ -4035,81 +4276,23 @@
     });
 
     // ---------------------------------------------------------------------
-    // Way modal -- ayah-level (unchanged from Phase 4: wheel-click always
-    // opens this, always at ayah granularity, regardless of Study Unit).
+    // Way modal -- ayah-level. The wheel-click path used to open its own
+    // floating overlay here (Phase 4); it now opens the Ayah Note screen
+    // instead (openNoteView(), wired from jumpToApproach() in renderWheel()
+    // above), with the same Track/Guide/Breakdown/Coverage card embedded
+    // inline after Notes (renderApproachEmbedHtml()/wireApproachEmbed(),
+    // beside renderNoteViewNow()). Nothing here builds that overlay any
+    // more; openUnitWayModal() below still does, for "Track this unit"'s
+    // wider Study Units (Range/Whole Surah/Ruku'/Juz/Hizb/Page), which the
+    // Note screen doesn't cover.
     // ---------------------------------------------------------------------
-
-    function openWayModal() {
-      const trackable = currentTrackable();
-      if (!trackable) return;
-      const unitKey = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
-      const entryKey = `${unitKey}::${trackable.id}`;
-      const entry = currentChunk?.entries?.[entryKey] ?? null;
-
-      const statusIdsForTrackable = Object.values(currentChunk?.entries ?? {})
-        .filter((e) => e.trackableId === trackable.id)
-        .map((e) => e.claimedStatus);
-      const ayahStatuses = ayahStatusesForCurrentTrackable();
-
-      const title = `${langText(trackable.name, getAppLang(), trackable.id)} — Surah ${currentSurahNum}, Ayah ${currentAyahNum}`;
-      const tabBodies = {
-        Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
-        Guide: renderGuideTab(trackable, getAppLang()),
-        Breakdown: renderBreakdownTab(statusIdsForTrackable),
-        Coverage: renderCoverageTab(ayahStatuses),
-      };
-      wayModalMount.innerHTML = renderWayModalShell(title, tabBodies);
-      wayModalOverlay.classList.add("open");
-
-      attachWayModalHandlers(wayModalMount.firstElementChild, {
-        onClose: () => wayModalOverlay.classList.remove("open"),
-      });
-
-      const claimBtn = wayModalMount.querySelector(".way-claim-btn");
-      const statusSelectEl = wayModalMount.querySelector(".way-status-select");
-      const resultEl = wayModalMount.querySelector(".way-claim-result");
-      claimBtn.addEventListener("click", async () => {
-        claimBtn.disabled = true;
-        const outcome = await safeWrite(
-          () => claimStatus(db, {
-            tenantId: activeTenantId,
-            personId: selectedPersonId,
-            subjectId: "quran",
-            unitKey,
-            trackableId: trackable.id,
-            statusId: statusSelectEl.value,
-            notes: "",
-            domainIds: [],
-            claimedByPersonId: currentActingPersonId(),
-            claimedByUid: auth.currentUser.uid,
-          }),
-          { collection: "records", action: "claimStatus" }
-        );
-        if (outcome.ok) {
-          await logActivity(db, {
-            tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
-            weekStartsOn: tenantWeekStartsOn, subjectId: "quran", unitKey,
-            trackableId: trackable.id, action: "claimed", uid: auth.currentUser.uid,
-            viaProgramId: programBySubjectId.get("quran") ?? null,
-          });
-          const message = t(outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.");
-          await refreshChunkAndWheel();
-          openWayModal(); // refresh the modal's own tabs against the new chunk -- this replaces resultEl, so the message has to be applied to the NEW element below, not the one captured above
-          const freshResultEl = wayModalMount.querySelector(".way-claim-result");
-          if (freshResultEl) freshResultEl.textContent = message;
-        } else {
-          resultEl.textContent = outcome.entry.message;
-          claimBtn.disabled = false;
-        }
-      });
-    }
 
     // ---------------------------------------------------------------------
     // Phase 5 -- Way modal for the currently-selected Study Unit (Range/
-    // Whole Surah/Ruku'/Juz/Page). Separate from openWayModal() above on
-    // purpose: the wheel-click path stays byte-for-byte what Phase 4 shipped
-    // and the owner already verified, zero regression risk. This is the new,
-    // additive path "Track this unit" uses.
+    // Whole Surah/Ruku'/Juz/Page). Still the floating overlay, on purpose:
+    // the Ayah Note screen (and its embedded card) is ayah-scoped only, so a
+    // wider unit has nowhere else to open. This is the "Track this unit"
+    // path.
     // ---------------------------------------------------------------------
 
     async function openUnitWayModal() {
