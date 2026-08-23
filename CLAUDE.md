@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.63.** Cutover to production happened
+**Current milestone: QuranRevival v07.64.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -3459,6 +3459,86 @@ Manually screenshotted at all six real breakpoints, both before and after,
 to see the fragment actually gone and the corrected order actually landed,
 not just trust the numbers. No `firestore.rules`, schema or Firestore data
 changes -- nothing to deploy but the static files.
+
+v07.64 (23 Aug 2026, on Claude Code on the web) is **shell round 33 -- the
+Ayah Note screen's bar 2 gets Bookmark/Play and a real Approach toggle**,
+from the owner's own layout brief for both PC/tablet and mobile.
+**Bookmark and Play move into bar 2** (between Share and Word by word),
+always visible now rather than hidden behind the old 🔖 icon --
+`note-actionsbar`/`note-master-row`/`note-actions-toggle` are retired
+outright, since nothing left in `.note-body` needed a reveal toggle once
+those two moved out of it.
+
+**A new Approach toggle (a real `<select>`, not a placeholder) is wired to
+the same `currentTrackableId` the canonical Study-options picker already
+uses.** Picking a different Approach here re-renders the wheel, keeps
+`#trackableSelect` in sync (each writes the other's value), and rebuilds
+the Track/Guide/Breakdown/Coverage card further down the same screen
+against the newly-picked Approach -- exactly the owner's own ask,
+"connect to the Study Track Card below." Both directions share one new
+`changeCurrentTrackable(id)`, which `#trackableSelect`'s own change
+handler now calls too rather than duplicating the wheel/re-render logic
+inline. The options themselves come from a new `buildTrackableOptionsHtml()`,
+extracted out of `renderTrackableSelectOptions()` without changing that
+function's own behaviour -- one source of truth for what's offered,
+whether it's offered from Study options or from this screen. Labelled
+**"Choose an Approach"** per the owner's own wording, in the toggle's
+`title`/`aria-label` (this row is otherwise all compact icon buttons with
+no visible text labels, the same convention bar 1/bar 2 already use
+elsewhere).
+
+**PC/tablet: the toggle sits in bar 2 itself**, right after Word by word,
+with Mapping My Journey straight after it -- one row, as asked.
+**On a phone, Approach and Mapping My Journey move to their own bar
+below bar 2 instead** (`.note-approach-bar-mobile`), in the spot the old
+Bookmark/Play row used to occupy, so bar 2 stays a five-icon row (Copy,
+Share, Bookmark, Play, Word by word) rather than wrapping. Both the
+desktop and phone copies of Approach/Journey always exist in the markup;
+CSS (the existing `@media (max-width: 720px)` phone breakpoint) decides
+which pair is actually shown, and `attachNoteViewHandlers()` wires both
+identically via `querySelectorAll` so whichever one the reader sees is the
+one that fires.
+
+**A real, if narrowly-scoped, CSS ordering bug was caught before it
+shipped, and it's worth recording because the same shape already exists
+elsewhere on this page.** The first version gave `.note-approach-bar-mobile`
+an unconditional `display: none` in the page's general CSS block, which
+sits AFTER the `@media (max-width: 720px)` block in the file -- so on a
+phone, the later, unconditional rule silently beat the earlier, phone-only
+`display: flex` (equal specificity, source order decides the tie), and the
+whole mobile bar stayed invisible. Confirmed empirically (a real headless
+run showed `display: none` at 390×844) rather than assumed from reading the
+CSS. **The same trap already exists, pre-existing and unrelated to this
+round, on `#studyScreen`'s own phone padding/border-radius override** --
+found while diagnosing this one, flagged rather than fixed here since it's
+outside this round's scope. Fixed for `.note-approach-bar-mobile` by putting
+BOTH its states behind a media condition (`display: flex` under
+`max-width: 720px`, `display: none` under a new `min-width: 721px`) instead
+of leaving one state unconditional -- the two conditions are mutually
+exclusive, so there's no ordering tie left to break.
+
+**Verified: 866 behaviour checks pass, 0 failed** (was 857 -- section 42f
+rewritten (Bookmark/Play proven always visible in bar 2, the old toggle
+proven gone, rather than "toggle reveals them"), 42k's Bangla check
+updated for the toggle's own titles (bookmark/play no longer share one
+🔖 title) plus a new Approach-title assertion, 42p rewritten to check
+actual computed visibility rather than DOM presence and to cover both the
+PC/tablet-in-bar-2 and phone-in-its-own-bar cases explicitly, and a new
+section 42s proving the toggle really drives the canonical picker, the
+Track card's own title, and the other (desktop) copy of the toggle, all in
+one round trip). **`layout.mjs` reports NO LAYOUT REGRESSIONS** against the
+real previous commit (landing page byte-for-byte identical at all eight
+viewports in both banner states -- same wheel-heading top, same wheel
+width, same Approach rows, same 9px dock gap, `getElementById` targets
+unchanged at 95, none missing), **`reading.mjs` OK**, **`navcheck.mjs`
+unchanged** (still only the pre-existing 320px English truncation of
+"Operation"/"Bookmark"), **`panel.mjs`** unaffected (this round never
+touches the Study options panel), **coverage 1,290/1,290 (100%)** -- two
+new strings, "Choose an Approach" and "(no Quran Approaches yet)" (the
+latter was a plain, untranslated literal before this round touched the
+function that builds it, so it's translated now rather than left as it
+was found). No `firestore.rules`, schema or Firestore data changes --
+nothing to deploy but the static files.
 
 ---
 
