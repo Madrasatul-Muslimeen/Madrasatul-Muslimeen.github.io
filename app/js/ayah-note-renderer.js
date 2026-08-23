@@ -90,26 +90,36 @@ const QM_LANGS = [
 ];
 
 /**
+ * Arabic/English/Bangla/My-note checkboxes, one per row -- shared by the ⋮
+ * quick menu's own Copy/Share submenus AND the Note view's bar-2 Copy/Share
+ * popovers (round 31), so "what to copy/share" is asked the same way and
+ * looks the same wherever it's asked. `hasNote` greys "My note" out when
+ * nothing's saved yet, so ticking it can't silently copy an empty line.
+ */
+function langCheckboxRows(cls, hasNote) {
+  const noteLabel = hasNote ? t("My note") : t("My note (none saved)");
+  return `
+        ${QM_LANGS.map(([lang, label]) => `<label><input type="checkbox" class="${cls}" data-lang="${lang}" checked> <span>${label()}</span></label>`).join("\n        ")}
+        <label><input type="checkbox" class="${cls}" data-lang="notes" ${hasNote ? "" : "disabled"}> <span>${escapeHtml(noteLabel)}</span></label>`;
+}
+
+/**
  * The ⋮ badge + its popover: Copy and Share each expand in place to their
  * own Arabic/English/Bangla/Notes checkboxes, then Play and Note & more as
  * plain one-tap items. `hasNote` greys the "My note" checkbox out when
  * nothing's saved yet, so ticking it can't silently copy an empty line.
  */
 export function renderQuickMenu(unitKey, { hasNote = false } = {}) {
-  const noteLabel = hasNote ? t("My note") : t("My note (none saved)");
-  const langRow = (cls) => `
-        ${QM_LANGS.map(([lang, label]) => `<label><input type="checkbox" class="${cls}" data-lang="${lang}" checked> <span>${label()}</span></label>`).join("\n        ")}
-        <label><input type="checkbox" class="${cls}" data-lang="notes" ${hasNote ? "" : "disabled"}> <span>${escapeHtml(noteLabel)}</span></label>`;
   return `
     <div class="ayah-quick-wrap" data-unit-key="${escapeHtml(unitKey)}">
       <button type="button" class="ayah-quick-btn${hasNote ? " has-note" : ""}" data-qm-toggle title="${t("Quick actions")}">⋮</button>
       <div class="quick-menu">
         <button type="button" class="qm-item" data-qm-sub-toggle="copy">📋 ${t("Copy")} <span class="qm-caret">▸</span></button>
-        <div class="qm-sub" data-qm-sub="copy">${langRow("qm-lang-copy")}
+        <div class="qm-sub" data-qm-sub="copy">${langCheckboxRows("qm-lang-copy", hasNote)}
           <button type="button" class="qm-go-btn" data-qm-copy-go>${t("Copy")}</button>
         </div>
         <button type="button" class="qm-item" data-qm-sub-toggle="share">📤 ${t("Share")} <span class="qm-caret">▸</span></button>
-        <div class="qm-sub" data-qm-sub="share">${langRow("qm-lang-share")}
+        <div class="qm-sub" data-qm-sub="share">${langCheckboxRows("qm-lang-share", hasNote)}
           <button type="button" class="qm-go-btn" data-qm-share-go>${t("Share")}</button>
         </div>
         <div class="qm-divider"></div>
@@ -203,21 +213,30 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
  * never user-editable -- unlike QCR's own prototype, which let you edit the
  * scripture text itself) plus a rich-text Notes field, all independently
  * collapsible, a master toggle over the first three (never Notes), and the
- * same Copy/Share/Play/bookmark row as the quick menu underneath its own
- * 🔖 icon toggle. No × button (spec, settled with the owner): this view
- * fills the stage and is left the same way any other stage view is left --
- * tapping a different dock tab.
+ * same Copy/Share/Play/bookmark actions the quick menu offers, reached from
+ * two bars rather than one (round 31, the owner's own correction of round
+ * 30 -- see the .note-bar2 CSS comment for why). No × button (spec, settled
+ * with the owner): this view fills the stage and is left the same way any
+ * other stage view is left -- tapping a different dock tab.
  */
 export function renderNoteView({
-  unitKey, ref, arabicText, englishText, banglaText, notesHtml,
+  unitKey, ref, arabicText, englishText, banglaText, notesHtml, wbwHtml,
   isBookmarked = false, hasPrev = false, hasNext = false, isFullscreen = false,
+  isWbwOn = false, hasNote = false,
 }) {
-  // The Ayah bar: reference + every quick action, one flex-wrap row (see
-  // the .note-ayahbar CSS comment for why this is a flex-wrap row rather
-  // than a fixed two-bar split). "Mapping My Journey" is placed LAST
-  // deliberately -- it is the widest single item, so on a narrow screen
-  // it is what wraps to its own line, while everything before it (the
-  // reference and the action icons) stays together on the first line.
+  // Bar 1, the Ayah bar: JUST the reference and the controls that change
+  // what's being read (Prev/Next), how Notes is formatted (Aa), and how
+  // much of the screen this view takes (Collapse, Full screen). Nothing
+  // else competes with the reference for room here, which is the whole
+  // point -- round 30 shipped a cut-off reference because Copy/Share/
+  // Journey were still crowding this same row.
+  const copySharePopover = (kind, goAttr) => `
+        <div class="note-sub-wrap" data-note-sub-wrap="${kind}">
+          <button type="button" class="note-icon-btn" data-note-sub-toggle="${kind}" title="${kind === "copy" ? t("Copy") : t("Share")}">${kind === "copy" ? "📋" : "📤"}</button>
+          <div class="note-sub-popover" data-note-sub="${kind}">${langCheckboxRows(`note-lang-${kind}`, hasNote)}
+            <button type="button" class="qm-go-btn" ${goAttr}>${kind === "copy" ? t("Copy") : t("Share")}</button>
+          </div>
+        </div>`;
   return `
     <div class="note-view" data-unit-key="${escapeHtml(unitKey)}">
       <div class="note-ayahbar">
@@ -225,10 +244,27 @@ export function renderNoteView({
         <button type="button" class="note-icon-btn" data-note-prev ${hasPrev ? "" : "disabled"} title="${t("Previous āyah")}">←</button>
         <button type="button" class="note-icon-btn" data-note-next ${hasNext ? "" : "disabled"} title="${t("Next āyah")}">→</button>
         <button type="button" class="note-icon-btn" data-note-palette-toggle title="${t("Notes formatting")}">Aa</button>
-        <button type="button" class="note-icon-btn" data-note-copy title="${t("Copy")}">📋</button>
-        <button type="button" class="note-icon-btn" data-note-share title="${t("Share")}">📤</button>
         <button type="button" class="note-icon-btn" data-note-master-toggle title="${t("Collapse āyah text")} (${t("Notes always stays open")})">▾</button>
         <button type="button" class="note-icon-btn${isFullscreen ? " active" : ""}" data-note-fullscreen title="${t("Full screen")}" aria-pressed="${isFullscreen ? "true" : "false"}">⤢</button>
+      </div>
+
+      <!-- Bar 2, permanent on every platform, not a mobile-only wrap of
+           bar 1 (the owner's own correction to round 30's shape): the
+           actions that need a CHOICE made first before they do anything --
+           Copy and Share each open the same picker the ⋮ quick menu
+           already uses rather than firing on whatever was left ticked --
+           plus Word by word (round 31, new) and Mapping My Journey. This
+           is also where "Ayah Approach" (the owner's own next ask) will
+           live once it's built. -->
+      <div class="note-bar2">
+        ${copySharePopover("copy", "data-note-copy-go")}
+        ${copySharePopover("share", "data-note-share-go")}
+        <!-- "WbW" stays a literal Latin abbreviation rather than a
+             translated word, the same convention "Aa" already uses on bar
+             1 (the palette toggle) -- it's a glyph-like icon, not a
+             sentence; the real, translated name lives in the title/
+             aria-pressed pair like every other icon on these two bars. -->
+        <button type="button" class="note-icon-btn${isWbwOn ? " active" : ""}" data-note-wbw-toggle title="${t("Word by Word")}" aria-pressed="${isWbwOn ? "true" : "false"}">WbW</button>
         <button type="button" class="note-icon-btn note-journey-btn" disabled title="${t("Coming later")}">${t("Mapping My Journey")}</button>
       </div>
 
@@ -250,23 +286,17 @@ export function renderNoteView({
       </div>
 
       <div class="note-body">
-        <!-- Copy and Share themselves moved to the Ayah bar above (the
-             owner's ask); this row keeps only what still needs a value
-             chosen first -- the bookmark, the language checkboxes Copy/
-             Share and Play all read from, and Play itself. -->
+        <!-- Copy and Share moved to bar 2 above, each with its OWN language
+             checkboxes in its own popover now (round 31) -- so this row has
+             nothing left to read a shared checkbox group for; it's just the
+             bookmark and Play. -->
         <div class="note-actionsbar" data-note-actionsbar>
           <button type="button" class="note-bookmark-btn${isBookmarked ? " active" : ""}" data-note-bookmark title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}">${isBookmarked ? "★" : "☆"}</button>
-          <span class="note-lang-group">
-            <label><input type="checkbox" class="note-lang" data-lang="ar" checked> AR</label>
-            <label><input type="checkbox" class="note-lang" data-lang="en" checked> EN</label>
-            <label><input type="checkbox" class="note-lang" data-lang="bn" checked> BN</label>
-            <label><input type="checkbox" class="note-lang" data-lang="notes"> ${t("Notes")}</label>
-          </span>
           <button type="button" class="note-play-btn" data-note-play>▶ ${t("Play")}</button>
         </div>
 
         <div class="note-master-row">
-          <button type="button" class="note-actions-toggle" data-note-actions-toggle title="${t("Bookmark, play & language options")}">🔖</button>
+          <button type="button" class="note-actions-toggle" data-note-actions-toggle title="${t("Bookmark & play")}">🔖</button>
         </div>
 
         <div data-note-collapsible>
@@ -291,6 +321,13 @@ export function renderNoteView({
             </div>
             <div class="note-field-body"><div class="note-bangla" lang="bn">${escapeHtml(banglaText)}</div></div>
           </div>
+          ${isWbwOn ? `
+          <div class="note-field" data-note-field="wbw">
+            <div class="note-field-label-row">
+              <span class="note-field-label">${t("Word by Word")}</span>
+            </div>
+            <div class="note-field-body">${wbwHtml ?? ""}</div>
+          </div>` : ""}
         </div>
 
         <div class="note-field" data-note-field="notes">
@@ -311,12 +348,13 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
 
 /**
  * `callbacks`:
- *   buildText(langs)       -> string, for the Ayah bar's Copy/Share
+ *   buildText(langs)       -> string, for bar 2's Copy/Share popovers
  *   onSaveNote(html)       -> Promise<{ok:boolean, message?:string}>, called on Notes blur
  *   onToggleBookmark()
  *   onPlay()
  *   onPrev() / onNext()    -- omit/leave the button disabled when there's nowhere to go
  *   onToggleFullscreen()   -- the view's own 2-state full screen (banner/nav/dock hidden, Ayah bar always on)
+ *   onToggleWbw()          -- bar 2's Word-by-word toggle (round 31)
  */
 export function attachNoteViewHandlers(container, callbacks) {
   const view = container.querySelector(".note-view");
@@ -396,20 +434,49 @@ export function attachNoteViewHandlers(container, callbacks) {
 
   view.querySelector("[data-note-bookmark]")?.addEventListener("click", () => callbacks.onToggleBookmark?.());
 
-  function checkedLangs() {
-    return [...view.querySelectorAll(".note-lang")].filter((cb) => cb.checked).map((cb) => cb.dataset.lang);
+  // Bar 2 -- Copy and Share (round 31): each is its own popover of language
+  // checkboxes, the same picker the ⋮ quick menu already uses, opened by
+  // its OWN icon rather than acting on whatever a shared checkbox group
+  // happened to have ticked. Scoped to `wrap` (not the whole view), so
+  // Copy's and Share's checkboxes -- both `.note-lang-copy`/`.note-lang-
+  // share` classes, chosen only so the two popovers' checked-state can
+  // never be confused with each other -- never read across.
+  function closeSubPopovers(exceptWrap) {
+    view.querySelectorAll("[data-note-sub-wrap]").forEach((wrap) => {
+      if (wrap === exceptWrap) return;
+      wrap.querySelector(".note-sub-popover")?.classList.remove("open");
+      wrap.querySelector("[data-note-sub-toggle]")?.classList.remove("active");
+    });
   }
-  // Icon-only on the Ayah bar, so the flash is a symbol rather than the
-  // quick menu's own "✓ Copied" text -- there's no room for words in a
-  // button this small.
-  const copyBtn = view.querySelector("[data-note-copy]");
-  copyBtn?.addEventListener("click", async () => {
-    const ok = await copyToClipboard(callbacks.buildText(checkedLangs()));
-    await flashBtn(copyBtn, ok ? "✓" : "✗", 600);
+  view.querySelectorAll("[data-note-sub-wrap]").forEach((wrap) => {
+    const toggleBtn = wrap.querySelector("[data-note-sub-toggle]");
+    const popover = wrap.querySelector(".note-sub-popover");
+    toggleBtn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const willOpen = !popover.classList.contains("open");
+      closeSubPopovers(null);
+      if (willOpen) {
+        popover.classList.add("open");
+        toggleBtn.classList.add("active");
+      }
+    });
   });
-  view.querySelector("[data-note-share]")?.addEventListener("click", () => {
-    shareText(callbacks.buildText(checkedLangs()), view.dataset.unitKey);
+  const copyWrap = view.querySelector('[data-note-sub-wrap="copy"]');
+  const copyGoBtn = view.querySelector("[data-note-copy-go]");
+  copyGoBtn?.addEventListener("click", async () => {
+    const langs = [...copyWrap.querySelectorAll("input[type=checkbox]")].filter((cb) => cb.checked).map((cb) => cb.dataset.lang);
+    const ok = await copyToClipboard(callbacks.buildText(langs));
+    await flashBtn(copyGoBtn, ok ? t("✓ Copied") : t("Copy failed"));
+    closeSubPopovers(null);
   });
+  const shareWrap = view.querySelector('[data-note-sub-wrap="share"]');
+  view.querySelector("[data-note-share-go]")?.addEventListener("click", () => {
+    const langs = [...shareWrap.querySelectorAll("input[type=checkbox]")].filter((cb) => cb.checked).map((cb) => cb.dataset.lang);
+    shareText(callbacks.buildText(langs), view.dataset.unitKey);
+    closeSubPopovers(null);
+  });
+
+  view.querySelector("[data-note-wbw-toggle]")?.addEventListener("click", () => callbacks.onToggleWbw?.());
   view.querySelector("[data-note-play]")?.addEventListener("click", () => callbacks.onPlay?.());
   view.querySelector("[data-note-prev]")?.addEventListener("click", () => callbacks.onPrev?.());
   view.querySelector("[data-note-next]")?.addEventListener("click", () => callbacks.onNext?.());
@@ -432,6 +499,14 @@ export function attachNoteViewHandlers(container, callbacks) {
         bar.classList.remove("open");
         barBtn?.classList.remove("active");
       }
+      v.querySelectorAll("[data-note-sub-wrap]").forEach((wrap) => {
+        const sub = wrap.querySelector(".note-sub-popover");
+        const subBtn = wrap.querySelector("[data-note-sub-toggle]");
+        if (sub?.classList.contains("open") && !wrap.contains(e.target)) {
+          sub.classList.remove("open");
+          subBtn?.classList.remove("active");
+        }
+      });
     });
   }
 }

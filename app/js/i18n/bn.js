@@ -540,16 +540,25 @@ export const BN = {
   // The Note view's own top bar and body.
   "Notes formatting": "নোট ফরম্যাটিং",
   "Coming later": "শীঘ্রই আসছে",
+  // Round 31 -- bar 2's Word-by-word toggle. Deliberately NOT translated,
+  // mapped to itself so the report counts it as decided rather than
+  // forgotten (same treatment "বাংলা (Bangla)" gets above): "WbW" is a
+  // Latin-abbreviation icon, the same convention "Aa" already uses on bar
+  // 1, and translating an abbreviation into a different alphabet defeats
+  // the point of it being a compact glyph. The real, translated name lives
+  // in the title/aria-pressed pair, via "Word by Word" below.
+  "WbW": "WbW",
   "Mapping My Journey": "আমার যাত্রার মানচিত্র", // ? -- placeholder feature name, not yet designed
   "Previous āyah": "পূর্ববর্তী আয়াত",
   "Next āyah": "পরবর্তী আয়াত",
   "Bookmark this āyah": "এই আয়াতটি বুকমার্ক করুন",
   "Remove bookmark": "বুকমার্ক সরান",
-  // Copy/Share moved to the Ayah bar itself; this key is what the 🔖
-  // toggle's title says now that only Bookmark/Play/language checkboxes
-  // are left behind it. "Bookmark, copy & share" above is kept, unused,
-  // rather than deleted -- same rule this project has followed every time
-  // a string stopped being called.
+  // Round 30 moved Copy/Share to the Ayah bar itself; round 31 moved them
+  // again, to their own bar-2 popovers with their own language checkboxes
+  // -- so the 🔖 toggle now holds only Bookmark and Play. Both earlier keys
+  // are kept, unused, rather than deleted -- same rule this project has
+  // followed every time a string stopped being called.
+  "Bookmark & play": "বুকমার্ক ও চালান",
   "Bookmark, play & language options": "বুকমার্ক, চালান ও ভাষা অপশন",
   "Bookmark, copy & share": "বুকমার্ক, কপি ও শেয়ার",
   "Collapse āyah text": "আয়াতের লেখা সংক্ষিপ্ত করুন",

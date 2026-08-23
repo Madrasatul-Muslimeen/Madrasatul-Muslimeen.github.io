@@ -1633,7 +1633,11 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   // NAME lives in aria-label.
   const transport = await page.evaluate(() => ({
     visible: !document.getElementById("readBar").hidden,
-    buttons: [...document.querySelectorAll("#readBar button")].map((b) => b.id),
+    // Direct children only -- round 31 mounts the ⋮ quick-menu's own popover
+    // (several unnamed <button>s of its own) inside #readQuickMenuSlot, a
+    // sixth DIRECT child of #readBar; `#readBar button` would count those
+    // too and this check is about the five original controls specifically.
+    buttons: [...document.querySelectorAll("#readBar > button")].map((b) => b.id),
     noWholeSurah: !document.getElementById("readPlaySurahBtn"),
     playLabel: document.getElementById("readPlayBtn").getAttribute("aria-label") || "",
     // Round 25 retired the reciter caption -- its only job was naming which
@@ -1677,7 +1681,8 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   await page.click("#tabReadBtn");
   await page.waitForTimeout(500);
   // Round 22: icons carry no words, so what must be in Bangla is their name.
-  const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar button")].map((b) => b.getAttribute("aria-label") || ""));
+  // Direct children only -- see the round-31 comment at 30j above.
+  const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button")].map((b) => b.getAttribute("aria-label") || ""));
   check("30l every reading-screen control is NAMED in Bangla",
         t18.length === 5 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
@@ -2213,9 +2218,11 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
     noRef: !document.getElementById("readRef"),
     playLabel: document.getElementById("readPlayBtn").getAttribute("aria-label") || "",
   }));
-  // Round 25 dropped the reciter caption from the end of this row.
-  check("33a the read bar is Prev · Next · Play · Stop · Full screen",
-        bar.ids.join() === "prevUnitBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn",
+  // Round 25 dropped the reciter caption from the end of this row. Round 31
+  // added a sixth child, #readQuickMenuSlot, mounting the ⋮ quick menu on
+  // the bar instead of over the ayah text.
+  check("33a the read bar is Prev · Next · Play · Stop · Full screen · ⋮ slot",
+        bar.ids.join() === "prevUnitBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readQuickMenuSlot",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -2882,12 +2889,20 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   const m = await page.evaluate(() => {
     const bar = document.getElementById("readBar");
     const barBox = bar.getBoundingClientRect();
-    const btns = [...bar.querySelectorAll("button")];
+    const kids = [...bar.children];
     const rows = [...document.querySelectorAll(".root-deriv-strip .root-row")];
+    // The honest check for "packed together, not spread with gaps" is the
+    // GAP between each consecutive control, not where the group starts --
+    // round 31 added a sixth child (#readQuickMenuSlot), which widens the
+    // group and moves its own start point, so a start-position threshold
+    // tuned for five items breaks the moment a sixth is added even though
+    // the row is still flush right with no `space-between`-style gaps.
+    const gaps = kids.slice(1).map((el, i) => Math.round(el.getBoundingClientRect().left - kids[i].getBoundingClientRect().right));
     return {
-      barKids: [...bar.children].map((e) => e.id),
+      barKids: kids.map((e) => e.id),
       noReciter: !document.getElementById("readReciterName"),
-      firstBtnLeft: Math.round(btns[0].getBoundingClientRect().left),
+      gaps,
+      lastRight: Math.round(kids[kids.length - 1].getBoundingClientRect().right),
       barLeft: Math.round(barBox.left), barRight: Math.round(barBox.right),
       posCount: rows.length,
       latinPos: rows.map((r) => r.querySelector(".root-pos")?.textContent || "").filter((x) => /[A-Za-z]/.test(x)).length,
@@ -2897,15 +2912,16 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   });
 
   check("37a the reciter caption is gone from the reading controls", m.noReciter);
-  check("37a the row is exactly the five controls",
-        m.barKids.join() === "prevUnitBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn", JSON.stringify(m.barKids));
-  // The honest check is where the group STARTS. `space-between` also ends at
-  // the right edge, so measuring the last button cannot tell the two apart --
-  // which is exactly how a stale `space-between` survived this round's first
-  // attempt.
-  check("37a the controls are grouped at the RIGHT, not spread",
-        m.firstBtnLeft - m.barLeft > (m.barRight - m.barLeft) / 2,
-        JSON.stringify({ firstBtnLeft: m.firstBtnLeft, bar: [m.barLeft, m.barRight] }));
+  // Round 31 added a sixth child, #readQuickMenuSlot (the ⋮ quick menu).
+  check("37a the row is Prev · Next · Play · Stop · Full screen · ⋮ slot",
+        m.barKids.join() === "prevUnitBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
+  // `space-between` would leave large, uneven gaps between controls, which
+  // is exactly how a stale `space-between` survived this round's first
+  // attempt -- checking the gaps directly catches that regardless of how
+  // many controls the row holds.
+  check("37a the controls are grouped together with no large gaps between them, flush against the right edge",
+        m.gaps.every((g) => g < 15) && m.lastRight >= m.barRight - 2,
+        JSON.stringify({ gaps: m.gaps, lastRight: m.lastRight, barRight: m.barRight }));
 
   check("37b the root & derivatives panel has rows to check", m.posCount > 0, String(m.posCount));
   check("37b every grammar label is Bangla — no English left",
@@ -3709,7 +3725,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(400); // ensureAyahNoteDataLoaded() is fire-and-forget from this same click
 
   const badge = await page.evaluate(() => {
-    const wrap = document.querySelector("#ayahPanels .ayah-quick-wrap");
+    const wrap = document.querySelector("#readQuickMenuSlot .ayah-quick-wrap");
     return {
       present: !!wrap,
       unitKey: wrap?.dataset.unitKey ?? null,
@@ -3719,10 +3735,10 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42a the ⋮ badge sits on the single-ayah view", badge.present && badge.unitKey === "ayah:1:1", JSON.stringify(badge));
   check("42a ...not marked as having a note yet", badge.hasNoteClass === false, JSON.stringify(badge));
 
-  await page.click("#ayahPanels [data-qm-toggle]");
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
   const menu = await page.evaluate(() => {
-    const wrap = document.querySelector("#ayahPanels .ayah-quick-wrap");
+    const wrap = document.querySelector("#readQuickMenuSlot .ayah-quick-wrap");
     return {
       open: wrap.querySelector(".quick-menu").classList.contains("open"),
       items: [...wrap.querySelectorAll(".qm-item")].map((b) => b.textContent.trim()),
@@ -3734,10 +3750,10 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
         && menu.items.some((t) => t.includes("Play")) && menu.items.some((t) => t.includes("Note")),
         JSON.stringify(menu.items));
 
-  await page.click('#ayahPanels [data-qm-sub-toggle="copy"]');
+  await page.click('#readQuickMenuSlot [data-qm-sub-toggle="copy"]');
   await page.waitForTimeout(120);
   const copySub = await page.evaluate(() => {
-    const wrap = document.querySelector("#ayahPanels .ayah-quick-wrap");
+    const wrap = document.querySelector("#readQuickMenuSlot .ayah-quick-wrap");
     const sub = wrap.querySelector('.qm-sub[data-qm-sub="copy"]');
     return {
       open: sub.classList.contains("open"),
@@ -3750,7 +3766,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42c ...and \"My note\" is greyed out -- nothing saved for this ayah yet", copySub.notesDisabled === true);
 
   // Note & more -- opens the full-stage view, not a floating modal.
-  await page.click("#ayahPanels [data-qm-note]");
+  await page.click("#readQuickMenuSlot [data-qm-note]");
   await page.waitForTimeout(250);
   const opened = await page.evaluate(() => ({
     noteShown: !document.getElementById("noteView").hidden,
@@ -3828,7 +3844,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42h tapping the Read tab again leaves Note & more, back to reading", closed.noteHidden && closed.readShown, JSON.stringify(closed));
 
   // The badge itself now reflects the saved note.
-  const badgeAfter = await page.evaluate(() => document.querySelector("#ayahPanels .ayah-quick-wrap .ayah-quick-btn")?.classList.contains("has-note"));
+  const badgeAfter = await page.evaluate(() => document.querySelector("#readQuickMenuSlot .ayah-quick-wrap .ayah-quick-btn")?.classList.contains("has-note"));
   check("42i the ⋮ badge now shows this ayah has a note", badgeAfter === true);
 
   check("42 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
@@ -3856,22 +3872,26 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await ctx.close();
 }
 
-// --- 42l the owner's own fixes: the ⋮ badge no longer overlaps the Arabic
-// text (measured, not eyeballed -- a fixed-position overlay left only a
-// ~6px gap from the text's own right edge, thin enough for an ordinary
-// āyah and real font rendering to eat into) -----------------------------
+// --- 42l round 30's fix (the badge sitting in its own header row, never
+// overlaid on the text) still holds for the FLOW view; round 31 moved the
+// single-āyah badge again, off the ayah entirely and onto #readBar (the
+// owner's own question: "why should the three dot take space over the
+// Ayah, when the Bar has empty spaces?") -- so there is no overlap
+// question left to measure there at all; what matters is that it really
+// left #ayahPanels rather than being duplicated. -------------------------
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await page.click("#tabReadBtn");
   await page.waitForTimeout(400);
-  const single = await page.evaluate(() => {
-    const badge = document.querySelector("#ayahPanels .ayah-quick-wrap").getBoundingClientRect();
-    const arabic = document.querySelector("#ayahPanels .ayah-arabic").getBoundingClientRect();
-    return { badgeBottom: badge.bottom, arabicTop: arabic.top, overlapsHorizontally: !(badge.right < arabic.left || badge.left > arabic.right) };
-  });
-  check("42l the ⋮ badge sits ABOVE the Arabic text, single-āyah view (no vertical overlap possible)",
-        single.badgeBottom <= single.arabicTop + 1, JSON.stringify(single));
+  const single = await page.evaluate(() => ({
+    onReadBar: !!document.querySelector("#readBar #readQuickMenuSlot .ayah-quick-wrap"),
+    stillInAyahPanels: !!document.querySelector("#ayahPanels .ayah-quick-wrap"),
+  }));
+  check("42l the single-āyah ⋮ badge lives on #readBar now, not over the ayah",
+        single.onReadBar, JSON.stringify(single));
+  check("42l ...and it's gone from #ayahPanels entirely -- moved, not duplicated",
+        !single.stillInAyahPanels, JSON.stringify(single));
 
   await openStudyOptions(page);
   await page.selectOption("#unitTypeSelect", "surah");
@@ -3889,87 +3909,217 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await ctx.close();
 }
 
-// --- 42m the Ayah bar: Copy/Share/Collapse (icon-only) and Full screen all
-// live on it now, and the reference text no longer truncates -- the old
-// nowrap+ellipsis rule cut it off "for no reason" any time the row's total
-// content didn't perfectly fit, wide screen or not. ----------------------
+// --- 42m round 31: the Ayah bar (bar 1) is JUST the reference, Prev/Next,
+// Aa, Collapse and Full screen now -- Copy/Share/Journey moved OUT to a
+// permanent second bar (see 42p) so nothing competes with the reference
+// for room. The reference itself still doesn't truncate (nowrap+ellipsis
+// was round 30's own now-fixed defect) -- proven twice over: the computed
+// style allows wrapping, AND the real text ("Quran 1:1 — Surah
+// Al-Faatiha") is actually present start to finish, not just theoretically
+// wrappable. Round 30 shipped the CSS fix while a separate bug
+// (surahName() called with no englishName) left the surah name blank, so
+// the property-only check passed while the owner could still see it cut
+// off -- this is the rendered-text half that catches that class of bug
+// again if it ever comes back. ---------------------------------------------
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await page.click("#tabReadBtn");
   await page.waitForTimeout(400);
-  await page.click("#ayahPanels [data-qm-toggle]");
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.click("#ayahPanels [data-qm-note]");
+  await page.click("#readQuickMenuSlot [data-qm-note]");
   await page.waitForTimeout(300);
   const bar = await page.evaluate(() => {
     const view = document.querySelector(".note-view");
-    const bar = view.querySelector(".note-ayahbar");
-    const ref = getComputedStyle(view.querySelector(".note-ref"));
+    const bar1 = view.querySelector(".note-ayahbar");
+    const ref = bar1.querySelector(".note-ref");
+    const refCs = getComputedStyle(ref);
     return {
-      hasCopy: !!bar.querySelector("[data-note-copy]"),
-      hasShare: !!bar.querySelector("[data-note-share]"),
-      hasCollapse: !!bar.querySelector("[data-note-master-toggle]"),
-      hasFullscreen: !!bar.querySelector("[data-note-fullscreen]"),
-      collapseIsIconOnly: bar.querySelector("[data-note-master-toggle]").textContent.trim() === "▾",
-      refWhiteSpace: ref.whiteSpace,
-      refTextOverflow: ref.textOverflow,
-      noOldCopyShareInActionsRow: !document.querySelector("[data-note-actionsbar] [data-note-copy], [data-note-actionsbar] [data-note-share]"),
+      bar1HasCopy: !!bar1.querySelector("[data-note-copy], [data-note-sub-toggle]"),
+      bar1HasJourney: !!bar1.querySelector(".note-journey-btn"),
+      hasPrev: !!bar1.querySelector("[data-note-prev]"),
+      hasNext: !!bar1.querySelector("[data-note-next]"),
+      hasCollapse: !!bar1.querySelector("[data-note-master-toggle]"),
+      hasFullscreen: !!bar1.querySelector("[data-note-fullscreen]"),
+      collapseIsIconOnly: bar1.querySelector("[data-note-master-toggle]").textContent.trim() === "▾",
+      refWhiteSpace: refCs.whiteSpace,
+      refTextOverflow: refCs.textOverflow,
+      refText: ref.textContent.trim(),
     };
   });
-  check("42m Copy, Share, Collapse and Full screen all live on the Ayah bar",
-        bar.hasCopy && bar.hasShare && bar.hasCollapse && bar.hasFullscreen, JSON.stringify(bar));
+  check("42m bar 1 no longer carries Copy/Share/Journey -- moved to bar 2",
+        !bar.bar1HasCopy && !bar.bar1HasJourney, JSON.stringify(bar));
+  check("42m ...just Prev, Next, Collapse and Full screen alongside the reference",
+        bar.hasPrev && bar.hasNext && bar.hasCollapse && bar.hasFullscreen, JSON.stringify(bar));
   check("42m the Collapse button is icon-only, no label text", bar.collapseIsIconOnly, JSON.stringify(bar));
-  check("42m Copy/Share are gone from the actions row -- moved, not duplicated", bar.noOldCopyShareInActionsRow);
-  check("42m the reference can wrap rather than being cut off (no nowrap+ellipsis)",
+  check("42m the reference CAN wrap (no nowrap+ellipsis)",
         bar.refWhiteSpace !== "nowrap" && bar.refTextOverflow !== "ellipsis", JSON.stringify(bar));
+  check("42m ...and the real text actually renders in full, surah name included",
+        bar.refText === "Quran 1:1 — Surah Al-Faatiha", bar.refText);
   check("42m no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
 }
 
-// --- 42n "Mapping My Journey" wraps to its own line on a phone, where the
-// owner asked it to make room for the reference, but joins the same line
-// as everything else on a desktop, where there's no need for a second row
-// at all. -------------------------------------------------------------------
+// --- 42p round 31: bar 2 is a REAL second bar, permanent on every
+// platform (not a mobile-only wrap fallback of bar 1, which was round
+// 30's shape) -- Copy, Share, Word by word and Mapping My Journey, all
+// present on a phone AND a desktop, always as their own row below bar 1.
 {
-  async function journeyRow(viewport) {
+  async function barLayout(viewport) {
     const ctx = await ctxFor({ banner: false, viewport });
     const { page } = await openPage(ctx, "/app/quranrevival.html");
     await page.click("#tabReadBtn");
     await page.waitForTimeout(400);
-    await page.click("#ayahPanels [data-qm-toggle]");
+    await page.click("#readQuickMenuSlot [data-qm-toggle]");
     await page.waitForTimeout(150);
-    await page.click("#ayahPanels [data-qm-note]");
+    await page.click("#readQuickMenuSlot [data-qm-note]");
     await page.waitForTimeout(300);
-    const rows = await page.evaluate(() => {
+    const info = await page.evaluate(() => {
       const view = document.querySelector(".note-view");
-      const ref = view.querySelector(".note-ref").getBoundingClientRect();
-      const journey = view.querySelector(".note-journey-btn").getBoundingClientRect();
-      return { refTop: ref.top, journeyTop: journey.top };
+      const bar1 = view.querySelector(".note-ayahbar").getBoundingClientRect();
+      const bar2El = view.querySelector(".note-bar2");
+      const bar2 = bar2El.getBoundingClientRect();
+      return {
+        bar2Below: bar2.top >= bar1.bottom - 1,
+        hasCopyToggle: !!bar2El.querySelector('[data-note-sub-toggle="copy"]'),
+        hasShareToggle: !!bar2El.querySelector('[data-note-sub-toggle="share"]'),
+        hasWbwToggle: !!bar2El.querySelector("[data-note-wbw-toggle]"),
+        hasJourney: !!bar2El.querySelector(".note-journey-btn"),
+        overflowX: document.documentElement.scrollWidth > window.innerWidth,
+      };
     });
     await page.close();
     await ctx.close();
-    return rows;
+    return info;
   }
-  const mobile = await journeyRow({ width: 360, height: 640 });
-  const desktop = await journeyRow({ width: 1280, height: 900 });
-  check("42n on a phone, Mapping My Journey wraps to its own line below the reference",
-        mobile.journeyTop > mobile.refTop + 5, JSON.stringify(mobile));
-  check("42n on a desktop, it shares the same line -- no second bar needed",
-        Math.abs(desktop.journeyTop - desktop.refTop) < 5, JSON.stringify(desktop));
+  const mobile = await barLayout({ width: 390, height: 844 });
+  const desktop = await barLayout({ width: 1280, height: 900 });
+  for (const [label, info] of [["phone", mobile], ["desktop", desktop]]) {
+    check(`42p bar 2 sits below bar 1 as its own row on a ${label}`, info.bar2Below, JSON.stringify(info));
+    check(`42p ...with Copy, Share, Word by word and Mapping My Journey all present on a ${label}`,
+          info.hasCopyToggle && info.hasShareToggle && info.hasWbwToggle && info.hasJourney, JSON.stringify(info));
+    check(`42p ...and nothing overflows the ${label} viewport`, !info.overflowX);
+  }
 }
 
-// --- 42o the Note view's own full screen: two states, and the Ayah bar
-// (which holds the Notes edit controls) stays on screen in both. -----------
+// --- 42q round 31: Copy and Share on bar 2 open the SAME language-checkbox
+// picker the ⋮ quick menu already uses, rather than acting immediately on
+// whatever was left ticked from before (the owner's own point: "why not
+// the 'copy' icon... open a toggle that will show all the copy and share
+// options to choose from?"). ------------------------------------------------
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.waitForTimeout(300);
+
+  await page.click('.note-bar2 [data-note-sub-toggle="copy"]');
+  await page.waitForTimeout(150);
+  const copyPop = await page.evaluate(() => {
+    const wrap = document.querySelector('[data-note-sub-wrap="copy"]');
+    const pop = wrap.querySelector(".note-sub-popover");
+    return {
+      open: pop.classList.contains("open"),
+      arChecked: pop.querySelector('input[data-lang="ar"]')?.checked,
+      notesDisabled: pop.querySelector('input[data-lang="notes"]')?.disabled,
+    };
+  });
+  check("42q Copy on bar 2 opens its own popover rather than copying immediately", copyPop.open, JSON.stringify(copyPop));
+  check("42q ...with Arabic/English/Bangla checked and \"My note\" greyed out (none saved yet)",
+        copyPop.arChecked === true && copyPop.notesDisabled === true, JSON.stringify(copyPop));
+
+  // Clicking Go really runs the copy (flashes ✓/✗, same as the quick
+  // menu's own Go button) and closes the popover behind it -- not asserting
+  // the OS clipboard's own contents, which headless Chromium doesn't grant
+  // read access to by default; the flash IS the outcome the reader sees.
+  await page.click("[data-note-copy-go]");
+  await page.waitForTimeout(150);
+  const flashed = await page.evaluate(() => document.querySelector("[data-note-copy-go] .ayah-note-flash")?.textContent.trim());
+  check("42q clicking Copy's Go button really runs it (flashes ✓ or ✗)",
+        flashed === "✓ Copied" || flashed === "Copy failed", flashed);
+  await page.waitForTimeout(700);
+  const closedAfterCopy = await page.evaluate(() => !document.querySelector('[data-note-sub-wrap="copy"] .note-sub-popover').classList.contains("open"));
+  check("42q ...and the popover closes itself afterwards", closedAfterCopy);
+
+  // Share opens its OWN, separate popover -- ticking inside Copy's must
+  // never leak into Share's.
+  await page.click('.note-bar2 [data-note-sub-toggle="share"]');
+  await page.waitForTimeout(150);
+  const sharePop = await page.evaluate(() => {
+    const wrap = document.querySelector('[data-note-sub-wrap="share"]');
+    const pop = wrap.querySelector(".note-sub-popover");
+    return { open: pop.classList.contains("open"), arChecked: pop.querySelector('input[data-lang="ar"]')?.checked };
+  });
+  check("42q Share opens its own popover, independent of Copy's own ticks",
+        sharePop.open && sharePop.arChecked === true, JSON.stringify(sharePop));
+
+  check("42q no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+// --- 42r round 31: Word by word, the new bar-2 tool -- "this Ayah screen
+// would be the main study screen for a user, therefore we need to make
+// tools available here" (the owner's own words). Reuses the same
+// renderWordByWordPanel() the ordinary reading screen already calls. ------
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("#readQuickMenuSlot [data-qm-note]");
+  await page.waitForTimeout(300);
+  const before = await page.evaluate(() => ({
+    fieldPresent: !!document.querySelector('[data-note-field="wbw"]'),
+    pressed: document.querySelector("[data-note-wbw-toggle]").getAttribute("aria-pressed"),
+  }));
+  check("42r Word by word is off by default", !before.fieldPresent && before.pressed === "false", JSON.stringify(before));
+
+  await page.click("[data-note-wbw-toggle]");
+  await page.waitForTimeout(200);
+  const on = await page.evaluate(() => {
+    const field = document.querySelector('[data-note-field="wbw"]');
+    return {
+      present: !!field,
+      hasWords: field ? field.querySelectorAll(".wbw-word").length > 0 : false,
+      pressed: document.querySelector("[data-note-wbw-toggle]").getAttribute("aria-pressed"),
+      active: document.querySelector("[data-note-wbw-toggle]").classList.contains("active"),
+    };
+  });
+  check("42r ticking it renders real word-by-word content, not a placeholder",
+        on.present && on.hasWords, JSON.stringify(on));
+  check("42r ...and the toggle itself reads pressed", on.pressed === "true" && on.active);
+
+  // Persists across Next -- a reading preference, not per-āyah state.
+  await page.click("[data-note-next]");
+  await page.waitForTimeout(200);
+  const afterNext = await page.evaluate(() => !!document.querySelector('[data-note-field="wbw"]'));
+  check("42r stays on after Next -- a session preference, not reset per āyah", afterNext);
+
+  check("42r no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+// --- 42o the Note view's own full screen: two states, and both bars
+// (bar 1 and, since round 31, bar 2 -- it holds Copy/Share/WbW now, real
+// edit/action tools, same reasoning as bar 1) stay on screen in both. ------
 {
   const ctx = await ctxFor({ banner: true });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await page.click("#tabReadBtn");
   await page.waitForTimeout(400);
-  await page.click("#ayahPanels [data-qm-toggle]");
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.click("#ayahPanels [data-qm-note]");
+  await page.click("#readQuickMenuSlot [data-qm-note]");
   await page.waitForTimeout(300);
 
   const before = await page.evaluate(() => ({
@@ -3977,9 +4127,10 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     topNav: getComputedStyle(document.getElementById("topNav")).display,
     dock: getComputedStyle(document.getElementById("dock")).display,
     ayahbar: getComputedStyle(document.querySelector(".note-ayahbar")).display,
+    bar2: getComputedStyle(document.querySelector(".note-bar2")).display,
   }));
-  check("42o state one (default): banner, main menu, dock and the Ayah bar are all visible",
-        before.banner !== "none" && before.topNav !== "none" && before.dock !== "none" && before.ayahbar !== "none",
+  check("42o state one (default): banner, main menu, dock and both bars are all visible",
+        before.banner !== "none" && before.topNav !== "none" && before.dock !== "none" && before.ayahbar !== "none" && before.bar2 !== "none",
         JSON.stringify(before));
 
   await page.click("[data-note-fullscreen]");
@@ -3989,11 +4140,12 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     topNav: getComputedStyle(document.getElementById("topNav")).display,
     dock: getComputedStyle(document.getElementById("dock")).display,
     ayahbar: getComputedStyle(document.querySelector(".note-ayahbar")).display,
+    bar2: getComputedStyle(document.querySelector(".note-bar2")).display,
     pressed: document.querySelector("[data-note-fullscreen]").getAttribute("aria-pressed"),
   }));
   check("42o state two (full screen): banner, main menu and dock go",
         full.banner === "none" && full.topNav === "none" && full.dock === "none", JSON.stringify(full));
-  check("42o ...but the Ayah bar stays -- it holds the Notes edit controls", full.ayahbar !== "none");
+  check("42o ...but BOTH bars stay -- they hold the Notes edit/action controls", full.ayahbar !== "none" && full.bar2 !== "none", JSON.stringify(full));
   check("42o the toggle itself reads pressed", full.pressed === "true");
 
   await page.click("[data-note-fullscreen]");
@@ -4015,9 +4167,9 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   // own description of it.
   await page.click("#tabReadBtn");
   await page.waitForTimeout(300);
-  await page.click("#ayahPanels [data-qm-toggle]");
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
-  await page.click("#ayahPanels [data-qm-note]");
+  await page.click("#readQuickMenuSlot [data-qm-note]");
   await page.waitForTimeout(300);
   const reopened = await page.evaluate(() => ({
     bodyClass: document.body.className,
@@ -4041,10 +4193,10 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
   await page.click("#tabReadBtn");
   await page.waitForTimeout(400);
-  await page.click("#ayahPanels [data-qm-toggle]");
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
   const menuBn = await page.evaluate(() => {
-    const wrap = document.querySelector("#ayahPanels .ayah-quick-wrap");
+    const wrap = document.querySelector("#readQuickMenuSlot .ayah-quick-wrap");
     return {
       items: [...wrap.querySelectorAll(".qm-item")].map((b) => b.textContent.trim()),
       // Checkbox VALUES must stay plain "ar"/"en"/"bn"/"notes" -- they are
@@ -4055,7 +4207,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42k the quick menu's own items render in Bangla", menuBn.items.every((t) => BANGLA.test(t)), JSON.stringify(menuBn.items));
   check("42k ...while the checkbox values stay plain ids", JSON.stringify(menuBn.langValues) === JSON.stringify(["ar", "en", "bn", "notes"]));
 
-  await page.click("#ayahPanels [data-qm-note]");
+  await page.click("#readQuickMenuSlot [data-qm-note]");
   await page.waitForTimeout(300);
   const noteBn = await page.evaluate(() => {
     const view = document.querySelector(".note-view");
@@ -4068,6 +4220,12 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
       masterToggleTitle: view.querySelector("[data-note-master-toggle]").title,
       fullscreenTitle: view.querySelector("[data-note-fullscreen]").title,
       headingOptions: [...view.querySelectorAll("[data-note-heading] option")].map((o) => ({ value: o.value, text: o.textContent.trim() })),
+      // Round 31 -- bar 2's own titles. "WbW" itself stays Latin (same
+      // convention as "Aa"), so only its title is asserted Bangla; the
+      // Journey button's title is separate from its own visible text above.
+      wbwToggleText: view.querySelector("[data-note-wbw-toggle]").textContent.trim(),
+      wbwToggleTitle: view.querySelector("[data-note-wbw-toggle]").title,
+      bookmarkPlayTitle: view.querySelector("[data-note-actions-toggle]").title,
     };
   });
   check("42k Note & more's own ref and Journey placeholder are in Bangla",
@@ -4078,6 +4236,23 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42k the heading-style dropdown reads in Bangla with plain option values",
         noteBn.headingOptions.every((o) => BANGLA.test(o.text)) && noteBn.headingOptions.map((o) => o.value).join() === "p,h1,h2,h3",
         JSON.stringify(noteBn.headingOptions));
+  check("42k bar 2's Word by word toggle stays the Latin abbreviation \"WbW\" (like \"Aa\"), title in Bangla",
+        noteBn.wbwToggleText === "WbW" && BANGLA.test(noteBn.wbwToggleTitle), JSON.stringify(noteBn));
+  check("42k the 🔖 toggle's own title is in Bangla now that it's just Bookmark & Play",
+        BANGLA.test(noteBn.bookmarkPlayTitle), JSON.stringify(noteBn));
+
+  await page.click('.note-bar2 [data-note-sub-toggle="copy"]');
+  await page.waitForTimeout(120);
+  const copyPopBn = await page.evaluate(() => {
+    const pop = document.querySelector('[data-note-sub-wrap="copy"] .note-sub-popover');
+    return {
+      labels: [...pop.querySelectorAll("label span")].map((s) => s.textContent.trim()),
+      langValues: [...pop.querySelectorAll("input[type=checkbox]")].map((cb) => cb.dataset.lang),
+      goText: pop.querySelector(".qm-go-btn").textContent.trim(),
+    };
+  });
+  check("42k bar 2's Copy popover renders in Bangla too", copyPopBn.labels.every((t) => BANGLA.test(t)) && BANGLA.test(copyPopBn.goText), JSON.stringify(copyPopBn));
+  check("42k ...while its checkbox values stay plain ids", JSON.stringify(copyPopBn.langValues) === JSON.stringify(["ar", "en", "bn", "notes"]));
 
   check("42k no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
