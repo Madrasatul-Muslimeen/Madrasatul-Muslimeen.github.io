@@ -40,7 +40,10 @@ const AREAS = {
   // js/homework.js and js/course-offers.js joined in phase 4 -- both hold
   // label maps this area's own pages render (submission state, offer status,
   // role in class), so counting them anywhere else understated the area.
-  tracking: ["records.html", "monitor.html", "homework.html", "course-offers.html", "js/monitor.js", "js/continue-strip.js", "js/bookmarks.js", "js/records.js", "js/activity.js", "js/homework.js", "js/course-offers.js"],
+  // bookmarks.html joined in the enhancement round -- the real screen
+  // behind nav.js's own long-standing "Bookmark" placeholder, alongside the
+  // js/bookmarks.js data layer this area already owned.
+  tracking: ["records.html", "monitor.html", "homework.html", "course-offers.html", "bookmarks.html", "js/monitor.js", "js/continue-strip.js", "js/bookmarks.js", "js/records.js", "js/activity.js", "js/homework.js", "js/course-offers.js"],
   // js/modules.js and js/study-lock.js joined in phase 5: the module
   // registry is what catalogue.html's own Modules table renders, and the
   // handover lock's refusal message is shown on people.html.

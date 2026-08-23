@@ -49,7 +49,7 @@ import {
   renderGuideTab, renderTrackTab, renderBreakdownTab, renderStreakTab,
   renderWayModalShell, attachWayModalHandlers,
 } from "./way-modal.js";
-import { getBookmarks, touchResume, recentResumeEntries, NO_PROGRAM } from "./bookmarks.js";
+import { getBookmarks, touchResume, recentResumeEntries, saveBookmark, removeSavedBookmark, findSavedBookmark, NO_PROGRAM } from "./bookmarks.js";
 import { renderContinueStrip } from "./continue-strip.js";
 import {
   listEnrollmentsForPerson, listCourseOffers, programSubjectMapFromEnrollments, allowedSubjectIdsForTeacherStudent,
@@ -116,6 +116,8 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
   // else, restricted to the subjectIds they're actually assigned to teach.
   // Client-side only -- see course-offers.js's allowedSubjectIdsForTeacherStudent().
   let allowedSubjectIds = null;
+  // Enhancement round -- the Bookmark Manager (same shape as topic-study.js).
+  let bookmarksDoc = { resume: {}, saved: [] };
 
   function currentPreview() {
     const context = getActiveContext();
@@ -223,9 +225,11 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     allowedSubjectIds = allowedSubjectIdsForTeacherStudent(teacherEnrollments, studentEnrollments, [...classes, ...offers]);
   }
 
+  /** Also refreshes the module-level bookmarksDoc (enhancement round), which the detail view's own Bookmark star reads -- see topic-study.js's own version of this comment for why the fetch isn't guarded on continueStripContainer. */
   async function refreshContinueStrip() {
-    if (!continueStripContainer || !selectedPersonId) return;
-    const bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
+    if (!selectedPersonId) return;
+    bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
+    if (!continueStripContainer) return;
     const entries = recentResumeEntries(bookmarksDoc, 5).map((e) => {
       const node = e.moduleId === moduleId ? moduleSubjects.find((n) => n.id === e.subjectId) : null;
       return { ...e, subjectLabel: node ? langText(node.name, getAppLang(), node.id) : null };
@@ -327,9 +331,10 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
       ? `Status: <strong>${entry.claimedStatus.replace(/_/g, " ")}</strong> &middot; ${entry.confirmState}`
       : "Not started yet.";
     const loggedToday = hasLoggedOn(currentWeekActivity, node.id, todayIso());
+    const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId, subjectId: node.id, position: node.id });
 
     detailContainer.innerHTML = `<div class="topic-detail">
-      <h2>${langText(node.name, getAppLang(), node.id)}</h2>
+      <h2>${langText(node.name, getAppLang(), node.id)} <button type="button" id="bookmarkTopicBtn" class="topic-bookmark-btn${isBookmarked ? " active" : ""}" title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this")}">${isBookmarked ? "★" : "☆"}</button></h2>
       ${renderTopicResource(resource)}
       <p>${statusLine}</p>
       <p>${loggedToday ? t("Logged today ✓") : t("Not logged today yet.")}</p>
@@ -338,6 +343,43 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
     const trackBtn = document.getElementById("trackTopicBtn");
     trackBtn.addEventListener("click", () => openWayModal(node));
+    document.getElementById("bookmarkTopicBtn").addEventListener("click", () => toggleRoutineBookmark(node));
+  }
+
+  /** Enhancement round -- same shape as topic-study.js's toggleTopicBookmark(): a real, named entry under the Bookmark menu, position-only (no rich settings), reusing ?resume='s own restore path. */
+  async function toggleRoutineBookmark(node) {
+    if (!auth.currentUser || !selectedPersonId) return;
+    const existing = findSavedBookmark(bookmarksDoc, { moduleId, subjectId: node.id, position: node.id });
+    if (existing) {
+      const outcome = await safeWrite(
+        () => removeSavedBookmark(db, activeTenantId, selectedPersonId, existing.id),
+        { collection: TENANT.BOOKMARKS, action: "removeSavedBookmark" }
+      );
+      if (!outcome.ok) return;
+      bookmarksDoc = { ...bookmarksDoc, saved: bookmarksDoc.saved.map((b) => (b.id === existing.id ? { ...b, removed: true } : b)) };
+    } else {
+      const defaultName = langText(node.name, getAppLang(), node.id);
+      const name = prompt(t("Name this bookmark:"), defaultName);
+      if (name === null) return;
+      const outcome = await safeWrite(
+        () => saveBookmark(db, {
+          tenantId: activeTenantId, personId: selectedPersonId, moduleId, subjectId: node.id,
+          name: name.trim() || defaultName, position: node.id, uid: auth.currentUser.uid,
+        }),
+        { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
+      );
+      if (!outcome.ok) return;
+      bookmarksDoc = { ...bookmarksDoc, saved: [...(bookmarksDoc.saved ?? []), outcome.result] };
+    }
+    // Patches the star's own DOM directly -- see topic-study.js's own
+    // toggleTopicBookmark() for why this doesn't re-open the whole detail view.
+    const btn = document.getElementById("bookmarkTopicBtn");
+    if (btn) {
+      const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId, subjectId: node.id, position: node.id });
+      btn.textContent = isBookmarked ? "★" : "☆";
+      btn.classList.toggle("active", isBookmarked);
+      btn.title = isBookmarked ? t("Remove bookmark") : t("Bookmark this");
+    }
   }
 
   async function logRoutineToday(node) {

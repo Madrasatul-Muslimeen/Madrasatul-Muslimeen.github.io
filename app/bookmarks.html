@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — Bookmarks</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+  h2 { font-size: 1.05rem; margin-top: 1.6rem; }
+  p.intro { color: #555; font-size: 0.94rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  button {
+    font-size: 0.88rem; padding: 0.32rem 0.7rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.secondary { background: white; color: #1F3A6E; }
+  button.tiny { padding: 0.12rem 0.4rem; font-size: 0.8rem; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  select { font-size: 0.85rem; padding: 0.25rem; border: 1px solid #ccc; border-radius: 0.35rem; }
+  .note { font-size: 0.88rem; color: #666; }
+  .warn { background: #fff8e6; border: 1px solid #f0d9a0; border-radius: 0.5rem; padding: 0.6rem 0.8rem; font-size: 0.88rem; }
+  .bm-folder { border: 1px solid #e0e0e0; border-radius: 0.5rem; padding: 0.6rem 0.7rem; margin: 0.6rem 0; }
+  .bm-folder.retired { opacity: 0.55; }
+  .bm-folder-header { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; font-weight: 600; }
+  .bm-folder-name { flex: 1 1 auto; min-width: 6rem; }
+  .bm-folder-children { margin-left: 1.4rem; }
+  .bm-group-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: #888; margin: 0.8rem 0 0.2rem; }
+  .bm-row {
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+    padding: 0.4rem 0.3rem; border-bottom: 1px solid #f0f0f0; font-size: 0.88rem;
+  }
+  .bm-row.retired { opacity: 0.55; }
+  .bm-row-name { flex: 1 1 auto; min-width: 8rem; font-weight: 600; }
+  .bm-row-module { color: #888; font-size: 0.78rem; }
+  #newFolderRow { margin: 0.8rem 0; }
+  #emptyMsg { color: #888; font-size: 0.9rem; margin-top: 1rem; }
+</style>
+</head>
+<body>
+  <h1>Bookmarks</h1>
+  <p class="intro">Every bookmark you have saved, from any module, in one place. Open one to jump straight back to where it was made. Group them into folders however you like.</p>
+
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
+
+  <div id="app" style="display:none;">
+    <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
+      <label style="margin:0;">Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label style="margin:0;">Person
+        <select id="personSelect" style="width:auto;"></select>
+      </label>
+    </div>
+
+    <div id="newFolderRow">
+      <button type="button" id="newFolderBtn">+ New folder</button>
+    </div>
+
+    <div id="foldersContainer"></div>
+
+    <div id="unfiledContainer"></div>
+
+    <p id="emptyMsg" style="display:none;">No bookmarks saved yet. Look for the ☆/🔖 button on a study screen.</p>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { roleListLabel } from "./js/labels.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
+    import { safeWrite } from "./js/errors.js";
+    import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster } from "./js/session-context.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+    import { translateStatic, t } from "./js/i18n.js";
+    import { MODULE_PAGES, MODULE_LABELS } from "./js/continue-strip.js";
+    import {
+      getBookmarks, renameSavedBookmark, setSavedBookmarkRemoved, moveBookmarkToFolder,
+      createFolder, renameFolder, setFolderRemoved, moveFolder, isFolderOrDescendant,
+    } from "./js/bookmarks.js";
+
+    translateStatic();
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
+    }
+    const tenantSelect = document.getElementById("tenantSelect");
+    const personSelect = document.getElementById("personSelect");
+    const newFolderBtn = document.getElementById("newFolderBtn");
+    const foldersContainer = document.getElementById("foldersContainer");
+    const unfiledContainer = document.getElementById("unfiledContainer");
+    const emptyMsg = document.getElementById("emptyMsg");
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    let activeTenantId = null;
+    let myMemberships = [];
+    let roster = [];
+    let selectedPersonId = null;
+    let bookmarksDoc = { resume: {}, saved: [], folders: [] };
+
+    function currentPreview() {
+      const context = getActiveContext();
+      const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      const realRoles = activeMembership?.roles ?? [];
+      const viewAsRole = context?.viewAsRole ?? null;
+      return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: activeMembership?.personId ?? null };
+    }
+
+    function renderPersonSelectOptions() {
+      const prev = personSelect.value;
+      const { viewAsRole, effRoles, myPersonId } = currentPreview();
+      const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
+      personSelect.innerHTML = visibleRoster.map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`).join("");
+      if (visibleRoster.some((p) => p.id === prev)) personSelect.value = prev;
+    }
+
+    async function loadContextData() {
+      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+      roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const { viewAsRole } = currentPreview();
+      renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
+      renderPersonSelectOptions();
+      selectedPersonId = personSelect.value || null;
+      await refreshBookmarks();
+    }
+
+    async function refreshBookmarks() {
+      if (!selectedPersonId) { bookmarksDoc = { resume: {}, saved: [], folders: [] }; renderAll(); return; }
+      bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
+      renderAll();
+    }
+
+    personSelect.addEventListener("change", async () => {
+      selectedPersonId = personSelect.value;
+      await refreshBookmarks();
+    });
+
+    // -----------------------------------------------------------------------
+    // Rendering -- one folder tree (module-grouping is the DEFAULT layer,
+    // per the owner's own "Both" answer: a bookmark with no folderId, or one
+    // pointing at a removed/missing folder, falls back to being grouped by
+    // its own moduleId under "Unfiled" rather than disappearing (I4: nothing
+    // destroyed, nothing lost).
+    // -----------------------------------------------------------------------
+
+    function allFolders() {
+      return bookmarksDoc.folders ?? [];
+    }
+    function folderById(id) {
+      return (bookmarksDoc.folders ?? []).find((f) => f.id === id) ?? null;
+    }
+    /** A bookmark's own folder counts only if it exists AND isn't retired -- otherwise it is unfiled, per this file's own header rule. */
+    function liveFolderIdFor(bookmark) {
+      const f = bookmark.folderId ? folderById(bookmark.folderId) : null;
+      return f && !f.removed ? f.id : null;
+    }
+
+    function bookmarksIn(folderId) {
+      return (bookmarksDoc.saved ?? []).filter((b) => liveFolderIdFor(b) === folderId);
+    }
+
+    function bookmarkHref(b) {
+      const page = MODULE_PAGES[b.moduleId];
+      if (!page) return null;
+      // Quran carries a full `settings` snapshot worth restoring by id;
+      // every other module has no comparable per-position state yet, so it
+      // reuses the same ?resume=<position> jump the Continue strip already
+      // uses (topic-study.js/routine-study.js/asma-study.js all read it).
+      return b.moduleId === "quranrevival"
+        ? `${page}?bookmark=${encodeURIComponent(b.id)}`
+        : `${page}?resume=${encodeURIComponent(b.position ?? "")}`;
+    }
+
+    function folderOptionsHtml(excludeId, selectedId) {
+      const options = [`<option value="">${t("Top level")}</option>`];
+      for (const f of allFolders()) {
+        if (f.removed) continue;
+        if (excludeId && isFolderOrDescendant(allFolders(), f.id, excludeId)) continue; // never offer moving a folder into itself or its own descendant
+        options.push(`<option value="${f.id}" ${f.id === selectedId ? "selected" : ""}>${escapeHtml(f.name)}</option>`);
+      }
+      return options.join("");
+    }
+
+    function moveBookmarkOptionsHtml(selectedFolderId) {
+      const options = [`<option value="">${t("Unfiled")}</option>`];
+      for (const f of allFolders()) {
+        if (f.removed) continue;
+        options.push(`<option value="${f.id}" ${f.id === selectedFolderId ? "selected" : ""}>${escapeHtml(f.name)}</option>`);
+      }
+      return options.join("");
+    }
+
+    function escapeHtml(s) {
+      return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function bookmarkRowHtml(b) {
+      const href = bookmarkHref(b);
+      const moduleLabel = MODULE_LABELS[b.moduleId] ? t(MODULE_LABELS[b.moduleId]) : b.moduleId;
+      return `<div class="bm-row${b.removed ? " retired" : ""}" data-bm-id="${b.id}">
+        <span class="bm-row-name">${escapeHtml(b.name)}</span>
+        <span class="bm-row-module">${escapeHtml(moduleLabel)}</span>
+        ${href ? `<a href="${href}"><button type="button" class="tiny" ${b.removed ? "disabled" : ""}>${t("Open")}</button></a>` : ""}
+        <button type="button" class="secondary tiny" data-bm-rename ${b.removed ? "disabled" : ""}>${t("Rename")}</button>
+        <select data-bm-move ${b.removed ? "disabled" : ""}>${moveBookmarkOptionsHtml(liveFolderIdFor(b))}</select>
+        <button type="button" class="secondary tiny" data-bm-toggle>${b.removed ? t("Restore") : t("Retire")}</button>
+      </div>`;
+    }
+
+    function folderNodeHtml(folder, depth) {
+      const bookmarks = bookmarksIn(folder.id);
+      const children = allFolders().filter((f) => f.parentId === folder.id);
+      return `<div class="bm-folder${folder.removed ? " retired" : ""}" data-folder-id="${folder.id}" style="margin-left:${depth * 0.4}rem;">
+        <div class="bm-folder-header">
+          📁 <span class="bm-folder-name">${escapeHtml(folder.name)}</span>
+          <button type="button" class="secondary tiny" data-folder-rename ${folder.removed ? "disabled" : ""}>${t("Rename")}</button>
+          <select data-folder-move ${folder.removed ? "disabled" : ""}>${folderOptionsHtml(folder.id, folder.parentId)}</select>
+          <button type="button" class="secondary tiny" data-folder-toggle>${folder.removed ? t("Restore") : t("Retire")}</button>
+        </div>
+        ${bookmarks.map(bookmarkRowHtml).join("")}
+        <div class="bm-folder-children">${children.map((f) => folderNodeHtml(f, depth + 1)).join("")}</div>
+      </div>`;
+    }
+
+    function renderAll() {
+      // A folder nests under its literal parentId whether or not that parent
+      // is itself retired (retiring a folder doesn't unroot its children --
+      // it just makes ITS OWN row inert until restored). Only a genuinely
+      // missing parent (deleted data, never happens through this screen, but
+      // cheap to guard) promotes a folder to root rather than losing it.
+      const roots = allFolders().filter((f) => !f.parentId || !folderById(f.parentId));
+      foldersContainer.innerHTML = roots.map((f) => folderNodeHtml(f, 0)).join("");
+
+      const unfiled = (bookmarksDoc.saved ?? []).filter((b) => liveFolderIdFor(b) === null);
+      const byModule = new Map();
+      for (const b of unfiled) {
+        const key = b.moduleId;
+        if (!byModule.has(key)) byModule.set(key, []);
+        byModule.get(key).push(b);
+      }
+      unfiledContainer.innerHTML = [...byModule.entries()]
+        .map(([moduleId, list]) => {
+          const label = MODULE_LABELS[moduleId] ? t(MODULE_LABELS[moduleId]) : moduleId;
+          return `<div class="bm-group-label">${escapeHtml(label)}</div>${list.map(bookmarkRowHtml).join("")}`;
+        })
+        .join("");
+
+      emptyMsg.style.display = (bookmarksDoc.saved ?? []).length === 0 ? "block" : "none";
+      wireRowHandlers();
+    }
+
+    // Every handler below patches bookmarksDoc IN MEMORY after a successful
+    // write and re-renders from that, rather than calling getBookmarks()
+    // again -- same reasoning quranrevival.html's own toggleAyahBookmark()
+    // already uses (an unneeded round trip, and a real race against a
+    // backend that may not have caught up to its own write yet).
+    function patchBookmark(id, patch) {
+      bookmarksDoc = { ...bookmarksDoc, saved: (bookmarksDoc.saved ?? []).map((b) => (b.id === id ? { ...b, ...patch } : b)) };
+    }
+    function patchFolder(id, patch) {
+      bookmarksDoc = { ...bookmarksDoc, folders: (bookmarksDoc.folders ?? []).map((f) => (f.id === id ? { ...f, ...patch } : f)) };
+    }
+
+    function wireRowHandlers() {
+      document.querySelectorAll(".bm-row").forEach((row) => {
+        const id = row.dataset.bmId;
+        const bookmark = (bookmarksDoc.saved ?? []).find((b) => b.id === id);
+        if (!bookmark) return;
+        row.querySelector("[data-bm-rename]")?.addEventListener("click", async () => {
+          const name = prompt(t("Rename this bookmark:"), bookmark.name);
+          if (name === null || !name.trim()) return;
+          const outcome = await safeWrite(
+            () => renameSavedBookmark(db, activeTenantId, selectedPersonId, bookmark.id, name.trim()),
+            { collection: TENANT.BOOKMARKS, action: "renameSavedBookmark" }
+          );
+          if (!outcome.ok) return;
+          patchBookmark(bookmark.id, { name: name.trim() });
+          renderAll();
+        });
+        row.querySelector("[data-bm-move]")?.addEventListener("change", async (e) => {
+          const folderId = e.target.value || null;
+          const outcome = await safeWrite(
+            () => moveBookmarkToFolder(db, activeTenantId, selectedPersonId, bookmark.id, folderId),
+            { collection: TENANT.BOOKMARKS, action: "moveBookmarkToFolder" }
+          );
+          if (!outcome.ok) return;
+          patchBookmark(bookmark.id, { folderId });
+          renderAll();
+        });
+        row.querySelector("[data-bm-toggle]")?.addEventListener("click", async () => {
+          const removed = !bookmark.removed;
+          const outcome = await safeWrite(
+            () => setSavedBookmarkRemoved(db, activeTenantId, selectedPersonId, bookmark.id, removed),
+            { collection: TENANT.BOOKMARKS, action: "setSavedBookmarkRemoved" }
+          );
+          if (!outcome.ok) return;
+          patchBookmark(bookmark.id, { removed });
+          renderAll();
+        });
+      });
+
+      document.querySelectorAll(".bm-folder").forEach((el) => {
+        const id = el.dataset.folderId;
+        const folder = folderById(id);
+        if (!folder) return;
+        el.querySelector("[data-folder-rename]")?.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const name = prompt(t("Rename this folder:"), folder.name);
+          if (name === null || !name.trim()) return;
+          const outcome = await safeWrite(
+            () => renameFolder(db, activeTenantId, selectedPersonId, folder.id, name.trim()),
+            { collection: TENANT.BOOKMARKS, action: "renameFolder" }
+          );
+          if (!outcome.ok) return;
+          patchFolder(folder.id, { name: name.trim() });
+          renderAll();
+        });
+        el.querySelector("[data-folder-move]")?.addEventListener("change", async (e) => {
+          const newParentId = e.target.value || null;
+          const outcome = await safeWrite(
+            () => moveFolder(db, activeTenantId, selectedPersonId, folder.id, newParentId),
+            { collection: TENANT.BOOKMARKS, action: "moveFolder" }
+          );
+          if (!outcome.ok || outcome.result === false) { e.target.value = folder.parentId ?? ""; return; }
+          patchFolder(folder.id, { parentId: newParentId });
+          renderAll();
+        });
+        el.querySelector("[data-folder-toggle]")?.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const removed = !folder.removed;
+          const outcome = await safeWrite(
+            () => setFolderRemoved(db, activeTenantId, selectedPersonId, folder.id, removed),
+            { collection: TENANT.BOOKMARKS, action: "setFolderRemoved" }
+          );
+          if (!outcome.ok) return;
+          patchFolder(folder.id, { removed });
+          renderAll();
+        });
+      });
+    }
+
+    newFolderBtn.addEventListener("click", async () => {
+      if (!selectedPersonId) return;
+      const name = prompt(t("Name this folder:"), "");
+      if (!name || !name.trim()) return;
+      const outcome = await safeWrite(
+        () => createFolder(db, { tenantId: activeTenantId, personId: selectedPersonId, name: name.trim(), uid: auth.currentUser.uid }),
+        { collection: TENANT.BOOKMARKS, action: "createFolder" }
+      );
+      if (!outcome.ok) return;
+      bookmarksDoc = { ...bookmarksDoc, folders: [...(bookmarksDoc.folders ?? []), outcome.result] };
+      renderAll();
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = t("Not signed in.");
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = t("Signed in as {email}", { email: user.email });
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+
+      try {
+        const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
+        if (adoptAppLangFromUserIndex(userIndexSnap)) return;
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+        const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
+        if (!context) {
+          whoEl.innerHTML += noAccountMessageHtml();
+          return;
+        }
+        activeTenantId = context.tenantId;
+        myMemberships = memberships;
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+          .join("");
+
+        appEl.style.display = "block";
+        await loadContextData();
+      } catch (err) {
+        console.error(err);
+        whoEl.textContent += ` — ${err.message}`;
+      }
+    });
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      renderNav(chosen.roles, null);
+      await loadContextData();
+    });
+  </script>
+</body>
+</html>

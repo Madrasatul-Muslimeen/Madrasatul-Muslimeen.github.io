@@ -172,7 +172,23 @@ const DATA = {
   // which __stubWrites actually records -- setDoc (the create path) is a
   // pure no-op in this stub and leaves no trace, same reasoning as every
   // other "seed one real row" collection below.
-  bookmarks: [{ _id: TENANT_ID + "__p1", tenantId: TENANT_ID, personId: "p1", resume: {}, saved: [] }],
+  //
+  // Enhancement round -- one real saved[] bookmark (Quran, with a full
+  // settings snapshot -- surah 2, a DIFFERENT surah from every other
+  // test's own default of surah 1, so a restore that silently stayed on
+  // surah 1 would be caught) so bookmarks.html has something real to
+  // render/rename/move/retire, and quranrevival.html's own ?bookmark= jump
+  // has something real to restore. folders is empty on purpose (adding a
+  // folder is itself part of the test, not pre-seeded).
+  bookmarks: [{
+    _id: TENANT_ID + "__p1", tenantId: TENANT_ID, personId: "p1", resume: {}, folders: [],
+    saved: [{
+      id: "bm1", programId: "none", moduleId: "quranrevival", subjectId: "quran",
+      name: "Ayat al-Kursi", position: "ayah:2:255", folderId: null, removed: false,
+      settings: { unitType: "ayah", surahNum: 2, ayahNum: 255, trackableId: "tafsir", tajweedOn: true, wbwOn: false, rootsOn: false, mushafOn: false },
+      createdAt: "2026-01-01T00:00:00.000Z",
+    }],
+  }],
   ayahNotes: [{ _id: TENANT_ID + "__p1", tenantId: TENANT_ID, personId: "p1", notes: {} }],
   // PHASE 5 (admin) needs the same treatment: an entity status, a renderer
   // name or an invite state can only be proved translated if a row renders.

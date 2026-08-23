@@ -87,10 +87,10 @@ const ADMIN_LINKS = [
   { href: "catalogue.html", label: "Catalogue" },
 ];
 
-// Bookmark: placeholder only -- its real design (per-subject, multiple
-// named bookmarks, its own page, resume-where-left-off) is explicit future
-// work, not an oversight.
-const BOOKMARK_PLACEHOLDERS = ["Bookmark"];
+// Bookmark: real now (enhancement round) -- named/foldered bookmarks, one
+// page, reachable from every module's own nav bar, same as this comment
+// always said it eventually would be.
+const BOOKMARK_LINKS = [{ href: "bookmarks.html", label: "Bookmark" }];
 // Settings: Language became real in shell round 13 (13 Aug 2026) -- see
 // renderSettings() below. Appearance is still a placeholder.
 const SETTINGS_PLACEHOLDERS = ["Appearance"];
@@ -132,7 +132,7 @@ function renderCategory(name, linksHtml, extraClass = "") {
   return `<details class="nav-cat${extraClass ? " " + extraClass : ""}"><summary>${t(name)}</summary><div class="nav-cat-links">${linksHtml}</div></details>`;
 }
 
-/** roles: this person's roles in the currently-active tenant (e.g. ["owner","prime"]). The Classes/Curriculum links inside Operation only show for owner/prime -- everyone else gets the rest of Operation (+ the always-shown Bookmark placeholder). viewAsRole (round 11): when set, shows a "Previewing as" notice so it's never ambiguous why the page looks scoped down -- change/exit it from the People page's own dropdown. Returns the Study/Operation/Bookmark categories only -- Home is the caller's own static markup; call renderHomeExtras() separately for its role-gated contents. */
+/** roles: this person's roles in the currently-active tenant (e.g. ["owner","prime"]). The Classes/Curriculum links inside Operation only show for owner/prime -- everyone else gets the rest of Operation (+ the always-shown Bookmark link, real since the enhancement round). viewAsRole (round 11): when set, shows a "Previewing as" notice so it's never ambiguous why the page looks scoped down -- change/exit it from the People page's own dropdown. Returns the Study/Operation/Bookmark categories only -- Home is the caller's own static markup; call renderHomeExtras() separately for its role-gated contents. */
 export function renderNavBar(roles = [], viewAsRole = null) {
   const canAdmin = roles.includes("owner") || roles.includes("prime");
   const currentFile = location.pathname.split("/").pop();
@@ -155,7 +155,7 @@ export function renderNavBar(roles = [], viewAsRole = null) {
   // midpoint, so a left-anchored dropdown under it has nowhere to grow but
   // off-screen.
   cats.push(renderCategory("Operation", renderLinks(OPERATION_LINKS, currentFile, canAdmin), "nav-cat-end"));
-  cats.push(renderCategory("Bookmark", renderPlaceholders(BOOKMARK_PLACEHOLDERS), "nav-cat-end"));
+  cats.push(renderCategory("Bookmark", renderLinks(BOOKMARK_LINKS, currentFile, canAdmin), "nav-cat-end"));
 
   // Phase 10: real per-student teacher assignment now exists (classes.html
   // + teacherStudentLinks) -- a teacher preview is scoped to whoever
