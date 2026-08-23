@@ -220,9 +220,9 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
  * other stage view is left -- tapping a different dock tab.
  */
 export function renderNoteView({
-  unitKey, ref, arabicText, englishText, banglaText, notesHtml, wbwHtml,
+  unitKey, ref, arabicText, englishText, banglaText, notesHtml, wbwHtml, rootsHtml,
   isBookmarked = false, hasPrev = false, hasNext = false, isFullscreen = false,
-  isWbwOn = false, hasNote = false, approachHtml = "", isNotesOpen = false,
+  isWbwOn = false, isRootsOn = false, hasNote = false, approachHtml = "", isNotesOpen = false,
   approachOptionsHtml = "",
 }) {
   // Bar 1, the Ayah bar: JUST the reference and the controls that change
@@ -278,6 +278,13 @@ export function renderNoteView({
              sentence; the real, translated name lives in the title/
              aria-pressed pair like every other icon on these two bars. -->
         <button type="button" class="note-icon-btn${isWbwOn ? " active" : ""}" data-note-wbw-toggle title="${t("Word by Word")}" aria-pressed="${isWbwOn ? "true" : "false"}">WbW</button>
+        <!-- Enhancement round -- "Root" (Roots & derivatives), always right
+             after Word by word on every platform, no phone/desktop split
+             the way Approach/Journey get: clicking it opens the derivatives
+             table below Word by word in the collapsible fields, re-clicking
+             closes it. Reuses renderRootDerivativePanel(), the same helper
+             Study options' own "Roots & derivatives" tick already calls. -->
+        <button type="button" class="note-icon-btn${isRootsOn ? " active" : ""}" data-note-roots-toggle title="${t("Roots & derivatives")}" aria-pressed="${isRootsOn ? "true" : "false"}">${t("Root")}</button>
         <div class="note-approach-wrap note-approach-desktop">
           <select class="note-approach-select" data-note-approach-select title="${t("Choose an Approach")}" aria-label="${t("Choose an Approach")}">${approachOptionsHtml}</select>
         </div>
@@ -346,6 +353,13 @@ export function renderNoteView({
             </div>
             <div class="note-field-body">${wbwHtml ?? ""}</div>
           </div>` : ""}
+          ${isRootsOn ? `
+          <div class="note-field" data-note-field="rootDerivatives">
+            <div class="note-field-label-row">
+              <span class="note-field-label">${t("Roots & derivatives")}</span>
+            </div>
+            <div class="note-field-body">${rootsHtml ?? ""}</div>
+          </div>` : ""}
         </div>
 
         <div class="note-field" data-note-field="notes">
@@ -388,6 +402,7 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
  *   onPrev() / onNext()    -- omit/leave the button disabled when there's nowhere to go
  *   onToggleFullscreen()   -- the view's own 2-state full screen (banner/nav/dock hidden, Ayah bar always on)
  *   onToggleWbw()          -- bar 2's Word-by-word toggle (round 31)
+ *   onToggleRoots()        -- bar 2's Root (Roots & derivatives) toggle (enhancement round)
  *   onApproachChange(id)   -- bar 2's / the mobile bar's Approach toggle (round 32), called with the newly-picked trackable id
  */
 export function attachNoteViewHandlers(container, callbacks) {
@@ -503,6 +518,7 @@ export function attachNoteViewHandlers(container, callbacks) {
   });
 
   view.querySelector("[data-note-wbw-toggle]")?.addEventListener("click", () => callbacks.onToggleWbw?.());
+  view.querySelector("[data-note-roots-toggle]")?.addEventListener("click", () => callbacks.onToggleRoots?.());
   // Two instances (desktop bar 2 / phone's own bar below it, CSS picks
   // which one shows) share the same options string and the same callback --
   // whichever one the reader actually sees is the one that fires.
