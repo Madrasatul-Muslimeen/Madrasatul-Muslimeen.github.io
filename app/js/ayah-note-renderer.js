@@ -223,6 +223,7 @@ export function renderNoteView({
   unitKey, ref, arabicText, englishText, banglaText, notesHtml, wbwHtml,
   isBookmarked = false, hasPrev = false, hasNext = false, isFullscreen = false,
   isWbwOn = false, hasNote = false, approachHtml = "", isNotesOpen = false,
+  approachOptionsHtml = "",
 }) {
   // Bar 1, the Ayah bar: JUST the reference and the controls that change
   // what's being read (Prev/Next), how Notes is formatted (Aa), and how
@@ -252,20 +253,46 @@ export function renderNoteView({
            bar 1 (the owner's own correction to round 30's shape): the
            actions that need a CHOICE made first before they do anything --
            Copy and Share each open the same picker the ⋮ quick menu
-           already uses rather than firing on whatever was left ticked --
-           plus Word by word (round 31, new) and Mapping My Journey. This
-           is also where "Ayah Approach" (the owner's own next ask) will
-           live once it's built. -->
+           already uses rather than firing on whatever was left ticked.
+           Round 32 (the owner's own ask): Bookmark and Play moved in here
+           too, between Share and Word by word, so they're always visible
+           rather than hidden behind the old 🔖 toggle -- and the Approach
+           toggle (data-note-approach-select) sits right after Word by
+           word, wired to change currentTrackableId (quranrevival.html's
+           changeCurrentTrackable()) and re-render the Track/Guide/
+           Breakdown/Coverage card below. On a PC/tablet this bar carries
+           Mapping My Journey too, straight after Approach; on a phone
+           (CSS, .note-approach-desktop/.note-journey-desktop hidden below
+           720px) Approach and Journey move to their OWN bar underneath
+           instead, .note-approach-bar-mobile -- see that class's own CSS
+           comment for why a phone needed a second row and a desktop
+           didn't. -->
       <div class="note-bar2">
         ${copySharePopover("copy", "data-note-copy-go")}
         ${copySharePopover("share", "data-note-share-go")}
+        <button type="button" class="note-icon-btn${isBookmarked ? " active" : ""}" data-note-bookmark title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}">${isBookmarked ? "★" : "☆"}</button>
+        <button type="button" class="note-icon-btn" data-note-play title="${t("Play")}">▶ ${t("Play")}</button>
         <!-- "WbW" stays a literal Latin abbreviation rather than a
              translated word, the same convention "Aa" already uses on bar
              1 (the palette toggle) -- it's a glyph-like icon, not a
              sentence; the real, translated name lives in the title/
              aria-pressed pair like every other icon on these two bars. -->
         <button type="button" class="note-icon-btn${isWbwOn ? " active" : ""}" data-note-wbw-toggle title="${t("Word by Word")}" aria-pressed="${isWbwOn ? "true" : "false"}">WbW</button>
-        <button type="button" class="note-icon-btn note-journey-btn" disabled title="${t("Coming later")}">${t("Mapping My Journey")}</button>
+        <div class="note-approach-wrap note-approach-desktop">
+          <select class="note-approach-select" data-note-approach-select title="${t("Choose an Approach")}" aria-label="${t("Choose an Approach")}">${approachOptionsHtml}</select>
+        </div>
+        <button type="button" class="note-icon-btn note-journey-btn note-journey-desktop" disabled title="${t("Coming later")}">${t("Mapping My Journey")}</button>
+      </div>
+
+      <!-- Phone only (CSS) -- Approach and Mapping My Journey, together, in
+           their own bar below bar 2 rather than crowding bar 2's single
+           line on a narrow screen. See .note-approach-bar-mobile's own CSS
+           comment. -->
+      <div class="note-approach-bar-mobile">
+        <div class="note-approach-wrap note-approach-mobile">
+          <select class="note-approach-select" data-note-approach-select title="${t("Choose an Approach")}" aria-label="${t("Choose an Approach")}">${approachOptionsHtml}</select>
+        </div>
+        <button type="button" class="note-icon-btn note-journey-btn note-journey-mobile" disabled title="${t("Coming later")}">${t("Mapping My Journey")}</button>
       </div>
 
       <div class="note-palette" data-note-palette>
@@ -286,19 +313,10 @@ export function renderNoteView({
       </div>
 
       <div class="note-body">
-        <!-- Copy and Share moved to bar 2 above, each with its OWN language
-             checkboxes in its own popover now (round 31) -- so this row has
-             nothing left to read a shared checkbox group for; it's just the
-             bookmark and Play. -->
-        <div class="note-actionsbar" data-note-actionsbar>
-          <button type="button" class="note-bookmark-btn${isBookmarked ? " active" : ""}" data-note-bookmark title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}">${isBookmarked ? "★" : "☆"}</button>
-          <button type="button" class="note-play-btn" data-note-play>▶ ${t("Play")}</button>
-        </div>
-
-        <div class="note-master-row">
-          <button type="button" class="note-actions-toggle" data-note-actions-toggle title="${t("Bookmark & play")}">🔖</button>
-        </div>
-
+        <!-- Bookmark, Play, Copy and Share all live on bar 2 now (round 32
+             moved Bookmark/Play up beside them) -- nothing left here needs
+             its own reveal toggle, so the old 🔖 icon (note-actions-toggle)
+             is retired outright rather than kept as dead markup. -->
         <div data-note-collapsible>
           <div class="note-field" data-note-field="arabic">
             <div class="note-field-label-row">
@@ -370,6 +388,7 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
  *   onPrev() / onNext()    -- omit/leave the button disabled when there's nowhere to go
  *   onToggleFullscreen()   -- the view's own 2-state full screen (banner/nav/dock hidden, Ayah bar always on)
  *   onToggleWbw()          -- bar 2's Word-by-word toggle (round 31)
+ *   onApproachChange(id)   -- bar 2's / the mobile bar's Approach toggle (round 32), called with the newly-picked trackable id
  */
 export function attachNoteViewHandlers(container, callbacks) {
   const view = container.querySelector(".note-view");
@@ -381,14 +400,6 @@ export function attachNoteViewHandlers(container, callbacks) {
     e.stopPropagation();
     const open = palette.classList.toggle("open");
     paletteToggle.classList.toggle("active", open);
-  });
-
-  const actionsToggle = view.querySelector("[data-note-actions-toggle]");
-  const actionsBar = view.querySelector("[data-note-actionsbar]");
-  actionsToggle?.addEventListener("click", (e) => {
-    e.stopPropagation();
-    const open = actionsBar.classList.toggle("open");
-    actionsToggle.classList.toggle("active", open);
   });
 
   // Field toggles -- each field (arabic/english/bangla/notes) collapses on
@@ -492,6 +503,12 @@ export function attachNoteViewHandlers(container, callbacks) {
   });
 
   view.querySelector("[data-note-wbw-toggle]")?.addEventListener("click", () => callbacks.onToggleWbw?.());
+  // Two instances (desktop bar 2 / phone's own bar below it, CSS picks
+  // which one shows) share the same options string and the same callback --
+  // whichever one the reader actually sees is the one that fires.
+  view.querySelectorAll("[data-note-approach-select]").forEach((sel) => {
+    sel.addEventListener("change", () => callbacks.onApproachChange?.(sel.value));
+  });
   view.querySelector("[data-note-play]")?.addEventListener("click", () => callbacks.onPlay?.());
   view.querySelector("[data-note-prev]")?.addEventListener("click", () => callbacks.onPrev?.());
   view.querySelector("[data-note-next]")?.addEventListener("click", () => callbacks.onNext?.());
@@ -507,12 +524,6 @@ export function attachNoteViewHandlers(container, callbacks) {
       if (p?.classList.contains("open") && !p.contains(e.target) && e.target !== pBtn) {
         p.classList.remove("open");
         pBtn?.classList.remove("active");
-      }
-      const bar = v.querySelector("[data-note-actionsbar]");
-      const barBtn = v.querySelector("[data-note-actions-toggle]");
-      if (bar?.classList.contains("open") && !bar.contains(e.target) && e.target !== barBtn) {
-        bar.classList.remove("open");
-        barBtn?.classList.remove("active");
       }
       v.querySelectorAll("[data-note-sub-wrap]").forEach((wrap) => {
         const sub = wrap.querySelector(".note-sub-popover");
