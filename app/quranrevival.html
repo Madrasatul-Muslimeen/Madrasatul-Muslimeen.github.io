@@ -1086,17 +1086,20 @@
                  every ayah-change rule keep living in exactly one place.
                  Choosing here re-points every slice at the new āyah, same as
                  changing it anywhere else already does.
-                 Surah sits at the top, Ayah at the very bottom and narrowed
-                 to three digits (the owner's own ask) -- freeing the wide
-                 middle of the hub, its own widest point, for the Ta'awwudh
-                 (always shown) and Bismillah (shown when there's room)
-                 lines. Widths/visibility are computed by layoutWheelHub()
-                 against the wheel's own measured hub circle, never guessed
-                 in CSS, so nothing here can spill onto a slice. -->
+                 Top to bottom, per the owner's own layout: Ta'awwudh,
+                 Bismillah (both PERMANENT now -- no longer conditional on
+                 space), Surah, then Ayah at the very bottom narrowed to
+                 three digits. The wheel's own centre no longer shows the
+                 chosen ayah's Arabic text at all (renderWheel() passes
+                 centerArabic/centerRef as empty strings) -- this overlay is
+                 the whole of what the hub shows now. Widths/font sizes are
+                 computed by layoutWheelHub() against the wheel's own
+                 measured hub circle, never guessed in CSS, so nothing here
+                 can spill onto a slice. -->
             <div id="wheelHubPickers" class="wheel-hub-pickers" hidden>
-              <select id="wheelHubSurahSelect" class="wheel-hub-surah" aria-label="Surah"></select>
               <p id="wheelHubTaawwudh" class="wheel-hub-arabic" dir="rtl" lang="ar">أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ</p>
-              <p id="wheelHubBismillah" class="wheel-hub-arabic" dir="rtl" lang="ar" hidden>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+              <p id="wheelHubBismillah" class="wheel-hub-arabic" dir="rtl" lang="ar">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+              <select id="wheelHubSurahSelect" class="wheel-hub-surah" aria-label="Surah"></select>
               <select id="wheelHubAyahSelect" class="wheel-hub-ayah" aria-label="Ayah"></select>
             </div>
           </div>
@@ -1730,7 +1733,6 @@
     const wheelCtaBtn = document.getElementById("wheelCtaBtn");
     const wheelHubPickers = document.getElementById("wheelHubPickers");
     const wheelIntroSettledEl = document.getElementById("wheelIntroSettled");
-    const wheelHubBismillahEl = document.getElementById("wheelHubBismillah");
     const readUnitTypeSelect = document.getElementById("readUnitTypeSelect");
     const readAyahSelect = document.getElementById("readAyahSelect");
     const readSurahSelect = document.getElementById("readSurahSelect");
@@ -1806,8 +1808,6 @@
     let currentSurahNum = 1;
     let currentSurahData = null;
     let currentTrackableId = null;
-    // The wheel's one-time intro (session-only -- a fresh load starts over).
-    let wheelIntroRevealed = false;
     let currentAyahNum = 1;
     let currentChunk = null;
     // Shell round 13 (13 Aug 2026) -- `currentLang` is gone. It used to be
@@ -2543,12 +2543,11 @@
     // the wheel underneath was always fully rendered and functional, it was
     // only covered.
     wheelCtaBtn?.addEventListener("click", () => {
-      wheelIntroRevealed = true;
       wheelCtaBtn.hidden = true;
       wheelHubPickers.hidden = false;
       wheelIntroSettledEl.hidden = false;
       wheelStageWrapEl.classList.remove("wheel-veiled");
-      renderWheel(); // redraw without the now-redundant centerRef line, hub pickers in its place
+      layoutWheelHub(); // the hub was hidden (0-width) until now -- size its content for real
     });
 
     unitTypeSelect.addEventListener("change", () => {
@@ -2908,21 +2907,25 @@
         return;
       }
       const approachStatuses = approachStatusesForCurrentAyah();
-      const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
       const items = approachStatuses.map(({ trackable, statusId }) => ({
         key: trackable.id,
         number: trackable.order ?? "",
         statusId,
         title: `${langText(trackable.name, getAppLang(), trackable.id)} — ${statusId.replace(/_/g, " ")}`,
       }));
+      // The hub's own overlay (Ta'awwudh/Bismillah, permanently, plus the
+      // Surah/Ayah pickers) now occupies this whole spot -- the owner's own
+      // instruction, after the chosen ayah's own Arabic text kept showing
+      // through behind/around the narrower HTML overlay (it was still being
+      // drawn by the SVG underneath, unrelated to and unbounded by the
+      // overlay's own safe-width fitting -- that stray fragment in their
+      // screenshot). centerArabic/centerRef are passed as empty strings
+      // rather than left out entirely: centerLabelMarkup() only draws the
+      // dark hub circle + gold ring AT ALL when centerArabic is defined, so
+      // an empty string keeps that backdrop while drawing no text into it.
       wheelContainer.innerHTML = renderScopedWheel(items, {
-        centerArabic: ayah?.uthmaniText,
-        // Once the intro's dismissed, the hub carries its own Surah/Ayah
-        // pickers right over this spot -- printing the same reference twice
-        // in the same few square inches read as clutter, not confirmation.
-        // Suppressed rather than removed: the reference is still what a
-        // veiled, blurred wheel (before the CTA is tapped) is showing.
-        centerRef: wheelIntroRevealed ? "" : t("SURAH {surah} · AYAH {ayah}", { surah: num(currentSurahNum), ayah: num(currentAyahNum) }),
+        centerArabic: "",
+        centerRef: "",
       });
 
       // Matches the old app's own wheel-click behaviour: clicking a segment
@@ -2971,7 +2974,7 @@
       }
     }
 
-    /** Sizes the hub's own content (Surah, Ta'awwudh, Bismillah, Ayah) so
+    /** Sizes the hub's own content (Ta'awwudh, Bismillah, Surah, Ayah) so
         none of it ever spills past the wheel's own hub circle onto a slice.
         Measured, never guessed: reads the wheel SVG's OWN rendered size
         (rOuter/size is a fixed ratio regardless of viewport -- 0.489 for the
@@ -2979,11 +2982,11 @@
         then solves for the widest rectangle whose corner still lands inside
         that circle at the stack's own measured height (Pythagoras: a block
         of width W and height H, centred on the circle's own centre, fits
-        exactly when (W/2)^2 + (H/2)^2 = r^2).
-        Ta'awwudh is always on (the owner's own "should always be there,
-        constant") -- Bismillah is the one that gives way when the two
-        together don't leave a wide-enough safe width, which is what "if
-        there's still space left" actually means here rather than a guess. */
+        exactly when (W/2)^2 + (H/2)^2 = r^2). Both Arabic lines are
+        permanent (the owner's own instruction -- "these two texts are to be
+        permanently placed there"), so there is no fallback branch any more:
+        the fit is against all four rows every time, and MIN_SAFE_WIDTH is
+        the floor rather than a cue to drop something. */
     function layoutWheelHub() {
       const svg = wheelContainer.querySelector("svg.mastery-wheel");
       if (!svg) return;
@@ -3006,22 +3009,16 @@
       wheelHubPickers.style.setProperty("--hub-arabic-size", arabicPx + "px");
       wheelHubPickers.style.setProperty("--hub-select-size", selectPx + "px");
 
-      const MIN_SAFE_WIDTH = 62; // below this even the shrunk text stops being legible -- drop Bismillah instead
+      const MIN_SAFE_WIDTH = 62; // the floor -- below this even the shrunk text stops being legible
 
-      const safeWidthFor = (showBismillah) => {
-        wheelHubBismillahEl.hidden = !showBismillah;
-        // A generous trial width so the Arabic actually wraps to its real
-        // line count before anything is measured -- too narrow a trial and
-        // every phrase would measure as artificially tall.
-        wheelHubPickers.style.width = Math.min(hubDiameter * 0.8, 190) + "px";
-        const h = wheelHubPickers.getBoundingClientRect().height;
-        if (h / 2 >= r) return 0; // too tall for this circle at any width
-        return 2 * Math.sqrt(r * r - (h / 2) * (h / 2));
-      };
+      // A generous trial width so the Arabic actually wraps to its real line
+      // count before anything is measured -- too narrow a trial and every
+      // phrase would measure as artificially tall.
+      wheelHubPickers.style.width = Math.min(hubDiameter * 0.8, 190) + "px";
+      const h = wheelHubPickers.getBoundingClientRect().height;
+      const safeWidth = h / 2 >= r ? 0 : 2 * Math.sqrt(r * r - (h / 2) * (h / 2));
 
-      let width = safeWidthFor(true);
-      if (width < MIN_SAFE_WIDTH) width = safeWidthFor(false);
-      width = Math.max(MIN_SAFE_WIDTH, Math.min(width, hubDiameter * 0.82));
+      const width = Math.max(MIN_SAFE_WIDTH, Math.min(safeWidth, hubDiameter * 0.82));
       wheelHubPickers.style.width = width + "px";
     }
 
