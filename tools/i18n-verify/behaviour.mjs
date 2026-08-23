@@ -4347,6 +4347,72 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
   await ctx.close();
 }
 
+console.log("\n=== 43i-o. The hub's own content: Surah top, Ta'awwudh/Bismillah in the middle, Ayah narrow at the bottom ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.waitForSelector("#wheelContainer svg", { timeout: 10000 }).catch(() => {});
+  await page.click("#wheelCtaBtn");
+  await page.waitForTimeout(200);
+
+  const order = await page.evaluate(() => {
+    const rect = (id) => document.getElementById(id).getBoundingClientRect();
+    return { surahTop: rect("wheelHubSurahSelect").top, taawwudhTop: rect("wheelHubTaawwudh").top, ayahTop: rect("wheelHubAyahSelect").top };
+  });
+  check("43i Surah sits above the Arabic lines", order.surahTop < order.taawwudhTop, JSON.stringify(order));
+  check("43i ...which sit above Ayah, at the very bottom", order.taawwudhTop < order.ayahTop, JSON.stringify(order));
+
+  const surahW = await page.evaluate(() => document.getElementById("wheelHubSurahSelect").getBoundingClientRect().width);
+  const ayahW = await page.evaluate(() => document.getElementById("wheelHubAyahSelect").getBoundingClientRect().width);
+  check("43j Ayah is narrowed to three digits, nowhere near Surah's own width", ayahW < surahW * 0.4, `surah=${surahW} ayah=${ayahW}`);
+
+  // Picking the widest real ayah number (Surah 2 has 286) must not clip --
+  // the whole point of "three digits wide, not more than that."
+  await page.selectOption("#wheelHubSurahSelect", "2");
+  await page.waitForTimeout(250);
+  await page.selectOption("#wheelHubAyahSelect", "286");
+  await page.waitForTimeout(250);
+  const wide = await page.evaluate(() => {
+    const el = document.getElementById("wheelHubAyahSelect");
+    return { value: el.value, clipped: el.scrollWidth > el.clientWidth + 1, canonical: document.getElementById("ayahSelect").value };
+  });
+  check("43j ...286 (the widest real ayah number) fits without clipping", wide.value === "286" && !wide.clipped, JSON.stringify(wide));
+  check("43j ...and really drives the canonical Ayah picker too", wide.canonical === "286", wide.canonical);
+
+  // Ta'awwudh is always on; Bismillah only when there's room -- both cases
+  // exist among the project's own breakpoints (see reading.mjs/layout.mjs's
+  // own eight-viewport sweep for the full range), so this checks the two
+  // ends: a roomy phone (Bismillah fits) and the tightest one (it may not).
+  await page.selectOption("#wheelHubSurahSelect", "1"); // back to a short surah/ayah
+  await page.selectOption("#wheelHubAyahSelect", "1");
+  await page.waitForTimeout(200);
+  const wide390 = await page.evaluate(() => ({
+    taawwudhShown: !document.getElementById("wheelHubTaawwudh").hidden,
+    taawwudhText: document.getElementById("wheelHubTaawwudh").textContent,
+  }));
+  check("43k Ta'awwudh is always shown, regardless of Bismillah's own state", wide390.taawwudhShown && wide390.taawwudhText.includes("أَعُوذُ"), JSON.stringify(wide390));
+
+  // Nothing here -- select or Arabic line -- may spill past the wheel's own
+  // hub circle onto a slice (Pythagoras against the wheel's OWN measured
+  // hub radius, same geometry layoutWheelHub() itself solves).
+  const fit = await page.evaluate(() => {
+    const svg = document.querySelector("#wheelContainer svg.mastery-wheel");
+    const svgRect = svg.getBoundingClientRect();
+    const size = svg.viewBox.baseVal.width;
+    const hubRadius = svgRect.width * ((size / 2 - 4) / size) / 2;
+    const cx = svgRect.left + svgRect.width / 2, cy = svgRect.top + svgRect.height / 2;
+    const hub = document.getElementById("wheelHubPickers").getBoundingClientRect();
+    const corners = [[hub.left, hub.top], [hub.right, hub.top], [hub.left, hub.bottom], [hub.right, hub.bottom]];
+    const maxDist = Math.max(...corners.map(([x, y]) => Math.hypot(x - cx, y - cy)));
+    return { maxDist, hubRadius, fits: maxDist <= hubRadius + 2 };
+  });
+  check("43l the hub's own content stays inside the wheel's hub circle, off the slices", fit.fits, JSON.stringify(fit));
+
+  check("43i-l no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
 await browser.close();
 console.log(`\n==== ${pass} passed, ${fail} failed ====`);
 process.exit(fail === 0 ? 0 : 1);

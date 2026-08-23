@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.61.** Cutover to production happened
+**Current milestone: QuranRevival v07.62.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -3305,6 +3305,79 @@ the static files.
 every re-render of the Ayah Note screen, same as Notes did before this round
 -- pre-existing, not introduced here, and worth the same `noteNotesOpen`-style
 fix if it ever becomes a real complaint rather than a theoretical one.
+
+v07.62 (23 Aug 2026, same day) is a same-day follow-up to v07.61's wheel hub,
+from the owner's own read of the shipped layout: Surah and Ayah stayed the
+same size as each other, and nothing used the room that freeing up should
+have bought. Their fix, verbatim: Ayah narrowed to three digits at the very
+bottom, Surah kept on top, and the middle -- freed by narrowing Ayah -- given
+to the Ta'awwudh ("Aujubillahi min ash-shaitaneer Rajeem"), always on, plus
+Bismillah if there's still room. "Let's try it."
+
+**The hub circle is genuinely tiny -- as small as ~80px across on a phone --
+and the two things that make text fit inside a CIRCLE (not a box) both had to
+be MEASURED, not guessed.** `layoutWheelHub()`, new, runs after every
+`renderWheel()`: it reads the wheel SVG's own rendered size (rOuter/size is a
+fixed ratio regardless of viewport, ~0.489 for the default size=360) to get
+the hub circle's real diameter in pixels, then solves for the widest
+rectangle whose CORNER still lands inside that circle at the stack's own
+measured height (Pythagoras -- a block centred on the circle's centre fits
+exactly when `(W/2)² + (H/2)² = r²`). Ta'awwudh is unconditional (the
+owner's own "should always be there, constant"); Bismillah is what gives way
+when the two together don't leave a wide-enough safe width -- which is what
+"if there's still space left" actually means here, measured per viewport
+rather than a single guessed breakpoint. **Font size scales with the hub
+too, not just the box** -- the first version fixed the Arabic at one size
+regardless of hub diameter, and on the smallest phone (~80px) that just
+wrapped to three crowded lines touching the selects above and below;
+`layoutWheelHub()` now also sets `--hub-arabic-size`/`--hub-select-size` as
+CSS custom properties, scaled off the same measured circle, computed BEFORE
+the width-fitting trial so that trial measures real, already-shrunk content.
+
+**One real, silent bug the fitting math itself caught, not a screenshot:**
+`.wheel-hub-pickers select` had no `box-sizing: border-box`, so a
+`width:100%` select's own padding and border added EXTRA width on top of
+what its parent had just been sized to -- content sitting exactly at a
+circle's edge doesn't forgive a stray few pixels. Added; the safety margin
+in the width formula (0.82 of the raw safe-width, tuned down from an initial
+0.92 while chasing this) is deliberately generous on top of that fix, not
+instead of it.
+
+**A pre-existing, unrelated defect surfaced while testing, flagged rather
+than fixed:** the wheel's own centre `centerArabic` text (the current ayah's
+Uthmani text, drawn by `renderScopedWheel()`) has no length limit or dynamic
+sizing -- for a short ayah like 1:1 it's fine, but a long one (tried: 2:286)
+spills its Arabic text well past the ring onto the slices. This is not new
+and not caused by the hub redesign -- it was already true of the wheel's own
+`centerArabic`, just less visible before the hub gave people an easy way to
+actually pick a long ayah. Worth its own round (the fix is almost certainly
+"scale font-size to text length" or "cap centerArabic's own width", neither
+attempted here since it's outside what was asked this round).
+
+**Verified: 853 behaviour checks, 852 pass** (was 845 -- 8 new, section
+43i-o: Surah proven above the Arabic lines, which are proven above Ayah at
+the very bottom; Ayah proven narrower than 40% of Surah's own width; 286 --
+the widest real ayah number in the Qur'an -- proven to fit without clipping
+AND to really drive the canonical Ayah picker; Ta'awwudh proven always shown
+regardless of Bismillah's own state; and the whole hub's own content proven
+to stay inside the wheel's measured hub circle, off the slices, by the same
+Pythagorean check `layoutWheelHub()` itself uses). **The one failure
+(`22h`) is the same pre-existing, environmental one this project has
+recorded since v07.44 -- this sandbox's proxy blocks archive.org, where the
+Asma posters live; unrelated to this round.** **`layout.mjs` reports NO
+LAYOUT REGRESSIONS** at all eight viewports in both banner states
+(`getElementById` targets 95 → 96, none missing), **`reading.mjs` OK**,
+**navcheck unchanged** (still only the pre-existing 320px English
+truncation), **coverage unchanged at 1,290/1,290 (100%)** -- Ta'awwudh and
+Bismillah are Arabic script, automatically excluded from the translation
+scan the same way every other Arabic string on the page already is, no new
+entries needed -- and **perf unchanged at 6 sequential round trips**,
+confirming this stayed pure client-side layout. Manually screenshotted at
+all six real breakpoints (360×640 through 1280×800) to see the actual fit,
+not just the numbers -- caught the crowding-at-small-sizes and the
+box-sizing bug that way before either became a test assertion. No
+`firestore.rules`, schema or Firestore data changes -- nothing to deploy but
+the static files.
 
 ---
 
