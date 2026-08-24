@@ -1793,4 +1793,14 @@ export const BN = {
   "+ New folder": "+ নতুন ফোল্ডার",
   "No bookmarks saved yet. Look for the ☆/🔖 button on a study screen.": "এখনো কোনো বুকমার্ক সংরক্ষণ করা হয়নি। অধ্যয়ন পাতায় ☆/🔖 বোতামটি খুঁজুন।",
   "QuranRevival — Bookmarks": "কুরআনরিভাইভাল — বুকমার্ক",
+
+  // =====================================================================
+  // Fixes round (23 Aug 2026) -- the bookmark-name popover (item 1) and the
+  // nav-bar bookmark dropdown (items 2/3).
+  // =====================================================================
+  "Folder": "ফোল্ডার",
+  "+ New folder…": "+ নতুন ফোল্ডার…",
+  "New folder name": "নতুন ফোল্ডারের নাম",
+  "Manage bookmarks…": "বুকমার্ক পরিচালনা করুন…",
+  "No bookmarks yet.": "এখনো কোনো বুকমার্ক নেই।",
 };

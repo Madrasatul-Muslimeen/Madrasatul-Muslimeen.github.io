@@ -91,11 +91,14 @@
     import { safeWrite } from "./js/errors.js";
     import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { translateStatic, t } from "./js/i18n.js";
     import { MODULE_PAGES, MODULE_LABELS } from "./js/continue-strip.js";
     import {
       getBookmarks, renameSavedBookmark, setSavedBookmarkRemoved, moveBookmarkToFolder,
       createFolder, renameFolder, setFolderRemoved, moveFolder, isFolderOrDescendant,
+      folderById as sharedFolderById, liveFolderIdFor as sharedLiveFolderIdFor,
+      rootFolders, childFolders, bookmarksInFolder, unfiledBookmarks,
     } from "./js/bookmarks.js";
 
     translateStatic();
@@ -110,6 +113,7 @@
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
+      mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId, getBookmarksDoc: () => bookmarksDoc });
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
@@ -176,20 +180,23 @@
     // destroyed, nothing lost).
     // -----------------------------------------------------------------------
 
+    // Thin wrappers over bookmarks.js's own shared, pure tree helpers -- kept
+    // under their original short names so every call site below (written
+    // before this refactor) needs no change; the helpers themselves are now
+    // the single implementation bookmarks.html and the nav dropdown
+    // (js/bookmark-nav.js) both share (see bookmarks.js's own header note on
+    // this "Fixes round").
     function allFolders() {
       return bookmarksDoc.folders ?? [];
     }
     function folderById(id) {
-      return (bookmarksDoc.folders ?? []).find((f) => f.id === id) ?? null;
+      return sharedFolderById(bookmarksDoc, id);
     }
-    /** A bookmark's own folder counts only if it exists AND isn't retired -- otherwise it is unfiled, per this file's own header rule. */
     function liveFolderIdFor(bookmark) {
-      const f = bookmark.folderId ? folderById(bookmark.folderId) : null;
-      return f && !f.removed ? f.id : null;
+      return sharedLiveFolderIdFor(bookmarksDoc, bookmark);
     }
-
     function bookmarksIn(folderId) {
-      return (bookmarksDoc.saved ?? []).filter((b) => liveFolderIdFor(b) === folderId);
+      return bookmarksInFolder(bookmarksDoc, folderId, { includeRemoved: true });
     }
 
     function bookmarkHref(b) {
@@ -242,7 +249,7 @@
 
     function folderNodeHtml(folder, depth) {
       const bookmarks = bookmarksIn(folder.id);
-      const children = allFolders().filter((f) => f.parentId === folder.id);
+      const children = childFolders(bookmarksDoc, folder.id, { includeRemoved: true });
       return `<div class="bm-folder${folder.removed ? " retired" : ""}" data-folder-id="${folder.id}" style="margin-left:${depth * 0.4}rem;">
         <div class="bm-folder-header">
           📁 <span class="bm-folder-name">${escapeHtml(folder.name)}</span>
@@ -261,10 +268,10 @@
       // it just makes ITS OWN row inert until restored). Only a genuinely
       // missing parent (deleted data, never happens through this screen, but
       // cheap to guard) promotes a folder to root rather than losing it.
-      const roots = allFolders().filter((f) => !f.parentId || !folderById(f.parentId));
+      const roots = rootFolders(bookmarksDoc, { includeRemoved: true });
       foldersContainer.innerHTML = roots.map((f) => folderNodeHtml(f, 0)).join("");
 
-      const unfiled = (bookmarksDoc.saved ?? []).filter((b) => liveFolderIdFor(b) === null);
+      const unfiled = unfiledBookmarks(bookmarksDoc, { includeRemoved: true });
       const byModule = new Map();
       for (const b of unfiled) {
         const key = b.moduleId;

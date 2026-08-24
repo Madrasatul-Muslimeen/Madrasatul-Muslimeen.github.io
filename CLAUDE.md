@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.66.** Cutover to production happened
+**Current milestone: QuranRevival v07.67.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -3727,6 +3727,136 @@ new star now also reads from, not a second one) and **`tools/perf/
 new-tenant.mjs` 10/10**, confirming this round added no Firestore reads
 anywhere. No `firestore.rules` or schema changes to deploy -- the two
 additive fields need no rules change, and nothing else in Firestore moved.
+
+v07.67 (24 Aug 2026, on Claude Code on the web) is **the Bookmark Manager's
+own fixes round -- four owner-asked corrections to v07.66**, all landing the
+same day it shipped.
+
+**(1) Naming a bookmark now offers the existing folder list, or a new one,
+in the same step.** The owner's own framing: the naming prompt "should also
+include the existing folder list so that the user tick the folder where he
+wants to place it" rather than always landing in Unfiled and needing a
+second trip to the Manager to file it. `js/bookmark-popover.js` is new -- a
+small, self-contained overlay (its own injected `<style>`, no page markup
+required) built as a pure UI component (I2: it never imports `bookmarks.js`
+or any Firebase module, so it can't accidentally become the thing a "pure
+renderer" is forbidden from being; the caller hands it an already-computed
+folder list and gets back a plain `{name, folderId, newFolderName}` choice
+object). It replaces the plain `prompt()` at all four bookmark-creation call
+sites (`quranrevival.html`'s `toggleAyahBookmark`, and the matching
+functions in `topic-study.js`/`routine-study.js`/`asma-study.js`), each of
+which now creates the folder first (if a new one was typed) before saving
+the bookmark into it, patching `bookmarksDoc` in memory both times -- the
+same "patch, don't re-fetch" rule this whole feature has followed since
+v07.66. `bookmarks.js` gained one new pure helper, `flattenFolderTree()`
+(depth-ordered, live folders only), reusing the same `rootFolders`/
+`childFolders` this file already exported rather than a second tree walker.
+
+**(2) and (3) are the same piece of work: the nav bar's own Bookmark
+category is a real, live dropdown now, not a single link.** The owner's own
+words: "opening as a page is needed only when organising/edits... is
+required," so jumping straight to a saved bookmark should be two clicks, not
+a page load. `nav.js`'s `renderBookmarkCategory()` still emits only a
+skeleton (a "Loading…" placeholder plus the one link into the Manager,
+renamed "Manage bookmarks…" so it doesn't repeat the category's own
+"Bookmark" heading) -- I2 holds, nav.js still never touches Firebase. New
+**`js/bookmark-nav.js`** is the Firebase-touching "mount" helper, the same
+seam `js/lang-sync.js`'s `mountSyncedAppLangControl()` already established,
+wired into all 21 nav-bearing pages' own `renderNav()` (9 pages edited
+directly, `quranrevival.html` on its own slightly different shape, and the
+three shared module controllers covering the other 9 module pages for free).
+Grouping matches `bookmarks.html` exactly, off the same shared tree helpers:
+**unfiled bookmarks are direct, one-click links** (the owner's item 3 --
+"only another click away when there are only a few bookmarks"), and **each
+real folder is its own `<details>`, closed by default**, so a person with
+many folders never has to scroll past all of them to reach an unfiled one.
+
+**Two data sources, deliberately, and the difference matters.** Every page
+that already loads and keeps patching its own `bookmarksDoc` in memory
+(`bookmarks.html`, `quranrevival.html`, the three module controllers) hands
+that SAME live copy to the nav dropdown via an optional `getBookmarksDoc` --
+zero extra reads (I9 in its strongest form) and zero lag behind anything
+just done on the same page. `quranrevival.html` is the one exception among
+those: its own `bookmarksDoc` loads LAZILY, only once the reading/note
+screen is actually opened (a deliberate I9 choice of its own, since v07.58)
+-- so its `getBookmarksDoc` is an ASYNC function that calls
+`ensureAyahNoteDataLoaded()` first, rather than a plain getter that would
+have shown an empty dropdown to anyone opening it straight from the wheel
+without ever visiting the reading screen. **This was a real bug caught by
+the suite, not assumed away**: the first version used a plain getter here,
+and a fresh page's nav dropdown showed "No bookmarks yet." even with a real
+seeded bookmark present, because nothing had triggered the lazy load yet.
+Pages with no local copy at all (the nine admin/tracking pages with no
+per-person bookmark tracking of their own) fall back to a genuine
+`getBookmarks()` fetch, made fresh on **every** open -- never cached after
+the first -- which is also most of the honest answer to item 4 below.
+
+**(4) Bookmarks already sync across devices, and this round's own
+mechanism makes that more immediate, not less.** Investigated rather than
+built blind: `bookmarks/{tenantId}__{personId}` is an ordinary Firestore
+document, keyed by tenant and person, not by device -- there is no
+localStorage or per-device cache anywhere in this feature (D5's offline
+persistence is a read-through cache that still hits the server first
+whenever the device is online, the same as every other collection in this
+app). So a bookmark created on one device was already visible on another
+the moment that device next reads the document -- no code changed anything
+here, because nothing was actually broken. What this round adds is that the
+**nav dropdown now IS one of the places that reads it fresh**: on the nine
+pages with no local `bookmarksDoc`, opening the Bookmark category re-fetches
+from Firestore every single time, so a bookmark added on another device
+shows up the next time this device's dropdown is opened -- no reload
+needed. On the pages that keep a local copy, the existing rule holds (fresh
+as of that page's own load, same as records/roster/every other collection
+in this app) -- a live, permanently-open push connection (`onSnapshot`)
+would be the only way to do better than that, and was deliberately NOT
+built: it's a bigger architecture change than this round's own scope, the
+same "adopt on next read, not a live push" call this project already made
+for the account-wide language preference (v07.37), and worth asking the
+owner about directly if they want something more than what a genuine second
+device test would show is already true.
+
+**A real testability trap, the second one this feature has hit, and it
+shaped the whole design of item 3's own test.** `bookmark-nav.js`'s fetch
+path re-reads on every open -- but the SAME stub that made v07.66's own
+`updateDoc()` a no-op (never mutating its `DATA`) means a genuine
+write-then-refetch cycle can't be proven through the stub the way it can
+through the page's own in-memory patch. The section 49 test that proves
+"the folder just created shows up on the very next open" works BECAUSE
+`quranrevival.html` passes its own live, already-patched `bookmarksDoc` --
+proving the mechanism the real page actually uses, not a fetch the stub
+can't honestly answer. A second, narrower testing trap was caught and fixed
+in the same round: the dropdown's own "Loading…" placeholder never resets
+on CLOSE, only on open, so a naive `waitForFunction(() => text !== "Loading…")`
+right after a re-open click resolves instantly against the STALE leftover
+content from the previous open rather than waiting for the fresh render --
+fixed by resetting the list to the sentinel "Loading…" text immediately
+before the click, so the wait can only resolve once the genuinely fresh
+render lands.
+
+**Verified: 919 behaviour checks pass, 0 failed** (was 907 -- 12 new:
+section 48 proves the popover's own two branches (an existing folder files
+directly with no extra write; a new folder issues both a folder-create AND
+a bookmark-save write, and is offered in the very next popover with no
+re-fetch needed) plus cancelling still making no write at all; section 49
+proves the unfiled seeded bookmark is a direct one-click link with the
+right href, a freshly-created folder shows up on the very next dropdown
+open collapsed by default, and expanding it is one click away).
+**`layout.mjs` reports NO LAYOUT REGRESSIONS** against the real previous
+commit at all eight viewports in both banner states (landing page
+byte-for-byte identical, `getElementById` targets unchanged at 95, none
+missing -- this round touches the nav dropdown and two new files only),
+**`reading.mjs` OK**, **`panel.mjs` no truncation and no wrapped bar**,
+**`navcheck.mjs` unchanged** (still only the pre-existing 320px English
+truncation of "Operation"/"Bookmark"), **coverage 1,449/1,449 (100%)** --
+`js/bookmark-nav.js` and `js/bookmark-popover.js` joined the `tracking`
+area alongside `js/bookmarks.js`/`bookmarks.html`, which already lived
+there -- and **`tools/perf/measure.mjs` unchanged at 6 sequential round
+trips** on every page tested, confirming the nav dropdown's own fetch never
+joins the startup path (I9) -- it only ever fires on an explicit tap -- and
+**`tools/perf/new-tenant.mjs` 10/10**. No `firestore.rules` or schema
+changes -- nothing new was added to `bookmarks/{tenantId}__{personId}`'s
+own shape, only new ways of reading and writing what v07.66 already put
+there.
 
 ---
 

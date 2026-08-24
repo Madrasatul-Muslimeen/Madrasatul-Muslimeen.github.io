@@ -42,8 +42,12 @@ const AREAS = {
   // role in class), so counting them anywhere else understated the area.
   // bookmarks.html joined in the enhancement round -- the real screen
   // behind nav.js's own long-standing "Bookmark" placeholder, alongside the
-  // js/bookmarks.js data layer this area already owned.
-  tracking: ["records.html", "monitor.html", "homework.html", "course-offers.html", "bookmarks.html", "js/monitor.js", "js/continue-strip.js", "js/bookmarks.js", "js/records.js", "js/activity.js", "js/homework.js", "js/course-offers.js"],
+  // js/bookmarks.js data layer this area already owned. js/bookmark-nav.js
+  // (the nav bar's own live dropdown) and js/bookmark-popover.js (the
+  // name+folder picker, used from quranrevival.html and the module pages
+  // alike) joined in the Fixes round for the same reason -- they're the
+  // rest of this one feature, not shell chrome or module-specific.
+  tracking: ["records.html", "monitor.html", "homework.html", "course-offers.html", "bookmarks.html", "js/monitor.js", "js/continue-strip.js", "js/bookmarks.js", "js/bookmark-nav.js", "js/bookmark-popover.js", "js/records.js", "js/activity.js", "js/homework.js", "js/course-offers.js"],
   // js/modules.js and js/study-lock.js joined in phase 5: the module
   // registry is what catalogue.html's own Modules table renders, and the
   // handover lock's refusal message is shown on people.html.

@@ -127,6 +127,73 @@ export function findSavedBookmark(bookmarksDoc, { moduleId, subjectId, position 
   );
 }
 
+// ---------------------------------------------------------------------------
+// Fixes round (23 Aug 2026) -- shared, pure tree helpers. bookmarks.html and
+// the new nav.js bookmark dropdown (js/bookmark-nav.js) both need to answer
+// "what folders are there, what's inside one, what's unfiled" -- these used
+// to be duplicated (bookmarks.html's own allFolders()/liveFolderIdFor()/
+// roots computation), which is exactly how the two screens could quietly
+// disagree about what "unfiled" means. One implementation now, reused by
+// both, with `includeRemoved` as the one real difference between them: the
+// Manager shows retired items too (greyed, per I4 -- nothing hidden), the
+// nav dropdown (item 3, a quick way to JUMP to a bookmark) shows only what's
+// live.
+// ---------------------------------------------------------------------------
+
+export function folderById(bookmarksDoc, id) {
+  return (bookmarksDoc?.folders ?? []).find((f) => f.id === id) ?? null;
+}
+
+/** A bookmark's own folder counts only if it exists AND isn't retired -- otherwise it's unfiled, grouped by its own moduleId (this file's own header rule). */
+export function liveFolderIdFor(bookmarksDoc, bookmark) {
+  const f = bookmark.folderId ? folderById(bookmarksDoc, bookmark.folderId) : null;
+  return f && !f.removed ? f.id : null;
+}
+
+/** Root folders -- no parentId, or a parentId that points nowhere (never happens through the Manager's own UI, but cheap to guard). A folder nests under its literal parent whether or not that parent is itself retired -- retiring a folder makes ITS OWN row inert, it doesn't unroot its children. */
+export function rootFolders(bookmarksDoc, { includeRemoved = true } = {}) {
+  const all = bookmarksDoc?.folders ?? [];
+  const pool = includeRemoved ? all : all.filter((f) => !f.removed);
+  return pool.filter((f) => !f.parentId || !all.some((p) => p.id === f.parentId));
+}
+
+export function childFolders(bookmarksDoc, parentId, { includeRemoved = true } = {}) {
+  const all = bookmarksDoc?.folders ?? [];
+  const pool = includeRemoved ? all : all.filter((f) => !f.removed);
+  return pool.filter((f) => f.parentId === parentId);
+}
+
+export function bookmarksInFolder(bookmarksDoc, folderId, { includeRemoved = false } = {}) {
+  const all = bookmarksDoc?.saved ?? [];
+  const pool = includeRemoved ? all : all.filter((b) => !b.removed);
+  return pool.filter((b) => liveFolderIdFor(bookmarksDoc, b) === folderId);
+}
+
+export function unfiledBookmarks(bookmarksDoc, { includeRemoved = false } = {}) {
+  return bookmarksInFolder(bookmarksDoc, null, { includeRemoved });
+}
+
+/**
+ * Fixes round, item 1 -- the folder tree flattened into one depth-ordered
+ * list (`[{id, name, depth}]`), live folders only. This is what feeds the
+ * bookmark-name popover's own folder picker (js/bookmark-popover.js, a pure
+ * renderer that must never import this Firebase-touching file itself, per
+ * I2) -- the caller (a page controller, which already imports bookmarks.js
+ * for saveBookmark()/createFolder()) builds this list and hands it over as
+ * plain data.
+ */
+export function flattenFolderTree(bookmarksDoc, { includeRemoved = false } = {}) {
+  const result = [];
+  function walk(list, depth) {
+    for (const f of list) {
+      result.push({ id: f.id, name: f.name, depth });
+      walk(childFolders(bookmarksDoc, f.id, { includeRemoved }), depth + 1);
+    }
+  }
+  walk(rootFolders(bookmarksDoc, { includeRemoved }), 0);
+  return result;
+}
+
 /** Soft-remove (D6: no client-side delete) -- flips removed:true on one saved[] entry, in place. */
 export async function removeSavedBookmark(db, tenantId, personId, bookmarkId) {
   const docId = bookmarksDocId(tenantId, personId);
