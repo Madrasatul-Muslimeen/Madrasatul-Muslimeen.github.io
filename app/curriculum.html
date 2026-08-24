@@ -241,7 +241,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
-      mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null });
+      mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null , getRoster: () => roster });
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const noAdminNote = document.getElementById("noAdminNote");

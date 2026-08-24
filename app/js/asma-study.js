@@ -59,7 +59,7 @@ export function initAsmaStudyPage() {
     navBar.innerHTML = renderNavBar(roles, viewAsRole);
     navHomeExtra.innerHTML = renderHomeExtras(roles);
     mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
-    mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId, getBookmarksDoc: () => bookmarksDoc });
+    mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId, getBookmarksDoc: () => bookmarksDoc, getRoster: () => roster });
   }
   const tenantSelect = document.getElementById("tenantSelect");
   const personSelect = document.getElementById("personSelect");
@@ -229,7 +229,15 @@ export function initAsmaStudyPage() {
       bookmarksDoc = { ...bookmarksDoc, saved: bookmarksDoc.saved.map((b) => (b.id === existing.id ? { ...b, removed: true } : b)) };
     } else {
       const defaultName = asmaName(name.number, name.transliteration);
-      const choice = await openBookmarkNamePopover({ defaultName, folders: flattenFolderTree(bookmarksDoc) });
+      const choice = await openBookmarkNamePopover({
+        defaultName,
+        folders: flattenFolderTree(bookmarksDoc),
+        // Fixes round 2 -- tag this bookmark with a person. Defaults to
+        // whoever is selected right now (studying WITH a child is the
+        // common case, per D10), and "No one in particular" clears it.
+        people: roster.map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id) })),
+        defaultPersonTagId: selectedPersonId,
+      });
       if (!choice) return;
       let folderId = choice.folderId;
       if (choice.newFolderName) {
@@ -244,7 +252,7 @@ export function initAsmaStudyPage() {
       const outcome = await safeWrite(
         () => saveBookmark(db, {
           tenantId: activeTenantId, personId: selectedPersonId, moduleId: MODULE_ID, subjectId: SUBJECT_ID,
-          name: choice.name || defaultName, position, folderId, uid: auth.currentUser.uid,
+          name: choice.name || defaultName, position, folderId, personTagId: choice.personTagId, uid: auth.currentUser.uid,
         }),
         { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
       );

@@ -97,6 +97,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import {
       getBookmarks, renameSavedBookmark, setSavedBookmarkRemoved, moveBookmarkToFolder,
       createFolder, renameFolder, setFolderRemoved, moveFolder, isFolderOrDescendant,
+      setBookmarkPersonTag,
       folderById as sharedFolderById, liveFolderIdFor as sharedLiveFolderIdFor,
       rootFolders, childFolders, bookmarksInFolder, unfiledBookmarks,
     } from "./js/bookmarks.js";
@@ -113,7 +114,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
-      mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId, getBookmarksDoc: () => bookmarksDoc });
+      mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId, getBookmarksDoc: () => bookmarksDoc, getRoster: () => roster });
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
@@ -221,6 +222,17 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       return options.join("");
     }
 
+    // Fixes round 2 -- who a bookmark is FOR (a student, a family member).
+    // Distinct from whose list it lives in; see bookmarks.js's own
+    // setBookmarkPersonTag() comment for why those are two different things.
+    function personTagOptionsHtml(selectedPersonTagId) {
+      const options = [`<option value="">${t("No one in particular")}</option>`];
+      for (const p of roster) {
+        options.push(`<option value="${p.id}" ${p.id === selectedPersonTagId ? "selected" : ""}>${escapeHtml(langText(p.name, getAppLang(), p.id))}</option>`);
+      }
+      return options.join("");
+    }
+
     function moveBookmarkOptionsHtml(selectedFolderId) {
       const options = [`<option value="">${t("Unfiled")}</option>`];
       for (const f of allFolders()) {
@@ -242,6 +254,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         <span class="bm-row-module">${escapeHtml(moduleLabel)}</span>
         ${href ? `<a href="${href}"><button type="button" class="tiny" ${b.removed ? "disabled" : ""}>${t("Open")}</button></a>` : ""}
         <button type="button" class="secondary tiny" data-bm-rename ${b.removed ? "disabled" : ""}>${t("Rename")}</button>
+        <select data-bm-person title="${t("For")}" ${b.removed ? "disabled" : ""}>${personTagOptionsHtml(b.personTagId ?? null)}</select>
         <select data-bm-move ${b.removed ? "disabled" : ""}>${moveBookmarkOptionsHtml(liveFolderIdFor(b))}</select>
         <button type="button" class="secondary tiny" data-bm-toggle>${b.removed ? t("Restore") : t("Retire")}</button>
       </div>`;
@@ -325,6 +338,16 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           );
           if (!outcome.ok) return;
           patchBookmark(bookmark.id, { folderId });
+          renderAll();
+        });
+        row.querySelector("[data-bm-person]")?.addEventListener("change", async (e) => {
+          const personTagId = e.target.value || null;
+          const outcome = await safeWrite(
+            () => setBookmarkPersonTag(db, activeTenantId, selectedPersonId, bookmark.id, personTagId),
+            { collection: TENANT.BOOKMARKS, action: "setBookmarkPersonTag" }
+          );
+          if (!outcome.ok) return;
+          patchBookmark(bookmark.id, { personTagId });
           renderAll();
         });
         row.querySelector("[data-bm-toggle]")?.addEventListener("click", async () => {

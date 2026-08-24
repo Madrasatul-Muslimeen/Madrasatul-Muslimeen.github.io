@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.67.** Cutover to production happened
+**Current milestone: QuranRevival v07.68.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -3847,10 +3847,17 @@ byte-for-byte identical, `getElementById` targets unchanged at 95, none
 missing -- this round touches the nav dropdown and two new files only),
 **`reading.mjs` OK**, **`panel.mjs` no truncation and no wrapped bar**,
 **`navcheck.mjs` unchanged** (still only the pre-existing 320px English
-truncation of "Operation"/"Bookmark"), **coverage 1,449/1,449 (100%)** --
+truncation of "Operation"/"Bookmark"), **coverage 1,317/1,317 (100%)** --
 `js/bookmark-nav.js` and `js/bookmark-popover.js` joined the `tracking`
 area alongside `js/bookmarks.js`/`bookmarks.html`, which already lived
-there -- and **`tools/perf/measure.mjs` unchanged at 6 sequential round
+there. **(Corrected 24 Aug 2026: this line first said 1,449, which was
+wrong -- the coverage run happened while `app/_prev-quranrevival.html`,
+`layout.mjs`'s own comparison shim, was still on disk, so the old copy of
+that page counted a second time. This file's v07.46 entry records that
+exact trap and says to delete the shim before reading the number; this
+round did not. Re-measured against a clean checkout of the commit: 1,317.
+The 100% was never in doubt -- only the total.)** -- and
+**`tools/perf/measure.mjs` unchanged at 6 sequential round
 trips** on every page tested, confirming the nav dropdown's own fetch never
 joins the startup path (I9) -- it only ever fires on an explicit tap -- and
 **`tools/perf/new-tenant.mjs` 10/10**. No `firestore.rules` or schema
@@ -3858,6 +3865,112 @@ changes -- nothing new was added to `bookmarks/{tenantId}__{personId}`'s
 own shape, only new ways of reading and writing what v07.66 already put
 there.
 
+v07.68 (24 Aug 2026, on Claude Code on the web) is **a correction to v07.67
+plus the person tag** -- the owner read the shipped dropdown and said the
+expanded/collapsed item "is not done", which was fair.
+
+**What v07.67 got wrong, and why it matters as a reading lesson.** Their
+original words were "enable the OPTION for Bookmark menu opening the bookmark
+list as expanded/collapsed". That round read it as *per-folder* collapsing and
+built each folder as its own `<details>` -- which is a real thing, and is kept,
+but it is not what was asked. The sentence is about **how the menu OPENS**: a
+setting, not a gesture. Their own follow-on line said so plainly ("this will
+enable a bookmark under a folder should be only another click away when there
+are only a few bookmark") -- with few bookmarks you want the whole thing open
+on sight, with many you want it shut. So there are now two real controls at the
+top of the dropdown, **Open as** (Collapsed / Expanded) and **Group by**
+(Folder / Person), both `localStorage` via `prefs.js` -- **no new startup read,
+no collection, no `firestore.rules` change** (I9 untouched), the same additive
+shape every reading preference since round 18 has used. The option sets the
+STARTING state only; tapping a group still opens or shuts that one, so v07.67's
+work is layered under this rather than replaced.
+
+**The person tag is the round's real new mechanism, and the distinction it
+rests on is worth not losing.** `saved[]` gains `personTagId` (additive, no
+rules change -- `canRecordFor()` gates the whole `bookmarks` document by
+tenant/person, not by field). **It is deliberately NOT the same thing as the
+document's own `personId`**: the document key is WHOSE LIST a bookmark lives
+in (whoever was selected in the Person picker when the star was tapped), while
+`personTagId` is WHO IT IS FOR, chosen in the naming popover and editable
+afterwards from the Manager. A guardian teaching three children keeps their
+own person selected, bookmarks an ayah, and tags it for whichever child it is
+meant for -- which is exactly the D10 workflow, and exactly what the grouping
+serves. It defaults to whoever is currently selected (the common case) and
+"No one in particular" clears it. **Stated plainly rather than left to be
+discovered: because bookmarks are still STORED per selected person, the
+person grouping is most useful when bookmarking from one's own person and
+tagging for a child. Reading every roster member's bookmark document instead
+would be N reads on a tap -- a real scope and load-speed decision, not
+something to slip in, so it is the owner's call if they want it.**
+
+**Both groupings now come off the same shared pure helpers** in `bookmarks.js`
+(`groupBookmarksByPerson()` joins `rootFolders`/`childFolders`/
+`bookmarksInFolder`/`unfiledBookmarks`), so the nav dropdown and
+`bookmarks.html` can never quietly disagree about what "ungrouped" means. In
+BOTH modes the ungrouped remainder -- unfiled in folder mode, untagged in
+person mode -- renders as direct links rather than inside a fold, which is the
+owner's "only another click away" holding in either grouping. A person group
+whose person has left the roster still renders, headed by the id rather than
+blank, so nothing is orphaned into an unlabelled group (I4).
+
+**A translation collision the coverage report could never have caught.**
+"Folder" is now two different phrases in the same app: the popover's own FIELD
+label ("which folder"), and the Group-by CHOICE ("by folder"). English is the
+same word for both; Bangla is not (`ফোল্ডার` vs `ফোল্ডার অনুযায়ী`). Left alone,
+the second `bn.js` entry would simply have overwritten the first and quietly
+mistranslated the popover. Fixed with `i18n.js`'s own context suffix
+(`"Folder|groupby"`, whose `fallbackOf()` strips back to "Folder" in English)
+-- the mechanism phase 4 built for `About|person` and the second time it has
+earned its keep. A behaviour check now asserts the two really differ in Bangla.
+
+**A real number in this file was wrong and is corrected in place.** v07.67's
+entry reported coverage as **1,449/1,449**; the honest figure is
+**1,317/1,317**. That run happened while `app/_prev-quranrevival.html` --
+`layout.mjs`'s own comparison shim -- was still on disk, so the old copy of
+that page was scanned a second time. **This file's own v07.46 entry documents
+that exact trap and says to delete the shim before reading the number, and
+v07.67 did it anyway** -- which is the argument for reading the number against
+a clean checkout rather than trusting whatever the last command printed. The
+100% was never in doubt; only the total. This round is **1,325/1,325**, +8 for
+its own new strings.
+
+**One test bug found by the suite and fixed as a test bug, not an app bug.**
+The first version of the "the choice survives a reload" check reloaded the
+page and then asserted the groups came back open -- and failed, because this
+harness's stub deliberately never persists writes, so the folder created
+moments earlier existed only in the page's memory and after a reload there
+were no groups at all to be open or shut. The substantive claim ("the menu
+OPENS as expanded") is proved instead by closing and re-opening the dropdown,
+a genuinely fresh render from the stored preference; the reload check now
+asserts the preference values, which is the part a reload actually can prove.
+**That is the third time this feature has run into the same stub property** --
+it is a real constraint on what this harness can demonstrate, not a defect,
+and the fix is always to prove the claim through the path the real page uses.
+
+**Verified: 945 behaviour checks pass, 0 failed** (was 919 -- 26 new in section
+50: the popover's person row present, defaulting to whoever is selected,
+offering "no one" and the real roster; both dropdown options present and
+defaulting to Collapsed/Folder, i.e. byte-identical behaviour to v07.67 for
+anyone who never touches them; choosing Expanded opening every group in place
+with no group tapped; a fresh re-open rendering from the stored option; a group
+still shuttable by hand afterwards; person grouping heading a group with the
+person's real NAME and holding the bookmark tagged for them, while an untagged
+one stays a direct link and the folder is correctly NOT shown in person mode;
+both choices surviving a reload; the Manager's own rows carrying an editable
+person picker with option VALUES proven still bare person ids, writing for
+real and keeping the new tag through its own re-render; and all of it in
+Bangla with the stored values proven still plain ids, including the
+Folder-vs-Folder context-suffix check above). **`layout.mjs` reports NO LAYOUT
+REGRESSIONS** at all eight viewports in both banner states, **`reading.mjs`
+OK**, **`panel.mjs` no truncation and no wrapped bar**, **`navcheck.mjs`
+unchanged** (still only the pre-existing 320px English truncation of
+"Operation"/"Bookmark"), **coverage 1,325/1,325 (100%)**, **`tools/perf/
+measure.mjs` unchanged at 6 sequential round trips** -- the two options are
+localStorage and the person tag rides on a document already being read, so
+nothing joined the startup path -- and **`tools/perf/new-tenant.mjs` 10/10**.
+**No `firestore.rules` change: `personTagId` is one more additive field on a
+document whose rule already gates by tenant and person rather than by field
+name** -- confirmed by reading the deployed rule rather than assuming.
 ---
 
 ## What this is

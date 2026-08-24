@@ -140,6 +140,17 @@ html[lang="bn"] body { line-height: 1.3; }
    sets per depth, capped so the dropdown never grows wider than the page can
    show at 320px. */
 .nav-bm-list { display: flex; flex-direction: column; gap: 0.2rem; max-width: 16rem; max-height: 60vh; overflow-y: auto; }
+/* Fixes round 2 -- the two options above the list ("Open as" expanded/
+   collapsed, "Group by" folder/person). Two cells sharing one line, each
+   minmax(0,1fr) so a long translated label shrinks its own cell rather than
+   pushing the row wider than the dropdown. */
+.nav-bm-controls {
+  display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 0.4rem;
+  padding-bottom: 0.4rem; margin-bottom: 0.3rem; border-bottom: 1px dashed #e5e5e5;
+}
+.nav-bm-control { display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.nav-bm-control span { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #999; }
+.nav-bm-control select { font-size: 0.8rem; padding: 0.15rem 0.2rem; max-width: 100%; box-sizing: border-box; }
 .nav-bm-link { color: #1F3A6E; text-decoration: none; font-size: 0.86rem; padding: 0.1rem 0; }
 .nav-bm-link:hover { text-decoration: underline; }
 .nav-bm-folder summary { color: #1F3A6E; font-size: 0.86rem; font-weight: 600; cursor: pointer; padding: 0.1rem 0; }
