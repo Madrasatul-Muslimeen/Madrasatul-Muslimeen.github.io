@@ -14,10 +14,17 @@
 // plain choice object; it does no reading or writing of its own. This is
 // the same reasoning way-modal.js's own header comment states for itself.
 //
+// Fixes round 2 adds the person tag to the same step (the owner: "enable a
+// bookmark to be saved tagging with a person (students/family members)") --
+// same rule as the folder list: the caller hands over an already-resolved
+// list of people and gets an id back, this file never looks one up.
+//
 // Resolves with:
-//   null                                     -- cancelled, no write to make
-//   { name, folderId, newFolderName: null }  -- save under an existing folder (or "" / null for Unfiled)
-//   { name, folderId: null, newFolderName }  -- save under a brand-new folder the caller must create first
+//   null  -- cancelled, no write to make
+//   { name, folderId, newFolderName, personTagId }
+// where folderId is an existing folder (or null for Unfiled), newFolderName is
+// set only when a brand-new folder was typed (the caller creates it first, then
+// files the bookmark into it), and personTagId is the tagged person (or null).
 
 import { t } from "./i18n.js";
 
@@ -58,15 +65,27 @@ function ensureStyles() {
   document.head.appendChild(style);
 }
 
-function renderPopoverInner(defaultName, folders) {
+function renderPopoverInner(defaultName, folders, people, defaultPersonTagId) {
   const folderOptions = folders
     .map((f) => `<option value="${f.id}">${"　".repeat(f.depth ?? 0)}${escapeHtml(f.name)}</option>`)
     .join("");
+  // The person row is omitted entirely rather than shown empty when the caller
+  // has no roster to offer (about.html and taglines.html never load one) --
+  // a picker whose only choice is "no one" is worse than no picker.
+  const personRow = people.length
+    ? `<label class="bm-popover-field">${t("For")}
+        <select data-bm-pop-person>
+          <option value="">${t("No one in particular")}</option>
+          ${people.map((p) => `<option value="${p.id}" ${p.id === defaultPersonTagId ? "selected" : ""}>${escapeHtml(p.name)}</option>`).join("")}
+        </select>
+      </label>`
+    : "";
   return `<div class="bm-popover" role="dialog" aria-modal="true" aria-label="${t("Bookmark this")}">
     <h3>${t("Bookmark this")}</h3>
     <label class="bm-popover-field">${t("Name")}
       <input type="text" data-bm-pop-name value="${escapeHtml(defaultName)}">
     </label>
+    ${personRow}
     <label class="bm-popover-field">${t("Folder")}
       <select data-bm-pop-folder>
         <option value="">${t("Unfiled")}</option>
@@ -89,12 +108,12 @@ function renderPopoverInner(defaultName, folders) {
  * `folders` is a flat, pre-indented list (see bookmarks.js's own
  * `flattenFolderTree()`) -- `[{id, name, depth}]`, live folders only.
  */
-export function openBookmarkNamePopover({ defaultName = "", folders = [] } = {}) {
+export function openBookmarkNamePopover({ defaultName = "", folders = [], people = [], defaultPersonTagId = null } = {}) {
   ensureStyles();
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.className = "bm-popover-overlay";
-    overlay.innerHTML = renderPopoverInner(defaultName, folders);
+    overlay.innerHTML = renderPopoverInner(defaultName, folders, people, defaultPersonTagId);
     document.body.appendChild(overlay);
 
     function onKeydown(e) {
@@ -112,6 +131,7 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [] } = {})
     });
 
     const nameInput = overlay.querySelector("[data-bm-pop-name]");
+    const personSelect = overlay.querySelector("[data-bm-pop-person]"); // absent when the caller had no roster
     const folderSelect = overlay.querySelector("[data-bm-pop-folder]");
     const newFolderRow = overlay.querySelector("[data-bm-pop-newfolder-row]");
     const newFolderInput = overlay.querySelector("[data-bm-pop-newfolder]");
@@ -129,15 +149,16 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [] } = {})
         nameInput.focus();
         return;
       }
+      const personTagId = personSelect ? personSelect.value || null : null;
       if (folderSelect.value === "__new__") {
         const newFolderName = newFolderInput.value.trim();
         if (!newFolderName) {
           newFolderInput.focus();
           return;
         }
-        close({ name, folderId: null, newFolderName });
+        close({ name, folderId: null, newFolderName, personTagId });
       } else {
-        close({ name, folderId: folderSelect.value || null, newFolderName: null });
+        close({ name, folderId: folderSelect.value || null, newFolderName: null, personTagId });
       }
     });
 

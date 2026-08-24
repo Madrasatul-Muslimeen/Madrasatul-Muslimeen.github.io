@@ -27,10 +27,15 @@ const readingRef = (page) => page.evaluate(() => {
 // folder or types a brand-new one), then clicks Save. Pass folderName to
 // pick an existing folder by its visible text, or newFolderName to create
 // one in the same step; omit both to leave it Unfiled.
-async function fillBookmarkPopover(page, { name, folderName = null, newFolderName = null } = {}) {
+async function fillBookmarkPopover(page, { name, folderName = null, newFolderName = null, personName = null } = {}) {
   await page.waitForSelector(".bm-popover-overlay");
   if (name !== undefined && name !== null) {
     await page.fill("[data-bm-pop-name]", name);
+  }
+  // Fixes round 2 -- the person tag ("For"), picked by the person's own
+  // visible name so the test reads like the thing a person actually does.
+  if (personName) {
+    await page.selectOption("[data-bm-pop-person]", { label: personName });
   }
   if (newFolderName) {
     await page.selectOption("[data-bm-pop-folder]", "__new__");
@@ -4977,6 +4982,227 @@ console.log("\n=== 49. Fixes round items 2/3 -- the nav bar's own live Bookmark 
   check("49 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
+}
+
+console.log("\n=== 50. Fixes round 2 -- the expanded/collapsed OPTION, and the person tag ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.waitForTimeout(600);
+
+  const openMenu = async () => {
+    const isOpen = await page.evaluate(() => document.querySelector(".nav-cat-bookmark")?.open);
+    if (isOpen) {
+      await page.click(".nav-cat-bookmark summary");
+      await page.waitForTimeout(150);
+    }
+    // Reset to the sentinel first -- the list keeps its last render while
+    // closed, so waiting for "not Loading..." alone resolves against that.
+    await page.evaluate(() => { document.getElementById("navBookmarkList").textContent = "Loading…"; });
+    await page.click(".nav-cat-bookmark summary");
+    await page.waitForFunction(() => document.getElementById("navBookmarkList")?.textContent.trim() !== "Loading…");
+  };
+
+  // Make a bookmark inside a folder, tagged for a DIFFERENT person than the
+  // one whose list it lives in -- the guardian/child shape this is for.
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  await page.waitForSelector(".bm-popover-overlay");
+  const popoverHasPerson = await page.evaluate(() => {
+    const sel = document.querySelector("[data-bm-pop-person]");
+    return {
+      present: !!sel,
+      defaultsToSelected: sel?.value === document.getElementById("personSelect")?.value,
+      offersNoOne: [...(sel?.options ?? [])].some((o) => o.value === ""),
+      names: [...(sel?.options ?? [])].map((o) => o.textContent.trim()),
+    };
+  });
+  check("50a the popover offers a person tag ('For'), defaulting to whoever is selected",
+        popoverHasPerson.present && popoverHasPerson.defaultsToSelected, JSON.stringify(popoverHasPerson));
+  check("50a ...with a way to tag no one, and the real roster to choose from",
+        popoverHasPerson.offersNoOne && popoverHasPerson.names.includes("Maryam"), JSON.stringify(popoverHasPerson.names));
+  await fillBookmarkPopover(page, { name: "Maryam's ayah", newFolderName: "Memorising", personName: "Maryam" });
+  await page.waitForTimeout(300);
+
+  // --- the OPTION itself (the thing v07.67 got wrong) ---
+  await openMenu();
+  const controls = await page.evaluate(() => ({
+    expandedSel: !!document.querySelector("[data-bm-nav-expanded]"),
+    groupBySel: !!document.querySelector("[data-bm-nav-groupby]"),
+    expandedValue: document.querySelector("[data-bm-nav-expanded]")?.value,
+    groupByValue: document.querySelector("[data-bm-nav-groupby]")?.value,
+    anyGroupOpen: [...document.querySelectorAll("#navBookmarkList .nav-bm-folder")].some((d) => d.open),
+    groupCount: document.querySelectorAll("#navBookmarkList .nav-bm-folder").length,
+  }));
+  check("50b the dropdown carries both options -- how it opens, and what it groups by",
+        controls.expandedSel && controls.groupBySel, JSON.stringify(controls));
+  check("50b ...defaulting to Collapsed / Folder, i.e. exactly today's behaviour",
+        controls.expandedValue === "0" && controls.groupByValue === "folder", JSON.stringify(controls));
+  check("50b ...so every group starts shut", controls.groupCount > 0 && !controls.anyGroupOpen, JSON.stringify(controls));
+
+  // Choosing Expanded opens every group WITHOUT touching any of them -- the
+  // owner's own "only another click away when there are only a few".
+  await page.selectOption("[data-bm-nav-expanded]", "1");
+  await page.waitForTimeout(200);
+  const afterExpand = await page.evaluate(() => {
+    const groups = [...document.querySelectorAll("#navBookmarkList .nav-bm-folder")];
+    return { count: groups.length, allOpen: groups.length > 0 && groups.every((d) => d.open) };
+  });
+  check("50c choosing Expanded opens every group in place, no group tapped",
+        afterExpand.allOpen, JSON.stringify(afterExpand));
+
+  // A FRESH render of the menu reads the stored option -- this is the real
+  // claim ("the bookmark menu OPENS as expanded"), and it is proved by
+  // closing and re-opening rather than by reloading: this harness's stub
+  // deliberately never persists writes (see its own README), so the folder
+  // created moments ago exists only in the page's memory and a reload would
+  // leave nothing to be open or shut. The reload below therefore checks the
+  // preference itself, which is the part a reload CAN prove.
+  await openMenu();
+  const freshOpen = await page.evaluate(() => {
+    const groups = [...document.querySelectorAll("#navBookmarkList .nav-bm-folder")];
+    return {
+      count: groups.length,
+      allOpen: groups.length > 0 && groups.every((d) => d.open),
+      value: document.querySelector("[data-bm-nav-expanded]")?.value,
+    };
+  });
+  check("50d re-opening the menu renders every group already open, from the stored option",
+        freshOpen.allOpen && freshOpen.value === "1", JSON.stringify(freshOpen));
+
+  // A group can still be shut by hand afterwards: the option sets the
+  // STARTING state, it does not take per-folder control away.
+  await page.click("#navBookmarkList .nav-bm-folder summary");
+  await page.waitForTimeout(100);
+  const stillTappable = await page.evaluate(() => document.querySelector("#navBookmarkList .nav-bm-folder")?.open);
+  check("50e ...and a group can still be shut by hand -- the option sets the starting state only",
+        stillTappable === false, String(stillTappable));
+
+  // --- grouping by person ---
+  await page.selectOption("[data-bm-nav-groupby]", "person");
+  await page.waitForTimeout(300);
+  const byPerson = await page.evaluate(() => {
+    const list = document.getElementById("navBookmarkList");
+    const groups = [...list.querySelectorAll(".nav-bm-folder")].map((d) => ({
+      heading: d.querySelector("summary")?.textContent.trim(),
+      links: [...d.querySelectorAll(".nav-bm-link")].map((a) => a.textContent.trim()),
+    }));
+    const direct = [...list.querySelectorAll(":scope > .nav-bm-link")].map((a) => a.textContent.trim());
+    return { groups, direct };
+  });
+  check("50f grouping by person heads the group with the person's real NAME, not an id",
+        byPerson.groups.some((g) => g.heading?.includes("Maryam")), JSON.stringify(byPerson.groups));
+  check("50f ...and the bookmark tagged for them is inside it",
+        byPerson.groups.find((g) => g.heading?.includes("Maryam"))?.links.includes("Maryam's ayah"),
+        JSON.stringify(byPerson.groups));
+  check("50g an untagged bookmark stays a direct link, not buried in a group",
+        byPerson.direct.includes("Ayat al-Kursi"), JSON.stringify(byPerson.direct));
+  check("50g ...and the folder it was filed under is NOT shown in person mode -- one grouping at a time",
+        !byPerson.groups.some((g) => g.heading?.includes("Memorising")), JSON.stringify(byPerson.groups));
+
+  // Both options are real stored preferences, not per-open state. Only the
+  // VALUES are asserted here -- see 50d for why the group state cannot be.
+  await page.reload({ waitUntil: "networkidle" });
+  await page.waitForTimeout(600);
+  await openMenu();
+  const afterReload = await page.evaluate(() => ({
+    expanded: document.querySelector("[data-bm-nav-expanded]")?.value,
+    groupBy: document.querySelector("[data-bm-nav-groupby]")?.value,
+  }));
+  check("50g both choices survive a reload -- real preferences, not per-open state",
+        afterReload.expanded === "1" && afterReload.groupBy === "person", JSON.stringify(afterReload));
+
+  check("50 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+console.log("\n=== 50h-k. The person tag on the Manager page, and both in Bangla ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/bookmarks.html");
+  await page.waitForTimeout(800);
+  const managerRow = await page.evaluate(() => {
+    const sel = document.querySelector(".bm-row [data-bm-person]");
+    return {
+      present: !!sel,
+      value: sel?.value,
+      names: [...(sel?.options ?? [])].map((o) => o.textContent.trim()),
+      values: [...(sel?.options ?? [])].map((o) => o.value),
+    };
+  });
+  check("50h the Manager's own rows carry the person tag, editable like the folder",
+        managerRow.present && managerRow.names.includes("Maryam"), JSON.stringify(managerRow));
+  check("50h ...with option VALUES still the bare person ids", managerRow.values.includes("p2"), JSON.stringify(managerRow.values));
+  check("50h ...and the seeded bookmark starts untagged", managerRow.value === "", String(managerRow.value));
+
+  await page.selectOption(".bm-row [data-bm-person]", "p2");
+  await page.waitForTimeout(300);
+  const writes = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
+  check("50i tagging from the Manager really writes to the bookmarks collection",
+        writes.some((w) => w.col === "bookmarks" && w.data.includes("saved")), JSON.stringify(writes));
+  const stuck = await page.evaluate(() => document.querySelector(".bm-row [data-bm-person]")?.value);
+  check("50i ...and the row keeps the new tag after its own re-render", stuck === "p2", String(stuck));
+  check("50h-i no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+
+  // Bangla: both new controls and the popover's own person row.
+  const ctxBn = await ctxFor({ banner: false, appLang: "bn" });
+  const { page: pageBn, errors: errorsBn } = await openPage(ctxBn, "/app/quranrevival.html");
+  await pageBn.waitForTimeout(600);
+  await pageBn.evaluate(() => { document.getElementById("navBookmarkList").textContent = "x"; });
+  await pageBn.click(".nav-cat-bookmark summary");
+  await pageBn.waitForFunction(() => document.getElementById("navBookmarkList")?.textContent.trim() !== "x");
+  const bn = await pageBn.evaluate(() => {
+    const labels = [...document.querySelectorAll("#navBookmarkList .nav-bm-control span")].map((s) => s.textContent.trim());
+    const expOpts = [...document.querySelectorAll("[data-bm-nav-expanded] option")];
+    const grpOpts = [...document.querySelectorAll("[data-bm-nav-groupby] option")];
+    return {
+      labels,
+      expText: expOpts.map((o) => o.textContent.trim()),
+      expValues: expOpts.map((o) => o.value),
+      grpText: grpOpts.map((o) => o.textContent.trim()),
+      grpValues: grpOpts.map((o) => o.value),
+    };
+  });
+  const BN = /[ঀ-৿]/;
+  check("50j both option labels read in Bangla", bn.labels.length === 2 && bn.labels.every((l) => BN.test(l)), JSON.stringify(bn.labels));
+  check("50j ...their choices too (Collapsed/Expanded, Folder/Person)",
+        bn.expText.every((s) => BN.test(s)) && bn.grpText.every((s) => BN.test(s)),
+        JSON.stringify([bn.expText, bn.grpText]));
+  check("50j ...while the stored VALUES stay plain ids",
+        bn.expValues.join(",") === "0,1" && bn.grpValues.join(",") === "folder,person",
+        JSON.stringify([bn.expValues, bn.grpValues]));
+  // The group-by "Folder" choice and the popover's "Folder" field label are
+  // the same English word wanting different Bangla -- the |groupby context
+  // suffix is what keeps them apart (i18n.js's own mechanism, first used in
+  // phase 4 for About|person).
+  // Close the dropdown first -- it is an absolutely-positioned overlay and
+  // would otherwise intercept the read-screen clicks below (same trap as 49).
+  await pageBn.click(".nav-cat-bookmark summary");
+  await pageBn.waitForTimeout(150);
+  await pageBn.click("#tabReadBtn");
+  await pageBn.waitForTimeout(400);
+  await pageBn.click("#readQuickMenuSlot [data-qm-toggle]");
+  await pageBn.waitForTimeout(150);
+  await pageBn.click("#readQuickMenuSlot [data-qm-bookmark]");
+  await pageBn.waitForSelector(".bm-popover-overlay");
+  const bnPop = await pageBn.evaluate(() => {
+    const fields = [...document.querySelectorAll(".bm-popover-field")].map((l) => l.childNodes[0]?.textContent.trim());
+    const groupByFolder = [...document.querySelectorAll("[data-bm-nav-groupby] option")].find((o) => o.value === "folder")?.textContent.trim();
+    return { fields, groupByFolder };
+  });
+  check("50k the popover's own person row reads in Bangla too",
+        bnPop.fields.some((f) => f && BN.test(f)), JSON.stringify(bnPop.fields));
+  check("50k ...and the popover's 'Folder' label is NOT the group-by 'Folder' wording (context suffix works)",
+        bnPop.fields.some((f) => f && BN.test(f) && f !== bnPop.groupByFolder), JSON.stringify(bnPop));
+  check("50j-k no page errors", errorsBn.length === 0, errorsBn.slice(0, 3).join(" | "));
+  await pageBn.close();
+  await ctxBn.close();
 }
 
 await browser.close();

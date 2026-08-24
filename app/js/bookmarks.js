@@ -3,7 +3,7 @@
 // bookmarks/{tenantId}__{personId} -- ONE document per person (Architecture
 // s3, Layer 2):
 //   resume{ "<moduleId>::<programId>::<subjectId>": {position, settings, updatedAt} }
-//   saved[]{ id, programId, moduleId, subjectId, name, position, settings, folderId, removed }
+//   saved[]{ id, programId, moduleId, subjectId, name, position, settings, folderId, personTagId, removed }
 //   folders[]{ id, name, parentId, removed, createdAt }
 //
 // resume is auto-touched every time someone opens a subject/topic/routine
@@ -90,14 +90,14 @@ export function recentResumeEntries(bookmarksDoc, limit = 5) {
     .slice(0, limit);
 }
 
-/** A person's own named shortcut -- distinct from resume's silent auto-tracking. folderId defaults to null (unfiled -- grouped by moduleId until moved into a real folder). */
+/** A person's own named shortcut -- distinct from resume's silent auto-tracking. folderId defaults to null (unfiled -- grouped by moduleId until moved into a real folder). personTagId defaults to null (untagged) -- see setBookmarkPersonTag() below for what the tag means and how it differs from personId. */
 export async function saveBookmark(db, {
-  tenantId, personId, moduleId, programId = NO_PROGRAM, subjectId, name, position = null, settings = null, folderId = null, uid,
+  tenantId, personId, moduleId, programId = NO_PROGRAM, subjectId, name, position = null, settings = null, folderId = null, personTagId = null, uid,
 }) {
   const docId = bookmarksDocId(tenantId, personId);
   const bookmark = {
     id: crypto.randomUUID(),
-    programId, moduleId, subjectId, name, position, settings, folderId,
+    programId, moduleId, subjectId, name, position, settings, folderId, personTagId,
     removed: false,
     createdAt: new Date().toISOString(),
   };
@@ -182,6 +182,37 @@ export function unfiledBookmarks(bookmarksDoc, { includeRemoved = false } = {}) 
  * for saveBookmark()/createFolder()) builds this list and hands it over as
  * plain data.
  */
+/**
+ * Fixes round 2 -- the person-tag counterpart of rootFolders/bookmarksInFolder
+ * above, for the dropdown's "group by Person" mode. Returns
+ * `{ untagged: [...], groups: [{ personTagId, bookmarks: [...] }] }`, groups
+ * ordered by the roster order the caller passes (so the dropdown reads in the
+ * same order as every Person picker in the app) with any tag NOT in that
+ * roster last -- a person can be archived out of the roster without their
+ * tagged bookmarks silently vanishing (I4: nothing is ever lost, it just falls
+ * to the end).
+ *
+ * Pure, like every helper in this block: names are the caller's job (they need
+ * langText() and the app language, which this Firebase-touching data module
+ * has no business knowing about).
+ */
+export function groupBookmarksByPerson(bookmarksDoc, rosterIds = [], { includeRemoved = false } = {}) {
+  const all = bookmarksDoc?.saved ?? [];
+  const pool = includeRemoved ? all : all.filter((b) => !b.removed);
+  const untagged = pool.filter((b) => !b.personTagId);
+  const byTag = new Map();
+  for (const b of pool) {
+    if (!b.personTagId) continue;
+    if (!byTag.has(b.personTagId)) byTag.set(b.personTagId, []);
+    byTag.get(b.personTagId).push(b);
+  }
+  const ordered = [
+    ...rosterIds.filter((id) => byTag.has(id)),
+    ...[...byTag.keys()].filter((id) => !rosterIds.includes(id)),
+  ];
+  return { untagged, groups: ordered.map((personTagId) => ({ personTagId, bookmarks: byTag.get(personTagId) })) };
+}
+
 export function flattenFolderTree(bookmarksDoc, { includeRemoved = false } = {}) {
   const result = [];
   function walk(list, depth) {
@@ -220,6 +251,32 @@ export async function setSavedBookmarkRemoved(db, tenantId, personId, bookmarkId
   const snap = await getDoc(doc(db, TENANT.BOOKMARKS, docId));
   if (!snap.exists()) return false;
   const saved = (snap.data().saved ?? []).map((b) => (b.id === bookmarkId ? { ...b, removed } : b));
+  await updateDocument(db, TENANT.BOOKMARKS, docId, { saved });
+  return true;
+}
+
+/**
+ * Fixes round 2 -- patches one saved[] entry's own personTagId. The owner's
+ * ask: "enable a bookmark to be saved tagging with a person (students/family
+ * members)", so the dropdown can group by who a bookmark is FOR.
+ *
+ * This is deliberately NOT the same thing as the document's own personId, and
+ * the difference is worth understanding before touching this. The document key
+ * (`bookmarks/{tenantId}__{personId}`) is WHOSE LIST a bookmark lives in --
+ * whichever person was selected in the page's own Person picker when the star
+ * was tapped. personTagId is WHO THE BOOKMARK IS FOR, chosen explicitly at
+ * creation and editable afterwards from the Manager. A guardian teaching three
+ * children keeps their own person selected, bookmarks an ayah, and tags it for
+ * whichever child it is meant for -- that is the workflow the grouping serves.
+ * Tag null = untagged, which the dropdown shows as direct links rather than
+ * inside a group (symmetric with how an unfiled bookmark behaves in folder
+ * mode).
+ */
+export async function setBookmarkPersonTag(db, tenantId, personId, bookmarkId, personTagId) {
+  const docId = bookmarksDocId(tenantId, personId);
+  const snap = await getDoc(doc(db, TENANT.BOOKMARKS, docId));
+  if (!snap.exists()) return false;
+  const saved = (snap.data().saved ?? []).map((b) => (b.id === bookmarkId ? { ...b, personTagId } : b));
   await updateDocument(db, TENANT.BOOKMARKS, docId, { saved });
   return true;
 }

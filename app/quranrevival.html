@@ -1638,6 +1638,7 @@
       mountBookmarkMenu(navBar, {
         db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId,
         getBookmarksDoc: async () => { await ensureAyahNoteDataLoaded(); return bookmarksDoc; },
+        getRoster: () => roster,
       });
     }
 
@@ -3858,7 +3859,15 @@
       } else {
         const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
         const defaultName = ayahRefLabel(surah, ayahNum);
-        const choice = await openBookmarkNamePopover({ defaultName, folders: flattenFolderTree(bookmarksDoc) });
+        const choice = await openBookmarkNamePopover({
+        defaultName,
+        folders: flattenFolderTree(bookmarksDoc),
+        // Fixes round 2 -- tag this bookmark with a person. Defaults to
+        // whoever is selected right now (studying WITH a child is the
+        // common case, per D10), and "No one in particular" clears it.
+        people: roster.map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id) })),
+        defaultPersonTagId: selectedPersonId,
+      });
         if (!choice) return; // cancelled -- no write, no re-render
         let folderId = choice.folderId;
         if (choice.newFolderName) {
@@ -3873,7 +3882,8 @@
         outcome = await safeWrite(
           () => saveBookmark(db, {
             tenantId: activeTenantId, personId: selectedPersonId, moduleId: "quranrevival", subjectId: "quran",
-            name: choice.name || defaultName, position: unitKey, settings: captureQuranBookmarkSettings(), folderId, uid: auth.currentUser.uid,
+            name: choice.name || defaultName, position: unitKey, settings: captureQuranBookmarkSettings(), folderId,
+            personTagId: choice.personTagId, uid: auth.currentUser.uid,
           }),
           { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
         );
