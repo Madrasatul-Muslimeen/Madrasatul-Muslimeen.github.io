@@ -1674,15 +1674,22 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   // the row is four buttons still, and "Pause disabled while nothing plays"
   // became "the button reads Play while nothing plays".
   // Round 22 merged the two control rows into one and retired "Whole surah"
-  // entirely, once Play started following the chosen unit -- so the row is
+  // entirely, once Play started following the chosen unit -- so the row was
   // Prev / Next / Play / Stop / Full screen, and the buttons are icons whose
   // NAME lives in aria-label.
+  // Enhancement round -- "one is for moving the whole unit of choice,
+  // another for moving only a single Ayah... these buttons should be in
+  // both READ and NOTE view" (the owner's own words): prevAyahBtn/
+  // nextAyahBtn moved UP into #readBar from the row further down the
+  // screen (same ids, same click handlers -- only their position and icon
+  // changed), sitting between the outer (unit) pair and the transport
+  // controls. The row is seven direct children now, not five.
   const transport = await page.evaluate(() => ({
     visible: !document.getElementById("readBar").hidden,
     // Direct children only -- round 31 mounts the ⋮ quick-menu's own popover
     // (several unnamed <button>s of its own) inside #readQuickMenuSlot, a
-    // sixth DIRECT child of #readBar; `#readBar button` would count those
-    // too and this check is about the five original controls specifically.
+    // DIRECT child of #readBar; `#readBar button` would count those
+    // too and this check is about the seven named controls specifically.
     buttons: [...document.querySelectorAll("#readBar > button")].map((b) => b.id),
     noWholeSurah: !document.getElementById("readPlaySurahBtn"),
     playLabel: document.getElementById("readPlayBtn").getAttribute("aria-label") || "",
@@ -1690,8 +1697,8 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
     // reciter Play would use, which Study options -> Listening already says.
     noReciter: !document.getElementById("readReciterName"),
   }));
-  check("30j prev, next, play, stop and full screen are on the reading screen",
-        transport.visible && JSON.stringify(transport.buttons) === '["prevUnitBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn"]', JSON.stringify(transport));
+  check("30j prev unit, prev āyah, next āyah, next unit, play, stop and full screen are on the reading screen",
+        transport.visible && JSON.stringify(transport.buttons) === '["prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn"]', JSON.stringify(transport));
   check("30j the separate 'Whole surah' button is gone (Play follows the unit)", transport.noWholeSurah);
   check("30j the merged button is named Play while nothing is playing",
         /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
@@ -1727,10 +1734,11 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   await page.click("#tabReadBtn");
   await page.waitForTimeout(500);
   // Round 22: icons carry no words, so what must be in Bangla is their name.
-  // Direct children only -- see the round-31 comment at 30j above.
+  // Direct children only -- see the enhancement-round comment at 30j above
+  // (seven now, not five -- prevAyahBtn/nextAyahBtn joined this row).
   const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button")].map((b) => b.getAttribute("aria-label") || ""));
   check("30l every reading-screen control is NAMED in Bangla",
-        t18.length === 5 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
+        t18.length === 7 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
   await ctx.close();
 }
@@ -2266,9 +2274,11 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   }));
   // Round 25 dropped the reciter caption from the end of this row. Round 31
   // added a sixth child, #readQuickMenuSlot, mounting the ⋮ quick menu on
-  // the bar instead of over the ayah text.
-  check("33a the read bar is Prev · Next · Play · Stop · Full screen · ⋮ slot",
-        bar.ids.join() === "prevUnitBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readQuickMenuSlot",
+  // the bar instead of over the ayah text. Enhancement round -- prevAyahBtn/
+  // nextAyahBtn joined the row too, between the outer (unit) pair and the
+  // transport controls (see the 30j comment above).
+  check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · ⋮ slot",
+        bar.ids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readQuickMenuSlot",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -2936,6 +2946,13 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
     const bar = document.getElementById("readBar");
     const barBox = bar.getBoundingClientRect();
     const kids = [...bar.children];
+    // Enhancement round -- prevAyahBtn/nextAyahBtn are real DIRECT children
+    // of #readBar now, but `.hidden` for Single Ayah (this test's default
+    // unit type), which collapses them to a zero-sized rect at (0,0). Left
+    // in the gap computation below, a hidden neighbour reads as a huge
+    // (or negative) "gap" that has nothing to do with real spacing -- only
+    // visible children describe the row's actual packing.
+    const visibleKids = kids.filter((el) => !el.hidden && getComputedStyle(el).display !== "none");
     const rows = [...document.querySelectorAll(".root-deriv-strip .root-row")];
     // The honest check for "packed together, not spread with gaps" is the
     // GAP between each consecutive control, not where the group starts --
@@ -2943,12 +2960,12 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
     // group and moves its own start point, so a start-position threshold
     // tuned for five items breaks the moment a sixth is added even though
     // the row is still flush right with no `space-between`-style gaps.
-    const gaps = kids.slice(1).map((el, i) => Math.round(el.getBoundingClientRect().left - kids[i].getBoundingClientRect().right));
+    const gaps = visibleKids.slice(1).map((el, i) => Math.round(el.getBoundingClientRect().left - visibleKids[i].getBoundingClientRect().right));
     return {
       barKids: kids.map((e) => e.id),
       noReciter: !document.getElementById("readReciterName"),
       gaps,
-      lastRight: Math.round(kids[kids.length - 1].getBoundingClientRect().right),
+      lastRight: Math.round(visibleKids[visibleKids.length - 1].getBoundingClientRect().right),
       barLeft: Math.round(barBox.left), barRight: Math.round(barBox.right),
       posCount: rows.length,
       latinPos: rows.map((r) => r.querySelector(".root-pos")?.textContent || "").filter((x) => /[A-Za-z]/.test(x)).length,
@@ -2958,9 +2975,12 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   });
 
   check("37a the reciter caption is gone from the reading controls", m.noReciter);
-  // Round 31 added a sixth child, #readQuickMenuSlot (the ⋮ quick menu).
-  check("37a the row is Prev · Next · Play · Stop · Full screen · ⋮ slot",
-        m.barKids.join() === "prevUnitBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
+  // Enhancement round -- prevAyahBtn/nextAyahBtn joined this row (see the
+  // 30j comment above); the DOM order is Prev unit, Prev āyah, Next āyah,
+  // Next unit, Play, Stop, Full screen, ⋮ slot, whether or not the inner
+  // pair happens to be visible for the current unit type.
+  check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · ⋮ slot",
+        m.barKids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how

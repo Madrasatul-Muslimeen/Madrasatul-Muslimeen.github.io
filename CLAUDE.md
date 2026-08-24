@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.68.** Cutover to production happened
+**Current milestone: QuranRevival v07.69.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -3971,6 +3971,116 @@ nothing joined the startup path -- and **`tools/perf/new-tenant.mjs` 10/10**.
 **No `firestore.rules` change: `personTagId` is one more additive field on a
 document whose rule already gates by tenant and person rather than by field
 name** -- confirmed by reading the deployed rule rather than assuming.
+
+v07.69 (24 Aug 2026, on Claude Code on the web) is **shell round -- the
+Note view's bars reorganised, and a note can now belong to any unit up to
+the whole Qur'an**, built to a demo the owner approved across several
+rounds of feedback in the same session before any code was written. Three
+things, all the owner's own words: **(1)** "one is for moving the whole
+unit of choice, another for moving only a single Ayah... these buttons
+should be in both READ and NOTE view" -- a media-player-style nav cluster
+(⏮ ◂ ▸ ⏭: outer = the whole chosen unit, inner = one āyah, inner hidden
+when it would duplicate the outer) now sits in both `#readBar` (relocating
+the existing `prevAyahBtn`/`nextAyahBtn` up from the row below the text,
+same ids, same click handlers, icon-only now) and the Note view's bar 2.
+**(2)** "the study contents (Ayat)... is only important to display here
+for single, a Range and a small Surah... anything above than that a user
+can read from the READ view" -- the Note view's Arabic/English/Bangla
+fields now show only for Single Ayah/Range/a Surah that fits one real
+Mushaf page (read off the `.page` field every loaded āyah already carries
+-- no fetch, a deliberately looser proxy than literal half-a-page line
+counting, flagged as such); anything bigger shows a plain "read it on the
+Read screen" link instead, with Notes as the main thing on the page.
+**(3)** "a Note can increase gradually about the gross understanding of
+all other units and for the entire Quran" -- `notes[unitKey]` was already
+generic (I5: any permanent unit key, not only āyah-shaped ones), so this
+needed no schema change, just a screen that offers the other six Study
+Unit types plus a new, deliberately separate **Whole Qur'an** entry
+(`buildUnitKey.book()`, `"book:quran"` -- one fixed key, one running note,
+kept OUT of the shared `unitTypeSelect`/`UNIT_TYPES` on purpose: that list
+is iterated generically elsewhere -- records.html's own unit-type filter
+dropdown, see the finding below -- and nothing is ever claimed/tracked
+against "the whole Qur'an"). Also built, from the owner's own two
+"buttons" instructions: **Share and Notes formatting (Aa) folded into ⋮**
+alongside Word by Word/Root/Collapse (only offered for a genuine
+single-āyah scope -- ayah-renderer.js's panels take one āyah, not a
+span), and **Approach/Mapping My Journey/the whole-Qur'an link folded
+into ⋯**, far right -- "must not make two bars for buttons," so bar 2 is
+one row on every platform, with the old phone/desktop Approach split
+(`.note-approach-bar-mobile`/`-desktop`) retired outright rather than kept
+alongside the new single instance. Bar 1 is no longer the reference bar at
+all -- it is now the reading-unit picker, mirroring `#readPickers`' own
+seven Study Unit choices, deliberately independent of the canonical
+Read-view position (`noteScope`, a new, separate piece of state) rather
+than a literal mirror: opening "Note & more" on one āyah of a flow must
+never silently move the Read screen out from under the reader, so Note
+view's own picker only forwards to the canonical Study Unit state when the
+reader explicitly changes it there. Also added: a small "Also noted at:"
+pill row (only for single-āyah scope) naming whichever wider unit already
+has its own note -- the owner's other ask, "every Ayah or any unit should
+have a way to recognise it contains a note in a different unit" -- each
+pill switches `noteScope` straight to that unit.
+
+**A real finding, caught by the project's own translation-coverage-style
+suite and not by reading the diff: `UNIT_TYPES` is iterated generically**
+(`records.html` builds its own unit-type filter dropdown straight from it)
+-- the first version of this round added `"book"` to that array, which
+made a "Qur'an" entry appear in that filter (always empty, since nothing
+is ever recorded with a `book` unit) and broke `tools/i18n-verify/
+behaviour.mjs`'s own "14a unit-type options are Bangla" check. Reverted:
+`buildUnitKey.book()` is a standalone export, `UNIT_TYPES` itself
+untouched, with the reasoning recorded in that array's own comment so a
+later round doesn't repeat it. **A second real finding, from the project's
+own "measure, don't guess" discipline**: a custom Playwright measurement
+(matching the project's own `tools/i18n-verify` method) showed `#readBar`
+genuinely not fitting on a phone with two more buttons in it -- turned out
+to be a false alarm on closer measurement (the "gap" was between a visible
+button and a correctly-`hidden` one for Single Ayah, not real overflow),
+which is itself a gap in `behaviour.mjs`'s own 37a check (its gap
+computation didn't filter hidden children) -- fixed there too, alongside
+updating three other checks (30j, 30l, 33a) whose hardcoded button-id
+lists/counts describe the OLD five/six-button row.
+
+**Verified: a focused 32-check Playwright script**, written this round
+against the real page (not the historical suite -- see below), covering
+every new mechanic end to end: bar 1's seven Study Unit options and fixed
+Surah cell; bar 2's three-row shape with Play/Bookmark/Full screen/Copy
+open and Share/Aa/WbW/Root/Collapse behind ⋮; ⋯ holding Approach and the
+whole-Qur'an link; Collapse actually collapsing the text; the size
+threshold really swapping Arabic/English/Bangla for the Read-view link on
+Juz and back again on Range; the nav cluster's inner pair present for Juz
+and absent for Single Ayah; the whole-Qur'an note showing no text, no nav,
+a real Notes editor, and exiting cleanly the moment any real Study Unit is
+picked. All 32 passed, no page errors. **The rest of `tools/i18n-verify/
+behaviour.mjs` was also run in full against this round**: every section
+through 41 (everything shared/canonical -- Read view, Study options,
+search, taglines, translation, the wheel, fonts, word-by-word direction --
+none of it touched by this round except `#readBar`) passed clean once the
+four stale assertions above were fixed. **Section 42 onward -- the
+Ayah Note panel's own historical checks -- were NOT updated this round and
+the suite crashes partway through them**: those sections test the OLD
+bar 2 (Share/Bookmark/Play inline, the phone/desktop Approach split) this
+round deliberately replaced, on the owner's own explicit instruction, so a
+large fraction of their ~30 direct selector references
+(`data-note-master-toggle`, `data-note-wbw-toggle`,
+`.note-approach-mobile`, etc.) now sit behind ⋮/⋯ and need a menu-opened
+first, or in a few cases reference a mechanism (the mobile/desktop
+Approach split) that no longer exists at all. **Flagged as real, scoped
+follow-up rather than rushed**: bringing sections 42-50 in line with the
+new bar 2 needs the same section-by-section care every other round in this
+file gives it, not a rushed pass under time pressure that risks a wrong
+fix landing in the harness itself.
+
+**Also flagged, not built this round**: Note view's own unit-level nav
+(the outer pair) stays within the currently loaded surah -- Ruku'/Juz/
+Hizb/Page step to the next number PRESENT IN THIS SURAH, never crossing
+into an adjacent one (that still means the Read screen); Play in the Note
+view previews only the scope's first āyah, not the whole range/surah; and
+Copy/Share build from whatever's on screen (the whole range/surah's joined
+text), a real improvement over the single-āyah-only `buildAyahText()` this
+round made along the way. No `firestore.rules` or schema change --
+`buildUnitKey.book()` is a pure function, `notes[unitKey]` already took
+any string.
 ---
 
 ## What this is

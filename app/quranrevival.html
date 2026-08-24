@@ -459,13 +459,6 @@
     #studyScreen { border-left: none; border-right: none; border-radius: 0; padding: 0.6rem 0.7rem; }
     #readBar button { font-size: 0.74rem; padding: 0.25rem 0.45rem; }
     #readRef { font-size: 0.75rem; }
-    /* Round 32 -- the owner's own split: on a phone, bar 2 keeps only Copy,
-       Share, Bookmark, Play and Word by word (five icons is already a full
-       line at this width); Approach and Mapping My Journey move to their
-       own row, .note-approach-bar-mobile, instead of wrapping onto a
-       second line of bar 2 itself. */
-    .note-bar2 .note-approach-desktop, .note-bar2 .note-journey-desktop { display: none; }
-    .note-approach-bar-mobile { display: flex; }
   }
 
   /* ---------- PC layout fix ----------
@@ -549,7 +542,7 @@
        owner's ask, and it only became possible once the reciter caption left
        the row. Note the old `space-between` had to GO rather than just be
        preceded: it is a later declaration, so it was quietly winning. */
-    flex: 0 0 auto; display: flex; justify-content: flex-end; align-items: center;
+    flex: 0 0 auto; display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center;
     gap: 0.4rem; padding: 0.25rem 0 0.4rem; border-bottom: 1px solid #eef1f7;
   }
   #readBar button { font-size: 0.78rem; padding: 0.3rem 0.55rem; margin: 0; white-space: nowrap; }
@@ -699,6 +692,8 @@
      have quietly become one switch. The row itself only goes when both do. */
   body.immersive-read.fs-hide-readbar #readPickers,
   body.immersive-read.fs-hide-readbar #prevUnitBtn,
+  body.immersive-read.fs-hide-readbar #prevAyahBtn,
+  body.immersive-read.fs-hide-readbar #nextAyahBtn,
   body.immersive-read.fs-hide-readbar #nextUnitBtn { display: none; }
   body.immersive-read.fs-hide-transport #readPlayBtn,
   body.immersive-read.fs-hide-transport #readStopBtn { display: none; }
@@ -896,24 +891,48 @@
   /* ---- Note & more: full-stage view, dock stays visible underneath ---- */
   #noteView { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   .note-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
-  /* Round 31 -- the owner's own correction to round 30: bar 1 (the Ayah
-     bar) holds JUST the reference and the controls that change what's on
-     screen (Prev/Next/Aa/Collapse/Full screen). Copy/Share/Journey used to
-     compete with the reference for room here, which is exactly why round
-     30's own fix (letting the reference wrap instead of truncate) still
-     read as cut off -- there wasn't enough room left to wrap INTO. Ref
-     keeps flex-grow 999 (wins the room fight over the icon buttons) and
-     wraps rather than truncates, so it can never be silently cut off
-     again either way. */
+
+  /* Enhancement round -- bar 1 stops being a button rack ("we would make
+     this Ayah view eventually as a deep study view, therefore we need to
+     place all types of reading views to enable here too" -- the owner's own
+     words) and becomes the reading-unit picker, the same shape as
+     #readPickers on the Read screen. */
+  .note-pickerbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem;
+    background: #142c58; padding: 0.4rem 0.6rem; flex: 0 0 auto;
+    border-radius: 0.4rem 0.4rem 0 0;
+  }
+  .note-pickerbar select {
+    background: #fff; border: 1px solid rgba(255,255,255,0.5); border-radius: 0.35rem;
+    padding: 0.22rem 0.28rem; font-size: 0.78rem; font-family: inherit; min-width: 0; flex: 1 1 0; color: #1c2333;
+  }
+  .note-pickerbar select[hidden] { display: none; }
+  .note-pickerbar select:disabled { background: #e4e4e4; color: #666; }
+  .note-pickerbar select[data-note-picker="ayah"],
+  .note-pickerbar select[data-note-picker="num"],
+  .note-pickerbar select[data-note-picker="from"],
+  .note-pickerbar select[data-note-picker="to"] { flex: 0 0 3.9rem; }
+
+  /* Enhancement round -- "a note can increase gradually... for the entire
+     Qur'an" and "every Ayah or any unit should have a way to recognise it
+     contains a note in a different unit" (the owner's own words): a small
+     row of pills naming whichever wider unit already has its own note. */
+  .note-wide-notes {
+    background: #f5f0e2; border-bottom: 1px solid #e0d8bd; padding: 0.35rem 0.6rem;
+    font-size: 0.74rem; color: #7a6a3c; flex: 0 0 auto;
+    display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center;
+  }
+  .note-wide-pill {
+    background: #fff; border: 1px dashed #b8862f; color: #7a6a3c; border-radius: 999px;
+    padding: 0.14rem 0.55rem; font-size: 0.72rem; cursor: pointer; font-family: inherit;
+  }
+  .note-wide-pill:hover { background: #fbf3e0; }
+
   .note-ayahbar {
     display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
-    background: #1F3A6E; color: #fff; padding: 0.5rem 0.6rem; border-radius: 0.4rem 0.4rem 0 0;
-    flex: 0 0 auto;
+    background: #1F3A6E; color: #fff; padding: 0.35rem 0.6rem;
   }
-  .note-ref {
-    flex: 999 1 140px; min-width: 90px; font-size: 0.88rem; font-weight: 700;
-    white-space: normal; overflow-wrap: break-word; line-height: 1.25;
-  }
+  .note-ref { flex: 1 1 auto; font-size: 0.88rem; font-weight: 700; white-space: normal; overflow-wrap: break-word; line-height: 1.25; }
   .note-icon-btn {
     flex: 0 0 auto;
     background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.4); color: #fff;
@@ -922,26 +941,23 @@
   .note-icon-btn:hover:not(:disabled) { background: rgba(255,255,255,0.3); }
   .note-icon-btn:disabled { opacity: 0.4; cursor: default; }
   .note-icon-btn.active { background: #B8862F; border-color: #B8862F; }
-  .note-journey-btn { flex: 0 0 auto; font-size: 0.68rem; font-weight: 700; white-space: nowrap; }
 
-  /* Bar 2 (round 31) -- a REAL second bar, permanent on every platform, not
-     a mobile-only wrap fallback of bar 1 (that was round 30's shape, and
-     the owner's own point: "In PC and desktop... no need to make a 2nd bar
-     as space is not a prob" was about bar 1 staying uncluttered, not about
-     there never being a bar 2). Holds the actions that need a CHOICE made
-     first -- Copy and Share each open the same picker the ⋮ quick menu
-     already uses. Round 32 (the owner's own ask) moved Bookmark and Play
-     in here too, always visible now rather than hidden behind the old 🔖
-     toggle (retired -- see .note-approach-wrap below for what replaced its
-     spot on a phone), and added the Approach toggle right after Word by
-     word -- it drives currentTrackableId (quranrevival.html's own
-     changeCurrentTrackable()), which is what the Track/Guide/Breakdown/
-     Coverage card further down in .note-body reads. */
+  /* Enhancement round -- one row of buttons, on every platform, no second
+     bar (the owner's own instruction: "must not make two bars for
+     buttons"). The nav cluster (pre-built HTML, quranrevival.html decides
+     which of its buttons are enabled/hidden) leads; Play/Bookmark/Full
+     screen/Copy stay open always; everything else folds into ⋮ and ⋯,
+     which reuse the Read screen's own `.quick-menu`/`.qm-item` dropdown
+     styling (`readPickers`' one bar, this bar -- same visual language). */
   .note-bar2 {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.32rem;
     background: #1F3A6E; padding: 0.4rem 0.6rem; flex: 0 0 auto;
-    border-top: 1px solid rgba(255,255,255,0.15);
+    border-top: 1px solid rgba(255,255,255,0.15); border-radius: 0 0 0.4rem 0.4rem;
   }
+  .note-nav-cluster { display: flex; gap: 0.32rem; flex: 0 0 auto; }
+  .note-bar2-spacer { flex: 1 1 auto; }
+  .note-dot-wrap { position: relative; flex: 0 0 auto; }
+  .note-dot-wrap .quick-menu { right: 0; left: auto; width: 15rem; }
   .note-sub-wrap { position: relative; flex: 0 0 auto; }
   .note-sub-popover {
     display: none; position: absolute; top: 2.3rem; left: 0; z-index: 8;
@@ -951,42 +967,26 @@
   .note-sub-popover.open { display: block; }
   .note-sub-popover label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.73rem; color: #555; padding: 0.15rem 0; }
   .note-sub-popover label input:disabled + span { color: #aaa; }
+  /* Nested inside the ⋮/⋯ dropdown now (round: Share and Aa fold in), so
+     its own popover needs to sit clear of the dropdown it lives inside. */
+  .quick-menu .note-sub-popover { position: static; box-shadow: none; border: none; padding: 0.2rem 0 0.3rem 1rem; width: auto; }
+  .quick-menu .note-sub-wrap > [data-note-sub-toggle] { width: 100%; text-align: left; background: none; border: none; color: #222; padding: 0.42rem 0.5rem; font-size: 0.8rem; }
+  .quick-menu .note-sub-wrap > [data-note-sub-toggle]:hover { background: #f5f0e2; }
 
-  /* The Approach toggle -- one instance lives in bar 2 (PC/tablet), a
-     second, identical one lives in .note-approach-bar-mobile (phone only,
-     below). Both are always in the markup; the media query below picks
-     which pair is actually visible, so there's exactly one control on
-     screen at any width -- see attachNoteViewHandlers() in
-     ayah-note-renderer.js, which wires both the same way regardless. */
-  .note-approach-wrap { flex: 0 0 auto; max-width: 11rem; }
+  .note-approach-wrap { flex: 1 1 auto; min-width: 8rem; }
   .note-approach-select {
     width: 100%; background: #fff; border: 1px solid #ddd; border-radius: 0.35rem;
     padding: 0.28rem 0.4rem; font-size: 0.8rem; color: #222; font-family: inherit;
   }
-  /* Round 32 -- "another bar below (where the Bookmark n Play Button now)":
-     on a phone, Approach and Mapping My Journey get their own row rather
-     than crowding bar 2's five other icons onto one line. It sits exactly
-     where the old note-actionsbar/note-master-row (the retired 🔖 toggle)
-     used to, at the top of .note-body, before the collapsible fields.
-     `display` is deliberately NOT set here: it's set only inside the two
-     mutually-exclusive media queries below (phone: flex, PC/tablet: none)
-     -- this rule and #studyScreen's own phone override sit in exactly the
-     shape that bit once already (a max-width:720px rule earlier in the
-     file loses a property tie to an unconditional rule later in it, equal
-     specificity, source order breaks the tie) -- putting BOTH states behind
-     a media condition sidesteps that trap rather than repeating it. */
-  .note-approach-bar-mobile {
-    flex-wrap: wrap; align-items: center; gap: 0.5rem;
-    background: #f5f0e2; border: 1px solid #e0d8bd; border-radius: 0.4rem;
-    padding: 0.5rem 0.6rem; margin: 0.8rem 0.9rem 0; flex: 0 0 auto;
+
+  .note-readlink {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap;
+    background: #f5f0e2; border: 1px dashed #999; border-radius: 0.4rem;
+    padding: 0.7rem 0.8rem; font-size: 0.86rem; margin-bottom: 0.6rem; color: #444;
   }
-  .note-approach-bar-mobile .note-approach-wrap { max-width: none; flex: 1 1 auto; }
-  .note-approach-bar-mobile .note-approach-select { background: #fff; }
-  .note-approach-bar-mobile .note-journey-btn {
-    background: #fff; border: 1px solid #ddd; color: #999; flex: 0 0 auto;
-  }
-  @media (min-width: 721px) {
-    .note-approach-bar-mobile { display: none; }
+  .note-readlink button {
+    background: #1F3A6E; color: #fff; border: none; border-radius: 0.35rem; padding: 0.35rem 0.7rem;
+    font-size: 0.78rem; cursor: pointer; font-family: inherit; white-space: nowrap;
   }
 
   .note-palette {
@@ -1179,9 +1179,23 @@
              it printed the same sentence as the dock's "Tracking:" line for five
              of the six unit types, and the pickers now say it better, because
              they are the readout AND the control. -->
+        <!-- Enhancement round -- "one is for moving the whole unit of choice,
+             another for moving only a single Ayah" (the owner's own words),
+             both together at the top rather than split between this bar and
+             the row further down. Media-player convention: the OUTER, double-
+             chevron pair moves the whole chosen unit (unchanged --
+             prevUnitBtn/nextUnitBtn, same stepUnit() as always, just
+             re-iconed); the INNER, single-chevron pair moves one āyah
+             (prevAyahBtn/nextAyahBtn, RELOCATED from #singleAyahNavRow below,
+             same click handlers, same hide rules -- unchanged). #ayahPosition
+             stays behind in its own row: it is the one place the surah's
+             total is written ("Ayah 1 of 286"), which the buttons moving up
+             does not replace. -->
         <div id="readBar">
-          <button type="button" class="secondary qr-ico" id="prevUnitBtn" aria-label="Previous" title="Previous">◂</button>
-          <button type="button" class="secondary qr-ico" id="nextUnitBtn" aria-label="Next" title="Next">▸</button>
+          <button type="button" class="secondary qr-ico" id="prevUnitBtn" aria-label="Previous" title="Previous">⏮</button>
+          <button type="button" class="secondary qr-ico" id="prevAyahBtn" aria-label="Previous āyah" title="Previous āyah">◂</button>
+          <button type="button" class="secondary qr-ico" id="nextAyahBtn" aria-label="Next āyah" title="Next āyah">▸</button>
+          <button type="button" class="secondary qr-ico" id="nextUnitBtn" aria-label="Next" title="Next">⏭</button>
           <button type="button" class="secondary qr-ico" id="readPlayBtn" aria-label="Play" title="Play">▶</button>
           <button type="button" class="secondary qr-ico" id="readStopBtn" aria-label="Stop" title="Stop">■</button>
           <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
@@ -1197,9 +1211,7 @@
         <div id="readScroll">
           <div id="studyScreen">
             <div class="row" id="singleAyahNavRow">
-              <button class="secondary" id="prevAyahBtn">◂ Previous</button>
-              <div id="ayahPosition" style="align-self:center; font-size:0.85rem; color:#666;"></div>
-              <button class="secondary" id="nextAyahBtn">Next ▸</button>
+              <div id="ayahPosition" style="align-self:center; font-size:0.85rem; color:#666; margin:0 auto;"></div>
             </div>
             <div id="ayahPanels"></div>
             <div id="pageViewContainer" style="display:none;"></div>
@@ -1510,7 +1522,7 @@
     import { safeWrite } from "./js/errors.js";
     import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames } from "./js/catalogue.js";
-    import { buildUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById } from "./js/unit-keys.js";
+    import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
     import { getBookmarks, saveBookmark, removeSavedBookmark, findSavedBookmark, createFolder, flattenFolderTree } from "./js/bookmarks.js";
@@ -1814,7 +1826,18 @@
     let ayahNotesDoc = { notes: {} };
     let bookmarksDoc = { resume: {}, saved: [] };
     let ayahNoteDataLoadedFor = null;
-    let openNoteUnitKey = null; // whichever āyah "Note & more" is currently showing, so a data refresh (e.g. after switching person) can re-render it in place
+    // Enhancement round -- the Note view's OWN scope, independent of the
+    // canonical Read-view position (currentUnitType/currentAyahNum/...) on
+    // purpose: opening "Note & more" on one āyah of a flow must never
+    // silently move the Read screen out from under the reader. Starts null
+    // (nothing open yet); openNoteView() seeds it from whichever āyah was
+    // tapped. Bar 1's own pickers then let the reader change what's being
+    // noted -- up to and including a fixed "book:quran" note about the
+    // whole Qur'an (isBook) -- entirely within this state, never touching
+    // currentUnitType/currentSurahNum/currentAyahNum. Always reads within
+    // currentSurahData: Note view never loads a different surah than
+    // whatever's already open (see noteScopeUnitInfo()'s own comment).
+    let noteScope = null; // { unitType, ayahNum, rangeFrom, rangeTo, unitNumber, isBook }
     let noteFullscreenOn = false; // the Note view's own full-screen state -- see toggleNoteFullscreen()
     let noteWbwOn = false; // bar 2's Word-by-word toggle (round 31) -- a reading preference that persists across Prev/Next within the Note view, not reset per āyah
     let noteRootsOn = false; // bar 2's Root (Roots & derivatives) toggle (enhancement round) -- same "persists across Prev/Next, not reset per āyah" shape as noteWbwOn
@@ -2302,6 +2325,12 @@
     }
 
     const UNIT_NUM_LABELS = { ruku: "Ruku' №", juz: "Juz №", hizb: "Hizb №", page: "Page №" };
+    // Enhancement round -- the Note view's own bar 1 picker offers the same
+    // seven Study Unit choices #unitTypeSelect does (Whole Qur'an is
+    // deliberately NOT one of them -- see buildUnitKey.book()'s own
+    // comment), in the same wording, so switching between the two feels
+    // like the same control.
+    const NOTE_UNIT_TYPE_LABELS = { ayah: "Single Ayah", range: "Range of Ayahs", surah: "Whole Surah", ruku: "Ruku'", juz: "Juz", hizb: "Hizb", page: "Page" };
 
     function renderUnitNumberPicker() {
       const numbered = NUMBERED_UNITS.includes(currentUnitType);
@@ -3007,7 +3036,7 @@
       trackableSelect.value = id;
       renderWheel();
       if (stageView === "read") renderStudyScreen();
-      else if (stageView === "note" && openNoteUnitKey) renderNoteViewNow(openNoteUnitKey);
+      else if (stageView === "note" && noteScope) renderNoteViewNow();
     }
 
     /** Brings the wheel hub's own Surah/Ayah pickers into line with the ones
@@ -3754,7 +3783,7 @@
         bookmarksDoc = { resume: {}, saved: [] };
       }
       if (stageView === "read") renderStudyScreen();
-      else if (stageView === "note" && openNoteUnitKey) renderNoteViewNow(openNoteUnitKey);
+      else if (stageView === "note" && noteScope) renderNoteViewNow();
     }
 
     /** Ref line + whichever of Arabic/English/Bangla/Notes were checked -- the same shape for the quick menu's Copy/Share and the Note view's own row, so ticking the same boxes in either place produces the same text (spec: "these options also have to be there where they are now for those using the note"). */
@@ -3810,6 +3839,27 @@
       };
     }
 
+    /** Note view's own equivalent -- reads noteScope instead of the
+        canonical Read-view position, since a Note-view bookmark can (this
+        round) describe a different scope than whatever the Read screen is
+        showing at the time (see noteScope's own comment). Reading-view
+        prefs (tajweed/WbW/roots/Mushaf) still come from the shared,
+        canonical toggles -- those aren't scope-specific. */
+    function captureNoteBookmarkSettings() {
+      return {
+        unitType: noteScope.unitType,
+        surahNum: currentSurahNum,
+        ayahNum: noteScope.ayahNum,
+        rangeFrom: noteScope.unitType === "range" ? noteScope.rangeFrom : null,
+        rangeTo: noteScope.unitType === "range" ? noteScope.rangeTo : null,
+        trackableId: currentTrackableId,
+        tajweedOn: tajweedToggle.checked,
+        wbwOn: wbwShowToggle.checked,
+        rootsOn: rootsToggle.checked,
+        mushafOn: mushafToggle.checked,
+      };
+    }
+
     /** The other half of captureQuranBookmarkSettings() -- restores every field it captured, then lands on the bookmarked āyah's own Note screen (item 6: "open the same place where the bookmark was created from"). Silently tolerant of a settings object from before this round (null, or missing fields) -- every field is optional and simply left alone. */
     async function applyQuranBookmarkSettings(settings, position) {
       if (settings) {
@@ -3847,7 +3897,7 @@
     }
 
     /** Item 2 ("prompt for naming it") + item 4 (capture the full study state, Quran only -- see captureQuranBookmarkSettings()'s own comment for why). Reachable from both the Note view's own star (bar 2) and the plain Read screen's ⋮ menu (item 3: "enable bookmark button at the READ screen as well") -- same function either way. */
-    async function toggleAyahBookmark(unitKey) {
+    async function toggleAyahBookmark(unitKey, defaultNameOverride, settingsOverride) {
       if (!auth.currentUser || !selectedPersonId) return;
       const existing = findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
       let outcome;
@@ -3857,8 +3907,15 @@
           { collection: TENANT.BOOKMARKS, action: "removeSavedBookmark" }
         );
       } else {
-        const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
-        const defaultName = ayahRefLabel(surah, ayahNum);
+        // Enhancement round -- this now also fires for a unitKey that isn't
+        // āyah-shaped (a Note-view bookmark on a wider unit, up to
+        // "book:quran") -- parseAyahUnitKey() would misread one of those, so
+        // the Note view hands its own noteScopeUnitInfo().label straight in
+        // rather than this function guessing at it.
+        const defaultName = defaultNameOverride ?? (() => {
+          const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
+          return ayahRefLabel(surah, ayahNum);
+        })();
         const choice = await openBookmarkNamePopover({
         defaultName,
         folders: flattenFolderTree(bookmarksDoc),
@@ -3882,7 +3939,7 @@
         outcome = await safeWrite(
           () => saveBookmark(db, {
             tenantId: activeTenantId, personId: selectedPersonId, moduleId: "quranrevival", subjectId: "quran",
-            name: choice.name || defaultName, position: unitKey, settings: captureQuranBookmarkSettings(), folderId,
+            name: choice.name || defaultName, position: unitKey, settings: settingsOverride ?? captureQuranBookmarkSettings(), folderId,
             personTagId: choice.personTagId, uid: auth.currentUser.uid,
           }),
           { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
@@ -3904,61 +3961,314 @@
       // right now -- the Note view when it's open on this exact āyah, the
       // ordinary reading screen (its own ⋮ badges) otherwise. Mirrors
       // changeCurrentTrackable()'s own "whichever stage view is open" rule.
-      if (stageView === "note" && openNoteUnitKey === unitKey) renderNoteViewNow(unitKey);
+      if (stageView === "note" && noteScopeCurrentUnitKey() === unitKey) renderNoteViewNow();
       else if (stageView === "read") renderStudyScreen();
     }
 
-    /** Builds and mounts the "Note & more" view for one āyah; does NOT switch stageView -- callers decide that (openNoteView() on first open; onPrev/onNext just re-render in place). Prev/Next stay within the current surah for this round -- crossing a surah boundary would need an async fetch mid-navigation, flagged as a real follow-up rather than attempted here. */
-    function renderNoteViewNow(unitKey) {
-      const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
-      if (surah !== currentSurahNum || !currentSurahData) return;
-      const ayah = currentSurahData.ayahs.find((a) => a.ayah === ayahNum);
-      if (!ayah) return;
-      openNoteUnitKey = unitKey;
+    /** Same shape as currentUnitInfo() ({unitType, unitKey, chunkKey, label})
+        but built from noteScope instead of the canonical Read-view position
+        -- kept as its own small function rather than parametrizing
+        currentUnitInfo() itself, so nothing about the Read screen's own,
+        already-correct position logic is touched by this round. Always
+        reads within currentSurahData (Note view never loads a different
+        surah than whatever's already open -- see noteScope's own comment);
+        callers check noteScope.isBook themselves first, since a book-scope
+        note has no surah/ayah at all. */
+    function noteScopeUnitInfo() {
+      const ayah = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum) ?? currentSurahData.ayahs[0];
+      const surahChunkKey = `surah_${currentSurahNum}`;
+      if (noteScope.unitType === "range") {
+        const from = Math.min(noteScope.rangeFrom, noteScope.rangeTo), to = Math.max(noteScope.rangeFrom, noteScope.rangeTo);
+        return { unitType: "range", unitKey: buildUnitKey.range(currentSurahNum, from, to), chunkKey: surahChunkKey, label: t("Ayahs {from}–{to} of Surah {surah}", { from: num(from), to: num(to), surah: num(currentSurahNum) }), fromAyah: from, toAyah: to };
+      }
+      if (noteScope.unitType === "surah") {
+        return { unitType: "surah", unitKey: buildUnitKey.surah(currentSurahNum), chunkKey: surahChunkKey, label: t("Whole Surah {surah}", { surah: num(currentSurahNum) }), fromAyah: 1, toAyah: currentSurahData.ayahCount };
+      }
+      if (noteScope.unitType === "ruku") {
+        const idx = rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku);
+        const inRuku = currentSurahData.ayahs.filter((a) => a.ruku === ayah.ruku).map((a) => a.ayah);
+        return { unitType: "ruku", unitKey: buildUnitKey.ruku(currentSurahNum, idx), chunkKey: surahChunkKey, label: t("Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})", { ruku: num(idx), surah: num(currentSurahNum), from: num(Math.min(...inRuku)), to: num(Math.max(...inRuku)) }), fromAyah: Math.min(...inRuku), toAyah: Math.max(...inRuku) };
+      }
+      if (noteScope.unitType === "juz") {
+        const inJuz = currentSurahData.ayahs.filter((a) => a.juz === ayah.juz).map((a) => a.ayah);
+        return { unitType: "juz", unitKey: buildUnitKey.juz(ayah.juz), chunkKey: "subject_quran", label: t("Juz {juz}", { juz: num(ayah.juz) }), fromAyah: Math.min(...inJuz), toAyah: Math.max(...inJuz) };
+      }
+      if (noteScope.unitType === "hizb") {
+        const hizbNow = Math.ceil(ayah.hizbQuarter / 4);
+        const inHizb = currentSurahData.ayahs.filter((a) => Math.ceil(a.hizbQuarter / 4) === hizbNow).map((a) => a.ayah);
+        return { unitType: "hizb", unitKey: buildUnitKey.hizb(hizbNow), chunkKey: "subject_quran", label: t("Hizb {hizb}", { hizb: num(hizbNow) }), fromAyah: Math.min(...inHizb), toAyah: Math.max(...inHizb) };
+      }
+      if (noteScope.unitType === "page") {
+        const inPage = currentSurahData.ayahs.filter((a) => a.page === ayah.page).map((a) => a.ayah);
+        return { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), chunkKey: "subject_quran", label: t("Page {page}", { page: num(ayah.page) }), fromAyah: Math.min(...inPage), toAyah: Math.max(...inPage) };
+      }
+      return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, noteScope.ayahNum), chunkKey: surahChunkKey, label: ayahRefLabel(currentSurahNum, noteScope.ayahNum), fromAyah: noteScope.ayahNum, toAyah: noteScope.ayahNum };
+    }
+
+    /** The unit key the Note view is showing right now, book scope included -- the one thing every caller that needs to compare "is this the note that's open" should call rather than re-deriving it. */
+    function noteScopeCurrentUnitKey() {
+      if (!noteScope) return null;
+      return noteScope.isBook ? buildUnitKey.book() : noteScopeUnitInfo().unitKey;
+    }
+
+    /** Which number (of whichever unit type) a given āyah of the CURRENTLY LOADED surah belongs to -- ruku/juz/hizb/page all read straight off fields the pulled data already carries, so this never needs the boundary-table fetch (getJuzIndex()/etc.) the canonical Study Unit picker uses. That is the trade this round makes deliberately: Note view's own unit-number picker only offers numbers that appear WITHIN the open surah, not every valid number in the whole Qur'an -- picking a different Juz/Hizb/Page entirely still means Study options or the Read screen. */
+    function noteScopeNumberOfAyah(unitType, ayah) {
+      if (unitType === "ruku") return rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku);
+      if (unitType === "juz") return ayah.juz;
+      if (unitType === "hizb") return Math.ceil(ayah.hizbQuarter / 4);
+      if (unitType === "page") return ayah.page;
+      return null;
+    }
+    function noteScopeNumbersInSurah(unitType) {
+      return [...new Set(currentSurahData.ayahs.map((a) => noteScopeNumberOfAyah(unitType, a)))].sort((a, b) => a - b);
+    }
+
+    /** "the study contents (Ayat)... is only important to display here for single, a Range and a small Surah that is less than a half page size. Anything above than that a user can read from the READ view" (the owner's own words). "Small" reads real data already in memory (every loaded āyah carries its own real Mushaf `.page` number) rather than fetching the full 2.8MB page-layout file just to decide this: a surah that fits on exactly one real printed page counts as small. That is a deliberately looser proxy than literal line-counted "half a page" -- flagged, not hidden, in the build report. */
+    function noteScopeShowAyatText() {
+      if (noteScope.isBook) return false;
+      if (noteScope.unitType === "ayah" || noteScope.unitType === "range") return true;
+      if (noteScope.unitType === "surah") return new Set(currentSurahData.ayahs.map((a) => a.page)).size === 1;
+      return false;
+    }
+
+    /** Word by Word / Root read ONE āyah's own data (ayah-renderer.js's panels take a single āyah object, not a span) -- narrower than noteScopeShowAyatText(), which also covers a Range or a short surah. */
+    function noteScopeCanWbwRoot() {
+      return !noteScope.isBook && noteScope.unitType === "ayah";
+    }
+
+    /** "every Ayah or any unit should have a way to recognise it contains a note in a different unit" (the owner's own words) -- for a single-āyah scope only (the concept only means something when there IS one specific āyah to ask "which wider units cover this"), lists whichever ancestor scope already has its own real note, so the reader can jump straight to it rather than stumbling on it by chance. Every candidate key is derived from data already loaded, and ayahHasNote() is a plain in-memory check (no fetch) -- this costs nothing extra to compute on every render. */
+    function noteScopeWiderNotes() {
+      if (noteScope.isBook || noteScope.unitType !== "ayah") return [];
+      const ayah = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
+      if (!ayah) return [];
+      const rukuIdx = rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku);
+      const hizbNow = Math.ceil(ayah.hizbQuarter / 4);
+      const candidates = [
+        { unitType: "ruku", unitKey: buildUnitKey.ruku(currentSurahNum, rukuIdx), label: t("Ruku' {ruku}", { ruku: num(rukuIdx) }) },
+        { unitType: "surah", unitKey: buildUnitKey.surah(currentSurahNum), label: t("Surah {surah}", { surah: num(currentSurahNum) }) },
+        { unitType: "juz", unitKey: buildUnitKey.juz(ayah.juz), label: t("Juz {juz}", { juz: num(ayah.juz) }) },
+        { unitType: "hizb", unitKey: buildUnitKey.hizb(hizbNow), label: t("Hizb {hizb}", { hizb: num(hizbNow) }) },
+        { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), label: t("Page {page}", { page: num(ayah.page) }) },
+        { unitType: "book", unitKey: buildUnitKey.book(), label: t("the whole Qur'an") },
+      ];
+      return candidates.filter((c) => ayahHasNote(ayahNotesDoc, c.unitKey));
+    }
+
+    /** Bar 1: the reading-unit picker, mirroring #unitTypeSelect's own seven
+        choices ("place all types of reading views to enable here too" --
+        the owner's own words) -- entirely built here (I2: ayah-note-renderer.js
+        never reads surah data), same pattern approachOptionsHtml already
+        uses. Surah is shown fixed/disabled: Note view never loads a
+        different surah than whatever's already open (see noteScope's own
+        comment for why). */
+    function renderNotePickerBarHtml() {
+      const meta = surahIndex.find((s) => s.surahNumber === currentSurahNum);
+      const unitType = noteScope.unitType;
+      const isRange = unitType === "range";
+      const numbered = NUMBERED_UNITS.includes(unitType);
+      const unitOptionsHtml = ["ayah", "range", "surah", "ruku", "juz", "hizb", "page"]
+        .map((v) => `<option value="${v}" ${unitType === v ? "selected" : ""}>${t(NOTE_UNIT_TYPE_LABELS[v])}</option>`).join("");
+      const ayahOptionsHtml = (selected) => Array.from({ length: currentSurahData.ayahCount }, (_, i) => i + 1)
+        .map((n) => `<option value="${n}" ${n === selected ? "selected" : ""}>${num(n)}</option>`).join("");
+      const numbers = numbered ? noteScopeNumbersInSurah(unitType) : [];
+      const numOptionsHtml = numbers.map((n) => `<option value="${n}" ${n === noteScope.unitNumber ? "selected" : ""}>${num(n)}</option>`).join("");
+      const ayahCellHidden = isRange || unitType === "surah";
+      return `
+        <select data-note-picker="unitType" aria-label="${t("Study Unit")}">${unitOptionsHtml}</select>
+        <select data-note-picker="surah" aria-label="${t("Surah")}" disabled title="${t("This surah — close Note & more to read a different one")}"><option>${surahName(currentSurahNum, meta?.nameEnglish)}</option></select>
+        <select data-note-picker="ayah" aria-label="${t("Ayah")}" ${ayahCellHidden ? "hidden" : ""}>${ayahOptionsHtml(noteScope.ayahNum)}</select>
+        <select data-note-picker="num" aria-label="${t(UNIT_NUM_LABELS[unitType] ?? "Number")}" ${numbered ? "" : "hidden"}>${numOptionsHtml}</select>
+        <select data-note-picker="from" aria-label="${t("From")}" ${isRange ? "" : "hidden"}>${ayahOptionsHtml(noteScope.rangeFrom)}</select>
+        <select data-note-picker="to" aria-label="${t("To")}" ${isRange ? "" : "hidden"}>${ayahOptionsHtml(noteScope.rangeTo)}</select>`;
+    }
+
+    /** Wires bar 1's own <select>s -- freshly looked up every call, since renderNoteViewNow() rebuilds the whole view's innerHTML on every re-render (a claim, a bookmark toggle, Prev/Next), which destroys and recreates these nodes each time; harmless to re-bind fresh listeners to fresh nodes. Any interaction here means the reader is genuinely choosing a different scope, so it always clears noteScope.isBook first. */
+    function wireNotePickerBar() {
+      const unitSel = noteView.querySelector('[data-note-picker="unitType"]');
+      const ayahSel = noteView.querySelector('[data-note-picker="ayah"]');
+      const numSel = noteView.querySelector('[data-note-picker="num"]');
+      const fromSel = noteView.querySelector('[data-note-picker="from"]');
+      const toSel = noteView.querySelector('[data-note-picker="to"]');
+      unitSel?.addEventListener("change", () => {
+        noteScope.isBook = false;
+        noteScope.unitType = unitSel.value;
+        if (noteScope.unitType === "range") {
+          noteScope.rangeFrom = noteScope.ayahNum;
+          noteScope.rangeTo = Math.min(noteScope.ayahNum + 4, currentSurahData.ayahCount);
+        }
+        if (NUMBERED_UNITS.includes(noteScope.unitType)) {
+          const nums = noteScopeNumbersInSurah(noteScope.unitType);
+          const ayah = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
+          const current = ayah ? noteScopeNumberOfAyah(noteScope.unitType, ayah) : null;
+          noteScope.unitNumber = nums.includes(current) ? current : (nums[0] ?? null);
+        }
+        renderNoteViewNow();
+      });
+      ayahSel?.addEventListener("change", () => { noteScope.isBook = false; noteScope.ayahNum = Number(ayahSel.value); renderNoteViewNow(); });
+      numSel?.addEventListener("change", () => {
+        noteScope.isBook = false;
+        noteScope.unitNumber = Number(numSel.value);
+        const match = currentSurahData.ayahs.find((a) => noteScopeNumberOfAyah(noteScope.unitType, a) === noteScope.unitNumber);
+        if (match) noteScope.ayahNum = match.ayah;
+        renderNoteViewNow();
+      });
+      fromSel?.addEventListener("change", () => { noteScope.isBook = false; noteScope.rangeFrom = Number(fromSel.value); noteScope.ayahNum = noteScope.rangeFrom; renderNoteViewNow(); });
+      toSel?.addEventListener("change", () => { noteScope.isBook = false; noteScope.rangeTo = Number(toSel.value); renderNoteViewNow(); });
+    }
+
+    /** The nav cluster's own HTML -- "one is for moving the whole unit of
+        choice, another for moving only a single Ayah... these buttons
+        should be in both READ and NOTE view" (the owner's own words), same
+        media-player convention as the Read screen: the OUTER, double-chevron
+        pair moves the whole chosen unit, the INNER, single-chevron pair
+        moves one āyah. The inner pair is left out entirely for Single Ayah
+        (the two would be identical) and for Whole Surah (there is no "next
+        whole surah" within a single loaded surah -- crossing surahs stays a
+        Read-view action, same "stays within the current surah" simplification
+        every other piece of Note view's own navigation makes this round). */
+    function renderNoteNavHtml() {
+      if (noteScope.isBook) return ""; // one running note -- nothing to page between
+      const info = noteScopeUnitInfo();
+      const isAyah = noteScope.unitType === "ayah";
+      const isSurah = noteScope.unitType === "surah";
+      const atStart = isSurah || info.fromAyah <= 1;
+      const atEnd = isSurah || info.toAyah >= currentSurahData.ayahCount;
+      const inner = isAyah || isSurah ? "" : `
+        <button type="button" class="note-icon-btn" data-note-prev-ayah ${noteScope.ayahNum <= 1 ? "disabled" : ""} title="${t("Previous āyah")}">◂</button>
+        <button type="button" class="note-icon-btn" data-note-next-ayah ${noteScope.ayahNum >= currentSurahData.ayahCount ? "disabled" : ""} title="${t("Next āyah")}">▸</button>`;
+      return `
+        <button type="button" class="note-icon-btn" data-note-prev-unit ${atStart ? "disabled" : ""} title="${t("Previous")}">⏮</button>
+        ${inner}
+        <button type="button" class="note-icon-btn" data-note-next-unit ${atEnd ? "disabled" : ""} title="${t("Next")}">⏭</button>`;
+    }
+
+    /** The nav cluster's OUTER pair -- moves the whole chosen unit, within the currently loaded surah only (see renderNoteNavHtml()'s own comment on why Whole Surah has no outer step at all). */
+    function stepNoteUnit(dir) {
+      if (noteScope.isBook || noteScope.unitType === "surah") return;
+      if (noteScope.unitType === "ayah") { stepNoteAyah(dir); return; }
+      const count = currentSurahData.ayahCount;
+      if (noteScope.unitType === "range") {
+        const span = Math.max(1, Math.abs(noteScope.rangeTo - noteScope.rangeFrom) + 1);
+        if (dir > 0) {
+          const to = Math.max(noteScope.rangeFrom, noteScope.rangeTo);
+          if (to >= count) return;
+          noteScope.rangeFrom = to + 1;
+          noteScope.rangeTo = Math.min(to + span, count);
+        } else {
+          const from = Math.min(noteScope.rangeFrom, noteScope.rangeTo);
+          if (from <= 1) return;
+          noteScope.rangeTo = from - 1;
+          noteScope.rangeFrom = Math.max(1, from - span);
+        }
+        noteScope.ayahNum = noteScope.rangeFrom;
+        renderNoteViewNow();
+        return;
+      }
+      // ruku/juz/hizb/page: step to the adjacent number present in this surah.
+      const numbers = noteScopeNumbersInSurah(noteScope.unitType);
+      const at = numbers.indexOf(noteScope.unitNumber);
+      const target = numbers[at + dir];
+      if (target === undefined) return;
+      noteScope.unitNumber = target;
+      const match = currentSurahData.ayahs.find((a) => noteScopeNumberOfAyah(noteScope.unitType, a) === target);
+      if (match) noteScope.ayahNum = match.ayah;
+      renderNoteViewNow();
+    }
+
+    /** The nav cluster's INNER pair -- moves exactly one āyah, bounded by the currently loaded surah (same simple rule the Read screen's own prevAyahBtn/nextAyahBtn already use). */
+    function stepNoteAyah(dir) {
+      const target = noteScope.ayahNum + dir;
+      if (target < 1 || target > currentSurahData.ayahCount) return;
+      noteScope.ayahNum = target;
+      renderNoteViewNow();
+    }
+
+    /** Builds and mounts the "Note & more" view against whatever `noteScope`
+        currently says -- does NOT switch stageView (callers decide that:
+        openNoteView() on first open; every nav/toggle callback just
+        re-renders in place). See noteScope's own comment for why this reads
+        local state rather than taking a unitKey parameter the way it used
+        to: opening a note on one āyah of a flow must never silently move
+        the Read screen's own position. */
+    function renderNoteViewNow() {
+      if (!noteScope || !currentSurahData) return;
+      const isBook = !!noteScope.isBook;
+      const info = isBook ? null : noteScopeUnitInfo();
+      const unitKey = isBook ? buildUnitKey.book() : info.unitKey;
+      const ref = isBook ? t("The whole Qur'an") : info.label;
+      const showAyatText = noteScopeShowAyatText();
+      const canWbwRoot = noteScopeCanWbwRoot();
+      const showApproach = !isBook && noteScope.unitType === "ayah";
+      const ayah = isBook ? null : currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
+
+      let textBlocks = { arabicText: "", englishText: "", banglaText: "" };
+      if (showAyatText && !isBook) {
+        const inScope = currentSurahData.ayahs.filter((a) => a.ayah >= info.fromAyah && a.ayah <= info.toAyah);
+        textBlocks = {
+          arabicText: inScope.map((a) => a.uthmaniText).join("  "),
+          englishText: inScope.map((a) => a.translations?.en).filter(Boolean).join(" "),
+          banglaText: inScope.map((a) => a.translations?.bn).filter(Boolean).join(" "),
+        };
+      }
+
       const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
       const hasNote = ayahHasNote(ayahNotesDoc, unitKey);
+      const wideNotes = noteScopeWiderNotes();
+      const wideNoteHtml = wideNotes.length
+        ? `<div class="note-wide-notes"><span>${t("Also noted at:")}</span>${wideNotes.map((w) => `<button type="button" class="note-wide-pill" data-note-wide-open="${w.unitType}">${w.label} →</button>`).join("")}</div>`
+        : "";
+      const readViewLinkHtml = !isBook && !showAyatText
+        ? `<span>${info.label} — ${t("read it on the Read screen")}</span><button type="button" data-note-open-read>${t("Open in Read")} ▸</button>`
+        : "";
+
       noteView.innerHTML = renderNoteView({
-        unitKey,
-        ref: ayahRefLabel(surah, ayahNum),
-        arabicText: ayah.uthmaniText,
-        englishText: ayah.translations?.en ?? "",
-        banglaText: ayah.translations?.bn ?? "",
+        unitKey, ref,
+        pickerBarHtml: renderNotePickerBarHtml(),
+        navHtml: renderNoteNavHtml(),
+        showAyatText,
+        arabicText: textBlocks.arabicText, englishText: textBlocks.englishText, banglaText: textBlocks.banglaText,
+        readViewLinkHtml,
         notesHtml: ayahNoteHtml(ayahNotesDoc, unitKey),
         // Round 31 -- "this Ayah screen would be the main study screen for a
         // user, therefore we need to make tools available here" (the
-        // owner's own words). Reuses the same renderWordByWordPanel() the
-        // ordinary reading screen already calls, at whatever language the
-        // reader has already chosen there (wbwLangs()) -- one tool, one
-        // source of truth, just a second place it's offered.
-        wbwHtml: noteWbwOn ? renderWordByWordPanel(ayah, { langs: wbwLangs() }) : "",
-        isWbwOn: noteWbwOn,
-        // Enhancement round -- "Root" toggle, right after Word by word,
-        // reusing the same renderRootDerivativePanel() Study options'
-        // "Roots & derivatives" tick already calls.
-        rootsHtml: noteRootsOn ? renderRootDerivativePanel(ayah) : "",
-        isRootsOn: noteRootsOn,
+        // owner's own words). Only meaningful for a genuine single āyah
+        // (canWbwRoot) -- ayah-renderer.js's panels take one āyah, not a span.
+        wbwHtml: canWbwRoot && noteWbwOn && ayah ? renderWordByWordPanel(ayah, { langs: wbwLangs() }) : "",
+        isWbwOn: canWbwRoot && noteWbwOn,
+        rootsHtml: canWbwRoot && noteRootsOn && ayah ? renderRootDerivativePanel(ayah) : "",
+        isRootsOn: canWbwRoot && noteRootsOn,
+        canWbwRoot,
         hasNote,
         isBookmarked,
-        hasPrev: ayahNum > 1,
-        hasNext: ayahNum < currentSurahData.ayahCount,
         isFullscreen: noteFullscreenOn,
-        // The wheel-slice card, now housed here after Notes instead of a
-        // floating pop-up -- see renderApproachEmbedHtml()'s own comment.
-        approachHtml: renderApproachEmbedHtml(surah, ayahNum),
+        // The wheel-slice card, only for a single-āyah scope (unchanged from
+        // before this round) -- see renderApproachEmbedHtml()'s own comment.
+        approachHtml: showApproach ? renderApproachEmbedHtml(currentSurahNum, noteScope.ayahNum) : "",
         isNotesOpen: noteNotesOpen,
-        // Round 32 -- the Approach toggle (bar 2 on PC/tablet, its own bar
-        // on a phone). Same options buildTrackableOptionsHtml() already
-        // builds for the canonical trackableSelect; the "selected" value
-        // itself is set just below rather than baked into the string, the
-        // same "set .value after inserting" convention trackableSelect's
-        // own render already uses.
-        approachOptionsHtml: buildTrackableOptionsHtml(),
+        showApproach,
+        approachOptionsHtml: showApproach ? buildTrackableOptionsHtml() : "",
+        wideNoteHtml,
       });
-      if (quranTrackables.some((tr) => tr.id === currentTrackableId)) {
+      if (showApproach && quranTrackables.some((tr) => tr.id === currentTrackableId)) {
         noteView.querySelectorAll("[data-note-approach-select]").forEach((sel) => { sel.value = currentTrackableId; });
       }
       attachNoteViewHandlers(noteView, {
-        buildText: (langs) => buildAyahText(unitKey, langs),
+        // Copy/Share build from whatever's actually ON SCREEN (textBlocks,
+        // already joined across the whole scope for a Range/short surah --
+        // buildAyahText() is single-āyah only, which used to be fine when
+        // Copy/Share only ever existed for a single āyah).
+        buildText: (langs) => {
+          if (isBook) return "";
+          const parts = [ref];
+          if (langs.includes("ar") && textBlocks.arabicText) parts.push(textBlocks.arabicText);
+          if (langs.includes("en") && textBlocks.englishText) parts.push(textBlocks.englishText);
+          if (langs.includes("bn") && textBlocks.banglaText) parts.push(textBlocks.banglaText);
+          if (langs.includes("notes")) {
+            const plain = notesToPlainText(ayahNoteHtml(ayahNotesDoc, unitKey));
+            if (plain) parts.push(`${t("Notes:")}\n${plain}`);
+          }
+          return parts.join("\n\n");
+        },
         onSaveNote: async (html) => {
           if (!auth.currentUser || !selectedPersonId) {
             return { ok: false, message: t("You're signed out, so that could not be saved. Please sign in again.") };
@@ -3969,21 +4279,39 @@
           );
           if (!outcome.ok) return { ok: false, message: outcome.entry.message };
           ayahNotesDoc = { ...ayahNotesDoc, notes: { ...(ayahNotesDoc.notes ?? {}), [unitKey]: { html, updatedAt: new Date().toISOString() } } };
-          // The ⋮ badge's own hasNote state lives in readQuickMenuSlot/
-          // pageViewContainer, hidden behind this view right now but not
-          // stale once shown again -- harmless to refresh a hidden view,
-          // and cheap (no network calls).
           renderStudyScreen();
           return { ok: true };
         },
-        onToggleBookmark: () => toggleAyahBookmark(unitKey),
-        onPlay: () => quickPlayAyah(unitKey),
-        onPrev: () => { if (ayahNum > 1) renderNoteViewNow(buildUnitKey.ayah(surah, ayahNum - 1)); },
-        onNext: () => { if (ayahNum < currentSurahData.ayahCount) renderNoteViewNow(buildUnitKey.ayah(surah, ayahNum + 1)); },
+        onToggleBookmark: () => toggleAyahBookmark(unitKey, ref, isBook ? {} : captureNoteBookmarkSettings()),
+        onPlay: () => { if (!isBook) quickPlayAyah(buildUnitKey.ayah(currentSurahNum, info.fromAyah)); },
+        onPrevUnit: () => stepNoteUnit(-1),
+        onNextUnit: () => stepNoteUnit(1),
+        onPrevAyah: () => stepNoteAyah(-1),
+        onNextAyah: () => stepNoteAyah(1),
         onToggleFullscreen: toggleNoteFullscreen,
         onToggleWbw: toggleNoteWbw,
         onToggleRoots: toggleNoteRoots,
         onApproachChange: (id) => changeCurrentTrackable(id),
+        onOpenWholeQuranNote: () => { noteScope.isBook = true; renderNoteViewNow(); },
+        onOpenInReadView: () => {
+          if (isBook) return;
+          currentUnitType = noteScope.unitType;
+          currentAyahNum = info.fromAyah;
+          unitTypeSelect.value = currentUnitType;
+          unitTypeSelect.dispatchEvent(new Event("change"));
+          if (ayahSelect.querySelector(`option[value="${currentAyahNum}"]`)) { ayahSelect.value = String(currentAyahNum); ayahSelect.dispatchEvent(new Event("change")); }
+          setStageView("read");
+        },
+        onOpenWideNote: (unitType) => {
+          if (unitType === "book") { noteScope.isBook = true; renderNoteViewNow(); return; }
+          noteScope.isBook = false;
+          noteScope.unitType = unitType;
+          if (NUMBERED_UNITS.includes(unitType)) {
+            const ayahNow = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
+            noteScope.unitNumber = ayahNow ? noteScopeNumberOfAyah(unitType, ayahNow) : null;
+          }
+          renderNoteViewNow();
+        },
       });
       // Notes' own toggle isn't wired by attachNoteViewHandlers above (that
       // click is generic, shared by all four fields) -- this listens for the
@@ -3993,17 +4321,21 @@
       noteView.querySelector('[data-note-field="notes"] [data-note-field-toggle]')?.addEventListener("click", () => {
         noteNotesOpen = noteView.querySelector('[data-note-field="notes"] .note-field-body').style.display !== "none";
       });
-      wireApproachEmbed(unitKey);
+      wireNotePickerBar();
+      if (showApproach) wireApproachEmbed(unitKey);
     }
 
     /** The wheel-slice card (Track/Guide/Breakdown/Coverage), now built for
         embedding inline in the Note view after Notes rather than a floating
         overlay -- the owner's own framing: everything above this card is
         STUDY (reading, word-by-word, notes), this card is ASSESSMENT (what
-        status has been claimed for this āyah). Reads currentTrackableId, the
-        same "whichever Approach was last picked" state the wheel-click path
-        and "Track this unit" both already operate on -- empty string when
-        nothing's selected yet, the same guard the old floating card had. */
+        status has been claimed for this āyah). Only shown for a single-āyah
+        scope (unchanged from before this round -- a wider unit already has
+        its own path, "Track this unit" in Study options). Reads
+        currentTrackableId, the same "whichever Approach was last picked"
+        state the wheel-click path and "Track this unit" both already
+        operate on -- empty string when nothing's selected yet, the same
+        guard the old floating card had. */
     function renderApproachEmbedHtml(surah, ayahNum) {
       const trackable = currentTrackable();
       if (!trackable) return "";
@@ -4065,7 +4397,7 @@
           });
           const message = t(outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.");
           await refreshChunkAndWheel();
-          renderNoteViewNow(unitKey); // rebuilds the whole Note view, including this card, against the fresh chunk
+          renderNoteViewNow(); // rebuilds the whole Note view, including this card, against the fresh chunk
           const freshResultEl = noteView.querySelector(".way-claim-result");
           if (freshResultEl) freshResultEl.textContent = message;
         } else {
@@ -4075,15 +4407,37 @@
       });
     }
 
-    /** Entry point from the ⋮ menu's "Note & more…". Confirms the notes doc is really writable (spec item 8) in the background -- opening the view never waits on it, and a failure surfaces the first time an actual save is attempted, via onSaveNote's own safeWrite above. */
+    /** Entry point from the ⋮ menu's "Note & more…" (and from a bookmark's
+        own "Open"). Seeds noteScope from whichever unit key was tapped --
+        an āyah-shaped one from the ordinary quick menu (single-ayah scope,
+        as always), or any other shape from a Note-view-created bookmark
+        (bookmarks.html/openBookmarkFromQueryString can now point at a
+        wider-unit or whole-Qur'an note too). Confirms the notes doc is
+        really writable (spec item 8) in the background -- opening the view
+        never waits on it, and a failure surfaces the first time an actual
+        save is attempted, via onSaveNote's own safeWrite above. */
     async function openNoteView(unitKey) {
       await ensureAyahNoteDataLoaded();
       if (auth.currentUser && selectedPersonId) {
         ensureAyahNotesWritable(db, { tenantId: activeTenantId, personId: selectedPersonId, uid: auth.currentUser.uid });
       }
+      const { unitType, parts } = parseUnitKey(unitKey);
+      if (unitType === "book") {
+        noteScope = { unitType: "ayah", ayahNum: currentAyahNum, rangeFrom: currentAyahNum, rangeTo: currentAyahNum, unitNumber: null, isBook: true };
+      } else if (unitType === "ayah") {
+        noteScope = { unitType: "ayah", ayahNum: Number(parts[1]), rangeFrom: Number(parts[1]), rangeTo: Number(parts[1]), unitNumber: null, isBook: false };
+      } else {
+        // A bookmark on a wider unit (range/surah/ruku/juz/hizb/page):
+        // land on that unit's own first āyah in THIS surah (currentSurahNum
+        // is already whatever surah is loaded -- see noteScope's own
+        // "never loads a different surah" rule) and let noteScopeUnitInfo()
+        // resolve the rest from there.
+        noteScope = { unitType, ayahNum: currentAyahNum, rangeFrom: currentAyahNum, rangeTo: currentAyahNum, unitNumber: null, isBook: false };
+        if (unitType === "range") { const [f, tRaw] = parts[1].split("-"); noteScope.rangeFrom = Number(f); noteScope.rangeTo = Number(tRaw); noteScope.ayahNum = noteScope.rangeFrom; }
+      }
       noteFullscreenOn = false; // always opens in the normal state -- the owner's own description of state one
       document.body.classList.remove("note-immersive");
-      renderNoteViewNow(unitKey);
+      renderNoteViewNow();
       setStageView("note");
     }
 
@@ -4113,7 +4467,7 @@
     function toggleNoteFullscreen() {
       noteFullscreenOn = !noteFullscreenOn;
       document.body.classList.toggle("note-immersive", noteFullscreenOn);
-      if (openNoteUnitKey) renderNoteViewNow(openNoteUnitKey);
+      if (noteScope) renderNoteViewNow();
     }
 
     /** Bar 2's Word-by-word toggle (round 31) -- a reading preference, not
@@ -4122,7 +4476,7 @@
         ordinary reading screen's own ticks behave). */
     function toggleNoteWbw() {
       noteWbwOn = !noteWbwOn;
-      if (openNoteUnitKey) renderNoteViewNow(openNoteUnitKey);
+      if (noteScope) renderNoteViewNow();
     }
 
     /** Bar 2's Root (Roots & derivatives) toggle (enhancement round) -- same
@@ -4130,7 +4484,7 @@
         above: stays on across Prev/Next until the reader clicks it again. */
     function toggleNoteRoots() {
       noteRootsOn = !noteRootsOn;
-      if (openNoteUnitKey) renderNoteViewNow(openNoteUnitKey);
+      if (noteScope) renderNoteViewNow();
     }
 
     function renderStudyScreen() {
@@ -4165,8 +4519,15 @@
       // the screen to remove a repetition.
       const duplicatesUnitNav = currentUnitType === "ayah";
       singleAyahNavRow.style.display = usesFlow ? "none" : "";
-      prevAyahBtn.hidden = duplicatesUnitNav;
-      nextAyahBtn.hidden = duplicatesUnitNav;
+      // Enhancement round -- prevAyahBtn/nextAyahBtn moved out of
+      // singleAyahNavRow and up into #readBar (always visible), so hiding
+      // that row alone no longer hides them too -- both conditions that
+      // used to hide them via the row now have to hide the buttons
+      // directly: Single Ayah (still a duplicate of the bar's own outer
+      // pair) AND a flow view (Range/Whole Surah/Mushaf render every āyah
+      // at once, so there is no single "current āyah" to step between).
+      prevAyahBtn.hidden = duplicatesUnitNav || usesFlow;
+      nextAyahBtn.hidden = duplicatesUnitNav || usesFlow;
       ayahSelectControl.style.display = isPageUnit ? "none" : "";
       ayahPanels.style.display = usesFlow ? "none" : "";
       pageViewContainer.style.display = usesFlow ? "" : "none";
