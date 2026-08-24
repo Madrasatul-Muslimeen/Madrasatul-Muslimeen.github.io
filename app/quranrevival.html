@@ -1382,7 +1382,15 @@
             <!-- Round 27: its own choice, not a passenger on Word by Word. The
                  two used to be one panel, so asking for the words always got
                  the grammar table too -- the owner's own report. -->
-            <label id="rootsControl"><input type="checkbox" id="rootsToggle" /> Roots &amp; derivatives</label>
+            <label id="rootsControl"><input type="checkbox" id="rootsToggle" /> Root</label>
+            <!-- Enhancement round: the owner's own follow-up report -- Root
+                 and Derivatives still "appeared together, merged" in the one
+                 "Roots & derivatives" panel/tick, the same complaint round 27
+                 already fixed once for Word by Word. Its own choice now too:
+                 Root shows the shared root letters + how often that root
+                 occurs; Derivatives shows this word's own derived form
+                 (part of speech + lemma). -->
+            <label id="derivativesControl"><input type="checkbox" id="derivativesToggle" /> Derivatives</label>
             <!-- Round 28: the owner's own "let the page move from left to
                  right". On by default, because that is what they asked; the
                  tick is the way back for anyone who prefers scrolling. -->
@@ -1540,7 +1548,7 @@
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
     import { searchQuran } from "./js/quran-search.js";
-    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootDerivativePanel, renderTranslationPanel } from "./js/ayah-renderer.js";
+    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel } from "./js/ayah-renderer.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
@@ -1697,6 +1705,8 @@
     const wbwShowToggle = document.getElementById("wbwShowToggle");
     const rootsToggle = document.getElementById("rootsToggle");
     const rootsControl = document.getElementById("rootsControl");
+    const derivativesToggle = document.getElementById("derivativesToggle");
+    const derivativesControl = document.getElementById("derivativesControl");
     const sidewaysToggle = document.getElementById("sidewaysToggle");
     const wbwShowControl = document.getElementById("wbwShowControl");
     const unitNumControl = document.getElementById("unitNumControl");
@@ -1845,7 +1855,8 @@
     let noteScope = null; // { unitType, ayahNum, rangeFrom, rangeTo, unitNumber }
     let noteFullscreenOn = false; // the Note view's own full-screen state -- see toggleNoteFullscreen()
     let noteWbwOn = false; // bar 2's Word-by-word toggle (round 31) -- a reading preference that persists across Prev/Next within the Note view, not reset per āyah
-    let noteRootsOn = false; // bar 2's Root (Roots & derivatives) toggle (enhancement round) -- same "persists across Prev/Next, not reset per āyah" shape as noteWbwOn
+    let noteRootsOn = false; // bar 2's Root toggle (enhancement round) -- same "persists across Prev/Next, not reset per āyah" shape as noteWbwOn
+    let noteDerivativesOn = false; // bar 2's own separate Derivatives toggle -- Root and Derivatives used to be one "Roots & derivatives" toggle; split for the same "appeared together, merged" reason Word by Word/Root were split in round 27
     // Whether Notes is open, tracked the same way -- renderNoteViewNow()
     // rebuilds the whole view's innerHTML on every re-render (a claim, a
     // bookmark toggle, a Prev/Next), which would otherwise snap a
@@ -3838,6 +3849,7 @@
         tajweedOn: tajweedToggle.checked,
         wbwOn: wbwShowToggle.checked,
         rootsOn: rootsToggle.checked,
+        derivativesOn: derivativesToggle.checked,
         mushafOn: mushafToggle.checked,
       };
     }
@@ -3859,6 +3871,7 @@
         tajweedOn: tajweedToggle.checked,
         wbwOn: wbwShowToggle.checked,
         rootsOn: rootsToggle.checked,
+        derivativesOn: derivativesToggle.checked,
         mushafOn: mushafToggle.checked,
       };
     }
@@ -3887,6 +3900,7 @@
         if (typeof settings.tajweedOn === "boolean") tajweedToggle.checked = settings.tajweedOn;
         if (typeof settings.wbwOn === "boolean") wbwShowToggle.checked = settings.wbwOn;
         if (typeof settings.rootsOn === "boolean") rootsToggle.checked = settings.rootsOn;
+        if (typeof settings.derivativesOn === "boolean") derivativesToggle.checked = settings.derivativesOn;
         if (typeof settings.mushafOn === "boolean") mushafToggle.checked = settings.mushafOn;
         if (typeof settings.trackableId === "string" && quranTrackables.some((tr) => tr.id === settings.trackableId)) {
           currentTrackableId = settings.trackableId;
@@ -4264,8 +4278,10 @@
         // (canWbwRoot) -- ayah-renderer.js's panels take one āyah, not a span.
         wbwHtml: canWbwRoot && noteWbwOn && ayah ? renderWordByWordPanel(ayah, { langs: wbwLangs() }) : "",
         isWbwOn: canWbwRoot && noteWbwOn,
-        rootsHtml: canWbwRoot && noteRootsOn && ayah ? renderRootDerivativePanel(ayah) : "",
+        rootsHtml: canWbwRoot && noteRootsOn && ayah ? renderRootPanel(ayah) : "",
         isRootsOn: canWbwRoot && noteRootsOn,
+        derivativesHtml: canWbwRoot && noteDerivativesOn && ayah ? renderDerivativesPanel(ayah) : "",
+        isDerivativesOn: canWbwRoot && noteDerivativesOn,
         canWbwRoot,
         hasNote,
         isBookmarked,
@@ -4319,6 +4335,7 @@
         onToggleFullscreen: toggleNoteFullscreen,
         onToggleWbw: toggleNoteWbw,
         onToggleRoots: toggleNoteRoots,
+        onToggleDerivatives: toggleNoteDerivatives,
         onApproachChange: (id) => changeCurrentTrackable(id),
         onOpenInReadView: () => {
           currentUnitType = noteScope.unitType;
@@ -4507,11 +4524,20 @@
       if (noteScope) renderNoteViewNow();
     }
 
-    /** Bar 2's Root (Roots & derivatives) toggle (enhancement round) -- same
-        "reading preference, not per-āyah state" shape as toggleNoteWbw()
-        above: stays on across Prev/Next until the reader clicks it again. */
+    /** Bar 2's Root toggle (enhancement round) -- same "reading preference,
+        not per-āyah state" shape as toggleNoteWbw() above: stays on across
+        Prev/Next until the reader clicks it again. */
     function toggleNoteRoots() {
       noteRootsOn = !noteRootsOn;
+      if (noteScope) renderNoteViewNow();
+    }
+
+    /** Bar 2's own, separate Derivatives toggle -- same shape as
+        toggleNoteRoots() above, kept as its own flag/function so the two
+        can be on independently rather than merged into one, which was the
+        owner's own report about the panel this round separates. */
+    function toggleNoteDerivatives() {
+      noteDerivativesOn = !noteDerivativesOn;
       if (noteScope) renderNoteViewNow();
     }
 
@@ -4572,13 +4598,14 @@
       const approachPanels = trackable?.panels ?? [];
       const panels = ["text", ...approachPanels.filter((p) => p !== "text")];
       if (wbwShowToggle.checked && !panels.includes("wordByWord")) panels.push("wordByWord");
-      if (rootsToggle.checked && !panels.includes("rootDerivatives")) panels.push("rootDerivatives");
+      if (rootsToggle.checked && !panels.includes("root")) panels.push("root");
+      if (derivativesToggle.checked && !panels.includes("derivatives")) panels.push("derivatives");
 
       // Mushaf is a photograph of a printed page: nothing else can share it.
       // The other reading choices are DISABLED rather than hidden, so the
       // reader can see what they would get back by turning Mushaf off.
-      [tajweedToggle, wbwShowToggle, rootsToggle, trEnToggle, trBnToggle].forEach((el) => { el.disabled = isMushaf; });
-      [tajweedControl, wbwShowControl, rootsControl, trEnControl, trBnControl].forEach((el) => { el.style.opacity = isMushaf ? "0.45" : ""; });
+      [tajweedToggle, wbwShowToggle, rootsToggle, derivativesToggle, trEnToggle, trBnToggle].forEach((el) => { el.disabled = isMushaf; });
+      [tajweedControl, wbwShowControl, rootsControl, derivativesControl, trEnControl, trBnControl].forEach((el) => { el.style.opacity = isMushaf ? "0.45" : ""; });
       mushafNote.hidden = !isMushaf;
       wbwLangControl.style.display = !isMushaf && panels.includes("wordByWord") ? "" : "none";
 
@@ -4900,6 +4927,7 @@
     trBnToggle.addEventListener("change", applyTranslationTicks);
     wbwShowToggle.addEventListener("change", renderStudyScreen);
     rootsToggle.addEventListener("change", renderStudyScreen);
+    derivativesToggle.addEventListener("change", renderStudyScreen);
 
     // Shell round 28 -- sideways paging is one body class, so turning it on or
     // off is a paint rather than a rebuild. renderStudyScreen() still runs

@@ -47,8 +47,8 @@ export function renderTranslationPanel(ayah, langs = ["en"]) {
 /**
  * Panel: word-by-word (F-050) — per-word Arabic, transliteration and gloss.
  * "Two panels, not one" (Architecture, carried features): this renders ONLY
- * the word-by-word strip; renderRootDerivativePanel below is the second,
- * separate panel over the same word list.
+ * the word-by-word strip; renderRootPanel/renderDerivativesPanel below are
+ * the other two, separate panels over the same word list.
  */
 export function renderWordByWordPanel(ayah, { langs = ["en"] } = {}) {
   if (!ayah.words?.length) return `<div class="wbw-empty">${t("No word-by-word data for this ayah.")}</div>`;
@@ -83,15 +83,38 @@ export function renderWordByWordPanel(ayah, { langs = ["en"] } = {}) {
 }
 
 /**
- * Panel: root & derivatives — the second of the two word-by-word panels.
- * Shows each word's root/lemma/part of speech and how many times that root
- * occurs across the whole Quran (rootCount, pre-computed at data-pull time
- * from the Quranic Arabic Corpus so this never needs to load the corpus
- * client-side). Per-word occurrence lists across surahs aren't loaded here
- * (would mean loading more than the one open surah) — see roots-index.json
- * (a bounded, separate static file) for that lookup once built.
+ * Panel: Root — the third of the word-by-word panels (Word by Word,
+ * Root, Derivatives, each its own choice now). Shows each word's ROOT
+ * letters and how many times that root occurs across the whole Quran
+ * (rootCount, pre-computed at data-pull time from the Quranic Arabic
+ * Corpus so this never needs to load the corpus client-side). Per-word
+ * occurrence lists across surahs aren't loaded here (would mean loading
+ * more than the one open surah) — see roots-index.json (a bounded,
+ * separate static file) for that lookup once built.
  */
-export function renderRootDerivativePanel(ayah) {
+export function renderRootPanel(ayah) {
+  if (!ayah.words?.length) return `<div class="wbw-empty">${t("No morphology data for this ayah.")}</div>`;
+  const rows = ayah.words
+    .filter((w) => w.morphology?.root)
+    .map(
+      (w) => `<div class="root-row" data-position="${w.position}">
+        <div class="root-word" dir="rtl" lang="ar">${escapeHtml(w.arabic)}</div>
+        <div class="root-root" dir="rtl" lang="ar">${escapeHtml(w.morphology.root)}<span class="root-count">${num(w.morphology.rootCount)}×</span></div>
+      </div>`
+    )
+    .join("");
+  return `<div class="root-deriv-strip root-panel">${rows || `<div class="wbw-empty">${t("No morphology data for this ayah.")}</div>`}</div>`;
+}
+
+/**
+ * Panel: Derivatives — the fourth panel, the word's own DERIVED form:
+ * its part of speech and lemma (the dictionary/inflected form this
+ * particular word takes, derived from the root Root shows separately).
+ * Shell round -- split out of Root on the owner's own report that the
+ * two "appeared together, merged" the same way Word by Word and Root
+ * used to before round 27 split those; same shape, one round later.
+ */
+export function renderDerivativesPanel(ayah) {
   if (!ayah.words?.length) return `<div class="wbw-empty">${t("No morphology data for this ayah.")}</div>`;
   const rows = ayah.words
     .filter((w) => w.morphology)
@@ -99,12 +122,11 @@ export function renderRootDerivativePanel(ayah) {
       (w) => `<div class="root-row" data-position="${w.position}">
         <div class="root-word" dir="rtl" lang="ar">${escapeHtml(w.arabic)}</div>
         <div class="root-pos">${escapeHtml(posLabel(w.morphology.pos))}</div>
-        ${w.morphology.root ? `<div class="root-root" dir="rtl" lang="ar">${escapeHtml(w.morphology.root)}<span class="root-count">${num(w.morphology.rootCount)}×</span></div>` : ""}
         ${w.morphology.lemma ? `<div class="root-lemma" dir="rtl" lang="ar">${escapeHtml(w.morphology.lemma)}</div>` : ""}
       </div>`
     )
     .join("");
-  return `<div class="root-deriv-strip">${rows || `<div class="wbw-empty">${t("No morphology data for this ayah.")}</div>`}</div>`;
+  return `<div class="root-deriv-strip derivatives-panel">${rows || `<div class="wbw-empty">${t("No morphology data for this ayah.")}</div>`}</div>`;
 }
 
 /**
@@ -116,10 +138,12 @@ export function renderRootDerivativePanel(ayah) {
 // Shell round 27 split "rootDerivatives" out of "wordByWord". They used to be
 // one panel, so asking for word-by-word always got the grammar table with it --
 // the owner's "should show only WbW, not with the entire derivatives at the
-// same time". They are two choices now, and an Approach that declares
-// "wordByWord" (catalogue-data.js) means the words alone, which is what that
-// name says.
-const PANEL_ORDER = ["text", "tajweed", "wordByWord", "rootDerivatives", "notes", "reflection", "writing", "checklist"];
+// same time". A later round split "rootDerivatives" itself into "root" and
+// "derivatives" for the same reason, on the same report: root and derivatives
+// still appeared together, merged in one panel/one toggle. Three choices now,
+// not two, and an Approach that declares "wordByWord" (catalogue-data.js)
+// still means the words alone, which is what that name says.
+const PANEL_ORDER = ["text", "tajweed", "wordByWord", "root", "derivatives", "notes", "reflection", "writing", "checklist"];
 const PANEL_RENDERERS = {
   text: (ayah, opts) => renderArabicPanel(ayah, opts) + renderTranslationPanel(ayah, opts.langs),
   tajweed: () => "", // tajweed is a toggle on the text panel (opts.tajweedOn), not a separate panel
@@ -127,7 +151,8 @@ const PANEL_RENDERERS = {
   // caller offer an explicit word-by-word language choice independent of
   // the ayah translation panel's language (owner request, 5 Aug 2026).
   wordByWord: (ayah, opts) => renderWordByWordPanel(ayah, { langs: opts.wbwLangs ?? opts.langs }),
-  rootDerivatives: (ayah) => renderRootDerivativePanel(ayah),
+  root: (ayah) => renderRootPanel(ayah),
+  derivatives: (ayah) => renderDerivativesPanel(ayah),
   notes: () => `<textarea class="panel-notes" placeholder="${t("Notes")}"></textarea>`,
   reflection: () => `<textarea class="panel-reflection" placeholder="${t("Reflection")}"></textarea>`,
   writing: () => `<div class="panel-writing"><textarea placeholder="${t("Write it out here")}"></textarea></div>`,
