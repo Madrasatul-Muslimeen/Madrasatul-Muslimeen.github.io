@@ -4081,6 +4081,84 @@ text), a real improvement over the single-āyah-only `buildAyahText()` this
 round made along the way. No `firestore.rules` or schema change --
 `buildUnitKey.book()` is a pure function, `notes[unitKey]` already took
 any string.
+
+v07.70 (24 Aug 2026, on Claude Code on the web) is **a same-day fix round to
+v07.69's own bar reorganisation**, from the owner's own report right after
+using it: "a lot has been messed up." Five real defects, all in
+`app/js/ayah-note-renderer.js` and the Note view's own picker-bar wiring in
+`quranrevival.html` -- no new mechanism, all fixes to what v07.69 shipped.
+
+**(1) The middle "Surah Ref" bar (`.note-ayahbar`/`.note-ref`) is gone**, per
+the owner's own "I don't want the middle bar, the Surah Ref anymore." Bar 1
+(the picker bar) already names the same position via its own Surah/Ayah
+selects, so the second, read-only line between it and bar 2 was pure
+repetition -- the same "redundant reference text" pattern this project has
+removed before (`#readRef` in shell round 22, the wheel's own centre text in
+v07.62/63). `renderNoteView()` no longer takes a `ref` display parameter;
+`quranrevival.html`'s own local `ref` variable is untouched (still used to
+build Copy/Share text and the bookmark-naming default).
+
+**(2) The Surah dropdown is a real, active picker now**, not the disabled,
+single-option `<select>` v07.69 shipped ("This surah -- close Note & more to
+read a different one") -- the owner read that as broken, not as the
+deliberate simplification it was meant to be. `renderNotePickerBarHtml()`
+now lists all 114 surahs (same translated-name/Bengali-numeral option shape
+as the canonical `#surahSelect`); picking one calls the same `loadSurah()`
+path the canonical picker's own change handler uses, keeps `#surahSelect`
+itself in sync (the same convention `goToReference()`/`applyJump()` already
+follow), resets `noteScope` to the new surah's first āyah, and re-renders.
+Note view's own "stays within the currently loaded surah" simplification for
+Prev/Next (flagged as a real, separate follow-up in v07.69's own entry)
+is untouched -- this only fixes the picker, not the nav-cluster buttons.
+
+**(3) The ⋮ ("tools") dropdown now closes after "Collapse āyah text" is
+picked.** Every other item in that menu (Share's Go button, Word by Word,
+Root) already called `closeAllDotMenus()` on selection; the master toggle
+alone was missing it, which is exactly the owner's report ("the 3 vertical
+dots button's card stays on even after the selection is done"). One added
+call fixes it.
+
+**(4) Aa (Notes formatting) moved out of ⋮ and onto bar 2 directly, beside
+Copy** -- the owner's own instruction, since there's room for it on the row.
+It's a real `.note-icon-btn` now (same active-state styling as
+Bookmark/Full screen), not a `.qm-item` inside a dropdown; its click handler
+was already generic (`[data-note-palette-toggle]`) so no JS change was
+needed beyond moving where the button lives in the markup.
+
+**(5) ⋯ (Approach/Journey) sits immediately beside ⋮ now**, not pushed to
+the bar's far right by the `.note-bar2-spacer` flex-grow element v07.69
+used -- the owner's own "move the 3 horizontal dots button beside the 3
+vertical dots button." The spacer's `<span>` and its CSS rule are both
+removed; the two `.note-dot-wrap`s are now adjacent siblings in normal flex
+flow.
+
+**Verified**: a focused, un-checked-in Playwright script (14 checks, the
+same "focused script" shape v07.69 used for its own round) confirmed all
+five fixes directly -- the ayahbar/ref gone, the Surah picker present,
+un-disabled, listing all 114 surahs, and a real surah switch working
+end-to-end (unit key, `#surahSelect`, and the rendered Arabic text all
+updating together); the ⋮ menu opening and then genuinely closing after
+"Collapse āyah text"; Aa sitting directly on bar 2 (not inside a `.note-dot-wrap`)
+and still opening the formatting palette; and ⋯ sitting within 20px of ⋮
+rather than flush against the bar's own right edge. Screenshotted at
+390×844 in both the closed and ⋮-open states to see the actual result, not
+just trust the numbers. **`layout.mjs` reports NO LAYOUT REGRESSIONS** at
+all eight viewports in both banner states (landing page byte-for-byte
+identical, `getElementById` targets unchanged at 95, none missing --
+this round touches the Note view only), **`reading.mjs` OK**, **`panel.mjs`**
+unaffected (it measures the Study options panel, which this round never
+touches). **`behaviour.mjs` sections 1-41: 788 checks pass, 1 fails** (the
+same pre-existing, environmental archive.org-blocked-by-the-sandbox-proxy
+failure this project has recorded since v07.44, unrelated to this round --
+everything shared/canonical this round doesn't touch); it then hits the
+SAME pre-existing crash v07.69's own entry already disclosed
+("Section 42 onward... the suite crashes partway through them") at the
+exact same line, confirmed by checking that line's own selector
+(`[data-note-master-toggle]`) sits inside a `display:none` dropdown by
+default at `HEAD` too, before any of this round's edits -- i.e. this round
+did not cause or worsen that gap, and closing it stays the same real,
+scoped follow-up v07.69 already flagged rather than something to rush here.
+No `firestore.rules` or schema changes -- markup, CSS and JS wiring only.
 ---
 
 ## What this is

@@ -928,11 +928,6 @@
   }
   .note-wide-pill:hover { background: #fbf3e0; }
 
-  .note-ayahbar {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
-    background: #1F3A6E; color: #fff; padding: 0.35rem 0.6rem;
-  }
-  .note-ref { flex: 1 1 auto; font-size: 0.88rem; font-weight: 700; white-space: normal; overflow-wrap: break-word; line-height: 1.25; }
   .note-icon-btn {
     flex: 0 0 auto;
     background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.4); color: #fff;
@@ -955,7 +950,6 @@
     border-top: 1px solid rgba(255,255,255,0.15); border-radius: 0 0 0.4rem 0.4rem;
   }
   .note-nav-cluster { display: flex; gap: 0.32rem; flex: 0 0 auto; }
-  .note-bar2-spacer { flex: 1 1 auto; }
   .note-dot-wrap { position: relative; flex: 0 0 auto; }
   .note-dot-wrap .quick-menu { right: 0; left: auto; width: 15rem; }
   .note-sub-wrap { position: relative; flex: 0 0 auto; }
@@ -1028,8 +1022,9 @@
      screen's three), and a separate mechanism from it on purpose (so
      opening/leaving a note can never accidentally inherit or leak the
      reading screen's own full-screen state): hides the banner, top nav and
-     dock; the Ayah bar (and the Notes palette, when open) stay on screen
-     always, since that is what holds the edit controls for notes. */
+     dock; bar 1 (the picker bar), bar 2 and the Notes palette (when open)
+     stay on screen always, since that is what holds the edit controls for
+     notes. */
   body.note-immersive > h1,
   body.note-immersive > .app-tagline,
   body.note-immersive #globalBanner,
@@ -4058,16 +4053,26 @@
         choices ("place all types of reading views to enable here too" --
         the owner's own words) -- entirely built here (I2: ayah-note-renderer.js
         never reads surah data), same pattern approachOptionsHtml already
-        uses. Surah is shown fixed/disabled: Note view never loads a
-        different surah than whatever's already open (see noteScope's own
-        comment for why). */
+        uses. Surah is a real, active picker (fixed 22 Aug 2026 -- it used to
+        ship disabled, "close Note & more to read a different one," which the
+        owner reported back as broken rather than as the deliberate
+        simplification it was) -- picking a different surah here loads it the
+        same way the canonical Surah picker does (see wireNotePickerBar()'s
+        own surah handler), still without ever moving the Read screen's own
+        position underneath the reader. */
     function renderNotePickerBarHtml() {
-      const meta = surahIndex.find((s) => s.surahNumber === currentSurahNum);
       const unitType = noteScope.unitType;
       const isRange = unitType === "range";
       const numbered = NUMBERED_UNITS.includes(unitType);
       const unitOptionsHtml = ["ayah", "range", "surah", "ruku", "juz", "hizb", "page"]
         .map((v) => `<option value="${v}" ${unitType === v ? "selected" : ""}>${t(NOTE_UNIT_TYPE_LABELS[v])}</option>`).join("");
+      // Same option shape as the canonical #surahSelect (translated names,
+      // Bengali numerals) -- just built fresh here with the current surah
+      // marked `selected`, since this <select> is destroyed and recreated on
+      // every renderNoteViewNow() call.
+      const surahOptionsHtml = surahIndex
+        .map((s) => `<option value="${s.surahNumber}" ${s.surahNumber === currentSurahNum ? "selected" : ""}>${num(s.surahNumber)}. ${surahName(s.surahNumber, s.nameEnglish)}</option>`)
+        .join("");
       const ayahOptionsHtml = (selected) => Array.from({ length: currentSurahData.ayahCount }, (_, i) => i + 1)
         .map((n) => `<option value="${n}" ${n === selected ? "selected" : ""}>${num(n)}</option>`).join("");
       const numbers = numbered ? noteScopeNumbersInSurah(unitType) : [];
@@ -4075,7 +4080,7 @@
       const ayahCellHidden = isRange || unitType === "surah";
       return `
         <select data-note-picker="unitType" aria-label="${t("Study Unit")}">${unitOptionsHtml}</select>
-        <select data-note-picker="surah" aria-label="${t("Surah")}" disabled title="${t("This surah — close Note & more to read a different one")}"><option>${surahName(currentSurahNum, meta?.nameEnglish)}</option></select>
+        <select data-note-picker="surah" aria-label="${t("Surah")}">${surahOptionsHtml}</select>
         <select data-note-picker="ayah" aria-label="${t("Ayah")}" ${ayahCellHidden ? "hidden" : ""}>${ayahOptionsHtml(noteScope.ayahNum)}</select>
         <select data-note-picker="num" aria-label="${t(UNIT_NUM_LABELS[unitType] ?? "Number")}" ${numbered ? "" : "hidden"}>${numOptionsHtml}</select>
         <select data-note-picker="from" aria-label="${t("From")}" ${isRange ? "" : "hidden"}>${ayahOptionsHtml(noteScope.rangeFrom)}</select>
@@ -4085,10 +4090,35 @@
     /** Wires bar 1's own <select>s -- freshly looked up every call, since renderNoteViewNow() rebuilds the whole view's innerHTML on every re-render (a claim, a bookmark toggle, Prev/Next), which destroys and recreates these nodes each time; harmless to re-bind fresh listeners to fresh nodes. Any interaction here means the reader is genuinely choosing a different scope, so it always clears noteScope.isBook first. */
     function wireNotePickerBar() {
       const unitSel = noteView.querySelector('[data-note-picker="unitType"]');
+      const surahSel = noteView.querySelector('[data-note-picker="surah"]');
       const ayahSel = noteView.querySelector('[data-note-picker="ayah"]');
       const numSel = noteView.querySelector('[data-note-picker="num"]');
       const fromSel = noteView.querySelector('[data-note-picker="from"]');
       const toSel = noteView.querySelector('[data-note-picker="to"]');
+      // Same "load a real surah" path the canonical #surahSelect uses
+      // (loadSurah() resets currentAyahNum to 1 and reloads its records
+      // chunk) -- kept in sync with #surahSelect itself (same convention
+      // goToReference()/applyJump() already follow) so leaving Note & more
+      // for the Read screen shows the surah just picked here, not the one
+      // that was open before it.
+      surahSel?.addEventListener("change", async () => {
+        noteScope.isBook = false;
+        currentSurahNum = Number(surahSel.value);
+        surahSelect.value = String(currentSurahNum);
+        await loadSurah();
+        noteScope.ayahNum = 1;
+        if (noteScope.unitType === "range") {
+          noteScope.rangeFrom = 1;
+          noteScope.rangeTo = Math.min(5, currentSurahData.ayahCount);
+        }
+        if (NUMBERED_UNITS.includes(noteScope.unitType)) {
+          const nums = noteScopeNumbersInSurah(noteScope.unitType);
+          noteScope.unitNumber = nums[0] ?? null;
+          const match = currentSurahData.ayahs.find((a) => noteScopeNumberOfAyah(noteScope.unitType, a) === noteScope.unitNumber);
+          if (match) noteScope.ayahNum = match.ayah;
+        }
+        renderNoteViewNow();
+      });
       unitSel?.addEventListener("change", () => {
         noteScope.isBook = false;
         noteScope.unitType = unitSel.value;
@@ -4222,7 +4252,7 @@
         : "";
 
       noteView.innerHTML = renderNoteView({
-        unitKey, ref,
+        unitKey,
         pickerBarHtml: renderNotePickerBarHtml(),
         navHtml: renderNoteNavHtml(),
         showAyatText,
