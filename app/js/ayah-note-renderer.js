@@ -237,7 +237,7 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
  * Qur'an.
  */
 export function renderNoteView({
-  unitKey, ref,
+  unitKey,
   pickerBarHtml, navHtml,
   showAyatText, arabicText, englishText, banglaText, readViewLinkHtml,
   notesHtml, wbwHtml, rootsHtml,
@@ -269,35 +269,34 @@ export function renderNoteView({
       <div class="note-pickerbar">${pickerBarHtml}</div>
       ${wideNoteHtml}
 
-      <div class="note-ayahbar">
-        <span class="note-ref">${escapeHtml(ref)}</span>
-      </div>
-
       <!-- Bar 2 -- every button, one row. The nav cluster (pre-built by the
            caller, which decides which pair(s) are enabled/hidden -- "one is
            for moving the whole unit of choice, another for moving only a
            single Ayah", both together, the owner's own words) comes first,
            then the four that must always stay visible (Play/Bookmark/Full
-           screen), then Copy (kept open -- "keep as much button as possible
-           to remain open"), then ⋮ (Share/Aa/WbW/Root/Collapse) and, far
-           right, ⋯ (Approach/Journey/whole-Qur'an note). -->
+           screen), then Copy and Aa (Notes formatting -- kept open here,
+           beside Copy, rather than folded into ⋮, since there's room for it
+           on the row -- the owner's own instruction), then ⋮ (Share/WbW/
+           Root/Collapse) sitting right beside ⋯ (Approach/Journey/whole-
+           Qur'an note) -- the owner's own ask, so the two "more" menus read
+           as a pair rather than one being pushed off to the far right. -->
       <div class="note-bar2">
         <span class="note-nav-cluster">${navHtml}</span>
         <button type="button" class="note-icon-btn" data-note-play title="${t("Play")}">▶</button>
         <button type="button" class="note-icon-btn${isBookmarked ? " active" : ""}" data-note-bookmark title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}">${isBookmarked ? "★" : "☆"}</button>
         <button type="button" class="note-icon-btn${isFullscreen ? " active" : ""}" data-note-fullscreen title="${t("Full screen")}" aria-pressed="${isFullscreen ? "true" : "false"}">⤢</button>
         ${copySharePopover("copy", "data-note-copy-go")}
+        <button type="button" class="note-icon-btn" data-note-palette-toggle title="${t("Notes formatting")}">Aa</button>
 
-        <!-- ⋮ -- everything that is a CHOICE about how to read/edit, not a
-             thing you tap every time: Share (the same expand-in-place
-             language picker Copy already uses), Notes formatting (Aa),
-             then -- only when there is āyah text on screen at all -- Word by
-             Word, Root, and Collapse āyah text. -->
+        <!-- ⋮ -- everything else that is a CHOICE about how to read/edit,
+             not a thing you tap every time: Share (the same expand-in-place
+             language picker Copy already uses), then -- only when there is
+             āyah text on screen at all -- Word by Word, Root, and Collapse
+             āyah text. -->
         <div class="note-dot-wrap">
           <button type="button" class="note-icon-btn" data-note-menu-toggle="tools" aria-haspopup="true" aria-expanded="false" title="${t("More")}">⋮</button>
           <div class="quick-menu" data-note-menu="tools">
             ${copySharePopover("share", "data-note-share-go")}
-            <button type="button" class="qm-item" data-note-palette-toggle>Aa ${t("Notes formatting")}</button>
             ${canWbwRoot ? `
             <div class="qm-divider"></div>
             <button type="button" class="qm-item${isWbwOn ? " is-on" : ""}" data-note-wbw-toggle aria-pressed="${isWbwOn ? "true" : "false"}">${t("Word by Word")} <span class="qm-caret">${isWbwOn ? "✓" : ""}</span></button>
@@ -307,13 +306,12 @@ export function renderNoteView({
           </div>
         </div>
 
-        <span class="note-bar2-spacer"></span>
-
         <!-- ⋯ -- Approach (only meaningful for a single āyah -- claiming/
              tracking is per-āyah, same as before this round) and Mapping My
              Journey (still the disabled placeholder), plus the enhancement
              round's own new item: one fixed entry into a running note about
-             the whole Qur'an. -->
+             the whole Qur'an. Sits right beside ⋮ now, not pushed to the
+             far right by a spacer. -->
         <div class="note-dot-wrap">
           <button type="button" class="note-icon-btn" data-note-menu-toggle="more" aria-haspopup="true" aria-expanded="false" title="${t("Approach & Journey")}">⋯</button>
           <div class="quick-menu" data-note-menu="more">
@@ -461,6 +459,11 @@ export function attachNoteViewHandlers(container, callbacks) {
     const collapsed = collapsibleWrap.style.display === "none";
     collapsibleWrap.style.display = collapsed ? "" : "none";
     masterToggle.textContent = collapsed ? t("Collapse āyah text") : t("Expand āyah text");
+    // A real, standalone selection like every other item in this menu (Share,
+    // Word by Word, Root) -- it must close the ⋮ dropdown behind it too,
+    // which this one alone was missing (the owner's own report: "the 3
+    // vertical dots button's card stays on even after the selection is done").
+    closeAllDotMenus(null);
   });
 
   // Notes: rich-text editing + save-on-blur.
