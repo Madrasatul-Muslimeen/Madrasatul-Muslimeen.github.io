@@ -1838,12 +1838,11 @@
     // silently move the Read screen out from under the reader. Starts null
     // (nothing open yet); openNoteView() seeds it from whichever āyah was
     // tapped. Bar 1's own pickers then let the reader change what's being
-    // noted -- up to and including a fixed "book:quran" note about the
-    // whole Qur'an (isBook) -- entirely within this state, never touching
+    // noted, entirely within this state, never touching
     // currentUnitType/currentSurahNum/currentAyahNum. Always reads within
     // currentSurahData: Note view never loads a different surah than
     // whatever's already open (see noteScopeUnitInfo()'s own comment).
-    let noteScope = null; // { unitType, ayahNum, rangeFrom, rangeTo, unitNumber, isBook }
+    let noteScope = null; // { unitType, ayahNum, rangeFrom, rangeTo, unitNumber }
     let noteFullscreenOn = false; // the Note view's own full-screen state -- see toggleNoteFullscreen()
     let noteWbwOn = false; // bar 2's Word-by-word toggle (round 31) -- a reading preference that persists across Prev/Next within the Note view, not reset per āyah
     let noteRootsOn = false; // bar 2's Root (Roots & derivatives) toggle (enhancement round) -- same "persists across Prev/Next, not reset per āyah" shape as noteWbwOn
@@ -2332,10 +2331,8 @@
 
     const UNIT_NUM_LABELS = { ruku: "Ruku' №", juz: "Juz №", hizb: "Hizb №", page: "Page №" };
     // Enhancement round -- the Note view's own bar 1 picker offers the same
-    // seven Study Unit choices #unitTypeSelect does (Whole Qur'an is
-    // deliberately NOT one of them -- see buildUnitKey.book()'s own
-    // comment), in the same wording, so switching between the two feels
-    // like the same control.
+    // seven Study Unit choices #unitTypeSelect does, in the same wording, so
+    // switching between the two feels like the same control.
     const NOTE_UNIT_TYPE_LABELS = { ayah: "Single Ayah", range: "Range of Ayahs", surah: "Whole Surah", ruku: "Ruku'", juz: "Juz", hizb: "Hizb", page: "Page" };
 
     function renderUnitNumberPicker() {
@@ -3914,10 +3911,10 @@
         );
       } else {
         // Enhancement round -- this now also fires for a unitKey that isn't
-        // āyah-shaped (a Note-view bookmark on a wider unit, up to
-        // "book:quran") -- parseAyahUnitKey() would misread one of those, so
-        // the Note view hands its own noteScopeUnitInfo().label straight in
-        // rather than this function guessing at it.
+        // āyah-shaped (a Note-view bookmark on a wider unit) --
+        // parseAyahUnitKey() would misread one of those, so the Note view
+        // hands its own noteScopeUnitInfo().label straight in rather than
+        // this function guessing at it.
         const defaultName = defaultNameOverride ?? (() => {
           const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
           return ayahRefLabel(surah, ayahNum);
@@ -3977,9 +3974,7 @@
         currentUnitInfo() itself, so nothing about the Read screen's own,
         already-correct position logic is touched by this round. Always
         reads within currentSurahData (Note view never loads a different
-        surah than whatever's already open -- see noteScope's own comment);
-        callers check noteScope.isBook themselves first, since a book-scope
-        note has no surah/ayah at all. */
+        surah than whatever's already open -- see noteScope's own comment). */
     function noteScopeUnitInfo() {
       const ayah = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum) ?? currentSurahData.ayahs[0];
       const surahChunkKey = `surah_${currentSurahNum}`;
@@ -4011,10 +4006,10 @@
       return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, noteScope.ayahNum), chunkKey: surahChunkKey, label: ayahRefLabel(currentSurahNum, noteScope.ayahNum), fromAyah: noteScope.ayahNum, toAyah: noteScope.ayahNum };
     }
 
-    /** The unit key the Note view is showing right now, book scope included -- the one thing every caller that needs to compare "is this the note that's open" should call rather than re-deriving it. */
+    /** The unit key the Note view is showing right now -- the one thing every caller that needs to compare "is this the note that's open" should call rather than re-deriving it. */
     function noteScopeCurrentUnitKey() {
       if (!noteScope) return null;
-      return noteScope.isBook ? buildUnitKey.book() : noteScopeUnitInfo().unitKey;
+      return noteScopeUnitInfo().unitKey;
     }
 
     /** Which number (of whichever unit type) a given āyah of the CURRENTLY LOADED surah belongs to -- ruku/juz/hizb/page all read straight off fields the pulled data already carries, so this never needs the boundary-table fetch (getJuzIndex()/etc.) the canonical Study Unit picker uses. That is the trade this round makes deliberately: Note view's own unit-number picker only offers numbers that appear WITHIN the open surah, not every valid number in the whole Qur'an -- picking a different Juz/Hizb/Page entirely still means Study options or the Read screen. */
@@ -4031,7 +4026,6 @@
 
     /** "the study contents (Ayat)... is only important to display here for single, a Range and a small Surah that is less than a half page size. Anything above than that a user can read from the READ view" (the owner's own words). "Small" reads real data already in memory (every loaded āyah carries its own real Mushaf `.page` number) rather than fetching the full 2.8MB page-layout file just to decide this: a surah that fits on exactly one real printed page counts as small. That is a deliberately looser proxy than literal line-counted "half a page" -- flagged, not hidden, in the build report. */
     function noteScopeShowAyatText() {
-      if (noteScope.isBook) return false;
       if (noteScope.unitType === "ayah" || noteScope.unitType === "range") return true;
       if (noteScope.unitType === "surah") return new Set(currentSurahData.ayahs.map((a) => a.page)).size === 1;
       return false;
@@ -4039,12 +4033,12 @@
 
     /** Word by Word / Root read ONE āyah's own data (ayah-renderer.js's panels take a single āyah object, not a span) -- narrower than noteScopeShowAyatText(), which also covers a Range or a short surah. */
     function noteScopeCanWbwRoot() {
-      return !noteScope.isBook && noteScope.unitType === "ayah";
+      return noteScope.unitType === "ayah";
     }
 
     /** "every Ayah or any unit should have a way to recognise it contains a note in a different unit" (the owner's own words) -- for a single-āyah scope only (the concept only means something when there IS one specific āyah to ask "which wider units cover this"), lists whichever ancestor scope already has its own real note, so the reader can jump straight to it rather than stumbling on it by chance. Every candidate key is derived from data already loaded, and ayahHasNote() is a plain in-memory check (no fetch) -- this costs nothing extra to compute on every render. */
     function noteScopeWiderNotes() {
-      if (noteScope.isBook || noteScope.unitType !== "ayah") return [];
+      if (noteScope.unitType !== "ayah") return [];
       const ayah = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
       if (!ayah) return [];
       const rukuIdx = rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku);
@@ -4055,7 +4049,6 @@
         { unitType: "juz", unitKey: buildUnitKey.juz(ayah.juz), label: t("Juz {juz}", { juz: num(ayah.juz) }) },
         { unitType: "hizb", unitKey: buildUnitKey.hizb(hizbNow), label: t("Hizb {hizb}", { hizb: num(hizbNow) }) },
         { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), label: t("Page {page}", { page: num(ayah.page) }) },
-        { unitType: "book", unitKey: buildUnitKey.book(), label: t("the whole Qur'an") },
       ];
       return candidates.filter((c) => ayahHasNote(ayahNotesDoc, c.unitKey));
     }
@@ -4098,7 +4091,7 @@
         <select data-note-picker="to" aria-label="${t("To")}" ${isRange ? "" : "hidden"}>${ayahOptionsHtml(noteScope.rangeTo)}</select>`;
     }
 
-    /** Wires bar 1's own <select>s -- freshly looked up every call, since renderNoteViewNow() rebuilds the whole view's innerHTML on every re-render (a claim, a bookmark toggle, Prev/Next), which destroys and recreates these nodes each time; harmless to re-bind fresh listeners to fresh nodes. Any interaction here means the reader is genuinely choosing a different scope, so it always clears noteScope.isBook first. */
+    /** Wires bar 1's own <select>s -- freshly looked up every call, since renderNoteViewNow() rebuilds the whole view's innerHTML on every re-render (a claim, a bookmark toggle, Prev/Next), which destroys and recreates these nodes each time; harmless to re-bind fresh listeners to fresh nodes. */
     function wireNotePickerBar() {
       const unitSel = noteView.querySelector('[data-note-picker="unitType"]');
       const surahSel = noteView.querySelector('[data-note-picker="surah"]');
@@ -4113,7 +4106,6 @@
       // for the Read screen shows the surah just picked here, not the one
       // that was open before it.
       surahSel?.addEventListener("change", async () => {
-        noteScope.isBook = false;
         currentSurahNum = Number(surahSel.value);
         surahSelect.value = String(currentSurahNum);
         await loadSurah();
@@ -4131,7 +4123,6 @@
         renderNoteViewNow();
       });
       unitSel?.addEventListener("change", () => {
-        noteScope.isBook = false;
         noteScope.unitType = unitSel.value;
         if (noteScope.unitType === "range") {
           noteScope.rangeFrom = noteScope.ayahNum;
@@ -4145,16 +4136,15 @@
         }
         renderNoteViewNow();
       });
-      ayahSel?.addEventListener("change", () => { noteScope.isBook = false; noteScope.ayahNum = Number(ayahSel.value); renderNoteViewNow(); });
+      ayahSel?.addEventListener("change", () => { noteScope.ayahNum = Number(ayahSel.value); renderNoteViewNow(); });
       numSel?.addEventListener("change", () => {
-        noteScope.isBook = false;
         noteScope.unitNumber = Number(numSel.value);
         const match = currentSurahData.ayahs.find((a) => noteScopeNumberOfAyah(noteScope.unitType, a) === noteScope.unitNumber);
         if (match) noteScope.ayahNum = match.ayah;
         renderNoteViewNow();
       });
-      fromSel?.addEventListener("change", () => { noteScope.isBook = false; noteScope.rangeFrom = Number(fromSel.value); noteScope.ayahNum = noteScope.rangeFrom; renderNoteViewNow(); });
-      toSel?.addEventListener("change", () => { noteScope.isBook = false; noteScope.rangeTo = Number(toSel.value); renderNoteViewNow(); });
+      fromSel?.addEventListener("change", () => { noteScope.rangeFrom = Number(fromSel.value); noteScope.ayahNum = noteScope.rangeFrom; renderNoteViewNow(); });
+      toSel?.addEventListener("change", () => { noteScope.rangeTo = Number(toSel.value); renderNoteViewNow(); });
     }
 
     /** The nav cluster's own HTML -- "one is for moving the whole unit of
@@ -4168,7 +4158,6 @@
         Read-view action, same "stays within the current surah" simplification
         every other piece of Note view's own navigation makes this round). */
     function renderNoteNavHtml() {
-      if (noteScope.isBook) return ""; // one running note -- nothing to page between
       const info = noteScopeUnitInfo();
       const isAyah = noteScope.unitType === "ayah";
       const isSurah = noteScope.unitType === "surah";
@@ -4185,7 +4174,7 @@
 
     /** The nav cluster's OUTER pair -- moves the whole chosen unit, within the currently loaded surah only (see renderNoteNavHtml()'s own comment on why Whole Surah has no outer step at all). */
     function stepNoteUnit(dir) {
-      if (noteScope.isBook || noteScope.unitType === "surah") return;
+      if (noteScope.unitType === "surah") return;
       if (noteScope.unitType === "ayah") { stepNoteAyah(dir); return; }
       const count = currentSurahData.ayahCount;
       if (noteScope.unitType === "range") {
@@ -4233,17 +4222,16 @@
         the Read screen's own position. */
     function renderNoteViewNow() {
       if (!noteScope || !currentSurahData) return;
-      const isBook = !!noteScope.isBook;
-      const info = isBook ? null : noteScopeUnitInfo();
-      const unitKey = isBook ? buildUnitKey.book() : info.unitKey;
-      const ref = isBook ? t("The whole Qur'an") : info.label;
+      const info = noteScopeUnitInfo();
+      const unitKey = info.unitKey;
+      const ref = info.label;
       const showAyatText = noteScopeShowAyatText();
       const canWbwRoot = noteScopeCanWbwRoot();
-      const showApproach = !isBook && noteScope.unitType === "ayah";
-      const ayah = isBook ? null : currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
+      const showApproach = noteScope.unitType === "ayah";
+      const ayah = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
 
       let textBlocks = { arabicText: "", englishText: "", banglaText: "" };
-      if (showAyatText && !isBook) {
+      if (showAyatText) {
         const inScope = currentSurahData.ayahs.filter((a) => a.ayah >= info.fromAyah && a.ayah <= info.toAyah);
         textBlocks = {
           arabicText: inScope.map((a) => a.uthmaniText).join("  "),
@@ -4258,7 +4246,7 @@
       const wideNoteHtml = wideNotes.length
         ? `<div class="note-wide-notes"><span>${t("Also noted at:")}</span>${wideNotes.map((w) => `<button type="button" class="note-wide-pill" data-note-wide-open="${w.unitType}">${w.label} →</button>`).join("")}</div>`
         : "";
-      const readViewLinkHtml = !isBook && !showAyatText
+      const readViewLinkHtml = !showAyatText
         ? `<span>${info.label} — ${t("read it on the Read screen")}</span><button type="button" data-note-open-read>${t("Open in Read")} ▸</button>`
         : "";
 
@@ -4299,7 +4287,6 @@
         // buildAyahText() is single-āyah only, which used to be fine when
         // Copy/Share only ever existed for a single āyah).
         buildText: (langs) => {
-          if (isBook) return "";
           const parts = [ref];
           if (langs.includes("ar") && textBlocks.arabicText) parts.push(textBlocks.arabicText);
           if (langs.includes("en") && textBlocks.englishText) parts.push(textBlocks.englishText);
@@ -4323,8 +4310,8 @@
           renderStudyScreen();
           return { ok: true };
         },
-        onToggleBookmark: () => toggleAyahBookmark(unitKey, ref, isBook ? {} : captureNoteBookmarkSettings()),
-        onPlay: () => { if (!isBook) quickPlayAyah(buildUnitKey.ayah(currentSurahNum, info.fromAyah)); },
+        onToggleBookmark: () => toggleAyahBookmark(unitKey, ref, captureNoteBookmarkSettings()),
+        onPlay: () => quickPlayAyah(buildUnitKey.ayah(currentSurahNum, info.fromAyah)),
         onPrevUnit: () => stepNoteUnit(-1),
         onNextUnit: () => stepNoteUnit(1),
         onPrevAyah: () => stepNoteAyah(-1),
@@ -4333,9 +4320,7 @@
         onToggleWbw: toggleNoteWbw,
         onToggleRoots: toggleNoteRoots,
         onApproachChange: (id) => changeCurrentTrackable(id),
-        onOpenWholeQuranNote: () => { noteScope.isBook = true; renderNoteViewNow(); },
         onOpenInReadView: () => {
-          if (isBook) return;
           currentUnitType = noteScope.unitType;
           currentAyahNum = info.fromAyah;
           unitTypeSelect.value = currentUnitType;
@@ -4344,8 +4329,6 @@
           setStageView("read");
         },
         onOpenWideNote: (unitType) => {
-          if (unitType === "book") { noteScope.isBook = true; renderNoteViewNow(); return; }
-          noteScope.isBook = false;
           noteScope.unitType = unitType;
           if (NUMBERED_UNITS.includes(unitType)) {
             const ayahNow = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
@@ -4453,27 +4436,31 @@
         an āyah-shaped one from the ordinary quick menu (single-ayah scope,
         as always), or any other shape from a Note-view-created bookmark
         (bookmarks.html/openBookmarkFromQueryString can now point at a
-        wider-unit or whole-Qur'an note too). Confirms the notes doc is
-        really writable (spec item 8) in the background -- opening the view
-        never waits on it, and a failure surfaces the first time an actual
-        save is attempted, via onSaveNote's own safeWrite above. */
+        wider-unit note too). Confirms the notes doc is really writable
+        (spec item 8) in the background -- opening the view never waits on
+        it, and a failure surfaces the first time an actual save is
+        attempted, via onSaveNote's own safeWrite above. */
     async function openNoteView(unitKey) {
       await ensureAyahNoteDataLoaded();
       if (auth.currentUser && selectedPersonId) {
         ensureAyahNotesWritable(db, { tenantId: activeTenantId, personId: selectedPersonId, uid: auth.currentUser.uid });
       }
       const { unitType, parts } = parseUnitKey(unitKey);
-      if (unitType === "book") {
-        noteScope = { unitType: "ayah", ayahNum: currentAyahNum, rangeFrom: currentAyahNum, rangeTo: currentAyahNum, unitNumber: null, isBook: true };
-      } else if (unitType === "ayah") {
-        noteScope = { unitType: "ayah", ayahNum: Number(parts[1]), rangeFrom: Number(parts[1]), rangeTo: Number(parts[1]), unitNumber: null, isBook: false };
+      if (unitType === "ayah") {
+        noteScope = { unitType: "ayah", ayahNum: Number(parts[1]), rangeFrom: Number(parts[1]), rangeTo: Number(parts[1]), unitNumber: null };
+      } else if (unitType === "book") {
+        // "book" was the whole-Qur'an note's own unit key, removed from this
+        // build -- a bookmark saved while that feature existed still points
+        // here, and falls back to the current āyah rather than erroring on a
+        // scope this view no longer understands.
+        noteScope = { unitType: "ayah", ayahNum: currentAyahNum, rangeFrom: currentAyahNum, rangeTo: currentAyahNum, unitNumber: null };
       } else {
         // A bookmark on a wider unit (range/surah/ruku/juz/hizb/page):
         // land on that unit's own first āyah in THIS surah (currentSurahNum
         // is already whatever surah is loaded -- see noteScope's own
         // "never loads a different surah" rule) and let noteScopeUnitInfo()
         // resolve the rest from there.
-        noteScope = { unitType, ayahNum: currentAyahNum, rangeFrom: currentAyahNum, rangeTo: currentAyahNum, unitNumber: null, isBook: false };
+        noteScope = { unitType, ayahNum: currentAyahNum, rangeFrom: currentAyahNum, rangeTo: currentAyahNum, unitNumber: null };
         if (unitType === "range") { const [f, tRaw] = parts[1].split("-"); noteScope.rangeFrom = Number(f); noteScope.rangeTo = Number(tRaw); noteScope.ayahNum = noteScope.rangeFrom; }
       }
       noteFullscreenOn = false; // always opens in the normal state -- the owner's own description of state one
