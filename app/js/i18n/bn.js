@@ -1820,4 +1820,12 @@ export const BN = {
   "Person|groupby": "ব্যক্তি অনুযায়ী",
   "For": "যার জন্য",
   "No one in particular": "নির্দিষ্ট কেউ নয়",
+
+  // =====================================================================
+  // Fixes round 3 (24 Aug 2026) -- the ⋯ menu's own Approach row no longer
+  // vanishes outright when the scope isn't a single āyah (whole-Qur'an note,
+  // or a wider unit); it stays put, disabled, same treatment as "Mapping My
+  // Journey" right beside it.
+  // =====================================================================
+  "Single āyah only": "শুধু একটি আয়াতের জন্য", // ?
 };
