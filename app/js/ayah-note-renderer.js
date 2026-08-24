@@ -223,8 +223,8 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
  * screen's #readPickers shape, mirrors -- unchanged behaviour, moved
  * screen); bar 2 holds every button, one row, on every platform. Four stay
  * open always (the nav cluster, Play, Bookmark, Full screen) plus Copy;
- * everything else (Share, Notes formatting, Word by Word, Root, Collapse)
- * folds into ⋮, and Approach / Mapping My Journey / the whole-Qur'an note
+ * everything else (Share, Notes formatting, Word by Word, Root,
+ * Derivatives, Collapse) folds into ⋮, and Approach / Mapping My Journey
  * fold into ⋯ at the far right -- so nothing here ever needs a second bar,
  * even with the picker row and four ways to move added since round 31.
  *
@@ -240,14 +240,14 @@ export function renderNoteView({
   unitKey,
   pickerBarHtml, navHtml,
   showAyatText, arabicText, englishText, banglaText, readViewLinkHtml,
-  notesHtml, wbwHtml, rootsHtml,
+  notesHtml, wbwHtml, rootsHtml, derivativesHtml,
   isBookmarked = false, isFullscreen = false,
-  isWbwOn = false, isRootsOn = false, hasNote = false, approachHtml = "", isNotesOpen = false,
+  isWbwOn = false, isRootsOn = false, isDerivativesOn = false, hasNote = false, approachHtml = "", isNotesOpen = false,
   approachOptionsHtml = "", showApproach = false, wideNoteHtml = "",
-  // Word by Word / Root read ONE āyah (ayah-renderer.js's panels take a
-  // single āyah object) -- so unlike showAyatText (which also covers a
-  // Range or a short surah), these two and the Collapse toggle only make
-  // sense for a genuine single-āyah scope.
+  // Word by Word / Root / Derivatives read ONE āyah (ayah-renderer.js's
+  // panels take a single āyah object) -- so unlike showAyatText (which also
+  // covers a Range or a short surah), these three and the Collapse toggle
+  // only make sense for a genuine single-āyah scope.
   canWbwRoot = false,
 }) {
   const copySharePopover = (kind, goAttr) => `
@@ -301,6 +301,7 @@ export function renderNoteView({
             <div class="qm-divider"></div>
             <button type="button" class="qm-item${isWbwOn ? " is-on" : ""}" data-note-wbw-toggle aria-pressed="${isWbwOn ? "true" : "false"}">${t("Word by Word")} <span class="qm-caret">${isWbwOn ? "✓" : ""}</span></button>
             <button type="button" class="qm-item${isRootsOn ? " is-on" : ""}" data-note-roots-toggle aria-pressed="${isRootsOn ? "true" : "false"}">${t("Root")} <span class="qm-caret">${isRootsOn ? "✓" : ""}</span></button>
+            <button type="button" class="qm-item${isDerivativesOn ? " is-on" : ""}" data-note-derivatives-toggle aria-pressed="${isDerivativesOn ? "true" : "false"}">${t("Derivatives")} <span class="qm-caret">${isDerivativesOn ? "✓" : ""}</span></button>
             <div class="qm-divider"></div>
             <button type="button" class="qm-item" data-note-master-toggle title="${t("Notes always stays open")}">${t("Collapse āyah text")}</button>` : ""}
           </div>
@@ -378,11 +379,18 @@ export function renderNoteView({
             <div class="note-field-body">${wbwHtml ?? ""}</div>
           </div>` : ""}
           ${isRootsOn ? `
-          <div class="note-field" data-note-field="rootDerivatives">
+          <div class="note-field" data-note-field="root">
             <div class="note-field-label-row">
-              <span class="note-field-label">${t("Roots & derivatives")}</span>
+              <span class="note-field-label">${t("Root")}</span>
             </div>
             <div class="note-field-body">${rootsHtml ?? ""}</div>
+          </div>` : ""}
+          ${isDerivativesOn ? `
+          <div class="note-field" data-note-field="derivatives">
+            <div class="note-field-label-row">
+              <span class="note-field-label">${t("Derivatives")}</span>
+            </div>
+            <div class="note-field-body">${derivativesHtml ?? ""}</div>
           </div>` : ""}
         </div>` : `
         <!-- Enhancement round -- "anything above [single/range/a short
@@ -425,7 +433,7 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
  *   onPrevUnit() / onNextUnit()   -- the nav cluster's OUTER pair (moves the whole chosen unit)
  *   onPrevAyah() / onNextAyah()   -- the nav cluster's INNER pair (moves one āyah); omitted/absent when the caller didn't render that pair (Single Ayah scope, or no āyah to step through)
  *   onToggleFullscreen()
- *   onToggleWbw() / onToggleRoots()
+ *   onToggleWbw() / onToggleRoots() / onToggleDerivatives()
  *   onApproachChange(id)
  *   onOpenInReadView()        -- the "read it in the Read view" link, only present when the scope wasn't shown as text
  *   onPickerChange            -- delegated: the caller wires its own picker bar's <select> elements directly (they're pre-built HTML it owns), so this file never needs to know their ids
@@ -567,6 +575,7 @@ export function attachNoteViewHandlers(container, callbacks) {
 
   view.querySelector("[data-note-wbw-toggle]")?.addEventListener("click", () => { callbacks.onToggleWbw?.(); closeAllDotMenus(null); });
   view.querySelector("[data-note-roots-toggle]")?.addEventListener("click", () => { callbacks.onToggleRoots?.(); closeAllDotMenus(null); });
+  view.querySelector("[data-note-derivatives-toggle]")?.addEventListener("click", () => { callbacks.onToggleDerivatives?.(); closeAllDotMenus(null); });
   view.querySelectorAll("[data-note-approach-select]").forEach((sel) => {
     sel.addEventListener("change", () => { callbacks.onApproachChange?.(sel.value); closeAllDotMenus(null); });
   });
