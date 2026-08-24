@@ -1729,8 +1729,9 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   check("30l ...and what it covers reads in Bangla with Bengali digits",
         BANGLA.test(bn.span) && !/[0-9]/.test(bn.span), bn.span);
   // Round 27 made it six ("Roots & derivatives", split out of Word by Word);
-  // round 28 made it seven ("Page by page", the sideways reading).
-  check("30l every Reading view tick is Bangla", bn.ticks.length === 7 && bn.ticks.every((x) => BANGLA.test(x)), JSON.stringify(bn.ticks));
+  // round 28 made it seven ("Page by page", the sideways reading); the
+  // enhancement round that split Root/Derivatives apart made it eight.
+  check("30l every Reading view tick is Bangla", bn.ticks.length === 8 && bn.ticks.every((x) => BANGLA.test(x)), JSON.stringify(bn.ticks));
   await page.click("#tabReadBtn");
   await page.waitForTimeout(500);
   // Round 22: icons carry no words, so what must be in Bangla is their name.
@@ -1792,7 +1793,7 @@ console.log("\n=== 31. Shell round 19: no Approach blocks anything ===");
     check("31b an Approach with no audio panel still offers every reciter",
           live.reciters > 0 && !live.recitersDisabled, JSON.stringify(live));
     check("31b ...still offers Loop and Play", live.loop && live.play, JSON.stringify(live));
-    check("31b ...and every reading choice stays live", live.ticks === 7, String(live.ticks)); // seven since round 28
+    check("31b ...and every reading choice stays live", live.ticks === 8, String(live.ticks)); // eight since the enhancement round split Derivatives out of Root
     check("31b the Qur'an text is on screen whatever the Approach declares", live.arabic > 0, String(live.arabic));
   }
 
@@ -2935,8 +2936,12 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   await openStudyOptions(page);
   await page.check("#wbwShowToggle");
   // Round 27 split the grammar table out of Word by Word into its own reading
-  // choice, so this section has to ask for it explicitly now.
+  // choice, so this section has to ask for it explicitly now. The
+  // enhancement round then split THAT into Root (root letters + count) and
+  // Derivatives (part of speech + lemma) -- the grammar labels this section
+  // is about now live under Derivatives, so both are ticked.
   await page.check("#rootsToggle");
+  await page.check("#derivativesToggle");
   await page.waitForTimeout(400);
   await page.click("#tabStudyOptionsBtn");
   await page.click("#tabReadBtn");
@@ -2953,7 +2958,12 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
     // (or negative) "gap" that has nothing to do with real spacing -- only
     // visible children describe the row's actual packing.
     const visibleKids = kids.filter((el) => !el.hidden && getComputedStyle(el).display !== "none");
-    const rows = [...document.querySelectorAll(".root-deriv-strip .root-row")];
+    // Root and Derivatives are two separate panels now (enhancement round),
+    // each its own "root-deriv-strip" wrapper -- .root-panel/.derivatives-panel
+    // tell them apart, since POS/lemma moved to Derivatives and root+count
+    // stayed on Root.
+    const derivRows = [...document.querySelectorAll(".derivatives-panel .root-row")];
+    const rootRows = [...document.querySelectorAll(".root-panel .root-row")];
     // The honest check for "packed together, not spread with gaps" is the
     // GAP between each consecutive control, not where the group starts --
     // round 31 added a sixth child (#readQuickMenuSlot), which widens the
@@ -2967,10 +2977,10 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
       gaps,
       lastRight: Math.round(visibleKids[visibleKids.length - 1].getBoundingClientRect().right),
       barLeft: Math.round(barBox.left), barRight: Math.round(barBox.right),
-      posCount: rows.length,
-      latinPos: rows.map((r) => r.querySelector(".root-pos")?.textContent || "").filter((x) => /[A-Za-z]/.test(x)).length,
-      samplePos: rows[0]?.querySelector(".root-pos")?.textContent.trim() ?? "",
-      counts: rows.map((r) => r.querySelector(".root-count")?.textContent ?? "").filter(Boolean),
+      posCount: derivRows.length,
+      latinPos: derivRows.map((r) => r.querySelector(".root-pos")?.textContent || "").filter((x) => /[A-Za-z]/.test(x)).length,
+      samplePos: derivRows[0]?.querySelector(".root-pos")?.textContent.trim() ?? "",
+      counts: rootRows.map((r) => r.querySelector(".root-count")?.textContent ?? "").filter(Boolean),
     };
   });
 
@@ -3421,7 +3431,7 @@ console.log("\n=== 39. Shell round 27: the four fixes ===");
     const ayah = (await q.getSurah(1)).ayahs[0];
     const has = (html, cls) => html.includes(cls);
     const words = r.renderLayoutA(ayah, ["wordByWord"], {});
-    const roots = r.renderLayoutA(ayah, ["rootDerivatives"], {});
+    const roots = r.renderLayoutA(ayah, ["root"], {});
     return {
       wordsOnly: has(words, "wbw-strip") && !has(words, "root-deriv-strip"),
       rootsOnly: has(roots, "root-deriv-strip") && !has(roots, "wbw-strip"),
@@ -4257,10 +4267,13 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await ctx.close();
 }
 
-// --- 42t enhancement round: the Root (Roots & derivatives) toggle -- always
-// right after Word by word, on every platform (no phone/desktop split the
-// way Approach/Journey get), off by default, opening real derivatives
-// content below Word by word and closing again on a second click. ----------
+// --- 42t enhancement round: Root -- always right after Word by word, on
+// every platform (no phone/desktop split the way Approach/Journey get), off
+// by default, opening real root content below Word by word and closing
+// again on a second click. Derivatives (below) is its own, separate toggle
+// now -- the owner's own report that Root and Derivatives still "appeared
+// together, merged" in one panel/one tick, the same complaint round 27
+// already fixed once for Word by Word. -------------------------------------
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
@@ -4276,16 +4289,25 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     const children = [...bar2.children];
     const wbwIdx = children.findIndex((c) => c.matches("[data-note-wbw-toggle]"));
     const rootsIdx = children.findIndex((c) => c.matches("[data-note-roots-toggle]"));
+    const derivIdx = children.findIndex((c) => c.matches("[data-note-derivatives-toggle]"));
     const rootsBtn = document.querySelector("[data-note-roots-toggle]");
+    const derivBtn = document.querySelector("[data-note-derivatives-toggle]");
     return {
-      fieldPresent: !!document.querySelector('[data-note-field="rootDerivatives"]'),
-      pressed: rootsBtn.getAttribute("aria-pressed"),
-      label: rootsBtn.textContent.trim(),
+      rootFieldPresent: !!document.querySelector('[data-note-field="root"]'),
+      derivFieldPresent: !!document.querySelector('[data-note-field="derivatives"]'),
+      rootPressed: rootsBtn.getAttribute("aria-pressed"),
+      derivPressed: derivBtn.getAttribute("aria-pressed"),
+      rootLabel: rootsBtn.textContent.trim(),
+      derivLabel: derivBtn.textContent.trim(),
       rightAfterWbw: rootsIdx === wbwIdx + 1,
+      derivRightAfterRoot: derivIdx === rootsIdx + 1,
     };
   });
   check("42t Root is off by default, right after Word by word, labelled \"Root\"",
-        !before.fieldPresent && before.pressed === "false" && before.label === "Root" && before.rightAfterWbw,
+        !before.rootFieldPresent && before.rootPressed === "false" && before.rootLabel === "Root" && before.rightAfterWbw,
+        JSON.stringify(before));
+  check("42t Derivatives is off by default, right after Root, labelled \"Derivatives\"",
+        !before.derivFieldPresent && before.derivPressed === "false" && before.derivLabel === "Derivatives" && before.derivRightAfterRoot,
         JSON.stringify(before));
 
   // Turn Word by word on too, so "below Word by word" is a real ordering
@@ -4296,7 +4318,8 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(200);
   const on = await page.evaluate(() => {
     const wbwField = document.querySelector('[data-note-field="wbw"]');
-    const rootsField = document.querySelector('[data-note-field="rootDerivatives"]');
+    const rootsField = document.querySelector('[data-note-field="root"]');
+    const derivField = document.querySelector('[data-note-field="derivatives"]');
     const collapsible = document.querySelector("[data-note-collapsible]");
     const children = [...collapsible.children];
     return {
@@ -4305,17 +4328,38 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
       pressed: document.querySelector("[data-note-roots-toggle]").getAttribute("aria-pressed"),
       active: document.querySelector("[data-note-roots-toggle]").classList.contains("active"),
       belowWbw: wbwField && rootsField ? children.indexOf(rootsField) === children.indexOf(wbwField) + 1 : null,
+      derivStillOff: !derivField,
     };
   });
-  check("42t clicking it opens real derivatives content below Word by word",
-        on.present && on.hasContent && on.belowWbw === true, JSON.stringify(on));
+  check("42t clicking it opens real root content below Word by word, WITHOUT Derivatives",
+        on.present && on.hasContent && on.belowWbw === true && on.derivStillOff, JSON.stringify(on));
   check("42t ...and the toggle itself reads pressed", on.pressed === "true" && on.active);
 
+  // Derivatives, on its own, independent of Root -- the point of splitting
+  // them apart. Root is still on from above; turning it off first proves
+  // Derivatives doesn't depend on Root being on.
   await page.click("[data-note-roots-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("[data-note-derivatives-toggle]");
+  await page.waitForTimeout(200);
+  const derivOn = await page.evaluate(() => {
+    const derivField = document.querySelector('[data-note-field="derivatives"]');
+    return {
+      present: !!derivField,
+      hasContent: derivField ? derivField.textContent.trim().length > 0 : false,
+      rootStillOff: !document.querySelector('[data-note-field="root"]'),
+      pressed: document.querySelector("[data-note-derivatives-toggle]").getAttribute("aria-pressed"),
+    };
+  });
+  check("42t Derivatives opens real content on its own, WITHOUT Root being on",
+        derivOn.present && derivOn.hasContent && derivOn.rootStillOff && derivOn.pressed === "true",
+        JSON.stringify(derivOn));
+
+  await page.click("[data-note-derivatives-toggle]");
   await page.waitForTimeout(200);
   const off = await page.evaluate(() => ({
-    fieldPresent: !!document.querySelector('[data-note-field="rootDerivatives"]'),
-    pressed: document.querySelector("[data-note-roots-toggle]").getAttribute("aria-pressed"),
+    fieldPresent: !!document.querySelector('[data-note-field="derivatives"]'),
+    pressed: document.querySelector("[data-note-derivatives-toggle]").getAttribute("aria-pressed"),
   }));
   check("42t clicking it again closes the derivatives field", !off.fieldPresent && off.pressed === "false", JSON.stringify(off));
 

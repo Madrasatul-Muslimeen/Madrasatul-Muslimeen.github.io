@@ -477,7 +477,14 @@ export const BN = {
   // Round 27 -- its own reading choice now, split out of Word by Word. The key
   // is the DECODED text (&amp; -> &), because translateStatic() reads text
   // nodes from the live DOM, not the HTML source (phase 3's own lesson).
+  // Kept, unused: the tick was renamed "Root" and this string stopped being
+  // called the round Derivatives split out of it, same "never delete a
+  // string that stops being called" rule this file follows throughout.
   "Roots & derivatives": "শব্দমূল ও গঠন", // ?
+  // Enhancement round -- Derivatives split out of Root the same way Root
+  // split out of Word by Word (round 27): the owner's own report that the
+  // two still "appeared together, merged" in one panel/one tick.
+  "Derivatives": "উদ্ভূত শব্দ", // ?
   // Round 28 -- the reading moves sideways, one page at a time.
   "Page by page": "পাতায় পাতায়", // ?
   "No morphology data for this ayah.": "এই আয়াতের জন্য শব্দগঠনের তথ্য নেই।",

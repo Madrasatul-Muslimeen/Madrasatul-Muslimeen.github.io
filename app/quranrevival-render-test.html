@@ -121,7 +121,7 @@
 
   <script type="module">
     import { getAyah, getSurah, getSurahIndex } from "./js/quran-data.js";
-    import { renderArabicPanel, renderTranslationPanel, renderWordByWordPanel, renderRootDerivativePanel } from "./js/ayah-renderer.js";
+    import { renderArabicPanel, renderTranslationPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel } from "./js/ayah-renderer.js";
     import { renderMasteryWheel, renderWheelLegend } from "./js/mastery-wheel.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar } from "./js/nav.js";
@@ -191,7 +191,8 @@
         renderArabicPanel(ayah255, { tajweedOn: tajweedToggle.checked }) +
         renderTranslationPanel(ayah255, langs) +
         `<h4>Word by word</h4>` + renderWordByWordPanel(ayah255, { langs }) +
-        `<h4>Root &amp; Derivatives</h4>` + renderRootDerivativePanel(ayah255);
+        `<h4>Root</h4>` + renderRootPanel(ayah255) +
+        `<h4>Derivatives</h4>` + renderDerivativesPanel(ayah255);
     }
     tajweedToggle.addEventListener("change", renderAyah);
     banglaToggle.addEventListener("change", renderAyah);

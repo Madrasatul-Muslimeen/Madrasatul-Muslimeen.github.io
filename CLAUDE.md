@@ -4294,6 +4294,101 @@ whole Qur'an", "the whole Qur'an") simply stop being scanned; none had a
 `bn.js` entry to clean up (flagged as a real, pre-existing translation gap
 in v07.71's own entry, now moot). No `firestore.rules` or schema changes --
 removing a study-screen feature never touched either.
+
+v07.73 (24 Aug 2026, on Claude Code on the web) is **shell round -- Root and
+Derivatives split apart, on the owner's own report.** Their words: "Check
+Root and derivatives features and functions in all languages in Quran Study
+module. They are merged, appeared together. I want you to separate the roots
+from derivatives as Word by Word is separated. And separate the options/
+selections across the app as well." Correct, and the same shape as an
+already-fixed complaint: round 27 (v07.54) had split "rootDerivatives" out of
+"wordByWord" for exactly this reason, but the panel it split OUT still showed
+a word's root letters/count and its part-of-speech/lemma together, in one
+table, behind one tick ("Roots & derivatives", later shortened to "Root").
+This round does the same split one level deeper.
+
+**`ayah-renderer.js`'s single `renderRootDerivativePanel()` is now two real
+panels**, `renderRootPanel()` (root letters + how many times that root occurs
+across the whole Qur'an -- unchanged data, `w.morphology.root`/`rootCount`)
+and `renderDerivativesPanel()` (this word's own derived form -- part of
+speech + lemma, `w.morphology.pos`/`lemma`). Both keep the shared
+`.root-deriv-strip` wrapper class for styling, each ALSO carries its own
+`.root-panel`/`.derivatives-panel` class so the two are unambiguous to query
+and to style separately later. `PANEL_ORDER`/`PANEL_RENDERERS` gained `"root"`
+and `"derivatives"` in place of the old `"rootDerivatives"` key -- no
+Approach in `catalogue-data.js` declared that key directly (it was always a
+reader's own Reading-view tick, never part of an Approach's default panels),
+so this needed no catalogue change.
+
+**Every place the app offered ONE combined toggle now offers two**, matching
+the owner's own "separate the options/selections across the app as well":
+Study options → Reading view gained a second tick, "Derivatives", right after
+the renamed "Root" (eight ticks now, not seven -- `panel.mjs`/`navcheck.mjs`
+account for it automatically since neither hardcodes the count); the Ayah
+Note screen's ⋮ menu gained its own "Derivatives" button beside "Root", each
+opening its own `note-field` (`data-note-field="root"` /
+`="derivatives"`), independently -- a new `noteDerivativesOn` session flag
+mirrors `noteRootsOn`'s own "persists across Prev/Next, not reset per āyah"
+shape, and a new `toggleNoteDerivatives()` mirrors `toggleNoteRoots()`. The
+Mushaf-greys-the-other-choices array, the bookmark-settings capture/restore
+pair (`captureQuranBookmarkSettings`/`captureNoteBookmarkSettings`/
+`applyQuranBookmarkSettings`, item 4's "reopen ALL settings") and the
+Bangla catalogue (`bn.js`, new `"Derivatives"` entry, `"Roots & derivatives"`
+kept in place but now unused, per this project's own "never delete a string
+that stops being called" rule) all picked up the new toggle alongside the
+old one, not instead of it.
+
+**One thing worth recording for whoever measures translation coverage next:**
+the report's own TOTAL count did not move (still 210 strings in the quran
+area) even though this round adds a brand-new "Derivatives" string --
+checked directly rather than assumed, and it is correct, not a ninth tool
+bug: it is a clean 1-for-1 swap. "Roots & derivatives" stops being called
+anywhere active (the checkbox label and the note-field label both used to say
+it); "Root" was already counted (the Note-view button has said "Root" since
+v07.65); "Derivatives" is new. One string leaves the extracted set, one
+enters, net zero -- the missing-count and every other area were compared
+line-for-line against `HEAD` and came back byte-identical bar that swap.
+
+**Verified: all sections of `behaviour.mjs` that the harness can actually
+reach still pass -- 789 checks, 0 failures** (was 788/1 before this round:
+one pre-existing failure, `"31b ...and every reading choice stays live"`,
+hardcoded the reading-ticks count at seven and is fixed to eight; two other
+count-based checks, `"30l every Reading view tick is Bangla"` and the section
+37/39c grammar-label tests, were updated the same way -- 37's own POS/lemma
+assertions now tick `#derivativesToggle` too, since that content moved off
+Root and onto Derivatives, and query `.root-panel`/`.derivatives-panel`
+separately rather than a shared selector that would have mixed the two
+panels' rows together). **The suite still hits the exact same pre-existing,
+disclosed crash at line ~3877** (a stale `.note-ref`/`.note-master-toggle`
+visibility assumption from before the round-31 bar reorg, first flagged in
+v07.69 and confirmed unrelated to this change in v07.70/71/72's own entries
+too) -- section 42t (the Root/Derivatives-specific behaviour test, rewritten
+this round to check both toggles independently: Root without Derivatives,
+Derivatives without Root, and both together) sits past that crash point and
+could not be run through the checked-in harness. **Verified instead with a
+focused, un-checked-in Playwright script** (13 checks, same practice
+v07.69-72 used for exactly this reason): both ticks present and adjacent in
+Study options; Root alone shows only root letters + count; Derivatives alone
+shows only POS + lemma; both together render as two distinct panels; the
+Note view's ⋮ menu offers both as separate buttons, each opening its own
+field independently of the other; both fields open together; and both ticks
+render in Bangla. Screenshotted the Note view with both fields open to see
+the actual result (root letters/counts under "ROOT", part-of-speech/lemma
+under "DERIVATIVES", clearly separated) rather than trust the assertions
+alone. **`layout.mjs` reports NO LAYOUT REGRESSIONS** at all eight viewports
+in both banner states (landing page byte-for-byte identical, `getElementById`
+targets 95 → 97, exactly the two new elements, none missing), **`reading.mjs`
+OK**, **`panel.mjs` no truncation and no wrapped bar** (this round never
+touches the five-bar picker structure `panel.mjs` measures), **`navcheck.mjs`
+unchanged** (still only the pre-existing 320px English truncation of
+"Operation"/"Bookmark"), **translation coverage 1,330/1,330 (100%), 7 missing
+strings unchanged from before this round** (all seven are pre-existing gaps
+from the round-31 bar reorg and the whole-Qur'an-note removal, none
+introduced or touched here), **perf unchanged at 6 sequential round trips /
+~0.87s** and **`new-tenant.mjs` 10/10**, confirming no Firestore read joined
+or left the startup path (I9) -- this round is pure client-side rendering and
+UI-state wiring. No `firestore.rules`, schema or Firestore data changes --
+nothing to deploy but the static files.
 ---
 
 ## What this is
