@@ -1803,4 +1803,21 @@ export const BN = {
   "New folder name": "নতুন ফোল্ডারের নাম",
   "Manage bookmarks…": "বুকমার্ক পরিচালনা করুন…",
   "No bookmarks yet.": "এখনো কোনো বুকমার্ক নেই।",
+
+  // =====================================================================
+  // Fixes round 2 (24 Aug 2026) -- the Bookmark dropdown's own two options
+  // (how it opens, what it groups by) and the person tag.
+  // =====================================================================
+  "Open as": "যেভাবে খুলবে",
+  "Collapsed": "গুটানো",
+  "Expanded": "খোলা",
+  "Group by": "যেভাবে সাজানো",
+  // Suffixed keys (i18n.js's own context mechanism): the group-by CHOICE
+  // reads "by folder"/"by person", while the popover's own "Folder" FIELD
+  // label above stays plain "ফোল্ডার". English falls back to the bare word
+  // for both, which is what that dropdown should say in English.
+  "Folder|groupby": "ফোল্ডার অনুযায়ী",
+  "Person|groupby": "ব্যক্তি অনুযায়ী",
+  "For": "যার জন্য",
+  "No one in particular": "নির্দিষ্ট কেউ নয়",
 };

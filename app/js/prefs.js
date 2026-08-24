@@ -422,3 +422,75 @@ export function setQuranFont(id) {
   writeStored(QURAN_FONT_KEY, id);
   return cachedQuranFont;
 }
+
+// ---------------------------------------------------------------------------
+// Fixes round 2 (24 Aug 2026) — how the nav bar's own Bookmark dropdown opens.
+//
+// The owner's own ask, restated after the first attempt read it as per-folder
+// collapsing: "enable the OPTION for [the] Bookmark menu opening the bookmark
+// list as expanded/collapsed" — a setting that decides whether every group in
+// that dropdown is already open when it appears (nothing to click through
+// when you only have a few bookmarks) or starts shut (so a long list stays
+// scannable). Not a per-folder toggle, which is what shipped in v07.67 and is
+// kept alongside it: the option decides the STARTING state, tapping a group
+// still opens or shuts that one.
+//
+// GROUP BY is the second half of the same round: bookmarks can now be tagged
+// with a person (a student, a family member), so the dropdown can group by
+// that instead of by folder.
+//
+// Both are localStorage, the same additive shape every reading preference
+// since round 18 has used: no new startup read, no collection, no
+// firestore.rules change (I9 untouched). Deliberately NOT synced to the
+// account the way the app language is (v07.37) — these are small per-device
+// display conveniences, not something worth a write on every change.
+// ---------------------------------------------------------------------------
+const BOOKMARK_MENU_EXPANDED_KEY = "mm_bookmark_menu_expanded";
+const BOOKMARK_MENU_GROUP_BY_KEY = "mm_bookmark_menu_group_by";
+
+// The |groupby suffix is i18n.js's own context mechanism (see fallbackOf()):
+// English falls back to "Folder"/"Person" unchanged, while Bangla can say
+// "by folder"/"by person" here without changing the popover's own "Folder"
+// FIELD label, which is a different phrase in the same app.
+export const BOOKMARK_GROUP_BYS = [
+  { id: "folder", label: "Folder|groupby" },
+  { id: "person", label: "Person|groupby" },
+];
+const BOOKMARK_GROUP_BY_IDS = BOOKMARK_GROUP_BYS.map((g) => g.id);
+
+function readBookmarkMenuExpanded() {
+  try {
+    const raw = localStorage.getItem(BOOKMARK_MENU_EXPANDED_KEY);
+    if (raw === null) return false; // never set: today's behaviour, groups start shut
+    return raw === "1";
+  } catch {
+    return false;
+  }
+}
+
+let cachedBookmarkMenuExpanded = readBookmarkMenuExpanded();
+
+/** True when every group in the Bookmark dropdown should already be open when it appears. */
+export function getBookmarkMenuExpanded() {
+  return cachedBookmarkMenuExpanded;
+}
+
+export function setBookmarkMenuExpanded(on) {
+  cachedBookmarkMenuExpanded = !!on;
+  writeStored(BOOKMARK_MENU_EXPANDED_KEY, cachedBookmarkMenuExpanded ? "1" : "0");
+  return cachedBookmarkMenuExpanded;
+}
+
+let cachedBookmarkGroupBy = readStored(BOOKMARK_MENU_GROUP_BY_KEY, BOOKMARK_GROUP_BY_IDS, "folder");
+
+/** "folder" (the default, and what v07.66 built) or "person" (this round's own person tag). */
+export function getBookmarkMenuGroupBy() {
+  return cachedBookmarkGroupBy;
+}
+
+export function setBookmarkMenuGroupBy(id) {
+  if (!BOOKMARK_GROUP_BY_IDS.includes(id)) return cachedBookmarkGroupBy;
+  cachedBookmarkGroupBy = id;
+  writeStored(BOOKMARK_MENU_GROUP_BY_KEY, id);
+  return cachedBookmarkGroupBy;
+}
