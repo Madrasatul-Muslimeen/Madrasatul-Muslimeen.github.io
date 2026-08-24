@@ -11,14 +11,6 @@
 
 import { t, num } from "./i18n.js";
 
-// "book" is deliberately NOT one of these -- UNIT_TYPES is iterated
-// generically (records.html builds its own unit-type FILTER dropdown
-// straight from it), and nothing is ever claimed/recorded with a "book"
-// unit -- only notes are (buildUnitKey.book below). Adding it here was
-// tried and reverted the same round: it made a "Qur'an" entry appear in
-// that filter, which would only ever return empty results and confused
-// exactly the generic screens this array is shared with. Caught by
-// tools/i18n-verify/behaviour.mjs's own "14a unit-type options" check.
 export const UNIT_TYPES = Object.freeze([
   "ayah", "range", "surah", "page", "ruku", "juz", "hizb", "rub", "manzil",
   "hadith", "topic", "name",
@@ -37,12 +29,6 @@ export const buildUnitKey = Object.freeze({
   hadith: (collectionName, number) => `hadith:${collectionName}:${number}`,
   topic: (topicId) => `topic:${topicId}`,
   name: (number) => `name:${number}`, // Asma ul Husna
-  // Ayah Note panel, shell round (notes across every unit) -- a note about
-  // the whole book, not any one subdivision of it. One fixed key: there is
-  // exactly one "whole Qur'an" note per person, never 604 separate ones.
-  // Deliberately not one of UNIT_TYPES above -- see that array's own
-  // comment for why.
-  book: () => "book:quran",
 });
 
 /** Splits a unit key into { unitType, parts } — parts is everything after the first namespace segment, still colon-joined for types that carry more than one field (e.g. "2:255-257"). */
