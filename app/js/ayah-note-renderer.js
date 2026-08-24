@@ -311,15 +311,22 @@ export function renderNoteView({
              Journey (still the disabled placeholder), plus the enhancement
              round's own new item: one fixed entry into a running note about
              the whole Qur'an. Sits right beside ⋮ now, not pushed to the
-             far right by a spacer. -->
+             far right by a spacer. When the scope ISN'T a single āyah (the
+             whole-Qur'an note, or a wider unit), the Approach row stays put
+             instead of vanishing outright -- disabled, with the same
+             "greyed out and says why" treatment "Mapping My Journey"
+             already uses, so opening ⋯ never reads as buttons having
+             disappeared (the owner's own report: "the approach button go
+             hiding"). -->
         <div class="note-dot-wrap">
           <button type="button" class="note-icon-btn" data-note-menu-toggle="more" aria-haspopup="true" aria-expanded="false" title="${t("Approach & Journey")}">⋯</button>
           <div class="quick-menu" data-note-menu="more">
             ${showApproach ? `
             <div class="note-approach-wrap">
               <select class="note-approach-select" data-note-approach-select title="${t("Choose an Approach")}" aria-label="${t("Choose an Approach")}">${approachOptionsHtml}</select>
-            </div>
-            <div class="qm-divider"></div>` : ""}
+            </div>` : `
+            <button type="button" class="qm-item" disabled style="color:#aaa;cursor:default;">${t("Approach")} <span class="qm-caret">${t("Single āyah only")}</span></button>`}
+            <div class="qm-divider"></div>
             <button type="button" class="qm-item" disabled style="color:#aaa;cursor:default;">${t("Mapping My Journey")} <span class="qm-caret">${t("Coming later")}</span></button>
             <div class="qm-divider"></div>
             <button type="button" class="qm-item" data-note-whole-quran>📖 ${t("Note about the whole Qur'an")}</button>

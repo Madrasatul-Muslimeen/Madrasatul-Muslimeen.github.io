@@ -4159,6 +4159,77 @@ default at `HEAD` too, before any of this round's edits -- i.e. this round
 did not cause or worsen that gap, and closing it stays the same real,
 scoped follow-up v07.69 already flagged rather than something to rush here.
 No `firestore.rules` or schema changes -- markup, CSS and JS wiring only.
+
+v07.71 (24 Aug 2026, same day) is **a second fix round, from the owner using
+v07.70's own fix within the hour**: "the approach button go hiding" once
+"Note about the whole Qur'an" is clicked, and then opening ⋮ (the vertical-
+dots "tools" menu) in that state left only Share visible -- and Share's own
+popover rendered "beyond the left screen." Both real, both reproduced with a
+throwaway Playwright script before either was touched (screenshots and
+`getBoundingClientRect()` on the actual dropdowns, not guessed from reading
+the CSS), and both traced to the SAME root cause: entering the whole-Qur'an
+note (`noteScope.isBook = true`) makes `renderNoteNavHtml()` return nothing
+(no nav cluster -- "there's nothing to page between" a running note) and
+`showApproach` false (Approach claiming is per-āyah, `isBook` has none) --
+so bar 2 gets noticeably SHORTER on its left side in this one state, and
+that is what broke two different things at once.
+
+**(1) The Approach row inside ⋯ used to vanish outright** when `showApproach`
+was false -- correct in principle (there is genuinely no single āyah to claim
+an Approach against for the whole Qur'an), but the owner read the whole ⋯
+dropdown suddenly holding less as "buttons disappearing," which is a fair
+read: the row was there a second ago and now it just isn't. Fixed the same
+way this exact menu already handles "Mapping My Journey" (a real placeholder,
+permanently disabled, that still says why in its own caret) -- when
+`showApproach` is false, the Approach row now stays in the menu as a
+disabled item reading "Approach -- Single āyah only" instead of being
+omitted. Nothing about WHEN an Approach can be claimed changed; only whether
+the row is still visibly there to explain itself.
+
+**(2) The dropdown overflow was the more mechanical bug, and the actual root
+cause of "shows beyond the left screen": `.note-dot-wrap .quick-menu` had
+always anchored each dropdown's RIGHT edge to the small ⋮/⋯ BUTTON's own
+right edge** (`.note-dot-wrap { position: relative }`, so the button was the
+containing block), extending a fixed 15rem leftward from there. That is fine
+as long as something wide enough sits before the button on the row -- which
+the nav cluster normally does. Strip the nav cluster away (exactly what
+`isBook` does) and the button can sit close enough to the LEFT edge of the
+screen that 15rem of dropdown run past x=0. **Fixed by anchoring the
+dropdown to `.note-bar2` itself instead of to the button that opens it** --
+`position: relative` moved from `.note-dot-wrap` to `.note-bar2`, and the
+positioning rule is now `.note-bar2 .quick-menu` rather than
+`.note-dot-wrap .quick-menu`. The bar's own right edge is always inside the
+viewport (every layout check this project runs already proves the bar
+itself never overflows), so the dropdown can no longer run off the screen
+regardless of which button opens it or how little sits before that button
+on the row -- a general fix, not a special case for the whole-Qur'an note
+specifically (the same shape of bug -- a short bar2 -- could in principle
+recur from some other future state that also drops the nav cluster).
+
+**Verified**: reproduced first (confirmed `menuRect.left` genuinely negative
+before the fix, `moreBtnVisible: true` throughout -- the ⋯ BUTTON itself was
+never actually hidden, only what showed inside its own and ⋮'s dropdowns),
+then confirmed fixed the same way (`overflowsLeft: false`, the Approach row
+present with its explanatory caret) -- both in the whole-Qur'an state AND
+re-checked in ordinary single-āyah mode to confirm the Approach `<select>`
+and the full Word by Word/Root/Collapse set still render exactly as before
+there (unaffected -- `showApproach`/`canWbwRoot` are only ever false in the
+states that already had nothing to show). Bangla checked directly too, not
+just the coverage report (this project's own standing rule, wrong five
+separate times already): "Approach" and the new "Single āyah only" caret
+both render correctly in বাংলা. **`layout.mjs` reports NO LAYOUT
+REGRESSIONS** at all eight viewports in both banner states (`getElementById`
+targets unchanged at 95, none missing), **`reading.mjs` OK**,
+**`behaviour.mjs` sections 1-41: 788 checks pass, 1 fails** (the same
+pre-existing environmental archive.org failure, unchanged from v07.70's own
+run -- identical counts, confirming no regression), hitting the same
+pre-existing section-42 crash v07.69/v07.70 already disclosed. One new
+string, `"Single āyah only"`, added to `bn.js` (marked `// ?` -- a first
+draft, worth the owner's eye). **Flagged, not fixed this round: "Note about
+the whole Qur'an" itself has no Bangla translation at all** -- a real,
+pre-existing gap from v07.69 (checked: no key in `bn.js`), unrelated to
+either bug reported here, left alone rather than expanding this round's
+scope. No `firestore.rules` or schema changes -- CSS and JS wiring only.
 ---
 
 ## What this is

@@ -948,10 +948,21 @@
     display: flex; flex-wrap: wrap; align-items: center; gap: 0.32rem;
     background: #1F3A6E; padding: 0.4rem 0.6rem; flex: 0 0 auto;
     border-top: 1px solid rgba(255,255,255,0.15); border-radius: 0 0 0.4rem 0.4rem;
+    /* Fixes round 3 -- the ⋮/⋯ dropdowns anchor to THIS bar's own right
+       edge now, not to the small dot-wrap button that opens them (see
+       below). The bar's own right edge is always inside the viewport
+       (every layout check already proves the bar itself never overflows);
+       the button that opens the dropdown is not -- whatever sits before it
+       on the row (the nav cluster, in particular, which vanishes entirely
+       for the whole-Qur'an note) can leave it sitting close enough to the
+       LEFT edge that a 15rem-wide, right-anchored dropdown ran off the
+       screen (the owner's own report: Share "shows beyond the left
+       screen"). */
+    position: relative;
   }
   .note-nav-cluster { display: flex; gap: 0.32rem; flex: 0 0 auto; }
-  .note-dot-wrap { position: relative; flex: 0 0 auto; }
-  .note-dot-wrap .quick-menu { right: 0; left: auto; width: 15rem; }
+  .note-dot-wrap { flex: 0 0 auto; }
+  .note-bar2 .quick-menu { top: 2.6rem; right: 0; left: auto; width: 15rem; }
   .note-sub-wrap { position: relative; flex: 0 0 auto; }
   .note-sub-popover {
     display: none; position: absolute; top: 2.3rem; left: 0; z-index: 8;
