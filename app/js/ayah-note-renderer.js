@@ -307,17 +307,14 @@ export function renderNoteView({
         </div>
 
         <!-- ⋯ -- Approach (only meaningful for a single āyah -- claiming/
-             tracking is per-āyah, same as before this round) and Mapping My
-             Journey (still the disabled placeholder), plus the enhancement
-             round's own new item: one fixed entry into a running note about
-             the whole Qur'an. Sits right beside ⋮ now, not pushed to the
-             far right by a spacer. When the scope ISN'T a single āyah (the
-             whole-Qur'an note, or a wider unit), the Approach row stays put
-             instead of vanishing outright -- disabled, with the same
-             "greyed out and says why" treatment "Mapping My Journey"
-             already uses, so opening ⋯ never reads as buttons having
-             disappeared (the owner's own report: "the approach button go
-             hiding"). -->
+             tracking is per-āyah) and Mapping My Journey (still the disabled
+             placeholder). Sits right beside ⋮, not pushed to the far right
+             by a spacer. When the scope ISN'T a single āyah (a wider unit),
+             the Approach row stays put instead of vanishing outright --
+             disabled, with the same "greyed out and says why" treatment
+             "Mapping My Journey" already uses, so opening ⋯ never reads as
+             buttons having disappeared (the owner's own report: "the
+             approach button go hiding"). -->
         <div class="note-dot-wrap">
           <button type="button" class="note-icon-btn" data-note-menu-toggle="more" aria-haspopup="true" aria-expanded="false" title="${t("Approach & Journey")}">⋯</button>
           <div class="quick-menu" data-note-menu="more">
@@ -328,8 +325,6 @@ export function renderNoteView({
             <button type="button" class="qm-item" disabled style="color:#aaa;cursor:default;">${t("Approach")} <span class="qm-caret">${t("Single āyah only")}</span></button>`}
             <div class="qm-divider"></div>
             <button type="button" class="qm-item" disabled style="color:#aaa;cursor:default;">${t("Mapping My Journey")} <span class="qm-caret">${t("Coming later")}</span></button>
-            <div class="qm-divider"></div>
-            <button type="button" class="qm-item" data-note-whole-quran>📖 ${t("Note about the whole Qur'an")}</button>
           </div>
         </div>
       </div>
@@ -432,7 +427,6 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
  *   onToggleFullscreen()
  *   onToggleWbw() / onToggleRoots()
  *   onApproachChange(id)
- *   onOpenWholeQuranNote()    -- ⋯ menu's new item
  *   onOpenInReadView()        -- the "read it in the Read view" link, only present when the scope wasn't shown as text
  *   onPickerChange            -- delegated: the caller wires its own picker bar's <select> elements directly (they're pre-built HTML it owns), so this file never needs to know their ids
  */
@@ -576,7 +570,6 @@ export function attachNoteViewHandlers(container, callbacks) {
   view.querySelectorAll("[data-note-approach-select]").forEach((sel) => {
     sel.addEventListener("change", () => { callbacks.onApproachChange?.(sel.value); closeAllDotMenus(null); });
   });
-  view.querySelector("[data-note-whole-quran]")?.addEventListener("click", () => { closeAllDotMenus(null); callbacks.onOpenWholeQuranNote?.(); });
   view.querySelector("[data-note-play]")?.addEventListener("click", () => callbacks.onPlay?.());
   view.querySelector("[data-note-prev-unit]")?.addEventListener("click", () => callbacks.onPrevUnit?.());
   view.querySelector("[data-note-next-unit]")?.addEventListener("click", () => callbacks.onNextUnit?.());

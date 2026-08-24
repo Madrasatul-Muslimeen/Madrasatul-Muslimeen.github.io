@@ -4230,6 +4230,70 @@ the whole Qur'an" itself has no Bangla translation at all** -- a real,
 pre-existing gap from v07.69 (checked: no key in `bn.js`), unrelated to
 either bug reported here, left alone rather than expanding this round's
 scope. No `firestore.rules` or schema changes -- CSS and JS wiring only.
+
+v07.72 (24 Aug 2026, on Claude Code on the web) **removes the whole-Qur'an
+note feature outright**, on the owner's own explicit instruction ("remove
+all the feature and function about the 'Whole Qur'an' that we introduced in
+between 2-5 versions before") -- the standalone running note about the
+Qur'an as a whole (`buildUnitKey.book()`, `"book:quran"`, `noteScope.isBook`)
+that v07.69 added and that v07.70/v07.71 then spent two more rounds fixing
+layout bugs around. Rather than fix it a third time, the owner's call was to
+take it back out.
+
+**What's gone**: `buildUnitKey.book()` in `unit-keys.js`; the ⋯ menu's own
+"📖 Note about the whole Qur'an" button and its `onOpenWholeQuranNote`
+callback in `ayah-note-renderer.js`; every `noteScope.isBook` branch across
+`quranrevival.html` -- `noteScopeUnitInfo()`/`noteScopeCurrentUnitKey()`/
+`noteScopeShowAyatText()`/`noteScopeCanWbwRoot()`/`noteScopeWiderNotes()`/
+`renderNoteNavHtml()`/`stepNoteUnit()`/`renderNoteViewNow()`'s whole `isBook`
+branch, and the six-plus `noteScope.isBook = false` resets `wireNotePickerBar()`
+no longer needs since the field doesn't exist at all now. `noteScope` is
+back to always describing a real position in the currently loaded surah
+(`{ unitType, ayahNum, rangeFrom, rangeTo, unitNumber }`, no `isBook`).
+
+**What's deliberately KEPT, because it's a general rule this round's own
+work exposed, not specific to the removed feature**: the ⋯ menu's "Approach
+-- Single āyah only" fallback (built in v07.71 to fix "the approach button
+go hiding"). `showApproach` is `noteScope.unitType === "ayah"` now (simpler,
+with the `isBook` half of that condition gone) -- and it was ALREADY false
+for every wider unit (Range/Surah/Ruku'/Juz/Hizb/Page), whole-Qur'an note or
+not, since claiming an Approach is genuinely per-āyah. So opening ⋯ on a
+Range still shows the row, disabled, saying why -- v07.71's fix was never
+only about the removed feature, and removing the feature doesn't undo it.
+
+**One thing kept on purpose, for data safety (I4 is about Firestore
+documents, not code, but the same spirit applies to old links):** a bookmark
+saved to `position: "book:quran"` during the ~2 days this feature existed
+still opens without erroring. `openNoteView()` gained an explicit `unitType
+=== "book"` fallback branch that lands on the current āyah instead of
+crashing on a shape the view no longer understands -- the stray Firestore
+field itself is untouched (still `book:quran` in whoever's `bookmarks`
+document has it), only the code path that would have tried to render it as
+a running whole-Qur'an note is gone. `parseUnitKey("book:quran")` still
+parses cleanly (it's a generic colon-split, not feature-specific), which is
+what the fallback branch relies on catching.
+
+**Verified**: a focused, un-checked-in Playwright script (8 checks) confirmed
+the ⋯ menu no longer offers the whole-Qur'an item on a single āyah OR on a
+Range (with the Approach fallback still showing on both), `buildUnitKey.book`
+genuinely gone from the real `unit-keys.js` module (checked via a live
+`import()` in the page's own runtime, not by reading the source), the
+`"book:quran"` fallback shape still parseable, and the ordinary Note & more
+flow (open, real Arabic text) unaffected -- plus **`layout.mjs` NO LAYOUT
+REGRESSIONS** at all eight viewports in both banner states (`getElementById`
+targets unchanged at 95, none missing -- this round only removes code paths,
+adds none), **`reading.mjs` OK**, **`behaviour.mjs` sections 1-41: 789 checks
+pass, 0 fail** (one better than v07.71's own run -- the previously-failing
+archive.org check happened to succeed this time, an environmental flake in
+either direction, not something this round touched), hitting the same
+pre-existing section-42 crash v07.69/v07.70/v07.71 already disclosed and
+still unrelated to this round. **Translation coverage total fell from
+1,333 to 1,330** (100% still, at 1,323/1,330 missing-count unchanged in
+spirit) -- the three removed strings ("Note about the whole Qur'an", "The
+whole Qur'an", "the whole Qur'an") simply stop being scanned; none had a
+`bn.js` entry to clean up (flagged as a real, pre-existing translation gap
+in v07.71's own entry, now moot). No `firestore.rules` or schema changes --
+removing a study-screen feature never touched either.
 ---
 
 ## What this is
