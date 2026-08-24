@@ -219,28 +219,37 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
 // ===================== "Note & more" full-stage view =====================
 
 /**
- * The deeper view: Arabic/English/Bangla read-only (this is platform text,
- * never user-editable -- unlike QCR's own prototype, which let you edit the
- * scripture text itself) plus a rich-text Notes field, all independently
- * collapsible, a master toggle over the first three (never Notes), and the
- * same Copy/Share/Play/bookmark actions the quick menu offers, reached from
- * two bars rather than one (round 31, the owner's own correction of round
- * 30 -- see the .note-bar2 CSS comment for why). No × button (spec, settled
- * with the owner): this view fills the stage and is left the same way any
- * other stage view is left -- tapping a different dock tab.
+ * The deeper view: bar 1 is the reading-unit picker only (mirrors the Read
+ * screen's #readPickers shape, mirrors -- unchanged behaviour, moved
+ * screen); bar 2 holds every button, one row, on every platform. Four stay
+ * open always (the nav cluster, Play, Bookmark, Full screen) plus Copy;
+ * everything else (Share, Notes formatting, Word by Word, Root, Collapse)
+ * folds into ⋮, and Approach / Mapping My Journey / the whole-Qur'an note
+ * fold into ⋯ at the far right -- so nothing here ever needs a second bar,
+ * even with the picker row and four ways to move added since round 31.
+ *
+ * Arabic/English/Bangla are read-only platform text (never user-editable),
+ * shown only when `showAyatText` is true (Single Ayah / Range / a Surah
+ * that fits on one real Mushaf page -- the caller decides, this renderer
+ * just draws whichever it's told); anything bigger shows `readViewLinkHtml`
+ * instead and leaves reading it to the Read screen. Notes is the one field
+ * that's always there, whatever the scope -- from one āyah up to the whole
+ * Qur'an.
  */
 export function renderNoteView({
-  unitKey, ref, arabicText, englishText, banglaText, notesHtml, wbwHtml, rootsHtml,
-  isBookmarked = false, hasPrev = false, hasNext = false, isFullscreen = false,
+  unitKey, ref,
+  pickerBarHtml, navHtml,
+  showAyatText, arabicText, englishText, banglaText, readViewLinkHtml,
+  notesHtml, wbwHtml, rootsHtml,
+  isBookmarked = false, isFullscreen = false,
   isWbwOn = false, isRootsOn = false, hasNote = false, approachHtml = "", isNotesOpen = false,
-  approachOptionsHtml = "",
+  approachOptionsHtml = "", showApproach = false, wideNoteHtml = "",
+  // Word by Word / Root read ONE āyah (ayah-renderer.js's panels take a
+  // single āyah object) -- so unlike showAyatText (which also covers a
+  // Range or a short surah), these two and the Collapse toggle only make
+  // sense for a genuine single-āyah scope.
+  canWbwRoot = false,
 }) {
-  // Bar 1, the Ayah bar: JUST the reference and the controls that change
-  // what's being read (Prev/Next), how Notes is formatted (Aa), and how
-  // much of the screen this view takes (Collapse, Full screen). Nothing
-  // else competes with the reference for room here, which is the whole
-  // point -- round 30 shipped a cut-off reference because Copy/Share/
-  // Journey were still crowding this same row.
   const copySharePopover = (kind, goAttr) => `
         <div class="note-sub-wrap" data-note-sub-wrap="${kind}">
           <button type="button" class="note-icon-btn" data-note-sub-toggle="${kind}" title="${kind === "copy" ? t("Copy") : t("Share")}">${kind === "copy" ? "📋" : "📤"}</button>
@@ -250,66 +259,74 @@ export function renderNoteView({
         </div>`;
   return `
     <div class="note-view" data-unit-key="${escapeHtml(unitKey)}">
+      <!-- Enhancement round -- bar 1 stops being a button rack and becomes
+           the reading-unit picker, same shape as #readPickers on the Read
+           screen ("place all types of reading views to enable here too" --
+           the owner's own words). Entirely pre-built by the caller
+           (quranrevival.html owns the Study Unit/Surah/Ayah option lists --
+           I2, this file never reads surah data), this renderer just places
+           it. -->
+      <div class="note-pickerbar">${pickerBarHtml}</div>
+      ${wideNoteHtml}
+
       <div class="note-ayahbar">
         <span class="note-ref">${escapeHtml(ref)}</span>
-        <button type="button" class="note-icon-btn" data-note-prev ${hasPrev ? "" : "disabled"} title="${t("Previous āyah")}">←</button>
-        <button type="button" class="note-icon-btn" data-note-next ${hasNext ? "" : "disabled"} title="${t("Next āyah")}">→</button>
-        <button type="button" class="note-icon-btn" data-note-palette-toggle title="${t("Notes formatting")}">Aa</button>
-        <button type="button" class="note-icon-btn" data-note-master-toggle title="${t("Collapse āyah text")} (${t("Notes always stays open")})">▾</button>
-        <button type="button" class="note-icon-btn${isFullscreen ? " active" : ""}" data-note-fullscreen title="${t("Full screen")}" aria-pressed="${isFullscreen ? "true" : "false"}">⤢</button>
       </div>
 
-      <!-- Bar 2, permanent on every platform, not a mobile-only wrap of
-           bar 1 (the owner's own correction to round 30's shape): the
-           actions that need a CHOICE made first before they do anything --
-           Copy and Share each open the same picker the ⋮ quick menu
-           already uses rather than firing on whatever was left ticked.
-           Round 32 (the owner's own ask): Bookmark and Play moved in here
-           too, between Share and Word by word, so they're always visible
-           rather than hidden behind the old 🔖 toggle -- and the Approach
-           toggle (data-note-approach-select) sits right after Word by
-           word, wired to change currentTrackableId (quranrevival.html's
-           changeCurrentTrackable()) and re-render the Track/Guide/
-           Breakdown/Coverage card below. On a PC/tablet this bar carries
-           Mapping My Journey too, straight after Approach; on a phone
-           (CSS, .note-approach-desktop/.note-journey-desktop hidden below
-           720px) Approach and Journey move to their OWN bar underneath
-           instead, .note-approach-bar-mobile -- see that class's own CSS
-           comment for why a phone needed a second row and a desktop
-           didn't. -->
+      <!-- Bar 2 -- every button, one row. The nav cluster (pre-built by the
+           caller, which decides which pair(s) are enabled/hidden -- "one is
+           for moving the whole unit of choice, another for moving only a
+           single Ayah", both together, the owner's own words) comes first,
+           then the four that must always stay visible (Play/Bookmark/Full
+           screen), then Copy (kept open -- "keep as much button as possible
+           to remain open"), then ⋮ (Share/Aa/WbW/Root/Collapse) and, far
+           right, ⋯ (Approach/Journey/whole-Qur'an note). -->
       <div class="note-bar2">
-        ${copySharePopover("copy", "data-note-copy-go")}
-        ${copySharePopover("share", "data-note-share-go")}
+        <span class="note-nav-cluster">${navHtml}</span>
+        <button type="button" class="note-icon-btn" data-note-play title="${t("Play")}">▶</button>
         <button type="button" class="note-icon-btn${isBookmarked ? " active" : ""}" data-note-bookmark title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}">${isBookmarked ? "★" : "☆"}</button>
-        <button type="button" class="note-icon-btn" data-note-play title="${t("Play")}">▶ ${t("Play")}</button>
-        <!-- "WbW" stays a literal Latin abbreviation rather than a
-             translated word, the same convention "Aa" already uses on bar
-             1 (the palette toggle) -- it's a glyph-like icon, not a
-             sentence; the real, translated name lives in the title/
-             aria-pressed pair like every other icon on these two bars. -->
-        <button type="button" class="note-icon-btn${isWbwOn ? " active" : ""}" data-note-wbw-toggle title="${t("Word by Word")}" aria-pressed="${isWbwOn ? "true" : "false"}">WbW</button>
-        <!-- Enhancement round -- "Root" (Roots & derivatives), always right
-             after Word by word on every platform, no phone/desktop split
-             the way Approach/Journey get: clicking it opens the derivatives
-             table below Word by word in the collapsible fields, re-clicking
-             closes it. Reuses renderRootDerivativePanel(), the same helper
-             Study options' own "Roots & derivatives" tick already calls. -->
-        <button type="button" class="note-icon-btn${isRootsOn ? " active" : ""}" data-note-roots-toggle title="${t("Roots & derivatives")}" aria-pressed="${isRootsOn ? "true" : "false"}">${t("Root")}</button>
-        <div class="note-approach-wrap note-approach-desktop">
-          <select class="note-approach-select" data-note-approach-select title="${t("Choose an Approach")}" aria-label="${t("Choose an Approach")}">${approachOptionsHtml}</select>
-        </div>
-        <button type="button" class="note-icon-btn note-journey-btn note-journey-desktop" disabled title="${t("Coming later")}">${t("Mapping My Journey")}</button>
-      </div>
+        <button type="button" class="note-icon-btn${isFullscreen ? " active" : ""}" data-note-fullscreen title="${t("Full screen")}" aria-pressed="${isFullscreen ? "true" : "false"}">⤢</button>
+        ${copySharePopover("copy", "data-note-copy-go")}
 
-      <!-- Phone only (CSS) -- Approach and Mapping My Journey, together, in
-           their own bar below bar 2 rather than crowding bar 2's single
-           line on a narrow screen. See .note-approach-bar-mobile's own CSS
-           comment. -->
-      <div class="note-approach-bar-mobile">
-        <div class="note-approach-wrap note-approach-mobile">
-          <select class="note-approach-select" data-note-approach-select title="${t("Choose an Approach")}" aria-label="${t("Choose an Approach")}">${approachOptionsHtml}</select>
+        <!-- ⋮ -- everything that is a CHOICE about how to read/edit, not a
+             thing you tap every time: Share (the same expand-in-place
+             language picker Copy already uses), Notes formatting (Aa),
+             then -- only when there is āyah text on screen at all -- Word by
+             Word, Root, and Collapse āyah text. -->
+        <div class="note-dot-wrap">
+          <button type="button" class="note-icon-btn" data-note-menu-toggle="tools" aria-haspopup="true" aria-expanded="false" title="${t("More")}">⋮</button>
+          <div class="quick-menu" data-note-menu="tools">
+            ${copySharePopover("share", "data-note-share-go")}
+            <button type="button" class="qm-item" data-note-palette-toggle>Aa ${t("Notes formatting")}</button>
+            ${canWbwRoot ? `
+            <div class="qm-divider"></div>
+            <button type="button" class="qm-item${isWbwOn ? " is-on" : ""}" data-note-wbw-toggle aria-pressed="${isWbwOn ? "true" : "false"}">${t("Word by Word")} <span class="qm-caret">${isWbwOn ? "✓" : ""}</span></button>
+            <button type="button" class="qm-item${isRootsOn ? " is-on" : ""}" data-note-roots-toggle aria-pressed="${isRootsOn ? "true" : "false"}">${t("Root")} <span class="qm-caret">${isRootsOn ? "✓" : ""}</span></button>
+            <div class="qm-divider"></div>
+            <button type="button" class="qm-item" data-note-master-toggle title="${t("Notes always stays open")}">${t("Collapse āyah text")}</button>` : ""}
+          </div>
         </div>
-        <button type="button" class="note-icon-btn note-journey-btn note-journey-mobile" disabled title="${t("Coming later")}">${t("Mapping My Journey")}</button>
+
+        <span class="note-bar2-spacer"></span>
+
+        <!-- ⋯ -- Approach (only meaningful for a single āyah -- claiming/
+             tracking is per-āyah, same as before this round) and Mapping My
+             Journey (still the disabled placeholder), plus the enhancement
+             round's own new item: one fixed entry into a running note about
+             the whole Qur'an. -->
+        <div class="note-dot-wrap">
+          <button type="button" class="note-icon-btn" data-note-menu-toggle="more" aria-haspopup="true" aria-expanded="false" title="${t("Approach & Journey")}">⋯</button>
+          <div class="quick-menu" data-note-menu="more">
+            ${showApproach ? `
+            <div class="note-approach-wrap">
+              <select class="note-approach-select" data-note-approach-select title="${t("Choose an Approach")}" aria-label="${t("Choose an Approach")}">${approachOptionsHtml}</select>
+            </div>
+            <div class="qm-divider"></div>` : ""}
+            <button type="button" class="qm-item" disabled style="color:#aaa;cursor:default;">${t("Mapping My Journey")} <span class="qm-caret">${t("Coming later")}</span></button>
+            <div class="qm-divider"></div>
+            <button type="button" class="qm-item" data-note-whole-quran>📖 ${t("Note about the whole Qur'an")}</button>
+          </div>
+        </div>
       </div>
 
       <div class="note-palette" data-note-palette>
@@ -330,10 +347,7 @@ export function renderNoteView({
       </div>
 
       <div class="note-body">
-        <!-- Bookmark, Play, Copy and Share all live on bar 2 now (round 32
-             moved Bookmark/Play up beside them) -- nothing left here needs
-             its own reveal toggle, so the old 🔖 icon (note-actions-toggle)
-             is retired outright rather than kept as dead markup. -->
+        ${showAyatText ? `
         <div data-note-collapsible>
           <div class="note-field" data-note-field="arabic">
             <div class="note-field-label-row">
@@ -370,7 +384,13 @@ export function renderNoteView({
             </div>
             <div class="note-field-body">${rootsHtml ?? ""}</div>
           </div>` : ""}
-        </div>
+        </div>` : `
+        <!-- Enhancement round -- "anything above [single/range/a short
+             surah] a user can read from the READ view" (the owner's own
+             words): rather than a wall of scripture this screen was never
+             meant to carry, a plain line back to where it reads properly,
+             and the Notes field becomes the main thing on the page. -->
+        <div class="note-readlink">${readViewLinkHtml ?? ""}</div>`}
 
         <div class="note-field" data-note-field="notes">
           <div class="note-field-label-row">
@@ -383,19 +403,12 @@ export function renderNoteView({
           </div>
         </div>
 
-        <!-- The Approach card (Track/Guide/Breakdown/Coverage + Claim),
-             moved in from what used to be a floating pop-up over the wheel.
-             Housed HERE, after Notes, and still INSIDE .note-body so it
-             scrolls with the rest of the screen rather than sitting pinned
-             below it -- the owner's own framing: everything above is for
-             STUDY (reading, word-by-word, notes), this card is for
-             ASSESSMENT (what status has been claimed for this āyah). It does
-             NOT live-update the way the fields above do: it only changes
-             when the reader actually taps Claim inside it, same as it always
-             has. quranrevival.html builds this HTML (way-modal.js's
-             renderWayEmbed) and passes it in already-built -- this file
-             stays I2-pure, it never imports way-modal.js or knows what a
-             "trackable" is. -->
+        <!-- The Approach card (Track/Guide/Breakdown/Coverage + Claim), only
+             for a single-āyah scope (unchanged from before this round) --
+             claiming/tracking a wider unit already has its own path ("Track
+             this unit" in Study options), so this card doesn't try to cover
+             both. Still I2-pure: quranrevival.html builds this HTML
+             (way-modal.js's renderWayEmbed) and passes it in already-built. -->
         ${approachHtml ? `<div class="note-approach">${approachHtml}</div>` : ""}
       </div>
     </div>`;
@@ -405,15 +418,18 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
 
 /**
  * `callbacks`:
- *   buildText(langs)       -> string, for bar 2's Copy/Share popovers
- *   onSaveNote(html)       -> Promise<{ok:boolean, message?:string}>, called on Notes blur
+ *   buildText(langs)         -> string, for bar 2's Copy/Share popovers
+ *   onSaveNote(html)         -> Promise<{ok:boolean, message?:string}>, called on Notes blur
  *   onToggleBookmark()
  *   onPlay()
- *   onPrev() / onNext()    -- omit/leave the button disabled when there's nowhere to go
- *   onToggleFullscreen()   -- the view's own 2-state full screen (banner/nav/dock hidden, Ayah bar always on)
- *   onToggleWbw()          -- bar 2's Word-by-word toggle (round 31)
- *   onToggleRoots()        -- bar 2's Root (Roots & derivatives) toggle (enhancement round)
- *   onApproachChange(id)   -- bar 2's / the mobile bar's Approach toggle (round 32), called with the newly-picked trackable id
+ *   onPrevUnit() / onNextUnit()   -- the nav cluster's OUTER pair (moves the whole chosen unit)
+ *   onPrevAyah() / onNextAyah()   -- the nav cluster's INNER pair (moves one āyah); omitted/absent when the caller didn't render that pair (Single Ayah scope, or no āyah to step through)
+ *   onToggleFullscreen()
+ *   onToggleWbw() / onToggleRoots()
+ *   onApproachChange(id)
+ *   onOpenWholeQuranNote()    -- ⋯ menu's new item
+ *   onOpenInReadView()        -- the "read it in the Read view" link, only present when the scope wasn't shown as text
+ *   onPickerChange            -- delegated: the caller wires its own picker bar's <select> elements directly (they're pre-built HTML it owns), so this file never needs to know their ids
  */
 export function attachNoteViewHandlers(container, callbacks) {
   const view = container.querySelector(".note-view");
@@ -438,17 +454,13 @@ export function attachNoteViewHandlers(container, callbacks) {
     });
   });
 
-  // Icon-only (the owner's ask) -- the label lives in the title/aria-label
-  // instead of visible text, same as every other Ayah-bar icon.
   const masterToggle = view.querySelector("[data-note-master-toggle]");
   const collapsibleWrap = view.querySelector("[data-note-collapsible]");
   masterToggle?.addEventListener("click", () => {
+    if (!collapsibleWrap) return;
     const collapsed = collapsibleWrap.style.display === "none";
     collapsibleWrap.style.display = collapsed ? "" : "none";
-    const label = collapsed ? t("Collapse āyah text") : t("Expand āyah text");
-    masterToggle.textContent = collapsed ? "▾" : "▸";
-    masterToggle.title = collapsed ? `${label} (${t("Notes always stays open")})` : label;
-    masterToggle.setAttribute("aria-label", label);
+    masterToggle.textContent = collapsed ? t("Collapse āyah text") : t("Expand āyah text");
   });
 
   // Notes: rich-text editing + save-on-blur.
@@ -467,8 +479,6 @@ export function attachNoteViewHandlers(container, callbacks) {
       }
     });
   }
-  // mousedown + preventDefault (QCR's own trick, ported as-is): clicking a
-  // palette button must not lose the Notes field's current text selection.
   view.querySelectorAll("[data-note-palette] button[data-cmd]").forEach((btn) => {
     btn.addEventListener("mousedown", (e) => e.preventDefault());
     btn.addEventListener("click", () => {
@@ -485,13 +495,34 @@ export function attachNoteViewHandlers(container, callbacks) {
 
   view.querySelector("[data-note-bookmark]")?.addEventListener("click", () => callbacks.onToggleBookmark?.());
 
-  // Bar 2 -- Copy and Share (round 31): each is its own popover of language
-  // checkboxes, the same picker the ⋮ quick menu already uses, opened by
-  // its OWN icon rather than acting on whatever a shared checkbox group
-  // happened to have ticked. Scoped to `wrap` (not the whole view), so
-  // Copy's and Share's checkboxes -- both `.note-lang-copy`/`.note-lang-
-  // share` classes, chosen only so the two popovers' checked-state can
-  // never be confused with each other -- never read across.
+  // ⋮ and ⋯ -- one open at a time, each closes on an outside click, and
+  // (round 31's own rule, carried forward) a menu closes itself the moment
+  // something inside it is actually picked, so nothing sits open "taking
+  // the space" once it's done its job.
+  function closeAllDotMenus(exceptToggle) {
+    view.querySelectorAll("[data-note-menu-toggle]").forEach((btn) => {
+      if (btn === exceptToggle) return;
+      btn.setAttribute("aria-expanded", "false");
+      btn.classList.remove("active");
+      view.querySelector(`[data-note-menu="${btn.dataset.noteMenuToggle}"]`)?.classList.remove("open");
+    });
+  }
+  view.querySelectorAll("[data-note-menu-toggle]").forEach((btn) => {
+    const menu = view.querySelector(`[data-note-menu="${btn.dataset.noteMenuToggle}"]`);
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const willOpen = !menu.classList.contains("open");
+      closeAllDotMenus(null);
+      menu.classList.toggle("open", willOpen);
+      btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      btn.classList.toggle("active", willOpen);
+    });
+    menu.addEventListener("click", (e) => e.stopPropagation());
+  });
+
+  // Copy and Share (each its own popover of language checkboxes, opened by
+  // its own icon) -- unchanged mechanism from before this round, just
+  // reachable from inside ⋮ for Share now instead of its own bar-2 icon.
   function closeSubPopovers(exceptWrap) {
     view.querySelectorAll("[data-note-sub-wrap]").forEach((wrap) => {
       if (wrap === exceptWrap) return;
@@ -525,20 +556,27 @@ export function attachNoteViewHandlers(container, callbacks) {
     const langs = [...shareWrap.querySelectorAll("input[type=checkbox]")].filter((cb) => cb.checked).map((cb) => cb.dataset.lang);
     shareText(callbacks.buildText(langs), view.dataset.unitKey);
     closeSubPopovers(null);
+    // Share now lives inside ⋮ (moved there this round) -- closing just its
+    // own sub-popover would leave the outer dropdown sitting open.
+    closeAllDotMenus(null);
   });
 
-  view.querySelector("[data-note-wbw-toggle]")?.addEventListener("click", () => callbacks.onToggleWbw?.());
-  view.querySelector("[data-note-roots-toggle]")?.addEventListener("click", () => callbacks.onToggleRoots?.());
-  // Two instances (desktop bar 2 / phone's own bar below it, CSS picks
-  // which one shows) share the same options string and the same callback --
-  // whichever one the reader actually sees is the one that fires.
+  view.querySelector("[data-note-wbw-toggle]")?.addEventListener("click", () => { callbacks.onToggleWbw?.(); closeAllDotMenus(null); });
+  view.querySelector("[data-note-roots-toggle]")?.addEventListener("click", () => { callbacks.onToggleRoots?.(); closeAllDotMenus(null); });
   view.querySelectorAll("[data-note-approach-select]").forEach((sel) => {
-    sel.addEventListener("change", () => callbacks.onApproachChange?.(sel.value));
+    sel.addEventListener("change", () => { callbacks.onApproachChange?.(sel.value); closeAllDotMenus(null); });
   });
+  view.querySelector("[data-note-whole-quran]")?.addEventListener("click", () => { closeAllDotMenus(null); callbacks.onOpenWholeQuranNote?.(); });
   view.querySelector("[data-note-play]")?.addEventListener("click", () => callbacks.onPlay?.());
-  view.querySelector("[data-note-prev]")?.addEventListener("click", () => callbacks.onPrev?.());
-  view.querySelector("[data-note-next]")?.addEventListener("click", () => callbacks.onNext?.());
+  view.querySelector("[data-note-prev-unit]")?.addEventListener("click", () => callbacks.onPrevUnit?.());
+  view.querySelector("[data-note-next-unit]")?.addEventListener("click", () => callbacks.onNextUnit?.());
+  view.querySelector("[data-note-prev-ayah]")?.addEventListener("click", () => callbacks.onPrevAyah?.());
+  view.querySelector("[data-note-next-ayah]")?.addEventListener("click", () => callbacks.onNextAyah?.());
   view.querySelector("[data-note-fullscreen]")?.addEventListener("click", () => callbacks.onToggleFullscreen?.());
+  view.querySelector("[data-note-open-read]")?.addEventListener("click", () => callbacks.onOpenInReadView?.());
+  view.querySelectorAll("[data-note-wide-open]").forEach((btn) => {
+    btn.addEventListener("click", () => callbacks.onOpenWideNote?.(btn.dataset.noteWideOpen));
+  });
 
   if (!container._noteOutsideBound) {
     container._noteOutsideBound = true;
@@ -557,6 +595,14 @@ export function attachNoteViewHandlers(container, callbacks) {
         if (sub?.classList.contains("open") && !wrap.contains(e.target)) {
           sub.classList.remove("open");
           subBtn?.classList.remove("active");
+        }
+      });
+      v.querySelectorAll("[data-note-menu-toggle]").forEach((btn) => {
+        const menu = v.querySelector(`[data-note-menu="${btn.dataset.noteMenuToggle}"]`);
+        if (menu?.classList.contains("open") && !menu.contains(e.target) && e.target !== btn) {
+          menu.classList.remove("open");
+          btn.classList.remove("active");
+          btn.setAttribute("aria-expanded", "false");
         }
       });
     });
