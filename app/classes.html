@@ -107,6 +107,7 @@
     import { enrolPerson, endEnrollment, listEnrollmentsForOffer } from "./js/course-offers.js";
     import { bulkConfirmClass } from "./js/records.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { translateStatic, t, num } from "./js/i18n.js";
 
     // Phase 1 of the full translation: turn this page's own static markup
@@ -124,6 +125,7 @@
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
+      mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null });
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const createFieldset = document.getElementById("createFieldset");

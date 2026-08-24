@@ -90,7 +90,17 @@ const ADMIN_LINKS = [
 // Bookmark: real now (enhancement round) -- named/foldered bookmarks, one
 // page, reachable from every module's own nav bar, same as this comment
 // always said it eventually would be.
-const BOOKMARK_LINKS = [{ href: "bookmarks.html", label: "Bookmark" }];
+//
+// Fixes round (23 Aug 2026), items 2/3: the category itself is no longer a
+// single link to that page -- it's a live dropdown of every bookmark
+// (js/bookmark-nav.js's own mountBookmarkMenu(), the Firebase-touching
+// "mount" helper this file's own I2 contract requires living elsewhere,
+// same seam mountSyncedAppLangControl() already uses for the language
+// picker). This link stays as the one way INTO the full Manager page --
+// "opening as a page is needed only when organising/edits... arrangements
+// is required," the owner's own words -- so it keeps its own distinct
+// label rather than repeating the category's own "Bookmark" heading.
+const BOOKMARK_LINKS = [{ href: "bookmarks.html", label: "Manage bookmarks…" }];
 // Settings: Language became real in shell round 13 (13 Aug 2026) -- see
 // renderSettings() below. Appearance is still a placeholder.
 const SETTINGS_PLACEHOLDERS = ["Appearance"];
@@ -132,6 +142,20 @@ function renderCategory(name, linksHtml, extraClass = "") {
   return `<details class="nav-cat${extraClass ? " " + extraClass : ""}"><summary>${t(name)}</summary><div class="nav-cat-links">${linksHtml}</div></details>`;
 }
 
+// Fixes round (23 Aug 2026), items 2/3 -- the Bookmark category's own
+// skeleton: a live-list container (js/bookmark-nav.js fills this in, lazily,
+// the first time the category is actually opened -- I9, never on page load)
+// plus the one link into the full Manager page. `#navBookmarkList`'s starting
+// text ("Loading…") is what a person sees for the brief moment between
+// opening the category and the fetch resolving; it is replaced outright, not
+// left behind, once real content renders.
+function renderBookmarkCategory(currentFile, canAdmin) {
+  return `<details class="nav-cat nav-cat-end nav-cat-bookmark"><summary>${t("Bookmark")}</summary><div class="nav-cat-links">
+    <div id="navBookmarkList" class="nav-bm-list">${t("Loading…")}</div>
+    ${renderLinks(BOOKMARK_LINKS, currentFile, canAdmin)}
+  </div></details>`;
+}
+
 /** roles: this person's roles in the currently-active tenant (e.g. ["owner","prime"]). The Classes/Curriculum links inside Operation only show for owner/prime -- everyone else gets the rest of Operation (+ the always-shown Bookmark link, real since the enhancement round). viewAsRole (round 11): when set, shows a "Previewing as" notice so it's never ambiguous why the page looks scoped down -- change/exit it from the People page's own dropdown. Returns the Study/Operation/Bookmark categories only -- Home is the caller's own static markup; call renderHomeExtras() separately for its role-gated contents. */
 export function renderNavBar(roles = [], viewAsRole = null) {
   const canAdmin = roles.includes("owner") || roles.includes("prime");
@@ -155,7 +179,7 @@ export function renderNavBar(roles = [], viewAsRole = null) {
   // midpoint, so a left-anchored dropdown under it has nowhere to grow but
   // off-screen.
   cats.push(renderCategory("Operation", renderLinks(OPERATION_LINKS, currentFile, canAdmin), "nav-cat-end"));
-  cats.push(renderCategory("Bookmark", renderLinks(BOOKMARK_LINKS, currentFile, canAdmin), "nav-cat-end"));
+  cats.push(renderBookmarkCategory(currentFile, canAdmin));
 
   // Phase 10: real per-student teacher assignment now exists (classes.html
   // + teacherStudentLinks) -- a teacher preview is scoped to whoever

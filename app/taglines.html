@@ -162,6 +162,7 @@
     import { TENANT } from "./js/collections.js";
     import { bootstrapContext } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras } from "./js/nav.js";
+    import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { getAppLang } from "./js/prefs.js";
     import { setLangText } from "./js/lang.js";
@@ -194,6 +195,10 @@
     const previewStrip = document.getElementById("previewStrip");
 
     let activeTenantId = null;
+    // No person picker on this page (tenant content, not per-person) --
+    // activePersonId exists only so the nav bar's own Bookmark dropdown
+    // (fixes round, items 2/3) has something to fetch against.
+    let activePersonId = null;
     let lines = [];
     let settings = null;
     let dirty = false;
@@ -202,6 +207,7 @@
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
+      mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => activePersonId });
     }
 
     signInBtn.addEventListener("click", () => {
@@ -491,6 +497,7 @@
         const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
         if (!context) return;
         activeTenantId = context.tenantId;
+        activePersonId = context.personId;
         const roles = memberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [];
         renderNav(roles, null);
         const canAdmin = roles.includes("owner") || roles.includes("prime");

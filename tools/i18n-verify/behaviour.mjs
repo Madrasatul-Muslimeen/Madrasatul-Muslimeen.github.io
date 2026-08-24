@@ -20,6 +20,32 @@ const readingRef = (page) => page.evaluate(() => {
   return `Surah ${s.value}, Ayah ${a.value}`;
 });
 
+// Fixes round (23 Aug 2026), item 1 -- every bookmark-creation call site now
+// opens js/bookmark-popover.js's own DOM overlay instead of a native
+// prompt(), so a test can no longer just accept a dialog. Waits for the
+// overlay, fills the name (and, when asked, files it under an existing
+// folder or types a brand-new one), then clicks Save. Pass folderName to
+// pick an existing folder by its visible text, or newFolderName to create
+// one in the same step; omit both to leave it Unfiled.
+async function fillBookmarkPopover(page, { name, folderName = null, newFolderName = null } = {}) {
+  await page.waitForSelector(".bm-popover-overlay");
+  if (name !== undefined && name !== null) {
+    await page.fill("[data-bm-pop-name]", name);
+  }
+  if (newFolderName) {
+    await page.selectOption("[data-bm-pop-folder]", "__new__");
+    await page.fill("[data-bm-pop-newfolder]", newFolderName);
+  } else if (folderName) {
+    await page.selectOption("[data-bm-pop-folder]", { label: folderName });
+  }
+  await page.click("[data-bm-pop-save]");
+}
+
+async function cancelBookmarkPopover(page) {
+  await page.waitForSelector(".bm-popover-overlay");
+  await page.click("[data-bm-pop-cancel]");
+}
+
 
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 async function ctxFor(o) {
@@ -3840,10 +3866,11 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
         JSON.stringify(barHasBookmarkPlay));
 
   // Bookmark -- reuses the existing bookmarks collection (findSavedBookmark).
-  // Enhancement round: creating one now prompts for a name (item 2) --
-  // accept it here, same as every other naming prompt in this suite.
-  page.once("dialog", (d) => d.accept("Test bookmark name"));
+  // Enhancement round: creating one now opens the folder-picker popover
+  // (item 1) rather than a native prompt() -- fill and save it here, same as
+  // every other bookmark-creation call site in this suite.
   await page.click("[data-note-bookmark]");
+  await fillBookmarkPopover(page, { name: "Test bookmark name" });
   await page.waitForTimeout(300);
   const afterBookmark = await page.evaluate(() => ({
     star: document.querySelector("[data-note-bookmark]")?.textContent.trim(),
@@ -4693,9 +4720,9 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   const readMenuItems = await page.evaluate(() => [...document.querySelectorAll("#readQuickMenuSlot .qm-item")].map((b) => b.textContent.trim()));
   check("45a the plain Read screen's own quick menu offers a Bookmark item", readMenuItems.some((t) => t.includes("Bookmark")), JSON.stringify(readMenuItems));
 
-  // Cancelling the naming prompt (item 2) makes no write and no bookmark.
-  page.once("dialog", (d) => d.dismiss());
+  // Cancelling the naming popover (item 1/2) makes no write and no bookmark.
   await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  await cancelBookmarkPopover(page);
   await page.waitForTimeout(200);
   const afterCancel = await page.evaluate(() => document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.classList.contains("has-note"));
   check("45b cancelling the name prompt makes no bookmark", afterCancel !== true);
@@ -4708,10 +4735,10 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   await page.waitForTimeout(100);
   await page.click("#tabStudyOptionsBtn"); // close the panel again -- it overlaps #readQuickMenuSlot while open
   await page.waitForTimeout(150);
-  page.once("dialog", (d) => d.accept("My Fatiha bookmark"));
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
   await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  await fillBookmarkPopover(page, { name: "My Fatiha bookmark" });
   await page.waitForTimeout(300);
   const writes = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
   const saveWrite = writes.find((w) => w.col === "bookmarks" && w.data.includes("saved"));
@@ -4754,8 +4781,8 @@ console.log("\n=== 47. Every other module gets a real, named Bookmark star too (
   await page.waitForTimeout(800);
   await page.click('[data-id="deen_ethics"]');
   await page.waitForTimeout(300);
-  page.once("dialog", (d) => d.accept("Ethics bookmark"));
   await page.click("#bookmarkTopicBtn");
+  await fillBookmarkPopover(page, { name: "Ethics bookmark" });
   await page.waitForTimeout(300);
   const topicAfter = await page.evaluate(() => ({
     text: document.getElementById("bookmarkTopicBtn")?.textContent.trim(),
@@ -4780,8 +4807,8 @@ console.log("\n=== 47. Every other module gets a real, named Bookmark star too (
   await page2.waitForTimeout(800);
   await page2.click('.asma-card[data-number="1"]');
   await page2.waitForTimeout(300);
-  page2.once("dialog", (d) => d.accept("Al-Rahman bookmark"));
   await page2.click("#bookmarkAsmaBtn");
+  await fillBookmarkPopover(page2, { name: "Al-Rahman bookmark" });
   await page2.waitForTimeout(300);
   const asmaAfter = await page2.evaluate(() => ({
     text: document.getElementById("bookmarkAsmaBtn")?.textContent.trim(),
@@ -4805,6 +4832,151 @@ console.log("\n=== 47. Every other module gets a real, named Bookmark star too (
         [...errors, ...errors2, ...errors3].slice(0, 3).join(" | "));
   await page3.close();
   await ctx3.close();
+}
+
+console.log("\n=== 48. Fixes round item 1 -- the bookmark popover's own folder picker ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+
+  // Bookmark #1: name it and create a brand-new folder in the same step.
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  await fillBookmarkPopover(page, { name: "Ayah One", newFolderName: "Favourites" });
+  await page.waitForTimeout(300);
+  const writesAfterFirst = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
+  const bmWritesAfterFirst = writesAfterFirst.filter((w) => w.col === "bookmarks");
+  check("48a naming with a brand-new folder issues a folder-create write AND a bookmark-save write",
+        bmWritesAfterFirst.some((w) => w.data.includes("folders")) && bmWritesAfterFirst.some((w) => w.data.includes("saved")),
+        JSON.stringify(bmWritesAfterFirst));
+
+  // Move to a different āyah so bookmark #2 is genuinely new, not a toggle-off of #1.
+  await page.selectOption("#readAyahSelect", "2");
+  await page.waitForTimeout(200);
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  await page.waitForSelector(".bm-popover-overlay");
+  const folderOptions = await page.evaluate(() =>
+    [...document.querySelectorAll("[data-bm-pop-folder] option")].map((o) => o.textContent.trim())
+  );
+  check("48b the folder just created is offered in the very next popover -- bookmarksDoc really updated in memory, no re-fetch needed",
+        folderOptions.includes("Favourites"), JSON.stringify(folderOptions));
+
+  await fillBookmarkPopover(page, { name: "Ayah Two", folderName: "Favourites" });
+  await page.waitForTimeout(300);
+  const writesAfterSecond = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
+  const newBmWrites = writesAfterSecond.filter((w) => w.col === "bookmarks").slice(bmWritesAfterFirst.length);
+  check("48c picking an EXISTING folder files it there directly, with no extra folder-create write",
+        newBmWrites.length === 1 && newBmWrites[0].data.includes("saved") && !newBmWrites[0].data.includes("folders"),
+        JSON.stringify(newBmWrites));
+
+  // Cancelling still makes no write at all -- the popover's own escape hatch, unchanged by adding the folder picker.
+  await page.selectOption("#readAyahSelect", "3");
+  await page.waitForTimeout(200);
+  const writesBeforeCancel = (await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"))).filter((w) => w.col === "bookmarks").length;
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  await cancelBookmarkPopover(page);
+  await page.waitForTimeout(200);
+  const writesAfterCancel = (await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"))).filter((w) => w.col === "bookmarks").length;
+  check("48d cancelling makes no write at all, folder picker or not", writesAfterCancel === writesBeforeCancel);
+
+  check("48 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
+}
+
+console.log("\n=== 49. Fixes round items 2/3 -- the nav bar's own live Bookmark dropdown ===");
+{
+  const ctx = await ctxFor({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  await page.waitForTimeout(600);
+
+  // Opening the category is what fetches (I9) -- before that, the skeleton
+  // says "Loading…" and nothing else.
+  const beforeOpen = await page.evaluate(() => document.getElementById("navBookmarkList")?.textContent.trim());
+  check("49a before opening, the skeleton shows only its own placeholder", beforeOpen === "Loading…", beforeOpen);
+
+  await page.click(".nav-cat-bookmark summary");
+  await page.waitForFunction(() => document.getElementById("navBookmarkList")?.textContent.trim() !== "Loading…");
+  const unfiledState = await page.evaluate(() => {
+    const list = document.getElementById("navBookmarkList");
+    return {
+      hasDirectLink: [...list.querySelectorAll(".nav-bm-link")].some((a) => a.textContent.trim() === "Ayat al-Kursi"),
+      insideAFold: !!list.querySelector(".nav-bm-folder a"),
+      href: [...list.querySelectorAll(".nav-bm-link")].find((a) => a.textContent.trim() === "Ayat al-Kursi")?.getAttribute("href"),
+    };
+  });
+  check("49b the seeded (unfiled) bookmark is a direct, clickable link -- one click away, no fold to open first",
+        unfiledState.hasDirectLink && !unfiledState.insideAFold, JSON.stringify(unfiledState));
+  check("49c ...and its href jumps straight to it (item 6, same mechanism as the Manager page)",
+        unfiledState.href?.includes("bookmark=bm1"), unfiledState.href);
+
+  // Close the dropdown again -- it's an absolutely-positioned overlay and
+  // would otherwise intercept the read-screen clicks below.
+  await page.click(".nav-cat-bookmark summary");
+  await page.waitForTimeout(150);
+
+  // Create a second bookmark, filed into a brand-new folder, via the popover
+  // (item 1). The folder must show up in the SAME dropdown collapsed by
+  // default (item 3), with its own bookmark reachable only once expanded.
+  await page.click("#tabReadBtn");
+  await page.waitForTimeout(400);
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  await fillBookmarkPopover(page, { name: "Fatiha in a folder", newFolderName: "Favourites" });
+  await page.waitForTimeout(300);
+
+  // Re-opening the category re-fetches -- force it closed, then open it
+  // again, whatever state it happened to be left in by the actions above.
+  // The list's own content already reads "Ayat al-Kursi" (not "Loading…")
+  // from the last time it was open, so simply waiting for "not Loading…"
+  // here would resolve instantly against that stale leftover rather than
+  // the fresh render. Reset it to the sentinel "Loading…" text itself right
+  // before reopening -- the real load() briefly sets that same text too, so
+  // there is no transient window to race against; the wait can only resolve
+  // once the genuinely fresh render lands.
+  const stillOpen = await page.evaluate(() => document.querySelector(".nav-cat-bookmark")?.open);
+  if (stillOpen) {
+    await page.click(".nav-cat-bookmark summary");
+    await page.waitForTimeout(150);
+  }
+  await page.evaluate(() => { document.getElementById("navBookmarkList").textContent = "Loading…"; });
+  await page.click(".nav-cat-bookmark summary");
+  await page.waitForFunction(() => document.getElementById("navBookmarkList")?.textContent.trim() !== "Loading…");
+  const folderState = await page.evaluate(() => {
+    const list = document.getElementById("navBookmarkList");
+    const folder = [...list.querySelectorAll(".nav-bm-folder")].find((f) => f.querySelector("summary")?.textContent.includes("Favourites"));
+    return {
+      folderPresent: !!folder,
+      startsCollapsed: folder ? !folder.open : null,
+    };
+  });
+  check("49d the just-created folder shows up on the very next open -- real re-fetch, not a stale cache",
+        folderState.folderPresent, JSON.stringify(folderState));
+  check("49e ...collapsed by default (item 3)", folderState.startsCollapsed === true, JSON.stringify(folderState));
+
+  await page.click(".nav-bm-folder summary");
+  await page.waitForTimeout(100);
+  const afterExpand = await page.evaluate(() => {
+    const list = document.getElementById("navBookmarkList");
+    const folder = [...list.querySelectorAll(".nav-bm-folder")].find((f) => f.querySelector("summary")?.textContent.includes("Favourites"));
+    return {
+      open: folder?.open,
+      linkText: folder?.querySelector(".nav-bm-link")?.textContent.trim(),
+    };
+  });
+  check("49f ...one click away from opening it (item 3)", afterExpand.open === true && afterExpand.linkText === "Fatiha in a folder", JSON.stringify(afterExpand));
+
+  check("49 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
+  await page.close();
+  await ctx.close();
 }
 
 await browser.close();
