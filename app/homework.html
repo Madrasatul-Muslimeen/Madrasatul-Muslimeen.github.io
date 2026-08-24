@@ -141,6 +141,7 @@
     } from "./js/homework.js";
     import { submissionStatusLabel } from "./js/homework.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { listClasses } from "./js/classes.js";
     import {
       listCourseOffers, listEnrollmentsForPerson, listEnrollmentsForOffer,
@@ -163,6 +164,7 @@
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
+      mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null });
     }
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");

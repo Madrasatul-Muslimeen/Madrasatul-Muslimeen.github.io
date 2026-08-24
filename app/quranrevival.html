@@ -1513,7 +1513,8 @@
     import { buildUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
-    import { getBookmarks, saveBookmark, removeSavedBookmark, findSavedBookmark } from "./js/bookmarks.js";
+    import { getBookmarks, saveBookmark, removeSavedBookmark, findSavedBookmark, createFolder, flattenFolderTree } from "./js/bookmarks.js";
+    import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText } from "./js/ayah-note-renderer.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
@@ -1524,6 +1525,7 @@
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootDerivativePanel, renderTranslationPanel } from "./js/ayah-renderer.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+    import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import {
       getAppLang, getQuranTranslationLangs, setQuranTranslationLangs,
       getFullScreenHides, setFullScreenHides, FULLSCREEN_HIDEABLE,
@@ -1628,6 +1630,15 @@
       // code for the picker that used to sit in bar 1, and because reloading
       // the landing page would re-fire the boot and Quran-entry splashes.
       mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid, onChange: applyAppLangChange });
+      // bookmarksDoc here loads LAZILY (ensureAyahNoteDataLoaded(), only once
+      // the reading/note screen actually opens) -- unlike the other pages
+      // that pass a plain getter, this one ensures that load happens first,
+      // so opening the nav dropdown straight from the wheel/landing view
+      // (without ever visiting the reading screen) still shows real data.
+      mountBookmarkMenu(navBar, {
+        db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId,
+        getBookmarksDoc: async () => { await ensureAyahNoteDataLoaded(); return bookmarksDoc; },
+      });
     }
 
     /** Re-render everything on this page that shows a language-keyed NAME.
@@ -3847,12 +3858,22 @@
       } else {
         const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
         const defaultName = ayahRefLabel(surah, ayahNum);
-        const name = prompt(t("Name this bookmark:"), defaultName);
-        if (name === null) return; // cancelled -- no write, no re-render
+        const choice = await openBookmarkNamePopover({ defaultName, folders: flattenFolderTree(bookmarksDoc) });
+        if (!choice) return; // cancelled -- no write, no re-render
+        let folderId = choice.folderId;
+        if (choice.newFolderName) {
+          const folderOutcome = await safeWrite(
+            () => createFolder(db, { tenantId: activeTenantId, personId: selectedPersonId, name: choice.newFolderName, uid: auth.currentUser.uid }),
+            { collection: TENANT.BOOKMARKS, action: "createFolder" }
+          );
+          if (!folderOutcome.ok) return;
+          folderId = folderOutcome.result.id;
+          bookmarksDoc = { ...bookmarksDoc, folders: [...(bookmarksDoc.folders ?? []), folderOutcome.result] };
+        }
         outcome = await safeWrite(
           () => saveBookmark(db, {
             tenantId: activeTenantId, personId: selectedPersonId, moduleId: "quranrevival", subjectId: "quran",
-            name: name.trim() || defaultName, position: unitKey, settings: captureQuranBookmarkSettings(), uid: auth.currentUser.uid,
+            name: choice.name || defaultName, position: unitKey, settings: captureQuranBookmarkSettings(), folderId, uid: auth.currentUser.uid,
           }),
           { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
         );

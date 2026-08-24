@@ -46,9 +46,11 @@ import { chunkKeyFor, getRecordsChunk, claimStatus } from "./records.js";
 import { logActivity } from "./activity.js";
 import { getResourcesByIds } from "./resources.js";
 import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./nav.js";
+import { mountBookmarkMenu } from "./bookmark-nav.js";
 import { renderTopicBreadcrumb, renderTopicChildList, renderTopicResource } from "./topic-renderer.js";
 import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderWayModalShell, attachWayModalHandlers } from "./way-modal.js";
-import { getBookmarks, touchResume, recentResumeEntries, saveBookmark, removeSavedBookmark, findSavedBookmark } from "./bookmarks.js";
+import { getBookmarks, touchResume, recentResumeEntries, saveBookmark, removeSavedBookmark, findSavedBookmark, createFolder, flattenFolderTree } from "./bookmarks.js";
+import { openBookmarkNamePopover } from "./bookmark-popover.js";
 import { renderContinueStrip } from "./continue-strip.js";
 
 /**
@@ -81,6 +83,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     navBar.innerHTML = renderNavBar(roles, viewAsRole);
     navHomeExtra.innerHTML = renderHomeExtras(roles);
     mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
+    mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId, getBookmarksDoc: () => bookmarksDoc });
   }
   const tenantSelect = document.getElementById("tenantSelect");
   const personSelect = document.getElementById("personSelect");
@@ -392,12 +395,22 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       bookmarksDoc = { ...bookmarksDoc, saved: bookmarksDoc.saved.map((b) => (b.id === existing.id ? { ...b, removed: true } : b)) };
     } else {
       const defaultName = langText(node.name, getAppLang(), node.id);
-      const name = prompt(t("Name this bookmark:"), defaultName);
-      if (name === null) return;
+      const choice = await openBookmarkNamePopover({ defaultName, folders: flattenFolderTree(bookmarksDoc) });
+      if (!choice) return;
+      let folderId = choice.folderId;
+      if (choice.newFolderName) {
+        const folderOutcome = await safeWrite(
+          () => createFolder(db, { tenantId: activeTenantId, personId: selectedPersonId, name: choice.newFolderName, uid: auth.currentUser.uid }),
+          { collection: TENANT.BOOKMARKS, action: "createFolder" }
+        );
+        if (!folderOutcome.ok) return;
+        folderId = folderOutcome.result.id;
+        bookmarksDoc = { ...bookmarksDoc, folders: [...(bookmarksDoc.folders ?? []), folderOutcome.result] };
+      }
       const outcome = await safeWrite(
         () => saveBookmark(db, {
           tenantId: activeTenantId, personId: selectedPersonId, moduleId, subjectId: node.id,
-          name: name.trim() || defaultName, position: node.id, uid: auth.currentUser.uid,
+          name: choice.name || defaultName, position: node.id, folderId, uid: auth.currentUser.uid,
         }),
         { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
       );
