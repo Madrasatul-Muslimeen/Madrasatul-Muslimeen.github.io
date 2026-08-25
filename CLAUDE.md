@@ -4788,6 +4788,71 @@ record for.", "Claim for {n}", "Claimed for {names}.", "Couldn't claim for
 for the owner's own eye. No `firestore.rules`, schema or Firestore data
 changes -- nothing to deploy but the static files.
 
+v07.78 (25 Aug 2026, on Claude Code on the web) is **not a feature round --
+it retires the two-repo dance itself.** Since the 9 Aug cutover this
+project has run on two GitHub repos: `Madrasatul-Muslimeen/QuranRevival---
+ClaudeCode` (the dev repo -- every Claude Code on the web session branched
+and PR'd here) and `Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io`
+(the live production/Pages site, kept in sync by hand-copying whichever
+`app/` files a round touched). The owner asked directly, after a manual
+upload mistake landed 15 files at the wrong paths in the mirror repo (fixed
+the same round, see below) made the sync burden visible again: fold the dev
+repo into this one, so there is never a second repo to keep in sync.
+
+**Done as a real git merge, not a copy** -- `git fetch` of the dev repo's
+full history (233 commits, Phase 0 through v07.77) directly from GitHub
+(the local sandbox checkout of that repo turned out to be a shallow clone
+and could not itself supply the missing objects -- fetching from the real
+GitHub remote is what worked), then `git merge --allow-unrelated-histories`
+into this repo's own `main`. **Checked before merging, not assumed:** a
+full recursive diff showed the entire `app/` tree, `tools/quran-data-pull/
+output/` (31MB of pulled Quran data) and its `pull.js`/`pull.log` were
+already byte-identical between the two repos -- the v07.77 mirror, done
+earlier the same day, is what made that true. Only two paths genuinely
+conflicted, both resolved by hand: **this repo's own root `index.html`**
+(the load-bearing redirect into `/app/index.html` the live site depends on)
+**was kept, not overwritten** by the dev repo's same-named file, which
+turned out to be a byte-identical duplicate of what already lives at this
+repo's own `legacy/index.html` -- confirmed by `md5sum`, not assumed from
+the filename; and `tools/quran-data-pull/build-juz-index.js` (pure build
+tooling, never fetched at runtime -- only `output/` is), where the dev
+repo's copy was taken, being the newer one, sitting alongside three sibling
+build scripts (hizb/page/search) this repo never had. Everything else the
+dev repo carried and this one didn't -- `CLAUDE.md` itself, every
+`PHASE-*-STATUS.md`, the architecture/catalogue docs, `.claude/`,
+`firebase.json`, `.firebaserc`, `firestore.rules`, `serve.js`,
+`.gitignore`, and the fuller `tools/i18n-verify`/`tools/perf`/`tools/fonts`/
+`tools/i18n-coverage.mjs` suites -- came in as clean, non-colliding adds.
+**Verified after merging**: `git diff` of the merge commit against this
+repo's own pre-merge `main`, restricted to every path that already existed
+here (`app/`, `legacy/`, `mushaf/`, `gtaf_bangla_timestamps.json`, root
+`index.html`, `tools/quran-data-pull/output`/`pull.js`/`pull.log`), came
+back completely empty -- nothing the live site serves changed at all.
+
+**Also cleaned up in the same round, on the owner's own report:** a manual
+upload on 26 Aug had landed 15 unreferenced files at the wrong paths in
+this repo (10 at the repo root -- `arabicstudy.html` etc., no hyphens,
+where the real pages are `arabic-study.html` etc. -- and 5 directly under
+`app/` where the real files live under `app/js/`). Confirmed by `grep`
+across every `.html`/`.js` file in the repo that nothing linked to any of
+them before deleting.
+
+**What this changes going forward:** there is no more "finish on the dev
+repo, then mirror the touched files here" step -- build directly on this
+repo's own `main` (branch, PR, merge, same as always) and the live site is
+current the moment that PR merges. The two paragraphs below this one
+("Post-cutover deployment shape" and "On the CLI...") describe the
+now-retired two-repo workflow as it stood from 9 Aug to 25 Aug 2026 --
+left as-is, as the historical record of how that period actually worked,
+not rewritten out from under itself. **The dev repo,
+`Madrasatul-Muslimeen/QuranRevival---ClaudeCode`, was NOT deleted** (I4/D6
+-- nothing is ever destroyed) -- its full history now also lives here, and
+the owner should archive it (GitHub repo Settings -> Archive this
+repository) at their convenience, from the GitHub UI directly, since that
+is an account-owner action outside what this session's own GitHub access
+can do. No `firestore.rules`, schema or Firestore data changes -- this
+round is repository plumbing only.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
@@ -4811,7 +4876,7 @@ decision-oriented. Corrections come promptly when framing drifts.
 | `QuranRevival_Complete_Architecture.html` | **THE source of truth.** Schema, invariants, roles, renderers, unit keys, 15 build phases, load-speed budget. Confirmed by the owner. |
 | `QuranRevival_Subject_Catalogue_v3.md` | 31 subjects, 30 Approaches in 7 sections. **Approved as-is (D11).** Phase 2 input. |
 | `QuranRevival_Parked_Items_Register.html` | 36 deferred items. **Do not build these.** |
-| `index.html` | The pre-cutover production app. **REFERENCE ONLY — NEVER EDIT.** No longer live at the production URL as of 9 Aug 2026 (cutover) — archived, reachable at `https://madrasatul-muslimeen.github.io/legacy/index.html`. |
+| `legacy/index.html` | The pre-cutover production app. **REFERENCE ONLY — NEVER EDIT.** No longer live at the production URL as of 9 Aug 2026 (cutover) — archived here, reachable at `https://madrasatul-muslimeen.github.io/legacy/index.html`. (Since v07.78's repo fold, this repo's root `index.html` is a DIFFERENT file — the live redirect stub into `/app/index.html` — not this one; don't confuse the two.) |
 | `LAYOUT-BACKLOG.md` | **The pick-up list for outstanding layout work** (opened 13 Aug 2026, after shell round 11), ordered as the owner wants it taken. Item 1 (one global Language preference) is agreed and ready to build in its own session. Read it before starting any layout round — it also records the measure-before-and-after method every round since v07.22 has used. |
 
 Do not re-derive or re-propose the architecture. If a request appears to
@@ -5083,6 +5148,11 @@ rounds before a 9 Aug note — **check `PHASE-5-STATUS.md` first, every
 session, for what's actually current**; don't rely on this file's own
 "current position" line alone.
 
+**Retired 25 Aug 2026 (v07.78) — there is only one repo now, this one; see
+that version's own entry above.** The paragraph below describes how
+deployment worked from the 9 Aug cutover until then, kept as the
+historical record rather than rewritten out from under itself.
+
 **Post-cutover deployment shape (9 Aug 2026), replacing the old beta-mirror
 setup**: `madrasatul-muslimeen.github.io` is the real production site.
 `https://madrasatul-muslimeen.github.io/app/…` is the live app — any fix
@@ -5110,6 +5180,10 @@ their side, not shipped. **Diff the whole of `app/` before copying**
 (`diff -rq app /workspace/madrasatul-muslimeen.github.io/app`) rather than
 copying only the files you think you touched: that is what proves the
 mirror had no unrelated drift, and it has caught a stale mirror before.
+
+**Retired 25 Aug 2026 (v07.78) — folded into this one repo; see that
+version's own entry above.** The paragraph below is the historical record
+of how the dev-repo/mirror-repo split worked before then.
 
 **On the CLI (this tool), "the local repo" and "the GitHub repo" are the
 same repo — there is no other way to edit code with it.** The CLI always
