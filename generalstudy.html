@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — General Study</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.15rem; margin-top: 1.6rem; }
+  button {
+    font-size: 0.92rem; padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  select { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #ccc; border-radius: 0.35rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+
+  /* ---------- Topic browser ---------- */
+  .topic-breadcrumb { font-size: 0.88rem; margin: 1rem 0; color: #555; }
+  .topic-crumb-btn { background: none; border: none; color: #1F3A6E; cursor: pointer; padding: 0; font: inherit; text-decoration: underline; }
+  .topic-crumb-current { font-weight: 600; color: #222; }
+  .topic-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .topic-row {
+    display: flex; align-items: center; gap: 0.6rem; text-align: left; width: 100%;
+    padding: 0.6rem 0.8rem; border: 1px solid #e0e0e0; border-radius: 0.5rem; background: white; color: #222; cursor: pointer;
+  }
+  .topic-row:hover { border-color: #1F3A6E; }
+  .topic-row-name { font-weight: 600; flex: 1; }
+  .topic-gloss { color: #777; font-size: 0.85rem; }
+  .topic-row-arrow { color: #999; font-size: 1.1rem; }
+  .topic-status-chip { color: white; padding: 0.15rem 0.55rem; border-radius: 0.8rem; font-size: 0.78rem; }
+  .topic-status-unclaimed { background: #888 !important; }
+  .topic-status-noresource { background: #bbb !important; color: #444; }
+  .topic-empty { color: #888; font-size: 0.9rem; }
+  .topic-reminder-badge { padding: 0.1rem 0.5rem; border-radius: 0.7rem; font-size: 0.72rem; margin-left: 0.3rem; }
+  .topic-reminder-due { background: #f5ebd6; color: #8a6220; }
+  .topic-reminder-done { background: #dbeee0; color: #1c6b3a; }
+
+  /* ---------- Continue strip (Phase 7) ---------- */
+  .continue-strip { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0 1rem; }
+  .continue-chip { background: #eef1f7; color: #1F3A6E; border: 1px solid #d3dbea; border-radius: 999px; padding: 0.3rem 0.8rem; font-size: 0.82rem; text-decoration: none; }
+  .continue-chip:hover { border-color: #1F3A6E; }
+
+  .topic-detail { border: 1px solid #e0e0e0; border-radius: 0.6rem; padding: 1rem; margin-top: 1rem; }
+  .topic-bookmark-btn { font-size: 0.95rem; vertical-align: middle; background: none; border: 1px solid #ccc; border-radius: 0.35rem; cursor: pointer; color: #B8862F; padding: 0.05rem 0.35rem; }
+  .topic-bookmark-btn.active { background: #B8862F; color: #fff; border-color: #B8862F; }
+  .topic-resource-empty { color: #888; }
+  .topic-resource-link { word-break: break-all; }
+
+  #wayModalOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 50; }
+  #wayModalOverlay.open { display: flex; }
+  #wayModalMount { background: white; border-radius: 0.6rem; padding: 1.2rem; max-width: 32rem; width: 92%; max-height: 85vh; overflow-y: auto; }
+  .way-tab-bar { display: flex; gap: 0.4rem; margin: 0.8rem 0; }
+  .way-tab-btn { background: #eef1f7; color: #1F3A6E; border: none; }
+  .way-tab-btn.active { background: #1F3A6E; color: white; }
+  .way-tab-panel { display: none; }
+  .way-tab-panel.active { display: block; }
+  .way-modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.4rem; }
+  .way-header-row { display: flex; align-items: flex-start; gap: 0.4rem; flex: 1; min-width: 0; }
+  .way-header-row h3 { flex: 1; min-width: 0; margin: 0; }
+  .way-close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; flex-shrink: 0; }
+
+  /* "Assign to" -- one Claim recorded for several people at once. A compact
+     dropdown pinned top-right of the card (Track/way-modal.js) rather than a
+     block that pushes the rest of the card down; opening/closing is wired
+     once, at module load, by way-modal.js itself. */
+  .assign-trigger-wrap { position: relative; flex-shrink: 0; }
+  .assign-trigger {
+    display: flex; align-items: center; gap: 0.3rem;
+    background: #fff; border: 1.5px solid rgba(31,58,110,0.35);
+    color: #1F3A6E; font-weight: 700; font-size: 0.78rem;
+    padding: 0.28rem 0.55rem; border-radius: 1.2rem; cursor: pointer;
+    white-space: nowrap; font-family: inherit;
+  }
+  .assign-trigger .caret { font-size: 0.65rem; opacity: 0.7; }
+  .assign-popover {
+    position: absolute; top: calc(100% + 0.35rem); right: 0; width: 12.5rem;
+    background: #fff; border: 1px solid rgba(31,58,110,0.22);
+    border-radius: 10px; padding: 0.6rem 0.65rem 0.65rem;
+    box-shadow: 0 10px 26px rgba(20,40,80,0.18); z-index: 5;
+    display: none;
+  }
+  .assign-popover.open { display: block; }
+  .assign-popover-label {
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
+    font-weight: 700; color: #666; margin: 0 0 0.4rem;
+  }
+  .assign-hint { font-size: 0.76rem; color: #777; margin: 0 0 0.55rem; }
+  .assign-list { display: flex; flex-direction: column; gap: 0.3rem; }
+  .assign-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none; padding: 0.1rem 0; }
+  .assign-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
+  .assign-row .who-name { flex: 1; }
+  .assign-row .who-tag { font-size: 0.66rem; color: #777; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
+</style>
+</head>
+<body>
+  <h1>General Study</h1>
+  <p>Mathematics, English, Science, Geography, World History, Life Skill and
+     Creativity — each topic only appears here once it has a real resource
+     attached, added subject by subject from the Catalogue page. (Health
+     Study lives on its own separate Health page — a scheduled-habit screen,
+     not a topic-and-resource one.)</p>
+
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
+
+  <div id="app" style="display:none;">
+    <div id="continueStrip"></div>
+    <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
+      <label style="margin:0;">Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label style="margin:0;">Person
+        <select id="personSelect" style="width:auto;"></select>
+      </label>
+    </div>
+
+    <div id="breadcrumbContainer"></div>
+    <div id="listContainer"></div>
+    <div id="detailContainer"></div>
+  </div>
+
+  <div id="wayModalOverlay"><div id="wayModalMount"></div></div>
+
+  <script type="module">
+    import { initTopicStudyPage } from "./js/topic-study.js";
+    import { translateStatic } from "./js/i18n.js";
+
+    // Phase 1 of the full translation: turn this page's own static markup
+    // (headings, labels, buttons) into the chosen language before anything
+    // else runs, so a Bangla reader never sees an English frame first.
+    translateStatic();
+    initTopicStudyPage({ moduleId: "general", trackableId: "studied_general", rootSubjectId: "general_study" });
+  </script>
+</body>
+</html>
