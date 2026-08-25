@@ -1339,7 +1339,10 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   check("29a the landing screen is still the wheel", before.wheelShown && before.readHidden);
   check("29a the Study screen has LEFT the Study options drawer", !before.studyInPanel);
   check("29a ...and lives on the stage", before.studyOnStage);
-  check("29a the dock carries three tabs", before.tabs.length === 3 && before.tabs[1] === "Read", JSON.stringify(before.tabs));
+  // Enhancement round -- five tabs now: Options, Read, Note, Approach, Explore.
+  check("29a the dock carries five tabs",
+        before.tabs.length === 5 && before.tabs.join(",") === "Options,Read,Note,Approach,Explore",
+        JSON.stringify(before.tabs));
 
   await page.click("#tabReadBtn");
   await page.waitForTimeout(400);
@@ -3849,7 +3852,11 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     readHidden: document.getElementById("readView").hidden,
     wheelHidden: getComputedStyle(document.getElementById("wheelSection")).display === "none",
     dockVisible: getComputedStyle(document.getElementById("dock")).display !== "none",
-    pressed: document.getElementById("tabReadBtn").getAttribute("aria-pressed"),
+    // Enhancement round -- Note is its own dock tab now, so it is tabNoteBtn
+    // that reads pressed while noting, not tabReadBtn (which now means only
+    // "read" -- see setStageView()'s own three-way split).
+    readPressed: document.getElementById("tabReadBtn").getAttribute("aria-pressed"),
+    notePressed: document.getElementById("tabNoteBtn").getAttribute("aria-pressed"),
     ref: document.querySelector(".note-ref")?.textContent.trim(),
     arabic: document.querySelector(".note-arabic")?.textContent.trim().length > 0,
     english: document.querySelector(".note-english")?.textContent.trim().length > 0,
@@ -3859,7 +3866,8 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42d Note & more opens a full-stage view, not a modal",
         opened.noteShown && opened.readHidden && opened.wheelHidden, JSON.stringify(opened));
   check("42d ...with the dock still reachable underneath", opened.dockVisible);
-  check("42d ...and the Read tab still reads as pressed (this IS the reading experience)", opened.pressed === "true");
+  check("42d ...and the Note tab reads as pressed, not Read (enhancement round -- Note is its own tab now)",
+        opened.notePressed === "true" && opened.readPressed === "false", JSON.stringify(opened));
   check("42d Arabic, English and Bangla all render", opened.arabic && opened.english && opened.bangla, JSON.stringify(opened));
   check("42d not bookmarked yet", opened.bookmarkStar === "☆", opened.bookmarkStar);
 

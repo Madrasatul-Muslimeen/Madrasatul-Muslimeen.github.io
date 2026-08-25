@@ -4389,6 +4389,90 @@ introduced or touched here), **perf unchanged at 6 sequential round trips /
 or left the startup path (I9) -- this round is pure client-side rendering and
 UI-state wiring. No `firestore.rules`, schema or Firestore data changes --
 nothing to deploy but the static files.
+
+v07.74 (25 Aug 2026, on Claude Code on the web) is **shell round -- the
+bottom dock, five tabs on one line.** The owner's own brief, shown as a
+clickable mockup artifact first (matching the "demo before building"
+discipline every layout round since round 4 has used) and confirmed with
+four answers before any real code was touched: the landing page stays
+exactly as it is; **Options** is only a shorter dock label for the same
+"Study options"/"Study Settings" panel, untouched underneath; **Read** is
+unchanged; **Note** (new) opens the Ayah Note screen directly, for whichever
+āyah is on screen; **Approach** (new) opens the Mastery Wheel full-stage,
+with its full Approaches list filling the rest of the screen, exactly the
+same wheel that has always been `#stage`'s own default landing view --
+**nothing about the wheel or its click behaviour changed**, so tapping a
+slice or a sidebar row still hands off straight to Note exactly as it has
+since v07.61 (`jumpToApproach()` → `openNoteView()`).
+
+**The mechanism was smaller than the brief, because most of it already
+existed.** `#stage` already held three views (`wheel`/`read`/`note`,
+`setStageView()`) with only two of them reachable from their own dock tab --
+`tabReadBtn` used to show pressed for BOTH `read` and `note`, as a stand-in
+for a Note tab that did not exist yet. `tabNoteBtn` and `tabApproachBtn` are
+two more `.qr-tab-view` buttons of the same shape `tabReadBtn` already was;
+`setStageView()` now sets each of the three tabs' own `aria-pressed`
+independently, so exactly one is ever pressed and it can never drift from
+what `#stage` is actually showing. `tabNoteBtn` opens
+`buildUnitKey.ayah(currentSurahNum, currentAyahNum)` through the EXISTING
+`openNoteView()` -- the same target `jumpToApproach()` already used --
+rather than a second code path. `tabApproachBtn` just calls
+`setStageView("wheel")`; a proactive one-line fix rides along on both its own
+handler and `tabReadBtn`'s "tap the open tab to close it" branch:
+`layoutWheelHub()`'s own comment already said "the next `renderWheel()` once
+the wheel is shown again does it for real", and nothing had ever actually
+called it -- a real, latent (if minor) staleness gap, closed while touching
+these exact handlers rather than left for someone else to trip over.
+
+**Two real defects were found by measuring, not by reading the diff --
+`tools/i18n-verify/layout.mjs` caught the first outright.** Five tabs on one
+line grew the dock's own height (33px → 48px) and cost a real Approach row
+at 412×915 in both banner states -- traced to `.qr-tab::after`'s own caret
+(`" ▴"`/`" ▾"`, Options/Explore only): with five tabs instead of three,
+those two get a narrower share, and the ORDINARY breakable space before the
+caret let it wrap onto its own orphaned second line while the label stayed
+on the first -- legal by this page's own "labels wrap, never truncate" rule,
+but the visual result read as broken, not as a clean two-line label, and it
+stretched the WHOLE row taller via `align-items: stretch`. Fixed with a
+non-breaking space (`\00a0`) instead, making label+caret one unbreakable
+run -- exactly the same reason "Approach" (one bare word, already
+unbreakable) never wrapped in the first place. **Second, found only by
+sweeping every width down to the phone floor this project tests against:**
+even after that fix, five tabs' own real minimum content widths do not
+fit a 320px phone's available ~288px -- `document.documentElement.scrollWidth`
+genuinely ran past the viewport, `tabExploreBtn` pushed 23px off the right
+edge. Closed with a `@media (max-width: 340px)` block trimming `.qr-tab`'s
+own font-size/padding and `#tabRow`'s gap -- the same floor, and the same
+kind of fix, as shell round 15's own `max-width: 340px` block (retired in
+round 16 once nothing needed it any more; reintroduced here on a fresh,
+real content-fit problem, not a guess). Nothing above 340px is touched --
+360px and up were already clean with the ordinary values.
+
+**Verified**: the full `tools/i18n-verify/behaviour.mjs` suite reached
+section 42 with **789 checks passing, 0 failing**, before hitting the same
+pre-existing, already-disclosed crash this project has carried since v07.69
+(a stale `[data-note-master-toggle]` visibility assumption from before the
+round-31 bar reorg, unrelated to this round -- confirmed by checking that
+line's own selector sits behind a closed dropdown at `HEAD` too, before any
+edit here). Two checks were **updated, not deleted**, both because this
+round deliberately changed what they asserted: section 29a's "the dock
+carries three tabs" is now five, in the new order; section 42d's "the Read
+tab still reads pressed" is now "the Note tab reads pressed, not Read" --
+the exact three-way split this round built. **`layout.mjs` reports NO
+LAYOUT REGRESSIONS** at all eight viewports in both banner states (landing
+page byte-for-byte identical, dock height back to 33px everywhere the
+original three-tab dock had it, `getElementById` targets 97 → 99, exactly
+the two new buttons, none missing) -- **`panel.mjs`, `reading.mjs` and
+`navcheck.mjs` all clean** (navcheck's only reported problem is still the
+pre-existing, unrelated 320px English "Operation"/"Bookmark" truncation) --
+**translation coverage 1,332/1,332, 99% (7 missing, unchanged pre-existing
+gaps from the round-31 bar reorg)** -- one new string, "Options"
+(`bn.js`: "বিকল্প", marked `// ?` for the owner's own eye); "Note" and
+"Approach" reuse their own existing, already-translated keys, since both
+words already mean the same thing elsewhere in this screen. A five-tab,
+320px sweep in both languages confirmed no truncation and no sideways
+scroll anywhere the harness tests. No `firestore.rules`, schema or
+Firestore data changes -- nothing to deploy but the static files.
 ---
 
 ## What this is
