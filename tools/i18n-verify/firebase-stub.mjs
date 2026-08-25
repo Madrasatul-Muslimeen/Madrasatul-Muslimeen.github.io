@@ -370,7 +370,7 @@ function fullySeededAppendix(SUBJECT_TEMPLATES, MODULE_TEMPLATES, APPROACH_TEMPL
 // latencyMs simulates one Firestore round trip. 0 (the default) keeps the
 // translation suites exactly as they were; the load-speed measurement passes
 // a real number so wall-clock time means something.
-export function stubFor({ banner, accountLang = null, latencyMs = 0, emptyTenant = false, seedTemplates = null, taglines = null }) {
+export function stubFor({ banner, accountLang = null, latencyMs = 0, emptyTenant = false, seedTemplates = null, taglines = null, extraSeedJs = null }) {
   const userIndexRow = accountLang
     ? `{ _id: UID, appLang: ${JSON.stringify(accountLang)} }`
     : "";
@@ -409,5 +409,12 @@ DATA.subjects = []; DATA.trackables = []; DATA.modules = []; DATA.subjectTemplat
 DATA.records = []; DATA.activity = [];
 `;
   }
+  // Bookmark-issues round -- an escape hatch for a one-off script that needs
+  // seed data none of the params above cover (e.g. a second person's own
+  // bookmarks doc, a retired row, a tagged folder), WITHOUT hand-editing the
+  // shared DATA object above and risking every other suite that reads it.
+  // Raw JS, appended last so it can see (and patch) whatever the options
+  // above already built.
+  if (extraSeedJs) out += extraSeedJs;
   return out;
 }

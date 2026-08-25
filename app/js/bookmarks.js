@@ -4,7 +4,7 @@
 // s3, Layer 2):
 //   resume{ "<moduleId>::<programId>::<subjectId>": {position, settings, updatedAt} }
 //   saved[]{ id, programId, moduleId, subjectId, name, position, settings, folderId, personTagId, removed }
-//   folders[]{ id, name, parentId, removed, createdAt }
+//   folders[]{ id, name, parentId, personTagId, removed, createdAt }
 //
 // resume is auto-touched every time someone opens a subject/topic/routine
 // in any module -- "continue where I left off." It overwrites the one
@@ -213,6 +213,32 @@ export function groupBookmarksByPerson(bookmarksDoc, rosterIds = [], { includeRe
   return { untagged, groups: ordered.map((personTagId) => ({ personTagId, bookmarks: byTag.get(personTagId) })) };
 }
 
+/**
+ * Bookmark-issues round -- the MODULE counterpart of groupBookmarksByPerson()
+ * above, for a "Group by: Module" view. Ignores folderId entirely (a filed
+ * bookmark shows here too, under its own moduleId) -- this is "everything
+ * from Deen Study, wherever I filed it," a different question from the
+ * folder tree's own "what's inside this folder." `moduleOrder` is the
+ * caller's own MODULE_PAGES/MODULE_LABELS key order (continue-strip.js),
+ * so headings read in the app's usual module order rather than whatever
+ * order they happen to appear in saved[]; any module not in that list
+ * (shouldn't happen, but cheap to guard) sorts last rather than vanishing.
+ */
+export function groupBookmarksByModule(bookmarksDoc, moduleOrder = [], { includeRemoved = false } = {}) {
+  const all = bookmarksDoc?.saved ?? [];
+  const pool = includeRemoved ? all : all.filter((b) => !b.removed);
+  const byModule = new Map();
+  for (const b of pool) {
+    if (!byModule.has(b.moduleId)) byModule.set(b.moduleId, []);
+    byModule.get(b.moduleId).push(b);
+  }
+  const ordered = [
+    ...moduleOrder.filter((id) => byModule.has(id)),
+    ...[...byModule.keys()].filter((id) => !moduleOrder.includes(id)),
+  ];
+  return ordered.map((moduleId) => ({ moduleId, bookmarks: byModule.get(moduleId) }));
+}
+
 export function flattenFolderTree(bookmarksDoc, { includeRemoved = false } = {}) {
   const result = [];
   function walk(list, depth) {
@@ -291,10 +317,22 @@ export async function moveBookmarkToFolder(db, tenantId, personId, bookmarkId, f
   return true;
 }
 
-/** A person's own folder -- the "layer" a bookmark (or another folder, for real multi-layer nesting) can be moved into. Same create-or-update shape as saveBookmark(). */
-export async function createFolder(db, { tenantId, personId, name, parentId = null, uid }) {
+/**
+ * A person's own folder -- the "layer" a bookmark (or another folder, for
+ * real multi-layer nesting) can be moved into. Same create-or-update shape
+ * as saveBookmark().
+ *
+ * Bookmark-issues round -- personTagId joins folders here, same field,
+ * same meaning, same null-means-untagged default as saveBookmark()'s own
+ * copy: WHO a folder is FOR (a student/family member), not whose document
+ * it lives in. A caller creating a folder from the naming popover (which
+ * already asks "for whom" for the bookmark itself) can hand the same
+ * choice straight through as a sensible default -- see
+ * bookmark-popover.js's own header comment.
+ */
+export async function createFolder(db, { tenantId, personId, name, parentId = null, personTagId = null, uid }) {
   const docId = bookmarksDocId(tenantId, personId);
-  const folder = { id: crypto.randomUUID(), name, parentId, removed: false, createdAt: new Date().toISOString() };
+  const folder = { id: crypto.randomUUID(), name, parentId, personTagId, removed: false, createdAt: new Date().toISOString() };
 
   const existingSnap = await getDoc(doc(db, TENANT.BOOKMARKS, docId));
   if (existingSnap.exists()) {
@@ -311,6 +349,16 @@ export async function renameFolder(db, tenantId, personId, folderId, name) {
   const snap = await getDoc(doc(db, TENANT.BOOKMARKS, docId));
   if (!snap.exists()) return false;
   const folders = (snap.data().folders ?? []).map((f) => (f.id === folderId ? { ...f, name } : f));
+  await updateDocument(db, TENANT.BOOKMARKS, docId, { folders });
+  return true;
+}
+
+/** The folder counterpart of setBookmarkPersonTag() above -- same field name, same meaning, same shape. */
+export async function setFolderPersonTag(db, tenantId, personId, folderId, personTagId) {
+  const docId = bookmarksDocId(tenantId, personId);
+  const snap = await getDoc(doc(db, TENANT.BOOKMARKS, docId));
+  if (!snap.exists()) return false;
+  const folders = (snap.data().folders ?? []).map((f) => (f.id === folderId ? { ...f, personTagId } : f));
   await updateDocument(db, TENANT.BOOKMARKS, docId, { folders });
   return true;
 }
