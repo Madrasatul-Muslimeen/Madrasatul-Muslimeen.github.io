@@ -1,0 +1,24 @@
+# Machine-local settings, not shared project config
+.claude/settings.local.json
+
+# Installer, not part of the app
+Git-*.exe
+
+# OS clutter
+Thumbs.db
+.DS_Store
+
+# Playwright, installed only to run tools/i18n-verify. Not part of the app --
+# the app itself has no build step and no dependencies (D4).
+node_modules/
+package-lock.json
+# npm creates this when playwright is installed at the repo root. The app
+# itself has no dependencies (D4), so it is not project config either.
+package.json
+
+# Playwright is installed as a symlink in some sandboxes, which the
+# trailing-slash rule above does not match.
+node_modules
+
+# Load-speed measurement output, regenerated on every run
+tools/perf/results/

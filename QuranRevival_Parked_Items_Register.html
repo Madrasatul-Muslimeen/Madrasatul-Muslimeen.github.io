@@ -1,0 +1,173 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QuranRevival &mdash; Parked Items Register</title><style>
+:root{
+  --paper:#F2F4F1; --surface:#FFFFFF; --mist:#E3E9E3; --rule:#C6D0C7;
+  --ink:#16302B; --ink-soft:#4A625C;
+  --lapis:#1F3A6E; --lapis-soft:#DDE4F0;
+  --saffron:#B8862F; --saffron-soft:#F5EBD6;
+  --verm:#9C3B2E; --verm-soft:#F6E3DF;
+  --green:#2E6B4F; --green-soft:#DEEDE4;
+  --serif:Georgia,'Iowan Old Style','Times New Roman',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font:16px/1.62 var(--sans);}
+.wrap{max-width:920px;margin:0 auto;padding:0 20px 90px}
+
+/* ---- masthead ---- */
+header.mast{border-bottom:3px double var(--lapis);margin-bottom:34px;padding:44px 0 24px}
+.eyebrow{font:600 11px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;
+  color:var(--lapis);margin:0 0 14px}
+h1{font:400 clamp(30px,6.2vw,46px)/1.1 var(--serif);margin:0 0 12px;letter-spacing:-.01em}
+.sub{margin:0;color:var(--ink-soft);font-size:16.5px;max-width:60ch}
+.meta{margin-top:18px;font:500 12.5px/1.5 var(--mono);color:var(--ink-soft)}
+
+/* ---- section markers (signature) ---- */
+.sec{margin:52px 0 0;scroll-margin-top:14px}
+.sec-head{display:flex;align-items:flex-start;gap:14px;
+  border-top:1px solid var(--rule);padding-top:16px}
+.rose{flex:0 0 auto;width:30px;height:30px;margin-top:3px}
+.sec h2{font:400 clamp(21px,3.6vw,27px)/1.25 var(--serif);margin:0;flex:1}
+.sec-note{color:var(--ink-soft);font-size:14.5px;margin:8px 0 0 44px}
+@media(max-width:560px){.sec-note{margin-left:0}}
+h3{font:600 15px/1.35 var(--sans);letter-spacing:.02em;margin:30px 0 10px;color:var(--lapis)}
+h4{font:600 13.5px/1.4 var(--sans);margin:20px 0 8px;color:var(--ink)}
+p{margin:0 0 13px} p.lead{font-size:17px}
+a{color:var(--lapis)}
+
+/* ---- tables ---- */
+.tw{overflow-x:auto;margin:16px 0 20px;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:440px;font-size:14.5px;background:var(--surface)}
+th{background:var(--lapis);color:#fff;text-align:left;padding:9px 12px;
+  font:600 12px/1.35 var(--sans);letter-spacing:.06em;text-transform:uppercase;vertical-align:bottom}
+td{padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+tbody tr:nth-child(even) td{background:#FAFCFA}
+td code,li code,p code{font:500 13px var(--mono);background:var(--mist);padding:1px 5px;border-radius:3px}
+
+/* ---- callouts ---- */
+.box{border-left:4px solid var(--lapis);background:var(--surface);
+  padding:15px 17px;margin:20px 0;border-radius:0 4px 4px 0}
+.box p:last-child{margin-bottom:0}
+.box .bt{font:700 11.5px/1 var(--sans);letter-spacing:.13em;text-transform:uppercase;
+  color:var(--lapis);margin:0 0 9px;display:block}
+.box.warn{border-color:var(--verm);background:var(--verm-soft)} .box.warn .bt{color:var(--verm)}
+.box.key{border-color:var(--saffron);background:var(--saffron-soft)} .box.key .bt{color:#8A6220}
+.box.ok{border-color:var(--green);background:var(--green-soft)} .box.ok .bt{color:var(--green)}
+
+/* ---- flow steps ---- */
+ol.flow{list-style:none;counter-reset:s;padding:0;margin:14px 0 20px}
+ol.flow li{counter-increment:s;position:relative;padding:0 0 12px 40px;margin:0}
+ol.flow li::before{content:counter(s);position:absolute;left:0;top:-1px;
+  width:26px;height:26px;border:1.5px solid var(--lapis);color:var(--lapis);
+  border-radius:50%;font:600 12.5px/23px var(--mono);text-align:center;background:var(--surface)}
+ul.tick{list-style:none;padding:0;margin:12px 0 18px}
+ul.tick li{padding:0 0 9px 24px;position:relative}
+ul.tick li::before{content:"\25C6";position:absolute;left:2px;top:0;color:var(--saffron);font-size:11px;line-height:1.7}
+
+/* ---- misc ---- */
+.tag{display:inline-block;font:600 10.5px/1 var(--sans);letter-spacing:.09em;
+  text-transform:uppercase;padding:4px 8px;border-radius:3px;white-space:nowrap}
+.t-open{background:var(--saffron-soft);color:#8A6220}
+.t-done{background:var(--green-soft);color:var(--green)}
+.t-risk{background:var(--verm-soft);color:var(--verm)}
+.t-no{background:var(--mist);color:var(--ink-soft)}
+.kv{font:500 13.5px/1.7 var(--mono);background:var(--surface);border:1px solid var(--rule);
+  padding:13px 15px;border-radius:4px;margin:14px 0;overflow-x:auto;white-space:pre}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:18px 0}
+@media(max-width:640px){.two{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:15px 17px}
+.card h4{margin-top:0}
+nav.toc{background:var(--surface);border:1px solid var(--rule);border-radius:5px;
+  padding:16px 19px;margin:26px 0 0}
+nav.toc .bt{font:700 11px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;
+  color:var(--lapis);display:block;margin-bottom:11px}
+nav.toc ol{margin:0;padding-left:20px;columns:2;column-gap:26px;font-size:14.5px}
+@media(max-width:560px){nav.toc ol{columns:1}}
+nav.toc li{margin-bottom:5px;break-inside:avoid}
+footer{margin-top:56px;padding-top:18px;border-top:3px double var(--lapis);
+  font-size:13.5px;color:var(--ink-soft)}
+@media print{
+  body{background:#fff} .wrap{max-width:none;padding:0}
+  nav.toc{display:none} .sec{page-break-inside:avoid} table{min-width:0}
+  .box,.card{border:1px solid #999}
+}
+@media (prefers-reduced-motion:no-preference){
+  .sec{animation:fade .5s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
+</style></head><body><div class="wrap"><header class="mast"><p class="eyebrow">QuranRevival &middot; Madrasah Platform</p><h1>Parked Items Register</h1><p class="sub">Everything deferred, and where it will be picked up. Forty-one items across five categories.</p><p class="meta">Last updated 5 August 2026 &nbsp;&middot;&nbsp; 43 items open</p></header><nav class="toc"><span class="bt">Contents</span><ol><li><a href="#s1">Design work, agreed but not designed</a></li><li><a href="#s2">Known bugs and fixes</a></li><li><a href="#s3">Security deferred to Step 4</a></li><li><a href="#s4">Out of scope until you ask</a></li><li><a href="#s5">Master Plan amendments</a></li><li><a href="#s6">How to use this file</a></li></ol></nav><div class="box key"><span class="bt">The purpose of this file</span><p>Nothing in this list is forgotten. Nothing in this list is being built. Forty-one items are tracked here rather than living only in chat history, which is not a safe place for them.</p></div><section class="sec" id="s1"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Design work, agreed but not designed</h2></div><div class="tw"><table><thead><tr><th>#</th><th>Item</th><th>Picked up</th><th>Notes</th></tr></thead><tbody>
+<tr><td>A1</td><td><strong>Curriculum design</strong> &mdash; term and week content lists for subjects with no source text (General Studies, Health, Life Skill, Nature-Life)</td><td>After Step 9, <strong>before Step 10</strong></td><td>This is the <em>unit source</em> for topic subjects, not an optional extra. Keep <strong>content</strong> (belongs to the subject) separate from <strong>schedule</strong> (belongs to the class or person).</td></tr>
+<tr><td>A2</td><td><strong>Prime role</strong> &mdash; madrasah principal, academic authority across the tenant</td><td>Roles &amp; Workflows v2</td><td><strong>CONFIRMED.</strong> A sixth role, distinct from owner. Held by you, alongside owner.</td></tr>
+<tr><td>A3</td><td><strong>Role display labels per account type</strong> &mdash; owner shows as &ldquo;Family Head&rdquo; / &ldquo;Proprietor&rdquo; / &ldquo;Me&rdquo;</td><td>Roles &amp; Workflows v2</td><td>Cosmetic only. Same role, friendlier word.</td></tr>
+<tr><td>A4</td><td><strong>Messaging Phase 2 &amp; 3</strong> &mdash; full Q&amp;A threads, per-person inbox, unread counts</td><td>New Step 9b</td><td>Phase 1 (comment on confirmation) comes first, at Step 6b.</td></tr>
+<tr><td>A5</td><td><strong>Voice recitation</strong> &mdash; record on device, send via the phone&rsquo;s share sheet, zero cloud storage, small text note in-app to keep the link to the ayah</td><td>Its own project, on request</td><td>Warnings recorded: browser storage can be evicted without notice; iPhone and Android record incompatible formats.</td></tr>
+<tr><td>A6</td><td><strong>Reminders for routines</strong> &mdash; &ldquo;after each Salah&rdquo;, &ldquo;before sleep&rdquo;</td><td>Needs notifications &rarr; tied to the deferred distribution layer</td><td>Display-only until then.</td></tr>
+<tr><td>A7</td><td><strong>Nature-Life subjects</strong> &mdash; Understanding Soil, Understanding Trees, and more</td><td>When you send them</td><td>Agro-Farming may itself become a parent.</td></tr>
+<tr><td>A8</td><td><strong>Hadith database</strong> &mdash; the actual hadith content</td><td>Later, in shaa Allah</td><td>Programs can exist before their units do.</td></tr>
+
+<tr><td>A9</td><td><strong>Hizb as a Quran unit</strong> &mdash; <code>hizb:1</code>&hellip;<code>hizb:60</code>, alongside ayah, range, page, surah, ruku and juz</td><td>Step 3 unit types</td><td>Free in the new design; would need a whole new collection in the current app. <strong>Open: also Rub&rsquo; al-Hizb (240) and Manzil (7)?</strong></td></tr>
+<tr><td>A10</td><td><strong>Study Mode</strong> &mdash; a locked handover screen when a parent passes the device to a child</td><td>With the Family flow</td><td>Without it, a child handed the phone is inside the parent&rsquo;s full session and can reach siblings&rsquo; data and settings.</td></tr>
+<tr><td>A11</td><td><strong>Reminders on programs</strong> &mdash; &ldquo;one minute after each Salah&rdquo;</td><td>In-app: soon. Closed-app notifications: distribution layer</td><td>The useful half is the hard half. iPhone requires home-screen installation; permission can be silently denied. <strong>Open: build in-app now, or wait and do both?</strong></td></tr>
+<tr><td>A12</td><td><strong>Editing rights &amp; template lineage</strong> &mdash; owners and Prime may edit the catalogue; teachers may not</td><td>Step 4</td><td>Untouched nodes receive platform updates automatically. Edited nodes keep the tenant&rsquo;s version and show a review notice. An edit is never overwritten, never silently discarded.</td></tr>
+<tr><td>A13</td><td><strong>Screensaver &mdash; Names of Allah</strong>, doubling as a study subject with units <code>name:1</code>&hellip;<code>name:99</code></td><td>After parity</td><td>Typographic text, never images. Loaded on first use, never at startup.</td></tr>
+<tr><td>A14</td><td><strong>Adult&harr;adult conversations</strong> &mdash; child-safety rules key on <code>isMinor</code>, not on role</td><td>Messaging Phase 1</td><td>Minor: guardian sees all, no private thread. Adult: private thread allowed, still append-only. Deliberately a simple flag, not a date of birth.</td></tr>
+<tr><td>A15</td><td><strong>Resources per subject</strong> &mdash; Quran, Hadith and Dua have sources; other subjects need material attached</td><td>With A1 curriculum</td><td>Links and typed text only at first &mdash; zero storage. File uploads deferred, same reasoning as voice recitation.</td></tr>
+<tr><td>A16</td><td><strong>Curriculum structure</strong> &mdash; 4 terms &times; 10 weeks &times; 6 days</td><td>With A1</td><td>Content belongs to the subject; schedule belongs to the class or person. Never merge the two.</td></tr>
+<tr><td>A17</td><td><strong>Cross-subject curriculum units</strong> &mdash; one unit, several subjects; movable across the schedule</td><td>With A1</td><td>Unit carries <code>subjectIds[]</code>. Appears in every subject it belongs to, <strong>counted once</strong>.</td></tr>
+<tr><td>A18</td><td><strong>Grades / levels</strong> &mdash; curriculum belongs to <em>subject &times; grade</em>, not subject alone</td><td>With A1, before Step 10</td><td>Mathematics Grade 3 and Grade 7 are different curricula under one subject. The largest addition so far.</td></tr>
+<tr><td>A19</td><td><strong>&ldquo;View as&rdquo;</strong> &mdash; preview the app exactly as a teacher or student sees it</td><td>After parity</td><td>Without it, Admin rights hide bugs and every report becomes &ldquo;works for me&rdquo;.</td></tr>
+<tr><td>A20</td><td><strong>Confirmation state is frozen when marked</strong>, never recalculated</td><td>Step 3</td><td>Otherwise an independent student joining a madrasah would have years of self-confirmed work retroactively un-confirmed.</td></tr>
+
+<tr><td>A21</td><td><strong>archive.org &mdash; permanence risk</strong></td><td>If ever used</td><td>Archive.org is <em>designed</em> so material cannot be removed. Acceptable for public-domain books; <strong>never</strong> for student work, children&rsquo;s names or faces.</td></tr>
+<tr><td>A22</td><td><strong>Privacy policy &amp; data-safety declaration</strong></td><td>Before any app-store submission</td><td>Not code, but mandatory. Children&rsquo;s-data policies apply on both stores. Already well served by: no child logins, guardian oversight, no private adult&harr;child threads, <code>isMinor</code>, no medical data.</td></tr>
+<tr><td>A23</td><td><strong>One app, not four</strong></td><td>Distribution decision</td><td>The four stages are how the app is <em>described</em>, never four products. Four listings means four builds, four review queues, and families having to migrate.</td></tr>
+<tr><td>A24</td><td><strong>3D tab styling</strong></td><td>Design phase</td><td>3D transforms are the one effect that genuinely costs performance on low-end Android. Layered shadow and a real press response give depth at no cost.</td></tr>
+<tr><td>A25</td><td><strong>Security-rule lookup cost</strong></td><td>Phase 0</td><td>Every <code>studyProgress</code> read today triggers extra internal document lookups via <code>isAdmin()</code> / <code>isTeacher()</code>. Under the tenant model this collapses to one membership check &mdash; a real speed win, on the startup path.</td></tr>
+<tr><td>A26</td><td><strong>Non-Quran subject progress tracking</strong> &mdash; Approaches (<code>trackables</code>) only exist for the <code>quran</code> subject; Deen Study, Arabic, General Study, Hadith, Nature-Life and Health have no defined &ldquo;what does progress look like here&rdquo; system at all</td><td>Before Phase 6 (Deen Study &amp; topic renderer) planning</td><td>Raised during Phase 3 verification, 31 Jul 2026 &mdash; confirmed by the owner as expected, not a defect. Doesn&rsquo;t block Phase 4 (Quran-only by definition). See CLAUDE.md and <code>PHASE-3-STATUS.md</code>.</td></tr>
+<tr><td>A27</td><td><strong>Subject/student-scoped teacher access</strong> &mdash; every <code>teacher</code> role grant (<code>canRecordFor</code>, <code>isTeacherIn()</code>) is tenant-wide today; a Family/Individual-tenant guardian bringing in an outside teacher for specific subjects/children needs that teacher blocked from everything else</td><td>Design conversation needed &mdash; Architecture Phase 10 (Classes &amp; provider) covers a related Tuition-Provider case, but this may need a lighter-weight Family-tenant primitive earlier</td><td>Raised by the owner 31 Jul 2026. See CLAUDE.md &ldquo;second open access-control question&rdquo; and <code>PHASE-3-STATUS.md</code>.</td></tr>
+</tbody></table></div><section class="sec" id="s2"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Known bugs and fixes</h2></div><div class="tw"><table><thead><tr><th>#</th><th>Item</th><th>Picked up</th><th>Severity</th></tr></thead><tbody>
+<tr><td>B1</td><td><strong>Ruku&rsquo; / Juz write path</strong> &mdash; summaries are not reaching Firestore even after the rules fix, and <code>studyProgress</code> showed no change either. Rules are proven correct, so the fault is in the app&rsquo;s save logic.</td><td><strong>Step 5</strong>, traced in code &mdash; no clicking required from you</td><td><span class="tag t-risk">medium</span> data safe locally, but device-only</td></tr>
+<tr><td>B2</td><td><strong>Backfill of stranded summaries</strong> &mdash; summaries already sitting in browsers will not upload by themselves</td><td>After Step 4</td><td><span class="tag t-no">low</span></td></tr>
+<tr><td>B3</td><td><strong>Guard clause</strong> <code>if(!personId) return;</code> &mdash; removes 4 doomed blocking round-trips from every startup</td><td>New build, or apply to the live file yourself</td><td><span class="tag t-open">load speed</span></td></tr>
+<tr><td>B4</td><td><strong>Parallel loading</strong> &mdash; the four boot loads run one after another; running them together saves roughly 3 round-trips</td><td>New build</td><td><span class="tag t-open">load speed</span> touches stable code, your call</td></tr>
+<tr><td>B5</td><td><strong>Test 3 never run</strong> &mdash; the student-invite flow was not verified after the S1/S2 rules change</td><td>If a new student reports trouble accepting an invite, look here first</td><td><span class="tag t-no">unknown</span></td></tr>
+</tbody></table></div><section class="sec" id="s3"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Security deferred to Step 4</h2></div><p class="sec-note">Deliberately not patched on the live rules, because your later decisions turned these from small fixes into architecture. Patching twice would mean editing live rules twice.</p><div class="tw"><table><thead><tr><th>#</th><th>Item</th><th>Decision already taken</th></tr></thead><tbody>
+<tr><td>C1</td><td><strong>S4</strong> &mdash; any teacher can currently read and delete <em>every</em> invite on the platform</td><td>Invites become Admin-only; families may invite family members up to a limit</td></tr>
+<tr><td>C2</td><td><strong>S5</strong> &mdash; any signed-in user can inject a person into any teacher&rsquo;s roster</td><td>Admin sets students and teachers; family heads enrol their own family</td></tr>
+<tr><td>C3</td><td><strong>S6</strong> &mdash; invites break for anyone whose email contains a capital letter</td><td>Fixed in the new build&rsquo;s invite flow, not by patching rules</td></tr>
+<tr><td>C4</td><td><strong>Invite quota</strong> &mdash; <code>tenants.maxInvites</code></td><td>New field, Step 4</td></tr>
+<tr><td>C5</td><td><strong>platformAdmin must not be self-grantable</strong></td><td>Hard requirement, Step 4</td></tr>
+</tbody></table></div>
+<div class="box ok"><span class="bt">Already fixed and published</span>
+<p><strong>S1</strong> teacher&rarr;Admin escalation &nbsp;&middot;&nbsp; <strong>S2</strong> invite-gated account overwrite
+&nbsp;&middot;&nbsp; <strong>S3</strong> four collections with no rules at all</p></div>
+<div class="box ok"><span class="bt">Resolved during Phase 0/1 of the rebuild (5 Aug 2026)</span>
+<p>Found stale during the Phase 5 audit &mdash; these were fixed before this
+register was last edited, but never marked here. <strong>B1</strong>
+(Ruku&rsquo;/Juz write path) was a data fault, not a code fault &mdash; one
+account&rsquo;s <code>users/</code> doc had the field misspelled
+<code>PersonId</code> instead of <code>personId</code>; fixed 30 Jul, no
+code change needed. <strong>C1</strong> (S4), <strong>C2</strong> (S5) and
+<strong>C3</strong> (S6) are live in the deployed <code>firestore.rules</code>
+since 30 Jul, protecting the same collections <code>index.html</code> uses.
+<strong>C4</strong> (invite quota) and <strong>C5</strong>
+(platformAdmin not self-grantable) were built in Phase 1 for the new
+tenant schema. Full detail in <code>PHASE-0-STATUS.md</code>,
+<code>PHASE-1-STATUS.md</code> and <code>PHASE-5-STATUS.md</code>.</p></div><section class="sec" id="s4"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Out of scope until you ask</h2></div><div class="tw"><table><thead><tr><th>#</th><th>Item</th></tr></thead><tbody>
+<tr><td>D1</td><td><strong>Finance</strong> &mdash; invoices, payments, ledger, billing, course pricing</td></tr>
+<tr><td>D2</td><td><strong>Operations</strong> &mdash; attendance, scheduling, timetables, rooms. <strong>Flagged 29 Jul:</strong> &ldquo;certain hourly classes per week&rdquo; crosses into this. Curriculum <em>sequencing</em> (Term 2, Week 3) stays in scope; <em>timetabling</em> (Monday 9am, Room 2) does not &mdash; awaiting your decision.</td></tr>
+<tr><td>D3</td><td><strong>Layer 3.5 &mdash; medical and biometric health records</strong> (allergies, medications, growth charts). Health stays habits and education only.</td></tr>
+<tr><td>D4</td><td><strong>Distribution strategy</strong> &mdash; PWA wrapper versus native app stores</td></tr>
+<tr><td>D5</td><td><strong>Group discussion / live chat</strong> &mdash; messaging stays student&harr;teacher, never open-ended</td></tr>
+</tbody></table></div><section class="sec" id="s5"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Master Plan amendments</h2></div><p class="sec-note">Changes to QuranRevival_Master_Plan_Final.md agreed during design. Recorded because the Master Plan is the source of truth, and these depart from it.</p><div class="tw"><table><thead><tr><th>#</th><th>Amendment</th><th>Reason</th></tr></thead><tbody>
+<tr><td>E1</td><td><strong>4 fixed modules &rarr; any number</strong>, via 3 shared renderers (<code>ayah</code>, <code>topic</code>, <code>routine</code>)</td><td>You named 7+ study groups</td></tr>
+<tr><td>E2</td><td><strong>&sect;1.3 &ldquo;all 4 modules&rdquo; &rarr; &ldquo;2 or more&rdquo;</strong> for the combined tab</td><td>Follows from E1</td></tr>
+<tr><td>E3</td><td><strong>Monitor <em>is</em> the Results view</strong>, not a separate build</td><td>Removes work from Step 13</td></tr>
+<tr><td>E4</td><td><strong>subjects becomes a tree</strong>, not a flat list</td><td>Your Module &rarr; Section &rarr; Domain &rarr; Subject hierarchy</td></tr>
+<tr><td>E5</td><td><strong>domainIds[] added to records</strong> &mdash; a second, after-the-fact relationship</td><td>Your teaching method: teach the Quran, then derive the domain</td></tr>
+<tr><td>E6</td><td><strong>Renderers are shared components</strong>, not owned by modules</td><td>LDOG shows an ayah without talking to QuranRevival</td></tr>
+<tr><td>E7</td><td><strong>New: confirmation, homework, bookmarks, course-offers, programs, Prime</strong></td><td>None were in the original plan</td></tr>
+</tbody></table></div><section class="sec" id="s6"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>How to use this file</h2></div><p>When something is picked up, it moves out of here and into the step that owns it.
+<strong>If an item is still listed, it has not been built.</strong></p><footer>Nothing in this register has been built. The current production HTML file remains untouched and is your live fallback.</footer></div></body></html>

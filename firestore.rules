@@ -1,0 +1,1092 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // QuranRevival — Firestore Security Rules
+    // Version: 2026-07-30   (S4 + S5 + S6 fixes, plus S7 + S8)
+    // Previous: 2026-07-29  (S1 + S2 + S3)
+    //
+    // CHANGES IN THIS VERSION — five, and nothing else:
+    //
+    //   S4  invites/{email} : REMOVED "allow read, delete: if isTeacher();"
+    //                         Any teacher could read AND delete every invite
+    //                         on the platform. Replaced with a read scoped to
+    //                         invites they created themselves.
+    //                         Verified: index.html line 9817 already filters
+    //                         the non-admin invite list by invitedBy == uid,
+    //                         and line 9782 writes invitedBy on every create,
+    //                         so the Admin screen behaves identically.
+    //                         Verified: the invite list renders a label and a
+    //                         copy button only — there is no teacher-facing
+    //                         delete control anywhere in the app.
+    //
+    //   S5  people/{personId} : create previously checked ownerUid but NOT
+    //                         teacherId, so any signed-in user could insert a
+    //                         person into any teacher's roster. Now teacherId
+    //                         must be the caller, or must match the teacherId
+    //                         on that person's own invite.
+    //                         Verified against index.html lines 9617-9621.
+    //
+    //   S6  EMAIL CASING — the real cause of "invite works for some accounts
+    //                         and not others". request.auth.token.email keeps
+    //                         Google's original capitalisation; invite doc ids
+    //                         are lowercased by the client (line 9772,
+    //                         .trim().toLowerCase()). An address with a
+    //                         capital letter therefore matched nothing — which
+    //                         failed the users/ CREATE rule too, blocking
+    //                         registration entirely, not just the invite.
+    //                         Fixed with myEmailLower() below.
+    //                         The previous version avoided .lower() because it
+    //                         caused permission errors in practice. The reason
+    //                         was a missing null guard: calling .lower() on an
+    //                         absent email aborts rule evaluation, which reads
+    //                         as a denial. myEmailLower() checks the type
+    //                         first and returns null instead of erroring, and
+    //                         every call site is guarded by hasEmail().
+    //
+    //   S7  NO CLIENT DELETES on users/ or people/ (invariant I4).
+    //                         people/ previously allowed teacher and admin
+    //                         delete. Beyond violating "never destroy", it was
+    //                         a trap: deleting people/{personId} makes every
+    //                         progress rule below unresolvable, permanently
+    //                         locking that person out of five collections with
+    //                         no error that explains why.
+    //                         Verified: the ONLY .delete() call in the entire
+    //                         app is line 9628 (an invite consuming itself),
+    //                         which is preserved below. Nothing else breaks.
+    //                         Deleting from the Firebase console still works —
+    //                         the console bypasses these rules.
+    //
+    //   S8  MISSING-PERSON ROBUSTNESS. The five progress collections each did
+    //                         get(people/{personId}).data.ownerUid directly.
+    //                         When that document does not exist, the rule does
+    //                         not return false — it ERRORS, which surfaces as
+    //                         a confusing denial. Replaced with exists()-first
+    //                         helpers. Identical security, clean failure.
+    //                         Same document, so still ~1 billed read.
+    //
+    // Everything else is byte-for-byte the previous version.
+    //
+    // NOT CHANGED, DELIBERATELY:
+    //   - rooms/         : still has no rule, so it stays fully denied. The
+    //                      word "rooms" appears ZERO times in index.html.
+    //                      Origin unknown — leaving it locked until identified.
+    //   - S1, S2, S3     : carried forward unchanged.
+    // =====================================================================
+
+    function signedIn() { return request.auth != null; }
+    function myUid() { return request.auth.uid; }
+
+    // --- S6 FIX: email helpers ------------------------------------------
+    // .get('email', null) never errors on an absent claim; the "is string"
+    // check makes .lower() safe. Every use is guarded by hasEmail() first.
+    function myEmail()      { return signedIn() ? request.auth.token.get('email', null) : null; }
+    function myEmailLower() { return (myEmail() is string) ? myEmail().lower() : null; }
+    function hasEmail()     { return myEmailLower() != null; }
+    function myInviteRef()  { return /databases/$(database)/documents/invites/$(myEmailLower()); }
+    function myInviteHeld() { return hasEmail() && exists(myInviteRef()); }
+    function myInvite()     { return get(myInviteRef()).data; }
+    // --------------------------------------------------------------------
+
+    function myUserDocExists() { return signedIn() && exists(/databases/$(database)/documents/users/$(myUid())); }
+    function myUserDoc() { return get(/databases/$(database)/documents/users/$(myUid())).data; }
+    function myRole() { return myUserDocExists() ? myUserDoc().role : null; }
+    function isAdmin() { return myRole() == 'admin'; }
+    function isTeacher() { return myRole() == 'teacher'; }
+    function isStudent() { return myRole() == 'student'; }
+    function myTeacherId() { return myUserDocExists() ? myUserDoc().teacherId : null; }
+    function myStudentIds() { return (myUserDocExists() && myUserDoc().studentIds is list) ? myUserDoc().studentIds : []; }
+
+    // --- S8 FIX: person lookups that cannot error ------------------------
+    // A missing people/{personId} now yields false instead of aborting the
+    // whole rule. This is exactly the condition that made B1 unreadable.
+    function personRef(pid)     { return /databases/$(database)/documents/people/$(pid); }
+    function personHeld(pid)    { return exists(personRef(pid)); }
+    function iOwnPerson(pid)    { return signedIn() && personHeld(pid) && get(personRef(pid)).data.ownerUid == myUid(); }
+    function iTeachPerson(pid)  { return isTeacher() && personHeld(pid) && get(personRef(pid)).data.teacherId == myUid(); }
+    // --------------------------------------------------------------------
+
+    // users/{uid} — role assignment.
+    match /users/{uid} {
+      allow read: if signedIn() && myUid() == uid;
+      allow read: if isAdmin();
+      allow read: if isTeacher() && (uid in myStudentIds());
+
+      // Self-registration on invite acceptance: a signed-in user may create
+      // ONLY their own uid's document, and ONLY if a real invite exists for
+      // their email with a matching role.
+      // S6 FIX: was myEmail() — now case-insensitive.
+      allow create: if signedIn() && myUid() == uid
+                    && myInviteHeld()
+                    && request.resource.data.role == myInvite().role;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+
+      // --- S7 FIX -------------------------------------------------------
+      // REMOVED: allow delete: if isAdmin();
+      // Invariant I4 — never destroy. No code path used it (the app contains
+      // exactly one .delete(), at line 9628, on an invite). Console deletes
+      // are unaffected.
+      // ------------------------------------------------------------------
+
+      // --- S1 FIX (carried forward, unchanged) --------------------------
+      // REMOVED: allow update: if isTeacher() && myUid() == uid;
+      // A teacher could rewrite their own document and set role:'admin'.
+      // ------------------------------------------------------------------
+
+      // --- S2 FIX (carried forward; S6 applied to the email lookups) -----
+      // A newly-registering student (valid invite pointing at THIS teacher)
+      // may add themself to that teacher's studentIds — and nothing else.
+      //   hasOnly(['studentIds'])  — no other field may be touched
+      //   hasAll(existing)         — entries may be added, never removed
+      // ------------------------------------------------------------------
+      allow update: if signedIn()
+                    && myInviteHeld()
+                    && myInvite().role == 'student'
+                    && myInvite().teacherId == uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['studentIds'])
+                    && resource.data.studentIds is list
+                    && request.resource.data.studentIds.hasAll(resource.data.studentIds);
+    }
+
+    // invites/{email} — pending role assignments, keyed by lowercased email.
+    match /invites/{email} {
+      // The invitee reads and consumes their own invite (line 9628).
+      // S6 FIX: compares the lowercased token email against the doc id.
+      allow read, delete: if hasEmail() && myEmailLower() == email;
+
+      allow read, delete: if isAdmin();
+
+      // --- S4 FIX -------------------------------------------------------
+      // REMOVED: allow read, delete: if isTeacher();
+      // Unconditional — every teacher could read and delete every invite on
+      // the platform. A teacher now sees only invites they issued, which is
+      // exactly what the Admin screen already queries (line 9817), and can
+      // delete none (no such control exists in the UI).
+      // ------------------------------------------------------------------
+      allow read: if isTeacher() && resource.data.invitedBy == myUid();
+
+      allow create: if isAdmin();
+      allow create: if isTeacher()
+                    && request.resource.data.role == 'student'
+                    && request.resource.data.teacherId == myUid();
+    }
+
+    // people/{personId} — profile records (name/emoji/color/ownership).
+    match /people/{personId} {
+      allow read: if isAdmin();
+      allow read: if signedIn() && resource.data.ownerUid == myUid();
+      allow read: if isTeacher() && resource.data.teacherId == myUid();
+
+      allow create: if isAdmin();
+      allow create: if isTeacher() && request.resource.data.teacherId == myUid();
+
+      // --- S5 FIX -------------------------------------------------------
+      // WAS: allow create: if signedIn()
+      //                    && request.resource.data.ownerUid == myUid();
+      // ownerUid was checked, teacherId was not — so any signed-in user could
+      // file a person under any teacher. Now the roster must be the caller's
+      // own, or the one their invite actually named.
+      // Verified against index.html lines 9617-9621: a student's people doc
+      // takes teacherId from the invite; a teacher's/admin's takes their own
+      // uid, which the first branch covers.
+      // ------------------------------------------------------------------
+      allow create: if signedIn()
+                    && request.resource.data.ownerUid == myUid()
+                    && (
+                         request.resource.data.teacherId == myUid()
+                         || ( myInviteHeld()
+                              && myInvite().teacherId == request.resource.data.teacherId )
+                       );
+
+      allow update: if isAdmin();
+      allow update: if isTeacher() && resource.data.teacherId == myUid();
+
+      // --- S7 FIX -------------------------------------------------------
+      // REMOVED delete for both admin and teacher.
+      // Deleting people/{personId} silently locks that person out of
+      // studyProgress, rukuSummaries, juzSummaries, juzSummariesPage and
+      // monitorWeeks — permanently, with no message explaining why.
+      // ------------------------------------------------------------------
+    }
+
+    // teachers/{teacherUid} — each teacher's own subjects/sections/domains/ways.
+    // Their students need read access so the app can render using it.
+    match /teachers/{teacherUid} {
+      allow read: if isAdmin();
+      allow read: if signedIn() && myUid() == teacherUid;
+      allow read: if isStudent() && myTeacherId() == teacherUid;
+      allow write: if isAdmin();
+      allow write: if signedIn() && myUid() == teacherUid;
+    }
+
+    // monitorWeeks/{personId}/weeks/{weekKey} — Study Tracker entries.
+    // Write: the OWNING TEACHER (or admin) only — students are view-only on
+    // Monitor by default (per the confirmed design; flip this if that changes).
+    // S8 FIX applied.
+    match /monitorWeeks/{personId}/weeks/{weekKey} {
+      allow read: if isAdmin();
+      allow read: if iOwnPerson(personId);
+      allow read: if iTeachPerson(personId);
+      allow write: if isAdmin();
+      allow write: if iTeachPerson(personId);
+    }
+
+    // studyProgress/{personId} — Quran Wheel progress. S8 FIX applied.
+    match /studyProgress/{personId} {
+      allow read: if isAdmin();
+      allow read: if iOwnPerson(personId);
+      allow read: if iTeachPerson(personId);
+      allow write: if isAdmin();
+      allow write: if iOwnPerson(personId);
+      allow write: if iTeachPerson(personId);
+    }
+
+    // =====================================================================
+    // S3 FIX (carried forward) — these four had NO rules at all, so every
+    // read and write was denied. Access shape is deliberately IDENTICAL to
+    // studyProgress above. S8 FIX now applied to all three per-person ones.
+    // =====================================================================
+
+    // rukuSummaries/{personId} — Ruku'-level Quran summary (5-Wheel Overhaul).
+    match /rukuSummaries/{personId} {
+      allow read: if isAdmin();
+      allow read: if iOwnPerson(personId);
+      allow read: if iTeachPerson(personId);
+      allow write: if isAdmin();
+      allow write: if iOwnPerson(personId);
+      allow write: if iTeachPerson(personId);
+    }
+
+    // juzSummaries/{personId} — Juz summary, Ayah-basis.
+    match /juzSummaries/{personId} {
+      allow read: if isAdmin();
+      allow read: if iOwnPerson(personId);
+      allow read: if iTeachPerson(personId);
+      allow write: if isAdmin();
+      allow write: if iOwnPerson(personId);
+      allow write: if iTeachPerson(personId);
+    }
+
+    // juzSummariesPage/{personId} — Juz summary, Page-basis.
+    match /juzSummariesPage/{personId} {
+      allow read: if isAdmin();
+      allow read: if iOwnPerson(personId);
+      allow read: if iTeachPerson(personId);
+      allow write: if isAdmin();
+      allow write: if iOwnPerson(personId);
+      allow write: if iTeachPerson(personId);
+    }
+
+    // appSettings/{docId} — app-wide settings, currently the global banner
+    // at appSettings/global. Every signed-in user reads it; Admin writes it.
+    match /appSettings/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // userPrefs/{uid} — personal, per-user app preferences (Colour Step 3
+    // theme colours). Keyed by uid, not personId — these are about how THIS
+    // signed-in user's own screen looks, not shared with anyone.
+    match /userPrefs/{uid} {
+      allow read, write: if signedIn() && myUid() == uid;
+    }
+
+    // =====================================================================
+    // Phase 1 — Identity & access (new-generation / TENANT collections)
+    // Version: 2026-07-31
+    //
+    // Everything above this line is untouched and covers ONLY the live app
+    // (index.html). Everything below is new: tenants, tenantPeople,
+    // memberships, userIndex, tenantMemberUids, tenantInvites, inviteTokens.
+    // None of these collided with anything above — tenantPeople/tenantInvites
+    // are deliberately named apart from the legacy people/invites (D2).
+    //
+    // I13: tenant isolation is enforced HERE, not only in client queries.
+    // memberships/{tenantId}__{personId}__{role} is keyed by personId, not
+    // the signed-in uid, and rules can't query across documents — only
+    // get() an exact path. tenantMemberUids is a small derived mirror (same
+    // spirit as userIndex — "derived + rebuildable"), kept in sync by the
+    // client on every membership write, so a rule can answer "what can THIS
+    // uid do in THIS tenant" in one get(). New in Phase 1, approved (D9).
+    // =====================================================================
+
+    function tenantMemberRef(tenantId) {
+      return /databases/$(database)/documents/tenantMemberUids/$(tenantId + '__' + myUid());
+    }
+    function tenantMemberHeld(tenantId) { return signedIn() && exists(tenantMemberRef(tenantId)); }
+    function tenantMemberDoc(tenantId)  { return get(tenantMemberRef(tenantId)).data; }
+    function myRolesIn(tenantId)        { return tenantMemberHeld(tenantId) ? tenantMemberDoc(tenantId).roles : []; }
+    function hasRoleIn(tenantId, role)  { return role in myRolesIn(tenantId); }
+    function myPersonIdIn(tenantId)     { return tenantMemberHeld(tenantId) ? tenantMemberDoc(tenantId).personId : null; }
+    function tenantPersonRef(personId)  { return /databases/$(database)/documents/tenantPeople/$(personId); }
+
+    function isPlatformAdmin() {
+      return signedIn()
+          && exists(/databases/$(database)/documents/userIndex/$(myUid()))
+          && get(/databases/$(database)/documents/userIndex/$(myUid())).data.get('platformAdmin', false) == true;
+    }
+
+    function isOwnerIn(tenantId)    { return hasRoleIn(tenantId, 'owner'); }
+    function isPrimeIn(tenantId)    { return hasRoleIn(tenantId, 'prime'); }
+    function isTeacherIn(tenantId)  { return hasRoleIn(tenantId, 'teacher'); }
+    function isGuardianIn(tenantId) { return hasRoleIn(tenantId, 'guardian'); }
+
+    // owner + prime + platformAdmin administer identity docs (role table:
+    // owner "configure everything"; prime "confirm anyone" / runs the
+    // tenant academically).
+    function canAdminIdentity(tenantId) { return isOwnerIn(tenantId) || isPrimeIn(tenantId) || isPlatformAdmin(); }
+
+    // Bug fix (Phase 9): this used to check memberships.guardianOf[] via
+    // myGuardianMembershipRef -- but addPersonToTenant()/invites.js/people.js
+    // all write guardianOf: [] and NOTHING in the client ever populates it
+    // (PHASE-3-STATUS.md already found and worked around this on the
+    // records.js side, computeConfirmationRequired() reading
+    // tenantPeople.managedByPersonId instead -- this rules-side copy was
+    // never fixed to match). Net effect: a guardian-only role (no owner/
+    // prime/teacher) could not actually canRecordFor()/confirm for their own
+    // child through these rules -- isGuardianOf was structurally always
+    // false. Rebuilt on the same real, populated field records.js already
+    // uses: tenantPeople/{childPersonId}.managedByPersonId == my own
+    // personId in this tenant.
+    function isGuardianOf(tenantId, childPersonId) {
+      return isGuardianIn(tenantId)
+          && exists(tenantPersonRef(childPersonId))
+          && get(tenantPersonRef(childPersonId)).data.get('managedByPersonId', null) == myPersonIdIn(tenantId);
+    }
+
+    // Phase 10 -- real, per-student teacher scoping (Stage B2, "safeguarding
+    // rules at scale"; closes the open access-control question CLAUDE.md had
+    // parked: a teacher was previously granted tenant-wide access to every
+    // student and subject via isTeacherIn(tenantId) alone). teacherStudentLinks
+    // is a D9-style rules-support mirror (see js/course-offers.js's own long
+    // comment on why it exists and how it's kept in sync) -- security rules
+    // can exists()/get() a fixed document path but can never run a query, so
+    // there's no cheap way to ask "is there SOME class/course offer where
+    // this teacher and this student are both actively enrolled" directly
+    // against enrollments. This function is that one flat, O(1) lookup.
+    function teacherStudentLinkRef(tenantId, teacherPersonId, studentPersonId) {
+      return /databases/$(database)/documents/teacherStudentLinks/$(tenantId + '__' + teacherPersonId + '__' + studentPersonId);
+    }
+    function isCoEnrolledTeacherOf(tenantId, studentPersonId) {
+      return signedIn() && myPersonIdIn(tenantId) != null
+          && exists(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId))
+          && get(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId)).data.active == true;
+    }
+
+    // Follow-up round (11 Aug 2026) -- the contextId-trust model
+    // isAssignmentCreator()'s own comment proposed: rather than proving
+    // "every element of assignedToPersonIds is one of my co-enrolled
+    // students" (no per-element get() exists in rules), this proves the
+    // narrower, cheap thing instead -- "am I an ACTIVE TEACHER in the one
+    // class/course-offer this assignment is declared against" -- a single
+    // fixed-path get() on enrollments, same shape as teacherStudentLinkRef
+    // above. The client is trusted to only ever populate assignedToPersonIds
+    // from that one context's own roster (homework.html); this rule can't
+    // itself verify that part, same trust boundary canAdminCatalogue()
+    // already accepts for admin-authored content elsewhere in this file.
+    function enrollmentRef(tenantId, contextId, personId) {
+      return /databases/$(database)/documents/enrollments/$(tenantId + '__' + contextId + '__' + personId);
+    }
+    function isActiveTeacherInContext(tenantId, contextId) {
+      return signedIn() && myPersonIdIn(tenantId) != null && contextId != null
+          && exists(enrollmentRef(tenantId, contextId, myPersonIdIn(tenantId)))
+          && get(enrollmentRef(tenantId, contextId, myPersonIdIn(tenantId))).data.roleInClass == 'teacher'
+          && get(enrollmentRef(tenantId, contextId, myPersonIdIn(tenantId))).data.status == 'active';
+    }
+
+    // tenants/{tenantId}
+    match /tenants/{tenantId} {
+      allow read: if isPlatformAdmin();
+      allow read: if myRolesIn(tenantId).size() > 0; // any member
+      // Stage 6: someone holding a still-pending invite to THIS tenant may
+      // read its name, so accept-invite.html can show "you're invited to
+      // join X" before they've accepted (and therefore before they're a
+      // member). Only the tenant doc itself -- not the roster, not anyone
+      // else's data.
+      allow read: if hasEmail()
+                  && exists(/databases/$(database)/documents/tenantInvites/$(tenantId + '__' + myEmailLower()))
+                  && get(/databases/$(database)/documents/tenantInvites/$(tenantId + '__' + myEmailLower())).data.status == 'pending';
+
+      // Self-serve creation: createdByUid is checked directly, not
+      // canAdminIdentity() — no membership exists yet at this instant.
+      allow create: if signedIn() && request.resource.data.createdByUid == myUid();
+      allow update: if canAdminIdentity(tenantId);
+      // D6/I4: no client delete, ever.
+    }
+
+    // tenantPeople/{personId}
+    match /tenantPeople/{personId} {
+      allow read: if isPlatformAdmin();
+      allow read: if canAdminIdentity(resource.data.tenantId);
+      // Phase 10: was blanket isTeacherIn(tenantId) ("rosters") -- any
+      // teacher membership could read every child's tenantPeople doc in the
+      // tenant, tenant-wide, regardless of who they actually teach. Scoped
+      // to isCoEnrolledTeacherOf() -- a teacher may still only read the
+      // people they're actually enrolled to teach. Because this rule is
+      // evaluated per-document, a list query (every page's own
+      // `where("tenantId","==",activeTenantId)` roster fetch) now comes
+      // back pre-filtered to that scoped roster automatically -- no client
+      // code needed to change for the UI to reflect this (scopedRoster() in
+      // session-context.js still passes teacher's roster through
+      // unmodified; it's already scoped by the time it gets there).
+      allow read: if isTeacherIn(resource.data.tenantId) && isCoEnrolledTeacherOf(resource.data.tenantId, personId);
+      allow read: if signedIn() && resource.data.authUid == myUid();   // own record
+      allow read: if isGuardianOf(resource.data.tenantId, personId);
+
+      allow create: if canAdminIdentity(request.resource.data.tenantId);
+      // Guardians add NEW children only — must name themselves as manager.
+      allow create: if isGuardianIn(request.resource.data.tenantId)
+                    && request.resource.data.isMinor == true
+                    && request.resource.data.managedByPersonId == myPersonIdIn(request.resource.data.tenantId);
+      // Self-registration (Stage 3 bootstrap, Stage 6 invite acceptance):
+      // an adult may create their own record. Managed (child) accounts
+      // never self-register.
+      allow create: if signedIn()
+                    && request.resource.data.authUid == myUid()
+                    && request.resource.data.isMinor == false;
+
+      allow update: if canAdminIdentity(resource.data.tenantId);
+      allow update: if isGuardianOf(resource.data.tenantId, personId)
+                    && request.resource.data.tenantId == resource.data.tenantId;
+      allow update: if signedIn() && resource.data.authUid == myUid()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['timezone', 'updatedAt']);
+      // No delete (I4/D6).
+    }
+
+    // memberships/{tenantId}__{personId}__{role}
+    match /memberships/{membershipId} {
+      function idParts()   { return membershipId.split('__'); }
+      function idMatches() {
+        return request.resource.data.tenantId == idParts()[0]
+            && request.resource.data.personId == idParts()[1]
+            && request.resource.data.role == idParts()[2];
+      }
+      function inviteRefFor(tenantId) { return /databases/$(database)/documents/tenantInvites/$(tenantId + '__' + myEmailLower()); }
+      function myPendingInviteMatches(tenantId, role) {
+        return hasEmail() && exists(inviteRefFor(tenantId))
+            && get(inviteRefFor(tenantId)).data.status == 'pending'
+            && get(inviteRefFor(tenantId)).data.role == role;
+      }
+
+      allow read: if isPlatformAdmin();
+      // S8-class fix (Phase 3): a get() on a membershipId that doesn't exist
+      // yet hands the rule a null `resource` -- resource.data.tenantId below
+      // then ERRORS instead of returning false, denying the read outright.
+      // records.js's getPersonRoles() does exactly this: one get() per
+      // POSSIBLE role, most of which a given person doesn't hold, so most
+      // of those six lookups hit a nonexistent doc. Nothing is exposed by
+      // allowing this -- a nonexistent document has no data to read.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/memberships/$(membershipId));
+      allow read: if canAdminIdentity(resource.data.tenantId);
+      allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) == resource.data.personId;
+
+      allow create: if idMatches() && canAdminIdentity(request.resource.data.tenantId);
+      // Bootstrap (Stage 3, second write of a two-step commit): the very
+      // first membership row a brand-new tenant ever gets. canAdminIdentity()
+      // can't be used here — it depends on tenantMemberUids, which doesn't
+      // exist until this same step finishes. Instead this checks the two
+      // documents created in the FIRST step (tenants, tenantPeople), which
+      // by now are genuinely committed: only the person who created this
+      // exact tenant, naming their own person record, can grant themselves
+      // owner/self this way -- and only those two roles, never any other.
+      allow create: if idMatches()
+                    && (request.resource.data.role == 'owner' || request.resource.data.role == 'self')
+                    && get(/databases/$(database)/documents/tenants/$(idParts()[0])).data.createdByUid == myUid()
+                    && get(/databases/$(database)/documents/tenantPeople/$(idParts()[1])).data.authUid == myUid();
+      // Invite acceptance (Stage 6, second write): the tenantPeople doc
+      // must already exist and belong to the caller, and a matching
+      // pending invite must exist.
+      allow create: if idMatches()
+                    && myPendingInviteMatches(request.resource.data.tenantId, request.resource.data.role)
+                    && get(/databases/$(database)/documents/tenantPeople/$(request.resource.data.personId)).data.authUid == myUid();
+
+      allow update: if canAdminIdentity(resource.data.tenantId);
+      // No delete (I4/D6) — Phase 1 only creates 'active' rows; revoke/
+      // return logic is out of scope here.
+    }
+
+    // userIndex/{uid}
+    match /userIndex/{uid} {
+      allow read: if isPlatformAdmin();
+      allow read: if signedIn() && myUid() == uid;
+
+      // I10: platformAdmin can NEVER be set true by a client write.
+      allow create: if signedIn() && myUid() == uid
+                    && request.resource.data.get('platformAdmin', false) == false;
+      // 'appLang' joined this list in v07.37 (the app language, synced to
+      // the account so it follows a person between devices). It rides on
+      // this document precisely because every signed-in page already reads
+      // it -- no new collection, no new read, nothing added to the startup
+      // path. It is a display preference and carries no authority: the
+      // platformAdmin guard below is untouched, and hasOnly() still pins
+      // the writable set to these four fields.
+      allow update: if signedIn() && myUid() == uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['tenantIds', 'defaultTenantId', 'appLang', 'updatedAt'])
+                    && request.resource.data.get('platformAdmin', false) == resource.data.get('platformAdmin', false);
+      allow update: if isPlatformAdmin();
+      // Only the Firebase console, or a future admin-only server-side
+      // path, may ever flip platformAdmin. No client rule does.
+    }
+
+    // tenantMemberUids/{tenantId}__{uid} — rules-support mirror. Never
+    // shown in any UI. See helper block comment above.
+    match /tenantMemberUids/{tenantUidKey} {
+      // Split into get/list on purpose. Firestore can only allow a LIST
+      // (query) request if it can prove, from the query's own filters
+      // alone, that every possible result satisfies the rule -- it will
+      // not reason about how the app constructs a document id. The get
+      // rule below (tenantUidKey reconstruction) is exactly right for
+      // fetching ONE known document, but as a list rule it made Firestore
+      // deny the whole query outright, since resource.data.tenantId isn't
+      // constrained by the query itself. The list rule instead mirrors the
+      // query's own filter directly (where uid == myUid()), which
+      // Firestore CAN verify -- the standard "list your own docs" pattern.
+      allow get: if isPlatformAdmin();
+      allow get: if signedIn() && tenantUidKey == (resource.data.tenantId + '__' + myUid());
+      allow list: if isPlatformAdmin();
+      allow list: if signedIn() && resource.data.uid == myUid();
+
+      allow create: if canAdminIdentity(request.resource.data.tenantId);
+      allow create: if isPlatformAdmin();
+      // Bootstrap: creating your own brand-new tenant (Stage 3) writes
+      // your own first owner row before any membership exists to check
+      // against.
+      allow create: if signedIn()
+                    && request.resource.data.uid == myUid()
+                    && 'owner' in request.resource.data.roles;
+      // Invite acceptance (Stage 6): same shape as the membership create rule.
+      allow create: if signedIn() && request.resource.data.uid == myUid()
+                    && hasEmail()
+                    && exists(/databases/$(database)/documents/tenantInvites/$(request.resource.data.tenantId + '__' + myEmailLower()))
+                    && get(/databases/$(database)/documents/tenantInvites/$(request.resource.data.tenantId + '__' + myEmailLower())).data.status == 'pending';
+
+      allow update: if canAdminIdentity(resource.data.tenantId);
+      allow update: if isPlatformAdmin();
+    }
+
+    // tenantInvites/{tenantId}__{email} — rules deployed now, first used
+    // in Stage 5 once the invite-creation UI exists.
+    match /tenantInvites/{inviteId} {
+      allow read: if isPlatformAdmin();
+      allow read: if canAdminIdentity(resource.data.tenantId);
+      allow read: if hasEmail() && inviteId == (resource.data.tenantId + '__' + myEmailLower());
+
+      allow create: if canAdminIdentity(request.resource.data.tenantId)
+                    && request.resource.data.status == 'pending';
+      allow create: if isPlatformAdmin();
+      // maxInvites quota is a soft, UI-level check — rules cannot count
+      // documents. See Stage 5.
+
+      allow update: if hasEmail()
+                    && inviteId == (resource.data.tenantId + '__' + myEmailLower())
+                    && resource.data.status == 'pending'
+                    && request.resource.data.status == 'consumed'
+                    && request.resource.data.consumedByUid == myUid()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'consumedAt', 'consumedByUid', 'updatedAt']);
+      allow update: if canAdminIdentity(resource.data.tenantId);
+      allow update: if isPlatformAdmin();
+      // No delete, ever (I4/D6 — overrides the legacy app's
+      // delete-on-consume pattern; this record is kept forever).
+    }
+
+    // inviteTokens/{token} — resolves an invite link's opaque code to the
+    // real invite, so raw email addresses never appear in a URL. Knowing
+    // the random token is the same authorization a direct link would have
+    // given anyway. Rules deployed now, first used in Stage 5.
+    match /inviteTokens/{token} {
+      // get (fetching a token you already know, e.g. from a link) is fine
+      // for anyone -- the token itself is the credential. list is
+      // deliberately NOT granted here: without this split, "allow read"
+      // would also let anyone query and enumerate the whole collection,
+      // exposing every tenant's pending invite emails at once.
+      allow get: if true;
+      allow list: if canAdminIdentity(resource.data.tenantId);
+      allow list: if isPlatformAdmin();
+
+      allow create: if canAdminIdentity(request.resource.data.tenantId);
+      allow create: if isPlatformAdmin();
+      // No update, no delete.
+    }
+
+    // =====================================================================
+    // Phase 2 — Catalogue (Layer 1: modules, subjects, trackables, ladders)
+    // Version: 2026-07-31
+    //
+    // Two genuinely different content shapes here, matching catalogue.js:
+    //
+    //   - modules/ and subjectTemplates/ are PLATFORM-WIDE, not tenant-
+    //     scoped. Genesis-only writes: create is open to any signed-in user
+    //     (Firestore's create op only ever fires when the doc doesn't exist
+    //     yet), same "first writer wins on fixed, non-sensitive content"
+    //     shape as the tenant-bootstrap fix documented in
+    //     PHASE-1-STATUS.md item 1. After genesis, only platformAdmin may
+    //     correct a row -- no client delete (I4/D6).
+    //
+    //   - subjects/ and trackables/ are tenant-scoped copies. Any tenant
+    //     member may READ (every future module needs this) and may CREATE
+    //     a row that declares a sourceTemplateId (the one-time "copy the
+    //     platform catalogue into my tenant" seed, harmless and identical
+    //     for everyone -- see ensureTenantCatalogueSeeded). Only owner/
+    //     prime/platformAdmin (canAdminCatalogue) may create a genuinely
+    //     new tenant-specific node (sourceTemplateId == null) or UPDATE an
+    //     existing one -- role table: teacher explicitly "Cannot: ...
+    //     catalogue configuration."
+    // =====================================================================
+
+    // owner + prime + platformAdmin configure the catalogue (role table:
+    // owner "configure everything"; prime runs the tenant academically,
+    // including curriculum; teacher explicitly cannot).
+    function canAdminCatalogue(tenantId) { return canAdminIdentity(tenantId); }
+    function anyMemberOf(tenantId) { return myRolesIn(tenantId).size() > 0; }
+
+    // modules/{moduleId} -- platform-wide.
+    match /modules/{moduleId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update: if isPlatformAdmin();
+      // No delete (I4/D6).
+    }
+
+    // subjectTemplates/{templateId} -- platform-wide, platform master list.
+    match /subjectTemplates/{templateId} {
+      allow read: if signedIn();
+      allow create: if signedIn();
+      allow update: if isPlatformAdmin();
+      // No delete (I4/D6).
+    }
+
+    // subjects/{tenantId}__{nodeId} -- tenant's own copy-on-write tree.
+    match /subjects/{subjectKey} {
+      allow read: if isPlatformAdmin();
+      // S8-class fix (Phase 3): a get() on a subjectId that doesn't exist
+      // (e.g. records.js checking a subject's confirmationRequired override)
+      // hands the rule a null `resource`, and anyMemberOf(resource.data...)
+      // below errors instead of returning false, denying the read outright.
+      // Nothing is exposed by allowing this -- there's no data to read.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/subjects/$(subjectKey));
+      allow read: if anyMemberOf(resource.data.tenantId);
+
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow create: if anyMemberOf(request.resource.data.tenantId)
+                    && request.resource.data.sourceTemplateId is string;
+
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- deactivate via status instead.
+    }
+
+    // trackables/{tenantId}__{trackableId} -- the 30 Approaches, tenant copy.
+    match /trackables/{trackableKey} {
+      allow read: if isPlatformAdmin();
+      // S8-class fix (Phase 3): see the identical comment on subjects above.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/trackables/$(trackableKey));
+      allow read: if anyMemberOf(resource.data.tenantId);
+
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow create: if anyMemberOf(request.resource.data.tenantId)
+                    && request.resource.data.sourceTemplateId is string;
+
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6).
+    }
+
+    // ladders/{tenantId}__{ladderId}, levels/{tenantId}__{levelId} --
+    // tenant-authored, no platform-seeded content (Architecture only gives
+    // examples: "e.g. General Grades, Hifz Years").
+    match /ladders/{ladderKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- deactivate via status instead.
+    }
+
+    match /levels/{levelKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6).
+    }
+
+    // personLevels/{tenantId}__{personId}__{ladderId}__{fromDate} -- dated
+    // rows, never overwritten (Architecture). No UI yet (Phase 11 uses
+    // this), rule deployed now so a future phase doesn't hit "no rule =
+    // fully denied" as a surprise, same pattern as tenantInvites in Phase 1.
+    match /personLevels/{personLevelKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      // No update (dated rows are never overwritten -- a correction is a
+      // new row with a new fromDate) and no delete (I4/D6).
+    }
+
+    // =====================================================================
+    // Phase 3 — Tracking core (Layer 2: records, activity, domains)
+    // Version: 2026-07-31
+    //
+    // Who may read/write ONE PERSON's tracking data is the same set for all
+    // three collections here -- the person themself (an adult with their
+    // own login), whoever guards them, whoever actually teaches them, and
+    // whoever administers the tenant (owner/prime/platformAdmin). This
+    // deliberately matches D10: a guardian/teacher logging progress for
+    // several people (any of the ones they're actually allowed to act for)
+    // in one sitting from a simple dropdown must never be blocked by rules
+    // any tighter than "can you act for this person at all" -- there is no
+    // finer-grained, per-field (e.g. "only a supervisor may set
+    // confirmState=confirmed") restriction here, same as every other
+    // dynamic-map-shaped collection in this file (subjects, trackables):
+    // Firestore rules can't safely inspect one key of an arbitrarily-keyed
+    // map, so role-appropriateness within an allowed write is enforced by
+    // the client functions in records.js/activity.js, not by the rule
+    // itself. isSelfPerson() adds one get() beyond the existing helpers
+    // (tenantPeople lookup by personId) to recognise an adult acting for
+    // their own record.
+    //
+    // Phase 10: isTeacherIn(tenantId) alone used to be enough here -- any
+    // teacher membership in the tenant could record/confirm for EVERY
+    // student, not just their own. That was always the disclosed gap
+    // CLAUDE.md's own open access-control question was about ("teacher
+    // cannot: other teachers' students" per the Architecture doc's own role
+    // table, never actually enforced). Now a teacher also needs
+    // isCoEnrolledTeacherOf() -- real, per-student scoping via the
+    // teacherStudentLinks mirror (see that function's own comment above),
+    // driven by class/course-offer enrolment rather than a guess.
+    // =====================================================================
+
+    function isSelfPerson(personId) {
+      return signedIn() && exists(tenantPersonRef(personId))
+          && get(tenantPersonRef(personId)).data.authUid == myUid();
+    }
+    function canRecordFor(tenantId, personId) {
+      return canAdminIdentity(tenantId)
+          || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, personId))
+          || isGuardianOf(tenantId, personId) || isSelfPerson(personId);
+    }
+
+    // Phase 9 -- who may create/edit an assignments doc. Admin is
+    // tenant-wide. Follow-up round (11 Aug 2026): the teacher branch used to
+    // be blanket isTeacherIn(tenantId) -- any teacher membership could write
+    // an assignment naming ANY student in the tenant, not just their own.
+    // Firestore rules still can't cheaply prove "every element of
+    // assignedToPersonIds is one of my co-enrolled students" (no per-element
+    // get() construct exists), so this closes the gap the contextId-trust
+    // model this comment used to propose: the teacher branch now requires
+    // isActiveTeacherInContext(tenantId, contextId) -- a single, cheap,
+    // fixed-path get() proving "I actively teach the ONE class/course-offer
+    // this assignment is declared against." The client (homework.html) is
+    // trusted to only ever offer checkboxes drawn from that one context's
+    // own roster -- same trust boundary canAdminCatalogue()-authored content
+    // already accepts elsewhere in this file, not a new kind of gap. A
+    // guardian-only actor stays scoped exactly as before Phase 10:
+    // assignedToPersonIds must be exactly ONE child, and isGuardianOf() must
+    // hold for that one id -- unaffected by this round's change.
+    function isAssignmentCreator(tenantId, contextId, assignedToPersonIds) {
+      return canAdminIdentity(tenantId)
+          || (isTeacherIn(tenantId) && isActiveTeacherInContext(tenantId, contextId))
+          || (isGuardianIn(tenantId) && assignedToPersonIds.size() == 1 && isGuardianOf(tenantId, assignedToPersonIds[0]));
+    }
+
+    // Phase 7 round 2 -- course offers/enrolments. The narrower
+    // "isEnrolledAsTeacherIn" roster-visibility check (and its enrollmentRef()
+    // path helper) that used to live here were removed in Phase 10 --
+    // enrollments' own read rule (below) widened to anyMemberOf() for the
+    // teacherStudentLinks sync fix (see that match block's own comment),
+    // which made a separate roster-visibility helper redundant. Record/
+    // confirm AUTHORITY over a student is isCoEnrolledTeacherOf() above
+    // (Phase 10), which most of this codebase now runs through instead of
+    // blanket isTeacherIn(tenantId) -- assignments is the one place still
+    // tenant-wide for teachers, see isAssignmentCreator's own comment above
+    // for why.
+    // Who may create/end an enrolment: admin, the child's guardian, or the
+    // adult enrolling themself -- matches the role table (enrolling is an
+    // admin/guardian/self action; teachers don't self-enrol students).
+    function canEnrol(tenantId, personId) {
+      return canAdminIdentity(tenantId) || isGuardianOf(tenantId, personId) || isSelfPerson(personId);
+    }
+
+    // records/{tenantId}__{personId}__{chunkKey}
+    match /records/{recordKey} {
+      allow read: if isPlatformAdmin();
+      // S8-class fix: claimStatus()/getRecordsChunk()/confirmEntry()/etc. all
+      // getDoc() a chunk to see whether it exists yet BEFORE creating it --
+      // for that very common first-ever-claim case, resource is null and
+      // resource.data.tenantId below would error instead of returning
+      // false, denying the read outright. Nothing is exposed by allowing
+      // this -- a nonexistent document has no data to read.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/records/$(recordKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);
+      allow update: if canRecordFor(resource.data.tenantId, resource.data.personId);
+      // No delete (I4/D6).
+    }
+
+    // activity/{tenantId}__{personId}__{weekKey} -- append-only in practice
+    // (activity.js only ever arrayUnion-appends), same read/write access as
+    // records above since it's the same person's data, just the "where did
+    // this claim come from" context (I3) instead of the claim itself.
+    match /activity/{activityKey} {
+      allow read: if isPlatformAdmin();
+      // S8-class fix: same reasoning as records above -- logActivity() reads
+      // the week's document first to decide create vs. arrayUnion-append.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/activity/$(activityKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);
+      allow update: if canRecordFor(resource.data.tenantId, resource.data.personId);
+      // No delete (I4/D6).
+    }
+
+    // domains/{tenantId}__{domainId} -- D12: tenant-authored tag registry
+    // backing records.entries.domainIds[]. Same shape as ladders/levels:
+    // any member reads, only owner/prime/platformAdmin authors.
+    match /domains/{domainKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- deactivate via status instead.
+    }
+
+    // bookmarks/{tenantId}__{personId} -- Phase 7: ONE doc per person
+    // (resume{} + saved[]). Same canRecordFor shape as records/activity
+    // above -- it's the same person's own data, just "where was I" instead
+    // of a claim or its context.
+    match /bookmarks/{bookmarkKey} {
+      allow read: if isPlatformAdmin();
+      // S8-class fix: touchResume()/saveBookmark()/removeSavedBookmark() all
+      // getDoc() first to decide create vs. update -- same reasoning as
+      // records/activity above, a nonexistent document has no data to leak.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/bookmarks/$(bookmarkKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);
+      allow update: if canRecordFor(resource.data.tenantId, resource.data.personId);
+      // No delete (I4/D6) -- saved[] entries are soft-removed (removed:true).
+    }
+
+    // ayahNotes/{tenantId}__{personId} -- Ayah Note panel: ONE doc per person
+    // (notes{} keyed by unitKey), same canRecordFor shape as bookmarks right
+    // above it -- this is one person's own free-text study notes, not
+    // shared/tenant-wide data. Same S8-class read-before-exists reasoning:
+    // saveAyahNote()/ensureAyahNotesWritable() both getDoc() first to decide
+    // create vs. update, and a nonexistent document has no data to leak.
+    match /ayahNotes/{noteKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/ayahNotes/$(noteKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);
+      allow update: if canRecordFor(resource.data.tenantId, resource.data.personId);
+      // No delete (I4/D6) -- a note is overwritten in place, like bookmarks.resume.
+    }
+
+    // resources/{tenantId}__{resourceId} -- Architecture Layer 1, reserved
+    // since Phase 0 but never written to until Phase 6 (Deen Study topics
+    // need somewhere for their actual content to live). Same
+    // read-any-member / write-owner-prime shape as domains/subjects.
+    match /resources/{resourceKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- deactivate via status instead.
+    }
+
+    // ==========================================================================
+    // Phase 9 -- Homework & feedback. Built person-only originally (no
+    // classes/contextId existed yet at the time -- nothing in a later phase
+    // is a prerequisite for an earlier one, per the Architecture doc's own
+    // phase table). contextId is real and enforced for the teacher branch as
+    // of the follow-up rounds below.
+    // ==========================================================================
+
+    // assignments/{tenantId}__{assignmentId}. Follow-up round (11 Aug 2026),
+    // REVISED same day after finding a real risk in the first version: a
+    // read RULE that reaches for a get() on a DIFFERENT document
+    // (isActiveTeacherInContext(), isGuardianOf()) is exactly the shape
+    // Firestore's LIST-query provability check tends to reject outright --
+    // it can only allow a list()/query() request if it can prove, from the
+    // query's own filters alone, that every possible result satisfies the
+    // rule (see tenantMemberUids' own comment above for the first time this
+    // codebase hit this). assignments is ALWAYS read via a query in this
+    // app (listAssignmentsForPerson()/listAssignmentsForReader() in
+    // homework.js), never a single getDoc(), so this isn't a theoretical
+    // concern -- it would have meant a teacher's or guardian's OWN homework
+    // list silently 403ing the moment the rules deployed.
+    //
+    // Fixed by DENORMALIZING instead of computing at read time:
+    // extraReadersPersonIds[] is written ONCE, at creation, by the client
+    // (homework.js's createAssignment(), fed by homework.html) -- every
+    // active teacher of the declared contextId, plus the guardian of each
+    // assignedToPersonIds entry. The read rule then only ever checks
+    // "is my personId literally IN this array" -- structurally identical to
+    // the assigned-student-self branch below it, which has worked in
+    // production since Phase 9 round 1 (same array-contains-vs-array-membership
+    // shape, no get() inside the check itself), so it's provable the same way.
+    // This is also what actually closes the guardian gap this round was
+    // asked to fix (a guardian used to see EVERY assignment in the tenant,
+    // isGuardianIn(tenantId) alone -- same shape the teacher branch had, and
+    // just as real a gap, not something to leave for later this time).
+    //
+    // isAssignmentCreator()/isActiveTeacherInContext() above are UNCHANGED
+    // and still exactly right for create/update -- those are single-document
+    // writes, not queries, so the list-provability concern never applied to
+    // them in the first place.
+    match /assignments/{assignmentKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if canAdminIdentity(resource.data.tenantId); // admin, tenant-wide
+      allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) in resource.data.assignedToPersonIds; // the assigned student themself
+      allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) in resource.data.get('extraReadersPersonIds', []); // teacher(s) of the context + guardian(s) of the assigned students, denormalized at creation
+
+      allow create: if isAssignmentCreator(request.resource.data.tenantId, request.resource.data.contextId, request.resource.data.assignedToPersonIds);
+      allow update: if isAssignmentCreator(resource.data.tenantId, resource.data.contextId, resource.data.assignedToPersonIds);
+      // No delete (I4/D6) -- archive via status instead.
+    }
+
+    // submissions/{assignmentId}__{personId} -- assignmentId already carries
+    // the tenantId prefix (assignments/{tenantId}__{assignmentId}), so this
+    // doc id is globally unique without its own separate tenantId prefix --
+    // matches the Architecture doc's own literal id format. Same
+    // canRecordFor() shape as records/activity/bookmarks: it's this one
+    // person's own homework status (a student marking "submitted" is the
+    // same kind of self-write as a self-confirmed claim; a teacher/guardian/
+    // admin scoring it is the same kind of write confirmEntry() already does
+    // for records).
+    match /submissions/{submissionKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);
+      allow update: if canRecordFor(resource.data.tenantId, resource.data.personId);
+      // No delete (I4/D6).
+    }
+
+    // teachingNotes/{tenantId}__{noteId} -- PRIVATE to the author (Architecture
+    // s7). authorUid is a rules-support field alongside authorPersonId (same
+    // "carry a uid so a rule can check ownership in one field read, no extra
+    // get()" shape tenantPeople.authUid already uses for isSelfPerson) --
+    // never shown in any UI, just what the rule below checks against.
+    match /teachingNotes/{noteKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if signedIn() && resource.data.authorUid == myUid();
+
+      allow create: if signedIn() && anyMemberOf(request.resource.data.tenantId) && request.resource.data.authorUid == myUid();
+      allow update: if signedIn() && resource.data.authorUid == myUid();
+      // No delete (I4/D6) -- archive via status instead.
+    }
+
+    // ==========================================================================
+    // Phase 7 round 2 -- course offers + enrolments (Stage B1). Phase 10
+    // adds classes as the other real contextType alongside courseOffer --
+    // enrollments below was already generic (contextId, contextType are
+    // plain fields, not collection-specific), so it needs no rule change of
+    // its own for classes to start using it.
+    // ==========================================================================
+
+    // courseOffers/{tenantId}__{offerId} -- admin-authored, same
+    // read-any-member/write-canAdminCatalogue shape as ladders/domains/resources.
+    match /courseOffers/{offerKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- archive via status instead.
+    }
+
+    // classes/{tenantId}__{classId} -- Phase 10. Same admin-authored shape
+    // as courseOffers immediately above (both are just "a context people
+    // enrol into" at the data-model level -- Architecture Layer 1).
+    match /classes/{classKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- archive via status instead.
+    }
+
+    // enrollments/{tenantId}__{contextId}__{personId}
+    //
+    // Phase 10: read widened from "admin, or your own/your child's row, or a
+    // teacher enrolled in this same context" to any tenant member -- found
+    // while wiring teacherStudentLinks (Phase 10): syncTeacherStudentLinksForContext()
+    // (js/course-offers.js) needs to enumerate EVERY OTHER active row in the
+    // context that was just changed to recompute the right mirror pairs, but
+    // a guardian enrolling/ending their own child could only ever read that
+    // ONE row under the narrower rule -- their query for "who else is in
+    // this class" came back empty, so a class's teacher never actually
+    // gained authority over a guardian-added child until some unrelated
+    // admin action next touched that same class. anyMemberOf() matches the
+    // same shape classes/courseOffers docs themselves already use one block
+    // up -- an enrollment row only carries personId + role + status, never
+    // the personal data itself (that's tenantPeople, which keeps its own,
+    // still fully scoped, read rule).
+    match /enrollments/{enrollmentKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+
+      allow create: if canEnrol(request.resource.data.tenantId, request.resource.data.personId);
+      allow update: if canEnrol(resource.data.tenantId, resource.data.personId);
+      // No delete (I4/D6) -- end via status instead.
+    }
+
+    // teacherStudentLinks/{tenantId}__{teacherPersonId}__{studentPersonId} --
+    // Phase 10, D9-style rules-support mirror (see isCoEnrolledTeacherOf()'s
+    // own comment above for what this backs). Never shown in any UI, so
+    // reads are kept as narrow as the two people it actually names, plus
+    // admin. Written as a side effect of enrolPerson()/endEnrollment()
+    // (js/course-offers.js) -- authorized the same way an enrolment change
+    // to EITHER side of the pair already is, via canEnrol(), since that's
+    // exactly the action that triggers a recompute.
+    match /teacherStudentLinks/{linkKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if canAdminIdentity(resource.data.tenantId);
+      allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) == resource.data.teacherPersonId;
+      allow read: if signedIn() && myPersonIdIn(resource.data.tenantId) == resource.data.studentPersonId;
+
+      allow create: if canEnrol(request.resource.data.tenantId, request.resource.data.teacherPersonId)
+                    || canEnrol(request.resource.data.tenantId, request.resource.data.studentPersonId);
+      allow update: if canEnrol(resource.data.tenantId, resource.data.teacherPersonId)
+                    || canEnrol(resource.data.tenantId, resource.data.studentPersonId);
+      // No delete (I4/D6) -- active:false via recompute instead.
+    }
+
+    // ==========================================================================
+    // Phase 11 -- Curriculum, grades & resources (Stage C). ladders/levels/
+    // personLevels/resources above already carry their own rules (personLevels
+    // deployed ahead of time in Phase 2/10, resources in Phase 6). The two
+    // collections still missing a rule are curriculumUnits and curriculumPlan
+    // -- same admin-authored read-any-member/write-canAdminCatalogue shape as
+    // every other Layer 1 catalogue collection (ladders, classes, courseOffers,
+    // resources, domains).
+    // ==========================================================================
+
+    // curriculumUnits/{tenantId}__{unitId} -- the CONTENT half (I8: content is
+    // separate from schedule). subjectIds[] can name several subjects at once
+    // (cross-subject), resourceIds[] is maintained via arrayUnion from
+    // curriculum.js, never a full-document overwrite of someone else's edits.
+    match /curriculumUnits/{unitKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- archive via status instead.
+    }
+
+    // curriculumPlan/{tenantId}__{planId} -- the SCHEDULE half (I8). contextId
+    // is a class's or a person's own id (contextType "class" | "person" --
+    // Family/Individual tenants have no classes, I1's own reasoning extended
+    // here so they still get real curriculum scheduling). Same admin-authored
+    // shape as curriculumUnits above -- a plan entry is authored by the
+    // tenant's own admin, not by whoever the context belongs to.
+    match /curriculumPlan/{planKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(resource.data.tenantId);
+      allow create: if canAdminCatalogue(request.resource.data.tenantId);
+      allow update: if canAdminCatalogue(resource.data.tenantId);
+      // No delete (I4/D6) -- archive via status instead.
+    }
+  }
+}
