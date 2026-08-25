@@ -6,9 +6,9 @@ export const BASE = "http://localhost:8080";
 // appLang seeds THIS DEVICE (localStorage); accountLang seeds the ACCOUNT
 // (userIndex/{uid}.appLang) -- v07.37. Setting them differently is what
 // exercises the sync: the account's value should win and reload the page.
-export async function newContext(browser, { banner = true, appLang = null, accountLang = null, viewport, latencyMs = 0, emptyTenant = false, seedTemplates = null, taglines = null } = {}) {
+export async function newContext(browser, { banner = true, appLang = null, accountLang = null, viewport, latencyMs = 0, emptyTenant = false, seedTemplates = null, taglines = null, extraSeedJs = null } = {}) {
   const ctx = await browser.newContext({ viewport });
-  const stub = stubFor({ banner, accountLang, latencyMs, emptyTenant, seedTemplates, taglines });
+  const stub = stubFor({ banner, accountLang, latencyMs, emptyTenant, seedTemplates, taglines, extraSeedJs });
   await ctx.route("https://www.gstatic.com/firebasejs/**", (route) =>
     route.fulfill({ status: 200, contentType: "text/javascript; charset=utf-8", body: stub })
   );

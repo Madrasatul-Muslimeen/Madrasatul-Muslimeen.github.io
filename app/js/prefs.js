@@ -449,12 +449,18 @@ const BOOKMARK_MENU_EXPANDED_KEY = "mm_bookmark_menu_expanded";
 const BOOKMARK_MENU_GROUP_BY_KEY = "mm_bookmark_menu_group_by";
 
 // The |groupby suffix is i18n.js's own context mechanism (see fallbackOf()):
-// English falls back to "Folder"/"Person" unchanged, while Bangla can say
-// "by folder"/"by person" here without changing the popover's own "Folder"
-// FIELD label, which is a different phrase in the same app.
+// English falls back to "Folder"/"Person"/"Module" unchanged, while Bangla
+// can say "by folder"/"by person"/"by module" here without changing the
+// popover's own "Folder" FIELD label, which is a different phrase in the
+// same app.
+//
+// Bookmark-issues round adds "module" -- everything from one module,
+// wherever it's filed, ignoring the folder tree entirely (bookmarks.js's
+// own groupBookmarksByModule()).
 export const BOOKMARK_GROUP_BYS = [
   { id: "folder", label: "Folder|groupby" },
   { id: "person", label: "Person|groupby" },
+  { id: "module", label: "Module|groupby" },
 ];
 const BOOKMARK_GROUP_BY_IDS = BOOKMARK_GROUP_BYS.map((g) => g.id);
 
@@ -483,7 +489,7 @@ export function setBookmarkMenuExpanded(on) {
 
 let cachedBookmarkGroupBy = readStored(BOOKMARK_MENU_GROUP_BY_KEY, BOOKMARK_GROUP_BY_IDS, "folder");
 
-/** "folder" (the default, and what v07.66 built) or "person" (this round's own person tag). */
+/** "folder" (the default, and what v07.66 built), "person" (bookmark-issues round's own person tag), or "module". */
 export function getBookmarkMenuGroupBy() {
   return cachedBookmarkGroupBy;
 }

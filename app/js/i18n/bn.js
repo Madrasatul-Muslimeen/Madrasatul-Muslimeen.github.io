@@ -1840,4 +1840,14 @@ export const BN = {
   // Journey" right beside it.
   // =====================================================================
   "Single āyah only": "শুধু একটি আয়াতের জন্য", // ?
+
+  // =====================================================================
+  // Bookmark-issues round (25 Aug 2026) -- retired bookmarks/folders hidden
+  // by default in the Manager (a "Show retired" toggle brings them back),
+  // a third Group-by mode (Module), and the cross-document "someone tagged
+  // this for whoever is selected, but it lives in their own list" section.
+  // =====================================================================
+  "Show retired": "অবসরপ্রাপ্ত দেখান", // ?
+  "Module|groupby": "মডিউল অনুযায়ী",
+  "Bookmarked for {name} by you": "আপনি {name}-এর জন্য বুকমার্ক করেছেন", // ?
 };

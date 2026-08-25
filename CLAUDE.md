@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.69.** Cutover to production happened
+**Current milestone: QuranRevival v07.76.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -4580,6 +4580,116 @@ byte-identical to v07.74's own last recorded run, confirming this round
 introduced no regression anywhere the suite can reach. No `firestore.rules`,
 schema or
 Firestore data changes -- nothing to deploy but the static files.
+
+v07.76 (25 Aug 2026, on Claude Code on the web) is **the bookmark-issues
+round -- five owner asks, one of which was put back to the owner first
+because it collided with a binding project invariant.**
+
+**"Make single bookmarks and bookmark folders deletable" collides with I4/D6
+("nothing is ever deleted, only archived") -- the app's most-repeated,
+"non-negotiable" rule, and real delete would be the FIRST exception to it
+anywhere in this codebase, irreversible with no admin undo. Asked before
+building anything: keep retire, but hide it better (the owner's real
+complaint -- "retiring just takes unnecessary focus" -- was about clutter,
+not about wanting data gone). Chosen over real delete.** Built as a **"Show
+retired" checkbox on `bookmarks.html`, default OFF** -- the same "Show
+archived" pattern `people.html` already uses for its own roster. Retire/
+Restore themselves are untouched; only the DEFAULT VIEW changed.
+
+**Item 1 -- default person/guardian/student defaults to the signed-in
+login's own person, not an arbitrary roster row.** Read literally ("default
+to Ahsan") this would only work for one tenant; built as the general
+version of the same intent -- every Person/Student picker in the app (9
+sites: `quranrevival.html`, `bookmarks.html`, `records.html`, `monitor.html`,
+`homework.html`, `course-offers.html`, and the three shared module
+controllers behind the other 9 study pages) now falls back to `myPersonId`
+(the signed-in login's own roster entry, already computed by every one of
+these pages' own `currentPreview()`) BELOW the existing "stored selection"
+fallback and ABOVE "first roster row" -- so a fresh browser with nothing
+stored yet lands on whoever the login actually IS (Ahsan, in the owner's own
+tenant), not whatever order Firestore happened to return (never a real
+guarantee). The stored-selection fallback (v07.75, same day) is untouched
+and still wins when present.
+
+**Item 3 -- folders can be assigned to a family member/student too, not just
+individual bookmarks.** `bookmarks.js`'s `folders[]` gains `personTagId`
+(additive, same field name/meaning as a bookmark's own), a new
+`setFolderPersonTag()`, and a "For" picker on each folder row in the
+Manager, matching the one bookmarks already had. **At the time of
+bookmarking too**: when the naming popover's own "+ New folder…" path fires
+(all four study pages), the new folder now inherits the SAME person chosen
+for the bookmark, rather than always landing untagged.
+
+**Item 4 -- "view by students (family/children) and by modules."** Two
+pieces. **(a) A third Group-by mode, Module** (`bookmarks.js`'s
+`groupBookmarksByModule()`), alongside the existing Folder/Person, on both
+the nav dropdown and the Manager -- "everything from Deen Study, wherever
+it's filed," ignoring the folder tree entirely. **(b) The real cross-document
+gap v07.68 had explicitly left for the owner to decide** ("reading every
+roster member's bookmark document instead would be N reads on a tap -- a
+real scope and load-speed decision... the owner's call if they want it") --
+now built, since they asked directly. Selecting a child in the Person
+picker only ever showed THAT CHILD's own document; it never showed what a
+guardian tagged FOR them while signed in as themselves (D10's own normal
+workflow), because that lives in the GUARDIAN's own document. Rather than
+an unbounded roster-wide read, `bookmarks.html` now fetches exactly ONE
+extra document -- the signed-in login's own -- whenever the selected person
+differs from it, and shows a **"Bookmarked for {name} by you"** section
+listing whatever that document has tagged for them. Read-only from that
+section (editing one means selecting yourself, where it actually lives).
+**A real correctness gap was caught while wiring this, not after**: Quran's
+own `?bookmark=<id>` deep link is resolved against WHOEVER IS CURRENTLY
+SELECTED's own document -- so opening a cross-document "tagged for" item
+while viewing the child would have looked the id up in the CHILD's document
+and silently failed to open anything. Fixed with a new, optional
+`ownerPersonId` query param (`openBookmarkFromQueryString()` in
+`quranrevival.html`): present, it fetches that one other document just to
+find the bookmark, WITHOUT switching `selectedPersonId` -- opening someone
+else's bookmarked spot must never silently change who the page is acting
+as. Every other module's `?resume=<position>` link was already safe (never
+document-scoped).
+
+**Item 5 -- "opening a bookmark to the same screen/settings it was
+bookmarked from (I think this should already be in place)."** Checked
+rather than rebuilt: it already is, for Quran -- `captureQuranBookmarkSettings()`/
+`applyQuranBookmarkSettings()` (v07.66) snapshot and restore the full
+reading state (unit, Approach, reading ticks) by design. The other 8 study
+modules restore POSITION only (which subject/topic/Name), a deliberate
+v07.66 scope choice recorded at the time -- those modules have no
+comparable per-position reading state to snapshot. Confirmed still correct
+and end-to-end tested (including through the new `ownerPersonId` path);
+extending full settings-capture to the other modules is real, separate,
+per-module design work, not attempted here since it wasn't asked for this
+round.
+
+**Verified**: the full `tools/i18n-verify/behaviour.mjs` suite re-run
+against this round's build -- **788 checks pass** (the one reported failure
+is the same pre-existing, environmental archive.org-blocked-by-the-sandbox-
+proxy failure this project has recorded since v07.44, unrelated), reaching
+the same already-disclosed crash point this project has carried since
+v07.69 (unrelated to this round -- confirmed the same selector sits behind
+the same closed dropdown at `HEAD` too). `layout.mjs` reports **NO LAYOUT
+REGRESSIONS**, `navcheck.mjs` unchanged (still only the pre-existing 320px
+English truncation). **A focused, un-checked-in Playwright script** (this
+project's own established practice for anything past the suite's disclosed
+crash point, matching how v07.69-73 verified their own Note-view work) --
+23 checks, all passing -- exercised every new mechanism directly: the
+person-picker default on both `bookmarks.html` and a module page; retired
+items hidden by default and restorable; a seeded folder's own person tag
+reading correctly and both clearing and re-setting it really writing; a
+brand-new folder created from the popover really carrying the bookmark's
+own tag through a real write; Group by Module and Group by Person both
+rendering correctly, including an item from a different module; the
+cross-document "Bookmarked for Maryam by you" section appearing with the
+right `ownerPersonId`-carrying link; and opening that link genuinely
+restoring the exact bookmarked surah/ayah. Two small, purely additive test-
+harness hooks (`extraSeedJs` on `stubFor()`/`newContext()`) were added to
+let that script seed a second person's cross-tagged bookmark without
+hand-editing the shared stub every other suite already depends on -- default
+`null`, so every existing caller is unaffected. No `firestore.rules`,
+schema or Firestore data changes -- `personTagId` on folders and
+`ownerPersonId` on a query string are both additive; nothing to deploy but
+the static files.
 
 ## What this is
 
