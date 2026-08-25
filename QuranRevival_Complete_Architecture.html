@@ -1,0 +1,400 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>QuranRevival &mdash; Complete Architecture &amp; Build Plan</title><style>
+:root{
+  --paper:#F2F4F1; --surface:#FFFFFF; --mist:#E3E9E3; --rule:#C6D0C7;
+  --ink:#16302B; --ink-soft:#4A625C;
+  --lapis:#1F3A6E; --lapis-soft:#DDE4F0;
+  --saffron:#B8862F; --saffron-soft:#F5EBD6;
+  --verm:#9C3B2E; --verm-soft:#F6E3DF;
+  --green:#2E6B4F; --green-soft:#DEEDE4;
+  --serif:Georgia,'Iowan Old Style','Times New Roman',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);
+  font:16px/1.62 var(--sans);}
+.wrap{max-width:920px;margin:0 auto;padding:0 20px 90px}
+
+/* ---- masthead ---- */
+header.mast{border-bottom:3px double var(--lapis);margin-bottom:34px;padding:44px 0 24px}
+.eyebrow{font:600 11px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;
+  color:var(--lapis);margin:0 0 14px}
+h1{font:400 clamp(30px,6.2vw,46px)/1.1 var(--serif);margin:0 0 12px;letter-spacing:-.01em}
+.sub{margin:0;color:var(--ink-soft);font-size:16.5px;max-width:60ch}
+.meta{margin-top:18px;font:500 12.5px/1.5 var(--mono);color:var(--ink-soft)}
+
+/* ---- section markers (signature) ---- */
+.sec{margin:52px 0 0;scroll-margin-top:14px}
+.sec-head{display:flex;align-items:flex-start;gap:14px;
+  border-top:1px solid var(--rule);padding-top:16px}
+.rose{flex:0 0 auto;width:30px;height:30px;margin-top:3px}
+.sec h2{font:400 clamp(21px,3.6vw,27px)/1.25 var(--serif);margin:0;flex:1}
+.sec-note{color:var(--ink-soft);font-size:14.5px;margin:8px 0 0 44px}
+@media(max-width:560px){.sec-note{margin-left:0}}
+h3{font:600 15px/1.35 var(--sans);letter-spacing:.02em;margin:30px 0 10px;color:var(--lapis)}
+h4{font:600 13.5px/1.4 var(--sans);margin:20px 0 8px;color:var(--ink)}
+p{margin:0 0 13px} p.lead{font-size:17px}
+a{color:var(--lapis)}
+
+/* ---- tables ---- */
+.tw{overflow-x:auto;margin:16px 0 20px;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;min-width:440px;font-size:14.5px;background:var(--surface)}
+th{background:var(--lapis);color:#fff;text-align:left;padding:9px 12px;
+  font:600 12px/1.35 var(--sans);letter-spacing:.06em;text-transform:uppercase;vertical-align:bottom}
+td{padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+tbody tr:nth-child(even) td{background:#FAFCFA}
+td code,li code,p code{font:500 13px var(--mono);background:var(--mist);padding:1px 5px;border-radius:3px}
+
+/* ---- callouts ---- */
+.box{border-left:4px solid var(--lapis);background:var(--surface);
+  padding:15px 17px;margin:20px 0;border-radius:0 4px 4px 0}
+.box p:last-child{margin-bottom:0}
+.box .bt{font:700 11.5px/1 var(--sans);letter-spacing:.13em;text-transform:uppercase;
+  color:var(--lapis);margin:0 0 9px;display:block}
+.box.warn{border-color:var(--verm);background:var(--verm-soft)} .box.warn .bt{color:var(--verm)}
+.box.key{border-color:var(--saffron);background:var(--saffron-soft)} .box.key .bt{color:#8A6220}
+.box.ok{border-color:var(--green);background:var(--green-soft)} .box.ok .bt{color:var(--green)}
+
+/* ---- flow steps ---- */
+ol.flow{list-style:none;counter-reset:s;padding:0;margin:14px 0 20px}
+ol.flow li{counter-increment:s;position:relative;padding:0 0 12px 40px;margin:0}
+ol.flow li::before{content:counter(s);position:absolute;left:0;top:-1px;
+  width:26px;height:26px;border:1.5px solid var(--lapis);color:var(--lapis);
+  border-radius:50%;font:600 12.5px/23px var(--mono);text-align:center;background:var(--surface)}
+ul.tick{list-style:none;padding:0;margin:12px 0 18px}
+ul.tick li{padding:0 0 9px 24px;position:relative}
+ul.tick li::before{content:"\25C6";position:absolute;left:2px;top:0;color:var(--saffron);font-size:11px;line-height:1.7}
+
+/* ---- misc ---- */
+.tag{display:inline-block;font:600 10.5px/1 var(--sans);letter-spacing:.09em;
+  text-transform:uppercase;padding:4px 8px;border-radius:3px;white-space:nowrap}
+.t-open{background:var(--saffron-soft);color:#8A6220}
+.t-done{background:var(--green-soft);color:var(--green)}
+.t-risk{background:var(--verm-soft);color:var(--verm)}
+.t-no{background:var(--mist);color:var(--ink-soft)}
+.kv{font:500 13.5px/1.7 var(--mono);background:var(--surface);border:1px solid var(--rule);
+  padding:13px 15px;border-radius:4px;margin:14px 0;overflow-x:auto;white-space:pre}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:18px 0}
+@media(max-width:640px){.two{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--rule);border-radius:5px;padding:15px 17px}
+.card h4{margin-top:0}
+nav.toc{background:var(--surface);border:1px solid var(--rule);border-radius:5px;
+  padding:16px 19px;margin:26px 0 0}
+nav.toc .bt{font:700 11px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;
+  color:var(--lapis);display:block;margin-bottom:11px}
+nav.toc ol{margin:0;padding-left:20px;columns:2;column-gap:26px;font-size:14.5px}
+@media(max-width:560px){nav.toc ol{columns:1}}
+nav.toc li{margin-bottom:5px;break-inside:avoid}
+footer{margin-top:56px;padding-top:18px;border-top:3px double var(--lapis);
+  font-size:13.5px;color:var(--ink-soft)}
+@media print{
+  body{background:#fff} .wrap{max-width:none;padding:0}
+  nav.toc{display:none} .sec{page-break-inside:avoid} table{min-width:0}
+  .box,.card{border:1px solid #999}
+}
+@media (prefers-reduced-motion:no-preference){
+  .sec{animation:fade .5s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
+</style></head><body><div class="wrap"><header class="mast"><p class="eyebrow">Madrasah Platform &middot; Architecture</p><h1>Complete Architecture &amp; Build Plan</h1><p class="sub">Everything agreed across the design conversation, in one document. The source of truth for the build.</p><p class="meta">Version 1.0 &nbsp;&middot;&nbsp; 30 July 2026 &nbsp;&middot;&nbsp; For approval before any code is written</p></header><nav class="toc"><span class="bt">Contents</span><ol><li><a href="#s1">The shape of the whole thing</a></li><li><a href="#s2">The layer model</a></li><li><a href="#s3">Every collection</a></li><li><a href="#s4">The invariants</a></li><li><a href="#s5">Renderers, units and keys</a></li><li><a href="#s6">Roles, access and confirmation</a></li><li><a href="#s7">Build phases</a></li><li><a href="#s8">Load-speed budget</a></li><li><a href="#s9">Planned but not built</a></li><li><a href="#s10">Growth seams</a></li></ol></nav><section class="sec" id="s1"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>The shape of the whole thing</h2></div><p class="lead">One platform. Any number of study modules, three account types, six roles.
+The whole design exists to stop those multiplying into dozens of special cases.</p>
+<div class="two">
+<div class="card"><h4>What you study &mdash; modules</h4><p>QuranRevival, Arabic, Hadith, Deen Study,
+Learn Deen On-the-Go, General Study, Health, Nature-Life &mdash; and any number more. <strong>Modules are
+rows of data, not code.</strong></p></div>
+<div class="card"><h4>Whose account &mdash; tenant type</h4><p>Individual, Family, Tuition Provider.
+A madrasah is <strong>not</strong> a fourth type &mdash; it is a Tuition Provider using more of the app.</p></div></div>
+<div class="box key"><span class="bt">The separation that makes it work</span>
+<p>A module never asks what kind of account it is in. An account never asks which modules are on.
+Everything else in this document follows from holding that line.</p></div>
+<h3>The four stages</h3>
+<div class="tw"><table><thead><tr><th>Stage</th><th>What it is</th><th>Gated by</th><th>Phases</th></tr></thead><tbody>
+<tr><td><strong>A</strong></td><td>Quran + Deen study, Individual &amp; Family</td><td>tracking core</td><td>0&ndash;8</td></tr>
+<tr><td><strong>B1</strong></td><td>Course offers</td><td>enrolment</td><td>9</td></tr>
+<tr><td><strong>B2</strong></td><td>Tuition Provider &mdash; other families&rsquo; children</td><td>roles, confirmation at scale, safeguarding</td><td>10</td></tr>
+<tr><td><strong>C</strong></td><td>All other subjects</td><td>curriculum + grades</td><td>11&ndash;12</td></tr>
+<tr><td><strong>D</strong></td><td>Full madrasah</td><td>Operations</td><td>14</td></tr>
+</tbody></table></div>
+<h3>Naming</h3>
+<p><strong>QuranRevival is a module, not the platform.</strong> The platform carries its own name
+(<em>Madrasatul Muslimeen</em> proposed) in a separate field, so either can be renamed at any time
+without touching code.</p><section class="sec" id="s2"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>The layer model</h2></div><div class="tw"><table><thead><tr><th>Layer</th><th>What lives there</th><th>Status</th></tr></thead><tbody>
+<tr><td><strong>0</strong> Tenant &amp; identity</td><td>tenants, people, memberships, userIndex, invites</td><td><span class="tag t-done">building</span></td></tr>
+<tr><td><strong>1</strong> Org &amp; catalogue</td><td>modules, subjects tree, ladders, levels, classes, course offers, enrolments, curriculum, resources</td><td><span class="tag t-done">building</span></td></tr>
+<tr><td><strong>2</strong> Tracking core</td><td>trackables, records, activity, bookmarks</td><td><span class="tag t-done">building</span></td></tr>
+<tr><td><strong>2.5</strong> Communication</td><td>threads, messages, teaching notes</td><td><span class="tag t-done">building</span></td></tr>
+<tr><td><strong>3</strong> Modules</td><td>consumers of Layer 2 only &mdash; never each other</td><td><span class="tag t-done">building</span></td></tr>
+<tr><td><strong>3.5</strong> Medical records</td><td>allergies, medications, growth &mdash; own collection, stricter rules</td><td><span class="tag t-no">reserved</span></td></tr>
+<tr><td><strong>4</strong> Operations</td><td>calendar, timetable, sessions, attendance, availability, notices, admissions, staff records</td><td><span class="tag t-open">planned</span></td></tr>
+<tr><td><strong>5</strong> Finance</td><td>fees, invoices, payments, salaries &mdash; needs an audit trail, not status tracking</td><td><span class="tag t-no">reserved</span></td></tr>
+<tr><td><strong>6</strong> Facilities</td><td>library, transport, hostel, canteen, payroll</td><td><span class="tag t-no">reserved</span></td></tr>
+</tbody></table></div>
+<div class="box warn"><span class="bt">Why 3.5, 5 and 6 are reserved rather than ignored</span>
+<p>A medication is not a status between 0 and 5. A payment needs an audit trail. Naming them now
+means Layer 2 is never bent to hold them later.</p></div><section class="sec" id="s3"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Every collection</h2></div><p class="sec-note">Field names are indicative; exact spelling is fixed at build time. What matters here is the shape and the relationships.</p><h3>Layer 0 &mdash; identity</h3>
+<div class="kv">tenants/{tenantId}
+  tenantType  individual | family | tuition_provider
+  name, createdAt, createdByUid, maxInvites, legacyTeacherId
+
+people/{personId}                      personId = 7 digits, checked before create
+  tenantId, name{lang}, emoji, color
+  authUid          null for children -- managed accounts have no login
+  isMinor          drives child-safety rules, not a date of birth
+  managedByPersonId, timezone, status, legacy{teacherId, ownerUid}
+
+memberships/{tenantId}__{personId}__{role}
+  role  owner | prime | teacher | guardian | student | self
+  guardianOf[], status, meta
+
+userIndex/{uid}      tenantIds[], defaultTenantId, platformAdmin
+                     derived + rebuildable; exists for startup speed only
+
+invites/{tenantId}__{email}
+  role, status pending|consumed, consumedAt, consumedByUid    never deleted</div>
+
+<h3>Layer 1 &mdash; catalogue and org</h3>
+<div class="kv">modules/{moduleId}          name{lang}, icon, renderer, order, status
+
+subjects/{tenantId}__{nodeId}          one row = one node in the tree
+  name{lang}, gloss{lang}
+  parentId        null = top level -- this single field IS the hierarchy
+  ancestorIds[]   everything above it; one query fetches a whole branch
+  moduleIds[]     a subject may belong to more than one module
+  isTrackable, order, status
+  sourceTemplateId, edited            drives update-without-overwrite
+  legacy{section, domain}
+
+subjectTemplates/{templateId}          platform master list, read-only
+
+ladders/{tenantId}__{ladderId}         e.g. General Grades, Hifz Years
+levels/{tenantId}__{levelId}           ladderId, name, order
+personLevels/{tenantId}__{personId}__{ladderId}__{fromDate}
+  levelId, fromDate, toDate            dated rows, never overwritten
+
+classes/{tenantId}__{classId}          name, gloss, subjectIds[], levelId?, status
+courseOffers/{tenantId}__{offerId}     name, moduleIds[], subjectIds[], routine{}, status
+
+enrollments/{tenantId}__{contextId}__{personId}
+  contextType class|courseOffer, contextId, roleInClass
+  subjectIds[], status, startedAt, endedAt
+
+curriculumUnits/{tenantId}__{unitId}
+  subjectIds[]    cross-subject: one unit, several subjects, counted once
+  levelId, name{lang}, order, resourceIds[]
+
+curriculumPlan/{tenantId}__{planId}    contextId (class or person)
+  curriculumUnitId, term, week, order  CONTENT and SCHEDULE stay separate
+
+resources/{tenantId}__{resourceId}     type link|text, url, body, addedByPersonId</div>
+
+<h3>Layer 2 &mdash; tracking core</h3>
+<div class="kv">trackables/{tenantId}__{trackableId}
+  moduleId, subjectId?, group          group = the 7 approach sections
+  name{lang}
+  guide{ what{lang}, how{lang}, measure{lang} }      the Guide tab
+  panels[]        which tools this approach shows -- Layout A
+  order, status, sourceTemplateId
+
+records/{tenantId}__{personId}__{chunkKey}          CHUNKED, one doc per surah/subject
+  entries{ "<unitKey>::<trackableId>": {
+      claimedStatus, confirmedStatus, confirmState pending|confirmed|returned,
+      confirmedByPersonId, confirmedAt, domainIds[], notes, updatedAt } }
+
+activity/{tenantId}__{personId}__{weekKey}          one doc per week
+  entries[]{ date, subjectId, unitKey, trackableId, action,
+             viaProgramId, viaSessionId }           context lives HERE, not on the record
+
+bookmarks/{tenantId}__{personId}                    ONE document
+  resume{ "<moduleId>::<programId>::<subjectId>": {position, settings, updatedAt} }
+  saved[]{ id, programId, moduleId, subjectId, name, position, settings }</div>
+
+<h3>Layer 2.5 &mdash; communication</h3>
+<div class="kv">threads/{tenantId}__{threadId}
+  personId, anchor{moduleId?, subjectId?, unitKey?}, kind
+  participantPersonIds[], status open|resolved, lastMessageAt, unreadFor[]
+messages/{threadId}/{messageId}    authorPersonId, body, createdAt, readBy[]   append-only
+
+teachingNotes/{tenantId}__{noteId}                  PRIVATE to the author
+  authorPersonId, aboutPersonId | aboutClassId, body, createdAt</div>
+
+<h3>Layer 3 &mdash; homework</h3>
+<div class="kv">assignments/{tenantId}__{assignmentId}
+  createdByPersonId, assignedToPersonIds[], contextId?
+  moduleId, subjectId, unitKeys[], dueDate, instructions, maxScore, status
+submissions/{assignmentId}__{personId}    score, markedByPersonId, markedAt</div>
+
+<h3>Layer 4 &mdash; Operations (planned, not built)</h3>
+<div class="kv">calendarTerms   term dates, holidays, week numbers
+timetable       routine template: class + subject + teacher + slot
+sessions        DATED instance;  classId is OPTIONAL -- private tuition has no class
+attendance      per session; students AND teachers; present|absent|late|excused
+availability    teacher availability and cover
+notices, admissions, staffRecords</div><section class="sec" id="s4"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>The invariants</h2></div><p class="sec-note">The short list of rules that keep this from collapsing back into special cases. If these hold, the architecture holds.</p><div class="tw"><table><thead><tr><th>#</th><th>Rule</th><th>What breaks if it is broken</th></tr></thead><tbody>
+<tr><td>I1</td><td><strong>Nothing in Layer 2 or 3 ever requires a <code>classId</code></strong></td><td>Family and Individual accounts stop working. Private tuition cannot take attendance.</td></tr>
+<tr><td>I2</td><td><strong>Modules never call each other. Renderers are shared components.</strong></td><td>The old <code>syncWayToTracker</code> bridge returns.</td></tr>
+<tr><td>I3</td><td><strong><code>viaProgramId</code> and <code>viaSessionId</code> live on activity, never in a record key</strong></td><td>Three entry paths create three progress states for one ayah; program history overwrites itself.</td></tr>
+<tr><td>I4</td><td><strong>Nothing is ever deleted</strong> &mdash; archive, revoke, return, mark consumed</td><td>History is lost and cannot be recovered.</td></tr>
+<tr><td>I5</td><td><strong>Units are keyed by permanent ID, never by name</strong></td><td>Renaming a topic erases every record attached to it.</td></tr>
+<tr><td>I6</td><td><strong>Confirmation state is frozen when marked, never recalculated</strong></td><td>An independent student joining a madrasah has years of work retroactively un-confirmed.</td></tr>
+<tr><td>I7</td><td><strong>Not Applicable is excluded from totals, not counted as zero</strong></td><td>Students are permanently penalised for approaches that never applied to them.</td></tr>
+<tr><td>I8</td><td><strong>Curriculum content is separate from schedule</strong></td><td>A unit cannot be moved between weeks; every class needs its own copy of the curriculum.</td></tr>
+<tr><td>I9</td><td><strong>Nothing joins the startup path without being flagged</strong></td><td>The app gets slower with every module added, permanently.</td></tr>
+<tr><td>I10</td><td><strong><code>platformAdmin</code> cannot be self-granted</strong></td><td>This is exactly the S1 vulnerability that was found and fixed.</td></tr>
+<tr><td>I11</td><td><strong>Every user-visible name is language-keyed from day one</strong></td><td>Adding Bangla later means touching every screen and every record.</td></tr>
+<tr><td>I12</td><td><strong>Roll-ups count through <code>ancestorIds</code> &mdash; counted once, never twice</strong></td><td>Mark Fiqh and Deen Study counts it twice.</td></tr>
+<tr><td>I13</td><td><strong>Tenant isolation is enforced in security rules, not only in queries</strong></td><td>A filter in JavaScript is a convenience, not a protection.</td></tr>
+<tr><td>I15</td><td><strong>A failed write must reach the user. Never <code>console.error</code> alone.</strong></td><td>This is exactly how bug B1 hid: four collections silently failed to save for months while the app looked healthy.</td></tr>
+<tr><td>I16</td><td><strong>Every existing <code>personId</code> is preserved unchanged at migration</strong></td><td><code>studyProgress</code>, <code>rukuSummaries</code>, <code>juzSummaries</code>, <code>monitorWeeks</code> are all keyed by it. Regenerate one and that person&rsquo;s entire history is orphaned.</td></tr>
+<tr><td>I17</td><td><strong>Every document carries <code>schemaVersion</code>, <code>createdAt</code>, <code>updatedAt</code>, <code>createdBy</code></strong></td><td>No way to change a field safely later; no audit trail for who did what.</td></tr><tr><td>I14</td><td><strong>Sessions are fetched by date range only, never as a set</strong></td><td>Tens of thousands of session documents per school year.</td></tr>
+</tbody></table></div><section class="sec" id="s5"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Renderers, units and keys</h2></div><h3>Three renderers serve every module</h3>
+<div class="tw"><table><thead><tr><th>Renderer</th><th>Used by</th><th>Marks against</th></tr></thead><tbody>
+<tr><td><code>ayah</code></td><td>QuranRevival</td><td>ayah, range, surah, page, ruku, juz, hizb, rub, manzil</td></tr>
+<tr><td><code>topic</code></td><td>Arabic, Hadith, Deen Study, General Study, Nature-Life</td><td>hadith number, page, curriculum unit, topic</td></tr>
+<tr><td><code>routine</code></td><td>Learn Deen On-the-Go, Health</td><td>a scheduled habit</td></tr>
+</tbody></table></div>
+<h3>Unit keys are namespaced and permanent</h3>
+<div class="kv">ayah:2:255        range:2:255-257     surah:2          page:madani:127
+ruku:2:34         juz:3               hizb:5           rub:20
+manzil:2          hadith:bukhari:5678 topic:topic_0042 name:17  (Asma ul Husna)</div>
+<p><code>unitType</code> is stored alongside the key, so &ldquo;show all page-based progress&rdquo; is one query.</p>
+<h3>Layout A &mdash; one frame, panels switched on</h3>
+<p>Each approach declares which tools it needs: <code>text, audio, loop, wordByWord, tajweed,
+writing, notes, reflection, timer, checklist</code>. Adding approach 31 is a row of data, not a build.</p>
+<h3>The Guide tab &mdash; three fields per approach</h3>
+<p>What is this approach &middot; How to do it &middot; How to measure your progress. The third is
+<strong>optional with a generic fallback</strong> &mdash; six statuses &times; 30 approaches &times; two languages
+is 360 short texts, and it must not block the module.</p>
+<h3>Where Quran content lives &mdash; a decision that was missing</h3>
+<p>Quran text, tajweed markup, word-by-word data and translations are the <strong>largest payload in
+the whole platform</strong> &mdash; far larger than every record a student will ever create. They are also
+completely static: ayah 2:255 will never change.</p>
+<div class="box key"><span class="bt">Static content does not belong in a database</span>
+<p>Quran content is served as <strong>static files, one per surah, cached permanently by the browser</strong>
+&mdash; never as Firestore reads. Firestore reads cost money, are slower than a cached file, and buy
+nothing for data that never changes.</p>
+<p>Load one surah when it is opened. Never load the Quran.</p></div>
+<h3>The landing rule &mdash; computed, not configured</h3>
+<div class="kv">Person uses ONE module   -> the app opens straight INTO that module
+Person uses TWO or more  -> card grid + Continue strip</div>
+<p>So through Stages A and B almost everyone opens the app and sees the wheel &mdash; without the wheel
+ever being the platform&rsquo;s front door. As they add a second module the grid appears on its own.
+Same principle as the adaptive Results view; nothing to configure, nothing to rebuild at Stage C.</p>
+<p><strong>The Mastery Wheel is QuranRevival&rsquo;s landing page, never the platform&rsquo;s.</strong> The approach
+dropdown sits beside it as a second door &mdash; the wheel for seeing everything at once, the dropdown
+for reaching an approach by name.</p>
+<h3>Status colours</h3>
+<p>Six statuses need six steps on the ramp. <strong>Achieved and Mastered must be visibly distinct</strong>
+&mdash; adjacent colours are indistinguishable on a small wheel segment. <strong>Not Applicable is not on
+the ramp at all</strong>: rendered greyed or hatched, and excluded from the total.</p><h3>Progress statuses</h3>
+<div class="kv">Not Applicable | Not started | Learning | Practising | Achieved | Mastered
+   ^ off the ladder, excluded from totals, rendered greyed/hatched -- never a colour on the ramp</div><section class="sec" id="s6"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Roles, access and confirmation</h2></div><div class="tw"><table><thead><tr><th>Role</th><th>Can</th><th>Cannot</th></tr></thead><tbody>
+<tr><td><strong>owner</strong></td><td>Create the account, add people, invite, configure everything</td><td>&mdash;</td></tr>
+<tr><td><strong>prime</strong></td><td>Run the madrasah academically: all classes, students, teachers, curriculum, reports; confirm anyone</td><td>Transfer ownership; Finance</td></tr>
+<tr><td><strong>teacher</strong></td><td>Teach, assign, mark, confirm, reply; edit their own class schedule</td><td>Roles, permissions, catalogue configuration; other teachers&rsquo; students</td></tr>
+<tr><td><strong>guardian</strong></td><td>All a teacher can, for their own children only; manage children&rsquo;s accounts</td><td>Anyone else&rsquo;s children</td></tr>
+<tr><td><strong>student</strong></td><td>Study, claim status, bookmark, ask, submit homework</td><td>Confirm own attainment; see others</td></tr>
+<tr><td><strong>self</strong></td><td>Study and confirm own progress</td><td>&mdash;</td></tr>
+</tbody></table></div>
+<p><strong>Roles are rows.</strong> One person may hold several at once &mdash; owner + prime + teacher, or
+owner + guardian + student. <strong>platformAdmin</strong> sits outside the six, has full access to all
+accounts and data, and cannot be self-granted. <strong>&ldquo;View as&rdquo;</strong> lets Admin preview the app
+exactly as a teacher or student sees it.</p>
+<h3>Who confirms &mdash; computed, never configured</h3>
+<div class="kv">Does this person have a teacher, guardian or prime?
+   YES -> their marks wait for confirmation
+   NO  -> their marks count straight away</div>
+<p>A teacher&rsquo;s own study is <strong>self-confirmed</strong>. Confirmation can be switched on or off
+<strong>per subject</strong>. <strong>Bulk confirm</strong> &mdash; a surah, a week, a class &mdash; is required from
+the first version, not added later.</p>
+<h3>Child safety &mdash; keyed on <code>isMinor</code>, not on role</h3>
+<ul class="tick">
+<li><strong>Minor:</strong> guardian sees every thread &middot; no private adult&harr;child thread &middot; append-only</li>
+<li><strong>Adult:</strong> private teacher&harr;student thread allowed &middot; still append-only</li>
+<li>Teacher feedback reaches the parent, copied to Admin</li></ul><section class="sec" id="s7"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Build phases</h2></div><p class="sec-note">Fifteen phases. Each ends with something usable. Nothing in a later phase is a prerequisite for an earlier one.</p><div class="tw"><table><thead><tr><th>Phase</th><th>Name</th><th>Needs</th><th>Delivers</th><th>Features</th></tr></thead><tbody><tr><td><strong>0</strong></td><td><strong>Foundation</strong></td><td>&mdash;</td><td>Firebase project, collections, tenant-isolation rules, auth, offline persistence enabled, language-key structure, feature registry. <strong>No UI.</strong></td><td><code>F-001&hellip;F-008</code></td></tr><tr><td><strong>1</strong></td><td><strong>Identity &amp; access</strong></td><td>0</td><td>tenants, people, memberships, userIndex, invites with quota, role switching, tenant switcher, View&nbsp;as, managed accounts, Study Mode handover lock</td><td><code>F-009&hellip;F-020</code></td></tr><tr><td><strong>2</strong></td><td><strong>Catalogue</strong></td><td>1</td><td>Module registry, subject tree with ancestors, templates + copy-on-write, 30 approaches as trackables in 7 sections, Guide tab fields, ladders and levels</td><td><code>F-021&hellip;F-032</code></td></tr><tr><td><strong>3</strong></td><td><strong>Tracking core</strong></td><td>2</td><td>records (chunked), activity (weekly), 6 statuses, Not-Applicable exclusion, unit keys incl. hizb/rub/manzil, domainIds, confirmation + bulk confirm + return</td><td><code>F-033&hellip;F-046</code></td></tr><tr><td><strong>4</strong></td><td><strong>QuranRevival module</strong></td><td>3</td><td>Ayah renderer, Mastery Wheel, Way modal (Track/Guide/Breakdown/Coverage), panels per approach, approach dropdown, tajweed toggle, word-by-word, audio + loop, Bangla Quran translation</td><td><code>F-047&hellip;F-060</code></td></tr><tr><td><strong>5</strong></td><td><strong>Migration &amp; parity</strong></td><td>4</td><td>Additive import from the old file; old collections untouched; <strong>B1 write-path bug traced</strong>; backfill of stranded summaries; <strong>parity checklist &mdash; your sign-off</strong></td><td><code>F-061&hellip;F-066</code></td></tr><tr><td><strong>6</strong></td><td><strong>Deen Study &amp; topic renderer</strong></td><td>3</td><td>Topic renderer, Deen subjects, Monitor data migrated onto Layer 2, old sync bridge deleted</td><td><code>F-067&hellip;F-072</code></td></tr><tr><td><strong>7</strong></td><td><strong>Bookmarks, programs, routines</strong></td><td>3</td><td>Bookmarks (auto-resume + named, grouped by program), Continue strip, course offers with routines, LDOG module, routine renderer, in-app reminders</td><td><code>F-073&hellip;F-084</code></td></tr><tr><td><strong>8</strong></td><td><strong>Monitor &amp; reports</strong></td><td>6,7</td><td><strong>Two report shapes</strong> &mdash; levels for subjects, streaks for programs. Adaptive tabs, filters computed from data, CSV, print, editable labels, export-everything</td><td><code>F-085&hellip;F-096</code></td></tr><tr><td><strong>9</strong></td><td><strong>Homework &amp; feedback</strong></td><td>8</td><td>Assignments to person or class, numeric scores, confirm-with-comment, parent copy, Admin copy, teaching notes</td><td><code>F-097&hellip;F-106</code></td></tr><tr><td><strong>10</strong></td><td><strong>Classes &amp; provider</strong></td><td>9</td><td>Classes, enrolments, prime role, teacher assignment, class-wide bulk confirm, safeguarding rules at scale</td><td><code>F-107&hellip;F-116</code></td></tr><tr><td><strong>11</strong></td><td><strong>Curriculum, grades &amp; resources</strong></td><td>10</td><td>Curriculum units (cross-subject), plan separate from content, 4 terms &times; 10 weeks, grades per ladder, dated level history, resources as links and text</td><td><code>F-117&hellip;F-130</code></td></tr><tr><td><strong>12</strong></td><td><strong>Remaining modules</strong></td><td>11</td><td>Arabic, General Study, Health, Nature-Life, Hadith &mdash; all as data on existing renderers</td><td><code>F-131&hellip;F-140</code></td></tr><tr><td><strong>13</strong></td><td><strong>Full messaging &amp; extras</strong></td><td>9</td><td>Threads, per-person inbox, unread counts, resolved/open, Asma ul Husna screensaver + study units, About screen reading the feature registry</td><td><code>F-141&hellip;F-152</code></td></tr><tr><td><strong>14</strong></td><td><strong>Operations</strong></td><td>11</td><td>4A calendar &middot; 4B timetable &middot; 4C sessions (classId optional) &middot; 4D attendance, students and teachers &middot; 4E availability and cover &middot; 4F notices &middot; 4G admissions &middot; 4H staff records</td><td><code>F-153&hellip;F-175</code></td></tr><tr><td><strong>15+</strong></td><td><strong>Reserved</strong></td><td>&mdash;</td><td>Finance &middot; Layer 3.5 medical &middot; Layer 6 facilities &middot; distribution &middot; voice recitation &middot; file uploads &middot; push notifications</td><td><code>&mdash;</code></td></tr></tbody></table></div><div class="box warn"><span class="bt">Phase 5 has no checklist source &mdash; and needs one</span>
+<p>The original plan derived the parity checklist from <code>QuranRevival_System_Blueprint.md</code>.
+<strong>That file was never supplied.</strong> So the gate that protects the old app currently has no
+authoritative list behind it.</p>
+<p><strong>Resolution:</strong> at the start of Phase 5, the checklist is generated by auditing the live
+production file directly &mdash; every screen, control and stored field enumerated from the code, not
+from memory or from a document that does not exist. That list is then signed by the owner.</p></div>
+<h3>Rules the audit found missing</h3>
+<div class="tw"><table><thead><tr><th>Question</th><th>Rule</th></tr></thead><tbody>
+<tr><td><strong>Offline conflict</strong> &mdash; two devices change the same thing while offline</td><td>Last write wins on reconnect. Acceptable for study data; the user is told when a value was replaced, never silently overwritten.</td></tr>
+<tr><td><strong>Week boundary</strong> &mdash; when does a week start?</td><td>Set per tenant, not globally. A madrasah week and a family week are not the same, and every weekly report depends on it.</td></tr>
+<tr><td><strong>Migration naming</strong></td><td>Each existing teacher becomes one tenant, auto-named &ldquo;&lt;Teacher&rsquo;s name&rsquo;s&gt; Madrasah&rdquo;, editable afterwards.</td></tr>
+<tr><td><strong>Backup</strong> &mdash; separate from export</td><td>Export is data portability for the owner. Backup is disaster recovery for the platform. Both needed; they are not the same feature.</td></tr>
+</tbody></table></div>
+<div class="box warn"><span class="bt">Unresolved &mdash; needs the owner&rsquo;s decision</span>
+<p><strong>&ldquo;Nothing is ever deleted&rdquo; (I4) will one day meet a parent who asks for their child&rsquo;s data
+to be removed.</strong> A school holding children&rsquo;s records cannot simply refuse.</p>
+<p>These two principles genuinely conflict, and the conflict has not been resolved. The usual answer
+is <em>anonymise rather than delete</em> &mdash; strip the name and contact details, keep the study history
+detached from any identity. That satisfies both, but it is a decision, not a detail.</p></div>
+<div class="box key"><span class="bt">Self-check screen &mdash; recommended addition</span>
+<p>The owner is a non-coder and has already found step-by-step browser testing too laborious to
+sustain. Every phase that ends with &ldquo;please test this&rdquo; is a phase whose verification may not happen.</p>
+<p><strong>Proposal:</strong> an Admin-only screen that checks the app&rsquo;s own health &mdash; every collection
+reachable, a test write to each succeeding, no queued offline writes stuck, no silent failures in
+the last session. One tap, plain-language result.</p>
+<p>Bug B1 would have been caught on day one by a screen like this.</p></div><h3>Existing features that must survive &mdash; carried explicitly</h3>
+<p>Named here because each was in the original parity list and each is easy to lose in a rebuild.</p>
+<div class="tw"><table><thead><tr><th>Feature</th><th>Where it lives today</th></tr></thead><tbody>
+<tr><td>Ayah Mastery Wheel</td><td>main study screen</td></tr>
+<tr><td>Way modal &mdash; Track, Guide, Breakdown, Coverage tabs</td><td>per approach</td></tr>
+<tr><td>Tajweed colour toggle</td><td>study settings</td></tr>
+<tr><td><strong>Word-by-word AND root-derivative panel</strong></td><td>two panels, not one</td></tr>
+<tr><td>Audio playback with loop</td><td>study screen</td></tr>
+<tr><td>Bangla Quran translation</td><td>study screen</td></tr>
+<tr><td><strong>Personal theme colours</strong></td><td><code>userPrefs/{uid}</code> &mdash; per signed-in user, not per person</td></tr>
+<tr><td><strong>Global banner</strong></td><td><code>appSettings/global</code> &mdash; Admin writes, everyone reads</td></tr>
+<tr><td><strong>Inline text-editing / text styles</strong></td><td><code>teachers/{id}.textStyles</code></td></tr>
+<tr><td>Editable labels</td><td>Monitor</td></tr>
+<tr><td>Shared student roster</td><td><code>people</code></td></tr>
+<tr><td>Weekly / monthly reports, CSV, print</td><td>Monitor</td></tr>
+<tr><td>Explore &middot; Choose Ayah &middot; Study Settings &middot; Home menu</td><td>study screen controls</td></tr>
+<tr><td>The two opening screens</td><td>startup &mdash; kept, needs refinement</td></tr>
+</tbody></table></div><div class="box warn"><span class="bt">Phase 5 is the gate</span>
+<p>The old production file is not retired until the parity checklist is signed <strong>by you</strong>.
+Until then it remains the live fallback, untouched.</p></div>
+<div class="box key"><span class="bt">Every feature carries a permanent ID</span>
+<p>The same ID appears in this document, in the build step that delivers it, in the parity checklist,
+and in the <strong>About screen inside the app</strong> &mdash; which reads the same registry and shows each
+feature as Built or Planned. <strong>A feature cannot exist in words only</strong>, because the app itself
+would report it as unbuilt.</p></div><section class="sec" id="s8"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Load-speed budget</h2></div><p class="sec-note">Speed is the one non-negotiable. This is the contract.</p><div class="tw"><table><thead><tr><th>Moment</th><th>Allowed</th><th>Never</th></tr></thead><tbody>
+<tr><td><strong>Startup, before first paint</strong></td><td>Local cache only &mdash; paint immediately</td><td>Any network wait</td></tr>
+<tr><td><strong>Startup, after first paint</strong></td><td>3 reads: userIndex, enrolments, bookmarks</td><td>Any module&rsquo;s study data</td></tr>
+<tr><td><strong>Landing page</strong></td><td>Card information only</td><td>Records, curriculum, sessions</td></tr>
+<tr><td><strong>Module registry</strong></td><td>Bundled in the app, refreshed in background</td><td>A blocking read</td></tr>
+<tr><td><strong>Records</strong></td><td>One chunk per surah or subject</td><td>All records for a person</td></tr>
+<tr><td><strong>Activity</strong></td><td>One document per week</td><td>A year at once</td></tr>
+<tr><td><strong>Sessions</strong></td><td>Date range only</td><td>The full set &mdash; tens of thousands per year</td></tr>
+<tr><td><strong>Screensaver, About, resources</strong></td><td>On first use</td><td>At startup</td></tr>
+</tbody></table></div>
+<div class="box ok"><span class="bt">Measured against today</span>
+<p>The current app makes <strong>four failing, blocking round-trips</strong> at every startup before it can
+finish loading. Removing those alone means the new build starts <em>faster</em> than the old one, before
+any other improvement is counted.</p></div><section class="sec" id="s9"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Planned but not built</h2></div><p class="sec-note">Everything deliberately deferred, so a future architect knows it was considered, not missed.</p><div class="tw"><table><thead><tr><th>Item</th><th>Why deferred</th><th>Seam it plugs into</th></tr></thead><tbody>
+<tr><td><strong>Finance</strong> &mdash; fees, invoices, payments, salaries</td><td>Needs an audit trail, not status tracking</td><td>Layer 5</td></tr>
+<tr><td><strong>Medical records</strong> &mdash; allergies, medications, growth</td><td>A medication is not a status 0&ndash;5; needs stricter rules</td><td>Layer 3.5</td></tr>
+<tr><td><strong>Library, transport, hostel, canteen, payroll</strong></td><td>Each is its own small app; none touches study data</td><td>Layer 6</td></tr>
+<tr><td><strong>Voice recitation</strong></td><td>Device-local + share sheet, zero cloud storage. Format mismatch between iPhone and Android is unresolved.</td><td>Activity entry + text note</td></tr>
+<tr><td><strong>File uploads</strong></td><td>Storage grows with every student. Links and text first.</td><td>resources.type</td></tr>
+<tr><td><strong>Push notifications</strong></td><td>Requires the distribution decision; iOS needs home-screen install</td><td>routine.reminder</td></tr>
+<tr><td><strong>Distribution</strong> &mdash; PWA vs native</td><td>Blocks nothing above it. Children&rsquo;s-data store policies apply when taken up.</td><td>&mdash;</td></tr>
+<tr><td><strong>Group chat</strong></td><td>Safeguarding &mdash; conversations stay student&harr;teacher</td><td>threads.kind</td></tr>
+<tr><td><strong>Additional languages</strong></td><td>Structure built from day one; content is a writing task</td><td><code>{lang}</code> on every name</td></tr>
+</tbody></table></div><section class="sec" id="s10"><div class="sec-head"><svg class="rose" viewBox="0 0 32 32" aria-hidden="true"><g fill="none" stroke="#B8862F" stroke-width="1.3"><rect x="6.2" y="6.2" width="19.6" height="19.6"/><rect x="6.2" y="6.2" width="19.6" height="19.6" transform="rotate(45 16 16)"/></g><circle cx="16" cy="16" r="4.1" fill="#1F3A6E"/><circle cx="16" cy="16" r="1.5" fill="#F2F4F1"/></svg><h2>Growth seams</h2></div><p class="sec-note">Where the future plugs in without rework. This is the test of whether the architecture holds.</p><div class="tw"><table><thead><tr><th>To add&hellip;</th><th>What it costs</th></tr></thead><tbody>
+<tr><td>A new module</td><td>One row in <code>modules</code>, if it uses an existing renderer</td></tr>
+<tr><td>A new approach (31st, 40th)</td><td>One row in <code>trackables</code> with its panel list</td></tr>
+<tr><td>A new unit type</td><td>A new namespace prefix; <code>unitType</code> already stored</td></tr>
+<tr><td>A new subject, domain, or level</td><td>One node; re-parent freely, history follows the ID</td></tr>
+<tr><td>A new language</td><td>A new key inside existing <code>{lang}</code> objects</td></tr>
+<tr><td>A new role</td><td>One value; roles are already rows, one person may hold many</td></tr>
+<tr><td>A new tenant type</td><td>Nothing in Layers 2&ndash;3 branches on tenant type</td></tr>
+<tr><td>A new renderer</td><td>Only if a module genuinely needs a fourth kind of screen</td></tr>
+<tr><td>Operations, Finance, Facilities</td><td>New layers alongside; no existing collection changes</td></tr>
+</tbody></table></div>
+<div class="box key"><span class="bt">The real test</span>
+<p>Every row above costs data, not code. Where a row costs a build, that is where the architecture
+would need revisiting &mdash; and there are only two: a fourth renderer, and a new layer.</p></div><footer>Nothing in this document has been built. The current production HTML file remains untouched and is the live fallback until the Phase 5 parity checklist is signed. Wa billahi tawfiq.</footer></div></body></html>
