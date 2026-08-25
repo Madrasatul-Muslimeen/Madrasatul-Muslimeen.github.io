@@ -4568,14 +4568,17 @@ states (numbers match the last known-good build exactly -- 148px/377px/5
 rows at 390x844 with the tenant banner set, etc. -- confirming nothing
 touched by this round shifted anything there), and **`navcheck.mjs`** shows
 only the pre-existing, unrelated 320px English "Operation"/"Bookmark"
-truncation this project has carried since v07.29. All nine JS/HTML files
+truncation this project has carried since v07.29. All fifteen JS/HTML files
 edited pass a plain syntax check (`node --check`). The full
-`tools/i18n-verify/behaviour.mjs` suite (789 checks as of the last round --
-none of them exercise the new Edit/Archive/People UI yet, since that suite
-predates this round) was re-run against this round's own build; this
-paragraph was written while it was still in progress and does not claim its
-final pass count -- check this session's own follow-up note, or re-run it
-directly, for the confirmed result. No `firestore.rules`, schema or
+`tools/i18n-verify/behaviour.mjs` suite (none of it exercises the new
+Edit/Archive/People UI yet, since that suite predates this round) was
+re-run against this round's own build: **789 checks pass, 0 failed**,
+reaching the exact same already-disclosed crash point this project has
+carried since v07.69 (a stale `[data-note-master-toggle]` visibility
+assumption from before the round-31 bar reorg, unrelated to this round) --
+byte-identical to v07.74's own last recorded run, confirming this round
+introduced no regression anywhere the suite can reach. No `firestore.rules`,
+schema or
 Firestore data changes -- nothing to deploy but the static files.
 
 ## What this is
