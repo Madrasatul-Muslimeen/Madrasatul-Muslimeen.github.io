@@ -172,13 +172,38 @@
     flex: 1 1 0; background: white; color: #1F3A6E; border: 1px solid #ddd;
     border-radius: 0.5rem; font-weight: 700; font-size: 0.85rem; padding: 0.5rem 0.3rem;
   }
-  .qr-tab::after { content: " \25B4"; font-size: 0.7em; color: #888; }
+  /* Enhancement round -- a NON-breaking space (\00a0) before the caret, not a
+     plain one: with five tabs on the row instead of three, Options/Explore
+     get a narrower share, and a plain space let the caret wrap onto its own
+     orphaned second line while "Options"/"Explore" stayed on the first --
+     legal by the ordinary "labels wrap, never truncate" rule, but the result
+     read as broken rather than as a clean two-line label. \00a0 makes the
+     label+caret one unbreakable run, so flex gives it a real minimum width
+     instead of a wrap point -- the same reason "Approach" (one word, already
+     unbreakable) never wrapped in the first place. */
+  .qr-tab::after { content: "\00a0\25B4"; font-size: 0.7em; color: #888; }
   .qr-tab[aria-expanded="true"] { background: #1F3A6E; color: white; border-color: #1F3A6E; }
-  .qr-tab[aria-expanded="true"]::after { content: " \25BE"; color: #cfe0ff; }
+  .qr-tab[aria-expanded="true"]::after { content: "\00a0\25BE"; color: #cfe0ff; }
   /* The Read tab is a view switch, not a drawer -- no caret to point at a
      panel that never slides up, and its "on" state is aria-pressed. */
   .qr-tab-view::after { content: none; }
   .qr-tab[aria-pressed="true"] { background: #1F3A6E; color: white; border-color: #1F3A6E; }
+
+  /* Enhancement round -- five tabs measured down to 320px (the floor shell
+     round 15's own @media (max-width: 340px) block existed for, retired in
+     round 16 once nothing needed it any more -- reintroduced here on the
+     same floor for the same reason: a real content-fit problem, not a
+     guess). At the ordinary sizing, "Approach"/"Options ▴"/"Explore ▾" each
+     need their own real minimum width, and MEASURED, five of those together
+     genuinely do not fit a 320px phone's available ~288px -- short of one
+     tab losing its label to truncation or the row scrolling sideways,
+     neither acceptable by this page's own rule. Nothing above 340px is
+     touched; 360px and up were already measured clean with the ordinary
+     values. */
+  @media (max-width: 340px) {
+    #tabRow { gap: 0.22rem; }
+    .qr-tab { font-size: 0.76rem; padding: 0.5rem 0.2rem; }
+  }
 
   .qr-panel {
     position: absolute; left: 0; right: 0; bottom: 100%;
@@ -1511,11 +1536,28 @@
       </div>
 
       <div id="tabRow">
-        <button type="button" class="qr-tab" id="tabStudyOptionsBtn" data-panel="panelStudyOptions" aria-controls="panelStudyOptions" aria-expanded="false">Study options</button>
-        <!-- Not a disclosure: this one switches the stage between the wheel and
-             the reading, so it carries aria-pressed rather than aria-expanded
-             and drops the caret the two panel tabs share. -->
+        <!-- Enhancement round -- five tabs, one line, per the owner's own
+             brief. "Options" is only a shorter label for this same tab
+             (still the "Study options"/"Study Settings" panel underneath,
+             untouched); "Note" and "Approach" are new. Not disclosures:
+             Read/Note/Approach switch the STAGE between three views (the
+             wheel, the reading, the Ayah Note screen), so they carry
+             aria-pressed rather than aria-expanded and drop the caret the
+             two panel tabs share -- exactly one of the three is pressed at
+             any time, matching whichever view #stage is actually showing.
+             Approach starts pressed because the wheel is #stage's own
+             default view (the landing page is unchanged by this round). -->
+        <button type="button" class="qr-tab" id="tabStudyOptionsBtn" data-panel="panelStudyOptions" aria-controls="panelStudyOptions" aria-expanded="false">Options</button>
         <button type="button" class="qr-tab qr-tab-view" id="tabReadBtn" aria-controls="readView" aria-pressed="false">Read</button>
+        <!-- Opens the Ayah Note screen for whichever āyah is currently open
+             -- the same screen the wheel's own slice click and the ⋮ quick
+             menu's "Note & more" already land on, now reachable directly. -->
+        <button type="button" class="qr-tab qr-tab-view" id="tabNoteBtn" aria-controls="noteView" aria-pressed="false">Note</button>
+        <!-- Opens the Mastery Wheel + its full Approaches list, unchanged
+             from what already renders as the landing screen -- clicking a
+             slice or a list row still hands off to Note, exactly as today
+             (jumpToApproach() -> openNoteView()). -->
+        <button type="button" class="qr-tab qr-tab-view" id="tabApproachBtn" aria-controls="wheelSection" aria-pressed="true">Approach</button>
         <button type="button" class="qr-tab" id="tabExploreBtn" data-panel="panelExplore" aria-controls="panelExplore" aria-expanded="false">Explore</button>
       </div>
       <div id="unitLabel"></div>
@@ -1753,11 +1795,13 @@
     const searchStatus = document.getElementById("searchStatus");
     const searchResults = document.getElementById("searchResults");
 
-    // Panel tabs only. The Read tab (shell round 17) is a stage-view switch
-    // with no panel behind it, so it must NOT be in this list -- closeAllPanels()
-    // looks each of these up by data-panel.
+    // Panel tabs only. Read/Note/Approach are stage-view switches with no
+    // panel behind them, so none of the three may be in this list --
+    // closeAllPanels() looks each of these up by data-panel.
     const dockTabs = Array.from(document.querySelectorAll(".qr-tab[data-panel]"));
     const tabReadBtn = document.getElementById("tabReadBtn");
+    const tabNoteBtn = document.getElementById("tabNoteBtn");
+    const tabApproachBtn = document.getElementById("tabApproachBtn");
     const readView = document.getElementById("readView");
     const noteView = document.getElementById("noteView");
     // Shell round 22 -- the reading screen's own pickers. Each one MIRRORS the
@@ -3195,31 +3239,33 @@
     // -----------------------------------------------------------------------
     // Shell round 17 (15 Aug 2026) -- the reading screen.
     //
-    // The stage holds two views and shows one: the Mastery Wheel (the landing
-    // screen, unchanged) or the reading. The wheel heading and #wheelSection
-    // are hidden rather than moved, so every measured rule that keys off them
-    // being direct children of #stage still applies exactly as before.
+    // The stage holds three views and shows one: the Mastery Wheel (the
+    // landing screen, unchanged), the reading, or the Ayah Note screen. The
+    // wheel heading and #wheelSection are hidden rather than moved, so every
+    // measured rule that keys off them being direct children of #stage still
+    // applies exactly as before.
     // -----------------------------------------------------------------------
     let stageView = "wheel";
 
-    // "note" (the Ayah Note panel's "Note & more" view) joins "wheel"/"read"
-    // as a third possible value, reached only from inside #readView's own ⋮
-    // quick menu -- there is no dock tab of its own. tabReadBtn shows pressed
-    // for either "read" or "note" (both are the reading experience, one just
-    // deeper), and its own click handler already does the right thing: its
-    // check is `stageView === "read"`, which is false while noting, so a tap
-    // falls through to the normal open-reading path and leaves note view
-    // exactly the way any other dock tap does (settled with the owner: no ×
-    // button, just the same navigation model as the rest of the screen).
+    // Enhancement round -- "note" used to be reached only from inside
+    // #readView's own ⋮ quick menu or a wheel-slice click, with no dock tab
+    // of its own; tabReadBtn showed pressed for either "read" or "note" as a
+    // stand-in. Now that Read/Note/Approach are three real dock tabs, each
+    // shows pressed for exactly its own view -- setStageView() is the one
+    // place that decides which, so a tab's pressed state can never drift
+    // from what #stage is actually showing.
     function setStageView(view) {
       stageView = view;
       const reading = view === "read";
       const noting = view === "note";
-      wheelHeadingEl.hidden = reading || noting;
-      wheelSectionEl.hidden = reading || noting;
+      const onWheel = view === "wheel";
+      wheelHeadingEl.hidden = !onWheel;
+      wheelSectionEl.hidden = !onWheel;
       readView.hidden = !reading;
       noteView.hidden = !noting;
-      tabReadBtn.setAttribute("aria-pressed", reading || noting ? "true" : "false");
+      tabReadBtn.setAttribute("aria-pressed", reading ? "true" : "false");
+      tabNoteBtn.setAttribute("aria-pressed", noting ? "true" : "false");
+      tabApproachBtn.setAttribute("aria-pressed", onWheel ? "true" : "false");
       // The READING screen's own full screen (immersive-read) is unrelated
       // to the Note view's own (note-immersive, toggleNoteFullscreen()) --
       // clear whichever one this new view doesn't own, so neither can leak
@@ -3330,7 +3376,11 @@
     }
 
     tabReadBtn.addEventListener("click", () => {
-      if (stageView === "read") { setStageView("wheel"); return; } // same "tap the open tab to close it" idiom as the panels
+      // Same "tap the open tab to close it" idiom as the panels. The hub was
+      // possibly sized while #wheelSection sat hidden (layoutWheelHub() no-ops
+      // against a 0-width container) -- renderWheel() lays it out for real
+      // now that it is shown again, same as the new Approach tab does below.
+      if (stageView === "read") { setStageView("wheel"); renderWheel(); return; }
       closeAllPanels();
       // Opening the reading screen is the last gesture before Play for anyone
       // who never opens Study options -- one of the places round 19 warms the
@@ -3366,6 +3416,32 @@
       // back. Now that Mushaf is a tick rather than a unit-type accident, this
       // applies to a single ayah's page too.
       if (mushafToggle.checked) setImmersive(true);
+    });
+
+    // Enhancement round -- Note as its own dock tab. Opens the Ayah Note
+    // screen for whichever āyah is on screen right now, the same
+    // buildUnitKey.ayah(currentSurahNum, currentAyahNum) target
+    // jumpToApproach() already uses; openNoteView() does the rest (loads the
+    // notes doc, seeds noteScope, calls setStageView("note")). No extra
+    // audio-warming call here -- every Play button this screen has already
+    // warms at the moment it is actually pressed (quickPlayAyah()), same as
+    // every other route into this same screen.
+    tabNoteBtn.addEventListener("click", () => {
+      if (stageView === "note") { setStageView("wheel"); renderWheel(); return; } // same close idiom as Read/Approach
+      closeAllPanels();
+      openNoteView(buildUnitKey.ayah(currentSurahNum, currentAyahNum));
+    });
+
+    // Enhancement round -- Approach as its own dock tab: the same Mastery
+    // Wheel + full Approaches list that has always been #stage's own default
+    // view, now also reachable directly from Read/Note/Explore. Nothing
+    // about the wheel itself changes -- clicking a slice or a sidebar row
+    // still hands off to Note exactly as today (jumpToApproach(), above).
+    tabApproachBtn.addEventListener("click", () => {
+      if (stageView === "wheel") return; // already showing -- nothing to toggle back to
+      closeAllPanels();
+      setStageView("wheel");
+      renderWheel(); // lay the hub out for real -- see the comment on tabReadBtn's own close branch
     });
 
     hideChromeBtn.addEventListener("click", advanceReadChrome);

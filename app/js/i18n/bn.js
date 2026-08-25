@@ -209,10 +209,15 @@ export const BN = {
   // live in their own file, js/i18n/surah-names-bn.js, because they are
   // data, not interface wording.
 
-  // --- The landing screen and its two dock tabs -------------------------
+  // --- The landing screen and its dock tabs ------------------------------
   "QuranRevival — Phase 4/5": "কুরআনরিভাইভাল",
   "Mastery Wheel": "দক্ষতার চাকা", // ?
   "Study options": "অধ্যয়নের সেটিংস",
+  // Enhancement round -- the dock's own tab label ("Options"), a shorter
+  // name for the same "Study options" panel above. "Note" and "Approach"
+  // (the two other new tabs) reuse existing keys elsewhere in this file --
+  // both already mean the same thing in this screen's own context.
+  "Options": "বিকল্প", // ?
   "Explore": "অন্বেষণ",
   "Study": "অধ্যয়ন",
     "Loading this surah…": "এই সূরা লোড হচ্ছে…",
