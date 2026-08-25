@@ -1713,6 +1713,16 @@ export const BN = {
   // English because none of the five call sites ever wrapped it in t().
   "Claimed and confirmed.": "দাবি করা হয়েছে এবং নিশ্চিত হয়েছে।",
 
+  // --- "Assign to" -- one Claim recorded for several family members/
+  // students at once (way-modal.js's renderAssignDropdown()). First-draft
+  // Bangla, worth the owner's own eye.
+  "you": "আপনি", // ?
+  "Assign to": "যাদের জন্য", // ?
+  "Everyone you can already record for.": "আপনি ইতিমধ্যে যাদের জন্য রেকর্ড করতে পারেন, তারা সবাই।", // ?
+  "Claim for {n}": "{n} জনের জন্য দাবি করুন", // ?
+  "Claimed for {names}.": "{names}-এর জন্য দাবি করা হয়েছে।", // ?
+  "Couldn't claim for {names}.": "{names}-এর জন্য দাবি করা যায়নি।", // ?
+
   // =====================================================================
   // Shell round 20 (17 Aug 2026) -- the moving tagline strip and its own
   // editing screen (taglines.html, js/taglines.js).

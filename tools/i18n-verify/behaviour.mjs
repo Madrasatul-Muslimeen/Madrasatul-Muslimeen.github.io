@@ -903,15 +903,19 @@ console.log("\n=== 24. PHASE 6: the claim message every module shows ===");
   // routine-study, asma-study) right through phases 1-5, because none of
   // them ever wrapped the ternary in t(). The coverage report could not
   // see it: its plural/ternary matcher only fires INSIDE t(...).
-  const src = await (await fetch("http://localhost:8080/app/js/topic-study.js")).text();
-  const quran = await (await fetch("http://localhost:8080/app/quranrevival.html")).text();
-  const routine = await (await fetch("http://localhost:8080/app/js/routine-study.js")).text();
-  const asma = await (await fetch("http://localhost:8080/app/js/asma-study.js")).text();
-  const bare = /(?<!t\()(?:^|[^(])outcome\.result\.needsConfirmation \? "Claimed/;
-  const all = [src, quran, routine, asma];
+  //
+  // "Assign to" round (a Claim can now go to several people at once): the
+  // ternary moved OUT of all five call sites into one shared way-modal.js
+  // helper, buildClaimResultMessage() -- a single assignee still reads
+  // exactly this sentence, several assignees get a different, also-t()'d
+  // sentence naming who got what. This check now reads that one function
+  // instead of five duplicated copies of the same pattern -- there is only
+  // one place left for it to go bare.
+  const wayModal = await (await fetch("http://localhost:8080/app/js/way-modal.js")).text();
+  const bare = /(?<!t\()(?:^|[^(])o\.needsConfirmation \? "Claimed/;
   check("24 every claim-confirmation message goes through t()",
-        all.every((f) => !bare.test(f)) && (quran.match(/t\(outcome\.result\.needsConfirmation/g) || []).length === 2,
-        "one or more call sites still bare");
+        !bare.test(wayModal) && (wayModal.match(/t\(o\.needsConfirmation \? "Claimed/g) || []).length === 1,
+        "the shared helper's own ternary is no longer wrapped in t()");
 }
 
 console.log("\n=== 25. v07.37: the language follows the ACCOUNT, not the browser ===");

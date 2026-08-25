@@ -4691,6 +4691,103 @@ schema or Firestore data changes -- `personTagId` on folders and
 `ownerPersonId` on a query string are both additive; nothing to deploy but
 the static files.
 
+v07.77 (25 Aug 2026, on Claude Code on the web) is **shell round -- "Assign
+to," a Claim recorded for several family members/students at once.** The
+owner's own ask: the Track/Guide/Breakdown/Coverage card (way-modal.js's
+`renderTrackTab()`) only ever claimed a status for whichever one person the
+Person picker currently pointed at; they wanted to tick several people and
+claim the same status for all of them in one tap, whatever their own role. A
+click-through demo artifact was published first (matching this project's own
+"ask before building" discipline for layout/UX calls) and two decisions were
+confirmed before any code was touched: **(a)** it appears everywhere a Track
+card does, not just Quran -- confirmed once it was pointed out that
+`renderTrackTab()` is one shared component (I2) used by all ten claim sites
+(Quran twice, the six topic modules, the two routine modules, Asma ul
+Husna), so building it once reaches all of them; **(b)** the dropdown starts
+with only the currently selected person ticked, matching today's single-
+person behaviour exactly, not everyone by default. A follow-up message
+moved the control from an inline block into a compact **top-right dropdown**
+on the card itself, to save space.
+
+**The mechanism, three new pure exports on `way-modal.js`:**
+`renderAssignDropdown(roster, selectedPersonId)` builds the trigger + popover
+HTML from a roster the caller supplies -- returns `""` for a roster under 2
+people (the ordinary case for most tenants today), so nothing changes on
+screen for anyone without a second person to assign to; `checkedAssignees
+(rootEl, fallbackPersonId)` reads which boxes are ticked, falling back to a
+single `{id: fallbackPersonId}` when there's no dropdown at all, so every
+caller can loop over its result unconditionally instead of branching;
+`buildClaimResultMessage(outcomes)` returns the EXACT original sentence for
+one assignee ("Claimed and confirmed." / "Claimed — waiting for
+confirmation.") and a new one-line summary naming who got confirmed vs
+pending for several. **Opening/closing the popover is wired ONCE, at
+way-modal.js's own module load**, via one delegated `document` click
+listener -- the same pattern `nav.js`'s outside-click-closes has used since
+shell round 29 -- rather than re-registering a listener on every re-render of
+a card that rebuilds itself on every claim.
+
+**Every one of the five existing claim-button handlers** (quranrevival.html's
+embedded Ayah-note card and its floating "Track this unit" modal,
+topic-study.js, routine-study.js, asma-study.js) now loops
+`checkedAssignees()` and fires `claimStatus()` + `logActivity()` once per
+ticked person via `Promise.all` -- safe in parallel since each assignee's
+write lands on a completely different `records` document
+(`recordsDocId(tenantId, personId, chunkKey)` differs by personId), never
+the same one twice. `claimedByPersonId` stays the ACTING person
+(`currentActingPersonId()`, unchanged) for every assignee -- only `personId`
+(whose record it is) varies per loop iteration. The screen's own refresh
+after claiming still only re-reads the CURRENTLY SELECTED person's chunk
+(unchanged) -- another assignee's own updated status shows the next time
+they, or their guardian, load their own view, the same "fresh as of that
+page's own load" model every other collection in this app already uses; no
+live push was built or needed. **Who can be assigned to is the exact same
+roster the Person picker already offers** -- a new `assignableRoster()` in
+each of the four controllers recomputes `scopedRoster()` + the non-archived
+filter on demand from data already in memory, rather than a second, possibly
+-diverging copy of that rule; no new permission model, no `firestore.rules`
+change (`canRecordFor()` already gates the whole write by tenant/personId,
+not by how many people one tap happened to name).
+
+**Verified with a focused, un-checked-in Playwright script** (this project's
+own established practice, matching v07.69-73), 27 checks covering the real
+floating-modal path end to end -- the trigger rendering top-right and not
+overlapping the close button, defaulting to the current person's own name;
+the popover opening, staying open while ticking boxes, closing on an outside
+tap; the Claim button and trigger label reading a live count once several are
+ticked; a real claim writing to BOTH people's own `records` documents (proven
+via the stub's `__stubWrites` log, since this stub's own `updateDoc()` never
+mutates its in-memory `DATA` -- documented in `firebase-stub.mjs` and this
+file's own v07.66-68 entries -- so the refresh-after-claim was verified
+against `window.__fsLog` re-fetching the RIGHT person's chunk rather than
+against rendered text the stub cannot make fresh); the result message naming
+both people with their own confirm/pending state; and, separately, a
+solo-roster tenant proven to render NO dropdown and produce the exact
+original single-assignee write and message, byte for byte -- the most common
+case today must cost nothing to anyone who never adds a second person. **The
+checked-in `tools/i18n-verify/behaviour.mjs` suite was also re-run in full:
+788/789 pass** (the one failure is the same pre-existing, environmental
+archive.org-blocked-by-the-sandbox-proxy failure this project has recorded
+since v07.44, unrelated), reaching the same already-disclosed crash point
+this project has carried since v07.69 (unrelated to this round). **One
+existing check (24, "every claim-confirmation message goes through t()") was
+updated, not deleted**, because this round deliberately moved the ternary it
+scanned for out of five duplicated call sites into the one shared
+`buildClaimResultMessage()` helper -- the check now reads that one function
+instead, which is the honest version of what it was always trying to prove.
+**`layout.mjs` reports NO LAYOUT REGRESSIONS** at all eight viewports in both
+banner states, **`reading.mjs` OK**, **`panel.mjs`** and **`navcheck.mjs`**
+both show only their pre-existing, already-documented gaps (the 320px English
+nav truncation; small-width `tenantSelect` clipping), and **`tools/perf/
+measure.mjs`** confirms no page's own round-trip count moved -- `assignable
+Roster()` is pure in-memory work, no Firestore call, so nothing joined any
+startup path (I9). Translation coverage stayed at 99% with the SAME 8
+pre-existing missing strings as before this round (none of the six new
+strings this round added -- "you", "Assign to", "Everyone you can already
+record for.", "Claim for {n}", "Claimed for {names}.", "Couldn't claim for
+{names}." -- are among them); all six are first-draft Bangla marked `// ?`
+for the owner's own eye. No `firestore.rules`, schema or Firestore data
+changes -- nothing to deploy but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

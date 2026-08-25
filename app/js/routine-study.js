@@ -49,6 +49,7 @@ import { renderTopicBreadcrumb, renderTopicChildList, renderTopicResource } from
 import {
   renderGuideTab, renderTrackTab, renderBreakdownTab, renderStreakTab,
   renderWayModalShell, attachWayModalHandlers,
+  renderAssignDropdown, wireAssignDropdown, checkedAssignees, buildClaimResultMessage,
 } from "./way-modal.js";
 import { getBookmarks, touchResume, recentResumeEntries, saveBookmark, removeSavedBookmark, findSavedBookmark, NO_PROGRAM, createFolder, flattenFolderTree } from "./bookmarks.js";
 import { openBookmarkNamePopover } from "./bookmark-popover.js";
@@ -133,6 +134,16 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
   function currentActingPersonId() {
     const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
     return membership?.personId ?? selectedPersonId;
+  }
+
+  /** Who a Claim can be assigned to -- the exact same scoping the Person
+      picker already uses (scopedRoster(), non-archived), recomputed on
+      demand rather than stored separately so the two can never disagree. */
+  function assignableRoster() {
+    const { viewAsRole, effRoles, myPersonId } = currentPreview();
+    return (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster)
+      .filter((p) => p.status !== "archived")
+      .map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id), isSelf: p.id === myPersonId }));
   }
 
   async function loadContextData() {
@@ -443,7 +454,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
       Streak: renderStreakTab(streakCount, loggedToday),
       Breakdown: renderBreakdownTab(statusIdsForTrackable),
     };
-    wayModalMount.innerHTML = renderWayModalShell(title, tabBodies, ["Track", "Guide", "Streak", "Breakdown"]);
+    wayModalMount.innerHTML = renderWayModalShell(title, tabBodies, ["Track", "Guide", "Streak", "Breakdown"], renderAssignDropdown(assignableRoster(), selectedPersonId));
     wayModalOverlay.classList.add("open");
     attachWayModalHandlers(wayModalMount.firstElementChild, {
       onClose: () => wayModalOverlay.classList.remove("open"),
@@ -470,31 +481,38 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const claimBtn = wayModalMount.querySelector(".way-claim-btn");
     const statusSelectEl = wayModalMount.querySelector(".way-status-select");
     const resultEl = wayModalMount.querySelector(".way-claim-result");
+    wireAssignDropdown(wayModalMount, claimBtn);
     claimBtn.addEventListener("click", async () => {
       claimBtn.disabled = true;
-      const outcome = await safeWrite(
-        () => claimStatus(db, {
-          tenantId: activeTenantId,
-          personId: selectedPersonId,
-          subjectId: chunkSubjectId,
-          unitKey,
-          trackableId,
-          statusId: statusSelectEl.value,
-          notes: "",
-          domainIds: [],
-          claimedByPersonId: currentActingPersonId(),
-          claimedByUid: auth.currentUser.uid,
-        }),
-        { collection: "records", action: "claimStatus" }
-      );
-      if (outcome.ok) {
-        await logActivity(db, {
-          tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
-          weekStartsOn: tenantWeekStartsOn, subjectId: node.id, unitKey,
-          trackableId, action: "claimed", uid: auth.currentUser.uid,
-          viaProgramId: programBySubjectId.get(node.id) ?? null,
-        });
-        const message = t(outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.");
+      const assignees = checkedAssignees(wayModalMount, selectedPersonId);
+      const outcomes = await Promise.all(assignees.map(async (a) => {
+        const r = await safeWrite(
+          () => claimStatus(db, {
+            tenantId: activeTenantId,
+            personId: a.id,
+            subjectId: chunkSubjectId,
+            unitKey,
+            trackableId,
+            statusId: statusSelectEl.value,
+            notes: "",
+            domainIds: [],
+            claimedByPersonId: currentActingPersonId(),
+            claimedByUid: auth.currentUser.uid,
+          }),
+          { collection: "records", action: "claimStatus" }
+        );
+        if (r.ok) {
+          await logActivity(db, {
+            tenantId: activeTenantId, personId: a.id, date: new Date(),
+            weekStartsOn: tenantWeekStartsOn, subjectId: node.id, unitKey,
+            trackableId, action: "claimed", uid: auth.currentUser.uid,
+            viaProgramId: programBySubjectId.get(node.id) ?? null,
+          });
+        }
+        return { name: a.name, ok: r.ok, needsConfirmation: r.ok ? r.result.needsConfirmation : null, message: r.ok ? null : r.entry.message };
+      }));
+      const message = buildClaimResultMessage(outcomes);
+      if (outcomes.some((o) => o.ok)) {
         await refreshChunk();
         renderBrowser();
         await openRoutineDetail(node.id);
@@ -502,7 +520,7 @@ export function initRoutineStudyPage({ moduleId, trackableId, rootSubjectId }) {
         const freshResultEl = wayModalMount.querySelector(".way-claim-result");
         if (freshResultEl) freshResultEl.textContent = message;
       } else {
-        resultEl.textContent = outcome.entry.message;
+        resultEl.textContent = message;
         claimBtn.disabled = false;
       }
     });
