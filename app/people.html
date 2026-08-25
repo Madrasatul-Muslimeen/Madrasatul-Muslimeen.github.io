@@ -18,6 +18,12 @@
     background: #1F3A6E; color: white; cursor: pointer;
   }
   button:disabled { opacity: 0.5; cursor: default; }
+  button.small { padding: 0.2rem 0.5rem; font-size: 0.82rem; }
+  button.secondary { background: white; color: #1F3A6E; }
+  .roster-role-edit { display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.85rem; }
+  .roster-role-edit label { display: flex; align-items: center; gap: 0.25rem; font-weight: 400; }
+  #rosterBody input[type="text"] { padding: 0.25rem; font-size: 0.9rem; }
+  #rosterBody select { padding: 0.25rem; font-size: 0.85rem; }
   table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
   th, td { text-align: left; padding: 0.4rem 0.5rem; border-bottom: 1px solid #eee; font-size: 0.92rem; }
   #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
@@ -62,8 +68,11 @@
       </label>
     </div>
 
+    <div class="check-row" style="margin:0.6rem 0;">
+      <label><input type="checkbox" id="showArchivedPeople" /> Show archived people</label>
+    </div>
     <table id="rosterTable">
-      <thead><tr><th>Name</th><th>Roles</th><th>Managed by</th></tr></thead>
+      <thead><tr><th>Name</th><th>Roles</th><th>Managed by</th><th id="peopleActionsHead" style="display:none;">Actions</th></tr></thead>
       <tbody id="rosterBody"></tbody>
     </table>
 
@@ -149,7 +158,7 @@
       getDocs,
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
-    import { addPersonToTenant } from "./js/people.js";
+    import { addPersonToTenant, updatePersonInTenant, setPersonStatus, getRosterRoles } from "./js/people.js";
     import { createInvite, listInvitesForTenant, getTokenForPendingInvite } from "./js/invites.js";
     import { langText } from "./js/lang.js";
     import { roleListLabel, roleLabel, entityStatusLabel } from "./js/labels.js";
@@ -187,6 +196,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null , getRoster: () => roster });
     }
     const rosterBody = document.getElementById("rosterBody");
+    const peopleActionsHead = document.getElementById("peopleActionsHead");
+    const showArchivedPeople = document.getElementById("showArchivedPeople");
     const isMinorEl = document.getElementById("isMinor");
     const managedByWrap = document.getElementById("managedByWrap");
     const managedBySelect = document.getElementById("managedBy");
@@ -210,6 +221,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     let activeTenantId = null;
     let roster = [];
     let myMemberships = [];
+    let rosterRoles = new Map(); // personId -> string[] of active roles, fix round (25 Aug 2026)
+    let editingPersonId = null; // fix round (25 Aug 2026) -- inline roster edit, catalogue.html's own convention
+
+    showArchivedPeople.addEventListener("change", renderRoster);
 
     // Round 10 fix (8 Aug 2026): old wording told anyone with no account to
     // create one on onboarding.html -- wrong for someone with a real pending
@@ -241,37 +256,172 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: activeMembership?.personId ?? null };
     }
 
+    let canAdmin = false;
+    // Matches people.js's own EDITABLE_ROLES exactly -- "owner" is never
+    // offered by either Add or Edit (D14).
+    const EDITABLE_ROLES_UI = ["teacher", "student", "guardian", "prime"];
+
     async function loadRoster() {
       const q = query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId));
       const snap = await getDocs(q);
       roster = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      // Fix round (25 Aug 2026): tenantPeople never carried a `roles` field
+      // (only memberships/tenantMemberUids do) -- this roster table's own
+      // Roles column has been silently blank since the page was built. See
+      // getRosterRoles()'s own comment in people.js.
+      rosterRoles = await getRosterRoles(db, activeTenantId, roster.map((p) => p.id));
 
-      const { viewAsRole, effRoles, myPersonId } = currentPreview();
-      const canAdmin = effRoles.includes("owner") || effRoles.includes("prime");
+      const { viewAsRole, effRoles } = currentPreview();
+      canAdmin = effRoles.includes("owner") || effRoles.includes("prime");
       addPersonBox.style.display = canAdmin ? "block" : "none";
       inviteBox.style.display = canAdmin ? "block" : "none";
+      peopleActionsHead.style.display = canAdmin ? "" : "none";
       renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
 
-      const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
-      rosterBody.innerHTML = "";
-      for (const person of visibleRoster) {
-        const tr = document.createElement("tr");
-        const managerName = person.managedByPersonId
-          ? langText(roster.find((p) => p.id === person.managedByPersonId)?.name, getAppLang(), "—")
-          : "—";
-        tr.innerHTML = `<td>${langText(person.name, getAppLang(), person.id)}</td><td>${roleListLabel(person.roles)}</td><td>${managerName}</td>`;
-        rosterBody.appendChild(tr);
-      }
+      editingPersonId = null; // a fresh load never re-opens a stale edit row
+      renderRoster();
 
       managedBySelect.innerHTML = roster
+        .filter((p) => p.status !== "archived")
         .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
         .join("");
 
-      const children = roster.filter((p) => p.isMinor);
+      const children = roster.filter((p) => p.isMinor && p.status !== "archived");
       studyPersonSelect.innerHTML = children
         .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
         .join("");
       renderStudyLockState();
+    }
+
+    /**
+     * Fix round (25 Aug 2026) -- Edit/Archive/Restore for the roster.
+     * Split out of loadRoster() so toggling "Show archived people" can
+     * re-render from data already in hand, without a re-fetch -- same
+     * split catalogue.html's own loadSubjects()/renderSubjects() uses.
+     */
+    function renderRoster() {
+      const { viewAsRole, effRoles, myPersonId } = currentPreview();
+      const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster)
+        .filter((p) => showArchivedPeople.checked || p.status !== "archived");
+      rosterBody.innerHTML = visibleRoster.map(personRowHtml).join("");
+      attachRosterRowHandlers();
+    }
+
+    function personRowHtml(person) {
+      const isArchived = person.status === "archived";
+      const displayName = `${langText(person.name, getAppLang(), person.id)}${isArchived ? ` (${t("archived")})` : ""}`;
+
+      if (canAdmin && editingPersonId === person.id) {
+        const roles = rosterRoles.get(person.id) ?? [];
+        const escapedName = langText(person.name, getAppLang(), person.id).replace(/"/g, "&quot;");
+        const roleChecks = EDITABLE_ROLES_UI
+          .map((role) => `<label><input type="checkbox" class="editRoleCheck" value="${role}" ${roles.includes(role) ? "checked" : ""} /> ${roleLabel(role)}</label>`)
+          .join("");
+        const managedOptions = roster
+          .filter((p) => p.id !== person.id && p.status !== "archived")
+          .map((p) => `<option value="${p.id}" ${p.id === person.managedByPersonId ? "selected" : ""}>${langText(p.name, getAppLang(), p.id)}</option>`)
+          .join("");
+        return `<tr data-person-id="${person.id}">
+          <td><input type="text" class="editNameInput" maxlength="80" value="${escapedName}" /></td>
+          <td><div class="roster-role-edit">${roleChecks}</div></td>
+          <td>
+            <label style="display:flex; align-items:center; gap:0.3rem; font-weight:400; margin-bottom:0.3rem;"><input type="checkbox" class="editIsMinor" ${person.isMinor ? "checked" : ""} /> ${t("Child")}</label>
+            <select class="editManagedBy" ${person.isMinor ? "" : "disabled"}><option value="">${t("(none)")}</option>${managedOptions}</select>
+          </td>
+          <td>
+            <button class="small savePersonBtn" data-id="${person.id}">${t("Save")}</button>
+            <button class="small secondary cancelPersonBtn" data-id="${person.id}">${t("Cancel")}</button>
+          </td>
+        </tr>`;
+      }
+
+      const managerName = person.managedByPersonId
+        ? langText(roster.find((p) => p.id === person.managedByPersonId)?.name, getAppLang(), "—")
+        : "—";
+      const roleText = roleListLabel(rosterRoles.get(person.id) ?? []);
+      const actionCell = canAdmin
+        ? `<td>
+            <button class="small secondary editPersonBtn" data-id="${person.id}">${t("Edit")}</button>
+            <button class="small secondary archivePersonBtn" data-id="${person.id}" data-next="${isArchived ? "active" : "archived"}">${isArchived ? t("Restore") : t("Archive")}</button>
+          </td>`
+        : "";
+      return `<tr data-person-id="${person.id}">
+        <td>${displayName}</td>
+        <td>${roleText}</td>
+        <td>${managerName}</td>
+        ${actionCell}
+      </tr>`;
+    }
+
+    function attachRosterRowHandlers() {
+      rosterBody.querySelectorAll(".editPersonBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          editingPersonId = btn.dataset.id;
+          renderRoster();
+        });
+      });
+      rosterBody.querySelectorAll(".cancelPersonBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          editingPersonId = null;
+          renderRoster();
+        });
+      });
+      rosterBody.querySelectorAll(".editIsMinor").forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          const select = checkbox.closest("tr")?.querySelector(".editManagedBy");
+          if (select) select.disabled = !checkbox.checked;
+        });
+      });
+      rosterBody.querySelectorAll(".savePersonBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const tr = btn.closest("tr");
+          const personId = btn.dataset.id;
+          const name = tr.querySelector(".editNameInput").value.trim();
+          if (!name) return; // nothing sensible to save -- same as Add-person, which never allows an empty name through
+          const isMinor = tr.querySelector(".editIsMinor").checked;
+          const managedByPersonId = isMinor ? (tr.querySelector(".editManagedBy").value || null) : null;
+          const roles = Array.from(tr.querySelectorAll(".editRoleCheck:checked")).map((el) => el.value);
+
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => updatePersonInTenant(db, {
+              tenantId: activeTenantId, uid: auth.currentUser.uid, personId, name, isMinor, managedByPersonId, roles,
+            }),
+            { collection: "tenantPeople", action: "updatePerson", id: personId }
+          );
+          if (outcome.ok) {
+            editingPersonId = null;
+            await loadRoster();
+          } else {
+            btn.disabled = false;
+            alert(outcome.entry.message);
+          }
+        });
+      });
+      rosterBody.querySelectorAll(".archivePersonBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const personId = btn.dataset.id;
+          const nextStatus = btn.dataset.next;
+          const person = roster.find((p) => p.id === personId);
+          const name = langText(person?.name, getAppLang(), personId);
+          const question = nextStatus === "archived"
+            ? t("Archive \"{name}\"?", { name })
+            : t("Restore \"{name}\"?", { name });
+          if (!confirm(question)) return;
+
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setPersonStatus(db, { tenantId: activeTenantId, personId, status: nextStatus, uid: auth.currentUser.uid }),
+            { collection: "tenantPeople", action: "setPersonStatus", id: personId }
+          );
+          if (outcome.ok) {
+            await loadRoster();
+          } else {
+            btn.disabled = false;
+            alert(outcome.entry.message);
+          }
+        });
+      });
     }
 
     function renderStudyLockState() {

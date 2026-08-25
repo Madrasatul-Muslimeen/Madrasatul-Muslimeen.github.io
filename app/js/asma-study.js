@@ -25,7 +25,7 @@ import { t, num, asmaName, translateStatic } from "./i18n.js";
 import { safeWrite } from "./errors.js";
 import {
   bootstrapContext, getActiveContext, setActiveContext,
-  effectiveRoles, scopedRoster,
+  effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId,
 } from "./session-context.js";
 import { getTrackables } from "./catalogue.js";
 import { seedCatalogueNow, repairCatalogueInBackground } from "./catalogue-repair.js";
@@ -126,11 +126,16 @@ export function initAsmaStudyPage() {
     const myPersonId = activeMembership?.personId ?? null;
     renderNav(realRoles, viewAsRole);
 
-    const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
+    const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster).filter((p) => p.status !== "archived");
     personSelect.innerHTML = visibleRoster
       .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
       .join("");
-    selectedPersonId = visibleRoster[0]?.id ?? null;
+    // Fix round (25 Aug 2026): a Person selection now stays chosen across
+    // pages and reloads, until manually changed -- see topic-study.js's own
+    // copy of this comment.
+    const storedPersonId = getSelectedPersonId();
+    selectedPersonId = visibleRoster.some((p) => p.id === storedPersonId) ? storedPersonId : (visibleRoster[0]?.id ?? null);
+    personSelect.value = selectedPersonId ?? "";
 
     // Parameter renamed off `t` in phase 6: it shadowed the imported
     // translator, so any t("…") added inside this callback would silently
@@ -431,6 +436,7 @@ export function initAsmaStudyPage() {
 
   personSelect.addEventListener("change", async () => {
     selectedPersonId = personSelect.value;
+    setSelectedPersonId(selectedPersonId);
     await refreshChunk();
     await refreshProgramMap();
     renderGrid();

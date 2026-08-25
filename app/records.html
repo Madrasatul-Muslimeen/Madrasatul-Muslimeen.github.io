@@ -159,6 +159,8 @@
       setActiveContext,
       effectiveRoles,
       scopedRoster,
+      getSelectedPersonId,
+      setSelectedPersonId,
     } from "./js/session-context.js";
     import { getSubjectTree, getTrackables } from "./js/catalogue.js";
     import {
@@ -331,11 +333,15 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       bulkConfirmWeekBtn.style.display = canConfirm ? "" : "none";
       renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
 
-      const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
+      const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster).filter((p) => p.status !== "archived");
       personSelect.innerHTML = visibleRoster
         .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
         .join("");
-      selectedPersonId = visibleRoster[0]?.id ?? null;
+      // Fix round (25 Aug 2026): a Person selection now stays chosen across
+      // pages and reloads, until manually changed.
+      const storedPersonId = getSelectedPersonId();
+      selectedPersonId = visibleRoster.some((p) => p.id === storedPersonId) ? storedPersonId : (visibleRoster[0]?.id ?? null);
+      personSelect.value = selectedPersonId ?? "";
 
       subjectTree = loadedTree;
       const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
@@ -373,6 +379,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     });
     personSelect.addEventListener("change", async () => {
       selectedPersonId = personSelect.value;
+      setSelectedPersonId(selectedPersonId);
       await refreshChunk();
       await refreshWeek();
     });

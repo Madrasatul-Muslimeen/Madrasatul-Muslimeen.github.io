@@ -4473,7 +4473,113 @@ words already mean the same thing elsewhere in this screen. A five-tab,
 320px sweep in both languages confirmed no truncation and no sideways
 scroll anywhere the harness tests. No `firestore.rules`, schema or
 Firestore data changes -- nothing to deploy but the static files.
----
+
+v07.75 (25 Aug 2026, on Claude Code on the web) is **three owner-asked fixes
+in one round: persistent Tenant/View-as/Person selection app-wide, a nav
+menu that closes on an outside tap, and real Edit/Archive for People.**
+
+**(1) Tenant, View as and Person selection now "take effect everywhere and
+remain constant" until manually changed, the owner's own words.** Tenant and
+View as were already shared across every page via one stored "active
+context" (`session-context.js`, F-015) -- what was missing was twofold.
+**(a)** That store was `sessionStorage`, so it reset the moment a browser
+tab closed; moved to `localStorage`. This file's own header used to justify
+`sessionStorage` by pointing at Stage 8's handover lock (F-016) needing a
+tab-scoped lifetime -- checked directly before changing it: the lock is a
+SEPARATE, independently `sessionStorage`-backed key (`qr.studyLock`),
+engaged only by the explicit "hand this device to a child" action on
+people.html, and the two have never shared code. Moving this file to
+`localStorage` does not touch `study-lock.js` at all, so D10's own
+handover-lock behaviour is unaffected -- confirmed by grepping for every
+caller of `study-lock.js` (just the one page) before touching anything.
+**(b)** The Person/Student picker on all nine screens that have one
+(`quranrevival.html`, `records.html`, `monitor.html`, `homework.html`,
+`course-offers.html`, `bookmarks.html`, plus the three shared controllers
+behind the other six module pages) was NEVER part of that shared state --
+each page kept its own choice in a local variable that reset to the first
+roster row on every navigation or reload. Two new helpers,
+`getSelectedPersonId()`/`setSelectedPersonId()`, extend the same stored
+context with a `selectedPersonId` field (distinct from `context.personId`,
+which is the SIGNED-IN user's own person record, not whoever their picker
+last pointed at); all nine picker sites now restore it on load (falling
+back to the first visible roster row only when nothing usable is stored)
+and write to it on change. A person picker choice made on Records now really
+does still hold when you open Monitor, or reopen the browser tomorrow.
+
+**(2) The shared nav menu (`js/nav.js`) now closes on a tap anywhere
+outside it**, not only when a different category is opened (the existing
+accordion behaviour, shell round 29). One bubble-phase `click` listener on
+`document`, added once at module load like the accordion listener beside
+it -- it runs during the ordinary bubble phase, which completes BEFORE a
+`<summary>` click's native open/close default action fires, so clicking a
+category's own summary (to open OR close it) is always still "inside" that
+category's own element and is correctly left alone; only a click genuinely
+outside every open category reaches far enough to close them.
+
+**(3) People can now be edited and archived from `people.html`** -- the
+roster table gained an Actions column (Edit / Archive-Restore, owner/
+prime-only, same `<th id="...ActionsHead" style="display:none;">` pattern
+catalogue.html's own Subjects/Approaches tables already use) and a "Show
+archived people" checkbox. Edit turns a row into an inline form (name,
+the same four role checkboxes Add-person offers, the isMinor/managed-by
+pair) -- catalogue.html's own inline-edit-row convention, not a separate
+fieldset or modal. **D6/I4 held throughout: nothing is deleted.** Archive
+flips `tenantPeople.status` to `"archived"` (Restore flips it back) --
+the exact mechanism catalogue.html's subjects/Approaches/ladders already
+use, native `confirm()` dialog and all, reusing the SAME translation keys
+("Archive \"{name}\"?", "Edit", "Save", "Cancel"...) so most of this is
+Bangla for free. Unchecking a role in Edit archives that ONE membership
+row (status: "archived"), never deletes it; re-checking it later
+reactivates the SAME document (the membership id is deterministic --
+`${tenantId}__${personId}__${role}`), never creates a duplicate. New
+`updatePersonInTenant()`/`setPersonStatus()` in `js/people.js`; no
+`firestore.rules` change needed -- `tenantPeople`'s and `memberships`'
+own update rules already allow `canAdminIdentity()` to write any field,
+checked directly before assuming otherwise.
+
+**A real, pre-existing defect was found while building this and fixed
+alongside it: the roster table's own "Roles" column has been silently
+blank since the page was built.** `tenantPeople` documents have never
+carried a `roles` field -- only `memberships` and the `tenantMemberUids`
+mirror do -- so `roleListLabel(person.roles)` was always reading
+`undefined`. The Edit form needed each person's real current roles anyway
+(to know which checkboxes to tick), which is what surfaced it. Fixed with
+a new `getRosterRoles()` in `js/people.js`: one `get()` per possible role
+per person (the same deterministic-id, no-list-query pattern records.js's
+own `getPersonRoles()` uses, and for the same documented reason -- see
+that function's own comment on why a `where(personId==)` query against
+`memberships` is deliberately avoided), all fired together so a roster of
+any real size costs one wait, not one per person.
+
+**Archived people now drop out of every Person/Student picker across the
+app** (the same nine files touched for (1) above, plus `people.html`'s own
+"Managed by" and "hand the device to a child" pickers) -- a natural
+consequence of adding "delete" that would otherwise have been a silent
+inconsistency: an archived person continuing to be selectable everywhere
+except the one screen that archived them. **Flagged, not built:** the same
+filter was not extended to `classes.html`, `curriculum.html` or
+`js/bookmark-nav.js`'s own roster reads, which weren't otherwise touched
+this round -- an archived person could still appear there. Small, scoped
+follow-up if it matters in practice.
+
+**Verified**: `tools/i18n-verify/layout.mjs` reports **NO LAYOUT
+REGRESSIONS** on the landing page at all eight viewports in both banner
+states (numbers match the last known-good build exactly -- 148px/377px/5
+rows at 390x844 with the tenant banner set, etc. -- confirming nothing
+touched by this round shifted anything there), and **`navcheck.mjs`** shows
+only the pre-existing, unrelated 320px English "Operation"/"Bookmark"
+truncation this project has carried since v07.29. All fifteen JS/HTML files
+edited pass a plain syntax check (`node --check`). The full
+`tools/i18n-verify/behaviour.mjs` suite (none of it exercises the new
+Edit/Archive/People UI yet, since that suite predates this round) was
+re-run against this round's own build: **789 checks pass, 0 failed**,
+reaching the exact same already-disclosed crash point this project has
+carried since v07.69 (a stale `[data-note-master-toggle]` visibility
+assumption from before the round-31 bar reorg, unrelated to this round) --
+byte-identical to v07.74's own last recorded run, confirming this round
+introduced no regression anywhere the suite can reach. No `firestore.rules`,
+schema or
+Firestore data changes -- nothing to deploy but the static files.
 
 ## What this is
 

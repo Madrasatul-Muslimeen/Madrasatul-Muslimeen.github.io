@@ -1576,7 +1576,7 @@
     import { langText } from "./js/lang.js";
     import { roleListLabel } from "./js/labels.js";
     import { safeWrite } from "./js/errors.js";
-    import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster } from "./js/session-context.js";
+    import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames } from "./js/catalogue.js";
     import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
@@ -2014,9 +2014,15 @@
     function renderPersonSelectOptions() {
       const prev = personSelect.value;
       const { viewAsRole, effRoles, myPersonId } = currentPreview();
-      const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
+      const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster).filter((p) => p.status !== "archived");
       personSelect.innerHTML = visibleRoster.map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`).join("");
-      if (visibleRoster.some((p) => p.id === prev)) personSelect.value = prev;
+      // Fix round (25 Aug 2026): prefer whatever this page's own re-render
+      // already had selected; failing that (a fresh page load), fall back
+      // to the last Person chosen anywhere in the app rather than always
+      // the first roster row.
+      const stored = getSelectedPersonId();
+      const candidate = visibleRoster.some((p) => p.id === prev) ? prev : (visibleRoster.some((p) => p.id === stored) ? stored : null);
+      if (candidate) personSelect.value = candidate;
     }
 
     /** Grouped by section (owner request, 5 Aug 2026: section names should show, in whichever language is chosen) -- also just a nicer 30-item dropdown than one flat list. Note the loop variable is `item`, not `t` -- shadowing the imported t() here is exactly the trap phase 2/5 already hit at other call sites, and this function now calls t() below. */
@@ -5028,6 +5034,7 @@
     trackableSelect.addEventListener("change", () => changeCurrentTrackable(trackableSelect.value));
     personSelect.addEventListener("change", async () => {
       selectedPersonId = personSelect.value;
+      setSelectedPersonId(selectedPersonId);
       await refreshChunkAndWheel();
       await refreshProgramMap();
       // A different acting person has their own notes/bookmarks -- the cache
