@@ -24,6 +24,100 @@ export function renderGuideTab(trackable, lang = "en") {
   </div>`;
 }
 
+/**
+ * "Assign to" dropdown -- lets one Claim be recorded for several family
+ * members/students at once instead of only whoever the Person picker
+ * currently points at. Pure (I2): the caller supplies the roster (already
+ * scoped by scopedRoster() in session-context.js, the same "who can I
+ * record for" rule the Person picker itself already uses) and which id
+ * starts ticked -- this file never decides who's allowed to see whom.
+ * Returns "" when there's nothing to add to (a lone student sees only
+ * themselves), the same "don't offer a control with one option" rule
+ * Listening settings/the Translator picker already follow elsewhere.
+ */
+export function renderAssignDropdown(roster, selectedPersonId) {
+  if (!roster || roster.length < 2) return "";
+  const rows = roster
+    .map((p) => {
+      const checked = p.id === selectedPersonId ? "checked" : "";
+      const tag = p.isSelf ? `<span class="who-tag">${t("you")}</span>` : "";
+      return `<label class="assign-row"><input type="checkbox" value="${p.id}" data-name="${escapeHtml(p.name)}" ${checked}><span class="who-name">${escapeHtml(p.name)}</span>${tag}</label>`;
+    })
+    .join("");
+  return `<div class="assign-trigger-wrap">
+    <button type="button" class="assign-trigger" data-assign-trigger aria-haspopup="true" aria-expanded="false">
+      <span aria-hidden="true">&#128101;</span><span data-assign-trigger-label>1</span><span class="caret" aria-hidden="true">&#9662;</span>
+    </button>
+    <div class="assign-popover" data-assign-popover>
+      <p class="assign-popover-label">${t("Assign to")}</p>
+      <p class="assign-hint">${t("Everyone you can already record for.")}</p>
+      <div class="assign-list" data-assign-list>${rows}</div>
+    </div>
+  </div>`;
+}
+
+/**
+ * Wires the trigger's live label + the Claim button's "Claim for N" text as
+ * checkboxes are ticked. A no-op when renderAssignDropdown() returned ""
+ * (single-person roster) -- claimBtn then behaves exactly as it always has.
+ * Opening/closing the popover itself is handled by the one delegated
+ * document listener below, not here, so this never double-registers on a
+ * re-render (same reasoning nav.js's own outside-click-closes uses).
+ */
+export function wireAssignDropdown(rootEl, claimBtn) {
+  const list = rootEl.querySelector("[data-assign-list]");
+  if (!list) return;
+  const label = rootEl.querySelector("[data-assign-trigger-label]");
+  const baseLabel = claimBtn.textContent;
+  function update() {
+    const checked = [...list.querySelectorAll("input:checked")];
+    const n = checked.length;
+    if (label) label.textContent = n === 1 ? (checked[0].dataset.name ?? "1") : num(n);
+    claimBtn.textContent = n <= 1 ? baseLabel : t("Claim for {n}", { n: num(n) });
+    claimBtn.disabled = n === 0;
+  }
+  list.addEventListener("change", update);
+  update();
+}
+
+/**
+ * Reads which people are ticked in an "Assign to" dropdown inside rootEl.
+ * Falls back to a single { id: fallbackPersonId } when there's no dropdown
+ * at all (single-person roster) or nothing's ticked, so every caller can
+ * loop over this unconditionally instead of branching on whether the
+ * dropdown was even rendered.
+ */
+export function checkedAssignees(rootEl, fallbackPersonId) {
+  const list = rootEl.querySelector("[data-assign-list]");
+  if (!list) return [{ id: fallbackPersonId, name: "" }];
+  const boxes = [...list.querySelectorAll("input:checked")];
+  return boxes.length
+    ? boxes.map((c) => ({ id: c.value, name: c.dataset.name ?? c.value }))
+    : [{ id: fallbackPersonId, name: "" }];
+}
+
+/**
+ * One result line for a Claim that may have gone to several people at once.
+ * outcomes: [{ name, ok, needsConfirmation, message }]. A single-assignee
+ * claim (the ordinary case, unchanged since Phase 4) reads exactly as it
+ * always has; several assignees get one line naming who got confirmed vs
+ * pending, and a second naming anyone the write actually failed for (I15 --
+ * a partial failure must still reach the reader, not just the successes).
+ */
+export function buildClaimResultMessage(outcomes) {
+  if (outcomes.length === 1) {
+    const o = outcomes[0];
+    return o.ok ? t(o.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.") : o.message;
+  }
+  const ok = outcomes.filter((o) => o.ok);
+  const failed = outcomes.filter((o) => !o.ok);
+  const okLine = ok.length
+    ? t("Claimed for {names}.", { names: ok.map((o) => `${o.name} (${t(o.needsConfirmation ? "pending" : "confirmed")})`).join(", ") })
+    : "";
+  const failLine = failed.length ? t("Couldn't claim for {names}.", { names: failed.map((o) => o.name).join(", ") }) : "";
+  return [okLine, failLine].filter(Boolean).join(" ");
+}
+
 /** Track tab -- current claimed/confirmed status for one unit + a status picker the caller wires to records.js claimStatus(). */
 export function renderTrackTab(entry, currentStatusId) {
   const options = STATUSES
@@ -106,11 +200,14 @@ const DEFAULT_TABS = ["Track", "Guide", "Breakdown", "Coverage"];
  * (Track/Guide/Breakdown only -- "which topics in this subject have been
  * touched" isn't a built concept yet, so there's no Coverage tab to show).
  */
-export function renderWayModalShell(title, tabBodies, tabs = DEFAULT_TABS) {
+export function renderWayModalShell(title, tabBodies, tabs = DEFAULT_TABS, assignDropdownHtml = "") {
   const buttons = tabs.map((t, i) => `<button type="button" class="way-tab-btn ${i === 0 ? "active" : ""}" data-tab="${t}">${t}</button>`).join("");
   const panels = tabs.map((t, i) => `<div class="way-tab-panel ${i === 0 ? "active" : ""}" data-tab="${t}">${tabBodies[t] ?? ""}</div>`).join("");
   return `<div class="way-modal">
-    <div class="way-modal-header"><h3>${escapeHtml(title)}</h3><button type="button" class="way-close-btn" aria-label="Close">&times;</button></div>
+    <div class="way-modal-header">
+      <div class="way-header-row"><h3>${escapeHtml(title)}</h3>${assignDropdownHtml}</div>
+      <button type="button" class="way-close-btn" aria-label="Close">&times;</button>
+    </div>
     <div class="way-tab-bar">${buttons}</div>
     <div class="way-tab-panels">${panels}</div>
   </div>`;
@@ -135,11 +232,14 @@ export function attachWayModalHandlers(modalEl, { onClose } = {}) {
  * card is assessment, and it stays wherever it is opened from until the
  * reader leaves that screen -- there is nothing here to close.
  */
-export function renderWayEmbed(title, tabBodies, tabs = DEFAULT_TABS) {
+export function renderWayEmbed(title, tabBodies, tabs = DEFAULT_TABS, assignDropdownHtml = "") {
   const buttons = tabs.map((tb, i) => `<button type="button" class="way-tab-btn ${i === 0 ? "active" : ""}" data-tab="${tb}">${tb}</button>`).join("");
   const panels = tabs.map((tb, i) => `<div class="way-tab-panel ${i === 0 ? "active" : ""}" data-tab="${tb}">${tabBodies[tb] ?? ""}</div>`).join("");
   return `<div class="way-embed">
-    <h4 class="way-embed-title">${escapeHtml(title)}</h4>
+    <div class="way-embed-header">
+      <h4 class="way-embed-title">${escapeHtml(title)}</h4>
+      ${assignDropdownHtml}
+    </div>
     <div class="way-tab-bar">${buttons}</div>
     <div class="way-tab-panels">${panels}</div>
   </div>`;
@@ -151,6 +251,33 @@ export function attachWayEmbedHandlers(embedEl) {
     btn.addEventListener("click", () => {
       embedEl.querySelectorAll(".way-tab-btn").forEach((b) => b.classList.toggle("active", b === btn));
       embedEl.querySelectorAll(".way-tab-panel").forEach((p) => p.classList.toggle("active", p.dataset.tab === btn.dataset.tab));
+    });
+  });
+}
+
+/**
+ * One delegated listener, registered once at module load -- mirrors nav.js's
+ * own outside-click-closes pattern (shell round 29) so opening/closing the
+ * "Assign to" popover never stacks a fresh document listener on every
+ * re-render of a Track card (a claim rebuilds the whole card each time).
+ */
+if (typeof document !== "undefined") {
+  document.addEventListener("click", (e) => {
+    const trigger = e.target.closest("[data-assign-trigger]");
+    if (trigger) {
+      e.stopPropagation();
+      const popover = trigger.parentElement.querySelector("[data-assign-popover]");
+      if (popover) {
+        const open = popover.classList.toggle("open");
+        trigger.setAttribute("aria-expanded", String(open));
+      }
+      return;
+    }
+    document.querySelectorAll(".assign-popover.open").forEach((pop) => {
+      if (!pop.contains(e.target)) {
+        pop.classList.remove("open");
+        pop.parentElement.querySelector("[data-assign-trigger]")?.setAttribute("aria-expanded", "false");
+      }
     });
   });
 }

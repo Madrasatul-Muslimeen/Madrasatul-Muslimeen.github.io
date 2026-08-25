@@ -37,7 +37,10 @@ import { mountBookmarkMenu } from "./bookmark-nav.js";
 import { ASMA_NAMES } from "./asma-data.js";
 import { ASMA_POSTERS } from "./asma-posters.js";
 import { renderAsmaGrid, renderAsmaDetail, renderAsmaScreensaverSlide } from "./asma-renderer.js";
-import { renderGuideTab, renderTrackTab, renderBreakdownTab, renderWayModalShell, attachWayModalHandlers } from "./way-modal.js";
+import {
+  renderGuideTab, renderTrackTab, renderBreakdownTab, renderWayModalShell, attachWayModalHandlers,
+  renderAssignDropdown, wireAssignDropdown, checkedAssignees, buildClaimResultMessage,
+} from "./way-modal.js";
 import { getBookmarks, touchResume, recentResumeEntries, saveBookmark, removeSavedBookmark, findSavedBookmark, NO_PROGRAM, createFolder, flattenFolderTree } from "./bookmarks.js";
 import { openBookmarkNamePopover } from "./bookmark-popover.js";
 import { renderContinueStrip } from "./continue-strip.js";
@@ -99,6 +102,21 @@ export function initAsmaStudyPage() {
   function currentActingPersonId() {
     const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
     return membership?.personId ?? selectedPersonId;
+  }
+
+  /** Who a Claim can be assigned to -- the exact same scoping the Person
+      picker already uses (scopedRoster(), non-archived), recomputed on
+      demand rather than stored separately so the two can never disagree. */
+  function assignableRoster() {
+    const context = getActiveContext();
+    const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+    const realRoles = activeMembership?.roles ?? [];
+    const viewAsRole = context?.viewAsRole ?? null;
+    const effRoles = effectiveRoles(realRoles, viewAsRole);
+    const myPersonId = activeMembership?.personId ?? null;
+    return (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster)
+      .filter((p) => p.status !== "archived")
+      .map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id), isSelf: p.id === myPersonId }));
   }
 
   async function loadContextData() {
@@ -292,7 +310,7 @@ export function initAsmaStudyPage() {
       Guide: renderGuideTab(studiedTrackable, getAppLang()),
       Breakdown: renderBreakdownTab(statusIdsForTrackable),
     };
-    wayModalMount.innerHTML = renderWayModalShell(title, tabBodies, ["Track", "Guide", "Breakdown"]);
+    wayModalMount.innerHTML = renderWayModalShell(title, tabBodies, ["Track", "Guide", "Breakdown"], renderAssignDropdown(assignableRoster(), selectedPersonId));
     wayModalOverlay.classList.add("open");
     attachWayModalHandlers(wayModalMount.firstElementChild, {
       onClose: () => wayModalOverlay.classList.remove("open"),
@@ -301,31 +319,38 @@ export function initAsmaStudyPage() {
     const claimBtn = wayModalMount.querySelector(".way-claim-btn");
     const statusSelectEl = wayModalMount.querySelector(".way-status-select");
     const resultEl = wayModalMount.querySelector(".way-claim-result");
+    wireAssignDropdown(wayModalMount, claimBtn);
     claimBtn.addEventListener("click", async () => {
       claimBtn.disabled = true;
-      const outcome = await safeWrite(
-        () => claimStatus(db, {
-          tenantId: activeTenantId,
-          personId: selectedPersonId,
-          subjectId: SUBJECT_ID,
-          unitKey,
-          trackableId: TRACKABLE_ID,
-          statusId: statusSelectEl.value,
-          notes: "",
-          domainIds: [],
-          claimedByPersonId: currentActingPersonId(),
-          claimedByUid: auth.currentUser.uid,
-        }),
-        { collection: "records", action: "claimStatus" }
-      );
-      if (outcome.ok) {
-        await logActivity(db, {
-          tenantId: activeTenantId, personId: selectedPersonId, date: new Date(),
-          weekStartsOn: 6, subjectId: SUBJECT_ID, unitKey,
-          trackableId: TRACKABLE_ID, action: "claimed", uid: auth.currentUser.uid,
-          viaProgramId: programBySubjectId.get(SUBJECT_ID) ?? null,
-        });
-        const message = t(outcome.result.needsConfirmation ? "Claimed — waiting for confirmation." : "Claimed and confirmed.");
+      const assignees = checkedAssignees(wayModalMount, selectedPersonId);
+      const outcomes = await Promise.all(assignees.map(async (a) => {
+        const r = await safeWrite(
+          () => claimStatus(db, {
+            tenantId: activeTenantId,
+            personId: a.id,
+            subjectId: SUBJECT_ID,
+            unitKey,
+            trackableId: TRACKABLE_ID,
+            statusId: statusSelectEl.value,
+            notes: "",
+            domainIds: [],
+            claimedByPersonId: currentActingPersonId(),
+            claimedByUid: auth.currentUser.uid,
+          }),
+          { collection: "records", action: "claimStatus" }
+        );
+        if (r.ok) {
+          await logActivity(db, {
+            tenantId: activeTenantId, personId: a.id, date: new Date(),
+            weekStartsOn: 6, subjectId: SUBJECT_ID, unitKey,
+            trackableId: TRACKABLE_ID, action: "claimed", uid: auth.currentUser.uid,
+            viaProgramId: programBySubjectId.get(SUBJECT_ID) ?? null,
+          });
+        }
+        return { name: a.name, ok: r.ok, needsConfirmation: r.ok ? r.result.needsConfirmation : null, message: r.ok ? null : r.entry.message };
+      }));
+      const message = buildClaimResultMessage(outcomes);
+      if (outcomes.some((o) => o.ok)) {
         await refreshChunk();
         renderGrid();
         await openNameDetail(name.number);
@@ -333,7 +358,7 @@ export function initAsmaStudyPage() {
         const freshResultEl = wayModalMount.querySelector(".way-claim-result");
         if (freshResultEl) freshResultEl.textContent = message;
       } else {
-        resultEl.textContent = outcome.entry.message;
+        resultEl.textContent = message;
         claimBtn.disabled = false;
       }
     });
