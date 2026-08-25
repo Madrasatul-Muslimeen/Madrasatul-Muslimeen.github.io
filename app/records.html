@@ -338,9 +338,11 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
         .join("");
       // Fix round (25 Aug 2026): a Person selection now stays chosen across
-      // pages and reloads, until manually changed.
+      // pages and reloads, until manually changed. Bookmark-issues round:
+      // myPersonId is a fallback below stored, above the first roster row.
       const storedPersonId = getSelectedPersonId();
-      selectedPersonId = visibleRoster.some((p) => p.id === storedPersonId) ? storedPersonId : (visibleRoster[0]?.id ?? null);
+      selectedPersonId = visibleRoster.some((p) => p.id === storedPersonId) ? storedPersonId
+        : (visibleRoster.some((p) => p.id === myPersonId) ? myPersonId : (visibleRoster[0]?.id ?? null));
       personSelect.value = selectedPersonId ?? "";
 
       subjectTree = loadedTree;

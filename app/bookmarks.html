@@ -68,11 +68,17 @@
 
     <div id="newFolderRow">
       <button type="button" id="newFolderBtn">+ New folder</button>
+      <label style="margin-left:0.8rem; font-size:0.85rem; color:#555;">Group by
+        <select id="groupBySelect" style="width:auto;"></select>
+      </label>
+      <label style="margin-left:0.8rem; font-size:0.85rem; color:#555;"><input type="checkbox" id="showRetiredCk"> Show retired</label>
     </div>
 
     <div id="foldersContainer"></div>
 
     <div id="unfiledContainer"></div>
+
+    <div id="taggedForContainer"></div>
 
     <p id="emptyMsg" style="display:none;">No bookmarks saved yet. Look for the ☆/🔖 button on a study screen.</p>
   </div>
@@ -86,7 +92,7 @@
     import { TENANT } from "./js/collections.js";
     import { langText } from "./js/lang.js";
     import { roleListLabel } from "./js/labels.js";
-    import { getAppLang } from "./js/prefs.js";
+    import { getAppLang, getBookmarkMenuGroupBy, setBookmarkMenuGroupBy, BOOKMARK_GROUP_BYS } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
     import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
@@ -97,7 +103,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import {
       getBookmarks, renameSavedBookmark, setSavedBookmarkRemoved, moveBookmarkToFolder,
       createFolder, renameFolder, setFolderRemoved, moveFolder, isFolderOrDescendant,
-      setBookmarkPersonTag,
+      setBookmarkPersonTag, setFolderPersonTag, groupBookmarksByPerson, groupBookmarksByModule,
       folderById as sharedFolderById, liveFolderIdFor as sharedLiveFolderIdFor,
       rootFolders, childFolders, bookmarksInFolder, unfiledBookmarks,
     } from "./js/bookmarks.js";
@@ -119,9 +125,40 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     const tenantSelect = document.getElementById("tenantSelect");
     const personSelect = document.getElementById("personSelect");
     const newFolderBtn = document.getElementById("newFolderBtn");
+    const showRetiredCk = document.getElementById("showRetiredCk");
+    const groupBySelect = document.getElementById("groupBySelect");
     const foldersContainer = document.getElementById("foldersContainer");
     const unfiledContainer = document.getElementById("unfiledContainer");
+    const taggedForContainer = document.getElementById("taggedForContainer");
     const emptyMsg = document.getElementById("emptyMsg");
+
+    // Bookmark-issues round: retired bookmarks/folders (D6/I4 soft-remove)
+    // used to always render, dimmed, mixed in with everything live -- the
+    // owner's own complaint was that retiring "just takes unnecessary
+    // focus." Nothing about retire/restore itself changed (still I4-shaped,
+    // still fully reversible) -- only the DEFAULT VIEW hides them, exactly
+    // the same "Show archived" pattern people.html already uses for its own
+    // roster. Toggling this on still lets you find and Restore one.
+    let showRetired = false;
+    showRetiredCk.addEventListener("change", () => {
+      showRetired = showRetiredCk.checked;
+      renderAll();
+    });
+
+    // Bookmark-issues round: the same Folder/Person/Module choice the nav
+    // dropdown offers (js/bookmark-nav.js), now on the Manager screen too --
+    // same stored preference (prefs.js), so picking one here is what the
+    // dropdown shows next time too, and vice versa. Folder mode is the only
+    // one that renders the folder tree/move-to-folder controls; Person and
+    // Module both flatten to "everything tagged/filed under X," which is
+    // also how a guardian finds "everything I've bookmarked for this child"
+    // without switching who's selected above.
+    groupBySelect.innerHTML = BOOKMARK_GROUP_BYS.map((g) => `<option value="${g.id}">${t(g.label)}</option>`).join("");
+    groupBySelect.value = getBookmarkMenuGroupBy();
+    groupBySelect.addEventListener("change", () => {
+      setBookmarkMenuGroupBy(groupBySelect.value);
+      renderAll();
+    });
 
     signInBtn.addEventListener("click", () => {
       signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
@@ -135,6 +172,19 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     let roster = [];
     let selectedPersonId = null;
     let bookmarksDoc = { resume: {}, saved: [], folders: [] };
+    // Bookmark-issues round -- the "view by student" case D10 already
+    // named as the common workflow: a guardian bookmarks something for a
+    // child WHILE SIGNED IN AS THEMSELVES, tagging it for the child
+    // (personTagId), so it lives in the GUARDIAN's own bookmarks doc, not
+    // the child's. Selecting the child above only ever showed the child's
+    // OWN saved[] -- never what a guardian tagged for them. Rather than
+    // reading every roster member's doc on a tap (a real, previously
+    // flagged load-speed cost, see bookmarks.js's own header), this reads
+    // exactly ONE extra document -- the signed-in login's own -- and shows
+    // only the entries tagged for whoever is currently selected. Cleared
+    // whenever the selected person IS the signed-in login (nothing extra
+    // to show) or has no tag from that doc.
+    let taggedForSelected = [];
 
     function currentPreview() {
       const context = getActiveContext();
@@ -153,8 +203,13 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       // already had selected; failing that (a fresh page load), fall back
       // to the last Person chosen anywhere in the app rather than always
       // the first roster row.
+      // Bookmark-issues round: myPersonId (the signed-in login's own person)
+      // is a third fallback, below stored -- see quranrevival.html's own
+      // copy of this comment.
       const stored = getSelectedPersonId();
-      const candidate = visibleRoster.some((p) => p.id === prev) ? prev : (visibleRoster.some((p) => p.id === stored) ? stored : null);
+      const candidate = visibleRoster.some((p) => p.id === prev) ? prev
+        : (visibleRoster.some((p) => p.id === stored) ? stored
+        : (visibleRoster.some((p) => p.id === myPersonId) ? myPersonId : null));
       if (candidate) personSelect.value = candidate;
     }
 
@@ -169,8 +224,19 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     }
 
     async function refreshBookmarks() {
-      if (!selectedPersonId) { bookmarksDoc = { resume: {}, saved: [], folders: [] }; renderAll(); return; }
+      if (!selectedPersonId) { bookmarksDoc = { resume: {}, saved: [], folders: [] }; taggedForSelected = []; renderAll(); return; }
       bookmarksDoc = await getBookmarks(db, activeTenantId, selectedPersonId);
+      const { myPersonId } = currentPreview();
+      if (myPersonId && myPersonId !== selectedPersonId) {
+        try {
+          const myDoc = await getBookmarks(db, activeTenantId, myPersonId);
+          taggedForSelected = (myDoc.saved ?? []).filter((b) => !b.removed && b.personTagId === selectedPersonId);
+        } catch {
+          taggedForSelected = []; // not readable (e.g. no rules-granted relationship) -- show nothing extra rather than error the whole page
+        }
+      } else {
+        taggedForSelected = [];
+      }
       renderAll();
     }
 
@@ -204,18 +270,25 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       return sharedLiveFolderIdFor(bookmarksDoc, bookmark);
     }
     function bookmarksIn(folderId) {
-      return bookmarksInFolder(bookmarksDoc, folderId, { includeRemoved: true });
+      return bookmarksInFolder(bookmarksDoc, folderId, { includeRemoved: showRetired });
     }
 
-    function bookmarkHref(b) {
+    // Bookmark-issues round -- ownerPersonId is set only for a cross-document
+    // "tagged for {selected}, but stored in your own doc" row (taggedForRowHtml
+    // below); every ordinary row (the bookmark really does live in
+    // selectedPersonId's own doc) omits it, unchanged from before. See
+    // quranrevival.html's own openBookmarkFromQueryString() for the read side.
+    function bookmarkHref(b, ownerPersonId = null) {
       const page = MODULE_PAGES[b.moduleId];
       if (!page) return null;
       // Quran carries a full `settings` snapshot worth restoring by id;
       // every other module has no comparable per-position state yet, so it
       // reuses the same ?resume=<position> jump the Continue strip already
-      // uses (topic-study.js/routine-study.js/asma-study.js all read it).
+      // uses (topic-study.js/routine-study.js/asma-study.js all read it) --
+      // that jump is never doc-scoped, so ownerPersonId is only ever added
+      // to the Quran branch.
       return b.moduleId === "quranrevival"
-        ? `${page}?bookmark=${encodeURIComponent(b.id)}`
+        ? `${page}?bookmark=${encodeURIComponent(b.id)}${ownerPersonId ? `&ownerPersonId=${encodeURIComponent(ownerPersonId)}` : ""}`
         : `${page}?resume=${encodeURIComponent(b.position ?? "")}`;
     }
 
@@ -269,11 +342,12 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
     function folderNodeHtml(folder, depth) {
       const bookmarks = bookmarksIn(folder.id);
-      const children = childFolders(bookmarksDoc, folder.id, { includeRemoved: true });
+      const children = childFolders(bookmarksDoc, folder.id, { includeRemoved: showRetired });
       return `<div class="bm-folder${folder.removed ? " retired" : ""}" data-folder-id="${folder.id}" style="margin-left:${depth * 0.4}rem;">
         <div class="bm-folder-header">
           📁 <span class="bm-folder-name">${escapeHtml(folder.name)}</span>
           <button type="button" class="secondary tiny" data-folder-rename ${folder.removed ? "disabled" : ""}>${t("Rename")}</button>
+          <select data-folder-person title="${t("For")}" ${folder.removed ? "disabled" : ""}>${personTagOptionsHtml(folder.personTagId ?? null)}</select>
           <select data-folder-move ${folder.removed ? "disabled" : ""}>${folderOptionsHtml(folder.id, folder.parentId)}</select>
           <button type="button" class="secondary tiny" data-folder-toggle>${folder.removed ? t("Restore") : t("Retire")}</button>
         </div>
@@ -282,16 +356,77 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       </div>`;
     }
 
+    /** Bookmark-issues round -- Person/Module modes both flatten to "everything tagged/filed under X," ignoring the folder tree (same shape the nav dropdown already uses for these two, bookmarks.js's own groupBookmarksByPerson()/groupBookmarksByModule()). */
+    function groupedSectionsHtml(groups, labelFor) {
+      return groups
+        .map((g) => `<div class="bm-group-label">${escapeHtml(labelFor(g))}</div>${g.bookmarks.map(bookmarkRowHtml).join("")}`)
+        .join("");
+    }
+
+    /**
+     * Bookmark-issues round -- read-only rows for taggedForSelected (see its
+     * own declaration comment). No rename/move/retire controls: those write
+     * to the OWNER'S doc (myPersonId), not selectedPersonId's, and this
+     * screen only ever writes to whichever doc is currently loaded as
+     * bookmarksDoc -- editing one of these means selecting yourself and
+     * editing it there, the same document it actually lives in.
+     */
+    function taggedForRowHtml(b) {
+      const { myPersonId } = currentPreview();
+      const href = bookmarkHref(b, myPersonId);
+      const moduleLabel = MODULE_LABELS[b.moduleId] ? t(MODULE_LABELS[b.moduleId]) : b.moduleId;
+      return `<div class="bm-row">
+        <span class="bm-row-name">${escapeHtml(b.name)}</span>
+        <span class="bm-row-module">${escapeHtml(moduleLabel)}</span>
+        ${href ? `<a href="${href}"><button type="button" class="tiny">${t("Open")}</button></a>` : ""}
+      </div>`;
+    }
+
+    function renderTaggedForContainer() {
+      if (!taggedForSelected.length) { taggedForContainer.innerHTML = ""; return; }
+      const p = roster.find((r) => r.id === selectedPersonId);
+      const name = p ? langText(p.name, getAppLang(), p.id) : selectedPersonId;
+      taggedForContainer.innerHTML =
+        `<h2>${escapeHtml(t("Bookmarked for {name} by you", { name }))}</h2>` +
+        taggedForSelected.map(taggedForRowHtml).join("");
+    }
+
     function renderAll() {
+      renderTaggedForContainer();
+      const groupBy = getBookmarkMenuGroupBy();
+
+      if (groupBy === "person") {
+        foldersContainer.innerHTML = "";
+        const { untagged, groups } = groupBookmarksByPerson(bookmarksDoc, roster.map((p) => p.id), { includeRemoved: showRetired });
+        unfiledContainer.innerHTML =
+          (untagged.length ? `<div class="bm-group-label">${escapeHtml(t("No one in particular"))}</div>${untagged.map(bookmarkRowHtml).join("")}` : "") +
+          groupedSectionsHtml(groups, (g) => {
+            const p = roster.find((r) => r.id === g.personTagId);
+            return p ? langText(p.name, getAppLang(), p.id) : g.personTagId;
+          });
+        emptyMsg.style.display = (bookmarksDoc.saved ?? []).length === 0 && !taggedForSelected.length ? "block" : "none";
+        wireRowHandlers();
+        return;
+      }
+
+      if (groupBy === "module") {
+        foldersContainer.innerHTML = "";
+        const groups = groupBookmarksByModule(bookmarksDoc, Object.keys(MODULE_PAGES), { includeRemoved: showRetired });
+        unfiledContainer.innerHTML = groupedSectionsHtml(groups, (g) => (MODULE_LABELS[g.moduleId] ? t(MODULE_LABELS[g.moduleId]) : g.moduleId));
+        emptyMsg.style.display = (bookmarksDoc.saved ?? []).length === 0 && !taggedForSelected.length ? "block" : "none";
+        wireRowHandlers();
+        return;
+      }
+
       // A folder nests under its literal parentId whether or not that parent
       // is itself retired (retiring a folder doesn't unroot its children --
       // it just makes ITS OWN row inert until restored). Only a genuinely
       // missing parent (deleted data, never happens through this screen, but
       // cheap to guard) promotes a folder to root rather than losing it.
-      const roots = rootFolders(bookmarksDoc, { includeRemoved: true });
+      const roots = rootFolders(bookmarksDoc, { includeRemoved: showRetired });
       foldersContainer.innerHTML = roots.map((f) => folderNodeHtml(f, 0)).join("");
 
-      const unfiled = unfiledBookmarks(bookmarksDoc, { includeRemoved: true });
+      const unfiled = unfiledBookmarks(bookmarksDoc, { includeRemoved: showRetired });
       const byModule = new Map();
       for (const b of unfiled) {
         const key = b.moduleId;
@@ -305,7 +440,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         })
         .join("");
 
-      emptyMsg.style.display = (bookmarksDoc.saved ?? []).length === 0 ? "block" : "none";
+      emptyMsg.style.display = (bookmarksDoc.saved ?? []).length === 0 && !taggedForSelected.length ? "block" : "none";
       wireRowHandlers();
     }
 
@@ -383,6 +518,16 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           );
           if (!outcome.ok) return;
           patchFolder(folder.id, { name: name.trim() });
+          renderAll();
+        });
+        el.querySelector("[data-folder-person]")?.addEventListener("change", async (e) => {
+          const personTagId = e.target.value || null;
+          const outcome = await safeWrite(
+            () => setFolderPersonTag(db, activeTenantId, selectedPersonId, folder.id, personTagId),
+            { collection: TENANT.BOOKMARKS, action: "setFolderPersonTag" }
+          );
+          if (!outcome.ok) return;
+          patchFolder(folder.id, { personTagId });
           renderAll();
         });
         el.querySelector("[data-folder-move]")?.addEventListener("change", async (e) => {

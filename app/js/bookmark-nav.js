@@ -18,6 +18,10 @@
 //     (bookmarks.js's setBookmarkPersonTag()), and this dropdown can group
 //     by that tag instead of by folder.
 //
+// Bookmark-issues round adds a third mode, GROUP BY MODULE (bookmarks.js's
+// groupBookmarksByModule()) -- "everything from Deen Study," ignoring
+// folders/tags entirely.
+//
 // I2: nav.js itself stays the pure renderer its own contract requires
 // (renderBookmarkCategory() there emits only a skeleton -- a "Loading..."
 // placeholder and the one link into the Manager page). This file is the
@@ -60,8 +64,9 @@
 
 import {
   getBookmarks, rootFolders, childFolders, bookmarksInFolder, unfiledBookmarks, groupBookmarksByPerson,
+  groupBookmarksByModule,
 } from "./bookmarks.js";
-import { MODULE_PAGES } from "./continue-strip.js";
+import { MODULE_PAGES, MODULE_LABELS } from "./continue-strip.js";
 import {
   getBookmarkMenuExpanded, setBookmarkMenuExpanded,
   getBookmarkMenuGroupBy, setBookmarkMenuGroupBy, BOOKMARK_GROUP_BYS, getAppLang,
@@ -127,6 +132,15 @@ function renderBookmarkList(bookmarksDoc, { expanded, groupBy, roster }) {
         .map((g) => groupHtml("\u{1F464}", personName(roster, g.personTagId), g.bookmarks.map(bookmarkLinkHtml).join(""), expanded))
         .join("")
     );
+  }
+  // Bookmark-issues round -- "everything from one module," ignoring the
+  // folder tree entirely. Headings come off MODULE_LABELS, translated at
+  // render time the same way every other module chip in this app already
+  // is (continue-strip.js's own renderContinueStrip()).
+  if (groupBy === "module") {
+    return groupBookmarksByModule(bookmarksDoc, Object.keys(MODULE_PAGES))
+      .map((g) => groupHtml("\u{1F4D6}", MODULE_LABELS[g.moduleId] ? t(MODULE_LABELS[g.moduleId]) : g.moduleId, g.bookmarks.map(bookmarkLinkHtml).join(""), expanded))
+      .join("");
   }
   return (
     unfiledBookmarks(bookmarksDoc, { includeRemoved: false }).map(bookmarkLinkHtml).join("") +

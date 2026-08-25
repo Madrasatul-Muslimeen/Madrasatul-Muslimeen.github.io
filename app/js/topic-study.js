@@ -184,8 +184,11 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     // Fix round (25 Aug 2026): a Person selection now stays chosen across
     // pages and reloads, until manually changed -- fall back to the first
     // visible roster row only when nothing usable is stored yet.
+    // Bookmark-issues round: myPersonId (the signed-in login's own person)
+    // is a fallback below stored, above the first roster row.
     const storedPersonId = getSelectedPersonId();
-    selectedPersonId = visibleRoster.some((p) => p.id === storedPersonId) ? storedPersonId : (visibleRoster[0]?.id ?? null);
+    selectedPersonId = visibleRoster.some((p) => p.id === storedPersonId) ? storedPersonId
+      : (visibleRoster.some((p) => p.id === myPersonId) ? myPersonId : (visibleRoster[0]?.id ?? null));
     personSelect.value = selectedPersonId ?? "";
 
     moduleSubjects = tree.filter((n) => (n.moduleIds ?? []).includes(moduleId) && n.status !== "archived");
@@ -413,7 +416,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       let folderId = choice.folderId;
       if (choice.newFolderName) {
         const folderOutcome = await safeWrite(
-          () => createFolder(db, { tenantId: activeTenantId, personId: selectedPersonId, name: choice.newFolderName, uid: auth.currentUser.uid }),
+          () => createFolder(db, { tenantId: activeTenantId, personId: selectedPersonId, name: choice.newFolderName, personTagId: choice.personTagId, uid: auth.currentUser.uid }),
           { collection: TENANT.BOOKMARKS, action: "createFolder" }
         );
         if (!folderOutcome.ok) return;

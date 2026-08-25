@@ -2020,8 +2020,15 @@
       // already had selected; failing that (a fresh page load), fall back
       // to the last Person chosen anywhere in the app rather than always
       // the first roster row.
+      // Bookmark-issues round: a THIRD fallback, below stored, above "first
+      // roster row" -- the signed-in login's own person (myPersonId). A
+      // fresh browser with nothing stored yet used to land on whichever row
+      // Firestore happened to return first (undefined ordering, not a real
+      // guarantee); it now lands on the person the login itself IS.
       const stored = getSelectedPersonId();
-      const candidate = visibleRoster.some((p) => p.id === prev) ? prev : (visibleRoster.some((p) => p.id === stored) ? stored : null);
+      const candidate = visibleRoster.some((p) => p.id === prev) ? prev
+        : (visibleRoster.some((p) => p.id === stored) ? stored
+        : (visibleRoster.some((p) => p.id === myPersonId) ? myPersonId : null));
       if (candidate) personSelect.value = candidate;
     }
 
@@ -4028,7 +4035,7 @@
         let folderId = choice.folderId;
         if (choice.newFolderName) {
           const folderOutcome = await safeWrite(
-            () => createFolder(db, { tenantId: activeTenantId, personId: selectedPersonId, name: choice.newFolderName, uid: auth.currentUser.uid }),
+            () => createFolder(db, { tenantId: activeTenantId, personId: selectedPersonId, name: choice.newFolderName, personTagId: choice.personTagId, uid: auth.currentUser.uid }),
             { collection: TENANT.BOOKMARKS, action: "createFolder" }
           );
           if (!folderOutcome.ok) return;
@@ -4577,11 +4584,33 @@
         object worth restoring). Silently does nothing for a stale/unknown
         id or a signed-out/no-person state -- same tolerance ?resume=
         already has elsewhere in this app. */
+    /**
+     * Bookmark-issues round -- an OPTIONAL `ownerPersonId` query param, set
+     * only by bookmarks.html's own "Bookmarked for {name} by you" section
+     * (a cross-document view: a bookmark someone tagged FOR whoever is
+     * currently selected there, but which actually lives in the TAGGER's
+     * own bookmarks doc, not the tagged person's -- see that file's own
+     * `taggedForSelected` comment). Without it, this reads exactly as
+     * before: the bookmark is looked up in the CURRENTLY SELECTED person's
+     * own bookmarksDoc, already loaded. With it, this fetches that one
+     * other document just to find the bookmark, WITHOUT touching
+     * selectedPersonId/bookmarksDoc themselves -- opening someone else's
+     * bookmarked spot must never silently switch who this page is acting
+     * as.
+     */
     async function openBookmarkFromQueryString() {
-      const bookmarkId = new URLSearchParams(location.search).get("bookmark");
+      const params = new URLSearchParams(location.search);
+      const bookmarkId = params.get("bookmark");
+      const ownerPersonId = params.get("ownerPersonId");
       if (!bookmarkId || !selectedPersonId) return;
       await ensureAyahNoteDataLoaded();
-      const bookmark = (bookmarksDoc.saved ?? []).find((b) => b.id === bookmarkId && !b.removed);
+      let bookmark;
+      if (ownerPersonId && ownerPersonId !== selectedPersonId) {
+        const ownerDoc = await getBookmarks(db, activeTenantId, ownerPersonId);
+        bookmark = (ownerDoc.saved ?? []).find((b) => b.id === bookmarkId && !b.removed);
+      } else {
+        bookmark = (bookmarksDoc.saved ?? []).find((b) => b.id === bookmarkId && !b.removed);
+      }
       if (!bookmark || bookmark.moduleId !== "quranrevival") return;
       await applyQuranBookmarkSettings(bookmark.settings, bookmark.position);
     }

@@ -132,9 +132,11 @@ export function initAsmaStudyPage() {
       .join("");
     // Fix round (25 Aug 2026): a Person selection now stays chosen across
     // pages and reloads, until manually changed -- see topic-study.js's own
-    // copy of this comment.
+    // copy of this comment. Bookmark-issues round: myPersonId is a fallback
+    // below stored, above the first roster row.
     const storedPersonId = getSelectedPersonId();
-    selectedPersonId = visibleRoster.some((p) => p.id === storedPersonId) ? storedPersonId : (visibleRoster[0]?.id ?? null);
+    selectedPersonId = visibleRoster.some((p) => p.id === storedPersonId) ? storedPersonId
+      : (visibleRoster.some((p) => p.id === myPersonId) ? myPersonId : (visibleRoster[0]?.id ?? null));
     personSelect.value = selectedPersonId ?? "";
 
     // Parameter renamed off `t` in phase 6: it shadowed the imported
@@ -247,7 +249,7 @@ export function initAsmaStudyPage() {
       let folderId = choice.folderId;
       if (choice.newFolderName) {
         const folderOutcome = await safeWrite(
-          () => createFolder(db, { tenantId: activeTenantId, personId: selectedPersonId, name: choice.newFolderName, uid: auth.currentUser.uid }),
+          () => createFolder(db, { tenantId: activeTenantId, personId: selectedPersonId, name: choice.newFolderName, personTagId: choice.personTagId, uid: auth.currentUser.uid }),
           { collection: TENANT.BOOKMARKS, action: "createFolder" }
         );
         if (!folderOutcome.ok) return;
