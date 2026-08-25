@@ -59,8 +59,42 @@
   .way-tab-btn.active { background: #1F3A6E; color: white; }
   .way-tab-panel { display: none; }
   .way-tab-panel.active { display: block; }
-  .way-modal-header { display: flex; justify-content: space-between; align-items: center; }
-  .way-close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; }
+  .way-modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.4rem; }
+  .way-header-row { display: flex; align-items: flex-start; gap: 0.4rem; flex: 1; min-width: 0; }
+  .way-header-row h3 { flex: 1; min-width: 0; margin: 0; }
+  .way-close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; flex-shrink: 0; }
+
+  /* "Assign to" -- one Claim recorded for several people at once. A compact
+     dropdown pinned top-right of the card (Track/way-modal.js) rather than a
+     block that pushes the rest of the card down; opening/closing is wired
+     once, at module load, by way-modal.js itself. */
+  .assign-trigger-wrap { position: relative; flex-shrink: 0; }
+  .assign-trigger {
+    display: flex; align-items: center; gap: 0.3rem;
+    background: #fff; border: 1.5px solid rgba(31,58,110,0.35);
+    color: #1F3A6E; font-weight: 700; font-size: 0.78rem;
+    padding: 0.28rem 0.55rem; border-radius: 1.2rem; cursor: pointer;
+    white-space: nowrap; font-family: inherit;
+  }
+  .assign-trigger .caret { font-size: 0.65rem; opacity: 0.7; }
+  .assign-popover {
+    position: absolute; top: calc(100% + 0.35rem); right: 0; width: 12.5rem;
+    background: #fff; border: 1px solid rgba(31,58,110,0.22);
+    border-radius: 10px; padding: 0.6rem 0.65rem 0.65rem;
+    box-shadow: 0 10px 26px rgba(20,40,80,0.18); z-index: 5;
+    display: none;
+  }
+  .assign-popover.open { display: block; }
+  .assign-popover-label {
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
+    font-weight: 700; color: #666; margin: 0 0 0.4rem;
+  }
+  .assign-hint { font-size: 0.76rem; color: #777; margin: 0 0 0.55rem; }
+  .assign-list { display: flex; flex-direction: column; gap: 0.3rem; }
+  .assign-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none; padding: 0.1rem 0; }
+  .assign-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
+  .assign-row .who-name { flex: 1; }
+  .assign-row .who-tag { font-size: 0.66rem; color: #777; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
   .way-streak-count { font-size: 1.1rem; margin: 0.5rem 0 0.2rem; }
   .way-streak-today { color: #555; font-size: 0.9rem; margin-bottom: 0.6rem; }
 </style>
