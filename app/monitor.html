@@ -123,6 +123,8 @@
       setActiveContext,
       effectiveRoles,
       scopedRoster,
+      getSelectedPersonId,
+      setSelectedPersonId,
     } from "./js/session-context.js";
     import { getSubjectTree, getTrackables } from "./js/catalogue.js";
     import { activityForRoster, monthWeekKeys, filterEntriesToMonth, summarizeByStudent, summarizeBySubject, summarizeQuranApproaches, entriesToCsvRows, downloadCsv, printReportHtml } from "./js/monitor.js";
@@ -226,10 +228,14 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       // everyone and lets Firestore's rules deny the read per-person), a
       // report iterates the WHOLE visible set in one go, so scoping it up
       // front avoids a batch of denied reads breaking the whole report.
-      visibleRoster = scopedRoster(roster, effRoles, myPersonId);
+      visibleRoster = scopedRoster(roster, effRoles, myPersonId).filter((p) => p.status !== "archived");
       personSelect.innerHTML = visibleRoster
         .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
         .join("");
+      // Fix round (25 Aug 2026): a Person selection now stays chosen across
+      // pages and reloads, until manually changed.
+      const storedPersonId = getSelectedPersonId();
+      if (visibleRoster.some((p) => p.id === storedPersonId)) personSelect.value = storedPersonId;
 
       if (!weekAnchor.value) weekAnchor.value = toDateInputValue(new Date());
       if (!monthAnchor.value) monthAnchor.value = new Date().toISOString().slice(0, 7);
@@ -364,7 +370,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       refreshReport();
     }
 
-    personSelect.addEventListener("change", () => { refreshReport(); refreshQuranBreakdown(); });
+    personSelect.addEventListener("change", () => { setSelectedPersonId(personSelect.value); refreshReport(); refreshQuranBreakdown(); });
     wholeRoster.addEventListener("change", refreshReport);
 
     csvBtn.addEventListener("click", () => {

@@ -110,6 +110,8 @@
       setActiveContext,
       effectiveRoles,
       scopedRoster,
+      getSelectedPersonId,
+      setSelectedPersonId,
     } from "./js/session-context.js";
     import { getSubjectTree } from "./js/catalogue.js";
     import {
@@ -192,10 +194,14 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const { viewAsRole, effRoles, myPersonId } = currentPreview();
       renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
 
-      visibleRoster = scopedRoster(roster, effRoles, myPersonId);
+      visibleRoster = scopedRoster(roster, effRoles, myPersonId).filter((p) => p.status !== "archived");
       personSelect.innerHTML = visibleRoster
         .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
         .join("");
+      // Fix round (25 Aug 2026): a Person selection now stays chosen across
+      // pages and reloads, until manually changed.
+      const storedPersonId = getSelectedPersonId();
+      if (visibleRoster.some((p) => p.id === storedPersonId)) personSelect.value = storedPersonId;
 
       canAdmin = effRoles.some((r) => ["owner", "prime"].includes(r));
       createFieldset.style.display = canAdmin ? "" : "none";
@@ -354,7 +360,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       }
     }
 
-    personSelect.addEventListener("change", () => { refreshOffers(); refreshEnrolments(); });
+    personSelect.addEventListener("change", () => { setSelectedPersonId(personSelect.value); refreshOffers(); refreshEnrolments(); });
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {

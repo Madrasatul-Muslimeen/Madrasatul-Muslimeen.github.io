@@ -297,3 +297,21 @@ document.addEventListener(
   },
   true
 );
+
+// Fix round (25 Aug 2026), owner report: a category stayed open until a
+// DIFFERENT category was clicked (the accordion listener above) -- there
+// was no way to just tap elsewhere on the page and have it close, which
+// is the more common way to dismiss any dropdown. A bubble-phase click
+// listener on `document`, same "attach once here, works for every page
+// and every category including ones injected later" shape as the toggle
+// listener above. Runs during the ordinary bubble phase, which completes
+// BEFORE a <summary> click's native open/close default action fires --
+// so clicking a category's own summary (to open OR close it) is always
+// still contained by that category's own element and is correctly left
+// alone here; only a click genuinely outside every open category reaches
+// this far and closes them.
+document.addEventListener("click", (e) => {
+  document.querySelectorAll(".nav-cat[open]").forEach((cat) => {
+    if (!cat.contains(e.target)) cat.open = false;
+  });
+});

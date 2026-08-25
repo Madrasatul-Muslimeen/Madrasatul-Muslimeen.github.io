@@ -89,7 +89,7 @@
     import { getAppLang } from "./js/prefs.js";
     import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
     import { safeWrite } from "./js/errors.js";
-    import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster } from "./js/session-context.js";
+    import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { translateStatic, t } from "./js/i18n.js";
@@ -147,9 +147,15 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     function renderPersonSelectOptions() {
       const prev = personSelect.value;
       const { viewAsRole, effRoles, myPersonId } = currentPreview();
-      const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
+      const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster).filter((p) => p.status !== "archived");
       personSelect.innerHTML = visibleRoster.map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`).join("");
-      if (visibleRoster.some((p) => p.id === prev)) personSelect.value = prev;
+      // Fix round (25 Aug 2026): prefer whatever this page's own re-render
+      // already had selected; failing that (a fresh page load), fall back
+      // to the last Person chosen anywhere in the app rather than always
+      // the first roster row.
+      const stored = getSelectedPersonId();
+      const candidate = visibleRoster.some((p) => p.id === prev) ? prev : (visibleRoster.some((p) => p.id === stored) ? stored : null);
+      if (candidate) personSelect.value = candidate;
     }
 
     async function loadContextData() {
@@ -170,6 +176,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
     personSelect.addEventListener("change", async () => {
       selectedPersonId = personSelect.value;
+      setSelectedPersonId(selectedPersonId);
       await refreshBookmarks();
     });
 

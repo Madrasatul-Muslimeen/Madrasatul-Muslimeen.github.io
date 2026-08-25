@@ -1,10 +1,24 @@
 // F-015 — Tenant/role switcher + View as (Phase 1, Identity & access)
 //
-// Tracks which tenant and role a signed-in user is currently acting as,
-// for people who belong to more than one tenant or hold more than one
-// role. Backed by sessionStorage (not localStorage) so it clears itself
-// when a browser tab closes -- this matters for Stage 8's handover lock,
-// which relies on the same tab-scoped lifetime.
+// Tracks which tenant, role and roster person a signed-in user is
+// currently acting as, for people who belong to more than one tenant or
+// hold more than one role.
+//
+// Fix round (25 Aug 2026): moved from sessionStorage to localStorage, on
+// the owner's own explicit ask -- Tenant/View as/Person selections must
+// "take effect everywhere and remain constant" until manually changed,
+// which a per-tab store can never do (a new tab, or the same tab
+// reopened, used to start over). This file's own header used to justify
+// sessionStorage by pointing at Stage 8's handover lock (F-016,
+// study-lock.js) -- checked directly before making this change: the lock
+// is a SEPARATE, independently sessionStorage-backed key
+// ("qr.studyLock"), engaged only by the explicit "hand this device to a
+// child" action on people.html, never by ordinary tenant/role/person
+// selection. The two have never shared code or state; only the comment
+// implied a dependency. Moving this file to localStorage does not touch
+// study-lock.js at all, so D10's own handover-lock behaviour (still
+// tab-scoped, still only for an explicit "start studying" action) is
+// unaffected.
 //
 // "View as" is a pure client-side render-mode flag: it changes what the
 // UI SHOWS, never what Firestore allows. The signed-in user's real,
@@ -19,10 +33,10 @@ import { getAppLang } from "./prefs.js";
 
 const STORAGE_KEY = "qr.sessionContext";
 
-/** { tenantId, personId, roles, viewAsRole } or null if nothing is active yet. */
+/** { tenantId, personId, roles, viewAsRole, selectedPersonId } or null if nothing is active yet. */
 export function getActiveContext() {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -30,11 +44,43 @@ export function getActiveContext() {
 }
 
 export function setActiveContext(context) {
-  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(context));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(context));
+  } catch {
+    // Private browsing / storage blocked -- same tolerant shape prefs.js
+    // already uses for its own localStorage writes. The choice simply
+    // doesn't stick for this load; nothing else depends on it succeeding.
+  }
 }
 
 export function clearActiveContext() {
-  sessionStorage.removeItem(STORAGE_KEY);
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // see setActiveContext()
+  }
+}
+
+/**
+ * Fix round (25 Aug 2026) -- which roster person (student/child) a picker
+ * should show selected, persisted the same way tenant/role already are.
+ * Distinct from `context.personId` (the SIGNED-IN user's own person record
+ * in this tenant, used for "myPersonId" checks) -- this is whichever
+ * roster entry was last chosen in a Person/Student picker, which used to
+ * live only in each page's own in-memory variable and reset to the first
+ * roster row on every navigation or reload. Falls back to null (caller's
+ * own default, usually the first visible roster row) when nothing is
+ * stored yet, or when the active context itself hasn't been set up.
+ */
+export function getSelectedPersonId() {
+  return getActiveContext()?.selectedPersonId ?? null;
+}
+
+/** Stores the choice above. A no-op if no active context exists yet (nothing to attach it to). */
+export function setSelectedPersonId(personId) {
+  const ctx = getActiveContext();
+  if (!ctx) return;
+  setActiveContext({ ...ctx, selectedPersonId: personId ?? null });
 }
 
 /** Every tenant this login belongs to, with the roles held in each and that tenant's display name. */

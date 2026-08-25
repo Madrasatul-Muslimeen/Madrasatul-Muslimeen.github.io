@@ -32,7 +32,7 @@ import { t, translateStatic } from "./i18n.js";
 import { safeWrite } from "./errors.js";
 import {
   bootstrapContext, getActiveContext, setActiveContext,
-  effectiveRoles, scopedRoster,
+  effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId,
 } from "./session-context.js";
 import { getSubjectTree, getTrackables } from "./catalogue.js";
 import { catalogueNeedsSeeding, seedCatalogueNow, repairCatalogueInBackground } from "./catalogue-repair.js";
@@ -177,11 +177,16 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
     const { viewAsRole, effRoles, myPersonId } = currentPreview();
     renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
 
-    const visibleRoster = viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster;
+    const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster).filter((p) => p.status !== "archived");
     personSelect.innerHTML = visibleRoster
       .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
       .join("");
-    selectedPersonId = visibleRoster[0]?.id ?? null;
+    // Fix round (25 Aug 2026): a Person selection now stays chosen across
+    // pages and reloads, until manually changed -- fall back to the first
+    // visible roster row only when nothing usable is stored yet.
+    const storedPersonId = getSelectedPersonId();
+    selectedPersonId = visibleRoster.some((p) => p.id === storedPersonId) ? storedPersonId : (visibleRoster[0]?.id ?? null);
+    personSelect.value = selectedPersonId ?? "";
 
     moduleSubjects = tree.filter((n) => (n.moduleIds ?? []).includes(moduleId) && n.status !== "archived");
     studiedTrackable = trackables.find((t) => t.id === trackableId) ?? null;
@@ -571,6 +576,7 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
 
   personSelect.addEventListener("change", async () => {
     selectedPersonId = personSelect.value;
+    setSelectedPersonId(selectedPersonId);
     const { effRoles, myPersonId } = currentPreview();
     // Four independent reads (records, enrolments, teacher scoping,
     // bookmarks) -- fired together instead of one at a time.
