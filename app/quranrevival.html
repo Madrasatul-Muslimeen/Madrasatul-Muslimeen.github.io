@@ -1268,13 +1268,17 @@
           <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
           <!-- Multi-student round -- "enable READ view to have a bookmark
                button too", matching the Note view's own bar 2 (v07.64: a
-               direct button, not buried in the ⋮ menu). Single-ayah view
-               only, same reason readQuickMenuSlot below is: a flow view has
-               no one "this āyah" for a bar-level button to mean, so it keeps
-               its own per-āyah ⋮ badge (renderQuickMenu()'s own bookmark
-               item, still shown there since showBookmark defaults true and
-               this button's own showBookmark:false only applies to the
-               single-ayah call site). -->
+               direct button, not buried in the ⋮ menu). Owner's own
+               follow-up correction ("did I ask for only one Study unit?
+               ... make it for all units") -- this button is visible on
+               EVERY unit type, single ayah or a flow view alike, and always
+               bookmarks whichever Study Unit is currently selected
+               (currentUnitInfo(), the same thing "Track this unit" claims
+               against), not just one ayah. The flow view's own per-āyah ⋮
+               badge (renderQuickMenu()'s own Bookmark item) still lets a
+               reader bookmark one specific āyah within a wider unit; the
+               two are independent, same as a Note can exist on both an
+               āyah and a wider unit ("Also noted at:"). -->
           <button type="button" class="secondary qr-ico" id="readBookmarkBtn" aria-label="Bookmark this āyah" title="Bookmark this āyah" hidden>🔖</button>
           <!-- Round 31 -- the owner's own question: "why should the three dot
                take space over the Ayah? put the dots on the Bar, where there
@@ -4860,17 +4864,31 @@
       mushafNote.hidden = !isMushaf;
       wbwLangControl.style.display = !isMushaf && panels.includes("wordByWord") ? "" : "none";
 
+      // Multi-student round, owner's own correction ("did I ask for only one
+      // Study unit? ... make it for all units"): the direct Bookmark button
+      // is no longer single-ayah-only. It always bookmarks whichever STUDY
+      // UNIT is currently selected -- currentUnitInfo(), the same source
+      // "Track this unit" already claims against -- so a Range/Whole Surah/
+      // Ruku'/Juz/Hizb/Page bookmark resumes that same unit later, not
+      // silently just "wherever the ayah happened to be." This runs before
+      // the flow/single-ayah split below because it no longer depends on
+      // which renderer is showing the unit, only on what the unit IS.
+      const unitInfo = currentUnitInfo();
+      const unitIsBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitInfo.unitKey });
+      readBookmarkBtn.hidden = false;
+      readBookmarkBtn.textContent = unitIsBookmarked ? "★" : "🔖";
+      const unitBmLabel = t(unitIsBookmarked ? "Remove bookmark" : (unitInfo.unitType === "ayah" ? "Bookmark this āyah" : "Bookmark this"));
+      readBookmarkBtn.setAttribute("aria-label", unitBmLabel);
+      readBookmarkBtn.setAttribute("title", unitBmLabel);
+
       if (usesFlow) {
         // Round 31: the bar-mounted ⋮ (below) only ever means "this one
         // āyah" -- a flow shows several at once, so it stays out of the
         // way here and the flow view keeps its own per-āyah badge instead.
+        // The new unit-level Bookmark button above is unaffected -- it
+        // means the whole Range/Whole Surah/etc., which a flow view is
+        // exactly suited to.
         readQuickMenuSlot.innerHTML = "";
-        // Multi-student round -- same reasoning as the ⋮ badge above: a flow
-        // has no one "this āyah" for a bar-level Bookmark button to mean, so
-        // it hides here too and the flow view's own per-āyah ⋮ badge keeps
-        // its Bookmark item (renderQuickMenu()'s default showBookmark:true,
-        // untouched below).
-        readBookmarkBtn.hidden = true;
         // Mushaf over a single ayah means THAT ayah's page, with it
         // highlighted -- the owner's one-ayah memorising case. Every other
         // unit hands over its own bounds, as before.
@@ -4893,19 +4911,18 @@
         // take space over the Ayah?" Mounted on #readBar instead of a
         // header row over the text (I2 -- ayah-renderer.js itself is
         // untouched and still shared by Hadith/topic/Asma renderers, which
-        // don't get this badge).
+        // don't get this badge). This menu is always about THIS ONE āyah's
+        // own text/audio (Copy/Share/Play/Note & more), independent of the
+        // unit-level Bookmark button above -- a Juz's own Bookmark and one
+        // of its ayah's own Note are two different things, same as the Note
+        // view's "Also noted at:" pills already treat them.
         const singleUnitKey = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
         const singleIsBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: singleUnitKey });
         // Multi-student round -- a direct, always-visible Bookmark button
-        // now lives on the bar itself for the single-ayah view (see its own
-        // markup comment), so the ⋮ menu's OWN Bookmark item is redundant
-        // here and dropped (showBookmark:false) -- the flow view above keeps
-        // it, since it has no bar-level button of its own to mean one āyah.
-        readBookmarkBtn.hidden = false;
-        readBookmarkBtn.textContent = singleIsBookmarked ? "★" : "🔖";
-        const bmLabel = t(singleIsBookmarked ? "Remove bookmark" : "Bookmark this āyah");
-        readBookmarkBtn.setAttribute("aria-label", bmLabel);
-        readBookmarkBtn.setAttribute("title", bmLabel);
+        // now lives on the bar itself, so the ⋮ menu's OWN Bookmark item is
+        // redundant here and dropped (showBookmark:false) -- the flow
+        // view's own per-āyah ⋮ badge keeps it, since it has no bar-level
+        // button of its own to mean one specific āyah.
         readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, { hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: false });
         attachAyahQuickMenus(readQuickMenuSlot);
       }
@@ -5158,10 +5175,21 @@
     readStopBtn.addEventListener("click", () => { stopDrill(); stopAudio(); renderReadTransport(); });
 
     // Multi-student round -- the Read screen's own direct Bookmark button
-    // (see #readBookmarkBtn's own markup comment). Reads currentAyahNum at
-    // click time rather than a captured value, same convention every other
-    // #readBar button already follows.
-    readBookmarkBtn.addEventListener("click", () => toggleAyahBookmark(buildUnitKey.ayah(currentSurahNum, currentAyahNum)));
+    // (see #readBookmarkBtn's own markup comment). Reads currentUnitInfo()
+    // fresh at click time rather than a captured value, same convention
+    // every other #readBar button already follows -- and, since the owner
+    // asked for every Study Unit rather than Single Ayah alone, that is
+    // what makes the button bookmark whatever unit is ACTUALLY selected
+    // when it's tapped, not always one ayah. defaultNameOverride is left
+    // undefined for a plain ayah (toggleAyahBookmark's own default naming
+    // already handles that shape); every wider unit hands in its own
+    // unitInfo.label, since parseAyahUnitKey() cannot read a Range/Juz/etc.
+    // key as an ayah reference (see toggleAyahBookmark's own comment on
+    // this exact point, first solved for the Note view's own bookmark).
+    readBookmarkBtn.addEventListener("click", () => {
+      const info = currentUnitInfo();
+      toggleAyahBookmark(info.unitKey, info.unitType === "ayah" ? undefined : info.label);
+    });
 
     prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopDrill(); currentAyahNum--; renderStudyScreen(); renderWheel(); } });
     nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount) { stopDrill(); currentAyahNum++; renderStudyScreen(); renderWheel(); } });
