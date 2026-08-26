@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.76.** Cutover to production happened
+**Current milestone: QuranRevival v07.79.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -4852,6 +4852,118 @@ repository) at their convenience, from the GitHub UI directly, since that
 is an account-owner action outside what this session's own GitHub access
 can do. No `firestore.rules`, schema or Firestore data changes -- this
 round is repository plumbing only.
+
+v07.79 (26 Aug 2026, on Claude Code on the web) is **the first round built
+directly on the unified repo v07.78 created -- a real "+ New bookmark"
+creation flow, and "Update bookmark."** The owner's own ask: enable
+creating a bookmark straight from `bookmarks.html` itself (a Name field, a
+Module dropdown, and -- for the Quran module only, for now, since "each
+module might have different fields" -- a real Study Unit picker), and let
+a bookmark opened with no captured settings be updated in place once the
+reader has set things up while actually studying, rather than needing a
+second star-tap to make a second bookmark. Two options for the update
+mechanism were put to the owner via `AskUserQuestion`; they chose a
+**distinct "Update bookmark" action**, offered only while viewing the
+exact spot a bookmark they opened points to, leaving the star's own
+create/remove job untouched.
+
+**The creation form** (`bookmarks.html`, a new `#newBookmarkForm` block)
+offers Name + Module always, and for Quran a picker across all seven
+Study Unit types -- Ayah, Range, Whole Surah, Ruku', Juz, Hizb, Page --
+the same seven `quranrevival.html`'s own `#unitTypeSelect` offers.
+**The one real correctness question this needed answering: how does a
+Ruku'/Juz/Hizb/Page bookmark, created with no study session behind it,
+open on the right unit later?** `openNoteView()`/`noteScopeUnitInfo()`
+derive a numbered unit's own claimed bounds from `currentAyahNum` --
+`settings.ayahNum` -- not from any number embedded in the unit key
+itself, so the form computes a real **anchor ayah** genuinely inside the
+chosen unit for every numbered type (`nbAnchor()`, reading the real
+juz/hizb/page boundary tables, or -- for Ruku' -- a real per-surah fetch
+via `getSurah()` to read that surah's own ruku boundaries) rather than
+guessing or defaulting to ayah 1. Every other module shows a plain
+"Creating a bookmark for this module isn't built yet" note instead of a
+picker it has no comparable per-position settings for -- honest about
+what the data can support rather than promising a picker that produces
+nothing real, the same discipline v07.28's disabled Translator control
+and v07.50's Indo-Pak note already used. The three Quran boundary tables
+(juz/hizb/page) and any per-surah ruku fetch are all lazy, fired only the
+first time the create form actually needs them (I9 untouched -- perf
+re-measured to prove it, still 6 sequential round trips on Quran Study).
+
+**"Update bookmark"** is a new item in the Ayah Note screen's ⋯ menu
+(`ayah-note-renderer.js`), shown only when a new `canUpdateBookmark` flag
+is true. That flag rides on a new `openedBookmarkId` session variable in
+`quranrevival.html`, set **only** by `openBookmarkFromQueryString()` --
+never by an ordinary star-tap create, since that already IS the save --
+and only for a bookmark that lives in the CURRENTLY SELECTED person's own
+document (a cross-document "tagged for" open, via `?ownerPersonId=`,
+stays read-only from here, matching v07.76's own rule that opening
+someone else's bookmarked spot must never silently write to their
+document). It clears when that bookmark is retired via its own star, or
+when the person picker changes (bookmarks are per-person documents).
+`updateOpenedBookmark()` saves whatever is CURRENTLY being studied --
+`noteScopeCurrentUnitKey()`'s own position and a fresh
+`captureNoteBookmarkSettings()` snapshot, not whatever the bookmark
+happened to be captured with originally -- into the SAME `saved[]` entry
+via a new `updateSavedBookmarkFields()` in `bookmarks.js`, which patches
+`position`/`settings` in place and leaves `name`/`folderId`/`personTagId`
+untouched (those stay the Manager's own job). `bookmarksDoc` is patched
+in memory afterward rather than re-fetched, the same "patch, don't
+re-fetch" rule this whole feature has followed since v07.66.
+
+**Verified**: `node --check` on every touched file, plus a focused,
+un-checked-in Playwright script (this project's own established practice
+for anything reaching past `behaviour.mjs`'s own disclosed section-42
+crash point, matching how v07.69-77 verified their own Note-view work) --
+38 checks, all passing: every Study Unit type's field visibility and
+auto-filled default name (Ruku's real per-surah ayah bounds, Juz/Hizb/
+Page's real 30/60/604 counts, each fetched from the real boundary table
+rather than assumed), a real Juz-5 bookmark created end to end with a
+working Open link and the write recorded, the non-Quran-module fallback
+note with Create correctly disabled, and -- for Update bookmark -- moving
+to a different ayah, firing the update, the write recording the right
+field, and the item correctly NOT offered on a page where no bookmark was
+opened this session; all of it again in Bangla. **A cross-page reload to
+confirm a written position "stuck" could not be proven through this
+project's own test stub** -- `firebase-stub.mjs`'s `updateDoc()` never
+mutates its backing `DATA` (the same standing limitation v07.66/68/77's
+own entries already recorded), so even the seeded bookmark reverts to its
+static value on any fresh page load regardless of what was written; the
+provable claim instead is that the write fires carrying the right field
+immediately after the on-screen position genuinely changed, which the
+script proves directly. Two real TEST bugs were caught and fixed while
+building the create-flow script, not app bugs: `waitForFunction(() =>
+options.length > 0)` after switching Study Unit type was satisfied
+instantly by the PREVIOUS type's own leftover options, still sitting in
+the DOM until the new fetch resolved and replaced them -- fixed by
+waiting for the real expected count (or the real network response) rather
+than merely "some options."
+
+Full `tools/i18n-verify/behaviour.mjs` suite re-run against this round's
+build: **788 checks pass**, 1 pre-existing environmental failure
+(archive.org blocked by this sandbox's proxy, recorded since v07.44),
+reaching the same already-disclosed pre-existing crash point in section
+42 this project has carried since v07.69 (confirmed unrelated -- the same
+selector sits behind the same closed dropdown at a clean `HEAD` too).
+**`layout.mjs` reports NO LAYOUT REGRESSIONS** against a real `HEAD` shim
+at all eight viewports in both banner states (landing page byte-for-byte
+identical, `getElementById` targets unchanged at 99), **`navcheck.mjs`
+unchanged** (still only the pre-existing 320px English truncation of
+"Operation"/"Bookmark"), **translation coverage 1,371/1,371 (99%), the
+same 8 pre-existing missing strings as before this round** (none of the
+three new strings this round adds among them), and **`tools/perf/
+measure.mjs` unchanged at 6 sequential round trips**, confirming no
+Firestore read joined the startup path. No `firestore.rules` or schema
+changes -- `position`/`settings` on a `saved[]` entry were already part
+of the `bookmarks` collection's own shape; nothing to deploy but the
+static files, and since v07.78 that deployment is simply this merge to
+`main`.
+
+**Flagged, not fixed (pre-existing, out of scope):** Asma ul Husna
+bookmarks have no working "Open" link on `bookmarks.html` --
+`MODULE_PAGES` in `continue-strip.js` has no `asma` entry, so
+`bookmarkHref()` returns `null` for that module. Found while building this
+round's Module dropdown; unrelated to it.
 
 ## What this is
 
