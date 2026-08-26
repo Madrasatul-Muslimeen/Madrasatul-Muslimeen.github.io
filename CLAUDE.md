@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.81.** Cutover to production happened
+**Current milestone: QuranRevival v07.82.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -5180,6 +5180,114 @@ bar's button count or DOM order. `layout.mjs`, `panel.mjs` and
 rendering logic with no effect on either page's own measured layout. No
 `firestore.rules` or schema changes -- nothing to deploy but the static
 files.
+
+v07.82 (26 Aug 2026, on Claude Code on the web) is **shell round -- the
+wheel hub redesigned to a phone screenshot the owner sent**, their own five
+asks in one message: Ta'awwudh curved and bigger (still contained, not
+overflowing); Bismillah bigger and moved up; the Surah dropdown's text
+bigger, nudged up; the Ayah dropdown wider (to show three digits clearly)
+and moved above Surah; and roughly 40% of the centre left free below,
+reserved for an "open Qur'an emitting light" graphic they said explicitly
+is phase 2, not this round. **A demo was shown first** (two mockup
+iterations -- the owner's own corrections mid-demo, "Ayah should be below
+the Surah" and "the button frame should be little less wide," both folded
+in before anything real was touched), and only built once approved
+("Go fo it").
+
+**Ta'awwudh is a curved SVG now, not a straight `<p>`** -- `<textPath>`
+along a shallow arc, chosen over per-character CSS rotation because Arabic
+is a cursive, contextual script: splitting it into per-character spans
+would break letter shaping, where `<textPath>` keeps the text one
+continuous run and lets the browser shape it correctly. **It stays wrapped
+in a plain `<p>`, not a bare `<svg>` root, on purpose** -- `SVGElement` has
+no native `.hidden` IDL reflection the way `HTMLElement` does, and this
+page's own veil/reveal logic (the wheel starts covered until the "Study
+Quran" button is tapped, v07.61) reads and writes `.hidden` on this
+element's id directly; a raw `<svg>` root would have silently broken that.
+Bismillah, Surah and Ayah are all bigger too, and Ayah is genuinely wider
+now (a **percentage of the same base width Surah's own percentage is
+measured against**, not a fixed em value -- a fixed width was tried first
+and could end up WIDER than Surah on the tightest hubs, where Surah's own
+percentage floors out; tying both to the same base keeps Ayah reliably
+narrower than Surah by construction, whatever width the fit below lands
+on, so `LAYOUT-BACKLOG.md`'s old "narrower than 40% of Surah" rule is
+retired for a plain "narrower than Surah," which the new width still
+genuinely is).
+
+**The real work this round is `layoutWheelHub()`'s own containment math,
+and it needed a real, measured diagnosis, not a guess.** The bigger content
+(curved Ta'awwudh, bigger fonts, a genuine 40%-reserve ask) pushed the
+existing single-pass fit into real overflow at several viewports first --
+fixed with an iterative re-measurement loop (the comment already explains
+why: Bismillah's own wrap count is discontinuous against width, so a
+width chosen from one measurement can cost it a whole extra line once
+actually rendered at that narrower width). **That loop then converged
+correctly for the STRESS case (a long surah name + "286," the widest ayah
+number) but silently crushed the DEFAULT/short-content case to the exact
+same `MIN_SAFE_WIDTH=62px` floor** -- found only by instrumenting the
+function with a gated debug log (`window.__hubDebug`, harmless, left in
+place) and reading the real per-pass numbers rather than assuming the fix
+that worked for one case worked for both. **The root cause: a single
+combined solve chases both containment AND the 40% reserve target at
+once, and for ordinary short content (a two-word Surah name) that
+combination is a genuine feedback loop** -- reserving more space demands a
+narrower width, but Bismillah's own wrap boundary means a narrower width
+can itself grow the content taller, which then demands narrowing further
+still, bottoming out at the legibility floor even though there was never
+a real containment problem to force that.
+
+**Fixed by decoupling the two questions into two separate steps, not by
+tuning the loop harder.** Step 1 decides WIDTH alone, for containment when
+CENTRED (no reserve yet) -- narrowed only as far as that genuinely
+demands. Step 2, once width is settled, spends whatever room is LEFT OVER
+pushing the block up as a pure bonus toward the 40% target, but never
+re-opens the width step 1 already decided to buy more of it. For the
+default case this means `up` ends up small (about 5px on a 176px-diameter
+hub, not the ~25px the old combined chase wanted), and width comes back at
+144px instead of the 62px floor -- **measured before/after: "1. Al-Faatiha"
+went from truncating on a 1280px desktop to rendering in full, with
+comfortable room either side.** For the stress case nothing regressed --
+**re-verified at all 8 viewports (320 through 1920px) that both the
+default state AND the "286" stress case still fit the hub circle with no
+overflow (`fits: true` everywhere) and no clipping**, confirmed both by
+direct geometry measurement and by four real screenshots (phone/desktop x
+default/286).
+
+**One pre-existing test-method bug, found and fixed along the way, not
+specific to this round's own change:** `scrollWidth > clientWidth` is NOT
+a reliable truncation check on a native `<select>` with
+`text-overflow: ellipsis` -- ellipsis truncates WITHIN `clientWidth` by
+design, so `scrollWidth` stays equal to it even while the visible text is
+genuinely cut down to "2…". Found by screenshotting the real page and
+reading it, not by the check itself, which reported "not clipped" the
+whole time it was wrong. Fixed with a canvas-based measurement of the
+option text's own real rendered width (at the select's own computed font)
+against the box's real content width, both in the throwaway verification
+scripts this round used AND as a fix to the checked-in `behaviour.mjs`
+test 43j, which also had its own now-stale "under 40% of Surah" ratio
+assertion updated to match this round's own wider-Ayah design (recorded in
+that test's own comment, per this project's standing "update in place,
+don't delete" rule for a round that deliberately changes what an old
+check describes).
+
+**Verified**: the checked-in `tools/i18n-verify/behaviour.mjs` suite
+re-run in full against this round's build, reaching well past the point
+this round's own changes could affect anything, with **no new failures --
+only the same single pre-existing, environmental archive.org-blocked-by-
+the-sandbox-proxy failure this project has recorded since v07.44** (unrelated
+to this round). Section 43i-o (the hub's own dedicated checks, including
+the corrected 43j) sits past the pre-existing, already-disclosed section-42
+crash this project has carried since v07.69 and so could not be reached
+through the checked-in harness in this run either -- verified instead with
+the same throwaway-script practice v07.69-81 have all used for exactly
+this reason: a direct 8-viewport geometry sweep (containment, the "286"
+stress case, no clipping) plus four real screenshots. No `firestore.rules`,
+schema or Firestore data changes -- nothing to deploy but the static files.
+
+**Flagged, not built: the phase-2 "open Qur'an emitting light" graphic
+itself.** This round only clears the ~40%-of-diameter room for it, as
+asked; the graphic is explicitly the owner's own next round, "En Shaa
+Allah."
 
 ## What this is
 

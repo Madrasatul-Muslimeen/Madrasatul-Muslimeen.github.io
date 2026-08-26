@@ -4647,19 +4647,41 @@ console.log("\n=== 43i-o. The hub's own content: Ta'awwudh/Bismillah (both perma
   check("43i ...which sits above Surah", order.bismillahTop < order.surahTop, JSON.stringify(order));
   check("43i ...which sits above Ayah, at the very bottom", order.surahTop < order.ayahTop, JSON.stringify(order));
 
+  // Round after v07.81 (the owner's own "the Ayah drop-down should be
+  // wider to show 3 texts clearly"): Ayah is still narrower than Surah,
+  // but the old strict "under 40% of Surah's own width" ratio was written
+  // for the earlier, deliberately three-digits-and-no-more-narrow design
+  // this round widened on purpose -- pinned to a plain "narrower than
+  // Surah" instead, which the new width still genuinely is.
   const surahW = await page.evaluate(() => document.getElementById("wheelHubSurahSelect").getBoundingClientRect().width);
   const ayahW = await page.evaluate(() => document.getElementById("wheelHubAyahSelect").getBoundingClientRect().width);
-  check("43j Ayah is narrowed to three digits, nowhere near Surah's own width", ayahW < surahW * 0.4, `surah=${surahW} ayah=${ayahW}`);
+  check("43j Ayah is still narrower than Surah", ayahW < surahW, `surah=${surahW} ayah=${ayahW}`);
 
   // Picking the widest real ayah number (Surah 2 has 286) must not clip --
-  // the whole point of "three digits wide, not more than that."
+  // the whole point of widening it was to show a 3-digit number clearly.
+  // `scrollWidth > clientWidth` is NOT a reliable truncation check on a
+  // native <select> with text-overflow:ellipsis -- ellipsis truncates
+  // WITHIN clientWidth by design, so scrollWidth stays equal to it even
+  // while the visible text is genuinely being cut down to "2…" (found by
+  // screenshotting the real page during this round, not by this check,
+  // which reported "not clipped" the whole time). Measuring the option
+  // text's own real rendered width against the box's real content width
+  // (via canvas, at the select's own computed font) is what actually
+  // proves it isn't truncated.
   await page.selectOption("#wheelHubSurahSelect", "2");
   await page.waitForTimeout(250);
   await page.selectOption("#wheelHubAyahSelect", "286");
   await page.waitForTimeout(250);
   const wide = await page.evaluate(() => {
     const el = document.getElementById("wheelHubAyahSelect");
-    return { value: el.value, clipped: el.scrollWidth > el.clientWidth + 1, canonical: document.getElementById("ayahSelect").value };
+    const cs = getComputedStyle(el);
+    const c2d = document.createElement("canvas").getContext("2d");
+    c2d.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const textW = c2d.measureText(el.value).width;
+    const contentW = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    // A fixed, conservative reserve for the native dropdown arrow, which
+    // CSS gives no way to measure directly.
+    return { value: el.value, clipped: textW > contentW - 14, textW, contentW, canonical: document.getElementById("ayahSelect").value };
   });
   check("43j ...286 (the widest real ayah number) fits without clipping", wide.value === "286" && !wide.clipped, JSON.stringify(wide));
   check("43j ...and really drives the canonical Ayah picker too", wide.canonical === "286", wide.canonical);

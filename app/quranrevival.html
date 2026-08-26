@@ -376,14 +376,19 @@
   .wheel-cta-btn:hover { filter: brightness(1.06); }
   .wheel-cta-line1 { font-size: 0.98rem; }
   .wheel-cta-line2 { font-size: 0.8rem; }
-  /* Round after v07.61: Surah top, Ta'awwudh/Bismillah in the middle (the
-     hub's own widest point), Ayah narrowed to three digits at the very
-     bottom. Width is set inline by layoutWheelHub(), never fixed here --
-     the safe width depends on the wheel's own measured hub circle AND on
-     whether Bismillah is showing, both of which only JS knows. */
+  /* Round after v07.81: Ta'awwudh curved over the top (an SVG line now, not
+     a straight paragraph -- see the markup below for why it stays wrapped
+     in a plain HTML element rather than living directly on the <svg>:
+     SVGElement has no native `.hidden` IDL reflection in browsers, and this
+     page's own veil/reveal logic reads/writes `.hidden` on these elements'
+     ids elsewhere), Bismillah/Surah/Ayah all bigger, Surah still above Ayah
+     (unchanged since v07.62/63). Width AND the block's own vertical anchor
+     are both set inline by layoutWheelHub(), never fixed here -- the safe
+     width/position depend on the wheel's own measured hub circle, which
+     only JS knows. */
   .wheel-hub-pickers {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3;
-    display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+    display: flex; flex-direction: column; align-items: center; gap: 0.12rem;
   }
   /* Both of the above set their own `display`, which -- exactly like
      #wheelSection's own known trap (shell round 17) -- beats the UA's
@@ -391,31 +396,52 @@
      from JS silently does nothing: the button never disappears and the
      pickers never appear from underneath it. */
   .wheel-cta-btn[hidden], .wheel-hub-pickers[hidden] { display: none; }
-  /* Font sizes are also set by layoutWheelHub() as CSS custom properties on
-     the wrapper (--hub-select-size/--hub-arabic-size), scaled to the wheel's
-     own measured hub circle -- fixed sizes here are only the fallback for
-     the first paint before that JS has run once. A hub this small (as low
-     as ~80px across on a phone) needs the TEXT to shrink with it, not just
-     the width: a fixed font size just wraps to more lines and crowds the
-     selects above/below it. */
+  /* Ta'awwudh's curve: the SVG's own viewBox scales proportionally with the
+     wrapper's own width (the same width layoutWheelHub() already computes
+     for everything else), so it needs no separate JS-driven font-size --
+     it behaves like a vector graphic, not text with a CSS font-size. */
+  .wheel-hub-taawwudh { margin: 0; display: block; width: 100%; }
+  .wheel-hub-taawwudh svg { display: block; overflow: visible; }
+  .wheel-hub-taawwudh-text {
+    font-family: var(--quran-font, 'Amiri', serif);
+    fill: #fbf3df; font-size: 14px;
+  }
+  /* Font sizes for Bismillah/Surah/Ayah are set by layoutWheelHub() as CSS
+     custom properties on the wrapper (--hub-select-size/--hub-arabic-size),
+     scaled to the wheel's own measured hub circle -- fixed sizes here are
+     only the fallback for the first paint before that JS has run once. A
+     hub this small (as low as ~80px across on a phone) needs the TEXT to
+     shrink with it, not just the width: a fixed font size just wraps to
+     more lines and crowds the selects above/below it. */
   .wheel-hub-pickers select {
     box-sizing: border-box;
-    font-size: var(--hub-select-size, 0.58rem); padding: 0.16rem 0.22rem; border-radius: 6px;
+    font-size: var(--hub-select-size, 0.7rem); padding: 0.1rem 0.18rem; border-radius: 6px;
     border: 1px solid rgba(201,162,75,0.55); background: rgba(8,14,26,0.85);
     color: #F2E8D5; text-align: center; text-align-last: center;
     text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
   }
-  .wheel-hub-surah { width: 100%; }
-  /* Exactly three digits wide (286 is the widest ayah number in the whole
-     Qur'an) plus the dropdown arrow, and never wider -- the owner's own ask,
-     so the width it gives back is genuinely usable by the Arabic lines
-     above rather than sitting empty either side of a select that used to
-     match Surah's own width. */
-  .wheel-hub-ayah { width: 2.5em; padding-left: 0.15em; padding-right: 0.15em; }
+  /* A deliberate small inset ("the button frame should be little less
+     wide") rather than stretching to the full computed safe width --
+     align-items:center on the wrapper centres it, since it's narrower than
+     the block itself. */
+  .wheel-hub-surah { width: 92%; }
+  /* Wide enough for three digits (286 is the widest ayah number in the
+     whole Qur'an) plus the dropdown arrow, and clearly readable -- widened
+     from the old 2.5em now that the text itself is bigger too. */
+  /* A percentage of the SAME block width Surah's own 92% is measured
+     against, not a fixed em value -- tried first as a fixed width, but a
+     select's "auto" content width for a 3-digit number barely shrinks with
+     font-size (measured: ~46px at both the smallest and largest font this
+     page ever uses), while Surah's own 92% genuinely can float down to the
+     block's MIN_SAFE_WIDTH floor on the tightest hubs -- a fixed Ayah
+     width could end up WIDER than Surah right there. Tying both to the
+     same base keeps Ayah reliably narrower than Surah by construction,
+     whatever width the fit above lands on. */
+  .wheel-hub-ayah { width: 78%; padding-left: 0.15em; padding-right: 0.15em; }
   .wheel-hub-arabic {
     margin: 0; width: 100%; text-align: center; direction: rtl;
     font-family: var(--quran-font, 'Amiri', serif);
-    color: #fbf3df; line-height: 1.25; font-size: var(--hub-arabic-size, 0.66rem);
+    color: #fbf3df; line-height: 1.25; font-size: var(--hub-arabic-size, 0.8rem);
   }
 
   /* Shell round 7: the landing wheel card stretches to fill the stage, and
@@ -1173,18 +1199,31 @@
                  every ayah-change rule keep living in exactly one place.
                  Choosing here re-points every slice at the new āyah, same as
                  changing it anywhere else already does.
-                 Top to bottom, per the owner's own layout: Ta'awwudh,
-                 Bismillah (both PERMANENT now -- no longer conditional on
-                 space), Surah, then Ayah at the very bottom narrowed to
-                 three digits. The wheel's own centre no longer shows the
-                 chosen ayah's Arabic text at all (renderWheel() passes
-                 centerArabic/centerRef as empty strings) -- this overlay is
-                 the whole of what the hub shows now. Widths/font sizes are
-                 computed by layoutWheelHub() against the wheel's own
-                 measured hub circle, never guessed in CSS, so nothing here
-                 can spill onto a slice. -->
+                 Top to bottom, per the owner's own layout: Ta'awwudh (now
+                 curved over the top, bigger), Bismillah (bigger, moved up
+                 into the room the curve frees), Surah (bigger), then Ayah
+                 at the very bottom, still narrower than Surah but widened.
+                 The wheel's own centre no longer shows the chosen ayah's
+                 Arabic text at all (renderWheel() passes centerArabic/
+                 centerRef as empty strings) -- this overlay is the whole of
+                 what the hub shows now. Widths/font sizes/the block's own
+                 vertical position are computed by layoutWheelHub() against
+                 the wheel's own measured hub circle, never guessed in CSS,
+                 so nothing here can spill onto a slice -- and, per the
+                 owner's own newest ask, the block's BOTTOM edge is now
+                 pinned above the hub's own centre rather than the block
+                 being centred on it, leaving roughly the bottom 40% of the
+                 circle empty on purpose: reserved for the phase-2
+                 illuminated Qur'an graphic, not built this round. -->
             <div id="wheelHubPickers" class="wheel-hub-pickers" hidden>
-              <p id="wheelHubTaawwudh" class="wheel-hub-arabic" dir="rtl" lang="ar">أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ</p>
+              <p id="wheelHubTaawwudh" class="wheel-hub-taawwudh" dir="rtl" lang="ar">
+                <svg viewBox="0 0 200 34" role="img" aria-label="أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ" xmlns:xlink="http://www.w3.org/1999/xlink">
+                  <defs><path id="wheelHubArc" d="M 10,32 A 296,296 0 0 1 190,32" fill="none"/></defs>
+                  <text class="wheel-hub-taawwudh-text" direction="rtl" text-anchor="middle">
+                    <textPath href="#wheelHubArc" xlink:href="#wheelHubArc" startOffset="50%">أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ</textPath>
+                  </text>
+                </svg>
+              </p>
               <p id="wheelHubBismillah" class="wheel-hub-arabic" dir="rtl" lang="ar">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
               <select id="wheelHubSurahSelect" class="wheel-hub-surah" aria-label="Surah"></select>
               <select id="wheelHubAyahSelect" class="wheel-hub-ayah" aria-label="Ayah"></select>
@@ -3206,18 +3245,38 @@
     }
 
     /** Sizes the hub's own content (Ta'awwudh, Bismillah, Surah, Ayah) so
-        none of it ever spills past the wheel's own hub circle onto a slice.
-        Measured, never guessed: reads the wheel SVG's OWN rendered size
-        (rOuter/size is a fixed ratio regardless of viewport -- 0.489 for the
-        default size=360) to get the hub circle's real diameter in pixels,
-        then solves for the widest rectangle whose corner still lands inside
-        that circle at the stack's own measured height (Pythagoras: a block
-        of width W and height H, centred on the circle's own centre, fits
-        exactly when (W/2)^2 + (H/2)^2 = r^2). Both Arabic lines are
-        permanent (the owner's own instruction -- "these two texts are to be
-        permanently placed there"), so there is no fallback branch any more:
-        the fit is against all four rows every time, and MIN_SAFE_WIDTH is
-        the floor rather than a cue to drop something. */
+        none of it ever spills past the wheel's own hub circle onto a slice
+        -- the harder, non-negotiable constraint -- AND, wherever there is
+        real room left over, shifts the block up so roughly the bottom 40%
+        of the circle sits empty, reserved for the phase-2 illuminated
+        Qur'an graphic (not built this round; this only clears the room for
+        it). Measured, never guessed: reads the wheel SVG's OWN rendered
+        size (rOuter/size is a fixed ratio regardless of viewport -- 0.489
+        for the default size=360) to get the hub circle's real diameter in
+        pixels.
+
+        Two DECOUPLED steps, deliberately, not one combined solve -- an
+        earlier version chased both at once (narrow the width to buy more
+        "up") and that overreached on ordinary, short content: reserving
+        the fuller 40% forces a narrower width, but Bismillah's own wrap
+        count is discontinuous against width, so narrowing to buy reserve
+        can itself grow the content taller, which then demands narrowing
+        further still -- a feedback loop that, for the combined solve,
+        bottomed out at MIN_SAFE_WIDTH even for a two-word default Surah
+        name, which is not what "not overflowing takes priority over the
+        exact reserve target" was meant to cost. So width is decided FIRST,
+        for containment ALONE (centred, no reserve) -- narrowed only as far
+        as that genuinely demands, re-measured each pass since a narrower
+        trial width can wrap Bismillah onto another line. THEN, once width
+        is settled, "up" is spent as a pure bonus against whatever room is
+        left at that SAME width -- it can shift the block up (which does
+        narrow how much width is safe, the same Pythagorean tradeoff as
+        before) but the width step already chose is never re-opened to buy
+        more of it. On a hub with real headroom this still reaches close to
+        the full 40%; on content that already nearly fills the circle at
+        its own natural width (the common, short-content case) `up` ends
+        up small or zero, which is the honest answer -- legible width wins
+        over hitting the aspirational reserve number, exactly as asked. */
     function layoutWheelHub() {
       const svg = wheelContainer.querySelector("svg.mastery-wheel");
       if (!svg) return;
@@ -3234,23 +3293,65 @@
       // fixed font size on a ~80px hub just wraps to more lines and crowds
       // the selects above/below it. Both scale off the same measured circle,
       // set BEFORE the width trial below so that trial measures real,
-      // already-shrunk content rather than the unscaled default.
-      const arabicPx = Math.max(7.5, Math.min(hubDiameter * 0.075, 12));
-      const selectPx = Math.max(7, Math.min(hubDiameter * 0.062, 9.5));
+      // already-shrunk content rather than the unscaled default. Bigger
+      // than before throughout, per the owner's own ask -- Ta'awwudh no
+      // longer uses either of these at all; its curved SVG scales with the
+      // wrapper's own width instead, like a vector graphic would.
+      const arabicPx = Math.max(8, Math.min(hubDiameter * 0.08, 13));
+      const selectPx = Math.max(8, Math.min(hubDiameter * 0.07, 10.5));
       wheelHubPickers.style.setProperty("--hub-arabic-size", arabicPx + "px");
       wheelHubPickers.style.setProperty("--hub-select-size", selectPx + "px");
 
       const MIN_SAFE_WIDTH = 62; // the floor -- below this even the shrunk text stops being legible
+      const RESERVE_TARGET = 0.4; // the owner's own "~40% of the centre below" ask, as a fraction of the hub's diameter
+      // A small, deliberate margin on the circle itself (measured, not
+      // guessed) -- the last bit of headroom for whatever sub-pixel gap
+      // survives the re-measurement loop below.
+      const rSafe = r * 0.98;
 
-      // A generous trial width so the Arabic actually wraps to its real line
-      // count before anything is measured -- too narrow a trial and every
-      // phrase would measure as artificially tall.
-      wheelHubPickers.style.width = Math.min(hubDiameter * 0.8, 190) + "px";
-      const h = wheelHubPickers.getBoundingClientRect().height;
-      const safeWidth = h / 2 >= r ? 0 : 2 * Math.sqrt(r * r - (h / 2) * (h / 2));
-
-      const width = Math.max(MIN_SAFE_WIDTH, Math.min(safeWidth, hubDiameter * 0.82));
+      // Step 1 -- decide the WIDTH, for containment alone (centred, no
+      // reserve yet). Not overflowing the circle is the one non-negotiable
+      // constraint; the 40% reserve below is prep work for a later phase
+      // and must never cost legibility to chase. Iterated because
+      // Bismillah's own wrap count is genuinely discontinuous against
+      // width -- narrowing from a trial width to the real, narrower final
+      // width can suddenly cost it a whole extra line (a jump of a whole
+      // line-height, not a smooth sub-pixel drift) -- so this measures,
+      // narrows only as far as containment (at up=0) genuinely demands,
+      // and measures AGAIN against what that narrower width really
+      // rendered at, until height stops changing or a small bounded number
+      // of passes is spent trying. It can only ever narrow, never widen a
+      // pass back out, which is what keeps this loop from oscillating.
+      let width = Math.min(hubDiameter * 0.85, 200);
+      let h = 0;
+      for (let pass = 0; pass < 4; pass++) {
+        wheelHubPickers.style.width = width + "px";
+        h = wheelHubPickers.getBoundingClientRect().height;
+        const safeWidth = (h / 2) >= rSafe ? 0 : 2 * Math.sqrt(rSafe * rSafe - (h / 2) * (h / 2));
+        const nextWidth = Math.max(MIN_SAFE_WIDTH, Math.min(safeWidth, hubDiameter * 0.82, width));
+        if (window.__hubDebug) console.log("HUBPASS", JSON.stringify({ pass, width, h, safeWidth, nextWidth }));
+        if (Math.abs(nextWidth - width) < 0.5) { width = nextWidth; break; }
+        width = nextWidth;
+      }
       wheelHubPickers.style.width = width + "px";
+
+      // Step 2 -- spend any room LEFT OVER (once width is already settled
+      // for containment) pushing the block up, as a bonus toward the 40%
+      // reserve target -- never narrower than the width step 1 already
+      // decided. For short/default content this is often close to zero
+      // (the block already nearly fills the circle at its natural width),
+      // and that is the correct, honest answer rather than crushing width
+      // down to MIN_SAFE_WIDTH to manufacture reserve nobody asked to pay
+      // legibility for.
+      const desiredUp = Math.max(0, h / 2 - (0.5 - RESERVE_TARGET) * hubDiameter);
+      const maxUpAtWidth = Math.sqrt(Math.max(0, rSafe * rSafe - (width / 2) * (width / 2))) - h / 2;
+      const up = Math.max(0, Math.min(desiredUp, maxUpAtWidth));
+
+      // Shift the block's own centre up by `up` px from the hub's centre --
+      // this is what actually reserves the space below, whatever `up` the
+      // fit above allowed.
+      wheelHubPickers.style.transform = `translate(-50%, calc(-50% - ${up}px))`;
+      if (window.__hubDebug) console.log("HUBDEBUG", JSON.stringify({ r, rSafe, hubDiameter, h, width, desiredUp, maxUpAtWidth, up }));
     }
 
     // -----------------------------------------------------------------------
