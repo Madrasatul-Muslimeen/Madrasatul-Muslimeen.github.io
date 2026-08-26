@@ -390,12 +390,21 @@
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3;
     display: flex; flex-direction: column; align-items: center; gap: 0.12rem;
   }
+  /* The phase-2 graphic sits BELOW the pickers in stacking order (they can
+     legitimately sit close together on a tight hub) and never intercepts a
+     tap -- it's decoration, not a control. Its width/height/vertical offset
+     are all set inline by layoutWheelHub(), same as the pickers block. */
+  .wheel-hub-graphic {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    z-index: 2; pointer-events: none;
+  }
+  .wheel-hub-graphic svg { display: block; width: 100%; height: 100%; }
   /* Both of the above set their own `display`, which -- exactly like
      #wheelSection's own known trap (shell round 17) -- beats the UA's
      [hidden] rule on its own. Without this, toggling the `hidden` attribute
      from JS silently does nothing: the button never disappears and the
      pickers never appear from underneath it. */
-  .wheel-cta-btn[hidden], .wheel-hub-pickers[hidden] { display: none; }
+  .wheel-cta-btn[hidden], .wheel-hub-pickers[hidden], .wheel-hub-graphic[hidden] { display: none; }
   /* Ta'awwudh's curve: the SVG's own viewBox scales proportionally with the
      wrapper's own width (the same width layoutWheelHub() already computes
      for everything else), so it needs no separate JS-driven font-size --
@@ -404,7 +413,7 @@
   .wheel-hub-taawwudh svg { display: block; overflow: visible; }
   .wheel-hub-taawwudh-text {
     font-family: var(--quran-font, 'Amiri', serif);
-    fill: #fbf3df; font-size: 14px;
+    fill: #fbf3df; font-size: 18px;
   }
   /* Font sizes for Bismillah/Surah/Ayah are set by layoutWheelHub() as CSS
      custom properties on the wrapper (--hub-select-size/--hub-arabic-size),
@@ -1217,8 +1226,8 @@
                  illuminated Qur'an graphic, not built this round. -->
             <div id="wheelHubPickers" class="wheel-hub-pickers" hidden>
               <p id="wheelHubTaawwudh" class="wheel-hub-taawwudh" dir="rtl" lang="ar">
-                <svg viewBox="0 0 200 34" role="img" aria-label="أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ" xmlns:xlink="http://www.w3.org/1999/xlink">
-                  <defs><path id="wheelHubArc" d="M 10,32 A 296,296 0 0 1 190,32" fill="none"/></defs>
+                <svg viewBox="0 0 200 64" role="img" aria-label="أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ" xmlns:xlink="http://www.w3.org/1999/xlink">
+                  <defs><path id="wheelHubArc" d="M 10,52 A 150,150 0 0 1 190,52" fill="none"/></defs>
                   <text class="wheel-hub-taawwudh-text" direction="rtl" text-anchor="middle">
                     <textPath href="#wheelHubArc" xlink:href="#wheelHubArc" startOffset="50%">أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ</textPath>
                   </text>
@@ -1227,6 +1236,48 @@
               <p id="wheelHubBismillah" class="wheel-hub-arabic" dir="rtl" lang="ar">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
               <select id="wheelHubSurahSelect" class="wheel-hub-surah" aria-label="Surah"></select>
               <select id="wheelHubAyahSelect" class="wheel-hub-ayah" aria-label="Ayah"></select>
+            </div>
+            <!-- Phase 2 (v07.83), built on the room the round above reserved:
+                 a purely decorative open Qur'an, glowing/radiating light,
+                 filling whatever the pickers block above didn't need --
+                 never guessed, sized/positioned by layoutWheelHub() itself
+                 the same measured way as everything else in this hub.
+                 pointer-events:none -- it must never intercept a tap meant
+                 for a wheel slice underneath it. aria-hidden since it adds
+                 no information a screen reader needs beyond what the
+                 pickers above it already say. -->
+            <div id="wheelHubGraphic" class="wheel-hub-graphic" aria-hidden="true" hidden>
+              <svg viewBox="0 0 100 60" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                  <radialGradient id="wheelHubGlow" cx="50%" cy="22%" r="60%">
+                    <stop offset="0%" stop-color="#F2E8D5" stop-opacity="0.55"/>
+                    <stop offset="45%" stop-color="#C9A24B" stop-opacity="0.22"/>
+                    <stop offset="100%" stop-color="#C9A24B" stop-opacity="0"/>
+                  </radialGradient>
+                </defs>
+                <ellipse cx="50" cy="16" rx="48" ry="24" fill="url(#wheelHubGlow)"/>
+                <!-- Solid filled wedges, not hairlines -- a 1px stroke
+                     vanishes once this whole graphic is scaled down to a
+                     few dozen px on a phone; a filled triangle stays a
+                     visible ray at any size this hub ever renders at. -->
+                <g fill="#C9A24B">
+                  <path d="M 50 1 L 52 9.5 L 48 9.5 Z"/>
+                  <path d="M 55.7 3.8 L 53 11.1 L 49.8 8.8 Z"/>
+                  <path d="M 44.3 3.8 L 47 11.1 L 50.2 8.8 Z"/>
+                  <path d="M 56.6 9.6 L 53.2 13.5 L 51.4 8.8 Z"/>
+                  <path d="M 43.4 9.6 L 46.8 13.5 L 48.6 8.8 Z"/>
+                </g>
+                <!-- The open Qur'an: a single peak at the spine with both
+                     wings sloping down and out from it (not curved petals
+                     meeting at a top-centre dip -- that read as a heart
+                     once scaled down this small, and a single unambiguous
+                     peak doesn't). -->
+                <g fill="#F2E8D5" stroke="#8a6a24" stroke-width="1.3" stroke-linejoin="round">
+                  <path d="M 50 14 L 10 26 L 14 50 L 50 56 Z"/>
+                  <path d="M 50 14 L 90 26 L 86 50 L 50 56 Z"/>
+                </g>
+                <path d="M 50 14 L 50 56" stroke="#8a6a24" stroke-width="1"/>
+              </svg>
             </div>
           </div>
           <div id="wheelLegendContainer"></div>
@@ -1929,6 +1980,7 @@
     const wheelStageWrapEl = document.getElementById("wheelStageWrap");
     const wheelCtaBtn = document.getElementById("wheelCtaBtn");
     const wheelHubPickers = document.getElementById("wheelHubPickers");
+    const wheelHubGraphic = document.getElementById("wheelHubGraphic");
     const wheelIntroSettledEl = document.getElementById("wheelIntroSettled");
     const readUnitTypeSelect = document.getElementById("readUnitTypeSelect");
     const readAyahSelect = document.getElementById("readAyahSelect");
@@ -2800,6 +2852,7 @@
     wheelCtaBtn?.addEventListener("click", () => {
       wheelCtaBtn.hidden = true;
       wheelHubPickers.hidden = false;
+      wheelHubGraphic.hidden = false;
       wheelIntroSettledEl.hidden = false;
       wheelStageWrapEl.classList.remove("wheel-veiled");
       layoutWheelHub(); // the hub was hidden (0-width) until now -- size its content for real
@@ -3297,7 +3350,7 @@
       // than before throughout, per the owner's own ask -- Ta'awwudh no
       // longer uses either of these at all; its curved SVG scales with the
       // wrapper's own width instead, like a vector graphic would.
-      const arabicPx = Math.max(8, Math.min(hubDiameter * 0.08, 13));
+      const arabicPx = Math.max(9, Math.min(hubDiameter * 0.095, 16));
       const selectPx = Math.max(8, Math.min(hubDiameter * 0.07, 10.5));
       wheelHubPickers.style.setProperty("--hub-arabic-size", arabicPx + "px");
       wheelHubPickers.style.setProperty("--hub-select-size", selectPx + "px");
@@ -3352,6 +3405,40 @@
       // fit above allowed.
       wheelHubPickers.style.transform = `translate(-50%, calc(-50% - ${up}px))`;
       if (window.__hubDebug) console.log("HUBDEBUG", JSON.stringify({ r, rSafe, hubDiameter, h, width, desiredUp, maxUpAtWidth, up }));
+
+      // Step 3 -- the phase-2 graphic fills whatever room step 2 actually
+      // reserved below the pickers block, down to the circle's own safe
+      // edge -- never a guessed size, solved the same measured way as the
+      // pickers' own width above. Aspect-locked to its own viewBox (5:3)
+      // rather than let free containment produce something oddly tall or
+      // wide at extreme hub sizes; solved as a closed-form quadratic
+      // (not iterated) since, unlike the pickers block, its own content
+      // never re-wraps at a different width -- one pass is exact.
+      if (wheelHubGraphic) {
+        const GRAPHIC_ASPECT = 100 / 60; // matches the graphic's own viewBox
+        const GRAPHIC_MARGIN = 4; // gap between the pickers' bottom edge and the graphic's top
+        const GRAPHIC_MIN_H = 18; // below this it's a smudge, not a graphic -- hide rather than crush it
+        const base = (h / 2 - up) + GRAPHIC_MARGIN; // pickers' own bottom edge, below hub centre
+        // Solve a*gh^2 + b*gh + c = 0 for the largest gh whose farthest
+        // corner -- at width gh*ASPECT, centred at (base + gh/2) below
+        // hub centre -- still lands inside rSafe.
+        const a = (GRAPHIC_ASPECT * GRAPHIC_ASPECT) / 4 + 1;
+        const b = 2 * base;
+        const c = base * base - rSafe * rSafe;
+        const disc = b * b - 4 * a * c;
+        const gh = disc > 0 ? (-b + Math.sqrt(disc)) / (2 * a) : 0;
+        if (window.__hubDebug) console.log("HUBGRAPHIC", JSON.stringify({ base, gh }));
+        if (gh < GRAPHIC_MIN_H) {
+          wheelHubGraphic.style.display = "none";
+        } else {
+          wheelHubGraphic.style.display = "";
+          const gw = gh * GRAPHIC_ASPECT;
+          const oy = base + gh / 2;
+          wheelHubGraphic.style.width = gw + "px";
+          wheelHubGraphic.style.height = gh + "px";
+          wheelHubGraphic.style.transform = `translate(-50%, calc(-50% + ${oy}px))`;
+        }
+      }
     }
 
     // -----------------------------------------------------------------------
