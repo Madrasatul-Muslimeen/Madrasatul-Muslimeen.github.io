@@ -579,6 +579,9 @@ export const BN = {
   "Next āyah": "পরবর্তী আয়াত",
   "Bookmark this āyah": "এই আয়াতটি বুকমার্ক করুন",
   "Remove bookmark": "বুকমার্ক সরান",
+  // Bookmark creation/update round -- the ⋯ menu's own action, only shown
+  // once a bookmark opened this session is the one still open here.
+  "Update bookmark": "বুকমার্ক আপডেট করুন", // ?
   // Round 30 moved Copy/Share to the Ayah bar itself; round 31 moved them
   // again, to their own bar-2 popovers with their own language checkboxes
   // -- so the 🔖 toggle now holds only Bookmark and Play. Both earlier keys
@@ -1860,4 +1863,13 @@ export const BN = {
   "Show retired": "অবসরপ্রাপ্ত দেখান", // ?
   "Module|groupby": "মডিউল অনুযায়ী",
   "Bookmarked for {name} by you": "আপনি {name}-এর জন্য বুকমার্ক করেছেন", // ?
+
+  // =====================================================================
+  // Bookmark creation round -- a real "+ New bookmark" flow on the Manager
+  // itself, with a Study Unit picker for the Quran module (see
+  // bookmarks.html's own header comment on this block).
+  // =====================================================================
+  "+ New bookmark": "+ নতুন বুকমার্ক", // ?
+  "Creating a bookmark for this module isn't built yet — open it and use its own ☆ button.":
+    "এই মডিউলের জন্য এখনো বুকমার্ক তৈরি করার ব্যবস্থা নেই — মডিউলটি খুলে এর নিজস্ব ☆ বোতাম ব্যবহার করুন।", // ?
 };
