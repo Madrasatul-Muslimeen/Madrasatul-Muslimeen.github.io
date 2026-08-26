@@ -1691,12 +1691,16 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
   // screen (same ids, same click handlers -- only their position and icon
   // changed), sitting between the outer (unit) pair and the transport
   // controls. The row is seven direct children now, not five.
+  // Multi-student round -- readBookmarkBtn joined the row too, right after
+  // Full screen: a direct Bookmark button (v07.64's own Note-view parity),
+  // shown only on the single-ayah view (renderStudyScreen() hides it for a
+  // flow, where the ⋮ badge stays the only way to bookmark one āyah of many).
   const transport = await page.evaluate(() => ({
     visible: !document.getElementById("readBar").hidden,
     // Direct children only -- round 31 mounts the ⋮ quick-menu's own popover
     // (several unnamed <button>s of its own) inside #readQuickMenuSlot, a
     // DIRECT child of #readBar; `#readBar button` would count those
-    // too and this check is about the seven named controls specifically.
+    // too and this check is about the eight named controls specifically.
     buttons: [...document.querySelectorAll("#readBar > button")].map((b) => b.id),
     noWholeSurah: !document.getElementById("readPlaySurahBtn"),
     playLabel: document.getElementById("readPlayBtn").getAttribute("aria-label") || "",
@@ -1704,8 +1708,8 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
     // reciter Play would use, which Study options -> Listening already says.
     noReciter: !document.getElementById("readReciterName"),
   }));
-  check("30j prev unit, prev āyah, next āyah, next unit, play, stop and full screen are on the reading screen",
-        transport.visible && JSON.stringify(transport.buttons) === '["prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn"]', JSON.stringify(transport));
+  check("30j prev unit, prev āyah, next āyah, next unit, play, stop, full screen and bookmark are on the reading screen",
+        transport.visible && JSON.stringify(transport.buttons) === '["prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn","readBookmarkBtn"]', JSON.stringify(transport));
   check("30j the separate 'Whole surah' button is gone (Play follows the unit)", transport.noWholeSurah);
   check("30j the merged button is named Play while nothing is playing",
         /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
@@ -1743,10 +1747,11 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   await page.waitForTimeout(500);
   // Round 22: icons carry no words, so what must be in Bangla is their name.
   // Direct children only -- see the enhancement-round comment at 30j above
-  // (seven now, not five -- prevAyahBtn/nextAyahBtn joined this row).
+  // (eight now -- prevAyahBtn/nextAyahBtn joined this row, and the
+  // multi-student round's own readBookmarkBtn joined it too).
   const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button")].map((b) => b.getAttribute("aria-label") || ""));
   check("30l every reading-screen control is NAMED in Bangla",
-        t18.length === 7 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
+        t18.length === 8 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
   await ctx.close();
 }
@@ -2284,9 +2289,11 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // added a sixth child, #readQuickMenuSlot, mounting the ⋮ quick menu on
   // the bar instead of over the ayah text. Enhancement round -- prevAyahBtn/
   // nextAyahBtn joined the row too, between the outer (unit) pair and the
-  // transport controls (see the 30j comment above).
-  check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · ⋮ slot",
-        bar.ids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readQuickMenuSlot",
+  // transport controls (see the 30j comment above). The multi-student round
+  // added #readBookmarkBtn, a direct Bookmark button for the single-ayah
+  // view, right before the ⋮ slot.
+  check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · ⋮ slot",
+        bar.ids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readBookmarkBtn,readQuickMenuSlot",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -2995,9 +3002,10 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // Enhancement round -- prevAyahBtn/nextAyahBtn joined this row (see the
   // 30j comment above); the DOM order is Prev unit, Prev āyah, Next āyah,
   // Next unit, Play, Stop, Full screen, ⋮ slot, whether or not the inner
-  // pair happens to be visible for the current unit type.
-  check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · ⋮ slot",
-        m.barKids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
+  // pair happens to be visible for the current unit type. The multi-student
+  // round added Bookmark right before the ⋮ slot.
+  check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · ⋮ slot",
+        m.barKids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readBookmarkBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how

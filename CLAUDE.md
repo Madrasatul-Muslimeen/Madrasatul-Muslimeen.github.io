@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.79.** Cutover to production happened
+**Current milestone: QuranRevival v07.80.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -4964,6 +4964,158 @@ bookmarks have no working "Open" link on `bookmarks.html` --
 `MODULE_PAGES` in `continue-strip.js` has no `asma` entry, so
 `bookmarkHref()` returns `null` for that module. Found while building this
 round's Module dropdown; unrelated to it.
+
+v07.80 (26 Aug 2026, on Claude Code on the web) is **the multi-student
+bookmarking round -- the owner's own two-line ask: "Enable READ view to
+have a bookmark button too" and "Enable Bookmarking for multiple students
+at a time in all the reading/study view and Bookmark management."**
+
+**Part 1 -- the Read screen gets a direct Bookmark button, matching the
+parity the Note view has had since v07.64.** The single-ayah Read view's
+`#readBar` gains `#readBookmarkBtn`, mounted between the full-screen icon
+and the `⋮` quick-menu slot -- the same "put it in the bar's own empty
+space, not over the ayah" placement round 31 already established for the
+badge itself. Clicking it calls the SAME `toggleAyahBookmark()` the Note
+view's own star and the `⋮` menu already call, so there is still only one
+bookmark mechanism, now reachable from a third place. **The flow view
+(Range/Whole Surah/Ruku'/Juz/Hizb/Page) keeps its own per-ayah `⋮` badge,
+unchanged** -- a single bar-level button has no one ayah to mean when
+several are on screen at once, so this is a single-ayah-view addition
+specifically, not a replacement. `renderQuickMenu()` gained a `showBookmark`
+option (default `true`, so the flow view's own call site needed no
+change) set to `false` only at the single-ayah call site, since showing
+the same toggle in two places on one screen would be redundant -- the
+same "retire the buried mechanism once a direct control is promoted"
+pattern v07.64 used for the Note view's own Bookmark/Play.
+
+**Part 2 -- "Assign to," extended from Claims to Bookmarks.** v07.77 built
+a real mechanism for this exact question already, just for a different
+button: `renderAssignDropdown()`/`checkedAssignees()` in `way-modal.js` let
+a Claim be recorded for several ticked people at once, defaulting to
+whoever is currently selected. Rather than a second copy for bookmarks,
+those two pure, Firebase-free functions moved into a new shared
+**`app/js/assign-picker.js`** (I2: no DOM events wired beyond what the
+caller's own markup carries, no Firebase import); `way-modal.js` re-exports
+both unchanged, so every existing Claim call site needed zero changes.
+
+**Every bookmark-CREATION site in the app now offers the same checklist.**
+`js/bookmark-popover.js` (the naming/folder popover all four study-page
+`toggleXBookmark()` handlers already open) gained an Assign-to section,
+built from the caller's own `assignableRoster()` -- the identical
+`scopedRoster()` + non-archived filter every page already computes for its
+Person picker, so "who can be assigned to" never drifts from "who this
+signed-in login can already record for." `bookmarks.html`'s own
+"+ New bookmark" form (v07.79's creation flow) gained the identical
+section. Both follow the same "returns `''` for a roster under 2 people"
+rule `renderAssignDropdown()` already had, so a tenant with only one
+person on its roster sees no new control at all and every write it
+produces is byte-for-byte what v07.66-79 already wrote.
+
+**The one real design decision this round needed, made without asking
+since it follows directly from what `personTagId` and `folderId` already
+mean (v07.68/76): when MORE THAN ONE assignee is ticked, `personTagId` is
+forced to `null` for every copy, and picking an EXISTING folder is
+disabled (falls back to Unfiled) for all of them.** Neither concept
+survives being asked to mean the same thing across several people's own,
+separate `bookmarks` documents at once -- "who this ONE copy is for" stops
+being a question once it is already stored per-assignee, and a folder id
+is only ever meaningful inside the ONE document it was listed from. A
+freshly TYPED "+ New folder…" name is unaffected by this and still works
+for several assignees: the same name is created independently in each
+assignee's own document, which is the one part of "a folder" that
+generalises cleanly across documents. `bookmarks.html`'s form and the
+popover both grey out the folder `<select>`'s real options (keeping
+"+ New folder…" live) and hide the "For" field the moment a second box is
+ticked, so the UI itself states the rule rather than silently ignoring a
+choice that would not mean anything.
+
+**Every one of the four bookmark-creating call sites -- `quranrevival.html`
+(the Read screen's star, the Note view's star, and the new direct button,
+all three now funnelling through the one restructured
+`toggleAyahBookmark()`), `topic-study.js`, `routine-study.js`,
+`asma-study.js`, and `bookmarks.html`'s own form -- loops the ticked
+assignee list and fires one `saveBookmark()`/`createFolder()` per person
+via `Promise.all`**, the same parallel-write shape v07.77's Claim loop
+already established (safe because each write lands on a completely
+different `bookmarks/{tenantId}__{personId}` document, never the same one
+twice). Only the CURRENTLY SELECTED person's own `bookmarksDoc` is patched
+in memory afterward and re-rendered -- another assignee's own copy shows
+up the next time they, or their guardian, load their own bookmarks, the
+same "fresh as of that page's own load" model this whole feature has used
+since v07.66. No `firestore.rules` change: `canRecordFor()` already gates
+the whole `bookmarks` document by tenant/personId, not by how many people
+one tap happened to name -- the exact same reasoning v07.77 already
+confirmed for Claims.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice for anything past `behaviour.mjs`'s own
+disclosed section-42 crash point), **20 checks, all passing**: the direct
+button present and correctly hidden/shown across the single-ayah and flow
+views; the `⋮` menu on the single-ayah view proven to have DROPPED its own
+Bookmark item now that the direct button covers it, while the flow view's
+copy is proven still there; the popover's own Assign-to checklist offering
+both seeded people, defaulting to only the currently selected one;
+cancelling making no write; ticking a second person hiding the "For" field
+in BOTH the popover and the Manager's own form; and -- the claim that
+actually matters -- **a real write landing in BOTH people's own
+`bookmarks/{tenantId}__{personId}` documents**, proven via
+`window.__fsLog`'s document-id tracking rather than the stub's own
+`__stubWrites` (which records field-key names only, not which document, so
+it cannot tell "wrote twice to the same doc" apart from "wrote once each to
+two docs" -- the exact distinction this round needed to prove); confirmed
+identically for both the Read-screen popover flow and the Manager's own
+creation form; and the whole thing again in Bangla, with every checkbox's
+own VALUE proven to stay a plain person id. Two throwaway-script selector
+bugs (using the canonical, hidden-while-on-Read `#unitTypeSelect` instead
+of the Read screen's own `#readUnitTypeSelect` mirror) were caught and
+fixed while writing the script, not app bugs.
+
+**Three pre-existing checks in `tools/i18n-verify/behaviour.mjs` needed
+updating, not reverting** -- the new `readBookmarkBtn` legitimately grew
+`#readBar` from seven direct children to eight, and 30j/30l/33a (plus 37a,
+a fourth found only once the full suite ran) all hardcoded the old
+button list/count. All four updated in place to expect the new button in
+its real position (between the full-screen icon and the `⋮` slot),
+matching this project's own long-standing rule for a round that
+deliberately changes what an old check describes. **One additional
+failure surfaced on the first full run and was investigated before being
+dismissed, not waved away**: `38d tapping Read mid-recitation keeps it
+playing` failed once, then passed cleanly on an immediate re-run (with the
+already-known-flaky `22h` archive.org check flipping the other way that
+same run) -- read together with the code itself, this is conclusive: the
+function that check depends on, `renderReadTransport()`, is driven
+entirely by `setPlaybackStateHandler()` callbacks tied to the real
+`<audio>` element's play/pause/ended state, and is never called from
+anywhere this round's own changes touch (`renderStudyScreen()`'s new
+`readBookmarkBtn` block, `refreshBookmarkDisplay()`, the `showBookmark`
+param). A timing flake in a real-audio test, not a regression.
+
+**Verified: the full `tools/i18n-verify/behaviour.mjs` suite re-run twice**
+(788/789 pass both times, the sole failure each run being one of the two
+known-flaky environmental checks above, never both at once), reaching the
+same already-disclosed, pre-existing section-42 crash point this project
+has carried since v07.69 (confirmed unrelated -- the same selector sits
+behind the same closed dropdown at a clean `HEAD` too). **`layout.mjs`
+reports NO LAYOUT REGRESSIONS** at all eight viewports in both banner
+states against a real `HEAD` shim (landing page byte-for-byte identical,
+`getElementById` targets 99 → 100, exactly the one new button, none
+missing), **`reading.mjs` OK in both languages**, **`panel.mjs` no
+truncation and no wrapped bar** (this round never touches the Study
+options panel structure), **`navcheck.mjs` unchanged** (still only the
+pre-existing 320px English truncation of "Operation"/"Bookmark"),
+**`tools/perf/measure.mjs` unchanged** on every page tested (Quran Study
+still 6 sequential round trips), confirming no Firestore read joined any
+startup path (I9) -- this round is pure client-side UI/mechanism work,
+firing writes only on an explicit tap, exactly like the Claim feature it
+borrows from -- and **`tools/perf/new-tenant.mjs` 10/10**. **Translation
+coverage 1,372/1,372, 99%, the same 8 pre-existing missing strings carried
+forward from before this round** (checked directly: none of the eight are
+new, and every string this round's own UI needed -- "Assign to", "you",
+"Everyone you can already record for.", "For" -- was already in `bn.js`
+from v07.68/77, reused rather than re-added). No `firestore.rules` or
+schema changes -- `personTagId`/`folderId` on a `saved[]` entry were
+already part of the `bookmarks` collection's own additive shape; nothing
+to deploy but the static files.
 
 ## What this is
 

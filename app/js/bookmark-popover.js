@@ -19,12 +19,32 @@
 // same rule as the folder list: the caller hands over an already-resolved
 // list of people and gets an id back, this file never looks one up.
 //
+// Multi-student round (v07.79's own follow-up) adds an "Assign to" roster
+// checklist -- the same control way-modal.js's Track card already offers for
+// a Claim (now shared via assign-picker.js) -- so one save can create the
+// SAME bookmark in several people's own documents at once, not only whoever
+// is currently selected. Shown only when the caller's roster has 2+ people
+// (a lone student sees no new control at all, same "don't offer a control
+// with one option" rule renderAssignDropdown() itself follows).
+//
+// personTagId and an EXISTING named folder both stop making sense the
+// moment more than one assignee is ticked: personTagId means "who this ONE
+// copy is for", and a folder id is only meaningful inside the ONE document
+// it was listed from -- neither transfers across several people's own
+// separate documents. So ticking a second assignee hides the "For" row and
+// narrows Folder down to Unfiled/"+ New folder…" (a newly-typed folder name
+// is still created fresh in EACH assignee's own document, by name). Ticking
+// back down to one restores both, unchanged from before this round.
+//
 // Resolves with:
 //   null  -- cancelled, no write to make
-//   { name, folderId, newFolderName, personTagId }
-// where folderId is an existing folder (or null for Unfiled), newFolderName is
-// set only when a brand-new folder was typed (the caller creates it first, then
-// files the bookmark into it), and personTagId is the tagged person (or null).
+//   { name, folderId, newFolderName, personTagId, assigneeIds }
+// where folderId is an existing folder (or null for Unfiled, or when several
+// assignees are ticked), newFolderName is set only when a brand-new folder
+// was typed, personTagId is the tagged person (or null, forced null when
+// several assignees are ticked), and assigneeIds is the ticked roster ids --
+// always at least one entry (defaults to [selectedPersonId] when no roster
+// was offered at all).
 
 import { t } from "./i18n.js";
 
@@ -61,11 +81,16 @@ function ensureStyles() {
       background: #1F3A6E; color: white; cursor: pointer;
     }
     .bm-popover-actions button.secondary { background: white; color: #1F3A6E; }
+    .bm-pop-assignees { display: flex; flex-direction: column; gap: 0.3rem; max-height: 8rem; overflow-y: auto; margin-top: 0.25rem; }
+    .bm-pop-assignee-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none; padding: 0.1rem 0; }
+    .bm-pop-assignee-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
+    .bm-pop-assignee-row .who-name { flex: 1; }
+    .bm-pop-assignee-row .who-tag { font-size: 0.66rem; color: #777; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
   `;
   document.head.appendChild(style);
 }
 
-function renderPopoverInner(defaultName, folders, people, defaultPersonTagId) {
+function renderPopoverInner(defaultName, folders, people, defaultPersonTagId, roster, selectedPersonId) {
   const folderOptions = folders
     .map((f) => `<option value="${f.id}">${"　".repeat(f.depth ?? 0)}${escapeHtml(f.name)}</option>`)
     .join("");
@@ -73,11 +98,28 @@ function renderPopoverInner(defaultName, folders, people, defaultPersonTagId) {
   // has no roster to offer (about.html and taglines.html never load one) --
   // a picker whose only choice is "no one" is worse than no picker.
   const personRow = people.length
-    ? `<label class="bm-popover-field">${t("For")}
+    ? `<label class="bm-popover-field" data-bm-pop-person-row>${t("For")}
         <select data-bm-pop-person>
           <option value="">${t("No one in particular")}</option>
           ${people.map((p) => `<option value="${p.id}" ${p.id === defaultPersonTagId ? "selected" : ""}>${escapeHtml(p.name)}</option>`).join("")}
         </select>
+      </label>`
+    : "";
+  // Multi-student round -- "Assign to", the same shape way-modal.js's own
+  // Track card already offers for a Claim. Omitted entirely for a roster
+  // under 2 (a lone student, or a caller with no roster at all), the same
+  // "don't offer a control with one option" rule renderAssignDropdown()
+  // itself follows -- assigneeIds then always defaults to [selectedPersonId].
+  const assigneeRows = (roster ?? [])
+    .map((p) => {
+      const checked = p.id === selectedPersonId ? "checked" : "";
+      const tag = p.isSelf ? `<span class="who-tag">${t("you")}</span>` : "";
+      return `<label class="bm-pop-assignee-row"><input type="checkbox" value="${p.id}" data-name="${escapeHtml(p.name)}" ${checked}><span class="who-name">${escapeHtml(p.name)}</span>${tag}</label>`;
+    })
+    .join("");
+  const assigneeField = roster && roster.length >= 2
+    ? `<label class="bm-popover-field">${t("Assign to")}
+        <div class="bm-pop-assignees" data-bm-pop-assignees>${assigneeRows}</div>
       </label>`
     : "";
   return `<div class="bm-popover" role="dialog" aria-modal="true" aria-label="${t("Bookmark this")}">
@@ -85,6 +127,7 @@ function renderPopoverInner(defaultName, folders, people, defaultPersonTagId) {
     <label class="bm-popover-field">${t("Name")}
       <input type="text" data-bm-pop-name value="${escapeHtml(defaultName)}">
     </label>
+    ${assigneeField}
     ${personRow}
     <label class="bm-popover-field">${t("Folder")}
       <select data-bm-pop-folder>
@@ -107,13 +150,18 @@ function renderPopoverInner(defaultName, folders, people, defaultPersonTagId) {
  * Opens the popover and resolves once the reader saves or cancels it.
  * `folders` is a flat, pre-indented list (see bookmarks.js's own
  * `flattenFolderTree()`) -- `[{id, name, depth}]`, live folders only.
+ * `roster`/`selectedPersonId` are the multi-student round's own "Assign to"
+ * inputs -- `roster` shaped like assignableRoster()'s own output
+ * (`[{id, name, isSelf}]`); omit (or a roster under 2) to get exactly
+ * yesterday's popover, with `assigneeIds` always resolving to
+ * `[selectedPersonId]`.
  */
-export function openBookmarkNamePopover({ defaultName = "", folders = [], people = [], defaultPersonTagId = null } = {}) {
+export function openBookmarkNamePopover({ defaultName = "", folders = [], people = [], defaultPersonTagId = null, roster = [], selectedPersonId = null } = {}) {
   ensureStyles();
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
     overlay.className = "bm-popover-overlay";
-    overlay.innerHTML = renderPopoverInner(defaultName, folders, people, defaultPersonTagId);
+    overlay.innerHTML = renderPopoverInner(defaultName, folders, people, defaultPersonTagId, roster, selectedPersonId);
     document.body.appendChild(overlay);
 
     function onKeydown(e) {
@@ -131,16 +179,43 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [], people
     });
 
     const nameInput = overlay.querySelector("[data-bm-pop-name]");
+    const personRow = overlay.querySelector("[data-bm-pop-person-row]");
     const personSelect = overlay.querySelector("[data-bm-pop-person]"); // absent when the caller had no roster
     const folderSelect = overlay.querySelector("[data-bm-pop-folder]");
     const newFolderRow = overlay.querySelector("[data-bm-pop-newfolder-row]");
     const newFolderInput = overlay.querySelector("[data-bm-pop-newfolder]");
+    const assigneesList = overlay.querySelector("[data-bm-pop-assignees]"); // absent when roster < 2
 
     folderSelect.addEventListener("change", () => {
       const isNew = folderSelect.value === "__new__";
       newFolderRow.style.display = isNew ? "block" : "none";
       if (isNew) newFolderInput.focus();
     });
+
+    // Multi-student round -- personTagId ("who this ONE copy is for") and an
+    // EXISTING named folder (an id only meaningful inside the one document it
+    // came from) both stop making sense once several assignees are ticked --
+    // see this file's own header comment. Ticking back down to one restores
+    // both. A "+ New folder…" choice is left alone either way: it creates a
+    // fresh folder by NAME in each assignee's own document, which the caller
+    // (toggleAyahBookmark() and its siblings) is what actually loops over.
+    function updateForAssigneeCount() {
+      if (!assigneesList) return;
+      const n = assigneesList.querySelectorAll("input:checked").length;
+      const multi = n > 1;
+      if (personRow) personRow.style.display = multi ? "none" : "";
+      [...folderSelect.options].forEach((opt) => {
+        if (opt.value !== "" && opt.value !== "__new__") opt.disabled = multi;
+      });
+      if (multi && folderSelect.value !== "" && folderSelect.value !== "__new__") {
+        folderSelect.value = "";
+        newFolderRow.style.display = "none";
+      }
+    }
+    if (assigneesList) {
+      assigneesList.addEventListener("change", updateForAssigneeCount);
+      updateForAssigneeCount();
+    }
 
     overlay.querySelector("[data-bm-pop-cancel]").addEventListener("click", () => close(null));
     overlay.querySelector("[data-bm-pop-save]").addEventListener("click", () => {
@@ -149,16 +224,20 @@ export function openBookmarkNamePopover({ defaultName = "", folders = [], people
         nameInput.focus();
         return;
       }
-      const personTagId = personSelect ? personSelect.value || null : null;
+      const assigneeIds = assigneesList
+        ? [...assigneesList.querySelectorAll("input:checked")].map((c) => c.value)
+        : [];
+      const resolvedAssigneeIds = assigneeIds.length ? assigneeIds : [selectedPersonId];
+      const personTagId = personSelect && resolvedAssigneeIds.length <= 1 ? personSelect.value || null : null;
       if (folderSelect.value === "__new__") {
         const newFolderName = newFolderInput.value.trim();
         if (!newFolderName) {
           newFolderInput.focus();
           return;
         }
-        close({ name, folderId: null, newFolderName, personTagId });
+        close({ name, folderId: null, newFolderName, personTagId, assigneeIds: resolvedAssigneeIds });
       } else {
-        close({ name, folderId: folderSelect.value || null, newFolderName: null, personTagId });
+        close({ name, folderId: folderSelect.value || null, newFolderName: null, personTagId, assigneeIds: resolvedAssigneeIds });
       }
     });
 

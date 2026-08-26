@@ -108,8 +108,15 @@ function langCheckboxRows(cls, hasNote) {
  * own Arabic/English/Bangla/Notes checkboxes, then Play and Note & more as
  * plain one-tap items. `hasNote` greys the "My note" checkbox out when
  * nothing's saved yet, so ticking it can't silently copy an empty line.
+ *
+ * Multi-student round -- `showBookmark` (default true) drops the Bookmark
+ * item entirely when the caller already offers a direct bar-level button
+ * for it (quranrevival.html's single-ayah #readBookmarkBtn) -- one mechanism,
+ * not two ways to do the same thing on the same screen. The flow view's own
+ * call site (several āyahs on screen at once, no single bar-level button
+ * can say which one) leaves this at its default and keeps the item.
  */
-export function renderQuickMenu(unitKey, { hasNote = false, isBookmarked = false } = {}) {
+export function renderQuickMenu(unitKey, { hasNote = false, isBookmarked = false, showBookmark = true } = {}) {
   return `
     <div class="ayah-quick-wrap" data-unit-key="${escapeHtml(unitKey)}">
       <button type="button" class="ayah-quick-btn${hasNote ? " has-note" : ""}" data-qm-toggle title="${t("Quick actions")}">⋮</button>
@@ -124,11 +131,7 @@ export function renderQuickMenu(unitKey, { hasNote = false, isBookmarked = false
         </div>
         <div class="qm-divider"></div>
         <button type="button" class="qm-item" data-qm-play>▶ ${t("Play this āyah")}</button>
-        <!-- Enhancement round -- item 3's own "enable bookmark on the READ
-             screen as well": this menu already reaches every āyah on the
-             read screen, single or flow view, so one item here covers both
-             rather than a second, screen-specific control. -->
-        <button type="button" class="qm-item" data-qm-bookmark>${isBookmarked ? "★" : "🔖"} ${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}</button>
+        ${showBookmark ? `<button type="button" class="qm-item" data-qm-bookmark>${isBookmarked ? "★" : "🔖"} ${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}</button>` : ""}
         <button type="button" class="qm-item" data-qm-note>📝 ${t("Note & more…")}</button>
       </div>
     </div>`;
