@@ -1617,7 +1617,7 @@
     import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
-    import { getBookmarks, saveBookmark, removeSavedBookmark, findSavedBookmark, createFolder, flattenFolderTree } from "./js/bookmarks.js";
+    import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree } from "./js/bookmarks.js";
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText } from "./js/ayah-note-renderer.js";
@@ -1941,6 +1941,19 @@
     let noteWbwOn = false; // bar 2's Word-by-word toggle (round 31) -- a reading preference that persists across Prev/Next within the Note view, not reset per āyah
     let noteRootsOn = false; // bar 2's Root toggle (enhancement round) -- same "persists across Prev/Next, not reset per āyah" shape as noteWbwOn
     let noteDerivativesOn = false; // bar 2's own separate Derivatives toggle -- Root and Derivatives used to be one "Roots & derivatives" toggle; split for the same "appeared together, merged" reason Word by Word/Root were split in round 27
+    // Bookmark creation/update round -- which of selectedPersonId's OWN
+    // saved[] entries (if any) was opened this session, so the Note view's
+    // ⋯ menu can offer "Update bookmark": save whatever's now being studied
+    // (position + settings) back into that SAME entry rather than needing a
+    // second star-tap to make a new one. Set only by openBookmarkFromQuery
+    // String() (never by an ordinary star-tap create -- that already IS the
+    // save), and only for a bookmark that lives in the CURRENTLY SELECTED
+    // person's own document (a cross-document "tagged for" open, via
+    // ?ownerPersonId=, is read-only from here -- writing to someone else's
+    // document from this screen would be a real surprise). Cleared when
+    // that bookmark is removed via its own star, or when the person picker
+    // changes (bookmarks are per-person documents).
+    let openedBookmarkId = null;
     // Whether Notes is open, tracked the same way -- renderNoteViewNow()
     // rebuilds the whole view's innerHTML on every re-render (a claim, a
     // bookmark toggle, a Prev/Next), which would otherwise snap a
@@ -4103,6 +4116,10 @@
         );
       }
       if (!outcome.ok) return;
+      // Bookmark creation/update round -- retiring the bookmark that was
+      // currently "open" (see openedBookmarkId's own comment) drops the
+      // association; there is nothing left to update.
+      if (existing && existing.id === openedBookmarkId) openedBookmarkId = null;
       // Update in-memory rather than re-fetching -- same reasoning as
       // onSaveNote's own ayahNotesDoc update below: the write already tells
       // us exactly what changed, so a re-fetch is both an unneeded round
@@ -4120,6 +4137,32 @@
       // changeCurrentTrackable()'s own "whichever stage view is open" rule.
       if (stageView === "note" && noteScopeCurrentUnitKey() === unitKey) renderNoteViewNow();
       else if (stageView === "read") renderStudyScreen();
+    }
+
+    /**
+     * Bookmark creation/update round -- the Note view's own "Update
+     * bookmark" action (⋯ menu, offered only while canUpdateBookmark is
+     * true -- see openedBookmarkId's own comment for exactly when that is).
+     * Saves whatever is CURRENTLY being studied -- noteScope's own position
+     * and reading state, not whatever the bookmark happened to be captured
+     * with originally -- into the SAME saved[] entry. Name, folder and
+     * personTagId are untouched; those stay the Manager's own job.
+     */
+    async function updateOpenedBookmark() {
+      if (!auth.currentUser || !selectedPersonId || !openedBookmarkId) return;
+      const position = noteScopeCurrentUnitKey();
+      const settings = captureNoteBookmarkSettings();
+      const outcome = await safeWrite(
+        () => updateSavedBookmarkFields(db, activeTenantId, selectedPersonId, openedBookmarkId, { position, settings }),
+        { collection: TENANT.BOOKMARKS, action: "updateSavedBookmarkFields" }
+      );
+      if (!outcome.ok) return;
+      // Patch in memory rather than re-fetch -- same reasoning toggleAyahBookmark() above already uses.
+      bookmarksDoc = {
+        ...bookmarksDoc,
+        saved: (bookmarksDoc.saved ?? []).map((b) => (b.id === openedBookmarkId ? { ...b, position, settings } : b)),
+      };
+      renderNoteViewNow();
     }
 
     /** Same shape as currentUnitInfo() ({unitType, unitKey, chunkKey, label})
@@ -4433,6 +4476,7 @@
         showApproach,
         approachOptionsHtml: showApproach ? buildTrackableOptionsHtml() : "",
         wideNoteHtml,
+        canUpdateBookmark: !!openedBookmarkId && (bookmarksDoc.saved ?? []).some((b) => b.id === openedBookmarkId && !b.removed),
       });
       if (showApproach && quranTrackables.some((tr) => tr.id === currentTrackableId)) {
         noteView.querySelectorAll("[data-note-approach-select]").forEach((sel) => { sel.value = currentTrackableId; });
@@ -4467,6 +4511,7 @@
           return { ok: true };
         },
         onToggleBookmark: () => toggleAyahBookmark(unitKey, ref, captureNoteBookmarkSettings()),
+        onUpdateBookmark: () => updateOpenedBookmark(),
         onPlay: () => quickPlayAyah(buildUnitKey.ayah(currentSurahNum, info.fromAyah)),
         onPrevUnit: () => stepNoteUnit(-1),
         onNextUnit: () => stepNoteUnit(1),
@@ -4670,6 +4715,11 @@
         bookmark = (bookmarksDoc.saved ?? []).find((b) => b.id === bookmarkId && !b.removed);
       }
       if (!bookmark || bookmark.moduleId !== "quranrevival") return;
+      // Bookmark creation/update round -- only a bookmark actually living in
+      // the CURRENTLY SELECTED person's own document can later be updated
+      // from here (a cross-document "tagged for" open must never let this
+      // screen write into someone else's document).
+      openedBookmarkId = ownerPersonId && ownerPersonId !== selectedPersonId ? null : bookmark.id;
       await applyQuranBookmarkSettings(bookmark.settings, bookmark.position);
     }
 
@@ -5122,6 +5172,7 @@
     personSelect.addEventListener("change", async () => {
       selectedPersonId = personSelect.value;
       setSelectedPersonId(selectedPersonId);
+      openedBookmarkId = null; // bookmarks are per-person documents -- a different person has no "currently open" bookmark of their own yet
       await refreshChunkAndWheel();
       await refreshProgramMap();
       // A different acting person has their own notes/bookmarks -- the cache

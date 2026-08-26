@@ -35,6 +35,12 @@
   .bm-row-name { flex: 1 1 auto; min-width: 8rem; font-weight: 600; }
   .bm-row-module { color: #888; font-size: 0.78rem; }
   #newFolderRow { margin: 0.8rem 0; }
+  .bm-form-row { display: flex; flex-wrap: wrap; gap: 0.7rem; margin-bottom: 0.6rem; }
+  .bm-form-field { display: block; font-size: 0.85rem; color: #444; min-width: 8rem; flex: 1 1 8rem; }
+  .bm-form-field select, .bm-form-field input {
+    display: block; width: 100%; margin-top: 0.2rem; font-size: 0.88rem;
+    padding: 0.3rem 0.4rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box;
+  }
   #emptyMsg { color: #888; font-size: 0.9rem; margin-top: 1rem; }
 </style>
 </head>
@@ -67,11 +73,68 @@
     </div>
 
     <div id="newFolderRow">
+      <button type="button" id="newBookmarkBtn">+ New bookmark</button>
       <button type="button" id="newFolderBtn">+ New folder</button>
       <label style="margin-left:0.8rem; font-size:0.85rem; color:#555;">Group by
         <select id="groupBySelect" style="width:auto;"></select>
       </label>
       <label style="margin-left:0.8rem; font-size:0.85rem; color:#555;"><input type="checkbox" id="showRetiredCk"> Show retired</label>
+    </div>
+
+    <!-- Bookmark creation round -- a real Study Unit picker for the Quran
+         module, the same seven choices #unitTypeSelect offers on
+         quranrevival.html itself (Ayah/Range/Whole Surah/Ruku'/Juz/Hizb/
+         Page), so a bookmark can be created from here without opening the
+         module first. Every other module gets a Create button that says why
+         it's disabled instead -- those modules have no comparable
+         position-picker of their own to build from yet (see the JS below). -->
+    <div id="newBookmarkForm" class="bm-folder" style="display:none;">
+      <div class="bm-form-row">
+        <label class="bm-form-field">Name
+          <input type="text" id="nbName">
+        </label>
+        <label class="bm-form-field">Module
+          <select id="nbModule"></select>
+        </label>
+      </div>
+      <div id="nbQuranFields" class="bm-form-row">
+        <label class="bm-form-field">Study Unit
+          <select id="nbUnitType">
+            <option value="ayah">Single Ayah</option>
+            <option value="range">Range of Ayahs</option>
+            <option value="surah">Whole Surah</option>
+            <option value="ruku">Ruku'</option>
+            <option value="juz">Juz</option>
+            <option value="hizb">Hizb</option>
+            <option value="page">Page</option>
+          </select>
+        </label>
+        <label class="bm-form-field" id="nbSurahField">Surah
+          <select id="nbSurah"></select>
+        </label>
+        <label class="bm-form-field" id="nbAyahField"><span data-nb-label>Ayah</span>
+          <select id="nbAyah"></select>
+        </label>
+        <label class="bm-form-field" id="nbToField"><span data-nb-label>To</span>
+          <select id="nbTo"></select>
+        </label>
+        <label class="bm-form-field" id="nbUnitNumField"><span data-nb-label>Number</span>
+          <select id="nbUnitNum"></select>
+        </label>
+      </div>
+      <p id="nbUnsupportedNote" class="note" style="display:none;">Creating a bookmark for this module isn't built yet — open it and use its own ☆ button.</p>
+      <div class="bm-form-row">
+        <label class="bm-form-field">Folder
+          <select id="nbFolder"></select>
+        </label>
+        <label class="bm-form-field">For
+          <select id="nbPersonTag"></select>
+        </label>
+      </div>
+      <div style="margin-top:0.5rem; display:flex; gap:0.5rem;">
+        <button type="button" id="nbCreateBtn">Create</button>
+        <button type="button" class="secondary" id="nbCancelBtn">Cancel</button>
+      </div>
     </div>
 
     <div id="foldersContainer"></div>
@@ -98,10 +161,12 @@
     import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu } from "./js/bookmark-nav.js";
-    import { translateStatic, t } from "./js/i18n.js";
+    import { translateStatic, t, num, surahName } from "./js/i18n.js";
     import { MODULE_PAGES, MODULE_LABELS } from "./js/continue-strip.js";
+    import { buildUnitKey, rukuIndexInSurah } from "./js/unit-keys.js";
+    import { getSurah, getSurahIndex, getJuzIndex, getHizbIndex, getPageIndex } from "./js/quran-data.js";
     import {
-      getBookmarks, renameSavedBookmark, setSavedBookmarkRemoved, moveBookmarkToFolder,
+      getBookmarks, saveBookmark, renameSavedBookmark, setSavedBookmarkRemoved, moveBookmarkToFolder,
       createFolder, renameFolder, setFolderRemoved, moveFolder, isFolderOrDescendant,
       setBookmarkPersonTag, setFolderPersonTag, groupBookmarksByPerson, groupBookmarksByModule,
       folderById as sharedFolderById, liveFolderIdFor as sharedLiveFolderIdFor,
@@ -564,6 +629,243 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       );
       if (!outcome.ok) return;
       bookmarksDoc = { ...bookmarksDoc, folders: [...(bookmarksDoc.folders ?? []), outcome.result] };
+      renderAll();
+    });
+
+    // -----------------------------------------------------------------------
+    // Bookmark creation round -- a real "+ New bookmark" flow, so a bookmark
+    // can be made straight from the Manager rather than only from a study
+    // screen's own ☆. The owner's own scope: Name + Module always, and for
+    // now a real Study Unit picker (Surah/Ayah/Range/Ruku'/Juz/Hizb/Page --
+    // the same seven choices quranrevival.html's own #unitTypeSelect
+    // offers) for the Quran module only; every other module shows a plain
+    // note instead of a picker it doesn't have yet, rather than pretending
+    // to support something it can't build a real position for.
+    //
+    // The Quran data files (surah index, juz/hizb/page boundary tables, and
+    // -- only when Ruku' is chosen -- one surah's own full ayahs, to read
+    // its ruku boundaries) are all fetched lazily, the first time the form
+    // actually needs them, never at page load (I9) -- this page has never
+    // imported quran-data.js before this round.
+    // -----------------------------------------------------------------------
+
+    const newBookmarkBtn = document.getElementById("newBookmarkBtn");
+    const newBookmarkForm = document.getElementById("newBookmarkForm");
+    const nbNameInput = document.getElementById("nbName");
+    const nbModuleSelect = document.getElementById("nbModule");
+    const nbQuranFields = document.getElementById("nbQuranFields");
+    const nbUnsupportedNote = document.getElementById("nbUnsupportedNote");
+    const nbUnitTypeSelect = document.getElementById("nbUnitType");
+    const nbSurahSelect = document.getElementById("nbSurah");
+    const nbAyahSelect = document.getElementById("nbAyah");
+    const nbToSelect = document.getElementById("nbTo");
+    const nbUnitNumSelect = document.getElementById("nbUnitNum");
+    const nbSurahField = document.getElementById("nbSurahField");
+    const nbAyahField = document.getElementById("nbAyahField");
+    const nbToField = document.getElementById("nbToField");
+    const nbUnitNumField = document.getElementById("nbUnitNumField");
+    const nbFolderSelect = document.getElementById("nbFolder");
+    const nbPersonTagSelect = document.getElementById("nbPersonTag");
+    const nbCreateBtn = document.getElementById("nbCreateBtn");
+    const nbCancelBtn = document.getElementById("nbCancelBtn");
+
+    nbModuleSelect.innerHTML = Object.keys(MODULE_PAGES)
+      .map((id) => `<option value="${id}">${escapeHtml(MODULE_LABELS[id] ? t(MODULE_LABELS[id]) : id)}</option>`)
+      .join("");
+
+    const NB_UNIT_NUM_LABELS = { ruku: "Ruku' №", juz: "Juz №", hizb: "Hizb №", page: "Page №" };
+    let nbSurahIndex = null; // getSurahIndex()'s own result, fetched once and cached
+    let nbJuzIndex = null;
+    let nbHizbIndex = null;
+    let nbPageIndex = null;
+    let nbRukuSurahData = null; // { surahNumber, ayahs } for whichever surah Ruku' last fetched -- getSurah() is a real per-surah fetch, so this avoids re-fetching on every keystroke
+    let nbNameEdited = false; // stops auto-filling the Name field once the reader has typed their own
+
+    async function ensureNbSurahIndex() {
+      if (!nbSurahIndex) nbSurahIndex = await getSurahIndex();
+      return nbSurahIndex;
+    }
+
+    function nbOptionsForCount(count) {
+      return Array.from({ length: count }, (_, i) => i + 1).map((n) => `<option value="${n}">${num(n)}</option>`).join("");
+    }
+
+    /** The one ayah that anchors whichever unit is chosen -- min ayah number for a ruku/juz/hizb/page, the chosen ayah for ayah/range, ayah 1 for a whole surah. This is what applyQuranBookmarkSettings() will land currentAyahNum on when the bookmark is later opened, so it has to really sit inside the unit being claimed (see quranrevival.html's own openNoteView() comment on why). */
+    async function nbAnchor() {
+      const unitType = nbUnitTypeSelect.value;
+      if (unitType === "ayah") return { surahNum: Number(nbSurahSelect.value), ayahNum: Number(nbAyahSelect.value) };
+      if (unitType === "range") return { surahNum: Number(nbSurahSelect.value), ayahNum: Number(nbAyahSelect.value) };
+      if (unitType === "surah") return { surahNum: Number(nbSurahSelect.value), ayahNum: 1 };
+      if (unitType === "ruku") {
+        const surahNum = Number(nbSurahSelect.value);
+        const rukuIdx = Number(nbUnitNumSelect.value);
+        const data = await ensureNbRukuData(surahNum);
+        const inRuku = data.ayahs.filter((a) => rukuIndexInSurah(data.ayahs, a.ruku) === rukuIdx).map((a) => a.ayah);
+        return { surahNum, ayahNum: Math.min(...inRuku) };
+      }
+      if (unitType === "juz") { const row = nbJuzIndex.find((r) => r.juz === Number(nbUnitNumSelect.value)); return { surahNum: row.startSurah, ayahNum: row.startAyah }; }
+      if (unitType === "hizb") { const row = nbHizbIndex.find((r) => r.hizb === Number(nbUnitNumSelect.value)); return { surahNum: row.startSurah, ayahNum: row.startAyah }; }
+      if (unitType === "page") { const row = nbPageIndex.find((r) => r.page === Number(nbUnitNumSelect.value)); return { surahNum: row.startSurah, ayahNum: row.startAyah }; }
+      return null;
+    }
+
+    async function ensureNbRukuData(surahNum) {
+      if (nbRukuSurahData?.surahNumber === surahNum) return nbRukuSurahData;
+      const surah = await getSurah(surahNum);
+      nbRukuSurahData = { surahNumber: surahNum, ayahs: surah.ayahs };
+      return nbRukuSurahData;
+    }
+
+    async function renderNbUnitNumOptions() {
+      const unitType = nbUnitTypeSelect.value;
+      if (unitType === "ruku") {
+        const surahNum = Number(nbSurahSelect.value);
+        if (!surahNum) { nbUnitNumSelect.innerHTML = ""; return; }
+        const data = await ensureNbRukuData(surahNum);
+        const rukus = [...new Set(data.ayahs.map((a) => rukuIndexInSurah(data.ayahs, a.ruku)))].sort((a, b) => a - b);
+        nbUnitNumSelect.innerHTML = rukus.map((n) => `<option value="${n}">${num(n)}</option>`).join("");
+      } else if (unitType === "juz") {
+        if (!nbJuzIndex) nbJuzIndex = await getJuzIndex();
+        nbUnitNumSelect.innerHTML = nbJuzIndex.map((r) => `<option value="${r.juz}">${num(r.juz)}</option>`).join("");
+      } else if (unitType === "hizb") {
+        if (!nbHizbIndex) nbHizbIndex = await getHizbIndex();
+        nbUnitNumSelect.innerHTML = nbHizbIndex.map((r) => `<option value="${r.hizb}">${num(r.hizb)}</option>`).join("");
+      } else if (unitType === "page") {
+        if (!nbPageIndex) nbPageIndex = await getPageIndex();
+        nbUnitNumSelect.innerHTML = nbPageIndex.map((r) => `<option value="${r.page}">${num(r.page)}</option>`).join("");
+      }
+    }
+
+    function nbUpdateFieldVisibility() {
+      const unitType = nbUnitTypeSelect.value;
+      const showSurah = ["ayah", "range", "surah", "ruku"].includes(unitType);
+      const showAyah = unitType === "ayah" || unitType === "range";
+      const showTo = unitType === "range";
+      const showUnitNum = ["ruku", "juz", "hizb", "page"].includes(unitType);
+      nbSurahField.style.display = showSurah ? "" : "none";
+      nbAyahField.style.display = showAyah ? "" : "none";
+      nbToField.style.display = showTo ? "" : "none";
+      nbUnitNumField.style.display = showUnitNum ? "" : "none";
+      nbAyahField.querySelector("[data-nb-label]").textContent = t(unitType === "range" ? "From" : "Ayah");
+      if (showUnitNum) nbUnitNumField.querySelector("[data-nb-label]").textContent = t(NB_UNIT_NUM_LABELS[unitType]);
+    }
+
+    async function nbUpdateDefaultName() {
+      if (nbNameEdited) return;
+      const unitType = nbUnitTypeSelect.value;
+      const surahNum = Number(nbSurahSelect.value) || null;
+      let label = "";
+      if (unitType === "ayah" && surahNum) label = t("Surah {surah}, Ayah {ayah}", { surah: num(surahNum), ayah: num(nbAyahSelect.value) });
+      else if (unitType === "range" && surahNum) label = t("Ayahs {from}–{to} of Surah {surah}", { from: num(nbAyahSelect.value), to: num(nbToSelect.value), surah: num(surahNum) });
+      else if (unitType === "surah" && surahNum) label = t("Whole Surah {surah}", { surah: num(surahNum) });
+      else if (unitType === "ruku" && surahNum && nbUnitNumSelect.value) {
+        // Reuses the exact string the Read/Note screens already show for a
+        // ruku (unit-keys.js/quranrevival.html), ayah bounds included --
+        // a shortened one would have been a brand-new, untranslated string.
+        const rukuIdx = Number(nbUnitNumSelect.value);
+        const inRuku = (nbRukuSurahData?.surahNumber === surahNum ? nbRukuSurahData.ayahs : [])
+          .filter((a) => rukuIndexInSurah(nbRukuSurahData.ayahs, a.ruku) === rukuIdx)
+          .map((a) => a.ayah);
+        if (inRuku.length) label = t("Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})", { ruku: num(rukuIdx), surah: num(surahNum), from: num(Math.min(...inRuku)), to: num(Math.max(...inRuku)) });
+      }
+      else if (unitType === "juz" && nbUnitNumSelect.value) label = t("Juz {juz}", { juz: num(nbUnitNumSelect.value) });
+      else if (unitType === "hizb" && nbUnitNumSelect.value) label = t("Hizb {hizb}", { hizb: num(nbUnitNumSelect.value) });
+      else if (unitType === "page" && nbUnitNumSelect.value) label = t("Page {page}", { page: num(nbUnitNumSelect.value) });
+      nbNameInput.value = label;
+    }
+
+    async function nbOnUnitTypeChange() {
+      nbUpdateFieldVisibility();
+      if (["ayah", "range"].includes(nbUnitTypeSelect.value)) {
+        const meta = nbSurahIndex.find((s) => s.surahNumber === Number(nbSurahSelect.value));
+        const options = nbOptionsForCount(meta?.ayahCount ?? 1);
+        nbAyahSelect.innerHTML = options;
+        nbToSelect.innerHTML = options;
+      }
+      if (["ruku", "juz", "hizb", "page"].includes(nbUnitTypeSelect.value)) await renderNbUnitNumOptions();
+      await nbUpdateDefaultName();
+    }
+
+    async function nbOnModuleChange() {
+      const isQuran = nbModuleSelect.value === "quranrevival";
+      nbQuranFields.style.display = isQuran ? "" : "none";
+      nbUnsupportedNote.style.display = isQuran ? "none" : "block";
+      nbCreateBtn.disabled = !isQuran;
+      if (isQuran) {
+        await ensureNbSurahIndex();
+        renderNbSurahOptions();
+        await nbOnUnitTypeChange();
+      }
+    }
+
+    function renderNbSurahOptions() {
+      nbSurahSelect.innerHTML = nbSurahIndex.map((s) => `<option value="${s.surahNumber}">${num(s.surahNumber)}. ${surahName(s.surahNumber, s.nameEnglish)}</option>`).join("");
+    }
+
+    nbModuleSelect.addEventListener("change", () => { nbOnModuleChange(); });
+    nbUnitTypeSelect.addEventListener("change", () => { nbOnUnitTypeChange(); });
+    nbSurahSelect.addEventListener("change", () => { nbOnUnitTypeChange(); });
+    nbAyahSelect.addEventListener("change", () => { nbUpdateDefaultName(); });
+    nbToSelect.addEventListener("change", () => { nbUpdateDefaultName(); });
+    nbUnitNumSelect.addEventListener("change", () => { nbUpdateDefaultName(); });
+    nbNameInput.addEventListener("input", () => { nbNameEdited = true; });
+
+    function nbResetForm() {
+      nbNameEdited = false;
+      nbNameInput.value = "";
+      nbModuleSelect.value = "quranrevival";
+      nbUnitTypeSelect.value = "ayah";
+      nbFolderSelect.innerHTML = moveBookmarkOptionsHtml(null);
+      nbPersonTagSelect.innerHTML = personTagOptionsHtml(selectedPersonId);
+    }
+
+    newBookmarkBtn.addEventListener("click", async () => {
+      if (!selectedPersonId) return;
+      nbResetForm();
+      newBookmarkForm.style.display = "block";
+      await nbOnModuleChange();
+    });
+
+    nbCancelBtn.addEventListener("click", () => { newBookmarkForm.style.display = "none"; });
+
+    nbCreateBtn.addEventListener("click", async () => {
+      if (!selectedPersonId || nbModuleSelect.value !== "quranrevival") return;
+      const unitType = nbUnitTypeSelect.value;
+      const anchor = await nbAnchor();
+      if (!anchor?.surahNum || !anchor?.ayahNum) return;
+      let position;
+      if (unitType === "ayah") position = buildUnitKey.ayah(anchor.surahNum, anchor.ayahNum);
+      else if (unitType === "range") position = buildUnitKey.range(anchor.surahNum, Math.min(Number(nbAyahSelect.value), Number(nbToSelect.value)), Math.max(Number(nbAyahSelect.value), Number(nbToSelect.value)));
+      else if (unitType === "surah") position = buildUnitKey.surah(anchor.surahNum);
+      else if (unitType === "ruku") position = buildUnitKey.ruku(anchor.surahNum, Number(nbUnitNumSelect.value));
+      else if (unitType === "juz") position = buildUnitKey.juz(Number(nbUnitNumSelect.value));
+      else if (unitType === "hizb") position = buildUnitKey.hizb(Number(nbUnitNumSelect.value));
+      else if (unitType === "page") position = buildUnitKey.page("madani", Number(nbUnitNumSelect.value));
+      else return;
+      const name = nbNameInput.value.trim();
+      if (!name) { nbNameInput.focus(); return; }
+      // Deliberately no tajweedOn/wbwOn/rootsOn/derivativesOn/trackableId
+      // here -- there was no real study session to capture those FROM, so
+      // they stay unset (applyQuranBookmarkSettings() leaves an unset field
+      // alone rather than forcing it off) until the reader opens this
+      // bookmark, sets them up while actually studying, and saves that into
+      // it with the Ayah Note screen's own "Update bookmark" action.
+      const settings = {
+        unitType, surahNum: anchor.surahNum, ayahNum: anchor.ayahNum,
+        rangeFrom: unitType === "range" ? Math.min(Number(nbAyahSelect.value), Number(nbToSelect.value)) : null,
+        rangeTo: unitType === "range" ? Math.max(Number(nbAyahSelect.value), Number(nbToSelect.value)) : null,
+      };
+      const outcome = await safeWrite(
+        () => saveBookmark(db, {
+          tenantId: activeTenantId, personId: selectedPersonId, moduleId: "quranrevival", subjectId: "quran",
+          name, position, settings, folderId: nbFolderSelect.value || null,
+          personTagId: nbPersonTagSelect.value || null, uid: auth.currentUser.uid,
+        }),
+        { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
+      );
+      if (!outcome.ok) return;
+      bookmarksDoc = { ...bookmarksDoc, saved: [...(bookmarksDoc.saved ?? []), outcome.result] };
+      newBookmarkForm.style.display = "none";
       renderAll();
     });
 

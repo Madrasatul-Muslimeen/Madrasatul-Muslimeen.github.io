@@ -271,6 +271,26 @@ export async function renameSavedBookmark(db, tenantId, personId, bookmarkId, na
   return true;
 }
 
+/**
+ * Bookmark creation/update round -- patches one saved[] entry's own
+ * `position`/`settings` in place, leaving name/folderId/personTagId
+ * untouched (those are edited from the Manager, not overwritten by a study
+ * screen). Backs the Ayah Note screen's own "Update bookmark" action
+ * (quranrevival.html's `updateOpenedBookmark()`): a bookmark can now be
+ * created from the Manager with no captured reading state at all, and this
+ * is what lets a reader who opens it, changes the Approach/reading ticks/
+ * position while studying, and saves save that state into the SAME
+ * bookmark rather than needing to retire it and make a new one.
+ */
+export async function updateSavedBookmarkFields(db, tenantId, personId, bookmarkId, { position, settings }) {
+  const docId = bookmarksDocId(tenantId, personId);
+  const snap = await getDoc(doc(db, TENANT.BOOKMARKS, docId));
+  if (!snap.exists()) return false;
+  const saved = (snap.data().saved ?? []).map((b) => (b.id === bookmarkId ? { ...b, position, settings } : b));
+  await updateDocument(db, TENANT.BOOKMARKS, docId, { saved });
+  return true;
+}
+
 /** The Bookmark Manager's own Retire/Restore toggle -- unlike removeSavedBookmark() (used by every star toggle, always removing), this sets `removed` either way, since the manager is the one screen that needs to flip it back. */
 export async function setSavedBookmarkRemoved(db, tenantId, personId, bookmarkId, removed) {
   const docId = bookmarksDocId(tenantId, personId);

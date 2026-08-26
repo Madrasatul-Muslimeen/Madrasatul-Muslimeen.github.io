@@ -244,6 +244,13 @@ export function renderNoteView({
   isBookmarked = false, isFullscreen = false,
   isWbwOn = false, isRootsOn = false, isDerivativesOn = false, hasNote = false, approachHtml = "", isNotesOpen = false,
   approachOptionsHtml = "", showApproach = false, wideNoteHtml = "",
+  // Bookmark creation/update round -- true only once a bookmark made
+  // elsewhere (the Manager's own "+ New bookmark", or an earlier ☆ tap) is
+  // the one currently open here (quranrevival.html tracks which). Omitted
+  // entirely rather than shown disabled when nothing is open -- there is
+  // nothing to explain, unlike Approach/Mapping My Journey, which are real
+  // capabilities that are sometimes unavailable.
+  canUpdateBookmark = false,
   // Word by Word / Root / Derivatives read ONE āyah (ayah-renderer.js's
   // panels take a single āyah object) -- so unlike showAyatText (which also
   // covers a Range or a short surah), these three and the Collapse toggle
@@ -326,6 +333,9 @@ export function renderNoteView({
             <button type="button" class="qm-item" disabled style="color:#aaa;cursor:default;">${t("Approach")} <span class="qm-caret">${t("Single āyah only")}</span></button>`}
             <div class="qm-divider"></div>
             <button type="button" class="qm-item" disabled style="color:#aaa;cursor:default;">${t("Mapping My Journey")} <span class="qm-caret">${t("Coming later")}</span></button>
+            ${canUpdateBookmark ? `
+            <div class="qm-divider"></div>
+            <button type="button" class="qm-item" data-note-update-bookmark>${t("Update bookmark")}</button>` : ""}
           </div>
         </div>
       </div>
@@ -437,6 +447,7 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
  *   onApproachChange(id)
  *   onOpenInReadView()        -- the "read it in the Read view" link, only present when the scope wasn't shown as text
  *   onPickerChange            -- delegated: the caller wires its own picker bar's <select> elements directly (they're pre-built HTML it owns), so this file never needs to know their ids
+ *   onUpdateBookmark()        -- bookmark creation/update round; only wired to anything when canUpdateBookmark rendered the row at all
  */
 export function attachNoteViewHandlers(container, callbacks) {
   const view = container.querySelector(".note-view");
@@ -506,6 +517,10 @@ export function attachNoteViewHandlers(container, callbacks) {
   });
 
   view.querySelector("[data-note-bookmark]")?.addEventListener("click", () => callbacks.onToggleBookmark?.());
+  view.querySelector("[data-note-update-bookmark]")?.addEventListener("click", () => {
+    closeAllDotMenus(null);
+    callbacks.onUpdateBookmark?.();
+  });
 
   // ⋮ and ⋯ -- one open at a time, each closes on an outside click, and
   // (round 31's own rule, carried forward) a menu closes itself the moment
