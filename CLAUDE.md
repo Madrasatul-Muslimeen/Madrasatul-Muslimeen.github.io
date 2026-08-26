@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.80.** Cutover to production happened
+**Current milestone: QuranRevival v07.81.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -5116,6 +5116,70 @@ from v07.68/77, reused rather than re-added). No `firestore.rules` or
 schema changes -- `personTagId`/`folderId` on a `saved[]` entry were
 already part of the `bookmarks` collection's own additive shape; nothing
 to deploy but the static files.
+
+v07.81 (26 Aug 2026, same day) is **a same-day correction to v07.80's own
+Part 1**, from the owner's own pointed question the moment it shipped:
+*"'A direct Bookmark button on the Quran Read screen (single-ayah view)'.
+Did I ask for only one Study unit? Was there any problem with making it
+for all units at one go? Make it for all units pls."* They were right --
+v07.80 read "enable READ view to have a bookmark button too" as
+single-ayah-only purely by analogy with the Note view's own bar-2 button
+(also single-ayah-scoped), without checking whether the ask itself was
+that narrow. It wasn't, and there was no real problem making it wider --
+the app already had exactly the right building block sitting unused for
+this.
+
+**`currentUnitInfo()`** -- the function `renderUnitLabel()` and "Track this
+unit" have shared since Phase 5 as their own single source of truth for
+"what does the currently selected Study Unit actually mean" -- already
+returns a real `{unitType, unitKey, label}` for all seven unit types
+(ayah/range/surah/ruku/juz/hizb/page). `renderStudyScreen()` now computes
+it ONCE, before the flow/single-ayah split, and `#readBookmarkBtn` is set
+from it unconditionally: visible on every unit type, keyed to
+`unitInfo.unitKey`, so a Range/Whole Surah/Ruku'/Juz/Hizb/Page bookmark now
+resumes that SAME unit later rather than the button being invisible for
+some units (Range, Whole Surah, Mushaf -- all of which render as a "flow"
+and had the button hidden outright) or, for the ones it did cover
+(Ruku'/Juz/Hizb/Page, which read ayah-by-ayah rather than as a flow),
+silently bookmarking only the single current ayah inside them rather than
+the wider unit the reader had actually chosen. **The flow view's own
+per-ayah `⋮` badge is untouched and independent** -- it still lets a
+reader bookmark one specific āyah within a Range or Whole Surah, exactly
+as before; the new bar-level button means the WHOLE unit, the same
+"an āyah's own note and a wider unit's own note are two different things"
+split the Note view's "Also noted at:" pills already established.
+
+**One real naming bug had to be fixed for this to work at all, not just
+extended:** `toggleAyahBookmark()`'s own default-naming logic
+(`parseAyahUnitKey()`) can only read an ayah-shaped key (`ayah:surah:ayah`)
+-- exactly the trap that function's own comment already documents, first
+hit and solved for the Note view's own wider-unit bookmark. The Read
+screen's click handler now hands in `unitInfo.label` as the
+`defaultNameOverride` for every non-ayah unit type (a real, translated
+string like "Juz 5" or "Ruku' 3 of Surah 2 (ayahs 8–20)"), so the naming
+popover offers a sensible default instead of a malformed one built from
+`undefined`. The button's own wording follows the same split: "Bookmark
+this āyah" only for the ayah unit type (unchanged), the existing generic
+"Bookmark this" (already translated, the same wording `topic-study.js`/
+`routine-study.js`'s own bookmark stars use) for every other unit type --
+no new translation strings needed.
+
+**Verified with a focused, un-checked-in 39-check Playwright script**
+covering all seven unit types plus the "Mushaf turned on over a single
+ayah" case (which is still `unitType === "ayah"` underneath the display
+mode, and correctly keeps the āyah-specific wording): the button visible
+and correctly labelled for each type; a real naming popover offering a
+genuine, non-malformed default name; saving flipping it to bookmarked and
+removing flipping it back, for every type. **Re-ran the full
+`behaviour.mjs` suite far enough to specifically re-confirm the four
+`#readBar` button-list checks (30j/30l/33a/37a) v07.80's own round had
+just updated** -- all four still pass unchanged, since this fix only
+changes what `readBookmarkBtn`'s hidden/label state is set to, never the
+bar's button count or DOM order. `layout.mjs`, `panel.mjs` and
+`reading.mjs` all report clean, confirming this stayed pure client-side
+rendering logic with no effect on either page's own measured layout. No
+`firestore.rules` or schema changes -- nothing to deploy but the static
+files.
 
 ## What this is
 
