@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.82.** Cutover to production happened
+**Current milestone: QuranRevival v07.83.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -5288,6 +5288,96 @@ schema or Firestore data changes -- nothing to deploy but the static files.
 itself.** This round only clears the ~40%-of-diameter room for it, as
 asked; the graphic is explicitly the owner's own next round, "En Shaa
 Allah."
+
+v07.83 (26 Aug 2026, on Claude Code on the web) is **the follow-up the
+owner asked for the moment v07.82 shipped: "Make Aujubillah font more
+bigger and more curved. Bismillah font should be bigger too. And then do
+the phase two."** Three parts, all in the wheel hub.
+
+**Ta'awwudh: bigger and genuinely more curved.** The arc's own radius
+(`R` in the SVG `A` command) dropped 296 → 150, which more than doubles
+the curve's own height (the sagitta -- the amount the middle of the arc
+bulges above its two ends -- goes from 14 to 30 viewBox units); its font
+went 14px → 18px. Both needed the viewBox itself to grow (200×34 → 200×64)
+so the taller, more curved text has real room to sit in rather than
+crowding its own edges -- and since this element has no width/height
+attribute of its own (deliberate, since v07.82: it scales with the
+wrapper's own measured width like a vector graphic, not fixed text), a
+taller viewBox is exactly what makes `layoutWheelHub()`'s existing
+containment math re-measure a taller block and adapt, with no other code
+change needed for Ta'awwudh's own sizing.
+
+**Bismillah: bigger too**, via the one place that actually sets its size
+-- `layoutWheelHub()`'s own `arabicPx` (the `--hub-arabic-size` CSS
+variable, `.wheel-hub-arabic`'s only consumer, i.e. Bismillah alone; Ta'awwudh's SVG font-size is unrelated
+to this variable). The cap went 13px → 16px and the diameter-scaling
+factor 0.08 → 0.095, so a bigger hub gets meaningfully more Bismillah size
+before hitting the ceiling, not just a marginally higher floor.
+
+**Phase 2: the "open Qur'an emitting light" graphic, built for real.**
+A new `#wheelHubGraphic` -- a small inline SVG (glow ellipse, five solid
+gold ray triangles, an open book) -- sits BELOW the pickers block as a
+sibling inside `#wheelStageWrap`, `pointer-events: none` and
+`aria-hidden="true"` since it adds no information a reader needs beyond
+what the pickers already say, and it must never intercept a tap meant for
+a wheel slice underneath it. **Sized and positioned by a genuine closed-form
+solve, not a guess or an iterated approximation like the pickers' own
+width**: unlike the pickers block, the graphic's own content never
+re-wraps at a different width, so `layoutWheelHub()`'s new Step 3 sets up
+the exact quadratic that a box of a FIXED aspect ratio (matching its own
+viewBox, so no CSS stretch-distortion) would need to solve for the
+largest height that still lands inside the hub's own safe radius, anchored
+just below the pickers block's own measured bottom edge -- one pass,
+exact, the same Pythagorean corner-containment idea every other measured
+element in this hub already uses, just algebraic instead of iterative
+since there was no re-wrap to chase here. **Below a floor of 18px tall it
+hides itself outright (`display:none`) rather than crush into an
+unrecognisable smudge** -- decorative, so the honest answer to "no real
+room" is absent, not degraded; this genuinely happens on the two smallest
+phones tested (320×640, 360×640), where the pickers block alone already
+fills essentially the whole hub circle.
+
+**A real design correction, caught by screenshot and not shipped
+blind**: the FIRST version of the book (two curved petals meeting at a
+single top-centre dip, mirroring the SAME shape a curvy "V" notch takes)
+read as a small heart once actually rendered at the ~25-45px this graphic
+ends up at on real screens -- an artifact of curvature this project has
+already hit once before, on the wheel's own centre disc (v07.62/63).
+Rebuilt as a single unambiguous peak at the spine with both wings sloping
+straight down and out from it (a gable/tent silhouette, the more common
+"open book" icon shape) -- no symmetric dip to misread. The rays were
+also switched from 1px stroked hairlines to solid filled triangles for
+the same reason stated directly in the file's own comment: a hairline
+this small render this small effectively vanishes; a filled wedge stays a
+visible ray at any size this hub ever renders at. Confirmed by zoomed
+(3× device-scale) screenshots at both a phone and a desktop size, not
+just the numbers.
+
+**Verified**: an 8-viewport geometry sweep (both the default state and
+the "286"/long-surah-name stress case, matching v07.82's own method)
+confirms the Ta'awwudh/Bismillah containment still holds with no overflow
+onto the wheel's own slices anywhere, and the graphic itself never
+overlaps the pickers block and stays within the hub's measured safe
+radius at every size where it renders at all. **`tools/i18n-verify/
+layout.mjs` reports NO LAYOUT REGRESSIONS against a real previous-commit
+shim** (landing page byte-for-byte identical at all eight viewports in
+both banner states, `getElementById` targets 100 → 101, exactly the one
+new graphic element, none missing) -- the landing page is untouched
+because the whole hub, pickers and graphic alike, only exists behind the
+wheel's own veil, which starts hidden. **The checked-in `tools/i18n-verify/
+behaviour.mjs` suite was re-run in full and reached well past this
+round's own area with 0 failures**, before hitting the same already-
+disclosed, pre-existing section-42 crash this project has carried since
+v07.69 (a stale `[data-note-master-toggle]` visibility assumption from
+before the round-31 bar reorg, confirmed unrelated -- the same selector
+sits behind the same closed dropdown at a clean `HEAD` too). **Translation
+coverage 1,372/1,372, the same 8 pre-existing missing strings as before
+this round** -- the new graphic is pure decoration with no text of its
+own (`aria-hidden`), so it adds nothing to translate. **`tools/perf/
+measure.mjs` unchanged** -- this round is pure client-side SVG/CSS/layout
+work, session-only, no Firestore read added anywhere (I9 untouched). No
+`firestore.rules`, schema or Firestore data changes -- nothing to deploy
+but the static files.
 
 ## What this is
 
