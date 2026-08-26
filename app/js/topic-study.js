@@ -404,6 +404,21 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
    * no per-topic reading state to capture, so a bookmark here is exactly
    * "which topic", named by the person.
    */
+  /** Patches the star's own DOM directly rather than re-opening the whole
+      detail view: openTopicDetail() would re-fetch bookmarksDoc from scratch
+      (via refreshContinueStrip()) and re-read resources/records for no
+      reason a star click needs -- an unnecessary round trip on top of the
+      one this toggle already made. Safe to call whatever the write outcome
+      was: it only ever re-derives from bookmarksDoc's own current state. */
+  function refreshTopicBookmarkBtn(node) {
+    const btn = document.getElementById("bookmarkTopicBtn");
+    if (!btn) return;
+    const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId, subjectId: node.id, position: node.id });
+    btn.textContent = isBookmarked ? "★" : "☆";
+    btn.classList.toggle("active", isBookmarked);
+    btn.title = isBookmarked ? t("Remove bookmark") : t("Bookmark this");
+  }
+
   async function toggleTopicBookmark(node) {
     if (!auth.currentUser || !selectedPersonId) return;
     const existing = findSavedBookmark(bookmarksDoc, { moduleId, subjectId: node.id, position: node.id });
@@ -414,50 +429,54 @@ export function initTopicStudyPage({ moduleId, trackableId, rootSubjectId }) {
       );
       if (!outcome.ok) return;
       bookmarksDoc = { ...bookmarksDoc, saved: bookmarksDoc.saved.map((b) => (b.id === existing.id ? { ...b, removed: true } : b)) };
-    } else {
-      const defaultName = langText(node.name, getAppLang(), node.id);
-      const choice = await openBookmarkNamePopover({
-        defaultName,
-        folders: flattenFolderTree(bookmarksDoc),
-        // Fixes round 2 -- tag this bookmark with a person. Defaults to
-        // whoever is selected right now (studying WITH a child is the
-        // common case, per D10), and "No one in particular" clears it.
-        people: roster.map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id) })),
-        defaultPersonTagId: selectedPersonId,
-      });
-      if (!choice) return;
-      let folderId = choice.folderId;
+      refreshTopicBookmarkBtn(node);
+      return;
+    }
+    const defaultName = langText(node.name, getAppLang(), node.id);
+    const choice = await openBookmarkNamePopover({
+      defaultName,
+      folders: flattenFolderTree(bookmarksDoc),
+      // Fixes round 2 -- tag this bookmark with a person. Defaults to
+      // whoever is selected right now (studying WITH a child is the
+      // common case, per D10), and "No one in particular" clears it.
+      people: roster.map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id) })),
+      defaultPersonTagId: selectedPersonId,
+      // Multi-student round -- "Assign to", the same roster/scoping rule
+      // the Track card's own Claim dropdown already uses.
+      roster: assignableRoster(),
+      selectedPersonId,
+    });
+    if (!choice) return;
+    // Save the SAME bookmark into every ticked assignee's own document --
+    // see quranrevival.html's own toggleAyahBookmark() for the full
+    // reasoning (an existing named folder id and a shared personTagId only
+    // transfer for a single assignee; safe in parallel since each write
+    // lands on a different bookmarks document).
+    const assigneeIds = choice.assigneeIds?.length ? choice.assigneeIds : [selectedPersonId];
+    const multi = assigneeIds.length > 1;
+    await Promise.all(assigneeIds.map(async (pid) => {
+      let folderId = multi ? null : choice.folderId;
       if (choice.newFolderName) {
         const folderOutcome = await safeWrite(
-          () => createFolder(db, { tenantId: activeTenantId, personId: selectedPersonId, name: choice.newFolderName, personTagId: choice.personTagId, uid: auth.currentUser.uid }),
+          () => createFolder(db, { tenantId: activeTenantId, personId: pid, name: choice.newFolderName, personTagId: multi ? null : choice.personTagId, uid: auth.currentUser.uid }),
           { collection: TENANT.BOOKMARKS, action: "createFolder" }
         );
         if (!folderOutcome.ok) return;
         folderId = folderOutcome.result.id;
-        bookmarksDoc = { ...bookmarksDoc, folders: [...(bookmarksDoc.folders ?? []), folderOutcome.result] };
+        if (pid === selectedPersonId) bookmarksDoc = { ...bookmarksDoc, folders: [...(bookmarksDoc.folders ?? []), folderOutcome.result] };
       }
       const outcome = await safeWrite(
         () => saveBookmark(db, {
-          tenantId: activeTenantId, personId: selectedPersonId, moduleId, subjectId: node.id,
-          name: choice.name || defaultName, position: node.id, folderId, personTagId: choice.personTagId, uid: auth.currentUser.uid,
+          tenantId: activeTenantId, personId: pid, moduleId, subjectId: node.id,
+          name: choice.name || defaultName, position: node.id, folderId, personTagId: multi ? null : choice.personTagId, uid: auth.currentUser.uid,
         }),
         { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
       );
-      if (!outcome.ok) return;
-      bookmarksDoc = { ...bookmarksDoc, saved: [...(bookmarksDoc.saved ?? []), outcome.result] };
-    }
-    // Patches the star's own DOM directly rather than re-opening the whole
-    // detail view: openTopicDetail() would re-fetch bookmarksDoc from
-    // scratch (via refreshContinueStrip()) and re-read resources/records for
-    // no reason a star click needs -- an unnecessary round trip on top of
-    // the one this toggle already made.
-    const btn = document.getElementById("bookmarkTopicBtn");
-    if (btn) {
-      const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId, subjectId: node.id, position: node.id });
-      btn.textContent = isBookmarked ? "★" : "☆";
-      btn.classList.toggle("active", isBookmarked);
-      btn.title = isBookmarked ? t("Remove bookmark") : t("Bookmark this");
-    }
+      if (outcome.ok && pid === selectedPersonId) {
+        bookmarksDoc = { ...bookmarksDoc, saved: [...(bookmarksDoc.saved ?? []), outcome.result] };
+      }
+    }));
+    refreshTopicBookmarkBtn(node);
   }
 
   function openWayModal(node) {

@@ -1266,6 +1266,16 @@
           <button type="button" class="secondary qr-ico" id="readPlayBtn" aria-label="Play" title="Play">▶</button>
           <button type="button" class="secondary qr-ico" id="readStopBtn" aria-label="Stop" title="Stop">■</button>
           <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
+          <!-- Multi-student round -- "enable READ view to have a bookmark
+               button too", matching the Note view's own bar 2 (v07.64: a
+               direct button, not buried in the ⋮ menu). Single-ayah view
+               only, same reason readQuickMenuSlot below is: a flow view has
+               no one "this āyah" for a bar-level button to mean, so it keeps
+               its own per-āyah ⋮ badge (renderQuickMenu()'s own bookmark
+               item, still shown there since showBookmark defaults true and
+               this button's own showBookmark:false only applies to the
+               single-ayah call site). -->
+          <button type="button" class="secondary qr-ico" id="readBookmarkBtn" aria-label="Bookmark this āyah" title="Bookmark this āyah" hidden>🔖</button>
           <!-- Round 31 -- the owner's own question: "why should the three dot
                take space over the Ayah? put the dots on the Bar, where there
                are lots of empty spaces." Mounted here for the single-ayah
@@ -1886,6 +1896,7 @@
     const readHint = document.getElementById("readHint");
     const readQuickMenuSlot = document.getElementById("readQuickMenuSlot");
     const hideChromeBtn = document.getElementById("hideChromeBtn");
+    const readBookmarkBtn = document.getElementById("readBookmarkBtn");
     const prevUnitBtn = document.getElementById("prevUnitBtn");
     const nextUnitBtn = document.getElementById("nextUnitBtn");
     const quranFontSelect = document.getElementById("quranFontSelect");
@@ -4067,26 +4078,42 @@
     }
 
     /** Item 2 ("prompt for naming it") + item 4 (capture the full study state, Quran only -- see captureQuranBookmarkSettings()'s own comment for why). Reachable from both the Note view's own star (bar 2) and the plain Read screen's ⋮ menu (item 3: "enable bookmark button at the READ screen as well") -- same function either way. */
+    /** Re-renders whichever view actually shows this āyah's own ⋮ badge/star
+        (or the direct #readBookmarkBtn) right now -- the Note view when it's
+        open on this exact āyah, the ordinary reading screen otherwise. Mirrors
+        changeCurrentTrackable()'s own "whichever stage view is open" rule. */
+    function refreshBookmarkDisplay(unitKey) {
+      if (stageView === "note" && noteScopeCurrentUnitKey() === unitKey) renderNoteViewNow();
+      else if (stageView === "read") renderStudyScreen();
+    }
+
     async function toggleAyahBookmark(unitKey, defaultNameOverride, settingsOverride) {
       if (!auth.currentUser || !selectedPersonId) return;
       const existing = findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
-      let outcome;
       if (existing) {
-        outcome = await safeWrite(
+        const outcome = await safeWrite(
           () => removeSavedBookmark(db, activeTenantId, selectedPersonId, existing.id),
           { collection: TENANT.BOOKMARKS, action: "removeSavedBookmark" }
         );
-      } else {
-        // Enhancement round -- this now also fires for a unitKey that isn't
-        // āyah-shaped (a Note-view bookmark on a wider unit) --
-        // parseAyahUnitKey() would misread one of those, so the Note view
-        // hands its own noteScopeUnitInfo().label straight in rather than
-        // this function guessing at it.
-        const defaultName = defaultNameOverride ?? (() => {
-          const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
-          return ayahRefLabel(surah, ayahNum);
-        })();
-        const choice = await openBookmarkNamePopover({
+        if (!outcome.ok) return;
+        // Bookmark creation/update round -- retiring the bookmark that was
+        // currently "open" (see openedBookmarkId's own comment) drops the
+        // association; there is nothing left to update.
+        if (existing.id === openedBookmarkId) openedBookmarkId = null;
+        bookmarksDoc = { ...bookmarksDoc, saved: bookmarksDoc.saved.map((b) => (b.id === existing.id ? { ...b, removed: true } : b)) };
+        refreshBookmarkDisplay(unitKey);
+        return;
+      }
+      // Enhancement round -- this now also fires for a unitKey that isn't
+      // āyah-shaped (a Note-view bookmark on a wider unit) --
+      // parseAyahUnitKey() would misread one of those, so the Note view
+      // hands its own noteScopeUnitInfo().label straight in rather than
+      // this function guessing at it.
+      const defaultName = defaultNameOverride ?? (() => {
+        const { surah, ayah: ayahNum } = parseAyahUnitKey(unitKey);
+        return ayahRefLabel(surah, ayahNum);
+      })();
+      const choice = await openBookmarkNamePopover({
         defaultName,
         folders: flattenFolderTree(bookmarksDoc),
         // Fixes round 2 -- tag this bookmark with a person. Defaults to
@@ -4094,49 +4121,54 @@
         // common case, per D10), and "No one in particular" clears it.
         people: roster.map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id) })),
         defaultPersonTagId: selectedPersonId,
+        // Multi-student round -- "Assign to", the same roster/scoping rule
+        // the Track card's own Claim dropdown already uses.
+        roster: assignableRoster(),
+        selectedPersonId,
       });
-        if (!choice) return; // cancelled -- no write, no re-render
-        let folderId = choice.folderId;
+      if (!choice) return; // cancelled -- no write, no re-render
+      // Save the SAME bookmark into every ticked assignee's own document.
+      // Safe in parallel: each write lands on a different bookmarks/
+      // {tenantId}__{personId} document (same reasoning "Assign to"'s own
+      // Claim loop already uses). An existing named folder id and a shared
+      // personTagId are only ever passed through for a single assignee --
+      // see bookmark-popover.js's own header comment for why neither
+      // transfers across several people's own separate documents.
+      const assigneeIds = choice.assigneeIds?.length ? choice.assigneeIds : [selectedPersonId];
+      const multi = assigneeIds.length > 1;
+      const settings = settingsOverride ?? captureQuranBookmarkSettings();
+      await Promise.all(assigneeIds.map(async (pid) => {
+        let folderId = multi ? null : choice.folderId;
         if (choice.newFolderName) {
           const folderOutcome = await safeWrite(
-            () => createFolder(db, { tenantId: activeTenantId, personId: selectedPersonId, name: choice.newFolderName, personTagId: choice.personTagId, uid: auth.currentUser.uid }),
+            () => createFolder(db, { tenantId: activeTenantId, personId: pid, name: choice.newFolderName, personTagId: multi ? null : choice.personTagId, uid: auth.currentUser.uid }),
             { collection: TENANT.BOOKMARKS, action: "createFolder" }
           );
           if (!folderOutcome.ok) return;
           folderId = folderOutcome.result.id;
-          bookmarksDoc = { ...bookmarksDoc, folders: [...(bookmarksDoc.folders ?? []), folderOutcome.result] };
+          if (pid === selectedPersonId) bookmarksDoc = { ...bookmarksDoc, folders: [...(bookmarksDoc.folders ?? []), folderOutcome.result] };
         }
-        outcome = await safeWrite(
+        const saveOutcome = await safeWrite(
           () => saveBookmark(db, {
-            tenantId: activeTenantId, personId: selectedPersonId, moduleId: "quranrevival", subjectId: "quran",
-            name: choice.name || defaultName, position: unitKey, settings: settingsOverride ?? captureQuranBookmarkSettings(), folderId,
-            personTagId: choice.personTagId, uid: auth.currentUser.uid,
+            tenantId: activeTenantId, personId: pid, moduleId: "quranrevival", subjectId: "quran",
+            name: choice.name || defaultName, position: unitKey, settings, folderId,
+            personTagId: multi ? null : choice.personTagId, uid: auth.currentUser.uid,
           }),
           { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
         );
-      }
-      if (!outcome.ok) return;
-      // Bookmark creation/update round -- retiring the bookmark that was
-      // currently "open" (see openedBookmarkId's own comment) drops the
-      // association; there is nothing left to update.
-      if (existing && existing.id === openedBookmarkId) openedBookmarkId = null;
-      // Update in-memory rather than re-fetching -- same reasoning as
-      // onSaveNote's own ayahNotesDoc update below: the write already tells
-      // us exactly what changed, so a re-fetch is both an unneeded round
-      // trip and, right after a create, a real race against a backend that
-      // may not have caught up to its own write yet.
-      bookmarksDoc = {
-        ...bookmarksDoc,
-        saved: existing
-          ? bookmarksDoc.saved.map((b) => (b.id === existing.id ? { ...b, removed: true } : b))
-          : [...(bookmarksDoc.saved ?? []), outcome.result],
-      };
-      // Re-render whichever view actually shows this āyah's own ⋮ badge/star
-      // right now -- the Note view when it's open on this exact āyah, the
-      // ordinary reading screen (its own ⋮ badges) otherwise. Mirrors
-      // changeCurrentTrackable()'s own "whichever stage view is open" rule.
-      if (stageView === "note" && noteScopeCurrentUnitKey() === unitKey) renderNoteViewNow();
-      else if (stageView === "read") renderStudyScreen();
+        // Update in-memory rather than re-fetching -- same reasoning as
+        // onSaveNote's own ayahNotesDoc update below: the write already
+        // tells us exactly what changed, so a re-fetch is both an unneeded
+        // round trip and, right after a create, a real race against a
+        // backend that may not have caught up to its own write yet. Only
+        // ONE assignee's own document is the one this page actually holds
+        // in memory -- another assignee's own copy shows the next time
+        // they (or their guardian) load their own bookmarks.
+        if (saveOutcome.ok && pid === selectedPersonId) {
+          bookmarksDoc = { ...bookmarksDoc, saved: [...(bookmarksDoc.saved ?? []), saveOutcome.result] };
+        }
+      }));
+      refreshBookmarkDisplay(unitKey);
     }
 
     /**
@@ -4833,6 +4865,12 @@
         // āyah" -- a flow shows several at once, so it stays out of the
         // way here and the flow view keeps its own per-āyah badge instead.
         readQuickMenuSlot.innerHTML = "";
+        // Multi-student round -- same reasoning as the ⋮ badge above: a flow
+        // has no one "this āyah" for a bar-level Bookmark button to mean, so
+        // it hides here too and the flow view's own per-āyah ⋮ badge keeps
+        // its Bookmark item (renderQuickMenu()'s default showBookmark:true,
+        // untouched below).
+        readBookmarkBtn.hidden = true;
         // Mushaf over a single ayah means THAT ayah's page, with it
         // highlighted -- the owner's one-ayah memorising case. Every other
         // unit hands over its own bounds, as before.
@@ -4858,7 +4896,17 @@
         // don't get this badge).
         const singleUnitKey = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
         const singleIsBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: singleUnitKey });
-        readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, { hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey), isBookmarked: singleIsBookmarked });
+        // Multi-student round -- a direct, always-visible Bookmark button
+        // now lives on the bar itself for the single-ayah view (see its own
+        // markup comment), so the ⋮ menu's OWN Bookmark item is redundant
+        // here and dropped (showBookmark:false) -- the flow view above keeps
+        // it, since it has no bar-level button of its own to mean one āyah.
+        readBookmarkBtn.hidden = false;
+        readBookmarkBtn.textContent = singleIsBookmarked ? "★" : "🔖";
+        const bmLabel = t(singleIsBookmarked ? "Remove bookmark" : "Bookmark this āyah");
+        readBookmarkBtn.setAttribute("aria-label", bmLabel);
+        readBookmarkBtn.setAttribute("title", bmLabel);
+        readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, { hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: false });
         attachAyahQuickMenus(readQuickMenuSlot);
       }
 
@@ -5108,6 +5156,12 @@
     readPlayBtn.addEventListener("click", () => playCurrentSelection());
 
     readStopBtn.addEventListener("click", () => { stopDrill(); stopAudio(); renderReadTransport(); });
+
+    // Multi-student round -- the Read screen's own direct Bookmark button
+    // (see #readBookmarkBtn's own markup comment). Reads currentAyahNum at
+    // click time rather than a captured value, same convention every other
+    // #readBar button already follows.
+    readBookmarkBtn.addEventListener("click", () => toggleAyahBookmark(buildUnitKey.ayah(currentSurahNum, currentAyahNum)));
 
     prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopDrill(); currentAyahNum--; renderStudyScreen(); renderWheel(); } });
     nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount) { stopDrill(); currentAyahNum++; renderStudyScreen(); renderWheel(); } });

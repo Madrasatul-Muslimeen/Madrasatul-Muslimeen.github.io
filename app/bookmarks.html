@@ -42,6 +42,17 @@
     padding: 0.3rem 0.4rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box;
   }
   #emptyMsg { color: #888; font-size: 0.9rem; margin-top: 1rem; }
+  /* Multi-student round -- the "+ New bookmark" form's own "Assign to"
+     checklist, same shape bookmark-popover.js's own .bm-pop-assignee-row
+     uses (that file injects its own styles, since it's meant to be usable
+     from any page -- this page just keeps a matching copy for its own
+     inline form, the same convention every other page's own copy of the
+     shared .assign-row/.who-name/.who-tag classes already follows). */
+  .bm-assignees { display: flex; flex-direction: column; gap: 0.3rem; max-height: 8rem; overflow-y: auto; margin-top: 0.2rem; border: 1px solid #ccc; border-radius: 0.35rem; padding: 0.4rem 0.5rem; }
+  .bm-assignee-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none; padding: 0.1rem 0; }
+  .bm-assignee-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
+  .bm-assignee-row .who-name { flex: 1; }
+  .bm-assignee-row .who-tag { font-size: 0.66rem; color: #777; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
 </style>
 </head>
 <body>
@@ -123,11 +134,22 @@
         </label>
       </div>
       <p id="nbUnsupportedNote" class="note" style="display:none;">Creating a bookmark for this module isn't built yet — open it and use its own ☆ button.</p>
+      <!-- Multi-student round -- the SAME "Assign to" checklist
+           bookmark-popover.js's own naming step offers (way-modal.js's own
+           Claim dropdown, before that). Hidden entirely when the roster has
+           fewer than 2 people -- a lone student sees no new control at all.
+           Populated/shown by nbOnModuleChange() below, since the roster
+           isn't known until the page's own data has loaded. -->
+      <div class="bm-form-row" id="nbAssigneesRow" style="display:none;">
+        <label class="bm-form-field" style="flex-basis:100%;">Assign to
+          <div id="nbAssignees" class="bm-assignees"></div>
+        </label>
+      </div>
       <div class="bm-form-row">
         <label class="bm-form-field">Folder
           <select id="nbFolder"></select>
         </label>
-        <label class="bm-form-field">For
+        <label class="bm-form-field" id="nbPersonTagField">For
           <select id="nbPersonTag"></select>
         </label>
       </div>
@@ -257,6 +279,17 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const realRoles = activeMembership?.roles ?? [];
       const viewAsRole = context?.viewAsRole ?? null;
       return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: activeMembership?.personId ?? null };
+    }
+
+    /** Multi-student round -- who "+ New bookmark" can Assign to, the exact
+        same scoping rule every study page's own assignableRoster() already
+        uses for a Claim's own "Assign to" dropdown (scopedRoster(), non-
+        archived), so the two can never disagree about who's reachable. */
+    function assignableRoster() {
+      const { viewAsRole, effRoles, myPersonId } = currentPreview();
+      return (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster)
+        .filter((p) => p.status !== "archived")
+        .map((p) => ({ id: p.id, name: langText(p.name, getAppLang(), p.id), isSelf: p.id === myPersonId }));
     }
 
     function renderPersonSelectOptions() {
@@ -665,7 +698,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     const nbToField = document.getElementById("nbToField");
     const nbUnitNumField = document.getElementById("nbUnitNumField");
     const nbFolderSelect = document.getElementById("nbFolder");
+    const nbPersonTagField = document.getElementById("nbPersonTagField");
     const nbPersonTagSelect = document.getElementById("nbPersonTag");
+    const nbAssigneesRow = document.getElementById("nbAssigneesRow");
+    const nbAssigneesContainer = document.getElementById("nbAssignees");
     const nbCreateBtn = document.getElementById("nbCreateBtn");
     const nbCancelBtn = document.getElementById("nbCancelBtn");
 
@@ -810,6 +846,41 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     nbUnitNumSelect.addEventListener("change", () => { nbUpdateDefaultName(); });
     nbNameInput.addEventListener("input", () => { nbNameEdited = true; });
 
+    // Multi-student round -- the SAME "Assign to" checklist bookmark-
+    // popover.js's own naming step offers (see that file's own header
+    // comment for the full reasoning). personTagId ("who this ONE copy is
+    // for") and an EXISTING named folder (an id only meaningful inside the
+    // one document it was listed from) both stop making sense once more than
+    // one assignee is ticked, so ticking a second one hides "For" and
+    // disables every existing-folder option -- ticking back down to one
+    // restores both.
+    function nbUpdateForAssigneeCount() {
+      const n = nbAssigneesContainer.querySelectorAll("input:checked").length;
+      const multi = n > 1;
+      nbPersonTagField.style.display = multi ? "none" : "";
+      [...nbFolderSelect.options].forEach((opt) => {
+        if (opt.value !== "" && opt.value !== "__new__") opt.disabled = multi;
+      });
+      if (multi && nbFolderSelect.value !== "" && nbFolderSelect.value !== "__new__") nbFolderSelect.value = "";
+    }
+
+    function nbRenderAssignees() {
+      const roster = assignableRoster();
+      if (roster.length < 2) {
+        nbAssigneesRow.style.display = "none";
+        nbAssigneesContainer.innerHTML = "";
+        return;
+      }
+      nbAssigneesRow.style.display = "";
+      nbAssigneesContainer.innerHTML = roster.map((p) => {
+        const checked = p.id === selectedPersonId ? "checked" : "";
+        const tag = p.isSelf ? `<span class="who-tag">${t("you")}</span>` : "";
+        return `<label class="bm-assignee-row"><input type="checkbox" value="${p.id}" ${checked}><span class="who-name">${escapeHtml(p.name)}</span>${tag}</label>`;
+      }).join("");
+      nbUpdateForAssigneeCount();
+    }
+    nbAssigneesContainer.addEventListener("change", nbUpdateForAssigneeCount);
+
     function nbResetForm() {
       nbNameEdited = false;
       nbNameInput.value = "";
@@ -817,6 +888,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       nbUnitTypeSelect.value = "ayah";
       nbFolderSelect.innerHTML = moveBookmarkOptionsHtml(null);
       nbPersonTagSelect.innerHTML = personTagOptionsHtml(selectedPersonId);
+      nbPersonTagField.style.display = "";
+      nbRenderAssignees();
     }
 
     newBookmarkBtn.addEventListener("click", async () => {
@@ -855,16 +928,35 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         rangeFrom: unitType === "range" ? Math.min(Number(nbAyahSelect.value), Number(nbToSelect.value)) : null,
         rangeTo: unitType === "range" ? Math.max(Number(nbAyahSelect.value), Number(nbToSelect.value)) : null,
       };
-      const outcome = await safeWrite(
-        () => saveBookmark(db, {
-          tenantId: activeTenantId, personId: selectedPersonId, moduleId: "quranrevival", subjectId: "quran",
-          name, position, settings, folderId: nbFolderSelect.value || null,
-          personTagId: nbPersonTagSelect.value || null, uid: auth.currentUser.uid,
-        }),
-        { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
-      );
-      if (!outcome.ok) return;
-      bookmarksDoc = { ...bookmarksDoc, saved: [...(bookmarksDoc.saved ?? []), outcome.result] };
+      // Multi-student round -- "Assign to": save the SAME bookmark into
+      // every ticked assignee's own document, exactly the same mechanism
+      // every study page's own toggle*Bookmark() now uses (see
+      // quranrevival.html's own toggleAyahBookmark() for the full
+      // reasoning). This form has no "+ New folder…" option of its own
+      // (unlike bookmark-popover.js's), so there's no per-assignee folder
+      // to create -- an existing folder id only ever applies to
+      // selectedPersonId's own document, which nbUpdateForAssigneeCount()
+      // above already disables the moment a second assignee is ticked.
+      const assigneeIds = [...nbAssigneesContainer.querySelectorAll("input:checked")].map((c) => c.value);
+      const resolvedAssigneeIds = assigneeIds.length ? assigneeIds : [selectedPersonId];
+      const multi = resolvedAssigneeIds.length > 1;
+      const folderId = multi ? null : (nbFolderSelect.value || null);
+      const personTagId = multi ? null : (nbPersonTagSelect.value || null);
+      await Promise.all(resolvedAssigneeIds.map(async (pid) => {
+        const outcome = await safeWrite(
+          () => saveBookmark(db, {
+            tenantId: activeTenantId, personId: pid, moduleId: "quranrevival", subjectId: "quran",
+            name, position, settings, folderId, personTagId, uid: auth.currentUser.uid,
+          }),
+          { collection: TENANT.BOOKMARKS, action: "saveBookmark" }
+        );
+        // Only selectedPersonId's own document is the one this page holds
+        // in memory -- another assignee's own copy shows the next time
+        // they (or their guardian) load their own bookmarks.
+        if (outcome.ok && pid === selectedPersonId) {
+          bookmarksDoc = { ...bookmarksDoc, saved: [...(bookmarksDoc.saved ?? []), outcome.result] };
+        }
+      }));
       newBookmarkForm.style.display = "none";
       renderAll();
     });
