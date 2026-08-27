@@ -4182,11 +4182,27 @@
     explorePaletteQuranBtn.addEventListener("click", () => { setExplorePalette("quran"); renderExplore(); });
     explorePaletteQcrBtn.addEventListener("click", () => openQcrPalette());
 
+    /** Real bug, found from the owner's own report (27 Aug 2026): before the
+        owner deploys this round's own firestore.rules addition, reading
+        ayahCollections/{tenantId} throws permission-denied -- there is no
+        rule for it at all yet in production. An unhandled rejection here
+        left openQcrPalette() never reaching renderQcrList(), so the QCR
+        panel got stuck on "Loading…" forever, on every platform, exactly as
+        reported. Browsing was always meant to work off the seeded defaults
+        with no write (this file's own header), so any read failure -- a
+        still-undeployed rule, a dropped connection, anything -- now falls
+        back to the same defaults rather than stranding the screen. */
     async function ensureQcrDataLoaded() {
       if (qcrCollections && qcrCollectionsTenantId === activeTenantId) return;
-      const docData = await getQcrDoc(db, activeTenantId);
-      qcrDocExists = !!docData;
-      qcrCollections = collectionsFrom(docData);
+      try {
+        const docData = await getQcrDoc(db, activeTenantId);
+        qcrDocExists = !!docData;
+        qcrCollections = collectionsFrom(docData);
+      } catch (err) {
+        console.warn("Couldn't read this tenant's saved Qur'an collections yet (showing the built-in defaults instead):", err.message);
+        qcrDocExists = false;
+        qcrCollections = collectionsFrom(null);
+      }
       qcrCollectionsTenantId = activeTenantId;
       qcrCurrentId = null;
     }
