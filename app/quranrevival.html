@@ -597,7 +597,13 @@
     font-weight: 700; font-size: 0.78rem; padding: 0.4rem 0.3rem; cursor: pointer;
   }
   .explore-palette-btn.on { background: #1F3A6E; color: white; border-color: #1F3A6E; }
-  #qcrPanel[hidden] { display: none; }
+  /* .wheel-box (both panels' own class) sets display:flex unconditionally,
+     which beats the UA's own [hidden] { display: none } outright -- the
+     exact same trap this page has hit before on #wheelSection/#studyScreen
+     (see #stage > [hidden] above). Caught here by the smoke test actually
+     switching palettes rather than assumed away: without this rule,
+     toggling .hidden on these two elements changes nothing on screen. */
+  #explorePanel[hidden], #qcrPanel[hidden] { display: none; }
 
   .qcr-manage-bar { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin: 0 0 0.4rem; }
   .qcr-manage-toggle {
