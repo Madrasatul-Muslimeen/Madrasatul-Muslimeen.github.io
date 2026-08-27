@@ -259,6 +259,21 @@ export function renderNoteView({
   // covers a Range or a short surah), these three and the Collapse toggle
   // only make sense for a genuine single-āyah scope.
   canWbwRoot = false,
+  // Ayah Collections (QCR) round 2 -- the owner's own ask: a way back to
+  // whichever collection's list+wheel this āyah was opened from ("There
+  // should be a button on the note bar in note view, to come back to the
+  // list and the wheel view"), and a way to change which collection(s)
+  // this exact āyah belongs to, from ANY Note view regardless of how it
+  // was reached ("interconnection is very important" -- confirmed with the
+  // owner as every āyah everywhere, not only when arrived via a
+  // collection). backToCollectionLabel is null/omitted when this Note view
+  // wasn't reached via a collection -- the button is left out entirely
+  // rather than shown disabled, matching canUpdateBookmark's own "nothing
+  // to explain" rule. collectionsPopoverHtml is pre-built by the caller
+  // (quranrevival.html owns the list of collections and their names -- I2,
+  // this file never reads that data itself) and is always offered.
+  backToCollectionLabel = null,
+  collectionsPopoverHtml = "",
 }) {
   const copySharePopover = (kind, goAttr) => `
         <div class="note-sub-wrap" data-note-sub-wrap="${kind}">
@@ -291,11 +306,28 @@ export function renderNoteView({
            Qur'an note) -- the owner's own ask, so the two "more" menus read
            as a pair rather than one being pushed off to the far right. -->
       <div class="note-bar2">
+        <!-- Ayah Collections round 2 -- the way back to wherever this āyah's
+             Note view was opened FROM (a collection's own list+wheel), only
+             when that's how it was reached. First in the row, matching the
+             owner's own picture: the wheel/list view is "analyses and
+             organising", Note view is "work/edit tasks" -- this is the
+             bridge back. -->
+        ${backToCollectionLabel ? `<button type="button" class="note-icon-btn note-back-btn" data-note-back-to-collection title="${t("Back to {name}", { name: backToCollectionLabel })}">◂ ${t("List & wheel")}</button>` : ""}
         <span class="note-nav-cluster">${navHtml}</span>
         <button type="button" class="note-icon-btn" data-note-play title="${t("Play")}">▶</button>
         <button type="button" class="note-icon-btn${isBookmarked ? " active" : ""}" data-note-bookmark title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}">${isBookmarked ? "★" : "☆"}</button>
         <button type="button" class="note-icon-btn${isFullscreen ? " active" : ""}" data-note-fullscreen title="${t("Full screen")}" aria-pressed="${isFullscreen ? "true" : "false"}">⤢</button>
         ${copySharePopover("copy", "data-note-copy-go")}
+        <!-- Ayah Collections round 2 -- "the NOTE view should have a button
+             for moving/placing the Ayah to multiple level/category (as it
+             is in the wheel view)". Same expand-in-place popover shape as
+             Copy/Share, just holding checkboxes instead of a language
+             picker -- one per collection, pre-built by the caller (this
+             file never reads catalogue/collections data itself, I2). -->
+        <div class="note-sub-wrap" data-note-sub-wrap="collections">
+          <button type="button" class="note-icon-btn" data-note-sub-toggle="collections" title="${t("Collections")}">🗂</button>
+          <div class="note-sub-popover" data-note-sub="collections">${collectionsPopoverHtml}</div>
+        </div>
         <button type="button" class="note-icon-btn" data-note-palette-toggle title="${t("Notes formatting")}">Aa</button>
 
         <!-- ⋮ -- everything else that is a CHOICE about how to read/edit,
@@ -451,6 +483,8 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
  *   onOpenInReadView()        -- the "read it in the Read view" link, only present when the scope wasn't shown as text
  *   onPickerChange            -- delegated: the caller wires its own picker bar's <select> elements directly (they're pre-built HTML it owns), so this file never needs to know their ids
  *   onUpdateBookmark()        -- bookmark creation/update round; only wired to anything when canUpdateBookmark rendered the row at all
+ *   onBackToCollection()      -- Ayah Collections round 2; only wired to anything when backToCollectionLabel rendered the button at all
+ *   onToggleCollectionMembership(collectionId, checked)  -- Ayah Collections round 2; fires once per checkbox in the always-present Collections popover
  */
 export function attachNoteViewHandlers(container, callbacks) {
   const view = container.querySelector(".note-view");
@@ -596,6 +630,10 @@ export function attachNoteViewHandlers(container, callbacks) {
   view.querySelector("[data-note-derivatives-toggle]")?.addEventListener("click", () => { callbacks.onToggleDerivatives?.(); closeAllDotMenus(null); });
   view.querySelectorAll("[data-note-approach-select]").forEach((sel) => {
     sel.addEventListener("change", () => { callbacks.onApproachChange?.(sel.value); closeAllDotMenus(null); });
+  });
+  view.querySelector("[data-note-back-to-collection]")?.addEventListener("click", () => callbacks.onBackToCollection?.());
+  view.querySelectorAll("[data-note-collection-toggle]").forEach((cb) => {
+    cb.addEventListener("change", () => callbacks.onToggleCollectionMembership?.(cb.dataset.noteCollectionToggle, cb.checked));
   });
   view.querySelector("[data-note-play]")?.addEventListener("click", () => callbacks.onPlay?.());
   view.querySelector("[data-note-prev-unit]")?.addEventListener("click", () => callbacks.onPrevUnit?.());

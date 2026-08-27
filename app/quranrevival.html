@@ -584,51 +584,91 @@
   /* ---------- Explore (Phase 5) ---------- */
   #explorePanel { margin-top: 0; } /* border/background/padding come from .wheel-box (Phase 5 round 12); lives inside the Explore dock panel since shell round 7 */
 
-  /* ---------- Explore palette + QCR (Ayah Collections round) ----------
-     A "palette" the owner asked for: Explore's own Quran-structure wheel
-     stays exactly as it was (#explorePanel, untouched by this round) and
-     sits alongside a new sibling, #qcrPanel, for named cross-surah āyah
-     collections -- QCR first, more to come. Same visual language as the
-     Reading view / Listening settings opt-btn pills (Study options), not a
-     new idiom. */
-  .explore-palette-row { display: flex; gap: 0.4rem; margin-bottom: 0.55rem; }
+  /* ---------- Explore, the stage's 4th view (Ayah Collections round 2) ----------
+     The owner's own ask: "the Explore panel should increase to the entire
+     screen (instead of taking a portion of the screen)." Same shape as
+     #readView/#readBar/#readScroll -- #exploreBar stays put, #exploreScroll
+     is the only thing that scrolls. Two palette modes share it: the
+     existing Quran-structure wheel (#explorePanel, untouched inside) and
+     named cross-surah āyah collections (#qcrPanel). */
+  #exploreView { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  #exploreBar { flex: 0 0 auto; padding: 0.3rem 0 0.5rem; }
+  #exploreScroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+  .explore-palette-row { display: flex; gap: 0.4rem; }
   .explore-palette-btn {
     flex: 1 1 0; background: white; color: #1F3A6E; border: 1px solid #ddd; border-radius: 0.5rem;
     font-weight: 700; font-size: 0.78rem; padding: 0.4rem 0.3rem; cursor: pointer;
   }
   .explore-palette-btn.on { background: #1F3A6E; color: white; border-color: #1F3A6E; }
-  /* .wheel-box (both panels' own class) sets display:flex unconditionally,
+  /* .wheel-box (#explorePanel's own class) sets display:flex unconditionally,
      which beats the UA's own [hidden] { display: none } outright -- the
      exact same trap this page has hit before on #wheelSection/#studyScreen
-     (see #stage > [hidden] above). Caught here by the smoke test actually
-     switching palettes rather than assumed away: without this rule,
-     toggling .hidden on these two elements changes nothing on screen. */
+     (see #stage > [hidden] above). #qcrPanel isn't .wheel-box any more
+     (round 2 -- it's its own full-bleed layout, not a padded card) but gets
+     the same override on general principle: neither is a direct #stage
+     child, so the global #stage > [hidden] rule doesn't reach them. */
   #explorePanel[hidden], #qcrPanel[hidden] { display: none; }
+  #explorePanel { flex: 1 1 auto; min-height: 0; }
 
-  .qcr-manage-bar { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin: 0 0 0.4rem; }
-  .qcr-manage-toggle {
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(201,162,75,0.4); color: #cdd5e3;
-    border-radius: 999px; padding: 0.22rem 0.75rem; font-size: 0.7rem; font-weight: 700; cursor: pointer;
+  /* ---------- QCR (Ayah Collections), round 2's own reference-app shape:
+     a level switcher up top, and BELOW it, ALWAYS, the current collection's
+     own item list beside its wheel -- not a separate "list of collections"
+     screen to drill into (the owner's own "exactly as it is in the QCR
+     app": one screen, a level dropdown to change which collection it
+     shows). Dark navy/gold, matching the rest of this module -- the
+     reference app's own ivory theme was a request about LAYOUT PROPORTIONS,
+     not about switching this one screen to a different colour language than
+     the rest of Quran Study. */
+  #qcrPanel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; color: #F2E8D5; font-family: 'Inter', sans-serif; }
+  #qcrLevelBar {
+    flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+    padding: 0.6rem 0.7rem; background: #1B2A41; border-radius: 12px 12px 0 0;
+    border: 1px solid rgba(201,162,75,0.3); border-bottom: none;
   }
-  .qcr-manage-toggle.on { background: #C9A24B; color: #241a06; border-color: #C9A24B; }
-
-  .qcr-level-list { display: flex; flex-direction: column; gap: 6px; width: 100%; }
-  .qcr-level-row {
-    display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.03);
-    border: 1px solid transparent; border-radius: 9px; padding: 7px 10px; cursor: pointer;
+  #qcrLevelSelect {
+    flex: 1 1 auto; min-width: 0; font-size: 0.82rem; padding: 0.35rem 0.4rem; border-radius: 6px;
+    border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5;
   }
-  .qcr-level-row:hover { background: rgba(255,255,255,0.07); border-color: rgba(201,162,75,0.25); }
-  .qcr-level-row.archived { opacity: 0.5; }
-  .qcr-level-title { flex: 1; font-size: 13px; color: #dde3ee; min-width: 0; }
-  .qcr-level-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(201,162,75,0.22); color: #C9A24B; white-space: nowrap; }
-  .qcr-level-count { font-size: 11px; color: #8fa0c2; white-space: nowrap; }
-  .qcr-level-manage { display: flex; gap: 4px; flex-shrink: 0; }
+  #qcrLevelManageActions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
   .qcr-icon-btn {
     background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); color: #dde3ee;
-    border-radius: 6px; width: 24px; height: 24px; font-size: 11px; cursor: pointer; flex-shrink: 0;
+    border-radius: 6px; width: 26px; height: 26px; font-size: 12px; cursor: pointer; flex-shrink: 0;
   }
   .qcr-icon-btn:hover { border-color: #C9A24B; }
   .qcr-icon-btn.danger:hover { border-color: #d97a63; color: #ffb9a6; }
+  .qcr-archived-toggle { font-size: 11.5px; color: #9aa7be; display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
+  .qcr-manage-toggle {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(201,162,75,0.4); color: #cdd5e3;
+    border-radius: 999px; padding: 0.28rem 0.85rem; font-size: 0.72rem; font-weight: 700; cursor: pointer; flex-shrink: 0;
+  }
+  .qcr-manage-toggle.on { background: #C9A24B; color: #241a06; border-color: #C9A24B; }
+
+  /* Mobile/tablet: wheel first (this app's own convention for a stacked
+     wheel+list -- Approach and the Quran-structure Explore wheel both put
+     the wheel before the list), item list below it, scrollable. Desktop
+     (≥900px, the reference app's own breakpoint): list LEFT, wheel RIGHT,
+     side by side, matching the owner's own screenshot -- achieved with zero
+     `order` tricks, since list-then-wheel is already the DOM/reading order;
+     flex-direction:column-reverse is what flips it to wheel-first below. */
+  #qcrMain {
+    flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column-reverse; gap: 0;
+    background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%);
+    border: 1px solid rgba(201,162,75,0.3); border-radius: 0 0 12px 12px; overflow: hidden;
+  }
+  #qcrListPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.9rem; }
+  #qcrWheelPane {
+    flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 0.7rem;
+    padding: 1.1rem 0.9rem; border-top: 1px solid rgba(201,162,75,0.2);
+  }
+  @media (min-width: 900px) {
+    #qcrMain { flex-direction: row; }
+    #qcrListPane { flex: 0 0 44%; max-width: 44%; border-right: 1px solid rgba(201,162,75,0.2); }
+    #qcrWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; }
+  }
+  #qcrListHeader { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+  #qcrListHeader .qcr-list-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: #C9A24B; font-size: 1.1rem; }
+  #qcrListHeader .qcr-list-count { font-size: 0.78rem; color: #8fa0c2; }
+  #qcrListHeader .qcr-level-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(201,162,75,0.22); color: #C9A24B; white-space: nowrap; }
 
   .way-row.qcr-way-row { flex-wrap: wrap; align-items: flex-start; cursor: default; }
   .way-row .way-click { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; cursor: pointer; background: none; border: none; padding: 0; text-align: left; font-family: inherit; }
@@ -636,15 +676,10 @@
   .qcr-way-manage { flex-basis: 100%; display: flex; gap: 6px; align-items: center; margin: 6px 0 0 32px; }
   .qcr-way-manage select { font-size: 11px; padding: 2px 4px; border-radius: 5px; border: 1px solid #ddd; max-width: 9rem; }
 
-  .qcr-add-form { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-top: 0.5rem; width: 100%; }
+  .qcr-add-form { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-top: 0.7rem; width: 100%; }
   .qcr-add-form select, .qcr-add-form input[type="number"] { font-size: 12px; padding: 4px 6px; border-radius: 6px; border: 1px solid #ddd; }
   .qcr-add-form input[type="number"] { width: 4rem; }
   .qcr-add-form button { font-size: 12px; padding: 4px 10px; }
-  .qcr-add-collection-btn {
-    width: 100%; background: none; border: 1px dashed rgba(201,162,75,0.5); color: #C9A24B;
-    border-radius: 9px; padding: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; margin-top: 4px;
-  }
-  .qcr-archived-toggle { font-size: 11.5px; color: #9aa7be; display: flex; align-items: center; gap: 5px; cursor: pointer; }
 
   /* ---------- Reading screen (shell round 17) ----------
      #readView is the stage's second occupant. It fills whatever the header
@@ -1136,6 +1171,17 @@
   .quick-menu .note-sub-wrap > [data-note-sub-toggle] { width: 100%; text-align: left; background: none; border: none; color: #222; padding: 0.42rem 0.5rem; font-size: 0.8rem; }
   .quick-menu .note-sub-wrap > [data-note-sub-toggle]:hover { background: #f5f0e2; }
 
+  /* Ayah Collections round 2 -- the way back to a collection's own list+wheel
+     (a text button, not an icon-only one, so it needs room rather than the
+     square .note-icon-btn footprint), and the 🗂 popover's own two bodies:
+     owner/prime get the same checkbox-row look .note-sub-popover label
+     already gives Copy/Share's language rows; everyone else gets a plain
+     read-only list of whichever collections this āyah is already in. */
+  .note-back-btn { white-space: nowrap; font-size: 0.78rem; }
+  .note-collections-empty { margin: 0; font-size: 0.75rem; color: #888; }
+  .note-collections-readonly { margin: 0; padding-left: 1.1rem; font-size: 0.78rem; color: #444; }
+  .note-collections-readonly li { padding: 0.1rem 0; }
+
   .note-approach-wrap { flex: 1 1 auto; min-width: 8rem; }
   .note-approach-select {
     width: 100%; background: #fff; border: 1px solid #ddd; border-radius: 0.35rem;
@@ -1459,6 +1505,60 @@
            × button -- settled with the owner: the same navigation model as
            the rest of the screen, not a second one just for this feature). -->
       <div id="noteView" hidden></div>
+
+      <!-- Ayah Collections round 2 -- Explore, the stage's fourth view. Two
+           palette modes share it: the existing Quran-structure drill-down
+           (#explorePanel, untouched inside) and named cross-surah āyah
+           collections (#qcrPanel -- QCR first, more to come). #exploreBar
+           stays put; #exploreScroll is the only thing that scrolls, same
+           shape as #readView/#readBar/#readScroll above. -->
+      <div id="exploreView" hidden>
+        <div id="exploreBar">
+          <div class="explore-palette-row">
+            <button type="button" class="explore-palette-btn on" id="explorePaletteQuranBtn" data-explore-mode="quran" aria-pressed="true">Quran</button>
+            <button type="button" class="explore-palette-btn" id="explorePaletteQcrBtn" data-explore-mode="qcr" aria-pressed="false">QCR</button>
+          </div>
+        </div>
+        <div id="exploreScroll">
+          <div id="explorePanel" class="wheel-box">
+            <div class="wheel-col">
+              <div id="exploreBreadcrumb"></div>
+              <div id="exploreWheelContainer">Loading&hellip;</div>
+              <div id="exploreWheelLegendContainer"></div>
+              <p class="hint">Click a segment to drill in &mdash; Quran &rarr; Juz &rarr; Surah &rarr; Ruku' &rarr; an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment &mdash; it only turns fully green once every ayah inside it is Mastered.</p>
+            </div>
+            <div id="exploreSidebarContainer" class="wheel-sidebar"></div>
+          </div>
+          <!-- QCR round 2: the reference app's own shape -- a level switcher
+               up top, and BELOW it, always, the current collection's own
+               item list (left on a wide screen) beside its wheel (right) --
+               not a separate "list of collections" screen to drill into. -->
+          <div id="qcrPanel" hidden>
+            <div id="qcrLevelBar">
+              <select id="qcrLevelSelect" aria-label="Collection"></select>
+              <span id="qcrLevelManageActions" hidden>
+                <button type="button" class="qcr-icon-btn" id="qcrRenameLevelBtn" title="Rename">✎</button>
+                <button type="button" class="qcr-icon-btn danger" id="qcrArchiveLevelBtn" title="Archive">🗄</button>
+                <button type="button" class="qcr-icon-btn" id="qcrAddLevelBtn" title="Add collection">+</button>
+                <label class="qcr-archived-toggle"><input type="checkbox" id="qcrShowArchivedToggle"> Show archived</label>
+              </span>
+              <button type="button" class="qcr-manage-toggle" id="qcrManageToggleBtn">Manage</button>
+            </div>
+            <div id="qcrMain">
+              <div id="qcrListPane">
+                <div id="qcrListHeader"></div>
+                <div id="qcrWaysListContainer" class="ways-list"></div>
+                <div id="qcrAddFormSlot"></div>
+              </div>
+              <div id="qcrWheelPane">
+                <div id="qcrWheelContainer"></div>
+                <div id="qcrLegendContainer"></div>
+                <p class="hint" id="qcrHint"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- The dock: two tabs on one line (they fit a phone), then the always-on
@@ -1724,33 +1824,6 @@
         </div><!-- /.study-options-body -->
       </div><!-- /#panelStudyOptions -->
 
-      <div id="panelExplore" class="qr-panel" hidden>
-        <div class="qr-panel-head">Explore <button type="button" class="qr-panel-x" data-close-panel aria-label="Close">&times;</button></div>
-        <!-- Ayah Collections round: a palette above the existing Quran wheel,
-             for named cross-surah āyah collections (QCR first). Explore's
-             own Quran drill-down (#explorePanel below) is untouched by this
-             round; #qcrPanel is a new sibling shown/hidden alongside it. -->
-        <div class="explore-palette-row">
-          <button type="button" class="explore-palette-btn on" id="explorePaletteQuranBtn" data-explore-mode="quran" aria-pressed="true">Quran</button>
-          <button type="button" class="explore-palette-btn" id="explorePaletteQcrBtn" data-explore-mode="qcr" aria-pressed="false">QCR</button>
-        </div>
-        <div id="explorePanel" class="wheel-box">
-          <div class="wheel-col">
-            <div id="exploreBreadcrumb"></div>
-            <div id="exploreWheelContainer">Loading&hellip;</div>
-            <div id="exploreWheelLegendContainer"></div>
-            <p class="hint">Click a segment to drill in &mdash; Quran &rarr; Juz &rarr; Surah &rarr; Ruku' &rarr; an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment &mdash; it only turns fully green once every ayah inside it is Mastered.</p>
-          </div>
-          <div id="exploreSidebarContainer" class="wheel-sidebar"></div>
-        </div>
-        <div id="qcrPanel" class="wheel-box" hidden>
-          <div class="wheel-col">
-            <div id="qcrBreadcrumb"></div>
-            <div id="qcrBody">Loading&hellip;</div>
-          </div>
-        </div>
-      </div>
-
       <div id="tabRow">
         <!-- Enhancement round -- five tabs, one line, per the owner's own
              brief. "Options" is only a shorter label for this same tab
@@ -1774,7 +1847,12 @@
              slice or a list row still hands off to Note, exactly as today
              (jumpToApproach() -> openNoteView()). -->
         <button type="button" class="qr-tab qr-tab-view" id="tabApproachBtn" aria-controls="wheelSection" aria-pressed="true">Approach</button>
-        <button type="button" class="qr-tab" id="tabExploreBtn" data-panel="panelExplore" aria-controls="panelExplore" aria-expanded="false">Explore</button>
+        <!-- Ayah Collections round 2 -- Explore stops being a small drawer
+             (the owner's own ask: "the Explore panel should increase to the
+             entire screen") and becomes a fourth full-#stage view, exactly
+             the same "tap the open tab to close it" idiom Read/Note/Approach
+             already use. -->
+        <button type="button" class="qr-tab qr-tab-view" id="tabExploreBtn" aria-controls="exploreView" aria-pressed="false">Explore</button>
       </div>
       <div id="unitLabel"></div>
     </div><!-- /#dock -->
@@ -2089,12 +2167,25 @@
     const exploreWheelContainer = document.getElementById("exploreWheelContainer");
     const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
     const exploreSidebarContainer = document.getElementById("exploreSidebarContainer");
+    const tabExploreBtn = document.getElementById("tabExploreBtn");
+    const exploreView = document.getElementById("exploreView");
     const explorePaletteQuranBtn = document.getElementById("explorePaletteQuranBtn");
     const explorePaletteQcrBtn = document.getElementById("explorePaletteQcrBtn");
     const explorePanelEl = document.getElementById("explorePanel");
     const qcrPanelEl = document.getElementById("qcrPanel");
-    const qcrBreadcrumbEl = document.getElementById("qcrBreadcrumb");
-    const qcrBodyEl = document.getElementById("qcrBody");
+    const qcrLevelSelect = document.getElementById("qcrLevelSelect");
+    const qcrLevelManageActions = document.getElementById("qcrLevelManageActions");
+    const qcrRenameLevelBtn = document.getElementById("qcrRenameLevelBtn");
+    const qcrArchiveLevelBtn = document.getElementById("qcrArchiveLevelBtn");
+    const qcrAddLevelBtn = document.getElementById("qcrAddLevelBtn");
+    const qcrShowArchivedToggle = document.getElementById("qcrShowArchivedToggle");
+    const qcrManageToggleBtn = document.getElementById("qcrManageToggleBtn");
+    const qcrListHeaderEl = document.getElementById("qcrListHeader");
+    const qcrWaysListContainer = document.getElementById("qcrWaysListContainer");
+    const qcrAddFormSlot = document.getElementById("qcrAddFormSlot");
+    const qcrWheelContainerEl = document.getElementById("qcrWheelContainer");
+    const qcrLegendContainerEl = document.getElementById("qcrLegendContainer");
+    const qcrHintEl = document.getElementById("qcrHint");
 
     const taglineStripEl = document.getElementById("taglineStrip");
     const globalBannerEl = document.getElementById("globalBanner");
@@ -2139,6 +2230,13 @@
     let noteWbwOn = false; // bar 2's Word-by-word toggle (round 31) -- a reading preference that persists across Prev/Next within the Note view, not reset per āyah
     let noteRootsOn = false; // bar 2's Root toggle (enhancement round) -- same "persists across Prev/Next, not reset per āyah" shape as noteWbwOn
     let noteDerivativesOn = false; // bar 2's own separate Derivatives toggle -- Root and Derivatives used to be one "Roots & derivatives" toggle; split for the same "appeared together, merged" reason Word by Word/Root were split in round 27
+    // QCR round: which collection the reader tapped an āyah FROM, so the
+    // Note view's "◂ List & wheel" button knows where "back" means -- null
+    // when Note view was reached any other way (Read screen, a bookmark, a
+    // direct wheel-slice tap), in which case the button doesn't render at
+    // all. Set only by goToAyahFromQcr(); cleared implicitly the next time
+    // openNoteView() is called without a fromCollectionId.
+    let noteOriginCollectionId = null;
     // Bookmark creation/update round -- which of selectedPersonId's OWN
     // saved[] entries (if any) was opened this session, so the Note view's
     // ⋯ menu can offer "Update bookmark": save whatever's now being studied
@@ -2235,7 +2333,7 @@
     let exploreMode = "quran"; // "quran" | "qcr"
     let qcrCollections = null; // null until ensureQcrDataLoaded() runs once
     let qcrDocExists = false; // whether ayahCollections/{tenantId} already exists -- decides create vs update on the next save
-    let qcrCurrentId = null; // which collection's own wheel is open, or null = the list of collections
+    let qcrCurrentId = null; // which collection the level bar currently has selected (round 2's own single-screen shape -- always set once data loads, never "the list of collections" any more)
     let qcrManageOn = false;
     let qcrShowArchived = false;
     let qcrSurahDataByNum = new Map(); // surahNum -> getSurah() result, for whichever collection is currently open (its own distinct surahs only, not the whole Quran)
@@ -3613,11 +3711,13 @@
     // exempts About/resources/screensaver.
     // -----------------------------------------------------------------------
 
-    /** Shell round 7: the dock's two tabs. One panel open at a time -- tapping
-        the open tab closes it, tapping the other swaps. Explore still loads
-        nothing until it is actually opened (the on-first-use exemption above);
-        opening it resets the drill-down to the whole-Quran level exactly as
-        the old toggle button did. */
+    /** Shell round 7: the dock's drawer tabs (data-panel="panelX", sliding up
+        from the dock -- Study options is the only one left since Read/Note/
+        Approach/Explore all became real #stage views of their own, most
+        recently Explore in round 2). One drawer open at a time -- tapping the
+        open tab closes it, tapping another swaps. Also called by every
+        #stage-view tab's own click handler (Read/Note/Approach/Explore) so
+        switching to a real view always closes any open drawer first. */
     function closeAllPanels() {
       dockTabs.forEach((tab) => {
         tab.setAttribute("aria-expanded", "false");
@@ -3647,7 +3747,6 @@
         // Study options holds the reciters, so opening it is another real
         // gesture that may precede Play -- warm the timing map here too.
         if (tab.dataset.panel === "panelStudyOptions") warmSegmentedTimestamps();
-        if (tab.dataset.panel === "panelExplore") await openExplore();
       });
     });
 
@@ -3673,14 +3772,17 @@
       stageView = view;
       const reading = view === "read";
       const noting = view === "note";
+      const exploring = view === "explore";
       const onWheel = view === "wheel";
       wheelHeadingEl.hidden = !onWheel;
       wheelSectionEl.hidden = !onWheel;
       readView.hidden = !reading;
       noteView.hidden = !noting;
+      exploreView.hidden = !exploring;
       tabReadBtn.setAttribute("aria-pressed", reading ? "true" : "false");
       tabNoteBtn.setAttribute("aria-pressed", noting ? "true" : "false");
       tabApproachBtn.setAttribute("aria-pressed", onWheel ? "true" : "false");
+      tabExploreBtn.setAttribute("aria-pressed", exploring ? "true" : "false");
       // The READING screen's own full screen (immersive-read) is unrelated
       // to the Note view's own (note-immersive, toggleNoteFullscreen()) --
       // clear whichever one this new view doesn't own, so neither can leak
@@ -3857,6 +3959,19 @@
       closeAllPanels();
       setStageView("wheel");
       renderWheel(); // lay the hub out for real -- see the comment on tabReadBtn's own close branch
+    });
+
+    // Ayah Collections round 2 -- Explore as a real #stage view, same
+    // "tap the open tab to close it" idiom as Read/Note/Approach, replacing
+    // the small drawer it used to slide up as (the owner's own ask: "the
+    // Explore panel should increase to the entire screen"). Opening it always
+    // resets the Quran drill-down to the whole-Quran level, exactly as
+    // openExplore() already did when it was a drawer.
+    tabExploreBtn.addEventListener("click", async () => {
+      if (stageView === "explore") { setStageView("wheel"); renderWheel(); return; }
+      closeAllPanels();
+      setStageView("explore");
+      await openExplore();
     });
 
     hideChromeBtn.addEventListener("click", advanceReadChrome);
@@ -4182,11 +4297,31 @@
     explorePaletteQuranBtn.addEventListener("click", () => { setExplorePalette("quran"); renderExplore(); });
     explorePaletteQcrBtn.addEventListener("click", () => openQcrPalette());
 
+    // Round 2: the level bar's own controls are static markup now (a real
+    // <select>, not dynamically-built rows), so each is wired ONCE here
+    // rather than re-queried and re-attached on every render.
+    qcrLevelSelect.addEventListener("change", async () => {
+      qcrCurrentId = qcrLevelSelect.value || null;
+      await renderQcrPanel();
+    });
+    qcrManageToggleBtn.addEventListener("click", async () => {
+      qcrManageOn = !qcrManageOn;
+      await renderQcrPanel();
+    });
+    qcrShowArchivedToggle.addEventListener("change", () => {
+      qcrShowArchived = qcrShowArchivedToggle.checked;
+      renderQcrLevelBar();
+      renderQcrCollectionView();
+    });
+    qcrRenameLevelBtn.addEventListener("click", () => { if (qcrCurrentId) qcrRenameCollectionPrompt(qcrCurrentId); });
+    qcrArchiveLevelBtn.addEventListener("click", () => { if (qcrCurrentId) qcrToggleArchiveCollection(qcrCurrentId); });
+    qcrAddLevelBtn.addEventListener("click", () => qcrAddCollectionPrompt());
+
     /** Real bug, found from the owner's own report (27 Aug 2026): before the
         owner deploys this round's own firestore.rules addition, reading
         ayahCollections/{tenantId} throws permission-denied -- there is no
         rule for it at all yet in production. An unhandled rejection here
-        left openQcrPalette() never reaching renderQcrList(), so the QCR
+        left openQcrPalette() never reaching its own render step, so the QCR
         panel got stuck on "Loading…" forever, on every platform, exactly as
         reported. Browsing was always meant to work off the seeded defaults
         with no write (this file's own header), so any read failure -- a
@@ -4207,12 +4342,22 @@
       qcrCurrentId = null;
     }
 
+    /** Round 2's own reference-app shape: one screen, not a drill-down --
+        the first active collection (or whichever the reader already had
+        open, if still valid) shows immediately, and the level select is
+        what changes which one. */
+    function qcrDefaultCollectionId() {
+      return activeCollections(qcrCollections)[0]?.id ?? qcrCollections[0]?.id ?? null;
+    }
+
     async function openQcrPalette() {
       setExplorePalette("qcr");
-      qcrCurrentId = null;
-      qcrBodyEl.innerHTML = t("Loading…");
+      qcrWaysListContainer.innerHTML = t("Loading…");
       await ensureQcrDataLoaded();
-      renderQcrList();
+      if (!qcrCurrentId || !qcrCollections.some((c) => c.id === qcrCurrentId)) {
+        qcrCurrentId = qcrDefaultCollectionId();
+      }
+      await renderQcrPanel();
     }
 
     /** Every manage action writes the whole array back immediately (no
@@ -4230,55 +4375,61 @@
       return res.ok;
     }
 
-    function renderQcrManageBarHtml() {
-      if (!canAdminCatalogueClientSide()) return "";
-      return `<div class="qcr-manage-bar"><button type="button" class="qcr-manage-toggle${qcrManageOn ? " on" : ""}" id="qcrManageToggleBtn">${escapeHtml(t("Manage"))}</button></div>`;
+    /** The level bar: which collection is showing (a plain <select>, not a
+        custom dropdown -- simpler, native, and just as reachable on a
+        phone), and -- owner/prime, Manage on -- rename/archive/add-a-
+        collection for whichever one is currently selected. */
+    function renderQcrLevelBar() {
+      const visible = qcrShowArchived ? [...qcrCollections].sort((a, b) => a.order - b.order) : activeCollections(qcrCollections);
+      qcrLevelSelect.innerHTML = visible.length
+        ? visible.map((c) => {
+            const label = langText(c.title, getAppLang()) + (c.status === "archived" ? ` (${t("Archived")})` : "");
+            return `<option value="${c.id}"${c.id === qcrCurrentId ? " selected" : ""}>${escapeHtml(label)}</option>`;
+          }).join("")
+        : `<option value="">${escapeHtml(t("No collections yet."))}</option>`;
+
+      const canManage = canAdminCatalogueClientSide();
+      qcrManageToggleBtn.hidden = !canManage;
+      qcrManageToggleBtn.classList.toggle("on", qcrManageOn);
+      const showManageActions = canManage && qcrManageOn;
+      qcrLevelManageActions.hidden = !showManageActions;
+      if (showManageActions) {
+        const col = qcrCollections.find((c) => c.id === qcrCurrentId);
+        const archived = col?.status === "archived";
+        qcrArchiveLevelBtn.textContent = archived ? "↺" : "🗄";
+        qcrArchiveLevelBtn.title = archived ? t("Restore") : t("Archive");
+        qcrArchiveLevelBtn.setAttribute("aria-label", qcrArchiveLevelBtn.title);
+        qcrArchiveLevelBtn.classList.toggle("danger", !archived);
+        qcrArchiveLevelBtn.disabled = !col;
+        qcrRenameLevelBtn.disabled = !col;
+        qcrShowArchivedToggle.checked = qcrShowArchived;
+      }
     }
 
-    function renderQcrList() {
-      qcrBreadcrumbEl.innerHTML = `<span class="explore-crumb active">${escapeHtml(t("QCR"))}</span>`;
-      const visible = qcrShowArchived ? [...qcrCollections].sort((a, b) => a.order - b.order) : activeCollections(qcrCollections);
-      const rows = visible
-        .map((col) => {
-          const title = escapeHtml(langText(col.title, getAppLang()));
-          const manage = qcrManageOn
-            ? `<span class="qcr-level-manage">
-                <button type="button" class="qcr-icon-btn" data-qcr-rename="${col.id}" title="${escapeHtml(t("Rename"))}">✎</button>
-                <button type="button" class="qcr-icon-btn${col.status === "archived" ? "" : " danger"}" data-qcr-archive="${col.id}" title="${escapeHtml(col.status === "archived" ? t("Restore") : t("Archive"))}">${col.status === "archived" ? "↺" : "🗄"}</button>
-              </span>`
-            : "";
-          return `<div class="qcr-level-row${col.status === "archived" ? " archived" : ""}" data-qcr-open="${col.id}">
-            <span class="qcr-level-title">${title}${col.status === "archived" ? ` (${escapeHtml(t("Archived"))})` : ""}</span>
-            <span class="qcr-level-count">${t("{count} āyāt", { count: num(col.items.length) })}</span>
-            ${col.badge ? `<span class="qcr-level-badge">${escapeHtml(col.badge)}</span>` : ""}
-            ${manage}
-          </div>`;
-        })
-        .join("") || `<p class="hint">${escapeHtml(t("No collections yet."))}</p>`;
-
-      const manageExtras = qcrManageOn
-        ? `<label class="qcr-archived-toggle"><input type="checkbox" id="qcrShowArchivedToggle" ${qcrShowArchived ? "checked" : ""}> ${escapeHtml(t("Show archived"))}</label>
-           <button type="button" class="qcr-add-collection-btn" id="qcrAddCollectionBtn">${escapeHtml(t("+ Add collection"))}</button>`
-        : "";
-
-      qcrBodyEl.innerHTML = `${renderQcrManageBarHtml()}<div class="qcr-level-list">${rows}</div>${manageExtras}
-        <p class="hint">${escapeHtml(t("Named collections of āyāt pulled from across the whole Qur'an — pick one to see it as a wheel."))}</p>`;
-
-      qcrBodyEl.querySelectorAll("[data-qcr-open]").forEach((el) => {
-        el.addEventListener("click", (e) => {
-          if (e.target.closest("[data-qcr-rename],[data-qcr-archive]")) return;
-          showQcrCollection(el.dataset.qcrOpen);
-        });
-      });
-      qcrBodyEl.querySelectorAll("[data-qcr-rename]").forEach((btn) => {
-        btn.addEventListener("click", (e) => { e.stopPropagation(); qcrRenameCollectionPrompt(btn.dataset.qcrRename); });
-      });
-      qcrBodyEl.querySelectorAll("[data-qcr-archive]").forEach((btn) => {
-        btn.addEventListener("click", (e) => { e.stopPropagation(); qcrToggleArchiveCollection(btn.dataset.qcrArchive); });
-      });
-      document.getElementById("qcrManageToggleBtn")?.addEventListener("click", () => { qcrManageOn = !qcrManageOn; renderQcrList(); });
-      document.getElementById("qcrShowArchivedToggle")?.addEventListener("change", (e) => { qcrShowArchived = e.target.checked; renderQcrList(); });
-      document.getElementById("qcrAddCollectionBtn")?.addEventListener("click", () => qcrAddCollectionPrompt());
+    /** Renders everything below the level bar for whichever collection is
+        current -- fetches only the DISTINCT surahs its own items touch
+        (see this block's own header on that cost), then hands off to
+        renderQcrCollectionView() for the actual list+wheel markup. */
+    async function renderQcrPanel() {
+      renderQcrLevelBar();
+      const col = qcrCollections.find((c) => c.id === qcrCurrentId);
+      if (!col) {
+        qcrListHeaderEl.innerHTML = "";
+        qcrWaysListContainer.innerHTML = `<p class="hint">${escapeHtml(t("No collections yet."))}</p>`;
+        qcrAddFormSlot.innerHTML = "";
+        qcrWheelContainerEl.innerHTML = "";
+        qcrLegendContainerEl.innerHTML = "";
+        qcrHintEl.textContent = "";
+        return;
+      }
+      const surahNums = [...new Set(
+        col.items.map((uk) => Number(parseUnitKey(uk).parts[0])).filter((n) => Number.isFinite(n))
+      )];
+      const results = await Promise.all(surahNums.map(async (n) => {
+        try { return [n, await getSurah(n)]; } catch { return [n, null]; }
+      }));
+      qcrSurahDataByNum = new Map(results);
+      renderQcrCollectionView();
     }
 
     async function qcrRenameCollectionPrompt(id) {
@@ -4289,8 +4440,9 @@
       if (!typed || !typed.trim() || typed.trim() === current) return;
       const prev = qcrCollections;
       qcrCollections = renameCollection(qcrCollections, id, setLangText(col.title, getAppLang(), typed.trim()));
-      renderQcrList();
-      if (!(await qcrPersist())) { qcrCollections = prev; renderQcrList(); }
+      renderQcrLevelBar();
+      renderQcrCollectionView();
+      if (!(await qcrPersist())) { qcrCollections = prev; renderQcrLevelBar(); renderQcrCollectionView(); }
     }
 
     async function qcrToggleArchiveCollection(id) {
@@ -4300,35 +4452,22 @@
       const willArchive = col.status !== "archived";
       if (!confirm(willArchive ? t('Archive "{name}"?', { name }) : t('Restore "{name}"?', { name }))) return;
       const prev = qcrCollections;
+      const prevCurrentId = qcrCurrentId;
       qcrCollections = setCollectionStatus(qcrCollections, id, willArchive ? "archived" : "active");
-      renderQcrList();
-      if (!(await qcrPersist())) { qcrCollections = prev; renderQcrList(); }
+      if (willArchive && !qcrShowArchived && qcrCurrentId === id) qcrCurrentId = qcrDefaultCollectionId();
+      await renderQcrPanel();
+      if (!(await qcrPersist())) { qcrCollections = prev; qcrCurrentId = prevCurrentId; await renderQcrPanel(); }
     }
 
     async function qcrAddCollectionPrompt() {
       const typed = prompt(t("New collection name:"));
       if (!typed || !typed.trim()) return;
       const prev = qcrCollections;
+      const prevCurrentId = qcrCurrentId;
       qcrCollections = addCollection(qcrCollections, { title: { [getAppLang()]: typed.trim() }, badge: "", status: "active" });
-      renderQcrList();
-      if (!(await qcrPersist())) { qcrCollections = prev; renderQcrList(); }
-    }
-
-    /** Opens one collection's own wheel -- fetches only the DISTINCT surahs
-        its own items touch (see this block's own header on that cost). */
-    async function showQcrCollection(id) {
-      qcrCurrentId = id;
-      const col = qcrCollections.find((c) => c.id === id);
-      if (!col) { qcrCurrentId = null; renderQcrList(); return; }
-      qcrBodyEl.innerHTML = t("Loading…");
-      const surahNums = [...new Set(
-        col.items.map((uk) => Number(parseUnitKey(uk).parts[0])).filter((n) => Number.isFinite(n))
-      )];
-      const results = await Promise.all(surahNums.map(async (n) => {
-        try { return [n, await getSurah(n)]; } catch { return [n, null]; }
-      }));
-      qcrSurahDataByNum = new Map(results);
-      renderQcrCollectionView();
+      qcrCurrentId = qcrCollections[qcrCollections.length - 1].id; // the one just added
+      await renderQcrPanel();
+      if (!(await qcrPersist())) { qcrCollections = prev; qcrCurrentId = prevCurrentId; await renderQcrPanel(); }
     }
 
     /** A unit key's own reference label, surah name and (if that surah's
@@ -4376,12 +4515,61 @@
       return entries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started";
     }
 
+    /** Every ACTIVE collection that already lists this unit key -- the Note
+        view's own "🗂 Collections" popover reads this to show which boxes
+        start ticked. Archived collections are left out of the list (there's
+        nothing useful to tag INTO an archived collection from here), but if
+        one somehow still carries the key it stays counted so the popover
+        never silently under-reports real membership. */
+    function qcrCollectionsContainingUnitKey(unitKey) {
+      return (qcrCollections ?? []).filter((c) => c.items.includes(unitKey));
+    }
+
+    /** The Note view's own "🗂 Collections" popover body. Editing a
+        collection's OWN name/status is owner/prime-only in the wheel view
+        (qcrManageOn, gated by canAdminCatalogueClientSide()) -- membership
+        tagging from the Note view follows the same split: owner/prime get
+        a ticked/unticked checkbox per active collection, wired generically
+        by ayah-note-renderer.js's own [data-note-collection-toggle] handler
+        (26 Aug 2026, the owner's own "the NOTE view should have a button for
+        moving/placing the Ayah to multiple level/category, as it is in the
+        wheel view"); everyone else gets a plain, read-only list of whichever
+        collections this āyah is ALREADY in -- still useful ("where does this
+        fit"), never an editing surface past what the wheel view itself
+        allows them. Confirmed with the owner: every āyah everywhere, not
+        only when reached via a collection. */
+    function renderQcrMembershipPopoverHtml(unitKey) {
+      if (!canAdminCatalogueClientSide()) {
+        const memberOf = qcrCollectionsContainingUnitKey(unitKey);
+        if (!memberOf.length) {
+          return `<p class="note-collections-empty">${escapeHtml(t("Not in any collection yet."))}</p>`;
+        }
+        return `<ul class="note-collections-readonly">${memberOf
+          .map((c) => `<li>${escapeHtml(langText(c.title, getAppLang()))}</li>`)
+          .join("")}</ul>`;
+      }
+      const collections = activeCollections(qcrCollections ?? []);
+      if (!collections.length) {
+        return `<p class="note-collections-empty">${escapeHtml(t("No collections yet."))}</p>`;
+      }
+      return collections
+        .map((c) => {
+          const checked = c.items.includes(unitKey);
+          return `<label class="note-collection-row">
+            <input type="checkbox" data-note-collection-toggle="${escapeHtml(c.id)}" ${checked ? "checked" : ""}>
+            <span>${escapeHtml(langText(c.title, getAppLang()))}</span>
+          </label>`;
+        })
+        .join("");
+    }
+
+    /** Round 2's own single-screen shape: the list pane (left on a wide
+        screen) and the wheel pane (right) for whichever collection the
+        level bar currently has selected -- rendered together, since
+        they're two views of the exact same items. */
     function renderQcrCollectionView() {
       const col = qcrCollections.find((c) => c.id === qcrCurrentId);
-      if (!col) { qcrCurrentId = null; renderQcrList(); return; }
-      const title = escapeHtml(langText(col.title, getAppLang()));
-      qcrBreadcrumbEl.innerHTML = `<button type="button" class="explore-crumb" data-qcr-crumb-list>${escapeHtml(t("QCR"))}</button><span class="explore-crumb-sep">›</span><span class="explore-crumb active">${title}</span>`;
-      qcrBreadcrumbEl.querySelector("[data-qcr-crumb-list]").addEventListener("click", () => { qcrCurrentId = null; renderQcrList(); });
+      if (!col) return;
 
       const trackable = currentTrackable();
       const approachName = trackable ? langText(trackable.name, getAppLang(), trackable.id) : "";
@@ -4390,31 +4578,16 @@
         const statusId = qcrItemStatus(unitKey);
         return { key: unitKey, number: disp.refLabel, statusId, title: `${disp.refLabel} — ${disp.surahName}`, ...disp };
       });
-
-      const wheelHtml = renderScopedWheel(items, {
-        centerLabel: langText(col.title, getAppLang()),
-        centerSub: approachName || col.badge || "",
-      });
       const labelsById = statusLabelsById();
 
-      qcrBodyEl.innerHTML = `
-        ${renderQcrManageBarHtml()}
-        <div id="qcrWheelContainer">${wheelHtml}</div>
-        <div id="qcrLegendContainer">${renderWheelLegend(labelsById)}</div>
-        <p class="hint">${escapeHtml(t("Tap a segment or a row to open that āyah — the wheel closes and lands you on QuranRevival's own reading/note screen."))}</p>
-        <div id="qcrWaysListContainer" class="wheel-sidebar"></div>
+      qcrListHeaderEl.innerHTML = `
+        <span class="qcr-list-title">${escapeHtml(langText(col.title, getAppLang()))}</span>
+        <span class="qcr-list-count">${escapeHtml(t("{count} āyāt", { count: num(items.length) }))}</span>
+        ${col.badge ? `<span class="qcr-level-badge">${escapeHtml(col.badge)}</span>` : ""}
       `;
 
-      document.getElementById("qcrManageToggleBtn")?.addEventListener("click", () => { qcrManageOn = !qcrManageOn; renderQcrCollectionView(); });
-      attachScopedWheelClickHandler(document.getElementById("qcrWheelContainer"), (key) => goToAyahFromQcr(key));
-      renderQcrWaysList(items, col, labelsById);
-    }
-
-    function renderQcrWaysList(items, col, labelsById) {
-      const container = document.getElementById("qcrWaysListContainer");
-      if (!container) return;
       const otherCollections = qcrCollections.filter((c) => c.id !== col.id && c.status !== "archived");
-      const rows = items
+      qcrWaysListContainer.innerHTML = items
         .map((it) => {
           const statusLabel = labelsById[it.statusId] ?? it.statusId;
           const manageRow = qcrManageOn
@@ -4436,9 +4609,9 @@
             ${manageRow}
           </div>`;
         })
-        .join("");
+        .join("") || `<p class="hint">${escapeHtml(t("No āyāt in this collection yet."))}</p>`;
 
-      const addForm = qcrManageOn
+      qcrAddFormSlot.innerHTML = qcrManageOn
         ? `<div class="qcr-add-form">
              <select id="qcrAddSurahSelect">${surahIndex.map((s) => `<option value="${s.surahNumber}">${num(s.surahNumber)}. ${escapeHtml(surahName(s.surahNumber, s.nameEnglish))}</option>`).join("")}</select>
              <input type="number" id="qcrAddAyahInput" min="1" placeholder="${escapeHtml(t("Ayah"))}">
@@ -4447,15 +4620,13 @@
            <p class="qcr-add-msg hint" id="qcrAddMsg" style="display:none;"></p>`
         : "";
 
-      container.innerHTML = `<div class="ways-list">${rows}</div>${addForm}`;
-
-      container.querySelectorAll("[data-qcr-jump]").forEach((btn) => {
+      qcrWaysListContainer.querySelectorAll("[data-qcr-jump]").forEach((btn) => {
         btn.addEventListener("click", () => goToAyahFromQcr(btn.dataset.qcrJump));
       });
-      container.querySelectorAll("[data-qcr-remove]").forEach((btn) => {
+      qcrWaysListContainer.querySelectorAll("[data-qcr-remove]").forEach((btn) => {
         btn.addEventListener("click", () => qcrRemoveItemAction(col.id, btn.dataset.qcrRemove));
       });
-      container.querySelectorAll("[data-qcr-move]").forEach((sel) => {
+      qcrWaysListContainer.querySelectorAll("[data-qcr-move]").forEach((sel) => {
         sel.addEventListener("change", () => {
           const toId = sel.value;
           if (!toId) return;
@@ -4463,6 +4634,14 @@
         });
       });
       document.getElementById("qcrAddItemBtn")?.addEventListener("click", () => qcrAddItemAction(col.id));
+
+      qcrWheelContainerEl.innerHTML = renderScopedWheel(items, {
+        centerLabel: langText(col.title, getAppLang()),
+        centerSub: approachName || col.badge || "",
+      });
+      attachScopedWheelClickHandler(qcrWheelContainerEl, (key) => goToAyahFromQcr(key));
+      qcrLegendContainerEl.innerHTML = renderWheelLegend(labelsById);
+      qcrHintEl.textContent = t("Tap a segment or a row to open that āyah — the wheel closes and lands you on QuranRevival's own reading/note screen.");
     }
 
     async function qcrRemoveItemAction(collectionId, unitKey) {
@@ -4518,7 +4697,7 @@
       } else {
         await goToReference(surahNum, Number(parts[1]), null);
       }
-      await openNoteView(unitKey);
+      await openNoteView(unitKey, { fromCollectionId: qcrCurrentId });
     }
 
     /** Ayah translation panel: additive when Bangla is chosen (English stays visible alongside it), per the F-060 design note in ayah-renderer.js. */
@@ -5190,6 +5369,16 @@
         ? `<span>${info.label} — ${t("read it on the Read screen")}</span><button type="button" data-note-open-read>${t("Open in Read")} ▸</button>`
         : "";
 
+      // Ayah Collections round 2 -- the collection this āyah was tapped
+      // FROM, if any (noteOriginCollectionId, set by goToAyahFromQcr()).
+      // Looked up by id every render rather than cached as a label, so a
+      // rename picked up mid-session shows immediately; a collection that
+      // no longer exists (shouldn't happen, I4, but a stale id from an old
+      // session is possible) just means no back button, same "nothing to
+      // explain" rule canUpdateBookmark already follows.
+      const originCollection = noteOriginCollectionId ? (qcrCollections ?? []).find((c) => c.id === noteOriginCollectionId) : null;
+      const backToCollectionLabel = originCollection ? langText(originCollection.title, getAppLang()) : null;
+
       noteView.innerHTML = renderNoteView({
         unitKey,
         pickerBarHtml: renderNotePickerBarHtml(),
@@ -5220,6 +5409,8 @@
         approachOptionsHtml: showApproach ? buildTrackableOptionsHtml() : "",
         wideNoteHtml,
         canUpdateBookmark: !!openedBookmarkId && (bookmarksDoc.saved ?? []).some((b) => b.id === openedBookmarkId && !b.removed),
+        backToCollectionLabel,
+        collectionsPopoverHtml: renderQcrMembershipPopoverHtml(unitKey),
       });
       if (showApproach && quranTrackables.some((tr) => tr.id === currentTrackableId)) {
         noteView.querySelectorAll("[data-note-approach-select]").forEach((sel) => { sel.value = currentTrackableId; });
@@ -5280,6 +5471,33 @@
             noteScope.unitNumber = ayahNow ? noteScopeNumberOfAyah(unitType, ayahNow) : null;
           }
           renderNoteViewNow();
+        },
+        // Ayah Collections round 2 -- the way back to the collection this
+        // āyah was reached from ("There should be a button on the note bar
+        // in note view, to come back to the list and the wheel view").
+        // Lands on that SAME collection's own level-bar selection, in the
+        // Explore stage view, exactly as if the reader had picked it there
+        // themselves.
+        onBackToCollection: async () => {
+          if (!noteOriginCollectionId) return;
+          closeAllPanels();
+          qcrCurrentId = (qcrCollections ?? []).some((c) => c.id === noteOriginCollectionId) ? noteOriginCollectionId : qcrDefaultCollectionId();
+          setStageView("explore");
+          setExplorePalette("qcr");
+          await renderQcrPanel();
+        },
+        // "The NOTE view should have a button for moving/placing the Ayah to
+        // multiple level/category (as it is in the wheel view)" -- every
+        // checkbox fires this once, immediately (same shape as every other
+        // QCR manage action -- no batched save). I15: a failed write rolls
+        // the optimistic change back and re-renders so the box's own state
+        // matches what actually got saved.
+        onToggleCollectionMembership: async (collectionId, checked) => {
+          const prev = qcrCollections;
+          qcrCollections = checked
+            ? qcrAddItemLocal(qcrCollections, collectionId, unitKey)
+            : qcrRemoveItemLocal(qcrCollections, collectionId, unitKey);
+          if (!(await qcrPersist())) { qcrCollections = prev; renderNoteViewNow(); }
         },
       });
       // Notes' own toggle isn't wired by attachNoteViewHandlers above (that
@@ -5392,8 +5610,16 @@
         (spec item 8) in the background -- opening the view never waits on
         it, and a failure surfaces the first time an actual save is
         attempted, via onSaveNote's own safeWrite above. */
-    async function openNoteView(unitKey) {
+    async function openNoteView(unitKey, { fromCollectionId = null } = {}) {
       await ensureAyahNoteDataLoaded();
+      // QCR round: the Collections popover needs qcrCollections whichever
+      // way this view was reached (spec item -- "every āyah, everywhere"),
+      // not only via a collection's own wheel -- load it now, same
+      // on-first-use/once-per-tenant shape ensureQcrDataLoaded() already
+      // has, so opening Note view from the Read screen or a bookmark still
+      // shows real membership, not an empty popover.
+      await ensureQcrDataLoaded();
+      noteOriginCollectionId = fromCollectionId;
       if (auth.currentUser && selectedPersonId) {
         ensureAyahNotesWritable(db, { tenantId: activeTenantId, personId: selectedPersonId, uid: auth.currentUser.uid });
       }
