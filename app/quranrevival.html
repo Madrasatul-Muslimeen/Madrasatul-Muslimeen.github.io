@@ -592,14 +592,36 @@
      existing Quran-structure wheel (#explorePanel, untouched inside) and
      named cross-surah āyah collections (#qcrPanel). */
   #exploreView { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-  #exploreBar { flex: 0 0 auto; padding: 0.3rem 0 0.5rem; }
+  #exploreBar { flex: 0 0 auto; padding: 0.3rem 0 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
   #exploreScroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
-  .explore-palette-row { display: flex; gap: 0.4rem; }
+  .explore-palette-row { flex: 1 1 auto; display: flex; gap: 0.4rem; }
   .explore-palette-btn {
     flex: 1 1 0; background: white; color: #1F3A6E; border: 1px solid #ddd; border-radius: 0.5rem;
     font-weight: 700; font-size: 0.78rem; padding: 0.4rem 0.3rem; cursor: pointer;
   }
   .explore-palette-btn.on { background: #1F3A6E; color: white; border-color: #1F3A6E; }
+  /* Owner's own ask (27 Aug 2026): "Enable the EXPLORE screen to move to
+     full screen (may be by tapping) in Tablet n Mob." A separate mechanism
+     from Reading's own immersive-read and Note's own note-immersive (same
+     reasoning both of those already document: a toggle flipped in one
+     screen must never leak into another the reader didn't ask to see
+     hidden chrome on) -- explore-immersive hides the same three things
+     Reading's own "2 bars only" state does (banner, top nav, dock), via
+     one button rather than a whole-screen tap: Explore holds far more
+     interactive surface (rows, wheel slices, the level select, Manage
+     controls) than a reading screen does, so a stray tap toggling full
+     screen out from under an in-progress action would be a real cost a
+     plain text screen doesn't have. */
+  .explore-fullscreen-btn {
+    flex: 0 0 auto; background: white; color: #1F3A6E; border: 1px solid #ddd; border-radius: 0.5rem;
+    font-size: 0.9rem; padding: 0.4rem 0.55rem; cursor: pointer; line-height: 1;
+  }
+  .explore-fullscreen-btn.active { background: #1F3A6E; color: white; border-color: #1F3A6E; }
+  body.explore-immersive > h1,
+  body.explore-immersive > .app-tagline,
+  body.explore-immersive #globalBanner { display: none; }
+  body.explore-immersive #topNav { display: none; }
+  body.explore-immersive #dock { display: none; }
   /* .wheel-box (#explorePanel's own class) sets display:flex unconditionally,
      which beats the UA's own [hidden] { display: none } outright -- the
      exact same trap this page has hit before on #wheelSection/#studyScreen
@@ -660,10 +682,56 @@
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 0.7rem;
     padding: 1.1rem 0.9rem; border-top: 1px solid rgba(201,162,75,0.2);
   }
+  /* Owner's own report (27 Aug 2026): on a phone/tablet the wheel's own
+     natural height ate nearly all of #qcrMain's bounded share, squeezing
+     the list pane down to a ~29px sliver -- technically scrollable, in
+     practice unusable (measured: the list's own clientHeight was 29px
+     against a scrollHeight of 479px). Below 900px, #qcrPanel/#qcrMain/
+     #qcrListPane/#qcrWheelPane all go back to their natural content
+     height instead of fighting each other for a fixed share of the
+     screen, so the wheel shows in full and the list simply grows to fit
+     every row beneath it -- #exploreScroll (already overflow-y:auto)
+     scrolls the WHOLE thing as one unit, wheel then list, exactly the
+     owner's own "enable it scrolling below the wheel". */
+  @media (max-width: 899px) {
+    #qcrPanel { flex: 0 0 auto; min-height: 0; }
+    #qcrMain { flex: 0 0 auto; overflow: visible; }
+    #qcrListPane { flex: 0 0 auto; overflow: visible; }
+    #qcrWheelPane { flex: 0 0 auto; }
+  }
+  /* .ways-list's own generic base rule (below) caps it at 420px with its
+     own internal scrollbar -- a second, nested scroll region inside
+     #qcrListPane's, the same double-scroll trap #wheelSection's own
+     sidebar was already special-cased out of. QCR gets the identical
+     treatment: no cap, flow with whatever contains it. */
+  #qcrListPane .ways-list { max-height: none; }
+  @media (max-width: 899px) {
+    #qcrListPane .ways-list { overflow-y: visible; }
+  }
   @media (min-width: 900px) {
     #qcrMain { flex-direction: row; }
     #qcrListPane { flex: 0 0 44%; max-width: 44%; border-right: 1px solid rgba(201,162,75,0.2); }
     #qcrWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; }
+    /* Owner's own report: the wheel rendered at its native 360x360
+       regardless of how much wider its own pane actually was (measured:
+       610px of pane at 1280px, wheel still 360px -- nearly 250px of
+       unused space either side), because .mastery-wheel's own generic
+       rule (below) only ever CAPS its size, never stretches it to fill
+       available room, the way #wheelSection's own landing wheel does.
+       Bounded by a share of the viewport's HEIGHT, not the pane's own
+       width -- a wheel is round, so filling width alone without a height
+       bound could push it taller than the pane has room for; measured at
+       several sizes and tuned so the legend + hint below it still fit
+       without the pane's own overflow-y:auto having to work hard.
+       #qcrWheelContainer gets an EXPLICIT width, not align-self:stretch --
+       a real, measured quirk, not a style choice: stretch on a flex item
+       whose only child is a replaced element (the SVG, with its own width/
+       height attributes) kept resolving the item back to that child's
+       OWN intrinsic 360px rather than actually stretching to the space
+       available, even with a generous max-width sitting right there
+       unused. An explicit width sidesteps the whole question. */
+    #qcrWheelContainer { width: min(55vh, 480px); margin: 0 auto; }
+    #qcrWheelPane .mastery-wheel { width: 100%; max-width: none; height: auto; }
   }
   #qcrListHeader { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
   #qcrListHeader .qcr-list-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: #C9A24B; font-size: 1.1rem; }
@@ -1518,6 +1586,7 @@
             <button type="button" class="explore-palette-btn on" id="explorePaletteQuranBtn" data-explore-mode="quran" aria-pressed="true">Quran</button>
             <button type="button" class="explore-palette-btn" id="explorePaletteQcrBtn" data-explore-mode="qcr" aria-pressed="false">QCR</button>
           </div>
+          <button type="button" class="explore-fullscreen-btn" id="exploreFullscreenBtn" title="Full screen" aria-label="Full screen" aria-pressed="false">⤢</button>
         </div>
         <div id="exploreScroll">
           <div id="explorePanel" class="wheel-box">
@@ -2169,6 +2238,7 @@
     const exploreSidebarContainer = document.getElementById("exploreSidebarContainer");
     const tabExploreBtn = document.getElementById("tabExploreBtn");
     const exploreView = document.getElementById("exploreView");
+    const exploreFullscreenBtn = document.getElementById("exploreFullscreenBtn");
     const explorePaletteQuranBtn = document.getElementById("explorePaletteQuranBtn");
     const explorePaletteQcrBtn = document.getElementById("explorePaletteQcrBtn");
     const explorePanelEl = document.getElementById("explorePanel");
@@ -2237,6 +2307,13 @@
     // all. Set only by goToAyahFromQcr(); cleared implicitly the next time
     // openNoteView() is called without a fromCollectionId.
     let noteOriginCollectionId = null;
+    // Explore's own full screen (explore-immersive) -- a separate mechanism
+    // from immersive-read/note-immersive above, same reasoning: a toggle
+    // flipped in one screen must never leak into another the reader didn't
+    // ask to see hidden chrome on. Two states only (unlike Reading's own
+    // three-step cycle), toggled from #exploreFullscreenBtn alone -- see
+    // toggleExploreFullscreen()'s own comment for why not a whole-screen tap.
+    let exploreFullscreenOn = false;
     // Bookmark creation/update round -- which of selectedPersonId's OWN
     // saved[] entries (if any) was opened this session, so the Note view's
     // ⋯ menu can offer "Update bookmark": save whatever's now being studied
@@ -3784,11 +3861,19 @@
       tabApproachBtn.setAttribute("aria-pressed", onWheel ? "true" : "false");
       tabExploreBtn.setAttribute("aria-pressed", exploring ? "true" : "false");
       // The READING screen's own full screen (immersive-read) is unrelated
-      // to the Note view's own (note-immersive, toggleNoteFullscreen()) --
-      // clear whichever one this new view doesn't own, so neither can leak
-      // into a screen the reader didn't ask to see hidden chrome on.
+      // to the Note view's own (note-immersive, toggleNoteFullscreen()) or
+      // Explore's own (explore-immersive, toggleExploreFullscreen()) --
+      // clear whichever ones this new view doesn't own, so none of the
+      // three can leak into a screen the reader didn't ask to see hidden
+      // chrome on.
       if (!reading) setImmersive(false);
       if (!noting && noteFullscreenOn) { noteFullscreenOn = false; document.body.classList.remove("note-immersive"); }
+      if (!exploring && exploreFullscreenOn) {
+        exploreFullscreenOn = false;
+        document.body.classList.remove("explore-immersive");
+        exploreFullscreenBtn.setAttribute("aria-pressed", "false");
+        exploreFullscreenBtn.classList.remove("active");
+      }
     }
 
     // -----------------------------------------------------------------------
@@ -3973,6 +4058,22 @@
       setStageView("explore");
       await openExplore();
     });
+
+    /** Explore's own full screen -- two states, a separate mechanism from
+        the reading screen's own (immersive-read) and the Note view's own
+        (note-immersive), so none of the three can leak into each other.
+        One button, toggling both ways, rather than a whole-screen tap:
+        Explore holds far more interactive surface than a reading screen
+        does (rows, wheel slices, the level select, Manage's own controls),
+        so a stray tap flipping full screen out from under an in-progress
+        action would cost real work a plain text screen never risks. */
+    function toggleExploreFullscreen() {
+      exploreFullscreenOn = !exploreFullscreenOn;
+      document.body.classList.toggle("explore-immersive", exploreFullscreenOn);
+      exploreFullscreenBtn.setAttribute("aria-pressed", exploreFullscreenOn ? "true" : "false");
+      exploreFullscreenBtn.classList.toggle("active", exploreFullscreenOn);
+    }
+    exploreFullscreenBtn.addEventListener("click", toggleExploreFullscreen);
 
     hideChromeBtn.addEventListener("click", advanceReadChrome);
 

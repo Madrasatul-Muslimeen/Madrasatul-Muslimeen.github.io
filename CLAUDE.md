@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.86.** Cutover to production happened
+**Current milestone: QuranRevival v07.87.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -5856,6 +5856,127 @@ diff: `tabExploreBtn` no longer carries `data-panel`, so the
 alongside Read/Note/Approach's) -- removed rather than left as a silent,
 misleading no-op, per this project's own standing rule (I4 is about data,
 not code; dead code gets deleted, not preserved).
+
+v07.87 (27 Aug 2026, on Claude Code on the web) is **Ayah Collections
+(QCR) round 3 -- three owner-reported layout fixes from using v07.86 for
+real**, each investigated with real measurements before being changed
+(this project's own standing discipline) rather than guessed at from the
+two screenshots the owner attached.
+
+**(1) Explore gets its own full-screen toggle, tablet and mobile** -- the
+owner's own ask: "Enable the EXPLORE screen to move to full screen (may be
+by tapping) in Tablet n Mob." A new `explore-immersive` body class, a
+THIRD independent full-screen mechanism alongside `immersive-read` and
+`note-immersive` -- same reasoning both of those already carry: a toggle
+flipped in one screen must never leak into another the reader didn't ask
+to see hidden chrome on, so each screen gets its own class and its own
+reset in `setStageView()`. Hides the same three things Reading's own "2
+bars only" state does (banner, top nav, dock), via one ⤢ button in
+`#exploreBar` rather than a whole-screen tap: Explore holds far more
+interactive surface than a reading screen (rows, wheel slices, the level
+select, Manage's own controls), so a stray tap toggling full screen out
+from under an in-progress action would be a real cost a plain text screen
+doesn't risk. **The dock being hidden under it is deliberate, not a gap**
+-- the same v07.48 convention ("a hidden dock has to be un-hidden first,
+from whatever stayed visible... the Ayah bar's own ⤢ button, which never
+hides, is that way back") applies here unchanged: the way out of Explore
+full screen is the screen's own button, which never itself hides.
+
+**(2) and (3) both trace back to the same root cause the owner's two
+screenshots were pointing at, and both needed real Playwright measurement
+to diagnose -- the screenshots alone were genuinely ambiguous about which
+element was actually at fault.** Measured before touching anything (a
+throwaway script reading real `getBoundingClientRect()`s, matching this
+project's own "measure, don't guess" method every layout round has used
+since v07.22): on a phone, `#qcrListPane`'s own bounded height had been
+squeezed to **29px** -- `clientHeight: 29` against a `scrollHeight: 479`
+-- because `#qcrMain`'s flex layout gave the wheel pane's own natural
+height first claim on the space, leaving the list a technically-scrollable
+but practically-unusable sliver. That is the owner's own "Ayah LIST
+scrolling under each category" report, and it explains both halves of it:
+what looked like "only half screen" on a screenshot was really "one row's
+worth of height."
+
+**Fix: below 900px, the whole QCR screen stops fighting itself for a fixed
+share of the viewport and flows naturally instead.** `#qcrPanel`/`#qcrMain`/
+`#qcrListPane`/`#qcrWheelPane` all go back to their own content height
+(`flex: 0 0 auto`) rather than being squeezed to fit `#exploreScroll`'s
+visible area, so the wheel renders in full and the list simply grows to
+fit every row below it -- `#exploreScroll` (already `overflow-y: auto`)
+scrolls the WHOLE thing as one unit, exactly "enable it scrolling below
+the wheel." A second, nested scroll trap was found and removed in the same
+pass: `.ways-list`'s own generic base rule caps it at 420px with its OWN
+internal scrollbar -- the exact double-scroll shape `#wheelSection`'s own
+sidebar was already special-cased out of years ago (`#wheelSection
+.ways-list { max-height: none; }`) -- `#qcrListPane .ways-list` now gets
+the identical treatment. **Desktop (≥900px) is untouched** -- the
+side-by-side layout already worked (measured: all 18 rows fit inside a
+498px-tall pane on a 1280×800 screen with no scroll needed at all before
+this round), so nothing there needed fixing.
+
+**The PC wheel was capped at its native 360×360 regardless of how much
+wider its own pane actually was** -- measured: 610px of real pane width at
+1280px, wheel still exactly 360px, leaving roughly 250px of unused space
+either side. Root cause: `.mastery-wheel`'s own generic CSS rule only ever
+CAPS the wheel's size (`max-width: 320px` / `420px` at different
+breakpoints), the way `#wheelSection`'s own landing wheel does with its
+own `width: min(100%, calc(100dvh - 420px))` STRETCH rule -- QCR's wheel
+never had the equivalent. Given a genuine choice between building that
+stretch rule or a manual resize control (the reference QCR app's own
+toolbar has a wheel-size slider, deliberately left out along with Save/
+Print back in round 2), the owner offered either, "whatever is easy" --
+auto-fill is the simpler of the two and was built. **A real, measured CSS
+quirk had to be worked around to make it actually happen, and it's worth
+recording**: the first attempt wrapped the SVG in a container sized via
+`align-self: stretch` + `max-width: min(55vh, 480px)` on a flex item --
+textbook CSS, and it did NOT work. Measured directly: the container's own
+computed `width` stayed at 360px, the SVG's own intrinsic size, EVEN
+THOUGH `max-width: 440px` and `align-self: stretch` were both confirmed
+correctly applied in the cascade. A flex item whose only child is a
+replaced element carrying its own `width`/`height` attributes (the SVG
+does, same shape `renderScopedWheel()` has always emitted) can keep
+resolving back to that child's own intrinsic size instead of actually
+stretching, generous `max-width` sitting right there unused. Fixed by
+giving `#qcrWheelContainer` an EXPLICIT `width: min(55vh, 480px)` instead
+of relying on stretch at all -- confirmed by the same direct measurement
+to genuinely apply (`computedWidth: "440px"`) once the fix landed. **Result,
+measured on a real page**: the QCR wheel is now **440×440 at 1280×800**
+(was 360×360), stays fully inside its own pane with no overflow, and
+mobile/tablet are proven byte-identical to before (still capped at ~320px,
+since the enlargement is scoped to ≥900px only -- enlarging the wheel
+there would eat into the list's own room, which is the opposite of what
+(2) was for).
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice for anything touching Explore/QCR,
+matching how round 2 verified its own work) -- **87 checks, all passing**
+(the 56 from round 2's own script, re-run unchanged to confirm nothing
+regressed, plus 31 new): the full-screen toggle hiding banner/top nav/dock
+and restoring them both ways, surviving a leave-the-view reset, and the
+dock's own hidden-under-full-screen state confirmed directly rather than
+just worked around; the phone list pane proven no longer squeezed (a
+direct height check plus scrolling the real container to the bottom and
+confirming the actual last row becomes reachable), the same proven at
+tablet size, with 18 real rows in the DOM and no horizontal overflow
+anywhere; and the PC wheel proven genuinely bigger (over 400px, was 360),
+staying inside its own pane, with mobile's own size proven unchanged.
+**`layout.mjs` reports the landing page byte-for-byte identical** at all
+eight viewports in both banner states against a real previous-commit shim
+(same heading/wheel/rows/gap numbers throughout) -- the only "missing ID
+target" warning is the SAME four QCR Manage-mode ids already investigated
+and disclosed as a pre-existing false positive of that check's own method
+in round 2's own entry, unrelated to this round (confirmed identical:
+`qcrAddItemBtn`/`qcrAddSurahSelect`/`qcrAddAyahInput`/`qcrAddMsg`, target
+count 125→126 reflecting only the one new `getElementById` call this round
+added). **`navcheck.mjs` unchanged** (still only the pre-existing 320px
+English truncation of "Operation"/"Bookmark"), **`reading.mjs` OK**,
+**`panel.mjs` clean**, **`tools/perf/measure.mjs` confirms Quran Study
+still opens in 6 sequential round trips** (this round is pure client-side
+CSS/JS, no Firestore reads added anywhere), **`tools/perf/new-tenant.mjs`
+10/10**, and **translation coverage unchanged at 1,388/1,415 (98%)** --
+"Full screen" is reused verbatim from Reading/Note's own already-translated
+string, so nothing new needed adding. No `firestore.rules` or schema
+changes -- nothing to deploy but the static files.
 
 ## What this is
 
