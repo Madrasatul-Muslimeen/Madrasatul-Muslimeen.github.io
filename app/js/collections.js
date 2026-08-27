@@ -57,6 +57,7 @@ export const TENANT = Object.freeze({
   CURRICULUM_UNITS: "curriculumUnits",
   CURRICULUM_PLAN: "curriculumPlan",
   RESOURCES: "resources",
+  AYAH_COLLECTIONS: "ayahCollections", // Ayah Collections (QCR) round: one doc per tenant, tenant-authored named collections of cross-surah āyāt (see js/qcr.js). Same "small tenant-authored content collection, no existing precedent quite fits" shape as D12's domains and the ladders/levels pair.
 
   // Layer 2 — tracking core
   TRACKABLES: "trackables",

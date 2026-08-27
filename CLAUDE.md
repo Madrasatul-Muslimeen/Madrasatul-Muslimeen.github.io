@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.84.** Cutover to production happened
+**Current milestone: QuranRevival v07.85.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -5462,6 +5462,174 @@ pass, 0 fail**, reaching the same already-disclosed, pre-existing
 section-42 crash this project has carried since v07.69, unrelated to this
 round. No `firestore.rules`, schema or Firestore data changes -- nothing
 to deploy but the static files.
+
+v07.85 (27 Aug 2026, on Claude Code on the web) is **Ayah Collections
+(QCR) — Explore gets a palette for named cross-surah āyah collections,
+the owner's own first upload of a real content-authoring file.** The
+owner supplied "QCR — Qur'an (calls for) Critical Reasoning"
+(`QCR__QuranCFCR__v01.13__19.06.26.html`), their own standalone tool
+authoring **18 named thematic collections** (Naẓar "look", Tafakkur
+"reflect", Tadabbur "ponder", Sayr fil-Arḍ "travel the land", and so on —
+categories from their own Qur'an-study framework), **379 āyāt total, 56 of
+them deliberately belonging to more than one collection at once**
+(e.g. 3:137 sits in "Naẓar", "Sayr fil-Arḍ" AND "Proposed New Families").
+Its own app: pick a collection → its āyāt appear as wedges on a wheel →
+tap one → read/edit it. The ask: bring that mechanism into QuranRevival,
+housed in the **Explore** dock tab as a **palette** (their own word),
+built so any future named collection reuses the same path -- "there will
+be many of such topic n groups of Ayat."
+
+**A demo was shown and confirmed before anything was built** (this
+project's own standing practice for a genuine design/scope decision) --
+two rounds of it. The first covered browsing only: Explore → a new QCR
+palette entry → the 18 collections listed → tap one → its āyāt as a wheel
+→ tap a wedge → a jump preview. The owner's follow-up added the three
+things that first demo hadn't covered, and each became a real decision:
+**(1) add/remove/move an āyah between collections, and across several at
+once** -- built as a plain ordered array of unit keys PER collection, so
+membership in more than one is just the same key listed in two arrays,
+no special mechanism; **(2) edit/add/archive the collections
+themselves** -- a **Manage** toggle (owner/prime only, reusing the
+existing `canAdminCatalogueClientSide()` gate) turns the same list/wheel
+into an editing surface; **(3) a tapped āyah must land on the real,
+working Ayah Note screen, not a preview** -- it now does, via the exact
+mechanism every other wheel-slice tap in the app already uses.
+
+**Storage, decided per the owner's own "whatever is easier to do, do
+it":** the first demo had proposed bundled platform data (like Asma ul
+Husna, no admin screen) -- wrong the moment (1) and (2) were added, since
+a static JS file can't be edited by the owner without a code redeploy.
+Built instead as one new, small, tenant-scoped Firestore document,
+**`ayahCollections/{tenantId}`** (`js/qcr.js`, `js/collections.js`),
+authored the same way Subjects/Approaches already are in Catalogue --
+read: any tenant member; write: owner/prime only (`canAdminCatalogue`,
+the same split `ladders`/`domains` already use). **I5**: every item is a
+permanent unit key (`buildUnitKey.ayah`/`.range`), never a stored name.
+**I4, applied deliberately at only ONE level**: a *collection* is a real,
+named, authored resource -- like a Subject or a tagline -- so archiving
+one never deletes it, only flips its own `status` field (`setCollection
+Status`, `Archive "{name}"?`/`Restore "{name}"?`, the exact `confirm()`-
+per-branch convention this project has used since v07.75). *Membership*
+of one āyah in one collection is deliberately NOT I4-soft-deleted --
+removing or moving one is a plain array splice, the same shape the
+owner's own QCR file already used for its own remove-from-level button,
+and nothing is lost by it: the āyah, and every OTHER collection that also
+lists it, are untouched. `firestore.rules` gained one new match block,
+same shape as `ladders`'s own -- **written, NOT yet deployed** (this is a
+Claude Code on the web session, no Firebase CLI/credentials available
+here, same constraint every recent round has carried; deploy via the
+Firebase Console, copy-paste, same as always).
+
+**Q1 (confirmed by the owner): no second copy of the text.** `js/
+qcr-data.js` carries only the 379 real references imported from the QCR
+file (18 collections, real membership, real Y-band badges) -- never the
+Arabic/English/Bangla that file also stored. Every āyah's text is drawn
+live from QuranRevival's own Qur'an data every time a collection's wheel
+opens (`getSurah`, the same static, cached-after-first-load fetch
+Explore's own Surah/Ruku levels already accept) -- so it can never drift
+from the app's real, current translation, and correcting a translation
+anywhere in the app fixes it here too, for free, with no re-import.
+**One real, disclosed cost**: opening ONE collection's wheel fetches that
+collection's own DISTINCT surahs' full text for the sidebar's English
+snippet -- a handful of surahs (Sayr fil-Arḍ touches 12), not all 114,
+paid once per collection per session, the same class of on-first-use cost
+Explore's own drill-down already accepts (I9's own exemption for this
+kind of explicitly-opened screen).
+
+**Q3 reversed by the owner: "reflect a gradual increase of deep shades of
+colour"** -- the first demo had shown plain, uncoloured wedges (no claimed
+-status concept for a browsing list); the owner asked for the opposite.
+Wedges now shade through the SAME six-status `STATUS_COLORS` ramp every
+other progress wheel in the app already uses, pooled per āyah against
+whichever Approach is currently selected (`qcrItemStatus`) -- reading from
+`exploreChunksBySurah`, which Explore's own `ensureExploreChunksLoaded()`
+already loads in full the moment Explore opens, whichever palette entry is
+picked afterwards. Costs nothing extra: the same read every other Explore
+wheel already pays for, reused rather than duplicated.
+
+**Q2 clarified, Q4 unchanged, Q5 parked as its own backlog item.** Q2
+("not clear what you said... whatever is easier") is the storage decision
+above. Q4 ("leave as designed") -- the palette stays a plain, extensible
+list; QCR is entry one. **Q5 -- the owner's own steer: "We have to build
+that sequence, this is a feature have to work out for all modules, all
+study material components need to sequence/labeled by yr 1 to y12
+bands... you decide, when to build it easier for you."** Correctly bigger
+than this round: a real cross-module Y1-Y12 sequencing system, not a
+QCR-only one. Parked rather than guessed at -- each collection's own
+`badge` field carries the QCR file's own plain Y-band label (Y3, Y6-12,
+"All years", "Pending"...) as display-only text, nothing filters or gates
+on it yet. **Named here as its own future round, the same way LAYOUT-
+BACKLOG.md items get carried** -- don't let it quietly drop: a real
+year/sequence system belongs to every module's study material, not just
+Quran, and needs its own scoping conversation before it's built.
+
+**Also confirmed, not built this round**: the owner's own QCR file has a
+richer rich-text notes toolbar (headings, lists, formatting) than the
+Ayah Note screen's own current editor -- their own words, "we can do that
+separately as note enhancement." Not attempted here; the existing Notes
+editor is what a QCR āyah gets today, same as any other āyah in the app.
+
+**Mechanism, for whoever touches this next.** `js/qcr.js` holds the pure
+array-editing helpers (`addCollection`/`renameCollection`/
+`setCollectionStatus`/`addItem`/`removeItem`/`moveItem`, mirroring
+`taglines.js`'s own I2-pure shape) plus the read/write pair
+(`getQcrDoc`/`saveQcrCollections`) -- unlike taglines.html's own manual
+Save button, every manage action here writes immediately (no room for a
+persistent save bar inside Explore's own panel, and an edit that already
+looked applied on screen should never be lost by navigating away);
+`quranrevival.html`'s own `qcrPersist()` rolls the optimistic in-memory
+change back if the write fails (I15, via `safeWrite()`). The wheel and
+legend are `mastery-wheel.js`'s own existing, unmodified
+`renderScopedWheel`/`renderWheelLegend` -- a QCR wheel is just a new set
+of items handed to a function every other Explore level already calls.
+The jump itself composes two existing mechanisms rather than inventing a
+third: `goToReference()` (the Search/"Go to" box's own canonical surah-
+load + range/ayah split) then `openNoteView()` (the ⋮ menu's own "Note &
+more…" target) -- `goToAyahFromQcr()` is nine lines because of it.
+Explore's own Quran-structure drill-down (`#explorePanel`) is byte-for-
+byte untouched; `#qcrPanel` is a new sibling shown/hidden by a small
+palette row, and `openExplore()` gained one line resetting the palette to
+"Quran" on every fresh open (QCR is an opt-in each time, not a remembered
+mode, matching that function's own existing "resets the drill-down"
+rule).
+
+**Translation**: all new interface strings route through `t()`; several
+already existed in `bn.js` from earlier rounds and were reused verbatim
+rather than re-added (`Archive`, `Restore`, `Rename`, `Move to…`, `Ayah`,
+`Loading…`, `Archive "{name}"?`/`Restore "{name}"?`, `Surah {surah} has
+{count} ayahs.`). Genuinely new strings (`Manage`, `+ Add collection`,
+`+ Add āyah`, `Show archived`, `{count} āyāt`, the two hint sentences,
+etc.) got first-draft Bangla, marked `// ?` for the owner's own eye per
+this project's standing convention. `"QCR"` itself is mapped to itself
+(the same treatment `"WbW"` already gets) -- it's the name of the owner's
+own uploaded file, not a word to translate. `tools/i18n-coverage.mjs`
+confirms all 20 new strings this round added are counted AND translated
+(quran area: 218 strings/212 Bangla before this round → 238/232 after,
+the same 6 pre-existing missing strings unchanged) -- consistent with,
+though per this project's own standing lesson never PROOF of, real
+correctness (the tool has been wrong about what it counts nine separate
+times across earlier rounds).
+
+**Verification, and its real limits, stated plainly.** `node --check`
+passes on every touched/new `.js` file and on the page's own extracted
+module script; a manual line-by-line review of the full diff caught and
+fixed one real bug before it shipped (a collection's own "archived" label
+was reading `t("Archive")`, the verb, instead of `t("Archived")`, the
+state -- now correct); `firestore.rules` brace/paren counts balance and
+the new match block's shape was checked line-for-line against the
+existing `ladders`/`tenants` blocks it's modelled on. **What was NOT
+run**: this session has no live Firebase connection and no browser
+harness available, so none of this round's actual Firestore reads/writes
+were exercised against real data, and `tools/i18n-verify/behaviour.mjs`
+(this project's own real-browser suite) was not run against this round's
+new screens -- said outright rather than claimed. **The owner's own
+click-through is what verifies this for real**, the same as always: open
+Explore, tap QCR, browse a collection, tap Manage (if owner/prime), try
+add/rename/archive/remove/move, tap a wedge and confirm it lands on the
+real Note screen. No `firestore.rules` change is live until the owner
+deploys this round's addition via the Firebase Console -- until then,
+Manage-mode writes will fail with a real, visible I15 message rather than
+silently doing nothing.
 
 ## What this is
 
