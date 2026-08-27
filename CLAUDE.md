@@ -5610,26 +5610,54 @@ though per this project's own standing lesson never PROOF of, real
 correctness (the tool has been wrong about what it counts nine separate
 times across earlier rounds).
 
-**Verification, and its real limits, stated plainly.** `node --check`
-passes on every touched/new `.js` file and on the page's own extracted
-module script; a manual line-by-line review of the full diff caught and
-fixed one real bug before it shipped (a collection's own "archived" label
-was reading `t("Archive")`, the verb, instead of `t("Archived")`, the
-state -- now correct); `firestore.rules` brace/paren counts balance and
-the new match block's shape was checked line-for-line against the
-existing `ladders`/`tenants` blocks it's modelled on. **What was NOT
-run**: this session has no live Firebase connection and no browser
-harness available, so none of this round's actual Firestore reads/writes
-were exercised against real data, and `tools/i18n-verify/behaviour.mjs`
-(this project's own real-browser suite) was not run against this round's
-new screens -- said outright rather than claimed. **The owner's own
-click-through is what verifies this for real**, the same as always: open
-Explore, tap QCR, browse a collection, tap Manage (if owner/prime), try
-add/rename/archive/remove/move, tap a wedge and confirm it lands on the
-real Note screen. No `firestore.rules` change is live until the owner
-deploys this round's addition via the Firebase Console -- until then,
-Manage-mode writes will fail with a real, visible I15 message rather than
-silently doing nothing.
+**Verification.** `node --check` passes on every touched/new `.js` file
+and on the page's own extracted module script; a manual line-by-line
+review of the full diff caught and fixed one real bug before it shipped
+(a collection's own "archived" label was reading `t("Archive")`, the
+verb, instead of `t("Archived")`, the state -- now correct); `firestore.
+rules` brace/paren counts balance and the new match block's shape was
+checked line-for-line against the existing `ladders`/`tenants` blocks
+it's modelled on. **Then run for real**, in a headless browser (Playwright
+against this project's own `tools/i18n-verify` Firebase-stub harness,
+network-layer-stubbed the same way every prior round's own real-browser
+checks work) rather than trusted from static review alone -- two focused,
+un-checked-in scripts, the same practice rounds since v07.69 have used for
+work past `behaviour.mjs`'s own disclosed section-42 crash point. **A
+real bug was caught by this and would otherwise have shipped**: `#explore
+Panel` carries `.wheel-box`, which sets `display:flex` unconditionally --
+the exact same `[hidden]`-trap class this page has hit before on
+`#wheelSection`/`#studyScreen` (shell round 17's own note on
+`#stage > [hidden]`). `#qcrPanel` already had its own override rule from
+this round's own CSS; `#explorePanel` needed the identical one and didn't
+have it, so switching to the QCR palette would have left the Quran wheel
+sitting on screen underneath it, unseen until someone actually clicked
+through. Fixed with one combined selector, re-verified clean. **36-check
+smoke test**: palette switching (both aria-pressed state and actual
+visibility, which is what caught the bug above); the real 18-collection
+list; opening Sayr fil-Arḍ and confirming 14 real wedges with real fill
+colours, 14 sidebar rows with real live English snippets; Manage mode's
+full add/rename/archive/restore-a-collection flow AND add/move/remove-an-
+āyah flow, each confirmed against the real row counts and against
+`window.__fsLog` showing a real call reaching `ayahCollections`; tapping
+a wedge closing Explore and landing on the real Note view with the Note
+dock tab reading pressed; zero console/page errors throughout. **10-check
+regression pass** confirms the EXISTING Quran-structure drill-down is
+untouched: the 30-segment Juz wheel still renders, drilling into Juz 1
+still works, the drill position survives a palette round-trip (switch to
+QCR and back within one Explore "open"), and reopening Explore still
+resets it to Whole Quran -- `openExplore()`'s own pre-existing rule,
+confirmed still intact. **What's still real and disclosed**: the stub
+answers instantly and doesn't model Firestore's actual latency/failure
+modes, so this proves the MECHANISM works, not production timing: and
+`tools/i18n-verify/behaviour.mjs` itself (the checked-in, 800+-assertion
+regression suite) was not updated or re-run for this round's own new
+screens -- these two scripts are a targeted smoke test, not that suite's
+replacement. **The owner's own click-through against the real Firebase
+project is still the final word**, same as always. No `firestore.rules`
+change is live until the owner deploys this round's addition via the
+Firebase Console -- until then, Manage-mode writes will fail with a real,
+visible I15 message rather than silently doing nothing (browsing works
+regardless, since it falls back to the seeded defaults with no write).
 
 ## What this is
 
