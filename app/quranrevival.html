@@ -584,6 +584,68 @@
   /* ---------- Explore (Phase 5) ---------- */
   #explorePanel { margin-top: 0; } /* border/background/padding come from .wheel-box (Phase 5 round 12); lives inside the Explore dock panel since shell round 7 */
 
+  /* ---------- Explore palette + QCR (Ayah Collections round) ----------
+     A "palette" the owner asked for: Explore's own Quran-structure wheel
+     stays exactly as it was (#explorePanel, untouched by this round) and
+     sits alongside a new sibling, #qcrPanel, for named cross-surah āyah
+     collections -- QCR first, more to come. Same visual language as the
+     Reading view / Listening settings opt-btn pills (Study options), not a
+     new idiom. */
+  .explore-palette-row { display: flex; gap: 0.4rem; margin-bottom: 0.55rem; }
+  .explore-palette-btn {
+    flex: 1 1 0; background: white; color: #1F3A6E; border: 1px solid #ddd; border-radius: 0.5rem;
+    font-weight: 700; font-size: 0.78rem; padding: 0.4rem 0.3rem; cursor: pointer;
+  }
+  .explore-palette-btn.on { background: #1F3A6E; color: white; border-color: #1F3A6E; }
+  /* .wheel-box (both panels' own class) sets display:flex unconditionally,
+     which beats the UA's own [hidden] { display: none } outright -- the
+     exact same trap this page has hit before on #wheelSection/#studyScreen
+     (see #stage > [hidden] above). Caught here by the smoke test actually
+     switching palettes rather than assumed away: without this rule,
+     toggling .hidden on these two elements changes nothing on screen. */
+  #explorePanel[hidden], #qcrPanel[hidden] { display: none; }
+
+  .qcr-manage-bar { display: flex; align-items: center; justify-content: flex-end; gap: 0.5rem; margin: 0 0 0.4rem; }
+  .qcr-manage-toggle {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(201,162,75,0.4); color: #cdd5e3;
+    border-radius: 999px; padding: 0.22rem 0.75rem; font-size: 0.7rem; font-weight: 700; cursor: pointer;
+  }
+  .qcr-manage-toggle.on { background: #C9A24B; color: #241a06; border-color: #C9A24B; }
+
+  .qcr-level-list { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+  .qcr-level-row {
+    display: flex; align-items: center; gap: 0.5rem; background: rgba(255,255,255,0.03);
+    border: 1px solid transparent; border-radius: 9px; padding: 7px 10px; cursor: pointer;
+  }
+  .qcr-level-row:hover { background: rgba(255,255,255,0.07); border-color: rgba(201,162,75,0.25); }
+  .qcr-level-row.archived { opacity: 0.5; }
+  .qcr-level-title { flex: 1; font-size: 13px; color: #dde3ee; min-width: 0; }
+  .qcr-level-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: rgba(201,162,75,0.22); color: #C9A24B; white-space: nowrap; }
+  .qcr-level-count { font-size: 11px; color: #8fa0c2; white-space: nowrap; }
+  .qcr-level-manage { display: flex; gap: 4px; flex-shrink: 0; }
+  .qcr-icon-btn {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); color: #dde3ee;
+    border-radius: 6px; width: 24px; height: 24px; font-size: 11px; cursor: pointer; flex-shrink: 0;
+  }
+  .qcr-icon-btn:hover { border-color: #C9A24B; }
+  .qcr-icon-btn.danger:hover { border-color: #d97a63; color: #ffb9a6; }
+
+  .way-row.qcr-way-row { flex-wrap: wrap; align-items: flex-start; cursor: default; }
+  .way-row .way-click { display: flex; align-items: center; gap: 10px; flex: 1 1 auto; min-width: 0; cursor: pointer; background: none; border: none; padding: 0; text-align: left; font-family: inherit; }
+  .qcr-way-snippet { flex-basis: 100%; font-size: 11.5px; color: #9aa7be; margin: 3px 0 0 32px; line-height: 1.4; }
+  .qcr-way-manage { flex-basis: 100%; display: flex; gap: 6px; align-items: center; margin: 6px 0 0 32px; }
+  .qcr-way-manage select { font-size: 11px; padding: 2px 4px; border-radius: 5px; border: 1px solid #ddd; max-width: 9rem; }
+
+  .qcr-add-form { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-top: 0.5rem; width: 100%; }
+  .qcr-add-form select, .qcr-add-form input[type="number"] { font-size: 12px; padding: 4px 6px; border-radius: 6px; border: 1px solid #ddd; }
+  .qcr-add-form input[type="number"] { width: 4rem; }
+  .qcr-add-form button { font-size: 12px; padding: 4px 10px; }
+  .qcr-add-collection-btn {
+    width: 100%; background: none; border: 1px dashed rgba(201,162,75,0.5); color: #C9A24B;
+    border-radius: 9px; padding: 8px; font-size: 12.5px; font-weight: 700; cursor: pointer; margin-top: 4px;
+  }
+  .qcr-archived-toggle { font-size: 11.5px; color: #9aa7be; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+
   /* ---------- Reading screen (shell round 17) ----------
      #readView is the stage's second occupant. It fills whatever the header
      and dock leave, and the ONLY thing that scrolls is #readScroll -- the
@@ -1664,6 +1726,14 @@
 
       <div id="panelExplore" class="qr-panel" hidden>
         <div class="qr-panel-head">Explore <button type="button" class="qr-panel-x" data-close-panel aria-label="Close">&times;</button></div>
+        <!-- Ayah Collections round: a palette above the existing Quran wheel,
+             for named cross-surah āyah collections (QCR first). Explore's
+             own Quran drill-down (#explorePanel below) is untouched by this
+             round; #qcrPanel is a new sibling shown/hidden alongside it. -->
+        <div class="explore-palette-row">
+          <button type="button" class="explore-palette-btn on" id="explorePaletteQuranBtn" data-explore-mode="quran" aria-pressed="true">Quran</button>
+          <button type="button" class="explore-palette-btn" id="explorePaletteQcrBtn" data-explore-mode="qcr" aria-pressed="false">QCR</button>
+        </div>
         <div id="explorePanel" class="wheel-box">
           <div class="wheel-col">
             <div id="exploreBreadcrumb"></div>
@@ -1672,6 +1742,12 @@
             <p class="hint">Click a segment to drill in &mdash; Quran &rarr; Juz &rarr; Surah &rarr; Ruku' &rarr; an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment &mdash; it only turns fully green once every ayah inside it is Mastered.</p>
           </div>
           <div id="exploreSidebarContainer" class="wheel-sidebar"></div>
+        </div>
+        <div id="qcrPanel" class="wheel-box" hidden>
+          <div class="wheel-col">
+            <div id="qcrBreadcrumb"></div>
+            <div id="qcrBody">Loading&hellip;</div>
+          </div>
         </div>
       </div>
 
@@ -1713,7 +1789,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
-    import { langText } from "./js/lang.js";
+    import { langText, setLangText } from "./js/lang.js";
     import { roleListLabel } from "./js/labels.js";
     import { safeWrite } from "./js/errors.js";
     import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
@@ -1725,6 +1801,12 @@
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText } from "./js/ayah-note-renderer.js";
+    import {
+      collectionsFrom, activeCollections,
+      addCollection, renameCollection, setCollectionStatus,
+      addItem as qcrAddItemLocal, removeItem as qcrRemoveItemLocal, moveItem as qcrMoveItemLocal,
+      getQcrDoc, saveQcrCollections,
+    } from "./js/qcr.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
     import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex } from "./js/quran-data.js";
     // Shell round 14 -- word/phrase search. Importing the module costs
@@ -2007,6 +2089,12 @@
     const exploreWheelContainer = document.getElementById("exploreWheelContainer");
     const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
     const exploreSidebarContainer = document.getElementById("exploreSidebarContainer");
+    const explorePaletteQuranBtn = document.getElementById("explorePaletteQuranBtn");
+    const explorePaletteQcrBtn = document.getElementById("explorePaletteQcrBtn");
+    const explorePanelEl = document.getElementById("explorePanel");
+    const qcrPanelEl = document.getElementById("qcrPanel");
+    const qcrBreadcrumbEl = document.getElementById("qcrBreadcrumb");
+    const qcrBodyEl = document.getElementById("qcrBody");
 
     const taglineStripEl = document.getElementById("taglineStrip");
     const globalBannerEl = document.getElementById("globalBanner");
@@ -2138,6 +2226,19 @@
     let exploreJuzNum = null;
     let exploreSurahNum = null;
     let exploreRukuIndex = null;
+
+    // Ayah Collections (QCR) round -- Explore's own palette state, alongside
+    // the Quran drill-down above. Loaded lazily, once per sign-in, the first
+    // time the QCR palette entry is actually opened (I9 -- Explore is
+    // already an on-first-use screen, this just adds a second thing it can
+    // load on first use rather than a second startup cost).
+    let exploreMode = "quran"; // "quran" | "qcr"
+    let qcrCollections = null; // null until ensureQcrDataLoaded() runs once
+    let qcrDocExists = false; // whether ayahCollections/{tenantId} already exists -- decides create vs update on the next save
+    let qcrCurrentId = null; // which collection's own wheel is open, or null = the list of collections
+    let qcrManageOn = false;
+    let qcrShowArchived = false;
+    let qcrSurahDataByNum = new Map(); // surahNum -> getSurah() result, for whichever collection is currently open (its own distinct surahs only, not the whole Quran)
 
     // Phase 5 -- drill playback state (persisted across renderAudioControls()
     // rebuilds, same pattern as currentReciterId/loopIsOn above).
@@ -3529,6 +3630,7 @@
       exploreJuzNum = null;
       exploreSurahNum = null;
       exploreRukuIndex = null;
+      setExplorePalette("quran"); // Ayah Collections round: every fresh open lands on the Quran wheel, same "opening it resets the drill-down" rule this function already had -- QCR is an opt-in via the palette each time, not a remembered mode
       exploreWheelContainer.innerHTML = "Loading whole-Quran progress — this reads every surah's saved progress once, so it can take a few seconds…";
       await ensureExploreChunksLoaded();
       await renderExplore();
@@ -4033,6 +4135,374 @@
       const sidebarItems = items.map((it) => ({ ...it, label: `Ayah ${it.key}` }));
       exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToStudy);
+    }
+
+    // -----------------------------------------------------------------------
+    // Ayah Collections (QCR), 26 Aug 2026 -- Explore's own palette, alongside
+    // the Quran-structure drill-down above (#explorePanel, untouched by this
+    // round). A demo was shown and confirmed before this was built (this
+    // project's own standing practice for a genuine design/scope decision);
+    // see js/qcr.js's own header for the full reasoning on storage, I4/I5
+    // and what changed between the demo and this build.
+    //
+    // Reused rather than re-invented: renderScopedWheel/renderWheelLegend
+    // (mastery-wheel.js) draw the wheel and legend exactly as every other
+    // Explore level already does; goToReference() (the Search/"Go to" box's
+    // own canonical jump) does the surah-loading and range/ayah split;
+    // openNoteView() (the ⋮ menu's own "Note & more…" target) is what a
+    // tapped āyah actually opens -- the owner's own ask ("moving to the Note
+    // view and enable working as regular note"), so Bookmark/Notes/Play/
+    // word-by-word all just work on a QCR āyah, unchanged. Colour reuses the
+    // SAME exploreChunksBySurah every other Explore wheel already loads on
+    // open (Q3's own reversal, 26 Aug 2026: "reflect a gradual increase of
+    // deep shades of colour") -- costs nothing extra, since ensureExplore
+    // ChunksLoaded() already runs unconditionally the moment Explore opens,
+    // whichever palette entry is picked afterwards.
+    //
+    // The one real new cost, disclosed rather than hidden: opening ONE
+    // collection's wheel fetches that collection's own DISTINCT surahs'
+    // full text (getSurah, for the English snippet in the sidebar) -- a
+    // handful of surahs, not all 114, and the same static, cached-after-
+    // first-load fetch Explore's own Surah/Ruku levels already accept.
+    function escapeHtml(s) {
+      return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    let qcrCollectionsTenantId = null; // which tenant qcrCollections was loaded for -- re-fetched if the person switches tenants while it's already cached
+
+    function setExplorePalette(mode) {
+      exploreMode = mode;
+      explorePaletteQuranBtn.classList.toggle("on", mode === "quran");
+      explorePaletteQuranBtn.setAttribute("aria-pressed", String(mode === "quran"));
+      explorePaletteQcrBtn.classList.toggle("on", mode === "qcr");
+      explorePaletteQcrBtn.setAttribute("aria-pressed", String(mode === "qcr"));
+      explorePanelEl.hidden = mode !== "quran";
+      qcrPanelEl.hidden = mode !== "qcr";
+    }
+    explorePaletteQuranBtn.addEventListener("click", () => { setExplorePalette("quran"); renderExplore(); });
+    explorePaletteQcrBtn.addEventListener("click", () => openQcrPalette());
+
+    async function ensureQcrDataLoaded() {
+      if (qcrCollections && qcrCollectionsTenantId === activeTenantId) return;
+      const docData = await getQcrDoc(db, activeTenantId);
+      qcrDocExists = !!docData;
+      qcrCollections = collectionsFrom(docData);
+      qcrCollectionsTenantId = activeTenantId;
+      qcrCurrentId = null;
+    }
+
+    async function openQcrPalette() {
+      setExplorePalette("qcr");
+      qcrCurrentId = null;
+      qcrBodyEl.innerHTML = t("Loading…");
+      await ensureQcrDataLoaded();
+      renderQcrList();
+    }
+
+    /** Every manage action writes the whole array back immediately (no
+        batched Save button -- Explore's own panel has no room for a
+        persistent save bar, and an edit that already looked applied on
+        screen should never be lost by navigating away). I15: a failure
+        reaches the user through safeWrite(); the caller rolls the optimistic
+        in-memory change back on failure. */
+    async function qcrPersist() {
+      const res = await safeWrite(
+        () => saveQcrCollections(db, { tenantId: activeTenantId, collections: qcrCollections, docExists: qcrDocExists, uid: auth.currentUser.uid }),
+        { collection: TENANT.AYAH_COLLECTIONS, docId: activeTenantId, action: "save Qur'an collections" }
+      );
+      if (res.ok) qcrDocExists = true;
+      return res.ok;
+    }
+
+    function renderQcrManageBarHtml() {
+      if (!canAdminCatalogueClientSide()) return "";
+      return `<div class="qcr-manage-bar"><button type="button" class="qcr-manage-toggle${qcrManageOn ? " on" : ""}" id="qcrManageToggleBtn">${escapeHtml(t("Manage"))}</button></div>`;
+    }
+
+    function renderQcrList() {
+      qcrBreadcrumbEl.innerHTML = `<span class="explore-crumb active">${escapeHtml(t("QCR"))}</span>`;
+      const visible = qcrShowArchived ? [...qcrCollections].sort((a, b) => a.order - b.order) : activeCollections(qcrCollections);
+      const rows = visible
+        .map((col) => {
+          const title = escapeHtml(langText(col.title, getAppLang()));
+          const manage = qcrManageOn
+            ? `<span class="qcr-level-manage">
+                <button type="button" class="qcr-icon-btn" data-qcr-rename="${col.id}" title="${escapeHtml(t("Rename"))}">✎</button>
+                <button type="button" class="qcr-icon-btn${col.status === "archived" ? "" : " danger"}" data-qcr-archive="${col.id}" title="${escapeHtml(col.status === "archived" ? t("Restore") : t("Archive"))}">${col.status === "archived" ? "↺" : "🗄"}</button>
+              </span>`
+            : "";
+          return `<div class="qcr-level-row${col.status === "archived" ? " archived" : ""}" data-qcr-open="${col.id}">
+            <span class="qcr-level-title">${title}${col.status === "archived" ? ` (${escapeHtml(t("Archived"))})` : ""}</span>
+            <span class="qcr-level-count">${t("{count} āyāt", { count: num(col.items.length) })}</span>
+            ${col.badge ? `<span class="qcr-level-badge">${escapeHtml(col.badge)}</span>` : ""}
+            ${manage}
+          </div>`;
+        })
+        .join("") || `<p class="hint">${escapeHtml(t("No collections yet."))}</p>`;
+
+      const manageExtras = qcrManageOn
+        ? `<label class="qcr-archived-toggle"><input type="checkbox" id="qcrShowArchivedToggle" ${qcrShowArchived ? "checked" : ""}> ${escapeHtml(t("Show archived"))}</label>
+           <button type="button" class="qcr-add-collection-btn" id="qcrAddCollectionBtn">${escapeHtml(t("+ Add collection"))}</button>`
+        : "";
+
+      qcrBodyEl.innerHTML = `${renderQcrManageBarHtml()}<div class="qcr-level-list">${rows}</div>${manageExtras}
+        <p class="hint">${escapeHtml(t("Named collections of āyāt pulled from across the whole Qur'an — pick one to see it as a wheel."))}</p>`;
+
+      qcrBodyEl.querySelectorAll("[data-qcr-open]").forEach((el) => {
+        el.addEventListener("click", (e) => {
+          if (e.target.closest("[data-qcr-rename],[data-qcr-archive]")) return;
+          showQcrCollection(el.dataset.qcrOpen);
+        });
+      });
+      qcrBodyEl.querySelectorAll("[data-qcr-rename]").forEach((btn) => {
+        btn.addEventListener("click", (e) => { e.stopPropagation(); qcrRenameCollectionPrompt(btn.dataset.qcrRename); });
+      });
+      qcrBodyEl.querySelectorAll("[data-qcr-archive]").forEach((btn) => {
+        btn.addEventListener("click", (e) => { e.stopPropagation(); qcrToggleArchiveCollection(btn.dataset.qcrArchive); });
+      });
+      document.getElementById("qcrManageToggleBtn")?.addEventListener("click", () => { qcrManageOn = !qcrManageOn; renderQcrList(); });
+      document.getElementById("qcrShowArchivedToggle")?.addEventListener("change", (e) => { qcrShowArchived = e.target.checked; renderQcrList(); });
+      document.getElementById("qcrAddCollectionBtn")?.addEventListener("click", () => qcrAddCollectionPrompt());
+    }
+
+    async function qcrRenameCollectionPrompt(id) {
+      const col = qcrCollections.find((c) => c.id === id);
+      if (!col) return;
+      const current = langText(col.title, getAppLang());
+      const typed = prompt(t("Rename collection:"), current);
+      if (!typed || !typed.trim() || typed.trim() === current) return;
+      const prev = qcrCollections;
+      qcrCollections = renameCollection(qcrCollections, id, setLangText(col.title, getAppLang(), typed.trim()));
+      renderQcrList();
+      if (!(await qcrPersist())) { qcrCollections = prev; renderQcrList(); }
+    }
+
+    async function qcrToggleArchiveCollection(id) {
+      const col = qcrCollections.find((c) => c.id === id);
+      if (!col) return;
+      const name = langText(col.title, getAppLang());
+      const willArchive = col.status !== "archived";
+      if (!confirm(willArchive ? t('Archive "{name}"?', { name }) : t('Restore "{name}"?', { name }))) return;
+      const prev = qcrCollections;
+      qcrCollections = setCollectionStatus(qcrCollections, id, willArchive ? "archived" : "active");
+      renderQcrList();
+      if (!(await qcrPersist())) { qcrCollections = prev; renderQcrList(); }
+    }
+
+    async function qcrAddCollectionPrompt() {
+      const typed = prompt(t("New collection name:"));
+      if (!typed || !typed.trim()) return;
+      const prev = qcrCollections;
+      qcrCollections = addCollection(qcrCollections, { title: { [getAppLang()]: typed.trim() }, badge: "", status: "active" });
+      renderQcrList();
+      if (!(await qcrPersist())) { qcrCollections = prev; renderQcrList(); }
+    }
+
+    /** Opens one collection's own wheel -- fetches only the DISTINCT surahs
+        its own items touch (see this block's own header on that cost). */
+    async function showQcrCollection(id) {
+      qcrCurrentId = id;
+      const col = qcrCollections.find((c) => c.id === id);
+      if (!col) { qcrCurrentId = null; renderQcrList(); return; }
+      qcrBodyEl.innerHTML = t("Loading…");
+      const surahNums = [...new Set(
+        col.items.map((uk) => Number(parseUnitKey(uk).parts[0])).filter((n) => Number.isFinite(n))
+      )];
+      const results = await Promise.all(surahNums.map(async (n) => {
+        try { return [n, await getSurah(n)]; } catch { return [n, null]; }
+      }));
+      qcrSurahDataByNum = new Map(results);
+      renderQcrCollectionView();
+    }
+
+    /** A unit key's own reference label, surah name and (if that surah's
+        text has been loaded) a short live English snippet -- never a stored
+        copy, always read from QuranRevival's own Qur'an data (Q1, 26 Aug
+        2026: "All texts come from the QR's own data source"). */
+    function qcrItemDisplay(unitKey) {
+      const { unitType, parts } = parseUnitKey(unitKey);
+      const surahNum = Number(parts[0]);
+      const meta = surahIndex.find((s) => s.surahNumber === surahNum);
+      const sName = meta ? surahName(surahNum, meta.nameEnglish) : t("Surah {surah}", { surah: num(surahNum) });
+      let ayahNum, refLabel;
+      if (unitType === "range") {
+        const [from, to] = parts[1].split("-").map(Number);
+        ayahNum = from;
+        refLabel = `${num(surahNum)}:${num(from)}–${num(to)}`;
+      } else {
+        ayahNum = Number(parts[1]);
+        refLabel = `${num(surahNum)}:${num(ayahNum)}`;
+      }
+      const surahData = qcrSurahDataByNum.get(surahNum);
+      const ayah = surahData?.ayahs?.find((a) => a.ayah === ayahNum);
+      const full = ayah?.translations?.en ?? "";
+      const snippet = full.length > 90 ? `${full.slice(0, 90).trim()}…` : full;
+      return { surahNum, ayahNum, refLabel, surahName: sName, snippet };
+    }
+
+    /** Q3's own reversal (26 Aug 2026): pooled/claimed progress under
+        whichever Approach is currently selected, the SAME STATUS_COLORS
+        ramp every other wheel in the app already uses -- "a gradual
+        increase of deep shades" as real progress increases, not a plain
+        neutral wedge. Reads from exploreChunksBySurah, already loaded the
+        moment Explore opened (see this block's own header). */
+    function qcrItemStatus(unitKey) {
+      const trackable = currentTrackable();
+      if (!trackable) return "not_started";
+      const { unitType, parts } = parseUnitKey(unitKey);
+      const surahNum = Number(parts[0]);
+      if (unitType === "range") {
+        const [from, to] = parts[1].split("-").map(Number);
+        return poolCoverageStatus([{ surah: surahNum, from, to }], trackable.id) ?? "not_started";
+      }
+      const ayahNum = Number(parts[1]);
+      const entries = exploreChunksBySurah?.get(surahNum)?.entries ?? {};
+      return entries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started";
+    }
+
+    function renderQcrCollectionView() {
+      const col = qcrCollections.find((c) => c.id === qcrCurrentId);
+      if (!col) { qcrCurrentId = null; renderQcrList(); return; }
+      const title = escapeHtml(langText(col.title, getAppLang()));
+      qcrBreadcrumbEl.innerHTML = `<button type="button" class="explore-crumb" data-qcr-crumb-list>${escapeHtml(t("QCR"))}</button><span class="explore-crumb-sep">›</span><span class="explore-crumb active">${title}</span>`;
+      qcrBreadcrumbEl.querySelector("[data-qcr-crumb-list]").addEventListener("click", () => { qcrCurrentId = null; renderQcrList(); });
+
+      const trackable = currentTrackable();
+      const approachName = trackable ? langText(trackable.name, getAppLang(), trackable.id) : "";
+      const items = col.items.map((unitKey) => {
+        const disp = qcrItemDisplay(unitKey);
+        const statusId = qcrItemStatus(unitKey);
+        return { key: unitKey, number: disp.refLabel, statusId, title: `${disp.refLabel} — ${disp.surahName}`, ...disp };
+      });
+
+      const wheelHtml = renderScopedWheel(items, {
+        centerLabel: langText(col.title, getAppLang()),
+        centerSub: approachName || col.badge || "",
+      });
+      const labelsById = statusLabelsById();
+
+      qcrBodyEl.innerHTML = `
+        ${renderQcrManageBarHtml()}
+        <div id="qcrWheelContainer">${wheelHtml}</div>
+        <div id="qcrLegendContainer">${renderWheelLegend(labelsById)}</div>
+        <p class="hint">${escapeHtml(t("Tap a segment or a row to open that āyah — the wheel closes and lands you on QuranRevival's own reading/note screen."))}</p>
+        <div id="qcrWaysListContainer" class="wheel-sidebar"></div>
+      `;
+
+      document.getElementById("qcrManageToggleBtn")?.addEventListener("click", () => { qcrManageOn = !qcrManageOn; renderQcrCollectionView(); });
+      attachScopedWheelClickHandler(document.getElementById("qcrWheelContainer"), (key) => goToAyahFromQcr(key));
+      renderQcrWaysList(items, col, labelsById);
+    }
+
+    function renderQcrWaysList(items, col, labelsById) {
+      const container = document.getElementById("qcrWaysListContainer");
+      if (!container) return;
+      const otherCollections = qcrCollections.filter((c) => c.id !== col.id && c.status !== "archived");
+      const rows = items
+        .map((it) => {
+          const statusLabel = labelsById[it.statusId] ?? it.statusId;
+          const manageRow = qcrManageOn
+            ? `<div class="qcr-way-manage">
+                <select data-qcr-move="${escapeHtml(it.key)}">
+                  <option value="">${escapeHtml(t("Move to…"))}</option>
+                  ${otherCollections.map((c) => `<option value="${c.id}">${escapeHtml(langText(c.title, getAppLang()))}</option>`).join("")}
+                </select>
+                <button type="button" class="qcr-icon-btn danger" data-qcr-remove="${escapeHtml(it.key)}" title="${escapeHtml(t("Remove from this collection"))}">×</button>
+              </div>`
+            : "";
+          return `<div class="way-row qcr-way-row">
+            <button type="button" class="way-click" data-qcr-jump="${escapeHtml(it.key)}">
+              <span class="badge">${escapeHtml(it.number)}</span>
+              <span class="name">${escapeHtml(it.surahName)}</span>
+              <span class="status-chip chip-${it.statusId}">${escapeHtml(statusLabel)}</span>
+            </button>
+            ${it.snippet ? `<span class="qcr-way-snippet">${escapeHtml(it.snippet)}</span>` : ""}
+            ${manageRow}
+          </div>`;
+        })
+        .join("");
+
+      const addForm = qcrManageOn
+        ? `<div class="qcr-add-form">
+             <select id="qcrAddSurahSelect">${surahIndex.map((s) => `<option value="${s.surahNumber}">${num(s.surahNumber)}. ${escapeHtml(surahName(s.surahNumber, s.nameEnglish))}</option>`).join("")}</select>
+             <input type="number" id="qcrAddAyahInput" min="1" placeholder="${escapeHtml(t("Ayah"))}">
+             <button type="button" id="qcrAddItemBtn">${escapeHtml(t("+ Add āyah"))}</button>
+           </div>
+           <p class="qcr-add-msg hint" id="qcrAddMsg" style="display:none;"></p>`
+        : "";
+
+      container.innerHTML = `<div class="ways-list">${rows}</div>${addForm}`;
+
+      container.querySelectorAll("[data-qcr-jump]").forEach((btn) => {
+        btn.addEventListener("click", () => goToAyahFromQcr(btn.dataset.qcrJump));
+      });
+      container.querySelectorAll("[data-qcr-remove]").forEach((btn) => {
+        btn.addEventListener("click", () => qcrRemoveItemAction(col.id, btn.dataset.qcrRemove));
+      });
+      container.querySelectorAll("[data-qcr-move]").forEach((sel) => {
+        sel.addEventListener("change", () => {
+          const toId = sel.value;
+          if (!toId) return;
+          qcrMoveItemAction(col.id, toId, sel.dataset.qcrMove);
+        });
+      });
+      document.getElementById("qcrAddItemBtn")?.addEventListener("click", () => qcrAddItemAction(col.id));
+    }
+
+    async function qcrRemoveItemAction(collectionId, unitKey) {
+      const prev = qcrCollections;
+      qcrCollections = qcrRemoveItemLocal(qcrCollections, collectionId, unitKey);
+      renderQcrCollectionView();
+      if (!(await qcrPersist())) { qcrCollections = prev; renderQcrCollectionView(); }
+    }
+
+    async function qcrMoveItemAction(fromId, toId, unitKey) {
+      const prev = qcrCollections;
+      qcrCollections = qcrMoveItemLocal(qcrCollections, fromId, toId, unitKey);
+      renderQcrCollectionView();
+      if (!(await qcrPersist())) { qcrCollections = prev; renderQcrCollectionView(); }
+    }
+
+    async function qcrAddItemAction(collectionId) {
+      const surahSel = document.getElementById("qcrAddSurahSelect");
+      const ayahInput = document.getElementById("qcrAddAyahInput");
+      const msgEl = document.getElementById("qcrAddMsg");
+      const surahNum = Number(surahSel.value);
+      const ayahNum = Number(parseNum(ayahInput.value.trim()));
+      const meta = surahIndex.find((s) => s.surahNumber === surahNum);
+      if (!meta || !Number.isInteger(ayahNum) || ayahNum < 1 || ayahNum > meta.ayahCount) {
+        msgEl.textContent = t("Surah {surah} has {count} ayahs.", { surah: num(surahNum), count: num(meta?.ayahCount ?? 0) });
+        msgEl.style.display = "block";
+        return;
+      }
+      msgEl.style.display = "none";
+      const unitKey = buildUnitKey.ayah(surahNum, ayahNum);
+      if (!qcrSurahDataByNum.has(surahNum)) {
+        try { qcrSurahDataByNum.set(surahNum, await getSurah(surahNum)); } catch { /* snippet just stays empty */ }
+      }
+      const prev = qcrCollections;
+      qcrCollections = qcrAddItemLocal(qcrCollections, collectionId, unitKey);
+      renderQcrCollectionView();
+      if (!(await qcrPersist())) { qcrCollections = prev; renderQcrCollectionView(); }
+    }
+
+    /** The owner's own ask (26 Aug 2026): a tapped āyah lands on the real,
+        working Ayah Note screen, not a preview -- Bookmark/Notes/Play/
+        word-by-word all just work, unchanged. Reuses goToReference() (the
+        Search/"Go to" box's own canonical jump) for the surah-load/range
+        split, then openNoteView() (the ⋮ menu's own "Note & more…" target)
+        for the rest -- two existing mechanisms, not a third one. */
+    async function goToAyahFromQcr(unitKey) {
+      closeAllPanels();
+      const { unitType, parts } = parseUnitKey(unitKey);
+      const surahNum = Number(parts[0]);
+      if (unitType === "range") {
+        const [from, to] = parts[1].split("-").map(Number);
+        await goToReference(surahNum, from, to);
+      } else {
+        await goToReference(surahNum, Number(parts[1]), null);
+      }
+      await openNoteView(unitKey);
     }
 
     /** Ayah translation panel: additive when Bangla is chosen (English stays visible alongside it), per the F-060 design note in ayah-renderer.js. */

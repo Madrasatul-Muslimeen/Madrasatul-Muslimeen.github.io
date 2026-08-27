@@ -1872,4 +1872,26 @@ export const BN = {
   "+ New bookmark": "+ নতুন বুকমার্ক", // ?
   "Creating a bookmark for this module isn't built yet — open it and use its own ☆ button.":
     "এই মডিউলের জন্য এখনো বুকমার্ক তৈরি করার ব্যবস্থা নেই — মডিউলটি খুলে এর নিজস্ব ☆ বোতাম ব্যবহার করুন।", // ?
+
+  // =====================================================================
+  // Ayah Collections (QCR) round (26 Aug 2026) -- Explore's own palette,
+  // for named cross-surah āyah collections. "QCR" is the name of the
+  // owner's own first collection set (their own uploaded file's title),
+  // kept as-is rather than translated -- same treatment "WbW"/"Aa" already
+  // get: a real word next to it (below) explains what it is.
+  // =====================================================================
+  "QCR": "QCR",
+  "Manage": "পরিচালনা", // ?
+  "New collection name:": "নতুন সংকলনের নাম:", // ?
+  "Rename collection:": "সংকলনের নাম বদলান:", // ?
+  "Show archived": "সংরক্ষণাগারে থাকাগুলো দেখান", // ?
+  "+ Add collection": "+ সংকলন যোগ করুন", // ?
+  "No collections yet.": "এখনো কোনো সংকলন নেই।", // ?
+  "{count} āyāt": "{count}টি আয়াত",
+  "Named collections of āyāt pulled from across the whole Qur'an — pick one to see it as a wheel.":
+    "কুরআনের বিভিন্ন সূরা থেকে বাছাই করা আয়াতের নামাঙ্কিত সংকলন — একটি বেছে নিন, চাকা হিসেবে দেখতে।", // ?
+  "Remove from this collection": "এই সংকলন থেকে সরান", // ?
+  "Tap a segment or a row to open that āyah — the wheel closes and lands you on QuranRevival's own reading/note screen.":
+    "কোনো অংশ বা সারিতে চাপুন সেই আয়াত খুলতে — চাকাটি বন্ধ হয়ে যাবে এবং আপনি সরাসরি QuranRevival-এর পঠন/নোট স্ক্রিনে পৌঁছাবেন।", // ?
+  "+ Add āyah": "+ আয়াত যোগ করুন", // ?
 };
