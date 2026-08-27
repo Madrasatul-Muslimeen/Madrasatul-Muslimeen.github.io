@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.85.** Cutover to production happened
+**Current milestone: QuranRevival v07.86.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -5658,6 +5658,204 @@ change is live until the owner deploys this round's addition via the
 Firebase Console -- until then, Manage-mode writes will fail with a real,
 visible I15 message rather than silently doing nothing (browsing works
 regardless, since it falls back to the seeded defaults with no write).
+
+v07.86 (27 Aug 2026, on Claude Code on the web) is **Ayah Collections
+(QCR) round 2 -- brought in line with the real QCR app's own PC layout,
+Explore made a real full-screen stage view, and the interconnection with
+the Note view the owner asked for from the start.** The owner deployed
+v07.85's `firestore.rules` addition themselves via the Firebase Console
+and confirmed it working, then sent a screenshot of the real QCR app's own
+PC screen and four more asks in one message, answered with two
+`AskUserQuestion` clarifications before anything was built (both matched
+the recommended option): full screen means the WHOLE Explore panel, not
+only QCR mode; and the Note view's "move to a collection" control is
+offered on every āyah everywhere, not only when reached via a collection
+(the owner's own words both times: "interconnection is very important").
+
+**Explore is a real fourth `#stage` view now, not a small drawer.** The
+owner's own report -- "The explore panel should increase to the entire
+screen (instead of taking a portion of the screen)" -- meant the whole
+`#panelExplore` drawer content moved OUT of `#dock` and became `#exploreView`,
+a direct sibling of `#wheelSection`/`#readView`/`#noteView`, reusing the
+SAME `#stage > [hidden] { display: none !important; }` rule shell round 17
+already established rather than a new override at that level.
+`tabExploreBtn` converted from a `data-panel` drawer toggle
+(`aria-controls`/`aria-expanded`) to a `.qr-tab-view` view switch
+(`aria-pressed`), exactly the Read/Note/Approach pattern -- `setStageView()`
+gained a fourth "explore" case, and `openExplore()` is unchanged underneath
+(still resets the palette to Quran and the drill-down to Whole Quran on
+every fresh open). `#explorePanel`/`#qcrPanel` (nested, non-direct-`#stage`-
+children) still need their own explicit `[hidden] { display: none; }`
+override -- the same `.wheel-box[hidden]` trap this project has hit
+several times before (shell round 17, v07.85 itself) -- confirmed present
+and correct.
+
+**The QCR screen itself was rebuilt to the owner's own screenshot: one
+persistent screen (a level switcher + always-visible current collection's
+list+wheel), not the two-screen drill-down v07.85 shipped.** `qcrLevelSelect`
+is a plain, native `<select>` of every collection (simpler and just as
+reachable on a phone than a custom dropdown), wired once at module init
+rather than re-attached on every render, since it's now a fixed element
+rather than dynamically generated rows. Manage mode (owner/prime only,
+`canAdminCatalogueClientSide()`, same gate the old two-screen build
+already used) reveals rename/archive/add-collection icon buttons and a
+"Show archived" checkbox beside the select, all acting on whichever
+collection is CURRENTLY SELECTED rather than a row that was clicked --
+simpler once there's no longer a list of rows to click. Below the level
+bar, `#qcrMain` holds the list pane and the wheel pane together, list
+FIRST in DOM order: `flex-direction: row` at `min-width: 900px` (matching
+the reference app's own breakpoint) puts list-left/wheel-right for free
+with zero `order` hacks; `flex-direction: column-reverse` below that shows
+the wheel first on a phone, list scrolling below it. **Deliberately kept
+QR's own dark navy/gold theme rather than the reference app's ivory one**
+-- read "PC layout has to be like that" as being about layout PROPORTIONS
+(the level bar, the toolbar, the list-left/wheel-right split), not the
+colour scheme, so the rebuilt screen still reads as part of the same Quran
+module rather than a visually foreign import. **Save and Print are
+excluded, exactly as the owner named** -- every QCR manage action already
+writes immediately (v07.85's own design, no batched Save), and this screen
+has no print output of its own.
+
+**The Note view's own new "◂ List & wheel" button is the bridge the owner
+asked for from the very first message: "Note view is to work/edit tasks on
+individual or on a range of Ayat, List and wheel view is for analyses and
+organising the Ayat and the topic, therefore, interconnection is very
+important."** A new `noteOriginCollectionId` state variable, set only by
+`goToAyahFromQcr()` (never by any other path into the Note view -- opening
+via the Read screen, a bookmark, or a direct wheel-slice tap all leave it
+`null`, and the button is left out entirely rather than shown disabled,
+the same "nothing to explain" rule `canUpdateBookmark` already follows).
+`ayah-note-renderer.js` gained two new, optional `renderNoteView()` params
+(`backToCollectionLabel`, `collectionsPopoverHtml`) and two new callbacks
+(`onBackToCollection`, `onToggleCollectionMembership`) -- I2 held
+throughout, this file still never touches Firebase or reads catalogue
+data, it only places HTML the caller built and fires callbacks the caller
+defines. The button sits FIRST in bar 2, ahead of the nav cluster, matching
+the owner's own picture of the wheel/list view as "analyses and organising"
+and the Note view as "work/edit tasks" -- this is the one control whose
+whole job is crossing between them. Tapping it re-selects the SAME
+collection in the level bar and lands back on Explore's own QCR palette,
+not merely "some QCR screen" -- verified round-trip, not assumed.
+
+**The "🗂 Collections" popover is the second half of that ask, and it really
+is offered on every āyah everywhere** -- opened from `openNoteView()` itself
+(now `openNoteView(unitKey, { fromCollectionId })`, with `fromCollectionId`
+defaulting to `null` so every pre-existing call site needed zero changes),
+which now also awaits `ensureQcrDataLoaded()` so the popover has real data
+whichever way the Note view was reached, not only via the QCR wheel. Reuses
+the exact same generic `[data-note-sub-wrap]` open/close/outside-click
+wiring `ayah-note-renderer.js` already had for Copy/Share -- that code was
+never hardcoded to those two ids, so the new "collections" wrap needed no
+extra plumbing there at all. **One permission decision made without asking,
+since it follows directly from the wheel view's own existing rule**: editing
+a collection's OWN name/status is owner/prime-only there (`qcrManageOn` +
+`canAdminCatalogueClientSide()`); membership tagging from the Note view
+follows the same split -- owner/prime get a real ticked/unticked checkbox
+per active collection (`data-note-collection-toggle`, wired generically,
+firing `qcrAddItemLocal`/`qcrRemoveItemLocal` + an immediate `qcrPersist()`,
+the same "write now, roll back on failure" shape every other QCR manage
+action already uses); everyone else gets a plain, read-only list of
+whichever collections the āyah is ALREADY in -- still useful ("where does
+this fit"), never an editing surface past what the wheel view itself
+allows them. This narrower reading was not put to the owner separately
+(the AskUserQuestion answer "every āyah, everywhere" was about SCOPE --
+which āyahs get the control -- not about WHO can edit membership from it),
+but is recorded here in case it needs revisiting.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice for anything past `behaviour.mjs`'s own
+disclosed section-42 crash point, matching how v07.69-85 verified their
+own Note-view/QCR work) -- **56 checks, all passing**: the full-screen
+Explore view hiding wheel/read/note via COMPUTED display (not just the
+`hidden` property, the same `.wheel-box[hidden]` trap this project keeps
+re-checking for) with the Quran drill-down still rendering underneath as a
+regression check; the QCR level bar listing all 18 seeded collections with
+a real list+wheel for whichever one is selected; desktop row layout with
+the list genuinely left-of-wheel by bounding-box position, and mobile
+column-reverse with the wheel genuinely above the list and no horizontal
+overflow; Manage mode's add-a-collection and add-an-āyah flows each
+proven with a real write to `ayahCollections` via `window.__fsLog`; a real
+wedge/row tap landing on the actual Note view (not a preview) with the
+back button present and correctly titled; the back button's full
+round-trip proven to return to the SAME collection, not merely "some QCR
+screen"; a Note view reached via the dock's own Note tab (no collection)
+proven to have NO back button while still offering the Collections
+popover; the popover's 18 real checkboxes for the seeded owner/prime user,
+their VALUES proven to stay plain collection ids (a real defect caught and
+fixed here: the seeded ids contain hyphens, like `sec-14-nazar`, which an
+early too-strict regex rejected), and a real toggle write; and the whole
+thing again in Bangla, including the checkbox values staying un-translated
+while the surrounding labels read Bangla. **One real test-timing bug was
+caught and fixed while writing the script, not an app bug**: the very
+first collection in seed order needs several distinct surahs' worth of
+Qur'an data fetched before its list+wheel can render (`renderQcrPanel()`'s
+own `Promise.all(getSurah)`), and a fixed 600ms wait was long enough for
+every LATER test in the same run (warm from earlier fetches) but not the
+first cold one -- fixed by waiting for the real rendered content
+(`page.waitForFunction`) rather than a guessed delay, the same lesson
+`tools/i18n-verify`'s own README already carries about `timeupdate`
+throttling (round 26).
+
+`node --check` passes on every touched file (`ayah-note-renderer.js`,
+`quranrevival.html`'s own extracted module script, `bn.js`). Six new
+strings this round adds -- "Add collection", "Back to {name}", "List &
+wheel", "Collections", "Not in any collection yet.", "No āyāt in this
+collection yet." -- all translated in `bn.js`, first-draft Bangla marked
+`// ?` per this project's own standing convention; every OTHER string this
+round's static markup needs ("Rename", "Archive", "Manage", "Show
+archived", "Quran") was already in `bn.js` from earlier rounds and is
+picked up automatically by `translateStatic()`'s own generic walk over
+text nodes and `TRANSLATABLE_ATTRS` (`title`/`placeholder`/`aria-label`/
+`alt`) -- no per-string wiring needed, confirmed by grep before assuming
+either way. **Not verified this round: the read-only (non-owner/prime)
+half of the Collections popover** -- the checked-in stub's seeded user is
+always owner+prime, and swapping that for one throwaway script would mean
+patching the checked-in `firebase-stub.mjs`, judged not worth doing for a
+smaller, self-decided permission detail; verified by code review against
+the wheel view's own identical gate instead. No `firestore.rules` or
+schema changes this round -- `ayahCollections`'s own shape from v07.85 is
+unchanged; nothing new to deploy.
+
+**Also run this round, after the smoke test: the project's own faster
+regression tools** (the full 800+-check `behaviour.mjs` itself timed out
+past 300s in this sandbox without reaching this round's own new screens
+anyway, so it was not the right tool here -- `layout.mjs`, `navcheck.mjs`,
+`reading.mjs`, `panel.mjs` and both `tools/perf/` scripts are what actually
+answer "did this round touch anything it shouldn't have"). **`layout.mjs`
+reports the landing page byte-for-byte identical at all eight viewports in
+both banner states** (same wheel-heading top, same wheel width, same
+Approach rows, same 9px dock gap) once run with a real previous-commit
+shim (`app/_prev-quranrevival.html`, dropped for the length of the
+comparison and deleted after, per this file's own v07.35 note) -- **but it
+also flagged a `getElementById` "missing ID targets" warning that turned
+out to be a pre-existing false positive, not a regression, confirmed by
+investigating rather than dismissing it**: `layout.mjs`'s own ID check
+regex-scans a loaded page's script text for every `getElementById("…")`
+call and flags any that don't resolve on a FRESH, default-state load --
+with no awareness that some ids (QCR's own Manage-mode controls, the
+add-item form) only exist once that screen is actually opened. Proven by
+running the OLD (v07.85) page against ITSELF: the identical warning fires,
+naming a different but equally real set of QCR ids
+(`qcrManageToggleBtn`/`qcrAddCollectionBtn`/etc.) that were equally
+"missing" on a fresh load of the UNCHANGED old page -- so this is a
+standing limitation of the check's own method wherever QCR's ids are
+concerned, present before this round and after it alike, not something
+this round introduced. **`navcheck.mjs` unchanged** (still only the
+pre-existing 320px English truncation of "Operation"/"Bookmark" this
+project has carried since v07.29), **`reading.mjs` OK in both banner
+states**, **`panel.mjs` reports no truncation and no wrapped bar** (this
+round never touches the Study options panel structure), and **`tools/perf/
+measure.mjs` confirms Quran Study still opens in 6 sequential round trips**
+-- `ayahCollections` joins no startup path, exactly as v07.85 already
+established -- with **`tools/perf/new-tenant.mjs` at 10/10**. One small,
+genuine dead-code cleanup found and fixed while reviewing this round's own
+diff: `tabExploreBtn` no longer carries `data-panel`, so the
+`dockTabs.forEach` click handler's own `if (tab.dataset.panel ===
+"panelExplore") await openExplore();` branch could never fire again
+(Explore now opens via its own `tabExploreBtn.addEventListener`, added
+alongside Read/Note/Approach's) -- removed rather than left as a silent,
+misleading no-op, per this project's own standing rule (I4 is about data,
+not code; dead code gets deleted, not preserved).
 
 ## What this is
 

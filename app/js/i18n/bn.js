@@ -1894,4 +1894,16 @@ export const BN = {
   "Tap a segment or a row to open that āyah — the wheel closes and lands you on QuranRevival's own reading/note screen.":
     "কোনো অংশ বা সারিতে চাপুন সেই আয়াত খুলতে — চাকাটি বন্ধ হয়ে যাবে এবং আপনি সরাসরি QuranRevival-এর পঠন/নোট স্ক্রিনে পৌঁছাবেন।", // ?
   "+ Add āyah": "+ আয়াত যোগ করুন", // ?
+  "No āyāt in this collection yet.": "এই সংকলনে এখনো কোনো আয়াত নেই।", // ?
+
+  // -------------------------------------------------------------------
+  // Round 2 (26 Aug 2026) -- full-screen Explore, the rebuilt level-bar
+  // shape, and the Note view's own "back to the collection" / "which
+  // collection(s) is this āyah in" additions.
+  // -------------------------------------------------------------------
+  "Add collection": "সংকলন যোগ করুন", // ?
+  "Back to {name}": "{name}-এ ফিরুন", // ?
+  "List & wheel": "তালিকা ও চাকা", // ?
+  "Collections": "সংকলনসমূহ", // ?
+  "Not in any collection yet.": "এখনো কোনো সংকলনে নেই।", // ?
 };
