@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.83.** Cutover to production happened
+**Current milestone: QuranRevival v07.84.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -5378,6 +5378,90 @@ measure.mjs` unchanged** -- this round is pure client-side SVG/CSS/layout
 work, session-only, no Firestore read added anywhere (I9 untouched). No
 `firestore.rules`, schema or Firestore data changes -- nothing to deploy
 but the static files.
+
+v07.84 (26 Aug 2026, on Claude Code on the web) is **a same-day correction
+to v07.83**, from the owner's own annotated screenshot the moment it
+shipped: red marks circling a real gap still sitting above Ta'awwudh,
+Bismillah still wrapped to two lines despite visible room on both sides,
+and an ask to move Surah/Ayah up and free more room for the graphic below.
+
+**The two complaints turned out to be ONE root cause, confirmed by
+measuring rather than guessed at.** A live debug trace (`window.__hubDebug`)
+at the owner's own screen size showed the picker block's own WIDTH (111px)
+was set by the width-fitting loop's CENTRED containment check, while
+Bismillah's real one-line requirement at its own font size measured 129px
+-- 18px short. **A wide, flat-topped rectangle corner-fit into a circle
+necessarily leaves empty space above its own top-centre even when its top
+CORNERS sit right at the circle's edge** -- that gap (measured 24px at
+1280px) is exactly what the owner circled, and it wasn't fixable by
+touching Ta'awwudh in isolation: the block was simply narrower than
+Bismillah needed, so wrapping it cost a second line's worth of height,
+which in turn ate into the vertical budget everything else -- Ta'awwudh,
+the up-shift, the graphic below -- was drawing from.
+
+**Fixed at the source: `MIN_SAFE_WIDTH` is no longer a flat guessed
+constant (62px).** `layoutWheelHub()` now measures Bismillah's own real
+one-line width with a reused `<canvas>` 2D context, at the exact font size
+(`arabicPx`) it's about to render at, and uses `max(62, that + 10px)` as
+the width-fitting loop's own floor -- a fact about THIS hub's own text,
+not a number picked by eye. **A real, hard safety clamp was added
+immediately after**, because that floor can legitimately conflict with the
+circle's own containment math on a tight enough hub, and this project's
+own non-negotiable rule is that overflow never wins: `hardSafeWidth` is
+recomputed against the block's own final measured height, and if
+Bismillah's width floor pushed past it, the block narrows back down to
+what's actually safe (re-measuring height afterward, since a narrower box
+can put Bismillah back onto two lines). **Caught for real, not
+theoretically**: the first version of this fix, tested before the clamp
+was added, put a real, visible ayah-marking overflow onto the wheel's own
+slices at 768×1024 -- confirmed both by a `maxDist > r` geometry check and
+by screenshot (the last letters of both Arabic lines running past the gold
+ring) -- exactly the failure mode this project's own "never overflow" rule
+exists to prevent, caught before it shipped rather than after.
+
+**Ta'awwudh's own viewBox was also tightened, not just its font raised
+again.** Font 18px → 20px, but the viewBox itself shrank (200×64 → 200×50)
+and the curve flattened slightly (arc radius 150 → 200, sagitta ~30 → ~21
+viewBox units) -- a deliberate trade the owner's OWN complaint pointed at:
+they asked for space to close, not more curve this round, and a shallower
+arc needs less vertical room for the same legible font, which is what
+actually let the ink move up rather than just grow in place. Because
+Ta'awwudh has no separate JS-driven font size (still scales with the
+wrapper's own measured width, like a vector graphic, exactly as v07.82
+designed it), this shorter aspect ratio pays off doubly: for any given
+width the box is now render shorter, which both closes real vertical
+space AND, since less height is spent per unit of width, indirectly buys
+back some of the room the wider Bismillah-driven box would otherwise have
+cost the up-shift and the graphic below.
+
+**Result, measured the same way as every round since v07.22: at 1280×800,
+Bismillah is one line (was two), the picker block's own height dropped
+~120px → 99px, and the phase-2 graphic's own height grew ~26px → ~30px
+with visibly more clearance above the dock.** Surah and Ayah moved up
+with the rest of the block automatically -- neither has its own
+positioning code, both just follow the flex column's own repositioned
+parent. **8-viewport geometry sweep (containment, both the default state
+and the "286"/long-surah-name stress case) confirms `fits: true`
+everywhere, including the 768×1024 case that briefly failed mid-round.**
+On the two smallest phones (320×640, 360×640) Bismillah still wraps to two
+lines -- the hard safety clamp genuinely has no more room to give there,
+and that is the honest, correct answer (no overflow ever, even on the
+tightest hub) rather than a leftover gap. Confirmed by zoomed (3×) real
+screenshots at three sizes, not just the numbers.
+
+**Verified**: `tools/i18n-verify/layout.mjs` reports **NO LAYOUT
+REGRESSIONS** against a real previous-commit shim at all eight viewports in
+both banner states (landing page byte-for-byte identical; `getElementById`
+targets 101 → 102, the one new call site reading Bismillah's own element,
+no new DOM), **`tools/perf/measure.mjs` unchanged** (9 Firestore calls,
+same as before -- a reused canvas 2D context adds no network dependency),
+**translation coverage unchanged at 1,372/1,372** (nothing new to
+translate -- this round only measures and repositions existing text), and
+**the full `tools/i18n-verify/behaviour.mjs` suite re-run in full: 789
+pass, 0 fail**, reaching the same already-disclosed, pre-existing
+section-42 crash this project has carried since v07.69, unrelated to this
+round. No `firestore.rules`, schema or Firestore data changes -- nothing
+to deploy but the static files.
 
 ## What this is
 

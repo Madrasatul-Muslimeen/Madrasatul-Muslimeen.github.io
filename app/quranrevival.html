@@ -413,7 +413,7 @@
   .wheel-hub-taawwudh svg { display: block; overflow: visible; }
   .wheel-hub-taawwudh-text {
     font-family: var(--quran-font, 'Amiri', serif);
-    fill: #fbf3df; font-size: 18px;
+    fill: #fbf3df; font-size: 20px;
   }
   /* Font sizes for Bismillah/Surah/Ayah are set by layoutWheelHub() as CSS
      custom properties on the wrapper (--hub-select-size/--hub-arabic-size),
@@ -1226,8 +1226,8 @@
                  illuminated Qur'an graphic, not built this round. -->
             <div id="wheelHubPickers" class="wheel-hub-pickers" hidden>
               <p id="wheelHubTaawwudh" class="wheel-hub-taawwudh" dir="rtl" lang="ar">
-                <svg viewBox="0 0 200 64" role="img" aria-label="أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ" xmlns:xlink="http://www.w3.org/1999/xlink">
-                  <defs><path id="wheelHubArc" d="M 10,52 A 150,150 0 0 1 190,52" fill="none"/></defs>
+                <svg viewBox="0 0 200 50" role="img" aria-label="أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ" xmlns:xlink="http://www.w3.org/1999/xlink">
+                  <defs><path id="wheelHubArc" d="M 10,43 A 200,200 0 0 1 190,43" fill="none"/></defs>
                   <text class="wheel-hub-taawwudh-text" direction="rtl" text-anchor="middle">
                     <textPath href="#wheelHubArc" xlink:href="#wheelHubArc" startOffset="50%">أَعُوذُ بِاللَّهِ مِنَ الشَّيْطَانِ الرَّجِيمِ</textPath>
                   </text>
@@ -1981,6 +1981,10 @@
     const wheelCtaBtn = document.getElementById("wheelCtaBtn");
     const wheelHubPickers = document.getElementById("wheelHubPickers");
     const wheelHubGraphic = document.getElementById("wheelHubGraphic");
+    const wheelHubBismillah = document.getElementById("wheelHubBismillah");
+    // Reused by layoutWheelHub() to measure Bismillah's own real one-line
+    // width -- one canvas, not a new one per layout pass.
+    const hubMeasureCtx = document.createElement("canvas").getContext("2d");
     const wheelIntroSettledEl = document.getElementById("wheelIntroSettled");
     const readUnitTypeSelect = document.getElementById("readUnitTypeSelect");
     const readAyahSelect = document.getElementById("readAyahSelect");
@@ -3355,7 +3359,21 @@
       wheelHubPickers.style.setProperty("--hub-arabic-size", arabicPx + "px");
       wheelHubPickers.style.setProperty("--hub-select-size", selectPx + "px");
 
-      const MIN_SAFE_WIDTH = 62; // the floor -- below this even the shrunk text stops being legible
+      // Bismillah must never wrap -- unlike Surah/Ayah (which may
+      // legitimately ellipsis) it's fixed text, so its own one-line width
+      // is knowable in advance rather than discovered by trial. Measured
+      // with a canvas at the SAME font this element is about to render at
+      // (arabicPx, just set above), so the floor below is a fact about
+      // THIS hub's own text, never a guess -- and it moves the width
+      // trial's own floor up from the old flat 62px whenever Bismillah
+      // genuinely needs more than that to stay on one line.
+      let bismillahMinWidth = 0;
+      if (wheelHubBismillah) {
+        const bStyle = getComputedStyle(wheelHubBismillah);
+        hubMeasureCtx.font = `${bStyle.fontWeight} ${arabicPx}px ${bStyle.fontFamily}`;
+        bismillahMinWidth = hubMeasureCtx.measureText(wheelHubBismillah.textContent).width;
+      }
+      const MIN_SAFE_WIDTH = Math.max(62, bismillahMinWidth + 10); // the floor -- below this either legibility or Bismillah's own one line breaks
       const RESERVE_TARGET = 0.4; // the owner's own "~40% of the centre below" ask, as a fraction of the hub's diameter
       // A small, deliberate margin on the circle itself (measured, not
       // guessed) -- the last bit of headroom for whatever sub-pixel gap
@@ -3385,6 +3403,21 @@
         if (window.__hubDebug) console.log("HUBPASS", JSON.stringify({ pass, width, h, safeWidth, nextWidth }));
         if (Math.abs(nextWidth - width) < 0.5) { width = nextWidth; break; }
         width = nextWidth;
+      }
+      // MIN_SAFE_WIDTH (Bismillah's own real one-line need) is allowed to
+      // win over `safeWidth` inside the loop above -- legibility matters
+      // enough to accept a LITTLE geometric risk chasing it. But not
+      // spilling onto a slice is the one truly non-negotiable constraint,
+      // so if that floor genuinely put the loop's own final width past
+      // what the circle allows at this height, clamp back down here,
+      // hard, even if that costs Bismillah its one line on a small enough
+      // hub. Re-measures `h` after clamping, since a narrower width can
+      // itself make Bismillah wrap and change the block's own height.
+      const hardSafeWidth = (h / 2) >= rSafe ? 0 : 2 * Math.sqrt(rSafe * rSafe - (h / 2) * (h / 2));
+      if (width > hardSafeWidth) {
+        width = hardSafeWidth;
+        wheelHubPickers.style.width = width + "px";
+        h = wheelHubPickers.getBoundingClientRect().height;
       }
       wheelHubPickers.style.width = width + "px";
 
