@@ -3637,6 +3637,25 @@
       if (!selectedPersonId) return;
       const chunkKey = `surah_${currentSurahNum}`;
       currentChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, chunkKey);
+      // 28 Aug 2026: a claim made from the Note view (or the floating "Track
+      // this unit" modal) used to leave exploreChunksBySurah -- Explore/QCR's
+      // own once-per-"open" cache -- pointing at the OLD currentChunk object,
+      // since this function reassigns currentChunk to a freshly-fetched one
+      // rather than mutating the old object in place. The QCR wheel (and the
+      // plain Explore wheel) read status through that cache, not currentChunk
+      // directly, so a real claim never showed as a real colour change until
+      // Explore was fully closed and reopened. No extra read: this surah's
+      // chunk was just fetched above for currentChunk anyway -- only touch
+      // the cache at all if Explore has actually been opened this session
+      // (exploreChunksBySurah stays null until then). Unconditionally, not
+      // only "if already present": a surah with NO prior claims never got an
+      // entry at all from ensureExploreChunksLoaded() (it only .set()s a
+      // truthy chunk) -- the exact case a first-ever claim on a surah hits --
+      // so gating on .has() left the very claim this fix exists for unseen.
+      if (exploreChunksBySurah) {
+        if (currentChunk) exploreChunksBySurah.set(currentSurahNum, currentChunk);
+        else exploreChunksBySurah.delete(currentSurahNum);
+      }
       renderWheel();
     }
 
