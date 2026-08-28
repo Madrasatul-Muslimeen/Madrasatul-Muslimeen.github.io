@@ -1462,7 +1462,7 @@
      Card always shows it. */
   .note-popup-row-body { flex: 1 1 100%; padding: 0 0.3rem 0.4rem; }
   .note-popup-row-arabic { font-family: var(--quran-font); direction: rtl; text-align: right; font-size: calc(1rem * var(--qr-ar-scale, 1)); line-height: 1.7; color: #1b1b16; }
-  .note-popup-row-snippet { display: none; margin: 0 0.3rem 0.3rem; font-size: 0.72rem; color: #555; line-height: 1.4; }
+  .note-popup-row-snippet { display: none; margin: 0 0.3rem 0.3rem; font-size: calc(0.72rem * var(--qr-en-scale, 1)); color: #555; line-height: 1.4; }
   .note-popup-row-note { flex: 1 1 100%; margin: 0 0.3rem 0.4rem; padding: 0.3rem 0.4rem; background: #fff; border: 1px dashed #b8862f; border-radius: 0.3rem; font-size: 0.72rem; color: #444; }
 
   /* List view (default): only the reference/surah/status line shows until
@@ -1789,10 +1789,6 @@
           <div class="note-popup-titlebar-actions">
             <button type="button" id="notePopupListViewBtn" title="List view" aria-pressed="false">☰</button>
             <button type="button" id="notePopupCardViewBtn" title="Card view" aria-pressed="false">▦</button>
-            <!-- Note-view enhancement round 3 -- "note-pane view" gets its
-                 own text-size button too, Arabic only (the only language
-                 this pane's own rows ever show -- see notePopupSideRowData()). -->
-            <div id="notePopupTextSizeSlot"></div>
             <button type="button" id="notePopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
             <button type="button" id="notePopupCloseBtn" title="Close" aria-label="Close">&times;</button>
           </div>
@@ -1803,6 +1799,15 @@
               <button type="button" id="notePopupSidePrevBtn" title="Previous in this group" aria-label="Previous in this group">◂</button>
               <span id="notePopupSideCount"></span>
               <button type="button" id="notePopupSideNextBtn" title="Next in this group" aria-label="Next in this group">▸</button>
+              <!-- Fixes round (28 Aug 2026, owner's own screenshot): the
+                   text-size button used to sit in the shared title bar
+                   above, crowded next to List/Card/Maximize/Close (window
+                   chrome, not this pane's own content) -- moved into the
+                   pane's OWN bar, right after its own Prev/Next, which is
+                   where a control scoped to THIS pane's content actually
+                   belongs. Arabic + English (the pane's own snippet is
+                   English, not Bangla -- see notePopupSideRowData()). -->
+              <div id="notePopupPaneTextSizeSlot"></div>
             </div>
             <div id="notePopupSideList" class="note-popup-side-list view-list"></div>
           </div>
@@ -2455,7 +2460,7 @@
     const notePopupTitleEl = document.getElementById("notePopupTitle");
     const notePopupListViewBtn = document.getElementById("notePopupListViewBtn");
     const notePopupCardViewBtn = document.getElementById("notePopupCardViewBtn");
-    const notePopupTextSizeSlot = document.getElementById("notePopupTextSizeSlot");
+    const notePopupPaneTextSizeSlot = document.getElementById("notePopupPaneTextSizeSlot");
     const notePopupMaximizeBtn = document.getElementById("notePopupMaximizeBtn");
     const notePopupCloseBtn = document.getElementById("notePopupCloseBtn");
     const notePopupSideEl = document.getElementById("notePopupSide");
@@ -4746,13 +4751,19 @@
     // there is nothing to keep in sync -- text-size.js's own delegated
     // document listeners cover whatever ends up in the DOM regardless of
     // when it was inserted. btnClass matches each bar's own existing button
-    // look (readBar's light "secondary qr-ico", the popup title bar's plain
-    // unclassed button) rather than the Note view's dark note-icon-btn
-    // default, which would look wrong in either. The note-pane only ever
-    // shows Arabic (see notePopupSideRowData()), so its own instance offers
-    // only that one slider plus All (which reduces to "just Arabic" there).
+    // look (readBar's light "secondary qr-ico", the note-pane's own navy
+    // square nav buttons via the plain, unclassed selector already
+    // targeting them) rather than the Note view's dark note-icon-btn
+    // default, which would look wrong in either. Fixes round: the note-pane
+    // popover offers Arabic AND English now, not Arabic alone -- its own
+    // default-visible text is the ENGLISH snippet (notePopupSideRowData()'s
+    // own `snippet` field, shown in Card view or once a row is expanded);
+    // the Arabic body is the one that stays hidden until a row's own toggle
+    // is opened. Offering only Arabic meant dragging the one slider on offer
+    // never visibly changed the text actually on screen by default -- Bangla
+    // stays excluded since that pane never renders it at all.
     readTextSizeSlot.innerHTML = renderTextSizeButtonHtml("read", { btnClass: "secondary qr-ico" });
-    notePopupTextSizeSlot.innerHTML = renderTextSizeButtonHtml("popup", { showEn: false, showBn: false, btnClass: "" });
+    notePopupPaneTextSizeSlot.innerHTML = renderTextSizeButtonHtml("popup", { showBn: false, btnClass: "" });
 
     // Pointer Events unify mouse/touch/pen in one code path (works on
     // desktop, tablet and phone alike, per this project's own standing

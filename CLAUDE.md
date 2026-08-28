@@ -6378,6 +6378,65 @@ generic "later phases" bucket otherwise, which would have under-reported
 this round's own real translation work). No `firestore.rules`, schema or
 Firestore data changes -- nothing to deploy but the static files.
 
+v07.93 (28 Aug 2026, on Claude Code on the web) is **a same-day fix to
+v07.92's own note-pane resizing**, from the owner's own screenshot:
+"In Note view both buttons work for note-view, none for note-pane view,
+you missed it. Also, is it okay placing these buttons (from note-bar-right
+to over the note-pane bar (left)? (Look at the image)"
+
+**The real bug, found by live investigation rather than assumed from the
+report: the note-pane's own popover was scoped to the wrong language.**
+v07.92 built it as `renderTextSizeButtonHtml("popup", { showEn: false,
+showBn: false, ... })` on the assumption that the pane's own default text
+is Arabic. It is the opposite. `.note-popup-row-snippet` -- the ENGLISH
+translation preview -- is what shows by default (Card view always, or List
+view once a row is expanded); `.note-popup-row-arabic` -- the Arabic
+body -- is what stays HIDDEN until a row's own individual toggle is
+opened. So the one slider the popover offered (Arabic) controlled text
+nobody was looking at, and the text actually on screen (English) had no
+`calc()` scaling on its own CSS rule at all -- confirmed with a focused
+Playwright script that dragged the Arabic slider against an EXPANDED row
+and watched it genuinely work (16px -> 24px), which is what proved this
+was a scope mistake, not a broken mechanism. Fixed: the popover now offers
+Arabic + English (still no Bangla, which that pane never renders), and
+`.note-popup-row-snippet`'s font-size gained `calc(0.72rem *
+var(--qr-en-scale, 1))` in place of a flat `0.72rem`.
+
+**The placement question the owner asked is answered yes, and built.** The
+button moved out of `.note-popup-titlebar-actions` (the shared title bar,
+crowded next to List/Card/Maximize/Close -- window chrome, not this pane's
+own content) into `.note-popup-side-nav`, right after the pane's own
+Prev/Next -- the owner's own "over the note-pane bar (left)" is exactly
+that row. The static slot was renamed `notePopupTextSizeSlot` ->
+`notePopupPaneTextSizeSlot` to match where it now lives; no JS logic in
+`text-size.js` itself needed to change, since the module's own delegated
+`document`-level click/input listeners were never tied to a fixed
+location in the first place -- moving the HTML was enough.
+
+**Verified: 35 checks pass** in a focused, un-checked-in Playwright script
+(this project's own established practice for anything past
+`behaviour.mjs`'s own disclosed section-42 crash point) -- the note-pane's
+own button confirmed gone from the title bar and present in its own nav
+bar; its popover confirmed offering Arabic AND English but not Bangla;
+dragging English confirmed to really resize the visible
+`.note-popup-row-snippet` text (not the hidden Arabic); the popover
+confirmed to stay within the pane's own box (not clipped by its
+`overflow:hidden`); a change made from the note-PANE popover confirmed to
+also resize the main Note VIEW's own Arabic (the same shared preference);
+plus every one of v07.92's own checks (the Note view's own popover, the
+Read bar's own popover, mobile persistence, Bangla) re-run and passing
+unchanged. **`layout.mjs` reports the landing page byte-for-byte
+identical** at all eight viewports in both banner states against a real
+`HEAD` shim (`getElementById` targets unchanged at 145, only the same
+four pre-existing QCR Manage-mode false positives this project has
+disclosed since v07.86, none newly missing), **`panel.mjs` and
+`reading.mjs` both clean**, **`navcheck.mjs` unchanged** (still only the
+pre-existing 320px English truncation of "Operation"/"Bookmark"), and
+**translation coverage unchanged** -- this round moves an existing control
+and fixes a CSS rule, adding no new user-visible strings. No
+`firestore.rules`, schema or Firestore data changes -- nothing to deploy
+but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
