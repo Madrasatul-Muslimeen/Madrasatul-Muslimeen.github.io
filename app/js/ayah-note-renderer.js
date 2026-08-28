@@ -20,6 +20,7 @@
 // notesToPlainText/copyAyahText/shareAyahText grouping.
 
 import { t } from "./i18n.js";
+import { renderTextSizeButtonHtml } from "./text-size.js";
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -335,6 +336,14 @@ export function renderNoteView({
           <div class="note-sub-popover" data-note-sub="collections">${collectionsPopoverHtml}</div>
         </div>
         <button type="button" class="note-icon-btn" data-note-palette-toggle title="${t("Notes formatting")}">Aa</button>
+        <!-- Note-view enhancement round 3 -- "enable all the languages
+             resizeable individually and collectively at the note-view".
+             text-size.js is a self-contained widget (its own delegated
+             document listeners, no per-render rewiring needed) -- this
+             renderer just places its markup, rebuilt fresh on every
+             re-render like everything else in this file, same as any other
+             bar-2 control. -->
+        ${renderTextSizeButtonHtml("noteview")}
 
         <!-- ⋮ -- everything else that is a CHOICE about how to read/edit,
              not a thing you tap every time: Share (the same expand-in-place

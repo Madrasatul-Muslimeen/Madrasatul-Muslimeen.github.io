@@ -1935,4 +1935,13 @@ export const BN = {
   "Category": "শ্রেণি", // ?
   "— none —": "— কোনোটি নয় —", // ?
   "Track this āyah": "এই আয়াত ট্র্যাক করুন", // ?
+
+  // -------------------------------------------------------------------
+  // Note view enhancement round 3 (28 Aug 2026) -- text-size.js's own
+  // resizable-text popover, offered from the Note view, the PC note-pane
+  // and the Read screen alike.
+  // -------------------------------------------------------------------
+  "Text size": "লেখার আকার", // ?
+  "All": "সব", // ?
+  "Reset": "পুনঃসেট", // ?
 };
