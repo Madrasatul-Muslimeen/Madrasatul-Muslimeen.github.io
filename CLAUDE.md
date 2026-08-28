@@ -6437,6 +6437,121 @@ and fixes a CSS rule, adding no new user-visible strings. No
 `firestore.rules`, schema or Firestore data changes -- nothing to deploy
 but the static files.
 
+v07.94 (28 Aug 2026, on Claude Code on the web) is **a real mobile
+horizontal-overflow fix, plus tap-to-toggle full screen for the Note
+view.** Two owner asks in one message, with a phone screenshot showing the
+Note view's Arabic/English/Bangla text and the top pickers all clipped on
+the right edge.
+
+**First, a retroactive note on where this bug came from, since it wasn't
+this session's own work.** A separate, concurrent Claude Code on the web
+session had merged **"Fix Edit palette white-on-white buttons; PC popup
+for Note view"** (commit `5be7bc8`) directly into `main` earlier the same
+day -- a real, useful feature (the Note view now floats as a resizable,
+draggable window on desktop, `app/js/note-popup.js`, plus a genuine
+`.note-palette button`/`select` white-on-white color fix, same bug class
+as v07.05) -- but **without bumping `app/js/version.js` or writing a
+CLAUDE.md changelog entry**, both of which this file's own "How to work"
+section requires every round to do. Recorded here so the gap in the
+version history is explained rather than silently skipped over; this
+entry is also that feature's first real changelog coverage.
+
+**The bug: that commit's own claim that "phone/tablet are byte-for-byte
+unchanged" was wrong, and the popup code is exactly why.**
+`initPopupWindow()` calls `applyGeometry(el, geometry)` **unconditionally**
+at setup -- `MIN_WIDTH = 480`, so `defaultGeometry()`'s own
+`Math.max(MIN_WIDTH, ...)` floors the popup's width at 480px on ANY
+screen, including a 360px phone -- and sets that as an literal inline
+`style="width:480px; height:...; top:...; left:...;"` on `#noteView`
+itself. The `position: fixed` popup CHROME is correctly gated behind the
+existing `@media (min-width: 900px)` block, but the **inline style is
+plain JS, and inline styles apply regardless of any CSS breakpoint** -- so
+on a phone, `#noteView` (still `position: static`, still a normal flex
+item) was nonetheless pinned to a hardcoded 480px width, overflowing a
+360-412px viewport by 90-130px. This produced exactly the owner's
+screenshot: the Arabic/English/Bangla text and bar 1's pickers all wrapped
+correctly WITHIN that oversized 480px box, then bled off the right edge of
+the phone. **Confirmed empirically, not guessed** -- a bisection script
+that hid every descendant of `#noteView` one at a time found NONE of them
+individually responsible (the width stayed 480px throughout), which is
+what pointed at something ABOVE the content entirely; reading
+`#noteView`'s own `style` attribute directly found the literal
+`width: 480px` inline value, matching `note-popup.js`'s own `MIN_WIDTH`
+constant exactly.
+
+**Fixed at the source, in `note-popup.js` only** -- a new
+`isPopupViewport()` helper mirrors the CSS's own `(min-width: 900px)`
+query via `matchMedia`. `initPopupWindow()` now calls `applyGeometry()`
+only when that query matches; below it, a new `clearGeometry()` resets
+`width`/`height`/`top`/`left` back to `""` so the phone/tablet layout's own
+plain flex CSS is genuinely in charge, with nothing inline left to fight
+it. The existing `window resize` listener (already there to re-clamp a
+popup that would otherwise sit off-screen) now ALSO re-checks the
+breakpoint on every resize and reacts to crossing it live in either
+direction -- shrinking a desktop window below 900px clears the inline
+geometry immediately; growing it back re-applies the SAME remembered
+geometry, rather than only taking effect on the next full page load. The
+drag/resize POINTER handlers themselves needed no equivalent guard: their
+own handles (`.note-popup-titlebar`, `.note-popup-resize`) are already
+`display: none` below 900px per the existing CSS, so those gestures were
+never reachable on a phone to begin with -- only the unconditional INITIAL
+`applyGeometry()` call and the resize listener's own re-clamp were the
+real gaps.
+
+**Second: "enable note view to have full screen by tapping."** Read's own
+tap-toggles-full-screen convention (shell round 21, v07.48) is mirrored for
+the Note view's existing two-state full screen (`note-immersive`,
+`toggleNoteFullscreen()`, unchanged since v07.59/61 -- only how it's
+triggered changes here). A new click listener on `#noteView` excludes
+`button, a, input, select, textarea, label, [role='button']` (the same
+list Read's own listener uses) **plus `[contenteditable]`**, specifically
+for the Notes editor -- unlike Read's plain ayah text, a tap there is
+positioning a cursor to type, not just reading, so it must never trigger
+full screen. It also skips when there's an active text selection, same as
+Read (highlighting an ayah to copy must not flip the screen out from under
+the reader).
+
+**Deliberately scoped to phone/tablet only (below the popup's own 900px
+breakpoint), a decision made without asking since it follows directly from
+the SAME feature this round's other half just fixed:** on desktop,
+`#noteView` is now a floating, draggable window with its own ⤢ maximize
+button and resize handles from any edge -- a body tap ALSO toggling the
+unrelated `note-immersive` shell-chrome full screen there would be a
+second, conflicting full-screen concept layered onto a screen that already
+has one, with no matching mental model for a person dragging or resizing a
+window. The ⤢ button stays the one way in on desktop, exactly as before;
+only the interaction MODEL on phone/tablet gained the tap.
+
+**Verified: 14 focused Playwright checks** (a new, un-checked-in script,
+this project's own established practice for anything touching the Note
+view) -- the Note view starting NOT in full screen; a tap on blank space
+in the note body turning it on; a second tap turning it back off;
+interacting with a real picker NOT triggering it; the existing ⤢ button
+still working exactly as before; on desktop, tapping the note body proven
+to NOT toggle full screen (the popup owns that interaction there); and, at
+360x800/390x844/412x915, `document.documentElement.scrollWidth >
+window.innerWidth` proven false with no page errors -- the actual
+regression this round exists to close. **The desktop popup itself was
+re-verified working exactly as before**: geometry still applies at
+1280x900 (`position: fixed`, the remembered width/height/top/left), AND a
+live resize down to 390x844 clears the inline style with zero overflow,
+then growing back to 1280x900 re-applies the SAME remembered geometry --
+proving the breakpoint-crossing fix works in both directions, not just at
+initial load. **`layout.mjs` reports the landing page byte-for-byte
+identical** at all eight viewports in both banner states against a real
+`HEAD` shim (only the same four pre-existing QCR Manage-mode
+`getElementById` false positives disclosed since v07.86, target count
+unchanged at 145, none newly missing), **`panel.mjs` and `reading.mjs`
+both clean** (panel's own reported "SCROLLS"/`tenantSelect` truncation
+lines are the same pre-existing, already-documented small-width tenant-name
+clipping this project has carried since v07.77 -- unrelated to this
+round), **`navcheck.mjs` unchanged** (still only the pre-existing 320px
+English truncation of "Operation"/"Bookmark"), and **translation coverage
+unchanged at 1,578/1,609 (98%)** -- this round is a CSS/JS mechanism fix
+plus a tap gesture, adding no new user-visible strings. No
+`firestore.rules`, schema or Firestore data changes -- nothing to deploy
+but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

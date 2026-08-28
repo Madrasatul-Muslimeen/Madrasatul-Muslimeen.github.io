@@ -23,6 +23,19 @@ const MIN_HEIGHT = 360;
 const MIN_SIDE_WIDTH = 180;
 const MAX_SIDE_WIDTH_RATIO = 0.6; // the side pane can never squeeze the main note area to nothing
 
+// Same breakpoint as quranrevival.html's own `@media (min-width: 900px)`
+// block, which is the ONLY place #noteView actually becomes a floating,
+// position:fixed popup window -- below it, #noteView is an ordinary flex
+// item in the page's own column layout and must never carry inline
+// width/height/top/left at all (28 Aug 2026 fix: the popup's own MIN_WIDTH
+// of 480px was being applied as an inline style unconditionally, on every
+// viewport, which forced #noteView to 480px wide on a phone regardless of
+// the CSS breakpoint -- a real horizontal-overflow bug, not cosmetic).
+const POPUP_QUERY = "(min-width: 900px)";
+function isPopupViewport() {
+  return typeof window.matchMedia === "function" ? window.matchMedia(POPUP_QUERY).matches : window.innerWidth >= 900;
+}
+
 function readJson(key) {
   try {
     const raw = localStorage.getItem(key);
@@ -97,6 +110,16 @@ function applyGeometry(el, g) {
   el.style.top = `${g.top}px`;
   el.style.left = `${g.left}px`;
 }
+// The phone/tablet layout owns these four properties entirely (plain flex
+// flow) -- clearing them, not merely leaving them unset, is what lets a
+// browser resized from wide to narrow (or a phone that loaded once with a
+// stale inline style) fall back to it.
+function clearGeometry(el) {
+  el.style.width = "";
+  el.style.height = "";
+  el.style.top = "";
+  el.style.left = "";
+}
 
 /**
  * Wires drag-to-move (via `dragHandleEl`), resize-from-any-edge/corner (via
@@ -107,7 +130,8 @@ function applyGeometry(el, g) {
  */
 export function initPopupWindow(el, { dragHandleEl, resizeHandleEls = [], maximizeBtn, onMaximizeChange } = {}) {
   let geometry = loadGeometry();
-  applyGeometry(el, geometry);
+  let wasPopupViewport = isPopupViewport();
+  if (wasPopupViewport) applyGeometry(el, geometry); else clearGeometry(el);
   let maximized = false;
   let preMaximizeGeometry = null;
 
@@ -178,7 +202,19 @@ export function initPopupWindow(el, { dragHandleEl, resizeHandleEls = [], maximi
   // A window resize (not a drag/resize gesture, the BROWSER window itself)
   // must never leave the popup partly off-screen or bigger than the
   // viewport -- re-clamp, but don't treat this as a new "remembered" size.
+  // Crossing the popup breakpoint itself (a tablet rotated, a desktop
+  // window dragged narrow) has to be handled first: below it, #noteView
+  // must carry no inline geometry at all (mobile/tablet own the layout via
+  // plain CSS); at or above it, the popup's own remembered geometry applies.
   window.addEventListener("resize", () => {
+    const nowPopupViewport = isPopupViewport();
+    if (nowPopupViewport !== wasPopupViewport) {
+      wasPopupViewport = nowPopupViewport;
+      if (!nowPopupViewport) { clearGeometry(el); return; }
+      applyGeometry(el, clampGeometry(geometry));
+      return;
+    }
+    if (!nowPopupViewport) return; // nothing to re-clamp -- no inline geometry to have drifted
     if (maximized) { commit({ width: window.innerWidth - 24, height: window.innerHeight - 24, top: 12, left: 12 }, { persist: false }); return; }
     commit(clampGeometry(geometry), { persist: false });
   });
