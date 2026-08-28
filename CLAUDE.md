@@ -6031,6 +6031,70 @@ already-translated string, so no new Bangla was needed. No `firestore.rules`,
 schema or Firestore data changes -- this round is pure client-side
 rendering/UI-state wiring; nothing to deploy but the static files.
 
+v07.89 (28 Aug 2026, on Claude Code on the web) is **a real bug fix, found
+by the owner using v07.88 the moment it shipped: a claim made through the
+Ayah Note screen's own Track/Guide/Breakdown/Coverage card never re-colored
+the QCR wheel's own wedge for that āyah**, even after going back to the
+collection's list+wheel screen (`onBackToCollection()`, which does
+re-render). The list row's status chip stayed stuck too -- both read the
+same underlying cache.
+
+**Root cause: `refreshChunkAndWheel()` -- called after every real claim,
+from all four claim sites (the ordinary study screen, the Note view's own
+embedded card, and the floating "Track this unit" modal) -- refetches
+`currentChunk` as a brand-new object, but never touched
+`exploreChunksBySurah`, Explore/QCR's own once-per-"open" cache of every
+surah's records chunk.** `qcrItemStatus()` (and the plain Explore wheel's
+own pooled-status functions) read status through THAT cache, not through
+`currentChunk` directly -- so a real, successful claim updated the one
+thing nothing displayed and left the one thing the QCR/Explore wheels
+actually read stale, until Explore was fully closed and reopened (which
+re-fetches everything from scratch).
+
+**The first fix attempt was still wrong, and the reason is worth recording:**
+patching `exploreChunksBySurah`'s entry ONLY when one already existed
+(`.has(currentSurahNum)`) missed the single most common real case --
+a surah with NO prior claims at all never gets an entry from
+`ensureExploreChunksLoaded()` in the first place (it only `.set()`s a
+*truthy* chunk, and a surah nobody has studied yet returns `null`), so a
+person's very FIRST claim on a given surah -- exactly what the owner hit --
+still went unseen by the cache. Caught by testing the actual first-claim
+case, not by reading the diff. Fixed by making the refresh unconditional
+whenever Explore has been opened this session at all (`exploreChunksBySurah`
+non-null): set the fresh chunk in, or delete the entry if the surah
+genuinely has no chunk. No extra Firestore read either way -- this surah's
+chunk was already being re-fetched for `currentChunk` regardless.
+
+**A real, standing test-harness limitation had to be worked around to prove
+this honestly, not around it.** `tools/i18n-verify`'s own Firebase stub
+never mutates its backing `DATA` on `setDoc`/`updateDoc` (documented since
+v07.66/68/77/79) -- so a naive re-fetch-and-check test would have reported
+this bug "fixed" even against the ORIGINAL broken code, since the refetch
+itself always returns the same stale seed data in the stub regardless of
+what was just written. A focused, un-checked-in Playwright script used
+`extraSeedJs` (the bookmark-issues round's own escape hatch for scripts
+needing behaviour the shared stub doesn't provide) to make `setDoc`/
+`updateDoc` really apply Firestore's own dot-path merge into `DATA.records`
+for this one script's run only -- proving the APP's logic, not the stub's
+limitation.
+
+**Verified: 6/6 checks pass** in that script -- a wedge starting
+`not_started`; a real claim via the Note view's embedded card; the SAME
+wedge re-coloring to `achieved` after tapping back to the collection; the
+list row's own status chip agreeing; and -- covering the *other* path, a
+surah that already had a cache entry -- a SECOND claim on the same āyah
+re-coloring again, to `mastered`. `node --check` passes.
+**`tools/i18n-verify/layout.mjs` reports the landing page byte-for-byte
+identical** at all eight viewports in both banner states against a real
+`HEAD` shim (only the same four pre-existing QCR Manage-mode
+`getElementById` false positives already disclosed in round 2/3/4's own
+entries — confirmed unrelated by running `HEAD` against itself),
+**`panel.mjs` and `reading.mjs` both clean**, **`navcheck.mjs` unchanged**
+(still only the pre-existing 320px English truncation of "Operation"/
+"Bookmark"). No `firestore.rules`, schema or Firestore data changes --
+this is a client-side caching bug fix only; nothing to deploy but the
+static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
