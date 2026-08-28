@@ -190,13 +190,25 @@ export function attachWayModalHandlers(modalEl, { onClose } = {}) {
  * (round after F-047's own Note view), after Notes: reading is study, this
  * card is assessment, and it stays wherever it is opened from until the
  * reader leaves that screen -- there is nothing here to close.
+ *
+ * Note view enhancement round -- the header used to be one plain string,
+ * "{Approach name} — {Ayah ref}" (`title`). The owner asked to change the
+ * Approach from inside this card itself, so `title` is now just the plain
+ * Ayah reference (`refLabel`, still escaped, still text) and a new,
+ * optional `approachSelectHtml` slot -- a real, caller-built `<select>`
+ * (this file stays I2-pure: quranrevival.html owns the list of Approaches
+ * and builds this markup, this file only places it) -- sits beside it.
+ * `.way-embed-header` is `flex-wrap` (see the CSS), so the select and the
+ * ref share one line on a wide screen and wrap to their own line on a
+ * phone/tablet with no separate breakpoint needed.
  */
-export function renderWayEmbed(title, tabBodies, tabs = DEFAULT_TABS, assignDropdownHtml = "") {
+export function renderWayEmbed(refLabel, tabBodies, tabs = DEFAULT_TABS, assignDropdownHtml = "", approachSelectHtml = "") {
   const buttons = tabs.map((tb, i) => `<button type="button" class="way-tab-btn ${i === 0 ? "active" : ""}" data-tab="${tb}">${tb}</button>`).join("");
   const panels = tabs.map((tb, i) => `<div class="way-tab-panel ${i === 0 ? "active" : ""}" data-tab="${tb}">${tabBodies[tb] ?? ""}</div>`).join("");
   return `<div class="way-embed">
     <div class="way-embed-header">
-      <h4 class="way-embed-title">${escapeHtml(title)}</h4>
+      ${approachSelectHtml}
+      <span class="way-embed-ref">${escapeHtml(refLabel)}</span>
       ${assignDropdownHtml}
     </div>
     <div class="way-tab-bar">${buttons}</div>

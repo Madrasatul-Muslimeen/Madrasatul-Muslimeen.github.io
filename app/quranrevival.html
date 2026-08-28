@@ -1054,9 +1054,19 @@
     border: 1.5px solid rgba(31,58,110,0.22); border-radius: 10px;
     padding: 0.7rem 0.85rem 0.85rem; background: #f6f7fb;
   }
-  .way-embed-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 1.02rem; color: #1F3A6E; margin: 0 0 0.5rem; }
-  .way-embed-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.4rem; }
-  .way-embed-header .way-embed-title { margin: 0; flex: 1; min-width: 0; }
+  /* Note view enhancement round -- the header used to be one title string
+     ("{Approach} — {Ref}"); it's now a real Approach <select>
+     (.note-approach-wrap, reused as-is from its old home in the ⋯ menu)
+     beside a plain .way-embed-ref label. flex-wrap, not a media query, is
+     what gives mobile/tablet two lines and PC one -- the owner's own
+     "whatever is easy": on a wide screen everything fits on one line and
+     stays there; on a narrow one the select is wide enough on its own that
+     the ref (and the Assign-to trigger, if it's showing) wrap below it with
+     no breakpoint to maintain. */
+  .way-embed-header { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; }
+  .way-embed-header .note-approach-wrap { flex: 1 1 10rem; min-width: 7rem; }
+  .way-embed-ref { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 0.98rem; color: #1F3A6E; white-space: nowrap; }
+  .way-embed-header .assign-trigger-wrap { margin-left: auto; }
 
   /* "Assign to" -- one Claim recorded for several people at once. A compact
      dropdown pinned top-right of the card (Track/way-modal.js) rather than a
@@ -1290,7 +1300,6 @@
   .note-collections-readonly { margin: 0; padding-left: 1.1rem; font-size: 0.78rem; color: #444; }
   .note-collections-readonly li { padding: 0.1rem 0; }
 
-  .note-approach-wrap { flex: 1 1 auto; min-width: 8rem; }
   .note-approach-select {
     width: 100%; background: #fff; border: 1px solid #ddd; border-radius: 0.35rem;
     padding: 0.28rem 0.4rem; font-size: 0.8rem; color: #222; font-family: inherit;
@@ -2569,6 +2578,10 @@
     // stays open through whatever else happens on this screen until they
     // close it again.
     let noteNotesOpen = false;
+    // Note view enhancement round -- the Track/Guide/Breakdown/Coverage card
+    // collapses the same way (default closed, "like the languages"), and
+    // needs the identical survive-a-rebuild fix Notes already has above.
+    let noteApproachCardOpen = false;
     let tenantWeekStartsOn = 6;
     let currentTenantDoc = null;
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
@@ -5639,7 +5652,20 @@
       const numbers = numbered ? noteScopeNumbersInSurah(unitType) : [];
       const numOptionsHtml = numbers.map((n) => `<option value="${n}" ${n === noteScope.unitNumber ? "selected" : ""}>${num(n)}</option>`).join("");
       const ayahCellHidden = isRange || unitType === "surah";
+      // Note view enhancement round -- "would be handy to pull the other
+      // category straight away from note view, without coming back to the
+      // wheel" (the owner's own words). qcrCollections is already loaded by
+      // the time the Note view can show at all (openNoteView() itself awaits
+      // ensureQcrDataLoaded()), so this never needs its own fetch. Picking
+      // one here only switches CONTEXT -- noteOriginCollectionId, so the
+      // "◂ Back to…" button and the desktop side pane's own list (which
+      // reads whichever collection is set there) both repoint to it -- it
+      // deliberately never jumps the reader to a different āyah (the
+      // owner's own confirmed answer: "just switch context, stay put").
+      const categoryOptionsHtml = `<option value="">${t("— none —")}</option>` +
+        activeCollections(qcrCollections ?? []).map((c) => `<option value="${c.id}" ${c.id === noteOriginCollectionId ? "selected" : ""}>${escapeHtml(langText(c.title, getAppLang()))}</option>`).join("");
       return `
+        <select data-note-picker="category" aria-label="${t("Category")}">${categoryOptionsHtml}</select>
         <select data-note-picker="unitType" aria-label="${t("Study Unit")}">${unitOptionsHtml}</select>
         <select data-note-picker="surah" aria-label="${t("Surah")}">${surahOptionsHtml}</select>
         <select data-note-picker="ayah" aria-label="${t("Ayah")}" ${ayahCellHidden ? "hidden" : ""}>${ayahOptionsHtml(noteScope.ayahNum)}</select>
@@ -5650,6 +5676,7 @@
 
     /** Wires bar 1's own <select>s -- freshly looked up every call, since renderNoteViewNow() rebuilds the whole view's innerHTML on every re-render (a claim, a bookmark toggle, Prev/Next), which destroys and recreates these nodes each time; harmless to re-bind fresh listeners to fresh nodes. */
     function wireNotePickerBar() {
+      const categorySel = noteView.querySelector('[data-note-picker="category"]');
       const unitSel = noteView.querySelector('[data-note-picker="unitType"]');
       const surahSel = noteView.querySelector('[data-note-picker="surah"]');
       const ayahSel = noteView.querySelector('[data-note-picker="ayah"]');
@@ -5677,6 +5704,19 @@
           const match = currentSurahData.ayahs.find((a) => noteScopeNumberOfAyah(noteScope.unitType, a) === noteScope.unitNumber);
           if (match) noteScope.ayahNum = match.ayah;
         }
+        renderNoteViewNow();
+      });
+      // "Just switch context, stay put" -- the current āyah/unit is left
+      // exactly where it is; only noteOriginCollectionId moves, which the
+      // very next renderNoteViewNow() picks up for the "◂ Back to…" button
+      // and (on a wide-enough screen) the side pane's own item list.
+      // qcrCurrentId is kept in step too, but only on a REAL pick -- "— none
+      // —" clears the Note view's own context without disturbing whichever
+      // collection the QCR wheel screen was last showing, since that screen
+      // always needs a real one selected to display anything at all.
+      categorySel?.addEventListener("change", () => {
+        noteOriginCollectionId = categorySel.value || null;
+        if (noteOriginCollectionId) qcrCurrentId = noteOriginCollectionId;
         renderNoteViewNow();
       });
       unitSel?.addEventListener("change", () => {
@@ -5847,8 +5887,7 @@
         // before this round) -- see renderApproachEmbedHtml()'s own comment.
         approachHtml: showApproach ? renderApproachEmbedHtml(currentSurahNum, noteScope.ayahNum) : "",
         isNotesOpen: noteNotesOpen,
-        showApproach,
-        approachOptionsHtml: showApproach ? buildTrackableOptionsHtml() : "",
+        isApproachOpen: noteApproachCardOpen,
         wideNoteHtml,
         canUpdateBookmark: !!openedBookmarkId && (bookmarksDoc.saved ?? []).some((b) => b.id === openedBookmarkId && !b.removed),
         backToCollectionLabel,
@@ -5949,6 +5988,13 @@
       // the same way noteWbwOn/noteFullscreenOn already survive a rebuild.
       noteView.querySelector('[data-note-field="notes"] [data-note-field-toggle]')?.addEventListener("click", () => {
         noteNotesOpen = noteView.querySelector('[data-note-field="notes"] .note-field-body').style.display !== "none";
+      });
+      // Same fix, same reason, for the Track/Guide/Breakdown/Coverage card's
+      // own toggle -- this rebuild-heavy screen (a claim, a bookmark toggle,
+      // Prev/Next all rebuild .note-body from scratch) would otherwise slam
+      // it shut again the moment anything else on screen changed.
+      noteView.querySelector('[data-note-field="approach"] [data-note-field-toggle]')?.addEventListener("click", () => {
+        noteApproachCardOpen = noteView.querySelector('[data-note-field="approach"] .note-field-body').style.display !== "none";
       });
       wireNotePickerBar();
       if (showApproach) wireApproachEmbed(unitKey);
@@ -6155,7 +6201,18 @@
         const key = noteToggle.dataset.notePopupNoteToggle;
         notePopupExpandedNotes.has(key) ? notePopupExpandedNotes.delete(key) : notePopupExpandedNotes.add(key);
         renderNotePopupSide();
+        return;
       }
+      // Note view enhancement round -- "enable clicking on the Note Pane
+      // Ayah makes it land in the note view (currently only dragging
+      // works)". It already did, but only from the small ref/surah pill
+      // (.note-popup-row-main) -- everywhere else on the row (the snippet
+      // text, the row's own padding) fell through all three checks above and
+      // did nothing, which reads exactly as "only dragging works" if that's
+      // where a reader's tap actually lands. This fallback makes the WHOLE
+      // row clickable, without changing either toggle's own narrower target.
+      const row = e.target.closest("[data-note-popup-row]");
+      if (row) notePopupGoToAyah(row.dataset.notePopupRow);
     });
     notePopupSideListEl.addEventListener("dragstart", (e) => {
       const row = e.target.closest("[data-note-popup-row]");
@@ -6209,14 +6266,24 @@
       const statusIdsForTrackable = Object.values(currentChunk?.entries ?? {})
         .filter((e) => e.trackableId === trackable.id)
         .map((e) => e.claimedStatus);
-      const title = `${langText(trackable.name, getAppLang(), trackable.id)} — ${ayahRefLabel(surah, ayahNum)}`;
+      // Note view enhancement round -- the Approach picker itself moves
+      // INTO this card's own header (the owner's own ask: "change the
+      // approach from inside the card straight away, without moving back
+      // to the wheel"), a real <select> built here exactly like the
+      // canonical trackableSelect (buildTrackableOptionsHtml() is the one
+      // source of truth every Approach picker already shares) and carrying
+      // the SAME data-note-approach-select attribute the ⋯ menu's own copy
+      // used to -- attachNoteViewHandlers()'s existing onApproachChange
+      // wiring finds it wherever it lives, so no new JS plumbing is needed
+      // to wire the select itself, only to build it here instead of there.
+      const approachSelectHtml = `<div class="note-approach-wrap"><select class="note-approach-select" data-note-approach-select title="${t("Choose an Approach")}" aria-label="${t("Choose an Approach")}">${buildTrackableOptionsHtml()}</select></div>`;
       const tabBodies = {
         Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
         Guide: renderGuideTab(trackable, getAppLang()),
         Breakdown: renderBreakdownTab(statusIdsForTrackable),
         Coverage: renderCoverageTab(ayahStatusesForCurrentTrackable()),
       };
-      return renderWayEmbed(title, tabBodies, undefined, renderAssignDropdown(assignableRoster(), selectedPersonId));
+      return renderWayEmbed(ayahRefLabel(surah, ayahNum), tabBodies, undefined, renderAssignDropdown(assignableRoster(), selectedPersonId), approachSelectHtml);
     }
 
     /** Wires the embedded card's tabs + Claim button, right after
