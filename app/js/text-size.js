@@ -136,9 +136,13 @@ function sliderRowHtml(idPrefix, kind, label, value) {
  * sites match its own surrounding bar's own button styling (the Note
  * view's dark `.note-icon-btn`, the Read bar's light `secondary qr-ico`,
  * or the PC popup title bar's own unclassed `button` selector) rather than
- * this one shared file guessing at a look that fits nowhere.
+ * this one shared file guessing at a look that fits nowhere. `showLabel`
+ * -- Note view mobile-overflow round -- adds the words "Text size" beside
+ * the "A±" glyph, for the one call site where this button sits inside a
+ * dropdown of otherwise fully-worded items (⋮) rather than alone on an
+ * icon bar, where "A±" alone already reads fine via its own title.
  */
-export function renderTextSizeButtonHtml(idPrefix, { showAr = true, showEn = true, showBn = true, btnClass = "note-icon-btn" } = {}) {
+export function renderTextSizeButtonHtml(idPrefix, { showAr = true, showEn = true, showBn = true, btnClass = "note-icon-btn", showLabel = false } = {}) {
   const rows = [
     showAr ? sliderRowHtml(idPrefix, "ar", t("Arabic"), getTextSizeScale("ar")) : "",
     showEn ? sliderRowHtml(idPrefix, "en", t("English"), getTextSizeScale("en")) : "",
@@ -148,9 +152,10 @@ export function renderTextSizeButtonHtml(idPrefix, { showAr = true, showEn = tru
   // GESTURE ("set every language to here"), not a fourth stored value, so
   // it never has its own "current" position to remember between opens.
   const allRow = sliderRowHtml(idPrefix, "all", t("All"), DEFAULT_SCALE);
+  const label = showLabel ? `${escapeHtml(t("Text size"))} ` : "";
   return `
     <div class="text-size-wrap" data-text-size-wrap="${idPrefix}">
-      <button type="button" class="${escapeHtml(btnClass)} text-size-toggle" data-text-size-toggle="${idPrefix}" title="${t("Text size")}" aria-haspopup="true" aria-expanded="false">A±</button>
+      <button type="button" class="${escapeHtml(btnClass)} text-size-toggle" data-text-size-toggle="${idPrefix}" title="${t("Text size")}" aria-haspopup="true" aria-expanded="false">${label}A±</button>
       <div class="text-size-popover" data-text-size-popover="${idPrefix}">
         ${allRow}
         <div class="text-size-divider"></div>
