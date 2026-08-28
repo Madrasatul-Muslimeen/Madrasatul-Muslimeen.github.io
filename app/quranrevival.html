@@ -1273,10 +1273,122 @@
   .note-palette.open { display: flex; }
   .note-palette-label { width: 100%; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: #999; }
   .note-palette button, .note-palette select {
-    background: #fff; border: 1px solid #ddd; border-radius: 0.3rem; min-width: 1.7rem; height: 1.7rem;
+    background: #fff; color: #222; border: 1px solid #ddd; border-radius: 0.3rem; min-width: 1.7rem; height: 1.7rem;
     font-size: 0.8rem; cursor: pointer; padding: 0 0.4rem;
   }
   .note-palette button:hover { background: #eee; }
+
+  /* ---- PC popup (28 Aug 2026): the Note view floats as a real, resizable,
+     draggable window on desktop widths instead of taking over #stage, with
+     a side pane of adjacent/related āyāt beside it. #noteView is still the
+     SAME element setStageView() hides/shows -- #stage > [hidden] keeps
+     applying exactly as before -- only its CSS presentation changes here,
+     and only at >=900px, the same breakpoint the QCR wheel/list layout
+     already uses (v07.86). Below 900px every rule in this block is a
+     no-op: the title bar/side pane/resize handles stay display:none, and
+     #notePopupBody/#noteViewMount just pass height through to .note-view
+     exactly as #noteView used to do directly -- the phone/tablet Note view
+     is unchanged, pixel for pixel. */
+  .note-popup-titlebar, .note-popup-side, .note-popup-splitter, .note-popup-resize { display: none; }
+  #notePopupBody { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  #noteViewMount { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+
+  @media (min-width: 900px) {
+    #noteView {
+      position: fixed; z-index: 55; /* below #dock's z-index:60 -- the dock stays reachable even if the popup's own geometry overlaps it */
+      background: #fff; border-radius: 0.6rem; overflow: hidden;
+      box-shadow: 0 20px 55px rgba(10,20,40,0.35); border: 1px solid rgba(20,40,80,0.15);
+    }
+    .note-popup-titlebar {
+      display: flex; align-items: center; gap: 0.4rem; flex: 0 0 auto;
+      background: #142c58; color: #fff; padding: 0.35rem 0.5rem; cursor: grab;
+      border-radius: 0.6rem 0.6rem 0 0; touch-action: none;
+    }
+    .note-popup-titlebar:active { cursor: grabbing; }
+    .note-popup-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.86rem; font-weight: 600; }
+    .note-popup-titlebar-actions { display: flex; gap: 0.25rem; flex: 0 0 auto; }
+    .note-popup-titlebar-actions button {
+      background: rgba(255,255,255,0.14); border: 1px solid rgba(255,255,255,0.35); color: #fff;
+      border-radius: 0.3rem; width: 1.7rem; height: 1.7rem; font-size: 0.8rem; cursor: pointer; padding: 0; line-height: 1;
+    }
+    .note-popup-titlebar-actions button:hover { background: rgba(255,255,255,0.28); }
+    .note-popup-titlebar-actions button[aria-pressed="true"] { background: #B8862F; border-color: #B8862F; }
+
+    #notePopupBody { flex-direction: row; }
+    .note-popup-side {
+      display: flex; flex-direction: column; flex: 0 0 auto; width: 260px; min-width: 180px;
+      border-right: 1px solid #e0d8bd; background: #faf7ee; overflow: hidden;
+    }
+    .note-popup-side-nav {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;
+      padding: 0.4rem 0.55rem; border-bottom: 1px solid #e0d8bd; flex: 0 0 auto;
+    }
+    .note-popup-side-nav button { background: #1F3A6E; color: #fff; border: none; border-radius: 0.3rem; width: 1.7rem; height: 1.7rem; cursor: pointer; }
+    .note-popup-side-nav button:disabled { opacity: 0.35; cursor: default; }
+    #notePopupSideCount { font-size: 0.72rem; color: #7a6a3c; flex: 1 1 auto; text-align: center; }
+    .note-popup-side-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.35rem; }
+    .note-popup-side-list .hint { font-size: 0.78rem; color: #888; padding: 0.4rem 0.3rem; margin: 0; }
+
+    #noteViewMount { min-width: 0; }
+
+    .note-popup-splitter {
+      display: block; flex: 0 0 auto; width: 6px; cursor: col-resize; background: transparent; touch-action: none;
+    }
+    .note-popup-splitter:hover, .note-popup-splitter:active { background: rgba(184,134,47,0.35); }
+
+    .note-popup-resize { display: block; position: absolute; z-index: 2; touch-action: none; }
+    .note-popup-resize[data-note-resize="n"] { top: -3px; left: 8px; right: 8px; height: 6px; cursor: ns-resize; }
+    .note-popup-resize[data-note-resize="s"] { bottom: -3px; left: 8px; right: 8px; height: 6px; cursor: ns-resize; }
+    .note-popup-resize[data-note-resize="e"] { top: 8px; bottom: 8px; right: -3px; width: 6px; cursor: ew-resize; }
+    .note-popup-resize[data-note-resize="w"] { top: 8px; bottom: 8px; left: -3px; width: 6px; cursor: ew-resize; }
+    .note-popup-resize[data-note-resize="ne"] { top: -3px; right: -3px; width: 14px; height: 14px; cursor: nesw-resize; }
+    .note-popup-resize[data-note-resize="nw"] { top: -3px; left: -3px; width: 14px; height: 14px; cursor: nwse-resize; }
+    .note-popup-resize[data-note-resize="se"] { bottom: -3px; right: -3px; width: 14px; height: 14px; cursor: nwse-resize; }
+    .note-popup-resize[data-note-resize="sw"] { bottom: -3px; left: -3px; width: 14px; height: 14px; cursor: nesw-resize; }
+  }
+
+  /* Side pane rows -- List (compact) is the default; Card widens the row
+     and always shows the translation snippet, matching each other's own
+     expand/collapse state for the Arabic line and any saved note (both
+     independent of which of the two this is -- the owner's own two asks). */
+  .note-popup-row {
+    border: 1px solid transparent; border-radius: 0.35rem; margin-bottom: 0.2rem;
+    display: flex; flex-wrap: wrap; align-items: center; cursor: grab;
+  }
+  .note-popup-row:hover { background: #f0ead8; }
+  .note-popup-row.current { border-color: #B8862F; background: #fbf3e0; }
+  .note-popup-row-main {
+    flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 0.35rem;
+    background: none; border: none; text-align: left; cursor: pointer; padding: 0.32rem 0.3rem; font-family: inherit;
+  }
+  .note-popup-row-dot { flex: 0 0 auto; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: #bbb; }
+  .note-popup-row-ref { flex: 0 0 auto; font-weight: 700; font-size: 0.78rem; color: #142c58; }
+  .note-popup-row-surah { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.74rem; color: #555; }
+  .note-popup-row-noteflag { flex: 0 0 auto; font-size: 0.7rem; }
+  .note-popup-row-toggle {
+    flex: 0 0 auto; background: none; border: none; color: #7a6a3c; font-size: 0.7rem; cursor: pointer; padding: 0.2rem 0.35rem;
+  }
+  /* .note-popup-row-body wraps the full Arabic line only now -- present in
+     the DOM (and therefore visible) purely when the row's own expand
+     toggle is on, in EITHER view. The short translation snippet lives
+     outside it (see below): always in the DOM, and it's the ONE thing that
+     differs between List and Card -- List hides it until expanded too,
+     Card always shows it. */
+  .note-popup-row-body { flex: 1 1 100%; padding: 0 0.3rem 0.4rem; }
+  .note-popup-row-arabic { font-family: var(--quran-font); direction: rtl; text-align: right; font-size: 1rem; line-height: 1.7; color: #1b1b16; }
+  .note-popup-row-snippet { display: none; margin: 0 0.3rem 0.3rem; font-size: 0.72rem; color: #555; line-height: 1.4; }
+  .note-popup-row-note { flex: 1 1 100%; margin: 0 0.3rem 0.4rem; padding: 0.3rem 0.4rem; background: #fff; border: 1px dashed #b8862f; border-radius: 0.3rem; font-size: 0.72rem; color: #444; }
+
+  /* List view (default): only the reference/surah/status line shows until
+     the row's own toggle is used. Card view: every row gets more room and
+     ALWAYS shows its translation snippet, so browsing reads like a stack of
+     small cards rather than a plain list -- the expand toggle still governs
+     the full Arabic line (and any note) the same way in both views; only
+     the short snippet's own visibility differs by view. */
+  .note-popup-row.expanded .note-popup-row-snippet,
+  .note-popup-side-list.view-card .note-popup-row-snippet { display: block; }
+  .note-popup-side-list.view-card .note-popup-row { display: block; padding: 0.3rem; background: #fff; border-color: #e0d8bd; box-shadow: 0 1px 3px rgba(20,30,60,0.08); }
+  .note-popup-side-list.view-card .note-popup-row-main { padding-bottom: 0.15rem; }
 
   .note-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.8rem 0.9rem 1.2rem; }
 
@@ -1572,7 +1684,44 @@
            #dock stays visible underneath and is the only way out of it (no
            × button -- settled with the owner: the same navigation model as
            the rest of the screen, not a second one just for this feature). -->
-      <div id="noteView" hidden></div>
+      <!-- PC popup (28 Aug 2026): this static chrome sits OUTSIDE
+           #noteViewMount on purpose -- renderNoteViewNow() replaces
+           #noteViewMount's own innerHTML on every render/nav step, so
+           anything that has to survive that (the title bar, the side pane,
+           the resize handles) can never live inside it. Below 900px every
+           piece here is display:none (see the CSS) and #noteView behaves
+           exactly as it always has. -->
+      <div id="noteView" hidden>
+        <div id="notePopupTitleBar" class="note-popup-titlebar">
+          <span id="notePopupTitle" class="note-popup-title" draggable="true" title="Drag onto the side pane to add this āyah there"></span>
+          <div class="note-popup-titlebar-actions">
+            <button type="button" id="notePopupListViewBtn" title="List view" aria-pressed="false">☰</button>
+            <button type="button" id="notePopupCardViewBtn" title="Card view" aria-pressed="false">▦</button>
+            <button type="button" id="notePopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
+            <button type="button" id="notePopupCloseBtn" title="Close" aria-label="Close">&times;</button>
+          </div>
+        </div>
+        <div id="notePopupBody">
+          <div id="notePopupSide" class="note-popup-side">
+            <div class="note-popup-side-nav">
+              <button type="button" id="notePopupSidePrevBtn" title="Previous in this group" aria-label="Previous in this group">◂</button>
+              <span id="notePopupSideCount"></span>
+              <button type="button" id="notePopupSideNextBtn" title="Next in this group" aria-label="Next in this group">▸</button>
+            </div>
+            <div id="notePopupSideList" class="note-popup-side-list view-list"></div>
+          </div>
+          <div id="notePopupSplitter" class="note-popup-splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
+          <div id="noteViewMount"></div>
+        </div>
+        <div class="note-popup-resize" data-note-resize="n"></div>
+        <div class="note-popup-resize" data-note-resize="s"></div>
+        <div class="note-popup-resize" data-note-resize="e"></div>
+        <div class="note-popup-resize" data-note-resize="w"></div>
+        <div class="note-popup-resize" data-note-resize="ne"></div>
+        <div class="note-popup-resize" data-note-resize="nw"></div>
+        <div class="note-popup-resize" data-note-resize="se"></div>
+        <div class="note-popup-resize" data-note-resize="sw"></div>
+      </div>
 
       <!-- Ayah Collections round 2 -- Explore, the stage's fourth view. Two
            palette modes share it: the existing Quran-structure drill-down
@@ -1948,6 +2097,7 @@
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText } from "./js/ayah-note-renderer.js";
+    import { initPopupWindow, initSideSplitter, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
     import {
       collectionsFrom, activeCollections,
       addCollection, renameCollection, setCollectionStatus,
@@ -2177,6 +2327,24 @@
     const tabApproachBtn = document.getElementById("tabApproachBtn");
     const readView = document.getElementById("readView");
     const noteView = document.getElementById("noteView");
+    // PC popup -- the static chrome around #noteViewMount (which is what
+    // renderNoteViewNow() actually replaces on every render/nav step; see
+    // that div's own markup comment). All of this is display:none below
+    // 900px, so none of it is reachable or built on phone/tablet.
+    const noteViewMount = document.getElementById("noteViewMount");
+    const notePopupTitleBar = document.getElementById("notePopupTitleBar");
+    const notePopupTitleEl = document.getElementById("notePopupTitle");
+    const notePopupListViewBtn = document.getElementById("notePopupListViewBtn");
+    const notePopupCardViewBtn = document.getElementById("notePopupCardViewBtn");
+    const notePopupMaximizeBtn = document.getElementById("notePopupMaximizeBtn");
+    const notePopupCloseBtn = document.getElementById("notePopupCloseBtn");
+    const notePopupSideEl = document.getElementById("notePopupSide");
+    const notePopupSideListEl = document.getElementById("notePopupSideList");
+    const notePopupSideCountEl = document.getElementById("notePopupSideCount");
+    const notePopupSidePrevBtn = document.getElementById("notePopupSidePrevBtn");
+    const notePopupSideNextBtn = document.getElementById("notePopupSideNextBtn");
+    const notePopupSplitter = document.getElementById("notePopupSplitter");
+    const notePopupResizeHandles = Array.from(document.querySelectorAll(".note-popup-resize"));
     // Shell round 22 -- the reading screen's own pickers. Each one MIRRORS the
     // control of the same name in Study options: it copies that control's
     // options and value, and forwards a change straight back to it, so the
@@ -5480,7 +5648,11 @@
       const originCollection = noteOriginCollectionId ? (qcrCollections ?? []).find((c) => c.id === noteOriginCollectionId) : null;
       const backToCollectionLabel = originCollection ? langText(originCollection.title, getAppLang()) : null;
 
-      noteView.innerHTML = renderNoteView({
+      // PC popup: only #noteViewMount is replaced -- the static title bar/
+      // side pane/resize handles around it (see #noteView's own markup
+      // comment) must survive every one of these re-renders, so nothing
+      // above the mount point is ever written to via innerHTML.
+      noteViewMount.innerHTML = renderNoteView({
         unitKey,
         pickerBarHtml: renderNotePickerBarHtml(),
         navHtml: renderNoteNavHtml(),
@@ -5611,7 +5783,242 @@
       });
       wireNotePickerBar();
       if (showApproach) wireApproachEmbed(unitKey);
+      // PC popup: title bar text + side pane, every render/nav step. A no-op
+      // below 900px (renderNotePopupSide() checks isPcNotePopup() itself).
+      notePopupTitleEl.textContent = originCollection ? `${ref} — ${langText(originCollection.title, getAppLang())}` : ref;
+      renderNotePopupSide();
     }
+
+    // -----------------------------------------------------------------------
+    // PC popup side pane (28 Aug 2026) -- "relevant and adjacent Ayat",
+    // decided with the owner before building: whichever Ayah Collection this
+    // Note view was opened FROM (noteOriginCollectionId), or -- when it
+    // wasn't reached via one -- the currently loaded Surah's own ayat. The
+    // new group nav buttons (prev/next "in the group") step through this
+    // SAME list, separate from the existing Surah-level prevAyahBtn/
+    // nextAyahBtn on the Read screen and the unit-level nav cluster already
+    // inside the Note view itself.
+    // -----------------------------------------------------------------------
+    function isPcNotePopup() {
+      return window.matchMedia("(min-width: 900px)").matches;
+    }
+
+    /** The ordered list of unit keys the side pane shows right now -- a
+        collection's own (possibly cross-surah, possibly non-contiguous)
+        items, or this Surah's own ayat in order. */
+    function notePopupSideItems() {
+      if (noteOriginCollectionId) {
+        const col = (qcrCollections ?? []).find((c) => c.id === noteOriginCollectionId);
+        if (col) return col.items.slice();
+      }
+      if (!currentSurahData) return [];
+      return currentSurahData.ayahs.map((a) => buildUnitKey.ayah(currentSurahNum, a.ayah));
+    }
+
+    /** Fetches whichever surahs a collection's own items touch that aren't
+        already cached, merging into the SAME qcrSurahDataByNum map
+        renderQcrPanel() populates -- so a surah loaded from either place
+        works for both, and re-opening a collection already browsed in
+        Explore this session costs nothing here. Never wipes the map (unlike
+        renderQcrPanel(), which owns its own full replace) -- this is an
+        addition on top of whatever's already cached. Surah-fallback mode
+        needs no fetch at all: currentSurahData is already loaded for the
+        reading/note screens themselves. */
+    async function ensureNotePopupSideSurahsLoaded(items) {
+      const surahNums = [...new Set(
+        items.map((uk) => Number(parseUnitKey(uk).parts[0])).filter((n) => Number.isFinite(n) && !qcrSurahDataByNum.has(n))
+      )];
+      if (!surahNums.length) return;
+      const results = await Promise.all(surahNums.map(async (n) => {
+        try { return [n, await getSurah(n)]; } catch { return [n, null]; }
+      }));
+      for (const [n, d] of results) if (d) qcrSurahDataByNum.set(n, d);
+    }
+
+    function notePopupSideRowData(unitKey) {
+      const { parts } = parseUnitKey(unitKey);
+      const surahNum = Number(parts[0]);
+      let refLabel, sName, snippet, arabicSnippet;
+      if (noteOriginCollectionId) {
+        const disp = qcrItemDisplay(unitKey); // same helper Explore's own QCR sidebar rows use -- surahNum/ayahNum/refLabel/surahName/snippet(en)
+        refLabel = disp.refLabel; sName = disp.surahName; snippet = disp.snippet;
+        const ayah = qcrSurahDataByNum.get(surahNum)?.ayahs?.find((a) => a.ayah === disp.ayahNum);
+        arabicSnippet = ayah?.uthmaniText ?? "";
+      } else {
+        const ayahNum = Number(parts[1]);
+        const meta = surahIndex.find((s) => s.surahNumber === surahNum);
+        sName = meta ? surahName(surahNum, meta.nameEnglish) : "";
+        refLabel = `${num(surahNum)}:${num(ayahNum)}`;
+        const ayah = currentSurahData?.ayahs?.find((a) => a.ayah === ayahNum);
+        const full = ayah?.translations?.en ?? "";
+        snippet = full.length > 90 ? `${full.slice(0, 90).trim()}…` : full;
+        arabicSnippet = ayah?.uthmaniText ?? "";
+      }
+      const hasNote = ayahHasNote(ayahNotesDoc, unitKey);
+      const noteText = hasNote ? notesToPlainText(ayahNoteHtml(ayahNotesDoc, unitKey)) : "";
+      return { unitKey, refLabel, surahName: sName, snippet, arabicSnippet, hasNote, noteText, statusId: qcrItemStatus(unitKey) };
+    }
+
+    // Per-row expand state, kept across re-renders for as long as the popup
+    // stays open on this page -- same "reading preference, not per-āyah
+    // state" shape noteWbwOn/noteRootsOn already use, just per unitKey
+    // instead of a single flag.
+    const notePopupExpandedAyah = new Set();
+    const notePopupExpandedNotes = new Set();
+
+    function notePopupSideRowHtml(row, isCurrent) {
+      const ayahOpen = notePopupExpandedAyah.has(row.unitKey);
+      const notesOpen = notePopupExpandedNotes.has(row.unitKey);
+      // The snippet is always in the DOM -- CSS decides whether it shows
+      // (Card view always; List view only once this row is .expanded). The
+      // full Arabic line stays gated by ayahOpen in EITHER view -- the
+      // expand toggle is one control, not two.
+      return `<div class="note-popup-row${isCurrent ? " current" : ""}${ayahOpen ? " expanded" : ""}" draggable="true" data-note-popup-row="${escapeHtml(row.unitKey)}">
+        <button type="button" class="note-popup-row-main" data-note-popup-open="${escapeHtml(row.unitKey)}">
+          <span class="note-popup-row-dot chip-${escapeHtml(row.statusId)}" aria-hidden="true"></span>
+          <span class="note-popup-row-ref">${escapeHtml(row.refLabel)}</span>
+          <span class="note-popup-row-surah">${escapeHtml(row.surahName)}</span>
+          ${row.hasNote ? `<span class="note-popup-row-noteflag" title="${escapeHtml(t("Has a note"))}">📝</span>` : ""}
+        </button>
+        <button type="button" class="note-popup-row-toggle" data-note-popup-ayah-toggle="${escapeHtml(row.unitKey)}" title="${escapeHtml(ayahOpen ? t("Collapse āyah text") : t("Expand āyah text"))}">${ayahOpen ? "▾" : "▸"}</button>
+        <div class="note-popup-row-snippet">${escapeHtml(row.snippet)}</div>
+        ${ayahOpen ? `<div class="note-popup-row-body">
+          <div class="note-popup-row-arabic" dir="rtl" lang="ar">${escapeHtml(row.arabicSnippet)}</div>
+        </div>` : ""}
+        ${row.hasNote ? `<button type="button" class="note-popup-row-toggle" data-note-popup-note-toggle="${escapeHtml(row.unitKey)}" title="${escapeHtml(notesOpen ? t("Collapse note") : t("Expand note"))}">📝 ${notesOpen ? "▾" : "▸"}</button>` : ""}
+        ${notesOpen ? `<div class="note-popup-row-note">${escapeHtml(row.noteText)}</div>` : ""}
+      </div>`;
+    }
+
+    // Guards against a slow ensureNotePopupSideSurahsLoaded() from an OLDER
+    // render overwriting a NEWER one's already-current list -- the same
+    // "ignore a stale async completion" shape this app already needed once
+    // it started letting several things load in the background at once.
+    let notePopupSideRenderToken = 0;
+
+    async function renderNotePopupSide() {
+      if (!isPcNotePopup() || !noteScope) return;
+      const myToken = ++notePopupSideRenderToken;
+      const items = notePopupSideItems();
+      if (noteOriginCollectionId) await ensureNotePopupSideSurahsLoaded(items);
+      if (myToken !== notePopupSideRenderToken) return;
+      const currentKey = noteScopeUnitInfo().unitKey;
+      const idx = items.indexOf(currentKey);
+      notePopupSideCountEl.textContent = items.length ? t("{current} of {total}", { current: num(idx >= 0 ? idx + 1 : 0), total: num(items.length) }) : "";
+      notePopupSidePrevBtn.disabled = idx <= 0;
+      notePopupSideNextBtn.disabled = idx === -1 || idx >= items.length - 1;
+      notePopupSideListEl.innerHTML = items.length
+        ? items.map((uk) => notePopupSideRowHtml(notePopupSideRowData(uk), uk === currentKey)).join("")
+        : `<p class="hint">${escapeHtml(t("Nothing to show here yet."))}</p>`;
+    }
+
+    /** Every entry point into a different āyah from the side pane (a row
+        click, a drag-drop, the group nav buttons) -- the owner's own
+        confirmed answer: it navigates the Note view there, same as tapping
+        it. Reuses goToAyahFromQcr()'s own two-step shape (goToReference()
+        for a cross-surah jump, then openNoteView()) rather than a third
+        mechanism, just carrying noteOriginCollectionId through instead of
+        qcrCurrentId -- this popup's own "back to collection" pill has to
+        keep pointing at whichever collection the Note view was ACTUALLY
+        opened from, not whatever Explore's own level bar happens to show. */
+    async function notePopupGoToAyah(unitKey) {
+      const { unitType, parts } = parseUnitKey(unitKey);
+      const surahNum = Number(parts[0]);
+      if (unitType === "range") {
+        const [from, to] = parts[1].split("-").map(Number);
+        await goToReference(surahNum, from, to);
+      } else {
+        await goToReference(surahNum, Number(parts[1]), null);
+      }
+      await openNoteView(unitKey, { fromCollectionId: noteOriginCollectionId });
+    }
+
+    /** The new group nav (separate from the Surah-level prevAyahBtn/
+        nextAyahBtn and from the unit-level nav cluster already inside the
+        Note view): steps to the previous/next item in whatever list the
+        side pane is showing right now. */
+    function notePopupStepGroup(dir) {
+      const items = notePopupSideItems();
+      if (!items.length || !noteScope) return;
+      const idx = items.indexOf(noteScopeUnitInfo().unitKey);
+      const target = idx === -1 ? undefined : items[idx + dir];
+      if (target) notePopupGoToAyah(target);
+    }
+
+    function setNotePopupSideViewMode(mode) {
+      saveSideViewMode(mode);
+      notePopupSideListEl.classList.toggle("view-card", mode === "card");
+      notePopupSideListEl.classList.toggle("view-list", mode !== "card");
+      notePopupListViewBtn.setAttribute("aria-pressed", mode !== "card" ? "true" : "false");
+      notePopupCardViewBtn.setAttribute("aria-pressed", mode === "card" ? "true" : "false");
+    }
+    setNotePopupSideViewMode(loadSideViewMode());
+    notePopupListViewBtn.addEventListener("click", () => setNotePopupSideViewMode("list"));
+    notePopupCardViewBtn.addEventListener("click", () => setNotePopupSideViewMode("card"));
+
+    notePopupCloseBtn.addEventListener("click", () => { setStageView("wheel"); renderWheel(); }); // same "tap the open tab to close it" idiom as tabNoteBtn's own second-tap
+    notePopupSidePrevBtn.addEventListener("click", () => notePopupStepGroup(-1));
+    notePopupSideNextBtn.addEventListener("click", () => notePopupStepGroup(1));
+
+    initPopupWindow(noteView, {
+      dragHandleEl: notePopupTitleBar,
+      resizeHandleEls: notePopupResizeHandles,
+      maximizeBtn: notePopupMaximizeBtn,
+    });
+    initSideSplitter(notePopupSplitter, notePopupSideEl, { getContainerWidth: () => noteView.getBoundingClientRect().width });
+    window.matchMedia("(min-width: 900px)").addEventListener("change", () => { if (stageView === "note") renderNotePopupSide(); });
+
+    // Row clicks/toggles/drags -- wired ONCE, by delegation on the static
+    // #notePopupSideList container, so re-rendering its innerHTML on every
+    // nav step never needs these re-attached.
+    notePopupSideListEl.addEventListener("click", (e) => {
+      const openBtn = e.target.closest("[data-note-popup-open]");
+      if (openBtn) { notePopupGoToAyah(openBtn.dataset.notePopupOpen); return; }
+      const ayahToggle = e.target.closest("[data-note-popup-ayah-toggle]");
+      if (ayahToggle) {
+        const key = ayahToggle.dataset.notePopupAyahToggle;
+        notePopupExpandedAyah.has(key) ? notePopupExpandedAyah.delete(key) : notePopupExpandedAyah.add(key);
+        renderNotePopupSide();
+        return;
+      }
+      const noteToggle = e.target.closest("[data-note-popup-note-toggle]");
+      if (noteToggle) {
+        const key = noteToggle.dataset.notePopupNoteToggle;
+        notePopupExpandedNotes.has(key) ? notePopupExpandedNotes.delete(key) : notePopupExpandedNotes.add(key);
+        renderNotePopupSide();
+      }
+    });
+    notePopupSideListEl.addEventListener("dragstart", (e) => {
+      const row = e.target.closest("[data-note-popup-row]");
+      if (row) e.dataTransfer.setData("text/plain", row.dataset.notePopupRow);
+    });
+
+    // Drop a side-pane row onto the note area -> switch to that āyah (the
+    // owner's own confirmed answer). Drop the note view's OWN current-āyah
+    // chip back onto the side pane -> the "vice versa" direction: when a
+    // collection is showing, add the currently-open āyah to it (the exact
+    // same write onToggleCollectionMembership already does from the 🗂
+    // popover, just reached by a drag instead of a checkbox).
+    noteViewMount.addEventListener("dragover", (e) => e.preventDefault());
+    noteViewMount.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const key = e.dataTransfer.getData("text/plain");
+      if (key) notePopupGoToAyah(key);
+    });
+    notePopupTitleEl.addEventListener("dragstart", (e) => {
+      if (noteScope) e.dataTransfer.setData("text/plain", noteScopeUnitInfo().unitKey);
+    });
+    notePopupSideListEl.addEventListener("dragover", (e) => { if (noteOriginCollectionId) e.preventDefault(); });
+    notePopupSideListEl.addEventListener("drop", async (e) => {
+      if (!noteOriginCollectionId) return;
+      e.preventDefault();
+      const key = e.dataTransfer.getData("text/plain");
+      if (!key) return;
+      const prev = qcrCollections;
+      qcrCollections = qcrAddItemLocal(qcrCollections, noteOriginCollectionId, key);
+      renderNotePopupSide();
+      if (!(await qcrPersist())) { qcrCollections = prev; renderNotePopupSide(); }
+    });
 
     /** The wheel-slice card (Track/Guide/Breakdown/Coverage), now built for
         embedding inline in the Note view after Notes rather than a floating
