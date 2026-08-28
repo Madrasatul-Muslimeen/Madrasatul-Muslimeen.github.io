@@ -1944,4 +1944,18 @@ export const BN = {
   "Text size": "লেখার আকার", // ?
   "All": "সব", // ?
   "Reset": "পুনঃসেট", // ?
+
+  // -------------------------------------------------------------------
+  // TOPIC bar round (28 Aug 2026) -- the 🗂 drawer's own retired-Category
+  // picker rebuilt as TOPIC -> Group/Attach/Yr Level, and a new Yr Level
+  // field on each QCR collection (Yr 1-12, Regular adult).
+  // -------------------------------------------------------------------
+  "Topic": "বিষয়", // ?
+  "Group": "গ্রুপ", // ?
+  "Attach": "সংযুক্তি", // ?
+  "Yr Level": "শ্রেণি স্তর", // ?
+  "Yr {n}": "শ্রেণি {n}", // ?
+  "Regular adult": "সাধারণ প্রাপ্তবয়স্ক", // ?
+  "None": "কোনোটি নেই", // ?
+  "Not set.": "নির্ধারণ করা হয়নি।", // ?
 };

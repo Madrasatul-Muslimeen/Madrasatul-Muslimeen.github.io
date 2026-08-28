@@ -6634,6 +6634,134 @@ since v07.86), **`reading.mjs` OK**, **`panel.mjs` clean** (neither touches
 the Note view). No `firestore.rules`, schema or Firestore data changes --
 nothing to deploy but the static files.
 
+v07.96 (28 Aug 2026, on Claude Code on the web) is **a real fix to how
+v07.95's 🗂 drawer was merged in, from the owner's own reaction the moment
+it shipped: "No, that's a messy way to do things. You just can't drop
+things in such a way, not workable."** Both halves of that feedback are
+recorded together because they were about two different things -- the PR
+being left as an unmerged draft (a process failure, fixed by actually
+merging it) and the drawer's own two-lists-crammed-into-one-popover shape
+(a design failure, fixed by this round's real rebuild). Two rounds of
+mockup iteration (shown as clickable artifacts, the owner's own corrections
+folded in each time before anything real was touched) landed on a shape
+none of the earlier internal proposals had: **a TOPIC bar**, read literally
+from the owner's own spec --  "TOPIC > Selection one, drop-down, selection
+2 dropdown (could be more selection criteria later)" -- followed by three
+fields the owner named directly: **Group** (which collection this āyah's
+Note view is currently following), **Attach** (how many collections this
+ONE āyah is tagged into, and which), and **Yr Level** (which year band(s)
+the currently-selected GROUP targets, Yr 1 through Yr 12 plus a "Regular
+adult" catch-all). The final build instruction was one line -- "Build it
+but make yr level apply to multiple yr" -- which is why Yr Level is a
+checklist, not a single pick, the same shape Attach already had.
+
+**Yr Level is a property of the GROUP, not the āyah** -- confirmed by how
+the owner described it ("which Year Level... it should be set for", of the
+collection, not of one reference inside it) and how Attach was already
+described the opposite way ("how many groups an Ayah attached to", clearly
+per-āyah). Getting this backwards would have meant tagging every single
+āyah in "Sayr fil-Arḍ" with the same 12 checkboxes one at a time instead of
+setting them once for the whole collection -- confirmed with the owner's
+own wording before building either way. `qcr.js` gained `YR_LEVEL_IDS`
+(yr1..yr12 + "adult"), `yrLevelLabel(id)` (the same parameterized-template
+shape "Ruku' {ruku}"/"Surah {surah}" already use -- one `t("Yr {n}", {n})`
+template covers all twelve, rather than twelve separate translated
+strings), and a new pure `setCollectionYrLevels(collections, id, yrLevels)`
+alongside the existing `renameCollection`/`setCollectionStatus`. **A new,
+additive `yrLevels[]` field, deliberately NOT a replacement for the
+existing free-text `badge` field** -- `badge` is unstructured text copied
+verbatim from the owner's own uploaded QCR file ("Y6–12", "All years",
+"Mixed — pending split") that doesn't map cleanly onto a fixed 13-item
+picklist, and I4 says don't reshape data that already means something; the
+two fields sit side by side rather than one replacing the other. **Scoped
+to QCR only, on purpose** -- CLAUDE.md already carries a bigger,
+not-yet-scoped idea (Q5, "every study item labelled by year band, across
+every module") as its own future round; this is that idea's first,
+narrower instance, not that round arriving early, and it is recorded here
+as exactly that so the two are never confused later.
+
+**The drawer itself is a real bar now, not a merged popover.** `renderQcr
+DrawerHtml()` in `quranrevival.html` was rebuilt from the ground up: a
+first row holds a disabled `Topic` select (fixed at "QCR" -- a real
+placeholder for "more such topics later", the owner's own words, not yet
+built since there is only the one topic today); a second row holds three
+real fields -- **Group** (an ordinary `<select>`, replacing what used to be
+a plain switcher list -- picking one moves `noteOriginCollectionId`, same
+"just switch context, stay put" rule this mechanism has had since it was
+introduced two rounds ago), **Attach** (a button that opens a small popover
+listing every active collection with a checkbox, reusing the EXISTING
+`renderQcrMembershipPopoverHtml()`/`onToggleCollectionMembership` this
+project already had -- no new mechanism there, just a new home for it), and
+**Yr Level** (the new `renderYrLevelPopoverHtml()`, a 13-checkbox list,
+disabled with no popover at all when no Group is selected, since "which
+year band" has no group to describe otherwise). Both Attach and Yr Level
+show a live COUNT on the button face (`num()`-formatted, so "৩" in Bangla)
+with the full list of names in the button's own `title` -- so the two
+fields read as genuinely separate lists, per the owner's own "two types of
+buttons... should have two separate list" complaint about the old design,
+rather than one crowded popover trying to be both at once.
+
+**A real re-render bug was caught before it shipped, not after: toggling a
+checkbox inside Attach or Yr Level was closing the OUTER 🗂 drawer itself.**
+Both callbacks originally called the full `renderNoteViewNow()` rebuild
+this screen uses for a claim, a bookmark toggle or Prev/Next -- correct for
+those, wrong here, because a full rebuild resets every popover to closed by
+default, and only the INNER dropdown's own open state was being tracked (an
+attempt at tracking it, `noteQcrDdOpen`/`onQcrDropdownOpenChange`, was
+built, found unnecessarily complicated, and removed again in the same
+sitting). Caught by the round's own Playwright script failing to click a
+second checkbox after the first one closed everything around it. **Fixed
+by not re-rendering at all for these two actions**: a new
+`refreshQcrDrawerSummaries(unitKey)` patches only the two summary `<span>`s'
+text and their buttons' `title` attributes directly, via plain DOM writes,
+leaving every other bit of UI state -- which popover is open, which field is
+expanded -- exactly as the reader left it. The same "patch the specific
+node, don't rebuild the screen" rule this project has reached for before
+(Notes/Word-by-word/Root's own session flags exist for the identical
+reason) applied here without needing a new state variable at all, since
+nothing about WHICH popover is open needed to survive the write -- only
+its CONTENTS did.
+
+**A second, smaller defect from widening the popover to fit three fields:
+it ran off the right edge of a phone.** `.note-sub-popover[data-note-sub=
+"collections"]` grew from 15rem to 17rem to hold the new content, and at
+that width, anchored `left:0` under the small 🗂 button (itself pushed well
+right by every icon preceding it in `.note-bar2`), it measured `x: 398.75`
+on a 390px viewport. Fixed the exact way this project's own ⋮/⋯ dropdowns
+were already fixed for the identical shape of overflow: `.note-bar2
+.note-sub-popover[data-note-sub="collections"] { left: auto; right: 0; }`,
+anchoring it to the BAR's own right edge (always inside the viewport)
+instead of the small button that happens to open it.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice for anything past `behaviour.mjs`'s own
+disclosed section-42 crash point) -- **28 checks, all passing**: the Topic
+row present and disabled at "QCR"; Group/Attach/Yr Level all present with
+the right starting values; picking a Group moving `noteOriginCollectionId`
+without moving the current āyah; Attach's popover opening, listing every
+collection, and a real toggle proven to persist to Firestore
+(`ayahCollections`, via `window.__fsLog`) AND to update its own summary
+count in place WITHOUT closing the outer 🗂 drawer around it; Yr Level
+disabled with no Group selected, then enabled once one is, accepting
+MULTIPLE ticks in one sitting, each persisting and updating its own count
+the same non-destructive way; the popover proven to stay within the
+viewport at 390px; and the whole thing again in Bangla, with Bengali-digit
+counts and every checkbox/option VALUE proven to stay a plain id.
+**`layout.mjs` reports the landing page byte-for-byte identical** at all
+eight viewports in both banner states against a real `HEAD` shim (only the
+same four pre-existing QCR Manage-mode false positives disclosed since
+v07.86, none newly missing), **`reading.mjs` OK**, **`panel.mjs` clean**
+(neither touches the Note view). No `firestore.rules` change --
+`yrLevels[]` is one more additive field on a document (`ayahCollections/
+{tenantId}`) whose rule already gates by tenant, not by field name;
+nothing to deploy but the static files.
+
+**And the process half of the owner's feedback**: this round's own PR was
+opened, marked ready, and merged in the same sitting -- not left sitting as
+an unmerged draft the way v07.95's own PR briefly was, which is what
+triggered the "that's a messy way to do things" correction in the first
+place.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

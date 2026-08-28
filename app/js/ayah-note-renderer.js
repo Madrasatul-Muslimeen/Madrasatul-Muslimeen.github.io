@@ -279,11 +279,12 @@ export function renderNoteView({
   // to explain" rule. collectionsPopoverHtml is pre-built by the caller
   // (quranrevival.html owns the list of collections and their names -- I2,
   // this file never reads that data itself) and is always offered.
-  // Mobile-overflow round -- collectionsPopoverHtml now ALSO carries bar 1's
-  // own retired Category picker (rows wired via onSwitchCollection, see
-  // attachNoteViewHandlers), so the 🗂 button is a real drawer: switch which
-  // collection this Note view follows, then (unchanged) tag/see which
-  // collections this exact āyah belongs to.
+  // TOPIC bar round -- collectionsPopoverHtml is now a real bar of
+  // dropdowns (TOPIC, then Group/Attach/Yr Level), not a flat list: Group
+  // is what onSwitchCollection still wires (see attachNoteViewHandlers),
+  // Attach is the unchanged per-āyah membership toggle, and Yr Level is a
+  // new per-GROUP field (onToggleGroupYrLevel). This file still only
+  // places the HTML the caller built -- I2 holds.
   backToCollectionLabel = null,
   collectionsPopoverHtml = "",
 }) {
@@ -332,17 +333,11 @@ export function renderNoteView({
         <button type="button" class="note-icon-btn" data-note-play title="${t("Play")}">▶</button>
         <button type="button" class="note-icon-btn${isBookmarked ? " active" : ""}" data-note-bookmark title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}">${isBookmarked ? "★" : "☆"}</button>
         <button type="button" class="note-icon-btn${isFullscreen ? " active" : ""}" data-note-fullscreen title="${t("Full screen")}" aria-pressed="${isFullscreen ? "true" : "false"}">⤢</button>
-        <!-- Ayah Collections round 2 -- "the NOTE view should have a button
-             for moving/placing the Ayah to multiple level/category (as it
-             is in the wheel view)". Mobile-overflow round -- this same
-             button now also carries bar 1's own retired Category picker
-             ("Move the QCR field from the Ayah/study selector bar... it
-             shrinks the [Study Unit]/Surah/Ayah selector in Mob n Tablet" --
-             the owner's own report): collectionsPopoverHtml is now a real
-             drawer, built by the caller, listing every other collection to
-             switch this Note view's own context to, ABOVE the per-āyah
-             membership toggle/list this button already offered ("make that
-             button as a drawer for similar other QCR type Ayat group"). -->
+        <!-- TOPIC bar round -- the 🗂 drawer is a real bar of dropdowns now:
+             TOPIC (which classification system -- QCR today), then that
+             topic's own row, Group/Attach/Yr Level, all pre-built by the
+             caller (quranrevival.html owns collections/labels data -- I2,
+             this file never reads it). -->
         <div class="note-sub-wrap" data-note-sub-wrap="collections">
           <button type="button" class="note-icon-btn" data-note-sub-toggle="collections" title="${t("Collections")}">🗂</button>
           <div class="note-sub-popover" data-note-sub="collections">${collectionsPopoverHtml}</div>
@@ -517,7 +512,8 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
  *   onUpdateBookmark()        -- bookmark creation/update round; only wired to anything when canUpdateBookmark rendered the row at all
  *   onBackToCollection()      -- Ayah Collections round 2; only wired to anything when backToCollectionLabel rendered the button at all
  *   onToggleCollectionMembership(collectionId, checked)  -- Ayah Collections round 2; fires once per checkbox in the always-present Collections popover
- *   onSwitchCollection(collectionId | null)  -- mobile-overflow round; fires when a row in the same 🗂 drawer's own retired-Category-picker section is picked (null for "— none —")
+ *   onSwitchCollection(collectionId | null)  -- TOPIC bar round; fires on the drawer's own Group <select> (null for "— none —")
+ *   onToggleGroupYrLevel(yrLevelId, checked)  -- TOPIC bar round; fires once per checkbox in the Yr Level dropdown, for whichever collection Group currently points at. On success the caller patches the Attach/Yr Level summary badges directly (see quranrevival.html's refreshQcrDrawerSummaries()) rather than re-rendering, so neither dropdown -- nor the outer 🗂 popover itself -- closes mid-tick
  */
 export function attachNoteViewHandlers(container, callbacks) {
   const view = container.querySelector(".note-view");
@@ -684,15 +680,35 @@ export function attachNoteViewHandlers(container, callbacks) {
   view.querySelectorAll("[data-note-collection-toggle]").forEach((cb) => {
     cb.addEventListener("change", () => callbacks.onToggleCollectionMembership?.(cb.dataset.noteCollectionToggle, cb.checked));
   });
-  // Mobile-overflow round -- bar 1's own retired Category picker moved into
-  // this same 🗂 drawer, above the membership toggles/list ("put it in the
-  // same button, but separately"): each row is a plain button naming one
-  // collection (or "— none —"), the caller decides which one is current.
-  view.querySelectorAll("[data-note-qcr-switch]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      callbacks.onSwitchCollection?.(btn.dataset.noteQcrSwitch || null);
-      closeSubPopovers(null);
+  // TOPIC bar round -- the 🗂 drawer's own retired-Category-picker section
+  // is a real bar of dropdowns now: Group is a plain <select> (reuses the
+  // exact same onSwitchCollection callback the old row-list of buttons
+  // called -- it's the same mechanism, just a real dropdown), and Attach/
+  // Yr Level are two small dropdown-styled controls, each opening its own
+  // checklist. Only one of the two stays open at a time -- closeQcrDropdowns
+  // mirrors closeSubPopovers/closeAllDotMenus above for the same reason.
+  view.querySelector("[data-note-qcr-group]")?.addEventListener("change", (e) => {
+    callbacks.onSwitchCollection?.(e.target.value || null);
+  });
+  function closeQcrDropdowns(exceptWrap) {
+    view.querySelectorAll("[data-note-qcr-dd]").forEach((wrap) => {
+      if (wrap === exceptWrap) return;
+      wrap.querySelector("[data-note-qcr-dd-pop]")?.classList.remove("on");
+      wrap.querySelector("[data-note-qcr-dd-toggle]")?.classList.remove("active");
     });
+  }
+  view.querySelectorAll("[data-note-qcr-dd-toggle]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const wrap = btn.closest("[data-note-qcr-dd]");
+      const pop = wrap.querySelector("[data-note-qcr-dd-pop]");
+      const willOpen = !pop.classList.contains("on");
+      closeQcrDropdowns(null);
+      if (willOpen) { pop.classList.add("on"); btn.classList.add("active"); }
+    });
+  });
+  view.querySelectorAll("[data-note-qcr-yrlevel-toggle]").forEach((cb) => {
+    cb.addEventListener("change", () => callbacks.onToggleGroupYrLevel?.(cb.dataset.noteQcrYrlevelToggle, cb.checked));
   });
   view.querySelector("[data-note-play]")?.addEventListener("click", () => callbacks.onPlay?.());
   view.querySelector("[data-note-prev-unit]")?.addEventListener("click", () => callbacks.onPrevUnit?.());
@@ -730,6 +746,14 @@ export function attachNoteViewHandlers(container, callbacks) {
           menu.classList.remove("open");
           btn.classList.remove("active");
           btn.setAttribute("aria-expanded", "false");
+        }
+      });
+      v.querySelectorAll("[data-note-qcr-dd]").forEach((wrap) => {
+        const pop = wrap.querySelector("[data-note-qcr-dd-pop]");
+        const btn = wrap.querySelector("[data-note-qcr-dd-toggle]");
+        if (pop?.classList.contains("on") && !wrap.contains(e.target)) {
+          pop.classList.remove("on");
+          btn?.classList.remove("active");
         }
       });
     });
