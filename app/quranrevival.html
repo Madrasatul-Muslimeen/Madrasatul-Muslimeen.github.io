@@ -4418,6 +4418,24 @@
       advanceReadChrome();
     });
 
+    // Same tap-toggles-full-screen idiom as the reading screen above, for
+    // the Note view -- the owner's own ask, after the PC popup-window round
+    // above gave #noteView a genuinely different desktop shape. Deliberately
+    // scoped to phone/tablet only (below the popup's own 900px breakpoint):
+    // on desktop #noteView is a floating, draggable window with its own ⤢
+    // maximize button and resize handles, and a body tap toggling the
+    // SEPARATE note-immersive shell chrome there would be a surprise mid
+    // drag/read with no matching mental model -- the ⤢ button stays the way
+    // in on desktop, same as it always has. `[contenteditable]` excludes the
+    // Notes editor specifically -- unlike the reading screen's plain text,
+    // a tap there is positioning a cursor to type, not just reading.
+    noteView.addEventListener("click", (e) => {
+      if (window.matchMedia("(min-width: 900px)").matches) return;
+      if (e.target.closest("button, a, input, select, textarea, label, [role='button'], [contenteditable]")) return;
+      if (String(window.getSelection?.() ?? "").length > 0) return;
+      toggleNoteFullscreen();
+    });
+
     document.querySelectorAll("[data-close-panel]").forEach((btn) => {
       btn.addEventListener("click", closeAllPanels);
     });
@@ -6514,9 +6532,11 @@
 
     /** The Note view's own full screen -- two states, a separate mechanism
         from the reading screen's own (immersive-read) so the two can never
-        leak into each other. Toggled only from the view's own ⤢ button;
-        never resets itself mid-session except when the view is (re)opened
-        or left, both handled by their own callers. */
+        leak into each other. Toggled from the view's own ⤢ button, and (on
+        phone/tablet only -- see the noteView click listener above) a tap
+        anywhere in the view that isn't a control; never resets itself
+        mid-session except when the view is (re)opened or left, both handled
+        by their own callers. */
     function toggleNoteFullscreen() {
       noteFullscreenOn = !noteFullscreenOn;
       document.body.classList.toggle("note-immersive", noteFullscreenOn);
