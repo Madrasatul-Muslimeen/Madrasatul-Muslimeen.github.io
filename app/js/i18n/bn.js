@@ -593,6 +593,21 @@ export const BN = {
   "Collapse āyah text": "আয়াতের লেখা সংক্ষিপ্ত করুন",
   "Expand āyah text": "আয়াতের লেখা বড় করুন",
   "Notes always stays open": "নোট সবসময় খোলা থাকে",
+  // PC popup (28 Aug 2026) -- the Note view's own floating window on
+  // desktop widths, with a side pane of the current collection's (or this
+  // Surah's) own ayat.
+  "List view": "তালিকা দৃশ্য", // ?
+  "Card view": "কার্ড দৃশ্য", // ?
+  "Maximize": "বড় করুন", // ?
+  "Previous in this group": "এই দলের পূর্ববর্তী", // ?
+  "Next in this group": "এই দলের পরবর্তী", // ?
+  "Drag to resize": "আকার পরিবর্তনে টেনে আনুন", // ?
+  "Drag onto the side pane to add this āyah there": "এই আয়াতটি যোগ করতে পাশের প্যানেলে টেনে আনুন", // ?
+  "Has a note": "একটি নোট আছে",
+  "Collapse note": "নোট সংক্ষিপ্ত করুন",
+  "Expand note": "নোট বড় করুন",
+  "{current} of {total}": "{total}-এর মধ্যে {current}", // ?
+  "Nothing to show here yet.": "এখানে দেখানোর মতো কিছু নেই এখনো।",
   "Bangla": "বাংলা",
   "Type notes here…": "এখানে নোট লিখুন…",
   "Couldn't save — will try again.": "সংরক্ষণ করা যায়নি — আবার চেষ্টা করা হবে।",
