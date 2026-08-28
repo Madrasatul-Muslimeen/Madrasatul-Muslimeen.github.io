@@ -6275,6 +6275,109 @@ already. Bar 1's own `flex-wrap` should prevent this by construction (every
 `<select>` carries `min-width:0`), so the cause is worth a real, separate
 investigation rather than a guess bundled into this round.
 
+v07.92 (28 Aug 2026, on Claude Code on the web) is **Note view enhancement
+round 3 -- text size, resizable individually and collectively, at the Note
+view, the PC note-pane, and the Read screen alike.** The owner's own ask
+covered three screens and three separate questions (placement, whether
+Read should be separate, whether the controls should live in "a new
+window") -- all three settled here with a recommendation rather than
+another AskUserQuestion round, since none of them was a fork the owner
+would need to weigh in on to get right.
+
+**Scope, deliberately narrower than "every Arabic on the page":** the three
+RUNNING TEXT blocks this app already shows full āyah content in -- Arabic
+(`.ayah-arabic`/`.note-arabic`/`.note-popup-row-arabic`), English and
+Bangla translation (`.ayah-translation`/`.note-english`/`.note-bangla`).
+NOT the wheel's own hub Arabic (`layoutWheelHub()` fits it inside a
+measured circle; an independent multiplier would fight that math, not
+cooperate with it) and NOT Mushaf/page view (`justifyPageLines()` fits
+real printed-page line widths -- scaling it needs that function's own math
+touched, a bigger, separate job, flagged rather than attempted here).
+Word-by-Word/Root/Derivatives keep their own existing sizing too -- "the
+languages" reads as the three blocks the owner actually named, not every
+Arabic-adjacent panel in the app.
+
+**One shared, global preference, not per-screen** -- matching every other
+Quran reading preference already in this app (font, translation languages,
+sideways reading): "how big do I want Arabic/English/Bangla" is a personal
+reading trait, not something that should quietly differ between the Read
+screen and the Note screen. This is also the direct answer to "same
+resizing at the READ view too... you can do separately if that's better":
+building it once as a shared mechanism and adding a third call site cost
+barely more than building it for one screen, so all three shipped together
+rather than as a deferred second round.
+
+**New `js/text-size.js`**, a small, self-contained, Firebase-free module
+(the same contract `prefs.js` itself keeps, so `ayah-note-renderer.js` -- a
+pure renderer -- can import it freely): `getTextSizeScale(lang)`/
+`setTextSizeScale(lang, value)`/`setAllTextSizeScales(value)`/
+`resetTextSizeScales()`, localStorage-backed, `[0.8, 1.6]` clamped, applied
+as CSS custom properties on `:root` (`--qr-ar-scale`/`--qr-en-scale`/
+`--qr-bn-scale`) that every base font-size rule now multiplies via
+`calc()` -- untouched (scale exactly 1, i.e. today's byte-for-byte sizes)
+until the reader actually drags a slider. `renderTextSizeButtonHtml()`
+builds one button + popover (an "All" slider for the collective gesture,
+then Arabic/English/Bangla sliders for the individual ones, then Reset),
+and **one delegated `document` listener, wired once at module load, covers
+every instance wherever it ends up in the DOM** -- the same shape
+`way-modal.js`'s own Assign-to popover and `nav.js`'s outside-click-closes
+already use -- so placing the SAME button in three completely different
+rendering contexts (two static-markup slots, one rebuilt-every-render
+template string) needed zero per-view rewiring.
+
+**Three buttons answer "is it possible to set a pane-view button on the
+pane-view bar and a note-view button on the note-view bar... easy for
+eyes"** -- literally three, not one shared instance moved around: the Note
+view's own bar 2, the PC note-pane's title bar, and the Read bar. Each
+passes its own `btnClass` so the button matches its own bar's existing
+look (the Note view's dark `note-icon-btn`, the Read bar's light `secondary
+qr-ico`, the popup title bar's plain unclassed button) rather than one
+shared style guessing at a look that fits nowhere. **The note-pane's own
+popover offers Arabic only** -- `notePopupSideRowData()` never shows
+English or Bangla text in that pane at all, so a slider for a language
+that isn't visible there would just be confusing; proven by a real test
+that a change made from that one popover still reaches the main Note
+view's own Arabic too, since it's the same shared preference underneath.
+
+**"Or all three things in a new window" was answered by NOT building one:**
+each popover reuses the exact expand-in-place shape Copy/Share/Collections
+already use in this app (`.note-sub-popover`'s own visual language, given
+its own class since it needs to look right anchored inside three different
+bars, none of which is `.note-bar2`), rather than introducing a floating-
+window paradigm this app doesn't otherwise have. Anchored to the RIGHT of
+its own button (not the left, like `.note-sub-popover`) since two of its
+three homes sit close to the screen's own right edge -- the exact "runs
+off the left/right screen" shape this project has already had to fix once
+for a right-anchored dropdown with nothing wide enough before it.
+
+**Verified: 31 checks pass** in a focused, un-checked-in Playwright script
+(this project's own established practice for anything past
+`behaviour.mjs`'s own disclosed section-42 crash point) -- all three
+buttons present; the Note view's own popover offering all three languages
+plus All; an individual Arabic drag growing only Arabic (English's own
+font-size proven untouched); the collective "All" drag setting Arabic,
+English AND Bangla to the same value, with the individual sliders' own
+thumbs visibly following it live; Reset returning all three to exactly 1;
+the note-pane's popover offering Arabic only, and a change made THERE
+proven to reach the main Note view's own Arabic too; the Read bar's own
+popover resizing the Read screen's real `.ayah-arabic` text; the main
+wheel proven to still render fine (hub Arabic untouched); the preference
+surviving a reload; no horizontal overflow from the popover itself; and
+all of it again in Bangla, with the percentage readout in Bengali digits
+and the row labels translated. **`layout.mjs` reports the landing page
+byte-for-byte identical** at all eight viewports in both banner states
+against a real `HEAD` shim (`getElementById` targets 143 → 145, exactly
+the two new static slots, none missing), **`panel.mjs` and `reading.mjs`
+both clean**, **`navcheck.mjs` unchanged** (still only the pre-existing
+320px English truncation), and **coverage 260/266 in the quran area (98%),
+the same pre-existing missing strings, total unchanged at 26** -- three new
+strings ("Text size", "All", "Reset"), all translated and marked `// ?`
+for the owner's own eye; `js/text-size.js` was added to
+`tools/i18n-coverage.mjs`'s own `quran` area (it was landing in the
+generic "later phases" bucket otherwise, which would have under-reported
+this round's own real translation work). No `firestore.rules`, schema or
+Firestore data changes -- nothing to deploy but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

@@ -993,10 +993,18 @@
   /* One variable, set from the reader's stored choice, so every piece of
      Arabic on the page follows one setting rather than four hardcoded stacks. */
   :root { --quran-font: 'QR Scheherazade', serif; }
-  .ayah-arabic { font-family: var(--quran-font); font-size: 1.7rem; line-height: 2.6rem; text-align: right; margin: 0.6rem 0; }
+  /* Note-view enhancement round 3 -- "same resizing at the READ view too".
+     --qr-ar-scale/--qr-en-scale/--qr-bn-scale default to 1 (exactly today's
+     numbers) until text-size.js's own applyToRoot() sets them from a real
+     stored preference -- see that file's own header for the full reasoning
+     and why the wheel/Mushaf/word-by-word are deliberately NOT touched here.
+     line-height is scaled by the SAME factor as font-size (it's in rem, not
+     unitless) so the two stay in the same proportion at every size rather
+     than lines crowding together as the text grows. */
+  .ayah-arabic { font-family: var(--quran-font); font-size: calc(1.7rem * var(--qr-ar-scale, 1)); line-height: calc(2.6rem * var(--qr-ar-scale, 1)); text-align: right; margin: 0.6rem 0; }
   .ayah-num { color: #B8862F; font-size: 1rem; }
-  .ayah-translation { font-size: 0.95rem; color: #333; margin: 0.3rem 0; }
-  .ayah-translation-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; }
+  .ayah-translation { font-size: calc(0.95rem * var(--qr-en-scale, 1)); color: #333; margin: 0.3rem 0; }
+  .ayah-translation-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; font-size: calc(0.95rem * var(--qr-bn-scale, 1)); }
   /* Shell round 24 -- the words of an ayah run RIGHT TO LEFT. The owner spotted
      this: the chips were laid out left to right, so the FIRST word of the ayah
      sat at the left of the row and reading them in order meant reading the
@@ -1289,6 +1297,35 @@
   .quick-menu .note-sub-wrap > [data-note-sub-toggle] { width: 100%; text-align: left; background: none; border: none; color: #222; padding: 0.42rem 0.5rem; font-size: 0.8rem; }
   .quick-menu .note-sub-wrap > [data-note-sub-toggle]:hover { background: #f5f0e2; }
 
+  /* Note-view enhancement round 3 -- text-size.js's own popover, the same
+     white-card shape .note-sub-popover already uses, so it looks native
+     wherever one of its three buttons actually sits (the Note view's own
+     dark bar 2, the Read bar, the PC note-pane's title bar) rather than
+     picking one bar's own colour scheme and looking wrong in the other two.
+     Anchored to the RIGHT of its own button (right:0, not left:0) since two
+     of its three homes (readBar, the popup title bar) sit close to the
+     screen's own right edge -- a left-anchored popover would run off it
+     there, the exact "Share shows beyond the left screen" shape bar 2's own
+     dropdowns already had to fix once. */
+  .text-size-wrap { position: relative; flex: 0 0 auto; display: inline-block; }
+  .text-size-popover {
+    display: none; position: absolute; top: 2.3rem; right: 0; z-index: 9;
+    background: #fff; border: 1px solid #ddd; border-radius: 0.5rem;
+    box-shadow: 0 10px 26px rgba(20,30,60,0.2); width: 13.5rem; padding: 0.55rem 0.6rem;
+  }
+  .text-size-popover.open { display: block; }
+  .text-size-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0; }
+  .text-size-row-label { flex: 0 0 3.4rem; font-size: 0.72rem; color: #555; }
+  .text-size-row input[type="range"] { flex: 1 1 auto; min-width: 0; accent-color: #1F3A6E; }
+  .text-size-row-pct { flex: 0 0 2.6rem; text-align: right; font-size: 0.7rem; color: #777; }
+  .text-size-row[data-text-size-row="all"] .text-size-row-label { font-weight: 700; color: #1F3A6E; }
+  .text-size-divider { height: 1px; background: #eee; margin: 0.35rem 0; }
+  .text-size-reset {
+    width: 100%; margin-top: 0.3rem; background: none; border: 1px solid #ddd; border-radius: 0.35rem;
+    color: #555; font-size: 0.72rem; padding: 0.22rem 0; cursor: pointer;
+  }
+  .text-size-reset:hover { background: #f5f0e2; }
+
   /* Ayah Collections round 2 -- the way back to a collection's own list+wheel
      (a text button, not an icon-only one, so it needs room rather than the
      square .note-icon-btn footprint), and the 🗂 popover's own two bodies:
@@ -1424,7 +1461,7 @@
      differs between List and Card -- List hides it until expanded too,
      Card always shows it. */
   .note-popup-row-body { flex: 1 1 100%; padding: 0 0.3rem 0.4rem; }
-  .note-popup-row-arabic { font-family: var(--quran-font); direction: rtl; text-align: right; font-size: 1rem; line-height: 1.7; color: #1b1b16; }
+  .note-popup-row-arabic { font-family: var(--quran-font); direction: rtl; text-align: right; font-size: calc(1rem * var(--qr-ar-scale, 1)); line-height: 1.7; color: #1b1b16; }
   .note-popup-row-snippet { display: none; margin: 0 0.3rem 0.3rem; font-size: 0.72rem; color: #555; line-height: 1.4; }
   .note-popup-row-note { flex: 1 1 100%; margin: 0 0.3rem 0.4rem; padding: 0.3rem 0.4rem; background: #fff; border: 1px dashed #b8862f; border-radius: 0.3rem; font-size: 0.72rem; color: #444; }
 
@@ -1445,9 +1482,9 @@
   .note-field-label-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.15rem; }
   .note-field-toggle { background: none; border: none; color: #1F3A6E; font-size: 0.75rem; cursor: pointer; padding: 0.1rem 0.2rem; width: 1.1rem; }
   .note-field-label { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.05em; color: #999; }
-  .note-arabic { font-family: var(--quran-font); direction: rtl; text-align: right; font-size: 1.35rem; line-height: 1.9; color: #1b1b16; margin: 0.15rem 0; }
-  .note-english { font-size: 0.86rem; color: #222; margin: 0.15rem 0; line-height: 1.5; }
-  .note-bangla { font-size: 0.84rem; color: #222; margin: 0.15rem 0; line-height: 1.6; }
+  .note-arabic { font-family: var(--quran-font); direction: rtl; text-align: right; font-size: calc(1.35rem * var(--qr-ar-scale, 1)); line-height: 1.9; color: #1b1b16; margin: 0.15rem 0; }
+  .note-english { font-size: calc(0.86rem * var(--qr-en-scale, 1)); color: #222; margin: 0.15rem 0; line-height: 1.5; }
+  .note-bangla { font-size: calc(0.84rem * var(--qr-bn-scale, 1)); color: #222; margin: 0.15rem 0; line-height: 1.6; }
   .note-notes-editor {
     min-height: 80px; max-height: 260px; overflow-y: auto;
     border: 1px solid #e0d8bd; border-radius: 0.4rem; padding: 0.55rem 0.65rem;
@@ -1693,6 +1730,12 @@
           <button type="button" class="secondary qr-ico" id="readPlayBtn" aria-label="Play" title="Play">▶</button>
           <button type="button" class="secondary qr-ico" id="readStopBtn" aria-label="Stop" title="Stop">■</button>
           <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
+          <!-- Note-view enhancement round 3 -- "same resizing at the READ
+               view too". Filled in by JS (renderTextSizeButtonHtml()) once
+               at init, same as every other static-markup slot on this
+               page -- see that function's own docstring for why one shared
+               module drives all three of this app's text-size buttons. -->
+          <div id="readTextSizeSlot"></div>
           <!-- Multi-student round -- "enable READ view to have a bookmark
                button too", matching the Note view's own bar 2 (v07.64: a
                direct button, not buried in the ⋮ menu). Owner's own
@@ -1746,6 +1789,10 @@
           <div class="note-popup-titlebar-actions">
             <button type="button" id="notePopupListViewBtn" title="List view" aria-pressed="false">☰</button>
             <button type="button" id="notePopupCardViewBtn" title="Card view" aria-pressed="false">▦</button>
+            <!-- Note-view enhancement round 3 -- "note-pane view" gets its
+                 own text-size button too, Arabic only (the only language
+                 this pane's own rows ever show -- see notePopupSideRowData()). -->
+            <div id="notePopupTextSizeSlot"></div>
             <button type="button" id="notePopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
             <button type="button" id="notePopupCloseBtn" title="Close" aria-label="Close">&times;</button>
           </div>
@@ -2190,6 +2237,7 @@
       getSidewaysReading, setSidewaysReading,
       getQcrWheelSize, setQcrWheelSize,
     } from "./js/prefs.js";
+    import { renderTextSizeButtonHtml } from "./js/text-size.js";
     import {
       taglinesFrom, taglineSettingsFrom, taglineText, pickTagline,
       readTaglineState, writeTaglineState, TAGLINE_SETTING_DEFAULTS,
@@ -2407,6 +2455,7 @@
     const notePopupTitleEl = document.getElementById("notePopupTitle");
     const notePopupListViewBtn = document.getElementById("notePopupListViewBtn");
     const notePopupCardViewBtn = document.getElementById("notePopupCardViewBtn");
+    const notePopupTextSizeSlot = document.getElementById("notePopupTextSizeSlot");
     const notePopupMaximizeBtn = document.getElementById("notePopupMaximizeBtn");
     const notePopupCloseBtn = document.getElementById("notePopupCloseBtn");
     const notePopupSideEl = document.getElementById("notePopupSide");
@@ -2462,6 +2511,7 @@
     const readRangeToSelect = document.getElementById("readRangeToSelect");
     const readHint = document.getElementById("readHint");
     const readQuickMenuSlot = document.getElementById("readQuickMenuSlot");
+    const readTextSizeSlot = document.getElementById("readTextSizeSlot");
     const hideChromeBtn = document.getElementById("hideChromeBtn");
     const readBookmarkBtn = document.getElementById("readBookmarkBtn");
     const prevUnitBtn = document.getElementById("prevUnitBtn");
@@ -4688,6 +4738,21 @@
       }
     }
     applyQcrWheelSize(getQcrWheelSize());
+
+    // Note-view enhancement round 3 -- the two STATIC-markup text-size
+    // buttons (Read bar, the PC note-pane's own title bar). Filled once,
+    // here, rather than re-rendered: neither #readBar nor notePopupTitleBar
+    // is ever rebuilt via innerHTML the way the Note view's own bar 2 is, so
+    // there is nothing to keep in sync -- text-size.js's own delegated
+    // document listeners cover whatever ends up in the DOM regardless of
+    // when it was inserted. btnClass matches each bar's own existing button
+    // look (readBar's light "secondary qr-ico", the popup title bar's plain
+    // unclassed button) rather than the Note view's dark note-icon-btn
+    // default, which would look wrong in either. The note-pane only ever
+    // shows Arabic (see notePopupSideRowData()), so its own instance offers
+    // only that one slider plus All (which reduces to "just Arabic" there).
+    readTextSizeSlot.innerHTML = renderTextSizeButtonHtml("read", { btnClass: "secondary qr-ico" });
+    notePopupTextSizeSlot.innerHTML = renderTextSizeButtonHtml("popup", { showEn: false, showBn: false, btnClass: "" });
 
     // Pointer Events unify mouse/touch/pen in one code path (works on
     // desktop, tablet and phone alike, per this project's own standing
