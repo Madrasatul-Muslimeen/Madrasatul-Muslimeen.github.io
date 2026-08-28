@@ -6095,6 +6095,86 @@ entries — confirmed unrelated by running `HEAD` against itself),
 this is a client-side caching bug fix only; nothing to deploy but the
 static files.
 
+v07.90 (28 Aug 2026, on Claude Code on the web) is **Ayah Collections
+(QCR) round 5 -- the QCR wheel is resizable by a drag handle, and the
+owner's own size sticks.** Their own ask: "Build drag-handle and make the
+size persists whatever i make, unless i resize again." A gold circular
+handle (⤡) now sits on the wheel's own bottom-right corner, on the QCR
+screen only (the main landing Mastery Wheel and the plain Explore
+Quran-structure wheel are both untouched and unaffected -- confirmed, not
+assumed).
+
+**Untouched by default is the design's whole point, not an incidental
+property.** `#qcrWheelResizeWrap`, the new wrapper the handle actually
+lives on, carries no size rule of its own -- every rule that lets a JS-set
+inline width win is scoped under a new `.qcr-wheel-resized` class on
+`#qcrWheelPane`, which is only ever added once the reader has genuinely
+saved a size. So a device that never touches the handle renders with
+every one of the wheel's existing, heavily-measured sizing rules (the
+phone `max-width:320px` cap, the >=900px `min(55vh,480px)` rule) fully in
+charge, byte-for-byte identical to before this round -- confirmed by
+`layout.mjs` against a real previous-commit shim, not assumed from reading
+the CSS.
+
+**A real bug caught by measuring, not by reading the diff: the wheel
+stayed pinned at 480px on desktop no matter how far the handle was
+dragged.** The first version only overrode `.mastery-wheel`'s own width
+inside the resized wrap; `#qcrWheelContainer` itself -- a plain, non-
+replaced `<div>`, not the SVG -- still carried its own hard
+`width: min(55vh, 480px)` from the existing >=900px rule, and an ordinary
+div's own explicit width always wins over a parent's, wrap or no wrap. A
+second, equally ID-scoped override on `#qcrWheelContainer` itself fixed
+it -- caught by actually measuring the rendered SVG width after a drag in
+a real headless browser, which read a flat 480px regardless of how large
+`#qcrWheelResizeWrap`'s own inline width had grown.
+
+**Storage is `prefs.js`'s own established shape**: `getQcrWheelSize()`/
+`setQcrWheelSize()`, localStorage, additive -- no new startup read, no
+collection, no `firestore.rules` change (I9 untouched; it reads only once
+the QCR panel actually renders, not at page load). `null` (never dragged)
+is a real, load-bearing third state, not merely "unset": it is what keeps
+every existing CSS rule fully in charge for a device that has never used
+the handle. A saved size is clamped to `[160, 900]` px on write, and a
+second, independent safety net (`max-width: 100%` on the resized wrap) is
+what actually prevents overflow on a screen narrower than wherever the
+size was originally dragged -- proven by dragging aggressively past a
+390px phone's own pane width and measuring zero page overflow, not by
+trusting the JS-side clamp math alone (which is deliberately generous,
+since the CSS backstop is what does the real work).
+
+**The drag itself uses Pointer Events with `setPointerCapture()`** on the
+handle -- one code path for mouse, touch and pen alike (this project's own
+standing "must work on desktop, tablet and phone" requirement), and
+capture is what keeps `pointermove`/`pointerup` firing on the handle even
+once a real diagonal drag has moved the pointer off its small circle. The
+delta is averaged across both axes (`(dx + dy) / 2`), matching how a
+corner handle is actually dragged, rather than reading only the
+horizontal or only the vertical movement. The very first-ever drag reads
+the wrap's REAL current rendered width as its starting point (not a
+guessed default), so it can never jump the wheel to an unrelated size on
+the first touch.
+
+**Verified: 18 checks pass** in a focused, un-checked-in Playwright script
+(this project's own established practice for anything touching QCR) --
+the default state carries no resize class and no inline width; dragging
+outward really grows the rendered SVG and persists the new size to
+`localStorage`; the size survives a reload; a second drag really changes
+it again (down to the 160px floor); the same mechanism works below the
+900px breakpoint too; an aggressive drag on a 390px phone clamps to the
+pane's own width with zero horizontal page overflow; the main landing
+wheel and its own section carry no trace of the resize class; and the
+handle's own title is genuinely translated in Bangla. **`layout.mjs`
+reports the landing page byte-for-byte identical** at all eight viewports
+in both banner states against a real `HEAD` shim (`getElementById`
+targets 140 → 143, exactly the three new elements, same pre-existing QCR
+Manage-mode false positives as every round since round 2), **`panel.mjs`
+and `reading.mjs` both clean**, **`navcheck.mjs` unchanged** (still only
+the pre-existing 320px English truncation), and **coverage 1,401/1,428
+(98%), the same pre-existing missing strings** -- one new string ("Drag to
+resize the wheel"), translated, marked `// ?` for the owner's own eye. No
+`firestore.rules`, schema or Firestore data changes -- nothing to deploy
+but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

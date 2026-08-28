@@ -500,3 +500,55 @@ export function setBookmarkMenuGroupBy(id) {
   writeStored(BOOKMARK_MENU_GROUP_BY_KEY, id);
   return cachedBookmarkGroupBy;
 }
+
+// ---------------------------------------------------------------------------
+// 28 Aug 2026 -- the QCR (Ayah Collections) wheel is resizable by a drag
+// handle on its own corner, and the owner's own size sticks: "make the size
+// persists whatever i make, unless i resize again."
+//
+// Stored as a plain pixel width, and null (never dragged) is a real, load-
+// bearing third state, not just "unset" -- it is what leaves every one of
+// the wheel's existing, heavily-measured CSS sizing rules (the phone cap,
+// the >=900px min(55vh,480px) rule) fully in charge, byte-for-byte as
+// before this feature existed, for anyone who never touches the handle.
+// quranrevival.html only applies an explicit inline width (and the CSS
+// override that lets it win) once this returns a real number.
+//
+// localStorage, the same additive shape every other reading/UI preference
+// on this page uses: no new startup read, no collection, no
+// firestore.rules change (I9 untouched) -- and, unlike the Bangla-reciter
+// timing map or the search index, this reads on first QCR-panel render,
+// not on page load, so it costs nothing to anyone who never opens Explore.
+// ---------------------------------------------------------------------------
+const QCR_WHEEL_SIZE_KEY = "mm_qcr_wheel_size";
+const QCR_WHEEL_SIZE_MIN = 160;
+const QCR_WHEEL_SIZE_MAX = 900;
+
+function readQcrWheelSize() {
+  try {
+    const raw = localStorage.getItem(QCR_WHEEL_SIZE_KEY);
+    if (raw === null) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) && n >= QCR_WHEEL_SIZE_MIN && n <= QCR_WHEEL_SIZE_MAX ? n : null;
+  } catch {
+    return null;
+  }
+}
+
+let cachedQcrWheelSize = readQcrWheelSize();
+
+/** The reader's own saved QCR wheel width in px, or null if they have never
+ *  dragged it -- null means "let the ordinary CSS rules decide," not "0". */
+export function getQcrWheelSize() {
+  return cachedQcrWheelSize;
+}
+
+/** Clamped to [QCR_WHEEL_SIZE_MIN, QCR_WHEEL_SIZE_MAX] so a stray drag can
+ *  never wedge the wheel too small to read or wider than any real pane;
+ *  the caller clamps further against the pane's own available width. */
+export function setQcrWheelSize(px) {
+  const n = Math.max(QCR_WHEEL_SIZE_MIN, Math.min(QCR_WHEEL_SIZE_MAX, Math.round(px)));
+  cachedQcrWheelSize = n;
+  writeStored(QCR_WHEEL_SIZE_KEY, String(n));
+  return n;
+}
