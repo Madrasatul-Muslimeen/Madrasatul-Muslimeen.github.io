@@ -5978,6 +5978,59 @@ CSS/JS, no Firestore reads added anywhere), **`tools/perf/new-tenant.mjs`
 string, so nothing new needed adding. No `firestore.rules` or schema
 changes -- nothing to deploy but the static files.
 
+v07.88 (28 Aug 2026, on Claude Code on the web) is **Ayah Collections
+(QCR) round 4 -- the Approach picker enabled on the QCR wheel itself.**
+The owner asked whether this would conflict with the main Mastery Wheel;
+the answer was no (it's the same shared `currentTrackableId` every other
+Approach picker already reads, the same mirror pattern the Ayah Note
+screen's own "Choose an Approach" toggle uses since v07.64/round 32-34),
+and they asked for it to be built.
+
+**A new `#qcrApproachSelect` sits above the wheel, inside `#qcrWheelPane`.**
+It is a plain mirror of the canonical `trackableSelect` -- same options
+(`buildTrackableOptionsHtml()`, the one source of truth every other
+Approach picker already shares), same value, synced on every
+`renderQcrCollectionView()` call and pushed both ways through the existing
+`changeCurrentTrackable(id)`. Picking an Approach here does exactly what
+picking one anywhere else in the app already does: it updates
+`currentTrackableId`, re-renders the landing wheel, and -- the one new
+branch this round adds to `changeCurrentTrackable()` -- re-renders the QCR
+wheel/legend too when Explore's own QCR palette is the screen actually
+open (`stageView === "explore" && exploreMode === "qcr"`), so the wedge
+colours (`qcrItemStatus()`, pooled against whichever Approach is selected
+since v07.85's own Q3 reversal) update immediately rather than only on the
+next collection switch. Nothing about `qcrItemStatus()`,
+`renderScopedWheel()` or the main Mastery Wheel's own render path changed
+-- this is purely a second, synced entry point onto state every wheel in
+the app already reads, exactly as the compatibility answer given to the
+owner said it would be.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice for anything touching Explore/QCR) --
+**15 checks, all passing**: the select renders, is visible, and is
+populated with real Approaches; it starts in sync with the canonical
+picker; switching it moves the canonical picker (and the wheel/legend) the
+same way switching the canonical picker moves it back; the main Mastery
+Wheel still opens correctly and reflects an Approach chosen from the QCR
+screen, proving the two are the same shared state rather than a conflict;
+and the whole thing again in Bangla, with the title translated and the
+option VALUES proven to stay plain Approach ids. `node --check` passes.
+**`tools/i18n-verify/layout.mjs` reports the landing page byte-for-byte
+identical** at all eight viewports in both banner states against a real
+`HEAD` shim (same heading/wheel/rows/gap numbers throughout) -- the only
+"missing ID target" warning is the same four pre-existing QCR Manage-mode
+ids already disclosed as a false positive of that check's own method in
+round 2/3's own entries (confirmed by running `HEAD` against itself: the
+identical warning fires there too), target count 139→140 reflecting only
+the one new `getElementById` call this round adds. **`panel.mjs` and
+`reading.mjs` both report clean** (this round never touches the Study
+options panel or the reading screen), **`navcheck.mjs` unchanged** (still
+only the pre-existing 320px English truncation of "Operation"/"Bookmark").
+"Choose an Approach" is reused verbatim from the Ayah Note screen's own
+already-translated string, so no new Bangla was needed. No `firestore.rules`,
+schema or Firestore data changes -- this round is pure client-side
+rendering/UI-state wiring; nothing to deploy but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
