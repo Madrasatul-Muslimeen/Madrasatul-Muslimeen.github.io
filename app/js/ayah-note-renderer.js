@@ -279,6 +279,11 @@ export function renderNoteView({
   // to explain" rule. collectionsPopoverHtml is pre-built by the caller
   // (quranrevival.html owns the list of collections and their names -- I2,
   // this file never reads that data itself) and is always offered.
+  // Mobile-overflow round -- collectionsPopoverHtml now ALSO carries bar 1's
+  // own retired Category picker (rows wired via onSwitchCollection, see
+  // attachNoteViewHandlers), so the 🗂 button is a real drawer: switch which
+  // collection this Note view follows, then (unchanged) tag/see which
+  // collections this exact āyah belongs to.
   backToCollectionLabel = null,
   collectionsPopoverHtml = "",
 }) {
@@ -306,12 +311,15 @@ export function renderNoteView({
            for moving the whole unit of choice, another for moving only a
            single Ayah", both together, the owner's own words) comes first,
            then the four that must always stay visible (Play/Bookmark/Full
-           screen), then Copy and Aa (Notes formatting -- kept open here,
-           beside Copy, rather than folded into ⋮, since there's room for it
-           on the row -- the owner's own instruction), then ⋮ (Share/WbW/
-           Root/Collapse) sitting right beside ⋯ (Approach/Journey/whole-
-           Qur'an note) -- the owner's own ask, so the two "more" menus read
-           as a pair rather than one being pushed off to the far right. -->
+           screen/Collections) plus Aa (Notes formatting), then ⋮ (Copy/
+           Share/WbW/Root/Collapse/Text size) sitting right beside ⋯
+           (Approach/Journey/whole-Qur'an note). Mobile-overflow round --
+           Copy and Text size (round 3's own resizer) moved OFF the bar and
+           INTO ⋮ (the owner's own instruction): this bar was overflowing to
+           a visual "3rd bar" on a phone with all of Play/Bookmark/Full
+           screen/Copy/Collections/Aa/Text size/⋮/⋯ plus the nav cluster on
+           one row -- fewer permanently-visible icons is the fix, not a
+           smaller font or a new breakpoint. -->
       <div class="note-bar2">
         <!-- Ayah Collections round 2 -- the way back to wherever this āyah's
              Note view was opened FROM (a collection's own list+wheel), only
@@ -324,35 +332,34 @@ export function renderNoteView({
         <button type="button" class="note-icon-btn" data-note-play title="${t("Play")}">▶</button>
         <button type="button" class="note-icon-btn${isBookmarked ? " active" : ""}" data-note-bookmark title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}">${isBookmarked ? "★" : "☆"}</button>
         <button type="button" class="note-icon-btn${isFullscreen ? " active" : ""}" data-note-fullscreen title="${t("Full screen")}" aria-pressed="${isFullscreen ? "true" : "false"}">⤢</button>
-        ${copySharePopover("copy", "data-note-copy-go")}
         <!-- Ayah Collections round 2 -- "the NOTE view should have a button
              for moving/placing the Ayah to multiple level/category (as it
-             is in the wheel view)". Same expand-in-place popover shape as
-             Copy/Share, just holding checkboxes instead of a language
-             picker -- one per collection, pre-built by the caller (this
-             file never reads catalogue/collections data itself, I2). -->
+             is in the wheel view)". Mobile-overflow round -- this same
+             button now also carries bar 1's own retired Category picker
+             ("Move the QCR field from the Ayah/study selector bar... it
+             shrinks the [Study Unit]/Surah/Ayah selector in Mob n Tablet" --
+             the owner's own report): collectionsPopoverHtml is now a real
+             drawer, built by the caller, listing every other collection to
+             switch this Note view's own context to, ABOVE the per-āyah
+             membership toggle/list this button already offered ("make that
+             button as a drawer for similar other QCR type Ayat group"). -->
         <div class="note-sub-wrap" data-note-sub-wrap="collections">
           <button type="button" class="note-icon-btn" data-note-sub-toggle="collections" title="${t("Collections")}">🗂</button>
           <div class="note-sub-popover" data-note-sub="collections">${collectionsPopoverHtml}</div>
         </div>
         <button type="button" class="note-icon-btn" data-note-palette-toggle title="${t("Notes formatting")}">Aa</button>
-        <!-- Note-view enhancement round 3 -- "enable all the languages
-             resizeable individually and collectively at the note-view".
-             text-size.js is a self-contained widget (its own delegated
-             document listeners, no per-render rewiring needed) -- this
-             renderer just places its markup, rebuilt fresh on every
-             re-render like everything else in this file, same as any other
-             bar-2 control. -->
-        ${renderTextSizeButtonHtml("noteview")}
 
         <!-- ⋮ -- everything else that is a CHOICE about how to read/edit,
-             not a thing you tap every time: Share (the same expand-in-place
-             language picker Copy already uses), then -- only when there is
-             āyah text on screen at all -- Word by Word, Root, and Collapse
-             āyah text. -->
+             not a thing you tap every time: Copy and Share (the same
+             expand-in-place language picker), Word by Word/Root/
+             Derivatives/Collapse when there is āyah text on screen at all,
+             and Text size (round 3's own resizer, moved in here from its
+             own bar-2 icon in the same mobile-overflow round that moved
+             Copy). -->
         <div class="note-dot-wrap">
           <button type="button" class="note-icon-btn" data-note-menu-toggle="tools" aria-haspopup="true" aria-expanded="false" title="${t("More")}">⋮</button>
           <div class="quick-menu" data-note-menu="tools">
+            ${copySharePopover("copy", "data-note-copy-go")}
             ${copySharePopover("share", "data-note-share-go")}
             ${canWbwRoot ? `
             <div class="qm-divider"></div>
@@ -361,6 +368,8 @@ export function renderNoteView({
             <button type="button" class="qm-item${isDerivativesOn ? " is-on" : ""}" data-note-derivatives-toggle aria-pressed="${isDerivativesOn ? "true" : "false"}">${t("Derivatives")} <span class="qm-caret">${isDerivativesOn ? "✓" : ""}</span></button>
             <div class="qm-divider"></div>
             <button type="button" class="qm-item" data-note-master-toggle title="${t("Notes always stays open")}">${t("Collapse āyah text")}</button>` : ""}
+            <div class="qm-divider"></div>
+            ${renderTextSizeButtonHtml("noteview", { showLabel: true })}
           </div>
         </div>
 
@@ -508,6 +517,7 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
  *   onUpdateBookmark()        -- bookmark creation/update round; only wired to anything when canUpdateBookmark rendered the row at all
  *   onBackToCollection()      -- Ayah Collections round 2; only wired to anything when backToCollectionLabel rendered the button at all
  *   onToggleCollectionMembership(collectionId, checked)  -- Ayah Collections round 2; fires once per checkbox in the always-present Collections popover
+ *   onSwitchCollection(collectionId | null)  -- mobile-overflow round; fires when a row in the same 🗂 drawer's own retired-Category-picker section is picked (null for "— none —")
  */
 export function attachNoteViewHandlers(container, callbacks) {
   const view = container.querySelector(".note-view");
@@ -604,7 +614,19 @@ export function attachNoteViewHandlers(container, callbacks) {
       btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
       btn.classList.toggle("active", willOpen);
     });
-    menu.addEventListener("click", (e) => e.stopPropagation());
+    menu.addEventListener("click", (e) => {
+      // Mobile-overflow round -- text-size.js's own toggle relies on a
+      // document-level delegated click listener to open its popover (one
+      // listener, works wherever its markup ends up, per its own header
+      // comment); blanket-stopping propagation here would silently swallow
+      // that click before it ever reaches document. The stop itself exists
+      // so a click on non-button dropdown content (padding, a label, a
+      // divider) never bubbles up to #noteView's own tap-toggles-full-screen
+      // listener -- keep that for everything else, just not text-size's
+      // own controls.
+      if (e.target.closest("[data-text-size-wrap]")) return;
+      e.stopPropagation();
+    });
   });
 
   // Copy and Share (each its own popover of language checkboxes, opened by
@@ -637,6 +659,10 @@ export function attachNoteViewHandlers(container, callbacks) {
     const ok = await copyToClipboard(callbacks.buildText(langs));
     await flashBtn(copyGoBtn, ok ? t("✓ Copied") : t("Copy failed"));
     closeSubPopovers(null);
+    // Copy now lives inside ⋮ (mobile-overflow round) -- closing just its
+    // own sub-popover would leave the outer dropdown sitting open, the same
+    // fix Share's own click handler already needed once it moved in here.
+    closeAllDotMenus(null);
   });
   const shareWrap = view.querySelector('[data-note-sub-wrap="share"]');
   view.querySelector("[data-note-share-go]")?.addEventListener("click", () => {
@@ -657,6 +683,16 @@ export function attachNoteViewHandlers(container, callbacks) {
   view.querySelector("[data-note-back-to-collection]")?.addEventListener("click", () => callbacks.onBackToCollection?.());
   view.querySelectorAll("[data-note-collection-toggle]").forEach((cb) => {
     cb.addEventListener("change", () => callbacks.onToggleCollectionMembership?.(cb.dataset.noteCollectionToggle, cb.checked));
+  });
+  // Mobile-overflow round -- bar 1's own retired Category picker moved into
+  // this same 🗂 drawer, above the membership toggles/list ("put it in the
+  // same button, but separately"): each row is a plain button naming one
+  // collection (or "— none —"), the caller decides which one is current.
+  view.querySelectorAll("[data-note-qcr-switch]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      callbacks.onSwitchCollection?.(btn.dataset.noteQcrSwitch || null);
+      closeSubPopovers(null);
+    });
   });
   view.querySelector("[data-note-play]")?.addEventListener("click", () => callbacks.onPlay?.());
   view.querySelector("[data-note-prev-unit]")?.addEventListener("click", () => callbacks.onPrevUnit?.());

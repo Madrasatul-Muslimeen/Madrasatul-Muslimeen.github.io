@@ -6552,6 +6552,88 @@ plus a tap gesture, adding no new user-visible strings. No
 `firestore.rules`, schema or Firestore data changes -- nothing to deploy
 but the static files.
 
+v07.95 (28 Aug 2026, on Claude Code on the web) is **three more Note view
+layout fixes from the owner's own use.** No new mechanism; all three
+reorganise what round after round had already built.
+
+**(1) Bar 2 was overflowing to a visual "3rd bar" on a phone.** With
+Play/Bookmark/Full screen/Copy/Collections/Aa/Text size/⋮/⋯ plus the nav
+cluster all fighting for one row, `flex-wrap` was genuinely wrapping the
+row onto a second line on a phone -- the owner's own report. **Copy and
+Text size moved into ⋮** (their own instruction), leaving bar 2 down to
+the nav cluster, Play, Bookmark, Full screen, Collections and Aa as
+permanent icons; Copy now sits first inside ⋮, ahead of Share, and Text
+size sits last, after Collapse, with its own new `showLabel` option on
+`renderTextSizeButtonHtml()` so it reads as a worded row ("Text size A±")
+rather than a bare icon once it's one item among several named ones. **A
+real conflict had to be fixed to make this work, not just moved**: the ⋮/⋯
+dropdown's own `menu.addEventListener("click", (e) => e.stopPropagation())`
+(there so a click on non-button dropdown content never bubbles up to
+`#noteView`'s own tap-toggles-full-screen listener) was ALSO silently
+swallowing every click before it ever reached `document` -- which is
+exactly where text-size.js's own toggle relies on a document-level
+delegated listener to open its popover at all (one listener, works
+wherever its markup ends up, per that file's own design). Fixed by
+excluding `[data-text-size-wrap]` from that particular stop, rather than
+changing text-size.js's own shared delegation (which two other call sites,
+the Read bar and the PC popup pane, already depend on working exactly as
+it does).
+
+**(2) and (3) are the same request: "move the QCR field... it shrinks the
+[Study Unit]/Surah/Ayah selector in Mob n Tablet... put it in the same
+button, where the other button related to it is now... make that button a
+drawer for similar other QCR type Ayat group."** Bar 1's own Category
+`<select>` (the collection-switcher round 2 of the QCR work added,
+mirroring `noteOriginCollectionId`) is gone -- freeing the room it was
+taking from Study Unit/Surah/Ayah on a phone/tablet. Its exact behaviour
+("just switch context, stay put": only `noteOriginCollectionId` moves,
+never the current āyah) moved wholesale into the existing 🗂 Collections
+button's own popover, which is now genuinely a drawer: a "Category"-labelled
+section listing every active collection (plus "— none —") as clickable
+rows, the current one marked with a checkmark, ABOVE its own divider and
+the pre-existing per-āyah membership toggle/list -- "which collection is
+this Note view following" and "which collections is this āyah tagged into"
+read as two separate questions rather than one merged list. New
+`renderQcrDrawerHtml()` in `quranrevival.html` composes the switch rows
+with the existing `renderQcrMembershipPopoverHtml()`; a new
+`onSwitchCollection(collectionId)` callback on `attachNoteViewHandlers()`
+wires the rows generically (ayah-note-renderer.js still never reads
+catalogue/collections data itself -- I2). The popover's own CSS grew a
+`max-height`/`overflow-y`/`max-width` safety net (a tenant can have well
+over a dozen collections) and a wider fixed width specifically for the
+collections drawer.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice for anything past `behaviour.mjs`'s own
+disclosed section-42 crash point): bar 1's Category picker confirmed gone;
+bar 2 confirmed down to one row with no direct Copy/Text-size children;
+Copy confirmed nested inside ⋮, working from there, and the whole dropdown
+confirmed to close afterward (waited for the real state via
+`waitForFunction`, not a guessed delay, since the copy handler's own
+700ms flash runs before it closes anything -- the same timing lesson this
+project's own README already carries); Text size confirmed nested inside
+⋮ and proven to really resize the Note view's own Arabic text; the 🗂
+drawer confirmed to list every collection with "— none —" starting
+checked, and picking a real collection confirmed to set
+`noteOriginCollectionId` (proxied through the "◂ Back to…" button's own
+title, since its visible label is the generic "◂ List & wheel" and the
+collection's name lives only in the title) with "— none —" clearing it
+again. Two real test-script bugs were caught and fixed while writing it,
+not app bugs: `page.click("body")` can land on a button INSIDE an open ⋮
+dropdown when the dropdown is tall enough to cover the viewport's centre
+point (fixed by clicking a screen corner instead), and a boot splash whose
+DOM node is force-removed for measurement purposes still fires its own
+un-cancelled `setTimeout` chain ~6 seconds later, appending a fresh
+Qur'an-entry splash that a longer-running script can walk straight into
+(fixed with a `MutationObserver` that keeps removing splash overlays for
+the life of the script). **`layout.mjs` reports the landing page
+byte-for-byte identical** at all eight viewports in both banner states
+against a real `HEAD` shim (`getElementById` targets unchanged at 145,
+only the same four pre-existing QCR Manage-mode false positives disclosed
+since v07.86), **`reading.mjs` OK**, **`panel.mjs` clean** (neither touches
+the Note view). No `firestore.rules`, schema or Firestore data changes --
+nothing to deploy but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

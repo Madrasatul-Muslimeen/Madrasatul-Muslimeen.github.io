@@ -1258,11 +1258,14 @@
 
   /* Enhancement round -- one row of buttons, on every platform, no second
      bar (the owner's own instruction: "must not make two bars for
-     buttons"). The nav cluster (pre-built HTML, quranrevival.html decides
-     which of its buttons are enabled/hidden) leads; Play/Bookmark/Full
-     screen/Copy stay open always; everything else folds into ⋮ and ⋯,
-     which reuse the Read screen's own `.quick-menu`/`.qm-item` dropdown
-     styling (`readPickers`' one bar, this bar -- same visual language). */
+     buttons"). Mobile-overflow round -- Copy and Text size moved OFF this
+     bar and into ⋮ (the bar was overflowing to a visual "3rd bar" on a
+     phone with all of Play/Bookmark/Full screen/Copy/Collections/Aa/Text
+     size/⋮/⋯ plus the nav cluster on one row): the nav cluster leads;
+     Play/Bookmark/Full screen/Collections stay open always, plus Aa;
+     everything else folds into ⋮ and ⋯, which reuse the Read screen's own
+     `.quick-menu`/`.qm-item` dropdown styling (`readPickers`' one bar, this
+     bar -- same visual language). */
   .note-bar2 {
     display: flex; flex-wrap: wrap; align-items: center; gap: 0.32rem;
     background: #1F3A6E; padding: 0.4rem 0.6rem; flex: 0 0 auto;
@@ -1287,6 +1290,7 @@
     display: none; position: absolute; top: 2.3rem; left: 0; z-index: 8;
     background: #fff; border: 1px solid #ddd; border-radius: 0.5rem;
     box-shadow: 0 10px 26px rgba(20,30,60,0.2); width: 11rem; padding: 0.5rem;
+    max-width: calc(100vw - 2rem); max-height: 70vh; overflow-y: auto;
   }
   .note-sub-popover.open { display: block; }
   .note-sub-popover label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.73rem; color: #555; padding: 0.15rem 0; }
@@ -1314,6 +1318,14 @@
     box-shadow: 0 10px 26px rgba(20,30,60,0.2); width: 13.5rem; padding: 0.55rem 0.6rem;
   }
   .text-size-popover.open { display: block; }
+  /* Mobile-overflow round -- Text size now also lives nested inside the
+     Note view's own ⋮ dropdown (renderTextSizeButtonHtml("noteview",
+     {showLabel:true})); the same "sit clear of the dropdown it lives
+     inside" treatment .quick-menu .note-sub-popover already gets. */
+  .quick-menu .text-size-wrap { display: block; width: 100%; }
+  .quick-menu .text-size-wrap > [data-text-size-toggle] { width: 100%; text-align: left; background: none; border: none; color: #222; padding: 0.42rem 0.5rem; font-size: 0.8rem; }
+  .quick-menu .text-size-wrap > [data-text-size-toggle]:hover { background: #f5f0e2; }
+  .quick-menu .text-size-popover { position: static; box-shadow: none; border: none; padding: 0.2rem 0 0.3rem 1rem; width: auto; }
   .text-size-row { display: flex; align-items: center; gap: 0.4rem; padding: 0.2rem 0; }
   .text-size-row-label { flex: 0 0 3.4rem; font-size: 0.72rem; color: #555; }
   .text-size-row input[type="range"] { flex: 1 1 auto; min-width: 0; accent-color: #1F3A6E; }
@@ -1328,11 +1340,22 @@
 
   /* Ayah Collections round 2 -- the way back to a collection's own list+wheel
      (a text button, not an icon-only one, so it needs room rather than the
-     square .note-icon-btn footprint), and the 🗂 popover's own two bodies:
+     square .note-icon-btn footprint), and the 🗂 popover's own bodies:
      owner/prime get the same checkbox-row look .note-sub-popover label
      already gives Copy/Share's language rows; everyone else gets a plain
-     read-only list of whichever collections this āyah is already in. */
+     read-only list of whichever collections this āyah is already in.
+     Mobile-overflow round -- this popover also carries bar 1's own retired
+     Category picker now (a row per collection, "qm-item"-styled to match
+     the ⋮/⋯ dropdowns' own look), so it's wider than an ordinary language
+     popover and can genuinely run long on a tenant with many collections
+     -- the base .note-sub-popover rule's own max-height/overflow-y already
+     covers the scrolling; this only needs the extra width. */
   .note-back-btn { white-space: nowrap; font-size: 0.78rem; }
+  .note-sub-popover[data-note-sub="collections"] { width: 15rem; }
+  .note-qcr-switch-label {
+    font-size: 0.66rem; font-weight: 700; color: #7a6a3c; text-transform: uppercase;
+    letter-spacing: 0.03em; padding: 0.15rem 0.5rem 0.2rem;
+  }
   .note-collections-empty { margin: 0; font-size: 0.75rem; color: #888; }
   .note-collections-readonly { margin: 0; padding-left: 1.1rem; font-size: 0.78rem; color: #444; }
   .note-collections-readonly li { padding: 0.1rem 0; }
@@ -5103,6 +5126,37 @@
         .join("");
     }
 
+    /** Mobile-overflow round -- the 🗂 button's own drawer, now doubling as
+        the collection SWITCHER too (moved here from bar 1's own Category
+        picker, which was crowding the Study Unit/Surah/Ayah pickers on a
+        phone/tablet -- the owner's own report: "Put it in the same button
+        [but separately], where the other button related to it is now...
+        make that button as a drawer for similar other QCR type Ayat
+        group"). A row per active collection (plus "— none —"), the current
+        one marked with a checkmark -- wired via onSwitchCollection, exactly
+        the categorySel change handler this replaces used to do ("just
+        switch context, stay put": only noteOriginCollectionId moves, never
+        the current āyah). Separated by its own divider from the existing
+        per-āyah membership toggle/list below, since "which collection is
+        this Note view following" and "which collections is THIS āyah
+        tagged into" are two different questions. */
+    function renderQcrDrawerHtml(unitKey) {
+      const collections = activeCollections(qcrCollections ?? []);
+      const switchRow = (id, label) => {
+        const isCurrent = (id || null) === noteOriginCollectionId;
+        return `<button type="button" class="qm-item" data-note-qcr-switch="${escapeHtml(id ?? "")}">${escapeHtml(label)} <span class="qm-caret">${isCurrent ? "✓" : ""}</span></button>`;
+      };
+      const switchRowsHtml = [
+        switchRow(null, t("— none —")),
+        ...collections.map((c) => switchRow(c.id, langText(c.title, getAppLang()))),
+      ].join("");
+      return `
+        <div class="note-qcr-switch-label">${escapeHtml(t("Category"))}</div>
+        ${switchRowsHtml}
+        <div class="qm-divider"></div>
+        ${renderQcrMembershipPopoverHtml(unitKey)}`;
+    }
+
     /** Round 2's own single-screen shape: the list pane (left on a wide
         screen) and the wheel pane (right) for whichever collection the
         level bar currently has selected -- rendered together, since
@@ -5746,20 +5800,14 @@
       const numbers = numbered ? noteScopeNumbersInSurah(unitType) : [];
       const numOptionsHtml = numbers.map((n) => `<option value="${n}" ${n === noteScope.unitNumber ? "selected" : ""}>${num(n)}</option>`).join("");
       const ayahCellHidden = isRange || unitType === "surah";
-      // Note view enhancement round -- "would be handy to pull the other
-      // category straight away from note view, without coming back to the
-      // wheel" (the owner's own words). qcrCollections is already loaded by
-      // the time the Note view can show at all (openNoteView() itself awaits
-      // ensureQcrDataLoaded()), so this never needs its own fetch. Picking
-      // one here only switches CONTEXT -- noteOriginCollectionId, so the
-      // "◂ Back to…" button and the desktop side pane's own list (which
-      // reads whichever collection is set there) both repoint to it -- it
-      // deliberately never jumps the reader to a different āyah (the
-      // owner's own confirmed answer: "just switch context, stay put").
-      const categoryOptionsHtml = `<option value="">${t("— none —")}</option>` +
-        activeCollections(qcrCollections ?? []).map((c) => `<option value="${c.id}" ${c.id === noteOriginCollectionId ? "selected" : ""}>${escapeHtml(langText(c.title, getAppLang()))}</option>`).join("");
+      // Mobile-overflow round -- the Category picker that used to sit here
+      // (Note view enhancement round: "would be handy to pull the other
+      // category straight away") moved into the 🗂 Collections button's own
+      // drawer instead (renderQcrDrawerHtml()) -- the owner's own report:
+      // it was "shrinking the Ayah/study selector in Mob n Tablet". See
+      // that function for the switching logic, unchanged in behaviour, just
+      // relocated.
       return `
-        <select data-note-picker="category" aria-label="${t("Category")}">${categoryOptionsHtml}</select>
         <select data-note-picker="unitType" aria-label="${t("Study Unit")}">${unitOptionsHtml}</select>
         <select data-note-picker="surah" aria-label="${t("Surah")}">${surahOptionsHtml}</select>
         <select data-note-picker="ayah" aria-label="${t("Ayah")}" ${ayahCellHidden ? "hidden" : ""}>${ayahOptionsHtml(noteScope.ayahNum)}</select>
@@ -5770,7 +5818,6 @@
 
     /** Wires bar 1's own <select>s -- freshly looked up every call, since renderNoteViewNow() rebuilds the whole view's innerHTML on every re-render (a claim, a bookmark toggle, Prev/Next), which destroys and recreates these nodes each time; harmless to re-bind fresh listeners to fresh nodes. */
     function wireNotePickerBar() {
-      const categorySel = noteView.querySelector('[data-note-picker="category"]');
       const unitSel = noteView.querySelector('[data-note-picker="unitType"]');
       const surahSel = noteView.querySelector('[data-note-picker="surah"]');
       const ayahSel = noteView.querySelector('[data-note-picker="ayah"]');
@@ -5798,19 +5845,6 @@
           const match = currentSurahData.ayahs.find((a) => noteScopeNumberOfAyah(noteScope.unitType, a) === noteScope.unitNumber);
           if (match) noteScope.ayahNum = match.ayah;
         }
-        renderNoteViewNow();
-      });
-      // "Just switch context, stay put" -- the current āyah/unit is left
-      // exactly where it is; only noteOriginCollectionId moves, which the
-      // very next renderNoteViewNow() picks up for the "◂ Back to…" button
-      // and (on a wide-enough screen) the side pane's own item list.
-      // qcrCurrentId is kept in step too, but only on a REAL pick -- "— none
-      // —" clears the Note view's own context without disturbing whichever
-      // collection the QCR wheel screen was last showing, since that screen
-      // always needs a real one selected to display anything at all.
-      categorySel?.addEventListener("change", () => {
-        noteOriginCollectionId = categorySel.value || null;
-        if (noteOriginCollectionId) qcrCurrentId = noteOriginCollectionId;
         renderNoteViewNow();
       });
       unitSel?.addEventListener("change", () => {
@@ -5985,7 +6019,7 @@
         wideNoteHtml,
         canUpdateBookmark: !!openedBookmarkId && (bookmarksDoc.saved ?? []).some((b) => b.id === openedBookmarkId && !b.removed),
         backToCollectionLabel,
-        collectionsPopoverHtml: renderQcrMembershipPopoverHtml(unitKey),
+        collectionsPopoverHtml: renderQcrDrawerHtml(unitKey),
       });
       if (showApproach && quranTrackables.some((tr) => tr.id === currentTrackableId)) {
         noteView.querySelectorAll("[data-note-approach-select]").forEach((sel) => { sel.value = currentTrackableId; });
@@ -6073,6 +6107,21 @@
             ? qcrAddItemLocal(qcrCollections, collectionId, unitKey)
             : qcrRemoveItemLocal(qcrCollections, collectionId, unitKey);
           if (!(await qcrPersist())) { qcrCollections = prev; renderNoteViewNow(); }
+        },
+        // Mobile-overflow round -- the same 🗂 drawer's own retired-Category-
+        // picker section (renderQcrDrawerHtml()). "Just switch context, stay
+        // put" -- the current āyah/unit is left exactly where it is; only
+        // noteOriginCollectionId moves, which the very next renderNoteViewNow()
+        // picks up for the "◂ Back to…" button and (on a wide-enough screen)
+        // the side pane's own item list. qcrCurrentId is kept in step too,
+        // but only on a REAL pick -- "— none —" clears the Note view's own
+        // context without disturbing whichever collection the QCR wheel
+        // screen was last showing, since that screen always needs a real one
+        // selected to display anything at all.
+        onSwitchCollection: (collectionId) => {
+          noteOriginCollectionId = collectionId || null;
+          if (noteOriginCollectionId) qcrCurrentId = noteOriginCollectionId;
+          renderNoteViewNow();
         },
       });
       // Notes' own toggle isn't wired by attachNoteViewHandlers above (that
