@@ -740,6 +740,39 @@
     #qcrWheelContainer { width: min(55vh, 480px); margin: 0 auto; }
     #qcrWheelPane .mastery-wheel { width: 100%; max-width: none; height: auto; }
   }
+  /* 28 Aug 2026: "I want this wheel to be resizable by me" -- a drag handle
+     on the wheel's own corner. Untouched by default: #qcrWheelResizeWrap
+     carries no size rule of its own, so it shrink-wraps to whatever
+     #qcrWheelContainer already renders at (the two rules directly above,
+     unchanged) exactly as if the wrap didn't exist. Every rule below fires
+     ONLY once #qcrWheelPane carries qcr-wheel-resized, which JS adds only
+     after the reader has actually saved a size (prefs.js's own
+     getQcrWheelSize()/setQcrWheelSize()) -- so nothing about the wheel's
+     measured sizing at either breakpoint changes for anyone who never
+     drags. The ID-scoped selector is what lets this beat BOTH the mobile
+     .mastery-wheel{max-width:320px} base rule and the >=900px explicit-
+     width rule above at every viewport, without touching either of them;
+     the actual pixel width itself is set as an inline style on the wrap by
+     JS, not here -- this only unlocks it (max-width:100% is the safety net
+     against a stored size wider than a since-narrowed screen). */
+  #qcrWheelResizeWrap { position: relative; }
+  #qcrWheelPane.qcr-wheel-resized #qcrWheelResizeWrap { max-width: 100%; margin: 0 auto; }
+  /* #qcrWheelContainer itself, not only the SVG inside it, needs the
+     override -- the >=900px rule above sets ITS width to a hard
+     min(55vh,480px), and an ordinary (non-replaced) div's own explicit
+     width always wins over its parent's, so leaving this out capped the
+     wheel at 480px regardless of how wide the wrap was actually dragged
+     to (caught by measuring the real rendered width, not assumed). */
+  #qcrWheelPane.qcr-wheel-resized #qcrWheelResizeWrap #qcrWheelContainer { width: 100%; }
+  #qcrWheelPane.qcr-wheel-resized #qcrWheelResizeWrap .mastery-wheel { width: 100%; max-width: none; height: auto; }
+  .qcr-wheel-resize-handle {
+    position: absolute; right: -4px; bottom: -4px; width: 28px; height: 28px;
+    border-radius: 50%; background: #C9A24B; color: #241a06; border: 2px solid #13192a;
+    display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 1;
+    padding: 0; cursor: nwse-resize; touch-action: none; user-select: none; z-index: 5;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .qcr-wheel-resize-handle:hover, .qcr-wheel-resize-handle:active { background: #ecd49a; }
   #qcrListHeader { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
   #qcrListHeader .qcr-list-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: #C9A24B; font-size: 1.1rem; }
   #qcrListHeader .qcr-list-count { font-size: 0.78rem; color: #8fa0c2; }
@@ -1785,7 +1818,19 @@
                      changes what the landing wheel and Study options show,
                      exactly like every other Approach picker already does. -->
                 <select id="qcrApproachSelect" class="qcr-approach-select" title="Choose an Approach" aria-label="Choose an Approach"></select>
-                <div id="qcrWheelContainer"></div>
+                <!-- 28 Aug 2026: "I want this wheel to be resizable by me" --
+                     a drag handle on the wheel's own corner. #qcrWheelContainer
+                     stays exactly what it was (renderQcrCollectionView() keeps
+                     overwriting its own innerHTML on every render); the wrap
+                     around it is the new, static element that actually carries
+                     the resized width, so a re-render can never wipe out the
+                     handle or the size. Untouched (no CSS fires, no inline
+                     width applied) until the reader has actually saved a size
+                     -- see prefs.js's own getQcrWheelSize()/setQcrWheelSize(). -->
+                <div id="qcrWheelResizeWrap">
+                  <div id="qcrWheelContainer"></div>
+                  <button type="button" id="qcrWheelResizeHandle" class="qcr-wheel-resize-handle" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</button>
+                </div>
                 <div id="qcrLegendContainer"></div>
                 <p class="hint" id="qcrHint"></p>
               </div>
@@ -2134,6 +2179,7 @@
       getFullScreenHides, setFullScreenHides, FULLSCREEN_HIDEABLE,
       getQuranFont, setQuranFont, quranFontStack,
       getSidewaysReading, setSidewaysReading,
+      getQcrWheelSize, setQcrWheelSize,
     } from "./js/prefs.js";
     import {
       taglinesFrom, taglineSettingsFrom, taglineText, pickTagline,
@@ -2438,6 +2484,9 @@
     const qcrWaysListContainer = document.getElementById("qcrWaysListContainer");
     const qcrAddFormSlot = document.getElementById("qcrAddFormSlot");
     const qcrApproachSelect = document.getElementById("qcrApproachSelect");
+    const qcrWheelPaneEl = document.getElementById("qcrWheelPane");
+    const qcrWheelResizeWrapEl = document.getElementById("qcrWheelResizeWrap");
+    const qcrWheelResizeHandleEl = document.getElementById("qcrWheelResizeHandle");
     const qcrWheelContainerEl = document.getElementById("qcrWheelContainer");
     const qcrLegendContainerEl = document.getElementById("qcrLegendContainer");
     const qcrHintEl = document.getElementById("qcrHint");
@@ -4608,6 +4657,78 @@
     explorePaletteQuranBtn.addEventListener("click", () => { setExplorePalette("quran"); renderExplore(); });
     explorePaletteQcrBtn.addEventListener("click", () => openQcrPalette());
     qcrApproachSelect.addEventListener("change", () => changeCurrentTrackable(qcrApproachSelect.value));
+
+    /** 28 Aug 2026: "I want this wheel to be resizable by me" -- applies (or
+        clears) the CSS override that lets #qcrWheelResizeWrap's own inline
+        width win over the wheel's ordinary sizing rules. Called once at
+        module load with whatever prefs.js has stored (null the very first
+        time anyone opens this app, or on a device that has never dragged
+        it -- every existing sizing rule then stays fully in charge, exactly
+        as before this feature existed) and again after every drag ends. */
+    function applyQcrWheelSize(px) {
+      if (px) {
+        qcrWheelPaneEl.classList.add("qcr-wheel-resized");
+        qcrWheelResizeWrapEl.style.width = `${px}px`;
+      } else {
+        qcrWheelPaneEl.classList.remove("qcr-wheel-resized");
+        qcrWheelResizeWrapEl.style.width = "";
+      }
+    }
+    applyQcrWheelSize(getQcrWheelSize());
+
+    // Pointer Events unify mouse/touch/pen in one code path (works on
+    // desktop, tablet and phone alike, per this project's own standing
+    // requirement) -- setPointerCapture() on the handle itself is what lets
+    // pointermove/pointerup keep firing on IT even once the finger/cursor
+    // has moved off the small handle, which a corner-drag always does.
+    (function wireQcrWheelResize() {
+      let dragging = false;
+      let startX = 0, startY = 0, startWidth = 0;
+      qcrWheelResizeHandleEl.addEventListener("pointerdown", (e) => {
+        dragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        // The very first drag ever has no inline width yet -- the wrap is
+        // still shrink-wrapped to whatever #qcrWheelContainer's own
+        // ordinary (unresized) CSS already rendered -- so this reads the
+        // wheel's REAL current box rather than guessing a default, and the
+        // first drag never jumps the wheel to an unrelated size.
+        startWidth = qcrWheelResizeWrapEl.getBoundingClientRect().width;
+        qcrWheelResizeHandleEl.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      });
+      qcrWheelResizeHandleEl.addEventListener("pointermove", (e) => {
+        if (!dragging) return;
+        // A corner handle is dragged diagonally -- averaging both axes
+        // reads as one natural "make it bigger/smaller" gesture rather than
+        // only ever tracking the horizontal (or only the vertical) finger
+        // movement, which a straight dx-only reading would feel wrong for.
+        const delta = ((e.clientX - startX) + (e.clientY - startY)) / 2;
+        // Clamped live against the PANE's own current width too, not only
+        // prefs.js's own [160,900] floor/ceiling -- so the wheel can never
+        // grow wider than the screen it's being dragged on while the drag
+        // is still in progress, whatever the stored min/max otherwise allow.
+        const paneWidth = qcrWheelPaneEl.getBoundingClientRect().width || startWidth;
+        const maxForPane = Math.max(160, paneWidth - 4);
+        const next = Math.min(maxForPane, Math.max(160, startWidth + delta));
+        qcrWheelPaneEl.classList.add("qcr-wheel-resized");
+        qcrWheelResizeWrapEl.style.width = `${next}px`;
+      });
+      function endDrag() {
+        if (!dragging) return;
+        dragging = false;
+        // Persisted only once the drag is DONE, not on every pointermove --
+        // this is what the owner asked for ("the size persists ... unless i
+        // resize again"), and setQcrWheelSize()'s own [160,900] clamp plus
+        // applyQcrWheelSize() below snap the wheel to exactly the saved
+        // value, so what's on screen and what's stored can never disagree.
+        const finalWidth = qcrWheelResizeWrapEl.getBoundingClientRect().width;
+        setQcrWheelSize(finalWidth);
+        applyQcrWheelSize(getQcrWheelSize());
+      }
+      qcrWheelResizeHandleEl.addEventListener("pointerup", endDrag);
+      qcrWheelResizeHandleEl.addEventListener("pointercancel", endDrag);
+    })();
 
     // Round 2: the level bar's own controls are static markup now (a real
     // <select>, not dynamically-built rows), so each is wired ONCE here
