@@ -6175,6 +6175,106 @@ resize the wheel"), translated, marked `// ?` for the owner's own eye. No
 `firestore.rules`, schema or Firestore data changes -- nothing to deploy
 but the static files.
 
+v07.91 (28 Aug 2026, on Claude Code on the web) is **Note view enhancement
+round 2 -- four owner-asked additions, three answered by `AskUserQuestion`
+before building** (a Category picker's own behaviour, its placement, and
+the Track card's default open/closed state -- all three answers matched
+the recommended option).
+
+**(1) A Category picker joins bar 1**, alongside Study Unit/Surah/Ayah --
+"would be handy to pull the other category straight away from note view,
+without coming back to the wheel." Lists every active QCR collection plus
+a "— none —" option; `qcrCollections` is already loaded by the time the
+Note view can show at all (`openNoteView()` itself awaits
+`ensureQcrDataLoaded()`), so this costs no extra read. Per the owner's own
+confirmed answer ("just switch context, stay put"), picking one only moves
+`noteOriginCollectionId` -- the current āyah is untouched, but the
+"◂ Back to…" button repoints to the new collection, and (on a wide-enough
+screen) the desktop side pane's own item list -- which already read from
+`noteOriginCollectionId` -- refreshes to the new collection's own āyāt,
+which is what actually delivers "pull the other category straight away":
+Prev/Next through it from right there, no trip to the wheel. Mobile/tablet
+get the context switch (the back button, the 🗂 Collections popover) but
+not an in-place browse list of the new category's items -- that's the
+PC-only side pane's job today; extending it to mobile is a bigger, separate
+round if wanted, not attempted here.
+
+**(2) Clicking anywhere on a side-pane row now navigates there, not just
+the small ref/surah pill.** It already worked from that one spot
+(`.note-popup-row-main`) -- the owner's own report ("currently only
+dragging works") is exactly what tapping the row's SNIPPET text or its own
+padding looked like, since neither was wrapped in that button and the
+delegated click handler had nowhere else to fall through to. One fallback
+branch, added after the two toggle checks: a click anywhere else inside
+`[data-note-popup-row]` navigates the same way the main button always did.
+
+**(3) The Approach picker moves INTO the Track/Guide/Breakdown/Coverage
+card's own header** -- "change the approach from inside the card straight
+away, without moving back to the wheel again." It used to live in the ⋯
+menu, disabled with "Single āyah only" when the scope wasn't a single āyah;
+since the Track card itself only ever shows for a single āyah anyway
+(unchanged), moving it removes that disabled row entirely rather than
+leaving a second, now-pointless copy -- one mechanism, not two. Reuses the
+exact `data-note-approach-select` attribute its old home used, so
+`attachNoteViewHandlers()`'s existing `onApproachChange` wiring finds it
+wherever it lives with no new JS plumbing. `way-modal.js`'s
+`renderWayEmbed()` signature changes from a single pre-joined `title`
+string ("{Approach} — {Ref}") to a plain `refLabel` plus a new
+`approachSelectHtml` slot, still I2-pure (quranrevival.html builds the
+select, this file only places it). **The header is `flex-wrap`, not a media
+query** -- the owner's own "whatever is easy": on a wide screen the select
+and the ref share one line with room to spare; on a phone/tablet the select
+alone is wide enough that the ref wraps below it with no breakpoint to
+maintain, satisfying "separate the Approach from the Ayah indicator... PC
+should be fine keeping together" without writing two layouts.
+
+**(4) The whole card collapses now, "like the languages"** -- the exact
+same `.note-field`/`.note-field-toggle`/`.note-field-body` markup and the
+SAME generic click handler Arabic/English/Bangla/Notes already use, so the
+toggle itself needed no new JS at all; only remembering which way it's
+left needed its own listener (`noteApproachCardOpen`), added the identical
+way Notes' own `noteNotesOpen` already survives a rebuild -- this screen
+rebuilds `.note-body` from scratch on a claim, a bookmark toggle or
+Prev/Next, which would otherwise slam a deliberately-opened card shut
+again mid-write (the exact trap v07.61 already hit once for Notes).
+**Starts CLOSED**, the owner's own confirmed answer.
+
+**Verified: 25 checks pass** in a focused, un-checked-in Playwright script
+(this project's own established practice for anything past `behaviour.mjs`'s
+own disclosed section-42 crash point) -- the Category picker's own options
+and starting value, picking one leaving the current āyah exactly where it
+was while repointing the back button and refreshing the side pane's list to
+the new collection's real item count; clicking a row's own snippet (not the
+ref pill) navigating there; the Track card existing as its own collapsible
+field, starting closed, with the Approach select genuinely inside its
+header and genuinely gone from the ⋯ menu; opening the card, switching
+Approach from inside it, and that change reaching the canonical picker
+(the same shared `currentTrackableId` every other Approach picker already
+reads) without leaving the Note view; the card surviving a claim's own
+rebuild without closing; the same Category picker and collapsed-by-default
+Track card on a 390px phone; and all of it again in Bangla with the
+Category picker's own option VALUES proven to stay plain collection ids.
+**`layout.mjs` reports the landing page byte-for-byte identical** at all
+eight viewports in both banner states against a real `HEAD` shim
+(`getElementById` targets unchanged at 143, none missing -- this round
+never touches the landing page), **`panel.mjs` and `reading.mjs` both
+clean**, **`navcheck.mjs` unchanged** (still only the pre-existing 320px
+English truncation), and **coverage improved to 257/263 in the quran area
+(98%)** -- three new strings ("Category", "— none —", "Track this āyah"),
+all translated and marked `// ?` for the owner's own eye, and the missing
+count actually DROPPED by one: the ⋯ menu's retired "Approach & Journey"
+title (never translated) and "Single āyah only" caret stopped being
+scanned along with it. No `firestore.rules`, schema or Firestore data
+changes -- nothing to deploy but the static files.
+
+**Flagged, not fixed: a real, PRE-EXISTING horizontal-overflow defect in
+bar 1 at 390px** (106px past the viewport), found by this round's own
+mobile check and confirmed unrelated by reproducing the identical scenario
+with these changes stashed out -- v07.90 overflows by the same amount
+already. Bar 1's own `flex-wrap` should prevent this by construction (every
+`<select>` carries `min-width:0`), so the cause is worth a real, separate
+investigation rather than a guess bundled into this round.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

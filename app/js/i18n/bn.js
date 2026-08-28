@@ -1926,4 +1926,13 @@ export const BN = {
   // Round 5 (28 Aug 2026) -- the QCR wheel's own drag-to-resize handle.
   // -------------------------------------------------------------------
   "Drag to resize the wheel": "চাকার আকার বদলাতে টেনে আনুন", // ?
+
+  // -------------------------------------------------------------------
+  // Note view enhancement round (28 Aug 2026) -- a Category picker in bar 1,
+  // and the Track/Guide/Breakdown/Coverage card moving its own Approach
+  // picker into its header and becoming collapsible.
+  // -------------------------------------------------------------------
+  "Category": "শ্রেণি", // ?
+  "— none —": "— কোনোটি নয় —", // ?
+  "Track this āyah": "এই আয়াত ট্র্যাক করুন", // ?
 };

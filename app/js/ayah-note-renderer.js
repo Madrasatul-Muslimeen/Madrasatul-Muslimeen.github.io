@@ -246,7 +246,13 @@ export function renderNoteView({
   notesHtml, wbwHtml, rootsHtml, derivativesHtml,
   isBookmarked = false, isFullscreen = false,
   isWbwOn = false, isRootsOn = false, isDerivativesOn = false, hasNote = false, approachHtml = "", isNotesOpen = false,
-  approachOptionsHtml = "", showApproach = false, wideNoteHtml = "",
+  // Note view enhancement round -- the Track/Guide/Breakdown/Coverage card
+  // collapses like Arabic/English/Bangla/Notes do (the owner's own "like
+  // the languages"), default CLOSED. approachOptionsHtml/showApproach are
+  // gone from here: the Approach picker itself now lives INSIDE approachHtml
+  // (way-modal.js's own renderWayEmbed), built by the caller, since it
+  // changes what the Track card shows rather than being a separate control.
+  isApproachOpen = false, wideNoteHtml = "",
   // Bookmark creation/update round -- true only once a bookmark made
   // elsewhere (the Manager's own "+ New bookmark", or an earlier ☆ tap) is
   // the one currently open here (quranrevival.html tracks which). Omitted
@@ -349,24 +355,17 @@ export function renderNoteView({
           </div>
         </div>
 
-        <!-- ⋯ -- Approach (only meaningful for a single āyah -- claiming/
-             tracking is per-āyah) and Mapping My Journey (still the disabled
-             placeholder). Sits right beside ⋮, not pushed to the far right
-             by a spacer. When the scope ISN'T a single āyah (a wider unit),
-             the Approach row stays put instead of vanishing outright --
-             disabled, with the same "greyed out and says why" treatment
-             "Mapping My Journey" already uses, so opening ⋯ never reads as
-             buttons having disappeared (the owner's own report: "the
-             approach button go hiding"). -->
+        <!-- ⋯ -- Mapping My Journey (still the disabled placeholder) and
+             Update bookmark. Approach USED to live here too, disabled with
+             "Single āyah only" when the scope wasn't a single āyah -- it
+             moved into the Track card's own header (round after: "change
+             the approach from inside the card straight away"), and since
+             that card only ever shows for a single āyah anyway (unchanged),
+             there is nothing left here to explain either way, so the row
+             is gone rather than kept as a second, now-pointless copy. -->
         <div class="note-dot-wrap">
-          <button type="button" class="note-icon-btn" data-note-menu-toggle="more" aria-haspopup="true" aria-expanded="false" title="${t("Approach & Journey")}">⋯</button>
+          <button type="button" class="note-icon-btn" data-note-menu-toggle="more" aria-haspopup="true" aria-expanded="false" title="${t("Mapping My Journey")}">⋯</button>
           <div class="quick-menu" data-note-menu="more">
-            ${showApproach ? `
-            <div class="note-approach-wrap">
-              <select class="note-approach-select" data-note-approach-select title="${t("Choose an Approach")}" aria-label="${t("Choose an Approach")}">${approachOptionsHtml}</select>
-            </div>` : `
-            <button type="button" class="qm-item" disabled style="color:#aaa;cursor:default;">${t("Approach")} <span class="qm-caret">${t("Single āyah only")}</span></button>`}
-            <div class="qm-divider"></div>
             <button type="button" class="qm-item" disabled style="color:#aaa;cursor:default;">${t("Mapping My Journey")} <span class="qm-caret">${t("Coming later")}</span></button>
             ${canUpdateBookmark ? `
             <div class="qm-divider"></div>
@@ -461,8 +460,23 @@ export function renderNoteView({
              claiming/tracking a wider unit already has its own path ("Track
              this unit" in Study options), so this card doesn't try to cover
              both. Still I2-pure: quranrevival.html builds this HTML
-             (way-modal.js's renderWayEmbed) and passes it in already-built. -->
-        ${approachHtml ? `<div class="note-approach">${approachHtml}</div>` : ""}
+             (way-modal.js's renderWayEmbed) and passes it in already-built.
+             Collapsible like Arabic/English/Bangla/Notes above -- same
+             .note-field/.note-field-toggle markup and the SAME generic
+             click handler below already wires for those, so no new JS
+             plumbing is needed for the toggle itself to work; only
+             REMEMBERING which way it's left (isApproachOpen) needs its own
+             listener, the same "survive a rebuild" fix Notes already got. -->
+        ${approachHtml ? `
+        <div class="note-field" data-note-field="approach">
+          <div class="note-field-label-row">
+            <button type="button" class="note-field-toggle" data-note-field-toggle>${isApproachOpen ? "▾" : "▸"}</button>
+            <span class="note-field-label">${t("Track this āyah")}</span>
+          </div>
+          <div class="note-field-body" style="${isApproachOpen ? "" : "display:none"}">
+            <div class="note-approach">${approachHtml}</div>
+          </div>
+        </div>` : ""}
       </div>
     </div>`;
 }
