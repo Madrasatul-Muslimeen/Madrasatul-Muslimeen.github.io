@@ -53,9 +53,35 @@
 // tenant-authored name in this app.
 
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { t, num } from "./i18n.js";
 import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
 import { DEFAULT_QCR_COLLECTIONS } from "./qcr-data.js";
+
+// TOPIC bar round (Note view's own 🗂 drawer) -- "Yr Level" asks which year
+// band(s) a GROUP (collection) targets, Yr 1 through Yr 12 plus a Regular
+// adult catch-all. Deliberately a NEW, additive field (yrLevels), not a
+// replacement for the existing `badge` field: badge is free text copied
+// verbatim from the owner's own uploaded QCR file (values like "Y6–12",
+// "All years", "Mixed — pending split") that don't map cleanly onto a fixed
+// picklist, and I4 says don't reshape data that already means something.
+// Stored as plain ids (I5 -- never the translated label itself); yrLevelLabel()
+// is the only place one turns into display text, the same "Ruku' {ruku}"/
+// "Surah {surah}" parameterized-template shape every other numbered label in
+// this app already uses, so a translator writes ONE template ("Yr {n}") for
+// all twelve rather than twelve separate strings.
+//
+// Scoped to QCR only for now, on purpose -- CLAUDE.md already carries a
+// bigger, not-yet-scoped idea ("every study item labelled by year band,
+// across every module") as its own future round; this is that idea's first,
+// narrower instance, not that round arriving early.
+export const YR_LEVEL_IDS = [...Array.from({ length: 12 }, (_, i) => `yr${i + 1}`), "adult"];
+
+export function yrLevelLabel(id) {
+  if (id === "adult") return t("Regular adult");
+  const n = Number(String(id).replace("yr", ""));
+  return Number.isFinite(n) ? t("Yr {n}", { n: num(n) }) : String(id ?? "");
+}
 
 function normalizeCollection(c) {
   return {
@@ -65,6 +91,7 @@ function normalizeCollection(c) {
     order: Number.isFinite(Number(c?.order)) ? Number(c.order) : 999,
     status: c?.status === "archived" ? "archived" : "active",
     items: Array.isArray(c?.items) ? c.items.map(String) : [],
+    yrLevels: Array.isArray(c?.yrLevels) ? c.yrLevels.filter((v) => YR_LEVEL_IDS.includes(v)) : [],
   };
 }
 
@@ -115,6 +142,18 @@ export function addCollection(collections, partial) {
 
 export function renameCollection(collections, id, title) {
   return collections.map((c) => (c.id === id ? normalizeCollection({ ...c, title }) : c));
+}
+
+/** Replaces one collection's own Yr Level tags outright -- the caller (the
+ *  Note view's own Yr Level checklist) already knows the full new set from
+ *  its own checkbox state, same "replace the whole field" shape as
+ *  setCollectionStatus below. Unlike collection MEMBERSHIP (addItem/
+ *  removeItem, a many-to-many tag with no soft-delete per this file's own
+ *  header), Yr Level is a property of the collection itself, so it's a real
+ *  edit -- gated the same owner/prime-only way renameCollection is. */
+export function setCollectionYrLevels(collections, id, yrLevels) {
+  const clean = [...new Set((yrLevels ?? []).filter((v) => YR_LEVEL_IDS.includes(v)))];
+  return collections.map((c) => (c.id === id ? normalizeCollection({ ...c, yrLevels: clean }) : c));
 }
 
 /** I4: archive/restore only — a collection's id, title and items are never
