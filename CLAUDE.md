@@ -6846,6 +6846,120 @@ pre-existing QCR Manage-mode false positives disclosed since v07.86),
 view's own drawer). No `firestore.rules`, schema or Firestore data
 changes -- nothing to deploy but the static files.
 
+v07.98 (29 Aug 2026, on Claude Code on the web) is **a real structural fix
+to v07.97's own drawer -- from the owner's own screenshot, taken right
+after confirming v07.97's width/position fix worked: the Attach checklist
+was still "showing inside the card only," plus a second report right
+after: picking a Group closed the whole drawer mid-selection, when it
+needs to "stay until finish all selection or tapping outside."**
+
+**The root cause of "inside the card only" was structural, not a sizing
+number -- `.note-qcr-dd-pop` (the Attach/Yr Level checklists) was still a
+`position: absolute` overlay NESTED one field deep inside the outer 🗂
+drawer's own scrollable card.** v07.97's own fix grew both boxes'
+`max-height`, which helped, but the underlying shape was unchanged: a
+real, long checklist was clipped by the outer card's `overflow-y: auto`
+and only reachable through a SECOND scrollbar nested inside the first --
+confirmed reachable via scroll-chaining at the time, but the owner's own
+words are exactly right: it visibly IS trapped, because that is genuinely
+what a nested, clipped overlay looks like. **Fixed by making both
+checklists plain, in-flow panels** rendered directly below the Group/
+Attach/Yr Level row (full card width, not squeezed into one field's own
+narrow column) instead of floating overlays -- opening one now just grows
+the ONE outer card's own natural height. **Measured, this mostly
+eliminates the double-scrollbar problem outright rather than just hiding
+it**: on a real phone (390×844) and desktop (1280×800), the outer card
+now comfortably fits Topic + Group/Attach/Yr Level + all 18 real seeded
+collections within its own 85vh ceiling with NO scrolling needed at
+all -- confirmed by reading `scrollHeight`/`clientHeight` directly, not
+assumed. Only when the checklist's own real content genuinely exceeds its
+own `min(60vh, 30rem)` cap does IT (alone) need a scrollbar, and since
+it's no longer nested inside another already-scrolling ancestor, that is
+now the ONE scroll a reader ever has to reason about, not two.
+
+**A real, honestly-disclosed remaining limitation, not swept under the
+rug: on a genuinely SHORT screen (≤700px tall -- 390×700, 360×640), the
+outer card's own fixed on-screen anchor point (below the icon row, itself
+below the banner/nav/picker bar) leaves less room below it than the
+card's own content needs, and no amount of scrolling can move a box's OWN
+position up when nothing above it is itself scrollable (this app's shell
+is a fixed-height `100dvh` layout by design, shell round 7).** Measured
+directly rather than assumed: at 390×700 the card's own box runs to
+y=819.7 against a 700px viewport, confirmed by reading its
+`getBoundingClientRect()`, not by trusting scroll state alone. **This is
+NOT a regression** -- the identical 390×700/360×640 combination already
+clipped content unreachably before this round, via the OLD nested-overlay
+mechanism; confirmed by re-running the exact same geometry check against
+v07.97's own build before touching anything. A real, dynamic fix
+(measuring the anchor's own on-screen offset at open time and capping the
+card's height against ACTUAL remaining space, the same technique
+`layoutWheelHub()` already uses for the wheel's own hub) would close this
+properly; not attempted this round, since it's a pre-existing edge case
+on an unusually short screen, not what either owner report asked about.
+
+**The second fix -- the drawer staying open across a Group switch -- reads
+LIVE DOM STATE right before a rebuild, rather than a separately-tracked
+flag.** `onSwitchCollection` (fired by the Group `<select>`) still calls a
+full `renderNoteViewNow()`, which rebuilds `.note-body` from scratch on
+every claim, bookmark toggle, Prev/Next AND now a Group switch --
+previously that always reset the 🗂 drawer to closed, since nothing
+tracked its own open state (v07.97's own `refreshQcrDrawerSummaries()`
+comment said so explicitly, and deliberately routed Attach/Yr Level's own
+checkbox toggles around a full rebuild for exactly this reason -- but the
+Group `<select>`'s own `change` event had no such workaround). Rather than
+add a manually-updated flag (the `noteNotesOpen`/`noteApproachCardOpen`
+shape Notes and the Track card already use, which only works because THEY
+have no "click outside to close" path to also keep in sync),
+`renderNoteViewNow()` now reads `noteView.querySelector('[data-note-sub-
+wrap="collections"] .note-sub-popover')?.classList.contains("open")` and
+`noteView.querySelector('[data-note-qcr-dd-pop].on')?.dataset.
+noteQcrDdPop` directly off the DOM, ONE line before it gets replaced, and
+hands both straight back into the next render (`isCollectionsOpen`,
+`renderQcrDrawerHtml`'s own new `openDdKey` parameter). **This is
+self-correcting by construction, not merely convenient** -- it is
+automatically right whether the drawer was closed by its own toggle, an
+outside click, or another popover opening in its place, since there is no
+separate flag that could ever go stale against what the DOM actually
+shows; a flag-based fix would have needed a matching update at every one
+of those closing paths to stay honest.
+
+**The Attach/Yr Level toggle wiring in `ayah-note-renderer.js` needed
+rewiring alongside the markup, not just new CSS**: `closeQcrDropdowns()`
+and both click handlers used to find a checklist via `btn.closest(
+"[data-note-qcr-dd]")` (the now-removed shared wrap that anchored the old
+`position: absolute` overlay) -- with the wrap gone, button and checklist
+are matched by the same key string (`"attach"`/`"yrlevel"`) instead of by
+DOM nesting, and the document-level outside-click-closer was updated the
+same way. `refreshQcrDrawerSummaries()` in `quranrevival.html` simplified
+alongside it -- `[data-note-qcr-dd-toggle="attach"]` finds the button
+directly now; no ancestor selector needed once there's no wrap to search
+through.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice for anything past `behaviour.mjs`'s
+own disclosed section-42 crash point) -- **22 checks, all passing** at
+both 390×844 and 1280×800 (the real PC-popup breakpoint, ≥900px): the
+checklist confirmed genuinely in normal flow (`position: static`) rather
+than absolute; all 18 real seeded collections listed; the outer card
+confirmed to need NO scroll of its own at these sizes; the checklist's own
+single scrollbar confirmed to reach the very last row on its own; the
+drawer confirmed to survive a real Group selection and stay open
+(previously closed); Yr Level confirmed to enable the moment a real Group
+is picked and to open its own 13-row list (Yr 1–12 + Regular adult);
+opening Yr Level confirmed to still close Attach (only one open at a
+time, unchanged); tapping outside the drawer confirmed to still close it
+(the one closing path that must keep working); no horizontal overflow; no
+page errors. The 390×700/360×640 short-screen limitation was measured
+directly (not merely inferred) and confirmed identical before and after
+this round's own change, via the same geometry-reading method.
+**`layout.mjs` reports NO LAYOUT REGRESSIONS** at all eight viewports in
+both banner states against a real `HEAD` shim (`getElementById` targets
+unchanged at 145, only the same four pre-existing QCR Manage-mode false
+positives disclosed since v07.86), **`reading.mjs` OK**, **`panel.mjs`
+clean** (neither touches the Note view's own drawer). No
+`firestore.rules`, schema or Firestore data changes -- nothing to deploy
+but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

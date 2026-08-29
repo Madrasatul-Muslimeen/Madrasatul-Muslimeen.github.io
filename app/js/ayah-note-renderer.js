@@ -287,6 +287,15 @@ export function renderNoteView({
   // places the HTML the caller built -- I2 holds.
   backToCollectionLabel = null,
   collectionsPopoverHtml = "",
+  // Sizing-fix round -- this screen rebuilds .note-body from scratch on a
+  // claim, a bookmark toggle, Prev/Next AND now a Group switch too, none of
+  // which should slam the 🗂 drawer shut mid-selection (the owner's own
+  // report). The caller reads this popover's own "open" class from the live
+  // DOM right before the rebuild and hands it straight back here -- same
+  // "patch it back in" shape isNotesOpen/isApproachOpen already use for
+  // their own fields, just for a dismissible sub-popover instead of a
+  // plain collapsible one.
+  isCollectionsOpen = false,
 }) {
   const copySharePopover = (kind, goAttr) => `
         <div class="note-sub-wrap" data-note-sub-wrap="${kind}">
@@ -339,8 +348,8 @@ export function renderNoteView({
              caller (quranrevival.html owns collections/labels data -- I2,
              this file never reads it). -->
         <div class="note-sub-wrap" data-note-sub-wrap="collections">
-          <button type="button" class="note-icon-btn" data-note-sub-toggle="collections" title="${t("Collections")}">🗂</button>
-          <div class="note-sub-popover" data-note-sub="collections">${collectionsPopoverHtml}</div>
+          <button type="button" class="note-icon-btn${isCollectionsOpen ? " active" : ""}" data-note-sub-toggle="collections" title="${t("Collections")}">🗂</button>
+          <div class="note-sub-popover${isCollectionsOpen ? " open" : ""}" data-note-sub="collections">${collectionsPopoverHtml}</div>
         </div>
         <button type="button" class="note-icon-btn" data-note-palette-toggle title="${t("Notes formatting")}">Aa</button>
 
@@ -512,8 +521,8 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
  *   onUpdateBookmark()        -- bookmark creation/update round; only wired to anything when canUpdateBookmark rendered the row at all
  *   onBackToCollection()      -- Ayah Collections round 2; only wired to anything when backToCollectionLabel rendered the button at all
  *   onToggleCollectionMembership(collectionId, checked)  -- Ayah Collections round 2; fires once per checkbox in the always-present Collections popover
- *   onSwitchCollection(collectionId | null)  -- TOPIC bar round; fires on the drawer's own Group <select> (null for "— none —")
- *   onToggleGroupYrLevel(yrLevelId, checked)  -- TOPIC bar round; fires once per checkbox in the Yr Level dropdown, for whichever collection Group currently points at. On success the caller patches the Attach/Yr Level summary badges directly (see quranrevival.html's refreshQcrDrawerSummaries()) rather than re-rendering, so neither dropdown -- nor the outer 🗂 popover itself -- closes mid-tick
+ *   onSwitchCollection(collectionId | null)  -- TOPIC bar round; fires on the drawer's own Group <select> (null for "— none —"). Triggers a full renderNoteViewNow() on the caller's side, but the 🗂 drawer and whichever of Attach/Yr Level was open both survive it (isCollectionsOpen / renderQcrDrawerHtml's own openDdKey, both read live from the DOM right before the rebuild -- see that function's own header comment; sizing-fix round)
+ *   onToggleGroupYrLevel(yrLevelId, checked)  -- TOPIC bar round; fires once per checkbox in the Yr Level panel, for whichever collection Group currently points at. On success the caller patches the Attach/Yr Level summary badges directly (see quranrevival.html's refreshQcrDrawerSummaries()) rather than re-rendering, so neither panel -- nor the outer 🗂 popover itself -- closes mid-tick
  */
 export function attachNoteViewHandlers(container, callbacks) {
   const view = container.querySelector(".note-view");
@@ -690,18 +699,28 @@ export function attachNoteViewHandlers(container, callbacks) {
   view.querySelector("[data-note-qcr-group]")?.addEventListener("change", (e) => {
     callbacks.onSwitchCollection?.(e.target.value || null);
   });
-  function closeQcrDropdowns(exceptWrap) {
-    view.querySelectorAll("[data-note-qcr-dd]").forEach((wrap) => {
-      if (wrap === exceptWrap) return;
-      wrap.querySelector("[data-note-qcr-dd-pop]")?.classList.remove("on");
-      wrap.querySelector("[data-note-qcr-dd-toggle]")?.classList.remove("active");
+  // Sizing-fix round -- the toggle button and its own checklist panel are
+  // no longer nested inside a shared wrap (that wrap's own position:relative
+  // was only ever there to anchor a position:absolute overlay, which is
+  // exactly what made the list read as "trapped inside the card" -- see the
+  // .note-qcr-dd-pop CSS comment). The two are matched by the same key
+  // string now ("attach"/"yrlevel") instead of by DOM nesting.
+  function closeQcrDropdowns(exceptKey) {
+    view.querySelectorAll("[data-note-qcr-dd-pop]").forEach((pop) => {
+      if (pop.dataset.noteQcrDdPop === exceptKey) return;
+      pop.classList.remove("on");
+    });
+    view.querySelectorAll("[data-note-qcr-dd-toggle]").forEach((btn) => {
+      if (btn.dataset.noteQcrDdToggle === exceptKey) return;
+      btn.classList.remove("active");
     });
   }
   view.querySelectorAll("[data-note-qcr-dd-toggle]").forEach((btn) => {
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const wrap = btn.closest("[data-note-qcr-dd]");
-      const pop = wrap.querySelector("[data-note-qcr-dd-pop]");
+      const key = btn.dataset.noteQcrDdToggle;
+      const pop = view.querySelector(`[data-note-qcr-dd-pop="${key}"]`);
+      if (!pop) return;
       const willOpen = !pop.classList.contains("on");
       closeQcrDropdowns(null);
       if (willOpen) { pop.classList.add("on"); btn.classList.add("active"); }
@@ -748,10 +767,12 @@ export function attachNoteViewHandlers(container, callbacks) {
           btn.setAttribute("aria-expanded", "false");
         }
       });
-      v.querySelectorAll("[data-note-qcr-dd]").forEach((wrap) => {
-        const pop = wrap.querySelector("[data-note-qcr-dd-pop]");
-        const btn = wrap.querySelector("[data-note-qcr-dd-toggle]");
-        if (pop?.classList.contains("on") && !wrap.contains(e.target)) {
+      // Sizing-fix round -- pop and toggle are matched by key now, not by a
+      // shared wrap (see closeQcrDropdowns' own comment above).
+      v.querySelectorAll("[data-note-qcr-dd-pop]").forEach((pop) => {
+        const key = pop.dataset.noteQcrDdPop;
+        const btn = v.querySelector(`[data-note-qcr-dd-toggle="${key}"]`);
+        if (pop.classList.contains("on") && !pop.contains(e.target) && e.target !== btn) {
           pop.classList.remove("on");
           btn?.classList.remove("active");
         }
