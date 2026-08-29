@@ -36,7 +36,7 @@ import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./nav.js";
 import { mountBookmarkMenu } from "./bookmark-nav.js";
 import { ASMA_NAMES } from "./asma-data.js";
 import { ASMA_POSTERS } from "./asma-posters.js";
-import { renderAsmaGrid, renderAsmaDetail, renderAsmaScreensaverSlide, renderAsmaCollectionListHtml, asmaEntryDisplayName } from "./asma-renderer.js";
+import { renderAsmaGrid, renderAsmaDetail, renderAsmaScreensaverSlide, renderAsmaCollectionListHtml, renderAsmaPosterHtml, asmaEntryDisplayName } from "./asma-renderer.js";
 import { renderScopedWheel, renderWheelLegend, attachScopedWheelClickHandler } from "./mastery-wheel.js";
 import {
   collectionsFrom, extraNamesFrom, overridesFrom, activeCollections, activeExtraNames,
@@ -83,6 +83,11 @@ export function initAsmaStudyPage() {
   const screensaverOverlay = document.getElementById("screensaverOverlay");
   const screensaverMount = document.getElementById("screensaverMount");
   const screensaverCloseBtn = document.getElementById("screensaverCloseBtn");
+  // Round 3 -- the standalone A4 poster view.
+  const posterOverlay = document.getElementById("posterOverlay");
+  const posterMount = document.getElementById("posterMount");
+  const posterCloseBtn = document.getElementById("posterCloseBtn");
+  const posterPrintBtn = document.getElementById("posterPrintBtn");
 
   // Asma Collections round -- the "Browse by Category" panel, built to the
   // same template as Ayah Collections (QCR). Static markup, wired once
@@ -639,6 +644,7 @@ export function initAsmaStudyPage() {
     detailContainer.innerHTML = renderAsmaDetail(name, entry, { isBookmarked });
     document.getElementById("trackAsmaBtn").addEventListener("click", () => openWayModal(name));
     document.getElementById("bookmarkAsmaBtn").addEventListener("click", () => toggleAsmaBookmark(name));
+    document.getElementById("posterAsmaBtn").addEventListener("click", () => openPosterView(name));
   }
 
   /** Patches the star's own DOM directly -- see topic-study.js's own
@@ -786,22 +792,51 @@ export function initAsmaStudyPage() {
   }
 
   // ---------------------------------------------------------------------
-  // Screensaver -- purely decorative, cycles ASMA_POSTERS (asma-posters.js)
-  // with a text-only fallback slide for any gap. Never opened automatically
-  // -- load-speed contract: "Screensaver -- on first use, never at startup."
+  // Screensaver -- purely decorative, cycles ASMA_POSTERS (asma-posters.js,
+  // the 93 existing photo-posters) TOGETHER with a live-rendered A4 poster
+  // per Name/phrase (round 3, both rotations run together per the owner's
+  // own "Both" answer -- neither replaces the other). Never opened
+  // automatically -- load-speed contract: "Screensaver -- on first use,
+  // never at startup." Opening it now also costs ensureAsmaCollectionsLoaded()
+  // if nothing else has already triggered it this session (I9's own
+  // on-first-use exemption, same as opening the category browser or a
+  // Name's own detail screen already do).
   // ---------------------------------------------------------------------
   let screensaverTimer = null;
   let screensaverIndex = 0;
+  let screensaverDeck = null; // built once per open -- [{kind:"photo",poster}] and [{kind:"name",entry}]
+
+  /** Every Name/phrase (canonical + active extras) as a poster slide,
+      after the 93 existing photo-poster slides -- deliberately photos
+      first, so the existing rotation's own feel is unchanged for anyone
+      who watches it start-to-finish, with the new content simply added
+      after it rather than interleaved. */
+  function buildScreensaverDeck() {
+    const photoSlides = ASMA_POSTERS.map((poster) => ({ kind: "photo", poster }));
+    const nameSlides = [];
+    for (const n of ASMA_NAMES) {
+      const entry = resolveNumber(n.number);
+      if (entry) nameSlides.push({ kind: "name", entry });
+    }
+    for (const e of activeExtraNames(asmaExtraNames ?? [])) {
+      const entry = resolveNumber(e.number);
+      if (entry) nameSlides.push({ kind: "name", entry });
+    }
+    return [...photoSlides, ...nameSlides];
+  }
 
   function showScreensaverSlide() {
-    const poster = ASMA_POSTERS[screensaverIndex % ASMA_POSTERS.length];
-    const fallbackName = ASMA_NAMES[screensaverIndex % ASMA_NAMES.length];
-    screensaverMount.innerHTML = renderAsmaScreensaverSlide(poster, fallbackName);
+    const slide = screensaverDeck[screensaverIndex % screensaverDeck.length];
+    screensaverMount.innerHTML = slide.kind === "photo"
+      ? renderAsmaScreensaverSlide(slide.poster, null)
+      : renderAsmaPosterHtml(slide.entry, "screensaver");
     screensaverIndex += 1;
   }
 
-  function openScreensaver() {
-    screensaverIndex = Math.floor(Math.random() * ASMA_POSTERS.length);
+  async function openScreensaver() {
+    await ensureAsmaCollectionsLoaded();
+    screensaverDeck = buildScreensaverDeck();
+    screensaverIndex = Math.floor(Math.random() * screensaverDeck.length);
     showScreensaverSlide();
     screensaverOverlay.classList.add("open");
     screensaverTimer = setInterval(showScreensaverSlide, SCREENSAVER_INTERVAL_MS);
@@ -815,6 +850,31 @@ export function initAsmaStudyPage() {
   if (screensaverBtn) screensaverBtn.addEventListener("click", openScreensaver);
   if (screensaverCloseBtn) screensaverCloseBtn.addEventListener("click", closeScreensaver);
   if (screensaverOverlay) screensaverOverlay.addEventListener("click", (e) => { if (e.target === screensaverOverlay) closeScreensaver(); });
+
+  // ---------------------------------------------------------------------
+  // Round 3 -- the standalone A4 poster view, one Name at a time, with a
+  // real Print button. Reuses the exact same renderAsmaPosterHtml() the
+  // screensaver's own "name" slides already call -- one rendering, two
+  // places it shows up, never two components to keep in sync. Printing
+  // uses @media print rules (asma-study.html's own CSS) that hide
+  // everything else on the page and show only #posterOverlay, rather than
+  // monitor.js's own popup-window pattern -- there is no table here to
+  // build twice, just one already-on-screen card.
+  // ---------------------------------------------------------------------
+  function openPosterView(entry) {
+    if (!posterOverlay || !posterMount) return;
+    posterMount.innerHTML = renderAsmaPosterHtml(entry, "standalone");
+    posterOverlay.classList.add("open");
+  }
+
+  function closePosterView() {
+    if (!posterOverlay) return;
+    posterOverlay.classList.remove("open");
+  }
+
+  if (posterCloseBtn) posterCloseBtn.addEventListener("click", closePosterView);
+  if (posterPrintBtn) posterPrintBtn.addEventListener("click", () => window.print());
+  if (posterOverlay) posterOverlay.addEventListener("click", (e) => { if (e.target === posterOverlay) closePosterView(); });
 
   onAuthStateChanged(auth, async (user) => {
     if (!user) {

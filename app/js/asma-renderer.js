@@ -103,6 +103,7 @@ export function renderAsmaDetail(entry, claimEntry, { isBookmarked = false } = {
     ${renderAsmaXrefBlock(entry)}
     <p>${statusLine}</p>
     <button type="button" id="trackAsmaBtn">${t("Track my progress")}</button>
+    <button type="button" id="posterAsmaBtn" class="secondary">🖼 ${t("Poster")}</button>
   </div>`;
 }
 
@@ -203,5 +204,31 @@ export function renderAsmaScreensaverSlide(poster, fallbackName) {
   return `<div class="asma-screensaver-slide asma-screensaver-textonly">
     <div class="asma-screensaver-arabic">${escapeHtml(fallbackName?.arabic ?? "")}</div>
     <div class="asma-screensaver-caption">${escapeHtml(fallbackLabel)} — ${escapeHtml(langText(fallbackName?.meaning, getAppLang()))}</div>
+  </div>`;
+}
+
+/** Round 3 -- the A4 poster, live-rendered from the same data every other
+    screen already reads (never a stored image file, per the owner's own
+    choice: "whatever is easy" turned out to mean this needs no generation
+    step, no storage and can never drift from a later correction). One
+    function, two call sites: `openPosterView()` wraps this once, full
+    size, with a Print button (window.print() against @media print rules
+    that hide everything else -- see asma-study.html's own copy of that
+    rule); the screensaver wraps it again, smaller, as one slide among the
+    93 existing photo-posters (variant "screensaver" vs "standalone" only
+    changes sizing, never the content). extraNames/overrides are already
+    resolved into `entry` by the caller (resolveAsmaEntry) -- this stays a
+    pure renderer either way (I2). */
+export function renderAsmaPosterHtml(entry, variant = "standalone") {
+  const refLine = entry.ref ? `<div class="poster-ref">${escapeHtml(entry.ref)}</div>` : "";
+  return `<div class="asma-poster asma-poster-${variant}">
+    <div class="poster-eyebrow">${escapeHtml(t("Asma ul Husna"))}</div>
+    <div class="poster-main">
+      <div class="poster-ar">${escapeHtml(entry.arabic)}</div>
+      <div class="poster-translit">${escapeHtml(asmaEntryDisplayName(entry))}</div>
+    </div>
+    <div class="poster-bn">${escapeHtml(asmaEntryMeaningText(entry))}</div>
+    ${refLine}
+    <div class="poster-footer">${escapeHtml(t("QuranRevival · Asma ul Husna"))}</div>
   </div>`;
 }

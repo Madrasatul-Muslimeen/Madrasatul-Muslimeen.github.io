@@ -7315,6 +7315,105 @@ live-rendered A4 poster + screensaver). No `firestore.rules` or schema
 change -- this round only reads data Round 1 already put in place, plus
 one new page-load query-string check; nothing new to deploy.
 
+v07.103 (29 Aug 2026, on Claude Code on the web) is **Asma Collections,
+round 3 -- the live-rendered A4 poster, and the existing screensaver
+gains ~132 more slides.** The last of the 3-round plan the owner approved
+("Bismillah! Yes, start it.") after the original demo: every Name/phrase
+now has its own poster, opened from its detail screen with a real Print
+button, and the SAME poster is what the screensaver shows for it -- one
+renderer, two places it appears, never two components that could drift
+apart.
+
+**One rendering function, `renderAsmaPosterHtml(entry, variant)`, in
+`asma-renderer.js` -- I2 held throughout, no DOM/Firebase, just the
+`entry` object `resolveAsmaEntry()` already resolves everywhere else in
+this feature.** `variant` ("standalone" vs "screensaver") only changes
+CSS sizing, never content, so a canonical Name and an extra Name/phrase
+alike (all 132 -- the 99 fixed Names plus however many active extras a
+tenant has) print identically shaped posters: an "Asma ul Husna" eyebrow,
+the Arabic, the transliteration/display name, the meaning (through the
+same Bangla-override-aware `asmaEntryMeaningText()` Round 1 already
+built), the reference line when one exists (reusing Round 2's own
+`entry.ref` field -- the poster does NOT render Round 2's tappable
+chips, since a printed A4 page has nowhere for a tap to go; it shows the
+same reference as plain text instead), and a footer.
+
+**Live-rendered, never a stored image file -- the owner's own "whatever
+is easy" answer to Q6, confirmed to mean exactly this: no generation
+step, no storage, and a later correction to a Name's own text (a Bangla
+edit, say) is reflected on the poster immediately, with nothing to
+regenerate.** The `posterAsmaBtn` button on the detail screen
+(`openNameDetail()`'s own markup) opens `openPosterView(entry)`, which
+mounts the poster into a new `#posterOverlay`/`#posterMount` pair and
+sets its own `.open` class -- the same overlay-plus-mount shape
+`#screensaverOverlay`/`#screensaverMount` already established, so no new
+UI pattern was introduced. Print uses `@media print` rules on
+`asma-study.html`'s own stylesheet (hide `body *`, show only
+`#posterOverlay`, and force the card to `100vh`/no border/no shadow with
+an `@page { size: A4 portrait; margin: 0; }` rule) rather than
+`monitor.js`'s own popup-window pattern -- deliberately, since there is
+no table to build twice here, just one card already on screen; a second,
+separate popup window would only have meant keeping two copies of the
+same CSS in step.
+
+**The screensaver's own deck is built once per open, photos first, then
+every Name/phrase after them** -- `buildScreensaverDeck()` in
+`asma-study.js` concatenates the existing 93 `ASMA_POSTERS` photo slides
+with one slide per resolvable Name (all 99 canonical, via `ASMA_NAMES`,
+plus every active extra via `activeExtraNames()`), each resolved through
+the SAME `resolveNumber()`/`resolveAsmaEntry()` path the detail screen and
+category browser already use, so a Bangla override or a tenant's own
+extra-Name edit shows up here too. Photos-before-names was a deliberate,
+unprompted call: it means anyone who watches the existing rotation
+start-to-finish sees no change in its own feel, with the new content
+simply appended rather than interleaved through it. `showScreensaverSlide()`
+branches on `slide.kind` and calls the pre-existing
+`renderAsmaScreensaverSlide()` for a photo or the new
+`renderAsmaPosterHtml(entry, "screensaver")` for a Name -- the timer,
+the random starting index, and the open/close mechanics are all
+untouched from before this round.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice, matching Rounds 1 and 2) -- **35
+checks, all passing, in both languages**: a canonical Name's poster
+opening with real Arabic/transliteration/meaning/footer content; the
+Print button proven to call `window.print()` (stubbed, so nothing was
+actually sent to a printer) without navigating away; the overlay closing
+via both its own X button and a click outside the card; an extra Name's
+poster (found live through the category browser, not hand-picked)
+rendering the same real content; the screensaver's combined deck sampled
+by reopening it repeatedly (each open picks a random starting slide) and
+confirmed to surface BOTH a photo slide and a name-poster slide, not
+just one kind; and, in Bangla, the poster's own footer confirmed to read
+real Bangla text. Zero page errors in either language. `node --check`
+passes on every touched file. `tools/i18n-verify/layout.mjs` was not run
+this round -- this session's own Playwright cache lacks the exact browser
+build that script's default `chromium.launch()` call expects (a known,
+pre-existing sandbox limitation this project has hit before, unrelated to
+this change) -- but since this round touches only `asma-study.html`/
+`asma-renderer.js`/`asma-study.js`/`bn.js`, none of which `layout.mjs`
+measures (it measures `quranrevival.html`'s own landing page only), no
+regression there was possible from this diff; confirmed by `git status`
+showing no other file touched.
+
+**Two new strings this round adds** ("QuranRevival · Asma ul Husna", the
+poster's own footer, and "Poster", the button label) -- both translated
+in `bn.js`, first-draft Bangla, marked `// ?` for the owner's own eye.
+"Print" was already in `bn.js` from elsewhere in the app and reused
+verbatim.
+
+**This completes the 3-round Asma Collections roadmap the owner approved
+in full before Round 1 began.** No `firestore.rules` or schema change
+this round -- the poster is pure client-side rendering of data Rounds 1
+and 2 already put in place; nothing new to deploy. **Still pending from
+Round 1, unaffected by this round: the `asmaCollections` `firestore.rules`
+match block has not yet been deployed** -- this session has no Firebase
+CLI/credentials; the owner needs to deploy it via the Firebase Console
+(same copy-paste route as every recent round) before Manage-mode writes
+on `asma-study.html` will actually succeed on a real device. Browsing,
+the detail screen, and the poster/screensaver all work regardless, since
+none of them write anything.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
