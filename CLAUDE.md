@@ -7096,6 +7096,141 @@ rather than rolling to v08.00, which would misleadingly read as a major
 version change. Flagged here in case the owner would rather see it
 handled differently going forward.
 
+v07.101 (29 Aug 2026, on Claude Code on the web) is **Asma Collections,
+round 1 -- named thematic groups of Names and honorific phrases about
+Allah, built to the exact same template as Ayah Collections (QCR).** The
+owner uploaded their own hand-organised board (`Asmaul_Husna v01.20`) and
+asked for it set up "in the same template as QCR." Two full demo/mockup
+artifacts were shown and confirmed before anything was built (this
+project's own standing "ask, then demo, then build" discipline) -- the
+first covering item scope, tap targets and UI placement, the second
+folding in seven follow-up answers on reorganising, editable Bangla,
+Qur'an/Hadith linking, an A4 poster and the screensaver. The owner then
+scoped a 3-round build (data + collections + Manage panel; cross-
+references; posters + screensaver); **this round is Round 1 only** --
+rounds 2 and 3 (Qur'an/Hadith reference chips on the detail card, and the
+live-rendered A4 poster feeding the screensaver alongside the existing 93
+photo-posters) are deliberately NOT built yet.
+
+**The data, measured, not guessed.** The uploaded file holds 128 distinct
+Names/phrases (the owner's own "129" is a placeholder count they asked to
+use until their grouping is finalised) across 19 owner-authored thematic
+groups, zero duplicates across groups (unlike QCR's 379 āyāt, 56 shared
+across collections). 95 already match one of the 99 canonical Names in
+`asma-data.js`; the other 33 are new -- honorific phrases (e.g.
+"Subhanahu", "Azza wa Jalla") or Names from weaker/disputed hadith outside
+the standard 99 enumeration, extracted programmatically (normalized-Arabic
+matching against `asma-data.js`, cross-checked by hand) rather than
+transcribed by eye. **A real gap in the first pass, caught by this round's
+own verification script before it shipped, not after: 14 of the CANONICAL
+99 (not only the 33 extras) were ALSO flagged weak-hadith by the owner's
+file** -- the first data model only carried a weak flag on extras, which
+would have silently dropped that fact for Al-'Adl, Ar-Rafi', Al-Khafid and
+11 others. Fixed with `DEFAULT_WEAK_CANONICAL_NUMBERS` in
+`asma-collections-data.js`, checked directly against the source file
+rather than assumed, and a dedicated behaviour check added specifically to
+catch this class of defect again.
+
+**Architecture, mirroring `js/qcr.js` deliberately.** New
+`asma-collections-data.js` (seed data: `DEFAULT_ASMA_COLLECTIONS`, the 19
+groups as plain `name:N` unit-key arrays; `DEFAULT_EXTRA_ASMA_NAMES`, the
+33 extras as full records) and `asma-collections.js` (pure editing helpers
+-- add/rename/archive a group, add/remove/move a Name between groups,
+exactly QCR's own shape -- plus the Firestore read/write pair). New
+Firestore doc **`asmaCollections/{tenantId}`**, same read/write split as
+`ayahCollections` (any member reads, owner/prime edits via Manage mode);
+`firestore.rules` gained one new match block, byte-identical shape to
+`ayahCollections`'s own -- **written, not yet deployed** (this session has
+no Firebase CLI/credentials; deploy via the Firebase Console, same as
+every recent round). **I5 held throughout, including through the owner's
+own "auto-numbering on movement" ask**: every Name/phrase keeps a
+PERMANENT number (1-99 canonical, 100-132 extras, assigned once in the
+seed data and never reassigned) that any claim/bookmark/note is keyed
+against; "auto-numbering" falls out of that for free, since a Name's
+number was never tied to its position in any list to begin with -- moving
+one between groups only ever changes which group's `items[]` array lists
+its key.
+
+**Editable Bangla wording, the owner's Q3 answer ("do whatever is easy,
+make those editable")**, resolved with a real design decision rather than
+guessed: `asma-data.js` stays exactly what it has been since Phase 13 --
+fixed platform content, untouched, still the 99-grid's own source. A
+canonical Name's Bangla gets a per-tenant **override** (`nameOverrides`,
+a plain `number -> text` map on the `asmaCollections` document, applied
+only when the app is in Bangla -- the override is a Bangla correction, not
+a second English original); an extra Name's own `bn` field is edited
+directly, since it's the owner's own new content with no fixed original to
+override. One `resolveAsmaEntry(number, {extraNames, overrides})` in
+`asma-collections.js` resolves either range uniformly, so the detail
+screen, the claim mechanism and every category-browser row treat any
+number 1-132 the same way.
+
+**The "Browse by Category" panel** on `asma-study.html` -- a toggle next
+to the existing Screensaver button swaps the plain 99-grid out for a
+level-bar + list + wheel panel, the closest direct mirror of QCR's own
+`#qcrPanel` this simpler page (no Explore/dock/stage system, unlike
+Quran) allows. Reuses `renderScopedWheel`/`renderWheelLegend`/
+`attachScopedWheelClickHandler` from `mastery-wheel.js` unchanged --
+wedge colour pools against the one `studied_asma` trackable's claimed
+status, the same "gradual increase of deep shades" rule QCR's own wheel
+uses. Manage mode (owner/prime only, same `effectiveRoles` check
+quranrevival.html's own `canAdminCatalogueClientSide()` makes) offers:
+rename/archive/add a group, show-archived, move a Name to a different
+group, remove a Name from a group, add an EXISTING Name (canonical or
+extra) not yet in the group, edit a Name's Bangla wording, and
+archive/restore an extra Name's own record. Tapping any Name (canonical
+or extra) closes the panel and opens the SAME real detail screen a grid
+tap already opens -- `openNameDetail()` now resolves through BOTH ranges
+uniformly, which is also what makes an extra Name genuinely claimable
+(the owner's Q4 answer, "Yes.") through the exact same Track/Guide/
+Breakdown card the 99 already use, with no new claim mechanism.
+`weak`/`isPhrase`/`beyond-the-99` badges show on both the category list
+rows and the detail screen wherever they apply.
+
+**Deliberately NOT built this round, flagged rather than attempted
+under time pressure**: authoring a brand-new Name/phrase from scratch
+(only adding an EXISTING one to a group is supported -- CLAUDE.md's own
+"one phase at a time" discipline, not an oversight); the Qur'an/Hadith
+reference chips (Round 2 -- the `ref` field the file already carries per
+item is what will parse into them, Qur'an citations jumping to the real
+reading screen the way QCR's own `goToAyahFromQcr()` does, Hadith
+citations staying reference-only since this app has no canonical
+hadith-text reader to jump to yet); the A4 poster and its screensaver
+wiring (Round 3, confirmed live-rendered rather than generated image
+files, and confirmed to run ALONGSIDE the existing 93 photo-posters
+rather than replace them).
+
+**Verified with a focused, un-checked-in Playwright script**
+(`tools/i18n-verify/_asma-smoke.mjs`, this project's own established
+practice for a brand-new screen not yet covered by the checked-in
+`behaviour.mjs` suite), reusing the project's own `harness.mjs`/
+`firebase-stub.mjs` -- **45 checks, all passing, in both languages**: the
+existing 99-grid unchanged (99 cards, tapping one still opens its detail
+screen -- proving `openNameDetail()`'s resolver change didn't regress the
+untouched path); the toggle swapping the grid for the category panel and
+back; all 19 groups listed; a group's real rows and matching wheel
+segments; Manage mode's move/edit/add controls, with a move proven by the
+row leaving the list and a second edit proven via a real
+`asmaCollections` write (the first write of a session goes through
+`setDoc`, which this project's own Firebase stub doesn't record --
+documented, not a defect -- so the FIRST action is proven by its
+real, user-visible effect and a SECOND action proves the write
+mechanism itself, once the doc exists and later writes go through
+`updateDoc`); a canonical Name's own weak-hadith badge (the bug found
+above); an extra Name's beyond-99/phrase/weak badges on both the list and
+detail screen, and its Track/Guide/Breakdown card opening and working
+identically to a canonical Name's; and the whole thing again in Bangla,
+with the Manage button, an edit-button's own title and a badge's own text
+all confirmed reading real Bangla rather than trusting
+`tools/i18n-coverage.mjs`'s own aggregate (this project's own standing
+lesson: that report has been wrong about what it counts nine separate
+times across earlier rounds -- and does not scan `asma-collections.js`/
+`asma-collections-data.js` at all, since neither has an area entry yet).
+No `firestore.rules` change is live until the owner deploys this round's
+addition via the Firebase Console; until then, a Manage-mode write on a
+real device will fail with a real, visible I15 message rather than
+silently doing nothing.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

@@ -58,6 +58,7 @@ export const TENANT = Object.freeze({
   CURRICULUM_PLAN: "curriculumPlan",
   RESOURCES: "resources",
   AYAH_COLLECTIONS: "ayahCollections", // Ayah Collections (QCR) round: one doc per tenant, tenant-authored named collections of cross-surah āyāt (see js/qcr.js). Same "small tenant-authored content collection, no existing precedent quite fits" shape as D12's domains and the ladders/levels pair.
+  ASMA_COLLECTIONS: "asmaCollections", // Asma Collections round: one doc per tenant, the same shape as ayahCollections above but for Names/phrases about Allah (see js/asma-collections.js) -- named groups, plus the ~33 Names/phrases beyond the fixed 99 in asma-data.js, plus any tenant edit to a canonical Name's own Bangla wording.
 
   // Layer 2 — tracking core
   TRACKABLES: "trackables",
