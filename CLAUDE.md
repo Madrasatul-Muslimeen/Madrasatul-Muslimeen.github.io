@@ -7414,6 +7414,174 @@ on `asma-study.html` will actually succeed on a real device. Browsing,
 the detail screen, and the poster/screensaver all work regardless, since
 none of them write anything.
 
+v07.104 (29 Aug 2026, on Claude Code on the web) is **Asma-in-Explore --
+Asma ul Husna becomes a second Explore topic and a second Note-view Topic,
+sitting beside QCR.** The owner's own framing set the whole shape: "AH is
+another topic like Quran for Critical Reasoning... it would house itself
+in Explore, form another similar topic/subject like and sit beside QCR.
+Same wheel and list structure." A demo was shown first (an interactive
+click-through prototype, styled in the app's own dark navy/gold, using
+real group names and real references pulled from `asma-collections-data.js`
+rather than lorem) and four open questions were answered before any real
+code was touched: **(1)** the standalone `asma-study.html` page's own
+"Browse by Category" panel stays exactly as it is -- a second, independent
+way in, per the owner's own "keep the panel as-is"; so this round is
+**read-only** wherever it touches quranrevival.html -- no Manage toggle,
+no rename/archive/add-a-group UI, since editing already has a home.
+**(2)** References render as a short row of chips, not a third wheel
+(usually only 1-3 per Name) -- confirmed, with the owner's own fallback
+noted ("if i don't like it will be in wheel"). **(3)** A real
+Track/Claim card, "same as Ayah" -- which turned out to mean something the
+demo hadn't shown at all: the exact `studied_asma`/`buildUnitKey.name()`
+mechanism `asma-study.js`'s own `openWayModal()` already claims against,
+now embedded in the Note view the same way an ayah's own Approach card
+already is. **(4)** Hadith references stay non-clickable, unchanged.
+
+**Explore's palette row gains a third button, Asma ul Husna, driving a
+genuine 3-level drill this round is the first to need: Groups -> Names ->
+References.** Unlike QCR's own single always-visible level (a plain
+`<select>`, since a collection's own items are directly claimable), a
+Group's own Names aren't -- there's a real step between "which group" and
+"which reference to open" -- so `#asmaXPanel` gets its own breadcrumb
+(reusing the plain Quran-structure drill's own `.explore-crumb` classes
+verbatim, not a second breadcrumb component) instead of a level select.
+Level 1 (Groups) and level 2 (Names) both reuse `mastery-wheel.js`'s own
+`renderScopedWheel`/`renderWheelLegend`/`attachScopedWheelClickHandler`
+unchanged -- the same shared component QCR already proves works for
+anything shaped like `{key, statusId, title, number}`. **Groups get a
+plain, uniform wedge colour** (no claim status of their own to show, the
+owner's own unconfirmed-but-unchallenged proposal from the demo); **Names
+get the real thing** -- claim-status colour against the `studied_asma`
+trackable, "the owner's own answer: 'coloring also same' [as an ayah/QCR's]"
+-- via a new, lazily-fetched `records/subject_asma_ul_husna` chunk
+(`ensureAsmaXChunkLoaded()`, cached per selected person, fetched only the
+first time the Asma palette or a manually-switched Note-view Topic
+actually needs it -- I9 held throughout, nothing joins the startup path).
+Level 3 (References) drops the wheel entirely and shows the Name's own
+card -- Arabic, display name, meaning, then `asma-renderer.js`'s own
+`renderAsmaXrefBlock()`, exported this round and given a new `inPage: true`
+mode: Round 2's own version rendered a Qur'an chip as a real `<a href=
+"quranrevival.html?goto=...">` link, correct for a separate page but wrong
+HERE -- a plain link would reload quranrevival.html even though the
+reference is opening ON quranrevival.html, discarding everything already
+loaded. `inPage: true` swaps it for a `data-asma-xref-jump` button the
+caller wires to a real in-page jump (`goToAyahFromAsmaX()`, `goToReference()`
++ `openNoteView()`, `goToAyahFromQcr()`'s own shape) instead -- the same
+parser, the same real chip markup, one function, two rendering modes.
+
+**The Note view's own "Topic" field stops being fixed at "QCR" (a disabled
+`<select>` with one option) and becomes a real choice.** `renderQcrDrawerHtml()`
+now renders a real, enabled Topic select and branches on a new `noteTopic`
+state variable ("qcr" | "asma") to decide which field set goes below it --
+QCR's own Group/Attach/Yr Level, byte-for-byte unchanged, or a new
+`renderAsmaXNoteFieldsHtml()`: Group -> Names -> References (the owner's
+own three fields, item 3 of the original spec), each a button+popover in
+the identical three-column row QCR's own fields already use, plus the
+Track/Claim embed and a Poster button. **Deliberately wired with its own
+data attributes (`data-asmax-dd-toggle`/`data-asmax-dd-pop`/
+`data-asmax-group-radio`/`data-asmax-name-radio`), not QCR's
+`data-note-qcr-dd-*` ones** -- only one field set is ever in the DOM at a
+time (never both), so there's no real collision risk, but reusing QCR's
+own attribute names would have meant QCR's OWN generic handlers in
+`ayah-note-renderer.js` (which fire `callbacks.onSwitchCollection` by
+name) silently intercepting an Asma Group pick meant for something else
+entirely. Wired as its own separate step, `wireAsmaXNoteFields()`, called
+right after `attachNoteViewHandlers()` -- the exact same "a separate step
+for what that shared, I2-pure function doesn't know about" shape
+`wireApproachEmbed()` already uses, so `ayah-note-renderer.js` itself
+needed zero changes.
+
+**The Track/Claim card is a real, working embed, not a placeholder.**
+`renderAsmaTrackEmbedHtml()`/`wireAsmaTrackEmbed()` mirror
+`renderApproachEmbedHtml()`/`wireApproachEmbed()` exactly, down to the
+same `claimStatus()`/`logActivity()` call shape -- but keyed to the fixed
+`asma_ul_husna`/`studied_asma` pair rather than a picked Approach (Asma has
+one trackable, not 30, so there's no picker in the header, just the
+Name's own display name), and wrapped in its own `#asmaTrackEmbedWrap` id
+-- a REAL scoping need, not defensive copying: a single-ayah scope's own
+Approach embed can be on screen in the Note view at the SAME TIME,
+independent of which Topic is picked, and both use way-modal.js's own
+`.way-embed` class, so a bare query would find whichever renders first,
+not necessarily this one. `asmaTrackable` itself (the `studied_asma`
+trackable object, for the embed's Guide tab) rides on the SAME tenant-wide
+`getTrackables()` read `quranTrackables` already comes from at startup --
+confirmed by reading that call site before adding a second one -- so this
+round adds no Firestore read there either.
+
+**One real gap closed along the way, not introduced by this round: a Note
+view reached any OTHER way (the Read screen, a bookmark, a plain dock tap)
+can land here with `asmaXCollections`/the Asma records chunk never loaded
+this session at all**, since `openNoteView()`'s own `fromAsma` param (new,
+alongside the existing `fromCollectionId`) is only ever passed by
+`goToAyahFromAsmaX()`. The Topic select's own change handler checks for
+exactly this and lazily loads both, the same on-first-use shape every
+other Explore/Note entry point already uses, before rendering -- verified
+directly: a Note view opened via the dock's own Approach/Note tabs (no
+Asma anywhere in its path) still renders real Asma content the moment
+Topic is switched by hand.
+
+**One real drawer-state bug fixed while wiring `openQcrDdKey` tracking,
+not introduced by this round -- caught by testing, not by reading the
+diff:** `renderNoteViewNow()`'s own "which popover was open before this
+rebuild" detection only ever looked for `[data-note-qcr-dd-pop].on`; an
+open Asma field's popover (which correctly uses the new
+`data-asmax-dd-pop` attribute instead) would have silently closed on every
+unrelated rebuild -- a claim via the Track card, in particular, since that
+itself calls `renderNoteViewNow()`. The same detection now falls through
+to `[data-asmax-dd-pop].on` too, the identical "read live state from the
+DOM right before it's replaced" method v07.98's own equivalent QCR fix
+already used.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice, matching every earlier Asma
+Collections round) -- **60 checks, all passing, in both languages**: 19
+real seeded groups listed with 19 real wheel segments; drilling into a
+real group (by DOM position, not English text -- a group's own title is
+real, translated content in Bangla) showing its real 2 Names with real
+claim-status chips and a 2-segment wheel; drilling into a real Name (by
+its own plain `data-asma-jump` unit key, language-independent) showing
+real Arabic, 2 real Qur'an reference chips with plain, untranslated jump
+targets, a Poster button, and no wheel; the Poster overlay rendering real
+content from both Explore AND the Note view; **a real in-page jump
+through a reference chip proven to change the surah with no reload** and
+land on the Note view with Topic already defaulted to Asma ul Husna;
+the Group/Names fields proven to really track the right group/Name via
+their own checked-radio VALUES (not visible text, for the same Bangla
+reason); the Track/Claim card present with real tabs; **a real claim
+through the embedded card proven to write to `records`**; a plain
+dock-opened Note view proven to default Topic back to "qcr"; manually
+switching Topic to Asma ul Husna proven to lazily load and render its own
+fields on the spot; and, in Bangla, the Topic option's own visible text
+translated with its VALUE proven to stay a plain id. **A separate
+regression pass (7 more checks) confirmed QCR's own untouched path**: the
+landing page's wheel heading still renders; the Asma panel stays hidden
+while QCR's shows; a real QCR item still jumps correctly with Topic
+defaulting to "qcr"; QCR's own Group/Attach/Yr Level fields and Group
+popover still render exactly as before. `node --check` (via the page's
+own extracted module script) and `node --check` on both touched `.js`
+files pass. Two new strings needing no new key at all: "Group"/"Topic"/
+"QCR"/"Poster"/"Asma ul Husna" are all reused verbatim from existing
+`bn.js` entries (the identical concept in the identical field shape);
+seven genuinely new strings ("All Groups", "{count} groups", "No groups
+yet.", "Tap a group to see the Names inside it.", "{count} Names", "Tap a
+Name to see the Ayat and Hadith it's linked to.", "References don't need
+a wheel — usually just 1–3.", "Names", "References", "Pick a Group
+first") are translated, first-draft Bangla, marked `// ?` for the owner's
+own eye. No `firestore.rules` or schema changes this round -- everything
+here reads data Rounds 1-3 already put in place (`asmaCollections`,
+`records/subject_asma_ul_husna`), through the same pure/shared modules
+`asma-study.js` already imports; nothing new to deploy. **Still pending
+from Round 1, unaffected by this round**: the `asmaCollections`
+`firestore.rules` match block itself has not yet been deployed by the
+owner.
+
+**Flagged, not built this round:** the PC popup's own title bar
+(`notePopupTitleEl`) still only ever reflects a QCR origin collection's
+name, falling back to the plain ayah reference when Topic is Asma ul
+Husna -- harmless (never wrong, just not as informative as it could be),
+and a real, small follow-up rather than an oversight discovered too late
+to record.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
