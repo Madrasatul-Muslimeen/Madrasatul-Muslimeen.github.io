@@ -50,7 +50,7 @@
 import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
-import { DEFAULT_ASMA_COLLECTIONS, DEFAULT_EXTRA_ASMA_NAMES, DEFAULT_WEAK_CANONICAL_NUMBERS } from "./asma-collections-data.js";
+import { DEFAULT_ASMA_COLLECTIONS, DEFAULT_EXTRA_ASMA_NAMES, DEFAULT_WEAK_CANONICAL_NUMBERS, DEFAULT_CANONICAL_REFS } from "./asma-collections-data.js";
 import { getAsmaName } from "./asma-data.js";
 
 function normalizeCollection(c) {
@@ -222,7 +222,11 @@ export function resolveAsmaEntry(number, { extraNames = [], overrides = {} } = {
       meaning: base.meaning,
       bnOverride: overrides[String(number)] ?? null,
       bnName: null,
-      ref: null,
+      // Round 2 -- the owner's file also gave 95 of the 99 canonical Names
+      // a reference, not only the extras; see DEFAULT_CANONICAL_REFS's own
+      // header. Four Names (36, 65, 69, 77) have none, same as in the
+      // owner's own file.
+      ref: DEFAULT_CANONICAL_REFS[number] ?? null,
       // The owner's own file flagged 14 of the 99 this way too, not only
       // the extras -- see asma-collections-data.js's own header on
       // DEFAULT_WEAK_CANONICAL_NUMBERS for exactly which and why this

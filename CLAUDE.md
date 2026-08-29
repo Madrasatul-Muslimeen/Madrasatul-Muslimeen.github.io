@@ -7231,6 +7231,90 @@ addition via the Firebase Console; until then, a Manage-mode write on a
 real device will fail with a real, visible I15 message rather than
 silently doing nothing.
 
+v07.102 (29 Aug 2026, on Claude Code on the web) is **Asma Collections,
+round 2 -- the Qur'an/Hadith reference chips on the detail screen.** The
+one piece Round 1 deferred: every Name/phrase's own "reference" text
+(already stored, both for the 33 extras and now for the 99 canonical
+Names too) becomes real, tappable chips.
+
+**A real gap Round 1 left unmentioned, closed here: the 95 canonical
+Names never carried their OWN reference text at all.** The round-1 data
+generator matched a canonical item against `asma-data.js` and kept only
+the bare `name:N` key -- the file's own reference for that Name (e.g.
+"কুরআন ১:১; ৫৫:১" for Ar-Rahman) was silently dropped, the same shape of
+gap the weak-hadith flag hit and was fixed for in Round 1 itself. Fixed
+the same way: `DEFAULT_CANONICAL_REFS` in `asma-collections-data.js`, all
+95 entries checked programmatically against the source file (a script
+compared every transcribed value byte-for-byte against a freshly
+re-extracted copy -- zero mismatches) rather than trusted from a manual
+copy. Four canonical Names (36, 65, 69, 77) have no reference in the
+owner's own file and stay that way -- nothing invented in their place.
+
+**The parser, verified against real data before it touched a screen.**
+New `js/asma-ref-parser.js` (I2: pure, no DOM/Firebase) turns one
+reference string into a list of Qur'an and/or Hadith citations -- the
+text mixes several real shapes (a single ayah; several ayahs, where the
+word "কুরআন" is never repeated so a bare "X:Y" fragment continues the
+previous one; Qur'an and Hadith citations mixed in one string; a Hadith
+grade; a trailing parenthetical note; and a few genuinely non-citation
+sentences, like "traditional honorific phrase, no specific ayah", which
+correctly yield nothing rather than a wrong guess). **Checked against
+every one of the 105 distinct reference strings the owner's file actually
+contains** (a throwaway script printed the parsed result next to each raw
+string for direct comparison), not a handful of invented examples -- all
+102 real citations came back correct and only the 3 genuinely
+non-citation strings yielded none.
+
+**The cross-page jump needed a real mechanism, not a shortcut: `quranrevival.html`
+gained a plain "?goto=surah:ayah" deep link.** Asma is its own page, not
+part of Quran's own Explore/stage system the way QCR's ayah references
+are -- so unlike `goToAyahFromQcr()` (an in-page jump), a Qur'an reference
+chip here means a real page navigation. The only existing deep link into
+that page was `?bookmark=<id>`, which needs an actual bookmark document to
+point at -- wrong shape for a reference chip with no bookmark behind it.
+New `openGotoFromQueryString()` reuses the "Go to" box's own
+`parseJumpText()`/`goToReference()` unchanged, then `openNoteView()` for
+the same rich landing QCR's own jump already gives -- read once on load,
+right after the existing bookmark-query-string step. A malformed or
+out-of-range value is simply ignored (no error box exists to show a
+redirect-in landing on), the same quiet-fallback shape `openBookmark
+FromQueryString()` already uses for a bookmark that fails to resolve.
+
+**Hadith citations stay reference-only, honestly.** This app has no
+canonical hadith-text reader to jump to -- flagged in Round 1's own entry
+as a real, disclosed gap rather than something to fake. A Hadith chip
+shows the collection name (left untranslated, the same "a proper noun is
+never translated" rule reciters' own names already follow), the number
+and its grade, as plain text, not a link. A reference that parses to
+nothing at all still shows its raw text on screen, so nothing the owner
+wrote simply vanishes.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice, matching Round 1's own verification)
+-- **38 checks, all passing, in both languages**: Ar-Rahman's own two
+Qur'an citations rendering as two real chips with the right hrefs; a
+Hadith-only Name (Al-Khafid) rendering exactly one plain, non-clickable
+chip naming the collection and grade; a mixed Name (Al-Qabid) rendering
+one of each; a Name with no reference at all (Al-Ali, #36) rendering no
+reference block whatsoever rather than an empty one; and, the check that
+actually matters, **a real click through a Qur'an chip landing on
+`quranrevival.html`'s own Note view for that exact āyah, with the
+canonical Surah/Ayah pickers themselves proven to have moved** -- not
+just a URL change. Re-ran Round 1's own 30-check script alongside it to
+confirm nothing regressed from wiring the new reference block into the
+same `renderAsmaDetail()`; both scripts total 68 checks, 0 failures.
+Confirmed separately that `quranrevival.html` itself still loads clean
+(the wheel renders, zero console errors) -- the one change there
+(`openGotoFromQueryString()` plus one new call in the init flow) touches
+no markup or CSS, so no layout regression was expected and none was
+found.
+
+**Deliberately not built this round, unchanged from Round 1's own
+scope**: authoring a brand-new Name/phrase from scratch, and Round 3 (the
+live-rendered A4 poster + screensaver). No `firestore.rules` or schema
+change -- this round only reads data Round 1 already put in place, plus
+one new page-load query-string check; nothing new to deploy.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
