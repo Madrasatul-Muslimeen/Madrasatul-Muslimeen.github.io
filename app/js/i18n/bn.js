@@ -1987,4 +1987,9 @@ export const BN = {
   // Round 2 -- Qur'an/Hadith reference chips.
   "Related Ayat & Hadith": "সংশ্লিষ্ট আয়াত ও হাদীস", // ?
   "Qur'an {ref}": "কুরআন {ref}",
+
+  // Round 3 -- the A4 poster + screensaver.
+  "QuranRevival · Asma ul Husna": "কুরআনরিভাইভাল · আসমাউল হুসনা",
+  "Poster": "পোস্টার",
+  "Print": "প্রিন্ট",
 };
