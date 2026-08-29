@@ -6960,6 +6960,46 @@ clean** (neither touches the Note view's own drawer). No
 `firestore.rules`, schema or Firestore data changes -- nothing to deploy
 but the static files.
 
+v07.99 (29 Aug 2026, on Claude Code on the web) is a **same-day width fix
+to v07.98's own in-flow checklists**, from the owner's own screenshots
+right after v07.98 shipped: the Attach/Yr Level panels were "beautiful in
+design, stays below the bar" -- v07.98's real, structural fix held -- but
+"doesn't need full-screen wide, as wide as to make the text visible is
+fine," and Yr Level's own box ("since there's not much text") should be
+noticeably narrower still, since "Yr 1".."Regular adult" never comes
+close to needing the card's own full width.
+
+**One CSS property, not a restructure**: `.note-qcr-dd-pop` was a plain
+block, which defaults to `width: 100%` of its container -- correct for
+v07.98's own fix (getting it OUT of a clipped, position:absolute overlay
+and INTO normal flow), but stretching it to the full card width regardless
+of how little text it held was never asked for, just an unexamined
+default. `width: fit-content` sizes it to whatever its own widest row
+actually needs; `max-width: 100%` is the safety net for a genuinely long
+collection name, which wraps inside the box rather than overflowing the
+card. Left-aligned by construction (a plain block starts at its
+container's own left edge) -- exactly where the owner's own screenshots
+show it landing, flush with the card's own left content edge, not
+indented under whichever column its own trigger button happens to sit in
+(Attach is the middle of three columns; Yr Level is the third).
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice for anything past `behaviour.mjs`'s
+own disclosed section-42 crash point) -- **16 checks, all passing** at
+390×844 and 1280×800: Attach's box (real collection names, some long)
+confirmed to start at the card's own left content edge and to stay
+narrower than the full card rather than stretching; Yr Level's box (short
+text only) confirmed to land at the same left edge and to come out
+meaningfully narrower than Attach's own box -- under 60% of the card's
+width at both sizes, matching the owner's own screenshot. **`layout.mjs`
+reports NO LAYOUT REGRESSIONS** at all eight viewports in both banner
+states against a real `HEAD` shim (`getElementById` targets unchanged at
+145, only the same four pre-existing QCR Manage-mode false positives
+disclosed since v07.86), **`reading.mjs` OK**, **`panel.mjs` clean**
+(neither touches the Note view's own drawer). No `firestore.rules`,
+schema or Firestore data changes -- nothing to deploy but the static
+files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
