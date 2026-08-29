@@ -1402,14 +1402,20 @@
     border: 1px solid #ddd; border-radius: 0.35rem; padding: 0.28rem 0.4rem; min-width: 0;
   }
   .note-qcr-select:disabled { background: #f0ede2; color: #999; }
-  .note-qcr-dd-wrap { position: relative; }
-  .note-qcr-dd-btn { text-align: left; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+  .note-qcr-dd-btn { text-align: left; display: flex; align-items: center; justify-content: space-between; cursor: pointer; width: 100%; }
   .note-qcr-dd-btn:disabled { cursor: default; }
   .note-qcr-dd-btn .car { color: #a08f5c; font-size: 0.68rem; }
+  /* Sizing-fix round -- no longer a position:absolute overlay nested one
+     field deep (that's what made a real 18-item list read as "trapped
+     inside the card," clipped by the outer .note-sub-popover's own
+     overflow:auto with a second, nested scrollbar doing the actual
+     scrolling). Now a plain in-flow panel, full card width, directly below
+     the Group/Attach/Yr Level row -- opening one just grows the ONE
+     card's own height, scrolled by that card's own single scrollbar. */
   .note-qcr-dd-pop {
-    display: none; position: absolute; top: 2.1rem; left: 0; right: 0; z-index: 9;
-    background: #fff; border: 1px solid #ddd; border-radius: 0.5rem; box-shadow: 0 10px 22px rgba(20,30,60,0.22);
-    max-height: min(60vh, 30rem); overflow-y: auto; padding: 0.3rem 0.6rem;
+    display: none; margin-top: 0.5rem;
+    background: #f7f4e9; border: 1px solid #e3dcc4; border-radius: 0.5rem;
+    max-height: min(60vh, 30rem); overflow-y: auto; padding: 0.4rem 0.7rem;
   }
   .note-qcr-dd-pop.on { display: block; }
   .note-collections-empty { margin: 0; font-size: 0.75rem; color: #888; }
@@ -5221,7 +5227,25 @@
         (which year band(s) the SELECTED group targets -- a NEW field on
         the collection itself, not on the āyah, so it's disabled until a
         Group is actually picked). */
-    function renderQcrDrawerHtml(unitKey) {
+    /** Sizing-fix round -- the Attach/Yr Level checklists used to be
+        position:absolute overlays nested INSIDE the outer 🗂 drawer's own
+        scrollable card, which meant a real, long checklist was clipped by
+        that card's own overflow:auto and only reachable through a second,
+        nested scrollbar sitting inside the first -- confirmed reachable in
+        testing (scroll-chaining), but the owner's own report ("still
+        showing inside the card only") is exactly right: it LOOKS trapped,
+        because it visibly is. Both checklists are now plain, in-flow
+        panels rendered AFTER the Group/Attach/Yr Level row (full card
+        width, not squeezed into one field's own narrow column), toggled
+        the same "only one open at a time" way as before -- so opening one
+        just grows the ONE card's own natural height, scrolled by that
+        card's own single, already-working scrollbar, rather than two
+        scrollbars nested inside each other. `openDdKey` ("attach" /
+        "yrlevel" / null) is which one, if any, was open before this
+        render -- read live from the DOM by the caller (see
+        renderNoteViewNow's own comment) so it survives a Group switch the
+        same way the outer drawer itself now does. */
+    function renderQcrDrawerHtml(unitKey, openDdKey = null) {
       const collections = activeCollections(qcrCollections ?? []);
       const groupOptionsHtml = `<option value="">${escapeHtml(t("— none —"))}</option>` +
         collections.map((c) => `<option value="${escapeHtml(c.id)}" ${c.id === noteOriginCollectionId ? "selected" : ""}>${escapeHtml(langText(c.title, getAppLang()))}</option>`).join("");
@@ -5233,6 +5257,8 @@
       const selectedGroup = noteOriginCollectionId ? collections.find((c) => c.id === noteOriginCollectionId) : null;
       const yrLevelSummary = !selectedGroup ? "—" : (selectedGroup.yrLevels.length ? num(selectedGroup.yrLevels.length) : t("None"));
       const yrLevelTitle = selectedGroup ? selectedGroup.yrLevels.map((id) => yrLevelLabel(id)).join(", ") : "";
+      const attachOn = openDdKey === "attach";
+      const yrOn = openDdKey === "yrlevel" && !!selectedGroup;
 
       return `
         <div class="note-qcr-topic-row">
@@ -5247,18 +5273,14 @@
             <select class="note-qcr-select" data-note-qcr-group>${groupOptionsHtml}</select>
           </div>
           <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Attach"))}</span>
-            <div class="note-qcr-dd-wrap" data-note-qcr-dd="attach">
-              <button type="button" class="note-qcr-select note-qcr-dd-btn" data-note-qcr-dd-toggle="attach" title="${escapeHtml(attachTitle)}"><span class="note-qcr-dd-summary">${escapeHtml(String(attachSummary))}</span> <span class="car">▾</span></button>
-              <div class="note-qcr-dd-pop" data-note-qcr-dd-pop="attach">${renderQcrMembershipPopoverHtml(unitKey)}</div>
-            </div>
+            <button type="button" class="note-qcr-select note-qcr-dd-btn${attachOn ? " active" : ""}" data-note-qcr-dd-toggle="attach" title="${escapeHtml(attachTitle)}"><span class="note-qcr-dd-summary">${escapeHtml(String(attachSummary))}</span> <span class="car">▾</span></button>
           </div>
           <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Yr Level"))}</span>
-            <div class="note-qcr-dd-wrap" data-note-qcr-dd="yrlevel">
-              <button type="button" class="note-qcr-select note-qcr-dd-btn" data-note-qcr-dd-toggle="yrlevel" title="${escapeHtml(yrLevelTitle)}" ${selectedGroup ? "" : "disabled"}><span class="note-qcr-dd-summary">${escapeHtml(String(yrLevelSummary))}</span> <span class="car">▾</span></button>
-              <div class="note-qcr-dd-pop" data-note-qcr-dd-pop="yrlevel">${selectedGroup ? renderYrLevelPopoverHtml(selectedGroup) : ""}</div>
-            </div>
+            <button type="button" class="note-qcr-select note-qcr-dd-btn${yrOn ? " active" : ""}" data-note-qcr-dd-toggle="yrlevel" title="${escapeHtml(yrLevelTitle)}" ${selectedGroup ? "" : "disabled"}><span class="note-qcr-dd-summary">${escapeHtml(String(yrLevelSummary))}</span> <span class="car">▾</span></button>
           </div>
-        </div>`;
+        </div>
+        <div class="note-qcr-dd-pop${attachOn ? " on" : ""}" data-note-qcr-dd-pop="attach">${renderQcrMembershipPopoverHtml(unitKey)}</div>
+        <div class="note-qcr-dd-pop${yrOn ? " on" : ""}" data-note-qcr-dd-pop="yrlevel">${selectedGroup ? renderYrLevelPopoverHtml(selectedGroup) : ""}</div>`;
     }
 
     /** Patches the Attach/Yr Level buttons' own summary text and title IN
@@ -5271,14 +5293,14 @@
         button's checkbox popover needs touching -- checkboxes are native
         and already show their own correct state. */
     function refreshQcrDrawerSummaries(unitKey) {
-      const attachBtn = noteView.querySelector('[data-note-qcr-dd="attach"] [data-note-qcr-dd-toggle]');
+      const attachBtn = noteView.querySelector('[data-note-qcr-dd-toggle="attach"]');
       if (attachBtn) {
         const memberOf = qcrCollectionsContainingUnitKey(unitKey);
         attachBtn.title = memberOf.map((c) => langText(c.title, getAppLang())).join(", ");
         const summary = attachBtn.querySelector(".note-qcr-dd-summary");
         if (summary) summary.textContent = memberOf.length ? num(memberOf.length) : t("None");
       }
-      const yrBtn = noteView.querySelector('[data-note-qcr-dd="yrlevel"] [data-note-qcr-dd-toggle]');
+      const yrBtn = noteView.querySelector('[data-note-qcr-dd-toggle="yrlevel"]');
       const group = noteOriginCollectionId ? (qcrCollections ?? []).find((c) => c.id === noteOriginCollectionId) : null;
       if (yrBtn && group) {
         yrBtn.title = group.yrLevels.map((id) => yrLevelLabel(id)).join(", ");
@@ -6115,6 +6137,19 @@
       const originCollection = noteOriginCollectionId ? (qcrCollections ?? []).find((c) => c.id === noteOriginCollectionId) : null;
       const backToCollectionLabel = originCollection ? langText(originCollection.title, getAppLang()) : null;
 
+      // Sizing-fix round -- the owner's own report: picking a Group closed
+      // the whole 🗂 drawer mid-selection, since renderNoteViewNow() rebuilds
+      // .note-body from scratch on every change and nothing tracked this
+      // drawer's own open state (see the retired comment on
+      // refreshQcrDrawerSummaries, which used to explain why it deliberately
+      // avoided a full rebuild instead of fixing this). Read the LIVE DOM
+      // state right before it's replaced rather than a separately-tracked
+      // flag -- that way it's automatically correct whether the drawer was
+      // closed by its own toggle, an outside click, or another popover
+      // opening in its place, with nothing to keep in sync by hand.
+      const wasQcrDrawerOpen = noteView.querySelector('[data-note-sub-wrap="collections"] .note-sub-popover')?.classList.contains("open") ?? false;
+      const openQcrDdKey = noteView.querySelector('[data-note-qcr-dd-pop].on')?.dataset.noteQcrDdPop ?? null;
+
       // PC popup: only #noteViewMount is replaced -- the static title bar/
       // side pane/resize handles around it (see #noteView's own markup
       // comment) must survive every one of these re-renders, so nothing
@@ -6149,7 +6184,8 @@
         wideNoteHtml,
         canUpdateBookmark: !!openedBookmarkId && (bookmarksDoc.saved ?? []).some((b) => b.id === openedBookmarkId && !b.removed),
         backToCollectionLabel,
-        collectionsPopoverHtml: renderQcrDrawerHtml(unitKey),
+        isCollectionsOpen: wasQcrDrawerOpen,
+        collectionsPopoverHtml: renderQcrDrawerHtml(unitKey, openQcrDdKey),
       });
       if (showApproach && quranTrackables.some((tr) => tr.id === currentTrackableId)) {
         noteView.querySelectorAll("[data-note-approach-select]").forEach((sel) => { sel.value = currentTrackableId; });
