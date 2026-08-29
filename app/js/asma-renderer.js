@@ -20,6 +20,7 @@ import { t, num, asmaName } from "./i18n.js";
 import { langText } from "./lang.js";
 import { getAppLang } from "./prefs.js";
 import { confirmStateLabel } from "./labels.js";
+import { parseAsmaRef } from "./asma-ref-parser.js";
 
 function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -93,16 +94,52 @@ export function renderAsmaDetail(entry, claimEntry, { isBookmarked = false } = {
     entry.isPhrase ? `<span class="asma-detail-badge phrase">${escapeHtml(t("Honorific phrase"))}</span>` : "",
     entry.weak ? `<span class="asma-detail-badge weak">${escapeHtml(t("Weak / disputed hadith"))}</span>` : "",
   ].filter(Boolean).join("");
-  const refLine = entry.ref ? `<p class="asma-detail-ref">${escapeHtml(entry.ref)}</p>` : "";
   return `<div class="asma-detail">
     <div class="asma-detail-number">${numberLine}</div>
     <div class="asma-detail-arabic">${escapeHtml(entry.arabic)}</div>
     <h2>${escapeHtml(asmaEntryDisplayName(entry))} <button type="button" id="bookmarkAsmaBtn" class="topic-bookmark-btn${isBookmarked ? " active" : ""}" title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this")}">${isBookmarked ? "★" : "☆"}</button></h2>
     <p class="asma-detail-meaning">${escapeHtml(asmaEntryMeaningText(entry))}</p>
     ${badges ? `<p class="asma-detail-badges">${badges}</p>` : ""}
-    ${refLine}
+    ${renderAsmaXrefBlock(entry)}
     <p>${statusLine}</p>
     <button type="button" id="trackAsmaBtn">${t("Track my progress")}</button>
+  </div>`;
+}
+
+/** Round 2 -- the Qur'an/Hadith reference chips. A Qur'an citation is a
+    real link (quranrevival.html's own new "?goto=surah:ayah" deep link,
+    js/asma-ref-parser.js's own parsed output) that jumps straight to that
+    āyah's real reading screen, opened in the same tab (going from one
+    module to another inside the same live app, not out to a different
+    generation of it -- unlike the "Legacy App" link, which does open in a
+    new tab for exactly that reason). A Hadith citation stays plain text:
+    this app has no canonical hadith-text reader to jump to yet, a real,
+    disclosed gap rather than a broken link. Hadith collection names are
+    left exactly as the owner's own file wrote them, the same "a proper
+    noun is never translated" rule reciters' own names already follow. If
+    the reference text parses to nothing at all (a plain descriptive
+    sentence, or an unnumbered placeholder), the raw text still shows so
+    nothing the owner wrote simply vanishes. */
+function renderAsmaXrefBlock(entry) {
+  if (!entry.ref) return "";
+  const citations = parseAsmaRef(entry.ref);
+  if (!citations.length) {
+    return `<p class="asma-detail-ref">${escapeHtml(entry.ref)}</p>`;
+  }
+  const chips = citations
+    .map((c) => {
+      if (c.kind === "quran") {
+        const label = t("Qur'an {ref}", { ref: `${num(c.surah)}:${num(c.ayah)}` });
+        const href = `quranrevival.html?goto=${c.surah}:${c.ayah}`;
+        return `<a class="asma-xref-chip quran" href="${escapeHtml(href)}">📖 ${escapeHtml(label)}</a>`;
+      }
+      const gradeText = c.grade ? ` (${escapeHtml(c.grade)})` : "";
+      return `<span class="asma-xref-chip hadith">📜 ${escapeHtml(c.collection)} ${escapeHtml(num(c.number))}${gradeText}</span>`;
+    })
+    .join("");
+  return `<div class="asma-xref-block">
+    <div class="asma-xref-label">${escapeHtml(t("Related Ayat & Hadith"))}</div>
+    <div class="asma-xref-row">${chips}</div>
   </div>`;
 }
 

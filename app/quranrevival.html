@@ -6830,6 +6830,28 @@
       await applyQuranBookmarkSettings(bookmark.settings, bookmark.position);
     }
 
+    /** Asma Collections round 2 -- a plain "surah:ayah" deep link, read
+        once on load: any external screen (today, an Asma Name's own Qur'an
+        reference chip) can ask this page to open a specific āyah without
+        needing an existing bookmark to point at -- a bookmark id is
+        per-person and per-document, which a reference chip has no such
+        thing to reuse. Reuses the exact same parseJumpText()/
+        goToReference() the "Go to" box itself already uses, so a malformed
+        value simply does nothing rather than crashing -- there is no error
+        box to show a redirect-in landing on. */
+    async function openGotoFromQueryString() {
+      const raw = new URLSearchParams(location.search).get("goto");
+      if (!raw) return;
+      const parsed = parseJumpText(raw);
+      if (!parsed) return;
+      const surahMeta = surahIndex.find((s) => s.surahNumber === parsed.surah);
+      if (!surahMeta) return;
+      const { from, to } = parsed;
+      if (from < 1 || from > surahMeta.ayahCount || (to !== null && (to < 1 || to > surahMeta.ayahCount))) return;
+      await goToReference(parsed.surah, from, to);
+      await openNoteView(buildUnitKey.ayah(parsed.surah, from));
+    }
+
     /** The Note view's own full screen -- two states, a separate mechanism
         from the reading screen's own (immersive-read) so the two can never
         leak into each other. Toggled from the view's own ⤢ button, and (on
@@ -7470,6 +7492,7 @@
         appEl.style.display = "flex"; // flex, not block: #app is the shell column (stage + dock) since shell round 7
         await step("load context data", loadContextData);
         await step("open bookmark", openBookmarkFromQueryString);
+        await step("open goto link", openGotoFromQueryString);
       } catch (err) {
         whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
         console.error(err);

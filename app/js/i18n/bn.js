@@ -1983,4 +1983,8 @@ export const BN = {
   "+ Add to this group": "+ এই গ্রুপে যোগ করুন", // ?
   "Already in this group, or no Names left to add.": "ইতিমধ্যে এই গ্রুপে আছে, অথবা যোগ করার মতো আর কোনো নাম নেই।", // ?
   "Tap a segment or a row to open that Name — the wheel closes and lands you on its own detail screen.": "কোনো অংশ বা সারিতে চাপ দিন সেই নামটি খুলতে — চাকাটি বন্ধ হয়ে তার নিজস্ব বিস্তারিত পাতায় নিয়ে যাবে।", // ?
+
+  // Round 2 -- Qur'an/Hadith reference chips.
+  "Related Ayat & Hadith": "সংশ্লিষ্ট আয়াত ও হাদীস", // ?
+  "Qur'an {ref}": "কুরআন {ref}",
 };
