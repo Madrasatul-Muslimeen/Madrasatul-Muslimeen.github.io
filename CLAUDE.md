@@ -6762,6 +6762,90 @@ an unmerged draft the way v07.95's own PR briefly was, which is what
 triggered the "that's a messy way to do things" correction in the first
 place.
 
+v07.97 (28 Aug 2026, same day) is a same-day sizing fix to v07.96's own
+TOPIC bar, from two owner screenshots taken the moment it shipped: the
+Attach checklist "doesn't open full (hidden within the card)" on a PC, and
+on both mobile and PC "make the card full screen wider to make the group
+and attach names visible as much as possible."
+
+**Both the outer 🗂 drawer card and the nested Attach/Yr Level checklists
+were still sized off the OLD, much narrower design** -- the outer card was
+still the base `.note-sub-popover`'s own 17rem width (bumped from 11rem in
+v07.96 just enough to fit three fields, never revisited for readability),
+and the nested checklist was capped at 9.4rem (~150px) tall, a number
+sized for a short flat list, not real seed data. With 18 real collections,
+that showed three rows behind a scrollbar and genuinely read as "hidden"
+rather than "scrollable" -- the owner's own words. Both grown for real
+room: the outer card to `min(94vw, 30rem)` (nearly the full width of a
+phone body, a genuinely wide 30rem/480px card on tablet/desktop -- the
+base rule's own `max-width: calc(100vw - 2rem)` stays the real safety net
+against overflow, this is only what it grows TOWARD), and the nested list
+to `min(60vh, 30rem)` -- roughly triple the old cap, showing most of an
+18-item list on a typical screen with no scrolling at all, its own
+`overflow-y: auto` kept as the safety net for a longer list or a short
+screen rather than a hard cap that always triggers. Each of the three
+fields (Group/Attach/Yr Level) also grew from a 5.1rem to a 7rem flex
+basis, so a phone that can't fit all three on one line wraps one to its
+own line rather than crushing all three -- verified this actually happens
+for Yr Level once a Group is picked (Group+Attach share one line at
+166.8px each, Yr Level takes the full second line at 340px), which is
+what "make the ... names visible as much as possible" is asking for: more
+room per field, not a fixed split.
+
+**Fitting the full 18-item list with zero scrolling on every screen was
+investigated and deliberately not chased further**: doing so would mean
+the checklist alone consuming the popover's entire height, crowding out
+the Group/Attach/Yr Level selects above it. A much bigger box that
+occasionally still needs a little scrolling beats a redesign for the last
+few rows. **Confirmed the remainder is genuinely reachable, not actually
+clipped**: `.note-qcr-dd-pop`'s own internal scroll reaches every row up
+to its own `scrollHeight`, and on a short screen where the box's fixed
+on-screen position runs past the viewport, the outer `.note-sub-popover`
+(already `overflow-y: auto`) scrolls too and brings the rest into view --
+checked directly (`scrollTop`/`scrollHeight` on both elements, and the
+18th row's own bounding rect) rather than assumed from the CSS alone; a
+real mouse-wheel or touch-drag gesture chains from the inner scroll to the
+outer one automatically once the inner hits its own end, so a reader never
+needs to think about which box they're scrolling.
+
+**A real, separate overflow bug was found and fixed while widening the
+card, not shipped blind: on a 390px phone the widened popover initially
+sat 48px off the LEFT edge of the screen.** Round 3's own `right: 0` rule
+on this popover reads, in its own comment, as "anchor to `.note-bar2`'s
+own right edge" -- but for an absolutely-positioned element, an offset is
+relative to the NEAREST positioned ancestor, which is `.note-sub-wrap` (the
+small 🗂 button's own wrapper, `position: relative` since round 1 of this
+feature), not `.note-bar2` itself. That was invisible before because the
+popover was only 17rem wide and the gap between the two edges (whatever
+sits between the 🗂 button and the end of the bar -- Aa, ⋮, ⋯) was small
+enough not to matter; widening the popover made the gap the whole
+difference. Fixed at the real cause -- `.note-bar2 [data-note-sub-wrap=
+"collections"] { position: static; }` -- so this one wrap's popover really
+is contained by `.note-bar2` (still `position: relative`), not the small
+button that opens it. A second, smaller overshoot (2px, from the popover's
+own padding/border being ADDED on top of its declared width in the
+content-box default) was closed with `box-sizing: border-box` on the same
+rule.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice for anything past `behaviour.mjs`'s own
+disclosed section-42 crash point) -- 16 checks, all passing, at both
+390x844 and 1280x800: the outer card measurably wider than the old 17rem
+cap and fully on-screen at both edges; the nested Attach list carrying all
+18 real seeded rows and its own box grown well past the old ~150px cap,
+with most of the list visible without scrolling; no horizontal page
+overflow; no page errors. Also checked directly (not just asserted): the
+Group select re-rendering the whole Note view on change (existing,
+unchanged behaviour) genuinely closes the drawer, so re-opening it is
+needed to reach Yr Level afterward -- not a regression, just how a full
+re-render has always worked here. **`layout.mjs` reports NO LAYOUT
+REGRESSIONS** at all eight viewports in both banner states against a real
+`HEAD` shim (`getElementById` targets unchanged at 145, only the same four
+pre-existing QCR Manage-mode false positives disclosed since v07.86),
+**`reading.mjs` OK**, **`panel.mjs` clean** (neither touches the Note
+view's own drawer). No `firestore.rules`, schema or Firestore data
+changes -- nothing to deploy but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
