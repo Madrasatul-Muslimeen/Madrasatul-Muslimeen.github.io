@@ -717,6 +717,21 @@ service cloud.firestore {
       // field inside the document, never removed from Firestore.
     }
 
+    // asmaCollections/{tenantId} -- Asma Collections round, 29 Aug 2026. One
+    // document per tenant (docId IS the tenantId), the same shape as
+    // ayahCollections above but for named groups of Names/phrases about
+    // Allah -- tenant-authored content, same read/write split: any member
+    // can browse it, only owner/prime can edit it (js/asma-collections.js's
+    // Manage mode).
+    match /asmaCollections/{tenantId} {
+      allow read: if isPlatformAdmin();
+      allow read: if anyMemberOf(tenantId);
+      allow create: if canAdminCatalogue(tenantId) && request.resource.data.tenantId == tenantId;
+      allow update: if canAdminCatalogue(tenantId);
+      // No delete (I4/D6) -- a collection/extra Name is archived via its
+      // own status field inside the document, never removed from Firestore.
+    }
+
     match /levels/{levelKey} {
       allow read: if isPlatformAdmin();
       allow read: if anyMemberOf(resource.data.tenantId);

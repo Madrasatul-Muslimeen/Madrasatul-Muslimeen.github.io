@@ -1958,4 +1958,29 @@ export const BN = {
   "Regular adult": "সাধারণ প্রাপ্তবয়স্ক", // ?
   "None": "কোনোটি নেই", // ?
   "Not set.": "নির্ধারণ করা হয়নি।", // ?
+
+  // -------------------------------------------------------------------
+  // Asma Collections round (29 Aug 2026) -- the "Browse by Category"
+  // panel on the Asma ul Husna page, built to the same template as Ayah
+  // Collections (QCR).
+  // -------------------------------------------------------------------
+  "Browse by Category": "বিষয় অনুযায়ী দেখুন", // ?
+  "All 99 Names": "সব ৯৯টি নাম",
+  "Beyond the 99": "৯৯-এর বাইরে", // ?
+  "Honorific phrase": "সম্মানসূচক বাক্যাংশ", // ?
+  "Weak / disputed hadith": "দুর্বল / বিতর্কিত হাদীস", // ?
+  "beyond 99": "৯৯-এর বাইরে", // ?
+  "phrase": "বাক্যাংশ",
+  "weak": "দুর্বল",
+  "Edit Bangla wording": "বাংলা লেখা সম্পাদনা করুন", // ?
+  "New Bangla wording:": "নতুন বাংলা লেখা:", // ?
+  "Remove from this group": "এই গ্রুপ থেকে সরান", // ?
+  "No Names in this group yet.": "এই গ্রুপে এখনো কোনো নাম নেই।", // ?
+  "New group name:": "নতুন গ্রুপের নাম:", // ?
+  "Rename group:": "গ্রুপের নাম পরিবর্তন করুন:", // ?
+  "No groups yet.": "এখনো কোনো গ্রুপ নেই।", // ?
+  "{count} Names": "{count}টি নাম", // ?
+  "+ Add to this group": "+ এই গ্রুপে যোগ করুন", // ?
+  "Already in this group, or no Names left to add.": "ইতিমধ্যে এই গ্রুপে আছে, অথবা যোগ করার মতো আর কোনো নাম নেই।", // ?
+  "Tap a segment or a row to open that Name — the wheel closes and lands you on its own detail screen.": "কোনো অংশ বা সারিতে চাপ দিন সেই নামটি খুলতে — চাকাটি বন্ধ হয়ে তার নিজস্ব বিস্তারিত পাতায় নিয়ে যাবে।", // ?
 };

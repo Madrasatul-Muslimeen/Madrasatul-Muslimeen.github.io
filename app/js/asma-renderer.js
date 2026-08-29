@@ -45,26 +45,105 @@ export function renderAsmaGrid(names, statusByNumber = new Map()) {
   return `<div class="asma-grid">${cards.join("")}</div>`;
 }
 
-export function renderAsmaDetail(name, entry, { isBookmarked = false } = {}) {
+/** Asma Collections round -- a resolved entry (js/asma-collections.js's
+    resolveAsmaEntry()) can be a canonical Name (1..99, unchanged shape) OR
+    one of the ~33 extras beyond it, which carry their own arabic/bnName
+    directly rather than routing through asmaName()/langText(). This is the
+    one place both are told apart for DISPLAY -- everything else (claiming,
+    bookmarking, the unit key) already treats every number the same way. */
+export function asmaEntryDisplayName(entry) {
+  if (!entry.isExtra) return asmaName(entry.number, entry.transliteration);
+  return getAppLang() === "bn" ? entry.bnName || entry.transliteration : entry.transliteration;
+}
+
+/** The meaning shown for one entry -- a canonical Name's own Bangla
+    OVERRIDE (js/asma-collections.js's nameOverrides, the owner's own
+    correction to a canonical Name's wording) wins over asma-data.js's
+    langText()-routed meaning when the app is in Bangla; English is never
+    overridden, since the override is a Bangla correction only. An extra's
+    own `meaning` already carries its real bn text directly (no bn.js
+    lookup for content that has no English original to key one off). */
+export function asmaEntryMeaningText(entry) {
+  const lang = getAppLang();
+  if (!entry.isExtra && lang === "bn" && entry.bnOverride) return entry.bnOverride;
+  return langText(entry.meaning, lang);
+}
+
+export function renderAsmaDetail(entry, claimEntry, { isBookmarked = false } = {}) {
   // Was a raw claimedStatus with its underscores swapped for spaces, and a
   // raw confirmState id -- both meaningless in either language. They go
   // through the shared label helpers now, and the whole line is ONE
   // translatable sentence rather than an English word concatenated onto
   // two values, because the order reverses in Bangla.
-  const statusLine = entry
+  const statusLine = claimEntry
     ? t("Status: {status} · {confirm}", {
-        status: `<strong>${escapeHtml(statusLabel(entry.claimedStatus))}</strong>`,
-        confirm: escapeHtml(confirmStateLabel(entry.confirmState)),
+        status: `<strong>${escapeHtml(statusLabel(claimEntry.claimedStatus))}</strong>`,
+        confirm: escapeHtml(confirmStateLabel(claimEntry.confirmState)),
       })
     : t("Not started yet.");
+  // Canonical Names keep the exact "N of 99" counter byte-for-byte -- the
+  // 99-grid's own promise is untouched. An extra Name (>= 100) has no
+  // sensible "of 99" to show; its own beyond-99/phrase/weak badges say what
+  // it is instead.
+  const numberLine = entry.isExtra
+    ? `#${num(entry.number)}`
+    : t("{n} of {total}", { n: num(entry.number), total: num(99) });
+  const badges = [
+    entry.isExtra ? `<span class="asma-detail-badge beyond99">${escapeHtml(t("Beyond the 99"))}</span>` : "",
+    entry.isPhrase ? `<span class="asma-detail-badge phrase">${escapeHtml(t("Honorific phrase"))}</span>` : "",
+    entry.weak ? `<span class="asma-detail-badge weak">${escapeHtml(t("Weak / disputed hadith"))}</span>` : "",
+  ].filter(Boolean).join("");
+  const refLine = entry.ref ? `<p class="asma-detail-ref">${escapeHtml(entry.ref)}</p>` : "";
   return `<div class="asma-detail">
-    <div class="asma-detail-number">${t("{n} of {total}", { n: num(name.number), total: num(99) })}</div>
-    <div class="asma-detail-arabic">${escapeHtml(name.arabic)}</div>
-    <h2>${escapeHtml(asmaName(name.number, name.transliteration))} <button type="button" id="bookmarkAsmaBtn" class="topic-bookmark-btn${isBookmarked ? " active" : ""}" title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this")}">${isBookmarked ? "★" : "☆"}</button></h2>
-    <p class="asma-detail-meaning">${escapeHtml(langText(name.meaning, getAppLang()))}</p>
+    <div class="asma-detail-number">${numberLine}</div>
+    <div class="asma-detail-arabic">${escapeHtml(entry.arabic)}</div>
+    <h2>${escapeHtml(asmaEntryDisplayName(entry))} <button type="button" id="bookmarkAsmaBtn" class="topic-bookmark-btn${isBookmarked ? " active" : ""}" title="${isBookmarked ? t("Remove bookmark") : t("Bookmark this")}">${isBookmarked ? "★" : "☆"}</button></h2>
+    <p class="asma-detail-meaning">${escapeHtml(asmaEntryMeaningText(entry))}</p>
+    ${badges ? `<p class="asma-detail-badges">${badges}</p>` : ""}
+    ${refLine}
     <p>${statusLine}</p>
     <button type="button" id="trackAsmaBtn">${t("Track my progress")}</button>
   </div>`;
+}
+
+/** Asma Collections round -- one row per Name/phrase in the currently open
+    group, the same "way-row" shape QCR's own list already uses. entries:
+    [{ key: "name:N", entry: resolveAsmaEntry() result, statusId }].
+    otherActiveCollections is only needed when manageOn (the Move-to
+    picker). Never touches Firebase (I2) -- the controller resolves
+    everything and hands it in already-shaped. */
+export function renderAsmaCollectionListHtml(entries, { manageOn = false, otherCollections = [] } = {}) {
+  if (!entries.length) return `<p class="hint">${escapeHtml(t("No Names in this group yet."))}</p>`;
+  return entries
+    .map(({ key, entry, statusId }) => {
+      const badges = [
+        entry.isExtra ? `<span class="asma-item-badge beyond99">${escapeHtml(t("beyond 99"))}</span>` : "",
+        entry.isPhrase ? `<span class="asma-item-badge phrase">${escapeHtml(t("phrase"))}</span>` : "",
+        entry.weak ? `<span class="asma-item-badge weak">${escapeHtml(t("weak"))}</span>` : "",
+      ].filter(Boolean).join("");
+      const manageRow = manageOn
+        ? `<div class="asma-way-manage">
+            <select data-asma-move="${escapeHtml(key)}">
+              <option value="">${escapeHtml(t("Move to…"))}</option>
+              ${otherCollections.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(langText(c.title, getAppLang()))}</option>`).join("")}
+            </select>
+            <button type="button" class="asma-icon-btn" data-asma-edit-bn="${escapeHtml(key)}" title="${escapeHtml(t("Edit Bangla wording"))}">✎</button>
+            ${entry.isExtra ? `<button type="button" class="asma-icon-btn danger" data-asma-archive-extra="${escapeHtml(key)}" title="${escapeHtml(entry.status === "archived" ? t("Restore") : t("Archive"))}">${entry.status === "archived" ? "↺" : "🗄"}</button>` : ""}
+            <button type="button" class="asma-icon-btn danger" data-asma-remove="${escapeHtml(key)}" title="${escapeHtml(t("Remove from this group"))}">×</button>
+          </div>`
+        : "";
+      return `<div class="way-row asma-way-row">
+        <button type="button" class="way-click" data-asma-jump="${escapeHtml(key)}">
+          <span class="badge">#${num(entry.number)}</span>
+          <span class="name">${escapeHtml(asmaEntryDisplayName(entry))}</span>
+          <span class="asma-status-chip" style="background:${STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started}">${escapeHtml(statusLabel(statusId))}</span>
+        </button>
+        ${badges ? `<span class="asma-way-badges">${badges}</span>` : ""}
+        <span class="asma-way-meaning">${escapeHtml(asmaEntryMeaningText(entry))}</span>
+        ${manageRow}
+      </div>`;
+    })
+    .join("");
 }
 
 /** Screensaver slide -- a poster (asma-posters.js entry) if given, otherwise a text-only fallback built from asma-data.js. Either way, purely decorative -- no claim/confirm affordance here. */
