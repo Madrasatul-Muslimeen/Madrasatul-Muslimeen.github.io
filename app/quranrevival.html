@@ -1357,12 +1357,43 @@
      that opens it, not to something guaranteed to stay on-screen" shape
      round 3 already fixed for the ⋮/⋯ dropdowns (.note-bar2 .quick-menu
      above). Same fix: anchor to .note-bar2's own right edge instead. */
-  .note-sub-popover[data-note-sub="collections"] { width: 17rem; }
+  /* Owner's own follow-up, same day: the outer drawer was still the base
+     .note-sub-popover's own 11rem-derived footprint (bumped to 17rem for
+     the three-field bar), and the nested Attach/Yr Level checklists were
+     capped at 9.4rem tall -- fine for a handful of rows, not for 18 real
+     collections, which showed three rows behind a scrollbar and read as
+     "hidden" rather than "scrollable" (the owner's own words: "doesn't
+     open full"). Both grown for real room instead of a slightly bigger
+     guess: the outer card to nearly the full width of a phone and a
+     genuinely wide card on a tablet/desktop (min(94vw, 30rem) -- the base
+     rule's own `max-width: calc(100vw - 2rem)` stays the real safety net
+     against overflow either way, this is just what it grows TOWARD), and
+     the nested list to min(60vh, 30rem) -- roughly double the old cap,
+     showing most of an 18-item list on a typical phone/desktop without
+     scrolling at all, with its own overflow-y:auto kept as the safety net
+     for a genuinely long list or a short screen rather than a hard cap
+     that always triggers. (Fitting the full 18-item list with zero scroll
+     on every screen would mean the checklist alone consuming the popover's
+     whole height, crowding out Group/Attach/Yr Level's own selects above
+     it -- not attempted; a much bigger box that occasionally still scrolls
+     a little beats a redesign for the last few rows.) */
+  .note-sub-popover[data-note-sub="collections"] { width: min(94vw, 30rem); max-height: 85vh; box-sizing: border-box; }
+  /* round 3's own `right: 0` on this popover was, in practice, anchored to
+     .note-sub-wrap's own right edge -- the NEAREST positioned ancestor for
+     an absolutely-positioned child, not .note-bar2 -- which happened to
+     read as "the bar's own right edge" only because the 🗂 button used to
+     sit close enough to Aa/⋮/⋯ that the gap between the two edges was small
+     next to the popover's old 17rem width. Widening the popover (above)
+     made that gap matter: measured, it ran the card 48px off the LEFT edge
+     of a 390px phone. Fixed at the real cause -- making this one wrap
+     position:static so the popover's containing block really is .note-bar2
+     (still position:relative), not the small button that opens it. */
+  .note-bar2 [data-note-sub-wrap="collections"] { position: static; }
   .note-bar2 .note-sub-popover[data-note-sub="collections"] { left: auto; right: 0; }
   .note-qcr-topic-row { display: flex; margin-bottom: 0.5rem; }
   .note-qcr-topic-row .note-qcr-field { flex: 1 1 auto; }
   .note-qcr-row { display: flex; align-items: flex-end; gap: 0.4rem; flex-wrap: wrap; }
-  .note-qcr-field { display: flex; flex-direction: column; gap: 0.15rem; flex: 1 1 5.1rem; min-width: 0; }
+  .note-qcr-field { display: flex; flex-direction: column; gap: 0.15rem; flex: 1 1 7rem; min-width: 0; }
   .note-qcr-field-label {
     font-size: 0.6rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #a08f5c;
   }
@@ -1378,7 +1409,7 @@
   .note-qcr-dd-pop {
     display: none; position: absolute; top: 2.1rem; left: 0; right: 0; z-index: 9;
     background: #fff; border: 1px solid #ddd; border-radius: 0.5rem; box-shadow: 0 10px 22px rgba(20,30,60,0.22);
-    max-height: 9.4rem; overflow-y: auto; padding: 0.3rem 0.6rem;
+    max-height: min(60vh, 30rem); overflow-y: auto; padding: 0.3rem 0.6rem;
   }
   .note-qcr-dd-pop.on { display: block; }
   .note-collections-empty { margin: 0; font-size: 0.75rem; color: #888; }
