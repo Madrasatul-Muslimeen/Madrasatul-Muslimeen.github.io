@@ -521,7 +521,7 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
  *   onUpdateBookmark()        -- bookmark creation/update round; only wired to anything when canUpdateBookmark rendered the row at all
  *   onBackToCollection()      -- Ayah Collections round 2; only wired to anything when backToCollectionLabel rendered the button at all
  *   onToggleCollectionMembership(collectionId, checked)  -- Ayah Collections round 2; fires once per checkbox in the always-present Collections popover
- *   onSwitchCollection(collectionId | null)  -- TOPIC bar round; fires on the drawer's own Group <select> (null for "— none —"). Triggers a full renderNoteViewNow() on the caller's side, but the 🗂 drawer and whichever of Attach/Yr Level was open both survive it (isCollectionsOpen / renderQcrDrawerHtml's own openDdKey, both read live from the DOM right before the rebuild -- see that function's own header comment; sizing-fix round)
+ *   onSwitchCollection(collectionId | null)  -- TOPIC bar round; fires on the drawer's own Group radio list (alignment-fix round; null for "— none —"). Triggers a full renderNoteViewNow() on the caller's side, but the 🗂 drawer itself survives it (isCollectionsOpen, read live from the DOM right before the rebuild -- see renderQcrDrawerHtml's own header comment); Group's own panel is deliberately NOT kept open across it (a Group pick closes its own panel first, unlike Attach/Yr Level's own openDdKey, which does survive)
  *   onToggleGroupYrLevel(yrLevelId, checked)  -- TOPIC bar round; fires once per checkbox in the Yr Level panel, for whichever collection Group currently points at. On success the caller patches the Attach/Yr Level summary badges directly (see quranrevival.html's refreshQcrDrawerSummaries()) rather than re-rendering, so neither panel -- nor the outer 🗂 popover itself -- closes mid-tick
  */
 export function attachNoteViewHandlers(container, callbacks) {
@@ -690,21 +690,33 @@ export function attachNoteViewHandlers(container, callbacks) {
     cb.addEventListener("change", () => callbacks.onToggleCollectionMembership?.(cb.dataset.noteCollectionToggle, cb.checked));
   });
   // TOPIC bar round -- the 🗂 drawer's own retired-Category-picker section
-  // is a real bar of dropdowns now: Group is a plain <select> (reuses the
-  // exact same onSwitchCollection callback the old row-list of buttons
-  // called -- it's the same mechanism, just a real dropdown), and Attach/
-  // Yr Level are two small dropdown-styled controls, each opening its own
-  // checklist. Only one of the two stays open at a time -- closeQcrDropdowns
-  // mirrors closeSubPopovers/closeAllDotMenus above for the same reason.
-  view.querySelector("[data-note-qcr-group]")?.addEventListener("change", (e) => {
-    callbacks.onSwitchCollection?.(e.target.value || null);
+  // is a real bar of dropdowns: Group/Attach/Yr Level, each opening its
+  // own panel. Only one stays open at a time -- closeQcrDropdowns mirrors
+  // closeSubPopovers/closeAllDotMenus above for the same reason.
+  // Alignment-fix round -- Group moved off a native <select> onto the same
+  // dropdown-styled shape as Attach/Yr Level (a full-screen OS picker
+  // sheet on a phone was never "like the others"), so it's wired the same
+  // generic [data-note-qcr-dd-toggle] way those two already are, below.
+  // Its own panel is a radio list rather than checkboxes (one Group at a
+  // time, not several tags), and picking one closes the panel immediately
+  // -- a Group is a one-shot choice, unlike Attach's own several-ticks-in-
+  // a-row use, and closing it here is what makes the very next
+  // renderNoteViewNow() (fired by onSwitchCollection, which always
+  // rebuilds) read "nothing open" for this one key rather than reopening
+  // it with the new pick already showing.
+  view.querySelectorAll("[data-note-qcr-group-radio]").forEach((radio) => {
+    radio.addEventListener("change", () => {
+      if (!radio.checked) return;
+      closeQcrDropdowns(null);
+      callbacks.onSwitchCollection?.(radio.value || null);
+    });
   });
   // Sizing-fix round -- the toggle button and its own checklist panel are
   // no longer nested inside a shared wrap (that wrap's own position:relative
   // was only ever there to anchor a position:absolute overlay, which is
   // exactly what made the list read as "trapped inside the card" -- see the
   // .note-qcr-dd-pop CSS comment). The two are matched by the same key
-  // string now ("attach"/"yrlevel") instead of by DOM nesting.
+  // string now ("group"/"attach"/"yrlevel") instead of by DOM nesting.
   function closeQcrDropdowns(exceptKey) {
     view.querySelectorAll("[data-note-qcr-dd-pop]").forEach((pop) => {
       if (pop.dataset.noteQcrDdPop === exceptKey) return;

@@ -7000,6 +7000,102 @@ disclosed since v07.86), **`reading.mjs` OK**, **`panel.mjs` clean**
 schema or Firestore data changes -- nothing to deploy but the static
 files.
 
+v07.100 (29 Aug 2026, on Claude Code on the web) is **a real structural
+fix to v07.99's own alignment, plus Group off the native `<select>`**,
+from two more owner-annotated screenshots: arrows drawn on the Attach and
+Yr Level panels showing they needed to move UP and RIGHT, under their own
+field, not sit flush with the card's far-left edge; and a plain
+instruction that Group's own picker "should be like the others and start
+from below the field as well (not taking the entire screen)".
+
+**Why v07.99's own fix still put every panel at the card's left edge:**
+`.note-qcr-dd-pop` was, and stayed, a plain in-flow BLOCK sibling after
+`.note-qcr-row` (a flex row) -- a flex layout has no way to say "this
+later sibling should start under column 2." That was invisible for
+GROUP (column 1, so "the card's left edge" and "under Group's own field"
+were the same point by coincidence) but visibly wrong for Attach (column
+2) and Yr Level (column 3), whose own panels floated off on the far left
+of the card while their trigger buttons sat in the middle and on the
+right -- exactly what the owner's drawn arrows pointed at.
+
+**Fixed by making `.note-qcr-row` a real CSS GRID** (`grid-template-
+columns: repeat(3, minmax(0, 1fr))`), with the three panels now genuine
+children of that same grid rather than siblings after it -- a real bug in
+the FIRST attempt at this fix, caught before it shipped: the panels'
+closing `</div>` had been left OUTSIDE `.note-qcr-row` from the older
+markup, so `grid-column` had no effect on them at all (still landing at
+the card's left edge) until they were actually moved inside. Each panel
+is placed under its own trigger's column (`grid-column: 1/3` for Group,
+`2/4` for Attach, `3/4` for Yr Level) -- Group and Attach get a second
+column's worth of room to grow into if a collection name needs it (real
+names run long: "§4 · Sayr fil-Arḍ"), Yr Level only its own column, since
+"Yr 1".."Regular adult" never needs more. `justify-self: start` plus
+`width: fit-content` (unchanged from v07.99) is what lets a short list
+hug tight to that starting edge instead of stretching to fill the
+reserved span.
+
+**Group moved off a native `<select>` onto the same button-plus-panel
+shape Attach/Yr Level already use** -- a native select's own full-screen
+picker sheet on a phone was never going to "start from below the field",
+because that behaviour comes from the OS, not this app's CSS. The new
+panel (`renderGroupPopoverHtml()`) is a radio list, not checkboxes --
+one Group at a time, not several tags -- and picking one closes the
+panel immediately (`closeQcrDropdowns(null)` fires before
+`onSwitchCollection`, so the very next `renderNoteViewNow()` reads
+"nothing open" for this one key rather than reopening it with the new
+pick already showing) -- a Group is a one-shot choice, unlike Attach's
+own several-ticks-in-a-row use, which deliberately keeps its own panel
+open across a write.
+
+**A real, if narrow, testing trap was chased down rather than shipped
+unexplained: Playwright's own `.click()`/`.check()` (and even a raw DOM
+`element.click()` call) did not fire "change" on these radios in one
+early test run, while the identical mechanism worked fine on an isolated
+page.** Investigated properly rather than worked around blind -- the
+radio in question turned out to already be CHECKED at the time of the
+click: entering the Note view via a wheel-slice tap inside a QCR
+collection (`goToAyahFromQcr()`) already sets `noteOriginCollectionId` to
+that same collection, so its own radio row starts pre-checked, and
+clicking an already-checked radio is correctly a no-op in any browser --
+no "change" fires because nothing changed. The app's own logic was right
+the whole time; only the test's own assumption (that the second row must
+still be unchecked) was wrong, fixed to click a genuinely different,
+unchecked row instead.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice for anything past `behaviour.mjs`'s
+own disclosed section-42 crash point) -- **26 checks, all passing** at
+390×844 and 1280×800: Group confirmed to be a real button (not a
+`<select>`) with the old native element gone; Group's own panel
+confirmed to list all 18 real collections plus "— none —" as radio rows,
+starting under Group's own column; Attach's panel confirmed to start
+under ATTACH's own column specifically -- and confirmed NOT sitting at
+the card's far-left edge, the exact defect the owner's arrows pointed
+at; the same for Yr Level under its own column; picking a real,
+different Group proven to close Group's own panel immediately while the
+outer 🗂 drawer survives (unchanged from v07.98), and the button's own
+face proven to update to the newly-picked name; no horizontal overflow;
+no page errors; the whole mechanism re-checked in Bangla, with radio
+VALUES proven to stay plain collection ids while the visible "— none —"
+label and the "Group" field label both read Bangla. **`layout.mjs`
+reports NO LAYOUT REGRESSIONS** at all eight viewports in both banner
+states against a real `HEAD` shim (`getElementById` targets unchanged at
+145, only the same four pre-existing QCR Manage-mode false positives
+disclosed since v07.86), **`reading.mjs` OK**, **`panel.mjs` clean**
+(neither touches the Note view's own drawer). No `firestore.rules`,
+schema or Firestore data changes -- nothing to deploy but the static
+files.
+
+**On the version number itself**: this file's own scheme bumps the first
+two digits only for a big overhaul and the last two for every feature
+after it -- v07.99 was the last two-digit slot available under "07", and
+nothing about this round is a big overhaul (it's the same kind of layout
+fix this file has recorded roughly fifty times since the 9 Aug cutover),
+so the count continues as v07.100 (three digits in the second field)
+rather than rolling to v08.00, which would misleadingly read as a major
+version change. Flagged here in case the owner would rather see it
+handled differently going forward.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

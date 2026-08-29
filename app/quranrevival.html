@@ -1392,8 +1392,20 @@
   .note-bar2 .note-sub-popover[data-note-sub="collections"] { left: auto; right: 0; }
   .note-qcr-topic-row { display: flex; margin-bottom: 0.5rem; }
   .note-qcr-topic-row .note-qcr-field { flex: 1 1 auto; }
-  .note-qcr-row { display: flex; align-items: flex-end; gap: 0.4rem; flex-wrap: wrap; }
-  .note-qcr-field { display: flex; flex-direction: column; gap: 0.15rem; flex: 1 1 7rem; min-width: 0; }
+  /* Alignment-fix round -- Group/Attach/Yr Level are a real 3-column GRID
+     now, not a flex row: a flex row can only place each dropdown's own
+     panel BELOW the row as a single full-width block (no way to say "line
+     this one up under column 2"), which is why v07.98/99's own panels
+     always started at the card's own left edge regardless of which field
+     opened them -- correct for Group (column 1), visibly wrong for Attach
+     and Yr Level, whose own trigger sits in the middle/right of the row
+     (the owner's own drawn arrows: "move this up here, under the field").
+     A CSS grid can put a later sibling into any column it names, so each
+     panel (below, in a shared row 2) starts under its OWN trigger's column
+     instead. minmax(0,1fr) is what stops a wide button from forcing its
+     own column wider than an equal three-way split. */
+  .note-qcr-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 0.4rem; }
+  .note-qcr-field { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
   .note-qcr-field-label {
     font-size: 0.6rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #a08f5c;
   }
@@ -1404,31 +1416,40 @@
   .note-qcr-select:disabled { background: #f0ede2; color: #999; }
   .note-qcr-dd-btn { text-align: left; display: flex; align-items: center; justify-content: space-between; cursor: pointer; width: 100%; }
   .note-qcr-dd-btn:disabled { cursor: default; }
-  .note-qcr-dd-btn .car { color: #a08f5c; font-size: 0.68rem; }
+  .note-qcr-dd-btn .car { color: #a08f5c; font-size: 0.68rem; flex: 0 0 auto; }
+  /* A long collection name inside the narrow flex row of the BUTTON itself
+     (not the dropdown panel) needs to wrap rather than push the button --
+     or the whole grid column -- wider than its own 1/3 share. */
+  .note-qcr-dd-summary { min-width: 0; overflow-wrap: anywhere; }
   /* Sizing-fix round -- no longer a position:absolute overlay nested one
      field deep (that's what made a real 18-item list read as "trapped
      inside the card," clipped by the outer .note-sub-popover's own
      overflow:auto with a second, nested scrollbar doing the actual
-     scrolling). Now a plain in-flow panel, full card width, directly below
-     the Group/Attach/Yr Level row -- opening one just grows the ONE
-     card's own height, scrolled by that card's own single scrollbar. */
+     scrolling). Now a plain in-flow panel, grown as tall as it needs --
+     opening one just grows the ONE card's own height, scrolled by that
+     card's own single scrollbar.
+     Width-fix round -- fit-content, not the full card: it only needs to be
+     as wide as its own text.
+     Alignment-fix round -- grid-row:2 puts all three panels on their own
+     shared row below the Group/Attach/Yr Level row (auto-placement would
+     already land them there, since row 1's three columns are full, but
+     saying so removes any doubt); grid-column places each one under its
+     own trigger's column specifically, spanning one column further right
+     where there's a neighbour to borrow room from (Group/Attach) so a
+     long name has somewhere to grow into besides wrapping, and just its
+     own column for Yr Level, the last one, where the text is short enough
+     never to need it. max-width:100% caps growth at the SPANNED area's
+     own right edge either way, never past the card. */
   .note-qcr-dd-pop {
-    display: none; margin-top: 0.5rem;
-    /* Width fix -- the owner's own follow-up once the in-flow panel
-       shipped: it doesn't need to run the full width of the card, only as
-       wide as its own text needs. width:fit-content does that (Yr Level's
-       own rows -- "Yr 1".."Regular adult" -- are short, so its box stays
-       genuinely narrow); max-width:100% is the safety net for a real,
-       long collection name, which wraps inside the box rather than
-       overflowing the card. Left-aligned by default (a plain block starts
-       at its container's own left edge) -- exactly where the owner's own
-       screenshots show it landing, under the card's own left edge, not
-       indented under whichever column the field itself sits in. */
-    width: fit-content; max-width: 100%;
+    display: none; grid-row: 2; margin-top: 0.5rem;
+    width: fit-content; max-width: 100%; justify-self: start;
     background: #f7f4e9; border: 1px solid #e3dcc4; border-radius: 0.5rem;
     max-height: min(60vh, 30rem); overflow-y: auto; padding: 0.4rem 0.7rem;
   }
   .note-qcr-dd-pop.on { display: block; }
+  .note-qcr-dd-pop[data-note-qcr-dd-pop="group"] { grid-column: 1 / 3; }
+  .note-qcr-dd-pop[data-note-qcr-dd-pop="attach"] { grid-column: 2 / 4; }
+  .note-qcr-dd-pop[data-note-qcr-dd-pop="yrlevel"] { grid-column: 3 / 4; }
   .note-collections-empty { margin: 0; font-size: 0.75rem; color: #888; }
   .note-collections-readonly { margin: 0; padding-left: 1.1rem; font-size: 0.78rem; color: #444; }
   .note-collections-readonly li { padding: 0.1rem 0; }
@@ -5223,6 +5244,30 @@
       }).join("");
     }
 
+    /** Alignment-fix round -- Group's own picker used to be a native
+        <select>, which on a phone is a full-screen OS picker sheet, not a
+        small dropdown that "stays below the bar" the way Attach/Yr Level
+        already do (the owner's own report: "Group's palette design should
+        be like the others"). Now the same button-plus-panel shape as
+        those two, but single-select (radio inputs sharing one name,
+        rather than checkboxes) since picking a Group is one choice, not a
+        multi-tag edit -- "— none —" is a real, selectable row here, not a
+        placeholder option. */
+    function renderGroupPopoverHtml() {
+      const collections = activeCollections(qcrCollections ?? []);
+      const rows = [{ id: "", title: null }, ...collections];
+      return rows
+        .map((c) => {
+          const checked = c.id === (noteOriginCollectionId ?? "");
+          const label = c.title ? langText(c.title, getAppLang()) : t("— none —");
+          return `<label class="note-collection-row">
+            <input type="radio" name="note-qcr-group-radio" value="${escapeHtml(c.id)}" data-note-qcr-group-radio ${checked ? "checked" : ""}>
+            <span>${escapeHtml(label)}</span>
+          </label>`;
+        })
+        .join("");
+    }
+
     /** TOPIC bar round -- the 🗂 button's own drawer, rebuilt from a flat
         list of collection rows into a real bar of dropdowns, per the
         owner's own drawn shape: TOPIC alone on top (which classification
@@ -5231,13 +5276,15 @@
         that topic's own row underneath with NO repeated "QCR" text (the
         TOPIC select already said so) -- Group (switch which collection
         this Note view follows, exactly what the old row-list of collection
-        buttons did, now a real <select>), Attach (how many groups THIS
-        āyah is tagged into -- unchanged mechanism from the old flat list,
+        buttons did), Attach (how many groups THIS āyah is tagged into --
+        unchanged mechanism from the old flat list,
         renderQcrMembershipPopoverHtml, now behind a dropdown-styled button
         showing a count since it's genuinely multi-choice), and Yr Level
         (which year band(s) the SELECTED group targets -- a NEW field on
         the collection itself, not on the āyah, so it's disabled until a
-        Group is actually picked). */
+        Group is actually picked). Group itself moved off a native <select>
+        onto the same dropdown-styled button shape as the other two --
+        see renderGroupPopoverHtml's own header comment. */
     /** Sizing-fix round -- the Attach/Yr Level checklists used to be
         position:absolute overlays nested INSIDE the outer 🗂 drawer's own
         scrollable card, which meant a real, long checklist was clipped by
@@ -5258,16 +5305,16 @@
         same way the outer drawer itself now does. */
     function renderQcrDrawerHtml(unitKey, openDdKey = null) {
       const collections = activeCollections(qcrCollections ?? []);
-      const groupOptionsHtml = `<option value="">${escapeHtml(t("— none —"))}</option>` +
-        collections.map((c) => `<option value="${escapeHtml(c.id)}" ${c.id === noteOriginCollectionId ? "selected" : ""}>${escapeHtml(langText(c.title, getAppLang()))}</option>`).join("");
+      const selectedGroup = noteOriginCollectionId ? collections.find((c) => c.id === noteOriginCollectionId) : null;
+      const groupSummary = selectedGroup ? langText(selectedGroup.title, getAppLang()) : t("— none —");
 
       const memberOf = qcrCollectionsContainingUnitKey(unitKey);
       const attachSummary = memberOf.length ? num(memberOf.length) : t("None");
       const attachTitle = memberOf.map((c) => langText(c.title, getAppLang())).join(", ");
 
-      const selectedGroup = noteOriginCollectionId ? collections.find((c) => c.id === noteOriginCollectionId) : null;
       const yrLevelSummary = !selectedGroup ? "—" : (selectedGroup.yrLevels.length ? num(selectedGroup.yrLevels.length) : t("None"));
       const yrLevelTitle = selectedGroup ? selectedGroup.yrLevels.map((id) => yrLevelLabel(id)).join(", ") : "";
+      const groupOn = openDdKey === "group";
       const attachOn = openDdKey === "attach";
       const yrOn = openDdKey === "yrlevel" && !!selectedGroup;
 
@@ -5281,7 +5328,7 @@
         </div>
         <div class="note-qcr-row">
           <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Group"))}</span>
-            <select class="note-qcr-select" data-note-qcr-group>${groupOptionsHtml}</select>
+            <button type="button" class="note-qcr-select note-qcr-dd-btn${groupOn ? " active" : ""}" data-note-qcr-dd-toggle="group" title="${escapeHtml(groupSummary)}"><span class="note-qcr-dd-summary">${escapeHtml(groupSummary)}</span> <span class="car">▾</span></button>
           </div>
           <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Attach"))}</span>
             <button type="button" class="note-qcr-select note-qcr-dd-btn${attachOn ? " active" : ""}" data-note-qcr-dd-toggle="attach" title="${escapeHtml(attachTitle)}"><span class="note-qcr-dd-summary">${escapeHtml(String(attachSummary))}</span> <span class="car">▾</span></button>
@@ -5289,9 +5336,10 @@
           <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Yr Level"))}</span>
             <button type="button" class="note-qcr-select note-qcr-dd-btn${yrOn ? " active" : ""}" data-note-qcr-dd-toggle="yrlevel" title="${escapeHtml(yrLevelTitle)}" ${selectedGroup ? "" : "disabled"}><span class="note-qcr-dd-summary">${escapeHtml(String(yrLevelSummary))}</span> <span class="car">▾</span></button>
           </div>
-        </div>
-        <div class="note-qcr-dd-pop${attachOn ? " on" : ""}" data-note-qcr-dd-pop="attach">${renderQcrMembershipPopoverHtml(unitKey)}</div>
-        <div class="note-qcr-dd-pop${yrOn ? " on" : ""}" data-note-qcr-dd-pop="yrlevel">${selectedGroup ? renderYrLevelPopoverHtml(selectedGroup) : ""}</div>`;
+          <div class="note-qcr-dd-pop${groupOn ? " on" : ""}" data-note-qcr-dd-pop="group">${renderGroupPopoverHtml()}</div>
+          <div class="note-qcr-dd-pop${attachOn ? " on" : ""}" data-note-qcr-dd-pop="attach">${renderQcrMembershipPopoverHtml(unitKey)}</div>
+          <div class="note-qcr-dd-pop${yrOn ? " on" : ""}" data-note-qcr-dd-pop="yrlevel">${selectedGroup ? renderYrLevelPopoverHtml(selectedGroup) : ""}</div>
+        </div>`;
     }
 
     /** Patches the Attach/Yr Level buttons' own summary text and title IN
