@@ -121,7 +121,16 @@ export function renderAsmaDetail(entry, claimEntry, { isBookmarked = false } = {
     the reference text parses to nothing at all (a plain descriptive
     sentence, or an unnumbered placeholder), the raw text still shows so
     nothing the owner wrote simply vanishes. */
-function renderAsmaXrefBlock(entry) {
+/** Exported (Asma-in-Explore round) so quranrevival.html can reuse the same
+    real reference parsing/chip markup for its own Asma ul Husna Explore
+    drill and Note-view References field, rather than a second copy of it.
+    `inPage: true` swaps the Qur'an chip from a real `<a href>` (asma-study.html's
+    own cross-PAGE navigation, unchanged default) to a `data-asma-xref-jump`
+    button -- a plain link would reload quranrevival.html even though the
+    reference is opening ON quranrevival.html, throwing away everything
+    already loaded there; the caller wires the button to an in-page jump
+    instead (see quranrevival.html's own goToAyahFromAsmaX()). */
+export function renderAsmaXrefBlock(entry, { inPage = false } = {}) {
   if (!entry.ref) return "";
   const citations = parseAsmaRef(entry.ref);
   if (!citations.length) {
@@ -131,6 +140,9 @@ function renderAsmaXrefBlock(entry) {
     .map((c) => {
       if (c.kind === "quran") {
         const label = t("Qur'an {ref}", { ref: `${num(c.surah)}:${num(c.ayah)}` });
+        if (inPage) {
+          return `<button type="button" class="asma-xref-chip quran" data-asma-xref-jump="${c.surah}:${c.ayah}">📖 ${escapeHtml(label)}</button>`;
+        }
         const href = `quranrevival.html?goto=${c.surah}:${c.ayah}`;
         return `<a class="asma-xref-chip quran" href="${escapeHtml(href)}">📖 ${escapeHtml(label)}</a>`;
       }

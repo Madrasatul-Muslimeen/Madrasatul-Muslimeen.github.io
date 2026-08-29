@@ -787,6 +787,102 @@
   .qcr-add-form { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-top: 0.7rem; width: 100%; }
   .qcr-add-form select, .qcr-add-form input[type="number"] { font-size: 12px; padding: 4px 6px; border-radius: 6px; border: 1px solid #ddd; }
   .qcr-add-form input[type="number"] { width: 4rem; }
+
+  /* Asma-in-Explore round -- #asmaXPanel mirrors #qcrPanel's own shape
+     (same dark-navy/gold theme, same mobile-wheel-first/desktop-list-left
+     layout) byte-for-byte, as its own self-contained set of rules rather
+     than widening the QCR selectors above -- lower risk of a stray edit
+     there, and this panel's own breadcrumb bar (3 drill levels, QCR has
+     only 1) genuinely differs from #qcrLevelBar anyway. */
+  #asmaXPanel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; color: #F2E8D5; font-family: 'Inter', sans-serif; }
+  #asmaXBreadcrumb {
+    flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 2px;
+    padding: 0.6rem 0.7rem; background: #1B2A41; border-radius: 12px 12px 0 0;
+    border: 1px solid rgba(201,162,75,0.3); border-bottom: none; font-size: 0.78rem;
+  }
+  #asmaXMain {
+    flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column-reverse; gap: 0;
+    background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%);
+    border: 1px solid rgba(201,162,75,0.3); border-radius: 0 0 12px 12px; overflow: hidden;
+  }
+  #asmaXListPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.9rem; }
+  #asmaXWheelPane {
+    flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 0.7rem;
+    padding: 1.1rem 0.9rem; border-top: 1px solid rgba(201,162,75,0.2);
+  }
+  @media (max-width: 899px) {
+    #asmaXPanel { flex: 0 0 auto; min-height: 0; }
+    #asmaXMain { flex: 0 0 auto; overflow: visible; }
+    #asmaXListPane { flex: 0 0 auto; overflow: visible; }
+    #asmaXWheelPane { flex: 0 0 auto; }
+  }
+  #asmaXListPane .ways-list { max-height: none; }
+  @media (max-width: 899px) { #asmaXListPane .ways-list { overflow-y: visible; } }
+  @media (min-width: 900px) {
+    #asmaXMain { flex-direction: row; }
+    #asmaXListPane { flex: 0 0 44%; max-width: 44%; border-right: 1px solid rgba(201,162,75,0.2); }
+    #asmaXWheelPane { flex: 1 1 auto; min-height: 0; overflow-y: auto; border-top: none; justify-content: center; }
+    #asmaXWheelContainer { width: min(55vh, 480px); margin: 0 auto; }
+    #asmaXWheelPane .mastery-wheel { width: 100%; max-width: none; height: auto; }
+  }
+  #asmaXListHeader { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+  #asmaXListHeader .qcr-list-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: #C9A24B; font-size: 1.1rem; }
+  #asmaXListHeader .qcr-list-count { font-size: 0.78rem; color: #8fa0c2; }
+
+  /* Names-level rows reuse asma-renderer.js's own renderAsmaCollectionListHtml()
+     -- its "way-row"/"badge"/"name" classes already fall back to this dark
+     panel's shared .way-row/.status-chip base (the exact way QCR's own
+     .way-row.qcr-way-row does), so only the classes that base doesn't cover
+     need their own rule here. */
+  .way-row.asma-way-row { flex-wrap: wrap; align-items: flex-start; cursor: default; }
+  .asma-status-chip { color: white; padding: 3px 9px; border-radius: 10px; font-size: 10px; font-weight: 600; white-space: nowrap; }
+  .asma-way-badges { display: flex; gap: 4px; margin: 4px 0 0 32px; flex-wrap: wrap; }
+  .asma-item-badge { font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 999px; }
+  .asma-item-badge.beyond99 { background: rgba(201,162,75,0.22); color: #C9A24B; }
+  .asma-item-badge.phrase { background: rgba(91,132,196,0.22); color: #a9c3ec; }
+  .asma-item-badge.weak { background: rgba(217,122,99,0.22); color: #ffb9a6; }
+  .asma-way-meaning { display: block; font-size: 11.5px; color: #9aa7be; margin: 3px 0 0 32px; line-height: 1.4; }
+
+  /* References level -- a short list of chips, not a third wheel (usually
+     only 1-3 references per Name); reuses asma-renderer.js's own
+     renderAsmaXrefBlock({inPage:true}), re-coloured for this dark panel
+     (asma-study.html's own copy of these classes is tuned for a light
+     page and would read washed-out here). */
+  .asma-xref-block { margin: 0.6rem 0; }
+  .asma-xref-label { font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase; color: #8fa0c2; margin-bottom: 6px; }
+  .asma-xref-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .asma-xref-chip {
+    font-size: 12.5px; padding: 5px 11px; border-radius: 999px; display: inline-flex;
+    align-items: center; gap: 5px; font-family: inherit; border: 1px solid transparent;
+  }
+  .asma-xref-chip.quran { background: rgba(91,132,196,0.2); border-color: rgba(91,132,196,0.5); color: #a9c3ec; cursor: pointer; }
+  .asma-xref-chip.quran:hover { background: rgba(91,132,196,0.34); }
+  .asma-xref-chip.hadith { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); color: #9aa7be; }
+  #asmaXRefCard { background: #1B2A41; border: 1px solid rgba(201,162,75,0.25); border-radius: 10px; padding: 0.9rem 1rem; }
+  #asmaXRefCard .asma-ref-arabic { font-family: 'Amiri', serif; font-size: 1.9rem; color: #C9A24B; }
+  #asmaXRefCard .asma-ref-lat { font-style: italic; font-size: 0.98rem; color: #F2E8D5; margin-top: 2px; }
+  #asmaXRefCard .asma-ref-meaning { font-size: 0.84rem; color: #9aa7be; margin-top: 3px; }
+  #asmaXRefCard .asma-ref-poster-btn { margin-top: 0.8rem; }
+
+  /* The A4 poster overlay -- reuses Round 3's own asma-study.html card
+     styling verbatim (a poster's own look is fixed, not theme-adapted). */
+  #asmaXPosterOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 900; align-items: center; justify-content: center; padding: 1rem; }
+  #asmaXPosterOverlay.open { display: flex; }
+  #asmaXPosterCloseBtn { position: fixed; top: 1rem; right: 1.2rem; background: rgba(255,255,255,0.15); color: white; border: none; font-size: 1.6rem; padding: 0.2rem 0.7rem; border-radius: 0.4rem; z-index: 901; cursor: pointer; }
+  .asma-poster {
+    width: 300px; aspect-ratio: 210 / 297;
+    background: radial-gradient(circle at 50% 8%, #164f4c 0%, #0b3a3a 55%, #072423 100%);
+    border: 1px solid rgba(230,197,106,0.4); border-radius: 8px;
+    color: #f3ecd9; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 2rem 1.4rem 1.6rem; text-align: center; box-shadow: 0 20px 44px rgba(0,0,0,0.45);
+  }
+  .poster-eyebrow { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: #c9a24b; }
+  .poster-main { margin: 0.6rem 0; }
+  .poster-ar { font-family: 'Amiri', serif; font-size: 2.6rem; color: #e6c56a; line-height: 1.15; }
+  .poster-translit { font-style: italic; font-size: 1.05rem; color: #d9cfae; margin-top: 0.3rem; }
+  .poster-bn { font-size: 0.95rem; margin-top: 0.5rem; line-height: 1.5; max-width: 22ch; }
+  .poster-ref { font-size: 0.68rem; color: #a8987a; margin-top: auto; padding-top: 0.7rem; }
+  .poster-footer { font-size: 0.5rem; letter-spacing: 0.1em; color: #6d6448; text-transform: uppercase; margin-top: 0.3rem; }
   .qcr-add-form button { font-size: 12px; padding: 4px 10px; }
 
   /* ---------- Reading screen (shell round 17) ----------
@@ -1952,6 +2048,7 @@
           <div class="explore-palette-row">
             <button type="button" class="explore-palette-btn on" id="explorePaletteQuranBtn" data-explore-mode="quran" aria-pressed="true">Quran</button>
             <button type="button" class="explore-palette-btn" id="explorePaletteQcrBtn" data-explore-mode="qcr" aria-pressed="false">QCR</button>
+            <button type="button" class="explore-palette-btn" id="explorePaletteAsmaBtn" data-explore-mode="asma" aria-pressed="false">Asma ul Husna</button>
           </div>
           <button type="button" class="explore-fullscreen-btn" id="exploreFullscreenBtn" title="Full screen" aria-label="Full screen" aria-pressed="false">⤢</button>
         </div>
@@ -2011,6 +2108,26 @@
                 </div>
                 <div id="qcrLegendContainer"></div>
                 <p class="hint" id="qcrHint"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Asma-in-Explore round -- a genuine 3-level drill (Groups →
+               Names → References), unlike QCR's single always-visible
+               level, since a Group's own Names aren't directly claimable
+               the way a collection's ayahs are -- there's a real step
+               between "which group" and "which reference to open." -->
+          <div id="asmaXPanel" hidden>
+            <div id="asmaXBreadcrumb"></div>
+            <div id="asmaXMain">
+              <div id="asmaXListPane">
+                <div id="asmaXListHeader"></div>
+                <div id="asmaXWaysListContainer" class="ways-list"></div>
+              </div>
+              <div id="asmaXWheelPane">
+                <div id="asmaXWheelContainer"></div>
+                <div id="asmaXLegendContainer"></div>
+                <p class="hint" id="asmaXHint"></p>
               </div>
             </div>
           </div>
@@ -2317,6 +2434,14 @@
 
   <div id="wayModalOverlay"><div id="wayModalMount"></div></div>
 
+  <!-- Asma-in-Explore round -- the same live-rendered A4 poster
+       (renderAsmaPosterHtml, Round 3) reachable from Explore's References
+       level and the Note view's Asma ul Husna Topic. -->
+  <div id="asmaXPosterOverlay">
+    <button type="button" id="asmaXPosterCloseBtn" aria-label="Close poster">&times;</button>
+    <div id="asmaXPosterMount"></div>
+  </div>
+
   <script type="module">
     import { auth, db } from "./js/firebase-init.js";
     import {
@@ -2344,6 +2469,22 @@
       getQcrDoc, saveQcrCollections,
       YR_LEVEL_IDS, yrLevelLabel, setCollectionYrLevels,
     } from "./js/qcr.js";
+    // Asma-in-Explore round -- Asma ul Husna sits beside QCR as a second
+    // Explore topic and a second Note-view Topic (the owner's own "AH is
+    // another topic like Quran for Critical Reasoning"). Read-only here --
+    // editing (rename/archive a group, add/move/remove a Name) stays on
+    // asma-study.html's own "Browse by Category" panel, the owner's own
+    // choice ("keep the panel as-is") rather than a second, duplicated
+    // editing surface. I2 holds: these are the same pure/shared modules
+    // asma-study.js already imports, not a second copy of anything.
+    import { ASMA_NAMES } from "./js/asma-data.js";
+    import {
+      collectionsFrom as asmaCollectionsFrom, extraNamesFrom as asmaExtraNamesFrom, overridesFrom as asmaOverridesFrom,
+      activeCollections as asmaActiveCollections, activeExtraNames as asmaActiveExtraNames,
+      resolveAsmaEntry, getAsmaCollectionsDoc,
+    } from "./js/asma-collections.js";
+    import { asmaEntryDisplayName, asmaEntryMeaningText, renderAsmaCollectionListHtml, renderAsmaXrefBlock, renderAsmaPosterHtml } from "./js/asma-renderer.js";
+    import { parseAsmaRef } from "./js/asma-ref-parser.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
     import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex } from "./js/quran-data.js";
     // Shell round 14 -- word/phrase search. Importing the module costs
@@ -2673,6 +2814,18 @@
     const qcrLegendContainerEl = document.getElementById("qcrLegendContainer");
     const qcrHintEl = document.getElementById("qcrHint");
 
+    const explorePaletteAsmaBtn = document.getElementById("explorePaletteAsmaBtn");
+    const asmaXPanelEl = document.getElementById("asmaXPanel");
+    const asmaXBreadcrumbEl = document.getElementById("asmaXBreadcrumb");
+    const asmaXListHeaderEl = document.getElementById("asmaXListHeader");
+    const asmaXWaysListContainer = document.getElementById("asmaXWaysListContainer");
+    const asmaXWheelContainerEl = document.getElementById("asmaXWheelContainer");
+    const asmaXLegendContainerEl = document.getElementById("asmaXLegendContainer");
+    const asmaXHintEl = document.getElementById("asmaXHint");
+    const asmaXPosterOverlayEl = document.getElementById("asmaXPosterOverlay");
+    const asmaXPosterMountEl = document.getElementById("asmaXPosterMount");
+    const asmaXPosterCloseBtn = document.getElementById("asmaXPosterCloseBtn");
+
     const taglineStripEl = document.getElementById("taglineStrip");
     const globalBannerEl = document.getElementById("globalBanner");
     const bannerTitleEl = document.getElementById("bannerTitle");
@@ -2723,6 +2876,15 @@
     // all. Set only by goToAyahFromQcr(); cleared implicitly the next time
     // openNoteView() is called without a fromCollectionId.
     let noteOriginCollectionId = null;
+    // Asma-in-Explore round -- the Note view's Topic field stops being fixed
+    // at "QCR" and becomes a real choice. noteTopic decides which of the two
+    // field sets renderQcrDrawerHtml() shows below it; noteOriginAsmaGroupId/
+    // Number are QCR's noteOriginCollectionId, mirrored -- set only by
+    // goToAyahFromAsmaX(), reset (like noteOriginCollectionId already is) on
+    // every openNoteView() call that doesn't pass a fromAsma.
+    let noteTopic = "qcr"; // "qcr" | "asma"
+    let noteOriginAsmaGroupId = null;
+    let noteOriginAsmaNumber = null;
     // Explore's own full screen (explore-immersive) -- a separate mechanism
     // from immersive-read/note-immersive above, same reasoning: a toggle
     // flipped in one screen must never leak into another the reader didn't
@@ -2766,6 +2928,7 @@
     let programBySubjectId = new Map();
 
     let quranTrackables = [];
+    let asmaTrackable = null; // studied_asma -- the same tenant-wide read quranTrackables already comes from (I9)
     let surahIndex = [];
     let currentSurahNum = 1;
     let currentSurahData = null;
@@ -2827,13 +2990,31 @@
     // time the QCR palette entry is actually opened (I9 -- Explore is
     // already an on-first-use screen, this just adds a second thing it can
     // load on first use rather than a second startup cost).
-    let exploreMode = "quran"; // "quran" | "qcr"
+    let exploreMode = "quran"; // "quran" | "qcr" | "asma"
     let qcrCollections = null; // null until ensureQcrDataLoaded() runs once
     let qcrDocExists = false; // whether ayahCollections/{tenantId} already exists -- decides create vs update on the next save
     let qcrCurrentId = null; // which collection the level bar currently has selected (round 2's own single-screen shape -- always set once data loads, never "the list of collections" any more)
     let qcrManageOn = false;
     let qcrShowArchived = false;
     let qcrSurahDataByNum = new Map(); // surahNum -> getSurah() result, for whichever collection is currently open (its own distinct surahs only, not the whole Quran)
+
+    // Asma-in-Explore round -- the Asma ul Husna palette entry, alongside
+    // Quran/QCR above. Read-only (I9: same on-first-use load asmaCollections
+    // already gets on asma-study.html, just a second page that can trigger
+    // it) -- editing stays on asma-study.html's own Browse-by-Category panel
+    // (the owner's own "keep the panel as-is"), so there's no manage/show-
+    // archived state here at all, unlike QCR's own palette.
+    let asmaXCollections = null; // null until ensureAsmaXDataLoaded() runs once
+    let asmaXExtraNames = null;
+    let asmaXOverrides = {};
+    let asmaXDataTenantId = null; // which tenant the three above were loaded for
+    let asmaXLevel = "groups"; // "groups" | "names" | "refs"
+    let asmaXGroupId = null;
+    let asmaXNumber = null; // the Name currently open at the "refs" level
+    let asmaXChunk = null; // records/subject_asma_ul_husna for whoever's selected -- claim-status colour on the Names wheel
+    let asmaXChunkPersonId = null; // which person asmaXChunk was fetched for
+    const ASMA_SUBJECT_ID = "asma_ul_husna";
+    const ASMA_TRACKABLE_ID = "studied_asma";
 
     // Phase 5 -- drill playback state (persisted across renderAudioControls()
     // rebuilds, same pattern as currentReciterId/loopIsOn above).
@@ -3817,6 +3998,11 @@
       applyTaglineData(currentTenantDoc);
 
       quranTrackables = allTrackables.filter((t) => t.subjectId === "quran" && t.status !== "archived");
+      // Asma-in-Explore round -- studied_asma rides along on this SAME
+      // already-fetched tenant-wide read (I9: no second Firestore call),
+      // the exact trackable asma-study.js's own openWayModal() already
+      // claims against, for the Note view's own Track/Guide embed.
+      asmaTrackable = allTrackables.find((t) => t.id === ASMA_TRACKABLE_ID) ?? null;
       renderTrackableSelectOptions();
       currentTrackableId = quranTrackables[0]?.id ?? null;
 
@@ -4855,11 +5041,15 @@
       explorePaletteQuranBtn.setAttribute("aria-pressed", String(mode === "quran"));
       explorePaletteQcrBtn.classList.toggle("on", mode === "qcr");
       explorePaletteQcrBtn.setAttribute("aria-pressed", String(mode === "qcr"));
+      explorePaletteAsmaBtn.classList.toggle("on", mode === "asma");
+      explorePaletteAsmaBtn.setAttribute("aria-pressed", String(mode === "asma"));
       explorePanelEl.hidden = mode !== "quran";
       qcrPanelEl.hidden = mode !== "qcr";
+      asmaXPanelEl.hidden = mode !== "asma";
     }
     explorePaletteQuranBtn.addEventListener("click", () => { setExplorePalette("quran"); renderExplore(); });
     explorePaletteQcrBtn.addEventListener("click", () => openQcrPalette());
+    explorePaletteAsmaBtn.addEventListener("click", () => openAsmaXPalette());
     qcrApproachSelect.addEventListener("change", () => changeCurrentTrackable(qcrApproachSelect.value));
 
     /** 28 Aug 2026: "I want this wheel to be resizable by me" -- applies (or
@@ -5090,6 +5280,213 @@
       renderQcrCollectionView();
     }
 
+    // -----------------------------------------------------------------
+    // Asma-in-Explore round -- "AH is another topic like Quran for
+    // Critical Reasoning... sit beside QCR. Same wheel and list
+    // structure." A genuine 3-level drill (Groups -> Names -> References),
+    // read-only: editing (rename/archive a group, add/move/remove a Name)
+    // stays on asma-study.html's own Browse-by-Category panel, per the
+    // owner's own "keep the panel as-is" -- so unlike QCR's own palette,
+    // there's no Manage toggle or level <select> here at all.
+    // -----------------------------------------------------------------
+
+    async function ensureAsmaXDataLoaded() {
+      if (asmaXCollections && asmaXDataTenantId === activeTenantId) return;
+      try {
+        const docData = await getAsmaCollectionsDoc(db, activeTenantId);
+        asmaXCollections = asmaCollectionsFrom(docData);
+        asmaXExtraNames = asmaExtraNamesFrom(docData);
+        asmaXOverrides = asmaOverridesFrom(docData);
+      } catch (err) {
+        console.warn("Couldn't read this tenant's saved Asma collections yet (showing the built-in defaults instead):", err.message);
+        asmaXCollections = asmaCollectionsFrom(null);
+        asmaXExtraNames = asmaExtraNamesFrom(null);
+        asmaXOverrides = {};
+      }
+      asmaXDataTenantId = activeTenantId;
+    }
+
+    /** The Names wheel's own claim-status colour (the owner's own answer:
+        "coloring also same" as an ayah/QCR's) -- a real, separate records
+        read from Quran's own (subject_quran/surah_N), lazily fetched only
+        once the AH palette is actually opened, cached per selected person. */
+    async function ensureAsmaXChunkLoaded() {
+      if (!selectedPersonId) { asmaXChunk = null; asmaXChunkPersonId = null; return; }
+      if (asmaXChunk && asmaXChunkPersonId === selectedPersonId) return;
+      const chunkKey = chunkKeyFor(buildUnitKey.name(1), ASMA_SUBJECT_ID);
+      asmaXChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, chunkKey);
+      asmaXChunkPersonId = selectedPersonId;
+    }
+
+    function asmaXResolve(number) {
+      return resolveAsmaEntry(number, { extraNames: asmaXExtraNames ?? [], overrides: asmaXOverrides ?? {} });
+    }
+
+    function asmaXItemStatus(number) {
+      const entry = asmaXChunk?.entries?.[`${buildUnitKey.name(number)}::${ASMA_TRACKABLE_ID}`];
+      return entry?.claimedStatus ?? "not_started";
+    }
+
+    async function openAsmaXPalette() {
+      setExplorePalette("asma");
+      asmaXWaysListContainer.innerHTML = t("Loading…");
+      await ensureAsmaXDataLoaded();
+      await ensureAsmaXChunkLoaded();
+      asmaXLevel = "groups";
+      asmaXGroupId = null;
+      asmaXNumber = null;
+      renderAsmaXPanel();
+    }
+
+    function renderAsmaXBreadcrumb() {
+      const crumbs = [{ label: t("All Groups"), level: "groups" }];
+      if (asmaXLevel !== "groups") {
+        const group = (asmaXCollections ?? []).find((c) => c.id === asmaXGroupId);
+        if (group) crumbs.push({ label: langText(group.title, getAppLang()), level: "names" });
+      }
+      if (asmaXLevel === "refs") {
+        const entry = asmaXNumber != null ? asmaXResolve(asmaXNumber) : null;
+        if (entry) crumbs.push({ label: asmaEntryDisplayName(entry), level: "refs" });
+      }
+      asmaXBreadcrumbEl.innerHTML = crumbs
+        .map((c) => `<button type="button" class="explore-crumb${c.level === asmaXLevel ? " active" : ""}" data-level="${c.level}">${escapeHtml(c.label)}</button>`)
+        .join('<span class="explore-crumb-sep">›</span>');
+      asmaXBreadcrumbEl.querySelectorAll(".explore-crumb").forEach((btn) => {
+        if (btn.dataset.level === asmaXLevel) return;
+        btn.addEventListener("click", () => {
+          if (btn.dataset.level === "groups") { asmaXGroupId = null; asmaXNumber = null; }
+          else if (btn.dataset.level === "names") { asmaXNumber = null; }
+          asmaXLevel = btn.dataset.level;
+          renderAsmaXPanel();
+        });
+      });
+    }
+
+    function renderAsmaXPanel() {
+      renderAsmaXBreadcrumb();
+      if (asmaXLevel === "groups") return renderAsmaXGroupsLevel();
+      if (asmaXLevel === "names") return renderAsmaXNamesLevel();
+      return renderAsmaXRefsLevel();
+    }
+
+    /** Level 1 -- every active group, as its own wheel wedge and list row.
+        A Group has no claim status of its own (only the Names inside it
+        do), so every wedge is the SAME neutral colour, not a progress
+        reading -- the owner's own confirmed reading (Q3): "coloring also
+        same" was answered about the Names wheel, not this one. */
+    function renderAsmaXGroupsLevel() {
+      const groups = asmaActiveCollections(asmaXCollections ?? []);
+      asmaXListHeaderEl.innerHTML = `
+        <span class="qcr-list-title">${escapeHtml(t("All Groups"))}</span>
+        <span class="qcr-list-count">${escapeHtml(t("{count} groups", { count: num(groups.length) }))}</span>`;
+      asmaXWaysListContainer.innerHTML = groups.length
+        ? groups.map((g, i) => `
+            <div class="way-row">
+              <button type="button" class="way-click" data-asma-open-group="${escapeHtml(g.id)}">
+                <span class="badge">${i + 1}</span>
+                <span class="name">${escapeHtml(langText(g.title, getAppLang()))}</span>
+              </button>
+            </div>`).join("")
+        : `<p class="hint">${escapeHtml(t("No groups yet."))}</p>`;
+      asmaXWaysListContainer.querySelectorAll("[data-asma-open-group]").forEach((btn) => {
+        btn.addEventListener("click", () => openAsmaXGroup(btn.dataset.asmaOpenGroup));
+      });
+      const items = groups.map((g, i) => ({ key: g.id, statusId: "not_started", title: escapeHtml(langText(g.title, getAppLang())), number: i + 1 }));
+      asmaXWheelContainerEl.innerHTML = renderScopedWheel(items, { centerLabel: t("Asma ul Husna") });
+      attachScopedWheelClickHandler(asmaXWheelContainerEl, (key) => openAsmaXGroup(key));
+      asmaXLegendContainerEl.innerHTML = "";
+      asmaXHintEl.textContent = t("Tap a group to see the Names inside it.");
+    }
+
+    function openAsmaXGroup(groupId) {
+      asmaXGroupId = groupId;
+      asmaXNumber = null;
+      asmaXLevel = "names";
+      renderAsmaXPanel();
+    }
+
+    /** Level 2 -- the group's own Names, real claim-status colour (the
+        owner's own "coloring also same" answer) via the studied_asma
+        trackable, exactly the one asma-study.js's own grid/category
+        browser already claims against. */
+    function renderAsmaXNamesLevel() {
+      const group = (asmaXCollections ?? []).find((c) => c.id === asmaXGroupId);
+      if (!group) { asmaXLevel = "groups"; return renderAsmaXPanel(); }
+      const entries = group.items
+        .map((uk) => {
+          const number = Number(uk.split(":")[1]);
+          const entry = asmaXResolve(number);
+          return entry ? { key: uk, number, entry, statusId: asmaXItemStatus(number) } : null;
+        })
+        .filter(Boolean);
+      asmaXListHeaderEl.innerHTML = `
+        <span class="qcr-list-title">${escapeHtml(langText(group.title, getAppLang()))}</span>
+        <span class="qcr-list-count">${escapeHtml(t("{count} Names", { count: num(entries.length) }))}</span>`;
+      asmaXWaysListContainer.innerHTML = renderAsmaCollectionListHtml(entries, { manageOn: false });
+      asmaXWaysListContainer.querySelectorAll("[data-asma-jump]").forEach((btn) => {
+        btn.addEventListener("click", () => openAsmaXName(Number(btn.dataset.asmaJump.split(":")[1])));
+      });
+      const items = entries.map((e) => ({ key: e.key, statusId: e.statusId, title: escapeHtml(asmaEntryDisplayName(e.entry)), number: e.number }));
+      asmaXWheelContainerEl.innerHTML = renderScopedWheel(items, { centerLabel: langText(group.title, getAppLang()) });
+      attachScopedWheelClickHandler(asmaXWheelContainerEl, (key) => openAsmaXName(Number(key.split(":")[1])));
+      const labelsById = statusLabelsById();
+      asmaXLegendContainerEl.innerHTML = renderWheelLegend(labelsById);
+      asmaXHintEl.textContent = t("Tap a Name to see the Ayat and Hadith it's linked to.");
+    }
+
+    function openAsmaXName(number) {
+      asmaXNumber = number;
+      asmaXLevel = "refs";
+      renderAsmaXPanel();
+    }
+
+    /** Level 3 -- the Name's own references. Not a wheel (usually only 1-3
+        per Name, per the owner's own answer: "do as you said, if i don't
+        like it will be in wheel"). A Qur'an chip jumps IN PAGE
+        (goToAyahFromAsmaX); a Hadith chip stays plain text -- no Hadith
+        reader exists yet, the same disclosed gap Round 2 already has. */
+    function renderAsmaXRefsLevel() {
+      const entry = asmaXNumber != null ? asmaXResolve(asmaXNumber) : null;
+      if (!entry) { asmaXLevel = "groups"; return renderAsmaXPanel(); }
+      asmaXListHeaderEl.innerHTML = `<span class="qcr-list-title">${escapeHtml(asmaEntryDisplayName(entry))}</span>`;
+      asmaXWaysListContainer.innerHTML = `
+        <div id="asmaXRefCard">
+          <div class="asma-ref-arabic">${escapeHtml(entry.arabic)}</div>
+          <div class="asma-ref-lat">${escapeHtml(asmaEntryDisplayName(entry))}</div>
+          <div class="asma-ref-meaning">${escapeHtml(asmaEntryMeaningText(entry))}</div>
+          ${renderAsmaXrefBlock(entry, { inPage: true })}
+          <button type="button" class="secondary asma-ref-poster-btn" id="asmaXRefPosterBtn">🖼 ${escapeHtml(t("Poster"))}</button>
+        </div>`;
+      asmaXWaysListContainer.querySelectorAll("[data-asma-xref-jump]").forEach((btn) => {
+        const [surah, ayah] = btn.dataset.asmaXrefJump.split(":").map(Number);
+        btn.addEventListener("click", () => goToAyahFromAsmaX(surah, ayah, asmaXGroupId, asmaXNumber));
+      });
+      document.getElementById("asmaXRefPosterBtn")?.addEventListener("click", () => openAsmaXPoster(entry));
+      asmaXWheelContainerEl.innerHTML = "";
+      asmaXLegendContainerEl.innerHTML = "";
+      asmaXHintEl.textContent = t("References don't need a wheel — usually just 1–3.");
+    }
+
+    /** Closes Explore and opens the tapped Ayah reference's own Note view,
+        IN PAGE -- goToAyahFromQcr()'s own shape, with the Asma origin
+        carried through so the Note view's own Topic field can default to
+        Asma ul Husna with this Group/Name already selected. */
+    async function goToAyahFromAsmaX(surah, ayah, groupId, number) {
+      closeAllPanels();
+      await goToReference(surah, ayah, null);
+      await openNoteView(buildUnitKey.ayah(surah, ayah), { fromAsma: { groupId, number } });
+    }
+
+    function openAsmaXPoster(entry) {
+      asmaXPosterMountEl.innerHTML = renderAsmaPosterHtml(entry, "standalone");
+      asmaXPosterOverlayEl.classList.add("open");
+    }
+    function closeAsmaXPoster() {
+      asmaXPosterOverlayEl.classList.remove("open");
+    }
+    asmaXPosterCloseBtn.addEventListener("click", closeAsmaXPoster);
+    asmaXPosterOverlayEl.addEventListener("click", (e) => { if (e.target === asmaXPosterOverlayEl) closeAsmaXPoster(); });
+
     async function qcrRenameCollectionPrompt(id) {
       const col = qcrCollections.find((c) => c.id === id);
       if (!col) return;
@@ -5303,7 +5700,25 @@
         render -- read live from the DOM by the caller (see
         renderNoteViewNow's own comment) so it survives a Group switch the
         same way the outer drawer itself now does. */
+    /** Asma-in-Explore round -- the Topic field stops being a fixed,
+        disabled "QCR" and becomes a real choice (id="noteTopicSelect",
+        wired directly in quranrevival.html -- attachNoteViewHandlers()
+        stays I2-pure and knows nothing about either topic). Below it, this
+        function branches to whichever field set the picked Topic needs --
+        QCR's own Group/Attach/Yr Level, unchanged, or Asma ul Husna's own
+        Group/Names/References (renderAsmaXNoteFieldsHtml, below). */
     function renderQcrDrawerHtml(unitKey, openDdKey = null) {
+      const topicRow = `
+        <div class="note-qcr-topic-row">
+          <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Topic"))}</span>
+            <select class="note-qcr-select" id="noteTopicSelect">
+              <option value="qcr" ${noteTopic === "qcr" ? "selected" : ""}>${escapeHtml(t("QCR"))}</option>
+              <option value="asma" ${noteTopic === "asma" ? "selected" : ""}>${escapeHtml(t("Asma ul Husna"))}</option>
+            </select>
+          </div>
+        </div>`;
+      if (noteTopic === "asma") return topicRow + renderAsmaXNoteFieldsHtml(openDdKey);
+
       const collections = activeCollections(qcrCollections ?? []);
       const selectedGroup = noteOriginCollectionId ? collections.find((c) => c.id === noteOriginCollectionId) : null;
       const groupSummary = selectedGroup ? langText(selectedGroup.title, getAppLang()) : t("— none —");
@@ -5318,14 +5733,7 @@
       const attachOn = openDdKey === "attach";
       const yrOn = openDdKey === "yrlevel" && !!selectedGroup;
 
-      return `
-        <div class="note-qcr-topic-row">
-          <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Topic"))}</span>
-            <select class="note-qcr-select" disabled>
-              <option value="qcr" selected>${escapeHtml(t("QCR"))}</option>
-            </select>
-          </div>
-        </div>
+      return topicRow + `
         <div class="note-qcr-row">
           <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Group"))}</span>
             <button type="button" class="note-qcr-select note-qcr-dd-btn${groupOn ? " active" : ""}" data-note-qcr-dd-toggle="group" title="${escapeHtml(groupSummary)}"><span class="note-qcr-dd-summary">${escapeHtml(groupSummary)}</span> <span class="car">▾</span></button>
@@ -5340,6 +5748,72 @@
           <div class="note-qcr-dd-pop${attachOn ? " on" : ""}" data-note-qcr-dd-pop="attach">${renderQcrMembershipPopoverHtml(unitKey)}</div>
           <div class="note-qcr-dd-pop${yrOn ? " on" : ""}" data-note-qcr-dd-pop="yrlevel">${selectedGroup ? renderYrLevelPopoverHtml(selectedGroup) : ""}</div>
         </div>`;
+    }
+
+    /** Asma ul Husna's own Note-view fields -- Group -> Names -> References
+        (the owner's own three, item 3 of the original spec), plus the
+        Track/Claim card ("same as Ayah") and the Poster button. Wired by
+        wireAsmaXNoteFields() (below), a separate step after
+        attachNoteViewHandlers() exactly like wireApproachEmbed() already
+        is -- new data attributes (data-asmax-*), not QCR's
+        data-note-qcr-dd-* ones, so there's no ambiguity about which topic
+        a click belongs to even though only one field set is ever in the
+        DOM at once. */
+    function renderAsmaXNoteFieldsHtml(openDdKey) {
+      const groups = asmaActiveCollections(asmaXCollections ?? []);
+      const group = noteOriginAsmaGroupId ? groups.find((g) => g.id === noteOriginAsmaGroupId) : null;
+      const groupSummary = group ? langText(group.title, getAppLang()) : t("— none —");
+      const entry = group && noteOriginAsmaNumber != null ? asmaXResolve(noteOriginAsmaNumber) : null;
+      const nameSummary = entry ? asmaEntryDisplayName(entry) : "—";
+      const refCount = entry?.ref ? parseAsmaRef(entry.ref).length : 0;
+      const refsSummary = entry ? num(refCount) : "—";
+      const groupOn = openDdKey === "asmagroup";
+      const nameOn = openDdKey === "asmaname" && !!group;
+      const refOn = openDdKey === "asmaref" && !!entry;
+
+      const groupPopover = [{ id: "", title: null }, ...groups]
+        .map((g) => {
+          const checked = g.id === (noteOriginAsmaGroupId ?? "");
+          const label = g.title ? langText(g.title, getAppLang()) : t("— none —");
+          return `<label class="note-collection-row">
+            <input type="radio" name="note-asmax-group-radio" value="${escapeHtml(g.id)}" data-asmax-group-radio ${checked ? "checked" : ""}>
+            <span>${escapeHtml(label)}</span>
+          </label>`;
+        }).join("");
+      const namePopover = group
+        ? group.items.map((uk) => {
+            const n = Number(uk.split(":")[1]);
+            const e = asmaXResolve(n);
+            if (!e) return "";
+            const checked = n === noteOriginAsmaNumber;
+            return `<label class="note-collection-row">
+              <input type="radio" name="note-asmax-name-radio" value="${n}" data-asmax-name-radio ${checked ? "checked" : ""}>
+              <span>${escapeHtml(asmaEntryDisplayName(e))}</span>
+            </label>`;
+          }).join("")
+        : `<p class="hint">${escapeHtml(t("Pick a Group first"))}</p>`;
+      const refPopover = entry ? renderAsmaXrefBlock(entry, { inPage: true }) : "";
+
+      const posterBtn = entry ? `<button type="button" class="secondary" id="noteAsmaXPosterBtn">🖼 ${escapeHtml(t("Poster"))}</button>` : "";
+      const trackEmbed = entry ? renderAsmaTrackEmbedHtml(entry.number) : "";
+
+      return `
+        <div class="note-qcr-row">
+          <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Group"))}</span>
+            <button type="button" class="note-qcr-select note-qcr-dd-btn${groupOn ? " active" : ""}" data-asmax-dd-toggle="asmagroup" title="${escapeHtml(groupSummary)}"><span class="note-qcr-dd-summary">${escapeHtml(groupSummary)}</span> <span class="car">▾</span></button>
+          </div>
+          <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Names"))}</span>
+            <button type="button" class="note-qcr-select note-qcr-dd-btn${nameOn ? " active" : ""}" data-asmax-dd-toggle="asmaname" title="${escapeHtml(nameSummary)}" ${group ? "" : "disabled"}><span class="note-qcr-dd-summary">${escapeHtml(nameSummary)}</span> <span class="car">▾</span></button>
+          </div>
+          <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("References"))}</span>
+            <button type="button" class="note-qcr-select note-qcr-dd-btn${refOn ? " active" : ""}" data-asmax-dd-toggle="asmaref" title="${escapeHtml(String(refsSummary))}" ${entry ? "" : "disabled"}><span class="note-qcr-dd-summary">${escapeHtml(String(refsSummary))}</span> <span class="car">▾</span></button>
+          </div>
+          <div class="note-qcr-dd-pop${groupOn ? " on" : ""}" data-asmax-dd-pop="asmagroup">${groupPopover}</div>
+          <div class="note-qcr-dd-pop${nameOn ? " on" : ""}" data-asmax-dd-pop="asmaname">${namePopover}</div>
+          <div class="note-qcr-dd-pop${refOn ? " on" : ""}" data-asmax-dd-pop="asmaref">${refPopover}</div>
+        </div>
+        ${posterBtn}
+        ${trackEmbed}`;
     }
 
     /** Patches the Attach/Yr Level buttons' own summary text and title IN
@@ -6207,7 +6681,9 @@
       // closed by its own toggle, an outside click, or another popover
       // opening in its place, with nothing to keep in sync by hand.
       const wasQcrDrawerOpen = noteView.querySelector('[data-note-sub-wrap="collections"] .note-sub-popover')?.classList.contains("open") ?? false;
-      const openQcrDdKey = noteView.querySelector('[data-note-qcr-dd-pop].on')?.dataset.noteQcrDdPop ?? null;
+      const openQcrDdKey = noteView.querySelector('[data-note-qcr-dd-pop].on')?.dataset.noteQcrDdPop
+        ?? noteView.querySelector('[data-asmax-dd-pop].on')?.dataset.asmaxDdPop
+        ?? null;
 
       // PC popup: only #noteViewMount is replaced -- the static title bar/
       // side pane/resize handles around it (see #noteView's own markup
@@ -6392,6 +6868,7 @@
       });
       wireNotePickerBar();
       if (showApproach) wireApproachEmbed(unitKey);
+      wireAsmaXNoteFields(unitKey);
       // PC popup: title bar text + side pane, every render/nav step. A no-op
       // below 900px (renderNotePopupSide() checks isPcNotePopup() itself).
       notePopupTitleEl.textContent = originCollection ? `${ref} — ${langText(originCollection.title, getAppLang())}` : ref;
@@ -6739,6 +7216,156 @@
       });
     }
 
+    /** Asma-in-Explore round -- "Enable AH will to have track/claim card in
+        the note view, same as Ayah... so, coloring also same" (the owner's
+        own answer). The exact same claim/track mechanism asma-study.js's
+        own openWayModal() already uses (studied_asma, buildUnitKey.name),
+        embedded the way an ayah's own Approach card already is -- but AH
+        has ONE trackable, not 30 Approaches, so there's no picker in the
+        header, just the plain ref (the Name's own display name). Wrapped
+        in its own id (#asmaTrackEmbedWrap) because a single-ayah scope's
+        OWN approach embed can be on screen in the SAME Note view at the
+        same time (independent of which Topic is picked) -- both use
+        way-modal.js's own ".way-embed" class, so a bare query would find
+        whichever renders first, not necessarily this one. */
+    function renderAsmaTrackEmbedHtml(number) {
+      if (!asmaTrackable) return "";
+      const entry = asmaXResolve(number);
+      if (!entry) return "";
+      const unitKey = buildUnitKey.name(number);
+      const entryKey = `${unitKey}::${ASMA_TRACKABLE_ID}`;
+      const claimEntry = asmaXChunk?.entries?.[entryKey] ?? null;
+      const statusIdsForTrackable = Object.values(asmaXChunk?.entries ?? {})
+        .filter((e) => e.trackableId === ASMA_TRACKABLE_ID)
+        .map((e) => e.claimedStatus);
+      const tabBodies = {
+        Track: renderTrackTab(claimEntry, claimEntry?.claimedStatus ?? "not_started"),
+        Guide: renderGuideTab(asmaTrackable, getAppLang()),
+        Breakdown: renderBreakdownTab(statusIdsForTrackable),
+      };
+      return `<div id="asmaTrackEmbedWrap">${renderWayEmbed(
+        asmaEntryDisplayName(entry), tabBodies, ["Track", "Guide", "Breakdown"],
+        renderAssignDropdown(assignableRoster(), selectedPersonId)
+      )}</div>`;
+    }
+
+    function wireAsmaTrackEmbed(number) {
+      const wrap = noteView.querySelector("#asmaTrackEmbedWrap");
+      const embedEl = wrap?.querySelector(".way-embed");
+      if (!embedEl || !asmaTrackable) return;
+      attachWayEmbedHandlers(embedEl);
+      const claimBtn = embedEl.querySelector(".way-claim-btn");
+      const statusSelectEl = embedEl.querySelector(".way-status-select");
+      const resultEl = embedEl.querySelector(".way-claim-result");
+      wireAssignDropdown(embedEl, claimBtn);
+      const unitKey = buildUnitKey.name(number);
+      claimBtn.addEventListener("click", async () => {
+        claimBtn.disabled = true;
+        const assignees = checkedAssignees(embedEl, selectedPersonId);
+        const outcomes = await Promise.all(assignees.map(async (a) => {
+          const r = await safeWrite(
+            () => claimStatus(db, {
+              tenantId: activeTenantId,
+              personId: a.id,
+              subjectId: ASMA_SUBJECT_ID,
+              unitKey,
+              trackableId: ASMA_TRACKABLE_ID,
+              statusId: statusSelectEl.value,
+              notes: "",
+              domainIds: [],
+              claimedByPersonId: currentActingPersonId(),
+              claimedByUid: auth.currentUser.uid,
+            }),
+            { collection: "records", action: "claimStatus" }
+          );
+          if (r.ok) {
+            await logActivity(db, {
+              tenantId: activeTenantId, personId: a.id, date: new Date(),
+              weekStartsOn: tenantWeekStartsOn, subjectId: ASMA_SUBJECT_ID, unitKey,
+              trackableId: ASMA_TRACKABLE_ID, action: "claimed", uid: auth.currentUser.uid,
+              viaProgramId: null,
+            });
+          }
+          return { name: a.name, ok: r.ok, needsConfirmation: r.ok ? r.result.needsConfirmation : null, message: r.ok ? null : r.entry.message };
+        }));
+        const message = buildClaimResultMessage(outcomes);
+        if (outcomes.some((o) => o.ok)) {
+          asmaXChunkPersonId = null; // forces a real re-fetch, not the stale cache
+          await ensureAsmaXChunkLoaded();
+          renderNoteViewNow(); // rebuilds the whole Note view, including this card, against the fresh chunk
+          const freshResultEl = noteView.querySelector("#asmaTrackEmbedWrap .way-claim-result");
+          if (freshResultEl) freshResultEl.textContent = message;
+        } else {
+          resultEl.textContent = message;
+          claimBtn.disabled = false;
+        }
+      });
+    }
+
+    /** Wires the Topic select + Asma ul Husna's own Group/Names/References
+        fields, exactly the "separate step after attachNoteViewHandlers()"
+        shape wireApproachEmbed() already uses for things that function
+        doesn't know about (I2 -- it's QCR/Asma-blind on purpose). A no-op
+        when Topic isn't "asma" or there's nothing to wire. */
+    function wireAsmaXNoteFields(unitKey) {
+      const topicSelect = noteView.querySelector("#noteTopicSelect");
+      if (topicSelect) {
+        topicSelect.addEventListener("change", async () => {
+          noteTopic = topicSelect.value === "asma" ? "asma" : "qcr";
+          if (noteTopic === "asma") {
+            // Manually switching Topic here (not via goToAyahFromAsmaX,
+            // which already loads both) is the one path that can reach
+            // this screen with neither ever fetched this session -- same
+            // on-first-use load every other Explore/Note entry point uses.
+            await ensureAsmaXDataLoaded();
+            await ensureAsmaXChunkLoaded();
+          }
+          renderNoteViewNow();
+        });
+      }
+      if (noteTopic !== "asma") return;
+      wireAsmaTrackEmbed(noteOriginAsmaNumber);
+      noteView.querySelectorAll("[data-asmax-group-radio]").forEach((radio) => {
+        radio.addEventListener("change", () => {
+          if (!radio.checked) return;
+          noteOriginAsmaGroupId = radio.value || null;
+          noteOriginAsmaNumber = null;
+          renderNoteViewNow();
+        });
+      });
+      noteView.querySelectorAll("[data-asmax-name-radio]").forEach((radio) => {
+        radio.addEventListener("change", () => {
+          if (!radio.checked) return;
+          noteOriginAsmaNumber = Number(radio.value);
+          renderNoteViewNow();
+        });
+      });
+      function closeAsmaXDropdowns(exceptKey) {
+        noteView.querySelectorAll("[data-asmax-dd-pop]").forEach((pop) => { if (pop.dataset.asmaxDdPop !== exceptKey) pop.classList.remove("on"); });
+        noteView.querySelectorAll("[data-asmax-dd-toggle]").forEach((btn) => { if (btn.dataset.asmaxDdToggle !== exceptKey) btn.classList.remove("active"); });
+      }
+      noteView.querySelectorAll("[data-asmax-dd-toggle]").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const key = btn.dataset.asmaxDdToggle;
+          const pop = noteView.querySelector(`[data-asmax-dd-pop="${key}"]`);
+          if (!pop) return;
+          const willOpen = !pop.classList.contains("on");
+          closeAsmaXDropdowns(null);
+          if (willOpen) { pop.classList.add("on"); btn.classList.add("active"); }
+        });
+      });
+      noteView.querySelectorAll("[data-asma-xref-jump]").forEach((btn) => {
+        const [surah, ayah] = btn.dataset.asmaXrefJump.split(":").map(Number);
+        btn.addEventListener("click", () => goToAyahFromAsmaX(surah, ayah, noteOriginAsmaGroupId, noteOriginAsmaNumber));
+      });
+      const posterBtn = noteView.querySelector("#noteAsmaXPosterBtn");
+      if (posterBtn && noteOriginAsmaNumber != null) {
+        const entry = asmaXResolve(noteOriginAsmaNumber);
+        if (entry) posterBtn.addEventListener("click", () => openAsmaXPoster(entry));
+      }
+    }
+
     /** Entry point from the ⋮ menu's "Note & more…" (and from a bookmark's
         own "Open"). Seeds noteScope from whichever unit key was tapped --
         an āyah-shaped one from the ordinary quick menu (single-ayah scope,
@@ -6748,7 +7375,7 @@
         (spec item 8) in the background -- opening the view never waits on
         it, and a failure surfaces the first time an actual save is
         attempted, via onSaveNote's own safeWrite above. */
-    async function openNoteView(unitKey, { fromCollectionId = null } = {}) {
+    async function openNoteView(unitKey, { fromCollectionId = null, fromAsma = null } = {}) {
       await ensureAyahNoteDataLoaded();
       // QCR round: the Collections popover needs qcrCollections whichever
       // way this view was reached (spec item -- "every āyah, everywhere"),
@@ -6758,6 +7385,14 @@
       // shows real membership, not an empty popover.
       await ensureQcrDataLoaded();
       noteOriginCollectionId = fromCollectionId;
+      // Asma-in-Explore round -- goToAyahFromAsmaX() is the only caller
+      // that ever passes fromAsma, so both are reset to null (Topic back to
+      // "qcr") on every other open, the same way fromCollectionId already
+      // resets noteOriginCollectionId -- no special-casing needed to keep
+      // the two mechanisms from interfering with each other.
+      noteTopic = fromAsma ? "asma" : "qcr";
+      noteOriginAsmaGroupId = fromAsma?.groupId ?? null;
+      noteOriginAsmaNumber = fromAsma?.number ?? null;
       if (auth.currentUser && selectedPersonId) {
         ensureAyahNotesWritable(db, { tenantId: activeTenantId, personId: selectedPersonId, uid: auth.currentUser.uid });
       }

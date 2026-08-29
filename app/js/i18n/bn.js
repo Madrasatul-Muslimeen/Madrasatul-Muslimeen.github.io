@@ -1992,4 +1992,16 @@ export const BN = {
   "QuranRevival · Asma ul Husna": "কুরআনরিভাইভাল · আসমাউল হুসনা",
   "Poster": "পোস্টার",
   "Print": "প্রিন্ট",
+
+  // Asma-in-Explore round -- AH as a second Explore topic + Note-view Topic.
+  "All Groups": "সব গ্রুপ", // ?
+  "{count} groups": "{count}টি গ্রুপ", // ?
+  "No groups yet.": "এখনো কোনো গ্রুপ নেই।", // ?
+  "Tap a group to see the Names inside it.": "ভিতরের নামগুলো দেখতে একটি গ্রুপে চাপ দিন।", // ?
+  "{count} Names": "{count}টি নাম", // ?
+  "Tap a Name to see the Ayat and Hadith it's linked to.": "এর সাথে যুক্ত আয়াত ও হাদীস দেখতে একটি নামে চাপ দিন।", // ?
+  "References don't need a wheel — usually just 1–3.": "রেফারেন্সের জন্য চাকার প্রয়োজন নেই — সাধারণত মাত্র ১–৩টি।", // ?
+  "Names": "নামসমূহ", // ?
+  "References": "রেফারেন্স", // ?
+  "Pick a Group first": "প্রথমে একটি গ্রুপ বাছুন", // ?
 };
