@@ -1622,8 +1622,9 @@
       display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;
       padding: 0.4rem 0.55rem; border-bottom: 1px solid #e0d8bd; flex: 0 0 auto;
     }
-    .note-popup-side-nav button { background: #1F3A6E; color: #fff; border: none; border-radius: 0.3rem; width: 1.7rem; height: 1.7rem; cursor: pointer; }
+    .note-popup-side-nav button { background: #1F3A6E; color: #fff; border: none; border-radius: 0.3rem; width: 1.7rem; height: 1.7rem; cursor: pointer; font-size: 0.8rem; }
     .note-popup-side-nav button:disabled { opacity: 0.35; cursor: default; }
+    .note-popup-side-nav button[aria-pressed="true"] { background: #B8862F; }
     #notePopupSideCount { font-size: 0.72rem; color: #7a6a3c; flex: 1 1 auto; text-align: center; }
     .note-popup-side-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.35rem; }
     .note-popup-side-list .hint { font-size: 0.78rem; color: #888; padding: 0.4rem 0.3rem; margin: 0; }
@@ -2000,8 +2001,7 @@
         <div id="notePopupTitleBar" class="note-popup-titlebar">
           <span id="notePopupTitle" class="note-popup-title" draggable="true" title="Drag onto the side pane to add this āyah there"></span>
           <div class="note-popup-titlebar-actions">
-            <button type="button" id="notePopupListViewBtn" title="List view" aria-pressed="false">☰</button>
-            <button type="button" id="notePopupCardViewBtn" title="Card view" aria-pressed="false">▦</button>
+            <button type="button" id="notePopupBackBtn" title="Back" aria-label="Back">◂</button>
             <button type="button" id="notePopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
             <button type="button" id="notePopupCloseBtn" title="Close" aria-label="Close">&times;</button>
           </div>
@@ -2020,6 +2020,14 @@
                    where a control scoped to THIS pane's content actually
                    belongs. Arabic + English (the pane's own snippet is
                    English, not Bangla -- see notePopupSideRowData()). -->
+              <!-- Back-button round -- List/Card view moved OUT of the
+                   shared title bar (window chrome: Back/Maximize/Close)
+                   into this pane's own bar too, same reasoning as the
+                   text-size button beside them: which VIEW the pane's own
+                   list renders in is this pane's own content, not window
+                   chrome. -->
+              <button type="button" id="notePopupListViewBtn" title="List view" aria-pressed="false">☰</button>
+              <button type="button" id="notePopupCardViewBtn" title="Card view" aria-pressed="false">▦</button>
               <div id="notePopupPaneTextSizeSlot"></div>
             </div>
             <div id="notePopupSideList" class="note-popup-side-list view-list"></div>
@@ -2720,6 +2728,7 @@
     const notePopupListViewBtn = document.getElementById("notePopupListViewBtn");
     const notePopupCardViewBtn = document.getElementById("notePopupCardViewBtn");
     const notePopupPaneTextSizeSlot = document.getElementById("notePopupPaneTextSizeSlot");
+    const notePopupBackBtn = document.getElementById("notePopupBackBtn");
     const notePopupMaximizeBtn = document.getElementById("notePopupMaximizeBtn");
     const notePopupCloseBtn = document.getElementById("notePopupCloseBtn");
     const notePopupSideEl = document.getElementById("notePopupSide");
@@ -7043,6 +7052,34 @@
     notePopupCardViewBtn.addEventListener("click", () => setNotePopupSideViewMode("card"));
 
     notePopupCloseBtn.addEventListener("click", () => { setStageView("wheel"); renderWheel(); }); // same "tap the open tab to close it" idiom as tabNoteBtn's own second-tap
+    /** Back-button round -- "go back to the wheel", the owner's own follow-
+        up answer: wherever the reader actually came from, not always the
+        plain landing wheel the way Close already does. noteOriginAsmaGroupId/
+        noteOriginCollectionId are only ever ONE of the two set at a time
+        (openNoteView() resets both on every call, only goToAyahFromAsmaX()/
+        goToAyahFromQcr() ever pass one) and neither is touched by anything
+        else while the reader stays on Note view -- so this just re-shows
+        Explore in exactly the state it was left in (same collection/group,
+        same drill level), rather than re-deriving it. Opened any other way
+        (Read screen, a bookmark, the quick menu, a plain dock tap) -- both
+        are null, and this falls back to Close's own plain-wheel behaviour. */
+    notePopupBackBtn.addEventListener("click", async () => {
+      closeAllPanels();
+      if (noteOriginAsmaGroupId != null || noteOriginAsmaNumber != null) {
+        setStageView("explore");
+        setExplorePalette("asma");
+        renderAsmaXPanel();
+        return;
+      }
+      if (noteOriginCollectionId != null) {
+        setStageView("explore");
+        setExplorePalette("qcr");
+        await renderQcrPanel();
+        return;
+      }
+      setStageView("wheel");
+      renderWheel();
+    });
     notePopupSidePrevBtn.addEventListener("click", () => notePopupStepGroup(-1));
     notePopupSideNextBtn.addEventListener("click", () => notePopupStepGroup(1));
 

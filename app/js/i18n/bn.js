@@ -2004,4 +2004,7 @@ export const BN = {
   "Names": "নামসমূহ", // ?
   "References": "রেফারেন্স", // ?
   "Pick a Group first": "প্রথমে একটি গ্রুপ বাছুন", // ?
+
+  // Back-button round -- the popup note view's own Back control.
+  "Back": "পেছনে", // ?
 };
