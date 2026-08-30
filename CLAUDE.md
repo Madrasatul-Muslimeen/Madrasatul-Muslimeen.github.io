@@ -7582,6 +7582,83 @@ Husna -- harmless (never wrong, just not as informative as it could be),
 and a real, small follow-up rather than an oversight discovered too late
 to record.
 
+v07.105 (29 Aug 2026, same day) is a same-day follow-up from the owner's
+own screenshot of the PC popup Note view, two asks in one message: a Back
+button to return from Note view to the wheel, and the popup's own corner
+buttons moved.
+
+**The corner buttons.** The owner's own instruction: "Leave the maximize,
+close buttons as it is. Move the list and card buttons on the left corner
+in between the right nav button and text resize button." `.note-popup-
+titlebar-actions` (the shared window-chrome bar: List view / Card view /
+Maximize / Close) is down to Maximize and Close, unchanged; List/Card
+moved into `.note-popup-side-nav` (the pane's own bar: ◂ Prev / count /
+▸ Next / [now: List, Card] / the text-size button `notePopupPaneText
+SizeSlot` v07.93 already put there) -- inserted between `notePopupSide
+NextBtn` ("▸", the owner's own "right nav button") and the text-size slot,
+exactly as asked. Zero JS wiring changed: `notePopupListViewBtn`/
+`notePopupCardViewBtn` are still the same element ids `setNotePopupSide
+ViewMode()` already targets, so moving them in the markup was enough --
+the same lesson v07.93's own text-size move already established (list/card
+view is this PANE's own content, not window chrome, the identical
+reasoning that moved text-size out in the first place). One CSS addition
+needed: `.note-popup-side-nav button[aria-pressed="true"]` picks up the
+same gold-highlight rule the titlebar's own pressed buttons already had,
+which the pane's own base button rule didn't carry.
+
+**The Back button.** Their first ask ("place a back button to go back to
+the wheel") was answered with a follow-up question -- the plain landing
+wheel always, or wherever the reader actually came from (Explore's own
+QCR/Asma drill, if that's how they got here)? **They chose "wherever the
+reader came from."** New `notePopupBackBtn` ("◂", first in the freed-up
+title-bar slot, before Maximize) reads the SAME origin state the Asma-in-
+Explore round (v07.104) already tracks -- `noteOriginAsmaGroupId`/
+`noteOriginAsmaNumber` (set only by `goToAyahFromAsmaX()`) or `noteOrigin
+CollectionId` (set only by `goToAyahFromQcr()`), only one of which is ever
+non-null at a time since `openNoteView()` resets both on every call. When
+neither is set (opened via the Read screen, a bookmark, the quick menu, or
+a plain wheel-slice tap) it falls back to exactly what Close already does
+-- `setStageView("wheel"); renderWheel();`. **Deliberately bypasses
+`openExplore()`** (the function a fresh tap on the Explore dock tab calls,
+which resets the drill to Whole Quran / palette to "quran" every time,
+per its own header comment: "QCR is an opt-in via the palette each time,
+not a remembered mode") -- Back calls `setExplorePalette()` +
+`renderQcrPanel()`/`renderAsmaXPanel()` directly instead, which is what
+actually restores the EXACT prior state rather than resetting it. **This
+runs deeper than "back to Explore's landing" for Asma ul Husna
+specifically**, and correctly so: since `asmaXLevel`/`asmaXGroupId`/
+`asmaXNumber` are never reset by anything else while the reader stays on
+Note view, tapping Back from a Reference-level jump lands back on that
+SAME Reference card (e.g. Ar-Rahim's own references), not one level up at
+the Names list -- confirmed by testing the real drill-then-jump-then-back
+sequence, not assumed from reading the state variables. `closeAllPanels()`
+is called first, matching `goToAyahFromQcr()`/`goToAyahFromAsmaX()`'s own
+convention, in case Study options happened to be open underneath.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice, matching every earlier round past
+`behaviour.mjs`'s own disclosed section-42 crash point) -- **17 checks,
+all passing, in both languages, at the 1280x900 PC-popup breakpoint**: the
+title bar confirmed down to exactly Back/Maximize/Close by element id; the
+side-nav's own child order confirmed exactly Prev/count/Next/List/Card/
+text-size-slot; List and Card proven still functional from their new
+position; Back from a plain wheel-opened Note view landing on the wheel;
+Back from a real QCR jump returning to Explore's QCR panel with the same
+collection's own row still present; Back from a real Asma jump (drilled
+all the way to a Name's own References level) returning to that EXACT
+level, not the Names list one step up -- the one assumption this round's
+own first test run got wrong before checking the real rendered state
+(caught by reading what the app actually restored, not by trusting the
+state-variable reasoning) -- and, in Bangla, the Back button's own title
+reading real Bangla text. Zero page errors in either language. `node
+--check` passes on both touched files. Neither `layout.mjs` nor any other
+regression script was re-run this round -- this change is scoped entirely
+to `.note-popup-titlebar`/`.note-popup-side-nav`, a ≥900px-only region
+`layout.mjs` doesn't measure and nothing else on the page reads. One new
+string, "Back", translated in `bn.js`, marked `// ?` for the owner's own
+eye. No `firestore.rules` or schema changes -- nothing to deploy but the
+static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
