@@ -7715,6 +7715,196 @@ CANONICAL Name's Arabic/meaning should stay fixed (Bangla-override only,
 as today) or become fully editable too. Awaiting the owner's answers
 before building any of it.
 
+v07.107 (30 Aug 2026, on Claude Code on the web) is **the round v07.106
+left open -- three real dropdown fields (Groups/Single/Dual), full
+add/edit/archive for Names and Groups from the Explore panel itself, a
+multi-Name reference-attach mechanism, and a new "attach this āyah" button
+on both the Read and Note screens.** Built directly from the owner's own
+follow-up message rather than another AskUserQuestion round, since it
+answered the open questions v07.106 had flagged (one dropdown vs several,
+duplicate-vs-alongside editing) in its own words: **"Two separate field for
+groups n Single Names for drop-down. In fact make another drop down field
+for DUAL Names... Enable all the editing, adding, ref functions to this
+list and individual Dual names like the lists n group names... Whatever
+changes is made affect everywhere it connects... Eng n Bangla only for
+now."**
+
+**"Dual Names" is not a new collection type -- it's the SAME collection
+mechanism (`asma-collections.js`'s own group/rename/archive/add-item/
+remove-item/move-item functions, unchanged) tagged with a new, additive
+`kind` field ("group" the default, or "dual").** The owner's own words
+("Dual names would belong as they are in Group n List but I am making a
+separate lust for Dual names") describe exactly that: the same mechanism,
+browsed from its own field. **Seeded with NONE, deliberately** -- deciding
+which of the 99+33 Names count as a traditional paired/complementary Name
+(Al-Qabid/Al-Basit and the like) is a real content call, not a coding one,
+so the owner populates this list themselves via the same "+" button that
+adds an ordinary group. No `firestore.rules` change: the deployed rule for
+`asmaCollections` (`allow update: if canAdminCatalogue(tenantId);`) has no
+field-level `hasOnly()` restriction, confirmed by reading it before
+assuming otherwise -- a new field needs nothing further.
+
+**The Explore Asma panel is dropdown-driven now, matching QCR's own "no
+separate browsing screen" shape** -- the old single breadcrumb bar is
+replaced by three real `<select>` fields: **Group** and **Dual** each list
+their own kind of collection and jump straight to that collection's own
+Names (list+wheel), reusing `renderAsmaXGroupsLevel()`/
+`renderAsmaXNamesLevel()`, now filtered by `asmaXKind` rather than hardcoded
+to "group"; **Single Names** lists every active Name -- canonical and extra
+alike, 132 in total -- with its own reference shown inline in the option
+text, and jumps straight to that one Name's own References level with no
+browsing step of its own, exactly the owner's own "a straight full list...
+as a drop-down field." A "Manage" toggle (owner/prime only,
+`canAdminCatalogueClientSide()`, the same gate QCR's own Manage mode uses)
+reveals rename/archive/add-collection icon buttons plus a **"+N" (Add
+Name)** button and a **🔗 (Attach a reference)** button. **The Names-level
+list reuses `renderAsmaCollectionListHtml()`'s own Manage-mode row
+controls unchanged** -- move-to-another-collection, edit, archive-extra,
+remove -- the exact same markup asma-study.html's "Browse by Category"
+panel already relies on, now wired here too rather than duplicated. **This
+means an edit made from either screen shows on the other**, since both are
+two windows onto the one `asmaCollections/{tenantId}` document -- the
+owner's own "affect everywhere it connects," true by construction rather
+than by extra plumbing.
+
+**Add/Edit-Name is a real overlay, and "Eng n Bangla only for now" is
+enforced by what fields the form even offers, not by a rule checked after
+the fact.** For a brand-new or existing EXTRA Name (number ≥ 100): a
+Transliteration field, English meaning, Bangla name, Bangla meaning, a
+Reference textarea, and weak/isPhrase checkboxes -- no Arabic field
+anywhere on the form. For a CANONICAL Name (1..99, `asma-data.js`'s own
+fixed platform content): only an English meaning override, a Bangla
+meaning override, and a reference override -- Arabic and transliteration
+show read-only, since I4/I5 already treat those as fixed. **Two new
+additive fields make the English half of this possible**:
+`nameOverridesEn` (mirrors the existing `nameOverrides` Bangla-correction
+map exactly -- `overridesEnFrom()`/`setNameOverrideEn()` in
+`asma-collections.js`, `entry.enOverride` in `resolveAsmaEntry()`,
+consumed by `asmaEntryMeaningText()`'s own language-gated check, which
+only ever shows the English override while the app itself is displaying in
+English -- the same rule the Bangla override already followed for Bangla)
+and `nameRefOverrides` (a canonical Name's own reference was, until this
+round, permanently fixed to `DEFAULT_CANONICAL_REFS`'s seeded text with no
+way to correct or extend it at all). An extra Name's own `meaningEn` field
+is new too, additive on `normalizeExtraName()` -- before this round an
+extra Name's English "meaning" was silently just its own transliteration
+repeated (`meaning: { en: extra.transliteration, ... }`), which this round
+also fixes for every extra Name going forward, not only new ones (falls
+back to the transliteration exactly as before when `meaningEn` is empty,
+so nothing already saved changes on screen).
+
+**The multi-Name reference-attach mechanism is one popover, reachable from
+three places -- Explore's own Manage mode, the Read screen, and the Note
+view -- never three separate implementations.** A new pure helper,
+`appendRefToName()` in `asma-collections.js`, appends a reference fragment
+onto whichever Name is ticked: for a canonical Name, onto its
+`nameRefOverrides` entry (combining with whatever it already effectively
+showed, never silently overwriting); for an extra Name, onto its own real
+`ref` field via the existing `updateExtraName()`. The popover
+(`#asmaXAttachOverlay`) offers a reference-text box, a filter box, and a
+scrollable checklist of every active Name (`asmaXAllNameEntries()`); it is
+opened via `openAsmaXAttachPopover({ prefillRef, prefillNumbers })`, which
+lazily loads `asmaX*` data first (`ensureAsmaXDataLoaded()`) since it's
+reachable from the Read/Note view even in a session that never opened the
+Asma Explore palette at all -- I9's own "on first use" rule, the same
+treatment every other lazy Asma read in this app already gets.
+
+**A real format constraint had to be respected for the auto-filled
+reference to work at all, not assumed away: `asma-ref-parser.js`'s own
+`parseAsmaRef()` reads Bangla digits and the literal word "কুরআন"
+REGARDLESS of the app's current display language** -- that parser was
+built (Round 2) against the owner's own uploaded file's fixed data
+convention, not against a translated UI string. So `asmaRefTextFor(surah,
+ayah)` always writes `"কুরআন {bn-digit surah}:{bn-digit ayah}"`, even while
+the reader is using the app in English -- writing plain Latin digits or
+the English word "Qur'an" would have produced a reference that LOOKS
+attached but never actually resolves into a real chip on the Name's own
+detail screen. Checked by reading the parser's own header before writing
+this function, not assumed from how `num()` already formats digits
+elsewhere (which follows the CURRENT language, the wrong behaviour here).
+
+**The Read-screen and Note-view attach buttons, per the owner's own "may
+be placing it with the copy/share button."** The Read screen's `#readBar`
+gets a new `readAttachAsmaBtn` (🔗), visible only for owner/prime, sitting
+beside the existing bookmark button; it always attaches whichever āyah is
+CURRENTLY on screen (`currentSurahNum`/`currentAyahNum`), independent of
+whatever Study Unit is selected. The Note view's own ⋯ menu -- the same
+menu "Update bookmark" already lives in -- gained a new
+`onAttachAsma`-wired item, `canAttachAsma`-gated the same way, rather than
+a new permanent bar-2 icon: the mobile-overflow round already moved things
+OFF that bar for exactly the reason a 7th permanent icon would reintroduce
+(`ayah-note-renderer.js`'s own comment on that round is what settled this
+without re-litigating it). Both wire to the SAME `openAsmaXAttachPopover()`
+-- one mechanism, two entry points, matching how every other shared
+popover in this app already works (Copy/Share, Collections).
+
+**One real, disclosed interpretive call, worth flagging for the owner to
+correct if wrong: "Move to…" (a Name's own move-between-collections picker,
+already built into `renderAsmaCollectionListHtml()`) was left offering
+EVERY active collection, group or dual alike, rather than restricted to
+match the current collection's own kind.** The underlying `moveItem()`
+helper never cared about kind to begin with, and there's no obvious reason
+a Name couldn't move from an everyday group into the Dual list (or back)
+if that's ever a real need -- but it wasn't asked about directly, so it's
+recorded here rather than silently decided.
+
+**Verified with a focused, un-checked-in Playwright smoke script** (this
+project's own established practice for a round this size) -- **52 checks,
+0 failures, in both English and Bangla**: the three dropdowns' own option
+counts (19 seeded groups, 0 seeded dual pairs, 132 Names); a group select
+value proven to stay a plain collection id; picking a group opening its
+own Names list with a working Back button; Manage mode's own visibility
+and its Add-existing-Name form; adding a real Dual collection (via a
+native `prompt()`, this project's own established convention for exactly
+this kind of admin action) and confirming it shows up in the Dual select,
+with a real write reaching `asmaCollections` (via `window.__fsLog`, since
+the very first write of a session goes through `setDoc`, which this
+project's own Firebase stub doesn't record -- documented in
+`firebase-stub.mjs` and this file's own v07.66-68/77 entries); the
+Add-Name overlay proven to carry NO Arabic input field; a brand-new extra
+Name proven to land in the current group's own list with a real second
+write (`updateDoc`) confirmed by an increased `__fsLog` count; the Single
+select jumping straight to Ar-Rahman's own refs card; the canonical-Name
+edit form proven to carry ONLY English/Bangla meaning + reference (no
+transliteration, no weak/isPhrase checkboxes), with the English input's
+own placeholder showing the real, unedited original text; a saved English
+override proven to really show on the refs card (checked only on the
+English-language pass, since `asmaEntryMeaningText()`'s own language gate
+correctly keeps it OFF while viewing in Bangla -- a genuine test-assumption
+bug caught and fixed mid-round, not an app defect); the attach popover
+proven to pre-tick the current Name, and a real attach proven to add a
+genuine new Qur'an chip to the refs card; the Read screen's own attach
+button proven visible for owner/prime and proven to pre-fill a real,
+correctly Bangla-digit-formatted reference; and the Note view's ⋯ menu
+proven to carry the same item with the same pre-fill. Two real test-script
+bugs were caught and fixed while writing the script, not app bugs: `page.
+waitForSelector("#el:not(.open)")` defaults to waiting for the element to
+become VISIBLE, which a closed overlay (`display:none` once `.open` is
+removed) can never satisfy -- fixed with a direct `waitForFunction`
+checking `classList.contains("open")` instead, the same shape of trap this
+project's own README already documents for `timeupdate` throttling.
+`node --check` passes on every touched file, including the module script
+extracted from `quranrevival.html` itself. **`tools/i18n-coverage.mjs`
+confirms the quran area's own missing-string count is unchanged (7,
+pre-existing, unrelated to this round) once this round's own new strings
+were added** -- three were caught missing on the first pass (`Add Name`,
+`Dual Names`, `Single Names`, all static `title`/`aria-label` attributes
+the tool's own scan reaches even though `translateStatic()` already
+covers them) and added; every other new string was added deliberately, up
+front, not discovered after the fact. **`tools/i18n-verify/layout.mjs`
+could not be run this round** -- this sandbox's own Playwright cache
+lacks the headless-shell browser build that script's default
+`chromium.launch()` call expects, the same pre-existing, disclosed sandbox
+limitation v07.103's own entry already recorded; since this round only
+adds new elements outside `#wheelSection`/`#stage`'s own measured layout
+(a new Read-bar icon, new overlay markup, and the Explore Asma panel's own
+internal structure, all of which sits behind the wheel's own veil or off
+the landing page entirely), no landing-page regression was expected, and
+none is claimed without the measurement to back it. No `firestore.rules`
+or schema changes beyond the two additive fields (`kind` on a collection,
+`meaningEn` on an extra Name) already covered above -- nothing to deploy
+but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

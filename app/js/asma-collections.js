@@ -61,6 +61,17 @@ function normalizeCollection(c) {
     order: Number.isFinite(Number(c?.order)) ? Number(c.order) : 999,
     status: c?.status === "archived" ? "archived" : "active",
     items: Array.isArray(c?.items) ? c.items.map(String) : [],
+    // Round -- 30 Aug 2026: additive. "group" (default, every pre-existing
+    // collection) is the owner's own everyday thematic grouping; "dual" is
+    // a SEPARATE list the owner asked for, of the traditional paired/
+    // complementary Names of Allah (e.g. Al-Qabid/Al-Basit) -- same exact
+    // collection mechanism (add/rename/archive a collection, add/remove/
+    // move a Name), just browsed from its own dropdown rather than mixed
+    // in with everyday groups. Seeded with none by default (see
+    // DEFAULT_ASMA_COLLECTIONS's own header) -- the owner populates this
+    // list themselves, since guessing which Names count as a traditional
+    // pair is a real content decision, not a coding one.
+    kind: c?.kind === "dual" ? "dual" : "group",
   };
 }
 
@@ -69,6 +80,12 @@ function normalizeExtraName(e) {
     number: Number(e?.number),
     arabic: String(e?.arabic ?? ""),
     transliteration: String(e?.transliteration ?? ""),
+    // Round -- 30 Aug 2026: additive. The English MEANING, distinct from
+    // the transliteration (a name's own Latin-script pronunciation, not
+    // its meaning) -- every extra Name added before this round has none,
+    // and resolveAsmaEntry() falls back to the transliteration exactly as
+    // it always did, so nothing already saved changes on screen.
+    meaningEn: String(e?.meaningEn ?? ""),
     bnName: String(e?.bnName ?? ""),
     bn: String(e?.bn ?? ""),
     ref: String(e?.ref ?? ""),
@@ -100,6 +117,25 @@ export function extraNamesFrom(docData) {
  *  CANONICAL Name (1..99). Empty object until the first edit. */
 export function overridesFrom(docData) {
   const stored = docData?.nameOverrides;
+  return stored && typeof stored === "object" ? stored : {};
+}
+
+/** number (string key) -> the owner's own ENGLISH correction for a
+ *  CANONICAL Name's meaning. Additive, mirrors overridesFrom() exactly --
+ *  30 Aug 2026 round, "Eng n Bangla only for now." */
+export function overridesEnFrom(docData) {
+  const stored = docData?.nameOverridesEn;
+  return stored && typeof stored === "object" ? stored : {};
+}
+
+/** number (string key) -> the owner's own full replacement reference text
+ *  for a CANONICAL Name (1..99). asma-collections-data.js's own
+ *  DEFAULT_CANONICAL_REFS is fixed platform data (imported straight from
+ *  the owner's uploaded file), so a canonical Name's reference needs the
+ *  same override shape a Bangla correction already has -- present, it wins
+ *  over the seeded reference; absent, nothing changes from today. */
+export function refOverridesFrom(docData) {
+  const stored = docData?.nameRefOverrides;
   return stored && typeof stored === "object" ? stored : {};
 }
 
@@ -205,13 +241,55 @@ export function setNameOverrideBn(overrides, number, text) {
   return next;
 }
 
+/** The owner's own ENGLISH correction for a CANONICAL Name's meaning --
+ *  same shape as setNameOverrideBn() above. */
+export function setNameOverrideEn(overrides, number, text) {
+  const next = { ...overrides };
+  const trimmed = (text ?? "").trim();
+  if (trimmed) next[String(number)] = trimmed;
+  else delete next[String(number)];
+  return next;
+}
+
+/** The owner's own full replacement reference text for a CANONICAL Name --
+ *  same shape as setNameOverrideBn() above. */
+export function setNameRefOverride(overrides, number, text) {
+  const next = { ...overrides };
+  const trimmed = (text ?? "").trim();
+  if (trimmed) next[String(number)] = trimmed;
+  else delete next[String(number)];
+  return next;
+}
+
+/** Appends one reference fragment onto a Name's own existing reference --
+ *  canonical (1..99) or extra (>=100) alike, via whichever mechanism that
+ *  range actually uses (a refOverride for canonical; the real, editable
+ *  `ref` field for an extra). Used both by Manage mode's own "attach one
+ *  reference to several Names at once" action, and by the new Read/Note
+ *  view "attach this ayah" button -- one shared mechanism, two entry
+ *  points. `currentRef(number)` reads whatever the Name's own reference
+ *  shows RIGHT NOW (already-resolved, override-aware), so appending never
+ *  clobbers a reference this exact function already added earlier. */
+export function appendRefToName({ extraNames, refOverrides }, number, currentRef, fragment) {
+  const clean = String(fragment ?? "").trim();
+  if (!clean) return { extraNames, refOverrides };
+  if (number >= 1 && number <= 99) {
+    const existing = String(currentRef ?? "").trim();
+    const combined = existing ? `${existing}; ${clean}` : clean;
+    return { extraNames, refOverrides: setNameRefOverride(refOverrides, number, combined) };
+  }
+  const existing = String(currentRef ?? "").trim();
+  const combined = existing ? `${existing}; ${clean}` : clean;
+  return { extraNames: updateExtraName(extraNames, number, { ref: combined }), refOverrides };
+}
+
 /** Resolves ONE Name/phrase by its permanent number, whether canonical
  *  (1..99, asma-data.js's own fixed ASMA_NAMES) or an extra (>= 100,
  *  extraNames) -- the one place both are treated uniformly, so the detail
  *  screen, the claim mechanism and every category-browser row can work off
  *  any number the same way. Returns null for a number nothing resolves to
  *  (a stale extraNames number archived away, or plain nonsense input). */
-export function resolveAsmaEntry(number, { extraNames = [], overrides = {} } = {}) {
+export function resolveAsmaEntry(number, { extraNames = [], overrides = {}, overridesEn = {}, refOverrides = {} } = {}) {
   if (number >= 1 && number <= 99) {
     const base = getAsmaName(number);
     if (!base) return null;
@@ -221,12 +299,16 @@ export function resolveAsmaEntry(number, { extraNames = [], overrides = {} } = {
       transliteration: base.transliteration,
       meaning: base.meaning,
       bnOverride: overrides[String(number)] ?? null,
+      // Round -- 30 Aug 2026: the owner's own English correction, additive,
+      // same shape as bnOverride above.
+      enOverride: overridesEn[String(number)] ?? null,
       bnName: null,
       // Round 2 -- the owner's file also gave 95 of the 99 canonical Names
       // a reference, not only the extras; see DEFAULT_CANONICAL_REFS's own
       // header. Four Names (36, 65, 69, 77) have none, same as in the
-      // owner's own file.
-      ref: DEFAULT_CANONICAL_REFS[number] ?? null,
+      // owner's own file. A refOverride (round -- 30 Aug 2026, additive)
+      // wins over the seeded reference when the owner has attached one.
+      ref: refOverrides[String(number)] ?? DEFAULT_CANONICAL_REFS[number] ?? null,
       // The owner's own file flagged 14 of the 99 this way too, not only
       // the extras -- see asma-collections-data.js's own header on
       // DEFAULT_WEAK_CANONICAL_NUMBERS for exactly which and why this
@@ -243,8 +325,9 @@ export function resolveAsmaEntry(number, { extraNames = [], overrides = {} } = {
     number,
     arabic: extra.arabic,
     transliteration: extra.transliteration,
-    meaning: { en: extra.transliteration, bn: extra.bn },
+    meaning: { en: extra.meaningEn || extra.transliteration, bn: extra.bn },
     bnOverride: overrides[String(number)] ?? null,
+    enOverride: null,
     bnName: extra.bnName,
     ref: extra.ref,
     weak: extra.weak,
@@ -268,8 +351,15 @@ export async function getAsmaCollectionsDoc(db, tenantId) {
  *  qcr.js's own saveQcrCollections() uses. I15: a failure reaches the user
  *  through safeWrite(); the caller rolls the optimistic in-memory change
  *  back on failure. */
-export async function saveAsmaCollections(db, { tenantId, collections, extraNames, overrides, docExists, uid }) {
-  const payload = { collections, extraNames, nameOverrides: overrides, tenantId };
+export async function saveAsmaCollections(db, { tenantId, collections, extraNames, overrides, overridesEn, refOverrides, docExists, uid }) {
+  const payload = {
+    collections,
+    extraNames,
+    nameOverrides: overrides,
+    nameOverridesEn: overridesEn ?? {},
+    nameRefOverrides: refOverrides ?? {},
+    tenantId,
+  };
   if (docExists) {
     await updateDocument(db, TENANT.ASMA_COLLECTIONS, tenantId, payload);
   } else {

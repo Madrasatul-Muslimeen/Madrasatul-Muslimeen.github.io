@@ -2007,4 +2007,29 @@ export const BN = {
 
   // Back-button round -- the popup note view's own Back control.
   "Back": "পেছনে", // ?
+
+  // 30 Aug 2026 round -- three real dropdown fields (Group/Dual/Single)
+  // plus Manage-mode add/edit/archive, over the SAME asmaCollections doc.
+  "All dual Names": "সব জোড়া নাম", // ?
+  "All Names": "সব নাম", // ?
+  "Dual Names": "জোড়া নাম", // ?
+  "Single Names": "একক নাম", // ?
+  "Add Name": "নাম যোগ করুন", // ?
+  "Add dual-name collection": "জোড়া-নামের সংগ্রহ যোগ করুন", // ?
+  "New dual-name collection:": "নতুন জোড়া-নামের সংগ্রহ:", // ?
+  "Add a new Name": "একটি নতুন নাম যোগ করুন", // ?
+  "Edit Name": "নাম সম্পাদনা করুন", // ?
+  "Transliteration": "প্রতিবর্ণীকরণ", // ?
+  "English meaning": "ইংরেজি অর্থ", // ?
+  "Bangla name": "বাংলা নাম", // ?
+  "Bangla meaning": "বাংলা অর্থ", // ?
+  "A transliteration is needed.": "একটি প্রতিবর্ণীকরণ প্রয়োজন।", // ?
+  "Attach a reference to Names": "নামগুলোতে একটি সূত্র যুক্ত করুন", // ?
+  "Attach a reference to several Names": "একাধিক নামে একটি সূত্র যুক্ত করুন", // ?
+  "Reference text": "সূত্রের লেখা", // ?
+  "Filter Names…": "নাম খুঁজুন…", // ?
+  "No Names found.": "কোনো নাম পাওয়া যায়নি।", // ?
+  "Type a reference first.": "প্রথমে একটি সূত্র লিখুন।", // ?
+  "Tick at least one Name.": "অন্তত একটি নাম বাছাই করুন।", // ?
+  "Attach to Asma ul Husna": "আসমাউল হুসনায় যুক্ত করুন", // ?
 };

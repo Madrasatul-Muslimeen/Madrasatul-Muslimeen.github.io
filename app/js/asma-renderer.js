@@ -67,6 +67,9 @@ export function asmaEntryDisplayName(entry) {
 export function asmaEntryMeaningText(entry) {
   const lang = getAppLang();
   if (!entry.isExtra && lang === "bn" && entry.bnOverride) return entry.bnOverride;
+  // Round -- 30 Aug 2026: the owner's own English correction to a
+  // CANONICAL Name's meaning, additive, same shape as bnOverride above.
+  if (!entry.isExtra && lang === "en" && entry.enOverride) return entry.enOverride;
   return langText(entry.meaning, lang);
 }
 

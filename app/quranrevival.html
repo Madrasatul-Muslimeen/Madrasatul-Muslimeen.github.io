@@ -792,14 +792,25 @@
      (same dark-navy/gold theme, same mobile-wheel-first/desktop-list-left
      layout) byte-for-byte, as its own self-contained set of rules rather
      than widening the QCR selectors above -- lower risk of a stray edit
-     there, and this panel's own breadcrumb bar (3 drill levels, QCR has
-     only 1) genuinely differs from #qcrLevelBar anyway. */
+     there.
+     30 Aug 2026 round: the old single breadcrumb bar is replaced by
+     #asmaXLevelBar, three real <select> fields (Group/Dual/Single) plus
+     Manage-mode icon buttons -- reuses the SAME generic .qcr-icon-btn/
+     .qcr-manage-toggle/.qcr-archived-toggle/.qcr-add-form classes QCR's own
+     level bar already defined above (they were never scoped to #qcrPanel),
+     so only the bar's own layout and the three selects' width need new
+     rules here. */
   #asmaXPanel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; color: #F2E8D5; font-family: 'Inter', sans-serif; }
-  #asmaXBreadcrumb {
-    flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 2px;
+  #asmaXLevelBar {
+    flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
     padding: 0.6rem 0.7rem; background: #1B2A41; border-radius: 12px 12px 0 0;
-    border: 1px solid rgba(201,162,75,0.3); border-bottom: none; font-size: 0.78rem;
+    border: 1px solid rgba(201,162,75,0.3); border-bottom: none;
   }
+  #asmaXLevelBar select {
+    flex: 1 1 9rem; min-width: 0; font-size: 0.8rem; padding: 0.35rem 0.4rem; border-radius: 6px;
+    border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5;
+  }
+  #asmaXLevelManageActions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
   #asmaXMain {
     flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column-reverse; gap: 0;
     background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%);
@@ -869,6 +880,42 @@
   #asmaXPosterOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 900; align-items: center; justify-content: center; padding: 1rem; }
   #asmaXPosterOverlay.open { display: flex; }
   #asmaXPosterCloseBtn { position: fixed; top: 1rem; right: 1.2rem; background: rgba(255,255,255,0.15); color: white; border: none; font-size: 1.6rem; padding: 0.2rem 0.7rem; border-radius: 0.4rem; z-index: 901; cursor: pointer; }
+
+  /* 30 Aug 2026 round -- Add/Edit-Name and multi-Name attach-reference
+     overlays. Same dark card-on-scrim idiom as the poster overlay above,
+     scoped so both are usable from the Explore panel's own Manage mode AND
+     -- the attach popover only -- from the Read/Note view's new "attach
+     this āyah" button, which sits outside #asmaXPanel entirely. */
+  #asmaXEditOverlay, #asmaXAttachOverlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 950;
+    align-items: center; justify-content: center; padding: 1rem;
+  }
+  #asmaXEditOverlay.open, #asmaXAttachOverlay.open { display: flex; }
+  #asmaXEditCard, #asmaXAttachCard {
+    position: relative; width: min(94vw, 30rem); max-height: 85vh; overflow-y: auto;
+    background: #1B2A41; border: 1px solid rgba(201,162,75,0.35); border-radius: 12px;
+    padding: 1.2rem 1.1rem; color: #F2E8D5; font-family: 'Inter', sans-serif;
+  }
+  #asmaXEditCard h3, #asmaXAttachCard h3 { margin: 0 0.4rem 0.8rem 0; color: #C9A24B; font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; }
+  #asmaXEditCloseBtn, #asmaXAttachCloseBtn { position: absolute; top: 0.7rem; right: 0.7rem; }
+  #asmaXEditBody { display: flex; flex-direction: column; gap: 0.6rem; }
+  #asmaXEditBody label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.78rem; color: #9aa7be; }
+  #asmaXEditBody input[type="text"], #asmaXEditBody textarea {
+    font-size: 0.85rem; padding: 0.4rem 0.5rem; border-radius: 6px;
+    border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5; font-family: inherit;
+  }
+  #asmaXEditBody textarea { min-height: 3.4rem; resize: vertical; }
+  #asmaXEditBody .asmaX-edit-check { flex-direction: row; align-items: center; gap: 0.4rem; }
+  .asmaX-edit-actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
+  #asmaXAttachRefLabel { display: block; font-size: 0.78rem; color: #9aa7be; margin-bottom: 0.25rem; }
+  #asmaXAttachRefInput, #asmaXAttachFilterInput {
+    width: 100%; box-sizing: border-box; font-size: 0.85rem; padding: 0.4rem 0.5rem; border-radius: 6px;
+    border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5; font-family: inherit; margin-bottom: 0.6rem;
+  }
+  #asmaXAttachList { max-height: 40vh; overflow-y: auto; border: 1px solid rgba(201,162,75,0.2); border-radius: 8px; padding: 0.4rem 0.6rem; }
+  .asmaX-attach-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; font-size: 0.82rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  .asmaX-attach-row:last-child { border-bottom: none; }
+  .asmaX-attach-row .asmaX-attach-num { color: #8fa0c2; font-size: 0.72rem; min-width: 2rem; }
   .asma-poster {
     width: 300px; aspect-ratio: 210 / 297;
     background: radial-gradient(circle at 50% 8%, #164f4c 0%, #0b3a3a 55%, #072423 100%);
@@ -1964,6 +2011,12 @@
                two are independent, same as a Note can exist on both an
                āyah and a wider unit ("Also noted at:"). -->
           <button type="button" class="secondary qr-ico" id="readBookmarkBtn" aria-label="Bookmark this āyah" title="Bookmark this āyah" hidden>🔖</button>
+          <!-- 30 Aug 2026 round -- "enable adding/attaching an Ayah... to
+               an existing GROUP, LIST, DUAL AH" -- owner/prime only (it
+               writes to asmaCollections/{tenantId}, the same Manage-mode
+               write every Explore Asma edit already makes), shown/hidden
+               by JS alongside every other role-gated control on this page. -->
+          <button type="button" class="secondary qr-ico" id="readAttachAsmaBtn" aria-label="Attach to Asma ul Husna" title="Attach to Asma ul Husna" hidden>🔗</button>
           <!-- Round 31 -- the owner's own question: "why should the three dot
                take space over the Ayah? put the dots on the Bar, where there
                are lots of empty spaces." Mounted here for the single-ayah
@@ -2120,17 +2173,44 @@
             </div>
           </div>
 
-          <!-- Asma-in-Explore round -- a genuine 3-level drill (Groups →
-               Names → References), unlike QCR's single always-visible
-               level, since a Group's own Names aren't directly claimable
-               the way a collection's ayahs are -- there's a real step
-               between "which group" and "which reference to open." -->
+          <!-- Asma-in-Explore round -- a 3-level drill (Groups → Names →
+               References), unlike QCR's single always-visible level, since
+               a Group's own Names aren't directly claimable the way a
+               collection's ayahs are -- there's a real step between "which
+               group" and "which reference to open."
+               30 Aug 2026 round: three real dropdown fields (the owner's
+               own ask, "two separate field for groups n Single Names...
+               make another drop down field for DUAL Names") replace the
+               old single breadcrumb -- Group and Dual are the SAME
+               collection mechanism, filtered by the collection's own
+               `kind`; Single is a flat jump straight to one Name's own
+               refs level, no browsing step of its own. Manage mode
+               (owner/prime only) now lives here too, mirroring QCR's own
+               level-bar shape -- editing an Asma Name/group is no longer
+               asma-study.html's own page alone (that panel is untouched
+               and still works; this is a second surface over the SAME
+               tenant document, so an edit here shows there too and vice
+               versa). -->
           <div id="asmaXPanel" hidden>
-            <div id="asmaXBreadcrumb"></div>
+            <div id="asmaXLevelBar">
+              <select id="asmaXGroupSelect" aria-label="Group"></select>
+              <select id="asmaXDualSelect" aria-label="Dual Names"></select>
+              <select id="asmaXSingleSelect" aria-label="Single Names"></select>
+              <span id="asmaXLevelManageActions" hidden>
+                <button type="button" class="qcr-icon-btn" id="asmaXRenameLevelBtn" title="Rename">✎</button>
+                <button type="button" class="qcr-icon-btn danger" id="asmaXArchiveLevelBtn" title="Archive">🗄</button>
+                <button type="button" class="qcr-icon-btn" id="asmaXAddLevelBtn" title="Add collection">+</button>
+                <button type="button" class="qcr-icon-btn" id="asmaXNewNameBtn" title="Add Name">+N</button>
+                <button type="button" class="qcr-icon-btn" id="asmaXAttachRefBtn" title="Attach a reference to several Names">🔗</button>
+                <label class="qcr-archived-toggle"><input type="checkbox" id="asmaXShowArchivedToggle"> Show archived</label>
+              </span>
+              <button type="button" class="qcr-manage-toggle" id="asmaXManageToggleBtn">Manage</button>
+            </div>
             <div id="asmaXMain">
               <div id="asmaXListPane">
                 <div id="asmaXListHeader"></div>
                 <div id="asmaXWaysListContainer" class="ways-list"></div>
+                <div id="asmaXAddFormSlot"></div>
               </div>
               <div id="asmaXWheelPane">
                 <div id="asmaXWheelContainer"></div>
@@ -2450,6 +2530,40 @@
     <div id="asmaXPosterMount"></div>
   </div>
 
+  <!-- 30 Aug 2026 round -- Add/Edit a Name (canonical override or a real,
+       owner-authored extra Name), and the multi-Name reference-attach
+       popover shared by Explore's own Manage mode AND the new Read/Note
+       view "attach this āyah" button (task item below). Plain overlay
+       cards, the same visual idiom #asmaXPosterOverlay already uses. -->
+  <div id="asmaXEditOverlay">
+    <div id="asmaXEditCard">
+      <button type="button" id="asmaXEditCloseBtn" class="qcr-icon-btn" aria-label="Close">&times;</button>
+      <h3 id="asmaXEditTitle"></h3>
+      <div id="asmaXEditBody"></div>
+      <p class="hint" id="asmaXEditMsg" style="display:none;"></p>
+      <div class="asmaX-edit-actions">
+        <button type="button" id="asmaXEditSaveBtn">Save</button>
+        <button type="button" class="secondary" id="asmaXEditCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="asmaXAttachOverlay">
+    <div id="asmaXAttachCard">
+      <button type="button" id="asmaXAttachCloseBtn" class="qcr-icon-btn" aria-label="Close">&times;</button>
+      <h3 id="asmaXAttachTitle"></h3>
+      <label id="asmaXAttachRefLabel" for="asmaXAttachRefInput"></label>
+      <input type="text" id="asmaXAttachRefInput">
+      <input type="text" id="asmaXAttachFilterInput" placeholder="">
+      <div id="asmaXAttachList"></div>
+      <p class="hint" id="asmaXAttachMsg" style="display:none;"></p>
+      <div class="asmaX-edit-actions">
+        <button type="button" id="asmaXAttachSaveBtn">Attach</button>
+        <button type="button" class="secondary" id="asmaXAttachCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { auth, db } from "./js/firebase-init.js";
     import {
@@ -2479,17 +2593,26 @@
     } from "./js/qcr.js";
     // Asma-in-Explore round -- Asma ul Husna sits beside QCR as a second
     // Explore topic and a second Note-view Topic (the owner's own "AH is
-    // another topic like Quran for Critical Reasoning"). Read-only here --
-    // editing (rename/archive a group, add/move/remove a Name) stays on
-    // asma-study.html's own "Browse by Category" panel, the owner's own
-    // choice ("keep the panel as-is") rather than a second, duplicated
-    // editing surface. I2 holds: these are the same pure/shared modules
-    // asma-study.js already imports, not a second copy of anything.
+    // another topic like Quran for Critical Reasoning").
+    // 30 Aug 2026 round: no longer read-only -- the owner's own follow-up
+    // ask ("Enable adding/editing/deleting Names... Groups... DUAL Names")
+    // brings real Manage-mode editing here too, over the exact SAME tenant
+    // document asma-study.html's own "Browse by Category" panel already
+    // reads/writes (I2 holds: same pure/shared asma-collections.js/
+    // asma-renderer.js functions, not a second copy) -- an edit made from
+    // either surface shows on the other, since both are just two windows
+    // onto one Firestore document.
     import { ASMA_NAMES } from "./js/asma-data.js";
     import {
-      collectionsFrom as asmaCollectionsFrom, extraNamesFrom as asmaExtraNamesFrom, overridesFrom as asmaOverridesFrom,
+      collectionsFrom as asmaCollectionsFrom, extraNamesFrom as asmaExtraNamesFrom,
+      overridesFrom as asmaOverridesFrom, overridesEnFrom as asmaOverridesEnFrom, refOverridesFrom as asmaRefOverridesFrom,
       activeCollections as asmaActiveCollections, activeExtraNames as asmaActiveExtraNames,
-      resolveAsmaEntry, getAsmaCollectionsDoc,
+      addCollection as asmaAddCollectionLocal, renameCollection as asmaRenameCollectionLocal, setCollectionStatus as asmaSetCollectionStatusLocal,
+      addItem as asmaAddItemLocal, removeItem as asmaRemoveItemLocal, moveItem as asmaMoveItemLocal,
+      addExtraName as asmaAddExtraNameLocal, updateExtraName as asmaUpdateExtraNameLocal, setExtraNameStatus as asmaSetExtraNameStatusLocal,
+      setNameOverrideBn as asmaSetNameOverrideBnLocal, setNameOverrideEn as asmaSetNameOverrideEnLocal,
+      setNameRefOverride as asmaSetNameRefOverrideLocal, appendRefToName as asmaAppendRefToNameLocal,
+      resolveAsmaEntry, getAsmaCollectionsDoc, saveAsmaCollections,
     } from "./js/asma-collections.js";
     import { asmaEntryDisplayName, asmaEntryMeaningText, renderAsmaCollectionListHtml, renderAsmaXrefBlock, renderAsmaPosterHtml } from "./js/asma-renderer.js";
     import { parseAsmaRef } from "./js/asma-ref-parser.js";
@@ -2825,15 +2948,43 @@
 
     const explorePaletteAsmaBtn = document.getElementById("explorePaletteAsmaBtn");
     const asmaXPanelEl = document.getElementById("asmaXPanel");
-    const asmaXBreadcrumbEl = document.getElementById("asmaXBreadcrumb");
+    const asmaXGroupSelect = document.getElementById("asmaXGroupSelect");
+    const asmaXDualSelect = document.getElementById("asmaXDualSelect");
+    const asmaXSingleSelect = document.getElementById("asmaXSingleSelect");
+    const asmaXLevelManageActions = document.getElementById("asmaXLevelManageActions");
+    const asmaXRenameLevelBtn = document.getElementById("asmaXRenameLevelBtn");
+    const asmaXArchiveLevelBtn = document.getElementById("asmaXArchiveLevelBtn");
+    const asmaXAddLevelBtn = document.getElementById("asmaXAddLevelBtn");
+    const asmaXNewNameBtn = document.getElementById("asmaXNewNameBtn");
+    const asmaXAttachRefBtn = document.getElementById("asmaXAttachRefBtn");
+    const asmaXShowArchivedToggle = document.getElementById("asmaXShowArchivedToggle");
+    const asmaXManageToggleBtn = document.getElementById("asmaXManageToggleBtn");
     const asmaXListHeaderEl = document.getElementById("asmaXListHeader");
     const asmaXWaysListContainer = document.getElementById("asmaXWaysListContainer");
+    const asmaXAddFormSlot = document.getElementById("asmaXAddFormSlot");
     const asmaXWheelContainerEl = document.getElementById("asmaXWheelContainer");
     const asmaXLegendContainerEl = document.getElementById("asmaXLegendContainer");
     const asmaXHintEl = document.getElementById("asmaXHint");
     const asmaXPosterOverlayEl = document.getElementById("asmaXPosterOverlay");
     const asmaXPosterMountEl = document.getElementById("asmaXPosterMount");
     const asmaXPosterCloseBtn = document.getElementById("asmaXPosterCloseBtn");
+    const asmaXEditOverlayEl = document.getElementById("asmaXEditOverlay");
+    const asmaXEditTitleEl = document.getElementById("asmaXEditTitle");
+    const asmaXEditBodyEl = document.getElementById("asmaXEditBody");
+    const asmaXEditMsgEl = document.getElementById("asmaXEditMsg");
+    const asmaXEditSaveBtn = document.getElementById("asmaXEditSaveBtn");
+    const asmaXEditCancelBtn = document.getElementById("asmaXEditCancelBtn");
+    const asmaXEditCloseBtn = document.getElementById("asmaXEditCloseBtn");
+    const asmaXAttachOverlayEl = document.getElementById("asmaXAttachOverlay");
+    const asmaXAttachTitleEl = document.getElementById("asmaXAttachTitle");
+    const asmaXAttachRefLabelEl = document.getElementById("asmaXAttachRefLabel");
+    const asmaXAttachRefInputEl = document.getElementById("asmaXAttachRefInput");
+    const asmaXAttachFilterInputEl = document.getElementById("asmaXAttachFilterInput");
+    const asmaXAttachListEl = document.getElementById("asmaXAttachList");
+    const asmaXAttachMsgEl = document.getElementById("asmaXAttachMsg");
+    const asmaXAttachSaveBtn = document.getElementById("asmaXAttachSaveBtn");
+    const asmaXAttachCancelBtn = document.getElementById("asmaXAttachCancelBtn");
+    const asmaXAttachCloseBtn = document.getElementById("asmaXAttachCloseBtn");
 
     const taglineStripEl = document.getElementById("taglineStrip");
     const globalBannerEl = document.getElementById("globalBanner");
@@ -3016,10 +3167,16 @@
     let asmaXCollections = null; // null until ensureAsmaXDataLoaded() runs once
     let asmaXExtraNames = null;
     let asmaXOverrides = {};
-    let asmaXDataTenantId = null; // which tenant the three above were loaded for
+    let asmaXOverridesEn = {}; // 30 Aug 2026: the owner's own English correction to a canonical Name's meaning
+    let asmaXRefOverrides = {}; // 30 Aug 2026: the owner's own replacement/appended reference for a canonical Name
+    let asmaXDataTenantId = null; // which tenant the five above were loaded for
+    let asmaXDocExists = false; // whether asmaCollections/{tenantId} has ever been written -- decides create vs update on the next save
     let asmaXLevel = "groups"; // "groups" | "names" | "refs"
+    let asmaXKind = "group"; // "group" | "dual" -- which collection kind the "groups"/"names" levels are browsing (30 Aug 2026 round)
     let asmaXGroupId = null;
     let asmaXNumber = null; // the Name currently open at the "refs" level
+    let asmaXManageOn = false;
+    let asmaXShowArchived = false;
     let asmaXChunk = null; // records/subject_asma_ul_husna for whoever's selected -- claim-status colour on the Names wheel
     let asmaXChunkPersonId = null; // which person asmaXChunk was fetched for
     const ASMA_SUBJECT_ID = "asma_ul_husna";
@@ -5292,25 +5449,37 @@
     // -----------------------------------------------------------------
     // Asma-in-Explore round -- "AH is another topic like Quran for
     // Critical Reasoning... sit beside QCR. Same wheel and list
-    // structure." A genuine 3-level drill (Groups -> Names -> References),
-    // read-only: editing (rename/archive a group, add/move/remove a Name)
-    // stays on asma-study.html's own Browse-by-Category panel, per the
-    // owner's own "keep the panel as-is" -- so unlike QCR's own palette,
-    // there's no Manage toggle or level <select> here at all.
+    // structure." A genuine 3-level drill (Groups -> Names -> References).
+    // 30 Aug 2026 round: real editing lives here now too -- the owner's own
+    // follow-up ask for three real dropdown fields (Group/Dual/Single) plus
+    // Manage-mode add/edit/archive, over the SAME asmaCollections/{tenantId}
+    // document asma-study.html's own Browse-by-Category panel already
+    // reads/writes (that panel is untouched -- a second surface, not a
+    // second copy). "Dual Names" is not a new collection, it is the SAME
+    // collection mechanism tagged kind:"dual" (asma-collections.js), seeded
+    // with none -- the owner populates it themselves, since deciding which
+    // Names count as a traditional complementary pair is a real content
+    // call, not a coding one.
     // -----------------------------------------------------------------
 
     async function ensureAsmaXDataLoaded() {
       if (asmaXCollections && asmaXDataTenantId === activeTenantId) return;
       try {
         const docData = await getAsmaCollectionsDoc(db, activeTenantId);
+        asmaXDocExists = !!docData;
         asmaXCollections = asmaCollectionsFrom(docData);
         asmaXExtraNames = asmaExtraNamesFrom(docData);
         asmaXOverrides = asmaOverridesFrom(docData);
+        asmaXOverridesEn = asmaOverridesEnFrom(docData);
+        asmaXRefOverrides = asmaRefOverridesFrom(docData);
       } catch (err) {
         console.warn("Couldn't read this tenant's saved Asma collections yet (showing the built-in defaults instead):", err.message);
+        asmaXDocExists = false;
         asmaXCollections = asmaCollectionsFrom(null);
         asmaXExtraNames = asmaExtraNamesFrom(null);
         asmaXOverrides = {};
+        asmaXOverridesEn = {};
+        asmaXRefOverrides = {};
       }
       asmaXDataTenantId = activeTenantId;
     }
@@ -5328,12 +5497,39 @@
     }
 
     function asmaXResolve(number) {
-      return resolveAsmaEntry(number, { extraNames: asmaXExtraNames ?? [], overrides: asmaXOverrides ?? {} });
+      return resolveAsmaEntry(number, {
+        extraNames: asmaXExtraNames ?? [],
+        overrides: asmaXOverrides ?? {},
+        overridesEn: asmaXOverridesEn ?? {},
+        refOverrides: asmaXRefOverrides ?? {},
+      });
     }
 
     function asmaXItemStatus(number) {
       const entry = asmaXChunk?.entries?.[`${buildUnitKey.name(number)}::${ASMA_TRACKABLE_ID}`];
       return entry?.claimedStatus ?? "not_started";
+    }
+
+    /** Every Name/phrase this tenant currently has active -- the 99
+        canonical (asma-data.js, never archived) plus any active extra --
+        the one list the Single-Names dropdown, the flat list of every
+        collection kind's "Add existing" picker, and the multi-Name attach
+        popover all draw from. */
+    function asmaXAllNameEntries() {
+      const canonical = ASMA_NAMES.map((n) => asmaXResolve(n.number)).filter(Boolean);
+      const extras = asmaActiveExtraNames(asmaXExtraNames ?? []).map((e) => asmaXResolve(e.number)).filter(Boolean);
+      return [...canonical, ...extras];
+    }
+
+    /** Active (or, if Show archived is on, every) collection of one kind --
+        "group" (the owner's everyday thematic groups) or "dual" (the
+        traditional paired/complementary Names, a separate list per the
+        owner's own ask). */
+    function asmaXCollectionsOfKind(kind) {
+      const list = asmaXShowArchived
+        ? [...(asmaXCollections ?? [])].sort((a, b) => a.order - b.order)
+        : asmaActiveCollections(asmaXCollections ?? []);
+      return list.filter((c) => c.kind === kind);
     }
 
     async function openAsmaXPalette() {
@@ -5342,66 +5538,97 @@
       await ensureAsmaXDataLoaded();
       await ensureAsmaXChunkLoaded();
       asmaXLevel = "groups";
+      asmaXKind = "group";
       asmaXGroupId = null;
       asmaXNumber = null;
       renderAsmaXPanel();
     }
 
-    function renderAsmaXBreadcrumb() {
-      const crumbs = [{ label: t("All Groups"), level: "groups" }];
-      if (asmaXLevel !== "groups") {
-        const group = (asmaXCollections ?? []).find((c) => c.id === asmaXGroupId);
-        if (group) crumbs.push({ label: langText(group.title, getAppLang()), level: "names" });
+    /** The level bar: three real dropdown fields, each an alternate entry
+        point into the same Groups/Names/References state -- Group and Dual
+        switch which COLLECTION KIND is being browsed and jump straight to
+        that collection's own Names; Single jumps straight to one Name's own
+        References, no browsing step of its own (the owner's own "a straight
+        full list... as a drop-down field"). Manage-mode actions (owner/prime
+        only) mirror QCR's own renderQcrLevelBar() shape. */
+    function renderAsmaXLevelBar() {
+      const groups = asmaXCollectionsOfKind("group");
+      const duals = asmaXCollectionsOfKind("dual");
+      const names = asmaXAllNameEntries();
+
+      const collOptionsHtml = (list, placeholder, selectedId) => {
+        const opts = list.map((c) => {
+          const label = langText(c.title, getAppLang()) + (c.status === "archived" ? ` (${t("Archived")})` : "");
+          return `<option value="${escapeHtml(c.id)}"${c.id === selectedId ? " selected" : ""}>${escapeHtml(label)}</option>`;
+        }).join("");
+        return `<option value=""${selectedId ? "" : " selected"}>${escapeHtml(placeholder)}</option>${opts}`;
+      };
+      asmaXGroupSelect.innerHTML = collOptionsHtml(groups, t("All Groups"), asmaXKind === "group" ? asmaXGroupId : null);
+      asmaXDualSelect.innerHTML = collOptionsHtml(duals, t("All dual Names"), asmaXKind === "dual" ? asmaXGroupId : null);
+
+      const singleSelectedNumber = asmaXLevel === "refs" ? asmaXNumber : null;
+      asmaXSingleSelect.innerHTML = [
+        `<option value=""${singleSelectedNumber ? "" : " selected"}>${escapeHtml(t("All Names"))}</option>`,
+        ...names.map((entry) => {
+          const label = `#${entry.number} ${asmaEntryDisplayName(entry)}${entry.ref ? ` — ${entry.ref}` : ""}`;
+          return `<option value="${entry.number}"${entry.number === singleSelectedNumber ? " selected" : ""}>${escapeHtml(label)}</option>`;
+        }),
+      ].join("");
+
+      const canManage = canAdminCatalogueClientSide();
+      asmaXManageToggleBtn.hidden = !canManage;
+      asmaXManageToggleBtn.classList.toggle("on", asmaXManageOn);
+      const showManageActions = canManage && asmaXManageOn;
+      asmaXLevelManageActions.hidden = !showManageActions;
+      if (showManageActions) {
+        const col = asmaXLevel !== "refs" ? (asmaXCollections ?? []).find((c) => c.id === asmaXGroupId) : null;
+        const archived = col?.status === "archived";
+        asmaXArchiveLevelBtn.textContent = archived ? "↺" : "🗄";
+        asmaXArchiveLevelBtn.title = archived ? t("Restore") : t("Archive");
+        asmaXArchiveLevelBtn.setAttribute("aria-label", asmaXArchiveLevelBtn.title);
+        asmaXArchiveLevelBtn.classList.toggle("danger", !archived);
+        asmaXArchiveLevelBtn.disabled = !col;
+        asmaXRenameLevelBtn.disabled = !col;
+        asmaXAddLevelBtn.title = asmaXKind === "dual" ? t("Add dual-name collection") : t("Add collection");
+        asmaXAddLevelBtn.setAttribute("aria-label", asmaXAddLevelBtn.title);
+        asmaXShowArchivedToggle.checked = asmaXShowArchived;
       }
-      if (asmaXLevel === "refs") {
-        const entry = asmaXNumber != null ? asmaXResolve(asmaXNumber) : null;
-        if (entry) crumbs.push({ label: asmaEntryDisplayName(entry), level: "refs" });
-      }
-      asmaXBreadcrumbEl.innerHTML = crumbs
-        .map((c) => `<button type="button" class="explore-crumb${c.level === asmaXLevel ? " active" : ""}" data-level="${c.level}">${escapeHtml(c.label)}</button>`)
-        .join('<span class="explore-crumb-sep">›</span>');
-      asmaXBreadcrumbEl.querySelectorAll(".explore-crumb").forEach((btn) => {
-        if (btn.dataset.level === asmaXLevel) return;
-        btn.addEventListener("click", () => {
-          if (btn.dataset.level === "groups") { asmaXGroupId = null; asmaXNumber = null; }
-          else if (btn.dataset.level === "names") { asmaXNumber = null; }
-          asmaXLevel = btn.dataset.level;
-          renderAsmaXPanel();
-        });
-      });
     }
 
     function renderAsmaXPanel() {
-      renderAsmaXBreadcrumb();
-      if (asmaXLevel === "groups") return renderAsmaXGroupsLevel();
+      renderAsmaXLevelBar();
+      if (asmaXLevel === "refs") return renderAsmaXRefsLevel();
       if (asmaXLevel === "names") return renderAsmaXNamesLevel();
-      return renderAsmaXRefsLevel();
+      return renderAsmaXGroupsLevel();
     }
 
-    /** Level 1 -- every active group, as its own wheel wedge and list row.
-        A Group has no claim status of its own (only the Names inside it
-        do), so every wedge is the SAME neutral colour, not a progress
-        reading -- the owner's own confirmed reading (Q3): "coloring also
-        same" was answered about the Names wheel, not this one. */
+    /** Level 1 -- every collection of the current kind, as its own wheel
+        wedge and list row. A Group/Dual pair has no claim status of its
+        own (only the Names inside it do), so every wedge is the SAME
+        neutral colour, not a progress reading -- the owner's own confirmed
+        reading (Q3): "coloring also same" was answered about the Names
+        wheel, not this one. */
     function renderAsmaXGroupsLevel() {
-      const groups = asmaActiveCollections(asmaXCollections ?? []);
+      const groups = asmaXCollectionsOfKind(asmaXKind);
+      const titleText = asmaXKind === "dual" ? t("All dual Names") : t("All Groups");
       asmaXListHeaderEl.innerHTML = `
-        <span class="qcr-list-title">${escapeHtml(t("All Groups"))}</span>
+        <span class="qcr-list-title">${escapeHtml(titleText)}</span>
         <span class="qcr-list-count">${escapeHtml(t("{count} groups", { count: num(groups.length) }))}</span>`;
       asmaXWaysListContainer.innerHTML = groups.length
         ? groups.map((g, i) => `
             <div class="way-row">
               <button type="button" class="way-click" data-asma-open-group="${escapeHtml(g.id)}">
                 <span class="badge">${i + 1}</span>
-                <span class="name">${escapeHtml(langText(g.title, getAppLang()))}</span>
+                <span class="name">${escapeHtml(langText(g.title, getAppLang()))}${g.status === "archived" ? ` (${escapeHtml(t("Archived"))})` : ""}</span>
               </button>
             </div>`).join("")
         : `<p class="hint">${escapeHtml(t("No groups yet."))}</p>`;
       asmaXWaysListContainer.querySelectorAll("[data-asma-open-group]").forEach((btn) => {
         btn.addEventListener("click", () => openAsmaXGroup(btn.dataset.asmaOpenGroup));
       });
+      asmaXAddFormSlot.innerHTML = "";
       const items = groups.map((g, i) => ({ key: g.id, statusId: "not_started", title: escapeHtml(langText(g.title, getAppLang())), number: i + 1 }));
-      asmaXWheelContainerEl.innerHTML = renderScopedWheel(items, { centerLabel: t("Asma ul Husna") });
+      asmaXWheelContainerEl.innerHTML = renderScopedWheel(items, { centerLabel: titleText });
       attachScopedWheelClickHandler(asmaXWheelContainerEl, (key) => openAsmaXGroup(key));
       asmaXLegendContainerEl.innerHTML = "";
       asmaXHintEl.textContent = t("Tap a group to see the Names inside it.");
@@ -5414,13 +5641,17 @@
       renderAsmaXPanel();
     }
 
-    /** Level 2 -- the group's own Names, real claim-status colour (the
+    /** Level 2 -- the collection's own Names, real claim-status colour (the
         owner's own "coloring also same" answer) via the studied_asma
         trackable, exactly the one asma-study.js's own grid/category
-        browser already claims against. */
+        browser already claims against. Manage mode reuses
+        renderAsmaCollectionListHtml()'s own move/edit/archive/remove row
+        controls -- the same markup asma-study.html's panel already relies
+        on, just wired here too. */
     function renderAsmaXNamesLevel() {
       const group = (asmaXCollections ?? []).find((c) => c.id === asmaXGroupId);
-      if (!group) { asmaXLevel = "groups"; return renderAsmaXPanel(); }
+      if (!group) { asmaXGroupId = null; asmaXLevel = "groups"; return renderAsmaXPanel(); }
+      asmaXKind = group.kind;
       const entries = group.items
         .map((uk) => {
           const number = Number(uk.split(":")[1]);
@@ -5429,12 +5660,43 @@
         })
         .filter(Boolean);
       asmaXListHeaderEl.innerHTML = `
+        <button type="button" class="qcr-icon-btn" id="asmaXBackToGroupsBtn" title="${escapeHtml(t("Back"))}" aria-label="${escapeHtml(t("Back"))}">◂</button>
         <span class="qcr-list-title">${escapeHtml(langText(group.title, getAppLang()))}</span>
         <span class="qcr-list-count">${escapeHtml(t("{count} Names", { count: num(entries.length) }))}</span>`;
-      asmaXWaysListContainer.innerHTML = renderAsmaCollectionListHtml(entries, { manageOn: false });
+      document.getElementById("asmaXBackToGroupsBtn")?.addEventListener("click", () => {
+        asmaXGroupId = null; asmaXNumber = null; asmaXLevel = "groups"; renderAsmaXPanel();
+      });
+      const otherCollections = (asmaXCollections ?? []).filter((c) => c.id !== group.id && c.status !== "archived");
+      asmaXWaysListContainer.innerHTML = renderAsmaCollectionListHtml(entries, { manageOn: asmaXManageOn, otherCollections });
       asmaXWaysListContainer.querySelectorAll("[data-asma-jump]").forEach((btn) => {
         btn.addEventListener("click", () => openAsmaXName(Number(btn.dataset.asmaJump.split(":")[1])));
       });
+      asmaXWaysListContainer.querySelectorAll("[data-asma-remove]").forEach((btn) => {
+        btn.addEventListener("click", () => asmaXRemoveItemAction(group.id, btn.dataset.asmaRemove));
+      });
+      asmaXWaysListContainer.querySelectorAll("[data-asma-move]").forEach((sel) => {
+        sel.addEventListener("change", () => { if (sel.value) asmaXMoveItemAction(group.id, sel.value, sel.dataset.asmaMove); });
+      });
+      asmaXWaysListContainer.querySelectorAll("[data-asma-edit-bn]").forEach((btn) => {
+        btn.addEventListener("click", () => openAsmaXEditOverlay({ mode: "edit", number: Number(btn.dataset.asmaEditBn.split(":")[1]) }));
+      });
+      asmaXWaysListContainer.querySelectorAll("[data-asma-archive-extra]").forEach((btn) => {
+        btn.addEventListener("click", () => asmaXArchiveExtraAction(btn.dataset.asmaArchiveExtra));
+      });
+
+      asmaXAddFormSlot.innerHTML = asmaXManageOn
+        ? (() => {
+            const candidates = asmaXAllNameEntries().filter((e) => !group.items.includes(buildUnitKey.name(e.number)));
+            if (!candidates.length) return `<p class="hint">${escapeHtml(t("Already in this group, or no Names left to add."))}</p>`;
+            const options = candidates.map((e) => `<option value="${buildUnitKey.name(e.number)}">#${num(e.number)} — ${escapeHtml(asmaEntryDisplayName(e))}</option>`).join("");
+            return `<div class="qcr-add-form">
+              <select id="asmaXAddExistingSelect">${options}</select>
+              <button type="button" id="asmaXAddExistingBtn">${escapeHtml(t("+ Add to this group"))}</button>
+            </div>`;
+          })()
+        : "";
+      document.getElementById("asmaXAddExistingBtn")?.addEventListener("click", () => asmaXAddItemAction(group.id));
+
       const items = entries.map((e) => ({ key: e.key, statusId: e.statusId, title: escapeHtml(asmaEntryDisplayName(e.entry)), number: e.number }));
       asmaXWheelContainerEl.innerHTML = renderScopedWheel(items, { centerLabel: langText(group.title, getAppLang()) });
       attachScopedWheelClickHandler(asmaXWheelContainerEl, (key) => openAsmaXName(Number(key.split(":")[1])));
@@ -5453,11 +5715,26 @@
         per Name, per the owner's own answer: "do as you said, if i don't
         like it will be in wheel"). A Qur'an chip jumps IN PAGE
         (goToAyahFromAsmaX); a Hadith chip stays plain text -- no Hadith
-        reader exists yet, the same disclosed gap Round 2 already has. */
+        reader exists yet, the same disclosed gap Round 2 already has.
+        Manage mode adds an Edit button (English/Bangla meaning + reference,
+        via openAsmaXEditOverlay) and an Attach-reference shortcut
+        pre-ticked to this one Name. */
     function renderAsmaXRefsLevel() {
       const entry = asmaXNumber != null ? asmaXResolve(asmaXNumber) : null;
-      if (!entry) { asmaXLevel = "groups"; return renderAsmaXPanel(); }
-      asmaXListHeaderEl.innerHTML = `<span class="qcr-list-title">${escapeHtml(asmaEntryDisplayName(entry))}</span>`;
+      if (!entry) { asmaXNumber = null; asmaXLevel = asmaXGroupId ? "names" : "groups"; return renderAsmaXPanel(); }
+      const canManage = asmaXManageOn && canAdminCatalogueClientSide();
+      asmaXListHeaderEl.innerHTML = `
+        <button type="button" class="qcr-icon-btn" id="asmaXBackFromRefsBtn" title="${escapeHtml(t("Back"))}" aria-label="${escapeHtml(t("Back"))}">◂</button>
+        <span class="qcr-list-title">${escapeHtml(asmaEntryDisplayName(entry))}</span>
+        ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXEditThisNameBtn" title="${escapeHtml(t("Edit"))}" aria-label="${escapeHtml(t("Edit"))}">✎</button>` : ""}
+        ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXAttachRefThisNameBtn" title="${escapeHtml(t("Attach a reference to several Names"))}" aria-label="${escapeHtml(t("Attach a reference to several Names"))}">🔗</button>` : ""}`;
+      document.getElementById("asmaXBackFromRefsBtn")?.addEventListener("click", () => {
+        asmaXNumber = null;
+        asmaXLevel = asmaXGroupId ? "names" : "groups";
+        renderAsmaXPanel();
+      });
+      document.getElementById("asmaXEditThisNameBtn")?.addEventListener("click", () => openAsmaXEditOverlay({ mode: "edit", number: entry.number }));
+      document.getElementById("asmaXAttachRefThisNameBtn")?.addEventListener("click", () => openAsmaXAttachPopover({ prefillNumbers: [entry.number] }));
       asmaXWaysListContainer.innerHTML = `
         <div id="asmaXRefCard">
           <div class="asma-ref-arabic">${escapeHtml(entry.arabic)}</div>
@@ -5471,6 +5748,7 @@
         btn.addEventListener("click", () => goToAyahFromAsmaX(surah, ayah, asmaXGroupId, asmaXNumber));
       });
       document.getElementById("asmaXRefPosterBtn")?.addEventListener("click", () => openAsmaXPoster(entry));
+      asmaXAddFormSlot.innerHTML = "";
       asmaXWheelContainerEl.innerHTML = "";
       asmaXLegendContainerEl.innerHTML = "";
       asmaXHintEl.textContent = t("References don't need a wheel — usually just 1–3.");
@@ -5495,6 +5773,367 @@
     }
     asmaXPosterCloseBtn.addEventListener("click", closeAsmaXPoster);
     asmaXPosterOverlayEl.addEventListener("click", (e) => { if (e.target === asmaXPosterOverlayEl) closeAsmaXPoster(); });
+
+    /** Every manage action writes the whole document back immediately (no
+        batched Save button, the same shape qcrPersist()/taglines.js's own
+        write functions already use) -- I15: a failure reaches the user
+        through safeWrite(); the caller rolls the optimistic in-memory
+        change back on failure. */
+    async function asmaXPersist() {
+      const res = await safeWrite(
+        () => saveAsmaCollections(db, {
+          tenantId: activeTenantId,
+          collections: asmaXCollections,
+          extraNames: asmaXExtraNames,
+          overrides: asmaXOverrides,
+          overridesEn: asmaXOverridesEn,
+          refOverrides: asmaXRefOverrides,
+          docExists: asmaXDocExists,
+          uid: auth.currentUser.uid,
+        }),
+        { collection: TENANT.ASMA_COLLECTIONS, docId: activeTenantId, action: "save Asma collections" }
+      );
+      if (res.ok) asmaXDocExists = true;
+      return res.ok;
+    }
+
+    async function asmaXRenameCollectionPrompt(id) {
+      const col = (asmaXCollections ?? []).find((c) => c.id === id);
+      if (!col) return;
+      const current = langText(col.title, getAppLang());
+      const typed = prompt(t("Rename group:"), current);
+      if (!typed || !typed.trim() || typed.trim() === current) return;
+      const prev = asmaXCollections;
+      asmaXCollections = asmaRenameCollectionLocal(asmaXCollections, id, setLangText(col.title, getAppLang(), typed.trim()));
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) { asmaXCollections = prev; renderAsmaXPanel(); }
+    }
+
+    async function asmaXToggleArchiveCollection(id) {
+      const col = (asmaXCollections ?? []).find((c) => c.id === id);
+      if (!col) return;
+      const name = langText(col.title, getAppLang());
+      const willArchive = col.status !== "archived";
+      if (!confirm(willArchive ? t('Archive "{name}"?', { name }) : t('Restore "{name}"?', { name }))) return;
+      const prev = asmaXCollections;
+      const prevGroupId = asmaXGroupId;
+      const prevLevel = asmaXLevel;
+      asmaXCollections = asmaSetCollectionStatusLocal(asmaXCollections, id, willArchive ? "archived" : "active");
+      if (willArchive && !asmaXShowArchived && asmaXGroupId === id) { asmaXGroupId = null; asmaXLevel = "groups"; }
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) { asmaXCollections = prev; asmaXGroupId = prevGroupId; asmaXLevel = prevLevel; renderAsmaXPanel(); }
+    }
+
+    async function asmaXAddCollectionPrompt(kind) {
+      const typed = prompt(kind === "dual" ? t("New dual-name collection:") : t("New group name:"));
+      if (!typed || !typed.trim()) return;
+      const prev = asmaXCollections;
+      const prevGroupId = asmaXGroupId;
+      const prevLevel = asmaXLevel;
+      asmaXCollections = asmaAddCollectionLocal(asmaXCollections, { title: { [getAppLang()]: typed.trim() }, badge: "", status: "active", kind });
+      asmaXKind = kind;
+      asmaXGroupId = asmaXCollections[asmaXCollections.length - 1].id;
+      asmaXLevel = "names";
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) { asmaXCollections = prev; asmaXGroupId = prevGroupId; asmaXLevel = prevLevel; renderAsmaXPanel(); }
+    }
+
+    async function asmaXRemoveItemAction(collectionId, unitKey) {
+      const prev = asmaXCollections;
+      asmaXCollections = asmaRemoveItemLocal(asmaXCollections, collectionId, unitKey);
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) { asmaXCollections = prev; renderAsmaXPanel(); }
+    }
+
+    async function asmaXMoveItemAction(fromId, toId, unitKey) {
+      const prev = asmaXCollections;
+      asmaXCollections = asmaMoveItemLocal(asmaXCollections, fromId, toId, unitKey);
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) { asmaXCollections = prev; renderAsmaXPanel(); }
+    }
+
+    async function asmaXAddItemAction(collectionId) {
+      const sel = document.getElementById("asmaXAddExistingSelect");
+      if (!sel || !sel.value) return;
+      const prev = asmaXCollections;
+      asmaXCollections = asmaAddItemLocal(asmaXCollections, collectionId, sel.value);
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) { asmaXCollections = prev; renderAsmaXPanel(); }
+    }
+
+    /** I4: archive/restore only, for an extra Name's own record -- its id
+        (>= 100) never changes, whatever collections still list it. */
+    async function asmaXArchiveExtraAction(unitKey) {
+      const number = Number(unitKey.split(":")[1]);
+      const extra = (asmaXExtraNames ?? []).find((e) => e.number === number);
+      if (!extra) return;
+      const willArchive = extra.status !== "archived";
+      const name = getAppLang() === "bn" ? (extra.bnName || extra.transliteration) : extra.transliteration;
+      if (!confirm(willArchive ? t('Archive "{name}"?', { name }) : t('Restore "{name}"?', { name }))) return;
+      const prev = asmaXExtraNames;
+      asmaXExtraNames = asmaSetExtraNameStatusLocal(asmaXExtraNames, number, willArchive ? "archived" : "active");
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) { asmaXExtraNames = prev; renderAsmaXPanel(); }
+    }
+
+    // -----------------------------------------------------------------
+    // Add/Edit-Name overlay -- "Eng n Bangla only for now" (the owner's own
+    // words): no Arabic authoring anywhere in this form, for a brand-new
+    // extra Name or for a canonical one. A canonical Name (1..99) only ever
+    // gets an English/Bangla MEANING override plus a reference override --
+    // its Arabic and transliteration are fixed platform content (I4/I5),
+    // shown read-only. An extra Name (>= 100) is real, owner-authored
+    // content, so its transliteration/meanings/reference/weak/isPhrase
+    // fields are all genuinely editable, same as this file's own header
+    // already documents for updateExtraName().
+    // -----------------------------------------------------------------
+    let asmaXEditContext = null; // { mode: "create" | "edit", number }
+
+    function openAsmaXEditOverlay({ mode, number = null }) {
+      asmaXEditContext = { mode, number };
+      asmaXEditMsgEl.style.display = "none";
+      const entry = mode === "edit" && number != null ? asmaXResolve(number) : null;
+      if (mode === "edit" && !entry) return;
+      if (mode === "create" || entry.isExtra) {
+        asmaXEditTitleEl.textContent = mode === "create" ? t("Add a new Name") : t("Edit Name");
+        asmaXEditBodyEl.innerHTML = `
+          <label>${escapeHtml(t("Transliteration"))}<input type="text" id="asmaXEditTranslit" value="${escapeHtml(entry?.transliteration ?? "")}"></label>
+          <label>${escapeHtml(t("English meaning"))}<input type="text" id="asmaXEditMeaningEn" value="${escapeHtml(entry?.meaning?.en ?? "")}"></label>
+          <label>${escapeHtml(t("Bangla name"))}<input type="text" id="asmaXEditBnName" value="${escapeHtml(entry?.bnName ?? "")}"></label>
+          <label>${escapeHtml(t("Bangla meaning"))}<input type="text" id="asmaXEditBn" value="${escapeHtml(entry?.meaning?.bn ?? "")}"></label>
+          <label>${escapeHtml(t("Reference"))}<textarea id="asmaXEditRef">${escapeHtml(entry?.ref ?? "")}</textarea></label>
+          <label class="asmaX-edit-check"><input type="checkbox" id="asmaXEditWeak" ${entry?.weak ? "checked" : ""}> ${escapeHtml(t("weak"))}</label>
+          <label class="asmaX-edit-check"><input type="checkbox" id="asmaXEditIsPhrase" ${entry?.isPhrase ? "checked" : ""}> ${escapeHtml(t("phrase"))}</label>`;
+      } else {
+        asmaXEditTitleEl.textContent = t("Edit Name");
+        asmaXEditBodyEl.innerHTML = `
+          <p class="hint">${escapeHtml(entry.arabic)} — ${escapeHtml(entry.transliteration)}</p>
+          <label>${escapeHtml(t("English meaning"))}<input type="text" id="asmaXEditMeaningEn" value="${escapeHtml(entry.enOverride ?? "")}" placeholder="${escapeHtml(entry.meaning.en ?? "")}"></label>
+          <label>${escapeHtml(t("Bangla meaning"))}<input type="text" id="asmaXEditBn" value="${escapeHtml(entry.bnOverride ?? "")}"></label>
+          <label>${escapeHtml(t("Reference"))}<textarea id="asmaXEditRef">${escapeHtml(entry.ref ?? "")}</textarea></label>`;
+      }
+      asmaXEditOverlayEl.classList.add("open");
+    }
+
+    function closeAsmaXEditOverlay() {
+      asmaXEditOverlayEl.classList.remove("open");
+      asmaXEditContext = null;
+    }
+    asmaXEditCancelBtn.addEventListener("click", closeAsmaXEditOverlay);
+    asmaXEditCloseBtn.addEventListener("click", closeAsmaXEditOverlay);
+    asmaXEditOverlayEl.addEventListener("click", (e) => { if (e.target === asmaXEditOverlayEl) closeAsmaXEditOverlay(); });
+
+    asmaXEditSaveBtn.addEventListener("click", async () => {
+      if (!asmaXEditContext) return;
+      const { mode, number } = asmaXEditContext;
+      asmaXEditMsgEl.style.display = "none";
+      if (mode === "create") {
+        const translit = document.getElementById("asmaXEditTranslit")?.value.trim() ?? "";
+        if (!translit) {
+          asmaXEditMsgEl.textContent = t("A transliteration is needed.");
+          asmaXEditMsgEl.style.display = "block";
+          return;
+        }
+        const partial = {
+          transliteration: translit,
+          meaningEn: document.getElementById("asmaXEditMeaningEn")?.value.trim() ?? "",
+          bnName: document.getElementById("asmaXEditBnName")?.value.trim() ?? "",
+          bn: document.getElementById("asmaXEditBn")?.value.trim() ?? "",
+          ref: document.getElementById("asmaXEditRef")?.value.trim() ?? "",
+          weak: !!document.getElementById("asmaXEditWeak")?.checked,
+          isPhrase: !!document.getElementById("asmaXEditIsPhrase")?.checked,
+        };
+        const prevExtra = asmaXExtraNames;
+        const prevCollections = asmaXCollections;
+        asmaXExtraNames = asmaAddExtraNameLocal(asmaXExtraNames ?? [], partial);
+        const newNumber = asmaXExtraNames[asmaXExtraNames.length - 1].number;
+        if (asmaXLevel === "names" && asmaXGroupId) {
+          asmaXCollections = asmaAddItemLocal(asmaXCollections, asmaXGroupId, buildUnitKey.name(newNumber));
+        }
+        closeAsmaXEditOverlay();
+        renderAsmaXPanel();
+        if (!(await asmaXPersist())) { asmaXExtraNames = prevExtra; asmaXCollections = prevCollections; renderAsmaXPanel(); }
+        return;
+      }
+      const entry = asmaXResolve(number);
+      if (!entry) { closeAsmaXEditOverlay(); return; }
+      if (entry.isExtra) {
+        const patch = {
+          transliteration: document.getElementById("asmaXEditTranslit")?.value.trim() ?? "",
+          meaningEn: document.getElementById("asmaXEditMeaningEn")?.value.trim() ?? "",
+          bnName: document.getElementById("asmaXEditBnName")?.value.trim() ?? "",
+          bn: document.getElementById("asmaXEditBn")?.value.trim() ?? "",
+          ref: document.getElementById("asmaXEditRef")?.value.trim() ?? "",
+          weak: !!document.getElementById("asmaXEditWeak")?.checked,
+          isPhrase: !!document.getElementById("asmaXEditIsPhrase")?.checked,
+        };
+        const prev = asmaXExtraNames;
+        asmaXExtraNames = asmaUpdateExtraNameLocal(asmaXExtraNames, number, patch);
+        closeAsmaXEditOverlay();
+        renderAsmaXPanel();
+        if (!(await asmaXPersist())) { asmaXExtraNames = prev; renderAsmaXPanel(); }
+      } else {
+        const enTyped = document.getElementById("asmaXEditMeaningEn")?.value ?? "";
+        const bnTyped = document.getElementById("asmaXEditBn")?.value ?? "";
+        const refTyped = document.getElementById("asmaXEditRef")?.value ?? "";
+        const prevEn = asmaXOverridesEn;
+        const prevBn = asmaXOverrides;
+        const prevRef = asmaXRefOverrides;
+        asmaXOverridesEn = asmaSetNameOverrideEnLocal(asmaXOverridesEn, number, enTyped);
+        asmaXOverrides = asmaSetNameOverrideBnLocal(asmaXOverrides, number, bnTyped);
+        asmaXRefOverrides = asmaSetNameRefOverrideLocal(asmaXRefOverrides, number, refTyped);
+        closeAsmaXEditOverlay();
+        renderAsmaXPanel();
+        if (!(await asmaXPersist())) { asmaXOverridesEn = prevEn; asmaXOverrides = prevBn; asmaXRefOverrides = prevRef; renderAsmaXPanel(); }
+      }
+    });
+
+    // -----------------------------------------------------------------
+    // Multi-Name reference-attach popover -- "enable adding a ref, enable
+    // it to add to multiple names" (Explore's own Manage mode) AND the new
+    // Read/Note-view "attach this āyah" button (below) -- ONE mechanism,
+    // two entry points, matching how every other shared popover in this
+    // app works. Ticking several Names and saving appends the SAME
+    // reference fragment to each, via asma-collections.js's own
+    // appendRefToName() (canonical -> a refOverride; extra -> its own real
+    // `ref` field), never overwriting what any of them already had.
+    // -----------------------------------------------------------------
+    let asmaXAttachChecked = new Set();
+
+    function asmaXAttachCandidates(filterText) {
+      const q = (filterText ?? "").trim().toLowerCase();
+      const list = asmaXAllNameEntries();
+      if (!q) return list;
+      return list.filter((e) => asmaEntryDisplayName(e).toLowerCase().includes(q) || String(e.number).includes(q));
+    }
+
+    function renderAsmaXAttachList() {
+      const candidates = asmaXAttachCandidates(asmaXAttachFilterInputEl.value);
+      asmaXAttachListEl.innerHTML = candidates.length
+        ? candidates.map((e) => `
+            <label class="asmaX-attach-row">
+              <input type="checkbox" data-asmax-attach-check="${e.number}" ${asmaXAttachChecked.has(e.number) ? "checked" : ""}>
+              <span class="asmaX-attach-num">#${num(e.number)}</span>
+              <span>${escapeHtml(asmaEntryDisplayName(e))}</span>
+            </label>`).join("")
+        : `<p class="hint">${escapeHtml(t("No Names found."))}</p>`;
+      asmaXAttachListEl.querySelectorAll("[data-asmax-attach-check]").forEach((box) => {
+        box.addEventListener("change", () => {
+          const n = Number(box.dataset.asmaxAttachCheck);
+          if (box.checked) asmaXAttachChecked.add(n); else asmaXAttachChecked.delete(n);
+        });
+      });
+    }
+
+    /** The reference-text format every existing Name/phrase already uses
+        (asma-collections-data.js's own DEFAULT_CANONICAL_REFS/
+        DEFAULT_EXTRA_ASMA_NAMES.ref -- "কুরআন ১:১; ৫৫:১") -- Bangla digits
+        and the literal word "কুরআন" are what asma-ref-parser.js's own
+        parseAsmaRef() actually looks for, REGARDLESS of the app's current
+        display language (that parser only ever reads this one field's own
+        fixed data convention, not a translated UI string). Auto-attaching
+        an ayah has to match that shape exactly, or the new reference would
+        sit there as unparsed text with no real Qur'an chip -- so this
+        always writes Bangla digits, even while the reader is using the
+        app in English. */
+    function asmaRefTextFor(surah, ayah) {
+      const bnDigits = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+      const toBn = (n) => String(n).replace(/[0-9]/g, (d) => bnDigits[Number(d)]);
+      return `কুরআন ${toBn(surah)}:${toBn(ayah)}`;
+    }
+
+    /** Opens the popover -- pre-filled with a reference (empty from
+        Explore's own Manage mode; the current āyah's own reference from the
+        Read/Note-view attach button) and, optionally, Names already ticked
+        (the current Name, at Explore's own References level; nothing, from
+        the Read/Note view). Lazily loads asmaX* data first (this popover is
+        reachable from the Read/Note view, which may never have opened the
+        Asma palette this session -- I9's own "on first use" rule). */
+    async function openAsmaXAttachPopover({ prefillRef = "", prefillNumbers = [] } = {}) {
+      await ensureAsmaXDataLoaded();
+      asmaXAttachTitleEl.textContent = t("Attach a reference to Names");
+      asmaXAttachRefLabelEl.textContent = t("Reference text");
+      asmaXAttachRefInputEl.value = prefillRef;
+      asmaXAttachFilterInputEl.value = "";
+      asmaXAttachFilterInputEl.placeholder = t("Filter Names…");
+      asmaXAttachChecked = new Set(prefillNumbers);
+      asmaXAttachMsgEl.style.display = "none";
+      renderAsmaXAttachList();
+      asmaXAttachOverlayEl.classList.add("open");
+    }
+    function closeAsmaXAttachPopover() {
+      asmaXAttachOverlayEl.classList.remove("open");
+    }
+    asmaXAttachFilterInputEl.addEventListener("input", renderAsmaXAttachList);
+    asmaXAttachCancelBtn.addEventListener("click", closeAsmaXAttachPopover);
+    asmaXAttachCloseBtn.addEventListener("click", closeAsmaXAttachPopover);
+    asmaXAttachOverlayEl.addEventListener("click", (e) => { if (e.target === asmaXAttachOverlayEl) closeAsmaXAttachPopover(); });
+
+    asmaXAttachSaveBtn.addEventListener("click", async () => {
+      const refText = asmaXAttachRefInputEl.value.trim();
+      asmaXAttachMsgEl.style.display = "none";
+      if (!refText) {
+        asmaXAttachMsgEl.textContent = t("Type a reference first.");
+        asmaXAttachMsgEl.style.display = "block";
+        return;
+      }
+      if (!asmaXAttachChecked.size) {
+        asmaXAttachMsgEl.textContent = t("Tick at least one Name.");
+        asmaXAttachMsgEl.style.display = "block";
+        return;
+      }
+      const prevExtra = asmaXExtraNames;
+      const prevRefOv = asmaXRefOverrides;
+      let extraNames = asmaXExtraNames ?? [];
+      let refOverrides = asmaXRefOverrides ?? {};
+      for (const number of asmaXAttachChecked) {
+        const entry = resolveAsmaEntry(number, { extraNames, overrides: asmaXOverrides ?? {}, overridesEn: asmaXOverridesEn ?? {}, refOverrides });
+        if (!entry) continue;
+        const result = asmaAppendRefToNameLocal({ extraNames, refOverrides }, number, entry.ref, refText);
+        extraNames = result.extraNames;
+        refOverrides = result.refOverrides;
+      }
+      asmaXExtraNames = extraNames;
+      asmaXRefOverrides = refOverrides;
+      closeAsmaXAttachPopover();
+      if (!asmaXPanelEl.hidden) renderAsmaXPanel();
+      if (!(await asmaXPersist())) {
+        asmaXExtraNames = prevExtra;
+        asmaXRefOverrides = prevRefOv;
+        if (!asmaXPanelEl.hidden) renderAsmaXPanel();
+      }
+    });
+
+    // Level bar controls wired ONCE (mirrors QCR's own "the level bar's own
+    // controls are static markup now" pattern) rather than re-attached on
+    // every render.
+    asmaXGroupSelect.addEventListener("change", () => {
+      asmaXKind = "group";
+      asmaXNumber = null;
+      if (asmaXGroupSelect.value) { asmaXGroupId = asmaXGroupSelect.value; asmaXLevel = "names"; }
+      else { asmaXGroupId = null; asmaXLevel = "groups"; }
+      renderAsmaXPanel();
+    });
+    asmaXDualSelect.addEventListener("change", () => {
+      asmaXKind = "dual";
+      asmaXNumber = null;
+      if (asmaXDualSelect.value) { asmaXGroupId = asmaXDualSelect.value; asmaXLevel = "names"; }
+      else { asmaXGroupId = null; asmaXLevel = "groups"; }
+      renderAsmaXPanel();
+    });
+    asmaXSingleSelect.addEventListener("change", () => {
+      if (!asmaXSingleSelect.value) return;
+      asmaXNumber = Number(asmaXSingleSelect.value);
+      asmaXLevel = "refs";
+      renderAsmaXPanel();
+    });
+    asmaXManageToggleBtn.addEventListener("click", () => { asmaXManageOn = !asmaXManageOn; renderAsmaXPanel(); });
+    asmaXShowArchivedToggle.addEventListener("change", () => { asmaXShowArchived = asmaXShowArchivedToggle.checked; renderAsmaXPanel(); });
+    asmaXRenameLevelBtn.addEventListener("click", () => { if (asmaXGroupId) asmaXRenameCollectionPrompt(asmaXGroupId); });
+    asmaXArchiveLevelBtn.addEventListener("click", () => { if (asmaXGroupId) asmaXToggleArchiveCollection(asmaXGroupId); });
+    asmaXAddLevelBtn.addEventListener("click", () => asmaXAddCollectionPrompt(asmaXKind));
+    asmaXNewNameBtn.addEventListener("click", () => openAsmaXEditOverlay({ mode: "create" }));
+    asmaXAttachRefBtn.addEventListener("click", () => openAsmaXAttachPopover({}));
 
     async function qcrRenameCollectionPrompt(id) {
       const col = qcrCollections.find((c) => c.id === id);
@@ -6736,6 +7375,7 @@
         isApproachOpen: noteApproachCardOpen,
         wideNoteHtml,
         canUpdateBookmark: !!openedBookmarkId && (bookmarksDoc.saved ?? []).some((b) => b.id === openedBookmarkId && !b.removed),
+        canAttachAsma: canAdminCatalogueClientSide(),
         backToCollectionLabel,
         isCollectionsOpen: wasQcrDrawerOpen,
         collectionsPopoverHtml: renderQcrDrawerHtml(unitKey, openQcrDdKey),
@@ -6774,6 +7414,7 @@
         },
         onToggleBookmark: () => toggleAyahBookmark(unitKey, ref, captureNoteBookmarkSettings()),
         onUpdateBookmark: () => updateOpenedBookmark(),
+        onAttachAsma: () => openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(currentSurahNum, info.fromAyah) }),
         onPlay: () => quickPlayAyah(buildUnitKey.ayah(currentSurahNum, info.fromAyah)),
         onPrevUnit: () => stepNoteUnit(-1),
         onNextUnit: () => stepNoteUnit(1),
@@ -7667,6 +8308,12 @@
       readBookmarkBtn.setAttribute("aria-label", unitBmLabel);
       readBookmarkBtn.setAttribute("title", unitBmLabel);
 
+      // 30 Aug 2026 round -- "place a button on both READ and NOTE VIEW"
+      // (may be placing it with the copy/share button). Owner/prime only --
+      // it writes to asmaCollections/{tenantId}, the same Manage-mode write
+      // every Explore Asma edit already makes.
+      readAttachAsmaBtn.hidden = !canAdminCatalogueClientSide();
+
       if (usesFlow) {
         // Round 31: the bar-mounted ⋮ (below) only ever means "this one
         // āyah" -- a flow shows several at once, so it stays out of the
@@ -7975,6 +8622,14 @@
     readBookmarkBtn.addEventListener("click", () => {
       const info = currentUnitInfo();
       toggleAyahBookmark(info.unitKey, info.unitType === "ayah" ? undefined : info.label);
+    });
+
+    // 30 Aug 2026 round -- always the ayah currently on screen, whatever
+    // Study Unit is selected (the same currentAyahNum a flow view's own
+    // active-ayah highlight already tracks) -- so the Read screen's own
+    // attach button always means "this exact āyah," never a wider unit.
+    readAttachAsmaBtn.addEventListener("click", () => {
+      openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(currentSurahNum, currentAyahNum) });
     });
 
     prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopDrill(); currentAyahNum--; renderStudyScreen(); renderWheel(); } });
