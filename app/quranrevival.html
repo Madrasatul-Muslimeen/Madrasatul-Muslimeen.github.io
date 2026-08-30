@@ -6676,8 +6676,17 @@
       // no longer exists (shouldn't happen, I4, but a stale id from an old
       // session is possible) just means no back button, same "nothing to
       // explain" rule canUpdateBookmark already follows.
+      // Asma enhancement round -- this same "◂ List & wheel" button (the
+      // universal one, mobile AND desktop, unlike the PC popup's own
+      // title-bar Back button which already covered both origins) had only
+      // ever been wired for a QCR origin -- a real, closeable gap, since a
+      // Note view reached via an Asma jump on a PHONE (no popup exists
+      // there at all) had NO way back to that drill state before this.
       const originCollection = noteOriginCollectionId ? (qcrCollections ?? []).find((c) => c.id === noteOriginCollectionId) : null;
-      const backToCollectionLabel = originCollection ? langText(originCollection.title, getAppLang()) : null;
+      const originAsmaEntry = noteOriginAsmaNumber != null ? asmaXResolve(noteOriginAsmaNumber) : null;
+      const backToCollectionLabel = originCollection
+        ? langText(originCollection.title, getAppLang())
+        : (originAsmaEntry ? asmaEntryDisplayName(originAsmaEntry) : null);
 
       // Sizing-fix round -- the owner's own report: picking a Group closed
       // the whole 🗂 drawer mid-selection, since renderNoteViewNow() rebuilds
@@ -6798,6 +6807,16 @@
         // Explore stage view, exactly as if the reader had picked it there
         // themselves.
         onBackToCollection: async () => {
+          // Asma enhancement round -- same "wherever the reader actually
+          // came from" branch the PC popup's own Back button already used
+          // (v07.105), now reachable from this universal button too.
+          if (noteOriginAsmaNumber != null) {
+            closeAllPanels();
+            setStageView("explore");
+            setExplorePalette("asma");
+            renderAsmaXPanel();
+            return;
+          }
           if (!noteOriginCollectionId) return;
           closeAllPanels();
           qcrCurrentId = (qcrCollections ?? []).some((c) => c.id === noteOriginCollectionId) ? noteOriginCollectionId : qcrDefaultCollectionId();

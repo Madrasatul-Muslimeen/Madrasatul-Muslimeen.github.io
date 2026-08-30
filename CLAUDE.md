@@ -7659,6 +7659,62 @@ string, "Back", translated in `bn.js`, marked `// ?` for the owner's own
 eye. No `firestore.rules` or schema changes -- nothing to deploy but the
 static files.
 
+v07.106 (30 Aug 2026, on Claude Code on the web) is a small, verified-
+direct fix, one item out of a larger owner request whose bigger half is
+still at the demo stage (see below): **"Enable a button going back to the
+AH wheel... from the note view."** Two things were checked before writing
+any code, and both changed the plan.
+
+**Full screen for the AH wheel view was already built and already
+works** -- `#exploreFullscreenBtn` lives in the shared `#exploreBar`,
+above whichever Explore palette is showing (Quran drill / QCR / Asma ul
+Husna alike), and `toggleExploreFullscreen()`/`.explore-immersive` never
+branched on which one. Confirmed live (nav and dock both hide, the button
+reads pressed) rather than assumed -- nothing to build here.
+
+**The "back" ask turned out to be a real, pre-existing gap in an EXISTING
+mechanism, not a new button.** `ayah-note-renderer.js`'s Note view already
+carries a universal "◂ List & wheel" button (`.note-bar2`, works at every
+screen size -- unlike v07.105's own PC-popup-only title-bar Back button)
+from the QCR round, wired only to `noteOriginCollectionId`. It had simply
+never been extended to the Asma origin -- so on a PHONE (where the PC
+popup doesn't exist at all) there was genuinely no way back to an Asma
+drill position, even though v07.105 had already fixed this for the
+desktop popup specifically. `backToCollectionLabel` now falls through to
+`asmaXResolve(noteOriginAsmaNumber)`'s own display name when there's no
+QCR origin, and `onBackToCollection()` gained the identical "asma vs qcr
+vs neither" branch the popup's own `notePopupBackBtn` already used --
+same logic, now reachable from a button that was already universal.
+Deliberately NOT retiring the popup's own separate Back button: having
+both is harmless (a corner shortcut and an inline one), and removing
+something built one round ago on the owner's own ask would read as
+flip-flopping rather than a fix.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice) -- **12 checks, all passing**, at
+both a 390px phone viewport (where only this fix's own new coverage is
+reachable at all) and the 1280px desktop breakpoint, in English and
+Bangla: the QCR path re-confirmed unchanged; the button's own title
+naming the real Name (Ar-Rahim); and the button proven to land back on
+Explore's Asma panel at the EXACT References level it was opened from,
+not one step up. `node --check` passes. No `firestore.rules` or schema
+changes -- nothing to deploy but the static files.
+
+**The rest of the owner's own message -- a flat, ungrouped list of every
+Name as a second dropdown option (references shown inline beside each
+one), real add/edit/archive for both Names and Groups from this screen,
+and a way to attach one new reference to several Names in a single
+action -- is real new scope, not a small fix: it reopens the "editing
+stays on the standalone Asma page" call the previous round made on
+purpose.** A demo was shown (the same interactive-prototype practice
+every comparably-sized round has used) with the app's own I4/D6 "nothing
+is ever deleted, only archived" rule stated up front as binding, plus
+three real open questions -- one dropdown vs two, whether this duplicates
+or sits alongside the standalone page's own editing, and whether a
+CANONICAL Name's Arabic/meaning should stay fixed (Bangla-override only,
+as today) or become fully editable too. Awaiting the owner's answers
+before building any of it.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
