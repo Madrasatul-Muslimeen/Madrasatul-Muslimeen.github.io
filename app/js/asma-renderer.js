@@ -174,26 +174,35 @@ export function renderAsmaCollectionListHtml(entries, { manageOn = false, otherC
         entry.isPhrase ? `<span class="asma-item-badge phrase">${escapeHtml(t("phrase"))}</span>` : "",
         entry.weak ? `<span class="asma-item-badge weak">${escapeHtml(t("weak"))}</span>` : "",
       ].filter(Boolean).join("");
-      const manageRow = manageOn
-        ? `<div class="asma-way-manage">
-            <select data-asma-move="${escapeHtml(key)}">
+      // 30 Aug 2026 round -- the owner's own layout: Move-to, then Archive,
+      // then Remove (×), then Edit, all sitting on the SAME line as the
+      // name, with the status chip moved to the END of that line rather
+      // than crowding the name itself. `.asma-way-main` is a flex row that
+      // wraps on a narrow screen (tablet/phone) instead of needing a
+      // separate breakpoint -- everything stays "after the name," it just
+      // drops to its own line there rather than being cut off.
+      const manageControls = manageOn
+        ? `<span class="asma-way-manage">
+            <select class="asma-way-move" data-asma-move="${escapeHtml(key)}">
               <option value="">${escapeHtml(t("Move to…"))}</option>
               ${otherCollections.map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(langText(c.title, getAppLang()))}</option>`).join("")}
             </select>
-            <button type="button" class="asma-icon-btn" data-asma-edit-bn="${escapeHtml(key)}" title="${escapeHtml(t("Edit Bangla wording"))}">✎</button>
             ${entry.isExtra ? `<button type="button" class="asma-icon-btn danger" data-asma-archive-extra="${escapeHtml(key)}" title="${escapeHtml(entry.status === "archived" ? t("Restore") : t("Archive"))}">${entry.status === "archived" ? "↺" : "🗄"}</button>` : ""}
             <button type="button" class="asma-icon-btn danger" data-asma-remove="${escapeHtml(key)}" title="${escapeHtml(t("Remove from this group"))}">×</button>
-          </div>`
+            <button type="button" class="asma-icon-btn" data-asma-edit-bn="${escapeHtml(key)}" title="${escapeHtml(t("Edit Bangla wording"))}">✎</button>
+          </span>`
         : "";
       return `<div class="way-row asma-way-row">
-        <button type="button" class="way-click" data-asma-jump="${escapeHtml(key)}">
-          <span class="badge">#${num(entry.number)}</span>
-          <span class="name">${escapeHtml(asmaEntryDisplayName(entry))}</span>
+        <div class="asma-way-main">
+          <button type="button" class="way-click" data-asma-jump="${escapeHtml(key)}">
+            <span class="badge">#${num(entry.number)}</span>
+            <span class="name">${escapeHtml(asmaEntryDisplayName(entry))}</span>
+          </button>
+          ${manageControls}
           <span class="asma-status-chip" style="background:${STATUS_COLORS[statusId] ?? STATUS_COLORS.not_started}">${escapeHtml(statusLabel(statusId))}</span>
-        </button>
+        </div>
         ${badges ? `<span class="asma-way-badges">${badges}</span>` : ""}
         <span class="asma-way-meaning">${escapeHtml(asmaEntryMeaningText(entry))}</span>
-        ${manageRow}
       </div>`;
     })
     .join("");
