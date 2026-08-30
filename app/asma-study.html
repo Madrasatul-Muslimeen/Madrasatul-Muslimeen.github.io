@@ -142,17 +142,25 @@
   .asma-cat-list-header .c { font-size: 0.8rem; color: #888; }
   .asma-ways-list { display: flex; flex-direction: column; gap: 0.45rem; }
   .asma-way-row { border: 1px solid #e5e5e5; border-radius: 0.5rem; padding: 0.55rem 0.65rem; background: white; }
-  .asma-way-row .way-click { display: flex; align-items: center; gap: 0.6rem; width: 100%; background: none; border: none; padding: 0; cursor: pointer; text-align: left; color: inherit; font: inherit; }
+  /* 30 Aug 2026 -- the same "one row after the name" layout quranrevival.html's
+     own Explore panel got, brought here too since both pages render the
+     exact same renderAsmaCollectionListHtml() markup: status chip moved to
+     the end of the row, Move-to/Archive/Remove/Edit sit beside the name
+     rather than stacked below it, wrapping onto their own line on a narrow
+     screen instead of a separate breakpoint. */
+  .asma-way-main { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; width: 100%; }
+  .asma-way-row .way-click { display: flex; align-items: center; gap: 0.6rem; background: none; border: none; padding: 0; cursor: pointer; text-align: left; color: inherit; font: inherit; flex: 0 1 auto; min-width: 0; }
   .asma-way-row .badge { font-size: 0.72rem; color: #999; flex: 0 0 auto; }
-  .asma-way-row .name { flex: 1 1 auto; font-weight: 600; }
+  .asma-way-row .name { font-weight: 600; }
+  .asma-status-chip { margin-left: auto; }
   .asma-way-badges { display: flex; gap: 0.3rem; margin: 0.35rem 0 0; flex-wrap: wrap; }
   .asma-item-badge { font-size: 0.65rem; font-weight: 600; padding: 0.06rem 0.4rem; border-radius: 0.6rem; }
   .asma-item-badge.beyond99 { background: #f0e6c8; color: #8a6a1f; }
   .asma-item-badge.phrase { background: #e1e9f6; color: #2c4f8f; }
   .asma-item-badge.weak { background: #f6dfd4; color: #a2551f; }
   .asma-way-meaning { display: block; font-size: 0.78rem; color: #666; margin-top: 0.25rem; }
-  .asma-way-manage { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.5rem; flex-wrap: wrap; }
-  .asma-way-manage select { font-size: 0.78rem; padding: 0.15rem 0.3rem; }
+  .asma-way-manage { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+  .asma-way-manage select { font-size: 0.78rem; padding: 0.15rem 0.3rem; max-width: 9rem; }
   .asma-add-form { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.8rem; flex-wrap: wrap; }
   .asma-add-form select { font-size: 0.82rem; padding: 0.25rem 0.4rem; max-width: 20rem; }
   .asma-detail-badges { display: flex; gap: 0.35rem; justify-content: center; flex-wrap: wrap; margin: 0.4rem 0; }

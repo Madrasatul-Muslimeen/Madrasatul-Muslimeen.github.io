@@ -7905,6 +7905,91 @@ or schema changes beyond the two additive fields (`kind` on a collection,
 `meaningEn` on an extra Name) already covered above -- nothing to deploy
 but the static files.
 
+v07.108 (30 Aug 2026, same day) is **a same-day fix round to v07.107,
+from two owner-annotated screenshots taken the moment it shipped: a real
+bug (Quran-structure content and the Asma panel both showing on screen at
+once) and a layout request (dropdown order, and the Manage-mode row
+reorganised onto one line).**
+
+**The bug: switching Explore's palette away from "asma" didn't actually
+hide `#asmaXPanel`.** The owner's own screenshot showed the plain
+Quran-structure wheel (Juz 1-9) with the Asma level bar and a Name's own
+refs card both rendering underneath it at the same time -- exactly the
+`[hidden]`-beaten-by-an-ID-selector trap this project has hit repeatedly
+before (`#wheelSection`, `#studyScreen`, and `#explorePanel`/`#qcrPanel`,
+each already fixed with an explicit `[hidden] { display: none; }`
+override). `#asmaXPanel`'s own CSS rule sets `display: flex`
+unconditionally, and an ID selector (0,1,0,0) always outranks the
+attribute selector `[hidden]` (0,0,1,0) regardless of source order --
+`setExplorePalette()` was correctly setting the `hidden` ATTRIBUTE the
+whole time, the CSS just never obeyed it. `#asmaXPanel` had simply never
+been added to the existing override list (`#explorePanel[hidden],
+#qcrPanel[hidden]`) since it was first built in v07.104 -- a real,
+pre-existing gap this round closes, one clause added.
+
+**Dropdown order: Group, then Single, then Dual** (was Group, Dual,
+Single) -- the owner's own instruction, a plain DOM reorder of the three
+`<select>` elements in `#asmaXLevelBar`; no JS logic depends on their
+order, so nothing else needed to change.
+
+**The Manage-mode row is one row now, "in the same level to a name"** --
+the owner's own words, with a drawn arrow showing the target order:
+badge, name, Move-to, Archive, Remove (×), Edit, then the status chip
+("Not started" etc.) moved from right after the name to the very end.
+`renderAsmaCollectionListHtml()` (the ONE shared function both
+`quranrevival.html`'s Explore panel and `asma-study.html`'s own "Browse by
+Category" panel already call -- I2 held, this is one shared renderer, not
+two copies) now wraps the clickable name button, the Manage controls, and
+the status chip in a single `.asma-way-main` flex row instead of stacking
+the status chip inside the name button and the Manage controls in their
+own block below it. **"Make Tablet and Mob compatible" is answered by
+`flex-wrap`, not a phone-specific breakpoint**: on a wide screen
+everything genuinely sits on one line (measured, screenshotted); on a
+narrow one the row wraps in place rather than needing a second rule to
+maintain -- the same technique this app's own Note-view bars have used
+since round 22 for exactly this reason. `margin-left: auto` on the status
+chip is what pushes it to the row's own far end whichever screen it's on.
+**Both stylesheets needed the same shape of update** -- `quranrevival.html`'s
+own dark-theme CSS and `asma-study.html`'s own light-theme CSS each got
+their own `.asma-way-main`/`.way-click`/`.asma-status-chip` rules, since
+both pages render the identical shared markup and a CSS-only page would
+otherwise have gone visually broken the moment the markup changed under
+it -- `asma-study.html`'s own look (light, no circular badge) was
+otherwise left untouched, matching the owner's own earlier "keep the panel
+as-is" call for that page.
+
+**The number badge is a bigger circle now, scoped to Asma's own list
+only.** The owner's own report: "#100" was clipped inside the shared
+22px `.way-row .badge` circle, sized for QCR and other Explore lists
+whose own numbers stay 1-2 digits -- Asma's own Names run to 132.
+`.asma-way-row .badge` overrides it to 34px, confirmed by direct
+measurement (not by eye) to comfortably fit a 3-digit number with the "#"
+prefix, at every screen size tested.
+
+**Verified with a focused, un-checked-in Playwright smoke script** (this
+project's own established practice) -- **48 checks, 0 failures, across
+both English and Bangla and both a 390×844 phone and a 768×1024 tablet
+viewport**: the dropdown order proven by reading the level bar's own
+`<select>` ids in DOM order (not by eye); the row's own single
+`.asma-way-main` wrapper proven, with the name button first and the
+status chip last among its children; the Manage controls' own internal
+order (Move-to, then Archive when present, then Remove, then Edit)
+proven by reading each control's own `data-*` attribute rather than
+guessed from position; the status chip proven to sit measurably to the
+right of the name (not merely present); the badge proven ≥30px (was
+22px); no horizontal page overflow at either viewport; and, the actual
+regression this round exists to close, `#asmaXPanel`'s own COMPUTED
+`display` proven `none` once the Quran palette is selected, with
+`#explorePanel` proven visible in its place, and a round-trip back to
+Asma proven to still work. Two real screenshots (a 390px phone and a
+1280px desktop) were taken and read before calling this done, not just
+the assertions: on the phone the Manage row wraps onto its own second
+line as designed, badges fully legible ("#100", "#101"); on the desktop
+every control for a Name -- badge, name, Move-to, Archive, ×, Edit,
+status chip -- sits on one line exactly as the owner's own markup
+requested. No `firestore.rules`, schema or Firestore data changes --
+nothing to deploy but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

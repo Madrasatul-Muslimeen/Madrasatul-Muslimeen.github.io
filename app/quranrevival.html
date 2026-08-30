@@ -628,8 +628,16 @@
      (see #stage > [hidden] above). #qcrPanel isn't .wheel-box any more
      (round 2 -- it's its own full-bleed layout, not a padded card) but gets
      the same override on general principle: neither is a direct #stage
-     child, so the global #stage > [hidden] rule doesn't reach them. */
-  #explorePanel[hidden], #qcrPanel[hidden] { display: none; }
+     child, so the global #stage > [hidden] rule doesn't reach them.
+     30 Aug 2026 -- #asmaXPanel has carried the identical display:flex
+     trap since it was first built (v07.104) and was simply never added to
+     this list -- a real, owner-reported bug (the Quran-structure wheel and
+     the Asma level bar/refs card both rendering on screen at once, because
+     switching the palette AWAY from "asma" set the hidden ATTRIBUTE but
+     #asmaXPanel's own ID-scoped display:flex rule (specificity 0,1,0,0)
+     always outranks the attribute selector [hidden] (0,0,1,0) regardless of
+     source order). */
+  #explorePanel[hidden], #qcrPanel[hidden], #asmaXPanel[hidden] { display: none; }
   #explorePanel { flex: 1 1 auto; min-height: 0; }
 
   /* ---------- QCR (Ayah Collections), round 2's own reference-app shape:
@@ -846,13 +854,30 @@
      .way-row.qcr-way-row does), so only the classes that base doesn't cover
      need their own rule here. */
   .way-row.asma-way-row { flex-wrap: wrap; align-items: flex-start; cursor: default; }
-  .asma-status-chip { color: white; padding: 3px 9px; border-radius: 10px; font-size: 10px; font-weight: 600; white-space: nowrap; }
-  .asma-way-badges { display: flex; gap: 4px; margin: 4px 0 0 32px; flex-wrap: wrap; }
+  /* 30 Aug 2026 round -- the owner's own layout: name, then (Manage on)
+     Move-to/Archive/Remove/Edit, then the status chip -- all ONE flex row
+     ("in the same level to a name"), which wraps onto its own line on a
+     narrow screen (tablet/phone) instead of needing a separate breakpoint;
+     everything stays grouped after the name, it just drops down rather
+     than being clipped. */
+  .asma-way-main { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; width: 100%; }
+  .asma-way-row .way-click { flex: 0 1 auto; min-width: 0; }
+  /* Bigger badge so a 3-digit Name number ("#132") is never clipped --
+     scoped to Asma's own list only; the shared .way-row .badge (22px) is
+     sized for QCR/other Explore lists whose own numbers stay 1-2 digits. */
+  .asma-way-row .badge { width: 34px; height: 34px; font-size: 11px; }
+  .asma-way-manage { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .asma-way-move {
+    font-size: 11px; padding: 3px 5px; border-radius: 6px; max-width: 8.5rem;
+    border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5;
+  }
+  .asma-status-chip { color: white; padding: 3px 9px; border-radius: 10px; font-size: 10px; font-weight: 600; white-space: nowrap; margin-left: auto; }
+  .asma-way-badges { display: flex; gap: 4px; margin: 4px 0 0 44px; flex-wrap: wrap; }
   .asma-item-badge { font-size: 10px; font-weight: 600; padding: 1px 7px; border-radius: 999px; }
   .asma-item-badge.beyond99 { background: rgba(201,162,75,0.22); color: #C9A24B; }
   .asma-item-badge.phrase { background: rgba(91,132,196,0.22); color: #a9c3ec; }
   .asma-item-badge.weak { background: rgba(217,122,99,0.22); color: #ffb9a6; }
-  .asma-way-meaning { display: block; font-size: 11.5px; color: #9aa7be; margin: 3px 0 0 32px; line-height: 1.4; }
+  .asma-way-meaning { display: block; font-size: 11.5px; color: #9aa7be; margin: 3px 0 0 44px; line-height: 1.4; }
 
   /* References level -- a short list of chips, not a third wheel (usually
      only 1-3 references per Name); reuses asma-renderer.js's own
@@ -2193,9 +2218,11 @@
                versa). -->
           <div id="asmaXPanel" hidden>
             <div id="asmaXLevelBar">
+              <!-- 30 Aug 2026 -- the owner's own order: Group, then Single,
+                   then Dual. -->
               <select id="asmaXGroupSelect" aria-label="Group"></select>
-              <select id="asmaXDualSelect" aria-label="Dual Names"></select>
               <select id="asmaXSingleSelect" aria-label="Single Names"></select>
+              <select id="asmaXDualSelect" aria-label="Dual Names"></select>
               <span id="asmaXLevelManageActions" hidden>
                 <button type="button" class="qcr-icon-btn" id="asmaXRenameLevelBtn" title="Rename">✎</button>
                 <button type="button" class="qcr-icon-btn danger" id="asmaXArchiveLevelBtn" title="Archive">🗄</button>
