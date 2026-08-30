@@ -287,6 +287,14 @@ export function renderNoteView({
   // places the HTML the caller built -- I2 holds.
   backToCollectionLabel = null,
   collectionsPopoverHtml = "",
+  // 30 Aug 2026 round -- "enable adding/attaching an Ayah... to an existing
+  // GROUP, LIST, DUAL AH... may be placing it with the copy/share button."
+  // Folded into the SAME ⋯ menu Update bookmark already uses (not a new
+  // bar-2 icon -- the mobile-overflow round already moved things OFF this
+  // bar for exactly the reason a 7th permanent icon would reintroduce).
+  // Owner/prime only, since it writes to asmaCollections/{tenantId} -- the
+  // caller (quranrevival.html) decides visibility, this file only places it.
+  canAttachAsma = false,
   // Sizing-fix round -- this screen rebuilds .note-body from scratch on a
   // claim, a bookmark toggle, Prev/Next AND now a Group switch too, none of
   // which should slam the 🗂 drawer shut mid-selection (the owner's own
@@ -392,6 +400,9 @@ export function renderNoteView({
             ${canUpdateBookmark ? `
             <div class="qm-divider"></div>
             <button type="button" class="qm-item" data-note-update-bookmark>${t("Update bookmark")}</button>` : ""}
+            ${canAttachAsma ? `
+            <div class="qm-divider"></div>
+            <button type="button" class="qm-item" data-note-attach-asma>🔗 ${t("Attach to Asma ul Husna")}</button>` : ""}
           </div>
         </div>
       </div>
@@ -519,6 +530,7 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
  *   onOpenInReadView()        -- the "read it in the Read view" link, only present when the scope wasn't shown as text
  *   onPickerChange            -- delegated: the caller wires its own picker bar's <select> elements directly (they're pre-built HTML it owns), so this file never needs to know their ids
  *   onUpdateBookmark()        -- bookmark creation/update round; only wired to anything when canUpdateBookmark rendered the row at all
+ *   onAttachAsma()            -- 30 Aug 2026 round; only wired to anything when canAttachAsma rendered the row at all
  *   onBackToCollection()      -- Ayah Collections round 2; only wired to anything when backToCollectionLabel rendered the button at all
  *   onToggleCollectionMembership(collectionId, checked)  -- Ayah Collections round 2; fires once per checkbox in the always-present Collections popover
  *   onSwitchCollection(collectionId | null)  -- TOPIC bar round; fires on the drawer's own Group radio list (alignment-fix round; null for "— none —"). Triggers a full renderNoteViewNow() on the caller's side, but the 🗂 drawer itself survives it (isCollectionsOpen, read live from the DOM right before the rebuild -- see renderQcrDrawerHtml's own header comment); Group's own panel is deliberately NOT kept open across it (a Group pick closes its own panel first, unlike Attach/Yr Level's own openDdKey, which does survive)
@@ -595,6 +607,10 @@ export function attachNoteViewHandlers(container, callbacks) {
   view.querySelector("[data-note-update-bookmark]")?.addEventListener("click", () => {
     closeAllDotMenus(null);
     callbacks.onUpdateBookmark?.();
+  });
+  view.querySelector("[data-note-attach-asma]")?.addEventListener("click", () => {
+    closeAllDotMenus(null);
+    callbacks.onAttachAsma?.();
   });
 
   // ⋮ and ⋯ -- one open at a time, each closes on an outside click, and
