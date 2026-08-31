@@ -7990,6 +7990,71 @@ status chip -- sits on one line exactly as the owner's own markup
 requested. No `firestore.rules`, schema or Firestore data changes --
 nothing to deploy but the static files.
 
+v07.109 (30 Aug 2026, same day) is **another follow-up round -- creating a
+brand-new Name is now possible directly from the attach flow, and the
+Note view's own Asma drawer gets a matching entry point.** The owner's
+own ask: "Enable adding/ attaching an Ayah... to an exiting Name in the
+LIST, or DUAL List of AH and creating New Name... place a button on both
+READ and NOTE VIEW. (may be placing it in the existing drawer under AH
+would be good idea)."
+
+**"Attaching to an existing Name in the LIST or DUAL List" was already
+covered** -- `openAsmaXAttachPopover()` (v07.107) already lists every
+active Name regardless of which collection(s) list it, canonical or
+extra alike, so ticking any Name already works uniformly whichever list
+it happens to live in. **"Creating New Name" was the real gap**, and it's
+built as one small extension of the SAME popover rather than a second
+mechanism: a new **"+ Create a new Name"** button sits right below the
+reference field. Tapping it closes the attach popover and opens the
+existing Add-Name overlay (`openAsmaXEditOverlay({mode:"create"})`),
+which gained a new `prefillRef` parameter so the Reference field arrives
+already carrying whatever the reader just typed -- the āyah IS the new
+Name's own reference the moment it's saved, so there's no separate
+"attach" step needed for a Name that didn't exist a second ago. Reachable
+from every existing entry point into the popover (Explore's own Manage
+mode, the Read screen's 🔗 button, the Note view's ⋯ menu) with zero
+extra wiring, since they all already call the one shared function.
+
+**The drawer placement suggestion was honoured as an ADDITION, not a
+replacement.** `renderAsmaXNoteFieldsHtml()` (the Note view's own
+Group/Names/References fields, shown when Topic is set to Asma ul Husna)
+gained a fourth control, **"🔗 Attach this āyah"**, opening the identical
+popover pre-filled with whichever āyah the Note view is currently
+anchored to (`noteScope.ayahNum` -- this function has no local access to
+`renderNoteViewNow()`'s own `info` variable, so it reads the same
+module-level state that variable is itself built from). **The ⋯ menu's
+own attach item from v07.107 stays too, deliberately** -- the owner's
+"may be" reads as a genuine suggestion, not an instruction to relocate,
+and removing an always-available entry point in favour of one gated
+behind first switching Topic to Asma ul Husna would have been a real
+regression for the common case (attaching without caring which Topic
+happens to be selected). Both owner/prime-gated identically, since both
+open the same Manage-mode-writing popover.
+
+**Verified with a focused, un-checked-in Playwright smoke script** (this
+project's own established practice) -- **16 checks, 0 failures, in both
+English and Bangla**: the attach popover's own new button present; a
+typed reference proven to carry through into the create form's own
+Reference field, byte for byte; the newly-created Name proven to really
+show up in the Single Names dropdown with that same reference attached;
+the SAME carry-through proven again reached from the Read screen's own
+button; the Note view's Asma drawer proven to carry its own Attach
+button and pre-fill a real reference; and the ⋯ menu's own item proven
+still present alongside it. Two real test-script bugs were caught and
+fixed while writing the script, not app bugs: opening the drawer AFTER
+switching Topic (rather than before) tried to reach `#noteTopicSelect`
+while it was still hidden inside a closed popover; and clicking the
+drawer toggle both before AND after a Topic switch closed it again,
+since the switch's own "read live DOM state right before it's replaced"
+rule (v07.98) already keeps it open across that rebuild -- a second
+click was toggling a drawer that had never actually closed. `node --check`
+passes on every touched file. **`tools/i18n-coverage.mjs`: quran area
+313/313 counted, missing-count unchanged at 7 (the same pre-existing,
+unrelated gaps)** -- both new strings ("Attach this āyah", "+ Create a
+new Name") added to `bn.js` up front, not discovered after the fact. No
+`firestore.rules`, schema or Firestore data changes -- nothing to deploy
+but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
