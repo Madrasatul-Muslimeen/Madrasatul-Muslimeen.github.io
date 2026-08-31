@@ -1858,7 +1858,16 @@
           <p id="wheelIntroSettled" class="wheel-intro-settled" hidden>Approach an Ayah in 30 ways</p>
           <div id="wheelStageWrap" class="wheel-stage-wrap wheel-veiled">
             <div id="wheelContainer">Loading&hellip;</div>
-            <button type="button" id="wheelCtaBtn" class="wheel-cta-btn">
+            <!-- Starts hidden -- shown for the first time only once renderWheel()
+                 has real content in #wheelContainer (see that function). Before
+                 this fix the button was visible from first paint, absolutely
+                 centred on #wheelStageWrap while that wrap was still only as
+                 tall as the "Loading…" placeholder text -- once the real wheel
+                 SVG landed a beat later, the wrap grew and the button visibly
+                 jumped to re-centre over it. Waiting for real content removes
+                 the jump: the button and the wheel now appear together, already
+                 in their final position. -->
+            <button type="button" id="wheelCtaBtn" class="wheel-cta-btn" hidden>
               <span class="wheel-cta-line1">Study Quran</span>
               <span class="wheel-cta-line2">ONE Ayah a Day</span>
             </button>
@@ -3130,6 +3139,10 @@
     let currentTrackableId = null;
     let currentAyahNum = 1;
     let currentChunk = null;
+    // Guards wheelCtaBtn's own first reveal (see renderWheel()) -- once the
+    // reader has dismissed the intro this session, a later renderWheel() must
+    // never bring the button back.
+    let wheelIntroDismissed = false;
     // Shell round 13 (13 Aug 2026) -- `currentLang` is gone. It used to be
     // declared here and nowhere else in the app, doing two unrelated jobs at
     // once: which language NAMES appear in (Approach/section names, person
@@ -3932,6 +3945,7 @@
     // the wheel underneath was always fully rendered and functional, it was
     // only covered.
     wheelCtaBtn?.addEventListener("click", () => {
+      wheelIntroDismissed = true;
       wheelCtaBtn.hidden = true;
       wheelHubPickers.hidden = false;
       wheelHubGraphic.hidden = false;
@@ -4341,6 +4355,11 @@
         centerArabic: "",
         centerRef: "",
       });
+      // Real wheel content now exists, so #wheelStageWrap is finally at its
+      // real, final size -- safe to reveal the intro button (started hidden,
+      // see its own markup comment) without the visible reflow that used to
+      // happen when it appeared before the wheel did.
+      if (!wheelIntroDismissed) wheelCtaBtn.hidden = false;
 
       // Matches the old app's own wheel-click behaviour: clicking a segment
       // is about that Approach for the ayah on screen -- it does not
