@@ -937,6 +937,7 @@
     width: 100%; box-sizing: border-box; font-size: 0.85rem; padding: 0.4rem 0.5rem; border-radius: 6px;
     border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5; font-family: inherit; margin-bottom: 0.6rem;
   }
+  #asmaXAttachNewNameBtn { width: 100%; box-sizing: border-box; margin-bottom: 0.6rem; font-size: 0.82rem; }
   #asmaXAttachList { max-height: 40vh; overflow-y: auto; border: 1px solid rgba(201,162,75,0.2); border-radius: 8px; padding: 0.4rem 0.6rem; }
   .asmaX-attach-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; font-size: 0.82rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
   .asmaX-attach-row:last-child { border-bottom: none; }
@@ -2581,6 +2582,12 @@
       <h3 id="asmaXAttachTitle"></h3>
       <label id="asmaXAttachRefLabel" for="asmaXAttachRefInput"></label>
       <input type="text" id="asmaXAttachRefInput">
+      <!-- 30 Aug 2026 round -- "attaching an Ayah... to an existing Name...
+           and creating New Name": a way to create a brand-new Name right
+           from this same popover, rather than needing a trip to Explore's
+           own Manage mode first. Uses the typed reference above as that
+           new Name's own reference (openAsmaXEditOverlay's own prefillRef). -->
+      <button type="button" class="secondary" id="asmaXAttachNewNameBtn">+ Create a new Name</button>
       <input type="text" id="asmaXAttachFilterInput" placeholder="">
       <div id="asmaXAttachList"></div>
       <p class="hint" id="asmaXAttachMsg" style="display:none;"></p>
@@ -3006,6 +3013,7 @@
     const asmaXAttachTitleEl = document.getElementById("asmaXAttachTitle");
     const asmaXAttachRefLabelEl = document.getElementById("asmaXAttachRefLabel");
     const asmaXAttachRefInputEl = document.getElementById("asmaXAttachRefInput");
+    const asmaXAttachNewNameBtn = document.getElementById("asmaXAttachNewNameBtn");
     const asmaXAttachFilterInputEl = document.getElementById("asmaXAttachFilterInput");
     const asmaXAttachListEl = document.getElementById("asmaXAttachList");
     const asmaXAttachMsgEl = document.getElementById("asmaXAttachMsg");
@@ -5916,19 +5924,26 @@
     // -----------------------------------------------------------------
     let asmaXEditContext = null; // { mode: "create" | "edit", number }
 
-    function openAsmaXEditOverlay({ mode, number = null }) {
+    function openAsmaXEditOverlay({ mode, number = null, prefillRef = "" }) {
       asmaXEditContext = { mode, number };
       asmaXEditMsgEl.style.display = "none";
       const entry = mode === "edit" && number != null ? asmaXResolve(number) : null;
       if (mode === "edit" && !entry) return;
       if (mode === "create" || entry.isExtra) {
         asmaXEditTitleEl.textContent = mode === "create" ? t("Add a new Name") : t("Edit Name");
+        // 30 Aug 2026 round -- "attaching an Ayah... and creating New Name":
+        // creating a brand-new Name from the Read/Note view's own attach
+        // flow pre-fills the Reference field with the āyah just typed
+        // there, so the ayah IS this Name's own reference the moment it's
+        // saved -- no separate attach step needed for a Name that didn't
+        // exist a second ago.
+        const refValue = entry?.ref ?? prefillRef;
         asmaXEditBodyEl.innerHTML = `
           <label>${escapeHtml(t("Transliteration"))}<input type="text" id="asmaXEditTranslit" value="${escapeHtml(entry?.transliteration ?? "")}"></label>
           <label>${escapeHtml(t("English meaning"))}<input type="text" id="asmaXEditMeaningEn" value="${escapeHtml(entry?.meaning?.en ?? "")}"></label>
           <label>${escapeHtml(t("Bangla name"))}<input type="text" id="asmaXEditBnName" value="${escapeHtml(entry?.bnName ?? "")}"></label>
           <label>${escapeHtml(t("Bangla meaning"))}<input type="text" id="asmaXEditBn" value="${escapeHtml(entry?.meaning?.bn ?? "")}"></label>
-          <label>${escapeHtml(t("Reference"))}<textarea id="asmaXEditRef">${escapeHtml(entry?.ref ?? "")}</textarea></label>
+          <label>${escapeHtml(t("Reference"))}<textarea id="asmaXEditRef">${escapeHtml(refValue)}</textarea></label>
           <label class="asmaX-edit-check"><input type="checkbox" id="asmaXEditWeak" ${entry?.weak ? "checked" : ""}> ${escapeHtml(t("weak"))}</label>
           <label class="asmaX-edit-check"><input type="checkbox" id="asmaXEditIsPhrase" ${entry?.isPhrase ? "checked" : ""}> ${escapeHtml(t("phrase"))}</label>`;
       } else {
@@ -6095,6 +6110,15 @@
     asmaXAttachCancelBtn.addEventListener("click", closeAsmaXAttachPopover);
     asmaXAttachCloseBtn.addEventListener("click", closeAsmaXAttachPopover);
     asmaXAttachOverlayEl.addEventListener("click", (e) => { if (e.target === asmaXAttachOverlayEl) closeAsmaXAttachPopover(); });
+    // "Attaching an Ayah... and creating New Name" -- whatever reference the
+    // reader has already typed here comes straight along as the new Name's
+    // own reference (openAsmaXEditOverlay's own prefillRef), so it's already
+    // "attached" the moment that Name is saved -- no separate attach step.
+    asmaXAttachNewNameBtn.addEventListener("click", () => {
+      const ref = asmaXAttachRefInputEl.value.trim();
+      closeAsmaXAttachPopover();
+      openAsmaXEditOverlay({ mode: "create", prefillRef: ref });
+    });
 
     asmaXAttachSaveBtn.addEventListener("click", async () => {
       const refText = asmaXAttachRefInputEl.value.trim();
@@ -6471,6 +6495,16 @@
 
       const posterBtn = entry ? `<button type="button" class="secondary" id="noteAsmaXPosterBtn">🖼 ${escapeHtml(t("Poster"))}</button>` : "";
       const trackEmbed = entry ? renderAsmaTrackEmbedHtml(entry.number) : "";
+      // 30 Aug 2026 round -- "may be placing it in the existing drawer under
+      // AH would be good idea": the same attach popover the Read/Note view's
+      // ⋯ menu already opens (canAttachAsma/onAttachAsma), reached here too
+      // now that this drawer IS "the AH interface" in the Note view -- not a
+      // replacement for the ⋯ item, which stays reachable whatever Topic is
+      // currently selected; this is the more discoverable second door for
+      // whoever is already looking at Asma fields.
+      const attachBtn = canAdminCatalogueClientSide()
+        ? `<button type="button" class="secondary" id="noteAsmaXAttachBtn">🔗 ${escapeHtml(t("Attach this āyah"))}</button>`
+        : "";
 
       return `
         <div class="note-qcr-row">
@@ -6488,6 +6522,7 @@
           <div class="note-qcr-dd-pop${refOn ? " on" : ""}" data-asmax-dd-pop="asmaref">${refPopover}</div>
         </div>
         ${posterBtn}
+        ${attachBtn}
         ${trackEmbed}`;
     }
 
@@ -8088,6 +8123,13 @@
         const entry = asmaXResolve(noteOriginAsmaNumber);
         if (entry) posterBtn.addEventListener("click", () => openAsmaXPoster(entry));
       }
+      // 30 Aug 2026 round -- the drawer's own way into the same attach
+      // popover the ⋯ menu already opens, pre-filled with whichever āyah
+      // this Note view is currently anchored to (noteScope.ayahNum, module
+      // state -- this function has no local "info" to read fromAyah off).
+      noteView.querySelector("#noteAsmaXAttachBtn")?.addEventListener("click", () => {
+        openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(currentSurahNum, noteScope.ayahNum) });
+      });
     }
 
     /** Entry point from the ⋮ menu's "Note & more…" (and from a bookmark's

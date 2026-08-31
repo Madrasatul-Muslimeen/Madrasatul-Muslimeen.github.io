@@ -2032,4 +2032,9 @@ export const BN = {
   "Type a reference first.": "প্রথমে একটি সূত্র লিখুন।", // ?
   "Tick at least one Name.": "অন্তত একটি নাম বাছাই করুন।", // ?
   "Attach to Asma ul Husna": "আসমাউল হুসনায় যুক্ত করুন", // ?
+
+  // 30 Aug 2026 round -- the Asma drawer's own attach button, and
+  // create-a-new-Name-while-attaching.
+  "Attach this āyah": "এই আয়াতটি যুক্ত করুন", // ?
+  "+ Create a new Name": "+ একটি নতুন নাম তৈরি করুন", // ?
 };
