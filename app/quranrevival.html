@@ -1020,7 +1020,16 @@
   #readPickers #readRangeToSelect { flex: 0 0 3.9rem; }
 /* Round 22 retired #readTransport: Play and Stop moved up into #readBar, and
      "Whole surah" went entirely once Play started following the chosen unit. */
-  #readScroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  /* Owner ask (31 Aug 2026): whatever Study Unit/Approach is chosen, Read
+     and Note view must ALWAYS be scrollable both vertically and sideways --
+     a safety net, not an active mode. Ordinary content wraps and never
+     triggers the horizontal scrollbar; it only matters for exceptionally
+     wide content (a long unbroken line, a wide table) that would otherwise
+     be silently clipped. body.read-sideways's own dedicated horizontal
+     PAGING strip (#pageViewContainer, below) still owns real x-scrolling in
+     that mode -- its own override just below turns this back to hidden so
+     the two scrollers are never fighting over the same axis. */
+  #readScroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: auto; }
   /* ---------------------------------------------------------------------
      Shell round 28 -- THE READING MOVES SIDEWAYS, page by page.
      Corrected same-round (the first build read the owner's "left to right"
@@ -1321,6 +1330,16 @@
     background: #fff8e1; border-left: 3px solid #c8a227;
     padding-left: 0.5rem; margin-left: -0.5rem; border-radius: 3px;
   }
+  /* Owner ask (31 Aug 2026) -- "Mushaf Shape of Ayah structure": consecutive
+     āyāt in a flow view read as one continuous page instead of a stack of
+     separated cards. Each āyah is still its own element (still individually
+     selectable, still its own ⋮ badge -- ayah-renderer.js/renderFlowView()
+     are completely untouched, this is styling only) -- the divider between
+     them just goes away. now-playing's own highlight band above stays
+     visually correct either way, since it only adds a background/edge and
+     never depended on the divider this rule removes. */
+  body.mushaf-shape-on .page-flow-ayah { border-bottom: none; padding-bottom: 0; margin-bottom: 0.1rem; }
+  body.mushaf-shape-on .ayah-quick-header { margin-bottom: 0; }
 
   /* =========================================================================
      Ayah Note panel -- the ⋮ quick-actions menu on every āyah, and the
@@ -1763,7 +1782,9 @@
   .note-popup-side-list.view-card .note-popup-row { display: block; padding: 0.3rem; background: #fff; border-color: #e0d8bd; box-shadow: 0 1px 3px rgba(20,30,60,0.08); }
   .note-popup-side-list.view-card .note-popup-row-main { padding-bottom: 0.15rem; }
 
-  .note-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 0.8rem 0.9rem 1.2rem; }
+  /* Owner ask (31 Aug 2026): always scrollable both ways, whatever Study
+     Unit/Approach is showing -- same reasoning as #readScroll above. */
+  .note-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: auto; padding: 0.8rem 0.9rem 1.2rem; }
 
   .note-field { margin-bottom: 0.55rem; }
   .note-field-label-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.15rem; }
@@ -2026,6 +2047,12 @@
           <button type="button" class="secondary qr-ico" id="readPlayBtn" aria-label="Play" title="Play">▶</button>
           <button type="button" class="secondary qr-ico" id="readStopBtn" aria-label="Stop" title="Stop">■</button>
           <button type="button" class="secondary qr-ico" id="hideChromeBtn" aria-label="Full screen" title="Full screen">⤢</button>
+          <!-- Owner ask (31 Aug 2026) -- "place a button on the button bar"
+               for a one-tap collapse into Mushaf shape, without a trip to
+               Study options. Mirrors the one real checkbox there
+               (#mushafShapeToggle); aria-pressed is kept in sync by that
+               checkbox's own change handler. -->
+          <button type="button" class="secondary qr-ico" id="mushafShapeBtn" aria-label="Mushaf shape" title="Mushaf shape" aria-pressed="false">📖</button>
           <!-- Note-view enhancement round 3 -- "same resizing at the READ
                view too". Filled in by JS (renderTextSizeButtonHtml()) once
                at init, same as every other static-markup slot on this
@@ -2431,6 +2458,21 @@
                  memorising programme needs) and ticking it greys the other four
                  out rather than hiding them. -->
             <label id="mushafControl"><input type="checkbox" id="mushafToggle" /> Mushaf view</label>
+            <!-- Owner ask (31 Aug 2026): "collapse all openings and bring the
+                 Arabic in Standard Mushaf shape with Tajweed colors ... this
+                 is not the 'Mushaf View' but Mushaf Shape of Ayah structure
+                 where user can select each Ayah separately." Unlike Mushaf
+                 view above (a real justified printed page -- a different
+                 renderer entirely), this stays on the ordinary āyah-by-āyah
+                 renderer, so every āyah keeps its own selectable ⋮ badge; it
+                 only (a) turns the other four openings off, once, as a
+                 one-tap "collapse" -- re-ticking any of them afterward is
+                 still free and adds it back -- and (b) tightens the flow
+                 view's own per-āyah spacing so consecutive āyāt read as one
+                 continuous page rather than a stack of separated cards.
+                 Tajweed colouring is untouched either way -- it is its own,
+                 independent tick, exactly as the owner asked. -->
+            <label id="mushafShapeControl"><input type="checkbox" id="mushafShapeToggle" /> Mushaf shape</label>
           </div>
           <div class="row" id="wbwLangControl" style="display:none;">
             <div><label for="wbwLangSelect">Word by Word language</label><select id="wbwLangSelect">
@@ -2851,6 +2893,8 @@
     const drillControlsEl = document.getElementById("drillControls");
     const ayahPanels = document.getElementById("ayahPanels");
     const mushafToggle = document.getElementById("mushafToggle");
+    const mushafShapeToggle = document.getElementById("mushafShapeToggle");
+    const mushafShapeBtn = document.getElementById("mushafShapeBtn");
     const mushafNote = document.getElementById("mushafNote");
     const singleAyahNavRow = document.getElementById("singleAyahNavRow");
     const pageViewContainer = document.getElementById("pageViewContainer");
@@ -3963,6 +4007,33 @@
     rangeFromSelect.addEventListener("change", () => { rangeFrom = Number(rangeFromSelect.value); rememberRangeSpan(); renderStudyScreen(); });
     rangeToSelect.addEventListener("change", () => { rangeTo = Number(rangeToSelect.value); rememberRangeSpan(); renderStudyScreen(); });
     mushafToggle.addEventListener("change", renderStudyScreen);
+    // Owner ask (31 Aug 2026) -- "Mushaf shape": a one-tap collapse, not a
+    // gate. Turning it ON quietly un-ticks the four other openings (each
+    // stays free to re-tick afterward -- this only decides the STARTING
+    // point, never disables anything, unlike Mushaf view above); turning it
+    // OFF just drops the continuous-flow styling and leaves whatever is
+    // ticked exactly as it is.
+    mushafShapeToggle.addEventListener("change", () => {
+      if (mushafShapeToggle.checked) {
+        wbwShowToggle.checked = false;
+        rootsToggle.checked = false;
+        derivativesToggle.checked = false;
+        trEnToggle.checked = false;
+        trBnToggle.checked = false;
+      }
+      document.body.classList.toggle("mushaf-shape-on", mushafShapeToggle.checked);
+      mushafShapeBtn?.setAttribute("aria-pressed", String(mushafShapeToggle.checked));
+      renderStudyScreen();
+    });
+    // The bottom-bar shortcut (#readBar) -- "place a button on the button
+    // bar", so this is reachable without opening Study options at all,
+    // which is the whole point of a quick collapse mid-reading. It only
+    // ever flips the ONE real checkbox above; nothing about what the tick
+    // means lives here twice.
+    mushafShapeBtn?.addEventListener("click", () => {
+      mushafShapeToggle.checked = !mushafShapeToggle.checked;
+      mushafShapeToggle.dispatchEvent(new Event("change"));
+    });
 
     // -----------------------------------------------------------------------
     // Shell round 11 (13 Aug 2026) -- Study options' own three bars.
@@ -4872,17 +4943,22 @@
     });
 
     // Enhancement round -- Note as its own dock tab. Opens the Ayah Note
-    // screen for whichever āyah is on screen right now, the same
-    // buildUnitKey.ayah(currentSurahNum, currentAyahNum) target
-    // jumpToApproach() already uses; openNoteView() does the rest (loads the
-    // notes doc, seeds noteScope, calls setStageView("note")). No extra
-    // audio-warming call here -- every Play button this screen has already
-    // warms at the moment it is actually pressed (quickPlayAyah()), same as
-    // every other route into this same screen.
+    // screen for whichever Study Unit is currently selected, wherever it
+    // was picked -- currentUnitInfo().unitKey, the exact same source
+    // "Track this unit" already claims against. Sync round (31 Aug 2026):
+    // this used to always force buildUnitKey.ayah(currentSurahNum,
+    // currentAyahNum), so tapping the dock's own Note tab while Options had
+    // Range/Whole Surah/etc. selected silently dropped back to Single Ayah
+    // -- the owner's own "affect everywhere" complaint, one more real place
+    // it showed up. openNoteView() does the rest (loads the notes doc,
+    // seeds noteScope, calls setStageView("note")). No extra audio-warming
+    // call here -- every Play button this screen has already warms at the
+    // moment it is actually pressed (quickPlayAyah()), same as every other
+    // route into this same screen.
     tabNoteBtn.addEventListener("click", () => {
       if (stageView === "note") { setStageView("wheel"); renderWheel(); return; } // same close idiom as Read/Approach
       closeAllPanels();
-      openNoteView(buildUnitKey.ayah(currentSurahNum, currentAyahNum));
+      openNoteView(currentUnitInfo().unitKey);
     });
 
     // Enhancement round -- Approach as its own dock tab: the same Mastery
@@ -7230,7 +7306,28 @@
         <select data-note-picker="to" aria-label="${t("To")}" ${isRange ? "" : "hidden"}>${ayahOptionsHtml(noteScope.rangeTo)}</select>`;
     }
 
-    /** Wires bar 1's own <select>s -- freshly looked up every call, since renderNoteViewNow() rebuilds the whole view's innerHTML on every re-render (a claim, a bookmark toggle, Prev/Next), which destroys and recreates these nodes each time; harmless to re-bind fresh listeners to fresh nodes. */
+    /** Wires bar 1's own <select>s -- freshly looked up every call, since renderNoteViewNow() rebuilds the whole view's innerHTML on every re-render (a claim, a bookmark toggle, Prev/Next), which destroys and recreates these nodes each time; harmless to re-bind fresh listeners to fresh nodes.
+     *
+     * Sync round (31 Aug 2026, owner's own report): "Choosing an option in
+     * anywhere should affect everywhere ... currently ... user has to come
+     * back to options to change the study unit." Bar 1 used to be a
+     * genuinely INDEPENDENT copy of the Study Unit state (noteScope,
+     * v07.69) -- the right call at the time for the one thing it protected
+     * (opening Note & more for one āyah of a flow must never silently move
+     * the Read screen), but it also meant an EXPLICIT pick made here never
+     * reached Options or the Read screen at all, exactly the friction the
+     * owner is describing. Every handler below now still updates noteScope
+     * first (so this screen redraws immediately), then propagates the
+     * SAME explicit choice through to the canonical control (unitTypeSelect/
+     * ayahSelect/unitNumSelect/rangeFromSelect/rangeToSelect) the exact way
+     * READ_PICKER_MIRRORS already does for the Read screen's own pickers --
+     * set the canonical select's value and fire its own "change", so the one
+     * real handler for "what does picking X mean" stays the only place that
+     * decides it. The v07.69 protection survives unchanged: openNoteView()
+     * itself still never touches canonical state when this screen is merely
+     * OPENED for one āyah inside a flow -- only an explicit interaction with
+     * bar 1, after the reader is already looking at it, writes through.
+     */
     function wireNotePickerBar() {
       const unitSel = noteView.querySelector('[data-note-picker="unitType"]');
       const surahSel = noteView.querySelector('[data-note-picker="surah"]');
@@ -7243,7 +7340,9 @@
       // chunk) -- kept in sync with #surahSelect itself (same convention
       // goToReference()/applyJump() already follow) so leaving Note & more
       // for the Read screen shows the surah just picked here, not the one
-      // that was open before it.
+      // that was open before it. Already fully canonical (currentSurahNum
+      // is the one real shared variable, not a noteScope-only copy), so
+      // this handler needed no change for the sync round above.
       surahSel?.addEventListener("change", async () => {
         currentSurahNum = Number(surahSel.value);
         surahSelect.value = String(currentSurahNum);
@@ -7263,27 +7362,54 @@
       });
       unitSel?.addEventListener("change", () => {
         noteScope.unitType = unitSel.value;
-        if (noteScope.unitType === "range") {
-          noteScope.rangeFrom = noteScope.ayahNum;
-          noteScope.rangeTo = Math.min(noteScope.ayahNum + 4, currentSurahData.ayahCount);
-        }
-        if (NUMBERED_UNITS.includes(noteScope.unitType)) {
-          const nums = noteScopeNumbersInSurah(noteScope.unitType);
-          const ayah = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
-          const current = ayah ? noteScopeNumberOfAyah(noteScope.unitType, ayah) : null;
-          noteScope.unitNumber = nums.includes(current) ? current : (nums[0] ?? null);
-        }
+        // Anchor on whichever āyah this screen is currently showing, so a
+        // "Range" pick here defaults its own From/To the exact same way the
+        // canonical picker would if the reader had picked it there instead.
+        currentAyahNum = noteScope.ayahNum;
+        ayahSelect.value = String(currentAyahNum);
+        unitTypeSelect.value = noteScope.unitType;
+        unitTypeSelect.dispatchEvent(new Event("change"));
+        // unitTypeSelect's own handler is now the single source of truth for
+        // what this pick means (range defaults included) -- read it back
+        // rather than keeping a second, possibly-drifting copy of the same
+        // arithmetic here.
+        noteScope.rangeFrom = rangeFrom;
+        noteScope.rangeTo = rangeTo;
+        noteScope.unitNumber = currentUnitNumber();
         renderNoteViewNow();
       });
-      ayahSel?.addEventListener("change", () => { noteScope.ayahNum = Number(ayahSel.value); renderNoteViewNow(); });
-      numSel?.addEventListener("change", () => {
-        noteScope.unitNumber = Number(numSel.value);
-        const match = currentSurahData.ayahs.find((a) => noteScopeNumberOfAyah(noteScope.unitType, a) === noteScope.unitNumber);
-        if (match) noteScope.ayahNum = match.ayah;
+      ayahSel?.addEventListener("change", () => {
+        noteScope.ayahNum = Number(ayahSel.value);
+        ayahSelect.value = String(noteScope.ayahNum);
+        ayahSelect.dispatchEvent(new Event("change"));
         renderNoteViewNow();
       });
-      fromSel?.addEventListener("change", () => { noteScope.rangeFrom = Number(fromSel.value); noteScope.ayahNum = noteScope.rangeFrom; renderNoteViewNow(); });
-      toSel?.addEventListener("change", () => { noteScope.rangeTo = Number(toSel.value); renderNoteViewNow(); });
+      numSel?.addEventListener("change", async () => {
+        // goToUnitNumber() (the canonical picker's own handler) is called
+        // directly, not via a dispatched event, because it is async and can
+        // cross into a different surah -- awaiting it here is what lets
+        // noteScope be resynced from the real, settled result afterward
+        // instead of racing it.
+        const numberValue = Number(numSel.value);
+        unitNumSelect.value = String(numberValue);
+        await goToUnitNumber(numberValue);
+        noteScope.ayahNum = currentAyahNum;
+        noteScope.unitNumber = currentUnitNumber();
+        renderNoteViewNow();
+      });
+      fromSel?.addEventListener("change", () => {
+        noteScope.rangeFrom = Number(fromSel.value);
+        noteScope.ayahNum = noteScope.rangeFrom;
+        rangeFromSelect.value = String(noteScope.rangeFrom);
+        rangeFromSelect.dispatchEvent(new Event("change"));
+        renderNoteViewNow();
+      });
+      toSel?.addEventListener("change", () => {
+        noteScope.rangeTo = Number(toSel.value);
+        rangeToSelect.value = String(noteScope.rangeTo);
+        rangeToSelect.dispatchEvent(new Event("change"));
+        renderNoteViewNow();
+      });
     }
 
     /** The nav cluster's own HTML -- "one is for moving the whole unit of
