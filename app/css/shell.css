@@ -110,9 +110,20 @@ html[lang="bn"] body { line-height: 1.3; }
 .nav-link:hover { text-decoration: underline; }
 .nav-current { color: #888; cursor: default; pointer-events: none; }
 .nav-link-disabled { color: #aaa; font-size: 0.84rem; font-style: italic; padding: 0.1rem 0; }
+/* Sharing the four-button row with this notice used to squeeze the tabs
+   themselves -- .nav-cat is `flex: 1 1 0; min-width: 0`, so any extra flex
+   item on the same line (this one, whenever a "Previewing as" role is
+   active) just ate into the categories' own share, and a longer role name
+   (or its Bangla translation) shrank Home/Modules/Operation/Bookmark's own
+   labels down toward unreadable ellipsis. `flex-basis: 100%` forces it onto
+   its OWN line instead -- a flex item that big can never fit alongside the
+   four tabs already on the line above it, so it wraps below them instead of
+   sharing space with them. The tabs are never touched by how long this text
+   gets, in any language. */
 .nav-preview-notice {
-  margin-left: auto; align-self: center; font-size: 0.82rem; color: #8a6220;
-  background: #f5ebd6; padding: 0.15rem 0.6rem; border-radius: 0.7rem;
+  flex: 1 1 100%; margin: 0.4rem 0 0; font-size: 0.82rem; color: #8a6220;
+  background: #f5ebd6; padding: 0.3rem 0.6rem; border-radius: 0.5rem;
+  text-align: center;
 }
 
 /* ---------- Home (the one static category) ---------- */

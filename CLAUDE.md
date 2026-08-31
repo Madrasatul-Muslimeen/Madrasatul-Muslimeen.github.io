@@ -8055,6 +8055,54 @@ new Name") added to `bn.js` up front, not discovered after the fact. No
 `firestore.rules`, schema or Firestore data changes -- nothing to deploy
 but the static files.
 
+v07.110 (31 Aug 2026, on Claude Code on the web) is **two small, owner-
+reported fixes -- the landing wheel's own intro button no longer visibly
+jumps into place, and a "Previewing as" role notice no longer squeezes the
+nav bar's own four tabs.** Both diagnosed from the owner's own phone
+screenshots rather than guessed at.
+
+**(1) The intro button's own reflow.** The owner's report: the "Study
+Quran / ONE Ayah a Day" button lands somewhere not settled, then about a
+second later visibly re-centres onto the wheel. **Root cause, confirmed
+by measuring rather than assumed**: `#wheelCtaBtn` had no `hidden`
+attribute, so it painted immediately, absolutely centred on
+`#wheelStageWrap` -- but that wrap's own height was, at that moment, only
+as tall as the "Loading…" placeholder text inside `#wheelContainer`
+(there is no real Firestore data yet at first paint). Once
+`renderWheel()` actually populated the wheel SVG a beat later, the wrap
+grew to the SVG's real height and the button, still centred on the SAME
+wrap, jumped down to follow it. Fixed by starting the button `hidden` and
+revealing it (`wheelCtaBtn.hidden = false`) only inside `renderWheel()`'s
+own real-content branch, right after the SVG is set -- so the button and
+the wheel now always appear together, already in their final position. A
+new `wheelIntroDismissed` flag (set by the button's own click handler)
+stops a later `renderWheel()` call from bringing the dismissed button
+back for the rest of the session. **Verified with a throwaway Playwright
+script** (this project's own established practice) against the real
+`firebase-stub.mjs` with an artificial 900ms per-read latency: on the
+UNFIXED build the button was visibly on screen with no SVG behind it for
+~1.65s (2700ms-4350ms of the load); on the fixed build there is no sample
+where it is visible before the SVG exists, and once both appear together
+the button's own centre is pixel-identical to the wheel SVG's own centre
+(195,365 both). No `firestore.rules`, schema or data changes.
+
+**(2) The "Previewing as" notice squeezing Home/Modules/Operation/
+Bookmark.** `.nav-preview-notice` shared the same flex row as the four
+nav-cat tabs (`.nav-cat` is `flex: 1 1 0; min-width: 0`, so any other
+item on that row eats straight into their own share) -- a longer role
+name, or its Bangla translation, shrank the tabs' own labels down toward
+an unreadable ellipsis, exactly the owner's screenshot. Fixed with
+`flex-basis: 100%` on the notice: a flex item that wide can never share a
+line with four tabs already filling it, so it wraps onto its own line
+below them instead of sharing space -- the tabs are never touched by how
+long this text gets, in any language, and nothing about the notice's own
+wording needed to change. **Verified** with a direct measurement against
+the real `shell.css` at 320/390/768px: all four tabs measure byte-
+identical widths with the notice present or absent, the notice sits on
+its own line below them (top 56px vs. the tabs' 16px), and there is no
+horizontal page overflow at any of the three widths. No `firestore.rules`,
+schema or data changes -- nothing to deploy but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
