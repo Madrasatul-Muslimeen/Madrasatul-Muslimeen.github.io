@@ -592,6 +592,7 @@ export const BN = {
   "Bookmark, copy & share": "বুকমার্ক, কপি ও শেয়ার",
   "Collapse āyah text": "আয়াতের লেখা সংক্ষিপ্ত করুন",
   "Expand āyah text": "আয়াতের লেখা বড় করুন",
+  "Show ayah by ayah": "আয়াত অনুযায়ী দেখান", // ?
   "Notes always stays open": "নোট সবসময় খোলা থাকে",
   // PC popup (28 Aug 2026) -- the Note view's own floating window on
   // desktop widths, with a side pane of the current collection's (or this

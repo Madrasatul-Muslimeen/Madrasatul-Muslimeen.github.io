@@ -24,6 +24,21 @@ function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+
+/** Fix round -- a translation's own leading ayah number is shown in that
+    TRANSLATION's own script, not the app's current display language: the
+    English block always reads plain "1", the Bangla block always reads
+    "১", regardless of whether the app itself happens to be in English or
+    Bangla right now. Deliberately NOT the same as i18n.js's num() (which
+    follows the app language) -- a Bangla-only reader who has the
+    ENGLISH translation showing alongside the Bangla one must still be able
+    to read that block's own number. */
+export function digitsForLang(value, lang) {
+  const s = String(value);
+  return lang === "bn" ? s.replace(/[0-9]/g, (d) => BN_DIGITS[Number(d)]) : s;
+}
+
 /** Panel: the Arabic script itself, plain or tajweed-colour-coded (F-049 toggle).
     Fix round: the ayah number used to show trailing and only in the
     non-tajweed path (tajweed's own embedded end-marker is a different,
@@ -37,14 +52,17 @@ export function renderArabicPanel(ayah, { tajweedOn } = {}) {
   return `<div class="ayah-num-row"><span class="ayah-num-badge">${num(ayah.ayah)}</span></div><div class="ayah-arabic" dir="rtl" lang="ar">${body}</div>`;
 }
 
-/** Panel: translation text, in whichever language(s) are asked for (F-060 — Bangla, alongside English). */
+/** Panel: translation text, in whichever language(s) are asked for (F-060 —
+    Bangla, alongside English). Fix round -- every translation line now
+    carries the SAME leading ayah-number badge the Arabic panel already
+    has, in that translation's own digit script (digitsForLang()). */
 export function renderTranslationPanel(ayah, langs = ["en"]) {
   return langs
     .map((lang) => {
       const text = ayah.translations?.[lang];
       if (!text) return "";
       const cls = lang === "bn" ? "ayah-translation ayah-translation-bn" : "ayah-translation";
-      return `<div class="${cls}" ${lang === "bn" ? 'lang="bn"' : ""}>${escapeHtml(text)}</div>`;
+      return `<div class="ayah-num-row"><span class="ayah-num-badge">${digitsForLang(ayah.ayah, lang)}</span></div><div class="${cls}" ${lang === "bn" ? 'lang="bn"' : ""}>${escapeHtml(text)}</div>`;
     })
     .join("");
 }

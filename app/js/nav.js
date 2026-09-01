@@ -193,10 +193,14 @@ export function renderNavBar(roles = [], viewAsRole = null) {
   // teacher-scoping round has disclosed, not new here) and a future gap
   // found the same way deserves the same kind of note.
   const teacherGapNote = "";
+  // Fixes round -- the owner's own ask: drop "— change this on the People
+  // page" (a real instruction, but one that made the badge itself too long
+  // to sit comfortably in the corner it's moved to, quranrevival.html's own
+  // <h1>) and move the badge there. phase 4: the role id itself is
+  // translated too -- the sentence around it was Bangla while the word
+  // inside it stayed "teacher".
   const previewNotice = viewAsRole
-    // phase 4: the role id itself is translated too -- the sentence around
-    // it was Bangla while the word inside it stayed "teacher".
-    ? `<span class="nav-preview-notice">${t("Previewing as: {role} — change this on the People page", { role: roleLabel(viewAsRole) })}${teacherGapNote}</span>`
+    ? `<span class="nav-preview-notice">${t("Previewing as: {role}", { role: roleLabel(viewAsRole) })}${teacherGapNote}</span>`
     : "";
   return `${cats.join("")}${previewNotice}`;
 }
