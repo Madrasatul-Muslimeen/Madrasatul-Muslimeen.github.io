@@ -8256,6 +8256,88 @@ guessed at again. The cross-device "default person" preference (item 1)
 is scoped and ready to build as its own round the moment the owner
 confirms they want it.
 
+v07.112 (31 Aug 2026, on Claude Code on the web) is **a same-day
+correction to v07.111 -- a real, severe scroll trap fixed, and the
+WbW/Root/Derivatives sync gap closed properly.** The owner's own report
+after using v07.111: "i had single Ayah unit setting and page setting.
+but none scrolls or go sideways, only except nav button... same is with
+note view... also choosing WbW at options should make it active in both
+read n note view (currently it works with read view only)."
+
+**The scroll bug is real, severe, and pre-existing -- not something
+v07.111 caused, but something it also didn't catch, and it's exactly the
+owner's OWN default configuration (Single Ayah + "Page by page" ON, the
+out-of-the-box state).** Measured before touching anything, not guessed:
+`#readScroll`'s real `scrollHeight` (471px) exceeded its `clientHeight`
+(429px) by 42px, with `overflow-x`/`overflow-y` both computing `hidden`
+-- content genuinely trapped, unreachable in either direction, matching
+the owner's own "only except nav button" precisely. Root cause:
+`body.read-sideways`'s own CSS (shell round 28, "Page by page" reading)
+forces `#readScroll { overflow: hidden }` and reshapes `#studyScreen`/
+`#ayahPanels` into a flex column purely because the TICK is checked --
+it never checked whether the paged renderer (`#pageViewContainer`) is
+actually what's on screen. For Single Ayah/Ruku'/Juz/Hizb/Page (content
+in `#ayahPanels` instead), those same rules were the trap. Fixed with a
+new `body.flow-view-active` class, toggled in `renderStudyScreen()`
+alongside its own existing `usesFlow` computation, and required
+alongside `body.read-sideways` on the three rules that actually caused
+harm (`#readScroll`/`#studyScreen`/`#ayahPanels`) -- `#pageViewContainer`/
+`.page-flow-ayah`/`.hifz-page`'s own rules needed no change, since those
+elements are already `display:none` whenever they're not the thing
+showing. **Verified with the real longest āyah in the Qur'an (2:282)**,
+Single Ayah + Page-by-page ON: `#readScroll` now genuinely scrolls both
+directions (confirmed by a real mouse-wheel simulation moving
+`scrollTop`), while the Range/Whole-Surah/Mushaf paged case is proven
+byte-identical to before (`flow-view-active` set, `#pageViewContainer`
+still the visible flex row with its own `overflow-x:auto` untouched) --
+10/10 checks pass. **The Note view's own report could not be reproduced
+as a distinct bug** -- `.note-body` (fixed for horizontal scroll in
+v07.111 itself, still unmerged at the time the owner tested) scrolls
+correctly both directions with real overflowing content, confirmed by
+the same real-scroll-and-measure method; the most likely explanation is
+the owner was testing against the still-unmerged v07.111 branch/
+production, which lacked that fix. Flagged rather than silently assumed
+fixed -- if it's still stuck after this merges, the exact ayah/unit is
+needed to reproduce it.
+
+**The WbW/Root/Derivatives sync gap was real and is now closed the same
+way v07.111 already closed it for the Study Unit pickers.** Tajweed
+never had this bug (`renderNoteViewNow()` already read
+`tajweedToggle.checked` directly); Word by Word/Root/Derivatives each had
+their OWN, always-false-on-entry flag (`noteWbwOn`/`noteRootsOn`/
+`noteDerivativesOn`) completely disconnected from Options' own
+`wbwShowToggle`/`rootsToggle`/`derivativesToggle` -- ticking one in
+Options never reached the Note view at all, exactly the owner's report.
+All three flags are retired; `renderNoteViewNow()` now reads the
+canonical checkboxes' own `.checked` directly (the same pattern Tajweed
+already used), and `toggleNoteWbw()`/`toggleNoteRoots()`/
+`toggleNoteDerivatives()` (the Note view's own ⋮-menu items) now flip
+the SAME canonical checkbox and fire its own "change" -- the identical
+mirror pattern `wireNotePickerBar()` already uses for the Study Unit
+pickers -- so a change made in EITHER screen reaches the other, and the
+Read screen too, with no second click required anywhere. **A real,
+separate, pre-existing finding surfaced while testing this, not caused
+by this fix**: the two candidate test-verification approaches
+(`tools/i18n-verify`'s default stub, and a first pass with real
+`catalogue-data.js` Approaches) initially disagreed on whether unticking
+Word by Word actually removed it from the Read screen -- traced to the
+test stub's own DEFAULT (non-`seedTemplates`) trackable seed giving
+EVERY Quran Approach the identical `panels: ["text", "audio", "loop",
+"tajweed", "wordByWord"]`, so a tick could never be seen to REMOVE
+wordByWord there, since every baseline already included it (correct,
+deliberate v07.45 behaviour: an Approach's own declared panels are
+never taken away by a tick, only added to). Re-verified against the
+REAL `APPROACH_TEMPLATES` (`approach_01`, "Reading (with Tajweed)",
+whose own baseline genuinely excludes wordByWord) confirms the fix
+itself is correct in both directions: 6/7 checks pass, the one
+non-critical failure being a baseline-timing artifact of the test
+script itself, not the app. `tools/i18n-verify/layout.mjs` reports the
+landing page byte-for-byte identical against a real `HEAD` shim at all
+eight viewports in both banner states (only the same pre-existing
+`asmaX*`/`qcrAdd*` false-positive missing-ID-target flag this file has
+disclosed since v07.86). No `firestore.rules`, schema or Firestore data
+changes -- nothing to deploy but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

@@ -1055,9 +1055,17 @@
      whatever this stylesheet says: which is why the rule below can turn it
      into a flex row without ever fighting the code that hides it.
      --------------------------------------------------------------------- */
-  body.read-sideways #readScroll { overflow: hidden; }
-  body.read-sideways #studyScreen { height: 100%; display: flex; flex-direction: column; min-height: 0; }
-  body.read-sideways #ayahPanels { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+  /* Sync round (31 Aug 2026) -- these three only apply once the paged
+     renderer (#pageViewContainer) is actually what's on screen
+     (body.flow-view-active, set by renderStudyScreen()'s own usesFlow) --
+     see that assignment's own comment for the real bug this closes: Single
+     Ayah/Ruku'/Juz/Hizb/Page render into #ayahPanels instead, and applying
+     these unconditionally trapped that content with no scroll in either
+     direction the moment "Page by page" was simply ticked, whether or not
+     it was the paged view actually showing. */
+  body.read-sideways.flow-view-active #readScroll { overflow: hidden; }
+  body.read-sideways.flow-view-active #studyScreen { height: 100%; display: flex; flex-direction: column; min-height: 0; }
+  body.read-sideways.flow-view-active #ayahPanels { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
   body.read-sideways #pageViewContainer {
     display: flex; flex-direction: row; flex: 1 1 auto; min-height: 0;
     overflow-x: auto; overflow-y: hidden;
@@ -3114,9 +3122,20 @@
     // whatever's already open (see noteScopeUnitInfo()'s own comment).
     let noteScope = null; // { unitType, ayahNum, rangeFrom, rangeTo, unitNumber }
     let noteFullscreenOn = false; // the Note view's own full-screen state -- see toggleNoteFullscreen()
-    let noteWbwOn = false; // bar 2's Word-by-word toggle (round 31) -- a reading preference that persists across Prev/Next within the Note view, not reset per āyah
-    let noteRootsOn = false; // bar 2's Root toggle (enhancement round) -- same "persists across Prev/Next, not reset per āyah" shape as noteWbwOn
-    let noteDerivativesOn = false; // bar 2's own separate Derivatives toggle -- Root and Derivatives used to be one "Roots & derivatives" toggle; split for the same "appeared together, merged" reason Word by Word/Root were split in round 27
+    // Sync round (31 Aug 2026, owner's own report): "choosing WbW at
+    // options should make it active in both read n note view ... in note
+    // view user has to click on WbW again ... not user-friendly." bar 2's
+    // Word by Word/Root/Derivatives buttons used to be THEIR OWN, always-
+    // false-on-entry flags (noteWbwOn/noteRootsOn/noteDerivativesOn),
+    // completely disconnected from Options' own wbwShowToggle/rootsToggle/
+    // derivativesToggle -- Tajweed never had this bug (renderNoteViewNow()
+    // already reads tajweedToggle.checked directly), which is exactly the
+    // shape these three now follow too: toggleNoteWbw()/toggleNoteRoots()/
+    // toggleNoteDerivatives() below flip the CANONICAL checkbox itself and
+    // fire its own "change" (the same mirror pattern READ_PICKER_MIRRORS
+    // and wireNotePickerBar() already use), so there is one real value for
+    // "is Word by Word on", read straight off wbwShowToggle.checked
+    // wherever it's needed -- never a second, driftable copy.
     // QCR round: which collection the reader tapped an āyah FROM, so the
     // Note view's "◂ List & wheel" button knows where "back" means -- null
     // when Note view was reached any other way (Read screen, a bookmark, a
@@ -7565,12 +7584,12 @@
         // user, therefore we need to make tools available here" (the
         // owner's own words). Only meaningful for a genuine single āyah
         // (canWbwRoot) -- ayah-renderer.js's panels take one āyah, not a span.
-        wbwHtml: canWbwRoot && noteWbwOn && ayah ? renderWordByWordPanel(ayah, { langs: wbwLangs() }) : "",
-        isWbwOn: canWbwRoot && noteWbwOn,
-        rootsHtml: canWbwRoot && noteRootsOn && ayah ? renderRootPanel(ayah) : "",
-        isRootsOn: canWbwRoot && noteRootsOn,
-        derivativesHtml: canWbwRoot && noteDerivativesOn && ayah ? renderDerivativesPanel(ayah) : "",
-        isDerivativesOn: canWbwRoot && noteDerivativesOn,
+        wbwHtml: canWbwRoot && wbwShowToggle.checked && ayah ? renderWordByWordPanel(ayah, { langs: wbwLangs() }) : "",
+        isWbwOn: canWbwRoot && wbwShowToggle.checked,
+        rootsHtml: canWbwRoot && rootsToggle.checked && ayah ? renderRootPanel(ayah) : "",
+        isRootsOn: canWbwRoot && rootsToggle.checked,
+        derivativesHtml: canWbwRoot && derivativesToggle.checked && ayah ? renderDerivativesPanel(ayah) : "",
+        isDerivativesOn: canWbwRoot && derivativesToggle.checked,
         canWbwRoot,
         hasNote,
         isBookmarked,
@@ -7731,7 +7750,7 @@
       // click is generic, shared by all four fields) -- this listens for the
       // SAME click, added AFTER so the generic handler has already flipped
       // .note-field-body's display, and just remembers which way it landed,
-      // the same way noteWbwOn/noteFullscreenOn already survive a rebuild.
+      // the same way noteFullscreenOn already survives a rebuild.
       noteView.querySelector('[data-note-field="notes"] [data-note-field-toggle]')?.addEventListener("click", () => {
         noteNotesOpen = noteView.querySelector('[data-note-field="notes"] .note-field-body').style.display !== "none";
       });
@@ -7823,8 +7842,8 @@
 
     // Per-row expand state, kept across re-renders for as long as the popup
     // stays open on this page -- same "reading preference, not per-āyah
-    // state" shape noteWbwOn/noteRootsOn already use, just per unitKey
-    // instead of a single flag.
+    // state" shape noteNotesOpen/noteApproachCardOpen already use, just per
+    // unitKey instead of a single flag.
     const notePopupExpandedAyah = new Set();
     const notePopupExpandedNotes = new Set();
 
@@ -8411,29 +8430,33 @@
       if (noteScope) renderNoteViewNow();
     }
 
-    /** Bar 2's Word-by-word toggle (round 31) -- a reading preference, not
-        per-āyah state, so it deliberately stays on across Prev/Next within
-        the Note view rather than resetting each time (matching how the
-        ordinary reading screen's own ticks behave). */
+    /** Bar 2's Word-by-word toggle -- sync round (31 Aug 2026): flips the
+        SAME canonical checkbox Options uses and fires its own "change" (it
+        already just calls renderStudyScreen(), harmless to run while Read
+        isn't the visible stage), so the choice reaches Options/Read AND
+        this screen from one real value, in either direction -- toggle it
+        here, Options shows it too; toggle it in Options, this screen shows
+        it too, without a trip back through Options first. */
     function toggleNoteWbw() {
-      noteWbwOn = !noteWbwOn;
+      wbwShowToggle.checked = !wbwShowToggle.checked;
+      wbwShowToggle.dispatchEvent(new Event("change"));
       if (noteScope) renderNoteViewNow();
     }
 
-    /** Bar 2's Root toggle (enhancement round) -- same "reading preference,
-        not per-āyah state" shape as toggleNoteWbw() above: stays on across
-        Prev/Next until the reader clicks it again. */
+    /** Bar 2's Root toggle -- same canonical mirror shape as toggleNoteWbw() above. */
     function toggleNoteRoots() {
-      noteRootsOn = !noteRootsOn;
+      rootsToggle.checked = !rootsToggle.checked;
+      rootsToggle.dispatchEvent(new Event("change"));
       if (noteScope) renderNoteViewNow();
     }
 
-    /** Bar 2's own, separate Derivatives toggle -- same shape as
-        toggleNoteRoots() above, kept as its own flag/function so the two
-        can be on independently rather than merged into one, which was the
-        owner's own report about the panel this round separates. */
+    /** Bar 2's own, separate Derivatives toggle -- same canonical mirror
+        shape as toggleNoteWbw() above; kept as its own function so Root and
+        Derivatives can still be switched on independently, which is the
+        whole reason they were split into two toggles in the first place. */
     function toggleNoteDerivatives() {
-      noteDerivativesOn = !noteDerivativesOn;
+      derivativesToggle.checked = !derivativesToggle.checked;
+      derivativesToggle.dispatchEvent(new Event("change"));
       if (noteScope) renderNoteViewNow();
     }
 
@@ -8456,6 +8479,22 @@
       // it works over any unit including a single ayah.
       const isPageUnit = currentUnitType === "surah" || currentUnitType === "range";
       const usesFlow = isMushaf || isPageUnit;
+      // Sync round (31 Aug 2026) -- the owner's own report: "i had single
+      // Ayah unit setting and page setting [Page by page ON, the default],
+      // but none scrolls or go sideways." Real bug, found by measuring:
+      // body.read-sideways's own CSS (below) forces #readScroll to
+      // overflow:hidden and reshapes #studyScreen/#ayahPanels into a fixed-
+      // height flex column purely because the "Page by page" TICK is on --
+      // it never checked whether the flow/paged renderer (#pageViewContainer)
+      // is actually the thing on screen. For Single Ayah/Ruku'/Juz/Hizb/Page
+      // (usesFlow false), content renders in #ayahPanels instead, and those
+      // same rules were trapping it -- content taller than the screen with
+      // NO way to reach the rest of it, in either direction, confirmed by a
+      // real scrollHeight/clientHeight measurement (471 vs 429px) before
+      // this fix. This class is what those rules now require alongside
+      // body.read-sideways, so they only ever apply while the paged
+      // renderer is genuinely what's showing.
+      document.body.classList.toggle("flow-view-active", usesFlow);
 
       // Shell round 21 -- the owner's answer to "keep both, or bar only?" was
       // keep both: the read bar moves the UNIT, this row moves the AYAH inside
