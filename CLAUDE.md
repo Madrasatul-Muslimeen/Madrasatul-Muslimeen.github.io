@@ -8103,6 +8103,98 @@ its own line below them (top 56px vs. the tabs' 16px), and there is no
 horizontal page overflow at any of the three widths. No `firestore.rules`,
 schema or data changes -- nothing to deploy but the static files.
 
+v07.111 (1 Sep 2026, on Claude Code on the web) is **four owner-reported fixes
+-- one setting that stayed put in only one screen, no scroll/swipe advance,
+and the ayah number and Bismillah both missing in at least one setting.**
+
+**(1) "A choice of setting anywhere should work everywhere."** The owner's own
+example: ticking Word by Word in Study options did nothing to an already-open
+Note view, which kept its own separate on/off state and needed a second tap
+from its own ⋮ menu. Root and Derivatives had the identical shape. **Fixed at
+the root, not patched over**: `noteWbwOn`/`noteRootsOn`/`noteDerivativesOn`
+(three separate session flags in `quranrevival.html`) are gone outright --
+the Note view now reads the SAME canonical `wbwShowToggle`/`rootsToggle`/
+`derivativesToggle` checkboxes Study options already owns, and its own ⋮ menu
+buttons (`toggleNoteWbw`/`toggleNoteRoots`/`toggleNoteDerivatives`) flip those
+checkboxes directly rather than a private copy. A new `onReadingTickChanged()`
+re-renders whichever of Read/Note is actually open whenever any of the four
+canonical ticks (Tajweed included) changes -- Study options is a drawer that
+can sit open OVER the Note view (shell round 7's own dock shape), so a tick
+made there has to reach the screen underneath it immediately, not just on the
+next Read-screen render. Translation ticks (En/Bn) were left alone -- the
+Note view already shows both languages unconditionally with their own
+independent collapse toggles, a different and pre-existing design, not the
+"needs a second click" defect this round was about.
+
+**(2) "Enable moving to the next Ayah both scrolling down and sideways... in
+all settings."** Before this, a non-flow unit (Single Ayah, Ruku', Juz',
+Hizb', Page) had ONLY the Prev/Next buttons -- no scroll, no swipe -- and a
+flow unit (Whole Surah/Range/Mushaf) only ever offered ONE of the two at a
+time, whichever the "Page by page" tick said. A new, document-level,
+capture-phase wheel/touch listener (`wireScrollSwipeAyahNav()`, wired once,
+survives the Note view's own per-render rebuild the same way `nav.js`'s
+outside-click and `way-modal.js`'s Assign-to popover already do) adds both
+gestures everywhere: a wheel-scroll or upward swipe past the bottom of
+whatever is genuinely scrolling advances (`nextAyahBtn`/`nextUnitBtn`,
+whichever isn't hidden -- the same "one ayah where that's a real, separate
+step, the whole unit otherwise" rule the visible buttons already follow);
+a sideways swipe does the same, EXCEPT inside `#pageViewContainer`, which
+already has its own native scroll-snap swipe (round 28) that this
+deliberately does not double up on. **A real measurement trap, found by
+testing and not by reading the CSS**: `#readScroll` defaults to
+`overflow:hidden` ("Page by page" is checked by default), so its own
+`scrollHeight`/`clientHeight` numbers are a red herring -- the actual
+scrolling element is `#ayahPanels` (or one page inside `#pageViewContainer`),
+found by walking up from wherever the gesture happened rather than assumed
+to be one fixed id; when NOTHING in that path genuinely scrolls (a short
+ayah that fits outright), the gesture fires unconditionally rather than
+checking a boundary element that was never really scrolling to begin with.
+
+**(3) Bismillah before ayah 1 of every surah except Surah 9 (At-Tawbah,
+which traditionally carries none), on the Read screen (single ayah AND flow)
+and the Note view alike** -- previously it existed nowhere but the landing
+wheel's own decorative hub. One shared `bismillahHtmlFor(surahNum, ayahNum)`
+decides this in one place so all three call sites can't disagree. In the
+flow view it goes INSIDE the first ayah's own `.page-flow-ayah` block, not as
+a bare sibling -- every direct child of `#pageViewContainer` is treated as
+one full-width sideways "page" (round 28's own CSS), so a stray sibling
+would have become a blank extra page instead of a heading.
+
+**(4) "Ayah Numbers to appear always before all Ayat in all settings."**
+Measured first: the number showed AFTER the Arabic text in the plain path,
+was a different, easy-to-miss glyph embedded inside the text in Tajweed mode,
+and was missing OUTRIGHT in the Note view (which joined raw `uthmaniText`,
+bypassing `ayah-renderer.js`'s `renderArabicPanel()` entirely). One
+shared fix: `renderArabicPanel()` now always draws a leading `.ayah-num-row`
+badge before the Arabic, tajweed on or off -- reaching both the single-ayah
+and flow Read views for free, since both already call it via `renderLayoutA`.
+The Note view gained the identical badge, built per ayah in
+`renderNoteViewNow()` and passed as pre-built, already-safe `arabicHtml` (a
+NEW field, kept separate from the existing plain-text `arabicText` that
+Copy/Share still reads, so pasting a note never carries stray HTML) -- and,
+since building that per-ayah anyway cost nothing extra, it is now
+Tajweed-aware there too, using the same `tajweedRawToSafeHtml()` the Read
+screen uses, closing a second, related gap (Note view's Arabic was always
+plain black text, regardless of the Tajweed tick) found while fixing (1).
+
+**Verified with a focused, throwaway Playwright script** (this project's own
+established practice for anything past `behaviour.mjs`'s own disclosed
+section-42 crash point) -- 18 checks, 0 failures, covering all four fixes
+together in both directions where that mattered (Study options → Note view
+and Note view's own menu → Study options; wheel-down, wheel-up and touch-swipe
+all really moving `#readAyahSelect`; Bismillah present for 79:1, absent for
+79:2 and for 9:1; the ayah-number badge present with Tajweed on AND off, in
+both the Read and Note screens, with real `tajweed-*` colour spans confirmed
+rendering). **`tools/i18n-verify/layout.mjs` reports the landing page
+byte-for-byte identical** at all eight viewports in both banner states (the
+one reported "MISSING ID TARGETS" line is the same pre-existing false
+positive this project has disclosed since v07.86 -- confirmed unrelated by
+running the unmodified `HEAD` copy through the same check and seeing the
+identical list), and **`tools/i18n-verify/reading.mjs` reports OK** at every
+viewport in both banner states -- neither the wheel nor the reading screen's
+own measured layout moved. No `firestore.rules`, schema or Firestore data
+changes -- nothing to deploy but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

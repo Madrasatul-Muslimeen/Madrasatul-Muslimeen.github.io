@@ -24,12 +24,17 @@ function escapeHtml(s) {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-/** Panel: the Arabic script itself, plain or tajweed-colour-coded (F-049 toggle). */
+/** Panel: the Arabic script itself, plain or tajweed-colour-coded (F-049 toggle).
+    Fix round: the ayah number used to show trailing and only in the
+    non-tajweed path (tajweed's own embedded end-marker is a different,
+    Arabic-digit glyph, easy to miss) -- now a plain, always-present badge
+    BEFORE the text, in every setting, matching the owner's own reference
+    screenshot and the equivalent fix in ayah-note-renderer.js's Note view. */
 export function renderArabicPanel(ayah, { tajweedOn } = {}) {
   const body = tajweedOn && ayah.tajweedText
     ? tajweedRawToSafeHtml(ayah.tajweedText)
-    : `${escapeHtml(ayah.uthmaniText)} <span class="ayah-num">﴿${ayah.ayah}﴾</span>`;
-  return `<div class="ayah-arabic" dir="rtl" lang="ar">${body}</div>`;
+    : escapeHtml(ayah.uthmaniText);
+  return `<div class="ayah-num-row"><span class="ayah-num-badge">${num(ayah.ayah)}</span></div><div class="ayah-arabic" dir="rtl" lang="ar">${body}</div>`;
 }
 
 /** Panel: translation text, in whichever language(s) are asked for (F-060 — Bangla, alongside English). */

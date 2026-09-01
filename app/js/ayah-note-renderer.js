@@ -243,7 +243,7 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
 export function renderNoteView({
   unitKey,
   pickerBarHtml, navHtml,
-  showAyatText, arabicText, englishText, banglaText, readViewLinkHtml,
+  showAyatText, arabicText, arabicHtml = "", bismillahHtml = "", englishText, banglaText, readViewLinkHtml,
   notesHtml, wbwHtml, rootsHtml, derivativesHtml,
   isBookmarked = false, isFullscreen = false,
   isWbwOn = false, isRootsOn = false, isDerivativesOn = false, hasNote = false, approachHtml = "", isNotesOpen = false,
@@ -426,13 +426,22 @@ export function renderNoteView({
 
       <div class="note-body">
         ${showAyatText ? `
+        ${bismillahHtml}
         <div data-note-collapsible>
           <div class="note-field" data-note-field="arabic">
             <div class="note-field-label-row">
               <button type="button" class="note-field-toggle" data-note-field-toggle>▾</button>
               <span class="note-field-label">${t("Arabic")}</span>
             </div>
-            <div class="note-field-body"><div class="note-arabic" dir="rtl" lang="ar">${escapeHtml(arabicText)}</div></div>
+            <!-- Fix round -- arabicHtml is already-safe, pre-built per-ayah
+                 markup (an ayah-number badge before each āyah, tajweed
+                 colouring when that Study-options tick is on) -- the same
+                 leading-number treatment ayah-renderer.js's own
+                 renderArabicPanel() gives the Read screen, so the number
+                 (and Tajweed, if chosen) shows here without a second
+                 switch. Falls back to the old plain-escaped arabicText for
+                 any caller that hasn't been updated to pass it. -->
+            <div class="note-field-body">${arabicHtml || `<div class="note-arabic" dir="rtl" lang="ar">${escapeHtml(arabicText)}</div>`}</div>
           </div>
           <div class="note-field" data-note-field="english">
             <div class="note-field-label-row">
