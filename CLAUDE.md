@@ -8395,6 +8395,131 @@ ayah", translated and marked `// ?` for the owner's own eye. No
 `firestore.rules`, schema or Firestore data changes -- nothing to deploy but
 the static files.
 
+v07.113 (1 Sep 2026, on Claude Code on the web) is **a same-day correction
+to v07.112, from the owner's own pointed follow-up on both real fixes
+that round claimed: "Bismillah...still there adding before the first Ayah.
+(thus Bismillah...now shows twice) FIX IT" and "Seems you didn't work on
+this: 'Also enable the Bookmark's Expand/collapse button to work in one
+tap ... Did you get it?' FIX IT."** Both reports were right, and both
+needed a real root-cause investigation, not another guess.
+
+**(1) The Bismillah duplication -- a genuine, systemic bug in the pulled
+data itself, not in v07.111's own heading logic.** Checked directly rather
+than assumed: `tools/quran-data-pull/output`'s own `surah_XXX.json` files
+embed "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ" as a literal PREFIX of ayah 1's
+own `uthmaniText`, for every surah except 9 (swept a dozen surahs directly
+against the real files to confirm, not one sample). Surah 1's own ayah 1 IS
+the Bismillah verse in full, nothing after it. So v07.111's own decorative
+heading (`bismillahHtmlFor()`) was correct to show ONCE per surah -- but the
+ayah's own body, rendered right below it in plain (non-Tajweed) mode, was
+ALSO showing the same phrase, because nothing had ever stripped it out of
+the underlying text. **`tajweedText` and every translation were checked the
+same way and confirmed to NEVER carry the embedded prefix** (Tajweed mode
+was genuinely unaffected, and this is why the FIRST round's own testing --
+which happened to check a `.ayah-bismillah` element COUNT rather than
+compare it against the ayah's own displayed text -- missed it entirely).
+
+New `stripLeadingBismillah()`, exported from `ayah-renderer.js`, strips the
+embedded prefix from `uthmaniText` when `ayah.ayah === 1`, falling back to
+the ORIGINAL text whenever nothing real is left after stripping (Surah 1's
+own case -- an ayah that IS Bismillah must never be emptied out).
+`bismillahHtmlFor()` in `quranrevival.html` also now skips the heading for
+Surah 1 itself (its own ayah 1 already reads correctly, unmodified, as a
+real, complete ayah -- adding a decorative heading on top of it would have
+been the exact duplicate being fixed, just moved rather than removed).
+**A real Unicode trap was found and fixed while building this, not
+shipped blind:** a hand-typed Bismillah literal and the pulled data's own
+copy look byte-identical on screen but compare UNEQUAL with a plain
+`startsWith()` -- two combining diacritics (shadda, fatha) stack on the
+same base letter in a different order between the two, which Unicode
+treats as canonically equivalent but a raw string comparison does not.
+`.normalize("NFC")` on both sides (Unicode's own canonical reordering by
+combining class) is what actually makes the comparison work, confirmed
+against the real data before trusting it rather than assumed from reading
+the strings. Surah 1's own ayah 1 also carries a leading U+FEFF the other
+113 don't (also confirmed against the real file, not guessed), stripped
+alongside the NFC normalization. `renderArabicPanel()` (the shared Read-
+screen renderer, both single-ayah and flow) and the Note view's own local
+`arabicOneAyahHtml()` (which builds its Arabic body separately, per that
+screen's own header comment, rather than calling the shared renderer) both
+now apply the strip -- the two places this project's own architecture
+already keeps this kind of logic.
+
+**(2) The Bookmark expand/collapse "double tap" -- a real bug, and the
+first round's own "no reproducible bug found" was wrong, traced to a real
+timing defect rather than the mechanism itself.** Root cause, found by
+measuring rather than re-testing the same way twice: `render()` in
+`js/bookmark-nav.js` replaces `listEl.innerHTML` SYNCHRONOUSLY, inside the
+very click handler that's still mid-dispatch -- which destroys the
+button/select that was actually clicked. The click event then keeps
+bubbling (its own default behaviour, unstopped) up to `nav.js`'s own
+outside-click-closes listener on `document` (shell round 29), which checks
+`cat.contains(e.target)` -- but by the time it runs, `e.target` is a
+DETACHED node from the just-replaced render, so `contains()` reads false
+and the WHOLE Bookmark dropdown closes on what looked like its own first
+tap. That is exactly "double tap to change from collapse to expand" from
+the reader's own side: the first tap silently closes the dropdown instead
+of visibly updating anything, so a second tap (reopening it) is what's
+needed to actually SEE the new state. **The first round's own investigation
+missed this because Playwright's `selectOption()` helper -- used to test
+the old "Open as" select -- sets the value and fires `change` directly,
+bypassing the real click-and-bubble sequence a genuine tap goes through,
+so it could never have caught a bug that lives specifically in that
+bubble.**
+
+Fixed at the actual cause, not worked around: `e.stopPropagation()` in both
+of `bookmark-nav.js`'s own click/change handlers (`wireControls()`), so the
+event never reaches `document`'s outside-click listener at all once a
+control inside the dropdown has been used. **Also rebuilt the control
+itself while fixing it, matching the owner's own literal wording** ("if it
+is on collapse, one tap should enable it to expand and vice versa") -- the
+old two-option `<select>` ("Open as": Collapsed/Expanded) is gone,
+replaced by one real toggle BUTTON that reads its own current state in its
+own label (▸ Expand all / ▾ Collapse all) and flips both the label and
+every folder's own open state in exactly one tap. This is also the more
+literal fix for the "double tap" complaint on its own merits, independent
+of the propagation bug: choosing an option from a native `<select>` is
+genuinely two taps on a touchscreen (open the picker, then choose), where
+a single button is one. Same underlying `getBookmarkMenuExpanded()`/
+`setBookmarkMenuExpanded()` localStorage preference as before -- only the
+control's shape changed, not the storage or the per-folder override rule
+("Open as"/"Collapsed"/"Expanded" are kept in `bn.js`, unused, per this
+project's own standing "never delete a string that stops being called"
+rule).
+
+**Verified with a focused, throwaway Playwright script** (this project's
+own established practice for anything past `behaviour.mjs`'s own disclosed
+section-42 crash point) -- **17 checks, 16 passed** (the one reported
+"failure" is a wrong test assertion, not a defect -- investigated directly:
+a stale, invisible, `display:none` leftover `.ayah-bismillah` node sits in
+`#ayahPanels` after switching to the flow view, the exact same benign
+duplicate this project's own diagnostic scripts found and dismissed before
+this round even started; confirmed via `getBoundingClientRect()` that it
+is genuinely `0×0` and never shown, while the real, visible flow-view
+heading renders exactly once): Surah 1 Ayah 1 shows no extra heading and
+its own real Bismillah text intact; Surah 2/18/Note-view Ayah 1 show
+exactly one heading with the ayah's own body no longer repeating it, in
+both plain and Tajweed mode; Surah 9 shows no heading at all; the flow
+view's own real (visible) heading is not duplicated; and the bookmark
+toggle button is proven to expand every folder in exactly ONE tap and
+collapse them again in exactly ONE more tap, with the old select
+confirmed gone. **`tools/i18n-verify/layout.mjs` reports the landing page
+byte-for-byte identical** at all eight viewports in both banner states
+(the "MISSING ID TARGETS" line is the same pre-existing false positive
+this project has disclosed since v07.86), **`tools/i18n-verify/reading.mjs`
+reports OK** at every viewport in both banner states (the "needed" pixel
+figures for the default test ayah dropped slightly, exactly as expected
+now that its own Bismillah duplicate is gone -- not a regression),
+**`navcheck.mjs` reports only the pre-existing, unrelated 320px English
+truncation** of "Operation"/"Bookmark" carried since v07.29, and
+**`tools/perf/measure.mjs` confirms Quran Study still opens in 6 sequential
+round trips**, confirming neither fix joined the startup path (I9).
+**Translation coverage 1,542/1,542 catalogued strings scanned** -- two new
+strings ("Expand all", "Collapse all"), both translated and marked `// ?`
+for the owner's own eye; the one reported missing string ("Qur'an") is
+pre-existing and unrelated to this round. No `firestore.rules`, schema or
+Firestore data changes -- nothing to deploy but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app

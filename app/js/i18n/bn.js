@@ -1852,6 +1852,8 @@ export const BN = {
   "Open as": "যেভাবে খুলবে",
   "Collapsed": "গুটানো",
   "Expanded": "খোলা",
+  "Expand all": "সব খুলুন", // ?
+  "Collapse all": "সব গুটান", // ?
   "Group by": "যেভাবে সাজানো",
   // Suffixed keys (i18n.js's own context mechanism): the group-by CHOICE
   // reads "by folder"/"by person", while the popover's own "Folder" FIELD

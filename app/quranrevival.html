@@ -2706,7 +2706,7 @@
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
     import { searchQuran } from "./js/quran-search.js";
-    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang } from "./js/ayah-renderer.js";
+    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah } from "./js/ayah-renderer.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
@@ -6781,13 +6781,16 @@
     function translationLangs() {
       return getQuranTranslationLangs();
     }
-
     /** Fix round -- Bismillah before ayah 1 of every surah except Surah 9
-        (At-Tawbah traditionally carries none), on both the Read screen
-        (single-ayah and flow) and the Note view. One place decides this so
-        all three call sites can never disagree about which surah it is. */
+        (At-Tawbah traditionally carries none) and Surah 1 itself (whose own
+        ayah 1 IS the Bismillah verse -- showing this heading there too was
+        a real, reported duplicate: readers saw the phrase once as this
+        decorative heading and once as the ayah's own content, since Al-
+        Fatiha's ayah 1 literally reads "In the name of Allah..."). On both
+        the Read screen (single-ayah and flow) and the Note view. One place
+        decides this so all three call sites can never disagree. */
     function bismillahHtmlFor(surahNum, ayahNum) {
-      if (ayahNum !== 1 || surahNum === 9) return "";
+      if (ayahNum !== 1 || surahNum === 9 || surahNum === 1) return "";
       return `<div class="ayah-bismillah" dir="rtl" lang="ar">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>`;
     }
 
@@ -7619,10 +7622,17 @@
         // renderArabicPanel()/renderTranslationPanel() use, just built
         // locally since this screen reads plain ayah objects, not the
         // shared renderer's own panel functions.
+        // Fix round -- ayah 1's own uthmaniText embeds the Bismillah phrase
+        // as a literal prefix for every surah except 9 (see
+        // stripLeadingBismillah()'s own comment in ayah-renderer.js); this
+        // Note view builds its Arabic locally rather than calling
+        // renderArabicPanel(), so it needs the same strip applied here too,
+        // or the bismillahHtml heading above and the ayah's own body would
+        // show the same phrase twice.
         const arabicOneAyahHtml = (a) => {
           const body = tajweedToggle.checked && a.tajweedText
             ? tajweedRawToSafeHtml(a.tajweedText)
-            : escapeHtml(a.uthmaniText);
+            : escapeHtml(a.ayah === 1 ? stripLeadingBismillah(a.uthmaniText) : a.uthmaniText);
           return `<div class="ayah-num-row"><span class="ayah-num-badge">${num(a.ayah)}</span></div><div class="note-arabic" dir="rtl" lang="ar">${body}</div>`;
         };
         const translationLineHtml = (ayahNum, text, lang) => {

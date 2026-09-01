@@ -39,6 +39,28 @@ export function digitsForLang(value, lang) {
   return lang === "bn" ? s.replace(/[0-9]/g, (d) => BN_DIGITS[Number(d)]) : s;
 }
 
+// Fix round -- the pulled data itself embeds "بِسْمِ اللَّهِ الرَّحْمَٰنِ
+// الرَّحِيمِ" as a literal PREFIX of ayah 1's own uthmaniText for every surah
+// except 9 (checked directly, not assumed: `tools/quran-data-pull/output`'s
+// own surah-1.json/surah-2.json/... swept across a dozen surahs) -- so
+// prepending our own decorative Bismillah heading (bismillahHtmlFor(), in
+// quranrevival.html) before ayah 1's own plain-text body genuinely showed it
+// TWICE, exactly as the owner reported. tajweedText and every translation
+// were checked the same way and never carry the embedded prefix (Tajweed
+// mode was never affected) -- only the plain uthmaniText path needed this.
+// Surah 1 is the one real exception: its own ayah 1 IS the Bismillah verse,
+// nothing after it, so stripping the prefix there would leave an empty
+// ayah -- stripLeadingBismillah() falls back to the original text whenever
+// nothing real is left after the prefix, which is exactly that case.
+const BISMILLAH_PREFIX = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ".normalize("NFC");
+export function stripLeadingBismillah(text) {
+  if (!text) return text;
+  const normalized = text.replace(/^\uFEFF/, "").normalize("NFC");
+  if (!normalized.startsWith(BISMILLAH_PREFIX)) return text;
+  const rest = normalized.slice(BISMILLAH_PREFIX.length).replace(/^[\s ]+/, "");
+  return rest || text;
+}
+
 /** Panel: the Arabic script itself, plain or tajweed-colour-coded (F-049 toggle).
     Fix round: the ayah number used to show trailing and only in the
     non-tajweed path (tajweed's own embedded end-marker is a different,
@@ -48,7 +70,11 @@ export function digitsForLang(value, lang) {
 export function renderArabicPanel(ayah, { tajweedOn } = {}) {
   const body = tajweedOn && ayah.tajweedText
     ? tajweedRawToSafeHtml(ayah.tajweedText)
-    : escapeHtml(ayah.uthmaniText);
+    // Fix round -- ayah 1's own text is stripped of its embedded Bismillah
+    // prefix here, since the decorative heading above (bismillahHtmlFor())
+    // already shows it once. Tajweed's own text never carried the prefix in
+    // the first place, so that branch is untouched.
+    : escapeHtml(ayah.ayah === 1 ? stripLeadingBismillah(ayah.uthmaniText) : ayah.uthmaniText);
   return `<div class="ayah-num-row"><span class="ayah-num-badge">${num(ayah.ayah)}</span></div><div class="ayah-arabic" dir="rtl" lang="ar">${body}</div>`;
 }
 
