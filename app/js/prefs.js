@@ -378,6 +378,35 @@ export function setSidewaysReading(on) {
 }
 
 // ---------------------------------------------------------------------------
+// Fix round -- whether a multi-ayah unit's Arabic/English/Bangla shows
+// grouped BY AYAH (one ayah's own Arabic+translations together, then the
+// next ayah's, in sequence -- what the Read screen's own flow view has
+// always done) or BY LANGUAGE (every ayah's Arabic joined together, then
+// every ayah's English, then every ayah's Bangla -- the Note view's own
+// old, reported-confusing shape). Same additive localStorage shape every
+// other reading preference in this app already uses -- no new startup
+// read, no collection, no firestore.rules change. Defaults to "byAyah",
+// since that is the shape the owner asked for as the fix.
+const AYAH_DISPLAY_MODE_KEY = "mm_ayah_display_mode";
+const AYAH_DISPLAY_MODES = ["byAyah", "byLanguage"];
+
+function readAyahDisplayMode() {
+  return readStored(AYAH_DISPLAY_MODE_KEY, AYAH_DISPLAY_MODES, "byAyah");
+}
+
+let cachedAyahDisplayMode = readAyahDisplayMode();
+
+export function getAyahDisplayMode() {
+  return cachedAyahDisplayMode;
+}
+
+export function setAyahDisplayMode(mode) {
+  cachedAyahDisplayMode = AYAH_DISPLAY_MODES.includes(mode) ? mode : "byAyah";
+  writeStored(AYAH_DISPLAY_MODE_KEY, cachedAyahDisplayMode);
+  return cachedAyahDisplayMode;
+}
+
+// ---------------------------------------------------------------------------
 // Shell round 23 — which Arabic typeface the Qur'an is set in.
 //
 // `.ayah-arabic` asked for `'Traditional Arabic', 'Amiri', serif` and NEITHER

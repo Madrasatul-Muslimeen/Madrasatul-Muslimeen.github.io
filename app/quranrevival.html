@@ -34,7 +34,17 @@
      body's own padding, so the banner floated roughly a bar's height down the
      screen for no reason. Halved, per the owner -- that space is now an
      Approach row instead. */
-  h1 { font-size: 1.4rem; margin-top: 0; margin-bottom: 0.15rem; }
+  h1 { font-size: 1.4rem; margin-top: 0; margin-bottom: 0.15rem; display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.3rem 0.6rem; }
+  /* Fixes round -- the "Previewing as" badge, moved here from the nav bar
+     into the banner's own right corner (relocatePreviewNotice()). Its base
+     rule in shell.css is written for sitting BELOW the four nav tabs
+     (flex: 1 1 100%, full-width, centred) -- none of that applies to a
+     corner badge, so every one of those properties is overridden here
+     rather than fought against. */
+  h1 .nav-preview-notice {
+    flex: 0 1 auto; margin: 0; font-size: 0.68rem; font-weight: 600;
+    text-align: right; max-width: 100%;
+  }
   h2 { font-size: 1.1rem; margin-top: 1.6rem; }
   h3 { font-size: 1rem; }
   h4 { font-size: 0.88rem; margin: 0.6rem 0 0.15rem; color: #555; }
@@ -1088,6 +1098,7 @@
     margin: 0; padding: 0.2rem 0.5rem 0.6rem;
   }
   body.read-sideways .page-flow-ayah.now-playing { margin-left: 0; padding-left: 0.5rem; }
+  body.read-sideways .page-flow-ayah.in-view:not(.now-playing) { margin-left: 0; padding-left: 0.5rem; }
   body.read-sideways .hifz-page { margin-bottom: 0; }
   /* The Reading view ticks: one line each on a phone, wrapping as needed --
      four short labels, no grid needed. */
@@ -1359,6 +1370,15 @@
      never depended on the divider this rule removes. */
   body.mushaf-shape-on .page-flow-ayah { border-bottom: none; padding-bottom: 0; margin-bottom: 0.1rem; }
   body.mushaf-shape-on .ayah-quick-header { margin-bottom: 0; }
+  /* Fix round -- the ayah currently on screen (after a scroll or a sideways
+     slide, not necessarily anything to do with recitation) gets its own,
+     subtler highlight -- a different colour from "now-playing" so the two
+     never look like the same thing, and :not(.now-playing) so the gold
+     recitation tint always wins if both happen to apply to the same ayah. */
+  .page-flow-ayah.in-view:not(.now-playing) {
+    background: #eef3fb; border-left: 3px solid #4d7dff;
+    padding-left: 0.5rem; margin-left: -0.5rem; border-radius: 3px;
+  }
 
   /* =========================================================================
      Ayah Note panel -- the ⋮ quick-actions menu on every āyah, and the
@@ -1812,6 +1832,11 @@
   .note-arabic { font-family: var(--quran-font); direction: rtl; text-align: right; font-size: calc(1.35rem * var(--qr-ar-scale, 1)); line-height: 1.9; color: #1b1b16; margin: 0.15rem 0; }
   .note-english { font-size: calc(0.86rem * var(--qr-en-scale, 1)); color: #222; margin: 0.15rem 0; line-height: 1.5; }
   .note-bangla { font-size: calc(0.84rem * var(--qr-bn-scale, 1)); color: #222; margin: 0.15rem 0; line-height: 1.6; }
+  /* Fix round -- "byAyah" mode's own combined field: one āyah's own
+     Arabic/English/Bangla grouped together, then a divider before the
+     next āyah -- same shape the Read screen's flow view already uses. */
+  .note-ayah-block { padding-bottom: 0.6rem; margin-bottom: 0.6rem; border-bottom: 1px solid #e7e0cc; }
+  .note-ayah-block:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
   .note-notes-editor {
     min-height: 80px; max-height: 260px; overflow-y: auto;
     border: 1px solid #e0d8bd; border-radius: 0.4rem; padding: 0.55rem 0.65rem;
@@ -1841,7 +1866,13 @@
 </style>
 </head>
 <body>
-  <h1>QuranRevival <span id="appVersion" class="app-version"></span></h1>
+  <!-- Fixes round -- the "Previewing as: {role}" badge (nav.js's own
+       .nav-preview-notice, rendered inside #navBar) moves here, into the
+       banner's own right corner, once nav.js has rendered it -- see
+       relocatePreviewNotice() below. This span just gives the title text
+       its own flex box so h1's own justify-content: space-between (below)
+       has two things to split between, not one. -->
+  <h1><span id="appTitleText">QuranRevival <span id="appVersion" class="app-version"></span></span></h1>
   <!-- Shell round 20 (17 Aug 2026) -- the moving tagline strip. It stands
        EXACTLY where the static tagline stood, which is the owner's own call
        and also the cheap one: measured at 17-19px against the <p>'s own
@@ -2725,7 +2756,7 @@
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
     import { searchQuran } from "./js/quran-search.js";
-    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml } from "./js/ayah-renderer.js";
+    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah } from "./js/ayah-renderer.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
@@ -2735,6 +2766,7 @@
       getQuranFont, setQuranFont, quranFontStack,
       getSidewaysReading, setSidewaysReading,
       getQcrWheelSize, setQcrWheelSize,
+      getAyahDisplayMode, setAyahDisplayMode,
     } from "./js/prefs.js";
     import { renderTextSizeButtonHtml } from "./js/text-size.js";
     import {
@@ -2828,10 +2860,29 @@
     // re-derive them (or wait on sign-in) just to change a language.
     let lastRenderedRoles = [];
     let lastRenderedViewAsRole = null;
+    /** Fixes round -- "Place the 'Previewing as Guardian' ... on the right
+        corner of the App banner." renderNavBar() still emits the notice
+        into #navBar (unchanged -- every other page that carries the nav bar
+        but has no banner of its own still shows it there); this page alone
+        moves it, since it alone has a real <h1> banner worth putting it in.
+        Reparented rather than re-implemented: the same element, same
+        translated text, same nav.js source of truth -- only WHERE it ends
+        up in the DOM changes. Removes any earlier copy first so a re-render
+        (language switch, tenant switch, preview cleared) never leaves a
+        stale one sitting in the corner. */
+    function relocatePreviewNotice() {
+      const h1 = document.querySelector("h1");
+      if (!h1) return;
+      h1.querySelector(".nav-preview-notice")?.remove();
+      const notice = navBar.querySelector(".nav-preview-notice");
+      if (notice) h1.appendChild(notice);
+    }
+
     function renderNav(roles, viewAsRole) {
       lastRenderedRoles = roles;
       lastRenderedViewAsRole = viewAsRole;
       navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      relocatePreviewNotice();
       navHomeExtra.innerHTML = renderHomeExtras(roles);
       // Shell round 13 -- Home -> Settings -> Language. Every other page
       // takes prefs.js's default handler, which simply reloads; this page
@@ -6814,13 +6865,16 @@
     function translationLangs() {
       return getQuranTranslationLangs();
     }
-
     /** Fix round -- Bismillah before ayah 1 of every surah except Surah 9
-        (At-Tawbah traditionally carries none), on both the Read screen
-        (single-ayah and flow) and the Note view. One place decides this so
-        all three call sites can never disagree about which surah it is. */
+        (At-Tawbah traditionally carries none) and Surah 1 itself (whose own
+        ayah 1 IS the Bismillah verse -- showing this heading there too was
+        a real, reported duplicate: readers saw the phrase once as this
+        decorative heading and once as the ayah's own content, since Al-
+        Fatiha's ayah 1 literally reads "In the name of Allah..."). On both
+        the Read screen (single-ayah and flow) and the Note view. One place
+        decides this so all three call sites can never disagree. */
     function bismillahHtmlFor(surahNum, ayahNum) {
-      if (ayahNum !== 1 || surahNum === 9) return "";
+      if (ayahNum !== 1 || surahNum === 9 || surahNum === 1) return "";
       return `<div class="ayah-bismillah" dir="rtl" lang="ar">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>`;
     }
 
@@ -6900,6 +6954,7 @@
         .join("");
       attachAyahQuickMenus(pageViewContainer);
       markPlayingAyah(currentAyahNum, { scroll: false });
+      wireFlowInViewHighlight();
     }
 
     /**
@@ -6934,6 +6989,34 @@
         target.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
       }
       return true;
+    }
+
+    /** Fix round -- "enable the Ayah which is on the screen (after scroll
+        or slide) to highlight," independent of recitation (markPlayingAyah()
+        above is audio-driven; this is purely about what the reader has
+        scrolled or swiped to). One IntersectionObserver per flow render,
+        watching every .page-flow-ayah row and marking whichever one is
+        most visible right now. The scrolling root differs by mode -- when
+        "Page by page" is on, #pageViewContainer itself is the horizontal
+        scroller and each row is one full page; when it's off, #readScroll
+        is the vertical scroller and pageViewContainer's own overflow is
+        plain -- so the observer's root is picked to match, the same
+        mode-aware lookup wireScrollSwipeAyahNav() already does. */
+    let flowInViewObserver = null;
+    function wireFlowInViewHighlight() {
+      if (flowInViewObserver) { flowInViewObserver.disconnect(); flowInViewObserver = null; }
+      if (getComputedStyle(pageViewContainer).display === "none") return;
+      const rows = [...pageViewContainer.querySelectorAll(".page-flow-ayah")];
+      if (rows.length < 2) return; // nothing to distinguish with only one row on screen
+      const root = document.body.classList.contains("read-sideways") ? pageViewContainer : document.getElementById("readScroll");
+      flowInViewObserver = new IntersectionObserver((entries) => {
+        let best = null, bestRatio = 0;
+        for (const e of entries) {
+          if (e.isIntersecting && e.intersectionRatio > bestRatio) { bestRatio = e.intersectionRatio; best = e.target; }
+        }
+        if (best) rows.forEach((r) => r.classList.toggle("in-view", r === best));
+      }, { root, threshold: [0.25, 0.5, 0.75, 1] });
+      rows.forEach((r) => flowInViewObserver.observe(r));
     }
 
     // -----------------------------------------------------------------------
@@ -7651,7 +7734,11 @@
 
       let textBlocks = { arabicText: "", englishText: "", banglaText: "" };
       let arabicHtml = "";
+      let englishHtml = "";
+      let banglaHtml = "";
+      let ayahByAyahHtml = "";
       let bismillahHtml = "";
+      const ayahDisplayMode = getAyahDisplayMode();
       if (showAyatText) {
         const inScope = currentSurahData.ayahs.filter((a) => a.ayah >= info.fromAyah && a.ayah <= info.toAyah);
         textBlocks = {
@@ -7664,13 +7751,43 @@
         // ayah-renderer.js's renderArabicPanel entirely); now built per
         // ayah the same way the Read screen is, so a setting chosen once
         // (Tajweed, the ayah number) shows here too, with no separate
-        // switch to remember.
-        arabicHtml = inScope.map((a) => {
+        // switch to remember. arabicOneAyahHtml()/translationLineHtml()
+        // are the same leading-badge shape ayah-renderer.js's own
+        // renderArabicPanel()/renderTranslationPanel() use, just built
+        // locally since this screen reads plain ayah objects, not the
+        // shared renderer's own panel functions.
+        // Fix round -- ayah 1's own uthmaniText embeds the Bismillah phrase
+        // as a literal prefix for every surah except 9 (see
+        // stripLeadingBismillah()'s own comment in ayah-renderer.js); this
+        // Note view builds its Arabic locally rather than calling
+        // renderArabicPanel(), so it needs the same strip applied here too,
+        // or the bismillahHtml heading above and the ayah's own body would
+        // show the same phrase twice.
+        const arabicOneAyahHtml = (a) => {
           const body = tajweedToggle.checked && a.tajweedText
             ? tajweedRawToSafeHtml(a.tajweedText)
-            : escapeHtml(a.uthmaniText);
+            : escapeHtml(a.ayah === 1 ? stripLeadingBismillah(a.uthmaniText) : a.uthmaniText);
           return `<div class="ayah-num-row"><span class="ayah-num-badge">${num(a.ayah)}</span></div><div class="note-arabic" dir="rtl" lang="ar">${body}</div>`;
-        }).join("");
+        };
+        const translationLineHtml = (ayahNum, text, lang) => {
+          if (!text) return "";
+          const cls = lang === "bn" ? "note-bangla" : "note-english";
+          return `<div class="ayah-num-row"><span class="ayah-num-badge">${digitsForLang(ayahNum, lang)}</span></div><div class="${cls}"${lang === "bn" ? ' lang="bn"' : ""}>${escapeHtml(text)}</div>`;
+        };
+        // Fix round -- "an option to choose one from both, in both READ and
+        // NOTE view": BY LANGUAGE keeps the three separate collapsible
+        // Arabic/English/Bangla fields (each now numbered per ayah too, so
+        // item 3 -- "all translations show an ayah number" -- holds in
+        // either mode); BY AYAH bunches one ayah's own Arabic + English +
+        // Bangla together and repeats that, ayah after ayah, matching what
+        // the Read screen's own flow view has always done.
+        if (ayahDisplayMode === "byAyah") {
+          ayahByAyahHtml = inScope.map((a) => `<div class="note-ayah-block">${arabicOneAyahHtml(a)}${translationLineHtml(a.ayah, a.translations?.en, "en")}${translationLineHtml(a.ayah, a.translations?.bn, "bn")}</div>`).join("");
+        } else {
+          arabicHtml = inScope.map(arabicOneAyahHtml).join("");
+          englishHtml = inScope.map((a) => translationLineHtml(a.ayah, a.translations?.en, "en")).join("");
+          banglaHtml = inScope.map((a) => translationLineHtml(a.ayah, a.translations?.bn, "bn")).join("");
+        }
         bismillahHtml = bismillahHtmlFor(currentSurahNum, info.fromAyah);
       }
 
@@ -7728,7 +7845,8 @@
         navHtml: renderNoteNavHtml(),
         showAyatText,
         arabicText: textBlocks.arabicText, englishText: textBlocks.englishText, banglaText: textBlocks.banglaText,
-        arabicHtml, bismillahHtml,
+        arabicHtml, englishHtml, banglaHtml, bismillahHtml,
+        ayahDisplayMode, ayahByAyahHtml,
         readViewLinkHtml,
         notesHtml: ayahNoteHtml(ayahNotesDoc, unitKey),
         // Round 31 -- "this Ayah screen would be the main study screen for a
@@ -7806,6 +7924,7 @@
         onToggleWbw: toggleNoteWbw,
         onToggleRoots: toggleNoteRoots,
         onToggleDerivatives: toggleNoteDerivatives,
+        onToggleAyahDisplayMode: toggleNoteAyahDisplayMode,
         onApproachChange: (id) => changeCurrentTrackable(id),
         onOpenInReadView: () => {
           currentUnitType = noteScope.unitType;
@@ -8614,6 +8733,16 @@
         between the Read and Note screens. */
     function toggleNoteDerivatives() {
       derivativesToggle.checked = !derivativesToggle.checked;
+      if (noteScope) renderNoteViewNow();
+    }
+
+    /** Note view's own ⋯-menu "show ayah by ayah" toggle -- a shared,
+        localStorage preference (js/prefs.js), not per-āyah state, since it's
+        "which layout do I read a multi-āyah unit in", the same class of
+        reading preference every other Note-view toggle already is. */
+    function toggleNoteAyahDisplayMode() {
+      const current = getAyahDisplayMode();
+      setAyahDisplayMode(current === "byAyah" ? "byLanguage" : "byAyah");
       if (noteScope) renderNoteViewNow();
     }
 

@@ -244,6 +244,16 @@ export function renderNoteView({
   unitKey,
   pickerBarHtml, navHtml,
   showAyatText, arabicText, arabicHtml = "", bismillahHtml = "", englishText, banglaText, readViewLinkHtml,
+  // Fix round -- "an option to choose one from both, in both READ and NOTE
+  // view": ayahDisplayMode "byLanguage" (default) keeps the three separate
+  // Arabic/English/Bangla fields below, each pre-built per ayah (englishHtml/
+  // banglaHtml, the same leading-badge shape arabicHtml already uses);
+  // "byAyah" instead shows ayahByAyahHtml -- one combined field bunching each
+  // ayah's own Arabic + English + Bangla together, ayah after ayah, matching
+  // what the Read screen's own flow view has always done. Falls back to the
+  // old plain-text englishText/banglaText when the caller hasn't passed the
+  // new HTML (same "graceful fallback" shape arabicHtml already established).
+  ayahDisplayMode = "byLanguage", ayahByAyahHtml = "", englishHtml = "", banglaHtml = "",
   notesHtml, wbwHtml, rootsHtml, derivativesHtml,
   isBookmarked = false, isFullscreen = false,
   isWbwOn = false, isRootsOn = false, isDerivativesOn = false, hasNote = false, approachHtml = "", isNotesOpen = false,
@@ -380,6 +390,8 @@ export function renderNoteView({
             <button type="button" class="qm-item${isDerivativesOn ? " is-on" : ""}" data-note-derivatives-toggle aria-pressed="${isDerivativesOn ? "true" : "false"}">${t("Derivatives")} <span class="qm-caret">${isDerivativesOn ? "✓" : ""}</span></button>
             <div class="qm-divider"></div>
             <button type="button" class="qm-item" data-note-master-toggle title="${t("Notes always stays open")}">${t("Collapse āyah text")}</button>` : ""}
+            ${showAyatText ? `
+            <button type="button" class="qm-item${ayahDisplayMode === "byAyah" ? " is-on" : ""}" data-note-ayahmode-toggle aria-pressed="${ayahDisplayMode === "byAyah" ? "true" : "false"}">${t("Show ayah by ayah")} <span class="qm-caret">${ayahDisplayMode === "byAyah" ? "✓" : ""}</span></button>` : ""}
             <div class="qm-divider"></div>
             ${renderTextSizeButtonHtml("noteview", { showLabel: true })}
           </div>
@@ -428,6 +440,14 @@ export function renderNoteView({
         ${showAyatText ? `
         ${bismillahHtml}
         <div data-note-collapsible>
+          ${ayahDisplayMode === "byAyah" ? `
+          <div class="note-field" data-note-field="ayahbyayah">
+            <div class="note-field-label-row">
+              <button type="button" class="note-field-toggle" data-note-field-toggle>▾</button>
+              <span class="note-field-label">${t("Arabic")} · ${t("English")} · ${t("Bangla")}</span>
+            </div>
+            <div class="note-field-body">${ayahByAyahHtml || `<div class="note-arabic" dir="rtl" lang="ar">${escapeHtml(arabicText)}</div>`}</div>
+          </div>` : `
           <div class="note-field" data-note-field="arabic">
             <div class="note-field-label-row">
               <button type="button" class="note-field-toggle" data-note-field-toggle>▾</button>
@@ -448,15 +468,19 @@ export function renderNoteView({
               <button type="button" class="note-field-toggle" data-note-field-toggle>▾</button>
               <span class="note-field-label">${t("English")}</span>
             </div>
-            <div class="note-field-body"><div class="note-english">${escapeHtml(englishText)}</div></div>
+            <!-- Same fallback shape as arabicHtml above -- englishHtml is
+                 pre-built per-ayah, ayah-numbered markup; falls back to
+                 the old plain-escaped englishText for any caller that
+                 hasn't been updated to pass it. -->
+            <div class="note-field-body">${englishHtml || `<div class="note-english">${escapeHtml(englishText)}</div>`}</div>
           </div>
           <div class="note-field" data-note-field="bangla">
             <div class="note-field-label-row">
               <button type="button" class="note-field-toggle" data-note-field-toggle>▾</button>
               <span class="note-field-label">${t("Bangla")}</span>
             </div>
-            <div class="note-field-body"><div class="note-bangla" lang="bn">${escapeHtml(banglaText)}</div></div>
-          </div>
+            <div class="note-field-body">${banglaHtml || `<div class="note-bangla" lang="bn">${escapeHtml(banglaText)}</div>`}</div>
+          </div>`}
           ${isWbwOn ? `
           <div class="note-field" data-note-field="wbw">
             <div class="note-field-label-row">
@@ -535,6 +559,7 @@ let activeNotesEditorEl = null; // module-level, matching QCR's own trick: palet
  *   onPrevAyah() / onNextAyah()   -- the nav cluster's INNER pair (moves one āyah); omitted/absent when the caller didn't render that pair (Single Ayah scope, or no āyah to step through)
  *   onToggleFullscreen()
  *   onToggleWbw() / onToggleRoots() / onToggleDerivatives()
+ *   onToggleAyahDisplayMode()  -- Fix round; flips the shared byAyah/byLanguage preference (js/prefs.js) and re-renders
  *   onApproachChange(id)
  *   onOpenInReadView()        -- the "read it in the Read view" link, only present when the scope wasn't shown as text
  *   onPickerChange            -- delegated: the caller wires its own picker bar's <select> elements directly (they're pre-built HTML it owns), so this file never needs to know their ids
@@ -707,6 +732,7 @@ export function attachNoteViewHandlers(container, callbacks) {
   view.querySelector("[data-note-wbw-toggle]")?.addEventListener("click", () => { callbacks.onToggleWbw?.(); closeAllDotMenus(null); });
   view.querySelector("[data-note-roots-toggle]")?.addEventListener("click", () => { callbacks.onToggleRoots?.(); closeAllDotMenus(null); });
   view.querySelector("[data-note-derivatives-toggle]")?.addEventListener("click", () => { callbacks.onToggleDerivatives?.(); closeAllDotMenus(null); });
+  view.querySelector("[data-note-ayahmode-toggle]")?.addEventListener("click", () => { callbacks.onToggleAyahDisplayMode?.(); closeAllDotMenus(null); });
   view.querySelectorAll("[data-note-approach-select]").forEach((sel) => {
     sel.addEventListener("change", () => { callbacks.onApproachChange?.(sel.value); closeAllDotMenus(null); });
   });

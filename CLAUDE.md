@@ -8195,18 +8195,346 @@ viewport in both banner states -- neither the wheel nor the reading screen's
 own measured layout moved. No `firestore.rules`, schema or Firestore data
 changes -- nothing to deploy but the static files.
 
-**Merge note:** this v07.111 landed from a concurrent Claude Code on the web
-session that reached `main` first. A second, independent session had been
-working the owner's own overlapping "OPTIONS, READ FIXES" report at the same
-time -- fixing the identical `noteWbwOn`/`noteRootsOn`/`noteDerivativesOn`
-disconnect this entry's item (1) already covers, plus a genuinely separate
-scroll-TRAP bug (content silently unreachable, not merely missing a gesture)
-and its own Study-Unit-picker sync fix and a first-draft "Mushaf shape"
-toggle. Merged in below as v07.112/v07.113, with its own now-redundant
-WbW/Root/Derivatives section trimmed down to a pointer at this entry rather
-than repeating it.
+v07.112 (1 Sep 2026, on Claude Code on the web) is **a follow-up round to
+v07.111 -- five real fixes and two investigated-but-not-reproduced reports**,
+sent with a tablet screenshot of the Mastery Wheel and an open Bookmark nav
+dropdown.
 
-v07.112 (31 Aug 2026, on Claude Code on the web) is **the "affect
+**(1) "Every beginning of Surah still shows Bismillah.... with the first
+Ayah. Fix it."** Investigated across every scenario the wording could
+plausibly mean, before touching any code: single-ayah navigation forward
+and backward across a surah boundary, a direct surah switch, a Note-view
+Range that starts at ayah 1 vs. one that doesn't, and the Note view's own
+Surah picker -- all render correctly (Bismillah exactly once, exactly at
+ayah 1 of a surah, never at Surah 9, never lingering on a later ayah).
+**No reproducible bug was found.** One real, separate fact surfaced along
+the way and is worth recording: the dock's own "Note" tab and the ⋮ quick
+menu's "Note & more…" both always open the Note view at a plain single-ayah
+scope (`buildUnitKey.ayah(currentSurahNum, currentAyahNum)`), regardless of
+whatever wider Study Unit (Range/Whole Surah/etc.) happens to be selected on
+the Read screen at the time -- a real, PRE-EXISTING, and apparently
+deliberate design choice (`noteScope` is its own independent state, per the
+Note view's own picker-bar comment), not something this round introduced or
+changed. If item 1's report was really about this -- opening Note from a
+wider unit and expecting to land there rather than on ayah 1 -- that is a
+different, larger ask than "fix the Bismillah rendering," and needs its own
+confirmation from the owner rather than a guess. Flagged rather than
+silently reinterpreted.
+
+**(2) "Enable showing every Ayah Arabic and Translations Ayah by Ayah ...
+enable an option to choose one from both, in both READ and NOTE view."**
+Read together with its own parenthetical ("A range of Ayat for Arabic and
+translations now shows all Ayat in a particular language together. FIX
+it"), the CURRENT bug is grouping by language (all Arabic, then all
+English, then all Bangla) and the fix is to offer ayah-by-ayah as well --
+so **ayah-by-ayah is the new DEFAULT**, matching what the Read screen's own
+flow view has always done, with by-language kept as the alternate, one tap
+away. `js/prefs.js` gained `getAyahDisplayMode()`/`setAyahDisplayMode()`
+(`"byAyah"`/`"byLanguage"`, localStorage, the same additive shape every
+reading preference since round 18 has used -- no new startup read, no
+collection, no `firestore.rules` change). Built as requested: a new toggle
+under the ⋮ ("tools") menu, beside Root/Derivatives/Collapse.
+`ayah-note-renderer.js`'s `renderNoteView()` now renders either ONE combined
+field per ayah (`.note-ayah-block`: that ayah's own Arabic, then its own
+English, then its own Bangla, each still carrying its own leading ayah-number
+badge -- see (3)) or the three separate Arabic/English/Bangla fields it
+already had, branching on the stored mode; `quranrevival.html`'s
+`renderNoteViewNow()` builds both shapes' HTML up front (`ayahByAyahHtml` vs.
+`arabicHtml`/`englishHtml`/`banglaHtml`) so switching the toggle is a plain
+re-render, no re-fetch. Scoped to the Note view only, on purpose -- the Read
+screen's own flow view has shown ayah-by-ayah unconditionally since it was
+built, so there was no "by language" behaviour there to offer an alternative
+to; extending the SAME toggle to the Read screen would be new, separate
+scope, not implied by "in both READ and NOTE view" once the actual current
+Read-screen behaviour is checked rather than assumed.
+
+**(3) "Enable all translations to show Ayah number and also show the Ayah
+number in respective languages."** `ayah-renderer.js`'s
+`renderTranslationPanel()` (shared by both Read views) and the Note view's
+own equivalent now prepend the SAME leading `.ayah-num-badge` the Arabic
+panel already carries (v07.111's own fix) before EVERY translation line, in
+EITHER of item 2's two modes. **"Respective languages" is a real, separate
+rule, not just "add a number":** a new `digitsForLang(value, lang)`,
+exported from `ayah-renderer.js` (deliberately NOT the same thing as
+`i18n.js`'s `num()`, which follows the APP's current display language) --
+the English block's own number is always plain Latin digits and the Bangla
+block's own number is always Bengali digits, regardless of which language
+the app itself happens to be showing right now, since a Bangla-only reader
+who has the ENGLISH translation showing alongside the Bangla one must still
+be able to read that block's own number.
+
+**(4) "Enable the Ayah which is on the screen (after scroll or slide) to
+highlight."** A new `wireFlowInViewHighlight()` in `quranrevival.html`, one
+`IntersectionObserver` per flow render, watches every `.page-flow-ayah` row
+and marks whichever one is most visible right now (`.in-view`, a tinted
+band + left border, `:not(.now-playing)` so it never fights the
+recitation's own highlight) -- independent of audio, purely about where the
+reader has scrolled or swiped to. **The scrolling root is picked to match
+which mode is active**, the same lookup `wireScrollSwipeAyahNav()` (below)
+already uses: `#pageViewContainer` itself when "Page by page" (sideways
+paging, on by default since round 28) is on, `#readScroll` when it's off --
+tested in both directions, since the two are genuinely different scrollers
+and a fix that only covered one would have silently missed the app's own
+default reading mode.
+
+**A second ask folded into the same round, from a broader reading of "in all
+settings" in the FIRST request's item (a): "a choice of setting anywhere
+should work everywhere."** Before this, Word by Word/Root/Derivatives each
+kept a private Note-view-only on/off flag (`noteWbwOn` etc.), separate from
+Study options' own canonical ticks -- ticking one in Study options did
+nothing to an already-open Note view, which needed its own second tap from
+its own ⋮ menu. Fixed at the root: those three private flags are gone: the
+Note view's ⋮-menu buttons now flip the SAME canonical
+`wbwShowToggle`/`rootsToggle`/`derivativesToggle` checkboxes Study options
+owns, and a new `onReadingTickChanged()` re-renders whichever of Read/Note
+is currently open the moment any of the four canonical ticks (Tajweed
+included) changes -- necessary because Study options is a drawer that can
+sit open OVER either screen (shell round 7's own dock shape), so a tick made
+there has to reach the screen underneath it immediately, not just on the
+next full render.
+
+**Also built, for the same "moving to the next Ayah both scrolling down and
+sideways" request: a document-level, capture-phase `wheel`/`touchstart`/
+`touchend` listener (`wireScrollSwipeAyahNav()`)**, wired once at module
+load (the same "survives every DOM rebuild" pattern `nav.js`'s own accordion
+and `way-modal.js`'s Assign-to popover already use) -- a wheel-scroll or
+upward swipe past the bottom of whatever is genuinely scrolling advances
+(the inner ayah-level Prev/Next when visible, the outer unit-level pair
+otherwise, matching the nav cluster's own two meanings), on both the Read
+and Note screens, with a sideways swipe doing the same except inside
+`#pageViewContainer` (which already has its own native scroll-snap swipe --
+this deliberately doesn't double up on it). **A real bug was caught and
+fixed while building this**: `#readScroll` defaults to `overflow: hidden`
+(sideways mode is on by default), so its own `scrollHeight`/`clientHeight`
+numbers are a red herring and the first version of the boundary-detection
+helper silently never fired against it -- fixed by having the helper return
+`null` when nothing in the gesture's path is genuinely scrolling, which
+callers now correctly read as "always at both ends, fire unconditionally."
+
+**(5) "Enable the width of the bookmark drop-down palette to keep the text
+of a bookmark folder or a bookmark in one line unless it overflows the
+screen edge."** Measured the real cause rather than guessed: `.nav-bm-list`
+was capped at a flat `16rem` (256px) regardless of how much real room the
+dropdown itself had to grow, so an ordinary-length name wrapped to a second
+line well before it actually needed to. `.nav-bm-list` now sizes to its own
+content (`width: max-content`) instead of a fixed guess, bounded only by
+the SAME viewport-wide safety net `.nav-cat-links` (its parent) now also
+carries explicitly (`max-width: calc(100vw - 2rem); box-sizing: border-box`)
+-- the same `calc(100vw - Npx)` shape this project's own popovers have used
+for exactly this reason since the QCR/Asma rounds. A short name now stays on
+one line; only a name genuinely too long for the screen wraps or is bounded
+by that edge, matching the ask's own "unless it overflows the screen edge."
+
+**(6) "Enable the Bookmark's 'Expand/collapse button' to work in one tap ...
+we don't need double tap to change."** Investigated three separate times
+across this round and the one before it (a per-folder `<details>` toggle,
+the "Open as" Expanded/Collapsed select, and the whole accordion/outside-
+click mechanism in `nav.js`) via real Playwright interaction -- every one of
+them already toggles correctly on the FIRST tap: a folder's own `<summary>`
+opens/closes on one click, and `nav.js`'s own accordion listener is scoped
+to `.matches(".nav-cat")` only, so it correctly leaves a nested
+`.nav-bm-folder`'s own toggle alone. `bookmark-nav.js`'s "Open as" select
+already re-renders the WHOLE list immediately on change (`render(...)`
+inside its own `change` handler), not only on the next open. **No
+reproducible "needs two taps" bug was found in any of these three
+mechanisms.** Reported rather than guessed at further -- if it reproduces on
+a real device, the owner's own exact steps (which control, which platform,
+what the first tap visibly does) would narrow it far faster than more
+synthetic-click investigation here.
+
+**(7) "Place the 'Previewing as Guardian' ... on the right corner of the
+App banner (discard the wording 'change this......')."** `nav.js`'s own
+`previewNotice` text shortened from "Previewing as: {role} — change this on
+the People page" to plain "Previewing as: {role}" (the shorter string was
+already sitting translated in `bn.js`, from an earlier round -- reused, not
+re-added; the longer one is kept, unused, per this project's own standing
+rule). `quranrevival.html`'s `<h1>` is now a flex row
+(`justify-content: space-between`) wrapping its title text in a new
+`#appTitleText` span; a new `relocatePreviewNotice()`, called right after
+every `navBar.innerHTML = renderNavBar(...)`, REPARENTS the notice element
+(nav.js's own output, not a re-implementation) from `#navBar` into the `<h1>`
+corner, removing any earlier copy first so a re-render (language switch,
+tenant switch, the preview clearing) never leaves a stale badge sitting
+there. Deliberately scoped to this ONE page (`quranrevival.html`) -- it
+alone has a real banner worth putting a corner badge in; every other
+nav-bearing page still shows the notice exactly where it always has, below
+the four nav tabs.
+
+**Verified with a focused, throwaway Playwright script** (this project's own
+established practice for anything past `behaviour.mjs`'s own disclosed
+section-42 crash point) -- **33 checks, 0 failures**: item 2's default
+ayah-by-ayah mode and its toggle to by-language, in both directions, with the
+preference proven to persist to `localStorage`; item 3's translation badges
+proven to carry Latin digits for English and Bengali digits for Bangla,
+independently of each other; item 1's Bismillah sweep across single-ayah
+navigation and both Note-view Range scenarios, all correct; item 4's
+in-view highlighting proven to change after BOTH a sideways slide (the real
+default) and a vertical scroll (Page by page off), the row genuinely
+following in either mode; item 7's badge proven to relocate into `<h1>`
+with the old wording gone and its own right edge measured flush against
+`<h1>`'s own right edge (a true corner, not merely present in the DOM),
+seeded via the same `qr.sessionContext` localStorage key `session-context.js`
+itself reads, so this exercises the real render path rather than a
+hand-built substitute; and item 5's widened dropdown proven to keep both a
+long folder name and a long bookmark name on one line at 390px and 768px
+alike, with no horizontal page overflow. **`tools/i18n-verify/layout.mjs`
+reports the landing page byte-for-byte identical** at all eight viewports in
+both banner states (the reported "MISSING ID TARGETS" line is the same
+pre-existing false positive this project has disclosed since v07.86,
+confirmed unrelated by running the unmodified `HEAD` copy through the same
+check and seeing the identical list), **`tools/i18n-verify/reading.mjs`
+reports OK** at every viewport in both banner states, **`navcheck.mjs`
+reports only the pre-existing, unrelated 320px English truncation of
+"Operation"/"Bookmark"** this project has carried since v07.29, **`panel.mjs`
+clean**, **`tools/perf/measure.mjs` confirms Quran Study still opens in 6
+sequential round trips**, confirming none of this round's fixes joined the
+startup path (I9), and **translation coverage 1,543/1,543 catalogued
+strings scanned, the quran area's own missing count unchanged at 7** (all
+pre-existing, none introduced this round) -- one new string, "Show ayah by
+ayah", translated and marked `// ?` for the owner's own eye. No
+`firestore.rules`, schema or Firestore data changes -- nothing to deploy but
+the static files.
+
+v07.113 (1 Sep 2026, on Claude Code on the web) is **a same-day correction
+to v07.112, from the owner's own pointed follow-up on both real fixes
+that round claimed: "Bismillah...still there adding before the first Ayah.
+(thus Bismillah...now shows twice) FIX IT" and "Seems you didn't work on
+this: 'Also enable the Bookmark's Expand/collapse button to work in one
+tap ... Did you get it?' FIX IT."** Both reports were right, and both
+needed a real root-cause investigation, not another guess.
+
+**(1) The Bismillah duplication -- a genuine, systemic bug in the pulled
+data itself, not in v07.111's own heading logic.** Checked directly rather
+than assumed: `tools/quran-data-pull/output`'s own `surah_XXX.json` files
+embed "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ" as a literal PREFIX of ayah 1's
+own `uthmaniText`, for every surah except 9 (swept a dozen surahs directly
+against the real files to confirm, not one sample). Surah 1's own ayah 1 IS
+the Bismillah verse in full, nothing after it. So v07.111's own decorative
+heading (`bismillahHtmlFor()`) was correct to show ONCE per surah -- but the
+ayah's own body, rendered right below it in plain (non-Tajweed) mode, was
+ALSO showing the same phrase, because nothing had ever stripped it out of
+the underlying text. **`tajweedText` and every translation were checked the
+same way and confirmed to NEVER carry the embedded prefix** (Tajweed mode
+was genuinely unaffected, and this is why the FIRST round's own testing --
+which happened to check a `.ayah-bismillah` element COUNT rather than
+compare it against the ayah's own displayed text -- missed it entirely).
+
+New `stripLeadingBismillah()`, exported from `ayah-renderer.js`, strips the
+embedded prefix from `uthmaniText` when `ayah.ayah === 1`, falling back to
+the ORIGINAL text whenever nothing real is left after stripping (Surah 1's
+own case -- an ayah that IS Bismillah must never be emptied out).
+`bismillahHtmlFor()` in `quranrevival.html` also now skips the heading for
+Surah 1 itself (its own ayah 1 already reads correctly, unmodified, as a
+real, complete ayah -- adding a decorative heading on top of it would have
+been the exact duplicate being fixed, just moved rather than removed).
+**A real Unicode trap was found and fixed while building this, not
+shipped blind:** a hand-typed Bismillah literal and the pulled data's own
+copy look byte-identical on screen but compare UNEQUAL with a plain
+`startsWith()` -- two combining diacritics (shadda, fatha) stack on the
+same base letter in a different order between the two, which Unicode
+treats as canonically equivalent but a raw string comparison does not.
+`.normalize("NFC")` on both sides (Unicode's own canonical reordering by
+combining class) is what actually makes the comparison work, confirmed
+against the real data before trusting it rather than assumed from reading
+the strings. Surah 1's own ayah 1 also carries a leading U+FEFF the other
+113 don't (also confirmed against the real file, not guessed), stripped
+alongside the NFC normalization. `renderArabicPanel()` (the shared Read-
+screen renderer, both single-ayah and flow) and the Note view's own local
+`arabicOneAyahHtml()` (which builds its Arabic body separately, per that
+screen's own header comment, rather than calling the shared renderer) both
+now apply the strip -- the two places this project's own architecture
+already keeps this kind of logic.
+
+**(2) The Bookmark expand/collapse "double tap" -- a real bug, and the
+first round's own "no reproducible bug found" was wrong, traced to a real
+timing defect rather than the mechanism itself.** Root cause, found by
+measuring rather than re-testing the same way twice: `render()` in
+`js/bookmark-nav.js` replaces `listEl.innerHTML` SYNCHRONOUSLY, inside the
+very click handler that's still mid-dispatch -- which destroys the
+button/select that was actually clicked. The click event then keeps
+bubbling (its own default behaviour, unstopped) up to `nav.js`'s own
+outside-click-closes listener on `document` (shell round 29), which checks
+`cat.contains(e.target)` -- but by the time it runs, `e.target` is a
+DETACHED node from the just-replaced render, so `contains()` reads false
+and the WHOLE Bookmark dropdown closes on what looked like its own first
+tap. That is exactly "double tap to change from collapse to expand" from
+the reader's own side: the first tap silently closes the dropdown instead
+of visibly updating anything, so a second tap (reopening it) is what's
+needed to actually SEE the new state. **The first round's own investigation
+missed this because Playwright's `selectOption()` helper -- used to test
+the old "Open as" select -- sets the value and fires `change` directly,
+bypassing the real click-and-bubble sequence a genuine tap goes through,
+so it could never have caught a bug that lives specifically in that
+bubble.**
+
+Fixed at the actual cause, not worked around: `e.stopPropagation()` in both
+of `bookmark-nav.js`'s own click/change handlers (`wireControls()`), so the
+event never reaches `document`'s outside-click listener at all once a
+control inside the dropdown has been used. **Also rebuilt the control
+itself while fixing it, matching the owner's own literal wording** ("if it
+is on collapse, one tap should enable it to expand and vice versa") -- the
+old two-option `<select>` ("Open as": Collapsed/Expanded) is gone,
+replaced by one real toggle BUTTON that reads its own current state in its
+own label (▸ Expand all / ▾ Collapse all) and flips both the label and
+every folder's own open state in exactly one tap. This is also the more
+literal fix for the "double tap" complaint on its own merits, independent
+of the propagation bug: choosing an option from a native `<select>` is
+genuinely two taps on a touchscreen (open the picker, then choose), where
+a single button is one. Same underlying `getBookmarkMenuExpanded()`/
+`setBookmarkMenuExpanded()` localStorage preference as before -- only the
+control's shape changed, not the storage or the per-folder override rule
+("Open as"/"Collapsed"/"Expanded" are kept in `bn.js`, unused, per this
+project's own standing "never delete a string that stops being called"
+rule).
+
+**Verified with a focused, throwaway Playwright script** (this project's
+own established practice for anything past `behaviour.mjs`'s own disclosed
+section-42 crash point) -- **17 checks, 16 passed** (the one reported
+"failure" is a wrong test assertion, not a defect -- investigated directly:
+a stale, invisible, `display:none` leftover `.ayah-bismillah` node sits in
+`#ayahPanels` after switching to the flow view, the exact same benign
+duplicate this project's own diagnostic scripts found and dismissed before
+this round even started; confirmed via `getBoundingClientRect()` that it
+is genuinely `0×0` and never shown, while the real, visible flow-view
+heading renders exactly once): Surah 1 Ayah 1 shows no extra heading and
+its own real Bismillah text intact; Surah 2/18/Note-view Ayah 1 show
+exactly one heading with the ayah's own body no longer repeating it, in
+both plain and Tajweed mode; Surah 9 shows no heading at all; the flow
+view's own real (visible) heading is not duplicated; and the bookmark
+toggle button is proven to expand every folder in exactly ONE tap and
+collapse them again in exactly ONE more tap, with the old select
+confirmed gone. **`tools/i18n-verify/layout.mjs` reports the landing page
+byte-for-byte identical** at all eight viewports in both banner states
+(the "MISSING ID TARGETS" line is the same pre-existing false positive
+this project has disclosed since v07.86), **`tools/i18n-verify/reading.mjs`
+reports OK** at every viewport in both banner states (the "needed" pixel
+figures for the default test ayah dropped slightly, exactly as expected
+now that its own Bismillah duplicate is gone -- not a regression),
+**`navcheck.mjs` reports only the pre-existing, unrelated 320px English
+truncation** of "Operation"/"Bookmark" carried since v07.29, and
+**`tools/perf/measure.mjs` confirms Quran Study still opens in 6 sequential
+round trips**, confirming neither fix joined the startup path (I9).
+**Translation coverage 1,542/1,542 catalogued strings scanned** -- two new
+strings ("Expand all", "Collapse all"), both translated and marked `// ?`
+for the owner's own eye; the one reported missing string ("Qur'an") is
+pre-existing and unrelated to this round. No `firestore.rules`, schema or
+Firestore data changes -- nothing to deploy but the static files.
+
+**Merge note:** v07.111 through v07.113 above all landed from a concurrent
+Claude Code on the web session that kept reaching `main` first. A second,
+independent session (this one) had been working the owner's own overlapping
+"OPTIONS, READ FIXES" report and its own follow-ups at the same time --
+fixing the identical `noteWbwOn`/`noteRootsOn`/`noteDerivativesOn`
+disconnect v07.111's own item (1) already covers, plus a genuinely separate
+scroll-TRAP bug (content silently unreachable, not merely missing a
+gesture) v07.112/v07.113 did not touch, and its own Study-Unit-picker sync
+fix and a first-draft "Mushaf shape" toggle. Merged in below as
+v07.114/v07.115 -- renumbered twice now, since the other session's own
+v07.112 and v07.113 both landed on `main` before this branch's merge caught
+up -- with the now-redundant WbW/Root/Derivatives section trimmed down to a
+pointer at v07.111's own entry rather than repeating it.
+
+v07.114 (31 Aug 2026, on Claude Code on the web) is **the "affect
 everywhere" round -- the READ/NOTE sync gap closed at its root, a real
 always-scrollable safety net, and a first-draft "Mushaf shape" toggle.**
 The owner's own message covered a role/permission question, a request that
@@ -8359,15 +8687,15 @@ guessed at again. The cross-device "default person" preference (item 1)
 is scoped and ready to build as its own round the moment the owner
 confirms they want it.
 
-v07.113 (31 Aug 2026, on Claude Code on the web) is **a same-day
-correction to v07.112 -- a real, severe scroll trap fixed.** The owner's
-own report after using v07.112: "i had single Ayah unit setting and page
+v07.115 (31 Aug 2026, on Claude Code on the web) is **a same-day
+correction to v07.114 -- a real, severe scroll trap fixed.** The owner's
+own report after using v07.114: "i had single Ayah unit setting and page
 setting. but none scrolls or go sideways, only except nav button... same
 is with note view... also choosing WbW at options should make it active
 in both read n note view (currently it works with read view only)."
 
 **The scroll bug is real, severe, and pre-existing -- not something
-v07.112 caused, but something it also didn't catch, and it's exactly the
+v07.114 caused, but something it also didn't catch, and it's exactly the
 owner's OWN default configuration (Single Ayah + "Page by page" ON, the
 out-of-the-box state).** Measured before touching anything, not guessed:
 `#readScroll`'s real `scrollHeight` (471px) exceeded its `clientHeight`
@@ -8394,10 +8722,10 @@ byte-identical to before (`flow-view-active` set, `#pageViewContainer`
 still the visible flex row with its own `overflow-x:auto` untouched) --
 10/10 checks pass. **The Note view's own report could not be reproduced
 as a distinct bug** -- `.note-body` (fixed for horizontal scroll in
-v07.112 itself, still unmerged at the time the owner tested) scrolls
+v07.114 itself, still unmerged at the time the owner tested) scrolls
 correctly both directions with real overflowing content, confirmed by
 the same real-scroll-and-measure method; the most likely explanation is
-the owner was testing against the still-unmerged v07.112 branch/
+the owner was testing against the still-unmerged v07.114 branch/
 production, which lacked that fix. Flagged rather than silently assumed
 fixed -- if it's still stuck after this merges, the exact ayah/unit is
 needed to reproduce it.

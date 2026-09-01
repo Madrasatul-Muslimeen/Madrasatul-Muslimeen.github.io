@@ -150,17 +150,24 @@ function renderBookmarkList(bookmarksDoc, { expanded, groupBy, roster }) {
   );
 }
 
-/** The two options, above the list. Rendered with the list (not once at mount) so they always show the current stored value even after another tab changed it. */
+/** The controls above the list. Rendered with the list (not once at mount) so they always show the current stored value even after another tab changed it.
+    Fix round -- the owner's own report: choosing Expanded/Collapsed from a
+    native <select> is genuinely TWO taps on a touchscreen (open the picker,
+    then tap the option), which is exactly the "double tap" they meant by
+    "we don't need double tap to change from collapse to expand and vice
+    versa." Replaced with a single real toggle BUTTON, which needs only one
+    tap and reads its own current/next state in its own label -- "if it is
+    on collapse [i.e. currently showing Collapse-all, meaning it's expanded],
+    one tap should enable it to expand [collapse everything] and vice versa."
+    Same underlying getBookmarkMenuExpanded()/setBookmarkMenuExpanded()
+    storage as before -- only the control shape changed, not the mechanism. */
 function controlsHtml() {
   const expanded = getBookmarkMenuExpanded();
   const groupBy = getBookmarkMenuGroupBy();
   return `<div class="nav-bm-controls">
-    <label class="nav-bm-control"><span>${t("Open as")}</span>
-      <select data-bm-nav-expanded>
-        <option value="0" ${expanded ? "" : "selected"}>${t("Collapsed")}</option>
-        <option value="1" ${expanded ? "selected" : ""}>${t("Expanded")}</option>
-      </select>
-    </label>
+    <button type="button" class="nav-bm-expand-toggle" data-bm-nav-expand-toggle aria-pressed="${expanded ? "true" : "false"}">
+      ${expanded ? "▾ " + t("Collapse all") : "▸ " + t("Expand all")}
+    </button>
     <label class="nav-bm-control"><span>${t("Group by")}</span>
       <select data-bm-nav-groupby>
         ${BOOKMARK_GROUP_BYS.map((g) => `<option value="${g.id}" ${g.id === groupBy ? "selected" : ""}>${t(g.label)}</option>`).join("")}
@@ -218,12 +225,26 @@ export function mountBookmarkMenu(navBarEl, { db, getTenantId, getPersonId, getB
 
   // Changing either option re-renders from the SAME document already in
   // hand -- these are display choices, so there is nothing to re-fetch.
+  //
+  // Fix round -- the real cause behind the owner's own "double tap" report:
+  // render() replaces listEl.innerHTML SYNCHRONOUSLY, inside the very click
+  // handler that's still mid-dispatch -- which destroys the button/select
+  // that was actually clicked. The click event then keeps bubbling (its own
+  // default behaviour) up to nav.js's own outside-click-closes listener on
+  // `document`, which checks `cat.contains(e.target)` -- but `e.target` is
+  // now a DETACHED node from the old render, so `contains()` reads false and
+  // the whole Bookmark dropdown closes on what looked like its own first
+  // tap. e.stopPropagation() here is what actually fixes "one tap should
+  // enable it to expand and vice versa" -- confirmed by reproducing the
+  // dropdown genuinely closing without this, not assumed.
   function wireControls(bookmarksDoc, roster) {
-    listEl.querySelector("[data-bm-nav-expanded]")?.addEventListener("change", (e) => {
-      setBookmarkMenuExpanded(e.target.value === "1");
+    listEl.querySelector("[data-bm-nav-expand-toggle]")?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      setBookmarkMenuExpanded(!getBookmarkMenuExpanded());
       render(bookmarksDoc, roster);
     });
     listEl.querySelector("[data-bm-nav-groupby]")?.addEventListener("change", async (e) => {
+      e.stopPropagation();
       setBookmarkMenuGroupBy(e.target.value);
       // Person mode may need names this page never loaded -- resolve them
       // before re-rendering, or the first switch would show bare ids once.
