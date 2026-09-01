@@ -1189,6 +1189,17 @@
      than lines crowding together as the text grows. */
   .ayah-arabic { font-family: var(--quran-font); font-size: calc(1.7rem * var(--qr-ar-scale, 1)); line-height: calc(2.6rem * var(--qr-ar-scale, 1)); text-align: right; margin: 0.6rem 0; }
   .ayah-num { color: #B8862F; font-size: 1rem; }
+  /* Fix round -- the ayah number badge now always sits BEFORE the ayah
+     (its own row, above the Arabic), in every setting (tajweed on/off, the
+     flow view, the Note view alike) rather than only trailing the plain
+     path. Right-aligned to match this app's RTL-first reading direction --
+     the same edge Arabic reading starts from. */
+  .ayah-num-row { display: flex; justify-content: flex-end; margin: 0.3rem 0 0.1rem; }
+  .ayah-num-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 1.5rem; height: 1.5rem; padding: 0 0.4rem; border-radius: 999px; background: #f0ead9; color: #8a6d1f; font-size: 0.78rem; font-weight: 700; border: 1px solid #d8c68a; }
+  /* Fix round -- Bismillah before ayah 1 of a surah (except Surah 9, which
+     traditionally carries none), on both the Read and Note screens --
+     previously it only ever appeared inside the landing wheel's own hub. */
+  .ayah-bismillah { font-family: var(--quran-font); direction: rtl; text-align: center; font-size: calc(1.5rem * var(--qr-ar-scale, 1)); line-height: 1.8; color: #1b1b16; margin: 0.2rem 0 0.9rem; }
   .ayah-translation { font-size: calc(0.95rem * var(--qr-en-scale, 1)); color: #333; margin: 0.3rem 0; }
   .ayah-translation-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; font-size: calc(0.95rem * var(--qr-bn-scale, 1)); }
   /* Shell round 24 -- the words of an ayah run RIGHT TO LEFT. The owner spotted
@@ -2714,7 +2725,7 @@
     // Shell round 14 -- word/phrase search. Importing the module costs
     // nothing at load: it fetches its index only when a search actually runs.
     import { searchQuran } from "./js/quran-search.js";
-    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel } from "./js/ayah-renderer.js";
+    import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml } from "./js/ayah-renderer.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
@@ -3122,20 +3133,11 @@
     // whatever's already open (see noteScopeUnitInfo()'s own comment).
     let noteScope = null; // { unitType, ayahNum, rangeFrom, rangeTo, unitNumber }
     let noteFullscreenOn = false; // the Note view's own full-screen state -- see toggleNoteFullscreen()
-    // Sync round (31 Aug 2026, owner's own report): "choosing WbW at
-    // options should make it active in both read n note view ... in note
-    // view user has to click on WbW again ... not user-friendly." bar 2's
-    // Word by Word/Root/Derivatives buttons used to be THEIR OWN, always-
-    // false-on-entry flags (noteWbwOn/noteRootsOn/noteDerivativesOn),
-    // completely disconnected from Options' own wbwShowToggle/rootsToggle/
-    // derivativesToggle -- Tajweed never had this bug (renderNoteViewNow()
-    // already reads tajweedToggle.checked directly), which is exactly the
-    // shape these three now follow too: toggleNoteWbw()/toggleNoteRoots()/
-    // toggleNoteDerivatives() below flip the CANONICAL checkbox itself and
-    // fire its own "change" (the same mirror pattern READ_PICKER_MIRRORS
-    // and wireNotePickerBar() already use), so there is one real value for
-    // "is Word by Word on", read straight off wbwShowToggle.checked
-    // wherever it's needed -- never a second, driftable copy.
+    // Fix round -- WbW/Root/Derivatives no longer keep their own separate
+    // noteWbwOn/noteRootsOn/noteDerivativesOn flags here; bar 2's own
+    // toggle buttons now flip the SAME canonical wbwShowToggle/rootsToggle/
+    // derivativesToggle checkboxes Study options uses, so a choice made in
+    // either place shows up in both without a second click.
     // QCR round: which collection the reader tapped an āyah FROM, so the
     // Note view's "◂ List & wheel" button knows where "back" means -- null
     // when Note view was reached any other way (Read screen, a bookmark, a
@@ -6813,6 +6815,15 @@
       return getQuranTranslationLangs();
     }
 
+    /** Fix round -- Bismillah before ayah 1 of every surah except Surah 9
+        (At-Tawbah traditionally carries none), on both the Read screen
+        (single-ayah and flow) and the Note view. One place decides this so
+        all three call sites can never disagree about which surah it is. */
+    function bismillahHtmlFor(surahNum, ayahNum) {
+      if (ayahNum !== 1 || surahNum === 9) return "";
+      return `<div class="ayah-bismillah" dir="rtl" lang="ar">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>`;
+    }
+
     /** Word-by-word panel: "auto" follows the language above; otherwise the owner's explicit choice wins (owner request, 5 Aug 2026 -- an explicit fallback alongside the automatic behaviour, not instead of it). */
     function wbwLangs() {
       if (wbwLangMode === "en") return ["en"];
@@ -6875,7 +6886,12 @@
           // The ⋮ badge is its own header row, ABOVE the ayah content, not
           // overlaid on it -- see the .ayah-quick-header CSS comment.
           const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
-          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}"><div class="ayah-quick-header">${renderQuickMenu(unitKey, { hasNote: ayahHasNote(ayahNotesDoc, unitKey), isBookmarked })}</div>${renderLayoutA(ayah, panels, {
+          // Fix round -- Bismillah goes INSIDE the first ayah's own block
+          // (not a sibling of it), since every direct child of
+          // #pageViewContainer is treated as one full-width "page" in
+          // sideways mode (round 28's own CSS) -- a bare sibling div would
+          // have become a blank extra page rather than a heading.
+          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}"><div class="ayah-quick-header">${renderQuickMenu(unitKey, { hasNote: ayahHasNote(ayahNotesDoc, unitKey), isBookmarked })}</div>${bismillahHtmlFor(currentSurahNum, ayah.ayah)}${renderLayoutA(ayah, panels, {
             tajweedOn: tajweedToggle.checked,
             langs: translationLangs(),
             wbwLangs: wbwLangs(),
@@ -7497,6 +7513,125 @@
       renderNoteViewNow();
     }
 
+    /** Fix round -- "enable moving to the next Ayah both scrolling down and
+        sideways in both read and note view in all settings." Before this,
+        the ONLY way to move in a non-flow unit (Single Ayah, Ruku', Juz',
+        Hizb', Page -- everything that reads one āyah at a time rather than
+        as a flow) was tapping Prev/Next; a flow view (Whole Surah/Range/
+        Mushaf) only ever offered ONE of scroll-down or sideways-paging at
+        once, whichever the "Page by page" tick said. This adds a genuine
+        wheel/scroll and touch-swipe gesture on top, everywhere, without
+        touching the flow's own native horizontal scroller (which already
+        handles its own swipe -- see the #pageViewContainer exclusion
+        below, or this would double-advance).
+        Document-level, capture-phase, wired once: #readScroll is static,
+        but .note-body is rebuilt from scratch on every Note-view render
+        (a claim, a bookmark toggle, Prev/Next...), so a listener attached
+        directly to it would be lost on the very next redraw -- capture at
+        document instead, matching this project's own established pattern
+        for anything that must survive a rebuild (nav.js's outside-click,
+        way-modal.js's Assign-to popover, text-size.js's own popovers). */
+    (function wireScrollSwipeAyahNav() {
+      const INTERACTIVE = "button, a, input, select, textarea, label, [role='button'], [contenteditable]";
+      let cooldownUntil = 0;
+
+      function nearBottom(el) { return el.scrollHeight - el.scrollTop - el.clientHeight <= 24; }
+      function nearTop(el) { return el.scrollTop <= 4; }
+
+      // Walks up from wherever the gesture actually happened to whichever
+      // element is doing the real vertical scrolling right now (#ayahPanels
+      // in sideways mode, a single page inside #pageViewContainer, or
+      // #readScroll/.note-body itself when nothing narrower is scrolling) --
+      // rather than assuming one fixed id, since which element scrolls
+      // depends on the sideways/Mushaf/unit-type combination in play.
+      // Returns the element that genuinely scrolls, or null when nothing in
+      // the gesture's own path does -- e.g. #readScroll itself is
+      // overflow:hidden by default (sideways/"Page by page" is on by
+      // default), so its OWN scrollHeight/clientHeight numbers are a red
+      // herring (they still differ even though it visually never scrolls);
+      // the real answer in that state is whichever descendant (#ayahPanels,
+      // or one page inside #pageViewContainer) actually carries the
+      // overflow, and when THAT fits too there is genuinely nothing to
+      // scroll -- a null result means "already at both ends," not "give up."
+      function nearestScroller(target, boundary) {
+        let node = target;
+        while (node && node.nodeType === 1) {
+          const cs = getComputedStyle(node);
+          if ((cs.overflowY === "auto" || cs.overflowY === "scroll") && node.scrollHeight > node.clientHeight + 2) return node;
+          if (node === boundary) return null;
+          node = node.parentElement;
+        }
+        return null;
+      }
+
+      function scrollBoundary(target) {
+        const readScroll = document.getElementById("readScroll");
+        if (readScroll && readScroll.contains(target)) return readScroll;
+        const noteBody = target.closest?.(".note-body");
+        if (noteBody) return noteBody;
+        return null;
+      }
+
+      function advance(dir) {
+        const now = Date.now();
+        if (now < cooldownUntil) return;
+        cooldownUntil = now + 550;
+        if (stageView === "note") {
+          if (!noteScope) return;
+          if (noteScope.unitType !== "ayah" && noteScope.unitType !== "surah") stepNoteAyah(dir);
+          else stepNoteUnit(dir);
+        } else if (stageView === "read") {
+          if (!currentSurahData) return;
+          if (!nextAyahBtn.hidden) {
+            const btn = dir > 0 ? nextAyahBtn : prevAyahBtn;
+            if (!btn.disabled) btn.click();
+          } else {
+            const btn = dir > 0 ? nextUnitBtn : prevUnitBtn;
+            if (!btn.disabled) btn.click();
+          }
+        }
+      }
+
+      document.addEventListener("wheel", (e) => {
+        if (e.target.closest?.(INTERACTIVE)) return;
+        const boundary = scrollBoundary(e.target);
+        if (!boundary) return;
+        if (Math.abs(e.deltaY) < 12) return;
+        const scroller = nearestScroller(e.target, boundary);
+        if (e.deltaY > 0 && (!scroller || nearBottom(scroller))) advance(1);
+        else if (e.deltaY < 0 && (!scroller || nearTop(scroller))) advance(-1);
+      }, { passive: true, capture: true });
+
+      let touchStartX = null, touchStartY = null, touchBoundary = null;
+      document.addEventListener("touchstart", (e) => {
+        if (e.touches.length !== 1 || e.target.closest?.(INTERACTIVE)) { touchBoundary = null; return; }
+        touchBoundary = scrollBoundary(e.target);
+        if (!touchBoundary) return;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }, { passive: true, capture: true });
+      document.addEventListener("touchend", (e) => {
+        if (!touchBoundary || touchStartX === null) { touchBoundary = null; return; }
+        const boundary = touchBoundary; touchBoundary = null;
+        const touch = e.changedTouches[0];
+        if (!touch) return;
+        const dx = touch.clientX - touchStartX;
+        const dy = touch.clientY - touchStartY;
+        touchStartX = touchStartY = null;
+        const SWIPE = 55;
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE) {
+          // Sideways: #pageViewContainer already swipes natively (the
+          // sideways-paged flow's own scroll-snap strip) -- don't double it.
+          if (e.target.closest?.("#pageViewContainer")) return;
+          advance(dx < 0 ? 1 : -1);
+        } else if (Math.abs(dy) > SWIPE) {
+          const scroller = nearestScroller(e.target, boundary);
+          if (dy < 0 && (!scroller || nearBottom(scroller))) advance(1);
+          else if (dy > 0 && (!scroller || nearTop(scroller))) advance(-1);
+        }
+      }, { passive: true, capture: true });
+    })();
+
     /** Builds and mounts the "Note & more" view against whatever `noteScope`
         currently says -- does NOT switch stageView (callers decide that:
         openNoteView() on first open; every nav/toggle callback just
@@ -7515,6 +7650,8 @@
       const ayah = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
 
       let textBlocks = { arabicText: "", englishText: "", banglaText: "" };
+      let arabicHtml = "";
+      let bismillahHtml = "";
       if (showAyatText) {
         const inScope = currentSurahData.ayahs.filter((a) => a.ayah >= info.fromAyah && a.ayah <= info.toAyah);
         textBlocks = {
@@ -7522,6 +7659,19 @@
           englishText: inScope.map((a) => a.translations?.en).filter(Boolean).join(" "),
           banglaText: inScope.map((a) => a.translations?.bn).filter(Boolean).join(" "),
         };
+        // Fix round -- the Note view never showed an ayah number or tajweed
+        // colouring at all (it joined plain uthmaniText, bypassing
+        // ayah-renderer.js's renderArabicPanel entirely); now built per
+        // ayah the same way the Read screen is, so a setting chosen once
+        // (Tajweed, the ayah number) shows here too, with no separate
+        // switch to remember.
+        arabicHtml = inScope.map((a) => {
+          const body = tajweedToggle.checked && a.tajweedText
+            ? tajweedRawToSafeHtml(a.tajweedText)
+            : escapeHtml(a.uthmaniText);
+          return `<div class="ayah-num-row"><span class="ayah-num-badge">${num(a.ayah)}</span></div><div class="note-arabic" dir="rtl" lang="ar">${body}</div>`;
+        }).join("");
+        bismillahHtml = bismillahHtmlFor(currentSurahNum, info.fromAyah);
       }
 
       const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
@@ -7578,12 +7728,18 @@
         navHtml: renderNoteNavHtml(),
         showAyatText,
         arabicText: textBlocks.arabicText, englishText: textBlocks.englishText, banglaText: textBlocks.banglaText,
+        arabicHtml, bismillahHtml,
         readViewLinkHtml,
         notesHtml: ayahNoteHtml(ayahNotesDoc, unitKey),
         // Round 31 -- "this Ayah screen would be the main study screen for a
         // user, therefore we need to make tools available here" (the
         // owner's own words). Only meaningful for a genuine single āyah
         // (canWbwRoot) -- ayah-renderer.js's panels take one āyah, not a span.
+        // Fix round -- WbW/Root/Derivatives now read the SAME canonical
+        // Study-options ticks the Read screen uses, instead of their own
+        // separate noteWbwOn/noteRootsOn/noteDerivativesOn flags -- ticking
+        // one anywhere now shows up everywhere, with no separate click
+        // needed in the Note view.
         wbwHtml: canWbwRoot && wbwShowToggle.checked && ayah ? renderWordByWordPanel(ayah, { langs: wbwLangs() }) : "",
         isWbwOn: canWbwRoot && wbwShowToggle.checked,
         rootsHtml: canWbwRoot && rootsToggle.checked && ayah ? renderRootPanel(ayah) : "",
@@ -8430,33 +8586,34 @@
       if (noteScope) renderNoteViewNow();
     }
 
-    /** Bar 2's Word-by-word toggle -- sync round (31 Aug 2026): flips the
-        SAME canonical checkbox Options uses and fires its own "change" (it
-        already just calls renderStudyScreen(), harmless to run while Read
-        isn't the visible stage), so the choice reaches Options/Read AND
-        this screen from one real value, in either direction -- toggle it
-        here, Options shows it too; toggle it in Options, this screen shows
-        it too, without a trip back through Options first. */
+    /** Bar 2's Word-by-word toggle (round 31) -- a reading preference, not
+        per-āyah state, so it deliberately stays on across Prev/Next within
+        the Note view rather than resetting each time (matching how the
+        ordinary reading screen's own ticks behave). Fix round -- flips the
+        SAME canonical wbwShowToggle checkbox Study options uses, rather
+        than a separate flag, so the Read screen picks up the change too
+        the next time it renders. */
     function toggleNoteWbw() {
       wbwShowToggle.checked = !wbwShowToggle.checked;
-      wbwShowToggle.dispatchEvent(new Event("change"));
       if (noteScope) renderNoteViewNow();
     }
 
-    /** Bar 2's Root toggle -- same canonical mirror shape as toggleNoteWbw() above. */
+    /** Bar 2's Root toggle (enhancement round) -- same "reading preference,
+        not per-āyah state" shape as toggleNoteWbw() above: stays on across
+        Prev/Next until the reader clicks it again, via the shared
+        rootsToggle checkbox. */
     function toggleNoteRoots() {
       rootsToggle.checked = !rootsToggle.checked;
-      rootsToggle.dispatchEvent(new Event("change"));
       if (noteScope) renderNoteViewNow();
     }
 
-    /** Bar 2's own, separate Derivatives toggle -- same canonical mirror
-        shape as toggleNoteWbw() above; kept as its own function so Root and
-        Derivatives can still be switched on independently, which is the
-        whole reason they were split into two toggles in the first place. */
+    /** Bar 2's own, separate Derivatives toggle -- same shape as
+        toggleNoteRoots() above, via the shared derivativesToggle
+        checkbox so the two settings stay independent (Root and
+        Derivatives used to be one merged panel/tick) but still shared
+        between the Read and Note screens. */
     function toggleNoteDerivatives() {
       derivativesToggle.checked = !derivativesToggle.checked;
-      derivativesToggle.dispatchEvent(new Event("change"));
       if (noteScope) renderNoteViewNow();
     }
 
@@ -8588,7 +8745,7 @@
         ayahSelect.value = String(currentAyahNum);
         prevAyahBtn.disabled = currentAyahNum <= 1;
         nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount;
-        ayahPanels.innerHTML = renderLayoutA(ayah, panels, {
+        ayahPanels.innerHTML = bismillahHtmlFor(currentSurahNum, currentAyahNum) + renderLayoutA(ayah, panels, {
           tajweedOn: tajweedToggle.checked,
           langs: translationLangs(),
           wbwLangs: wbwLangs(),
@@ -8888,7 +9045,17 @@
     prevAyahBtn.addEventListener("click", () => { if (currentAyahNum > 1) { stopDrill(); currentAyahNum--; renderStudyScreen(); renderWheel(); } });
     nextAyahBtn.addEventListener("click", () => { if (currentAyahNum < currentSurahData.ayahCount) { stopDrill(); currentAyahNum++; renderStudyScreen(); renderWheel(); } });
     ayahSelect.addEventListener("change", () => { stopDrill(); currentAyahNum = Number(ayahSelect.value); renderStudyScreen(); renderWheel(); });
-    tajweedToggle.addEventListener("change", renderStudyScreen);
+    // Fix round -- "a choice of setting anywhere should work everywhere":
+    // Study options' own Tajweed/Word by Word/Root/Derivatives ticks are
+    // read live by BOTH the Read screen and the Note view (Note view no
+    // longer keeps its own separate noteWbwOn/noteRootsOn/noteDerivativesOn
+    // flags), so a change made here has to re-render whichever of the two
+    // is actually open right now, not just the Read screen.
+    function onReadingTickChanged() {
+      renderStudyScreen();
+      if (stageView === "note" && noteScope) renderNoteViewNow();
+    }
+    tajweedToggle.addEventListener("change", onReadingTickChanged);
     // Shell round 13 -- the reading half of the old bar-1 "Language" picker;
     // shell round 18 -- two ticks instead of one picker, so both translations
     // can be on together. The stored preference is unchanged in meaning and
@@ -8920,9 +9087,9 @@
     }
     trEnToggle.addEventListener("change", applyTranslationTicks);
     trBnToggle.addEventListener("change", applyTranslationTicks);
-    wbwShowToggle.addEventListener("change", renderStudyScreen);
-    rootsToggle.addEventListener("change", renderStudyScreen);
-    derivativesToggle.addEventListener("change", renderStudyScreen);
+    wbwShowToggle.addEventListener("change", onReadingTickChanged);
+    rootsToggle.addEventListener("change", onReadingTickChanged);
+    derivativesToggle.addEventListener("change", onReadingTickChanged);
 
     // Shell round 28 -- sideways paging is one body class, so turning it on or
     // off is a paint rather than a rebuild. renderStudyScreen() still runs

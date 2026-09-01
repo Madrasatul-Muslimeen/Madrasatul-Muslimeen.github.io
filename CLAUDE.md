@@ -8103,7 +8103,110 @@ its own line below them (top 56px vs. the tabs' 16px), and there is no
 horizontal page overflow at any of the three widths. No `firestore.rules`,
 schema or data changes -- nothing to deploy but the static files.
 
-v07.111 (31 Aug 2026, on Claude Code on the web) is **the "affect
+v07.111 (1 Sep 2026, on Claude Code on the web) is **four owner-reported fixes
+-- one setting that stayed put in only one screen, no scroll/swipe advance,
+and the ayah number and Bismillah both missing in at least one setting.**
+
+**(1) "A choice of setting anywhere should work everywhere."** The owner's own
+example: ticking Word by Word in Study options did nothing to an already-open
+Note view, which kept its own separate on/off state and needed a second tap
+from its own ⋮ menu. Root and Derivatives had the identical shape. **Fixed at
+the root, not patched over**: `noteWbwOn`/`noteRootsOn`/`noteDerivativesOn`
+(three separate session flags in `quranrevival.html`) are gone outright --
+the Note view now reads the SAME canonical `wbwShowToggle`/`rootsToggle`/
+`derivativesToggle` checkboxes Study options already owns, and its own ⋮ menu
+buttons (`toggleNoteWbw`/`toggleNoteRoots`/`toggleNoteDerivatives`) flip those
+checkboxes directly rather than a private copy. A new `onReadingTickChanged()`
+re-renders whichever of Read/Note is actually open whenever any of the four
+canonical ticks (Tajweed included) changes -- Study options is a drawer that
+can sit open OVER the Note view (shell round 7's own dock shape), so a tick
+made there has to reach the screen underneath it immediately, not just on the
+next Read-screen render. Translation ticks (En/Bn) were left alone -- the
+Note view already shows both languages unconditionally with their own
+independent collapse toggles, a different and pre-existing design, not the
+"needs a second click" defect this round was about.
+
+**(2) "Enable moving to the next Ayah both scrolling down and sideways... in
+all settings."** Before this, a non-flow unit (Single Ayah, Ruku', Juz',
+Hizb', Page) had ONLY the Prev/Next buttons -- no scroll, no swipe -- and a
+flow unit (Whole Surah/Range/Mushaf) only ever offered ONE of the two at a
+time, whichever the "Page by page" tick said. A new, document-level,
+capture-phase wheel/touch listener (`wireScrollSwipeAyahNav()`, wired once,
+survives the Note view's own per-render rebuild the same way `nav.js`'s
+outside-click and `way-modal.js`'s Assign-to popover already do) adds both
+gestures everywhere: a wheel-scroll or upward swipe past the bottom of
+whatever is genuinely scrolling advances (`nextAyahBtn`/`nextUnitBtn`,
+whichever isn't hidden -- the same "one ayah where that's a real, separate
+step, the whole unit otherwise" rule the visible buttons already follow);
+a sideways swipe does the same, EXCEPT inside `#pageViewContainer`, which
+already has its own native scroll-snap swipe (round 28) that this
+deliberately does not double up on. **A real measurement trap, found by
+testing and not by reading the CSS**: `#readScroll` defaults to
+`overflow:hidden` ("Page by page" is checked by default), so its own
+`scrollHeight`/`clientHeight` numbers are a red herring -- the actual
+scrolling element is `#ayahPanels` (or one page inside `#pageViewContainer`),
+found by walking up from wherever the gesture happened rather than assumed
+to be one fixed id; when NOTHING in that path genuinely scrolls (a short
+ayah that fits outright), the gesture fires unconditionally rather than
+checking a boundary element that was never really scrolling to begin with.
+
+**(3) Bismillah before ayah 1 of every surah except Surah 9 (At-Tawbah,
+which traditionally carries none), on the Read screen (single ayah AND flow)
+and the Note view alike** -- previously it existed nowhere but the landing
+wheel's own decorative hub. One shared `bismillahHtmlFor(surahNum, ayahNum)`
+decides this in one place so all three call sites can't disagree. In the
+flow view it goes INSIDE the first ayah's own `.page-flow-ayah` block, not as
+a bare sibling -- every direct child of `#pageViewContainer` is treated as
+one full-width sideways "page" (round 28's own CSS), so a stray sibling
+would have become a blank extra page instead of a heading.
+
+**(4) "Ayah Numbers to appear always before all Ayat in all settings."**
+Measured first: the number showed AFTER the Arabic text in the plain path,
+was a different, easy-to-miss glyph embedded inside the text in Tajweed mode,
+and was missing OUTRIGHT in the Note view (which joined raw `uthmaniText`,
+bypassing `ayah-renderer.js`'s `renderArabicPanel()` entirely). One
+shared fix: `renderArabicPanel()` now always draws a leading `.ayah-num-row`
+badge before the Arabic, tajweed on or off -- reaching both the single-ayah
+and flow Read views for free, since both already call it via `renderLayoutA`.
+The Note view gained the identical badge, built per ayah in
+`renderNoteViewNow()` and passed as pre-built, already-safe `arabicHtml` (a
+NEW field, kept separate from the existing plain-text `arabicText` that
+Copy/Share still reads, so pasting a note never carries stray HTML) -- and,
+since building that per-ayah anyway cost nothing extra, it is now
+Tajweed-aware there too, using the same `tajweedRawToSafeHtml()` the Read
+screen uses, closing a second, related gap (Note view's Arabic was always
+plain black text, regardless of the Tajweed tick) found while fixing (1).
+
+**Verified with a focused, throwaway Playwright script** (this project's own
+established practice for anything past `behaviour.mjs`'s own disclosed
+section-42 crash point) -- 18 checks, 0 failures, covering all four fixes
+together in both directions where that mattered (Study options → Note view
+and Note view's own menu → Study options; wheel-down, wheel-up and touch-swipe
+all really moving `#readAyahSelect`; Bismillah present for 79:1, absent for
+79:2 and for 9:1; the ayah-number badge present with Tajweed on AND off, in
+both the Read and Note screens, with real `tajweed-*` colour spans confirmed
+rendering). **`tools/i18n-verify/layout.mjs` reports the landing page
+byte-for-byte identical** at all eight viewports in both banner states (the
+one reported "MISSING ID TARGETS" line is the same pre-existing false
+positive this project has disclosed since v07.86 -- confirmed unrelated by
+running the unmodified `HEAD` copy through the same check and seeing the
+identical list), and **`tools/i18n-verify/reading.mjs` reports OK** at every
+viewport in both banner states -- neither the wheel nor the reading screen's
+own measured layout moved. No `firestore.rules`, schema or Firestore data
+changes -- nothing to deploy but the static files.
+
+**Merge note:** this v07.111 landed from a concurrent Claude Code on the web
+session that reached `main` first. A second, independent session had been
+working the owner's own overlapping "OPTIONS, READ FIXES" report at the same
+time -- fixing the identical `noteWbwOn`/`noteRootsOn`/`noteDerivativesOn`
+disconnect this entry's item (1) already covers, plus a genuinely separate
+scroll-TRAP bug (content silently unreachable, not merely missing a gesture)
+and its own Study-Unit-picker sync fix and a first-draft "Mushaf shape"
+toggle. Merged in below as v07.112/v07.113, with its own now-redundant
+WbW/Root/Derivatives section trimmed down to a pointer at this entry rather
+than repeating it.
+
+v07.112 (31 Aug 2026, on Claude Code on the web) is **the "affect
 everywhere" round -- the READ/NOTE sync gap closed at its root, a real
 always-scrollable safety net, and a first-draft "Mushaf shape" toggle.**
 The owner's own message covered a role/permission question, a request that
@@ -8256,16 +8359,15 @@ guessed at again. The cross-device "default person" preference (item 1)
 is scoped and ready to build as its own round the moment the owner
 confirms they want it.
 
-v07.112 (31 Aug 2026, on Claude Code on the web) is **a same-day
-correction to v07.111 -- a real, severe scroll trap fixed, and the
-WbW/Root/Derivatives sync gap closed properly.** The owner's own report
-after using v07.111: "i had single Ayah unit setting and page setting.
-but none scrolls or go sideways, only except nav button... same is with
-note view... also choosing WbW at options should make it active in both
-read n note view (currently it works with read view only)."
+v07.113 (31 Aug 2026, on Claude Code on the web) is **a same-day
+correction to v07.112 -- a real, severe scroll trap fixed.** The owner's
+own report after using v07.112: "i had single Ayah unit setting and page
+setting. but none scrolls or go sideways, only except nav button... same
+is with note view... also choosing WbW at options should make it active
+in both read n note view (currently it works with read view only)."
 
 **The scroll bug is real, severe, and pre-existing -- not something
-v07.111 caused, but something it also didn't catch, and it's exactly the
+v07.112 caused, but something it also didn't catch, and it's exactly the
 owner's OWN default configuration (Single Ayah + "Page by page" ON, the
 out-of-the-box state).** Measured before touching anything, not guessed:
 `#readScroll`'s real `scrollHeight` (471px) exceeded its `clientHeight`
@@ -8292,50 +8394,32 @@ byte-identical to before (`flow-view-active` set, `#pageViewContainer`
 still the visible flex row with its own `overflow-x:auto` untouched) --
 10/10 checks pass. **The Note view's own report could not be reproduced
 as a distinct bug** -- `.note-body` (fixed for horizontal scroll in
-v07.111 itself, still unmerged at the time the owner tested) scrolls
+v07.112 itself, still unmerged at the time the owner tested) scrolls
 correctly both directions with real overflowing content, confirmed by
 the same real-scroll-and-measure method; the most likely explanation is
-the owner was testing against the still-unmerged v07.111 branch/
+the owner was testing against the still-unmerged v07.112 branch/
 production, which lacked that fix. Flagged rather than silently assumed
 fixed -- if it's still stuck after this merges, the exact ayah/unit is
 needed to reproduce it.
 
-**The WbW/Root/Derivatives sync gap was real and is now closed the same
-way v07.111 already closed it for the Study Unit pickers.** Tajweed
-never had this bug (`renderNoteViewNow()` already read
-`tajweedToggle.checked` directly); Word by Word/Root/Derivatives each had
-their OWN, always-false-on-entry flag (`noteWbwOn`/`noteRootsOn`/
-`noteDerivativesOn`) completely disconnected from Options' own
-`wbwShowToggle`/`rootsToggle`/`derivativesToggle` -- ticking one in
-Options never reached the Note view at all, exactly the owner's report.
-All three flags are retired; `renderNoteViewNow()` now reads the
-canonical checkboxes' own `.checked` directly (the same pattern Tajweed
-already used), and `toggleNoteWbw()`/`toggleNoteRoots()`/
-`toggleNoteDerivatives()` (the Note view's own ⋮-menu items) now flip
-the SAME canonical checkbox and fire its own "change" -- the identical
-mirror pattern `wireNotePickerBar()` already uses for the Study Unit
-pickers -- so a change made in EITHER screen reaches the other, and the
-Read screen too, with no second click required anywhere. **A real,
-separate, pre-existing finding surfaced while testing this, not caused
-by this fix**: the two candidate test-verification approaches
-(`tools/i18n-verify`'s default stub, and a first pass with real
-`catalogue-data.js` Approaches) initially disagreed on whether unticking
-Word by Word actually removed it from the Read screen -- traced to the
-test stub's own DEFAULT (non-`seedTemplates`) trackable seed giving
-EVERY Quran Approach the identical `panels: ["text", "audio", "loop",
-"tajweed", "wordByWord"]`, so a tick could never be seen to REMOVE
-wordByWord there, since every baseline already included it (correct,
-deliberate v07.45 behaviour: an Approach's own declared panels are
-never taken away by a tick, only added to). Re-verified against the
-REAL `APPROACH_TEMPLATES` (`approach_01`, "Reading (with Tajweed)",
-whose own baseline genuinely excludes wordByWord) confirms the fix
-itself is correct in both directions: 6/7 checks pass, the one
-non-critical failure being a baseline-timing artifact of the test
-script itself, not the app. `tools/i18n-verify/layout.mjs` reports the
-landing page byte-for-byte identical against a real `HEAD` shim at all
-eight viewports in both banner states (only the same pre-existing
-`asmaX*`/`qcrAdd*` false-positive missing-ID-target flag this file has
-disclosed since v07.86). No `firestore.rules`, schema or Firestore data
+**The WbW/Root/Derivatives sync half of this report turned out to already be
+fixed by the time this round reached `main`.** A concurrent Claude Code on
+the web session had been working the owner's own identical complaint at the
+same time and merged first (see v07.111's own item (1) above) -- the exact
+same retirement of `noteWbwOn`/`noteRootsOn`/`noteDerivativesOn` in favour of
+reading `wbwShowToggle`/`rootsToggle`/`derivativesToggle` directly, and in
+one respect a strict superset of what this round had built (its
+`onReadingTickChanged()` also live-re-renders whichever of Read/Note is
+actually open the moment a tick changes, not only on the next full render).
+Confirmed by reading v07.111's own diff line for line against this round's
+own now-redundant copy before merging: picking theirs loses nothing this
+round would otherwise have shipped, so the duplicate edit was dropped here
+during the merge rather than kept as a second, competing implementation of
+the same fix. `tools/i18n-verify/layout.mjs` reports the landing page
+byte-for-byte identical against a real `HEAD` shim at all eight viewports in
+both banner states (only the same pre-existing `asmaX*`/`qcrAdd*`
+false-positive missing-ID-target flag this file has disclosed since v07.86).
+No `firestore.rules`, schema or Firestore data
 changes -- nothing to deploy but the static files.
 
 ## What this is
