@@ -168,7 +168,15 @@
      nothing else. #stage takes all the height the header and dock don't. */
   #app { flex: 1 1 auto; min-height: 0; flex-direction: column; } /* display:flex set by JS when it un-hides the app */
   #stage { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
-  #stage > .wheel-heading { flex: 0 0 auto; margin-top: 0.35rem; }
+  /* 2 Sep 2026: the Mastery Wheel heading and #wheelSection are now wrapped
+     in one #wheelPopupView -- the PC-popup round's own container -- rather
+     than being two direct #stage children. #wheelPopupView carries exactly
+     the flex behaviour #stage used to hand each of them separately (heading
+     fixed-height, section filling the rest), so nothing about the wheel's
+     own byte-for-byte measured layout below 900px changes: this is the same
+     distribution, one level deeper. See the markup's own comment for why. */
+  #wheelPopupView { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  #wheelPopupView > .wheel-heading { flex: 0 0 auto; margin-top: 0.35rem; }
 
   #dock {
     flex: 0 0 auto; position: sticky; bottom: 0; z-index: 60; background: white;
@@ -508,11 +516,21 @@
        bottom. On a normal-height phone 100% wins and the wheel is genuinely
        edge to edge. */
     #wheelSection { margin-left: -1rem; margin-right: -1rem; border-left: none; border-right: none; border-radius: 0; }
+    /* 2 Sep 2026: #wheelResizeWrap (the new any-side drag-resize wrap around
+       #wheelContainer) sits between .wheel-stage-wrap and #wheelContainer
+       now -- without its own width:100% here, #wheelContainer's own
+       width:100% below resolves against a SHRINK-TO-FIT box (the wrap,
+       unstyled by default) instead of .wheel-stage-wrap's own real, definite
+       width, which the SVG's own width:min(100%, calc(...)) then inherits
+       the same circular problem from -- caught by measuring the real
+       rendered wheel width (it silently fell back to the SVG's bare
+       intrinsic 360px, ignoring the calc() entirely) rather than assumed. */
+    #wheelSection #wheelResizeWrap { width: 100%; }
     #wheelSection #wheelContainer { width: 100%; display: flex; justify-content: center; }
     #wheelSection .mastery-wheel { width: min(100%, calc(100dvh - 420px)); max-width: none; }
     #wheelSection .wheel-legend { font-size: 0.68rem; gap: 4px 9px; }
     #wheelSection .legend-swatch { width: 9px; height: 9px; }
-    #stage > .wheel-heading { margin-top: 0; margin-bottom: 0.15rem; font-size: 1rem; }
+    #wheelPopupView > .wheel-heading { margin-top: 0; margin-bottom: 0.15rem; font-size: 1rem; }
     /* Tighter rows on a phone -- same 13px name, just less padding around it,
        which buys roughly one extra visible Approach per screen. */
     #wheelSection .ways-list { gap: 4px; }
@@ -627,6 +645,11 @@
     font-size: 0.9rem; padding: 0.4rem 0.55rem; cursor: pointer; line-height: 1;
   }
   .explore-fullscreen-btn.active { background: #1F3A6E; color: white; border-color: #1F3A6E; }
+  /* 2 Sep 2026 -- PC popup round: a Maximize button for #exploreView, same
+     shape as the Note/Wheel popups' own; hidden below 900px, same as every
+     other popup-only control on this page. */
+  #explorePopupMaximizeBtn { display: none; }
+  @media (min-width: 900px) { #explorePopupMaximizeBtn { display: inline-flex; align-items: center; justify-content: center; } }
   body.explore-immersive > h1,
   body.explore-immersive > .app-tagline,
   body.explore-immersive #globalBanner { display: none; }
@@ -759,38 +782,80 @@
     #qcrWheelPane .mastery-wheel { width: 100%; max-width: none; height: auto; }
   }
   /* 28 Aug 2026: "I want this wheel to be resizable by me" -- a drag handle
-     on the wheel's own corner. Untouched by default: #qcrWheelResizeWrap
-     carries no size rule of its own, so it shrink-wraps to whatever
-     #qcrWheelContainer already renders at (the two rules directly above,
-     unchanged) exactly as if the wrap didn't exist. Every rule below fires
-     ONLY once #qcrWheelPane carries qcr-wheel-resized, which JS adds only
-     after the reader has actually saved a size (prefs.js's own
-     getQcrWheelSize()/setQcrWheelSize()) -- so nothing about the wheel's
-     measured sizing at either breakpoint changes for anyone who never
-     drags. The ID-scoped selector is what lets this beat BOTH the mobile
-     .mastery-wheel{max-width:320px} base rule and the >=900px explicit-
-     width rule above at every viewport, without touching either of them;
-     the actual pixel width itself is set as an inline style on the wrap by
-     JS, not here -- this only unlocks it (max-width:100% is the safety net
-     against a stored size wider than a since-narrowed screen). */
-  #qcrWheelResizeWrap { position: relative; }
-  #qcrWheelPane.qcr-wheel-resized #qcrWheelResizeWrap { max-width: 100%; margin: 0 auto; }
-  /* #qcrWheelContainer itself, not only the SVG inside it, needs the
-     override -- the >=900px rule above sets ITS width to a hard
-     min(55vh,480px), and an ordinary (non-replaced) div's own explicit
-     width always wins over its parent's, so leaving this out capped the
-     wheel at 480px regardless of how wide the wrap was actually dragged
-     to (caught by measuring the real rendered width, not assumed). */
-  #qcrWheelPane.qcr-wheel-resized #qcrWheelResizeWrap #qcrWheelContainer { width: 100%; }
-  #qcrWheelPane.qcr-wheel-resized #qcrWheelResizeWrap .mastery-wheel { width: 100%; max-width: none; height: auto; }
-  .qcr-wheel-resize-handle {
-    position: absolute; right: -4px; bottom: -4px; width: 28px; height: 28px;
-    border-radius: 50%; background: #C9A24B; color: #241a06; border: 2px solid #13192a;
-    display: flex; align-items: center; justify-content: center; font-size: 15px; line-height: 1;
-    padding: 0; cursor: nwse-resize; touch-action: none; user-select: none; z-index: 5;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+     on the wheel's own corner. 2 Sep 2026: generalized to all 8 corners/
+     edges, and to every wheel in the app (the Mastery Wheel, Explore's own
+     Quran-structure wheel, QCR's, and the Asma ul Husna wheel) -- one
+     shared class family, `.wheel-resize-wrap`/`.wheel-resize-handle`/
+     `.wheel-resize-target`, instead of QCR's own bespoke ID-scoped rules.
+     Untouched by default: `.wheel-resize-wrap` carries no size rule of its
+     own, so it shrink-wraps to whatever its own wheel container already
+     renders at, exactly as if the wrap didn't exist. Every override rule
+     below fires ONLY once the wrap itself carries `.wheel-resized`, which
+     JS adds only after the reader has actually saved a size for THAT wheel
+     (prefs.js's own getWheelSize()/setWheelSize()) -- so nothing about any
+     wheel's measured sizing at any breakpoint changes for anyone who never
+     drags. `!important` is what lets one shared, class-scoped rule beat
+     every wheel's own different, sometimes ID-scoped base sizing rule (the
+     mobile `.mastery-wheel{max-width:320px}` rule, the >=900px
+     `#qcrWheelContainer{width:min(55vh,480px)}`-shaped rules, and the plain
+     `.mastery-wheel{max-width:420px}` the Mastery Wheel and Explore's own
+     wheel otherwise rely on) without needing a bespoke, doubly-ID-scoped
+     override per wheel -- the two are mutually exclusive by construction
+     (the override only ever applies once `.wheel-resized` is present), so
+     there is no real specificity war to referee. The actual pixel width
+     itself is set as an inline style on the wrap by JS, not here -- this
+     only unlocks it (max-width:100% is the safety net against a stored
+     size wider than a since-narrowed screen). */
+  .wheel-resize-wrap { position: relative; }
+  .wheel-resize-wrap.wheel-resized { max-width: 100% !important; margin: 0 auto !important; }
+  /* The wheel's own container div, not only the SVG inside it, needs the
+     override -- an ordinary (non-replaced) div's own explicit width always
+     wins over its parent's, so leaving this out caps the wheel at whatever
+     its un-resized rule set regardless of how wide the wrap was actually
+     dragged to (measured, not assumed, on the original QCR handle). */
+  .wheel-resize-wrap.wheel-resized > .wheel-resize-target { width: 100% !important; }
+  .wheel-resize-wrap.wheel-resized .mastery-wheel { width: 100% !important; max-width: none !important; height: auto !important; }
+  /* One visible, discoverable handle per wheel (bottom-right, carrying the
+     ⤡ glyph -- the original QCR affordance) plus three plain gold dots at
+     the other corners, all draggable; the four edges (n/s/e/w) are
+     invisible hit-zones, the same convention the Note popup's own window-
+     resize edges already use -- a border/shadow makes THOSE discoverable,
+     but a wheel floats with no box around it, so its corners stay visibly
+     marked instead. */
+  .wheel-resize-handle {
+    position: absolute; z-index: 5; touch-action: none; user-select: none;
   }
-  .qcr-wheel-resize-handle:hover, .qcr-wheel-resize-handle:active { background: #ecd49a; }
+  .wheel-resize-handle-corner {
+    width: 26px; height: 26px; border-radius: 50%; background: #C9A24B; color: #241a06;
+    border: 2px solid #13192a; display: flex; align-items: center; justify-content: center;
+    font-size: 14px; line-height: 1; padding: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .wheel-resize-handle-corner:hover, .wheel-resize-handle-corner:active { background: #ecd49a; }
+  .wheel-resize-handle[data-wheel-resize="se"] { bottom: -6px; right: -6px; cursor: nwse-resize; }
+  .wheel-resize-handle[data-wheel-resize="sw"] { bottom: -6px; left: -6px; cursor: nesw-resize; }
+  .wheel-resize-handle[data-wheel-resize="ne"] { top: -6px; right: -6px; cursor: nesw-resize; }
+  .wheel-resize-handle[data-wheel-resize="nw"] { top: -6px; left: -6px; cursor: nwse-resize; }
+  .wheel-resize-handle[data-wheel-resize="n"] { top: -8px; left: 15%; right: 15%; height: 14px; cursor: ns-resize; }
+  .wheel-resize-handle[data-wheel-resize="s"] { bottom: -8px; left: 15%; right: 15%; height: 14px; cursor: ns-resize; }
+  .wheel-resize-handle[data-wheel-resize="e"] { top: 15%; bottom: 15%; right: -8px; width: 14px; cursor: ew-resize; }
+  .wheel-resize-handle[data-wheel-resize="w"] { top: 15%; bottom: 15%; left: -8px; width: 14px; cursor: ew-resize; }
+  /* The Mastery Wheel goes edge-to-edge full-bleed on a phone (shell round
+     8, #wheelSection's own negative margins) -- an outward-facing handle
+     there sits OUTSIDE the viewport and causes real horizontal overflow
+     (measured, not assumed: 2-4px past the edge at every phone width). No
+     other wheel's own pane is ever edge-to-edge, so this is scoped to
+     #wheelResizeWrap alone, pulling its handles inward rather than shrinking
+     every wheel's own inset. A circle inscribed in its own bounding box
+     already leaves its corners empty, so this reads as "at the wheel's own
+     edge," not "on top of it." */
+  #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="se"] { bottom: 2px; right: 2px; }
+  #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="sw"] { bottom: 2px; left: 2px; }
+  #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="ne"] { top: 2px; right: 2px; }
+  #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="nw"] { top: 2px; left: 2px; }
+  #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="n"] { top: 2px; }
+  #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="s"] { bottom: 2px; }
+  #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="e"] { right: 2px; }
+  #wheelResizeWrap .wheel-resize-handle[data-wheel-resize="w"] { left: 2px; }
   #qcrListHeader { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
   #qcrListHeader .qcr-list-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; color: #C9A24B; font-size: 1.1rem; }
   #qcrListHeader .qcr-list-count { font-size: 0.78rem; color: #8fa0c2; }
@@ -1734,6 +1799,10 @@
      exactly as #noteView used to do directly -- the phone/tablet Note view
      is unchanged, pixel for pixel. */
   .note-popup-titlebar, .note-popup-side, .note-popup-splitter, .note-popup-resize { display: none; }
+  /* Same "hidden below 900px, real popup chrome only above it" rule as the
+     four classes above -- shared by the Approach/Explore popups (2 Sep
+     2026) rather than declared a second time. */
+  .popup-title-label { display: none; }
   #notePopupBody { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
   #noteViewMount { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
 
@@ -1790,6 +1859,54 @@
     .note-popup-resize[data-note-resize="nw"] { top: -3px; left: -3px; width: 14px; height: 14px; cursor: nwse-resize; }
     .note-popup-resize[data-note-resize="se"] { bottom: -3px; right: -3px; width: 14px; height: 14px; cursor: nwse-resize; }
     .note-popup-resize[data-note-resize="sw"] { bottom: -3px; left: -3px; width: 14px; height: 14px; cursor: nesw-resize; }
+  }
+
+  /* ---- 2 Sep 2026: the SAME PC-popup treatment above, for the Approach
+     (Mastery Wheel) and Explore stage views -- "pop-out on click" is really
+     "whichever of the four stage views is active floats as its own window
+     on a desktop width", exactly what the Note view has already done since
+     28 Aug 2026. Reuses .note-popup-titlebar/.note-popup-titlebar-actions/
+     .note-popup-resize verbatim (those classes were never actually scoped
+     to #noteView -- only the ID-scoped box rules were), so only each
+     popup's own box (position/background/shadow) and title text need new
+     rules here; the title bar, its buttons and the 8 resize handles are
+     free. Below 900px every rule in this block is a no-op, same as above:
+     #wheelPopupView/#exploreView stay plain in-flow elements, pixel for
+     pixel unchanged from before this round. */
+  @media (min-width: 900px) {
+    #wheelPopupView {
+      position: fixed; z-index: 55;
+      background: #13192a; border-radius: 0.6rem; overflow-y: auto;
+      box-shadow: 0 20px 55px rgba(10,20,40,0.35); border: 1px solid rgba(201,162,75,0.3);
+    }
+    /* The title bar replaces the plain heading once this is a real window --
+       showing both would print "Mastery Wheel" twice, the same reasoning
+       the Note view's own dynamic title already follows. */
+    #wheelPopupView > .wheel-heading { display: none; }
+
+    #exploreView {
+      position: fixed; z-index: 55;
+      background: #13192a; border-radius: 0.6rem; overflow: hidden;
+      box-shadow: 0 20px 55px rgba(10,20,40,0.35); border: 1px solid rgba(201,162,75,0.3);
+      padding: 0 0.8rem 0.6rem;
+    }
+    /* #exploreBar already holds real controls (the palette buttons, the
+       full-screen toggle) -- initPopupWindow()'s own drag handler already
+       leaves clicks on button/select/input/a alone, so making the BAR
+       itself the drag handle costs nothing: dragging still only starts
+       from a blank stretch of it. Below 900px .explore-palette-row's own
+       flex:1 1 auto is deliberate (its 3 buttons fill a phone's own width
+       evenly) -- at this width there's a real popup title bar to give
+       blank, draggable room to instead, so the label takes that growth
+       here and the row settles to its own natural (un-stretched) width,
+       leaving the gap between them as the actual grab area. */
+    #exploreBar { cursor: grab; touch-action: none; }
+    #exploreBar:active { cursor: grabbing; }
+    .popup-title-label {
+      display: inline-flex; align-items: center; flex: 1 1 auto; font-weight: 700;
+      color: #C9A24B; font-family: 'Cormorant Garamond', serif; font-size: 0.98rem; margin-right: 0.2rem;
+    }
+    .explore-palette-row { flex: 0 0 auto; }
   }
 
   /* Side pane rows -- List (compact) is the default; Card widens the row
@@ -1929,8 +2046,27 @@
          its position within the form, so all existing wiring is untouched --
          only the wrapper moved. -->
     <div id="stage">
-      <h2 class="wheel-heading">Mastery Wheel</h2>
-      <div id="wheelSection" class="wheel-box">
+      <!-- 2 Sep 2026 -- PC popup round: the heading and #wheelSection are
+           now wrapped in ONE #wheelPopupView, so this "Approach" view can
+           float as its own resizable/draggable window on a PC width, the
+           same treatment the Note view has had since 28 Aug 2026. Below
+           900px #wheelPopupView is a plain, invisible flex wrapper (see the
+           CSS) carrying exactly the flex distribution #stage used to hand
+           the heading/#wheelSection directly, so the landing page stays
+           byte for byte what every layout round since v07.22 has measured.
+           At >=900px the title bar below replaces the plain heading (which
+           is hidden then, so "Mastery Wheel" isn't printed twice) and the
+           8 resize handles let the window be dragged from any corner/edge,
+           exactly like #noteView's own. -->
+      <div id="wheelPopupView">
+        <div id="wheelPopupTitleBar" class="note-popup-titlebar">
+          <span class="note-popup-title">Mastery Wheel</span>
+          <div class="note-popup-titlebar-actions">
+            <button type="button" id="wheelPopupMaximizeBtn" title="Maximize" aria-pressed="false">⬜</button>
+          </div>
+        </div>
+        <h2 class="wheel-heading">Mastery Wheel</h2>
+        <div id="wheelSection" class="wheel-box">
         <div class="wheel-col">
           <!-- The wheel's own one-time intro: a plain invitation over the
                dial before anything about "30 ways" is asked of a first
@@ -1942,7 +2078,23 @@
                not on the taller wheel-col box. -->
           <p id="wheelIntroSettled" class="wheel-intro-settled" hidden>Approach an Ayah in 30 ways</p>
           <div id="wheelStageWrap" class="wheel-stage-wrap wheel-veiled">
-            <div id="wheelContainer">Loading&hellip;</div>
+            <!-- 2 Sep 2026 -- "enable all wheels ... to be expandable from
+                 any side": a drag-resize wrap around #wheelContainer alone
+                 (never the hub overlay below, which stays absolutely
+                 positioned against #wheelStageWrap and re-centres on
+                 whatever size the wheel ends up at). Untouched by default,
+                 same as every other wheel's own wrap -- see the CSS. -->
+            <div id="wheelResizeWrap" class="wheel-resize-wrap">
+              <div id="wheelContainer" class="wheel-resize-target">Loading&hellip;</div>
+              <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="se" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</div>
+              <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="sw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+              <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="ne" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+              <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="nw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+              <div class="wheel-resize-handle" data-wheel-resize="n" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+              <div class="wheel-resize-handle" data-wheel-resize="s" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+              <div class="wheel-resize-handle" data-wheel-resize="e" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+              <div class="wheel-resize-handle" data-wheel-resize="w" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+            </div>
             <!-- Starts hidden -- shown for the first time only once renderWheel()
                  has real content in #wheelContainer (see that function). Before
                  this fix the button was visible from first paint, absolutely
@@ -2038,15 +2190,29 @@
           <div id="wheelLegendContainer"></div>
         </div>
         <div id="wheelSidebarContainer" class="wheel-sidebar"></div>
-      </div>
+        </div><!-- /#wheelSection -->
+        <!-- The popup WINDOW's own 8 resize handles (dragging #wheelPopupView
+           itself, not the wheel inside it) -- children of #wheelPopupView,
+           exactly where #noteView's own equivalent handles live, reusing the
+           identical .note-popup-resize classes. -->
+        <div class="note-popup-resize" data-note-resize="n"></div>
+        <div class="note-popup-resize" data-note-resize="s"></div>
+        <div class="note-popup-resize" data-note-resize="e"></div>
+        <div class="note-popup-resize" data-note-resize="w"></div>
+        <div class="note-popup-resize" data-note-resize="ne"></div>
+        <div class="note-popup-resize" data-note-resize="nw"></div>
+        <div class="note-popup-resize" data-note-resize="se"></div>
+        <div class="note-popup-resize" data-note-resize="sw"></div>
+      </div><!-- /#wheelPopupView -->
 
       <!-- Shell round 17 (15 Aug 2026) -- the reading itself, moved out of the
-           Study options drawer and given the stage. The wheel heading and
-           #wheelSection stay DIRECT children of #stage on purpose: every
-           measured sizing rule this page has (#stage > .wheel-heading, the
-           #wheelSection flex/media-query block) keys off that, so the wheel's
-           own layout is untouched byte for byte -- the two views simply take
-           turns being the one that is not hidden.
+           Study options drawer and given the stage. #wheelPopupView (the wheel
+           heading + #wheelSection, wrapped together 2 Sep 2026 for the PC-popup
+           round) stays the one direct #stage child taking the wheel's own turn
+           -- every measured sizing rule this page has keys off THAT wrapper now
+           (see its own markup comment above), so the wheel's own layout is
+           untouched byte for byte below 900px; the views simply take turns
+           being the one that is not hidden.
            The owner chose this shape (option A) over "reading replaces the
            wheel until closed", for a reason worth keeping: with a Read tab of
            its own, Study options is still ONE tap away while reading, which
@@ -2229,21 +2395,42 @@
            (#explorePanel, untouched inside) and named cross-surah āyah
            collections (#qcrPanel -- QCR first, more to come). #exploreBar
            stays put; #exploreScroll is the only thing that scrolls, same
-           shape as #readView/#readBar/#readScroll above. -->
+           shape as #readView/#readBar/#readScroll above.
+           2 Sep 2026 -- PC popup round: #exploreView floats as its own
+           window at >=900px, same treatment as #noteView/#wheelPopupView.
+           #exploreBar doubles as the drag handle (initPopupWindow()'s own
+           drag logic already leaves clicks on its buttons alone), and
+           .popup-title-label/#explorePopupMaximizeBtn are both hidden below
+           900px (see the CSS) so nothing here changes for phone/tablet. -->
       <div id="exploreView" hidden>
         <div id="exploreBar">
+          <span class="popup-title-label">Explore</span>
           <div class="explore-palette-row">
             <button type="button" class="explore-palette-btn on" id="explorePaletteQuranBtn" data-explore-mode="quran" aria-pressed="true">Quran</button>
             <button type="button" class="explore-palette-btn" id="explorePaletteQcrBtn" data-explore-mode="qcr" aria-pressed="false">QCR</button>
             <button type="button" class="explore-palette-btn" id="explorePaletteAsmaBtn" data-explore-mode="asma" aria-pressed="false">Asma ul Husna</button>
           </div>
           <button type="button" class="explore-fullscreen-btn" id="exploreFullscreenBtn" title="Full screen" aria-label="Full screen" aria-pressed="false">⤢</button>
+          <button type="button" class="explore-fullscreen-btn" id="explorePopupMaximizeBtn" title="Maximize" aria-label="Maximize" aria-pressed="false">⬜</button>
         </div>
         <div id="exploreScroll">
           <div id="explorePanel" class="wheel-box">
             <div class="wheel-col">
               <div id="exploreBreadcrumb"></div>
-              <div id="exploreWheelContainer">Loading&hellip;</div>
+              <!-- 2 Sep 2026 -- "enable all wheels ... to be expandable
+                   from any side", same mechanism as the Mastery Wheel/QCR/
+                   Asma wheels. -->
+              <div id="exploreWheelResizeWrap" class="wheel-resize-wrap">
+                <div id="exploreWheelContainer" class="wheel-resize-target">Loading&hellip;</div>
+                <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="se" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</div>
+                <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="sw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="ne" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="nw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                <div class="wheel-resize-handle" data-wheel-resize="n" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                <div class="wheel-resize-handle" data-wheel-resize="s" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                <div class="wheel-resize-handle" data-wheel-resize="e" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                <div class="wheel-resize-handle" data-wheel-resize="w" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+              </div>
               <div id="exploreWheelLegendContainer"></div>
               <p class="hint">Click a segment to drill in &mdash; Quran &rarr; Juz &rarr; Surah &rarr; Ruku' &rarr; an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment &mdash; it only turns fully green once every ayah inside it is Mastered.</p>
             </div>
@@ -2281,17 +2468,27 @@
                      exactly like every other Approach picker already does. -->
                 <select id="qcrApproachSelect" class="qcr-approach-select" title="Choose an Approach" aria-label="Choose an Approach"></select>
                 <!-- 28 Aug 2026: "I want this wheel to be resizable by me" --
-                     a drag handle on the wheel's own corner. #qcrWheelContainer
-                     stays exactly what it was (renderQcrCollectionView() keeps
-                     overwriting its own innerHTML on every render); the wrap
-                     around it is the new, static element that actually carries
-                     the resized width, so a re-render can never wipe out the
-                     handle or the size. Untouched (no CSS fires, no inline
-                     width applied) until the reader has actually saved a size
-                     -- see prefs.js's own getQcrWheelSize()/setQcrWheelSize(). -->
-                <div id="qcrWheelResizeWrap">
-                  <div id="qcrWheelContainer"></div>
-                  <button type="button" id="qcrWheelResizeHandle" class="qcr-wheel-resize-handle" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</button>
+                     a drag handle on the wheel's own corner. 2 Sep 2026:
+                     generalized to all 8 corners/edges (see wheel-resize.js
+                     and this page's own shared .wheel-resize-* CSS).
+                     #qcrWheelContainer stays exactly what it was
+                     (renderQcrCollectionView() keeps overwriting its own
+                     innerHTML on every render); the wrap around it is the
+                     new, static element that actually carries the resized
+                     width, so a re-render can never wipe out a handle or
+                     the size. Untouched (no CSS fires, no inline width
+                     applied) until the reader has actually saved a size --
+                     see prefs.js's own getWheelSize()/setWheelSize(). -->
+                <div id="qcrWheelResizeWrap" class="wheel-resize-wrap">
+                  <div id="qcrWheelContainer" class="wheel-resize-target"></div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="se" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="sw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="ne" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="nw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle" data-wheel-resize="n" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle" data-wheel-resize="s" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle" data-wheel-resize="e" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle" data-wheel-resize="w" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
                 </div>
                 <div id="qcrLegendContainer"></div>
                 <p class="hint" id="qcrHint"></p>
@@ -2341,14 +2538,37 @@
                 <div id="asmaXAddFormSlot"></div>
               </div>
               <div id="asmaXWheelPane">
-                <div id="asmaXWheelContainer"></div>
+                <!-- 2 Sep 2026 -- "enable all wheels ... to be expandable
+                     from any side", same mechanism as QCR's own wheel. -->
+                <div id="asmaXWheelResizeWrap" class="wheel-resize-wrap">
+                  <div id="asmaXWheelContainer" class="wheel-resize-target"></div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="se" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="sw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="ne" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="nw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle" data-wheel-resize="n" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle" data-wheel-resize="s" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle" data-wheel-resize="e" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle" data-wheel-resize="w" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                </div>
                 <div id="asmaXLegendContainer"></div>
                 <p class="hint" id="asmaXHint"></p>
               </div>
             </div>
           </div>
         </div>
-      </div>
+        <!-- The popup WINDOW's own 8 resize handles (dragging #exploreView
+             itself), children of #exploreView same as #noteView/
+             #wheelPopupView's own. -->
+        <div class="note-popup-resize" data-note-resize="n"></div>
+        <div class="note-popup-resize" data-note-resize="s"></div>
+        <div class="note-popup-resize" data-note-resize="e"></div>
+        <div class="note-popup-resize" data-note-resize="w"></div>
+        <div class="note-popup-resize" data-note-resize="ne"></div>
+        <div class="note-popup-resize" data-note-resize="nw"></div>
+        <div class="note-popup-resize" data-note-resize="se"></div>
+        <div class="note-popup-resize" data-note-resize="sw"></div>
+      </div><!-- /#exploreView -->
     </div>
 
     <!-- The dock: two tabs on one line (they fit a phone), then the always-on
@@ -2779,9 +2999,10 @@
       getFullScreenHides, setFullScreenHides, FULLSCREEN_HIDEABLE,
       getQuranFont, setQuranFont, quranFontStack,
       getSidewaysReading, setSidewaysReading,
-      getQcrWheelSize, setQcrWheelSize,
+      getWheelSize, setWheelSize,
       getAyahDisplayMode, setAyahDisplayMode,
     } from "./js/prefs.js";
+    import { wireWheelResize } from "./js/wheel-resize.js";
     import { renderTextSizeButtonHtml } from "./js/text-size.js";
     import {
       taglinesFrom, taglineSettingsFrom, taglineText, pickTagline,
@@ -2966,6 +3187,12 @@
     const wbwLangControl = document.getElementById("wbwLangControl");
     const wbwLangSelect = document.getElementById("wbwLangSelect");
     const wheelContainer = document.getElementById("wheelContainer");
+    // The wheel's own drag-resize clamps its max width against this, not
+    // #wheelStageWrap -- that wrap shrink-wraps to the wheel itself
+    // (display:flex; justify-content:center with one child), so it can
+    // never report more room than the wheel already uses; .wheel-col is the
+    // real flex item sharing space with the sidebar at >=900px.
+    const wheelColEl = document.querySelector("#wheelSection .wheel-col");
     const wheelLegendContainer = document.getElementById("wheelLegendContainer");
     const wheelSidebarContainer = document.getElementById("wheelSidebarContainer");
     const ayahPosition = document.getElementById("ayahPosition");
@@ -3031,7 +3258,12 @@
     const notePopupSidePrevBtn = document.getElementById("notePopupSidePrevBtn");
     const notePopupSideNextBtn = document.getElementById("notePopupSideNextBtn");
     const notePopupSplitter = document.getElementById("notePopupSplitter");
-    const notePopupResizeHandles = Array.from(document.querySelectorAll(".note-popup-resize"));
+    // 2 Sep 2026: scoped to #noteView's own DIRECT children specifically --
+    // the Approach/Explore popups (added this round) now carry the same
+    // .note-popup-resize handles for their own windows, and an unscoped
+    // query here would have wired all three popups' worth of handles to
+    // THIS ONE popup's own initPopupWindow() call below.
+    const notePopupResizeHandles = Array.from(noteView.querySelectorAll(":scope > .note-popup-resize"));
     // Shell round 22 -- the reading screen's own pickers. Each one MIRRORS the
     // control of the same name in Study options: it copies that control's
     // options and value, and forwards a change straight back to it, so the
@@ -3086,18 +3318,37 @@
     const quranFontSelect = document.getElementById("quranFontSelect");
     const fullScreenHidesBox = document.getElementById("fullScreenHides");
     const fullScreenNote = document.getElementById("fullScreenNote");
-    const wheelHeadingEl = document.querySelector("#stage > .wheel-heading");
-    const wheelSectionEl = document.getElementById("wheelSection");
+    // 2 Sep 2026 -- PC popup round: #wheelPopupView is now the one direct
+    // #stage child that wraps BOTH the heading and #wheelSection (see the
+    // markup's own comment) -- this is what setStageView() hides/shows, and
+    // what floats as a window at >=900px.
+    const wheelPopupViewEl = document.getElementById("wheelPopupView");
+    const wheelPopupTitleBarEl = document.getElementById("wheelPopupTitleBar");
+    const wheelPopupMaximizeBtn = document.getElementById("wheelPopupMaximizeBtn");
+    const wheelPopupResizeHandles = Array.from(wheelPopupViewEl.querySelectorAll(":scope > .note-popup-resize"));
+    // The wheel's OWN drag-resize (any of its 8 corners/edges), independent
+    // of the popup window above -- see wheel-resize.js.
+    const wheelResizeWrapEl = document.getElementById("wheelResizeWrap");
+    const wheelResizeHandleEls = Array.from(wheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
     const exploreBreadcrumb = document.getElementById("exploreBreadcrumb");
+    const exploreWheelResizeWrapEl = document.getElementById("exploreWheelResizeWrap");
+    const exploreWheelResizeHandleEls = Array.from(exploreWheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
     const exploreWheelContainer = document.getElementById("exploreWheelContainer");
     const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
     const exploreSidebarContainer = document.getElementById("exploreSidebarContainer");
     const tabExploreBtn = document.getElementById("tabExploreBtn");
     const exploreView = document.getElementById("exploreView");
+    const exploreBarEl = document.getElementById("exploreBar");
     const exploreFullscreenBtn = document.getElementById("exploreFullscreenBtn");
+    const explorePopupMaximizeBtn = document.getElementById("explorePopupMaximizeBtn");
+    const explorePopupResizeHandles = Array.from(exploreView.querySelectorAll(":scope > .note-popup-resize"));
     const explorePaletteQuranBtn = document.getElementById("explorePaletteQuranBtn");
     const explorePaletteQcrBtn = document.getElementById("explorePaletteQcrBtn");
     const explorePanelEl = document.getElementById("explorePanel");
+    // Same reasoning as wheelColEl above: the wheel's own resize clamps
+    // against the wheel's own column, not #explorePanel's full width
+    // (which also includes the sidebar's own share).
+    const exploreWheelColEl = document.querySelector("#explorePanel .wheel-col");
     const qcrPanelEl = document.getElementById("qcrPanel");
     const qcrLevelSelect = document.getElementById("qcrLevelSelect");
     const qcrLevelManageActions = document.getElementById("qcrLevelManageActions");
@@ -3112,7 +3363,7 @@
     const qcrApproachSelect = document.getElementById("qcrApproachSelect");
     const qcrWheelPaneEl = document.getElementById("qcrWheelPane");
     const qcrWheelResizeWrapEl = document.getElementById("qcrWheelResizeWrap");
-    const qcrWheelResizeHandleEl = document.getElementById("qcrWheelResizeHandle");
+    const qcrWheelResizeHandleEls = Array.from(qcrWheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
     const qcrWheelContainerEl = document.getElementById("qcrWheelContainer");
     const qcrLegendContainerEl = document.getElementById("qcrLegendContainer");
     const qcrHintEl = document.getElementById("qcrHint");
@@ -3133,6 +3384,9 @@
     const asmaXListHeaderEl = document.getElementById("asmaXListHeader");
     const asmaXWaysListContainer = document.getElementById("asmaXWaysListContainer");
     const asmaXAddFormSlot = document.getElementById("asmaXAddFormSlot");
+    const asmaXWheelPaneEl = document.getElementById("asmaXWheelPane");
+    const asmaXWheelResizeWrapEl = document.getElementById("asmaXWheelResizeWrap");
+    const asmaXWheelResizeHandleEls = Array.from(asmaXWheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
     const asmaXWheelContainerEl = document.getElementById("asmaXWheelContainer");
     const asmaXLegendContainerEl = document.getElementById("asmaXLegendContainer");
     const asmaXHintEl = document.getElementById("asmaXHint");
@@ -4859,8 +5113,10 @@
       const noting = view === "note";
       const exploring = view === "explore";
       const onWheel = view === "wheel";
-      wheelHeadingEl.hidden = !onWheel;
-      wheelSectionEl.hidden = !onWheel;
+      // 2 Sep 2026: the heading and #wheelSection are one #wheelPopupView
+      // now (see its own markup comment) -- one hidden toggle covers both,
+      // same as every other stage view.
+      wheelPopupViewEl.hidden = !onWheel;
       readView.hidden = !reading;
       noteView.hidden = !noting;
       exploreView.hidden = !exploring;
@@ -5435,22 +5691,96 @@
     qcrApproachSelect.addEventListener("change", () => changeCurrentTrackable(qcrApproachSelect.value));
 
     /** 28 Aug 2026: "I want this wheel to be resizable by me" -- applies (or
-        clears) the CSS override that lets #qcrWheelResizeWrap's own inline
-        width win over the wheel's ordinary sizing rules. Called once at
-        module load with whatever prefs.js has stored (null the very first
-        time anyone opens this app, or on a device that has never dragged
-        it -- every existing sizing rule then stays fully in charge, exactly
-        as before this feature existed) and again after every drag ends. */
-    function applyQcrWheelSize(px) {
+        clears) the CSS override that lets a wheel's own resize-wrap inline
+        width win over its ordinary sizing rules. Generalized 2 Sep 2026 to
+        every wheel in the app (the class carried used to be pane-scoped and
+        QCR-specific, "qcr-wheel-resized" -- it's the wrap's own
+        "wheel-resized" now, shared by all four). Called once at module load
+        with whatever prefs.js has stored for `id` (null the very first time
+        anyone opens this app, or on a device that has never dragged it --
+        every existing sizing rule then stays fully in charge, exactly as
+        before this feature existed) and again after every drag ends. */
+    function applyWheelSize(wrapEl, px) {
       if (px) {
-        qcrWheelPaneEl.classList.add("qcr-wheel-resized");
-        qcrWheelResizeWrapEl.style.width = `${px}px`;
+        wrapEl.classList.add("wheel-resized");
+        wrapEl.style.width = `${px}px`;
       } else {
-        qcrWheelPaneEl.classList.remove("qcr-wheel-resized");
-        qcrWheelResizeWrapEl.style.width = "";
+        wrapEl.classList.remove("wheel-resized");
+        wrapEl.style.width = "";
       }
     }
-    applyQcrWheelSize(getQcrWheelSize());
+
+    /** A wheel's own drag-resize is capped by `.wheel-resize-wrap.wheel-
+        resized { max-width: 100% !important }`, and a CSS percentage width
+        resolves against the parent's CONTENT box -- padding excluded, not
+        its bounding-client-rect (border box). `paneEl.getBoundingClientRect
+        ().width` alone over-reports the real ceiling by exactly the pane's
+        own left+right padding (measured, not assumed: QCR's own
+        1.1rem/0.9rem padding made the JS clamp think ~29px more room existed
+        than the CSS safety net actually allowed, so the wheel silently
+        stopped growing mid-drag while the handle kept "setting" a bigger
+        width nothing rendered -- a real, if harmless, dead-zone in the drag
+        gesture, not a data-safety bug, but worth fixing at the source
+        rather than working around). */
+    function contentWidth(el) {
+      const cs = getComputedStyle(el);
+      return el.getBoundingClientRect().width - parseFloat(cs.paddingLeft || "0") - parseFloat(cs.paddingRight || "0");
+    }
+
+    /** Wires one wheel's own 8 corner/edge handles to getWheelSize()/
+        setWheelSize()'s own remembered size for `id`, clamped live against
+        `paneEl`'s own current CONTENT width so the wheel can never be
+        dragged wider than the screen it's on. `onApplied` fires after every
+        live resize AND once at load -- the Mastery Wheel passes
+        layoutWheelHub() so its hub overlay stays fitted to the wheel's real
+        diameter; every other wheel (no comparable overlay) passes nothing. */
+    function setUpWheelResize(id, { wrapEl, paneEl, handleEls, onApplied }) {
+      function apply(px) {
+        applyWheelSize(wrapEl, px);
+        onApplied?.();
+      }
+      wireWheelResize(handleEls, {
+        getStartWidth: () => wrapEl.getBoundingClientRect().width,
+        getMaxWidth: () => Math.max(160, contentWidth(paneEl) - 4),
+        onResize: apply,
+        onResizeEnd: () => {
+          // Persisted only once the drag is DONE, not on every pointermove --
+          // this is what the owner asked for ("the size persists ... unless i
+          // resize again"), and setWheelSize()'s own [160,900] clamp plus
+          // apply() below snap the wheel to exactly the saved value, so
+          // what's on screen and what's stored can never disagree.
+          setWheelSize(id, wrapEl.getBoundingClientRect().width);
+          apply(getWheelSize(id));
+        },
+      });
+      apply(getWheelSize(id));
+    }
+
+    setUpWheelResize("qcr", { wrapEl: qcrWheelResizeWrapEl, paneEl: qcrWheelPaneEl, handleEls: qcrWheelResizeHandleEls });
+    setUpWheelResize("approach", { wrapEl: wheelResizeWrapEl, paneEl: wheelColEl, handleEls: wheelResizeHandleEls, onApplied: () => layoutWheelHub() });
+    setUpWheelResize("exploreQuran", { wrapEl: exploreWheelResizeWrapEl, paneEl: exploreWheelColEl, handleEls: exploreWheelResizeHandleEls });
+    setUpWheelResize("asma", { wrapEl: asmaXWheelResizeWrapEl, paneEl: asmaXWheelPaneEl, handleEls: asmaXWheelResizeHandleEls });
+
+    // 2 Sep 2026 -- PC popup round: the Approach (Mastery Wheel) and Explore
+    // stage views float as their own resizable/draggable windows on a PC
+    // width, exactly the treatment the Note view has had since 28 Aug 2026
+    // (initPopupWindow() itself is unchanged -- only the `id` differs, so
+    // each popup remembers its own shape). #exploreBar doubles as Explore's
+    // own drag handle -- its buttons stay clickable, since
+    // initPopupWindow()'s drag logic already ignores clicks on
+    // button/select/input/a.
+    initPopupWindow(wheelPopupViewEl, {
+      id: "wheel",
+      dragHandleEl: wheelPopupTitleBarEl,
+      resizeHandleEls: wheelPopupResizeHandles,
+      maximizeBtn: wheelPopupMaximizeBtn,
+    });
+    initPopupWindow(exploreView, {
+      id: "explore",
+      dragHandleEl: exploreBarEl,
+      resizeHandleEls: explorePopupResizeHandles,
+      maximizeBtn: explorePopupMaximizeBtn,
+    });
 
     // Note-view enhancement round 3 -- the two STATIC-markup text-size
     // buttons (Read bar, the PC note-pane's own title bar). Filled once,
@@ -5472,60 +5802,6 @@
     // stays excluded since that pane never renders it at all.
     readTextSizeSlot.innerHTML = renderTextSizeButtonHtml("read", { btnClass: "secondary qr-ico" });
     notePopupPaneTextSizeSlot.innerHTML = renderTextSizeButtonHtml("popup", { showBn: false, btnClass: "" });
-
-    // Pointer Events unify mouse/touch/pen in one code path (works on
-    // desktop, tablet and phone alike, per this project's own standing
-    // requirement) -- setPointerCapture() on the handle itself is what lets
-    // pointermove/pointerup keep firing on IT even once the finger/cursor
-    // has moved off the small handle, which a corner-drag always does.
-    (function wireQcrWheelResize() {
-      let dragging = false;
-      let startX = 0, startY = 0, startWidth = 0;
-      qcrWheelResizeHandleEl.addEventListener("pointerdown", (e) => {
-        dragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        // The very first drag ever has no inline width yet -- the wrap is
-        // still shrink-wrapped to whatever #qcrWheelContainer's own
-        // ordinary (unresized) CSS already rendered -- so this reads the
-        // wheel's REAL current box rather than guessing a default, and the
-        // first drag never jumps the wheel to an unrelated size.
-        startWidth = qcrWheelResizeWrapEl.getBoundingClientRect().width;
-        qcrWheelResizeHandleEl.setPointerCapture(e.pointerId);
-        e.preventDefault();
-      });
-      qcrWheelResizeHandleEl.addEventListener("pointermove", (e) => {
-        if (!dragging) return;
-        // A corner handle is dragged diagonally -- averaging both axes
-        // reads as one natural "make it bigger/smaller" gesture rather than
-        // only ever tracking the horizontal (or only the vertical) finger
-        // movement, which a straight dx-only reading would feel wrong for.
-        const delta = ((e.clientX - startX) + (e.clientY - startY)) / 2;
-        // Clamped live against the PANE's own current width too, not only
-        // prefs.js's own [160,900] floor/ceiling -- so the wheel can never
-        // grow wider than the screen it's being dragged on while the drag
-        // is still in progress, whatever the stored min/max otherwise allow.
-        const paneWidth = qcrWheelPaneEl.getBoundingClientRect().width || startWidth;
-        const maxForPane = Math.max(160, paneWidth - 4);
-        const next = Math.min(maxForPane, Math.max(160, startWidth + delta));
-        qcrWheelPaneEl.classList.add("qcr-wheel-resized");
-        qcrWheelResizeWrapEl.style.width = `${next}px`;
-      });
-      function endDrag() {
-        if (!dragging) return;
-        dragging = false;
-        // Persisted only once the drag is DONE, not on every pointermove --
-        // this is what the owner asked for ("the size persists ... unless i
-        // resize again"), and setQcrWheelSize()'s own [160,900] clamp plus
-        // applyQcrWheelSize() below snap the wheel to exactly the saved
-        // value, so what's on screen and what's stored can never disagree.
-        const finalWidth = qcrWheelResizeWrapEl.getBoundingClientRect().width;
-        setQcrWheelSize(finalWidth);
-        applyQcrWheelSize(getQcrWheelSize());
-      }
-      qcrWheelResizeHandleEl.addEventListener("pointerup", endDrag);
-      qcrWheelResizeHandleEl.addEventListener("pointercancel", endDrag);
-    })();
 
     // Round 2: the level bar's own controls are static markup now (a real
     // <select>, not dynamically-built rows), so each is wired ONCE here

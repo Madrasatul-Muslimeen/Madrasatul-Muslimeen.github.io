@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.116.** Cutover to production happened
+**Current milestone: QuranRevival v07.117.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -8904,6 +8904,171 @@ both banner states (only the same pre-existing `asmaX*`/`qcrAdd*`
 false-positive missing-ID-target flag this file has disclosed since v07.86).
 No `firestore.rules`, schema or Firestore data
 changes -- nothing to deploy but the static files.
+
+**Merge note (second collision):** this branch's own v07.115/v07.116 above
+landed as a merge, and by the time this branch caught up to `main` again,
+a fourth concurrent-session round had landed as `main`'s OWN v07.115 (PR
+#42, 2 Sep 2026, the Approach/Explore PC pop-out round). Renumbered to
+v07.117 below to keep sequencing intact -- content otherwise untouched.
+Checked directly, not assumed: that round's own diff (`js/note-popup.js`
+generalized to take an `id`, a new `js/wheel-resize.js`, markup surgery on
+`#wheelSection`/`#exploreView`) touches none of the same functions this
+branch's own `flow-view-active`/Mushaf-shape/Note-picker-sync work does --
+`git merge` resolved `app/quranrevival.html` with no conflict at all, and
+the post-merge smoke suite below re-confirms this branch's own mechanisms
+still hold up under the popup/resize restructuring.
+
+v07.117 (2 Sep 2026, on Claude Code on the web) is **the Approach/Explore
+PC pop-out round -- the owner's own ask: pop out the Approach (Mastery
+Wheel) and Explore stage views on PC the way the Note view already does
+(28 Aug 2026), for all of Explore's own functions (the Quran-structure
+drill-down, QCR, Asma ul Husna), make every wheel in the app resizable
+from any side, and remember each pop-out's own position/size across a
+close/reopen.**
+
+**The mechanism is the Note popup's own, generalized, not rebuilt.**
+`js/note-popup.js`'s `initPopupWindow()` already took an element plus a
+drag handle, 8 resize handles and a maximize button and made it a real,
+draggable, resizable `position:fixed` window at >=900px -- it just hard-
+coded ONE remembered geometry key. It now takes an `id` (default `"note"`,
+so the Ayah Note screen's own already-saved window shape is untouched) and
+keys its localStorage geometry by it, so `#wheelPopupView` and
+`#exploreView` each get their own independent remembered shape under
+`"wheel"`/`"explore"`. **Approach's own markup needed real surgery to fit
+this shape**: `.wheel-heading` and `#wheelSection` used to be two separate
+direct `#stage` children (deliberately, since shell round 17, so every
+measured landing-page sizing rule could key off `#stage > .wheel-heading`)
+-- they're now wrapped in one `#wheelPopupView`, carrying the exact same
+flex distribution `#stage` used to hand each of them directly, so nothing
+about the landing page's own byte-for-byte measured layout below 900px
+moved. At >=900px the plain heading is hidden and a real title bar
+("Mastery Wheel" + a Maximize button, reusing `.note-popup-titlebar`
+verbatim) takes over; `setStageView()` now toggles one `hidden` attribute
+(`wheelPopupViewEl`) instead of two. Explore needed no such surgery --
+`#exploreView` was already one cohesive element -- so its own existing
+`#exploreBar` (palette buttons + the existing full-screen toggle) simply
+doubles as the drag handle too (`initPopupWindow()`'s drag logic already
+ignores clicks on `button/select/input/a`, so the palette stays clickable);
+a new `.popup-title-label` ("Explore") and `#explorePopupMaximizeBtn`
+appear only at >=900px.
+
+**Every wheel in the app -- the Mastery Wheel, Explore's own Quran-
+structure wheel, QCR's, and the Asma ul Husna wheel -- now has all 8
+corner/edge drag-resize handles, not just QCR's original single bottom-
+right corner (28 Aug 2026).** A new, generic `js/wheel-resize.js`
+(`wireWheelResize()`) generalizes QCR's own delta math (each handle just
+grows/shrinks ONE width value, anchored on the wheel's own centre --
+corners average both axes with the correct sign per corner, edges use one
+axis) to all 8 directions; `prefs.js` gained generic `getWheelSize(id)`/
+`setWheelSize(id, px)`, and QCR's OWN call site now uses
+`getWheelSize("qcr")` directly against its ORIGINAL `"mm_qcr_wheel_size"`
+key (`wheelSizeKey()`'s own special case), so nobody's already-saved QCR
+wheel size is lost by the generalization -- the two now-redundant
+`getQcrWheelSize`/`setQcrWheelSize` wrapper exports were deleted outright
+once nothing called them any more, per this project's own "dead code gets
+deleted, not preserved" rule. One shared CSS class family
+(`.wheel-resize-wrap`/`.wheel-resize-handle`/`.wheel-resize-target`, with
+`!important` overrides since the four wheels' own base sizing rules differ
+in specificity and the override only ever applies once `.wheel-resized` is
+present, so there's no real cascade fight to referee) replaced QCR's own
+bespoke ID-scoped rules. A visible gold corner handle at SE (the original,
+already-discoverable affordance) plus three plain corner dots and four
+invisible edge hit-zones -- matching the Note popup's own "corners visible
+via the popup's border, edges invisible" convention, adapted since a
+floating wheel has no border of its own to anchor discoverability to.
+
+**Three real bugs were found by measuring, not assumed away, and all three
+would have shipped broken without it.** **(1)** Wrapping `#wheelContainer`
+in a new `#wheelResizeWrap` broke the mobile-only `width: min(100%,
+calc(100dvh - 420px))` formula outright -- `#wheelResizeWrap`, unstyled by
+default, is a shrink-to-fit box, so `#wheelContainer`'s own `width:100%`
+(the mobile rule) resolved against an INDEFINITE size instead of
+`.wheel-stage-wrap`'s real, definite width, and the whole percentage chain
+silently fell back to the SVG's bare intrinsic 360px -- measured directly
+(`377px -> 360px` at 390x844), not assumed from reading the CSS. Fixed
+with one added rule, `#wheelSection #wheelResizeWrap { width: 100%; }`,
+inside the SAME existing mobile media query. **(2)** The new edge/corner
+handles poked 2-4px past the viewport at every phone width, because the
+Mastery Wheel (uniquely among the four) goes edge-to-edge full-bleed on a
+phone (shell round 8) -- an OUTWARD-facing handle then sits outside the
+screen. Caught by a direct `elementFromPoint`-style overflow sweep, not
+`layout.mjs`'s own summary line alone; fixed by pulling `#wheelResizeWrap`'s
+own handles inward (2px inset instead of the shared -6/-8px outset) rather
+than shrinking every wheel's own inset globally. **(3)** `getMaxWidth()`'s
+own live clamp read a pane's bounding-client-rect width (border box,
+padding included), but the CSS `max-width:100%` safety net that actually
+bounds the wrap resolves against the pane's CONTENT box (padding excluded)
+-- so on QCR's own padded pane the JS clamp let a drag "set" a wider inline
+width than the CSS would ever render, and the wheel visibly stopped
+growing mid-drag while the handle kept moving, a real (if harmless) dead-
+zone in the gesture. Fixed with a `contentWidth()` helper that subtracts
+the pane's own computed left/right padding before clamping, so the JS and
+CSS ceilings now agree everywhere.
+
+**A fourth bug was caught before it ever reached the app, purely by
+re-reading the diff rather than trusting it: `notePopupResizeHandles` was
+still `document.querySelectorAll(".note-popup-resize")`, UNSCOPED.** With
+the Approach/Explore popups now sharing that same class for their own
+window-resize handles, an unscoped query would have handed the Note
+popup's own `initPopupWindow()` call all 24 handles across all three
+popups, not just its own 8 -- silent cross-wiring that would have broken
+every popup's own resize the moment a reader actually dragged one. Scoped
+to `noteView.querySelectorAll(":scope > .note-popup-resize")`, matching
+how the two new popups' own handle queries were already written.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice) -- **39 checks, all passing**: both
+new popups proven `position:fixed` only at a PC width and plain in-flow
+elements on a phone (390x844, with the resize handles present and
+confirmed to add NO horizontal overflow); the Approach popup's title bar
+reading "Mastery Wheel" with the plain heading proven hidden; dragging the
+SE window handle, the title bar, and Maximize/restore all proven to change
+the popup's own real geometry, which survives a reload; the Mastery
+Wheel's own NW-then-SE drag proven to grow then shrink the rendered SVG,
+with the hub overlay proven to stay within the (resized) wheel's own
+bounds throughout, and the resized SIZE surviving a reload; Explore's own
+palette buttons proven still clickable despite the bar doubling as a drag
+handle, its own drag/Maximize proven working, and its Quran-structure
+wheel's own resize proven; QCR's and Asma's own new WEST/NE edge-and-corner
+handles (not the original SE one) each proven to grow the wheel for real;
+and the whole thing again in Bangla, with "Mastery Wheel", "Maximize",
+"Explore" and "Drag to resize the wheel" all reused VERBATIM from already-
+translated strings -- **coverage confirms zero new strings were added**
+(1,542/1,542 scanned, same 7 pre-existing missing in the quran area,
+unchanged). **`layout.mjs` reports the landing page byte-for-byte
+identical at every phone/tablet viewport in both banner states** (heading
+top, wheel width, Approach row count and dock gap all match exactly) --
+the ONLY changes are the deliberate, intended ones at >=900px (the plain
+heading now measures 0px since it's genuinely hidden behind the popup
+title bar, and "gap above dock" changes shape since the wheel card no
+longer spans the full stage there) -- **`reading.mjs`, `navcheck.mjs` and
+`tools/perf/measure.mjs`/`new-tenant.mjs` all report their own unchanged
+baselines** (Quran Study still 6 sequential round trips, confirming this
+round added no Firestore read anywhere -- it is pure client-side CSS/JS).
+One PRE-EXISTING checked-in test (`tools/i18n-verify/reading.mjs`'s "wheel
+still showing" check) needed updating, not just working around: it read
+`#wheelSection`'s own `.hidden` property directly, which this round's
+restructuring no longer sets (the wrapper's `hidden` is what's toggled
+now) -- confirmed via `getBoundingClientRect()` that the wheel is
+genuinely invisible (a 0x0 box) despite `#wheelSection.hidden` itself
+reading `false`, then fixed the check to read `#wheelPopupView` instead,
+per this project's own "update stale assertions, don't just route around
+them" rule. The full 800+-check `behaviour.mjs` suite could not be run to
+completion in this sandbox (it timed out past this environment's own
+budget, a pre-existing, disclosed limitation unrelated to this round --
+see v07.86's own entry) -- the targeted scripts above, plus the 39-check
+smoke test, are what actually exercised this round's own new mechanism.
+
+**Flagged, not built:** the wheel's own resize clamp still doesn't account
+for the popup WINDOW's own current size when the wheel sits inside a
+popped-out Approach window (it clamps against `.wheel-col`'s own rendered
+width, which already reflects the popup's real size once one exists, so
+this is more a note for future maintainers than a live gap) -- exercised
+directly and behaved correctly in testing, so no fix was needed, just
+worth knowing the two resizes (window and wheel) are independent
+mechanisms that happen to compose correctly rather than being explicitly
+coordinated. No `firestore.rules`, schema or Firestore data changes --
+nothing to deploy but the static files.
 
 ## What this is
 
