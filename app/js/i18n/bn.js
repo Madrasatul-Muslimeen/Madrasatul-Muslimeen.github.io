@@ -2040,4 +2040,9 @@ export const BN = {
   // create-a-new-Name-while-attaching.
   "Attach this āyah": "এই আয়াতটি যুক্ত করুন", // ?
   "+ Create a new Name": "+ একটি নতুন নাম তৈরি করুন", // ?
+
+  // 2 Sep 2026 -- the list-pane splitter/collapse toggle shared by
+  // Approach, Explore, QCR and Asma ul Husna.
+  "Collapse list": "তালিকা সংকুচিত করুন", // ?
+  "Expand list": "তালিকা প্রসারিত করুন", // ?
 };

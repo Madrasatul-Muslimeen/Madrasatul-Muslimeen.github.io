@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.115.** Cutover to production happened
+**Current milestone: QuranRevival v07.117.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -8869,6 +8869,118 @@ unchanged baselines** (Quran Study still 6 sequential Firestore round
 trips; coverage still 1,542/1,542 scanned, no new strings -- this round
 adds no new user-visible text at all). No `firestore.rules`, schema or
 Firestore data changes -- nothing to deploy but the static files.
+
+v07.117 (2 Sep 2026, same day) is **Phase 3 of the PC pop-out round -- the
+list panes get the same "resizable, and the size stays until you change it
+again" treatment v07.115 already gave the popup windows and the wheels.**
+The owner's own ask, in full: *"Enable the list blocks expandable/
+Shrinkable/Collapsible as well everywhere. Enable the sizes (The main
+pop-out window/pane, wheel, list) remain static until (even after new
+update) it is changed again manually."*
+
+**One splitter, reused across all four wheel/list contexts** (Approach,
+Explore's own Quran-structure drill, QCR, Asma ul Husna) -- a real DOM
+sibling sitting between the wheel side and the list side, deliberately
+OUTSIDE every one of the four containers a re-render actually rewrites
+(`#wheelSidebarContainer`/`#exploreSidebarContainer`/
+`#qcrWaysListContainer`/`#asmaXWaysListContainer`), so neither the splitter
+nor its own embedded collapse button is ever wiped by a claim, a Manage-mode
+edit, or a level switch. `note-popup.js`'s own `initSideSplitter()` --
+already built for the Note popup's side pane -- is generalized with the same
+`id` parameter `initPopupWindow()`/`wireWheelResize()` already use, so each
+of the four contexts (plus the original Note popup, still `id: "note"` by
+default) remembers its own list width independently. **Untouched by
+default, the same rule wheel-resize.js's own header already states for the
+wheel itself**: `readStoredSideWidth()` returns `null` until a real drag has
+happened, and nothing is applied inline before that -- a fresh browser sees
+QCR/Asma's own 44% flex-basis and the Mastery Wheel/Explore sidebar's own
+260-460px CSS range exactly as before this round, not a guessed 260px
+default clobbering them the instant the page loads.
+
+**The collapse button lives ON the splitter, not inside the pane it
+controls, and that placement is the whole reason it works at all.**
+Collapsing sets the pane's own `element.style.display = "none"` (an inline
+style, not the `hidden` attribute -- several of these panes already carry
+an ID-scoped `display:flex` rule, e.g. `#wheelSection .wheel-sidebar`, that
+would silently outrank the UA's plain `[hidden]` rule by specificity, the
+exact trap this project has hit and fixed repeatedly before; an inline
+style always wins regardless of which selector set `display` first) -- so a
+button living inside the pane would have vanished along with it, with no
+way left on screen to bring it back. New `initListCollapse()`/
+`getListCollapsed`/`setListCollapsed` in `note-popup.js` handle exactly
+this shape, and the freed space is picked up automatically: the sibling
+flex item (`.wheel-col`, or `#qcrWheelPane`/`#asmaXWheelPane` at ≥900px)
+already carries its own `flex: 1 1 auto`-shaped rule, so it grows to fill
+whatever the collapsed pane stopped occupying with zero extra CSS.
+
+**A real, measured cost forced one scope decision the owner's own
+"everywhere" didn't spell out: the splitter/collapse bar is PC-only
+(`>=900px`), the same breakpoint the row-reverse "list left, wheel right"
+swap (v07.116) and the pop-out windows themselves (v07.115) already use.**
+The first version left it in flow at every width, reasoning that a stacked
+phone layout could still benefit from hiding a long list -- **measured, it
+cost a real Approach row on the landing page**: `tools/i18n-verify/
+layout.mjs` reported 5 → 4 rows at 390×844 (banner set), and the same drop
+at every phone size tested, traced to the bar's own padding + button height
+landing squarely inside the ~33-37px this project has repeatedly measured
+as exactly what one more Approach row needs (shell rounds 9-10 spent whole
+rounds reclaiming pixels in this same range). Given "everywhere" arrived in
+the same message as "the main pop-out window/pane, wheel, list" -- i.e. as
+the next thing to extend the SAME already-PC-only pop-out mechanism to,
+not a request to change any of the four contexts' own mobile/tablet
+layout -- `.list-splitter` is `display:none` below 900px and `display:flex`
+at or above it, which removes the cost outright rather than merely
+shrinking it. Below 900px these four contexts already stack the wheel and
+list instead of sitting them side by side, which is exactly the
+relationship a horizontal splitter has nothing to resize in any case.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice) -- **24 checks, all passing**: the
+Approach sidebar's own width before any drag; dragging the splitter (from
+above/below the embedded button, not through it -- `initSideSplitter()`'s
+own `e.target.closest("button")` guard correctly refuses to start a resize
+from ON the collapse button, exactly so a tap on it can never accidentally
+trigger one) really widening it; the dragged width surviving a full page
+reload; collapsing really hiding the pane (`display:none`) with the wheel
+column measurably taking over most of the row; the collapsed state ALSO
+surviving a reload; expanding it back working both ways; the identical
+mechanism proven again for QCR (a real flex-basis:44% pane, confirmed
+widened past its own CSS default) and Asma ul Husna; Explore's own
+Quran-structure sidebar collapsing the same way; the ORIGINAL Note popup's
+own splitter re-verified completely unaffected by the generalization (still
+drags correctly with `id` defaulting to `"note"`); a 390px phone confirmed
+to render the splitter as `display:none` with zero added horizontal
+overflow and the wheel itself still rendering correctly; and the whole
+mechanism again in Bangla, with the collapse button's own title genuinely
+flipping between the translated "Collapse list"/"Expand list" wording as
+the state toggles.
+
+**`tools/i18n-verify/layout.mjs` reports NO REGRESSIONS** at all eight
+viewports in both banner states once the mobile fix above landed -- rows,
+heading position, wheel width and dock gap all byte-for-byte identical to
+`HEAD`; the only remaining flag is the same, already-disclosed set of
+pre-existing false-positive missing `getElementById` targets this project
+has carried since v07.86 (18 Manage-mode-only Asma/QCR controls, confirmed
+by running the unmodified `HEAD` copy through the identical check and
+getting the exact same list). `getElementById` targets went 208 → 221,
+exactly the 13 new lookups this round adds (8 for the new splitter/button
+pairs, plus `#wheelSection`/`#qcrListPane`/`#asmaXListPane`/`#qcrMain`/
+`#asmaXMain`, none of them missing). **`reading.mjs` reports READING SCREEN
+OK**, **`navcheck.mjs` unchanged** (still only the pre-existing 320px
+English truncation of "Operation"/"Bookmark"), **`panel.mjs`** unaffected
+(this round never touches the Study options panel), and **`tools/perf/
+measure.mjs` confirms Quran Study still opens in 6 sequential round trips**
+with **`tools/perf/new-tenant.mjs` 10/10**, confirming this round added no
+Firestore read anywhere -- it is pure client-side CSS/JS/localStorage, same
+as the rest of this PC pop-out project. **Translation coverage: two new
+strings ("Collapse list"/"Expand list"), both translated** -- measured
+directly against a clean `HEAD` checkout rather than trusted from an old
+figure in this file (a lesson this project has had to relearn more than
+once): the `quran` area went 314/307/7-missing → 316/309/7-missing (the
+same 7 pre-existing gaps, unchanged), and the whole catalogue's own total
+went 1,772 → 1,774, both new strings landing on the translated side. No
+`firestore.rules`, schema or Firestore data changes -- nothing to deploy
+but the static files.
 
 ## What this is
 
