@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.87.** Cutover to production happened
+**Current milestone: QuranRevival v07.114.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -8519,6 +8519,134 @@ strings ("Expand all", "Collapse all"), both translated and marked `// ?`
 for the owner's own eye; the one reported missing string ("Qur'an") is
 pre-existing and unrelated to this round. No `firestore.rules`, schema or
 Firestore data changes -- nothing to deploy but the static files.
+
+v07.114 (2 Sep 2026, on Claude Code on the web) is **the text-tools round --
+Word by Word / Root / Derivatives / Collapse brought back to every unit
+choice that actually shows āyah text, placed on the READ screen too, and the
+sideways movement between āyahs turned right-to-left and made to follow the
+finger.** Four owner reports in one sitting, all built.
+
+**(1) The Note view offered those four options on Single Ayah only.** The
+gate was `noteScopeCanWbwRoot()`, hard-coded to `unitType === "ayah"` for a
+real reason at the time: `ayah-renderer.js`'s word panels each take ONE āyah
+object, not a span, so a Range had nothing to hand them. The owner's report
+-- "bring these back in the appropriate Unit choices" -- is right, and the
+appropriate ones turn out to be exactly the units whose text is on this
+screen at all, i.e. `noteScopeShowAyatText()`: Single Ayah, a Range, and a
+surah short enough to fit one real Mushaf page. A unit bigger than that
+still shows the "read it on the Read screen" link instead, so there is no
+text there for these panels to annotate and the menu correctly still offers
+none (verified, not assumed -- a Juz is its own check). Multi-āyah scopes get
+**one panel per āyah**, the same "loop the single-āyah renderer over every
+āyah in scope" shape the Read screen's own flow view has always used, each
+carrying its own leading āyah-number badge when there is more than one --
+without it the words of āyah 2 and āyah 3 run together with nothing saying
+where one ends. A single-āyah scope renders exactly as before, badge-free.
+
+**(2) The same four options are now on the READ screen's own ⋮ badge**, for
+both the single-āyah view (the badge on `#readBar`) and every āyah of a flow
+(Range/Whole Surah, one badge each) -- "also place these options at the
+appropriate READ view too". The three toggles are **not a second setting**:
+they flip the SAME canonical Study-options checkboxes the Note view's own
+copies already flip (`toggleNoteWbw`/`toggleNoteRoots`/
+`toggleNoteDerivatives`, unchanged in mechanism), which is what makes a
+choice made in any of the three places show in all of them -- v07.111's own
+rule, now with a third entry point. Those three functions re-render
+whichever screen is open (`onReadingTickChanged`) rather than the Note view
+alone, which is the one line each of them needed.
+
+**Collapse needed a real mechanism on the Read screen, and it is deliberately
+per-āyah.** The caller marks whichever element holds an āyah's own text with
+`data-ayah-collapsible-for="<unitKey>"` and the menu's handler toggles it --
+looked up document-wide by key rather than by DOM position, because the two
+call sites sit nowhere near their own text in the same way: the flow view's
+badge is inside the āyah's own block, while the single-āyah view's lives up
+in `#readBar` with the text in `#ayahPanels`. So in a Range, collapsing one
+āyah folds that one and leaves its neighbours alone (its own check). Like
+the Note view's own master toggle, it is a "hide what is in front of me now"
+gesture rather than a stored preference: `#ayahPanels` survives every
+re-render (only its innerHTML is replaced), so the class is cleared on each
+render or a collapse left on would silently hide the NEXT āyah too.
+
+**A real defect this round shipped and then caught in its own test run, worth
+recording because it is a class of bug this codebase keeps meeting:**
+`#ayahPanels` is HIDDEN, not emptied, while a flow shows -- so it sat in the
+document still carrying the key of whichever āyah it last drew, and when
+that key happened to match a flow row's (open a single āyah, step to āyah 2,
+switch to a Range covering it) the document-wide lookup found the hidden
+container FIRST and Collapse folded away something invisible, doing nothing
+on screen. Fixed at both ends: the flow branch clears the stale attribute,
+and the lookup prefers a target that is actually rendered. Found by a test
+asserting WHICH āyah folded, not merely that something did.
+
+**(3) Sideways movement is right-to-left now, matching the script.** The
+gesture handler advanced on a LEFT swipe; the owner's own correction --
+"swiping right should bring next Ayah" -- is also what the flow view's own
+scroll-snap strip has done since v07.56, where `direction: rtl` puts āyah 2
+to the LEFT of āyah 1 (measured again this round: āyah 1 at x=17, āyah 2 at
+x=-339). So the two agreed on the page and disagreed in the gesture; they
+agree now.
+
+**(4) The āyah follows the finger instead of jumping when it lifts** -- "make
+the movement of Ayah by fingers smooth, currently it jumps at the end". A
+new `touchmove` stage translates the text with the drag (damped, fading as
+it goes), and on release either springs it back or carries it the rest of
+the way out, steps, and brings the new āyah in from the far side, so the
+swap reads as one continuous movement rather than a cut. The gesture only
+claims itself once it is clearly sideways (12px, and more horizontal than
+vertical), because this listener is passive and a vertical scroll has to
+stay a vertical scroll. **`advance()` returns whether anything actually
+moved now** -- via a before/after position signature rather than by making
+five existing steppers return booleans -- so the last āyah of a surah slides
+back instead of animating a change that never happened. The Read screen's
+flow view is deliberately excluded from the drag: `#pageViewContainer` is a
+real scroll-snap strip that already follows the finger natively, and
+dragging it too would fight its own scrolling.
+
+**Verified with a focused, un-checked-in Playwright script** (this project's
+own established practice for anything past `behaviour.mjs`'s own disclosed
+section-42 crash point) -- **32 checks, 0 failures**: every unit choice's own
+menu contents in the Note view (all four on Single Ayah AND on a Range, none
+on a Juz); a Range's Word by Word / Root / Derivatives each proven to render
+one panel per āyah with its own number, and Collapse proven to fold the text
+while Notes stays; the Read screen's badge proven to carry all four on both
+the single-āyah and flow views, its Word by Word proven to reach the rendered
+text by flipping the canonical tick, its Collapse proven to fold exactly one
+āyah of three and to come back expanded on the next āyah; the swipe proven to
+bring the NEXT āyah on a RIGHT swipe and the previous one on a LEFT swipe, in
+both the Read and Note screens, with the text proven to have really moved
+mid-gesture and the drag styles proven cleared once it settles; and the whole
+menu again in Bangla. **`layout.mjs` reports the landing page byte-for-byte
+identical** at all eight viewports in both banner states (`getElementById`
+targets unchanged at 201; the "MISSING ID TARGETS" line is the same
+pre-existing false positive disclosed since v07.86 -- confirmed by running
+`HEAD`'s own copy of the page through the identical check and getting a
+byte-identical list), **`reading.mjs` READING SCREEN OK** at every viewport
+in both banner states, **`panel.mjs` no wrapped bar and no truncated label**,
+**`navcheck.mjs` unchanged** (still only the pre-existing 320px English
+truncation of "Operation"/"Bookmark"), and **translation coverage unchanged
+at 1,542 scanned with the same 7 pre-existing missing strings in the quran
+area** -- every label this round needed ("Word by Word", "Root",
+"Derivatives", "Collapse āyah text"/"Expand āyah text") was already in
+`bn.js` from the Note view's own copies and is reused verbatim, so nothing
+new to translate. No `firestore.rules`, schema or Firestore data changes --
+nothing to deploy but the static files.
+
+**Investigated, not fixed here -- the owner's own screenshot of a
+permissions toast** ("That save was blocked by a permissions rule") on any
+save/attach attempt. That message is `errors.js`'s own I15 wording for a
+Firestore `permission-denied`, so it is a RULES-DEPLOYMENT state, not a
+code path this round can change: **`firestore.rules` in this repo carries an
+`asmaCollections` block that has never been deployed** (added v07.101, 29
+Aug, and flagged as pending in that round's own entry and every round
+since), so every Asma attach/edit write is denied at the server. If a plain
+NOTE save is being refused too, the deployed copy is older still than that
+-- the fix either way is the same one this project has used every round:
+paste the current `firestore.rules` into the Firebase Console's rules editor
+and publish. Worth noting alongside it that the screenshot's version badge
+reads v07.109 while `main` is well past it, so that device may also be
+holding a cached older build. This could not be checked from here -- a cloud
+sandbox with no Firebase credentials and no reachability to Firestore.
 
 ## What this is
 

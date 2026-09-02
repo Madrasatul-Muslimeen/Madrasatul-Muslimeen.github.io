@@ -116,8 +116,23 @@ function langCheckboxRows(cls, hasNote) {
  * not two ways to do the same thing on the same screen. The flow view's own
  * call site (several āyahs on screen at once, no single bar-level button
  * can say which one) leaves this at its default and keeps the item.
+ *
+ * Text-tools round -- `showTextTools` adds the same Word by Word / Root /
+ * Derivatives / Collapse group the Note view's own ⋮ menu carries ("also
+ * place these options at the appropriate READ view too" -- the owner's own
+ * words), so the reading choices are reachable from the text itself rather
+ * than only from Study options. The three toggles flip the SAME canonical
+ * Study-options checkboxes the Note view's own copies do (the caller wires
+ * them), so a choice made in either place shows in both. Collapse is
+ * per-āyah and needs no state here: the caller marks whichever element
+ * holds that āyah's own text with data-ayah-collapsible-for="<unitKey>",
+ * and the handler below toggles it -- the same "the caller owns the DOM,
+ * this file only asks for it by key" split every other callback here uses.
  */
-export function renderQuickMenu(unitKey, { hasNote = false, isBookmarked = false, showBookmark = true } = {}) {
+export function renderQuickMenu(unitKey, {
+  hasNote = false, isBookmarked = false, showBookmark = true,
+  showTextTools = false, isWbwOn = false, isRootsOn = false, isDerivativesOn = false,
+} = {}) {
   return `
     <div class="ayah-quick-wrap" data-unit-key="${escapeHtml(unitKey)}">
       <button type="button" class="ayah-quick-btn${hasNote ? " has-note" : ""}" data-qm-toggle title="${t("Quick actions")}">⋮</button>
@@ -134,6 +149,12 @@ export function renderQuickMenu(unitKey, { hasNote = false, isBookmarked = false
         <button type="button" class="qm-item" data-qm-play>▶ ${t("Play this āyah")}</button>
         ${showBookmark ? `<button type="button" class="qm-item" data-qm-bookmark>${isBookmarked ? "★" : "🔖"} ${isBookmarked ? t("Remove bookmark") : t("Bookmark this āyah")}</button>` : ""}
         <button type="button" class="qm-item" data-qm-note>📝 ${t("Note & more…")}</button>
+        ${showTextTools ? `
+        <div class="qm-divider"></div>
+        <button type="button" class="qm-item${isWbwOn ? " is-on" : ""}" data-qm-wbw aria-pressed="${isWbwOn ? "true" : "false"}">${t("Word by Word")} <span class="qm-caret">${isWbwOn ? "✓" : ""}</span></button>
+        <button type="button" class="qm-item${isRootsOn ? " is-on" : ""}" data-qm-roots aria-pressed="${isRootsOn ? "true" : "false"}">${t("Root")} <span class="qm-caret">${isRootsOn ? "✓" : ""}</span></button>
+        <button type="button" class="qm-item${isDerivativesOn ? " is-on" : ""}" data-qm-derivatives aria-pressed="${isDerivativesOn ? "true" : "false"}">${t("Derivatives")} <span class="qm-caret">${isDerivativesOn ? "✓" : ""}</span></button>
+        <button type="button" class="qm-item" data-qm-collapse>${t("Collapse āyah text")}</button>` : ""}
       </div>
     </div>`;
 }
@@ -153,11 +174,12 @@ function closeAllQuickMenus(container) {
  *   onPlay(unitKey)
  *   onOpenNote(unitKey)
  *   onToggleBookmark(unitKey)  -- enhancement round, the READ screen's own Bookmark item
+ *   onToggleWbw() / onToggleRoots() / onToggleDerivatives()  -- text-tools round; only wired to anything when showTextTools rendered the rows at all. Take no unitKey: they flip a canonical, screen-wide reading choice (the same Study-options checkbox the Note view's own copies flip), not per-āyah state
  * Re-call after every re-render (innerHTML replace) -- the per-instance
  * listeners below are cheap to re-attach to fresh nodes; only the outside-
  * click listener is guarded against being bound twice on the same container.
  */
-export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNote, onToggleBookmark }) {
+export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNote, onToggleBookmark, onToggleWbw, onToggleRoots, onToggleDerivatives }) {
   container.querySelectorAll(".ayah-quick-wrap").forEach((wrap) => {
     const unitKey = wrap.dataset.unitKey;
     const btn = wrap.querySelector("[data-qm-toggle]");
@@ -208,6 +230,47 @@ export function attachQuickMenuHandlers(container, { buildText, onPlay, onOpenNo
     wrap.querySelector("[data-qm-bookmark]")?.addEventListener("click", () => {
       closeAllQuickMenus(container);
       onToggleBookmark?.(unitKey);
+    });
+
+    // Text-tools round -- the same three reading choices the Note view's own
+    // ⋮ menu offers, on the Read screen's own badge. They flip a canonical
+    // Study-options checkbox (the caller's job), which re-renders whichever
+    // screen is showing -- so the menu is closed first, since the node it
+    // lives in is about to be replaced underneath it.
+    wrap.querySelector("[data-qm-wbw]")?.addEventListener("click", () => {
+      closeAllQuickMenus(container);
+      onToggleWbw?.();
+    });
+    wrap.querySelector("[data-qm-roots]")?.addEventListener("click", () => {
+      closeAllQuickMenus(container);
+      onToggleRoots?.();
+    });
+    wrap.querySelector("[data-qm-derivatives]")?.addEventListener("click", () => {
+      closeAllQuickMenus(container);
+      onToggleDerivatives?.();
+    });
+
+    // Collapse is a plain DOM toggle on whichever element the caller marked
+    // as holding THIS āyah's own text -- looked up document-wide by unit key
+    // rather than by DOM position, because the two call sites sit in
+    // completely different places relative to their own text (the flow
+    // view's badge is inside the āyah's own block; the single-āyah view's
+    // badge lives up in #readBar, nowhere near #ayahPanels). Same
+    // toggle-the-label-in-place mechanism the Note view's own master
+    // toggle uses, and like it, a full re-render resets it to expanded.
+    const collapseBtn = wrap.querySelector("[data-qm-collapse]");
+    collapseBtn?.addEventListener("click", () => {
+      // Prefer a target that is actually on screen: a hidden container can
+      // legitimately still carry the same key (the single-āyah #ayahPanels
+      // while a flow shows the same āyah), and folding away something
+      // invisible would look like the button doing nothing at all.
+      const candidates = [...document.querySelectorAll(`[data-ayah-collapsible-for="${unitKey.replace(/"/g, "")}"]`)];
+      const body = candidates.find((el) => el.offsetParent !== null || el.classList.contains("collapsed")) ?? candidates[0];
+      if (body) {
+        const collapsed = body.classList.toggle("collapsed");
+        collapseBtn.textContent = collapsed ? t("Expand āyah text") : t("Collapse āyah text");
+      }
+      closeAllQuickMenus(container);
     });
   });
 
