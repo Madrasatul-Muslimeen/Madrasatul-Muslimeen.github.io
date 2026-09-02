@@ -672,6 +672,40 @@
      source order). */
   #explorePanel[hidden], #qcrPanel[hidden], #asmaXPanel[hidden] { display: none; }
   #explorePanel { flex: 1 1 auto; min-height: 0; }
+  /* 2 Sep 2026 (owner's own screenshot): the Quran-structure sidebar list
+     was still capped by .ways-list's own generic 420px max-height (below)
+     -- harmless in the old, short drawer-panel days, but inside the now
+     much taller Explore popup it left a large blank gap below the last
+     row. Same fix #wheelSection's own sidebar already has (shell round 29,
+     for the identical reason -- a flex item left at height:auto doesn't
+     get bound by align-items:stretch, it only keeps its own content
+     height): align-items:stretch is what lets .wheel-sidebar's own
+     height:100% resolve against #explorePanel's real, popup-bounded
+     height, which then lets .ways-list's own flex:1 1 auto genuinely
+     fill it instead of stopping short. */
+  #explorePanel { align-items: stretch; }
+  #explorePanel .wheel-sidebar { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+  #explorePanel .ways-list { flex: 1 1 auto; max-height: none; }
+
+  /* Owner's own follow-up: "in QCR and Asma, list is left, wheel right --
+     do the same for Quran [Explore] and Approach?" Yes, and safely --
+     nothing here cares which side of the row an element renders on
+     (functions are untouched either way), and row-reverse only fires at
+     the SAME >=900px breakpoint this page's own pop-out already uses,
+     well above the @media(max-width:720px) block that owns mobile's own
+     wheel-then-list STACKING order -- that stays plain (non-reversed)
+     column flow, completely unaffected by a row-level property, and the
+     721-899px tablet range (never a popup) is untouched too, since it
+     never matches this rule either. Deliberately a row-reverse, not a DOM
+     reorder: the markup keeps wheel-then-sidebar (unchanged, so nothing
+     that reads it by position breaks), and reversing only the ROW
+     direction is what flips which side each ends up on -- the same
+     reasoning QCR's own "column-reverse on mobile" rule already uses to
+     flip a stacking order without touching the DOM. */
+  @media (min-width: 900px) {
+    #wheelSection { flex-direction: row-reverse; }
+    #explorePanel { flex-direction: row-reverse; }
+  }
 
   /* ---------- QCR (Ayah Collections), round 2's own reference-app shape:
      a level switcher up top, and BELOW it, ALWAYS, the current collection's
