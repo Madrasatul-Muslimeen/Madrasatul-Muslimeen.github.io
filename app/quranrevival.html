@@ -707,6 +707,49 @@
     #explorePanel { flex-direction: row-reverse; }
   }
 
+  /* ---------- List pane resize/collapse (2 Sep 2026) ----------
+     One shared splitter, reused as a sibling between the wheel and the list
+     in all four wheel/list contexts (Approach, Explore's own Quran-structure
+     drill, QCR, Asma ul Husna) -- a real DOM element, never wiped by any of
+     the four contexts' own re-renders (each rewrites only ITS OWN list
+     container's innerHTML: #wheelSidebarContainer/#exploreSidebarContainer/
+     #qcrWaysListContainer/#asmaXWaysListContainer -- the splitter and its
+     embedded button sit outside every one of those). The collapse button
+     lives ON the splitter rather than inside the list pane it controls, on
+     purpose: collapsing sets the pane's own `display:none`, which would
+     have taken the button down with it if the button lived inside the pane
+     it was meant to bring back.
+     The owner's own "everywhere" reads in context as "every one of the
+     four PC pop-out screens" (this whole round is the same >=900px pop-out
+     mechanism Phase 1/2 already built, extended to the list pane) rather
+     than every screen WIDTH: below 900px these four contexts stack
+     wheel-then-list (or list-then-wheel) instead of sitting side by side,
+     which is exactly the layout a horizontal splitter/resize has nothing to
+     do in. Scoped to >=900px alone rather than merely hidden there also
+     avoids a real, measured cost: a first version of this rule left the bar
+     in flow on every width, and on a phone -- where every pixel of the
+     landing Mastery Wheel's own approaches list has been fought over since
+     shell round 9 -- its own padding + button cost enough height to drop a
+     full visible Approach row (measured: 5 -> 4 rows at 390x844). `display:
+     none` below 900px is what removes that cost outright rather than
+     merely shrinking it. */
+  .list-splitter { display: none; }
+  @media (min-width: 900px) {
+    .list-splitter {
+      display: flex; align-items: center; justify-content: center;
+      flex: 0 0 auto; align-self: stretch; width: 16px; cursor: col-resize; position: relative;
+    }
+  }
+  .list-collapse-btn {
+    flex: 0 0 auto; width: 1.5rem; height: 1.5rem; border-radius: 50%;
+    background: #C9A24B; color: #241a06; border: 2px solid #13192a;
+    font-size: 0.7rem; line-height: 1; cursor: pointer; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .list-collapse-btn:hover { background: #ecd49a; }
+  .list-collapse-btn::before { content: "\25c2"; } /* ◂ -- list is showing, tap to hide it */
+  .list-collapse-btn.collapsed::before { content: "\25b8"; } /* ▸ -- list is hidden, tap to bring it back */
+
   /* ---------- QCR (Ayah Collections), round 2's own reference-app shape:
      a level switcher up top, and BELOW it, ALWAYS, the current collection's
      own item list beside its wheel -- not a separate "list of collections"
@@ -2194,6 +2237,13 @@
           </div>
           <div id="wheelLegendContainer"></div>
         </div>
+        <!-- 2 Sep 2026 -- "enable the list blocks expandable/shrinkable/
+             collapsible as well everywhere" -- see the shared .list-splitter
+             CSS above for why this lives here, outside #wheelSidebarContainer
+             itself. -->
+        <div class="list-splitter" id="wheelListSplitter" role="separator" aria-orientation="vertical" title="Drag to resize">
+          <button type="button" class="list-collapse-btn" id="wheelListCollapseBtn" title="Collapse list" aria-label="Collapse list" aria-pressed="false"></button>
+        </div>
         <div id="wheelSidebarContainer" class="wheel-sidebar"></div>
         </div><!-- /#wheelSection -->
         <!-- The popup WINDOW's own 8 resize handles (dragging #wheelPopupView
@@ -2433,6 +2483,9 @@
               <div id="exploreWheelLegendContainer"></div>
               <p class="hint">Click a segment to drill in &mdash; Quran &rarr; Juz &rarr; Surah &rarr; Ruku' &rarr; an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment &mdash; it only turns fully green once every ayah inside it is Mastered.</p>
             </div>
+            <div class="list-splitter" id="exploreListSplitter" role="separator" aria-orientation="vertical" title="Drag to resize">
+              <button type="button" class="list-collapse-btn" id="exploreListCollapseBtn" title="Collapse list" aria-label="Collapse list" aria-pressed="false"></button>
+            </div>
             <div id="exploreSidebarContainer" class="wheel-sidebar"></div>
           </div>
           <!-- QCR round 2: the reference app's own shape -- a level switcher
@@ -2455,6 +2508,9 @@
                 <div id="qcrListHeader"></div>
                 <div id="qcrWaysListContainer" class="ways-list"></div>
                 <div id="qcrAddFormSlot"></div>
+              </div>
+              <div class="list-splitter" id="qcrListSplitter" role="separator" aria-orientation="vertical" title="Drag to resize">
+                <button type="button" class="list-collapse-btn" id="qcrListCollapseBtn" title="Collapse list" aria-label="Collapse list" aria-pressed="false"></button>
               </div>
               <div id="qcrWheelPane">
                 <!-- 28 Aug 2026: "enable the Approaches on the Wheel at the
@@ -2535,6 +2591,9 @@
                 <div id="asmaXListHeader"></div>
                 <div id="asmaXWaysListContainer" class="ways-list"></div>
                 <div id="asmaXAddFormSlot"></div>
+              </div>
+              <div class="list-splitter" id="asmaXListSplitter" role="separator" aria-orientation="vertical" title="Drag to resize">
+                <button type="button" class="list-collapse-btn" id="asmaXListCollapseBtn" title="Collapse list" aria-label="Collapse list" aria-pressed="false"></button>
               </div>
               <div id="asmaXWheelPane">
                 <!-- 2 Sep 2026 -- "enable all wheels ... to be expandable
@@ -2936,7 +2995,7 @@
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText } from "./js/ayah-note-renderer.js";
-    import { initPopupWindow, initSideSplitter, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
+    import { initPopupWindow, initSideSplitter, initListCollapse, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
     import {
       collectionsFrom, activeCollections,
       addCollection, renameCollection, setCollectionStatus,
@@ -3176,9 +3235,12 @@
     // (display:flex; justify-content:center with one child), so it can
     // never report more room than the wheel already uses; .wheel-col is the
     // real flex item sharing space with the sidebar at >=900px.
+    const wheelSectionEl = document.getElementById("wheelSection");
     const wheelColEl = document.querySelector("#wheelSection .wheel-col");
     const wheelLegendContainer = document.getElementById("wheelLegendContainer");
     const wheelSidebarContainer = document.getElementById("wheelSidebarContainer");
+    const wheelListSplitter = document.getElementById("wheelListSplitter");
+    const wheelListCollapseBtn = document.getElementById("wheelListCollapseBtn");
     const ayahPosition = document.getElementById("ayahPosition");
     const prevAyahBtn = document.getElementById("prevAyahBtn");
     const nextAyahBtn = document.getElementById("nextAyahBtn");
@@ -3318,6 +3380,8 @@
     const exploreWheelContainer = document.getElementById("exploreWheelContainer");
     const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
     const exploreSidebarContainer = document.getElementById("exploreSidebarContainer");
+    const exploreListSplitter = document.getElementById("exploreListSplitter");
+    const exploreListCollapseBtn = document.getElementById("exploreListCollapseBtn");
     const tabExploreBtn = document.getElementById("tabExploreBtn");
     const exploreView = document.getElementById("exploreView");
     const exploreBarEl = document.getElementById("exploreBar");
@@ -3339,9 +3403,12 @@
     const qcrAddLevelBtn = document.getElementById("qcrAddLevelBtn");
     const qcrShowArchivedToggle = document.getElementById("qcrShowArchivedToggle");
     const qcrManageToggleBtn = document.getElementById("qcrManageToggleBtn");
+    const qcrListPaneEl = document.getElementById("qcrListPane");
     const qcrListHeaderEl = document.getElementById("qcrListHeader");
     const qcrWaysListContainer = document.getElementById("qcrWaysListContainer");
     const qcrAddFormSlot = document.getElementById("qcrAddFormSlot");
+    const qcrListSplitter = document.getElementById("qcrListSplitter");
+    const qcrListCollapseBtn = document.getElementById("qcrListCollapseBtn");
     const qcrApproachSelect = document.getElementById("qcrApproachSelect");
     const qcrWheelPaneEl = document.getElementById("qcrWheelPane");
     const qcrWheelResizeWrapEl = document.getElementById("qcrWheelResizeWrap");
@@ -3363,9 +3430,12 @@
     const asmaXAttachRefBtn = document.getElementById("asmaXAttachRefBtn");
     const asmaXShowArchivedToggle = document.getElementById("asmaXShowArchivedToggle");
     const asmaXManageToggleBtn = document.getElementById("asmaXManageToggleBtn");
+    const asmaXListPaneEl = document.getElementById("asmaXListPane");
     const asmaXListHeaderEl = document.getElementById("asmaXListHeader");
     const asmaXWaysListContainer = document.getElementById("asmaXWaysListContainer");
     const asmaXAddFormSlot = document.getElementById("asmaXAddFormSlot");
+    const asmaXListSplitter = document.getElementById("asmaXListSplitter");
+    const asmaXListCollapseBtn = document.getElementById("asmaXListCollapseBtn");
     const asmaXWheelPaneEl = document.getElementById("asmaXWheelPane");
     const asmaXWheelResizeWrapEl = document.getElementById("asmaXWheelResizeWrap");
     const asmaXWheelResizeHandleEls = Array.from(asmaXWheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
@@ -5730,6 +5800,39 @@
       dragHandleEl: exploreBarEl,
       resizeHandleEls: explorePopupResizeHandles,
       maximizeBtn: explorePopupMaximizeBtn,
+    });
+
+    // 2 Sep 2026 -- "enable the list blocks expandable/shrinkable/
+    // collapsible as well everywhere. Enable the sizes ... remain static
+    // until (even after new update) it is changed again manually." One
+    // splitter per context, reused unchanged from the Note popup's own
+    // side-pane mechanism (see note-popup.js's own header on why `id`
+    // keeps each context's remembered width/collapsed state separate).
+    // Untouched by default -- nothing here applies an inline width to any
+    // of these four panes unless the reader has actually dragged one, so a
+    // fresh browser sees exactly the same 44%/flex-basis CSS defaults as
+    // before this round.
+    function wireListPane(splitterEl, btnEl, sideEl, id, { getContainerWidth }) {
+      initSideSplitter(splitterEl, sideEl, { getContainerWidth, id });
+      initListCollapse(btnEl, sideEl, id, {
+        onChange: (collapsed) => {
+          const label = collapsed ? t("Expand list") : t("Collapse list");
+          btnEl.title = label;
+          btnEl.setAttribute("aria-label", label);
+        },
+      });
+    }
+    wireListPane(wheelListSplitter, wheelListCollapseBtn, wheelSidebarContainer, "approach", {
+      getContainerWidth: () => wheelSectionEl.getBoundingClientRect().width,
+    });
+    wireListPane(exploreListSplitter, exploreListCollapseBtn, exploreSidebarContainer, "exploreQuran", {
+      getContainerWidth: () => explorePanelEl.getBoundingClientRect().width,
+    });
+    wireListPane(qcrListSplitter, qcrListCollapseBtn, qcrListPaneEl, "qcr", {
+      getContainerWidth: () => document.getElementById("qcrMain").getBoundingClientRect().width,
+    });
+    wireListPane(asmaXListSplitter, asmaXListCollapseBtn, asmaXListPaneEl, "asma", {
+      getContainerWidth: () => document.getElementById("asmaXMain").getBoundingClientRect().width,
     });
 
     // Note-view enhancement round 3 -- the two STATIC-markup text-size

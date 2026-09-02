@@ -25,6 +25,12 @@
 // shape is lost) plus "wheel" and "explore" for the two views added
 // 2 Sep 2026. Never share one key across views: a person may reasonably
 // want the wheel popup small and the Note popup large.
+//
+// Same `id` pattern extended (2 Sep 2026, list resize/collapse round) to the
+// SIDE LIST PANE every one of the four wheel/list contexts (Approach, QCR,
+// Asma ul Husna, Explore's own Quran-structure drill) carries beside its own
+// wheel -- initSideSplitter()/initListCollapse() below, keyed by "note"
+// (the original, unchanged), "approach", "exploreQuran", "qcr", "asma".
 
 const GEOMETRY_KEY = "mm_note_popup_geometry";
 const SIDE_WIDTH_KEY = "mm_note_popup_side_width";
@@ -32,6 +38,12 @@ const VIEW_MODE_KEY = "mm_note_popup_side_view"; // "list" | "card"
 
 function geometryKeyFor(id) {
   return id === "note" ? GEOMETRY_KEY : `mm_${id}_popup_geometry`;
+}
+function sideWidthKeyFor(id) {
+  return id === "note" ? SIDE_WIDTH_KEY : `mm_${id}_side_width`;
+}
+function listCollapsedKeyFor(id) {
+  return `mm_${id}_list_collapsed`;
 }
 
 const MIN_WIDTH = 480;
@@ -99,11 +111,85 @@ function loadGeometry(id) {
 }
 function saveGeometry(g, id) { writeJson(geometryKeyFor(id), g); }
 
-export function loadSideWidth() {
-  const saved = readJson(SIDE_WIDTH_KEY);
-  return Number.isFinite(saved) ? Math.max(MIN_SIDE_WIDTH, saved) : 260;
+// `null` means "nothing stored yet" -- distinct from a genuine 260, which
+// matters below: initSideSplitter() must never apply an inline width to a
+// pane that has never been dragged, or a context whose own CSS default is
+// something OTHER than 260 (QCR/Asma's 44%, the Mastery Wheel/Explore
+// sidebar's own 260-460px range) would silently jump to 260px the instant
+// this module loads, on every device, before anyone ever touched a handle.
+function readStoredSideWidth(id) {
+  const saved = readJson(sideWidthKeyFor(id));
+  return Number.isFinite(saved) ? Math.max(MIN_SIDE_WIDTH, saved) : null;
 }
-export function saveSideWidth(w) { writeJson(SIDE_WIDTH_KEY, w); }
+export function loadSideWidth(id = "note") {
+  // Kept for the one existing "note" caller's own historical shape (a
+  // default of 260 either way, which is also literally what .note-popup-side
+  // itself already defaults to in CSS, so applying it inline changes
+  // nothing) -- new callers should read initSideSplitter()'s own behaviour
+  // instead of calling this directly.
+  return readStoredSideWidth(id) ?? 260;
+}
+export function saveSideWidth(w, id = "note") { writeJson(sideWidthKeyFor(id), w); }
+
+function applySideWidth(sideEl, width) {
+  // flex-basis (not `width` alone) is what actually governs a flex child's
+  // main-axis size once its own CSS sets `flex` to anything other than
+  // `0 0 auto` -- QCR/Asma's own list pane is `flex: 0 0 44%` at >=900px, so
+  // a plain `style.width` there would be silently overruled by that 44%
+  // flex-basis. `flex: 0 0 <px>` pins it outright; max-width is set
+  // alongside it because a stray `max-width: 44%` CSS rule (again QCR/Asma)
+  // would otherwise still clamp the box even once flex-basis says otherwise.
+  sideEl.style.flex = "0 0 auto";
+  sideEl.style.width = `${width}px`;
+  sideEl.style.maxWidth = `${width}px`;
+}
+
+export function loadListCollapsed(id) {
+  try {
+    return localStorage.getItem(listCollapsedKeyFor(id)) === "1";
+  } catch {
+    return false;
+  }
+}
+export function saveListCollapsed(id, collapsed) {
+  try {
+    localStorage.setItem(listCollapsedKeyFor(id), collapsed ? "1" : "0");
+  } catch {
+    // Same tolerance as writeJson above.
+  }
+}
+
+/**
+ * Wires a persistent collapse/expand toggle for a side list pane. `btn` is
+ * expected to live OUTSIDE `sideEl` (on the splitter, so it stays reachable
+ * even while the pane it controls is hidden) -- collapsing just sets
+ * `sideEl.style.display = "none"`, which is what a flex sibling (the wheel
+ * pane) already needs to naturally grow into the freed space with zero
+ * extra CSS, the same way any flex item does once a sibling drops out of
+ * flow. An inline style, not the `hidden` attribute/property, on purpose:
+ * several of these panes already carry an ID-scoped `display:flex` rule of
+ * their own (e.g. `#wheelSection .wheel-sidebar`) that outranks the UA's
+ * plain `[hidden]` rule by specificity -- the exact trap this codebase has
+ * hit and fixed repeatedly elsewhere (v07.55, v07.61...) -- an inline style
+ * always wins regardless, so there is no trap to fall into here.
+ * `onChange(collapsed)` is where the caller updates its own translated
+ * title/aria-label text (this file stays translation-free, per its own
+ * "no app-specific data" contract).
+ */
+export function initListCollapse(btn, sideEl, id, { onChange } = {}) {
+  function apply(collapsed) {
+    sideEl.style.display = collapsed ? "none" : "";
+    btn.setAttribute("aria-pressed", collapsed ? "true" : "false");
+    btn.classList.toggle("collapsed", collapsed);
+    onChange?.(collapsed);
+  }
+  apply(loadListCollapsed(id));
+  btn.addEventListener("click", () => {
+    const next = sideEl.style.display !== "none";
+    saveListCollapsed(id, next);
+    apply(next);
+  });
+}
 
 export function loadSideViewMode() {
   try {
@@ -244,25 +330,43 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
 
 /** The side-pane/main splitter -- horizontal drag only, clamped between
  *  MIN_SIDE_WIDTH and a fraction of the popup's own current width so the
- *  main note area can never be squeezed to nothing. */
-export function initSideSplitter(splitterEl, sideEl, { getContainerWidth }) {
-  let width = loadSideWidth();
-  sideEl.style.width = `${width}px`;
+ *  main note area can never be squeezed to nothing.
+ *
+ *  `id` (2 Sep 2026) picks which remembered width this splitter uses --
+ *  defaults to "note", the one original caller, so its own key is
+ *  untouched. Nothing is applied at init unless a width is genuinely
+ *  stored for this id (see readStoredSideWidth's own comment) -- a fresh
+ *  QCR/Asma/Approach/Explore pane keeps its own CSS default exactly as it
+ *  always has, until the reader drags it at least once. `sideEl` may
+ *  legitimately be collapsed (display:none, via initListCollapse above) --
+ *  the splitter still renders and its own embedded toggle button stays
+ *  live, but a drag on the bar itself is a no-op while there is nothing
+ *  visible to resize. */
+export function initSideSplitter(splitterEl, sideEl, { getContainerWidth, id = "note" }) {
+  let width = readStoredSideWidth(id);
+  if (width != null) applySideWidth(sideEl, width);
   splitterEl.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button")) return; // the embedded collapse toggle stays clickable
+    if (sideEl.style.display === "none") return; // collapsed -- nothing to resize
     e.preventDefault();
     const startX = e.clientX;
-    const startWidth = width;
+    // The very first-ever drag reads the pane's own REAL current rendered
+    // width as its starting point (never a guessed 260) -- the same rule
+    // wheel-resize.js's own getStartWidth() already follows, so dragging
+    // never jumps a QCR/Asma/Approach/Explore pane to an unrelated size on
+    // its first touch.
+    const startWidth = width ?? sideEl.getBoundingClientRect().width;
     splitterEl.setPointerCapture(e.pointerId);
     const move = (ev) => {
       const containerWidth = getContainerWidth();
       const max = Math.max(MIN_SIDE_WIDTH, Math.round(containerWidth * MAX_SIDE_WIDTH_RATIO));
       width = Math.max(MIN_SIDE_WIDTH, Math.min(startWidth + (ev.clientX - startX), max));
-      sideEl.style.width = `${width}px`;
+      applySideWidth(sideEl, width);
     };
     const up = () => {
       splitterEl.removeEventListener("pointermove", move);
       splitterEl.removeEventListener("pointerup", up);
-      saveSideWidth(width);
+      saveSideWidth(width, id);
     };
     splitterEl.addEventListener("pointermove", move);
     splitterEl.addEventListener("pointerup", up);
