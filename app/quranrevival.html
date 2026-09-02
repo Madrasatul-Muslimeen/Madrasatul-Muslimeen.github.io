@@ -1352,6 +1352,20 @@
     background: #eef3fb; border-left: 3px solid #4d7dff;
     padding-left: 0.5rem; margin-left: -0.5rem; border-radius: 3px;
   }
+  /* Text-tools round -- what the ⋮ menu's "Collapse āyah text" folds away.
+     Marked by unit key rather than by position, because the two call sites
+     sit in different places relative to their own text: the flow view's
+     wrapper is inside the āyah's own block, while the single-āyah view's is
+     #ayahPanels, nowhere near the badge up in #readBar. */
+  [data-ayah-collapsible-for].collapsed { display: none; }
+
+  /* Smooth-swipe round -- the āyah text follows the finger and settles,
+     instead of jumping only once the finger lifts (the owner's own report).
+     The transform is set inline by the gesture handler; these two rules are
+     what stop a mid-drag offset from becoming a real horizontal scrollbar
+     on the page behind it. */
+  #readScroll { overflow-x: hidden; }
+  .note-view { overflow-x: hidden; }
 
   /* =========================================================================
      Ayah Note panel -- the ⋮ quick-actions menu on every āyah, and the
@@ -6861,11 +6875,22 @@
           // #pageViewContainer is treated as one full-width "page" in
           // sideways mode (round 28's own CSS) -- a bare sibling div would
           // have become a blank extra page rather than a heading.
-          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}"><div class="ayah-quick-header">${renderQuickMenu(unitKey, { hasNote: ayahHasNote(ayahNotesDoc, unitKey), isBookmarked })}</div>${bismillahHtmlFor(currentSurahNum, ayah.ayah)}${renderLayoutA(ayah, panels, {
+          // Text-tools round -- the ⋮ badge carries the same Word by Word /
+          // Root / Derivatives / Collapse group the Note view's own menu
+          // does ("also place these options at the appropriate READ view
+          // too"). The three toggles are screen-wide reading choices (the
+          // canonical Study-options ticks); Collapse is per-āyah, which is
+          // what the data-ayah-collapsible-for wrapper below is for -- one
+          // āyah of a Range can be folded away without touching the rest.
+          return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}"><div class="ayah-quick-header">${renderQuickMenu(unitKey, {
+            hasNote: ayahHasNote(ayahNotesDoc, unitKey), isBookmarked,
+            showTextTools: true,
+            isWbwOn: wbwShowToggle.checked, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked,
+          })}</div><div class="ayah-flow-body" data-ayah-collapsible-for="${unitKey}">${bismillahHtmlFor(currentSurahNum, ayah.ayah)}${renderLayoutA(ayah, panels, {
             tajweedOn: tajweedToggle.checked,
             langs: translationLangs(),
             wbwLangs: wbwLangs(),
-          })}</div>`;
+          })}</div></div>`;
         })
         .join("");
       attachAyahQuickMenus(pageViewContainer);
@@ -7011,6 +7036,13 @@
         onPlay: quickPlayAyah,
         onOpenNote: openNoteView,
         onToggleBookmark: toggleAyahBookmark,
+        // Text-tools round -- the SAME three functions the Note view's own
+        // ⋮ menu calls, which flip the canonical Study-options ticks and
+        // re-render whichever screen is open (onReadingTickChanged). One
+        // mechanism, three places it can be reached from.
+        onToggleWbw: toggleNoteWbw,
+        onToggleRoots: toggleNoteRoots,
+        onToggleDerivatives: toggleNoteDerivatives,
       });
     }
 
@@ -7273,9 +7305,20 @@
       return false;
     }
 
-    /** Word by Word / Root read ONE āyah's own data (ayah-renderer.js's panels take a single āyah object, not a span) -- narrower than noteScopeShowAyatText(), which also covers a Range or a short surah. */
+    /** Word by Word / Root / Derivatives (and the Collapse toggle that hides
+        the text they annotate) used to be single-āyah only, because
+        ayah-renderer.js's panels each take ONE āyah object rather than a
+        span. The owner's own report: that took them off every unit but
+        Single Ayah -- "bring these back in the appropriate Unit choices."
+        The appropriate ones are exactly the units whose text is on screen
+        here at all (Single Ayah, a Range, a surah that fits one real Mushaf
+        page); a unit too big for that shows the "read it on the Read screen"
+        link instead, so there is no text here for these panels to annotate.
+        Multi-āyah scopes get one panel per āyah, built by the caller below --
+        the same "loop the single-āyah renderer over every āyah in scope"
+        shape the Read screen's own flow view has always used. */
     function noteScopeCanWbwRoot() {
-      return noteScope.unitType === "ayah";
+      return noteScopeShowAyatText();
     }
 
     /** "every Ayah or any unit should have a way to recognise it contains a note in a different unit" (the owner's own words) -- for a single-āyah scope only (the concept only means something when there IS one specific āyah to ask "which wider units cover this"), lists whichever ancestor scope already has its own real note, so the reader can jump straight to it rather than stumbling on it by chance. Every candidate key is derived from data already loaded, and ayahHasNote() is a plain in-memory check (no fetch) -- this costs nothing extra to compute on every render. */
@@ -7521,16 +7564,29 @@
         return null;
       }
 
+      /** Where the reader currently is, as one comparable string -- the
+          smooth-swipe round needs to know whether a step actually moved
+          anything (the last āyah of a surah, a disabled Prev at 1:1) so it
+          can slide the new āyah in rather than animating a change that
+          never happened. Read before and after rather than making every
+          stepper return a boolean, which would have meant changing what
+          five existing call sites mean. */
+      function positionSignature() {
+        const note = noteScope ? `${noteScope.unitType}/${noteScope.ayahNum}/${noteScope.rangeFrom}/${noteScope.rangeTo}/${noteScope.unitNumber}` : "-";
+        return `${stageView}|${currentSurahNum}|${currentAyahNum}|${currentUnitType}|${rangeFrom}|${rangeTo}|${note}`;
+      }
+
       function advance(dir) {
         const now = Date.now();
-        if (now < cooldownUntil) return;
+        if (now < cooldownUntil) return false;
         cooldownUntil = now + 550;
+        const before = positionSignature();
         if (stageView === "note") {
-          if (!noteScope) return;
+          if (!noteScope) return false;
           if (noteScope.unitType !== "ayah" && noteScope.unitType !== "surah") stepNoteAyah(dir);
           else stepNoteUnit(dir);
         } else if (stageView === "read") {
-          if (!currentSurahData) return;
+          if (!currentSurahData) return false;
           if (!nextAyahBtn.hidden) {
             const btn = dir > 0 ? nextAyahBtn : prevAyahBtn;
             if (!btn.disabled) btn.click();
@@ -7539,6 +7595,31 @@
             if (!btn.disabled) btn.click();
           }
         }
+        return positionSignature() !== before;
+      }
+
+      /** Which element the finger actually drags. The Read screen's flow
+          view is deliberately excluded (null): #pageViewContainer is a real
+          scroll-snap strip that already follows the finger natively -- see
+          the sideways-reading CSS -- and dragging it too would fight its own
+          scrolling. Re-queried after every step, because .note-body is
+          rebuilt from scratch on each Note-view render while #ayahPanels is
+          the same element with new content. */
+      function swipeDragEl() {
+        if (stageView === "note") return noteView.querySelector(".note-body");
+        if (stageView === "read") {
+          if (getComputedStyle(pageViewContainer).display !== "none") return null;
+          return ayahPanels;
+        }
+        return null;
+      }
+
+      function clearDragStyle(el, animate) {
+        if (!el) return;
+        el.style.transition = animate ? "transform 180ms ease-out, opacity 180ms ease-out" : "none";
+        el.style.transform = "";
+        el.style.opacity = "";
+        setTimeout(() => { el.style.transition = ""; }, animate ? 200 : 0);
       }
 
       document.addEventListener("wheel", (e) => {
@@ -7551,28 +7632,97 @@
         else if (e.deltaY < 0 && (!scroller || nearTop(scroller))) advance(-1);
       }, { passive: true, capture: true });
 
+      // Smooth-swipe round -- the āyah text follows the finger while the
+      // gesture is in progress and settles when it lifts, instead of
+      // standing still and then jumping at the end (the owner's own report:
+      // "make the movement of Ayah by fingers smooth, currently it jumps at
+      // the end"). Direction is RIGHT-to-LEFT throughout, matching the
+      // script and the sideways strip's own `direction: rtl`: the next āyah
+      // sits to the LEFT of this one, so swiping RIGHT brings it in (the
+      // owner's own "swiping right should bring next Ayah"). This reverses
+      // the earlier reading, which advanced on a left swipe.
+      const SWIPE = 55;
       let touchStartX = null, touchStartY = null, touchBoundary = null;
+      let dragEl = null, dragging = false, dragWidth = 0;
+
       document.addEventListener("touchstart", (e) => {
         if (e.touches.length !== 1 || e.target.closest?.(INTERACTIVE)) { touchBoundary = null; return; }
         touchBoundary = scrollBoundary(e.target);
         if (!touchBoundary) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
+        dragging = false;
+        // Never drag the flow view's own native strip (swipeDragEl returns
+        // null there), and never a gesture that started inside it.
+        dragEl = e.target.closest?.("#pageViewContainer") ? null : swipeDragEl();
       }, { passive: true, capture: true });
+
+      document.addEventListener("touchmove", (e) => {
+        if (!touchBoundary || touchStartX === null || e.touches.length !== 1) return;
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+        if (!dragging) {
+          // Only claim the gesture once it is clearly sideways -- a vertical
+          // scroll must stay a vertical scroll, and this listener is passive
+          // (it can't preventDefault), so the two have to not overlap.
+          if (!dragEl || Math.abs(dx) < 12 || Math.abs(dx) <= Math.abs(dy)) return;
+          dragging = true;
+          dragWidth = dragEl.getBoundingClientRect().width || window.innerWidth;
+          dragEl.style.transition = "none";
+        }
+        const shift = Math.max(-dragWidth, Math.min(dragWidth, dx)) * 0.55;
+        dragEl.style.transform = `translateX(${shift}px)`;
+        dragEl.style.opacity = String(Math.max(0.4, 1 - Math.abs(shift) / (dragWidth || 1)));
+      }, { passive: true, capture: true });
+
+      document.addEventListener("touchcancel", () => {
+        if (dragging) clearDragStyle(dragEl, true);
+        dragging = false; dragEl = null; touchBoundary = null; touchStartX = touchStartY = null;
+      }, { passive: true, capture: true });
+
       document.addEventListener("touchend", (e) => {
-        if (!touchBoundary || touchStartX === null) { touchBoundary = null; return; }
+        if (!touchBoundary || touchStartX === null) { touchBoundary = null; dragging = false; dragEl = null; return; }
         const boundary = touchBoundary; touchBoundary = null;
         const touch = e.changedTouches[0];
-        if (!touch) return;
+        const wasDragging = dragging; const el = dragEl;
+        dragging = false; dragEl = null;
+        if (!touch) { if (wasDragging) clearDragStyle(el, true); return; }
         const dx = touch.clientX - touchStartX;
         const dy = touch.clientY - touchStartY;
         touchStartX = touchStartY = null;
-        const SWIPE = 55;
+
+        if (wasDragging && el) {
+          if (Math.abs(dx) <= SWIPE) { clearDragStyle(el, true); return; }
+          // Committed: carry the old āyah the rest of the way out, step, then
+          // bring the new one in from the far side, so the swap reads as one
+          // continuous movement rather than a cut.
+          const dir = dx > 0 ? 1 : -1;
+          const w = dragWidth || window.innerWidth;
+          el.style.transition = "transform 140ms ease-out, opacity 140ms ease-out";
+          el.style.transform = `translateX(${dx > 0 ? w : -w}px)`;
+          el.style.opacity = "0";
+          setTimeout(() => {
+            const moved = advance(dir);
+            const fresh = swipeDragEl() ?? el;
+            if (moved) {
+              fresh.style.transition = "none";
+              fresh.style.transform = `translateX(${dx > 0 ? -w : w}px)`;
+              fresh.style.opacity = "0";
+              requestAnimationFrame(() => clearDragStyle(fresh, true));
+            } else {
+              // Nothing to step to (the last āyah of the surah, Prev at 1:1):
+              // the same content slides back rather than sitting off-screen.
+              clearDragStyle(fresh, true);
+            }
+          }, 140);
+          return;
+        }
+
         if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE) {
-          // Sideways: #pageViewContainer already swipes natively (the
-          // sideways-paged flow's own scroll-snap strip) -- don't double it.
+          // A sideways swipe with nothing to drag -- the flow view, whose own
+          // scroll-snap strip already handles it, so don't double-advance it.
           if (e.target.closest?.("#pageViewContainer")) return;
-          advance(dx < 0 ? 1 : -1);
+          advance(dx > 0 ? 1 : -1);
         } else if (Math.abs(dy) > SWIPE) {
           const scroller = nearestScroller(e.target, boundary);
           if (dy < 0 && (!scroller || nearBottom(scroller))) advance(1);
@@ -7596,7 +7746,6 @@
       const showAyatText = noteScopeShowAyatText();
       const canWbwRoot = noteScopeCanWbwRoot();
       const showApproach = noteScope.unitType === "ayah";
-      const ayah = currentSurahData.ayahs.find((a) => a.ayah === noteScope.ayahNum);
 
       let textBlocks = { arabicText: "", englishText: "", banglaText: "" };
       let arabicHtml = "";
@@ -7604,6 +7753,16 @@
       let banglaHtml = "";
       let ayahByAyahHtml = "";
       let bismillahHtml = "";
+      // Text-tools round -- one panel per āyah in scope, not one panel for a
+      // single āyah. Built here (rather than passed a lone `ayah` as before)
+      // so a Range or a short surah gets Word by Word / Root / Derivatives
+      // too, which is what "bring these back in the appropriate Unit
+      // choices" asked for. Each panel keeps its own leading āyah-number
+      // badge when there is more than one, or the words of āyah 3 and āyah 4
+      // would run together with nothing saying where one ends.
+      let wbwHtml = "";
+      let rootsHtml = "";
+      let derivativesHtml = "";
       const ayahDisplayMode = getAyahDisplayMode();
       if (showAyatText) {
         const inScope = currentSurahData.ayahs.filter((a) => a.ayah >= info.fromAyah && a.ayah <= info.toAyah);
@@ -7655,6 +7814,19 @@
           banglaHtml = inScope.map((a) => translationLineHtml(a.ayah, a.translations?.bn, "bn")).join("");
         }
         bismillahHtml = bismillahHtmlFor(currentSurahNum, info.fromAyah);
+
+        // Word by Word / Root / Derivatives, once per āyah in scope. The
+        // ticks themselves are the canonical Study-options ones (fix round:
+        // "a choice of setting anywhere should work everywhere"), so this
+        // only decides HOW MUCH to draw, never whether the choice is on.
+        const perAyahPanels = (panelFn) => inScope
+          .map((a) => (inScope.length > 1
+            ? `<div class="ayah-num-row"><span class="ayah-num-badge">${num(a.ayah)}</span></div>${panelFn(a)}`
+            : panelFn(a)))
+          .join("");
+        if (canWbwRoot && wbwShowToggle.checked) wbwHtml = perAyahPanels((a) => renderWordByWordPanel(a, { langs: wbwLangs() }));
+        if (canWbwRoot && rootsToggle.checked) rootsHtml = perAyahPanels((a) => renderRootPanel(a));
+        if (canWbwRoot && derivativesToggle.checked) derivativesHtml = perAyahPanels((a) => renderDerivativesPanel(a));
       }
 
       const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
@@ -7717,18 +7889,19 @@
         notesHtml: ayahNoteHtml(ayahNotesDoc, unitKey),
         // Round 31 -- "this Ayah screen would be the main study screen for a
         // user, therefore we need to make tools available here" (the
-        // owner's own words). Only meaningful for a genuine single āyah
-        // (canWbwRoot) -- ayah-renderer.js's panels take one āyah, not a span.
-        // Fix round -- WbW/Root/Derivatives now read the SAME canonical
+        // owner's own words). Text-tools round -- no longer single-āyah
+        // only: whichever units show their text here get these too, one
+        // panel per āyah (see the perAyahPanels() builder above).
+        // Fix round -- WbW/Root/Derivatives read the SAME canonical
         // Study-options ticks the Read screen uses, instead of their own
         // separate noteWbwOn/noteRootsOn/noteDerivativesOn flags -- ticking
         // one anywhere now shows up everywhere, with no separate click
         // needed in the Note view.
-        wbwHtml: canWbwRoot && wbwShowToggle.checked && ayah ? renderWordByWordPanel(ayah, { langs: wbwLangs() }) : "",
+        wbwHtml,
         isWbwOn: canWbwRoot && wbwShowToggle.checked,
-        rootsHtml: canWbwRoot && rootsToggle.checked && ayah ? renderRootPanel(ayah) : "",
+        rootsHtml,
         isRootsOn: canWbwRoot && rootsToggle.checked,
-        derivativesHtml: canWbwRoot && derivativesToggle.checked && ayah ? renderDerivativesPanel(ayah) : "",
+        derivativesHtml,
         isDerivativesOn: canWbwRoot && derivativesToggle.checked,
         canWbwRoot,
         hasNote,
@@ -8577,10 +8750,13 @@
         ordinary reading screen's own ticks behave). Fix round -- flips the
         SAME canonical wbwShowToggle checkbox Study options uses, rather
         than a separate flag, so the Read screen picks up the change too
-        the next time it renders. */
+        the next time it renders. Text-tools round -- the Read screen's own
+        ⋮ badge calls these three as well, so they re-render whichever
+        screen is open (onReadingTickChanged) rather than the Note view
+        alone; the name is kept because the mechanism is unchanged. */
     function toggleNoteWbw() {
       wbwShowToggle.checked = !wbwShowToggle.checked;
-      if (noteScope) renderNoteViewNow();
+      onReadingTickChanged();
     }
 
     /** Bar 2's Root toggle (enhancement round) -- same "reading preference,
@@ -8589,7 +8765,7 @@
         rootsToggle checkbox. */
     function toggleNoteRoots() {
       rootsToggle.checked = !rootsToggle.checked;
-      if (noteScope) renderNoteViewNow();
+      onReadingTickChanged();
     }
 
     /** Bar 2's own, separate Derivatives toggle -- same shape as
@@ -8599,7 +8775,7 @@
         between the Read and Note screens. */
     function toggleNoteDerivatives() {
       derivativesToggle.checked = !derivativesToggle.checked;
-      if (noteScope) renderNoteViewNow();
+      onReadingTickChanged();
     }
 
     /** Note view's own ⋯-menu "show ayah by ayah" toggle -- a shared,
@@ -8711,6 +8887,13 @@
         // means the whole Range/Whole Surah/etc., which a flow view is
         // exactly suited to.
         readQuickMenuSlot.innerHTML = "";
+        // Text-tools round -- #ayahPanels keeps whichever āyah key it was
+        // last rendered for, and it is hidden (not emptied) while a flow
+        // shows. Left set, it stays in the document with a key a flow row
+        // may ALSO carry, and Collapse -- which looks its target up by key,
+        // document-wide -- would fold the hidden container instead of the
+        // āyah the reader actually tapped. Caught by test, not by reading.
+        delete ayahPanels.dataset.ayahCollapsibleFor;
         // Mushaf over a single ayah means THAT ayah's page, with it
         // highlighted -- the owner's one-ayah memorising case. Every other
         // unit hands over its own bounds, as before.
@@ -8729,6 +8912,14 @@
           langs: translationLangs(),
           wbwLangs: wbwLangs(),
         });
+        // Text-tools round -- what the ⋮ menu's Collapse item folds away.
+        // #ayahPanels itself survives every re-render (only its innerHTML is
+        // replaced), so the class has to be cleared here or a collapse left
+        // on would silently hide the NEXT āyah too -- collapse is a "hide
+        // what's in front of me now" gesture, not a stored preference, the
+        // same as the Note view's own master toggle.
+        ayahPanels.dataset.ayahCollapsibleFor = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
+        ayahPanels.classList.remove("collapsed");
         // Round 31 -- the owner's own question: "why should the three dot
         // take space over the Ayah?" Mounted on #readBar instead of a
         // header row over the text (I2 -- ayah-renderer.js itself is
@@ -8745,7 +8936,17 @@
         // redundant here and dropped (showBookmark:false) -- the flow
         // view's own per-āyah ⋮ badge keeps it, since it has no bar-level
         // button of its own to mean one specific āyah.
-        readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, { hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: false });
+        readQuickMenuSlot.innerHTML = renderQuickMenu(singleUnitKey, {
+          hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey), isBookmarked: singleIsBookmarked, showBookmark: false,
+          // Text-tools round -- Word by Word / Root / Derivatives / Collapse,
+          // the same group the Note view's own ⋮ carries. Not offered in
+          // Mushaf mode, which replaces those choices rather than sharing
+          // the screen with them (round 19's own rule) -- this branch never
+          // runs with Mushaf on (it forces the flow renderer), so there is
+          // nothing to gate here beyond saying why.
+          showTextTools: true,
+          isWbwOn: wbwShowToggle.checked, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked,
+        });
         attachAyahQuickMenus(readQuickMenuSlot);
       }
 
