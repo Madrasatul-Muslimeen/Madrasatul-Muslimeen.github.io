@@ -291,6 +291,8 @@ export const BN = {
   "Loop": "পুনরাবৃত্তি চক্র",
   "Play": "চালান",
   "Mushaf view": "মুসহাফ দৃশ্য",
+  // ? -- first-draft Bangla, 31 Aug 2026 round.
+  "Mushaf shape": "মুসহাফ আকার",
   "(whole surah only)": "(কেবল পুরো সূরা)",
   "Mushaf view shows the printed page, so the other reading choices do not apply while it is on.":
     "মুসহাফ দৃশ্যে ছাপা পৃষ্ঠাই দেখানো হয়, তাই এটি চালু থাকলে পাঠের অন্য পছন্দগুলো প্রযোজ্য নয়।",

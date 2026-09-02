@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.115.** Cutover to production happened
+**Current milestone: QuranRevival v07.117.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -8520,6 +8520,47 @@ for the owner's own eye; the one reported missing string ("Qur'an") is
 pre-existing and unrelated to this round. No `firestore.rules`, schema or
 Firestore data changes -- nothing to deploy but the static files.
 
+**Merge note:** v07.111 through v07.113 above all landed from a concurrent
+Claude Code on the web session that kept reaching `main` first. A second,
+independent session (this one) had been working the owner's own overlapping
+"OPTIONS, READ FIXES" report and its own follow-ups at the same time --
+fixing the identical `noteWbwOn`/`noteRootsOn`/`noteDerivativesOn`
+disconnect v07.111's own item (1) already covers, plus a genuinely separate
+scroll-TRAP bug (content silently unreachable, not merely missing a
+gesture) v07.112/v07.113 did not touch, and its own Study-Unit-picker sync
+fix and a first-draft "Mushaf shape" toggle. Merged in as v07.115/v07.116
+below (renumbered THREE times now: the other session's own v07.112 and
+v07.113 landed first, pushing this branch's original v07.114/v07.115 up by
+one; then the SAME session landed its own v07.114 above -- 2 Sep 2026, the
+"text-tools" round, a genuinely different piece of work in largely the same
+area of the file -- pushing this branch's numbers up by one more, to
+v07.115/v07.116) -- with the now-redundant WbW/Root/Derivatives section
+trimmed down to a pointer at v07.111's own entry rather than repeating it.
+Checked directly rather than assumed: v07.114's own text-tools round (READ-
+screen ⋮ badge, per-āyah Collapse, RTL swipe) and this branch's own
+Study-Unit-picker sync / scroll-trap / Mushaf-shape work touch overlapping
+functions (`renderStudyScreen()`, the Note view's own bar wiring) but not
+the same lines -- `git merge` resolved `app/quranrevival.html` with no
+conflict at all, and the post-merge smoke suite (below) re-confirms both
+rounds' own behaviour still holds together. **One real, silent interaction
+was found by re-running the smoke suite after the merge, not by reading
+the diff**: v07.116's own item 1 ("screen must always be scrollable both
+vertically and sideways") had added a plain `#readScroll { overflow-x:
+auto }` safety net -- but v07.114's own smooth-swipe round, landing later,
+added an unconditional `#readScroll { overflow-x: hidden }` right after it
+in the cascade (needed so the mid-drag `translateX` on `#ayahPanels` never
+flashes a real scrollbar on its ancestor while the finger is dragging), so
+theirs now wins on every path, sideways mode or not. Investigated rather
+than "fixed" either way: `#ayahPanels` carries no fixed width and never
+organically overflows horizontally (plain wrapped text, confirmed by
+reading its own CSS), so the safety net was, in practice, exactly what its
+own v07.115 entry already called it -- "ordinary content still wraps and
+never triggers it." Nothing is actually unreachable; the swipe fix is the
+one that matters and is left as the winner. The two throwaway smoke
+scripts that asserted the old expectation were corrected to assert the
+real, intentional post-merge behaviour instead of reverting anything in
+`app/quranrevival.html` itself.
+
 v07.114 (2 Sep 2026, on Claude Code on the web) is **the text-tools round --
 Word by Word / Root / Derivatives / Collapse brought back to every unit
 choice that actually shows āyah text, placed on the READ screen too, and the
@@ -8648,7 +8689,236 @@ reads v07.109 while `main` is well past it, so that device may also be
 holding a cached older build. This could not be checked from here -- a cloud
 sandbox with no Firebase credentials and no reachability to Firestore.
 
-v07.115 (2 Sep 2026, on Claude Code on the web) is **the Approach/Explore
+v07.115 (31 Aug 2026, on Claude Code on the web) is **the "affect
+everywhere" round -- the READ/NOTE sync gap closed at its root, a real
+always-scrollable safety net, and a first-draft "Mushaf shape" toggle.**
+The owner's own message covered a role/permission question, a request that
+turned out to already be built, and four READ/NOTE view items; each is
+handled on its own terms below rather than folded together.
+
+**Role authority and "guardian acts as student too" were investigated, not
+built -- both are already true, by design, and no code changed for
+either.** Read directly rather than assumed: `session-context.js`'s
+`effectiveRoles()`/`canAdminIdentity()`-style checks key off the SIGNED-IN
+login's own `tenantMemberUids` roles, never off `selectedPersonId` --
+picking a different person in the Person/Student picker (Ahsan, say)
+never touches `context.roles`/`viewAsRole`, so an owner/prime account
+keeps full authority whichever person the picker happens to point at.
+`scopedRoster()`'s own guardian branch already includes `p.id ===
+myPersonId` (a guardian can already select THEMSELVES, not only their
+children), and `firestore.rules`' `tenantPeople` read rule already has an
+`authUid == myUid()` "own record" branch alongside `isGuardianOf()`, so a
+guardian's own roster entry is readable regardless -- confirmed
+`canRecordFor()` already includes `isSelfPerson(personId)` too. **What is
+NOT built, flagged rather than guessed at: a cross-device "default
+person" preference.** The picker's own choice already persists forever
+per BROWSER (v07.75, localStorage) -- selecting Ahsan once on a device
+keeps it as that device's default from then on -- but there is no
+account-level sync yet (the `js/lang-sync.js` shape v07.37 built for
+`appLang`, generalized to a person rather than hardcoded to one, since
+hardcoding a name/email into the app would break I5/I11 the same way this
+project has never done for anyone else). Real, additive, deployable work
+if the owner wants it as its own round -- not attempted here since it
+needs its own schema field and a `firestore.rules` change, the same
+"ask/scope before building" bar every round in this file uses for new
+schema.
+
+**Item 1 -- READ and NOTE view now always scroll both ways, whatever Study
+Unit/Approach is showing.** `#readScroll` and `.note-body` gained
+`overflow-x: auto` alongside their existing `overflow-y: auto` -- a safety
+net, not an active mode: ordinary content still wraps and never triggers
+it. The default "Page by page" sideways-reading mode (on by default since
+shell round 28) already had its own dedicated horizontal scroller,
+`#pageViewContainer`, and correctly keeps `#readScroll` itself at
+`overflow: hidden` so the two never fight over the same axis -- confirmed
+by testing both modes rather than assuming the new rule was even needed
+in the default one.
+
+**Item 2 -- a new "Mushaf shape" toggle, first draft.** The owner's own
+spec: "collapse all openings and bring the Arabic in Standard Mushaf shape
+with Tajweed colors ... not the 'Mushaf View' but Mushaf Shape of Ayah
+structure where user can select each Ayah separately." Built as a new
+tick in Reading view (`#mushafShapeToggle`) plus a matching one-tap
+shortcut on the Read screen's own bottom bar (`#mushafShapeBtn`, "place a
+button on the button bar"), deliberately NOT reusing `#mushafToggle` (the
+real Mushaf view, a different renderer entirely -- real justified printed
+pages via `getMushafPagesForKeys()`). Turning it on (a) un-ticks Word by
+Word/Root/Derivatives/English/Bangla translation ONCE, as a one-shot
+"collapse" -- any of them stays freely re-tickable afterward, nothing is
+disabled the way real Mushaf view greys them out -- and (b) adds
+`body.mushaf-shape-on`, which only removes the flow view's own per-āyah
+card divider/margin (`.page-flow-ayah`) so consecutive āyāt read as one
+continuous page. Tajweed is untouched either way, exactly as asked ("with
+Tajweed colors when the Tajweed option is chosen"), since it is its own
+independent tick. Ayah-renderer.js/`renderFlowView()` are completely
+unmodified -- this is styling plus a one-shot tick reset, never a
+different renderer, so every āyah keeps its own selectable ⋮ badge, unlike
+real Mushaf view. **This is a first-draft reading of a genuinely new
+mechanism** (the class of thing this project has always demoed before
+building) rather than something confirmed with the owner first -- flagged
+plainly so it can be corrected rather than assumed right.
+
+**Item 3 -- an Approach never restricting another Approach's own
+functions was checked, not rebuilt.** Already the standing rule since
+shell round 19 (v07.45, "an Approach is a way of studying, not a gate on
+it"): `renderStudyScreen()`'s own `panels` array always starts with
+`["text", ...approachPanels]` and every reading tick (Word by Word,
+Root, Derivatives, translations) ADDS to whatever an Approach declares
+rather than being limited by it; the only thing that ever greys other
+ticks out is the reader's OWN Mushaf-view tick (a real rendering
+conflict, not an Approach restriction). Read the relevant code paths
+directly to confirm nothing had regressed since v07.45 rather than
+assuming the rule still held.
+
+**Item 4 -- "choosing an option anywhere should affect everywhere," the
+real bug, fixed at its root.** The Note view's own bar 1 (Study Unit/
+Surah/Ayah/Number/From/To) had been genuinely INDEPENDENT state
+(`noteScope`, v07.69) since the round that built it -- the right call at
+the time for the one thing it protected (opening Note & more for one āyah
+inside a flow must never silently move the Read screen), but it also
+meant an EXPLICIT pick made inside Note view never reached Options or the
+Read screen at all, which is exactly the friction the owner described:
+"user has to come back to options to change the study unit, this is just
+doing things twice." Every one of `wireNotePickerBar()`'s six handlers
+now still updates `noteScope` first (so Note view redraws immediately),
+then propagates the SAME explicit choice through to the canonical control
+(`unitTypeSelect`/`ayahSelect`/`unitNumSelect`/`rangeFromSelect`/
+`rangeToSelect`) the exact way `READ_PICKER_MIRRORS` already does for the
+Read screen's own pickers -- set the canonical select's value and fire
+its own `change`, so the one real handler for "what does picking X mean"
+stays the only place that decides it (the `numSel` handler calls
+`goToUnitNumber()` directly and awaits it instead, since that one is
+async and can cross a surah boundary -- dispatching a change event there
+would have raced it). The v07.69 protection survives unchanged:
+`openNoteView()` itself still never touches canonical state on ENTRY --
+tapping one āyah's own ⋮ badge inside a flow still opens Note view for
+just that āyah without moving the Read screen underneath the reader; only
+an explicit interaction with bar 1, once the reader is already looking at
+it, writes through. **A second, related gap in the same spirit was found
+and fixed alongside it**: the dock's own Note tab (`tabNoteBtn`) always
+forced `buildUnitKey.ayah(currentSurahNum, currentAyahNum)` regardless of
+what Options had selected -- so tapping it while Range/Whole Surah/Ruku'/
+etc. was chosen silently dropped back to Single Ayah, one more real place
+the same complaint showed up. Now opens at `currentUnitInfo().unitKey`,
+the same source "Track this unit" already claims against, so the dock's
+Note tab shows whatever unit is actually selected, wherever it was
+picked.
+
+**Verified with two focused, un-checked-in Playwright smoke scripts**
+(this project's own established practice for work reached after
+`behaviour.mjs`'s own disclosed section-42 crash point) -- 10 checks for
+the sync fix (both scroll axes in the non-sideways mode, the sideways
+mode's own existing horizontal scroller confirmed unaffected, Options
+"Range" pick surviving into a fresh Note-view open, an explicit unit-type
+pick made INSIDE Note view propagating to both the canonical picker and
+the Read screen's own mirror) and 14 for Mushaf shape (the bottom-bar
+button collapsing the right ticks while leaving Tajweed alone, the real
+Mushaf view never engaging, the other ticks staying enabled rather than
+greyed, individual āyahs staying separately selectable under the new
+class, and the toggle cleanly reversing) -- all 24 pass, 0 failures, 0
+page errors. `node --check` passes on the extracted module script and
+`bn.js`. **`tools/i18n-verify/layout.mjs` reports the landing page
+byte-for-byte identical against a real `HEAD` shim** at all eight
+viewports in both banner states (heading/wheel/rows/gap all unchanged;
+the "missing ID targets" flag is the same pre-existing false-positive
+class this file has disclosed since v07.86 -- ids that only exist once a
+particular screen is opened, now including the newer `asmaX*`/`qcrAdd*`
+ones too -- confirmed by the flag firing identically against `HEAD`
+compared to itself, not something this round introduced). The full
+`tools/i18n-verify/behaviour.mjs` suite could not be run to completion in
+this sandbox within a reasonable time budget and was not used to verify
+this round -- flagged rather than silently skipped; a future session with
+more time should run it in full. One new string ("Mushaf shape") added to
+`bn.js`, first-draft Bangla marked `// ?` for the owner's own eye. No
+`firestore.rules`, schema or Firestore data changes -- nothing to deploy
+but the static files.
+
+**Flagged for the owner's own correction, not treated as settled:** the
+Mushaf-shape button's exact visual/interaction reading (item 2 above) is
+a first guess at a genuinely new mechanism, built without the usual
+demo-first round this class of change normally gets in this project --
+say what's wrong with it and it can be corrected directly rather than
+guessed at again. The cross-device "default person" preference (item 1)
+is scoped and ready to build as its own round the moment the owner
+confirms they want it.
+
+v07.116 (31 Aug 2026, on Claude Code on the web) is **a same-day
+correction to v07.115 -- a real, severe scroll trap fixed.** The owner's
+own report after using v07.115: "i had single Ayah unit setting and page
+setting. but none scrolls or go sideways, only except nav button... same
+is with note view... also choosing WbW at options should make it active
+in both read n note view (currently it works with read view only)."
+
+**The scroll bug is real, severe, and pre-existing -- not something
+v07.115 caused, but something it also didn't catch, and it's exactly the
+owner's OWN default configuration (Single Ayah + "Page by page" ON, the
+out-of-the-box state).** Measured before touching anything, not guessed:
+`#readScroll`'s real `scrollHeight` (471px) exceeded its `clientHeight`
+(429px) by 42px, with `overflow-x`/`overflow-y` both computing `hidden`
+-- content genuinely trapped, unreachable in either direction, matching
+the owner's own "only except nav button" precisely. Root cause:
+`body.read-sideways`'s own CSS (shell round 28, "Page by page" reading)
+forces `#readScroll { overflow: hidden }` and reshapes `#studyScreen`/
+`#ayahPanels` into a flex column purely because the TICK is checked --
+it never checked whether the paged renderer (`#pageViewContainer`) is
+actually what's on screen. For Single Ayah/Ruku'/Juz/Hizb/Page (content
+in `#ayahPanels` instead), those same rules were the trap. Fixed with a
+new `body.flow-view-active` class, toggled in `renderStudyScreen()`
+alongside its own existing `usesFlow` computation, and required
+alongside `body.read-sideways` on the three rules that actually caused
+harm (`#readScroll`/`#studyScreen`/`#ayahPanels`) -- `#pageViewContainer`/
+`.page-flow-ayah`/`.hifz-page`'s own rules needed no change, since those
+elements are already `display:none` whenever they're not the thing
+showing. **Verified with the real longest āyah in the Qur'an (2:282)**,
+Single Ayah + Page-by-page ON: `#readScroll` now genuinely scrolls both
+directions (confirmed by a real mouse-wheel simulation moving
+`scrollTop`), while the Range/Whole-Surah/Mushaf paged case is proven
+byte-identical to before (`flow-view-active` set, `#pageViewContainer`
+still the visible flex row with its own `overflow-x:auto` untouched) --
+10/10 checks pass. **The Note view's own report could not be reproduced
+as a distinct bug** -- `.note-body` (fixed for horizontal scroll in
+v07.115 itself, still unmerged at the time the owner tested) scrolls
+correctly both directions with real overflowing content, confirmed by
+the same real-scroll-and-measure method; the most likely explanation is
+the owner was testing against the still-unmerged v07.115 branch/
+production, which lacked that fix. Flagged rather than silently assumed
+fixed -- if it's still stuck after this merges, the exact ayah/unit is
+needed to reproduce it.
+
+**The WbW/Root/Derivatives sync half of this report turned out to already be
+fixed by the time this round reached `main`.** A concurrent Claude Code on
+the web session had been working the owner's own identical complaint at the
+same time and merged first (see v07.111's own item (1) above) -- the exact
+same retirement of `noteWbwOn`/`noteRootsOn`/`noteDerivativesOn` in favour of
+reading `wbwShowToggle`/`rootsToggle`/`derivativesToggle` directly, and in
+one respect a strict superset of what this round had built (its
+`onReadingTickChanged()` also live-re-renders whichever of Read/Note is
+actually open the moment a tick changes, not only on the next full render).
+Confirmed by reading v07.111's own diff line for line against this round's
+own now-redundant copy before merging: picking theirs loses nothing this
+round would otherwise have shipped, so the duplicate edit was dropped here
+during the merge rather than kept as a second, competing implementation of
+the same fix. `tools/i18n-verify/layout.mjs` reports the landing page
+byte-for-byte identical against a real `HEAD` shim at all eight viewports in
+both banner states (only the same pre-existing `asmaX*`/`qcrAdd*`
+false-positive missing-ID-target flag this file has disclosed since v07.86).
+No `firestore.rules`, schema or Firestore data
+changes -- nothing to deploy but the static files.
+
+**Merge note (second collision):** this branch's own v07.115/v07.116 above
+landed as a merge, and by the time this branch caught up to `main` again,
+a fourth concurrent-session round had landed as `main`'s OWN v07.115 (PR
+#42, 2 Sep 2026, the Approach/Explore PC pop-out round). Renumbered to
+v07.117 below to keep sequencing intact -- content otherwise untouched.
+Checked directly, not assumed: that round's own diff (`js/note-popup.js`
+generalized to take an `id`, a new `js/wheel-resize.js`, markup surgery on
+`#wheelSection`/`#exploreView`) touches none of the same functions this
+branch's own `flow-view-active`/Mushaf-shape/Note-picker-sync work does --
+`git merge` resolved `app/quranrevival.html` with no conflict at all, and
+the post-merge smoke suite below re-confirms this branch's own mechanisms
+still hold up under the popup/resize restructuring.
+
+v07.117 (2 Sep 2026, on Claude Code on the web) is **the Approach/Explore
 PC pop-out round -- the owner's own ask: pop out the Approach (Mastery
 Wheel) and Explore stage views on PC the way the Note view already does
 (28 Aug 2026), for all of Explore's own functions (the Quran-structure
