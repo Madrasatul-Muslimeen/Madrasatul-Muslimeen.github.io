@@ -8800,6 +8800,76 @@ mechanisms that happen to compose correctly rather than being explicitly
 coordinated. No `firestore.rules`, schema or Firestore data changes --
 nothing to deploy but the static files.
 
+v07.116 (2 Sep 2026, same day) is **a follow-up fix to v07.115's own PC
+pop-out round, from the owner's own screenshot: the Explore ("Quran" tab)
+list stopped well short of the pane's own bottom edge, and a question --
+"in QCR and Asma, list is left, wheel right -- do the same for Quran
+[Explore] and Approach?"**
+
+**The list-stopping-short bug was `.ways-list`'s own generic base rule
+(`max-height: 420px`), never overridden for `#explorePanel`.** Every OTHER
+list that shares this class already has its own override for the identical
+reason -- `#wheelSection .ways-list`, `#qcrListPane .ways-list` and
+`#asmaXListPane .ways-list` all set `max-height: none` (the first of them,
+shell round 29, for a real 30-Approach tenant whose list needed to scroll
+inside the card rather than stop early) -- but `#explorePanel`'s own copy
+of this same sidebar/list pattern was simply never given the same
+treatment, and the 420px cap only became genuinely visible once v07.115
+made Explore's own pane taller (a real floating popup, maximizable). Fixed
+identically: `#explorePanel { align-items: stretch; }` plus
+`#explorePanel .wheel-sidebar { height: 100%; }` plus `#explorePanel
+.ways-list { flex: 1 1 auto; max-height: none; }` -- the same three-part
+fix shell round 29's own comment already documents in full (a flex item
+left at `height: auto` doesn't get bound by `align-items: stretch`, it
+only wins ties; `height: 100%` is what forces it to the real, already-
+correct pane height).
+
+**The list-left/wheel-right question was answered yes, and built as a pure
+CSS reorder, not a markup change.** QCR and Asma already read List-then-
+Wheel in the DOM (so a plain `row` puts List on the left with zero `order`
+tricks) and use `flex-direction: column-reverse` on mobile to flip the
+stacking back to wheel-first there without touching the DOM. The Mastery
+Wheel and Explore's own Quran-structure panel have the OPPOSITE DOM order
+(Wheel-then-List, since that's what mobile's own plain, non-reversed
+`column` stacking has always relied on) -- reordering their markup to
+match QCR/Asma would have meant ALSO reversing their own mobile rule to
+compensate, two coordinated changes for one visual result. `flex-direction:
+row-reverse`, scoped to the SAME `>=900px` breakpoint v07.115's own pop-out
+already uses, does the identical visual flip (the DOM-last child, the
+list, renders first/left; the DOM-first child, the wheel, renders last/
+right) with **zero markup change and zero mobile-rule change** --
+`@media (max-width: 720px)` (mobile's own stacking order) and the untouched
+721-899px tablet range (still plain `row`, wheel-left/list-right, exactly
+as before) are both completely unaffected, confirmed by measurement rather
+than assumed. Functions are untouched either way: nothing in either panel
+cares which side of the row it renders on, only its own DOM position for
+click handlers and content, neither of which `flex-direction` touches.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice) -- **15 checks, all passing**: the
+Explore list's own `max-height` confirmed `none` and its own bottom edge
+now sitting within ~25px of the pane's bottom (was a large, visible gap)
+in a maximized popup; the Approach list confirmed left-of the wheel and
+the Explore list confirmed left-of its own wheel, both on a 1280px PC
+width; and, at both a 390px phone and the project's own 768px tablet test
+size, the Approach AND Explore wheels both confirmed still rendering
+before/above their own lists -- unchanged order -- with no horizontal
+overflow introduced. **`tools/i18n-verify/layout.mjs` reports the landing
+page's own measured metrics (heading position, wheel width, visible
+Approach rows, gap above dock, overflow) byte-for-byte IDENTICAL** at
+every phone/tablet/desktop viewport in both banner states against a real
+previous-commit shim -- expected, since a pure re-ordering of which side
+two same-sized elements render on changes no measured dimension this
+project's own layout check tracks. `getElementById` targets unchanged at
+208 (no JS touched this round, CSS only), with the same pre-existing 18
+false-positive missing ids this project has disclosed since v07.86.
+**`reading.mjs`, `navcheck.mjs`, `panel.mjs`, `tools/perf/measure.mjs`/
+`new-tenant.mjs` and `tools/i18n-coverage.mjs` all report their own
+unchanged baselines** (Quran Study still 6 sequential Firestore round
+trips; coverage still 1,542/1,542 scanned, no new strings -- this round
+adds no new user-visible text at all). No `firestore.rules`, schema or
+Firestore data changes -- nothing to deploy but the static files.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
