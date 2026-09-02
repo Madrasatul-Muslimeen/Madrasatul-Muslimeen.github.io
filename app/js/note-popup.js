@@ -1,22 +1,38 @@
-// Note popup window -- PC-only resizable/draggable chrome for the Ayah Note
-// screen (28 Aug 2026, owner's own ask: "make the NOTE VIEW to pop-up in PC
-// with all the functions and features it has with it").
+// Popup window chrome -- PC-only resizable/draggable window shell, built for
+// the Ayah Note screen (28 Aug 2026, owner's own ask: "make the NOTE VIEW to
+// pop-up in PC with all the functions and features it has with it") and,
+// since 2 Sep 2026, reused verbatim for the Mastery Wheel ("Approach") and
+// Explore stage views too -- same window mechanics, same drag/resize/
+// maximize behaviour, just a different element and a different remembered
+// geometry per view. Nothing about the mechanism itself is Note-specific;
+// only the side-pane/splitter helpers at the bottom of this file are.
 //
 // Pure DOM (I2): no Firebase, no app-specific data, no Qur'an knowledge --
 // this file only knows about pixels and localStorage. quranrevival.html
-// wires it to the real #noteView element and real navigation/data.
+// wires it to the real popup elements and real navigation/data.
 //
 // Geometry, the side-pane width and the list/card choice are all
 // localStorage -- a per-viewer convenience (which window size/shape someone
 // likes), the same additive shape every reading preference in this app has
 // used since shell round 18 (Tajweed/WbW/Root ticks, the Arabic font,
 // full-screen-hides...). No new startup read, no collection, no
-// firestore.rules change: nothing here is read until the popup is actually
+// firestore.rules change: nothing here is read until a popup is actually
 // opened, and even then it's a synchronous localStorage read, never network.
+//
+// Each popup gets its own remembered geometry, keyed by the `id` passed to
+// initPopupWindow() -- "note" (the default, preserving the exact storage
+// key this file has always used, so nobody's already-saved Note window
+// shape is lost) plus "wheel" and "explore" for the two views added
+// 2 Sep 2026. Never share one key across views: a person may reasonably
+// want the wheel popup small and the Note popup large.
 
 const GEOMETRY_KEY = "mm_note_popup_geometry";
 const SIDE_WIDTH_KEY = "mm_note_popup_side_width";
 const VIEW_MODE_KEY = "mm_note_popup_side_view"; // "list" | "card"
+
+function geometryKeyFor(id) {
+  return id === "note" ? GEOMETRY_KEY : `mm_${id}_popup_geometry`;
+}
 
 const MIN_WIDTH = 480;
 const MIN_HEIGHT = 360;
@@ -73,15 +89,15 @@ function clampGeometry(g) {
   return { width, height, top, left };
 }
 
-function loadGeometry() {
-  const saved = readJson(GEOMETRY_KEY);
+function loadGeometry(id) {
+  const saved = readJson(geometryKeyFor(id));
   if (saved && Number.isFinite(saved.width) && Number.isFinite(saved.height)
       && Number.isFinite(saved.top) && Number.isFinite(saved.left)) {
     return clampGeometry(saved);
   }
   return defaultGeometry();
 }
-function saveGeometry(g) { writeJson(GEOMETRY_KEY, g); }
+function saveGeometry(g, id) { writeJson(geometryKeyFor(id), g); }
 
 export function loadSideWidth() {
   const saved = readJson(SIDE_WIDTH_KEY);
@@ -127,9 +143,15 @@ function clearGeometry(el) {
  * "nw"/"se"/"sw"`), and maximize/restore (via `maximizeBtn`). Geometry
  * persists on pointerup, not on every move -- the same "don't write on every
  * pixel" restraint the side splitter below uses too.
+ *
+ * `id` picks which remembered geometry this window uses -- defaults to
+ * "note" so every existing call site (just the Ayah Note screen, until
+ * 2 Sep 2026) keeps reading/writing the exact key it always has. Pass
+ * "wheel" or "explore" to give the Mastery Wheel / Explore popups their own,
+ * independent remembered shape.
  */
-export function initPopupWindow(el, { dragHandleEl, resizeHandleEls = [], maximizeBtn, onMaximizeChange } = {}) {
-  let geometry = loadGeometry();
+export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls = [], maximizeBtn, onMaximizeChange } = {}) {
+  let geometry = loadGeometry(id);
   let wasPopupViewport = isPopupViewport();
   if (wasPopupViewport) applyGeometry(el, geometry); else clearGeometry(el);
   let maximized = false;
@@ -138,7 +160,7 @@ export function initPopupWindow(el, { dragHandleEl, resizeHandleEls = [], maximi
   function commit(next, { persist = true } = {}) {
     geometry = next;
     applyGeometry(el, geometry);
-    if (persist) saveGeometry(geometry);
+    if (persist) saveGeometry(geometry, id);
   }
 
   dragHandleEl?.addEventListener("pointerdown", (e) => {
@@ -154,7 +176,7 @@ export function initPopupWindow(el, { dragHandleEl, resizeHandleEls = [], maximi
     const up = () => {
       dragHandleEl.removeEventListener("pointermove", move);
       dragHandleEl.removeEventListener("pointerup", up);
-      saveGeometry(geometry);
+      saveGeometry(geometry, id);
     };
     dragHandleEl.addEventListener("pointermove", move);
     dragHandleEl.addEventListener("pointerup", up);
@@ -179,7 +201,7 @@ export function initPopupWindow(el, { dragHandleEl, resizeHandleEls = [], maximi
       const up = () => {
         handle.removeEventListener("pointermove", move);
         handle.removeEventListener("pointerup", up);
-        saveGeometry(geometry);
+        saveGeometry(geometry, id);
       };
       handle.addEventListener("pointermove", move);
       handle.addEventListener("pointerup", up);
@@ -188,7 +210,7 @@ export function initPopupWindow(el, { dragHandleEl, resizeHandleEls = [], maximi
 
   maximizeBtn?.addEventListener("click", () => {
     if (maximized) {
-      commit(preMaximizeGeometry ?? loadGeometry());
+      commit(preMaximizeGeometry ?? loadGeometry(id));
       maximized = false;
     } else {
       preMaximizeGeometry = { ...geometry };

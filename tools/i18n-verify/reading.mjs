@@ -48,7 +48,15 @@ function readMetrics() {
     ayahVisible: Math.round(visible),
     startsAt: Math.round(panelsR?.top ?? 0),
     dockVisible: (() => { const d = box("#dock"); return !!d && d.bottom <= innerHeight + 1 && d.height > 0; })(),
-    wheelHidden: !!q("#wheelSection")?.hidden,
+    // 2 Sep 2026 PC-popup round: the heading + #wheelSection are now
+    // wrapped in one #wheelPopupView (see quranrevival.html's own markup
+    // comment) -- setStageView() toggles ITS hidden attribute now, not
+    // #wheelSection's own, so checking #wheelSection directly would always
+    // read false even though the whole wrapper (and #wheelSection inside
+    // it) is genuinely invisible -- confirmed by reading #wheelSection's
+    // own getBoundingClientRect() (0x0 when the wrapper is hidden) rather
+    // than assumed.
+    wheelHidden: !!q("#wheelPopupView")?.hidden,
     horizontalOverflow: document.documentElement.scrollWidth > innerWidth + 1,
     readScrollOverflowsX: scroll ? scroll.scrollWidth > scroll.clientWidth + 1 : null,
     immersive: document.body.classList.contains("immersive-read"),
