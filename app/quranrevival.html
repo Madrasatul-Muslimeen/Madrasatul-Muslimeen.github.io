@@ -572,6 +572,12 @@
   .wheel-seg { cursor: pointer; stroke: #0c1320; stroke-width: 1; transition: stroke .15s, stroke-width .15s; }
   .wheel-seg:hover { stroke: #F2E8D5; stroke-width: 1.5; }
   .wheel-seg-num { font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 600; fill: #F2E8D5; }
+  /* Drag-reposition round (2 Sep 2026) -- mastery-wheel.js's own OPT-IN
+     `sliceLines` extra, drawn inside the slice body for the Asma ul Husna
+     Groups/Names wheels only (no other wheel in the app ever sets it). A
+     touch smaller than the outer number, since several lines share one
+     slice's own limited radial band. */
+  .wheel-seg-label { font-family: 'Inter', sans-serif; font-size: 7px; font-weight: 600; fill: #cdd8ee; }
   .wheel-legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 0.78rem; color: #cdd5e3; }
   .legend-item { display: flex; align-items: center; gap: 0.4rem; }
   .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
@@ -1006,6 +1012,23 @@
      .way-row.qcr-way-row does), so only the classes that base doesn't cover
      need their own rule here. */
   .way-row.asma-way-row { flex-wrap: wrap; align-items: flex-start; cursor: default; }
+  /* Drag-reposition round (2 Sep 2026) -- the small grip both the Groups
+     list and a group's own Names list use to reorder (js/drag-reorder.js).
+     touch-action:none is what stops a touch-drag from also scrolling the
+     list underneath the reader's finger -- the same reason every other
+     Pointer-Events drag handle in this app (note-popup.js's own splitters,
+     wheel-resize.js) carries it. */
+  .asma-drag-handle {
+    cursor: grab; touch-action: none; background: transparent; border: none; color: #8fa0c2;
+    font-size: 16px; line-height: 1; padding: 4px 2px; flex: 0 0 auto; align-self: center;
+  }
+  .asma-drag-handle:active { cursor: grabbing; color: #C9A24B; }
+  .way-row.drag-reorder-active { opacity: 0.55; }
+  /* The owner's own "01.01.01"-style display-position number
+     (asma-collections.js's own asmaPositionLabels()) -- a second, smaller
+     badge next to the permanent "#N" one, which stays exactly what it
+     always was (I5: still the real key everything else in the app reads). */
+  .asma-pos-label { font-size: 10px; color: #C9A24B; font-weight: 600; }
   /* 30 Aug 2026 round -- the owner's own layout: name, then (Manage on)
      Move-to/Archive/Remove/Edit, then the status chip -- all ONE flex row
      ("in the same level to a name"), which wraps onto its own line on a
@@ -3024,9 +3047,11 @@
       addExtraName as asmaAddExtraNameLocal, updateExtraName as asmaUpdateExtraNameLocal, setExtraNameStatus as asmaSetExtraNameStatusLocal,
       setNameOverrideBn as asmaSetNameOverrideBnLocal, setNameOverrideEn as asmaSetNameOverrideEnLocal,
       setNameRefOverride as asmaSetNameRefOverrideLocal, appendRefToName as asmaAppendRefToNameLocal,
+      reorderCollections as asmaReorderCollectionsLocal, reorderItems as asmaReorderItemsLocal, asmaPositionLabels,
       resolveAsmaEntry, getAsmaCollectionsDoc, saveAsmaCollections,
     } from "./js/asma-collections.js";
     import { asmaEntryDisplayName, asmaEntryMeaningText, renderAsmaCollectionListHtml, renderAsmaXrefBlock, renderAsmaPosterHtml } from "./js/asma-renderer.js";
+    import { wireDragReorder } from "./js/drag-reorder.js";
     import { parseAsmaRef } from "./js/asma-ref-parser.js";
     import { listEnrollmentsForPerson, programSubjectMapFromEnrollments } from "./js/course-offers.js";
     import { getSurah, getSurahIndex, getJuzIndex, getPageIndex, getHizbIndex } from "./js/quran-data.js";
@@ -3066,7 +3091,7 @@
     // -- each respects its own Every time/Once a day/Once a week preference
     // independently, same as when they were two separate page loads.
     showBootSplash(() => showQuranSplash());
-    import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler } from "./js/mastery-wheel.js";
+    import { renderWheelLegend, renderScopedWheel, attachScopedWheelClickHandler, renderWheelSidebar, attachWheelSidebarClickHandler, wrapWheelLabel } from "./js/mastery-wheel.js";
     import {
       renderGuideTab, renderTrackTab, renderBreakdownTab, renderCoverageTab,
       renderWayModalShell, attachWayModalHandlers, renderWayEmbed, attachWayEmbedHandlers,
@@ -6147,12 +6172,36 @@
       return renderAsmaXGroupsLevel();
     }
 
+    /** How many characters of a wrapped wheel-slice line reasonably fit at
+        the given item count on renderScopedWheel's own default 360px size
+        -- more slices means less arc per slice means less room. Derived
+        from the slice's own mid-radius arc length, not a guessed constant,
+        so it scales sensibly whether a group holds 3 Names or 20. Only
+        ever used for the two Asma wheels (Groups/Names) below -- see
+        wrapWheelLabel's own header on why every other wheel in the app
+        never sets `sliceLines` at all. */
+    function wheelLabelMaxLen(n) {
+      const rOuter = 360 / 2 - 4;
+      const rInner = rOuter * 0.5;
+      const midR = (rOuter + rInner) / 2;
+      const anglePer = 360 / Math.max(n, 1);
+      const arcLen = midR * anglePer * (Math.PI / 180);
+      return Math.max(6, Math.min(22, Math.floor(arcLen / 4.4)));
+    }
+
     /** Level 1 -- every collection of the current kind, as its own wheel
         wedge and list row. A Group/Dual pair has no claim status of its
         own (only the Names inside it do), so every wedge is the SAME
         neutral colour, not a progress reading -- the owner's own confirmed
         reading (Q3): "coloring also same" was answered about the Names
-        wheel, not this one. */
+        wheel, not this one.
+
+        Drag-reposition round (2 Sep 2026) -- Manage mode adds a drag
+        handle to each row (js/drag-reorder.js), and the wheel's own slices
+        now wrap the group's own number + title onto its body ("the group
+        name on the circle... wrapped... with group number"), in the same
+        rotated, radially-readable direction the plain outer number has
+        always used. */
     function renderAsmaXGroupsLevel() {
       const groups = asmaXCollectionsOfKind(asmaXKind);
       const titleText = asmaXKind === "dual" ? t("All dual Names") : t("All Groups");
@@ -6161,9 +6210,10 @@
         <span class="qcr-list-count">${escapeHtml(t("{count} groups", { count: num(groups.length) }))}</span>`;
       asmaXWaysListContainer.innerHTML = groups.length
         ? groups.map((g, i) => `
-            <div class="way-row">
+            <div class="way-row" data-asma-group-key="${escapeHtml(g.id)}">
+              ${asmaXManageOn ? `<button type="button" class="asma-drag-handle" data-asma-drag-handle title="${escapeHtml(t("Drag to reorder"))}" aria-label="${escapeHtml(t("Drag to reorder"))}">⠿</button>` : ""}
               <button type="button" class="way-click" data-asma-open-group="${escapeHtml(g.id)}">
-                <span class="badge">${i + 1}</span>
+                <span class="badge">${num(i + 1)}</span>
                 <span class="name">${escapeHtml(langText(g.title, getAppLang()))}${g.status === "archived" ? ` (${escapeHtml(t("Archived"))})` : ""}</span>
               </button>
             </div>`).join("")
@@ -6171,8 +6221,21 @@
       asmaXWaysListContainer.querySelectorAll("[data-asma-open-group]").forEach((btn) => {
         btn.addEventListener("click", () => openAsmaXGroup(btn.dataset.asmaOpenGroup));
       });
+      wireDragReorder(asmaXWaysListContainer, {
+        rowSelector: "[data-asma-group-key]",
+        handleSelector: "[data-asma-drag-handle]",
+        getKey: (row) => row.dataset.asmaGroupKey,
+        onReorder: (orderedIds) => asmaXReorderGroupsAction(orderedIds),
+      });
       asmaXAddFormSlot.innerHTML = "";
-      const items = groups.map((g, i) => ({ key: g.id, statusId: "not_started", title: escapeHtml(langText(g.title, getAppLang())), number: i + 1 }));
+      const maxLen = wheelLabelMaxLen(groups.length);
+      const items = groups.map((g, i) => ({
+        key: g.id,
+        statusId: "not_started",
+        title: escapeHtml(langText(g.title, getAppLang())),
+        number: i + 1,
+        sliceLines: [num(String(i + 1).padStart(2, "0")), ...wrapWheelLabel(escapeHtml(langText(g.title, getAppLang())), maxLen)],
+      }));
       asmaXWheelContainerEl.innerHTML = renderScopedWheel(items, { centerLabel: titleText });
       attachScopedWheelClickHandler(asmaXWheelContainerEl, (key) => openAsmaXGroup(key));
       asmaXLegendContainerEl.innerHTML = "";
@@ -6192,7 +6255,17 @@
         browser already claims against. Manage mode reuses
         renderAsmaCollectionListHtml()'s own move/edit/archive/remove row
         controls -- the same markup asma-study.html's panel already relies
-        on, just wired here too. */
+        on, just wired here too.
+
+        Drag-reposition round (2 Sep 2026): `enableReorder: true` and
+        `positionLabelByKey` (asma-collections.js's own asmaPositionLabels(),
+        computed from this SAME group.kind's list so its numbers agree with
+        the Groups-level screen) are both new -- asma-study.html's own
+        "Browse by Category" panel doesn't pass either, so it renders
+        exactly as before (the owner's own "keep the panel as-is" call).
+        The wheel's own slices now carry the position label, the Arabic and
+        the display-language name on their body, in the same rotated
+        direction the plain outer number already used. */
     function renderAsmaXNamesLevel() {
       const group = (asmaXCollections ?? []).find((c) => c.id === asmaXGroupId);
       if (!group) { asmaXGroupId = null; asmaXLevel = "groups"; return renderAsmaXPanel(); }
@@ -6212,7 +6285,10 @@
         asmaXGroupId = null; asmaXNumber = null; asmaXLevel = "groups"; renderAsmaXPanel();
       });
       const otherCollections = (asmaXCollections ?? []).filter((c) => c.id !== group.id && c.status !== "archived");
-      asmaXWaysListContainer.innerHTML = renderAsmaCollectionListHtml(entries, { manageOn: asmaXManageOn, otherCollections });
+      const { labelByKey } = asmaPositionLabels(asmaXCollectionsOfKind(group.kind));
+      asmaXWaysListContainer.innerHTML = renderAsmaCollectionListHtml(entries, {
+        manageOn: asmaXManageOn, otherCollections, enableReorder: true, positionLabelByKey: labelByKey,
+      });
       asmaXWaysListContainer.querySelectorAll("[data-asma-jump]").forEach((btn) => {
         btn.addEventListener("click", () => openAsmaXName(Number(btn.dataset.asmaJump.split(":")[1])));
       });
@@ -6228,6 +6304,12 @@
       asmaXWaysListContainer.querySelectorAll("[data-asma-archive-extra]").forEach((btn) => {
         btn.addEventListener("click", () => asmaXArchiveExtraAction(btn.dataset.asmaArchiveExtra));
       });
+      wireDragReorder(asmaXWaysListContainer, {
+        rowSelector: "[data-asma-way-key]",
+        handleSelector: "[data-asma-drag-handle]",
+        getKey: (row) => row.dataset.asmaWayKey,
+        onReorder: (orderedKeys) => asmaXReorderItemsAction(group.id, orderedKeys),
+      });
 
       asmaXAddFormSlot.innerHTML = asmaXManageOn
         ? (() => {
@@ -6242,7 +6324,18 @@
         : "";
       document.getElementById("asmaXAddExistingBtn")?.addEventListener("click", () => asmaXAddItemAction(group.id));
 
-      const items = entries.map((e) => ({ key: e.key, statusId: e.statusId, title: escapeHtml(asmaEntryDisplayName(e.entry)), number: e.number }));
+      const maxLen = wheelLabelMaxLen(entries.length);
+      const items = entries.map((e) => ({
+        key: e.key,
+        statusId: e.statusId,
+        title: escapeHtml(asmaEntryDisplayName(e.entry)),
+        number: e.number,
+        sliceLines: [
+          num(labelByKey.get(e.key) ?? `#${e.number}`),
+          escapeHtml(e.entry.arabic),
+          ...wrapWheelLabel(escapeHtml(asmaEntryDisplayName(e.entry)), maxLen),
+        ],
+      }));
       asmaXWheelContainerEl.innerHTML = renderScopedWheel(items, { centerLabel: langText(group.title, getAppLang()) });
       attachScopedWheelClickHandler(asmaXWheelContainerEl, (key) => openAsmaXName(Number(key.split(":")[1])));
       const labelsById = statusLabelsById();
@@ -6393,6 +6486,30 @@
     async function asmaXMoveItemAction(fromId, toId, unitKey) {
       const prev = asmaXCollections;
       asmaXCollections = asmaMoveItemLocal(asmaXCollections, fromId, toId, unitKey);
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) { asmaXCollections = prev; renderAsmaXPanel(); }
+    }
+
+    /** Drag-reposition round -- js/drag-reorder.js calls this once, on
+        drop, with every currently-shown Group's own id in its new order
+        (whatever "currently shown" means for this kind/Show-archived
+        state -- exactly asmaXCollectionsOfKind()'s own result, unchanged by
+        this action). Renumbering (the group's own display number, and
+        every Name's own GG.RR.LL label) simply falls out of the new
+        `order` on the next render -- nothing else to update by hand. */
+    async function asmaXReorderGroupsAction(orderedIds) {
+      const prev = asmaXCollections;
+      asmaXCollections = asmaReorderCollectionsLocal(asmaXCollections, orderedIds);
+      renderAsmaXPanel();
+      if (!(await asmaXPersist())) { asmaXCollections = prev; renderAsmaXPanel(); }
+    }
+
+    /** Same shape, for dragging a Name into a new position WITHIN one
+        group -- js/drag-reorder.js hands back every row's own unit key in
+        its new order. */
+    async function asmaXReorderItemsAction(collectionId, orderedKeys) {
+      const prev = asmaXCollections;
+      asmaXCollections = asmaReorderItemsLocal(asmaXCollections, collectionId, orderedKeys);
       renderAsmaXPanel();
       if (!(await asmaXPersist())) { asmaXCollections = prev; renderAsmaXPanel(); }
     }

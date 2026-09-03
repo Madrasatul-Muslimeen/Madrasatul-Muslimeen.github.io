@@ -2045,4 +2045,8 @@ export const BN = {
   // Approach, Explore, QCR and Asma ul Husna.
   "Collapse list": "তালিকা সংকুচিত করুন", // ?
   "Expand list": "তালিকা প্রসারিত করুন", // ?
+
+  // 2 Sep 2026 -- drag-reposition round: dragging a Group or a Name within
+  // a group, with auto-numbering.
+  "Drag to reorder": "সরানোর জন্য টেনে ধরুন", // ?
 };

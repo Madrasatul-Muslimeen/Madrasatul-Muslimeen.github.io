@@ -157,6 +157,41 @@ export function attachWheelClickHandler(containerEl, onAyahClick) {
  * prints outside the segment, defaulting to key. I2: still a pure
  * renderer — never reads records.js itself.
  */
+/** Wraps `text` to at most two lines, splitting at whichever SPACE sits
+ *  closest to the middle -- never truncates (a name showing in full is the
+ *  whole point of renderScopedWheel's own `sliceLines` option below). A
+ *  single word longer than `maxLen` is left as one line as-is, since there
+ *  is no space to split it on. Exported so a caller (quranrevival.html's
+ *  Explore -> Asma ul Husna panel, the only one that uses `sliceLines`
+ *  today) doesn't need its own copy of this. */
+export function wrapWheelLabel(text, maxLen = 14) {
+  const s = String(text ?? "").trim();
+  if (!s) return [];
+  if (s.length <= maxLen) return [s];
+  const mid = Math.floor(s.length / 2);
+  let splitAt = -1;
+  for (let d = 0; d < mid; d++) {
+    if (s[mid - d] === " ") { splitAt = mid - d; break; }
+    if (s[mid + d] === " ") { splitAt = mid + d; break; }
+  }
+  if (splitAt === -1) return [s];
+  return [s.slice(0, splitAt).trim(), s.slice(splitAt + 1).trim()];
+}
+
+/**
+ * items: [{ key, statusId, title, number, sliceLines? }] -- `sliceLines`
+ * (2 Sep 2026, Asma-in-Explore drag-reposition round) is a strictly OPT-IN
+ * extra: an array of already-wrapped, already-escaped lines (see
+ * wrapWheelLabel above) drawn INSIDE the slice's own body, between rInner
+ * and rOuter, stacked outward at the SAME angle and rotation the plain
+ * outer number already uses ("in the direction as it shows for the numbers
+ * now") -- one <text> per line, each at its own radius, rather than
+ * <tspan>s needing a rotated dy offset reasoned about. The outer `number`
+ * badge is untouched either way (I5: still the real, permanent id). Every
+ * caller that never sets `sliceLines` (QCR, the plain Explore Quran wheel,
+ * the main Approach wheel, and every existing renderScopedWheel call before
+ * this round) renders byte-for-byte as before.
+ */
 export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, centerLabel, centerSub } = {}) {
   const cx = size / 2, cy = size / 2;
   const rOuter = size / 2 - 4;
@@ -171,9 +206,19 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
       const end = start + anglePer - Math.min(1.2, anglePer * 0.08);
       const mid = (start + end) / 2;
       const fill = STATUS_COLORS[entry.statusId] ?? STATUS_COLORS.not_started;
+      const rot = ringNumberRotation(mid);
       const lp = polarToCartesian(cx, cy, rOuter + labelOffset, mid);
+      const numText = `<text class="wheel-seg-num" x="${lp.x}" y="${lp.y}" text-anchor="middle" transform="rotate(${rot} ${lp.x} ${lp.y})" style="pointer-events:none">${entry.number ?? entry.key}</text>`;
+      const lines = Array.isArray(entry.sliceLines) ? entry.sliceLines.filter(Boolean) : [];
+      const bodyText = lines
+        .map((line, li) => {
+          const r = rInner + ((li + 1) / (lines.length + 1)) * (rOuter - rInner);
+          const p = polarToCartesian(cx, cy, r, mid);
+          return `<text class="wheel-seg-label" x="${p.x}" y="${p.y}" text-anchor="middle" transform="rotate(${rot} ${p.x} ${p.y})" style="pointer-events:none">${line}</text>`;
+        })
+        .join("");
       return `<path class="wheel-seg" data-key="${entry.key}" d="${segmentPath(cx, cy, rInner, rOuter, start, end)}" fill="${fill}"><title>${entry.title}</title></path>
-      <text class="wheel-seg-num" x="${lp.x}" y="${lp.y}" text-anchor="middle" transform="rotate(${ringNumberRotation(mid)} ${lp.x} ${lp.y})" style="pointer-events:none">${entry.number ?? entry.key}</text>`;
+      ${numText}${bodyText}`;
     })
     .join("");
 
