@@ -177,18 +177,19 @@ export function renderAsmaXrefBlock(entry, { inPage = false } = {}) {
        what dragging it does.
      - `positionLabelByKey`: Map(unitKey -> display label), the owner's own
        "01.01.01"-style position number (asma-collections.js's own
-       asmaPositionLabels()) -- shown as a second, smaller badge next to the
-       "#" one.
+       asmaPositionLabels()) -- shown as a second, smaller badge next to
+       the number badge.
 
     3 Sep 2026 follow-up -- `runningNumberByKey` (Map(unitKey -> the same
     label's own middle/running-total number), also OFF by default: the
     owner's own ask was for that running number to be what shows in the
-    "#" badge here, in place of the permanent canonical id -- I5 is
+    number badge here, in place of the permanent canonical id -- I5 is
     untouched by this, since it's a DISPLAY substitution only, on this one
     screen; the real key (`entry.number`, still used for the unit key,
     claims, bookmarks and notes) never changes, and asma-study.html's own
     panel (which never passes this) keeps showing the permanent id exactly
-    as it always has. */
+    as it always has. A second follow-up the same day dropped the "#"
+    prefix the badge used to carry -- it now shows the bare number. */
 export function renderAsmaCollectionListHtml(entries, { manageOn = false, otherCollections = [], enableReorder = false, positionLabelByKey = null, runningNumberByKey = null } = {}) {
   if (!entries.length) return `<p class="hint">${escapeHtml(t("No Names in this group yet."))}</p>`;
   return entries
@@ -217,7 +218,15 @@ export function renderAsmaCollectionListHtml(entries, { manageOn = false, otherC
           </span>`
         : "";
       const posLabel = positionLabelByKey?.get(key);
-      const badgeNumber = runningNumberByKey?.get(key) ?? entry.number;
+      // 3 Sep 2026, second follow-up -- "don't place a # sign before the
+      // number" was asked specifically about THIS running-total badge (the
+      // one this same round's own earlier change put here); the # stays on
+      // the permanent-id badge asma-study.html's own panel shows (it never
+      // passes runningNumberByKey), so that screen is unaffected, matching
+      // every prior round's own "left as-is" call for it.
+      const usingRunningNumber = runningNumberByKey?.has(key) ?? false;
+      const badgeNumber = usingRunningNumber ? runningNumberByKey.get(key) : entry.number;
+      const badgeText = usingRunningNumber ? num(badgeNumber) : `#${num(badgeNumber)}`;
       const dragHandle = enableReorder && manageOn
         ? `<button type="button" class="asma-drag-handle" data-asma-drag-handle title="${escapeHtml(t("Drag to reorder"))}" aria-label="${escapeHtml(t("Drag to reorder"))}">⠿</button>`
         : "";
@@ -225,7 +234,7 @@ export function renderAsmaCollectionListHtml(entries, { manageOn = false, otherC
         ${dragHandle}
         <div class="asma-way-main">
           <button type="button" class="way-click" data-asma-jump="${escapeHtml(key)}">
-            <span class="badge">#${num(badgeNumber)}</span>
+            <span class="badge">${badgeText}</span>
             ${posLabel ? `<span class="asma-pos-label">${escapeHtml(num(posLabel))}</span>` : ""}
             <span class="name">${escapeHtml(asmaEntryDisplayName(entry))}</span>
           </button>

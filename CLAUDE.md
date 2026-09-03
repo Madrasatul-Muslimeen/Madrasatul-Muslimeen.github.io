@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.120.** Cutover to production happened
+**Current milestone: QuranRevival v07.121.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -9210,6 +9210,85 @@ elements. A phone-width sweep (390×844) confirmed no horizontal overflow.
 `tools/i18n-coverage.mjs` unchanged (no new strings -- this round is
 numbers and CSS only). No `firestore.rules`, schema or Firestore data
 changes -- nothing to deploy but the static files.
+
+v07.121 (3 Sep 2026, same day) is **a real geometry fix to the Asma
+wheel's own multi-line slice labels, plus dropping the "#" sign from the
+running-total badge.** Third same-day follow-up, from the owner's own
+three-part ask.
+
+**The real bug, found by measuring rather than guessed at: two lines of
+one Name's own slice label (its Arabic and its transliteration) were
+overlapping each other, not just crashing into the NEIGHBOURING slice's
+text.** v07.118 had stacked `sliceLines` by placing each line at a
+DIFFERENT RADIUS along the same angle, each independently rotated by
+`ringNumberRotation()` -- which orients a label to point OUTWARD along
+the radius, the same convention a clock's numerals use, not tangentially.
+A label rotated to point radially has its own printed length running
+ALONG the radius, so two separately-placed radial labels reach into each
+other's space the moment either one is longer than the gap between their
+two radii. Confirmed by measuring real rendered bounding boxes rather than
+assumed: two lines meant to sit roughly 30px apart came back with
+bounding boxes 34-50px tall, comfortably overlapping -- exactly what a
+screenshot showed as "As-Salamالسلام" and "الفتاحAl-Fattah" jammed
+together into unreadable single lines.
+
+**Fixed by drawing the whole multi-line label as ONE rotated `<text>`
+with `<tspan dy="…em">` line stacking, instead of several independently-
+positioned `<text>` elements.** Every line now shares one rotation, and
+`dy` spacing is resolved in the text's own local coordinate space BEFORE
+that rotation is applied -- so consecutive lines can never bleed into
+each other regardless of which way the label ends up pointing on the
+ring. This is a structural fix to `renderScopedWheel()` itself, not a
+tuning knob, and it directly answers the owner's own **"Place Each
+language in separate line on the wheel slice"** -- Arabic and the
+display-language name are now genuinely two clean, non-overlapping
+lines, on every slice, at every angle around the ring, confirmed by
+screenshot rather than by a geometry check alone (an axis-aligned
+bounding-box comparison on ROTATED text is unreliable -- two cleanly
+adjacent rotated rectangles can still show overlapping AABBs, which is
+exactly the trap a first pass at verifying this round fell into before a
+real screenshot settled it).
+
+**The same fix is also most of the answer to "Place the group names in 2
+lines on the wheel slice."** The Groups wheel was already capped at 2
+lines by `wrapWheelLabel()` (since v07.119), but the OLD per-line-radius
+placement meant even a group's own 2 lines could crowd each other the
+same way the Names wheel's Arabic/transliteration pair did -- the same
+tspan-based fix keeps a group's own two title lines cleanly separated
+from each other. **The 19-Group wheel is still visually tight** -- 19
+long, multi-clause titles on one ring is a real space constraint no
+line-stacking fix removes, and the owner has already twice been offered
+(and twice declined) the shrink-to-fit/truncate alternative that would
+relieve it; this round is not a third offer of that trade, just a
+correctness fix to how each label's OWN lines are drawn.
+
+**The "#" sign is gone from the running-total badge specifically, not
+from every badge this shared function draws.** A first pass removed it
+unconditionally and a regression check caught it immediately: `asma-
+study.html`'s own "Browse by Category" panel (which never passes
+`runningNumberByKey`, so its badge still shows the PERMANENT id) lost its
+own "#" too, which nobody asked for and which every prior round has
+been careful NOT to touch. Fixed by keying the "#" itself off which kind
+of number the badge is showing -- present for the permanent-id case
+(unchanged, matches every other "#N" badge elsewhere in the app), absent
+for the running-total case this Explore screen introduced. `asma-study.html`
+is confirmed unaffected by a dedicated regression check, not merely
+assumed safe.
+
+**Verified with a focused, un-checked-in Playwright script** -- 16
+checks, all passing: every Group slice's own label built as one `<text>`
+with exactly 2 `<tspan>` children; the badge proven to carry no "#" in
+the Explore screen while `asma-study.html`'s own badges are proven to
+still carry it; the same in Bangla with Bengali digits; QCR's and the
+main Approach wheel's own rendering confirmed unaffected; a phone-width
+sweep (390×844) with no horizontal overflow. Real screenshots (not just
+assertions) were taken and read at both the Groups and Names level before
+calling this done, since the previous round's own bounding-box-only
+verification had already been shown to be an unreliable way to judge
+rotated-text overlap. `tools/i18n-coverage.mjs` unchanged (no new strings
+-- pure SVG/rendering-logic and one CSS-adjacent JS change). No
+`firestore.rules`, schema or Firestore data changes -- nothing to deploy
+but the static files.
 
 ## What this is
 

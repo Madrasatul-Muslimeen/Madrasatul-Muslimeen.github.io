@@ -257,15 +257,32 @@ export function wrapWheelLabel(text, maxLen = 14) {
  * items: [{ key, statusId, title, number, sliceLines? }] -- `sliceLines`
  * (2 Sep 2026, Asma-in-Explore drag-reposition round) is a strictly OPT-IN
  * extra: an array of already-wrapped, already-escaped lines (see
- * wrapWheelLabel above) drawn INSIDE the slice's own body, between rInner
- * and rOuter, stacked outward at the SAME angle and rotation the plain
- * outer number already uses ("in the direction as it shows for the numbers
- * now") -- one <text> per line, each at its own radius, rather than
- * <tspan>s needing a rotated dy offset reasoned about. The outer `number`
- * badge is untouched either way (I5: still the real, permanent id). Every
- * caller that never sets `sliceLines` (QCR, the plain Explore Quran wheel,
- * the main Approach wheel, and every existing renderScopedWheel call before
+ * wrapWheelLabel above) drawn INSIDE the slice's own body, at the SAME
+ * angle and rotation the plain outer number already uses ("in the
+ * direction as it shows for the numbers now"). The outer `number` badge is
+ * untouched either way (I5: still the real, permanent id). Every caller
+ * that never sets `sliceLines` (QCR, the plain Explore Quran wheel, the
+ * main Approach wheel, and every existing renderScopedWheel call before
  * this round) renders byte-for-byte as before.
+ *
+ * 3 Sep 2026 follow-up -- "place each language in a separate line": the
+ * first version placed each line at a DIFFERENT RADIUS along the same
+ * angle, each independently rotated -- which reads as separate rows for
+ * roughly-horizontal/vertical slices, but for anything in between it
+ * doesn't work, because `ringNumberRotation` orients each label to point
+ * OUTWARD along the radius (the same convention a clock's numerals use),
+ * not tangentially. A label rotated to point radially has its own printed
+ * length running ALONG the radius, so two separately-placed radial labels
+ * (say, an Arabic line and its transliteration) reach into each other's
+ * space the moment either one is longer than the gap between their two
+ * radii -- confirmed by measuring real rendered bounding boxes, not
+ * assumed: two lines meant to sit ~30px apart came back with bounding
+ * boxes 34-50px tall, comfortably overlapping. Fixed by drawing the whole
+ * multi-line label as ONE rotated `<text>` with `<tspan dy="…em">` line
+ * stacking instead: every line shares one rotation, and `dy` spacing is
+ * resolved in the text's own local coordinate space BEFORE that rotation
+ * is applied, so consecutive lines can never bleed into each other
+ * regardless of which way the label ends up pointing.
  */
 export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, centerLabel, centerSub } = {}) {
   const cx = size / 2, cy = size / 2;
@@ -274,6 +291,7 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
   const labelOffset = Math.max(10, rOuter * 0.065);
   const n = items.length || 1;
   const anglePer = 360 / n;
+  const sliceLineHeightEm = 1.2;
 
   const segments = items
     .map((entry, i) => {
@@ -285,13 +303,16 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
       const lp = polarToCartesian(cx, cy, rOuter + labelOffset, mid);
       const numText = `<text class="wheel-seg-num" x="${lp.x}" y="${lp.y}" text-anchor="middle" transform="rotate(${rot} ${lp.x} ${lp.y})" style="pointer-events:none">${entry.number ?? entry.key}</text>`;
       const lines = Array.isArray(entry.sliceLines) ? entry.sliceLines.filter(Boolean) : [];
-      const bodyText = lines
-        .map((line, li) => {
-          const r = rInner + ((li + 1) / (lines.length + 1)) * (rOuter - rInner);
-          const p = polarToCartesian(cx, cy, r, mid);
-          return `<text class="wheel-seg-label" x="${p.x}" y="${p.y}" text-anchor="middle" transform="rotate(${rot} ${p.x} ${p.y})" style="pointer-events:none">${line}</text>`;
-        })
-        .join("");
+      let bodyText = "";
+      if (lines.length) {
+        const midR = (rInner + rOuter) / 2;
+        const p = polarToCartesian(cx, cy, midR, mid);
+        const firstDy = -((lines.length - 1) / 2) * sliceLineHeightEm;
+        const tspans = lines
+          .map((line, li) => `<tspan x="${p.x}" dy="${li === 0 ? firstDy : sliceLineHeightEm}em">${line}</tspan>`)
+          .join("");
+        bodyText = `<text class="wheel-seg-label" x="${p.x}" y="${p.y}" text-anchor="middle" transform="rotate(${rot} ${p.x} ${p.y})" style="pointer-events:none">${tspans}</text>`;
+      }
       return `<path class="wheel-seg" data-key="${entry.key}" d="${segmentPath(cx, cy, rInner, rOuter, start, end)}" fill="${fill}"><title>${entry.title}</title></path>
       ${numText}${bodyText}`;
     })
