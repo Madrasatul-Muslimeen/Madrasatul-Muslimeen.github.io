@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.117.** Cutover to production happened
+**Current milestone: QuranRevival v07.118.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -8981,6 +8981,115 @@ same 7 pre-existing gaps, unchanged), and the whole catalogue's own total
 went 1,772 → 1,774, both new strings landing on the translated side. No
 `firestore.rules`, schema or Firestore data changes -- nothing to deploy
 but the static files.
+
+v07.118 (3 Sep 2026, on Claude Code on the web) is **Asma ul Husna --
+drag-repositioning for Groups and Names, real auto-numbering, and names
+shown on the wheel's own slices.** The owner's own four-part ask, from the
+Explore → Asma ul Husna Manage screen. Two of the four were genuinely
+ambiguous as written and were confirmed before building rather than
+guessed: the owner's own numbering examples mixed a 2-part form for Group 1
+(01.01, 01.02, 01.03) with a 3-part form for Groups 2-3 (02.04.01..02.08.05,
+03.09.01..) -- resolved as **every group gets 3 parts, group.runningTotal.
+localIndex**, with Group 1's own running total simply equal to its local
+index (01.01.01, 01.02.02, 01.03.03), matching the owner's own confirmed
+answer; and whether "the wheel should display the names" meant every wheel
+in the app or only Asma's -- **scoped to Asma ul Husna only**, so QCR's own
+collection wheel, the plain Explore Quran-structure wheel and the main
+Approach wheel are all byte-for-byte unaffected.
+
+**Repositioning is real drag-and-drop, Pointer Events throughout** (not
+native HTML5 drag-and-drop, which has patchy touch support on mobile
+browsers this app's own phone/tablet requirement rules out) -- a small grip
+(⠿) on each row, shown only in Manage mode, for both the Groups list and a
+group's own Names list. **A real bug was found and fixed before this
+shipped, not after: pointer capture must be taken on the LIST CONTAINER,
+never on the small handle inside the row being dragged.** The live-reorder
+preview physically moves the dragged row via `insertBefore()`/
+`appendChild()` as the pointer travels -- and a captured element that gets
+reparented (which is what `insertBefore` does internally, even when the net
+position barely changes) has its pointer capture silently released by the
+browser. The first version captured on the handle itself and worked for
+exactly one `pointermove` before capture silently died, which read as "drag
+does nothing" with zero console errors -- caught by writing a throwaway
+Playwright script that dragged a real row and logged every pointer event,
+not by reading the code. `container` (the list wrapper) is never itself
+moved during a within-list reorder, so capturing there keeps the whole
+gesture alive regardless of how many rows get reshuffled along the way.
+
+**Auto-numbering falls out of the new order for free, exactly as asked, and
+never touches the permanent Name id.** New pure helpers in
+`js/asma-collections.js` -- `reorderCollections()` (reassigns a Group's own
+`order`), `reorderItems()` (replaces a Group's own `items[]` wholesale) and
+`asmaPositionLabels()` (derives every Name's own "GG.RR.LL" display label
+fresh from whatever's currently shown, recomputed on every render -- there
+is nothing to hand-renumber after a drag). I5 holds throughout: a Name's
+real number (`#100`, `#67`...) is completely untouched and still the only
+thing a claim, bookmark or note is ever keyed against; the new label is a
+second, purely cosmetic badge next to it. The drag mechanism itself
+(`js/drag-reorder.js`, new, I2-pure -- no Firebase, no app data) is generic,
+not Asma-specific, so it could be reused elsewhere without change.
+
+**The wheel's own slices now carry real text, not just a bare number** --
+`mastery-wheel.js`'s `renderScopedWheel()` gained a strictly opt-in
+`sliceLines` field per item (an array of already-wrapped, already-escaped
+lines, via the new exported `wrapWheelLabel()`, which never truncates --
+splits at whichever space sits closest to the middle, leaving a single
+overlong word as one line since there's nothing to split it on, per the
+owner's own choice of "always show the full name" over shrink-to-fit).
+Drawn INSIDE the slice's own body (between the wheel's inner and outer
+radius), one `<text>` per line stacked outward at progressively larger
+radii, using the SAME rotation formula the existing outside number already
+used ("in the direction as it shows for the numbers now") -- so a Group
+slice shows its own padded number plus its wrapped title, and a Name slice
+shows its GG.RR.LL label, its Arabic, and its display-language name. Every
+other caller of `renderScopedWheel` (QCR, the plain Explore Quran wheel, the
+main Approach wheel) never sets `sliceLines` and renders byte-for-byte as
+before -- confirmed directly, not assumed, by checking the QCR wheel still
+carries zero `.wheel-seg-label` elements after this round.
+
+**One real, disclosed trade-off, matching the owner's own confirmed
+choice**: a Groups-level wheel with 19 real, long, multi-clause titles
+("The Only One to worship, The Carer, The Nourisher and Provider") on one
+ring reads as genuinely crowded -- the wrapped text from adjacent slices
+visually overlaps near the wheel's centre. This was the accepted cost of
+"always show the full name, wrapping to 2 lines if needed" over the
+recommended shrink-to-fit/truncate alternative, put to the owner directly
+before building and confirmed rather than decided here. The Names-level
+wheel (4-6 items per group typically) reads cleanly, screenshotted and
+checked, not merely assumed from the numbers.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice for anything touching Explore/QCR/Asma)
+-- 22 checks, all passing: drag handles absent until Manage mode is on;
+dragging the 2nd Group above the 1st changing the real DOM order and firing
+a real write to `asmaCollections` (confirmed via `window.__fsLog`); the
+Groups wheel carrying zero-padded numeric slice labels; opening a group and
+confirming real "GG.RR.LL" position labels on every row, one drag handle per
+row, and slice-label lines on the wheel numbering at least two per Name
+(position + Arabic, plus the wrapped display name); dragging the 2nd Name
+above the 1st re-numbering the position labels correctly (`01.__.01` on the
+new first row); the whole mechanism again in Bangla, with the drag handle's
+own title translated and position labels showing Bengali digits; and two
+regression checks -- `asma-study.html`'s own "Browse by Category" panel
+(which calls the same shared `renderAsmaCollectionListHtml()`, deliberately
+left "as-is" since a much earlier round) shows no drag handles and no
+position labels, since both new options default off there; and QCR's own
+wheel carries no slice-label text at all. **`tools/i18n-verify/layout.mjs`
+reports the landing page's own measured metrics byte-for-byte IDENTICAL** at
+all eight viewports in both banner states against a real `HEAD` shim (same
+heading position, wheel width, Approach row count and dock gap throughout)
+-- the tool's own "16 REGRESSION(S)" line is entirely the same, already-
+disclosed false-positive `getElementById` check this project has carried
+since v07.86 (the Manage-mode-only Asma/QCR ids that don't exist until
+Manage is toggled on), confirmed by checking that the identical id list is
+missing on the unmodified `HEAD` copy too -- there is no numeric layout
+change anywhere. **`tools/i18n-coverage.mjs`: one new string ("Drag to
+reorder"), translated** (marked `// ?` for the owner's own eye) -- the
+`quran` area's own missing-count is unchanged. No `firestore.rules`, schema
+or Firestore data changes -- `reorderCollections()`/`reorderItems()` only
+ever touch fields (`order`, `items[]`) the existing deployed
+`asmaCollections` rule already lets an owner/prime write; nothing new to
+deploy but the static files.
 
 ## What this is
 

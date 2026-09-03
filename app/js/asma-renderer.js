@@ -164,8 +164,23 @@ export function renderAsmaXrefBlock(entry, { inPage = false } = {}) {
     [{ key: "name:N", entry: resolveAsmaEntry() result, statusId }].
     otherActiveCollections is only needed when manageOn (the Move-to
     picker). Never touches Firebase (I2) -- the controller resolves
-    everything and hands it in already-shaped. */
-export function renderAsmaCollectionListHtml(entries, { manageOn = false, otherCollections = [] } = {}) {
+    everything and hands it in already-shaped.
+
+    Drag-reposition round (2 Sep 2026) -- two new, both OFF by default so
+    asma-study.html's own "Browse by Category" panel (which calls this same
+    function and was deliberately left "as-is" that round) renders exactly
+    as it always has:
+     - `enableReorder`: adds a small drag handle to each row plus
+       `data-asma-way-key` on the row itself, for quranrevival.html's own
+       Explore panel to wire up with js/drag-reorder.js. This file stays a
+       pure renderer either way -- it draws the handle, the caller decides
+       what dragging it does.
+     - `positionLabelByKey`: Map(unitKey -> display label), the owner's own
+       "01.01.01"-style position number (asma-collections.js's own
+       asmaPositionLabels()) -- shown as a second, smaller badge next to the
+       permanent "#N" one, which is untouched (I5: that's still the real
+       key everything else in the app reads). */
+export function renderAsmaCollectionListHtml(entries, { manageOn = false, otherCollections = [], enableReorder = false, positionLabelByKey = null } = {}) {
   if (!entries.length) return `<p class="hint">${escapeHtml(t("No Names in this group yet."))}</p>`;
   return entries
     .map(({ key, entry, statusId }) => {
@@ -192,10 +207,16 @@ export function renderAsmaCollectionListHtml(entries, { manageOn = false, otherC
             <button type="button" class="asma-icon-btn" data-asma-edit-bn="${escapeHtml(key)}" title="${escapeHtml(t("Edit Bangla wording"))}">✎</button>
           </span>`
         : "";
-      return `<div class="way-row asma-way-row">
+      const posLabel = positionLabelByKey?.get(key);
+      const dragHandle = enableReorder && manageOn
+        ? `<button type="button" class="asma-drag-handle" data-asma-drag-handle title="${escapeHtml(t("Drag to reorder"))}" aria-label="${escapeHtml(t("Drag to reorder"))}">⠿</button>`
+        : "";
+      return `<div class="way-row asma-way-row"${enableReorder ? ` data-asma-way-key="${escapeHtml(key)}"` : ""}>
+        ${dragHandle}
         <div class="asma-way-main">
           <button type="button" class="way-click" data-asma-jump="${escapeHtml(key)}">
             <span class="badge">#${num(entry.number)}</span>
+            ${posLabel ? `<span class="asma-pos-label">${escapeHtml(num(posLabel))}</span>` : ""}
             <span class="name">${escapeHtml(asmaEntryDisplayName(entry))}</span>
           </button>
           ${manageControls}

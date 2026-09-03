@@ -208,6 +208,66 @@ export function moveItem(collections, fromId, toId, unitKey) {
 }
 
 // ---------------------------------------------------------------------------
+// Drag-reposition round -- 2 Sep 2026. The owner's own ask: reposition a
+// Group, or a Name within a Group, by dragging it in the list, with
+// auto-numbering "falling out" of the new order rather than being a second
+// thing to update by hand. I5 holds throughout -- these only ever change
+// DISPLAY ORDER (`order` on a collection, position in `items[]`), never the
+// permanent unit key/number a claim, bookmark or note is keyed against.
+// ---------------------------------------------------------------------------
+
+/** Applied after dragging a Group into a new position -- reassigns `order`
+ *  (10-stepped, matching nextCollectionOrder()'s own spacing) for exactly
+ *  the ids in orderedIds, in that order. A collection whose id isn't in the
+ *  list (a different kind, or one not currently shown) keeps whatever order
+ *  it already had -- reordering one kind's own list never touches the
+ *  other's. */
+export function reorderCollections(collections, orderedIds) {
+  const orderById = new Map(orderedIds.map((id, i) => [id, (i + 1) * 10]));
+  return collections.map((c) => (orderById.has(c.id) ? { ...c, order: orderById.get(c.id) } : c));
+}
+
+/** Applied after dragging a Name into a new position within one Group --
+ *  replaces that Group's own `items` array wholesale with the new order.
+ *  Every key is still the exact same permanent unit key; only its position
+ *  in this one group's own list changes. */
+export function reorderItems(collections, collectionId, orderedKeys) {
+  return collections.map((c) => (c.id === collectionId ? { ...c, items: [...orderedKeys] } : c));
+}
+
+/** The owner's own display-position numbering -- NOT the permanent Name
+ *  number used for claims/bookmarks/notes, which never changes (I5). A
+ *  Group's own number is simply its 1-based position in `orderedGroups`; a
+ *  Name's own label is "{group}.{runningTotal}.{localIndex}", where
+ *  runningTotal keeps counting across every group in `orderedGroups`
+ *  (never resets) and localIndex restarts at 1 inside each group --
+ *  confirmed with the owner directly against their own worked example
+ *  (Group 1, 3 names -> 01.01.01, 01.02.02, 01.03.03; Group 2, 5 names ->
+ *  02.04.01 .. 02.08.05; Group 3 -> 03.09.01..).
+ *
+ *  `orderedGroups`: the exact array of collections the caller is currently
+ *  showing, already filtered/sorted (e.g. one kind's own
+ *  asmaXCollectionsOfKind() result) -- this function doesn't decide what
+ *  counts as "shown", it only numbers what it's handed. Recomputed fresh on
+ *  every render, so there is nothing to hand-renumber after a drag -- that
+ *  is the whole point of it being derived rather than stored. */
+export function asmaPositionLabels(orderedGroups) {
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const groupNumbers = new Map();
+  const labelByKey = new Map();
+  let running = 0;
+  orderedGroups.forEach((c, gi) => {
+    const groupNum = gi + 1;
+    groupNumbers.set(c.id, groupNum);
+    (c.items ?? []).forEach((key, li) => {
+      running += 1;
+      labelByKey.set(key, `${pad2(groupNum)}.${pad2(running)}.${pad2(li + 1)}`);
+    });
+  });
+  return { groupNumbers, labelByKey };
+}
+
+// ---------------------------------------------------------------------------
 // Pure editing helpers for the extra (>= 100) Names/phrases themselves --
 // real content the owner curated, so unlike a canonical Name these fields
 // are genuinely editable.
