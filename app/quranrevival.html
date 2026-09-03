@@ -1326,7 +1326,22 @@
   body.immersive-read.fs-hide-readbar #nextUnitBtn { display: none; }
   body.immersive-read.fs-hide-transport #readPlayBtn,
   body.immersive-read.fs-hide-transport #readStopBtn { display: none; }
-  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar { display: none; }
+  /* Fix round -- the full-screen button NEVER hides, and that is now
+     load-bearing. This rule used to hide the whole bar, which was safe only
+     while a tap anywhere on the reading also walked the full-screen cycle:
+     that tap is gone (the owner: "disable a single tapping for full-screen
+     view ... the button should be enough"), so hiding the bar outright would
+     leave the BARE state -- the default, with all five switches on -- with no
+     control on screen at all and no way back. Everything else in the bar
+     still goes; the button stays, faint and out of the way, exactly the rule
+     the Note view's own full-screen button has followed since round 30. */
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar > *:not(#hideChromeBtn) { display: none; }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #readBar {
+    border-bottom: none; padding: 0; gap: 0;
+  }
+  body.immersive-read.fs-hide-readbar.fs-hide-transport #hideChromeBtn {
+    opacity: 0.4; border-color: transparent; background: transparent;
+  }
   /* Round 21 read "edge to edge" as applying to the TEXT and set this to 0,
      which put the Arabic hard against the glass -- diacritics and end-of-ayah
      marks on the edge, which is what the owner's phone screenshot showed.
@@ -2418,7 +2433,7 @@
             <div id="pageViewContainer" style="display:none;"></div>
           </div><!-- /#studyScreen -->
         </div>
-        <div id="readHint" hidden>Tap the text to bring the menus back.</div>
+        <div id="readHint" hidden>Press the ⤢ button to bring the menus back.</div>
       </div><!-- /#readView -->
 
       <!-- Ayah Note panel -- "Note & more" from the ⋮ quick menu on any āyah
@@ -5258,9 +5273,13 @@
       // last one did.
       const states = readChromeStates();
       const next = states[(states.indexOf(state) + 1) % states.length];
+      // Fix round -- both of these told the reader to TAP, which no longer
+      // does anything (the tap is gone; see the listener block further down).
+      // They name the button instead. The two old keys stay in bn.js, unused,
+      // per this project's own rule for a string that stops being called.
       readHint.textContent = next === 0
-        ? t("Tap the text to bring the menus back.")
-        : t("Tap again to hide more.");
+        ? t("Press the ⤢ button to bring the menus back.")
+        : t("Press ⤢ again to hide more.");
       readHint.hidden = state === 0;
       if (!readHint.hidden) {
         clearTimeout(readHint._timer);
@@ -5419,37 +5438,24 @@
 
     hideChromeBtn.addEventListener("click", advanceReadChrome);
 
-    // Shell round 21 -- a tap on the reading TOGGLES full screen, both ways.
-    // The owner's own ask, and it reverses round 17's deliberate one-way rule
-    // ("nothing hides on a stray tap"): "tapping on the screen will take the
-    // entire mobile screen edge to edge, tapping again will move it back to
-    // normal with the top and bottom menu bars."
-    // A tap on something you meant to press is still left alone, and so is a
-    // tap that is really the end of selecting text to copy -- otherwise
-    // highlighting an ayah would flip the screen out from under you.
-    readView.addEventListener("click", (e) => {
-      if (e.target.closest("button, a, input, select, textarea, label, [role='button']")) return;
-      if (String(window.getSelection?.() ?? "").length > 0) return;
-      advanceReadChrome();
-    });
-
-    // Same tap-toggles-full-screen idiom as the reading screen above, for
-    // the Note view -- the owner's own ask, after the PC popup-window round
-    // above gave #noteView a genuinely different desktop shape. Deliberately
-    // scoped to phone/tablet only (below the popup's own 900px breakpoint):
-    // on desktop #noteView is a floating, draggable window with its own ⤢
-    // maximize button and resize handles, and a body tap toggling the
-    // SEPARATE note-immersive shell chrome there would be a surprise mid
-    // drag/read with no matching mental model -- the ⤢ button stays the way
-    // in on desktop, same as it always has. `[contenteditable]` excludes the
-    // Notes editor specifically -- unlike the reading screen's plain text,
-    // a tap there is positioning a cursor to type, not just reading.
-    noteView.addEventListener("click", (e) => {
-      if (window.matchMedia("(min-width: 900px)").matches) return;
-      if (e.target.closest("button, a, input, select, textarea, label, [role='button'], [contenteditable]")) return;
-      if (String(window.getSelection?.() ?? "").length > 0) return;
-      toggleNoteFullscreen();
-    });
+    // Fix round -- THE WHOLE-SCREEN TAP IS GONE, on both the reading screen
+    // and the Note view. The owner's own words: "disable a single tapping for
+    // full-screen view (in both read n note view, makes too much quick
+    // movement, the button should be enough for full screen view)."
+    //
+    // This reverses shell round 21's own rule (a tap walks the reading's
+    // three-state chrome cycle) and round 30's matching one for the Note
+    // view. Both were the owner's asks at the time; both are overruled by
+    // their own use -- a reading screen is full of things worth touching (a
+    // word, a swipe that stops short, a thumb resting while scrolling) and
+    // every one of them was flipping the chrome.
+    //
+    // What replaces them is what already sat beside them: hideChromeBtn on
+    // the read bar walks the same three-state cycle, and the Note view's own
+    // button toggles its own two states. Both are exempt from being hidden by
+    // full screen -- see the #readBar rule in the CSS above, which had to
+    // become explicit here rather than stay implied, since the tap was until
+    // now the only way out of the BARE state.
 
     document.querySelectorAll("[data-close-panel]").forEach((btn) => {
       btn.addEventListener("click", closeAllPanels);
@@ -7503,7 +7509,16 @@
         })
         .join("");
       attachAyahQuickMenus(pageViewContainer);
-      markPlayingAyah(currentAyahNum, { scroll: false });
+      // Fix round -- only mark an āyah as SOUNDING when something really is.
+      // This used to run unconditionally, so a fresh flow always painted the
+      // gold "now playing" band on currentAyahNum with nothing playing --
+      // which, now that the reader's own position has its own (blue)
+      // highlight, meant two different colours for two different ideas
+      // sitting on screen at once, and the first āyah wearing the wrong one.
+      // Gold means what its own CSS comment says again: the ayah being
+      // recited. The playback callbacks that drive it during a recitation are
+      // untouched.
+      if (isPlaying() || isPaused()) markPlayingAyah(currentAyahNum, { scroll: false });
       wireFlowInViewHighlight();
     }
 
@@ -7541,32 +7556,132 @@
       return true;
     }
 
-    /** Fix round -- "enable the Ayah which is on the screen (after scroll
-        or slide) to highlight," independent of recitation (markPlayingAyah()
-        above is audio-driven; this is purely about what the reader has
-        scrolled or swiped to). One IntersectionObserver per flow render,
-        watching every .page-flow-ayah row and marking whichever one is
-        most visible right now. The scrolling root differs by mode -- when
-        "Page by page" is on, #pageViewContainer itself is the horizontal
-        scroller and each row is one full page; when it's off, #readScroll
-        is the vertical scroller and pageViewContainer's own overflow is
-        plain -- so the observer's root is picked to match, the same
-        mode-aware lookup wireScrollSwipeAyahNav() already does. */
-    let flowInViewObserver = null;
-    function wireFlowInViewHighlight() {
-      if (flowInViewObserver) { flowInViewObserver.disconnect(); flowInViewObserver = null; }
+    /** "Enable the Ayah which is on the screen (after scroll or slide) to
+        highlight" -- independent of recitation (markPlayingAyah() above is
+        audio-driven; this is purely about what the reader has scrolled or
+        swiped to).
+
+        Fix round -- this was an IntersectionObserver and it genuinely did not
+        work, for two reasons neither of which a screenshot would show. An
+        observer callback only carries the entries that CHANGED, so picking
+        the "most visible" row from that batch alone is right only when every
+        row happens to report at once; and its thresholds only fire when a
+        ratio CROSSES one, so an ayah taller than the viewport (ratio never
+        reaches 0.25) never fired at all -- which is most ayahs in the
+        vertical, non-sideways reading. Replaced with a plain measurement:
+        on every scroll of whichever element is really scrolling, compare each
+        row's own rect against the viewport's and mark whichever OVERLAPS it
+        most. Deterministic, no thresholds, and correct for a row of any
+        height. The scrolling root differs by mode -- when "Page by page" is
+        on, #pageViewContainer is the horizontal scroller and each row is one
+        full page; when it is off, #readScroll is the vertical scroller -- so
+        the listener is attached to whichever one is actually in play, the
+        same mode-aware lookup stepFlowAyah()/wireScrollSwipeAyahNav() use. */
+    let flowInViewRoot = null;
+    let flowInViewHandler = null;
+
+    /** Which element genuinely scrolls the flow right now. One answer, used by
+        the highlight, by stepFlowAyah() and by anything else that has to
+        reason about the strip -- so the two can never disagree about what is
+        moving. */
+    function flowScrollRoot() {
+      return document.body.classList.contains("read-sideways")
+        ? pageViewContainer
+        : document.getElementById("readScroll");
+    }
+
+    /** Marks whichever flow row overlaps the visible area most. Safe to call
+        at any time -- it does nothing when the flow view is not on screen. */
+    function updateFlowInView() {
       if (getComputedStyle(pageViewContainer).display === "none") return;
       const rows = [...pageViewContainer.querySelectorAll(".page-flow-ayah")];
-      if (rows.length < 2) return; // nothing to distinguish with only one row on screen
-      const root = document.body.classList.contains("read-sideways") ? pageViewContainer : document.getElementById("readScroll");
-      flowInViewObserver = new IntersectionObserver((entries) => {
-        let best = null, bestRatio = 0;
-        for (const e of entries) {
-          if (e.isIntersecting && e.intersectionRatio > bestRatio) { bestRatio = e.intersectionRatio; best = e.target; }
-        }
-        if (best) rows.forEach((r) => r.classList.toggle("in-view", r === best));
-      }, { root, threshold: [0.25, 0.5, 0.75, 1] });
-      rows.forEach((r) => flowInViewObserver.observe(r));
+      if (rows.length < 2) return; // nothing to distinguish with one row on screen
+      const root = flowInViewRoot ?? flowScrollRoot();
+      if (!root) return;
+      const view = root.getBoundingClientRect();
+      let best = null, bestOverlap = 0;
+      for (const row of rows) {
+        const r = row.getBoundingClientRect();
+        // Overlap in BOTH axes: sideways paging moves rows horizontally,
+        // ordinary scrolling moves them vertically, and multiplying the two
+        // gives one number that is right in either mode without branching.
+        const w = Math.min(r.right, view.right) - Math.max(r.left, view.left);
+        const h = Math.min(r.bottom, view.bottom) - Math.max(r.top, view.top);
+        const overlap = Math.max(0, w) * Math.max(0, h);
+        if (overlap > bestOverlap) { bestOverlap = overlap; best = row; }
+      }
+      if (best) rows.forEach((r) => r.classList.toggle("in-view", r === best));
+    }
+
+    function wireFlowInViewHighlight() {
+      if (flowInViewRoot && flowInViewHandler) flowInViewRoot.removeEventListener("scroll", flowInViewHandler);
+      flowInViewRoot = null; flowInViewHandler = null;
+      if (getComputedStyle(pageViewContainer).display === "none") return;
+      if (pageViewContainer.querySelectorAll(".page-flow-ayah").length < 2) return;
+      const root = flowScrollRoot();
+      if (!root) return;
+      flowInViewRoot = root;
+      let pending = false;
+      flowInViewHandler = () => {
+        if (pending) return;
+        pending = true;
+        requestAnimationFrame(() => { pending = false; updateFlowInView(); });
+      };
+      root.addEventListener("scroll", flowInViewHandler, { passive: true });
+      // Mark the starting row straight away rather than waiting for a first
+      // scroll -- otherwise nothing is highlighted until the reader moves.
+      updateFlowInView();
+    }
+
+    /** The flow view's own "next/previous āyah", for the scroll and swipe
+        gestures.
+
+        Fix round -- the owner's report: with Whole Surah open and "Page by
+        page" on, sliding up "brings the next Surah." It genuinely did:
+        advance() asks whether the āyah-level Next button is available, and a
+        flow view (Whole Surah/Range/Mushaf) hides that pair on purpose --
+        every āyah is already drawn, so there is no single "current āyah" for
+        it to step -- which sent the gesture to the UNIT-level pair instead,
+        i.e. the next surah, from one slide anywhere in the surah.
+
+        What a flow view needs is a move WITHIN the flow, which is what this
+        does: scroll the next (or previous) page into view. Deliberately does
+        NOT touch currentAyahNum -- that would re-render the whole flow and
+        throw the reader's own scroll position away, and this view has never
+        moved #ayahSelect as it scrolls. #pageViewContainer's own children are
+        used rather than .page-flow-ayah so a Mushaf page steps the same way
+        (it renders .hifz-page children instead, and a slide there should turn
+        the page, not the surah, for exactly the same reason).
+
+        Returns false at either end, which is the caller's signal that nothing
+        moved -- so the swipe slides back instead of animating a change that
+        never happened. The unit-level pair is left alone on purpose: stepping
+        to the next surah is what the ⏭ button is for, explicitly. */
+    function stepFlowAyah(dir) {
+      if (getComputedStyle(pageViewContainer).display === "none") return false;
+      const rows = [...pageViewContainer.children].filter((el) => el.nodeType === 1);
+      if (rows.length < 2) return false;
+      const root = flowScrollRoot();
+      if (!root) return false;
+      const view = root.getBoundingClientRect();
+      let at = 0, bestOverlap = -1;
+      rows.forEach((row, i) => {
+        const r = row.getBoundingClientRect();
+        const w = Math.min(r.right, view.right) - Math.max(r.left, view.left);
+        const h = Math.min(r.bottom, view.bottom) - Math.max(r.top, view.top);
+        const overlap = Math.max(0, w) * Math.max(0, h);
+        if (overlap > bestOverlap) { bestOverlap = overlap; at = i; }
+      });
+      const next = at + (dir > 0 ? 1 : -1);
+      if (next < 0 || next >= rows.length) return false;
+      rows[next].scrollIntoView({ block: "start", inline: "start", behavior: "smooth" });
+      // scrollIntoView is smooth, so the rects the highlight reads are still
+      // the old ones for a few frames -- mark the destination directly rather
+      // than waiting for the scroll listener to catch up.
+      if (rows[next].classList.contains("page-flow-ayah")) {
+        rows.forEach((r) => r.classList.toggle("in-view", r === rows[next]));
+      }
+      return true;
     }
 
     // -----------------------------------------------------------------------
@@ -8196,6 +8311,15 @@
           else stepNoteUnit(dir);
         } else if (stageView === "read") {
           if (!currentSurahData) return false;
+          // Fix round -- a flow view (Whole Surah/Range/Mushaf) moves WITHIN
+          // the flow. It used to fall through to the unit-level pair, because
+          // that is where "the āyah pair is hidden" pointed -- and hidden it
+          // is, but because every āyah is already on screen, not because there
+          // is nothing smaller to step. One slide-up therefore jumped a whole
+          // surah, which is exactly what the owner reported.
+          if (getComputedStyle(pageViewContainer).display !== "none") {
+            return stepFlowAyah(dir);
+          }
           if (!nextAyahBtn.hidden) {
             const btn = dir > 0 ? nextAyahBtn : prevAyahBtn;
             if (!btn.disabled) btn.click();
@@ -8401,7 +8525,11 @@
           const body = tajweedToggle.checked && a.tajweedText
             ? tajweedRawToSafeHtml(a.tajweedText)
             : escapeHtml(a.ayah === 1 ? stripLeadingBismillah(a.uthmaniText) : a.uthmaniText);
-          return `<div class="ayah-num-row"><span class="ayah-num-badge">${num(a.ayah)}</span></div><div class="note-arabic" dir="rtl" lang="ar">${body}</div>`;
+          // Fix round -- Arabic-Indic digits beside the Arabic, matching
+          // renderArabicPanel()'s own rule (a block's number in that block's
+          // own script). This screen builds its Arabic locally rather than
+          // calling that renderer, so it needs the same call here.
+          return `<div class="ayah-num-row"><span class="ayah-num-badge">${digitsForLang(a.ayah, "ar")}</span></div><div class="note-arabic" dir="rtl" lang="ar">${body}</div>`;
         };
         const translationLineHtml = (ayahNum, text, lang) => {
           if (!text) return "";

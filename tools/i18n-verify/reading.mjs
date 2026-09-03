@@ -92,10 +92,23 @@ for (const banner of [true, false]) {
     await page.click("#hideChromeBtn");
     await page.waitForTimeout(350);
     const f = await page.evaluate(readMetrics);
-    // A tap on the ayah text carries the cycle round to the start -- the owner
-    // asked for the tap to walk all three states, so from the bare one the
-    // next tap is back to normal.
+    // Fix round -- this used to press the AYAH TEXT here, because a tap on the
+    // reading walked the same three-state cycle. That tap is gone (the owner:
+    // "disable a single tapping for full-screen view ... the button should be
+    // enough"), so the check is now the other way round: a tap must change
+    // NOTHING, and the button must still carry the cycle back to normal.
+    // The button is deliberately still on screen in the bare state -- it is
+    // the only way out now, which is why hiding the whole read bar there had
+    // to stop.
     await page.click("#ayahPanels", { position: { x: 5, y: 5 } }).catch(() => {});
+    await page.waitForTimeout(300);
+    const tapChanged = await page.evaluate(() => !document.body.classList.contains("immersive-read"));
+    const fsBtnReachable = await page.evaluate(() => {
+      const b = document.getElementById("hideChromeBtn");
+      const r = b.getBoundingClientRect();
+      return getComputedStyle(b).display !== "none" && r.width > 0 && r.height > 0;
+    });
+    await page.click("#hideChromeBtn");
     await page.waitForTimeout(300);
     const back = await page.evaluate(() => document.body.classList.contains("immersive-read"));
 
@@ -106,7 +119,9 @@ for (const banner of [true, false]) {
     if (m.readScrollOverflowsX) bad.push("reading scrolls sideways");
     if (!f.immersive) bad.push("Full screen did nothing");
     if (f.readScrollH <= m.readScrollH) bad.push("Full screen gained nothing");
-    if (back) bad.push("the tap did not carry the cycle back to normal");
+    if (tapChanged) bad.push("a tap on the reading still changed full screen");
+    if (!fsBtnReachable) bad.push("the full-screen button is unreachable in the bare state");
+    if (back) bad.push("the button did not carry the cycle back to normal");
     if (mid.readScrollH <= m.readScrollH) bad.push("the middle state gained nothing");
     if (f.readScrollH <= mid.readScrollH) bad.push("the bare state gained nothing over the middle one");
     // Round 22's own regression: "edge to edge" must reach the CARD, not the

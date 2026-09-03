@@ -25,6 +25,9 @@ function escapeHtml(s) {
 }
 
 const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+// Arabic-Indic (U+0660-0669) -- the digits a mushaf itself prints, and what
+// the owner asked for: "enable Arabic Ayah text number to be shown Arabic."
+const AR_DIGITS = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"];
 
 /** Fix round -- a translation's own leading ayah number is shown in that
     TRANSLATION's own script, not the app's current display language: the
@@ -36,7 +39,9 @@ const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮"
     to read that block's own number. */
 export function digitsForLang(value, lang) {
   const s = String(value);
-  return lang === "bn" ? s.replace(/[0-9]/g, (d) => BN_DIGITS[Number(d)]) : s;
+  if (lang === "bn") return s.replace(/[0-9]/g, (d) => BN_DIGITS[Number(d)]);
+  if (lang === "ar") return s.replace(/[0-9]/g, (d) => AR_DIGITS[Number(d)]);
+  return s;
 }
 
 // Fix round -- the pulled data itself embeds "بِسْمِ اللَّهِ الرَّحْمَٰنِ
@@ -75,7 +80,13 @@ export function renderArabicPanel(ayah, { tajweedOn } = {}) {
     // already shows it once. Tajweed's own text never carried the prefix in
     // the first place, so that branch is untouched.
     : escapeHtml(ayah.ayah === 1 ? stripLeadingBismillah(ayah.uthmaniText) : ayah.uthmaniText);
-  return `<div class="ayah-num-row"><span class="ayah-num-badge">${num(ayah.ayah)}</span></div><div class="ayah-arabic" dir="rtl" lang="ar">${body}</div>`;
+  // Fix round -- the Arabic block's own number is in ARABIC-INDIC digits
+  // (٠١٢٣٤٥٦٧٨٩), always, whatever the app's display language happens to be.
+  // Exactly the rule digitsForLang() already encoded for the two translation
+  // blocks: a block's number belongs to that block's own script, so an
+  // English-mode reader still sees ١٠ beside the Arabic and a Bangla-mode
+  // reader still sees ١٠ there and ১০ beside the Bangla.
+  return `<div class="ayah-num-row"><span class="ayah-num-badge">${digitsForLang(ayah.ayah, "ar")}</span></div><div class="ayah-arabic" dir="rtl" lang="ar">${body}</div>`;
 }
 
 /** Panel: translation text, in whichever language(s) are asked for (F-060 —

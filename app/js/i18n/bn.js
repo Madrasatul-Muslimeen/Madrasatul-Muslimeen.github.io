@@ -306,6 +306,12 @@ export const BN = {
   "Read": "পড়ুন",
   "◂ Mastery Wheel": "◂ দক্ষতার চাকা",
   "⤢ Full screen": "⤢ পূর্ণ স্ক্রিন",
+  // Fix round -- the whole-screen tap is gone (the owner: "the button should
+  // be enough for full screen view"), so these two hints name the button now.
+  // The two "Tap ..." keys below/above are kept, unused, per this project's
+  // own rule for a string that stops being called rather than being wrong.
+  "Press the ⤢ button to bring the menus back.": "মেনু ফিরিয়ে আনতে ⤢ বোতামে চাপুন।",
+  "Press ⤢ again to hide more.": "আরও লুকাতে আবার ⤢ চাপুন।",
   "Tap the text to bring the menus back.": "মেনু ফিরিয়ে আনতে লেখায় স্পর্শ করুন।",
 
   // --- Shell round 21: Prev/Next move the whole unit, and Full screen is a

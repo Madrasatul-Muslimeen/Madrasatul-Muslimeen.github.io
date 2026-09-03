@@ -1352,7 +1352,19 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   await page.waitForTimeout(400);
   const reading = await page.evaluate(() => ({
     readShown: !document.getElementById("readView").hidden,
-    wheelHidden: getComputedStyle(document.getElementById("wheelSection")).display === "none",
+    // Fix round -- this read #wheelSection's own computed display, which
+    // stopped being the answer in v07.115: that round wrapped the heading and
+    // the wheel in #wheelPopupView and moved the `hidden` toggle up to the
+    // wrapper, so #wheelSection itself keeps the display:flex .wheel-box
+    // gives it, and this check had been failing ever since. (v07.115 fixed
+    // reading.mjs's own copy of it for exactly that reason and missed this
+    // one.) Measured rather than read off a property: an element inside a
+    // hidden wrapper has a 0x0 box, which is true however the hiding is done
+    // -- still the point the check was always making.
+    wheelHidden: (() => {
+      const r = document.getElementById("wheelSection").getBoundingClientRect();
+      return r.width === 0 && r.height === 0;
+    })(),
     pressed: document.getElementById("tabReadBtn").getAttribute("aria-pressed"),
     ref: document.getElementById("readSurahSelect").value + ":" + document.getElementById("readAyahSelect").value,
     ayahs: document.querySelectorAll("#ayahPanels .ayah-arabic").length,
@@ -1402,16 +1414,32 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   check("29d ...the Qur'an is still there", full.ayahs > 0);
   check("29d ...and it says how to get back", full.hint);
 
-  // Round 22: the tap CYCLES, so from the middle state it goes to bare and
-  // only then back to normal. Tap until the menus really are back.
+  // Fix round -- the whole-screen TAP is gone (the owner: "disable a single
+  // tapping for full-screen view ... the button should be enough"), so this
+  // is two checks now rather than one: a tap must change NOTHING, and the
+  // button must carry the cycle back to the menus. The button is deliberately
+  // still on screen in the bare state -- it is the only way out now, which is
+  // why hiding the whole read bar there had to stop.
+  const dockShown = () => page.evaluate(() => getComputedStyle(document.getElementById("dock")).display !== "none");
+  const dockBeforeTap = await dockShown();
+  await page.click("#ayahPanels", { position: { x: 5, y: 5 } });
+  await page.waitForTimeout(300);
+  check("29d a tap on the text no longer changes full screen", (await dockShown()) === dockBeforeTap);
+  check("29d the full-screen button is still reachable while full screen is on",
+        await page.evaluate(() => {
+          const b = document.getElementById("hideChromeBtn");
+          const r = b.getBoundingClientRect();
+          return getComputedStyle(b).display !== "none" && r.width > 0 && r.height > 0;
+        }));
+  // Round 22: the cycle has three states, so from the middle one it goes to
+  // bare and only then back to normal. Press until the menus really are back.
   for (let i = 0; i < 3; i++) {
-    const back = await page.evaluate(() => getComputedStyle(document.getElementById("dock")).display !== "none");
-    if (back) break;
-    await page.click("#ayahPanels", { position: { x: 5, y: 5 } });
+    if (await dockShown()) break;
+    await page.click("#hideChromeBtn");
     await page.waitForTimeout(300);
   }
-  const restored = await page.evaluate(() => getComputedStyle(document.getElementById("dock")).display !== "none");
-  check("29d tapping the text carries the cycle back to the menus", restored);
+  const restored = await dockShown();
+  check("29d the button carries the cycle back to the menus", restored);
 
   // A tap on something you meant to press must NOT be swallowed as "show the
   // menus again" -- and must not hide them either, since nothing hides on a tap.
@@ -1424,21 +1452,28 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   });
   check("29d pressing a button inside the reading does not exit Full screen", stillFull);
 
-  // Back out of Full screen the only way there is -- taps on the text. Round 22
-  // made that a THREE-state cycle, so one tap is not always enough, and the
-  // dock is genuinely gone until it completes: without this loop every action
-  // after it fails on an invisible #tabReadBtn.
+  // Back out of Full screen the only way there is -- the ⤢ button (fix round:
+  // the tap that used to do this is gone). Round 22 made it a THREE-state
+  // cycle, so one press is not always enough, and the dock is genuinely gone
+  // until it completes: without this loop every action after it fails on an
+  // invisible #tabReadBtn.
   for (let i = 0; i < 3; i++) {
-    const back = await page.evaluate(() => getComputedStyle(document.getElementById("dock")).display !== "none");
-    if (back) break;
-    await page.click("#ayahPanels", { position: { x: 5, y: 5 } });
+    if (await dockShown()) break;
+    await page.click("#hideChromeBtn");
     await page.waitForTimeout(300);
   }
 
   await page.click("#tabReadBtn"); // tapping the open tab returns to the wheel
   await page.waitForTimeout(350);
   const back = await page.evaluate(() => ({
-    wheel: getComputedStyle(document.getElementById("wheelSection")).display !== "none",
+    // Fix round -- measured, not read off `display`: v07.115's own
+    // #wheelPopupView wrapper is what carries `hidden` now, so #wheelSection
+    // itself always computes to flex and this could no longer fail. See the
+    // wheelHidden comments above.
+    wheel: (() => {
+      const r = document.getElementById("wheelSection").getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    })(),
     readHidden: document.getElementById("readView").hidden,
     immersive: document.body.classList.contains("immersive-read"),
     wheelSvg: !!document.querySelector("#wheelContainer svg"),
@@ -1709,7 +1744,7 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
     noReciter: !document.getElementById("readReciterName"),
   }));
   check("30j prev unit, prev āyah, next āyah, next unit, play, stop, full screen and bookmark are on the reading screen",
-        transport.visible && JSON.stringify(transport.buttons) === '["prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn","readBookmarkBtn"]', JSON.stringify(transport));
+        transport.visible && JSON.stringify(transport.buttons) === '["prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn","readBookmarkBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
   check("30j the separate 'Whole surah' button is gone (Play follows the unit)", transport.noWholeSurah);
   check("30j the merged button is named Play while nothing is playing",
         /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
@@ -1751,7 +1786,7 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   // multi-student round's own readBookmarkBtn joined it too).
   const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button")].map((b) => b.getAttribute("aria-label") || ""));
   check("30l every reading-screen control is NAMED in Bangla",
-        t18.length === 8 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
+        t18.length === 9 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
   await ctx.close();
 }
@@ -2292,8 +2327,13 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // transport controls (see the 30j comment above). The multi-student round
   // added #readBookmarkBtn, a direct Bookmark button for the single-ayah
   // view, right before the ⋮ slot.
+  // Fix round -- these four read-bar lists had gone stale twice over and were
+  // failing at HEAD, unrelated to anything this round changed: #readTextSizeSlot
+  // joined the row in v07.92 and #readAttachAsmaBtn in v07.107, and neither
+  // round updated them. Brought in line rather than left permanently red --
+  // a red check in the very row this round edits would mask a real regression.
   check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · ⋮ slot",
-        bar.ids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readBookmarkBtn,readQuickMenuSlot",
+        bar.ids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readAttachAsmaBtn,readQuickMenuSlot",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -2433,8 +2473,13 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
 
   // The owner's own example of a partial choice: "show only bottom menu".
   const partial = await page.evaluate(async () => {
-    // Bring the menus back so Study options is reachable, then retick.
-    document.getElementById("studyScreen").click();
+    // Bring the menus back so Study options is reachable, then retick. Fix
+    // round -- this tapped #studyScreen, which no longer walks the cycle; the
+    // ⤢ button does, and it has three stops, so press until they are back.
+    for (let i = 0; i < 3 && document.body.classList.contains("immersive-read"); i++) {
+      document.getElementById("hideChromeBtn").click();
+      await new Promise((r) => setTimeout(r, 250));
+    }
     await new Promise((r) => setTimeout(r, 250));
     document.getElementById("tabStudyOptionsBtn").click();
     await new Promise((r) => setTimeout(r, 250));
@@ -2470,20 +2515,27 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   await openRead(page);
   const imm = () => page.evaluate(() => document.body.classList.contains("immersive-read"));
   check("33g the reading opens with the menus showing", !(await imm()));
+  // Fix round -- the whole-screen tap is gone (the owner: "the button should
+  // be enough for full screen view"), so the cycle is driven by the ⤢ button
+  // and the tap is asserted to do NOTHING. The button is deliberately still on
+  // screen in the bare state; it is the only way out now.
   await page.click("#studyScreen", { position: { x: 8, y: 8 } });
   await page.waitForTimeout(350);
-  check("33g a tap goes full screen", await imm());
-  await page.click("#studyScreen", { position: { x: 8, y: 8 } });
+  check("33g a tap on the reading does NOT go full screen", !(await imm()));
+  await page.click("#hideChromeBtn");
   await page.waitForTimeout(350);
-  check("33g a second tap hides more, rather than coming straight back", await imm());
-  await page.click("#studyScreen", { position: { x: 8, y: 8 } });
+  check("33g the button goes full screen", await imm());
+  await page.click("#hideChromeBtn");
   await page.waitForTimeout(350);
-  check("33g a third tap completes the cycle and the menus are back", !(await imm()));
+  check("33g a second press hides more, rather than coming straight back", await imm());
+  await page.click("#hideChromeBtn");
+  await page.waitForTimeout(350);
+  check("33g a third press completes the cycle and the menus are back", !(await imm()));
 
-  // A tap on something you meant to press must not flip the screen. With the
+  // A press on something you meant to press must not flip the screen. With the
   // menus hidden the transport is gone too, so this is tested with the ticks
   // set to keep it -- pressed via the button that is always in the reading.
-  await page.click("#studyScreen", { position: { x: 8, y: 8 } });
+  await page.click("#hideChromeBtn");
   await page.waitForTimeout(300);
   const afterButton = await page.evaluate(async () => {
     const btn = document.querySelector("#studyScreen button, #studyScreen input");
@@ -2698,13 +2750,18 @@ console.log("\n=== 34. Shell round 22: pickers on the reading screen ===");
              pickers: shown("#readPickers"), play: shown("#readPlayBtn"), quran: shown("#studyScreen") };
   });
   const s0 = await stateOf();
-  await page.click("#studyScreen", { position: { x: 8, y: 8 } });
+  // Fix round -- the cycle is walked by the ⤢ button now, not by tapping the
+  // reading; the three states themselves are unchanged and are what this
+  // section is really about.
+  await page.click("#hideChromeBtn");
   await page.waitForTimeout(320);
   const s1 = await stateOf();
-  await page.click("#studyScreen", { position: { x: 8, y: 8 } });
+  await page.click("#hideChromeBtn");
   await page.waitForTimeout(320);
   const s2 = await stateOf();
-  await page.click("#studyScreen", { position: { x: 8, y: 8 } });
+  // The bare state hides everything in the read bar EXCEPT this button, which
+  // is exactly why it must stay: it is the only way back out now.
+  await page.click("#hideChromeBtn");
   await page.waitForTimeout(320);
   const s3 = await stateOf();
 
@@ -2713,7 +2770,7 @@ console.log("\n=== 34. Shell round 22: pickers on the reading screen ===");
         !s1.banner && !s1.nav && !s1.dock && s1.pickers && s1.play && s1.quran, JSON.stringify(s1));
   check("34e state 3 is bare — nothing but the Qur'an",
         !s2.banner && !s2.nav && !s2.dock && !s2.pickers && !s2.play && s2.quran, JSON.stringify(s2));
-  check("34e a fourth tap is back where it started",
+  check("34e a fourth press is back where it started",
         s3.banner && s3.nav && s3.dock && s3.pickers && s3.play, JSON.stringify(s3));
 
   check("34e no page errors", errors.length === 0, errors.slice(0, 2).join(" | "));
@@ -3005,7 +3062,7 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // pair happens to be visible for the current unit type. The multi-student
   // round added Bookmark right before the ⋮ slot.
   check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · ⋮ slot",
-        m.barKids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readBookmarkBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
+        m.barKids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how
@@ -3560,13 +3617,18 @@ async function openMushaf(page, unit = null) {
   await page.waitForTimeout(200);
   await openRead(page);
   await page.waitForTimeout(1500);
-  // One tap on the reading walks the full-screen cycle back to normal, which
-  // is what puts the reading screen's own controls back within reach.
-  await page.evaluate(() => {
-    if (document.body.classList.contains("immersive-read")) {
-      document.getElementById("studyScreen").click();
-    }
-  });
+  // Mushaf opens immersive by design (shell round 17: a page is a page), and
+  // the reading screen's own controls are out of reach until the cycle comes
+  // back round to normal. Fix round -- this used to tap #studyScreen; that tap
+  // is gone (the owner: "the button should be enough for full screen view"),
+  // so it presses the ⤢ button instead. The cycle has three stops, so press
+  // until the menus are genuinely back rather than assuming one is enough.
+  for (let i = 0; i < 3; i++) {
+    const immersive = await page.evaluate(() => document.body.classList.contains("immersive-read"));
+    if (!immersive) break;
+    await page.click("#hideChromeBtn");
+    await page.waitForTimeout(400);
+  }
   await page.waitForTimeout(400);
 }
 
@@ -3862,7 +3924,19 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   const opened = await page.evaluate(() => ({
     noteShown: !document.getElementById("noteView").hidden,
     readHidden: document.getElementById("readView").hidden,
-    wheelHidden: getComputedStyle(document.getElementById("wheelSection")).display === "none",
+    // Fix round -- this read #wheelSection's own computed display, which
+    // stopped being the answer in v07.115: that round wrapped the heading and
+    // the wheel in #wheelPopupView and moved the `hidden` toggle up to the
+    // wrapper, so #wheelSection itself keeps the display:flex .wheel-box
+    // gives it, and this check had been failing ever since. (v07.115 fixed
+    // reading.mjs's own copy of it for exactly that reason and missed this
+    // one.) Measured rather than read off a property: an element inside a
+    // hidden wrapper has a 0x0 box, which is true however the hiding is done
+    // -- still the point the check was always making.
+    wheelHidden: (() => {
+      const r = document.getElementById("wheelSection").getBoundingClientRect();
+      return r.width === 0 && r.height === 0;
+    })(),
     dockVisible: getComputedStyle(document.getElementById("dock")).display !== "none",
     // Enhancement round -- Note is its own dock tab now, so it is tabNoteBtn
     // that reads pressed while noting, not tabReadBtn (which now means only
