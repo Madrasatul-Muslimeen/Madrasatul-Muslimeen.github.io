@@ -79,15 +79,63 @@ function naHatchDefs() {
   </pattern>`;
 }
 
-/**
- * The dark centre disc, shared by both wheel styles below, in either of two
+/** Greedy word-wrap of `text` at the given canvas font, shrinking the font
+ *  size one step at a time (from `startSize` down to `minSize`) until the
+ *  wrapped block's own height fits `maxHeight` -- or, failing that even at
+ *  the smallest size, returning the smallest-size wrap anyway rather than
+ *  looping forever. `maxWidth` is deliberately a single flat number, not a
+ *  true per-line circle-chord width -- a slightly conservative
+ *  approximation (this project's own standing rule: when in doubt, err
+ *  toward MORE wrapping/a smaller font, never toward overflow) that avoids
+ *  the chicken-and-egg of "the exact width available depends on how many
+ *  lines there end up being." A single word wider than `maxWidth` is kept
+ *  on its own line rather than sliced mid-word. */
+function wrapTextToFit(ctx, text, { maxWidth, maxHeight, startSize, minSize, family, weight }) {
+  const words = String(text ?? "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return { lines: [], fontSize: startSize, lineHeight: startSize * 1.18 };
+  let best = null;
+  for (let size = startSize; size >= minSize; size -= 1) {
+    ctx.font = `${weight} ${size}px ${family}`;
+    const lines = [];
+    let current = "";
+    for (const word of words) {
+      const trial = current ? `${current} ${word}` : word;
+      if (!current || ctx.measureText(trial).width <= maxWidth) {
+        current = trial;
+      } else {
+        lines.push(current);
+        current = word;
+      }
+    }
+    if (current) lines.push(current);
+    const lineHeight = size * 1.18;
+    best = { lines, fontSize: size, lineHeight };
+    if (lines.length * lineHeight <= maxHeight) return best;
+  }
+  return best;
+}
+
+/** The dark centre disc, shared by both wheel styles below, in either of two
  * modes (index.html's own two centre treatments, re-derived):
  *  - centerArabic: the actual ayah text (Amiri, RTL) + a small centerRef
  *    line under it (e.g. "SURAH 1 · AYAH 1") -- what the old app's real
  *    Mastery Wheel shows, since its centre is always one fixed ayah.
- *  - centerLabel: a short plain-text label (Cormorant Garamond) + optional
+ *  - centerLabel: a plain-text label (Cormorant Garamond) + optional
  *    centerSub line -- for wheels with no single ayah to anchor on (the
- *    Explore/Juz-wheel's "Whole Quran" + Approach name).
+ *    Explore/Juz-wheel's "Whole Quran" + Approach name, or an Asma ul
+ *    Husna group's own, often much longer, title).
+ *
+ * Drag-reposition/centre-fit round (3 Sep 2026) -- `centerLabel` used to be
+ * ONE fixed-size line that simply ran past the gold ring for a long title
+ * (Asma ul Husna's own 19 group names are full sentences). It is now
+ * measured with a real canvas 2D context (this project's own "measure,
+ * don't guess" method, the same one the Quran-landing wheel's hub layout
+ * already uses) and wrapped -- shrinking the font only as far as it has to
+ * -- to fit inside the circle. A short label ("All Groups", a QCR
+ * collection's own short name) still measures as one line at the original
+ * 20px, so every existing caller renders byte-for-byte as before. Falls
+ * back to the original single, unwrapped line if no canvas is available
+ * (there always is one in a real browser -- purely a defensive guard).
  */
 function centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabel, centerSub } = {}) {
   if (centerArabic === undefined && centerLabel === undefined) return "";
@@ -103,8 +151,35 @@ function centerLabelMarkup(cx, cy, rInner, { centerArabic, centerRef, centerLabe
   const sub = centerSub
     ? `<text x="${cx}" y="${cy + 20}" text-anchor="middle" font-family="Inter" font-size="10" fill="#8fa0c2">${centerSub}</text>`
     : "";
+  const baseY = centerSub ? cy - 2 : cy + 6;
+  const family = "'Cormorant Garamond', serif";
+  let fit = null;
+  if (typeof document !== "undefined" && document.createElement) {
+    try {
+      const ctx = document.createElement("canvas").getContext("2d");
+      const usableR = Math.max(20, rInner - 10);
+      fit = wrapTextToFit(ctx, centerLabel, {
+        maxWidth: usableR * 1.7,
+        maxHeight: usableR * 1.5,
+        startSize: 20,
+        minSize: 11,
+        family,
+        weight: 600,
+      });
+    } catch {
+      fit = null;
+    }
+  }
+  const titleMarkup = fit
+    ? (() => {
+        const blockHeight = (fit.lines.length - 1) * fit.lineHeight;
+        const startY = baseY - blockHeight / 2;
+        const tspans = fit.lines.map((line, i) => `<tspan x="${cx}" y="${startY + i * fit.lineHeight}">${line}</tspan>`).join("");
+        return `<text text-anchor="middle" font-family="${family}" font-weight="600" font-size="${fit.fontSize}" fill="#C9A24B">${tspans}</text>`;
+      })()
+    : `<text x="${cx}" y="${baseY}" text-anchor="middle" font-family="${family}" font-weight="600" font-size="20" fill="#C9A24B">${centerLabel}</text>`;
   return `${circle}
-    <text x="${cx}" y="${centerSub ? cy - 2 : cy + 6}" text-anchor="middle" font-family="Cormorant Garamond, serif" font-weight="600" font-size="20" fill="#C9A24B">${centerLabel}</text>
+    ${titleMarkup}
     ${sub}`;
 }
 

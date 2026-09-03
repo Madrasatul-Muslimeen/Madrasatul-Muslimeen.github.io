@@ -6234,7 +6234,13 @@
         statusId: "not_started",
         title: escapeHtml(langText(g.title, getAppLang())),
         number: i + 1,
-        sliceLines: [num(String(i + 1).padStart(2, "0")), ...wrapWheelLabel(escapeHtml(langText(g.title, getAppLang())), maxLen)],
+        // 3 Sep 2026 follow-up -- the owner's own "wrap in 2 lines": the
+        // group's own number already shows OUTSIDE the ring (the plain
+        // `number` field above); repeating it inside the slice body too
+        // was a third line competing for room on a crowded 19-slice wheel,
+        // so the body now carries only the wrapped title, which
+        // wrapWheelLabel() already caps at 2 lines on its own.
+        sliceLines: wrapWheelLabel(escapeHtml(langText(g.title, getAppLang())), maxLen),
       }));
       asmaXWheelContainerEl.innerHTML = renderScopedWheel(items, { centerLabel: titleText });
       attachScopedWheelClickHandler(asmaXWheelContainerEl, (key) => openAsmaXGroup(key));
@@ -6330,8 +6336,13 @@
         statusId: e.statusId,
         title: escapeHtml(asmaEntryDisplayName(e.entry)),
         number: e.number,
+        // 3 Sep 2026 follow-up -- the owner's own "don't show the numbers
+        // (the 00.00.00 format) in the wheel": the position label is still
+        // shown on the LIST row (it's genuinely useful there for
+        // reorganising), just not repeated a second time on the wheel's
+        // own slice, which already carries the permanent "#N" outside the
+        // ring.
         sliceLines: [
-          num(labelByKey.get(e.key) ?? `#${e.number}`),
           escapeHtml(e.entry.arabic),
           ...wrapWheelLabel(escapeHtml(asmaEntryDisplayName(e.entry)), maxLen),
         ],
