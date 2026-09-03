@@ -4056,6 +4056,18 @@
       return [currentAyahNum, currentAyahNum]; // ayah
     }
 
+    /** True when the reading draws the WHOLE chosen unit at once AND that unit
+        is more than one ayah -- so nothing on screen depends on which ayah is
+        "current", and an Ayah picker beside it would move nothing.
+        Mushaf over a Single Ayah is the one whole-unit view that still needs
+        it: that ayah is what gets marked on the page. One rule, read by both
+        the Study options picker and its reading-screen mirror, so the two can
+        never disagree about when it is offered. */
+    function unitRendersWhole() {
+      if (currentUnitType === "ayah") return false;
+      return mushafToggle.checked || currentUnitType === "surah" || currentUnitType === "range";
+    }
+
     /** { unitType, unitKey, chunkKey, label } for whatever's currently selected -- the single source of truth both "Track this unit" and the drill controls build on. chunkKey mirrors records.js's own chunkKeyFor() exactly (surah-chunked for ayah/range/surah/ruku, subject-chunked for juz/page) so it always matches the real document a claim will land in. */
     function currentUnitInfo() {
       const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
@@ -7455,11 +7467,21 @@
         pageViewContainer.innerHTML = `<p style="color:#888;">${t("Loading Mushaf page…")}</p>`;
         try {
           await ensureMushafData();
-          const pages = getMushafPagesForKeys(ayahKeys);
+          // Mushaf fix round -- a Page unit names its own page outright, so
+          // use it rather than deriving pages from ayah keys: an ayah that
+          // straddles a page boundary would otherwise pull the NEXT page in
+          // alongside it, and a Page unit should be exactly one page.
+          const pinnedPage = currentUnitType === "page" ? currentUnitNumber() : null;
+          const pages = pinnedPage ? [pinnedPage] : getMushafPagesForKeys(ayahKeys);
+          // The dim marks "your unit, inside a page it only partly fills".
+          // When the unit IS the page there is nothing to mark off -- the
+          // owner's "the entire page should be highlighted" -- so nothing
+          // dims. Every other unit keeps the distinction it earns.
+          const highlight = currentUnitType === "page" ? null : new Set(ayahKeys);
           await renderMushafPages(
             pageViewContainer,
             pages,
-            new Set(ayahKeys),
+            highlight,
             (surahNum) => surahIndex.find((s) => s.surahNumber === surahNum)?.nameArabic ?? null
           );
         } catch (err) {
@@ -7682,6 +7704,66 @@
         rows.forEach((r) => r.classList.toggle("in-view", r === rows[next]));
       }
       return true;
+    }
+
+    /** How many pages/āyahs the flow strip currently holds. Two or more and
+        the strip can page within itself -- its own scroll-snap does it
+        natively sideways, stepFlowAyah() does it otherwise. ONE and it cannot
+        move at all, which is exactly a Mushaf Page unit: one printed page,
+        nothing to scroll to. Zero when no flow is showing. */
+    function flowStripPages() {
+      if (getComputedStyle(pageViewContainer).display === "none") return 0;
+      return [...pageViewContainer.children].filter((el) => el.nodeType === 1).length;
+    }
+
+    /** Mushaf fix round -- the owner's "enable right slide to appear the next
+        page in a way as if a page is turning right to left."
+
+        A page turn, not a cut: the leaf is hinged at its RIGHT edge -- the
+        spine side of an Arabic book -- so going forward swings the current
+        page away about that hinge and lays the next one down from the far
+        side, then settles it flat. The direction matches this page's own
+        standing rule (v07.56/v07.114): the next unit sits to the LEFT, so a
+        RIGHT swipe brings it in.
+
+        Deliberately fire-and-forget from advance(): stepUnit() is async for
+        Juz/Hizb/Page (it fetches that unit's boundary table and may open a
+        different surah), and the gesture must not wait on a network read. */
+    let flowTurnInFlight = false;
+    async function turnFlowPage(dir) {
+      // stepUnit() awaits a boundary table and can outlast advance()'s own
+      // cooldown on a slow connection, so a second swipe could otherwise
+      // start a turn while the first is still mid-flight and the two would
+      // fight over the same element's transform.
+      if (flowTurnInFlight) return;
+      flowTurnInFlight = true;
+      const el = pageViewContainer;
+      const OUT = 170, IN = 200;
+      const away = dir > 0 ? -72 : 72;
+      try {
+        el.style.transformOrigin = "right center";
+        el.style.transition = `transform ${OUT}ms ease-in, opacity ${OUT}ms ease-in`;
+        el.style.transform = `perspective(1400px) rotateY(${away}deg)`;
+        el.style.opacity = "0";
+        await new Promise((r) => setTimeout(r, OUT));
+        await stepUnit(dir);
+        el.style.transition = "none";
+        el.style.transform = `perspective(1400px) rotateY(${-away}deg)`;
+        el.style.opacity = "0";
+        await new Promise((r) => requestAnimationFrame(() => r()));
+        el.style.transition = `transform ${IN}ms ease-out, opacity ${IN}ms ease-out`;
+        el.style.transform = "";
+        el.style.opacity = "";
+        await new Promise((r) => setTimeout(r, IN + 40));
+      } finally {
+        // Whatever happened -- a failed boundary-table fetch included -- the
+        // page must never be left mid-turn and invisible.
+        el.style.transition = "";
+        el.style.transform = "";
+        el.style.opacity = "";
+        el.style.transformOrigin = "";
+        flowTurnInFlight = false;
+      }
     }
 
     // -----------------------------------------------------------------------
@@ -8317,8 +8399,21 @@
           // is, but because every āyah is already on screen, not because there
           // is nothing smaller to step. One slide-up therefore jumped a whole
           // surah, which is exactly what the owner reported.
-          if (getComputedStyle(pageViewContainer).display !== "none") {
-            return stepFlowAyah(dir);
+          // Mushaf fix round -- ...but only while there IS a flow to step
+          // through. A Mushaf Page unit draws exactly one printed page, so
+          // the strip cannot scroll and stepFlowAyah() correctly reports
+          // "nothing moved" -- which left the gesture doing nothing at all
+          // ("this page doesn't slide right nor down"). With one page, the
+          // gesture means the UNIT: the next printed page. Two or more and
+          // v07.123's rule still holds -- a slide inside a Whole Surah must
+          // never jump to the next surah; that is what the ⏭ button is for.
+          const stripPages = flowStripPages();
+          if (stripPages >= 2) return stepFlowAyah(dir);
+          if (stripPages === 1) {
+            const unitBtn = dir > 0 ? nextUnitBtn : prevUnitBtn;
+            if (unitBtn.disabled) return false;
+            turnFlowPage(dir); // async on purpose -- see its own comment
+            return true;
           }
           if (!nextAyahBtn.hidden) {
             const btn = dir > 0 ? nextAyahBtn : prevAyahBtn;
@@ -8454,7 +8549,11 @@
         if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE) {
           // A sideways swipe with nothing to drag -- the flow view, whose own
           // scroll-snap strip already handles it, so don't double-advance it.
-          if (e.target.closest?.("#pageViewContainer")) return;
+          // Mushaf fix round -- unless the strip holds a single page, where
+          // there is nothing for scroll-snap to snap to and the swipe would
+          // otherwise be swallowed entirely (the owner's "this page doesn't
+          // slide right"). advance() decides what one page means.
+          if (e.target.closest?.("#pageViewContainer") && flowStripPages() >= 2) return;
           advance(dx > 0 ? 1 : -1);
         } else if (Math.abs(dy) > SWIPE) {
           const scroller = nearestScroller(e.target, boundary);
@@ -9566,7 +9665,10 @@
       // at once, so there is no single "current āyah" to step between).
       prevAyahBtn.hidden = duplicatesUnitNav || usesFlow;
       nextAyahBtn.hidden = duplicatesUnitNav || usesFlow;
-      ayahSelectControl.style.display = isPageUnit ? "none" : "";
+      // Mushaf fix round, the owner's own follow-on ("we won't need Ayah
+      // selector in the page unit selection"): the picker is offered exactly
+      // where it still does something. See unitRendersWhole().
+      ayahSelectControl.style.display = unitRendersWhole() ? "none" : "";
       ayahPanels.style.display = usesFlow ? "none" : "";
       pageViewContainer.style.display = usesFlow ? "" : "none";
 
@@ -9631,12 +9733,19 @@
         // document-wide -- would fold the hidden container instead of the
         // āyah the reader actually tapped. Caught by test, not by reading.
         delete ayahPanels.dataset.ayahCollapsibleFor;
-        // Mushaf over a single ayah means THAT ayah's page, with it
-        // highlighted -- the owner's one-ayah memorising case. Every other
-        // unit hands over its own bounds, as before.
-        const from = isMushaf && !isPageUnit ? currentAyahNum : unitFrom;
-        const to = isMushaf && !isPageUnit ? currentAyahNum : unitTo;
-        renderFlowView(from, to, panels, isMushaf);
+        // Mushaf fix round -- the owner's report: with Mushaf on and Unit =
+        // Page, "the entire page should be highlighted, but only one Ayah
+        // is." It was: this line used to read `isMushaf && !isPageUnit ?
+        // currentAyahNum : unitFrom`, and `isPageUnit` names only Whole
+        // Surah and Range -- so Ruku'/Juz/Hizb/PAGE all took the
+        // single-ayah branch and Mushaf drew that one ayah's page with the
+        // whole rest of it dimmed. The comment it carried already stated
+        // the intended rule ("Mushaf over a single ayah means THAT ayah's
+        // page ... every other unit hands over its own bounds"), and
+        // currentUnitAyahBounds() already returns [currentAyahNum,
+        // currentAyahNum] for the Single Ayah unit -- so the special case
+        // was not only wrong, it was never needed.
+        renderFlowView(unitFrom, unitTo, panels, isMushaf);
       } else {
         const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
         if (!ayah) return;
@@ -9725,7 +9834,10 @@
       // that matter their width. Study options has hidden it for exactly these
       // two units since round 19 (ayahSelectControl / isPageUnit) -- this is
       // the mirror finally agreeing with the control it mirrors.
-      readAyahSelect.hidden = isRange || currentUnitType === "surah";
+      // Mushaf fix round -- and gone for any other unit whose whole span is
+      // drawn at once (Mushaf over a Page/Ruku'/Juz/Hizb), where there is no
+      // "current ayah" left for it to move. One rule, both controls.
+      readAyahSelect.hidden = unitRendersWhole();
       // An aria-label is an ATTRIBUTE, so translateStatic() -- which walks the
       // page's text nodes -- never sees it. These are named here instead, and
       // the number cell borrows the same per-unit wording Study options uses.

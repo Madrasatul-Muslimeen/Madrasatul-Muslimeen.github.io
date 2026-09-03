@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.123.** Cutover to production happened
+**Current milestone: QuranRevival v07.124.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -9517,6 +9517,110 @@ Bangla reciter's timing map that v07.39 warms when the reading screen
 opens. Confirmed present at `HEAD` too, and intermittent (it passes when
 that host is reachable). No `firestore.rules`, schema or Firestore data
 changes -- nothing to deploy but the static files.
+
+v07.124 (3 Sep 2026, on Claude Code on the web) is **the Mushaf page fixes --
+a Page unit is now a WHOLE page, and it turns.** Two owner reports from a
+tablet screenshot of v07.123 (Read view, Mushaf and "Page by page" both on,
+Unit = Page, Surah 36, page 441): *"The entire page should be highlighted, but
+only one Ayah is highlighted. Why? (is it because there is Ayah selector? If
+that's the case then, we won't need Ayah selector in the page unit selection.
+FIX."* and *"this page doesn't slide right nor down. Need right ways slide to
+work. Enable right slide to appear the next page in a way as if a page is
+turning right to left."* Both reproduced by measurement before anything was
+touched: 144 words on the page, **142 of them dimmed**, and the strip's own
+`scrollWidth` exactly equal to its `clientWidth` -- nothing to scroll to.
+
+**(1) The highlight bug was one wrong word in one condition, and the code's own
+comment already said what the rule should be.** `renderStudyScreen()` read
+`const from = isMushaf && !isPageUnit ? currentAyahNum : unitFrom` -- but
+`isPageUnit` names only Whole Surah and Range, so **Ruku'/Juz/Hizb/PAGE all
+took the single-ayah branch**: Mushaf drew that one ayah's page with the whole
+rest of it dimmed. The comment above it already stated the intent ("Mushaf over
+a single ayah means THAT ayah's page ... every other unit hands over its own
+bounds"), and `currentUnitAyahBounds()` already returns
+`[currentAyahNum, currentAyahNum]` for the Single Ayah unit -- so the special
+case was not only wrong, **it was never needed**. It is gone; the bounds are
+passed unconditionally.
+
+**Two smaller decisions ride with it.** The dim exists to mark "your unit,
+inside a page it only partly fills" -- when the unit IS the page there is
+nothing to mark off, so **nothing dims for a Page unit** (the owner's "the
+entire page should be highlighted", literally). And a Page unit now names its
+own page outright (`currentUnitNumber()`) rather than deriving pages from ayah
+keys: an ayah that straddles a page boundary would otherwise pull the NEXT page
+in alongside it, and a Page unit should be exactly one page.
+
+**The Ayah picker: hidden where it does nothing, kept where it does.** The
+owner's own follow-on was conditional ("**is it because** there is Ayah
+selector? **If that's the case then**, we won't need Ayah selector in the page
+unit selection") -- and it was not the cause, only implicated, since
+`currentAyahNum` is what the broken branch read. One new `unitRendersWhole()`
+is now the single rule both the Study-options picker and its reading-screen
+mirror read, so the two can never disagree: **the picker goes whenever the
+whole unit is drawn at once AND that unit is more than one ayah** -- Range and
+Whole Surah as before, plus Mushaf over a Page/Ruku'/Juz/Hizb. It **stays** for
+an ordinary (non-Mushaf) Page/Ruku'/Juz/Hizb, which still reads ayah by ayah
+and where it is the only way to move within the unit, and for Mushaf over a
+Single Ayah, where it chooses which ayah is marked on the page. Said plainly
+rather than applied more widely than it earns.
+
+**(2) The slide needed a real distinction, not a blanket fall-through.**
+v07.123 made a flow-view gesture step WITHIN the flow, on purpose: a slide
+inside a Whole Surah must never jump to the next surah (that is what the ⏭
+button is for), and that rule has its own check. But `stepFlowAyah()` returns
+false for two different reasons -- **at the end of a multi-page strip**, and
+**there is only one page, so the strip cannot move at all** -- and a Mushaf
+Page unit is the second. New `flowStripPages()` tells them apart: two or more
+and v07.123's rule stands unchanged; **exactly one and the gesture means the
+UNIT** -- the next printed page. The same one-page test is what now lets a
+sideways swipe through `touchend`'s `#pageViewContainer` guard, which had been
+deferring unconditionally to a native scroll-snap that has nothing to snap to.
+
+**(3) A real page turn, not a cut.** `turnFlowPage()` hinges the leaf at its
+**right** edge -- the spine side of an Arabic book -- so going forward swings
+the current page away about that hinge and lays the next one down from the far
+side (`perspective(1400px) rotateY(±72deg)`, 170ms out / 200ms in). Direction
+follows this page's own standing rule (v07.56/v07.114): the next unit sits to
+the LEFT, so a RIGHT swipe brings it in. Deliberately **fire-and-forget** from
+`advance()` -- `stepUnit()` is async for Juz/Hizb/Page (it fetches that unit's
+boundary table and may open a different surah) and a gesture must not wait on a
+network read -- and every style it sets is cleared in a `finally`, so a failed
+fetch can never leave the page mid-turn and invisible. One in-flight guard, for
+the same reason: `stepUnit()` can outlast `advance()`'s own 550ms cooldown on a
+slow connection, and two turns fighting over one element's transform is a real
+glitch rather than a theoretical one. **Screenshotted at both ends and
+mid-turn** rather than trusted from the assertions alone.
+
+**Verified: 800 behaviour checks pass** (was 789 -- 11 new; the 3 failures are
+the same pre-existing, environmental archive.org poster block this project has
+recorded since v07.44, and the run ends at the same pre-existing section-42
+crash carried since v07.69, both unrelated). **Sections 40d and 40e are new and
+checked in** (not
+a throwaway script -- section 40 sits before the pre-existing section-42 crash
+this project has carried since v07.69, so these are reachable): the Page unit
+proven to draw exactly its own page with **zero** dimmed words and no Ayah
+picker in either place; a right swipe proven to start a real `rotateY` turn and
+land on page 51 with the transform cleared; a left swipe proven to turn back; a
+slide up at the foot of the page proven to turn it too; and 40e proving Mushaf
+over a Single Ayah is untouched -- still one ayah marked, rest dimmed, picker
+still there. The suite gained a `swipe()` helper (synthetic
+touchstart/touchmove/touchend on the real document listeners) -- the gesture
+path had no checked-in coverage at all before this round, which is part of why
+a one-page strip was never exercised. `openMushaf()` takes a unit NUMBER now,
+waiting for the boundary table to land before selecting it.
+**`layout.mjs`: every measured landing metric byte-for-byte identical** at all
+eight viewports in both banner states against a real `HEAD` shim -- same
+heading top, wheel width, Approach rows and dock gap, `getElementById` targets
+unchanged at 222; the only flagged line is the same pre-existing false positive
+this project has disclosed since v07.86 (Manage-mode-only Asma/QCR ids that do
+not exist until Manage is toggled on). **`reading.mjs` READING SCREEN OK** at
+all eight viewports, **`panel.mjs` no wrapped bar and no truncated label**,
+**`navcheck.mjs` unchanged** (still only the pre-existing 320px English
+truncation of "Operation"/"Bookmark"), **coverage byte-identical at 1,547
+scanned / 48 missing, same in every area** -- this round adds no user-visible
+strings. No `firestore.rules`, schema or Firestore data changes -- nothing to
+deploy but the static files.
+
 
 ## What this is
 

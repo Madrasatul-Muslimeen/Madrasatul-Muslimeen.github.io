@@ -3606,11 +3606,13 @@ async function mushafCtx(opts = {}) {
     BEFORE Mushaf is ticked on purpose: opening a Mushaf page goes straight to
     full screen (round 18's rule -- a page is a page), which hides the dock, so
     there is no Study options tab to reach afterwards. */
-async function openMushaf(page, unit = null) {
+async function openMushaf(page, unit = null, unitNumber = null) {
   await openStudyOptions(page);
   await page.selectOption("#surahSelect", "3");
   await page.waitForTimeout(1200);
   if (unit) { await page.selectOption("#unitTypeSelect", unit); await page.waitForTimeout(600); }
+  // Juz/Hizb/Page fill their number list only once the boundary table lands.
+  if (unitNumber !== null) { await page.waitForTimeout(900); await page.selectOption("#unitNumSelect", String(unitNumber)); await page.waitForTimeout(1000); }
   await page.check("#mushafToggle");
   await page.waitForTimeout(2500);
   await page.click("#tabStudyOptionsBtn");
@@ -3630,6 +3632,33 @@ async function openMushaf(page, unit = null) {
     await page.waitForTimeout(400);
   }
   await page.waitForTimeout(400);
+}
+
+/** A real finger, synthesised. The app's gesture nav listens for plain
+    touchstart/touchmove/touchend on document (capture, passive), so
+    dispatching them on the element the gesture starts over exercises exactly
+    the production path -- and a swipe is the only way to reach it. */
+async function swipe(page, selector, dx, dy = 0) {
+  await page.evaluate(async ({ selector, dx, dy }) => {
+    const el = document.querySelector(selector);
+    const r = el.getBoundingClientRect();
+    const x0 = r.left + r.width / 2, y0 = r.top + Math.min(r.height / 2, 200);
+    const fire = (type, x, y) => {
+      const t = new Touch({ identifier: 1, target: el, clientX: x, clientY: y });
+      el.dispatchEvent(new TouchEvent(type, {
+        bubbles: true, cancelable: true, composed: true,
+        touches: type === "touchend" ? [] : [t],
+        targetTouches: type === "touchend" ? [] : [t],
+        changedTouches: [t],
+      }));
+    };
+    fire("touchstart", x0, y0);
+    for (let i = 1; i <= 4; i++) {
+      fire("touchmove", x0 + (dx * i) / 4, y0 + (dy * i) / 4);
+      await new Promise((done) => setTimeout(done, 16));
+    }
+    fire("touchend", x0 + dx, y0 + dy);
+  }, { selector, dx, dy });
 }
 
 console.log("\n=== 40. Shell round 28: the Mushaf page ===");
@@ -3742,6 +3771,90 @@ console.log("\n=== 40. Shell round 28: the Mushaf page ===");
           return marked > 0 && marked < total;
         }));
   await page.click("#readStopBtn");
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 40d Mushaf fix round: a Page unit is a WHOLE page, and it turns -----
+  // The owner's report, from a tablet: "The entire page should be
+  // highlighted, but only one Ayah is ... and this page doesn't slide right
+  // nor down." Both were real. Surah 3's pages 50 and 51 are the checked-in
+  // fixture, and they sit inside one surah, so a page step stays in it.
+  const ctx = await mushafCtx({ banner: false });
+  const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+  await openMushaf(page, "page", 50);
+
+  const shown = () => page.evaluate(() => {
+    const c = document.getElementById("pageViewContainer");
+    const words = [...c.querySelectorAll(".hifz-word")];
+    return {
+      pages: c.children.length,
+      nums: [...c.querySelectorAll(".hifz-page-num")].map((e) => e.textContent).join(),
+      words: words.length,
+      dim: words.filter((w) => w.classList.contains("dim")).length,
+      unitNum: document.getElementById("unitNumSelect")?.value,
+      surah: document.getElementById("surahSelect")?.value,
+      ayahSel: getComputedStyle(document.getElementById("ayahSelectControl")).display,
+      readAyahHidden: document.getElementById("readAyahSelect")?.hidden,
+      transform: c.style.transform,
+    };
+  });
+
+  const first = await shown();
+  check("40d a Page unit draws exactly its own printed page", first.pages === 1 && first.nums === "Page 50", JSON.stringify(first));
+  check("40d ...with the WHOLE page highlighted, nothing dimmed", first.words > 50 && first.dim === 0, `words=${first.words} dim=${first.dim}`);
+  check("40d ...and no Ayah picker, which would move nothing", first.ayahSel === "none" && first.readAyahHidden === true, JSON.stringify([first.ayahSel, first.readAyahHidden]));
+
+  await swipe(page, "#pageViewContainer", 160);
+  await page.waitForTimeout(120);
+  const mid = await page.evaluate(() => document.getElementById("pageViewContainer").style.transform);
+  check("40d a right swipe turns the page about its hinge, not a cut", /rotateY/.test(mid), mid);
+  await page.waitForTimeout(1800);
+  const next = await shown();
+  check("40d ...and lands on the next printed page", next.nums === "Page 51" && next.unitNum === "51", JSON.stringify([next.nums, next.unitNum]));
+  check("40d ...whole too, with the turn cleared rather than left mid-flight", next.dim === 0 && next.transform === "", JSON.stringify([next.dim, next.transform]));
+
+  await page.waitForTimeout(700);
+  await swipe(page, "#pageViewContainer", -160);
+  await page.waitForTimeout(1800);
+  const back = await shown();
+  check("40d a left swipe turns back", back.nums === "Page 50" && back.unitNum === "50", JSON.stringify([back.nums, back.unitNum]));
+
+  // A Mushaf page is taller than a phone, so the slide only steps once the
+  // page's own scroll has reached its end -- the same rule every other
+  // reading gesture follows.
+  await page.waitForTimeout(700);
+  await page.evaluate(() => { for (const el of document.querySelectorAll("#readScroll, #pageViewContainer, .hifz-page")) el.scrollTop = el.scrollHeight; });
+  await page.waitForTimeout(200);
+  await swipe(page, "#pageViewContainer", 0, -160);
+  await page.waitForTimeout(1800);
+  check("40d a slide up at the foot of the page turns it too", (await shown()).unitNum === "51");
+  check("40d no page errors", errors.filter((e) => !/archive\.org/.test(e)).length === 0, JSON.stringify(errors.slice(0, 3)));
+  await page.close();
+  await ctx.close();
+}
+
+{
+  // --- 40e Mushaf over a Single Ayah is unchanged --------------------------
+  // The one whole-page view that still marks one ayah and still needs the
+  // Ayah picker to choose which -- the owner's own one-ayah memorising case,
+  // which the fix above must not have taken away.
+  const ctx = await mushafCtx({ banner: false });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  page.on("dialog", (d) => d.dismiss().catch(() => {}));
+  await openMushaf(page);
+  const s = await page.evaluate(() => {
+    const words = [...document.querySelectorAll("#pageViewContainer .hifz-word")];
+    return {
+      words: words.length,
+      dim: words.filter((w) => w.classList.contains("dim")).length,
+      ayahSel: getComputedStyle(document.getElementById("ayahSelectControl")).display,
+    };
+  });
+  check("40e Mushaf over a Single Ayah still marks that ayah on the page", s.words > 50 && s.dim > 0 && s.dim < s.words, JSON.stringify(s));
+  check("40e ...and keeps the Ayah picker, which chooses what is marked", s.ayahSel !== "none", s.ayahSel);
   await page.close();
   await ctx.close();
 }
