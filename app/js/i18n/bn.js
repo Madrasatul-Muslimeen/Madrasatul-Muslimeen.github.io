@@ -2049,4 +2049,11 @@ export const BN = {
   // 2 Sep 2026 -- drag-reposition round: dragging a Group or a Name within
   // a group, with auto-numbering.
   "Drag to reorder": "সরানোর জন্য টেনে ধরুন", // ?
+
+  // 3 Sep 2026 -- Asma ul Husna wheel resize round: js/asma-wheel-text.js's
+  // own "Wheel labels" slider (a Group's own title, or a Name's own
+  // display-language name, on the Explore -> Asma ul Husna wheel). "Text
+  // size", "Arabic", "All" and "Reset" are all reused verbatim from their
+  // existing entries above.
+  "Wheel labels": "চাকার লেবেল", // ?
 };

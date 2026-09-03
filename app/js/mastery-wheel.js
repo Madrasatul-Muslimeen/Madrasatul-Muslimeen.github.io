@@ -283,6 +283,19 @@ export function wrapWheelLabel(text, maxLen = 14) {
  * resolved in the text's own local coordinate space BEFORE that rotation
  * is applied, so consecutive lines can never bleed into each other
  * regardless of which way the label ends up pointing.
+ *
+ * 3 Sep 2026 resize round — `entry.sliceArabicLines` (a count, default 0) is
+ * a second strictly OPT-IN extra: however many of `sliceLines`' own leading
+ * lines are the Arabic Name (today only the Asma ul Husna Names-level
+ * wheel's own first line) get the separate `.wheel-seg-label-ar` class
+ * instead of the plain `.wheel-seg-label` every other line already used —
+ * two independently CSS-sized classes, so the owner can resize "the Arabic
+ * Names" and "the wrapped title/name text" apart from each other (see
+ * js/asma-wheel-text.js). A tspan's own `dy="…em"` is resolved against ITS
+ * OWN font-size, not the line before it, so the Arabic line getting a
+ * bigger font never throws off the spacing of the lines around it. Every
+ * caller that never sets `sliceArabicLines` renders byte-for-byte as
+ * before (every non-Arabic line, or a caller with no Arabic line at all).
  */
 export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, centerLabel, centerSub } = {}) {
   const cx = size / 2, cy = size / 2;
@@ -303,13 +316,17 @@ export function renderScopedWheel(items, { size = 360, centerArabic, centerRef, 
       const lp = polarToCartesian(cx, cy, rOuter + labelOffset, mid);
       const numText = `<text class="wheel-seg-num" x="${lp.x}" y="${lp.y}" text-anchor="middle" transform="rotate(${rot} ${lp.x} ${lp.y})" style="pointer-events:none">${entry.number ?? entry.key}</text>`;
       const lines = Array.isArray(entry.sliceLines) ? entry.sliceLines.filter(Boolean) : [];
+      const arabicLineCount = Math.max(0, Number(entry.sliceArabicLines) || 0);
       let bodyText = "";
       if (lines.length) {
         const midR = (rInner + rOuter) / 2;
         const p = polarToCartesian(cx, cy, midR, mid);
         const firstDy = -((lines.length - 1) / 2) * sliceLineHeightEm;
         const tspans = lines
-          .map((line, li) => `<tspan x="${p.x}" dy="${li === 0 ? firstDy : sliceLineHeightEm}em">${line}</tspan>`)
+          .map((line, li) => {
+            const cls = li < arabicLineCount ? ` class="wheel-seg-label-ar"` : "";
+            return `<tspan${cls} x="${p.x}" dy="${li === 0 ? firstDy : sliceLineHeightEm}em">${line}</tspan>`;
+          })
           .join("");
         bodyText = `<text class="wheel-seg-label" x="${p.x}" y="${p.y}" text-anchor="middle" transform="rotate(${rot} ${p.x} ${p.y})" style="pointer-events:none">${tspans}</text>`;
       }
