@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.118.** Cutover to production happened
+**Current milestone: QuranRevival v07.119.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -9089,6 +9089,73 @@ reorder"), translated** (marked `// ?` for the owner's own eye) -- the
 or Firestore data changes -- `reorderCollections()`/`reorderItems()` only
 ever touch fields (`order`, `items[]`) the existing deployed
 `asmaCollections` rule already lets an owner/prime write; nothing new to
+deploy but the static files.
+
+v07.119 (3 Sep 2026, same day) is **a same-day follow-up to v07.118, from
+the owner's own two screenshots taken right after it shipped: the 19-Group
+wheel was still crowded (3 stacked lines per slice, not 2), the Names
+wheel's own slices repeated the "00.00.00" position label the list rows
+already show, and a long group title in the wheel's own centre disc ran
+straight past the gold ring instead of fitting inside it.**
+
+**The 19-Group wheel's own slice body drops the redundant number line.**
+Each slice already shows its plain sequence number (1-19) OUTSIDE the ring,
+exactly as before -- the body text (`sliceLines`) was ALSO repeating that
+same number as its own first line, ahead of the wrapped title, which is
+what pushed every slice to 3 stacked lines instead of 2. Removing the
+duplicate number leaves exactly `wrapWheelLabel()`'s own 2-line cap, so "wrap
+in 2 lines" falls out of the fix rather than needing a new limit -- the
+group's own number is still readable, just not written twice.
+
+**The Names wheel's own slices drop the "00.00.00" line outright.** The
+owner's own words -- "Don't show the numbers (the format, 00.00.00) in the
+wheel" -- point at `asmaPositionLabels()`'s own display label
+(`group.runningTotal.localIndex`, v07.118's own new numbering), which was
+being drawn a second time on each slice alongside the Arabic and the
+display-language name. **Kept exactly where it's actually useful: the LIST
+row.** Reorganising a group by dragging is a list operation, and that's
+where the position label still earns its place; the wheel is for browsing
+and claiming, where a Name's own Arabic + name is what matters, plus its
+permanent `#N` id already shown outside the ring (a plain number, not the
+"00.00.00" format the owner was pointing at, so it stays).
+
+**The centre disc's own title now wraps to fit the circle, measured with a
+real canvas context rather than guessed at.** `mastery-wheel.js`'s shared
+`centerLabelMarkup()` always drew `centerLabel` as ONE fixed 20px line --
+fine for a short label ("All Groups", a QCR collection's own short name),
+visibly broken for one of Asma's own 19 group titles, which are full
+sentences ("The Most Glorious, Most High, Exalted, Uppermost"). A new
+`wrapTextToFit()` measures the label with a real `CanvasRenderingContext2D`
+(the same "measure, don't guess" method the Quran-landing wheel's own hub
+layout already uses) and greedily word-wraps it, shrinking the font one
+step at a time (20px down to a floor of 11px) only as far as it has to for
+the wrapped block to fit inside the circle. **Deliberately a flat,
+slightly conservative width estimate, not a true per-line circle chord**
+-- computing the exact width available at each line's own vertical offset
+depends on how many lines there end up being, which depends on the width
+in the first place; a flat estimate errs toward wrapping a little more
+than strictly necessary rather than ever overflowing, which is the safe
+direction to be wrong in. **This is a generic fix to a shared function,
+not gated to Asma** -- a label that already fits in one line (every other
+caller today) measures as exactly one line at the original 20px and
+renders byte-for-byte as before; only a label too long to fit is affected,
+and previously that meant silently overflowing the ring, never a design
+anyone was relying on.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice) -- 14 checks, all passing: the Groups
+wheel's own slice-label count confirmed at most 2 per group; a short
+centre label ("All Groups") confirmed still rendering as a single line/
+tspan; the long-titled group's own Names wheel confirmed to carry no
+"GG.RR.LL"-shaped text on any slice while the list row's own position label
+is confirmed still present and correctly formatted; the same long title
+confirmed to wrap to more than one line AND to stay within the circle's own
+left/right edges (measured via real `getBoundingClientRect()`, not
+assumed); the same wrap-and-fit re-confirmed in Bangla; and a QCR
+regression check confirming its own wheel still carries zero slice-label
+elements (unaffected, as before). A phone-width sweep (390×844) confirmed
+no horizontal overflow. No `firestore.rules`, schema or Firestore data
+changes -- this round is pure client-side SVG/text-layout work; nothing to
 deploy but the static files.
 
 ## What this is
