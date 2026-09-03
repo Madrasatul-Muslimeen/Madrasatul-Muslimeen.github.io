@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.119.** Cutover to production happened
+**Current milestone: QuranRevival v07.120.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -9157,6 +9157,59 @@ elements (unaffected, as before). A phone-width sweep (390×844) confirmed
 no horizontal overflow. No `firestore.rules`, schema or Firestore data
 changes -- this round is pure client-side SVG/text-layout work; nothing to
 deploy but the static files.
+
+v07.120 (3 Sep 2026, same day) is **a second same-day follow-up: the
+slice text 30% bigger, and the wheel's own "number with #" now shows the
+Name's running position instead of its permanent canonical id.** The
+owner's own two asks, from a fresh pair of screenshots.
+
+**(1) `.wheel-seg-label` is 30% bigger** -- 7px to 9.1px, one CSS value.
+`wheelLabelMaxLen()`'s own average-character-width divisor was tuned
+against the OLD 7px size, so it was updated by the same 30% (`4.4` to
+`4.4 * 1.3`) to keep the wrap-width estimate honest against what is
+actually being drawn now -- leaving it at the old value would have under-
+estimated how much room each character really needs at the bigger size,
+letting lines run further past their own slice than intended. The 19-Group
+wheel is still visually crowded at this size (nothing here changes how
+many long titles can fit on one ring, a limit already disclosed and
+accepted in v07.118's own entry) -- bigger, more legible text was the
+literal ask, not a fix to the crowding itself.
+
+**(2) The number shown "with #" -- the list row's own badge, and the
+wheel's own outer ring digit -- is now the Name's RUNNING TOTAL** (the
+middle segment of its own "GG.RR.LL" position label, e.g. "90" out of
+"17.90.01"), in place of the permanent canonical id ("#99") both of those
+used to show. This is a pure DISPLAY substitution, scoped to this one
+Explore screen -- I5 is untouched: the real unit key, and the number a
+claim/bookmark/note is keyed against, never change; the full "GG.RR.LL"
+label stays exactly where it already was, next to the badge, so nothing is
+removed, only what one specific badge draws. `asma-collections.js`'s
+`asmaPositionLabels()` gained a `runningByKey` map alongside its existing
+`labelByKey` (the same numbers, already computed, just handed back
+un-formatted so a caller wanting the plain running number doesn't have to
+re-parse a formatted string for it); `renderAsmaCollectionListHtml()`
+gained an optional `runningNumberByKey` param, OFF by default, so
+asma-study.html's own "Browse by Category" panel (which never passes it)
+keeps showing the permanent id exactly as it always has. **Worth knowing
+if this is ever revisited**: a Name now reads as two different numbers
+depending which screen it's viewed from (the running total here, the
+permanent id everywhere else in the app -- asma-study.html, the detail
+screen, the poster, bookmarks) -- a deliberate, scoped choice matching what
+was asked for THIS screen, not a renumbering of the Name itself.
+
+**Verified with a focused, un-checked-in Playwright script** -- 12 checks,
+all passing: the slice-label font-size measured as exactly 9.1px; every
+list row's own badge cross-checked against the middle segment of its own
+position label, for a real 5-Name group; the wheel's own outer ring
+numbers cross-checked as the exact same SET of running totals as the list's
+own badges (not merely "some numbers changed"); the same badge proven to
+carry Bengali digits in Bangla; and two regression checks -- asma-study.html's
+own category panel confirmed to carry no position-label elements at all
+(unaffected), and QCR's own wheel confirmed to still carry zero slice-label
+elements. A phone-width sweep (390×844) confirmed no horizontal overflow.
+`tools/i18n-coverage.mjs` unchanged (no new strings -- this round is
+numbers and CSS only). No `firestore.rules`, schema or Firestore data
+changes -- nothing to deploy but the static files.
 
 ## What this is
 
