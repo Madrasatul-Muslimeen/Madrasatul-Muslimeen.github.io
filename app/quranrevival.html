@@ -578,7 +578,17 @@
      touch smaller than the outer number, since several lines share one
      slice's own limited radial band. */
   /* 3 Sep 2026 follow-up -- the owner's own "30% bigger": 7px * 1.3. */
-  .wheel-seg-label { font-family: 'Inter', sans-serif; font-size: 9.1px; font-weight: 600; fill: #cdd8ee; }
+  /* 3 Sep 2026 resize round -- both now read a user-adjustable CSS custom
+     property (js/asma-wheel-text.js sets these on :root; the literal 9.1px/
+     1/1.5 values here are only the FALLBACK for a browser too old to
+     understand var(), never applied once the module has actually run).
+     .wheel-seg-label-ar is a SEPARATE class from the plain label so the
+     Arabic Name and the wrapped title/transliteration text can be resized
+     apart from each other -- only the Asma ul Husna Names wheel's own first
+     sliceLine gets it (mastery-wheel.js's `sliceArabicLines`); every other
+     line, and every other wheel in the app, still uses the plain class. */
+  .wheel-seg-label { font-family: 'Inter', sans-serif; font-size: calc(9.1px * var(--asmax-wheel-label-scale, 1)); font-weight: 600; fill: #cdd8ee; }
+  .wheel-seg-label-ar { font-size: calc(9.1px * var(--asmax-wheel-ar-scale, 1.5)); }
   .wheel-legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 0.78rem; color: #cdd5e3; }
   .legend-item { display: flex; align-items: center; gap: 0.4rem; }
   .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
@@ -978,6 +988,14 @@
     border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5;
   }
   #asmaXLevelManageActions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  /* 3 Sep 2026 resize round -- reuses text-size.js's own .text-size-wrap/
+     .text-size-popover look (js/asma-wheel-text.js), which anchors right:0
+     off ITS OWN button. #asmaXLevelBar can wrap that button anywhere along
+     its own row (it's a flex-wrap bar, not a fixed-width one), so a plain
+     max-width safety net is added here rather than assumed unnecessary --
+     the same "calc(100vw - Npx)" shape this project's other narrow-bar
+     popovers already use. */
+  #asmaXLevelBar [data-awtext-popover] { max-width: calc(100vw - 2rem); box-sizing: border-box; }
   #asmaXMain {
     flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column-reverse; gap: 0;
     background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%);
@@ -2609,6 +2627,13 @@
                 <label class="qcr-archived-toggle"><input type="checkbox" id="asmaXShowArchivedToggle"> Show archived</label>
               </span>
               <button type="button" class="qcr-manage-toggle" id="asmaXManageToggleBtn">Manage</button>
+              <!-- 3 Sep 2026 resize round -- "enable me to resize the [Arabic]
+                   names myself" / "enable me to resize and wrapping the texts
+                   ... for groups as well." Always visible (not a Manage-mode
+                   action -- this is a personal display preference, same as
+                   the Read screen's own text-size button), filled in once by
+                   js/asma-wheel-text.js. -->
+              <span id="asmaXWheelTextSlot"></span>
             </div>
             <div id="asmaXMain">
               <div id="asmaXListPane">
@@ -3073,6 +3098,7 @@
     } from "./js/prefs.js";
     import { wireWheelResize } from "./js/wheel-resize.js";
     import { renderTextSizeButtonHtml } from "./js/text-size.js";
+    import { renderAsmaWheelTextButtonHtml, onAsmaWheelTextScaleChange, getAsmaWheelLabelScale } from "./js/asma-wheel-text.js";
     import {
       taglinesFrom, taglineSettingsFrom, taglineText, pickTagline,
       readTaglineState, writeTaglineState, TAGLINE_SETTING_DEFAULTS,
@@ -3456,6 +3482,7 @@
     const asmaXAttachRefBtn = document.getElementById("asmaXAttachRefBtn");
     const asmaXShowArchivedToggle = document.getElementById("asmaXShowArchivedToggle");
     const asmaXManageToggleBtn = document.getElementById("asmaXManageToggleBtn");
+    const asmaXWheelTextSlot = document.getElementById("asmaXWheelTextSlot");
     const asmaXListPaneEl = document.getElementById("asmaXListPane");
     const asmaXListHeaderEl = document.getElementById("asmaXListHeader");
     const asmaXWaysListContainer = document.getElementById("asmaXWaysListContainer");
@@ -5882,6 +5909,19 @@
     readTextSizeSlot.innerHTML = renderTextSizeButtonHtml("read", { btnClass: "secondary qr-ico" });
     notePopupPaneTextSizeSlot.innerHTML = renderTextSizeButtonHtml("popup", { showBn: false, btnClass: "" });
 
+    // 3 Sep 2026 resize round -- the Explore -> Asma ul Husna wheel's own
+    // Arabic-Name/label text-size control. Filled in once (its own markup
+    // doesn't depend on which Asma level is open) rather than rebuilt on
+    // every renderAsmaXPanel(), so an open popover never gets reset out from
+    // under the reader by an unrelated re-render (a claim, Manage-mode edit,
+    // or a level switch). Changing either slider re-renders whichever Asma
+    // level is CURRENTLY on screen, since a bigger/smaller font needs its
+    // wrapped lines reflowed, not just repainted at the old wrap.
+    asmaXWheelTextSlot.innerHTML = renderAsmaWheelTextButtonHtml("asmax", { btnClass: "qcr-icon-btn" });
+    onAsmaWheelTextScaleChange(() => {
+      if (stageView === "explore" && exploreMode === "asma") renderAsmaXPanel();
+    });
+
     // Round 2: the level bar's own controls are static markup now (a real
     // <select>, not dynamically-built rows), so each is wired ONCE here
     // rather than re-queried and re-attached on every render.
@@ -6192,7 +6232,13 @@
       // so the wrap estimate still reflects what's actually being drawn:
       // 4.4 was tuned for the original 7px, and 7 * 1.3 = 9.1px needs
       // roughly 30% more room per character too.
-      return Math.max(6, Math.min(22, Math.floor(arcLen / (4.4 * 1.3))));
+      // 3 Sep 2026 resize round -- that font-size is now user-adjustable
+      // (js/asma-wheel-text.js's own "label" scale, the owner's own
+      // "resize and wrapping ... for groups as well"), so the divisor reads
+      // the CURRENT scale rather than assuming the fixed 1.3 baseline --
+      // a bigger label font needs fewer characters per wrapped line to keep
+      // fitting inside its own slice, and a smaller one can fit more.
+      return Math.max(6, Math.min(22, Math.floor(arcLen / (4.4 * 1.3 * getAsmaWheelLabelScale()))));
     }
 
     /** Level 1 -- every collection of the current kind, as its own wheel
@@ -6363,6 +6409,11 @@
           escapeHtml(e.entry.arabic),
           ...wrapWheelLabel(escapeHtml(asmaEntryDisplayName(e.entry)), maxLen),
         ],
+        // 3 Sep 2026 resize round -- the first line above is the Arabic
+        // Name; marking it lets mastery-wheel.js draw it with the separate,
+        // independently-resizable `.wheel-seg-label-ar` class rather than
+        // the plain one every other line (and every other wheel) uses.
+        sliceArabicLines: 1,
       }));
       asmaXWheelContainerEl.innerHTML = renderScopedWheel(items, { centerLabel: langText(group.title, getAppLang()) });
       attachScopedWheelClickHandler(asmaXWheelContainerEl, (key) => openAsmaXName(Number(key.split(":")[1])));
