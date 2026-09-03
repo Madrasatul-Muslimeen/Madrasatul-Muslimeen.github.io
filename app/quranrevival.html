@@ -577,7 +577,8 @@
      Groups/Names wheels only (no other wheel in the app ever sets it). A
      touch smaller than the outer number, since several lines share one
      slice's own limited radial band. */
-  .wheel-seg-label { font-family: 'Inter', sans-serif; font-size: 7px; font-weight: 600; fill: #cdd8ee; }
+  /* 3 Sep 2026 follow-up -- the owner's own "30% bigger": 7px * 1.3. */
+  .wheel-seg-label { font-family: 'Inter', sans-serif; font-size: 9.1px; font-weight: 600; fill: #cdd8ee; }
   .wheel-legend { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 0.78rem; color: #cdd5e3; }
   .legend-item { display: flex; align-items: center; gap: 0.4rem; }
   .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
@@ -6186,7 +6187,12 @@
       const midR = (rOuter + rInner) / 2;
       const anglePer = 360 / Math.max(n, 1);
       const arcLen = midR * anglePer * (Math.PI / 180);
-      return Math.max(6, Math.min(22, Math.floor(arcLen / 4.4)));
+      // 3 Sep 2026 follow-up -- the average-character-width divisor scales
+      // with `.wheel-seg-label`'s own font-size (the owner's "30% bigger"),
+      // so the wrap estimate still reflects what's actually being drawn:
+      // 4.4 was tuned for the original 7px, and 7 * 1.3 = 9.1px needs
+      // roughly 30% more room per character too.
+      return Math.max(6, Math.min(22, Math.floor(arcLen / (4.4 * 1.3))));
     }
 
     /** Level 1 -- every collection of the current kind, as its own wheel
@@ -6291,9 +6297,16 @@
         asmaXGroupId = null; asmaXNumber = null; asmaXLevel = "groups"; renderAsmaXPanel();
       });
       const otherCollections = (asmaXCollections ?? []).filter((c) => c.id !== group.id && c.status !== "archived");
-      const { labelByKey } = asmaPositionLabels(asmaXCollectionsOfKind(group.kind));
+      // 3 Sep 2026 follow-up -- `runningByKey` is the middle number of the
+      // "GG.RR.LL" label (e.g. "90" of "17.90.01"), which the owner asked
+      // to have showing wherever a Name's number is shown "with #" on this
+      // screen -- the list row's own badge (below) and the wheel's own
+      // outer ring digit (in the `items` map further down) -- in place of
+      // the permanent canonical id. Display-only: `e.number` itself, and
+      // every unit key, are untouched (I5).
+      const { labelByKey, runningByKey } = asmaPositionLabels(asmaXCollectionsOfKind(group.kind));
       asmaXWaysListContainer.innerHTML = renderAsmaCollectionListHtml(entries, {
-        manageOn: asmaXManageOn, otherCollections, enableReorder: true, positionLabelByKey: labelByKey,
+        manageOn: asmaXManageOn, otherCollections, enableReorder: true, positionLabelByKey: labelByKey, runningNumberByKey: runningByKey,
       });
       asmaXWaysListContainer.querySelectorAll("[data-asma-jump]").forEach((btn) => {
         btn.addEventListener("click", () => openAsmaXName(Number(btn.dataset.asmaJump.split(":")[1])));
@@ -6335,7 +6348,11 @@
         key: e.key,
         statusId: e.statusId,
         title: escapeHtml(asmaEntryDisplayName(e.entry)),
-        number: e.number,
+        // 3 Sep 2026 follow-up -- "around the wheel" gets the same running
+        // number as the list row's own "#" badge now, not the permanent
+        // canonical id (which stays exactly what it's always been -- I5 --
+        // it just isn't what's DRAWN here any more).
+        number: runningByKey.get(e.key) ?? e.number,
         // 3 Sep 2026 follow-up -- the owner's own "don't show the numbers
         // (the 00.00.00 format) in the wheel": the position label is still
         // shown on the LIST row (it's genuinely useful there for

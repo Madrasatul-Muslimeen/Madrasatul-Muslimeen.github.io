@@ -255,6 +255,15 @@ export function asmaPositionLabels(orderedGroups) {
   const pad2 = (n) => String(n).padStart(2, "0");
   const groupNumbers = new Map();
   const labelByKey = new Map();
+  // 3 Sep 2026 follow-up -- the owner's own ask: the MIDDLE number of the
+  // "GG.RR.LL" label (the running total, unique across every Name in this
+  // kind's own list) is now what shows wherever a number is shown "with #"
+  // for a Name on this screen -- the wheel's own outer ring digit and the
+  // list row's own badge -- in place of the permanent canonical id. Kept
+  // as its own map (not just parsed back out of `labelByKey`'s string)
+  // since a caller wanting the plain number for display shouldn't have to
+  // re-parse a formatted label to get it.
+  const runningByKey = new Map();
   let running = 0;
   orderedGroups.forEach((c, gi) => {
     const groupNum = gi + 1;
@@ -262,9 +271,10 @@ export function asmaPositionLabels(orderedGroups) {
     (c.items ?? []).forEach((key, li) => {
       running += 1;
       labelByKey.set(key, `${pad2(groupNum)}.${pad2(running)}.${pad2(li + 1)}`);
+      runningByKey.set(key, running);
     });
   });
-  return { groupNumbers, labelByKey };
+  return { groupNumbers, labelByKey, runningByKey };
 }
 
 // ---------------------------------------------------------------------------
