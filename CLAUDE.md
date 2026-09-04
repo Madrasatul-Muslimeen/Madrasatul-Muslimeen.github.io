@@ -566,6 +566,16 @@ worked around:** the helper pressed `#tabExploreBtn` a second time, which
 TOGGLES Explore shut, so the second half of each case was measuring a closed
 panel.
 
+**`behaviour.mjs`: 800 checks pass, 3 fail** -- the three are the known
+environmental archive.org poster block this project has recorded since v07.44
+(section 22g; they passed earlier the same day, when that host happened to be
+reachable, which is the giveaway), and the run stops at the same pre-existing
+line-4084 crash carried since v07.69. Same 803 total as v07.127's own run. No
+checked-in check needed updating: what this round fixes is Manage-mode surface
+on the QCR/Asma Explore bars, which sits past that crash point and has never
+had checked-in coverage -- which is exactly why the `[hidden]` bug lived so
+long.
+
 **`layout.mjs`: every measured landing-page metric byte-for-byte identical** to
 `HEAD` at all eight viewports in both banner states (heading 148/103px, wheel
 377/399/280/220/320/360px, Approach rows, 9px dock gap, no overflow);
