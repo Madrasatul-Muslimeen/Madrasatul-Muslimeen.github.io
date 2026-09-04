@@ -524,6 +524,7 @@ export const BN = {
   "Study Quran": "কুরআন অধ্যয়ন করুন", // ?
   "ONE Ayah a Day": "প্রতিদিন একটি আয়াত", // ?
   "Approach an Ayah in 30 ways": "একটি আয়াতকে ৩০ উপায়ে অধ্যয়ন করুন", // ?
+  "Approach the Quran in 30 ways": "কুরআনকে ৩০ উপায়ে অধ্যয়ন করুন", // ?
 
   // --- Claiming, and the Approach modal ----------------------------------
   "Track this unit": "এই এককটি চিহ্নিত করুন",
