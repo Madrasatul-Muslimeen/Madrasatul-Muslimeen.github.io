@@ -4777,7 +4777,27 @@
         // Number() on every change. Only the text a person reads is translated.
         .map((s) => `<option value="${s.surahNumber}">${num(s.surahNumber)}. ${surahName(s.surahNumber, s.nameEnglish)}</option>`)
         .join("");
+      // The remembered surah is applied HERE, before the first loadSurah(),
+      // not afterwards by restoreLastSession(). Doing it afterwards read the
+      // records chunk TWICE on every restored load -- surah 1's, because
+      // that is what boot had just opened, and then the remembered surah's
+      // (measured: 9 calls -> 10). Seeding it up front costs nothing extra
+      // at all: boot reads exactly one chunk either way, just the right one,
+      // and applyQuranBookmarkSettings() then finds the surah already
+      // correct and skips its own loadSurah(). `lastSessionReady` is false
+      // only during the first load -- a tenant switch calls this function
+      // again with it true, and keeps its own existing "reset to the first
+      // surah" behaviour rather than silently jumping somewhere else.
       currentSurahNum = surahIndex[0]?.surahNumber ?? 1;
+      if (!lastSessionReady) {
+        const params = new URLSearchParams(location.search);
+        const deepLinked = params.get("bookmark") || params.get("goto") || params.get("resume");
+        const rememberedSurah = deepLinked ? null : getQuranLastSession()?.settings?.surahNum;
+        if (typeof rememberedSurah === "number" && surahIndex.some((sx) => sx.surahNumber === rememberedSurah)) {
+          currentSurahNum = rememberedSurah;
+        }
+      }
+      surahSelect.value = String(currentSurahNum);
 
       await Promise.all([refreshProgramMap(), loadSurah()]);
 
@@ -5333,26 +5353,27 @@
       if (params.get("bookmark") || params.get("goto") || params.get("resume")) return;
       const saved = getQuranLastSession();
       if (!saved) return;
-      // position is applied by the branches below (only the Note view has
-      // one), never here -- applyQuranBookmarkSettings() would open the Note
-      // screen for it, which is right for a bookmark and wrong for someone
-      // who left the app on Read.
+      // The app ALWAYS opens on the wheel -- the owner's own call, once the
+      // cost of doing otherwise was measured. Restoring straight into Read
+      // or Note meant firing ensureAyahNoteDataLoaded() during boot, which
+      // is 2 more Firestore reads on the startup path (9 calls -> 11) for
+      // anyone who happened to leave the app on one of those two screens.
+      // The settings are what they actually wanted back; the screen was
+      // never worth an I9 conversation. So this restores the study state
+      // and nothing else, and boot is byte-identical to before this feature
+      // existed in EVERY case, not merely in the common one.
+      //
+      // `stageView`/`position` are still WRITTEN by rememberLastSession()
+      // -- they cost nothing to store, they are what would be needed if the
+      // owner ever asks for the screen back too, and dropping them would
+      // silently invalidate every session already saved on a real device.
+      // They are simply not acted on here.
+      //
+      // null as the position for the same reason: applyQuranBookmarkSettings()
+      // opens the Note screen for a non-null one, which is right for a
+      // bookmark someone deliberately followed and wrong for a page someone
+      // has merely reopened.
       if (saved.settings) await applyQuranBookmarkSettings(saved.settings, null);
-      if (saved.stageView === "read") {
-        ensureAyahNoteDataLoaded(); // fire-and-forget, exactly as tabReadBtn's own click does
-        setStageView("read");
-        renderStudyScreen();
-      } else if (saved.stageView === "note" && saved.position) {
-        await openNoteView(saved.position);
-      } else if (saved.stageView === "explore") {
-        setStageView("explore");
-        // openExplore() resets its own drill-down to the whole-Quran level
-        // on every open, by its own long-standing rule -- so this restores
-        // the Explore SCREEN, not a remembered position inside it. Changing
-        // that rule is its own decision, not one to slip in here.
-        await openExplore();
-      }
-      // "wheel" needs nothing: it is already what the stage shows.
     }
 
     // -----------------------------------------------------------------------
