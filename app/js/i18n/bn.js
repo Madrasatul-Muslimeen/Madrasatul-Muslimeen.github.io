@@ -2060,6 +2060,11 @@ export const BN = {
   // create-a-new-Name-while-attaching.
   "Attach this āyah": "এই আয়াতটি যুক্ত করুন", // ?
   "+ Create a new Name": "+ একটি নতুন নাম তৈরি করুন", // ?
+  // 5 Sep 2026 -- attaching a reference to a Dual Name as well.
+  "+ Create a new Dual Name": "+ একটি নতুন জোড়া নাম তৈরি করুন", // ?
+  "Dual": "জোড়া", // ?
+  "Show": "দেখান", // ?
+  "No Dual Names yet — make one with “+ Create a new Dual Name”.": "এখনো কোনো জোড়া নাম নেই — “+ একটি নতুন জোড়া নাম তৈরি করুন” দিয়ে একটি তৈরি করুন।", // ?
 
   // 5 Sep 2026 -- creating a Name (or a Dual Name) straight from the āyah
   // being read in the Note view, with that āyah as its own reference, plus
