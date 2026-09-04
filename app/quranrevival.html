@@ -820,6 +820,16 @@
     border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5;
   }
   #qcrLevelManageActions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  /* 4 Sep 2026, same-day fix -- a PRE-EXISTING bug, this codebase's own
+     most-repeated trap in a fifth place: the rule above is an ID selector
+     setting `display`, which outranks the UA's `[hidden] { display: none }`,
+     so `qcrLevelManageActions.hidden = true` has NEVER actually hidden
+     anything. Rename/Archive/Add and Show archived have been on screen for
+     every reader all along, whether or not Manage was on and whether or not
+     they can manage at all -- visible in the owner's own screenshot of the
+     round before this one. `#id[hidden]` outranks `#id`, which is what makes
+     the property mean what the JS beside it has always assumed. */
+  #qcrLevelManageActions[hidden] { display: none; }
   .qcr-icon-btn {
     background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); color: #dde3ee;
     border-radius: 6px; width: 26px; height: 26px; font-size: 12px; cursor: pointer; flex-shrink: 0;
@@ -862,6 +872,10 @@
   .bar-palette #qcrLevelManageActions,
   .bar-palette #asmaXLevelManageActions { margin-top: 0.45rem; }
   .bar-palette-divider { height: 1px; background: #eee; margin: 0.5rem 0 0.35rem; }
+  /* Same-day fix -- why Manage is not on offer, said in words rather than
+     left as an empty dropdown. Nothing else in this palette is a sentence,
+     so it carries its own smaller, quieter type. */
+  .bar-palette-note { margin: 0 0 0.1rem; font-size: 0.72rem; line-height: 1.35; color: #6b6b6b; }
   /* The palette is the only thing on either bar that opens downward over
      the wheel, so it must sit above it -- #qcrMain/#asmaXMain both clip
      their own overflow, which is why the palette lives in the BAR (outside
@@ -1103,6 +1117,9 @@
     #asmaXLevelBar > select { font-size: 0.6rem; }
   }
   #asmaXLevelManageActions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  /* Same pre-existing `[hidden]` trap as #qcrLevelManageActions above -- see
+     that rule's own note. */
+  #asmaXLevelManageActions[hidden] { display: none; }
   /* 3 Sep 2026 resize round -- the wheel text-size sliders reuse
      text-size.js's own .text-size-* look (js/asma-wheel-text.js). 4 Sep
      2026: those rows live INSIDE the bar's own ⋯ palette now rather than
@@ -2699,6 +2716,7 @@
               <div class="bar-palette-wrap" data-bar-palette-wrap="qcr">
                 <button type="button" class="qcr-icon-btn bar-palette-toggle" id="qcrPaletteBtn" data-bar-palette-toggle="qcr" title="More" aria-label="More" aria-haspopup="true" aria-expanded="false">⋯</button>
                 <div class="bar-palette" data-bar-palette="qcr">
+                  <p class="bar-palette-note" id="qcrManageNote" hidden></p>
                   <button type="button" class="qcr-manage-toggle" id="qcrManageToggleBtn">Manage</button>
                   <span id="qcrLevelManageActions" hidden>
                     <button type="button" class="qcr-icon-btn" id="qcrRenameLevelBtn" title="Rename">✎</button>
@@ -2792,6 +2810,7 @@
               <div class="bar-palette-wrap" data-bar-palette-wrap="asmax">
                 <button type="button" class="qcr-icon-btn bar-palette-toggle" id="asmaXPaletteBtn" data-bar-palette-toggle="asmax" title="More" aria-label="More" aria-haspopup="true" aria-expanded="false">⋯</button>
                 <div class="bar-palette" data-bar-palette="asmax">
+                  <p class="bar-palette-note" id="asmaXManageNote" hidden></p>
                   <button type="button" class="qcr-manage-toggle" id="asmaXManageToggleBtn">Manage</button>
                   <span id="asmaXLevelManageActions" hidden>
                     <button type="button" class="qcr-icon-btn" id="asmaXRenameLevelBtn" title="Rename">✎</button>
@@ -3238,7 +3257,7 @@
     import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
     import { TENANT } from "./js/collections.js";
     import { langText, setLangText } from "./js/lang.js";
-    import { roleListLabel } from "./js/labels.js";
+    import { roleListLabel, roleLabel } from "./js/labels.js";
     import { safeWrite } from "./js/errors.js";
     import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames } from "./js/catalogue.js";
@@ -3673,6 +3692,7 @@
     const qcrListCollapseBtn = document.getElementById("qcrListCollapseBtn");
     const qcrApproachSelect = document.getElementById("qcrApproachSelect");
     const qcrPaletteWrapEl = document.querySelector('[data-bar-palette-wrap="qcr"]');
+    const qcrManageNoteEl = document.getElementById("qcrManageNote");
     const qcrWheelPaneEl = document.getElementById("qcrWheelPane");
     const qcrWheelResizeWrapEl = document.getElementById("qcrWheelResizeWrap");
     const qcrWheelResizeHandleEls = Array.from(qcrWheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
@@ -3693,6 +3713,7 @@
     const asmaXAttachRefBtn = document.getElementById("asmaXAttachRefBtn");
     const asmaXShowArchivedToggle = document.getElementById("asmaXShowArchivedToggle");
     const asmaXManageToggleBtn = document.getElementById("asmaXManageToggleBtn");
+    const asmaXManageNoteEl = document.getElementById("asmaXManageNote");
     const asmaXWheelTextSlot = document.getElementById("asmaXWheelTextSlot");
     const asmaXListPaneEl = document.getElementById("asmaXListPane");
     const asmaXListHeaderEl = document.getElementById("asmaXListHeader");
@@ -3987,6 +4008,31 @@
       const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
       if (!membership) return false;
       return currentPreview().effRoles.some((r) => r === "owner" || r === "prime");
+    }
+
+    /** Why Manage is not on offer, in words -- filled into the QCR/Asma ⋯
+        palettes (4 Sep 2026, same-day fix). Before this, a reader who could
+        not manage got a palette with nothing in it and no hint why, and the
+        overwhelmingly likely reason is one they can undo in two taps: a
+        "View as" preview left switched on, which has lived in localStorage
+        since v07.75 and so survives every reload on that device. An owner
+        previewing as a student really is not an admin, so the gate itself is
+        correct -- what was wrong was that it said nothing. */
+    function manageUnavailableNote() {
+      if (canAdminCatalogueClientSide()) return "";
+      const { viewAsRole } = currentPreview();
+      if (viewAsRole) {
+        return t("You're previewing as {role}, so managing is switched off. Turn the preview off on the People page to manage again.", { role: roleLabel(viewAsRole) });
+      }
+      return t("Only the owner or prime can manage this.");
+    }
+
+    /** Both palettes carry the same note in the same place, so this is one
+        function rather than two copies that could drift. */
+    function renderManageNote(noteEl) {
+      const text = manageUnavailableNote();
+      noteEl.textContent = text;
+      noteEl.hidden = !text;
     }
 
     function renderPersonSelectOptions() {
@@ -6367,14 +6413,19 @@
         : `<option value="">${escapeHtml(t("No collections yet."))}</option>`;
 
       const canManage = canAdminCatalogueClientSide();
-      // 4 Sep 2026 one-bar round -- everything this palette holds is a
-      // Manage-mode control, so for a reader who cannot manage it would open
-      // EMPTY: a button that does nothing. The whole wrap goes instead, and
-      // any palette left open goes with it. (Asma's own palette is NOT gated
-      // this way, deliberately -- it also carries the wheel text-size
-      // sliders, which are a personal display preference every reader gets.)
-      qcrPaletteWrapEl.hidden = !canManage;
-      if (!canManage) closeAllBarPalettes(null);
+      // 4 Sep 2026, SAME DAY, from the owner's own report ("In Tab, QCR, the
+      // button group is missing"): this button is NEVER hidden. An earlier
+      // pass of this round hid the whole wrap when `canManage` was false, on
+      // the reasoning that the palette would otherwise open empty -- and that
+      // turned out to be the one change able to make the control vanish
+      // outright, because `canAdminCatalogueClientSide()` reads
+      // currentPreview().effRoles: a "View as" preview left switched on
+      // (localStorage since v07.75, so it survives every reload on that
+      // device) makes an OWNER read as a student, and the button disappeared
+      // with no way back to it from this screen. A palette that opens and
+      // explains itself beats a button that is not there.
+      qcrPaletteWrapEl.hidden = false;
+      renderManageNote(qcrManageNoteEl);
       qcrManageToggleBtn.hidden = !canManage;
       qcrManageToggleBtn.classList.toggle("on", qcrManageOn);
       const showManageActions = canManage && qcrManageOn;
@@ -6556,6 +6607,7 @@
       ].join("");
 
       const canManage = canAdminCatalogueClientSide();
+      renderManageNote(asmaXManageNoteEl);
       asmaXManageToggleBtn.hidden = !canManage;
       asmaXManageToggleBtn.classList.toggle("on", asmaXManageOn);
       const showManageActions = canManage && asmaXManageOn;
