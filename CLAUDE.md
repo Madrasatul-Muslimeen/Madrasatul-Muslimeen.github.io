@@ -491,7 +491,15 @@ holds: the module touches no Firebase and knows nothing about QCR or Asma.
 (`#qcrApproachSelect`) came UP out of `#qcrWheelPane`, where it had been a
 stacked row of its own since 28 Aug 2026, and now sits beside the collection
 picker; Manage and its four actions went behind the palette. Two rows become
-one. One real consequence had to be handled rather than discovered later:
+one. **Everything QCR's palette holds is a Manage-mode control**, so for a reader
+who cannot manage it would have opened EMPTY -- a button that does nothing --
+and the whole wrap is hidden for them instead. Asma's is deliberately NOT gated
+that way: it also carries the wheel text-size sliders, which are a personal
+display preference every reader gets. Proved by reading COMPUTED display rather
+than trusting the `hidden` property, since `[hidden]` loses to any class rule
+that sets `display` and this project has been caught by that four times.
+
+One real consequence had to be handled rather than discovered later:
 `renderQcrCollectionView()`, which used to fill that picker, **returns early
 when no collection is selected at all** -- fine while the picker lived under
 the wheel, wrong the moment it lives on a bar that is always drawn, so it would

@@ -3672,6 +3672,7 @@
     const qcrListSplitter = document.getElementById("qcrListSplitter");
     const qcrListCollapseBtn = document.getElementById("qcrListCollapseBtn");
     const qcrApproachSelect = document.getElementById("qcrApproachSelect");
+    const qcrPaletteWrapEl = document.querySelector('[data-bar-palette-wrap="qcr"]');
     const qcrWheelPaneEl = document.getElementById("qcrWheelPane");
     const qcrWheelResizeWrapEl = document.getElementById("qcrWheelResizeWrap");
     const qcrWheelResizeHandleEls = Array.from(qcrWheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
@@ -6366,6 +6367,14 @@
         : `<option value="">${escapeHtml(t("No collections yet."))}</option>`;
 
       const canManage = canAdminCatalogueClientSide();
+      // 4 Sep 2026 one-bar round -- everything this palette holds is a
+      // Manage-mode control, so for a reader who cannot manage it would open
+      // EMPTY: a button that does nothing. The whole wrap goes instead, and
+      // any palette left open goes with it. (Asma's own palette is NOT gated
+      // this way, deliberately -- it also carries the wheel text-size
+      // sliders, which are a personal display preference every reader gets.)
+      qcrPaletteWrapEl.hidden = !canManage;
+      if (!canManage) closeAllBarPalettes(null);
       qcrManageToggleBtn.hidden = !canManage;
       qcrManageToggleBtn.classList.toggle("on", qcrManageOn);
       const showManageActions = canManage && qcrManageOn;
