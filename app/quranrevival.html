@@ -848,11 +848,13 @@
   .qcr-icon-btn:hover { border-color: #C9A24B; }
   .qcr-icon-btn.danger:hover { border-color: #d97a63; color: #ffb9a6; }
   .qcr-archived-toggle { font-size: 11.5px; color: #9aa7be; display: flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap; }
-  .qcr-manage-toggle {
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(201,162,75,0.4); color: #cdd5e3;
-    border-radius: 999px; padding: 0.28rem 0.85rem; font-size: 0.72rem; font-weight: 700; cursor: pointer; flex-shrink: 0;
-  }
-  .qcr-manage-toggle.on { background: #C9A24B; color: #241a06; border-color: #C9A24B; }
+  /* 5 Sep 2026 -- `.qcr-manage-toggle` retired with the Manage buttons
+     themselves (Asma v07.130, QCR this round). Both bars' management
+     actions are simply what the ⋯ palette holds now, so nothing carries
+     this class any more and its four rules are gone rather than left as
+     dead weight -- the same treatment v07.29 gave the banner-edit block's
+     own orphaned rules. The "Manage" STRING stays in bn.js, unused, per
+     this project's own rule for a string that stops being called. */
 
   /* 4 Sep 2026 one-bar round -- the ⋯ palette both the QCR and the Asma
      level bars now hang every one of their buttons off (js/bar-palette.js
@@ -898,8 +900,6 @@
   .bar-palette .qcr-archived-toggle { flex: 1 0 100%; font-size: 0.78rem; }
   .bar-palette .qcr-icon-btn:hover { border-color: #C9A24B; }
   .bar-palette .qcr-archived-toggle { color: #555; }
-  .bar-palette .qcr-manage-toggle { color: #1F3A6E; border-color: #c9c2ae; background: #f4f1e8; width: 100%; }
-  .bar-palette .qcr-manage-toggle.on { background: #C9A24B; color: #241a06; border-color: #C9A24B; }
   .bar-palette #qcrLevelManageActions,
   .bar-palette #asmaXLevelManageActions { margin-top: 0.45rem; }
   .bar-palette-divider { height: 1px; background: #eee; margin: 0.5rem 0 0.35rem; }
@@ -1101,7 +1101,7 @@
      30 Aug 2026 round: the old single breadcrumb bar is replaced by
      #asmaXLevelBar, three real <select> fields (Group/Dual/Single) plus
      Manage-mode icon buttons -- reuses the SAME generic .qcr-icon-btn/
-     .qcr-manage-toggle/.qcr-archived-toggle/.qcr-add-form classes QCR's own
+     .qcr-archived-toggle/.qcr-add-form classes QCR's own
      level bar already defined above (they were never scoped to #qcrPanel),
      so only the bar's own layout and the three selects' width need new
      rules here. */
@@ -2804,7 +2804,16 @@
                 <button type="button" class="qcr-icon-btn bar-palette-toggle" id="qcrPaletteBtn" data-bar-palette-toggle="qcr" title="More" aria-label="More" aria-haspopup="true" aria-expanded="false">⋯</button>
                 <div class="bar-palette" data-bar-palette="qcr">
                   <p class="bar-palette-note" id="qcrManageNote" hidden></p>
-                  <button type="button" class="qcr-manage-toggle" id="qcrManageToggleBtn">Manage</button>
+                  <!-- 5 Sep 2026 -- the Manage button is GONE here for the
+                       same reason it went from Asma one round earlier, on the
+                       owner's own "Do the same for QCR": it was a mode toggle
+                       in front of a menu that is already a mode. Opening ⋯ is
+                       the reader saying "show me the controls"; asking again
+                       cost a second tap and forgot the answer on every load.
+                       These actions now show whenever the reader can manage
+                       at all, and a reader who cannot still gets the note
+                       above saying why -- so the palette never opens empty
+                       and never opens silent. -->
                   <span id="qcrLevelManageActions" hidden>
                     <button type="button" class="qcr-icon-btn" id="qcrRenameLevelBtn" title="Rename">✎</button>
                     <button type="button" class="qcr-icon-btn danger" id="qcrArchiveLevelBtn" title="Archive">🗄</button>
@@ -3780,7 +3789,6 @@
     const qcrArchiveLevelBtn = document.getElementById("qcrArchiveLevelBtn");
     const qcrAddLevelBtn = document.getElementById("qcrAddLevelBtn");
     const qcrShowArchivedToggle = document.getElementById("qcrShowArchivedToggle");
-    const qcrManageToggleBtn = document.getElementById("qcrManageToggleBtn");
     const qcrListPaneEl = document.getElementById("qcrListPane");
     const qcrListHeaderEl = document.getElementById("qcrListHeader");
     const qcrWaysListContainer = document.getElementById("qcrWaysListContainer");
@@ -4032,7 +4040,11 @@
     let qcrCollections = null; // null until ensureQcrDataLoaded() runs once
     let qcrDocExists = false; // whether ayahCollections/{tenantId} already exists -- decides create vs update on the next save
     let qcrCurrentId = null; // which collection the level bar currently has selected (round 2's own single-screen shape -- always set once data loads, never "the list of collections" any more)
-    let qcrManageOn = false;
+    /** 5 Sep 2026 -- was `let qcrManageOn = false`, a session-only mode
+        behind its own button (now deleted, see the palette markup). Being
+        able to manage IS the condition: nothing to remember, nothing to
+        forget on the next load. Mirrors asmaXCanManage() exactly. */
+    function qcrCanManage() { return canAdminCatalogueClientSide(); }
     let qcrShowArchived = false;
     let qcrSurahDataByNum = new Map(); // surahNum -> getSurah() result, for whichever collection is currently open (its own distinct surahs only, not the whole Quran)
 
@@ -6416,10 +6428,6 @@
       qcrCurrentId = qcrLevelSelect.value || null;
       await renderQcrPanel();
     });
-    qcrManageToggleBtn.addEventListener("click", async () => {
-      qcrManageOn = !qcrManageOn;
-      await renderQcrPanel();
-    });
     qcrShowArchivedToggle.addEventListener("change", () => {
       qcrShowArchived = qcrShowArchivedToggle.checked;
       renderQcrLevelBar();
@@ -6527,9 +6535,7 @@
       // explains itself beats a button that is not there.
       qcrPaletteWrapEl.hidden = false;
       renderManageNote(qcrManageNoteEl);
-      qcrManageToggleBtn.hidden = !canManage;
-      qcrManageToggleBtn.classList.toggle("on", qcrManageOn);
-      const showManageActions = canManage && qcrManageOn;
+      const showManageActions = canManage;
       qcrLevelManageActions.hidden = !showManageActions;
       if (showManageActions) {
         const col = qcrCollections.find((c) => c.id === qcrCurrentId);
@@ -7682,7 +7688,7 @@
 
     /** The Note view's own "🗂 Collections" popover body. Editing a
         collection's OWN name/status is owner/prime-only in the wheel view
-        (qcrManageOn, gated by canAdminCatalogueClientSide()) -- membership
+        (qcrCanManage(), i.e. canAdminCatalogueClientSide()) -- membership
         tagging from the Note view follows the same split: owner/prime get
         a ticked/unticked checkbox per active collection, wired generically
         by ayah-note-renderer.js's own [data-note-collection-toggle] handler
@@ -8030,7 +8036,7 @@
       qcrWaysListContainer.innerHTML = items
         .map((it) => {
           const statusLabel = labelsById[it.statusId] ?? it.statusId;
-          const manageRow = qcrManageOn
+          const manageRow = qcrCanManage()
             ? `<div class="qcr-way-manage">
                 <select data-qcr-move="${escapeHtml(it.key)}">
                   <option value="">${escapeHtml(t("Move to…"))}</option>
@@ -8051,7 +8057,7 @@
         })
         .join("") || `<p class="hint">${escapeHtml(t("No āyāt in this collection yet."))}</p>`;
 
-      qcrAddFormSlot.innerHTML = qcrManageOn
+      qcrAddFormSlot.innerHTML = qcrCanManage()
         ? `<div class="qcr-add-form">
              <select id="qcrAddSurahSelect">${surahIndex.map((s) => `<option value="${s.surahNumber}">${num(s.surahNumber)}. ${escapeHtml(surahName(s.surahNumber, s.nameEnglish))}</option>`).join("")}</select>
              <input type="number" id="qcrAddAyahInput" min="1" placeholder="${escapeHtml(t("Ayah"))}">

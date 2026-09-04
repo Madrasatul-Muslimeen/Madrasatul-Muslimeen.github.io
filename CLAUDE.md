@@ -3,7 +3,7 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: QuranRevival v07.130.** The app has been live and real,
+**Current milestone: QuranRevival v07.131.** The app has been live and real,
 not a beta, since the 9 August 2026 cutover (v07.00) — we are in real-use
 iteration, driven by what the owner hits using it. See "Post-cutover rollout
 order" (D13) below for whose real use comes first.
@@ -27,71 +27,6 @@ alongside `app/js/version.js` (first two digits = big overhaul, last two = each
 new feature) and will drift if a round forgets to bump it here too.
 
 ### The five most recent rounds
-
-v07.126 (4 Sep 2026, same day) is **the owner's own narrowing of v07.125's
-restore, plus splitting this file's build log out into `CHANGELOG.md`.**
-
-**(1) The app always opens on the wheel; only the SETTINGS come back.** v07.125
-restored the stage view too, and flagged the cost honestly rather than burying
-it: reopening straight into Read or Note fired `ensureAyahNoteDataLoaded()`
-during boot, **2 more Firestore reads on the startup path (9 calls -> 11)**.
-Offered as a choice; the owner took the narrower version. `restoreLastSession()`
-now applies the study state and nothing else. **Measured: 9 calls in EVERY
-case** -- fresh browser, wheel session, Read session, Note session alike --
-so the load-speed contract is untouched in fact and not merely in the common
-case. `stageView`/`position` are still WRITTEN by `rememberLastSession()`,
-deliberately: they cost nothing to store, they are what would be needed if the
-screen is ever wanted back, and dropping them would silently invalidate every
-session already saved on a real device. They are simply not acted on.
-
-**A second read had to be removed to reach 9, and it was NOT obvious.** With
-the view restore gone, a restored load still measured 10 calls, not 9 -- the
-records chunk was being read TWICE: surah 1's, because `loadContextData()`
-opens surah 1 before anything else runs, and then the remembered surah's, when
-`applyQuranBookmarkSettings()` called `loadSurah()` a moment later. Fixed by
-seeding the remembered surah INTO `loadContextData()` itself, before its first
-`loadSurah()` -- boot then reads exactly one chunk either way, just the right
-one, and the restore finds the surah already correct and skips its own load.
-Guarded twice: only on the FIRST load (`lastSessionReady` is false only then,
-so a tenant switch keeps its own existing reset-to-surah-1 behaviour), and only
-when no `?bookmark=`/`?goto=`/`?resume=` deep link is present, since those
-still win outright. **Found by reading the call log, not by assuming the
-narrowing was enough** -- the honest first measurement said 10.
-
-**(2) The build log is now `CHANGELOG.md`.** The owner's own instruction, from
-a direct question about session cost. **Measured: `CLAUDE.md` was 689 KB,
-roughly 172,000 tokens, read in full at the start of every session before a
-word of the actual task** -- and ~95% of it was the v07.01-onward changelog,
-which is valuable history but almost never what the round in hand needs. Split
-byte-for-byte (nothing was edited on the way across): the standing brief plus
-**the five most recent rounds** stay here, everything older moves. **Result:
-689 KB -> 75 KB, about 172,000 tokens -> 18,700, a ~89% cut**, with the whole
-history one file away and pointed at from the top of this file and from the
-Source-of-truth table.
-
-**The split's own real risk was handled rather than accepted: a lot of what
-made that file worth its size was LESSONS, not history** -- the coverage tool
-being wrong nine times, `[hidden]` losing to a class rule, the stub never
-mutating its own data, "measure before and after", "update a stale check, don't
-work around it". Those were buried in the prose of individual rounds and would
-have left the always-read brief entirely. They are lifted into a new
-**"Standing lessons"** section here, grouped by measuring / this codebase's own
-traps / the test harness / reporting. That section is the point of the exercise
-as much as the size is: the history is now optional reading, and nothing that
-still binds depends on anyone choosing to read it.
-
-**Verified:** a focused Playwright script, **13 checks, all passing** -- the app
-proven to open on the wheel from a Read session AND from a Note session, with
-the surah, ayah, unit and reading ticks all proven to come back; **boot proven
-to cost exactly what a fresh browser costs (9 calls) in both cases**; a
-never-visited browser proven to still open on surah 1 at 9 calls; and `?goto=`
-proven to still outrank the remembered surah. **`layout.mjs`: every measured
-number byte-identical** to v07.125 at all eight viewports in both banner states
-(the only flagged lines are the same pre-existing Manage-mode-only missing-id
-false positives disclosed since v07.86). **`tools/perf/measure.mjs` unchanged**
-at 6 sequential round trips / 9 calls on Quran Study. No `firestore.rules`,
-schema or Firestore data changes -- nothing to deploy but the static files.
-
 
 v07.127 (4 Sep 2026, on Claude Code on the web) is **the one-bar round -- the
 QCR and Asma ul Husna level bars each fold onto a single line, and an Asma Name
@@ -657,7 +592,85 @@ identical** (Quran Study 6 sequential round trips / 9 calls) and
 **Flagged, not changed: QCR still has its Manage button**, and it is the same
 two-tap complaint one screen over. It was left alone only because the owner
 named Asma; the change there is the same handful of lines, and it should
-probably follow.
+probably follow. **(Done the same day, in v07.131 below, on the owner's own
+"Do the same for QCR".)**
+
+
+v07.131 (5 Sep 2026, same day) is **the owner's own "Do the same for QCR" --
+the second half of v07.130, applied to the screen it deliberately left alone.**
+That round flagged QCR as carrying the identical two-tap complaint one screen
+over and said it should probably follow; the owner said so directly, so it
+follows.
+
+**The change is the same change, and saying that plainly is the point: this is
+not a second design.** `qcrManageOn`, a session-only `let` behind its own
+Manage button, becomes `qcrCanManage()` -- a function returning
+`canAdminCatalogueClientSide()`, mirroring `asmaXCanManage()` line for line.
+The button is deleted from the palette markup, its `getElementById` lookup and
+its click handler go with it, and everything it used to gate now shows on the
+one condition that was ever meaningful: **✎ 🗄 + and "Show archived" in the ⋯
+palette, each āyah's own "Move to…" select and its × Remove, and the "+ Add
+āyah" form.** One tap on ⋯ and the controls are there. Nothing else about QCR
+moved -- no ids, no handlers, no layout.
+
+**A reader who cannot manage is unchanged from v07.128's own rule, which is the
+half worth not breaking**: the ⋯ button is never hidden, the palette opens, and
+it carries the note saying why management is off (naming the previewed role
+where a "View as" preview is the cause). So the palette still opens and
+explains itself rather than opening blank -- proven by COMPUTED display, not by
+the `hidden` property.
+
+**`.qcr-manage-toggle` is retired outright.** With both bars' Manage buttons
+gone, nothing carries that class, so its four rules are deleted rather than
+left as dead weight -- the same treatment v07.29 gave the banner-edit block's
+own orphaned rules. **The `"Manage"` STRING stays in `bn.js`, unused**, per this
+project's own standing rule for a string that stops being called; the coverage
+total falling by exactly one is that string leaving the extracted set, and it
+was confirmed by grepping for `t("Manage")` rather than inferred from the
+number.
+
+**Verified with a focused, un-checked-in Playwright script -- 32 checks, all
+passing**, and screenshotted rather than trusted from the assertions: the
+Manage button proven gone from the page entirely at 320/390/768/1280px; the QCR
+bar proven to still hold ONE line with no page overflow at each of those widths
+(the 36px/40px buttons v07.130 introduced were already costed there, and this
+round re-measures rather than assuming); one tap on ⋯ proven to reveal all
+three actions as a single row of 40px buttons, with the palette proven inside
+the viewport; each āyah's own Move-to/Remove row and the "+ Add āyah" form
+proven present **with no Manage tap anywhere in the journey**; a reader
+previewing as Guardian proven to get the ⋯ button still drawn, the actions
+really hidden by computed display, the explanatory note in words, and no
+Move-to rows or add form; **Asma proven untouched** by this round (still no
+Manage, still five actions); and QCR's own action labels proven Bangla in
+Bangla. **One test bug of its own was found and fixed rather than worked
+around:** the non-admin check asked for `#qcrPaletteWrap`, an id that does not
+exist -- the wrap is addressed by its `data-bar-palette-wrap` attribute, like
+every other bar palette. The app was right and the check was wrong.
+
+**`behaviour.mjs`: 800 checks pass, 3 fail** -- the three are section 22g, the
+environmental archive.org poster block this project has recorded since v07.44,
+and the run stops at the same pre-existing line-4084 crash carried since
+v07.69. Same 803 total as every recent run, and no checked-in check needed
+updating: QCR's Explore bar sits past that crash point and has never had
+checked-in coverage.
+
+**`layout.mjs`: every measured landing-page metric byte-for-byte identical** to
+`HEAD` at all eight viewports in both banner states (heading 148/103px, wheel
+377/399/280/220/320/360px, Approach rows, 9px dock gap, no overflow);
+`getElementById` targets 234 -> 233, exactly the retired `qcrManageToggleBtn`
+lookup, and the "missing" list is the same 22 as `HEAD`. **`reading.mjs`
+READING SCREEN OK**, **`panel.mjs` byte-identical** (this round never touches
+the Study options panel), **`navcheck.mjs` unchanged** (still only the
+pre-existing 320px English truncation of "Operation"/"Bookmark"). **Coverage
+1,560 -> 1,559 scanned, 47 missing UNCHANGED** -- only `quran` moves, 331 ->
+330, the one retired string. **`tools/perf/measure.mjs` identical** (Quran
+Study 6 sequential round trips / 9 calls) and **`new-tenant.mjs` 10/10** -- I9
+untouched, as expected for markup and a state variable becoming a function. No
+`firestore.rules`, schema or Firestore data changes.
+
+**What this closes:** both Explore bars now work the same way, and the
+"Flagged, not changed" note v07.130 left against QCR is resolved rather than
+carried. Manage mode no longer exists anywhere in this app.
 
 
 ## What this is
@@ -810,9 +823,15 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
 - **A mode toggle in front of a menu is one tap too many.** Asma's Manage
   button was a session-only `let` gating controls that already sat inside a
   ⋯ palette -- so opening the palette said "show me the controls" and the app
-  asked again, then forgot the answer on every load. v07.130 deleted it: being
-  able to manage IS the condition. If a gate is a capability, make it a
-  function of the capability, not a piece of state someone has to re-set.
+  asked again, then forgot the answer on every load. v07.130 deleted it and
+  v07.131 did the same for QCR, so **"Manage mode" no longer exists anywhere
+  in this app**: being able to manage IS the condition
+  (`asmaXCanManage()`/`qcrCanManage()`, both just
+  `canAdminCatalogueClientSide()`). If a gate is a capability, make it a
+  function of the capability, not a piece of state someone has to re-set. What
+  must survive the deletion is v07.128's rule: the ⋯ button is still never
+  hidden from a non-admin, and the palette still says in words why management
+  is off rather than opening blank.
 - **"Unreachable" and "broken" are different bugs, and the fix is different.**
   v07.129's own report ("the movement button is nowhere, even after I set my
   role to Prime") reproduced as: the button rendered correctly, for an owner
