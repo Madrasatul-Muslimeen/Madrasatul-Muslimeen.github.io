@@ -830,9 +830,20 @@
      round before this one. `#id[hidden]` outranks `#id`, which is what makes
      the property mean what the JS beside it has always assumed. */
   #qcrLevelManageActions[hidden] { display: none; }
+  /* 5 Sep 2026 -- the owner's own report: "Make the buttons look bigger.
+     Why do you always makes the button looks tiny?" Fair, and measurable:
+     these were 26x26px with a 12px glyph, well under the ~44px a finger
+     actually wants and small enough that the emoji inside read as specks.
+     36x36 with a 17px glyph on the dark bars, and 40x40 with 19px inside
+     the ⋯ palette, where there is room and where every management action
+     now lives. Kept square and flex-shrink:0 so a row of them stays a row
+     of equal tiles rather than three different widths -- which is the
+     other half of what went wrong the round before this one. */
   .qcr-icon-btn {
     background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.18); color: #dde3ee;
-    border-radius: 6px; width: 26px; height: 26px; font-size: 12px; cursor: pointer; flex-shrink: 0;
+    border-radius: 8px; width: 36px; height: 36px; font-size: 17px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer; flex-shrink: 0;
   }
   .qcr-icon-btn:hover { border-color: #C9A24B; }
   .qcr-icon-btn.danger:hover { border-color: #d97a63; color: #ffb9a6; }
@@ -858,13 +869,33 @@
     display: none; position: absolute; top: 2rem; right: 0; z-index: 12;
     background: #fff; border: 1px solid #ddd; border-radius: 0.5rem;
     box-shadow: 0 10px 26px rgba(20,30,60,0.25);
-    width: 15rem; max-width: calc(100vw - 2rem); box-sizing: border-box;
-    padding: 0.5rem 0.55rem; color: #222;
+    /* 5 Sep 2026 -- 15rem fitted four 40px tiles and wrapped the fifth onto
+       a line of its own. 16.5rem (264px) holds all five as one row and
+       still clears the narrowest screen this project tests (the
+       `max-width` below is 288px at 320px), so the palette reads as one
+       group of actions rather than four-and-a-stray. */
+    width: 16.5rem; max-width: calc(100vw - 2rem); box-sizing: border-box;
+    padding: 0.55rem 0.6rem; color: #222;
   }
   .bar-palette.open { display: block; }
   /* The buttons inside keep their own look, but on a light ground: the
      icon buttons' own dark-on-dark palette would be invisible here. */
-  .bar-palette .qcr-icon-btn { background: #f4f1e8; border-color: #d8d2c2; color: #3a3a3a; }
+  .bar-palette .qcr-icon-btn { background: #f4f1e8; border-color: #d8d2c2; color: #3a3a3a; width: 40px; height: 40px; font-size: 19px; }
+  /* The palette is where every management action lives now that Manage is
+     gone, so its own rows are laid out rather than left to wrap as they
+     fall: the icons are one wrapping flex row of equal tiles, and "Show
+     archived" gets its own line under them instead of being squeezed in
+     beside a tile it is nothing like. */
+  /* `:not([hidden])` is not decoration here. `.bar-palette #xManageActions`
+     and `#xManageActions[hidden]` have IDENTICAL specificity, so a bare
+     `display:flex` written below the `[hidden]` override would silently
+     win on source order and put every Manage icon back on screen for every
+     reader -- the exact bug v07.128 spent a round finding. Excluding the
+     hidden state from the selector removes the tie rather than betting on
+     where the two rules sit in the file. */
+  .bar-palette #qcrLevelManageActions:not([hidden]),
+  .bar-palette #asmaXLevelManageActions:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+  .bar-palette .qcr-archived-toggle { flex: 1 0 100%; font-size: 0.78rem; }
   .bar-palette .qcr-icon-btn:hover { border-color: #C9A24B; }
   .bar-palette .qcr-archived-toggle { color: #555; }
   .bar-palette .qcr-manage-toggle { color: #1F3A6E; border-color: #c9c2ae; background: #f4f1e8; width: 100%; }
@@ -1937,6 +1968,19 @@
      it -- not attempted; a much bigger box that occasionally still scrolls
      a little beats a redesign for the last few rows.) */
   .note-sub-popover[data-note-sub="collections"] { width: min(94vw, 30rem); max-height: 85vh; box-sizing: border-box; }
+  /* 5 Sep 2026 -- the owner's own "In TAB you can wide the palette to the
+     entire screen": the 30rem cap was what held this card to half a tablet,
+     and with four cells on row 2 it now has something to spend the width on.
+     `width: 100%` and NOT `94vw`, and that is the whole care here: this card
+     is anchored `right: 0` off .note-bar2, so a viewport-sized width hangs
+     off the BAR's right edge and runs however much wider it is straight off
+     the left of the screen -- measured at 1280px, a 94vw card started at
+     x=-46, and at 1920px far worse. 100% of the bar is exactly the width of
+     the reading screen itself, which IS the whole screen on a tablet, and
+     it cannot overflow either edge at any width by construction. */
+  @media (min-width: 721px) {
+    .note-sub-popover[data-note-sub="collections"] { width: 100%; }
+  }
   /* round 3's own `right: 0` on this popover was, in practice, anchored to
      .note-sub-wrap's own right edge -- the NEAREST positioned ancestor for
      an absolutely-positioned child, not .note-bar2 -- which happened to
@@ -2009,6 +2053,41 @@
   .note-qcr-dd-pop[data-note-qcr-dd-pop="group"] { grid-column: 1 / 3; }
   .note-qcr-dd-pop[data-note-qcr-dd-pop="attach"] { grid-column: 2 / 4; }
   .note-qcr-dd-pop[data-note-qcr-dd-pop="yrlevel"] { grid-column: 3 / 4; }
+  /* 5 Sep 2026 -- the Asma fields in the Note drawer, to the owner's own
+     two-row layout. Row 1 is Group alone (it carries the longest titles in
+     the feature); row 2 is Names / Dual / References plus one fixed group
+     of three equal action tiles. `auto` on that last column is what keeps
+     the tiles their own size while the three fields share what is left --
+     the fields shrink, the controls never do, which is the opposite of
+     what happened when they were three text buttons free to wrap.
+     Both rows are grids for the same reason .note-qcr-row is: each open
+     panel sits in row 2 of its own grid, under the field that opened it,
+     instead of jumping to the card's left edge. */
+  .note-asmax-row1 { display: grid; grid-template-columns: minmax(0, 1fr); align-items: end; gap: 0.4rem; margin-bottom: 0.5rem; }
+  .note-asmax-row2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; gap: 0.4rem; }
+  .note-asmax-row1 > .note-qcr-dd-pop { grid-column: 1 / -1; }
+  .note-asmax-row2 > .note-qcr-dd-pop { grid-column: 1 / -1; }
+  .note-asmax-actions { display: flex; gap: 0.3rem; flex: 0 0 auto; }
+  /* 40px tiles: the size a finger actually wants, and the size that makes
+     an emoji read as a glyph rather than a speck. Square and fixed, so
+     three of them are visibly one control cluster. */
+  .note-asmax-icon-btn {
+    width: 40px; height: 40px; flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center;
+    font-size: 18px; line-height: 1; cursor: pointer; padding: 0;
+    background: #fff; color: #24283a; border: 1px solid #ddd; border-radius: 0.45rem;
+  }
+  .note-asmax-icon-btn:hover { border-color: #C9A24B; background: #faf7ee; }
+  .note-asmax-poster-btn { margin-top: 0.55rem; }
+  /* A phone cannot hold three fields AND three 40px tiles on one line
+     without cutting a label, so below 560px the tiles take their own row,
+     right-aligned under the fields -- still one cluster of three equal
+     squares, never a ragged wrap. Measured, not guessed: at 390px the
+     three fields need ~95px each and the tiles ~132px, which is 417px in
+     a 356px card. */
+  @media (max-width: 560px) {
+    .note-asmax-row2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr); }
+    .note-asmax-actions { grid-column: 1 / -1; justify-content: flex-end; }
+  }
   .note-collections-empty { margin: 0; font-size: 0.75rem; color: #888; }
   .note-collections-readonly { margin: 0; padding-left: 1.1rem; font-size: 0.78rem; color: #444; }
   .note-collections-readonly li { padding: 0.1rem 0; }
@@ -2819,7 +2898,17 @@
                 <button type="button" class="qcr-icon-btn bar-palette-toggle" id="asmaXPaletteBtn" data-bar-palette-toggle="asmax" title="More" aria-label="More" aria-haspopup="true" aria-expanded="false">⋯</button>
                 <div class="bar-palette" data-bar-palette="asmax">
                   <p class="bar-palette-note" id="asmaXManageNote" hidden></p>
-                  <button type="button" class="qcr-manage-toggle" id="asmaXManageToggleBtn">Manage</button>
+                  <!-- 5 Sep 2026 -- the Manage button is GONE, on the owner's
+                       own report: "Why do I have to click twice (manage
+                       button again) to bring the edit buttons? Discard the
+                       'manage' button. those edit button should be open
+                       under the 3 dots." It was a mode toggle in front of a
+                       menu that is already a mode: opening ⋯ is the reader
+                       saying "show me the controls", and asking again was a
+                       second tap that bought nothing and forgot itself on
+                       every load. These actions now show whenever the reader
+                       can manage at all; a reader who cannot still gets the
+                       note above saying why, so nothing became silent. -->
                   <span id="asmaXLevelManageActions" hidden>
                     <button type="button" class="qcr-icon-btn" id="asmaXRenameLevelBtn" title="Rename">✎</button>
                     <button type="button" class="qcr-icon-btn danger" id="asmaXArchiveLevelBtn" title="Archive">🗄</button>
@@ -3197,7 +3286,7 @@
        popover shared by Explore's own Manage mode AND the new Read/Note
        view "attach this āyah" button (task item below). Plain overlay
        cards, the same visual idiom #asmaXPosterOverlay already uses. -->
-  <div id="asmaXEditOverlay">
+  <div id="asmaXEditOverlay" data-keep-note-popovers>
     <div id="asmaXEditCard">
       <button type="button" id="asmaXEditCloseBtn" class="qcr-icon-btn" aria-label="Close">&times;</button>
       <h3 id="asmaXEditTitle"></h3>
@@ -3210,7 +3299,7 @@
     </div>
   </div>
 
-  <div id="asmaXAttachOverlay">
+  <div id="asmaXAttachOverlay" data-keep-note-popovers>
     <div id="asmaXAttachCard">
       <button type="button" id="asmaXAttachCloseBtn" class="qcr-icon-btn" aria-label="Close">&times;</button>
       <h3 id="asmaXAttachTitle"></h3>
@@ -3243,7 +3332,7 @@
        "Move to…" select on the Names list is untouched and still there:
        that one acts on a Name in the context of the group being browsed,
        this one acts on the Name itself. -->
-  <div id="asmaXGroupsOverlay">
+  <div id="asmaXGroupsOverlay" data-keep-note-popovers>
     <div id="asmaXGroupsCard">
       <button type="button" id="asmaXGroupsCloseBtn" class="qcr-icon-btn" aria-label="Close">&times;</button>
       <h3 id="asmaXGroupsTitle"></h3>
@@ -3720,7 +3809,6 @@
     const asmaXNewNameBtn = document.getElementById("asmaXNewNameBtn");
     const asmaXAttachRefBtn = document.getElementById("asmaXAttachRefBtn");
     const asmaXShowArchivedToggle = document.getElementById("asmaXShowArchivedToggle");
-    const asmaXManageToggleBtn = document.getElementById("asmaXManageToggleBtn");
     const asmaXManageNoteEl = document.getElementById("asmaXManageNote");
     const asmaXWheelTextSlot = document.getElementById("asmaXWheelTextSlot");
     const asmaXListPaneEl = document.getElementById("asmaXListPane");
@@ -3965,7 +4053,12 @@
     let asmaXKind = "group"; // "group" | "dual" -- which collection kind the "groups"/"names" levels are browsing (30 Aug 2026 round)
     let asmaXGroupId = null;
     let asmaXNumber = null; // the Name currently open at the "refs" level
-    let asmaXManageOn = false;
+    /** 5 Sep 2026 -- was `let asmaXManageOn = false`, a session-only mode
+        behind its own button. The button is gone (see the palette markup);
+        being able to manage IS the condition now, so this is a function
+        rather than state -- there is nothing left to remember, and nothing
+        left to forget on the next load. */
+    function asmaXCanManage() { return canAdminCatalogueClientSide(); }
     let asmaXShowArchived = false;
     let asmaXChunk = null; // records/subject_asma_ul_husna for whoever's selected -- claim-status colour on the Names wheel
     let asmaXChunkPersonId = null; // which person asmaXChunk was fetched for
@@ -6616,9 +6709,7 @@
 
       const canManage = canAdminCatalogueClientSide();
       renderManageNote(asmaXManageNoteEl);
-      asmaXManageToggleBtn.hidden = !canManage;
-      asmaXManageToggleBtn.classList.toggle("on", asmaXManageOn);
-      const showManageActions = canManage && asmaXManageOn;
+      const showManageActions = canManage;
       asmaXLevelManageActions.hidden = !showManageActions;
       if (showManageActions) {
         const col = asmaXLevel !== "refs" ? (asmaXCollections ?? []).find((c) => c.id === asmaXGroupId) : null;
@@ -6692,7 +6783,7 @@
       asmaXWaysListContainer.innerHTML = groups.length
         ? groups.map((g, i) => `
             <div class="way-row" data-asma-group-key="${escapeHtml(g.id)}">
-              ${asmaXManageOn ? `<button type="button" class="asma-drag-handle" data-asma-drag-handle title="${escapeHtml(t("Drag to reorder"))}" aria-label="${escapeHtml(t("Drag to reorder"))}">⠿</button>` : ""}
+              ${asmaXCanManage() ? `<button type="button" class="asma-drag-handle" data-asma-drag-handle title="${escapeHtml(t("Drag to reorder"))}" aria-label="${escapeHtml(t("Drag to reorder"))}">⠿</button>` : ""}
               <button type="button" class="way-click" data-asma-open-group="${escapeHtml(g.id)}">
                 <span class="badge">${num(i + 1)}</span>
                 <span class="name">${escapeHtml(langText(g.title, getAppLang()))}${g.status === "archived" ? ` (${escapeHtml(t("Archived"))})` : ""}</span>
@@ -6781,7 +6872,7 @@
       // every unit key, are untouched (I5).
       const { labelByKey, runningByKey } = asmaPositionLabels(asmaXCollectionsOfKind(group.kind));
       asmaXWaysListContainer.innerHTML = renderAsmaCollectionListHtml(entries, {
-        manageOn: asmaXManageOn, otherCollections, enableReorder: true, positionLabelByKey: labelByKey, runningNumberByKey: runningByKey,
+        manageOn: asmaXCanManage(), otherCollections, enableReorder: true, positionLabelByKey: labelByKey, runningNumberByKey: runningByKey,
       });
       asmaXWaysListContainer.querySelectorAll("[data-asma-jump]").forEach((btn) => {
         btn.addEventListener("click", () => openAsmaXName(Number(btn.dataset.asmaJump.split(":")[1])));
@@ -6805,7 +6896,7 @@
         onReorder: (orderedKeys) => asmaXReorderItemsAction(group.id, orderedKeys),
       });
 
-      asmaXAddFormSlot.innerHTML = asmaXManageOn
+      asmaXAddFormSlot.innerHTML = asmaXCanManage()
         ? (() => {
             const candidates = asmaXAllNameEntries().filter((e) => !group.items.includes(buildUnitKey.name(e.number)));
             if (!candidates.length) return `<p class="hint">${escapeHtml(t("Already in this group, or no Names left to add."))}</p>`;
@@ -6868,29 +6959,19 @@
     function renderAsmaXRefsLevel() {
       const entry = asmaXNumber != null ? asmaXResolve(asmaXNumber) : null;
       if (!entry) { asmaXNumber = null; asmaXLevel = asmaXGroupId ? "names" : "groups"; return renderAsmaXPanel(); }
-      const canManage = asmaXManageOn && canAdminCatalogueClientSide();
-      // 5 Sep 2026 -- the owner's own report: "there's supposed to be a
-      // button for moving a name from one group to another group and
-      // placing a name in multiple groups but there's nowhere movement
-      // button is shown in TAB, even after I set my role as 'Prime'."
-      // Reproduced, and the mechanism was never broken: 📂 rendered fine
-      // for an owner AND for an owner previewing as Prime -- but only
-      // after opening the ⋯ palette, pressing Manage, and then drilling
-      // into a Name, and `asmaXManageOn` is session-only, so it fell back
-      // to off on every single load. Nothing on screen ever said the
-      // button existed. So filing a Name into groups is gated on being
-      // able to manage AT ALL now, not on Manage MODE: it is the one
-      // action on this bar with no other route, and it only ever splices
-      // a membership array (asmaCollections' own items[], never content),
-      // whereas ✎ rewrites the Name itself and 🔗 appends references to
-      // many Names at once -- those two stay behind Manage, unchanged.
-      const canFileIntoGroups = canAdminCatalogueClientSide();
+      // 5 Sep 2026 -- all three of this bar's own actions now show on the
+      // one condition that was ever really meaningful: can this reader
+      // manage? The Manage MODE that used to sit in front of them is gone
+      // (see the palette markup for the owner's own reasoning), so ✎, 🔗
+      // and 📂 arrive together with the Name itself rather than after two
+      // more taps that reset on the next load.
+      const canManage = asmaXCanManage();
       asmaXListHeaderEl.innerHTML = `
         <button type="button" class="qcr-icon-btn" id="asmaXBackFromRefsBtn" title="${escapeHtml(t("Back"))}" aria-label="${escapeHtml(t("Back"))}">◂</button>
         <span class="qcr-list-title">${escapeHtml(asmaEntryDisplayName(entry))}</span>
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXEditThisNameBtn" title="${escapeHtml(t("Edit"))}" aria-label="${escapeHtml(t("Edit"))}">✎</button>` : ""}
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXAttachRefThisNameBtn" title="${escapeHtml(t("Attach a reference to several Names"))}" aria-label="${escapeHtml(t("Attach a reference to several Names"))}">🔗</button>` : ""}
-        ${canFileIntoGroups ? `<button type="button" class="qcr-icon-btn" id="asmaXGroupsThisNameBtn" title="${escapeHtml(t("Groups this Name is in"))}" aria-label="${escapeHtml(t("Groups this Name is in"))}">📂</button>` : ""}`;
+        ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXGroupsThisNameBtn" title="${escapeHtml(t("Groups this Name is in"))}" aria-label="${escapeHtml(t("Groups this Name is in"))}">📂</button>` : ""}`;
       document.getElementById("asmaXBackFromRefsBtn")?.addEventListener("click", () => {
         asmaXNumber = null;
         asmaXLevel = asmaXGroupId ? "names" : "groups";
@@ -7499,7 +7580,6 @@
       asmaXLevel = "refs";
       renderAsmaXPanel();
     });
-    asmaXManageToggleBtn.addEventListener("click", () => { asmaXManageOn = !asmaXManageOn; renderAsmaXPanel(); });
     asmaXShowArchivedToggle.addEventListener("change", () => { asmaXShowArchived = asmaXShowArchivedToggle.checked; renderAsmaXPanel(); });
     asmaXRenameLevelBtn.addEventListener("click", () => { if (asmaXGroupId) asmaXRenameCollectionPrompt(asmaXGroupId); });
     asmaXArchiveLevelBtn.addEventListener("click", () => { if (asmaXGroupId) asmaXToggleArchiveCollection(asmaXGroupId); });
@@ -7779,19 +7859,44 @@
         data-note-qcr-dd-* ones, so there's no ambiguity about which topic
         a click belongs to even though only one field set is ever in the
         DOM at once. */
+    /** 5 Sep 2026 -- rebuilt to the owner's own layout, after the round
+        before this one dropped three differently-sized text buttons into a
+        ragged wrap: *"Put the Group field in one row; 2nd row Names, Dual,
+        Ref in the 2nd row and put three buttons as three icons side by side
+        after ref."*
+
+        Two rows, then. Row 1 is Group alone, full width -- it holds the
+        longest names in the whole feature ("The Most Glorious, Most High,
+        Exalted, Uppermost"), so giving it a third of a row was always the
+        wrong share. Row 2 is Names / Dual / References plus one fixed
+        three-tile action group: equal squares, never wrapping against each
+        other, so the row reads as three fields and one control cluster
+        rather than as six things of six widths.
+
+        DUAL is new here, and it is the same split the Explore bar has used
+        since 30 Aug 2026 rather than a second idea: Group lists collections
+        of `kind: "group"`, Dual lists `kind: "dual"`, and both write the
+        same `noteOriginAsmaGroupId` -- picking in one clears the other,
+        because a Name is being browsed through exactly one list at a time.
+        Before this, one "Group" field listed both kinds mixed together. */
     function renderAsmaXNoteFieldsHtml(openDdKey) {
-      const groups = asmaActiveCollections(asmaXCollections ?? []);
-      const group = noteOriginAsmaGroupId ? groups.find((g) => g.id === noteOriginAsmaGroupId) : null;
-      const groupSummary = group ? langText(group.title, getAppLang()) : t("— none —");
+      const all = asmaActiveCollections(asmaXCollections ?? []);
+      const groups = all.filter((c) => c.kind !== "dual");
+      const duals = all.filter((c) => c.kind === "dual");
+      const group = noteOriginAsmaGroupId ? all.find((g) => g.id === noteOriginAsmaGroupId) : null;
+      const isDual = group?.kind === "dual";
+      const groupSummary = group && !isDual ? langText(group.title, getAppLang()) : t("— none —");
+      const dualSummary = group && isDual ? langText(group.title, getAppLang()) : t("— none —");
       const entry = group && noteOriginAsmaNumber != null ? asmaXResolve(noteOriginAsmaNumber) : null;
       const nameSummary = entry ? asmaEntryDisplayName(entry) : "—";
       const refCount = entry?.ref ? parseAsmaRef(entry.ref).length : 0;
       const refsSummary = entry ? num(refCount) : "—";
       const groupOn = openDdKey === "asmagroup";
+      const dualOn = openDdKey === "asmadual";
       const nameOn = openDdKey === "asmaname" && !!group;
       const refOn = openDdKey === "asmaref" && !!entry;
 
-      const groupPopover = [{ id: "", title: null }, ...groups]
+      const collectionPopover = (list) => [{ id: "", title: null }, ...list]
         .map((g) => {
           const checked = g.id === (noteOriginAsmaGroupId ?? "");
           const label = g.title ? langText(g.title, getAppLang()) : t("— none —");
@@ -7800,6 +7905,10 @@
             <span>${escapeHtml(label)}</span>
           </label>`;
         }).join("");
+      const groupPopover = collectionPopover(groups);
+      const dualPopover = duals.length
+        ? collectionPopover(duals)
+        : `<p class="hint">${escapeHtml(t("No Dual Names list yet — make one with the ✚² button."))}</p>`;
       const namePopover = group
         ? group.items.map((uk) => {
             const n = Number(uk.split(":")[1]);
@@ -7814,7 +7923,7 @@
         : `<p class="hint">${escapeHtml(t("Pick a Group first"))}</p>`;
       const refPopover = entry ? renderAsmaXrefBlock(entry, { inPage: true }) : "";
 
-      const posterBtn = entry ? `<button type="button" class="secondary" id="noteAsmaXPosterBtn">🖼 ${escapeHtml(t("Poster"))}</button>` : "";
+      const posterBtn = entry ? `<button type="button" class="secondary note-asmax-poster-btn" id="noteAsmaXPosterBtn">🖼 ${escapeHtml(t("Poster"))}</button>` : "";
       const trackEmbed = entry ? renderAsmaTrackEmbedHtml(entry.number) : "";
       // 30 Aug 2026 round -- "may be placing it in the existing drawer under
       // AH would be good idea": the same attach popover the Read/Note view's
@@ -7823,42 +7932,44 @@
       // replacement for the ⋯ item, which stays reachable whatever Topic is
       // currently selected; this is the more discoverable second door for
       // whoever is already looking at Asma fields.
-      const attachBtn = canAdminCatalogueClientSide()
-        ? `<button type="button" class="secondary" id="noteAsmaXAttachBtn">🔗 ${escapeHtml(t("Attach this āyah"))}</button>`
+      // 5 Sep 2026 -- the three actions are ONE tile group at the end of
+      // row 2, not three sentences left to wrap where they fall. Equal
+      // 40px squares, so they read as a cluster and can never re-create
+      // the ragged row the owner rightly objected to. The words live in
+      // `title`/`aria-label`, the same icon-with-its-name-in-the-title
+      // convention this screen's own bar 2 has used since round 31.
+      // ✚ and ✚² deliberately echo the Explore bar's own +N: one adds a
+      // Name, the superscript two says the other adds a PAIRED one.
+      const asmaActionTiles = canAdminCatalogueClientSide()
+        ? `<div class="note-asmax-actions">
+             <button type="button" class="note-asmax-icon-btn" id="noteAsmaXAttachBtn" title="${escapeHtml(t("Attach this āyah"))}" aria-label="${escapeHtml(t("Attach this āyah"))}">🔗</button>
+             <button type="button" class="note-asmax-icon-btn" id="noteAsmaXNewNameBtn" title="${escapeHtml(t("New Name from this āyah"))}" aria-label="${escapeHtml(t("New Name from this āyah"))}">✚</button>
+             <button type="button" class="note-asmax-icon-btn" id="noteAsmaXNewDualBtn" title="${escapeHtml(t("New Dual Name from this āyah"))}" aria-label="${escapeHtml(t("New Dual Name from this āyah"))}">✚²</button>
+           </div>`
         : "";
-      // 5 Sep 2026 -- the owner's own ask, reading an āyah in the Note
-      // view: "I want a button to add a new name here, attach that Ayah as
-      // reference to that new name, add a field where I can Create a DUAL
-      // name and attach the Ayah as ref to that new name." Both go through
-      // the SAME create-Name overlay the Explore bar's own +N already uses
-      // -- one form, one write -- with the āyah already in its Reference
-      // field and a "file it under" row saying which list the new Name
-      // joins. The only difference between the two buttons is that row's
-      // `kind`; a Dual Name is a real Name (so it can carry the reference)
-      // that lives in a Dual Names collection.
-      const newNameBtns = canAdminCatalogueClientSide()
-        ? `<button type="button" class="secondary" id="noteAsmaXNewNameBtn">➕ ${escapeHtml(t("New Name from this āyah"))}</button>
-           <button type="button" class="secondary" id="noteAsmaXNewDualBtn">➕ ${escapeHtml(t("New Dual Name from this āyah"))}</button>`
-        : "";
-
       return `
-        <div class="note-qcr-row">
+        <div class="note-asmax-row1">
           <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Group"))}</span>
             <button type="button" class="note-qcr-select note-qcr-dd-btn${groupOn ? " active" : ""}" data-asmax-dd-toggle="asmagroup" title="${escapeHtml(groupSummary)}"><span class="note-qcr-dd-summary">${escapeHtml(groupSummary)}</span> <span class="car">▾</span></button>
           </div>
+          <div class="note-qcr-dd-pop${groupOn ? " on" : ""}" data-asmax-dd-pop="asmagroup">${groupPopover}</div>
+        </div>
+        <div class="note-asmax-row2">
           <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Names"))}</span>
             <button type="button" class="note-qcr-select note-qcr-dd-btn${nameOn ? " active" : ""}" data-asmax-dd-toggle="asmaname" title="${escapeHtml(nameSummary)}" ${group ? "" : "disabled"}><span class="note-qcr-dd-summary">${escapeHtml(nameSummary)}</span> <span class="car">▾</span></button>
+          </div>
+          <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("Dual Names"))}</span>
+            <button type="button" class="note-qcr-select note-qcr-dd-btn${dualOn ? " active" : ""}" data-asmax-dd-toggle="asmadual" title="${escapeHtml(dualSummary)}"><span class="note-qcr-dd-summary">${escapeHtml(dualSummary)}</span> <span class="car">▾</span></button>
           </div>
           <div class="note-qcr-field"><span class="note-qcr-field-label">${escapeHtml(t("References"))}</span>
             <button type="button" class="note-qcr-select note-qcr-dd-btn${refOn ? " active" : ""}" data-asmax-dd-toggle="asmaref" title="${escapeHtml(String(refsSummary))}" ${entry ? "" : "disabled"}><span class="note-qcr-dd-summary">${escapeHtml(String(refsSummary))}</span> <span class="car">▾</span></button>
           </div>
-          <div class="note-qcr-dd-pop${groupOn ? " on" : ""}" data-asmax-dd-pop="asmagroup">${groupPopover}</div>
+          ${asmaActionTiles}
           <div class="note-qcr-dd-pop${nameOn ? " on" : ""}" data-asmax-dd-pop="asmaname">${namePopover}</div>
+          <div class="note-qcr-dd-pop${dualOn ? " on" : ""}" data-asmax-dd-pop="asmadual">${dualPopover}</div>
           <div class="note-qcr-dd-pop${refOn ? " on" : ""}" data-asmax-dd-pop="asmaref">${refPopover}</div>
         </div>
         ${posterBtn}
-        ${attachBtn}
-        ${newNameBtns}
         ${trackEmbed}`;
     }
 

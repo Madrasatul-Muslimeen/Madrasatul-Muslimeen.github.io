@@ -10256,3 +10256,135 @@ one-line `prefs.js` addition of the same additive shape every reading preference
 since round 18 has used, and it would make the rest of Manage as findable as 📂
 now is -- but it also means edit icons appearing unbidden on a later visit, so it
 is the owner's call rather than something to slip in here.
+
+
+v07.130 (5 Sep 2026, on Claude Code on the web) is **the round v07.129 should
+have been on its own: the Asma surfaces laid out properly, Manage discarded,
+and every button given a size a finger can actually hit.** The owner opened
+with *"Man, do things eloquently, not haphazardly! ... Why do I have to spend
+time to fix your work?"* -- and they were right. v07.129 dropped three
+differently-sized text buttons into the Note drawer and let them wrap where
+they fell; it was never measured or looked at, only asserted. **The standing
+lesson that failed was already written down and was simply not followed: a
+screenshot is not a measurement, and neither is a passing assertion.** Every
+number below was measured before and after, at seven widths in both languages,
+and every screen was screenshotted and read.
+
+**(1) The Note drawer's Asma fields, to the owner's own layout.** *"Put the
+Group field in one row; 2nd row Names, Dual, Ref in the 2nd row and put three
+buttons as three icons side by side after ref."* Built exactly so: `.note-asmax-row1`
+is Group alone at full width -- it carries the longest titles in the whole
+feature ("The Most Glorious, Most High, Exalted, Uppermost"), so a third of a
+row was always the wrong share -- and `.note-asmax-row2` is a four-column grid,
+`minmax(0,1fr)` three times plus **`auto`**. That last column is the design:
+the three fields shrink and the control cluster never does, which is the exact
+opposite of three text buttons free to wrap against each other.
+
+**DUAL is new here and is not a second idea** -- it is the split the Explore
+bar has used since 30 Aug 2026, brought over: Group lists `kind: "group"`,
+Dual lists `kind: "dual"`, both write the same `noteOriginAsmaGroupId`, and
+picking in one clears the other because a Name is browsed through exactly one
+list at a time. Before this, one "Group" field listed both kinds mixed
+together. A tenant with no dual list yet gets a line saying so and pointing at
+the ✚² button, rather than a dropdown that opens empty (v07.128's own rule).
+
+**The three actions are one tile group**: 🔗 attach this āyah, ✚ new Name, ✚²
+new Dual Name -- equal 40px squares, words in `title`/`aria-label`, the same
+icon-with-its-name-in-the-title convention bar 2 has used since round 31.
+**Measured at every width, both languages: 768px and up they sit after
+References on one line with nothing truncated; below 560px they take one tidy
+right-aligned line of their own.** That breakpoint is a measurement, not a
+feel: at 390px the three fields need ~95px each and the tiles 132px, which is
+417px inside a 356px card. Squeezing the fields to ~78px to force one line
+would have cut their labels silently, which is this project's own
+most-repeated layout trap.
+
+**(2) "In TAB you can wide the palette to the entire screen"** -- and the care
+here is which width. The drawer is `width: 100%`, **not `94vw`**: it is
+anchored `right: 0` off `.note-bar2`, so a viewport-sized width hangs off the
+BAR's right edge and runs however much wider it is straight off the LEFT of the
+screen. **Measured on the first attempt: at 1280px a 94vw card started at
+x=-46, and worse at 1920px.** 100% of the bar is the full width of the reading
+screen -- which IS the whole screen on a tablet (736px of 768px) -- and cannot
+overflow either edge at any width by construction.
+
+**(3) Manage is gone from Asma.** *"Why do I have to click twice (manage button
+again) to bring the edit buttons? Discard the 'manage' button. those edit
+button should be open under the 3 dots."* It was a mode toggle sitting in front
+of a menu that is already a mode: opening ⋯ IS the reader saying "show me the
+controls", and asking again bought nothing and forgot itself on every load --
+which is precisely what made 📂 unfindable in v07.129. `asmaXManageOn`, a
+session-only `let`, is now `asmaXCanManage()`, a function returning
+`canAdminCatalogueClientSide()`: there is nothing left to remember and nothing
+left to forget. One tap on ⋯ and all five actions are there; open a Name and
+✎ 🔗 📂 arrive with it. **A reader who cannot manage still sees none of them**,
+and still gets the note saying why (v07.128's rule holds).
+
+**(4) The buttons are bigger, because they were genuinely too small.**
+`.qcr-icon-btn` was **26x26px with a 12px glyph** -- well under the ~44px a
+finger wants, and small enough that the emoji inside read as specks. Now
+**36x36 with a 17px glyph** on the dark bars and **40x40 with 19px** inside the
+⋯ palette, where the room is. Costed rather than assumed: the Asma bar goes
+**47px -> 56px** and still holds ONE line at 320/360/390/768/1280px in both
+languages, with no page overflow; the landing page is untouched. The palette
+went 15rem -> 16.5rem for one reason, found by screenshot: at 15rem the fifth
+tile wrapped to a line of its own, so the palette read as four-and-a-stray
+rather than one group.
+
+**Two real defects were caught by measuring, and one of them was mine, made
+while fixing this.** The new palette rule was first written as a bare
+`.bar-palette #asmaXLevelManageActions { display: flex }` -- **identical
+specificity to `#asmaXLevelManageActions[hidden]`, and written below it**, so
+it would have won on source order and put every Manage icon back on screen for
+every reader: the exact bug v07.128 spent a whole round finding, re-introduced
+within a day. `:not([hidden])` removes the tie rather than betting on where two
+rules sit in a file. And a **pre-existing** one, surfaced because the drawer is
+now a workspace: `ayah-note-renderer.js`'s outside-click closer treated a modal
+opened FROM the drawer as an outside click, so pressing Save in the form the
+drawer had just opened closed the drawer underneath it. Fixed generically with
+a `[data-keep-note-popovers]` opt-out marker the three Asma overlays carry --
+that file stays a pure renderer that knows nothing about what those overlays
+are (I2).
+
+**Verified with a focused, un-checked-in Playwright script -- 53 checks, all
+passing**, and every screen screenshotted and read rather than trusted from the
+assertions: row 1 proven Group alone and row 2 proven Names/Dual/References
+with three equal tiles proven to sit AFTER References on the same line at 768
+and 1280px, and proven to fall to one right-aligned line at 390px with the
+fields still on one line of their own; the tiles proven >=38px; the drawer
+proven to fill the screen AND to stay on it at every width; the Dual field
+proven to say so when empty, to be filled by the ✚² tile's own new list, to
+clear Group when picked and to open the Names field against it; **the drawer
+proven still open after saving from a form it opened** -- the defect above;
+the Manage button proven gone from the page entirely at 390/768/1280px; one tap
+on ⋯ proven to reveal all five actions as one 40px row; ✎ 🔗 📂 proven present
+on a Name with no Manage tap anywhere in the journey; a reader previewing as
+Guardian proven to get no tiles in either place **by COMPUTED display**, with
+the note still explaining why and the text-size sliders still theirs; **QCR
+proven unbroken** by the shared style change (its bar still one line, its own
+Manage button deliberately untouched); and all four labels, all three tile
+titles and the empty-Dual hint proven Bangla in Bangla.
+
+**`behaviour.mjs`: 800 checks pass, 3 fail** -- the three are section 22g, the
+environmental archive.org poster block this project has recorded since v07.44
+(the sandbox's proxy blocks that host; they pass when it is reachable), and the
+run stops at the same pre-existing line-4084 crash carried since v07.69. Same
+803 total. **`layout.mjs`: every measured landing-page metric byte-for-byte
+identical** to `HEAD` at all eight viewports in both banner states (heading
+148/103px, wheel 377/399/280/220/320/360px, Approach rows, 9px dock gap, no
+overflow); `getElementById` targets 235 -> 234, exactly the retired
+`asmaXManageToggleBtn` lookup, and the "missing" list is the same 22 as `HEAD`
+-- no new entries. **`reading.mjs` READING SCREEN OK** at all eight viewports,
+**`panel.mjs` byte-identical to `HEAD`** (this round never touches the Study
+options panel), **`navcheck.mjs` unchanged** (still only the pre-existing 320px
+English truncation of "Operation"/"Bookmark"). **Coverage 1,559 -> 1,560
+scanned, 47 missing UNCHANGED**, compared area by area: only `quran` moves,
+330 -> 331, the one new string, translated. **`tools/perf/measure.mjs`
+identical** (Quran Study 6 sequential round trips / 9 calls) and
+**`new-tenant.mjs` 10/10** -- I9 untouched, as expected for markup and CSS. No
+`firestore.rules`, schema or Firestore data changes.
+
+**Flagged, not changed: QCR still has its Manage button**, and it is the same
+two-tap complaint one screen over. It was left alone only because the owner
+named Asma; the change there is the same handful of lines, and it should
+probably follow.

@@ -871,6 +871,15 @@ export function attachNoteViewHandlers(container, callbacks) {
     document.addEventListener("click", (e) => {
       const v = container.querySelector(".note-view");
       if (!v) return;
+      // 5 Sep 2026 -- a modal opened FROM one of these popovers is not an
+      // "outside" click, however far outside the DOM it sits. The Asma
+      // drawer's own action tiles open full-screen overlays; without this
+      // the drawer the reader was working in closed the moment they pressed
+      // Save in the form it had just opened, and they came back to a shut
+      // card. Any owner can opt an element out by marking it -- this file
+      // stays a pure renderer that knows nothing about what those overlays
+      // actually are (I2).
+      if (e.target.closest?.("[data-keep-note-popovers]")) return;
       const p = v.querySelector("[data-note-palette]");
       const pBtn = v.querySelector("[data-note-palette-toggle]");
       if (p?.classList.contains("open") && !p.contains(e.target) && e.target !== pBtn) {
