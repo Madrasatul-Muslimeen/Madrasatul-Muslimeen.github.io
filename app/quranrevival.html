@@ -1249,10 +1249,18 @@
   #asmaXEditCloseBtn, #asmaXAttachCloseBtn, #asmaXGroupsCloseBtn { position: absolute; top: 0.7rem; right: 0.7rem; }
   #asmaXEditBody { display: flex; flex-direction: column; gap: 0.6rem; }
   #asmaXEditBody label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.78rem; color: #9aa7be; }
-  #asmaXEditBody input[type="text"], #asmaXEditBody textarea {
-    font-size: 0.85rem; padding: 0.4rem 0.5rem; border-radius: 6px;
+  /* 5 Sep 2026 -- the create form gained a "file it under" <select>, which
+     had no rule of its own here and would otherwise have rendered as the
+     browser's default control on a dark card. Sized with the inputs beside
+     it, and box-sizing so a long collection title can never push the card
+     wider than the field it sits in. */
+  #asmaXEditBody input[type="text"], #asmaXEditBody textarea, #asmaXEditBody select {
+    font-size: 0.85rem; padding: 0.4rem 0.5rem; border-radius: 6px; width: 100%; box-sizing: border-box;
     border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5; font-family: inherit;
   }
+  /* [hidden] on a flex label loses to the `display:flex` rule above it --
+     the trap this codebase has been caught by six times. */
+  #asmaXEditBody label[hidden] { display: none !important; }
   #asmaXEditBody textarea { min-height: 3.4rem; resize: vertical; }
   #asmaXEditBody .asmaX-edit-check { flex-direction: row; align-items: center; gap: 0.4rem; }
   .asmaX-edit-actions { display: flex; gap: 0.6rem; margin-top: 1rem; }
@@ -6861,12 +6869,28 @@
       const entry = asmaXNumber != null ? asmaXResolve(asmaXNumber) : null;
       if (!entry) { asmaXNumber = null; asmaXLevel = asmaXGroupId ? "names" : "groups"; return renderAsmaXPanel(); }
       const canManage = asmaXManageOn && canAdminCatalogueClientSide();
+      // 5 Sep 2026 -- the owner's own report: "there's supposed to be a
+      // button for moving a name from one group to another group and
+      // placing a name in multiple groups but there's nowhere movement
+      // button is shown in TAB, even after I set my role as 'Prime'."
+      // Reproduced, and the mechanism was never broken: 📂 rendered fine
+      // for an owner AND for an owner previewing as Prime -- but only
+      // after opening the ⋯ palette, pressing Manage, and then drilling
+      // into a Name, and `asmaXManageOn` is session-only, so it fell back
+      // to off on every single load. Nothing on screen ever said the
+      // button existed. So filing a Name into groups is gated on being
+      // able to manage AT ALL now, not on Manage MODE: it is the one
+      // action on this bar with no other route, and it only ever splices
+      // a membership array (asmaCollections' own items[], never content),
+      // whereas ✎ rewrites the Name itself and 🔗 appends references to
+      // many Names at once -- those two stay behind Manage, unchanged.
+      const canFileIntoGroups = canAdminCatalogueClientSide();
       asmaXListHeaderEl.innerHTML = `
         <button type="button" class="qcr-icon-btn" id="asmaXBackFromRefsBtn" title="${escapeHtml(t("Back"))}" aria-label="${escapeHtml(t("Back"))}">◂</button>
         <span class="qcr-list-title">${escapeHtml(asmaEntryDisplayName(entry))}</span>
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXEditThisNameBtn" title="${escapeHtml(t("Edit"))}" aria-label="${escapeHtml(t("Edit"))}">✎</button>` : ""}
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXAttachRefThisNameBtn" title="${escapeHtml(t("Attach a reference to several Names"))}" aria-label="${escapeHtml(t("Attach a reference to several Names"))}">🔗</button>` : ""}
-        ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXGroupsThisNameBtn" title="${escapeHtml(t("Groups this Name is in"))}" aria-label="${escapeHtml(t("Groups this Name is in"))}">📂</button>` : ""}`;
+        ${canFileIntoGroups ? `<button type="button" class="qcr-icon-btn" id="asmaXGroupsThisNameBtn" title="${escapeHtml(t("Groups this Name is in"))}" aria-label="${escapeHtml(t("Groups this Name is in"))}">📂</button>` : ""}`;
       document.getElementById("asmaXBackFromRefsBtn")?.addEventListener("click", () => {
         asmaXNumber = null;
         asmaXLevel = asmaXGroupId ? "names" : "groups";
@@ -7054,15 +7078,47 @@
     // fields are all genuinely editable, same as this file's own header
     // already documents for updateExtraName().
     // -----------------------------------------------------------------
-    let asmaXEditContext = null; // { mode: "create" | "edit", number }
+    let asmaXEditContext = null; // { mode: "create" | "edit", number, fileInto }
 
-    function openAsmaXEditOverlay({ mode, number = null, prefillRef = "" }) {
-      asmaXEditContext = { mode, number };
+    /** The "file it under" row, only ever drawn for a brand-new Name that
+        was asked for from somewhere with a destination in mind (5 Sep 2026
+        -- the Note view's own "+ New Name"/"+ New Dual Name"). `kind` is
+        which list the reader is filling: "group" is the everyday thematic
+        grouping, "dual" is the separate paired-Names list that has its own
+        dropdown on the Asma bar. Both are the SAME collection mechanism
+        (asma-collections.js's own `kind` field) -- so a "Dual Name" is a
+        real Name, carrying its own reference like any other, that lives in
+        a Dual Names collection. That is what makes "attach the Ayah as ref
+        to that new name" work for a dual name at all: a collection has no
+        `ref` field and never has, a Name does. */
+    function asmaXFileIntoRowHtml(kind) {
+      const options = (asmaXCollections ?? [])
+        .filter((c) => c.kind === kind && c.status !== "archived")
+        .sort((a, b) => a.order - b.order)
+        .map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(langText(c.title, getAppLang()))}</option>`)
+        .join("");
+      const newLabel = kind === "dual" ? t("+ New Dual Names list…") : t("+ New group…");
+      const fieldLabel = kind === "dual" ? t("File under (Dual Names)") : t("File under (Group)");
+      const titleLabel = kind === "dual" ? t("New Dual Names list title") : t("New group title");
+      return `
+        <label>${escapeHtml(fieldLabel)}
+          <select id="asmaXEditFileSelect">
+            ${options}
+            <option value="__new__"${options ? "" : " selected"}>${escapeHtml(newLabel)}</option>
+          </select>
+        </label>
+        <label id="asmaXEditNewCollLabel"${options ? " hidden" : ""}>${escapeHtml(titleLabel)}<input type="text" id="asmaXEditNewColl"></label>`;
+    }
+
+    function openAsmaXEditOverlay({ mode, number = null, prefillRef = "", fileInto = null }) {
+      asmaXEditContext = { mode, number, fileInto: mode === "create" ? fileInto : null };
       asmaXEditMsgEl.style.display = "none";
       const entry = mode === "edit" && number != null ? asmaXResolve(number) : null;
       if (mode === "edit" && !entry) return;
       if (mode === "create" || entry.isExtra) {
-        asmaXEditTitleEl.textContent = mode === "create" ? t("Add a new Name") : t("Edit Name");
+        asmaXEditTitleEl.textContent = mode === "create"
+          ? (fileInto?.kind === "dual" ? t("Add a new Dual Name") : t("Add a new Name"))
+          : t("Edit Name");
         // 30 Aug 2026 round -- "attaching an Ayah... and creating New Name":
         // creating a brand-new Name from the Read/Note view's own attach
         // flow pre-fills the Reference field with the āyah just typed
@@ -7077,7 +7133,15 @@
           <label>${escapeHtml(t("Bangla meaning"))}<input type="text" id="asmaXEditBn" value="${escapeHtml(entry?.meaning?.bn ?? "")}"></label>
           <label>${escapeHtml(t("Reference"))}<textarea id="asmaXEditRef">${escapeHtml(refValue)}</textarea></label>
           <label class="asmaX-edit-check"><input type="checkbox" id="asmaXEditWeak" ${entry?.weak ? "checked" : ""}> ${escapeHtml(t("weak"))}</label>
-          <label class="asmaX-edit-check"><input type="checkbox" id="asmaXEditIsPhrase" ${entry?.isPhrase ? "checked" : ""}> ${escapeHtml(t("phrase"))}</label>`;
+          <label class="asmaX-edit-check"><input type="checkbox" id="asmaXEditIsPhrase" ${entry?.isPhrase ? "checked" : ""}> ${escapeHtml(t("phrase"))}</label>
+          ${mode === "create" && fileInto ? asmaXFileIntoRowHtml(fileInto.kind) : ""}`;
+        // "+ New …" reveals its own title field rather than opening a
+        // second overlay -- one form, one Save, one write.
+        const fileSel = document.getElementById("asmaXEditFileSelect");
+        fileSel?.addEventListener("change", () => {
+          const lbl = document.getElementById("asmaXEditNewCollLabel");
+          if (lbl) lbl.hidden = fileSel.value !== "__new__";
+        });
       } else {
         asmaXEditTitleEl.textContent = t("Edit Name");
         asmaXEditBodyEl.innerHTML = `
@@ -7117,16 +7181,42 @@
           weak: !!document.getElementById("asmaXEditWeak")?.checked,
           isPhrase: !!document.getElementById("asmaXEditIsPhrase")?.checked,
         };
+        const fileInto = asmaXEditContext.fileInto;
+        const fileSelectValue = document.getElementById("asmaXEditFileSelect")?.value ?? "";
+        const newCollTitle = document.getElementById("asmaXEditNewColl")?.value.trim() ?? "";
         const prevExtra = asmaXExtraNames;
         const prevCollections = asmaXCollections;
         asmaXExtraNames = asmaAddExtraNameLocal(asmaXExtraNames ?? [], partial);
         const newNumber = asmaXExtraNames[asmaXExtraNames.length - 1].number;
-        if (asmaXLevel === "names" && asmaXGroupId) {
+        if (fileInto) {
+          // Asked for from the Note view, which has a destination in mind.
+          // A brand-new list takes the Name's own transliteration as its
+          // title when nothing was typed -- that is almost always what a
+          // dual Name's own list is called, and it beats a second error
+          // message for a field the reader has already effectively filled.
+          let targetId = fileSelectValue;
+          if (!targetId || targetId === "__new__") {
+            const title = newCollTitle || translit;
+            const next = asmaAddCollectionLocal(asmaXCollections ?? [], { title: { en: title }, kind: fileInto.kind });
+            targetId = next[next.length - 1].id;
+            asmaXCollections = next;
+          }
+          asmaXCollections = asmaAddItemLocal(asmaXCollections, targetId, buildUnitKey.name(newNumber));
+        } else if (asmaXLevel === "names" && asmaXGroupId) {
           asmaXCollections = asmaAddItemLocal(asmaXCollections, asmaXGroupId, buildUnitKey.name(newNumber));
         }
         closeAsmaXEditOverlay();
-        renderAsmaXPanel();
-        if (!(await asmaXPersist())) { asmaXExtraNames = prevExtra; asmaXCollections = prevCollections; renderAsmaXPanel(); }
+        // The Explore panel is hidden when this was asked for from the Note
+        // view, so re-render whichever surface the reader is actually
+        // looking at -- the same guard the attach popover's own save uses.
+        if (!asmaXPanelEl.hidden) renderAsmaXPanel();
+        if (stageView === "note" && noteScope) renderNoteViewNow();
+        if (!(await asmaXPersist())) {
+          asmaXExtraNames = prevExtra;
+          asmaXCollections = prevCollections;
+          if (!asmaXPanelEl.hidden) renderAsmaXPanel();
+          if (stageView === "note" && noteScope) renderNoteViewNow();
+        }
         return;
       }
       const entry = asmaXResolve(number);
@@ -7736,6 +7826,20 @@
       const attachBtn = canAdminCatalogueClientSide()
         ? `<button type="button" class="secondary" id="noteAsmaXAttachBtn">🔗 ${escapeHtml(t("Attach this āyah"))}</button>`
         : "";
+      // 5 Sep 2026 -- the owner's own ask, reading an āyah in the Note
+      // view: "I want a button to add a new name here, attach that Ayah as
+      // reference to that new name, add a field where I can Create a DUAL
+      // name and attach the Ayah as ref to that new name." Both go through
+      // the SAME create-Name overlay the Explore bar's own +N already uses
+      // -- one form, one write -- with the āyah already in its Reference
+      // field and a "file it under" row saying which list the new Name
+      // joins. The only difference between the two buttons is that row's
+      // `kind`; a Dual Name is a real Name (so it can carry the reference)
+      // that lives in a Dual Names collection.
+      const newNameBtns = canAdminCatalogueClientSide()
+        ? `<button type="button" class="secondary" id="noteAsmaXNewNameBtn">➕ ${escapeHtml(t("New Name from this āyah"))}</button>
+           <button type="button" class="secondary" id="noteAsmaXNewDualBtn">➕ ${escapeHtml(t("New Dual Name from this āyah"))}</button>`
+        : "";
 
       return `
         <div class="note-qcr-row">
@@ -7754,6 +7858,7 @@
         </div>
         ${posterBtn}
         ${attachBtn}
+        ${newNameBtns}
         ${trackEmbed}`;
     }
 
@@ -9950,6 +10055,15 @@
       // state -- this function has no local "info" to read fromAyah off).
       noteView.querySelector("#noteAsmaXAttachBtn")?.addEventListener("click", () => {
         openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(currentSurahNum, noteScope.ayahNum) });
+      });
+      // 5 Sep 2026 -- create a Name (or a Dual Name) straight from the āyah
+      // being read, with that āyah already its Reference. Same overlay, same
+      // single write; only which list it is filed under differs.
+      noteView.querySelector("#noteAsmaXNewNameBtn")?.addEventListener("click", () => {
+        openAsmaXEditOverlay({ mode: "create", prefillRef: asmaRefTextFor(currentSurahNum, noteScope.ayahNum), fileInto: { kind: "group" } });
+      });
+      noteView.querySelector("#noteAsmaXNewDualBtn")?.addEventListener("click", () => {
+        openAsmaXEditOverlay({ mode: "create", prefillRef: asmaRefTextFor(currentSurahNum, noteScope.ayahNum), fileInto: { kind: "dual" } });
       });
     }
 

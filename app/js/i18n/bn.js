@@ -2061,6 +2061,19 @@ export const BN = {
   "Attach this āyah": "এই আয়াতটি যুক্ত করুন", // ?
   "+ Create a new Name": "+ একটি নতুন নাম তৈরি করুন", // ?
 
+  // 5 Sep 2026 -- creating a Name (or a Dual Name) straight from the āyah
+  // being read in the Note view, with that āyah as its own reference, plus
+  // the "file it under" row that says which list the new Name joins.
+  "New Name from this āyah": "এই আয়াত থেকে নতুন নাম", // ?
+  "New Dual Name from this āyah": "এই আয়াত থেকে নতুন জোড়া নাম", // ?
+  "Add a new Dual Name": "একটি নতুন জোড়া নাম যোগ করুন", // ?
+  "File under (Group)": "যে গ্রুপে রাখবেন", // ?
+  "File under (Dual Names)": "যে জোড়া-নামের তালিকায় রাখবেন", // ?
+  "+ New group…": "+ নতুন গ্রুপ…", // ?
+  "+ New Dual Names list…": "+ নতুন জোড়া-নামের তালিকা…", // ?
+  "New group title": "নতুন গ্রুপের শিরোনাম", // ?
+  "New Dual Names list title": "নতুন জোড়া-নামের তালিকার শিরোনাম", // ?
+
   // 2 Sep 2026 -- the list-pane splitter/collapse toggle shared by
   // Approach, Explore, QCR and Asma ul Husna.
   "Collapse list": "তালিকা সংকুচিত করুন", // ?
