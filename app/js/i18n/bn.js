@@ -2066,6 +2066,7 @@ export const BN = {
   // the "file it under" row that says which list the new Name joins.
   "New Name from this āyah": "এই আয়াত থেকে নতুন নাম", // ?
   "New Dual Name from this āyah": "এই আয়াত থেকে নতুন জোড়া নাম", // ?
+  "No Dual Names list yet — make one with the ✚² button.": "এখনো কোনো জোড়া-নামের তালিকা নেই — ✚² বোতাম দিয়ে একটি তৈরি করুন।", // ?
   "Add a new Dual Name": "একটি নতুন জোড়া নাম যোগ করুন", // ?
   "File under (Group)": "যে গ্রুপে রাখবেন", // ?
   "File under (Dual Names)": "যে জোড়া-নামের তালিকায় রাখবেন", // ?
