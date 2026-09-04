@@ -3,7 +3,7 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: QuranRevival v07.131.** The app has been live and real,
+**Current milestone: QuranRevival v07.132.** The app has been live and real,
 not a beta, since the 9 August 2026 cutover (v07.00) — we are in real-use
 iteration, driven by what the owner hits using it. See "Post-cutover rollout
 order" (D13) below for whose real use comes first.
@@ -27,190 +27,6 @@ alongside `app/js/version.js` (first two digits = big overhaul, last two = each
 new feature) and will drift if a round forgets to bump it here too.
 
 ### The five most recent rounds
-
-v07.127 (4 Sep 2026, on Claude Code on the web) is **the one-bar round -- the
-QCR and Asma ul Husna level bars each fold onto a single line, and an Asma Name
-can now be moved between groups, or put in several at once.** Three owner asks
-from two marked-up screenshots of the live app. Their own framing set the shape:
-*"QCR. Make it one bar... 2 pull-down n one combined button for all those
-button, all In one bar. (Only one stuff drops down at a time, they can take
-entire space, but the button don't need that much space, got it?)"* and, for
-Asma, *"Field names change to Group, Names, Dual Names and then all buttons
-combined in a pallette under in one button. all In one bar. Saves 3 bar-space
-in mob, 2 bar space in Tab."*
-
-**The mechanism is one small new module, `js/bar-palette.js`, and it is
-deliberately NOT a renderer.** It owns only open/close -- one delegated
-`document` listener wired at module load, the same "one listener, no per-render
-rewiring" shape `nav.js`'s outside-click-closes, `text-size.js` and
-`asma-wheel-text.js` already use -- while each palette's own BODY is static
-markup in the page. That is the load-bearing half, and it is what the first
-sketch of this round would have got wrong: pressing **Manage** from inside the
-palette re-renders the bar, so a palette whose contents were rebuilt on every
-render would have slammed shut under the reader's own finger at the exact
-moment it was meant to reveal ✎/🗄/+. Because nothing rebuilds it, the buttons
-also kept their ids and their once-wired handlers -- **this is a MOVE, not a
-rewrite**, which is why no click handler in either bar was re-attached. I2
-holds: the module touches no Firebase and knows nothing about QCR or Asma.
-
-**(1) QCR is two dropdowns and one ⋯ button.** The Approach picker
-(`#qcrApproachSelect`) came UP out of `#qcrWheelPane`, where it had been a
-stacked row of its own since 28 Aug 2026, and now sits beside the collection
-picker; Manage and its four actions went behind the palette. Two rows become
-one. **Everything QCR's palette holds is a Manage-mode control**, so for a reader
-who cannot manage it would have opened EMPTY -- a button that does nothing --
-and the whole wrap is hidden for them instead. Asma's is deliberately NOT gated
-that way: it also carries the wheel text-size sliders, which are a personal
-display preference every reader gets. Proved by reading COMPUTED display rather
-than trusting the `hidden` property, since `[hidden]` loses to any class rule
-that sets `display` and this project has been caught by that four times.
-
-One real consequence had to be handled rather than discovered later:
-`renderQcrCollectionView()`, which used to fill that picker, **returns early
-when no collection is selected at all** -- fine while the picker lived under
-the wheel, wrong the moment it lives on a bar that is always drawn, so it would
-have shown an empty second dropdown. A new `syncQcrApproachSelect()` is called
-from `renderQcrLevelBar()` instead, and from `changeCurrentTrackable()`'s own
-QCR branch, whose `&& qcrCurrentId` guard is now scoped to the list+wheel below
-rather than to the mirror itself.
-
-**(2) Asma is three dropdowns and one ⋯ button**, where it was three stacked
-rows on a phone. The five Manage icons, Show archived, Manage itself **and the
-wheel text-size sliders** all fold in -- the A± button v07.122 put on that bar
-is gone, its sliders now rendered straight into the palette by a new
-`renderAsmaWheelTextRowsHtml()`. Two small changes inside `asma-wheel-text.js`
-make that honest rather than a copy: its slider sync now queries the whole
-document instead of `[data-awtext-popover].open`, since the rows live in a
-container that module deliberately knows nothing about, and its click listener
-is down to the one thing it still owns (Reset) now that opening and closing
-belong to `bar-palette.js`. The sliders, "All" and Reset were all re-proved
-working from their new home rather than assumed. The three field names are the
-owner's own shortening -- "All Groups"/"All Names"/"All dual Names" become
-**Group / Names / Dual Names** -- and cost nothing in translation: all three
-keys already existed in `bn.js`. The three they replace stay there, unused, per
-this project's own rule for a string that stops being called.
-
-**What the two bars actually cost before and after, measured against a real
-`HEAD` shim rather than counted off the markup** (the owner's own prediction
-was "Saves 3 bar-space in mob, 2 bar space in Tab"): on a **390px phone** the
-QCR bar goes **89px -> 50px** and the whole distance from the top of the bar to
-the top of the wheel **150px -> 70px**, while the Asma bar goes **161px -> 47px**
-and its own bar-to-wheel distance **180px -> 67px** -- so roughly two reclaimed
-rows on QCR and three on Asma, which is the owner's phone figure. On a **768px
-tablet** each screen reclaims **one** row, not two (QCR 111px -> 70px, Asma
-108px -> 69px): both bars already fitted on one line at that width, so the only
-thing left to reclaim there was QCR's own Approach row and Asma's second row of
-icons. Said plainly rather than rounded up to the prediction.
-
-**A real trap was caught by measuring, and it is the standing lesson in its
-usual form: a `<select>` ellipsises its own label silently.** Three fields
-sharing one phone row is tight, so the fit was measured rather than eyed --
-and measured HONESTLY, by cloning each real select, giving it only the option
-in question and sizing it to `max-content`, so the number is what that option
-needs **in this browser, chrome and all**, not a guessed arrow allowance. It
-found "Dual Names" needing 101px against a 96px third at 390px: cut, with
-nothing on screen saying so. Two candidate fixes were measured before either
-was kept. **Sizing the fields by content (`flex: 1 1 auto`) was tried and
-rejected on the numbers** -- it hands each select its own longest option as a
-starting width, so the Names field (100+ long options) swallowed the row while
-the Dual field, which holds one short placeholder until a dual collection
-exists, was squeezed to **90px even on a 1280px screen**. An equal share plus
-a smaller label on phones is what actually works. **Result, measured at
-320/360/390/412/768/1280px in both languages, on both bars: no truncation, no
-wrap and no page overflow anywhere** -- including 320px, which is below every
-viewport the harness runs and needed one more notch in this page's existing
-`@media (max-width: 340px)` block.
-
-**(3) The Asma Name screen gets the button the owner drew a box around**
-(📂, beside ✎ and 🔗, Manage-mode only like its neighbours): *"Enable a button
-at the markup space, to move the Name under a different group or place in
-multiple group."* **Both halves are one question asked once -- which
-collections hold this Name? -- so it is a tick list over every live Group and
-Dual-Name collection, not a "move to…" picker plus a separate "add to…" one.**
-Untick one and tick another and the Name has moved; tick several and it is in
-several. Built on `addItem`/`removeItem` rather than `moveItem` for exactly
-that reason: a move is just the pair, and expressing it as the pair is what
-makes multiple membership possible at all. No schema change -- `items[]` on a
-collection already held name unit keys, and `asmaCollections/{tenantId}`'s own
-rule gates by tenant, not by field, so **no `firestore.rules` change either**.
-Three decisions worth not undoing: an **archived** collection is offered only
-when the Name is actually in it, so it can be taken OUT but never filed into
-(I4 says archive rather than destroy; it does not say keep filing into the
-archive); the browsing position **falls back** to a collection that really does
-hold the Name if the reader has just removed it from the one on screen, rather
-than leaving a dead-end list; and the per-row "Move to…" select on the Names
-list is untouched -- that one acts on a Name in the context of the group being
-browsed, this one acts on the Name itself.
-
-**Verified with three focused, un-checked-in Playwright scripts** (this
-project's own established practice for anything past `behaviour.mjs`'s
-disclosed section-42 crash point) -- **75 + 23 + 1 checks, all passing**: each bar proven to
-hold exactly its dropdowns plus one palette wrap and to sit on ONE line at
-390/768/1280px, before and after Manage; the Approach picker proven present in
-the bar and absent from the wheel pane, and proven to still drive the canonical
-`#trackableSelect`; the palette proven to start closed, to open on ⋯, to stay
-open when Manage is pressed inside it, to close on an outside click, and to
-stay within the viewport at every width; the A± button proven gone with its
-three sliders proven inside the palette, really moving `--asmax-wheel-ar-scale`,
-really writing to localStorage, and Reset proven to move the slider back with
-it; the 📂 button proven ABSENT while Manage is off and present after it, in
-the owner's own marked-up slot after ✎ and 🔗; the picker proven to open with
-the groups the Name is already in ticked, to put it in BOTH on save (multiple
-membership), to MOVE it when one is unticked, to write for real to
-`asmaCollections`, and the destination group proven to really list the Name
-afterwards; plus the whole thing in Bangla with the collection ids behind the
-ticks proven still plain ids; and, separately, a palette proven **never to come
-back open** -- left open, then the reader switches Explore mode, or leaves
-Explore for the Read screen and returns, and it is closed both times (an
-absolutely-positioned popover goes off screen when its panel is hidden but
-would otherwise stay marked open, so `setExplorePalette()` and
-`closeAllPanels()` both close it). **Screenshotted at 390x844 in both languages** --
-each bar, each palette open with Manage on, the Name screen and the picker --
-rather than trusting the assertions alone.
-
-**`behaviour.mjs`: 803 checks pass, 0 fail**, stopping at the exact
-pre-existing crash this project has carried since v07.69 (a stale
-`[data-note-master-toggle]` visibility assumption from before the round-31 bar
-reorg, at that file's own line 4084 -- confirmed unrelated, since nothing in
-this round is reachable from any section the suite runs). Worth knowing when
-comparing that number with v07.124's "800 pass, 3 fail": the three were the
-environmental archive.org poster block this project has recorded since v07.44,
-and archive.org happened to be reachable from this sandbox on these runs -- the
-total is the same 803 either way, and no checked-in check needed updating,
-because the QCR and Asma Explore surfaces this round rebuilds sit past that
-crash point and have never had checked-in coverage.
-
-**`tools/perf/measure.mjs` unchanged**: Quran Study **6 sequential round trips /
-9 Firestore calls**, Deen Study, Health and Asma 7, Records 5 -- byte-identical
-to the v07.126 baseline, which is the check that proves this round joined
-nothing to the startup path (I9). Expected, since it is client-side UI
-throughout: one new pure module, some markup moved between containers, and CSS.
-
-**`layout.mjs`: every measured landing-page metric byte-for-byte identical** to
-`HEAD` at all eight viewports in both banner states (heading 103px, wheel
-280/399px, Approach rows, 9px dock gap, no overflow). **One harness note worth
-keeping, and it cost a wrong reading first:** the shim `layout.mjs` compares
-against is HEAD's copy of `quranrevival.html` running against the CURRENT
-`js/` modules -- so a round that renames an export that page imports (this one
-retired `renderAsmaWheelTextButtonHtml`) makes the whole "before" side fail to
-boot and score null everywhere, which looks like a catastrophic regression and
-is not. The honest fix is to drop HEAD's copy of the changed module beside it
-and point the shim at that. `getElementById` targets 221 → 230, exactly this
-round's nine new lookups; the "missing" list is 19, and **the unmodified `HEAD`
-copy was run through the identical check and reports the same 18** -- the
-pre-existing Manage-mode-only Asma/QCR false positives disclosed since v07.86 --
-so this round adds exactly one, `asmaXGroupsThisNameBtn`, which is Manage-mode-
-only in the same way. **`reading.mjs` READING SCREEN OK** at all eight
-viewports, **`panel.mjs` no wrapped bar and no truncated label** (this round
-never touches the Study options panel), **`navcheck.mjs` unchanged** (still only
-the pre-existing 320px English truncation of "Operation"/"Bookmark").
-**Coverage 1,547 → 1,548 scanned, 48 → 47 missing**, both movements accounted
-for line by line against a clean `HEAD` checkout rather than trusted from the
-total: four new strings, three that stop being called, and -- incidentally --
-the pre-existing untranslated `"More"` in the quran area now has its Bangla,
-because this round needed the same word. No `firestore.rules`, schema or
-Firestore data changes -- nothing to deploy but the static files.
-
 
 v07.128 (4 Sep 2026, same day) is **two owner reports against v07.127, one
 cause between them -- and a THIRD bug, pre-existing and older, found while
@@ -673,6 +489,123 @@ untouched, as expected for markup and a state variable becoming a function. No
 carried. Manage mode no longer exists anywhere in this app.
 
 
+v07.132 (5 Sep 2026, same day) is **the owner's own "Enable attaching to Dual
+Name as well in Asma in Note, Read, In Explore."** -- and the useful part of
+the round is that measuring first changed what the fix had to be.
+
+**A Dual Name was ALREADY in the attach list, and that is not the same as
+being attachable.** Measured before touching anything, from the Note view with
+a Dual Name freshly made: the list held **133 rows and the Dual Name was row
+133 of 133**, at the bottom of a flat scroller, carrying **nothing that said it
+was a Dual Name**, with no way to narrow to one and only a "+ Create a new
+Name" button beside it. That follows from v07.130's own model -- a Dual Name is
+a real Name filed into a `kind: "dual"` collection -- so nothing was broken;
+what was missing is everything that makes a thing findable. **The same
+distinction v07.129 recorded (unreachable is not broken) with a different
+answer: there the fix was removing a gate, here it is giving the list a way to
+be read.**
+
+**Three things, and because this is ONE shared popover they reach all three
+places the owner named at once** -- the Note drawer's own 🔗 tile, the Read
+bar's 🔗, and Explore's (both the ⋯ palette's 🔗 and a Name's own). Proven at
+each of the four entry points rather than assumed from the fact that they share
+code.
+
+**(1) A Show picker -- All / Names / Dual Names.** Choosing Dual Names takes the
+list from 133 rows to just the Dual ones. **A Name already TICKED is never
+filtered away**, whichever slice is showing: narrowing would otherwise silently
+drop what the reader had already chosen and Save would write less than the list
+had led them to expect. Reset to "All" on every open, like the filter box beside
+it -- it narrows a search, it is not a preference.
+
+**(2) A DUAL chip on the row**, so a Dual Name is identifiable even in "All".
+The chip says only "Dual" and is `flex-shrink: 0` + `nowrap`; **the dual list's
+own title rides in the row's `title` rather than on screen**, because a long
+collection name in a narrow row is exactly this project's most-repeated layout
+trap, and a one-word tag ellipsised to nothing would leave the row simply lying
+about what it is.
+
+**(3) "+ Create a new Dual Name"**, beside the existing create button as an
+equal pair (a two-column grid that stacks below 460px -- never two widths left
+to wrap, v07.129's own lesson). It **must** carry a destination
+(`fileInto: {kind:"dual"}`, v07.129's file-under row) where the plain create
+button deliberately still does not: a Name in no Dual Names list is not a Dual
+Name, so a create with nowhere to file it would make something the reader could
+never find again under that heading. With no dual list yet, the narrowed list
+says so and points at that button rather than reading as empty.
+
+**Two things the round got wrong first, both caught by measuring, and both
+worth recording because they are the same two mistakes in opposite directions.**
+
+**A check was wrong and the app was right.** The first fit probe reported the
+Show picker cut -- 109px box against 116px needed -- so a `min-width:
+max-content` went in "to fix" it. It changed nothing, which is the tell: the
+probe had cloned the select **without carrying its computed font, padding and
+border**, so it was measuring a bigger control than the real one. Measured
+honestly, "Dual Names" needs exactly the 109px it has, with `scrollWidth ===
+clientWidth`. The rule is KEPT -- it pins the column to the longest option, so a
+longer word in a future translation widens the field instead of being cut --
+but **its comment now says it is a guard rather than a fix for something
+observed**, because a false rationale left in the code is worse than no comment
+at all. That is the third wrong assertion this session; the standing lesson
+holds.
+
+**And the coverage report was right where I was sloppy.** Missing went 47 → 48,
+and the instinct ("the number has been wrong nine times") was the wrong one
+here: the extra was **`"Show"`, hardcoded as `aria-label="Show"` in the new
+picker's markup**. A screen reader's only name for a control is user-visible
+text and gets translated like any other. Set from `t("Show")` when the popover
+opens, and translated. **Back to 47 missing**, the baseline. The rule survives
+intact -- the number is never *evidence* -- but it is still a to-do list worth
+reading, and this time it found a real gap the rendered page would not have
+shown to a sighted reader at all.
+
+**Verified with a focused, un-checked-in Playwright script -- 26 checks, all
+passing** -- and screenshotted: the popover proven to carry the picker, both
+create buttons and a DUAL chip **from all four entry points** (Note, Read,
+Explore's palette, a Name's own); the picker proven to offer All/Names/Dual
+Names; Dual Names proven to narrow 133 rows to 1, Names proven to exclude it,
+and the row's own tooltip proven to name its list; **a ticked Name proven to
+survive narrowing**; the filter box proven to still work alongside; the āyah
+proven already the reference text; attaching to a Dual Name proven to write to
+`asmaCollections` for real, with that Dual Name's own card then proven on
+screen carrying the āyah; the empty-state hint proven to appear and point at
+the button; "+ Create a new Dual Name" proven to open the Dual form with the
+āyah prefilled and a file-under row; a reader who cannot manage proven offered
+neither; and all of it in Bangla -- picker options, button, chip, **the
+picker's own screen-reader name**, and the empty-state hint read off a really
+rendered page, with the option VALUES proven still plain ids. **Measured at
+320/390/768/1280px in both languages: the create pair equal-width and one line
+from 460px up, the picker and filter on one line, nothing truncated, no
+overflow, the card always on screen.** One reported page error was chased to
+its host rather than waved away: `raw.githubusercontent.com` resetting -- the
+Bangla reciter timing map v07.39 warms when the Read screen opens, the
+intermittent environmental block this project already records, and the check
+now separates app errors from outside-host network failures instead of
+failing on both.
+
+**`behaviour.mjs`: 800 checks pass, 3 fail** -- section 22g, the environmental
+archive.org poster block recorded since v07.44 -- stopping at the same
+pre-existing line-4084 crash carried since v07.69. Same 803 total.
+**`layout.mjs`: every measured landing-page metric byte-for-byte identical** to
+`HEAD` at all eight viewports in both banner states; `getElementById` targets
+233 → 235, exactly this round's two new lookups, and the "missing" list is the
+same 22 as `HEAD` -- neither new id joins it, since both live in markup that
+always exists. **`reading.mjs` READING SCREEN OK**, **`panel.mjs`
+byte-identical**, **`navcheck.mjs` unchanged**. **Coverage 1,559 → 1,563
+scanned, 47 missing UNCHANGED** once the `aria-label` above was fixed -- only
+`quran` moves, 330 → 334, all four new strings translated.
+**`tools/perf/measure.mjs` identical** (Quran Study 6 sequential round trips)
+and **`new-tenant.mjs` 10/10**. No `firestore.rules`, schema or Firestore data
+changes.
+
+**Flagged, not changed:** "+ Create a new Name" still files nowhere when it is
+used from the Note or Read view (there is no current group there), so a plain
+Name made that way is reachable only through the flat Names list. That is
+pre-existing, it is not what was asked, and the fix is the same file-under row
+the dual button already uses -- say the word and it is one line.
+
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
@@ -786,6 +719,13 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   outright. ~40px is the target for anything a finger presses; a square,
   fixed, `flex-shrink: 0` tile is what keeps a row of them looking like one
   group instead of several sizes.
+- **The coverage number is never evidence, but it IS a to-do list worth
+  reading.** v07.132's own extra "missing" was real: an `aria-label="Show"`
+  hardcoded in English on a new picker. A screen reader's only name for a
+  control is user-visible text and gets translated like any other -- and a
+  rendered page would never have shown that gap to a sighted reader. So
+  neither trust the number nor dismiss it: read what it names, then check the
+  rendered page.
 - **The translation coverage number is a to-do list, never evidence.** It has
   been wrong about what it counts **nine separate times** — over- and
   under-counting both. Only reading a really-rendered page proves a screen is
@@ -890,6 +830,12 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
 
 **On reporting**
 
+- **A measurement probe must carry the real element's computed style.**
+  v07.132 cloned a `<select>` to size its longest option but left the clone
+  with page-default font and padding -- it reported a truncation that did not
+  exist, and a CSS "fix" that changed nothing was the tell. Copy `font`,
+  `padding`, `border` and `box-sizing` from `getComputedStyle` onto any probe,
+  or it is measuring a different control.
 - **A failing check is a wrong assertion surprisingly often.** Investigate
   before "fixing" the app; several rounds here have proved the test wrong.
 - **A PASSING check can carry the same blind spot as the code it guards.**

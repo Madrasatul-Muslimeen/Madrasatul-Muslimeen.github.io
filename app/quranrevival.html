@@ -1303,6 +1303,44 @@
   #asmaXAttachNewNameBtn { width: 100%; box-sizing: border-box; margin-bottom: 0.6rem; font-size: 0.82rem; }
   #asmaXAttachList, #asmaXGroupsList { max-height: 40vh; overflow-y: auto; border: 1px solid rgba(201,162,75,0.2); border-radius: 8px; padding: 0.4rem 0.6rem; }
   .asmaX-attach-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; font-size: 0.82rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
+  /* 5 Sep 2026 -- attaching to a Dual Name. The name takes the slack so the
+     "Dual" chip is never what gets squeezed, and the chip itself is
+     `flex-shrink: 0` + `nowrap` so it can never be silently ellipsised into
+     nothing -- which for a one-word tag would leave the row simply lying
+     about what it is. The dual LIST's own title rides in the row's `title`
+     rather than on screen, for the same reason: a long collection name in a
+     narrow row is exactly this project's most-repeated layout trap. */
+  .asmaX-attach-name { min-width: 0; flex: 1 1 auto; overflow-wrap: anywhere; }
+  .asmaX-attach-dual {
+    flex: 0 0 auto; white-space: nowrap; font-size: 0.66rem; font-weight: 800;
+    letter-spacing: 0.04em; text-transform: uppercase; padding: 0.1rem 0.4rem;
+    border-radius: 999px; background: rgba(201,162,75,0.18); color: #E6C87A;
+    border: 1px solid rgba(201,162,75,0.4);
+  }
+  /* The two create buttons are one pair, sized together -- never two
+     different widths left to wrap where they fall (v07.129's own lesson).
+     They stack on a narrow card rather than shrinking their own words. */
+  .asmaX-attach-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; margin-bottom: 0.6rem; }
+  .asmaX-attach-btns button { width: 100%; }
+  @media (max-width: 460px) { .asmaX-attach-btns { grid-template-columns: 1fr; } }
+  /* "Show [All/Names/Dual Names]" beside the filter box: the picker takes
+     only what its own longest option needs, the filter takes the rest. */
+  .asmaX-attach-find { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.4rem; align-items: center; margin-bottom: 0.6rem; }
+  /* `min-width: max-content` is a GUARD, not a fix for anything observed:
+     measured honestly (a probe carrying this select's own computed font,
+     padding and border), "Dual Names" needs 109px and the column gives it
+     109px, with scrollWidth == clientWidth -- nothing is cut today. The
+     first measurement said 116px and was WRONG: that probe cloned the
+     select without its computed font, so it measured a bigger control than
+     the real one. Kept anyway because it costs nothing and pins the column
+     to the longest option, so a longer word in some future translation
+     widens the field instead of being silently ellipsised. */
+  #asmaXAttachKindSelect {
+    font-size: 0.8rem; padding: 0.4rem 0.5rem; border-radius: 6px; box-sizing: border-box;
+    min-width: max-content;
+    border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5; font-family: inherit;
+  }
+  .asmaX-attach-find #asmaXAttachFilterInput { margin-bottom: 0; }
   .asmaX-attach-row:last-child { border-bottom: none; }
   .asmaX-attach-row .asmaX-attach-num { color: #8fa0c2; font-size: 0.72rem; min-width: 2rem; }
   /* 4 Sep 2026 -- the Name screen's own "which groups is this Name in"
@@ -3319,8 +3357,23 @@
            from this same popover, rather than needing a trip to Explore's
            own Manage mode first. Uses the typed reference above as that
            new Name's own reference (openAsmaXEditOverlay's own prefillRef). -->
-      <button type="button" class="secondary" id="asmaXAttachNewNameBtn">+ Create a new Name</button>
-      <input type="text" id="asmaXAttachFilterInput" placeholder="">
+      <!-- 5 Sep 2026 -- the owner's own "Enable attaching to Dual Name as
+           well in Asma in Note, Read, In Explore." Measured first: a Dual
+           Name WAS already in this list, because a Dual Name is a real Name
+           (v07.130's own model) -- but it landed as row 133 of 133 in a flat
+           scroller, with nothing on the row saying it was a Dual Name, no
+           way to narrow to one, and the only create button making a plain
+           Name. Attaching to one was possible and not practical. Three
+           things fix that, and because this is ONE shared popover, all
+           three reach the Note view, the Read bar and Explore at once. -->
+      <div class="asmaX-attach-btns">
+        <button type="button" class="secondary" id="asmaXAttachNewNameBtn">+ Create a new Name</button>
+        <button type="button" class="secondary" id="asmaXAttachNewDualBtn">+ Create a new Dual Name</button>
+      </div>
+      <div class="asmaX-attach-find">
+        <select id="asmaXAttachKindSelect"></select>
+        <input type="text" id="asmaXAttachFilterInput" placeholder="">
+      </div>
       <div id="asmaXAttachList"></div>
       <p class="hint" id="asmaXAttachMsg" style="display:none;"></p>
       <div class="asmaX-edit-actions">
@@ -3846,6 +3899,8 @@
     const asmaXAttachRefLabelEl = document.getElementById("asmaXAttachRefLabel");
     const asmaXAttachRefInputEl = document.getElementById("asmaXAttachRefInput");
     const asmaXAttachNewNameBtn = document.getElementById("asmaXAttachNewNameBtn");
+    const asmaXAttachNewDualBtn = document.getElementById("asmaXAttachNewDualBtn");
+    const asmaXAttachKindSelectEl = document.getElementById("asmaXAttachKindSelect");
     const asmaXAttachFilterInputEl = document.getElementById("asmaXAttachFilterInput");
     const asmaXAttachListEl = document.getElementById("asmaXAttachList");
     const asmaXAttachMsgEl = document.getElementById("asmaXAttachMsg");
@@ -7350,24 +7405,63 @@
     // `ref` field), never overwriting what any of them already had.
     // -----------------------------------------------------------------
     let asmaXAttachChecked = new Set();
+    /** "all" | "dual" | "name" -- which slice of the list the attach popover
+        is showing. Reset to "all" on every open, like the filter box beside
+        it: it narrows a search, it is not a preference. */
+    let asmaXAttachKind = "all";
 
-    function asmaXAttachCandidates(filterText) {
+    /** number -> the title of the FIRST live Dual Names list holding it.
+        A "Dual Name" is not a separate kind of record (v07.130): it is a
+        Name filed into a `kind: "dual"` collection, so this is the only
+        honest way to ask "is this one a Dual Name" -- read the membership,
+        never a flag on the Name itself. Archived lists are left out, so a
+        Name only reads as Dual while it really is in a live one. */
+    function asmaXDualNameTitles() {
+      const byNumber = new Map();
+      for (const c of asmaActiveCollections(asmaXCollections ?? [])) {
+        if (c.kind !== "dual") continue;
+        const title = langText(c.title, getAppLang());
+        for (const uk of c.items ?? []) {
+          const n = Number(uk.split(":")[1]);
+          if (Number.isFinite(n) && !byNumber.has(n)) byNumber.set(n, title);
+        }
+      }
+      return byNumber;
+    }
+
+    function asmaXAttachCandidates(filterText, kind, dualTitles) {
       const q = (filterText ?? "").trim().toLowerCase();
-      const list = asmaXAllNameEntries();
+      let list = asmaXAllNameEntries();
+      // A ticked Name is never filtered away, whichever slice is showing --
+      // otherwise narrowing to Dual Names would silently drop what the
+      // reader had already chosen, and Save would write less than the list
+      // had led them to expect.
+      const keep = (e) => asmaXAttachChecked.has(e.number);
+      if (kind === "dual") list = list.filter((e) => dualTitles.has(e.number) || keep(e));
+      else if (kind === "name") list = list.filter((e) => !dualTitles.has(e.number) || keep(e));
       if (!q) return list;
-      return list.filter((e) => asmaEntryDisplayName(e).toLowerCase().includes(q) || String(e.number).includes(q));
+      return list.filter((e) => keep(e) || asmaEntryDisplayName(e).toLowerCase().includes(q) || String(e.number).includes(q));
     }
 
     function renderAsmaXAttachList() {
-      const candidates = asmaXAttachCandidates(asmaXAttachFilterInputEl.value);
+      const dualTitles = asmaXDualNameTitles();
+      const candidates = asmaXAttachCandidates(asmaXAttachFilterInputEl.value, asmaXAttachKind, dualTitles);
       asmaXAttachListEl.innerHTML = candidates.length
-        ? candidates.map((e) => `
-            <label class="asmaX-attach-row">
+        ? candidates.map((e) => {
+            // The chip says only "Dual"; the list's own title rides in the
+            // row's `title`, so a long collection name can never be
+            // silently ellipsised out of the row (this codebase's own
+            // most-repeated layout trap).
+            const dual = dualTitles.get(e.number);
+            return `
+            <label class="asmaX-attach-row"${dual ? ` title="${escapeHtml(dual)}"` : ""}>
               <input type="checkbox" data-asmax-attach-check="${e.number}" ${asmaXAttachChecked.has(e.number) ? "checked" : ""}>
               <span class="asmaX-attach-num">#${num(e.number)}</span>
-              <span>${escapeHtml(asmaEntryDisplayName(e))}</span>
-            </label>`).join("")
-        : `<p class="hint">${escapeHtml(t("No Names found."))}</p>`;
+              <span class="asmaX-attach-name">${escapeHtml(asmaEntryDisplayName(e))}</span>
+              ${dual ? `<span class="asmaX-attach-dual">${escapeHtml(t("Dual"))}</span>` : ""}
+            </label>`;
+          }).join("")
+        : `<p class="hint">${escapeHtml(asmaXAttachKind === "dual" ? t("No Dual Names yet — make one with “+ Create a new Dual Name”.") : t("No Names found."))}</p>`;
       asmaXAttachListEl.querySelectorAll("[data-asmax-attach-check]").forEach((box) => {
         box.addEventListener("change", () => {
           const n = Number(box.dataset.asmaxAttachCheck);
@@ -7407,6 +7501,19 @@
       asmaXAttachRefInputEl.value = prefillRef;
       asmaXAttachFilterInputEl.value = "";
       asmaXAttachFilterInputEl.placeholder = t("Filter Names…");
+      // Reset on every open, like the filter box beside it: this narrows a
+      // search, it is not a preference to remember.
+      asmaXAttachKind = "all";
+      // The label is set here, not left hardcoded in the markup: it is the
+      // only name a screen reader ever gets for this picker, so it is
+      // user-visible text and gets translated like any other (the coverage
+      // report caught it as a missing string, and was right).
+      asmaXAttachKindSelectEl.setAttribute("aria-label", t("Show"));
+      asmaXAttachKindSelectEl.innerHTML = [
+        ["all", t("All")],
+        ["name", t("Names")],
+        ["dual", t("Dual Names")],
+      ].map(([v, label]) => `<option value="${v}"${v === asmaXAttachKind ? " selected" : ""}>${escapeHtml(label)}</option>`).join("");
       asmaXAttachChecked = new Set(prefillNumbers);
       asmaXAttachMsgEl.style.display = "none";
       renderAsmaXAttachList();
@@ -7416,6 +7523,10 @@
       asmaXAttachOverlayEl.classList.remove("open");
     }
     asmaXAttachFilterInputEl.addEventListener("input", renderAsmaXAttachList);
+    asmaXAttachKindSelectEl.addEventListener("change", () => {
+      asmaXAttachKind = asmaXAttachKindSelectEl.value;
+      renderAsmaXAttachList();
+    });
     asmaXAttachCancelBtn.addEventListener("click", closeAsmaXAttachPopover);
     asmaXAttachCloseBtn.addEventListener("click", closeAsmaXAttachPopover);
     asmaXAttachOverlayEl.addEventListener("click", (e) => { if (e.target === asmaXAttachOverlayEl) closeAsmaXAttachPopover(); });
@@ -7427,6 +7538,18 @@
       const ref = asmaXAttachRefInputEl.value.trim();
       closeAsmaXAttachPopover();
       openAsmaXEditOverlay({ mode: "create", prefillRef: ref });
+    });
+    // 5 Sep 2026 -- the dual sibling. It MUST carry a destination
+    // (`fileInto`), where the plain "+ Create a new Name" above deliberately
+    // still does not: a Name that is in no Dual Names list is not a Dual
+    // Name, so a create with nowhere to file it would produce something the
+    // reader could never find again under that heading. v07.129's own
+    // file-under row is what makes the destination askable without a second
+    // overlay.
+    asmaXAttachNewDualBtn.addEventListener("click", () => {
+      const ref = asmaXAttachRefInputEl.value.trim();
+      closeAsmaXAttachPopover();
+      openAsmaXEditOverlay({ mode: "create", prefillRef: ref, fileInto: { kind: "dual" } });
     });
 
     asmaXAttachSaveBtn.addEventListener("click", async () => {

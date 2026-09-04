@@ -10465,3 +10465,120 @@ untouched, as expected for markup and a state variable becoming a function. No
 **What this closes:** both Explore bars now work the same way, and the
 "Flagged, not changed" note v07.130 left against QCR is resolved rather than
 carried. Manage mode no longer exists anywhere in this app.
+
+
+v07.132 (5 Sep 2026, same day) is **the owner's own "Enable attaching to Dual
+Name as well in Asma in Note, Read, In Explore."** -- and the useful part of
+the round is that measuring first changed what the fix had to be.
+
+**A Dual Name was ALREADY in the attach list, and that is not the same as
+being attachable.** Measured before touching anything, from the Note view with
+a Dual Name freshly made: the list held **133 rows and the Dual Name was row
+133 of 133**, at the bottom of a flat scroller, carrying **nothing that said it
+was a Dual Name**, with no way to narrow to one and only a "+ Create a new
+Name" button beside it. That follows from v07.130's own model -- a Dual Name is
+a real Name filed into a `kind: "dual"` collection -- so nothing was broken;
+what was missing is everything that makes a thing findable. **The same
+distinction v07.129 recorded (unreachable is not broken) with a different
+answer: there the fix was removing a gate, here it is giving the list a way to
+be read.**
+
+**Three things, and because this is ONE shared popover they reach all three
+places the owner named at once** -- the Note drawer's own 🔗 tile, the Read
+bar's 🔗, and Explore's (both the ⋯ palette's 🔗 and a Name's own). Proven at
+each of the four entry points rather than assumed from the fact that they share
+code.
+
+**(1) A Show picker -- All / Names / Dual Names.** Choosing Dual Names takes the
+list from 133 rows to just the Dual ones. **A Name already TICKED is never
+filtered away**, whichever slice is showing: narrowing would otherwise silently
+drop what the reader had already chosen and Save would write less than the list
+had led them to expect. Reset to "All" on every open, like the filter box beside
+it -- it narrows a search, it is not a preference.
+
+**(2) A DUAL chip on the row**, so a Dual Name is identifiable even in "All".
+The chip says only "Dual" and is `flex-shrink: 0` + `nowrap`; **the dual list's
+own title rides in the row's `title` rather than on screen**, because a long
+collection name in a narrow row is exactly this project's most-repeated layout
+trap, and a one-word tag ellipsised to nothing would leave the row simply lying
+about what it is.
+
+**(3) "+ Create a new Dual Name"**, beside the existing create button as an
+equal pair (a two-column grid that stacks below 460px -- never two widths left
+to wrap, v07.129's own lesson). It **must** carry a destination
+(`fileInto: {kind:"dual"}`, v07.129's file-under row) where the plain create
+button deliberately still does not: a Name in no Dual Names list is not a Dual
+Name, so a create with nowhere to file it would make something the reader could
+never find again under that heading. With no dual list yet, the narrowed list
+says so and points at that button rather than reading as empty.
+
+**Two things the round got wrong first, both caught by measuring, and both
+worth recording because they are the same two mistakes in opposite directions.**
+
+**A check was wrong and the app was right.** The first fit probe reported the
+Show picker cut -- 109px box against 116px needed -- so a `min-width:
+max-content` went in "to fix" it. It changed nothing, which is the tell: the
+probe had cloned the select **without carrying its computed font, padding and
+border**, so it was measuring a bigger control than the real one. Measured
+honestly, "Dual Names" needs exactly the 109px it has, with `scrollWidth ===
+clientWidth`. The rule is KEPT -- it pins the column to the longest option, so a
+longer word in a future translation widens the field instead of being cut --
+but **its comment now says it is a guard rather than a fix for something
+observed**, because a false rationale left in the code is worse than no comment
+at all. That is the third wrong assertion this session; the standing lesson
+holds.
+
+**And the coverage report was right where I was sloppy.** Missing went 47 → 48,
+and the instinct ("the number has been wrong nine times") was the wrong one
+here: the extra was **`"Show"`, hardcoded as `aria-label="Show"` in the new
+picker's markup**. A screen reader's only name for a control is user-visible
+text and gets translated like any other. Set from `t("Show")` when the popover
+opens, and translated. **Back to 47 missing**, the baseline. The rule survives
+intact -- the number is never *evidence* -- but it is still a to-do list worth
+reading, and this time it found a real gap the rendered page would not have
+shown to a sighted reader at all.
+
+**Verified with a focused, un-checked-in Playwright script -- 26 checks, all
+passing** -- and screenshotted: the popover proven to carry the picker, both
+create buttons and a DUAL chip **from all four entry points** (Note, Read,
+Explore's palette, a Name's own); the picker proven to offer All/Names/Dual
+Names; Dual Names proven to narrow 133 rows to 1, Names proven to exclude it,
+and the row's own tooltip proven to name its list; **a ticked Name proven to
+survive narrowing**; the filter box proven to still work alongside; the āyah
+proven already the reference text; attaching to a Dual Name proven to write to
+`asmaCollections` for real, with that Dual Name's own card then proven on
+screen carrying the āyah; the empty-state hint proven to appear and point at
+the button; "+ Create a new Dual Name" proven to open the Dual form with the
+āyah prefilled and a file-under row; a reader who cannot manage proven offered
+neither; and all of it in Bangla -- picker options, button, chip, **the
+picker's own screen-reader name**, and the empty-state hint read off a really
+rendered page, with the option VALUES proven still plain ids. **Measured at
+320/390/768/1280px in both languages: the create pair equal-width and one line
+from 460px up, the picker and filter on one line, nothing truncated, no
+overflow, the card always on screen.** One reported page error was chased to
+its host rather than waved away: `raw.githubusercontent.com` resetting -- the
+Bangla reciter timing map v07.39 warms when the Read screen opens, the
+intermittent environmental block this project already records, and the check
+now separates app errors from outside-host network failures instead of
+failing on both.
+
+**`behaviour.mjs`: 800 checks pass, 3 fail** -- section 22g, the environmental
+archive.org poster block recorded since v07.44 -- stopping at the same
+pre-existing line-4084 crash carried since v07.69. Same 803 total.
+**`layout.mjs`: every measured landing-page metric byte-for-byte identical** to
+`HEAD` at all eight viewports in both banner states; `getElementById` targets
+233 → 235, exactly this round's two new lookups, and the "missing" list is the
+same 22 as `HEAD` -- neither new id joins it, since both live in markup that
+always exists. **`reading.mjs` READING SCREEN OK**, **`panel.mjs`
+byte-identical**, **`navcheck.mjs` unchanged**. **Coverage 1,559 → 1,563
+scanned, 47 missing UNCHANGED** once the `aria-label` above was fixed -- only
+`quran` moves, 330 → 334, all four new strings translated.
+**`tools/perf/measure.mjs` identical** (Quran Study 6 sequential round trips)
+and **`new-tenant.mjs` 10/10**. No `firestore.rules`, schema or Firestore data
+changes.
+
+**Flagged, not changed:** "+ Create a new Name" still files nowhere when it is
+used from the Note or Read view (there is no current group there), so a plain
+Name made that way is reachable only through the flat Names list. That is
+pre-existing, it is not what was asked, and the fix is the same file-under row
+the dual button already uses -- say the word and it is one line.
