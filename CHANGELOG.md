@@ -9381,3 +9381,155 @@ existing entries; `js/asma-wheel-text.js` joined the `quran` area
 alongside `js/mastery-wheel.js`/`js/text-size.js`, which already lived
 there. No `firestore.rules`, schema or Firestore data changes -- nothing
 to deploy but the static files.
+
+v07.123 (3 Sep 2026, on Claude Code on the web) is **four owner-reported
+fixes from a Whole-Surah reading screenshot** -- one of them a real,
+week-old navigation bug that had been sending readers a whole surah at a
+time, and two of them reversals of decisions this project made itself.
+
+**(1) A slide-up in a Whole Surah brought the NEXT SURAH.** The owner's own
+report, and it reproduced first time: on surah 67 with "Page by page" on,
+one vertical slide moved to surah 68. **Root cause, found by reading the
+gesture handler rather than the CSS:** `advance()` decides what a gesture
+means by asking whether the āyah-level Next button is available -- and a
+flow view (Whole Surah/Range/Mushaf) hides that pair ON PURPOSE, because
+every āyah is already drawn at once, not because there is nothing smaller
+to step. So the gesture fell straight through to the UNIT-level pair, i.e.
+the next surah, from anywhere in the surah. New `stepFlowAyah(dir)` gives a
+flow view its own within-the-flow step: scroll the next (or previous) page
+into view, in whichever direction that mode actually moves -- sideways when
+"Page by page" is on, vertically when it is off. It reads
+`#pageViewContainer`'s own CHILDREN rather than `.page-flow-ayah`, so a
+Mushaf page turns the same way (a slide there should turn the page, not the
+surah, for exactly the same reason). **Deliberately does NOT touch
+`currentAyahNum`:** that would re-render the whole flow and throw the
+reader's own scroll position away, and this view has never moved
+`#ayahSelect` as it scrolls. **And it deliberately does NOT roll into the
+next surah at the last āyah** -- stepping the unit is what the ⏭ button is
+for, explicitly, which is the whole point of the complaint; a gesture at
+the end now slides back instead. Worth knowing for anyone testing this by
+hand: with both translations on, an āyah's own page genuinely scrolls, so a
+slide-up reads THROUGH it first and only steps at its end -- which is the
+right behaviour and is what the round's own checks drive.
+
+**(2) The āyah slid to was not highlighted, and the mechanism for it was
+broken in two independent ways.** `wireFlowInViewHighlight()` was an
+`IntersectionObserver`, and neither failure would ever show in a
+screenshot. An observer callback carries only the entries that CHANGED, so
+picking "the most visible row" out of that batch alone is right only when
+every row happens to report at once; and its thresholds fire only when a
+ratio CROSSES one, so an āyah taller than the viewport -- whose ratio never
+reaches 0.25 -- never fired at all, which is most āyahs in the vertical
+reading. **Replaced with a plain measurement:** on every scroll of whichever
+element is really scrolling, compare each row's own rect against the
+viewport's and mark whichever OVERLAPS it most, in both axes at once so the
+same arithmetic is right for sideways paging and ordinary scrolling without
+branching. Deterministic, no thresholds, correct at any row height.
+`flowScrollRoot()` is now the ONE answer to "what is actually scrolling
+here", shared by the highlight and by `stepFlowAyah()`, so the two can
+never disagree about what is moving.
+
+**One thing fixed alongside it, because it was competing with the answer:**
+`markPlayingAyah(currentAyahNum)` ran unconditionally on every flow render,
+so a fresh Whole Surah always painted the GOLD "now playing" band on āyah 1
+with nothing playing. With the reader's own position now carrying its own
+(blue) highlight, that put two colours for two different ideas on screen at
+once and gave the first āyah the wrong one. It is conditional on
+`isPlaying() || isPaused()` now, so gold means what its own CSS comment has
+always said -- the āyah being recited. The playback callbacks that drive it
+during a real recitation are untouched.
+
+**(3) The whole-screen tap no longer toggles full screen, in the reading
+screen OR the Note view.** The owner: *"disable a single tapping for
+full-screen view (in both read n note view, makes too much quick movement,
+the button should be enough for full screen view)."* This reverses shell
+round 21's own rule and round 30's matching one for the Note view -- both
+were the owner's asks at the time, both overruled by their own use.
+**A real trap had to be closed for this to be safe, and it is the reason
+the round touches CSS at all:** `#readBar` -- which holds the ⤢ button --
+was hidden OUTRIGHT in the BARE state (the default, all five switches on),
+so until now the tap was the ONLY way back out of it. Removing the tap
+without this would have stranded the reader with no control on screen.
+`#readBar > *:not(#hideChromeBtn)` is what goes now; the button stays,
+faint and out of the way, exactly the rule the Note view's own full-screen
+button has followed since round 30. `reading.mjs` measures that directly
+(the button reachable in the bare state) rather than taking it on trust.
+The two on-screen hints told the reader to TAP and are reworded to name the
+button; the two old keys stay in `bn.js`, unused, per this project's own
+rule for a string that stops being called.
+
+**(4) The Arabic block's āyah number is in Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩),
+globally.** This needed no new mechanism -- `digitsForLang()` already
+encoded exactly the right rule for the two translation blocks ("a block's
+number belongs to that block's own script, not the app's current display
+language"), and the Arabic block was the one that had been left following
+`num()`. So `"ar"` joins that helper and both call sites use it:
+`renderArabicPanel()` in `ayah-renderer.js`, which reaches every reading
+screen in the app, and the Note view's own locally-built Arabic. Measured
+in both app languages: the Arabic reads ١, the English 1 and the Bangla ১,
+side by side, in either. The per-āyah divider above the Word by
+Word/Root/Derivatives panels is left following the app language on purpose
+-- it labels a section, it is not the Arabic āyah text.
+
+**Verified with a focused, un-checked-in Playwright script** (this
+project's own established practice for anything past `behaviour.mjs`'s own
+disclosed section-42 crash point) -- **35 checks, all passing**: the 30-row
+flow rendering and marking an in-view āyah on first render; a slide-up
+proven NOT to change surah, proven to move the strip, and the āyah it
+lands on proven to be the one highlighted; a second slide-up stepping one
+more; a slide-down stepping back; a slide-up at the LAST āyah proven still
+not to change surah while ⏭ still does; the same again with "Page by page"
+OFF, where a vertical scroll is proven to move the highlight; a tap on the
+reading and a tap on the Note view each proven to change nothing while
+both buttons still work; the BARE state proven to hide the dock AND to
+keep the ⤢ button on screen with nothing else in the bar; and the badge
+trio proven ١/1/১ in both app languages, on the Read screen and in the
+Note view. **Two of its own early failures were WRONG ASSERTIONS, not
+defects, and both are worth recording**: the test drove the gesture from
+the FIRST flow row rather than the one on screen, so `nearestScroller()`
+correctly read a different row's scroll position; and it asserted a Bangla
+badge with the Bangla translation switched off.
+
+**Nine checked-in assertions were UPDATED, not worked around**, and they
+split into two kinds. **Six describe behaviour this round deliberately
+removed** -- `reading.mjs`'s own tap-walks-the-cycle check (which alone
+reported 16 problems), `behaviour.mjs`'s 29d, 33g and 34e, and the two
+HELPERS that leaned on the tap to get back out of full screen
+(`openMushaf()`, which opens immersive by design, and 33f's own retick
+step). All now press the ⤢ button, and the tap is asserted to change
+NOTHING; `reading.mjs` also measures directly that the button is reachable
+in the bare state. **The other three were already failing at `HEAD`, on
+their own, and are unrelated to this round** -- 30j/30l/33a/37a hardcode
+the read bar's contents and had gone stale twice over (`#readTextSizeSlot`
+joined that row in v07.92, `#readAttachAsmaBtn` in v07.107, and neither
+round updated them), and 29b read `#wheelSection`'s own computed display,
+which stopped being the answer in v07.115 when `#wheelPopupView` became
+what carries `hidden` (that round fixed `reading.mjs`'s copy of the same
+check and missed this one). Fixed rather than left permanently red: a red
+check in the very row this round edits would mask a real regression.
+**`reading.mjs`: READING SCREEN OK at all eight viewports.**
+**`behaviour.mjs`: 789 checks pass, 3 fail** -- all three the known
+environmental archive.org poster block (recorded since v07.44) -- and the
+run reaches the same pre-existing `[data-note-master-toggle]` crash point
+this project has carried since v07.69, unchanged. **`layout.mjs`: every measured landing-page metric
+byte-for-byte identical** against a real `HEAD` shim at all eight viewports
+in both banner states -- same heading top, wheel width, Approach rows and
+9px dock gap, `getElementById` targets unchanged at 222 -- the only flagged
+line is the same pre-existing false positive this project has carried since
+v07.86 (Manage-mode-only Asma/QCR ids that do not exist until Manage is
+toggled on), confirmed identical on the unmodified `HEAD` copy.
+**`panel.mjs` clean**, **`navcheck.mjs` unchanged** (still only the
+pre-existing 320px English truncation of "Operation"/"Bookmark"),
+**coverage byte-identical at 1,547 scanned / 48 missing, same in every
+area** -- the two reworded hints are a clean 1-for-1 swap, both translated
+and read back off a real rendered page in Bangla rather than trusted from
+the report -- and **`tools/perf/measure.mjs` identical to `HEAD` on every
+page measured** (Quran Study 6 sequential round trips / 9 calls; Deen
+Study, Health and Asma 7; Records 5), confirming no Firestore read joined
+or left any startup path. **One environmental failure, pre-existing and
+unrelated:** this sandbox's proxy resets the fetch of
+`gtaf_bangla_timestamps.json` from `raw.githubusercontent.com` -- the
+Bangla reciter's timing map that v07.39 warms when the reading screen
+opens. Confirmed present at `HEAD` too, and intermittent (it passes when
+that host is reachable). No `firestore.rules`, schema or Firestore data
+changes -- nothing to deploy but the static files.

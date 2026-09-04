@@ -3,7 +3,7 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: QuranRevival v07.127.** The app has been live and real,
+**Current milestone: QuranRevival v07.128.** The app has been live and real,
 not a beta, since the 9 August 2026 cutover (v07.00) — we are in real-use
 iteration, driven by what the owner hits using it. See "Post-cutover rollout
 order" (D13) below for whose real use comes first.
@@ -21,158 +21,6 @@ alongside `app/js/version.js` (first two digits = big overhaul, last two = each
 new feature) and will drift if a round forgets to bump it here too.
 
 ### The five most recent rounds
-
-v07.123 (3 Sep 2026, on Claude Code on the web) is **four owner-reported
-fixes from a Whole-Surah reading screenshot** -- one of them a real,
-week-old navigation bug that had been sending readers a whole surah at a
-time, and two of them reversals of decisions this project made itself.
-
-**(1) A slide-up in a Whole Surah brought the NEXT SURAH.** The owner's own
-report, and it reproduced first time: on surah 67 with "Page by page" on,
-one vertical slide moved to surah 68. **Root cause, found by reading the
-gesture handler rather than the CSS:** `advance()` decides what a gesture
-means by asking whether the āyah-level Next button is available -- and a
-flow view (Whole Surah/Range/Mushaf) hides that pair ON PURPOSE, because
-every āyah is already drawn at once, not because there is nothing smaller
-to step. So the gesture fell straight through to the UNIT-level pair, i.e.
-the next surah, from anywhere in the surah. New `stepFlowAyah(dir)` gives a
-flow view its own within-the-flow step: scroll the next (or previous) page
-into view, in whichever direction that mode actually moves -- sideways when
-"Page by page" is on, vertically when it is off. It reads
-`#pageViewContainer`'s own CHILDREN rather than `.page-flow-ayah`, so a
-Mushaf page turns the same way (a slide there should turn the page, not the
-surah, for exactly the same reason). **Deliberately does NOT touch
-`currentAyahNum`:** that would re-render the whole flow and throw the
-reader's own scroll position away, and this view has never moved
-`#ayahSelect` as it scrolls. **And it deliberately does NOT roll into the
-next surah at the last āyah** -- stepping the unit is what the ⏭ button is
-for, explicitly, which is the whole point of the complaint; a gesture at
-the end now slides back instead. Worth knowing for anyone testing this by
-hand: with both translations on, an āyah's own page genuinely scrolls, so a
-slide-up reads THROUGH it first and only steps at its end -- which is the
-right behaviour and is what the round's own checks drive.
-
-**(2) The āyah slid to was not highlighted, and the mechanism for it was
-broken in two independent ways.** `wireFlowInViewHighlight()` was an
-`IntersectionObserver`, and neither failure would ever show in a
-screenshot. An observer callback carries only the entries that CHANGED, so
-picking "the most visible row" out of that batch alone is right only when
-every row happens to report at once; and its thresholds fire only when a
-ratio CROSSES one, so an āyah taller than the viewport -- whose ratio never
-reaches 0.25 -- never fired at all, which is most āyahs in the vertical
-reading. **Replaced with a plain measurement:** on every scroll of whichever
-element is really scrolling, compare each row's own rect against the
-viewport's and mark whichever OVERLAPS it most, in both axes at once so the
-same arithmetic is right for sideways paging and ordinary scrolling without
-branching. Deterministic, no thresholds, correct at any row height.
-`flowScrollRoot()` is now the ONE answer to "what is actually scrolling
-here", shared by the highlight and by `stepFlowAyah()`, so the two can
-never disagree about what is moving.
-
-**One thing fixed alongside it, because it was competing with the answer:**
-`markPlayingAyah(currentAyahNum)` ran unconditionally on every flow render,
-so a fresh Whole Surah always painted the GOLD "now playing" band on āyah 1
-with nothing playing. With the reader's own position now carrying its own
-(blue) highlight, that put two colours for two different ideas on screen at
-once and gave the first āyah the wrong one. It is conditional on
-`isPlaying() || isPaused()` now, so gold means what its own CSS comment has
-always said -- the āyah being recited. The playback callbacks that drive it
-during a real recitation are untouched.
-
-**(3) The whole-screen tap no longer toggles full screen, in the reading
-screen OR the Note view.** The owner: *"disable a single tapping for
-full-screen view (in both read n note view, makes too much quick movement,
-the button should be enough for full screen view)."* This reverses shell
-round 21's own rule and round 30's matching one for the Note view -- both
-were the owner's asks at the time, both overruled by their own use.
-**A real trap had to be closed for this to be safe, and it is the reason
-the round touches CSS at all:** `#readBar` -- which holds the ⤢ button --
-was hidden OUTRIGHT in the BARE state (the default, all five switches on),
-so until now the tap was the ONLY way back out of it. Removing the tap
-without this would have stranded the reader with no control on screen.
-`#readBar > *:not(#hideChromeBtn)` is what goes now; the button stays,
-faint and out of the way, exactly the rule the Note view's own full-screen
-button has followed since round 30. `reading.mjs` measures that directly
-(the button reachable in the bare state) rather than taking it on trust.
-The two on-screen hints told the reader to TAP and are reworded to name the
-button; the two old keys stay in `bn.js`, unused, per this project's own
-rule for a string that stops being called.
-
-**(4) The Arabic block's āyah number is in Arabic-Indic digits (٠١٢٣٤٥٦٧٨٩),
-globally.** This needed no new mechanism -- `digitsForLang()` already
-encoded exactly the right rule for the two translation blocks ("a block's
-number belongs to that block's own script, not the app's current display
-language"), and the Arabic block was the one that had been left following
-`num()`. So `"ar"` joins that helper and both call sites use it:
-`renderArabicPanel()` in `ayah-renderer.js`, which reaches every reading
-screen in the app, and the Note view's own locally-built Arabic. Measured
-in both app languages: the Arabic reads ١, the English 1 and the Bangla ১,
-side by side, in either. The per-āyah divider above the Word by
-Word/Root/Derivatives panels is left following the app language on purpose
--- it labels a section, it is not the Arabic āyah text.
-
-**Verified with a focused, un-checked-in Playwright script** (this
-project's own established practice for anything past `behaviour.mjs`'s own
-disclosed section-42 crash point) -- **35 checks, all passing**: the 30-row
-flow rendering and marking an in-view āyah on first render; a slide-up
-proven NOT to change surah, proven to move the strip, and the āyah it
-lands on proven to be the one highlighted; a second slide-up stepping one
-more; a slide-down stepping back; a slide-up at the LAST āyah proven still
-not to change surah while ⏭ still does; the same again with "Page by page"
-OFF, where a vertical scroll is proven to move the highlight; a tap on the
-reading and a tap on the Note view each proven to change nothing while
-both buttons still work; the BARE state proven to hide the dock AND to
-keep the ⤢ button on screen with nothing else in the bar; and the badge
-trio proven ١/1/১ in both app languages, on the Read screen and in the
-Note view. **Two of its own early failures were WRONG ASSERTIONS, not
-defects, and both are worth recording**: the test drove the gesture from
-the FIRST flow row rather than the one on screen, so `nearestScroller()`
-correctly read a different row's scroll position; and it asserted a Bangla
-badge with the Bangla translation switched off.
-
-**Nine checked-in assertions were UPDATED, not worked around**, and they
-split into two kinds. **Six describe behaviour this round deliberately
-removed** -- `reading.mjs`'s own tap-walks-the-cycle check (which alone
-reported 16 problems), `behaviour.mjs`'s 29d, 33g and 34e, and the two
-HELPERS that leaned on the tap to get back out of full screen
-(`openMushaf()`, which opens immersive by design, and 33f's own retick
-step). All now press the ⤢ button, and the tap is asserted to change
-NOTHING; `reading.mjs` also measures directly that the button is reachable
-in the bare state. **The other three were already failing at `HEAD`, on
-their own, and are unrelated to this round** -- 30j/30l/33a/37a hardcode
-the read bar's contents and had gone stale twice over (`#readTextSizeSlot`
-joined that row in v07.92, `#readAttachAsmaBtn` in v07.107, and neither
-round updated them), and 29b read `#wheelSection`'s own computed display,
-which stopped being the answer in v07.115 when `#wheelPopupView` became
-what carries `hidden` (that round fixed `reading.mjs`'s copy of the same
-check and missed this one). Fixed rather than left permanently red: a red
-check in the very row this round edits would mask a real regression.
-**`reading.mjs`: READING SCREEN OK at all eight viewports.**
-**`behaviour.mjs`: 789 checks pass, 3 fail** -- all three the known
-environmental archive.org poster block (recorded since v07.44) -- and the
-run reaches the same pre-existing `[data-note-master-toggle]` crash point
-this project has carried since v07.69, unchanged. **`layout.mjs`: every measured landing-page metric
-byte-for-byte identical** against a real `HEAD` shim at all eight viewports
-in both banner states -- same heading top, wheel width, Approach rows and
-9px dock gap, `getElementById` targets unchanged at 222 -- the only flagged
-line is the same pre-existing false positive this project has carried since
-v07.86 (Manage-mode-only Asma/QCR ids that do not exist until Manage is
-toggled on), confirmed identical on the unmodified `HEAD` copy.
-**`panel.mjs` clean**, **`navcheck.mjs` unchanged** (still only the
-pre-existing 320px English truncation of "Operation"/"Bookmark"),
-**coverage byte-identical at 1,547 scanned / 48 missing, same in every
-area** -- the two reworded hints are a clean 1-for-1 swap, both translated
-and read back off a real rendered page in Bangla rather than trusted from
-the report -- and **`tools/perf/measure.mjs` identical to `HEAD` on every
-page measured** (Quran Study 6 sequential round trips / 9 calls; Deen
-Study, Health and Asma 7; Records 5), confirming no Firestore read joined
-or left any startup path. **One environmental failure, pre-existing and
-unrelated:** this sandbox's proxy resets the fetch of
-`gtaf_bangla_timestamps.json` from `raw.githubusercontent.com` -- the
-Bangla reciter's timing map that v07.39 warms when the reading screen
-opens. Confirmed present at `HEAD` too, and intermittent (it passes when
-that host is reachable). No `firestore.rules`, schema or Firestore data
-changes -- nothing to deploy but the static files.
 
 v07.124 (3 Sep 2026, on Claude Code on the web) is **the Mushaf page fixes --
 a Page unit is now a WHOLE page, and it turns.** Two owner reports from a
@@ -646,6 +494,95 @@ because this round needed the same word. No `firestore.rules`, schema or
 Firestore data changes -- nothing to deploy but the static files.
 
 
+v07.128 (4 Sep 2026, same day) is **two owner reports against v07.127, one
+cause between them -- and a THIRD bug, pre-existing and older, found while
+reproducing it.** Their words: *"In Tab, QCR, the button group is missing. FIX"*
+and *"In Asma, name movement field is no where, FIX"*.
+
+**Reproduced before anything was touched, and the two reports turned out to be
+one thing.** `canAdminCatalogueClientSide()` reads `currentPreview().effRoles`
+-- so a **"View as" preview left switched on** makes an OWNER read as a
+student. That preference has lived in **localStorage since v07.75**, so it
+survives every reload on that device and can sit there for weeks unnoticed.
+With a preview on: **QCR's ⋯ vanished outright** (report 1), and **Asma's
+Manage button was hidden**, so Manage could never be turned on, so ✎/🔗/📂
+never rendered -- which is exactly *"name movement field is no where"*
+(report 2). Asma's own ⋯ stayed visible throughout, which is why the owner
+reported the missing BUTTON GROUP for QCR only and the missing FIELD for Asma.
+Measured with the preview seeded into localStorage, at 768px and 1280px, before
+a line was changed.
+
+**(1) The QCR half was v07.127's own regression, and it is reverted.** That
+round's follow-up commit hid the whole palette wrap when `canManage` was
+false, reasoning that it would otherwise open empty. That reasoning was wrong
+in the way that matters: it made the only control on that bar disappear, with
+nothing on screen to say why and no way back to it. **The button is never
+hidden now.** The general lesson, worth keeping: *a control that opens and
+explains itself beats a control that is not there* -- an empty dropdown is a
+small ugliness, a missing one is a dead end.
+
+**(2) The gate itself is correct, so it now says so in words.** An owner
+previewing as a student really is not an admin; what was wrong was that the
+app said nothing. Both palettes carry a note when management is unavailable,
+from one shared `manageUnavailableNote()` rather than two copies: with a
+preview on it names the role and points at where to turn it off ("You're
+previewing as Student, so managing is switched off. Turn the preview off on
+the People page to manage again."), and otherwise it says plainly that this is
+owner/prime only. Two new strings, both translated.
+
+**(3) The third bug, PRE-EXISTING and not introduced by v07.127 -- this
+codebase's own most-repeated trap, in a fifth place.** While screenshotting the
+fix, the ✎ 🗄 + and "Show archived" row was on screen **with Manage switched
+off**. `#qcrLevelManageActions` and `#asmaXLevelManageActions` are ID rules
+setting `display: flex`, which outranks the UA's `[hidden] { display: none }` --
+so `qcrLevelManageActions.hidden = true` **has never actually hidden anything**.
+Rename/Archive/Add and Show archived have been on screen for every reader all
+along, whether or not Manage was on and **whether or not they can manage at
+all**. It is visible in the owner's own screenshot of the round before this
+one, once you know to look. Fixed with the explicit `#id[hidden] { display:
+none }` override the standing lesson prescribes (`#id[hidden]` outranks `#id`),
+on both bars.
+
+**And the reason it survived v07.127's own verification is worth recording
+against that round's name:** its check read `element.hidden` -- the PROPERTY --
+and passed, while the icons were really on screen. That is precisely the
+mistake the standing lesson names ("Check COMPUTED display"), made by the test
+rather than the app. The check reads `getComputedStyle(...).display` now. **A
+test can carry the same blind spot as the code it guards; assert the rendered
+result, not the intent.**
+
+**Verified: 145 focused checks across four un-checked-in Playwright scripts,
+all passing** -- v07.127's own 75 + 23 re-run green, plus 47 new ones for this
+round: the QCR ⋯ proven on screen and openable while previewing as a student,
+at 768px and 390px, in English and Bangla; the note proven to appear, to name
+the previewed role, and to be Bangla in Bangla; the Manage button proven
+correctly still off; Asma's palette proven to carry the same explanation while
+its wheel text-size sliders stay available to every reader either way; no note
+at all for an owner who can manage; and **the whole path to 📂 proven to work
+on a tablet** for an owner who is not previewing -- Manage on, open a Name, the
+button present and on screen. The `[hidden]` fix is proven by COMPUTED display,
+not by the property. **One test bug of its own was found and fixed rather than
+worked around:** the helper pressed `#tabExploreBtn` a second time, which
+TOGGLES Explore shut, so the second half of each case was measuring a closed
+panel.
+
+**`layout.mjs`: every measured landing-page metric byte-for-byte identical** to
+`HEAD` at all eight viewports in both banner states (heading 148/103px, wheel
+377/399/280/220/320/360px, Approach rows, 9px dock gap, no overflow);
+`getElementById` targets 230 → 232, exactly the two new note elements, and the
+"missing" list is the same 19 disclosed in v07.127. **Coverage 1,548 → 1,550
+scanned, 47 missing unchanged** -- the two new strings, both translated and
+read back off a really-rendered Bangla page rather than trusted from the
+report. No `firestore.rules`, schema or Firestore data changes -- nothing to
+deploy but the static files.
+
+**Flagged, not changed:** the `[hidden]` fix means a reader who cannot manage
+no longer sees Rename/Archive/Add at all on either bar. That is the intended
+behaviour those `hidden` attributes have always described, but it IS a visible
+change for anyone who had grown used to seeing them -- said here rather than
+left to be noticed.
+
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
@@ -773,8 +710,22 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   containers here carry `display:flex` from a class, which outranks the UA's
   `[hidden]{display:none}`. Toggling `.hidden` from JS then silently does
   nothing. Check COMPUTED display, and add an explicit `[hidden]` override.
-  This has bitten at least four times (`#wheelSection`, `#studyScreen`,
-  `#explorePanel`, `#asmaXPanel`).
+  This has bitten at least six times (`#wheelSection`, `#studyScreen`,
+  `#explorePanel`, `#asmaXPanel`, and — found in v07.128, after living
+  undetected for months — `#qcrLevelManageActions`/`#asmaXLevelManageActions`,
+  where it meant Manage-mode buttons were on screen for every reader all
+  along). **`#id[hidden]` outranks `#id`**, which is the fix for an id rule.
+- **A control that opens and explains itself beats a control that is not
+  there.** v07.127 hid a whole palette because it would otherwise open empty
+  for a non-admin; v07.128 reverted it the same day, on the owner's report,
+  because "empty" is a small ugliness while "missing" is a dead end with
+  nothing on screen to say why. When a gate is correct, say so in words where
+  the control would have been.
+- **`canAdminCatalogueClientSide()` is false while a "View as" preview is on**,
+  because it reads `currentPreview().effRoles` — and that preview lives in
+  localStorage (v07.75), so it survives every reload and can sit forgotten on
+  one device for weeks. When an owner reports admin controls "missing",
+  check for a stale preview before hunting the layout.
 - **Two CSS rules of equal specificity: source order wins.** An unconditional
   `display:none` placed after a media-query rule silently beats it. Put BOTH
   states behind mutually exclusive conditions instead.
@@ -814,6 +765,11 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
 
 - **A failing check is a wrong assertion surprisingly often.** Investigate
   before "fixing" the app; several rounds here have proved the test wrong.
+- **A PASSING check can carry the same blind spot as the code it guards.**
+  v07.127 asserted `element.hidden` — the property — and passed green while
+  the buttons were really on screen, because `[hidden]` was being overruled.
+  Assert the RENDERED result (computed display, a measured rect, real text),
+  never the intent the code just expressed.
 - **Say what was NOT done, and why.** Every round in the log that flagged a gap
   rather than silently working around it is why later rounds could pick it up.
 
