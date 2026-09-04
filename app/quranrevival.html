@@ -797,13 +797,26 @@
      not about switching this one screen to a different colour language than
      the rest of Quran Study. */
   #qcrPanel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; color: #F2E8D5; font-family: 'Inter', sans-serif; }
+  /* 4 Sep 2026 one-bar round -- `nowrap`, deliberately, where this bar used
+     to wrap: with the buttons gone into the palette there are only ever
+     three children (two selects and a 26px toggle), and `flex: 1 1 0` +
+     `min-width: 0` lets the selects shrink as far as they must rather than
+     dropping the toggle onto a second row. That is what makes "one bar" a
+     guarantee at every width instead of a hope. */
   #qcrLevelBar {
-    flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+    flex: 0 0 auto; display: flex; flex-wrap: nowrap; align-items: center; gap: 0.4rem;
     padding: 0.6rem 0.7rem; background: #1B2A41; border-radius: 12px 12px 0 0;
     border: 1px solid rgba(201,162,75,0.3); border-bottom: none;
   }
-  #qcrLevelSelect {
-    flex: 1 1 auto; min-width: 0; font-size: 0.82rem; padding: 0.35rem 0.4rem; border-radius: 6px;
+  /* An EQUAL share each (`flex: 1 1 0`), deliberately, and it was measured
+     both ways before being settled: sizing by content instead
+     (`flex: 1 1 auto`) hands each select its own longest option's width as
+     a starting point, so the Names field -- 100+ long options -- swallowed
+     the row while the Dual field, which holds one short placeholder until a
+     collection exists, was squeezed to 90px even on a 1280px screen. An
+     equal share is what actually keeps three fields legible. */
+  #qcrLevelBar > select {
+    flex: 1 1 0; min-width: 0; font-size: 0.82rem; padding: 0.35rem 0.4rem; border-radius: 6px;
     border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5;
   }
   #qcrLevelManageActions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
@@ -819,6 +832,40 @@
     border-radius: 999px; padding: 0.28rem 0.85rem; font-size: 0.72rem; font-weight: 700; cursor: pointer; flex-shrink: 0;
   }
   .qcr-manage-toggle.on { background: #C9A24B; color: #241a06; border-color: #C9A24B; }
+
+  /* 4 Sep 2026 one-bar round -- the ⋯ palette both the QCR and the Asma
+     level bars now hang every one of their buttons off (js/bar-palette.js
+     owns the open/close). Anchored right:0 off its own wrap and capped
+     against the viewport, the "sit clear of the screen edge" treatment this
+     project's other narrow-bar dropdowns already carry -- the toggle sits at
+     the bar's right end, so a left-growing card is the only one that can
+     stay on screen at 320px. Light card on purpose: it reuses the same
+     white .text-size-popover look the wheel text-size sliders inside it
+     already have, rather than putting a second colour language on one
+     dropdown. */
+  .bar-palette-wrap { position: relative; flex: 0 0 auto; }
+  .bar-palette {
+    display: none; position: absolute; top: 2rem; right: 0; z-index: 12;
+    background: #fff; border: 1px solid #ddd; border-radius: 0.5rem;
+    box-shadow: 0 10px 26px rgba(20,30,60,0.25);
+    width: 15rem; max-width: calc(100vw - 2rem); box-sizing: border-box;
+    padding: 0.5rem 0.55rem; color: #222;
+  }
+  .bar-palette.open { display: block; }
+  /* The buttons inside keep their own look, but on a light ground: the
+     icon buttons' own dark-on-dark palette would be invisible here. */
+  .bar-palette .qcr-icon-btn { background: #f4f1e8; border-color: #d8d2c2; color: #3a3a3a; }
+  .bar-palette .qcr-icon-btn:hover { border-color: #C9A24B; }
+  .bar-palette .qcr-archived-toggle { color: #555; }
+  .bar-palette .qcr-manage-toggle { color: #1F3A6E; border-color: #c9c2ae; background: #f4f1e8; width: 100%; }
+  .bar-palette .qcr-manage-toggle.on { background: #C9A24B; color: #241a06; border-color: #C9A24B; }
+  .bar-palette #qcrLevelManageActions,
+  .bar-palette #asmaXLevelManageActions { margin-top: 0.45rem; }
+  .bar-palette-divider { height: 1px; background: #eee; margin: 0.5rem 0 0.35rem; }
+  /* The palette is the only thing on either bar that opens downward over
+     the wheel, so it must sit above it -- #qcrMain/#asmaXMain both clip
+     their own overflow, which is why the palette lives in the BAR (outside
+     that box) rather than anywhere inside the panes below. */
 
   /* Mobile/tablet: wheel first (this app's own convention for a stacked
      wheel+list -- Approach and the Quran-structure Explore wheel both put
@@ -837,11 +884,12 @@
     flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 0.7rem;
     padding: 1.1rem 0.9rem; border-top: 1px solid rgba(201,162,75,0.2);
   }
-  /* 28 Aug 2026: the Approach picker mirror sits above the wheel, same
-     width family as #qcrLevelSelect above but capped so it doesn't stretch
-     edge-to-edge on a wide desktop pane. */
+  /* 28 Aug 2026: the Approach picker mirror. 4 Sep 2026: it moved off its
+     own row above the wheel and into #qcrLevelBar, where the rule above
+     sizes it -- this class now only carries the colours, so the select
+     still looks itself if it is ever mounted anywhere else. */
   .qcr-approach-select {
-    width: min(100%, 280px); font-size: 0.8rem; padding: 0.35rem 0.4rem; border-radius: 6px;
+    font-size: 0.8rem; padding: 0.35rem 0.4rem; border-radius: 6px;
     border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5;
   }
   /* Owner's own report (27 Aug 2026): on a phone/tablet the wheel's own
@@ -1013,24 +1061,54 @@
      so only the bar's own layout and the three selects' width need new
      rules here. */
   #asmaXPanel { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; color: #F2E8D5; font-family: 'Inter', sans-serif; }
+  /* 4 Sep 2026 one-bar round -- same treatment as #qcrLevelBar above, with
+     three selects instead of two: `nowrap` plus `flex: 1 1 0` is what keeps
+     Group/Names/Dual Names and the ⋯ toggle on ONE line at every width,
+     where `flex: 1 1 9rem` used to drop them onto two or three rows on a
+     phone. The three share the row equally; a name too long for its share
+     is ellipsised by the select itself, which is why the three field names
+     were shortened to Group/Names/Dual Names in the same round. */
   #asmaXLevelBar {
-    flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+    flex: 0 0 auto; display: flex; flex-wrap: nowrap; align-items: center; gap: 0.35rem;
     padding: 0.6rem 0.7rem; background: #1B2A41; border-radius: 12px 12px 0 0;
     border: 1px solid rgba(201,162,75,0.3); border-bottom: none;
   }
-  #asmaXLevelBar select {
-    flex: 1 1 9rem; min-width: 0; font-size: 0.8rem; padding: 0.35rem 0.4rem; border-radius: 6px;
+  /* An equal third each, same reasoning as #qcrLevelBar's own rule above. */
+  #asmaXLevelBar > select {
+    flex: 1 1 0; min-width: 0; font-size: 0.78rem; padding: 0.35rem 0.3rem; border-radius: 6px;
     border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5;
   }
+  /* Phones -- three fields, a button, and one bar. MEASURED, because a
+     <select> ellipsises its own label silently and this project has been
+     caught by exactly that before: at the ordinary size an equal third is
+     96px at 390px while the longest of the three field names ("Dual Names")
+     needs 101px, so it was being cut with nothing on screen saying so. A
+     smaller label and tighter padding is what buys those pixels back; the
+     numbers either side of this were re-measured, not eyed. */
+  @media (max-width: 430px) {
+    #asmaXLevelBar { gap: 0.25rem; padding-left: 0.45rem; padding-right: 0.45rem; }
+    #asmaXLevelBar > select { font-size: 0.68rem; padding-left: 0.15rem; padding-right: 0.15rem; }
+  }
+  /* 320px -- below every viewport the harness runs, and the width where the
+     QCR bar's own two fields need the same treatment (an Approach name is
+     the longest thing either bar has to hold). Same floor, and the same kind
+     of fix, as this page's other 340px rule further up. */
+  @media (max-width: 340px) {
+    #qcrLevelBar { gap: 0.25rem; padding-left: 0.45rem; padding-right: 0.45rem; }
+    #qcrLevelBar > select { font-size: 0.72rem; padding-left: 0.2rem; padding-right: 0.2rem; }
+    /* And one more notch for the Asma bar, which carries three fields
+       rather than two: at 320px "Dual Names" still needed 87px against a
+       77px third at the 430px size above. */
+    #asmaXLevelBar { gap: 0.15rem; padding-left: 0.3rem; padding-right: 0.3rem; }
+    #asmaXLevelBar > select { font-size: 0.6rem; }
+  }
   #asmaXLevelManageActions { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-  /* 3 Sep 2026 resize round -- reuses text-size.js's own .text-size-wrap/
-     .text-size-popover look (js/asma-wheel-text.js), which anchors right:0
-     off ITS OWN button. #asmaXLevelBar can wrap that button anywhere along
-     its own row (it's a flex-wrap bar, not a fixed-width one), so a plain
-     max-width safety net is added here rather than assumed unnecessary --
-     the same "calc(100vw - Npx)" shape this project's other narrow-bar
-     popovers already use. */
-  #asmaXLevelBar [data-awtext-popover] { max-width: calc(100vw - 2rem); box-sizing: border-box; }
+  /* 3 Sep 2026 resize round -- the wheel text-size sliders reuse
+     text-size.js's own .text-size-* look (js/asma-wheel-text.js). 4 Sep
+     2026: those rows live INSIDE the bar's own ⋯ palette now rather than
+     behind an A± button of their own, so the width safety net that used to
+     sit on their popover moved onto .bar-palette below, which is the thing
+     with an edge to run past. */
   #asmaXMain {
     flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column-reverse; gap: 0;
     background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%);
@@ -1140,18 +1218,18 @@
      scoped so both are usable from the Explore panel's own Manage mode AND
      -- the attach popover only -- from the Read/Note view's new "attach
      this āyah" button, which sits outside #asmaXPanel entirely. */
-  #asmaXEditOverlay, #asmaXAttachOverlay {
+  #asmaXEditOverlay, #asmaXAttachOverlay, #asmaXGroupsOverlay {
     display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 950;
     align-items: center; justify-content: center; padding: 1rem;
   }
-  #asmaXEditOverlay.open, #asmaXAttachOverlay.open { display: flex; }
-  #asmaXEditCard, #asmaXAttachCard {
+  #asmaXEditOverlay.open, #asmaXAttachOverlay.open, #asmaXGroupsOverlay.open { display: flex; }
+  #asmaXEditCard, #asmaXAttachCard, #asmaXGroupsCard {
     position: relative; width: min(94vw, 30rem); max-height: 85vh; overflow-y: auto;
     background: #1B2A41; border: 1px solid rgba(201,162,75,0.35); border-radius: 12px;
     padding: 1.2rem 1.1rem; color: #F2E8D5; font-family: 'Inter', sans-serif;
   }
-  #asmaXEditCard h3, #asmaXAttachCard h3 { margin: 0 0.4rem 0.8rem 0; color: #C9A24B; font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; }
-  #asmaXEditCloseBtn, #asmaXAttachCloseBtn { position: absolute; top: 0.7rem; right: 0.7rem; }
+  #asmaXEditCard h3, #asmaXAttachCard h3, #asmaXGroupsCard h3 { margin: 0 0.4rem 0.8rem 0; color: #C9A24B; font-family: 'Cormorant Garamond', serif; font-size: 1.25rem; }
+  #asmaXEditCloseBtn, #asmaXAttachCloseBtn, #asmaXGroupsCloseBtn { position: absolute; top: 0.7rem; right: 0.7rem; }
   #asmaXEditBody { display: flex; flex-direction: column; gap: 0.6rem; }
   #asmaXEditBody label { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.78rem; color: #9aa7be; }
   #asmaXEditBody input[type="text"], #asmaXEditBody textarea {
@@ -1167,10 +1245,18 @@
     border: 1px solid rgba(201,162,75,0.4); background: #13192a; color: #F2E8D5; font-family: inherit; margin-bottom: 0.6rem;
   }
   #asmaXAttachNewNameBtn { width: 100%; box-sizing: border-box; margin-bottom: 0.6rem; font-size: 0.82rem; }
-  #asmaXAttachList { max-height: 40vh; overflow-y: auto; border: 1px solid rgba(201,162,75,0.2); border-radius: 8px; padding: 0.4rem 0.6rem; }
+  #asmaXAttachList, #asmaXGroupsList { max-height: 40vh; overflow-y: auto; border: 1px solid rgba(201,162,75,0.2); border-radius: 8px; padding: 0.4rem 0.6rem; }
   .asmaX-attach-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; font-size: 0.82rem; border-bottom: 1px solid rgba(255,255,255,0.06); }
   .asmaX-attach-row:last-child { border-bottom: none; }
   .asmaX-attach-row .asmaX-attach-num { color: #8fa0c2; font-size: 0.72rem; min-width: 2rem; }
+  /* 4 Sep 2026 -- the Name screen's own "which groups is this Name in"
+     picker (#asmaXGroupsOverlay). Reuses the attach overlay's own card and
+     row look above verbatim; only the kind badge beside each collection
+     (Group vs Dual) is its own. */
+  .asmaX-groups-kind { margin-left: auto; font-size: 0.66rem; font-weight: 600; padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+  .asmaX-groups-kind.group { background: rgba(201,162,75,0.22); color: #C9A24B; }
+  .asmaX-groups-kind.dual { background: rgba(91,132,196,0.22); color: #a9c3ec; }
+  #asmaXGroupsIntro { font-size: 0.78rem; color: #9aa7be; margin: 0 0 0.6rem; }
   .asma-poster {
     width: 300px; aspect-ratio: 210 / 297;
     background: radial-gradient(circle at 50% 8%, #164f4c 0%, #0b3a3a 55%, #072423 100%);
@@ -2585,15 +2671,43 @@
                item list (left on a wide screen) beside its wheel (right) --
                not a separate "list of collections" screen to drill into. -->
           <div id="qcrPanel" hidden>
+            <!-- 4 Sep 2026 one-bar round -- the owner's own ask: "QCR. Make
+                 it one bar... 2 pull-down n one combined button for all
+                 those button, all In one bar. (Only one stuff drops down at
+                 a time, they can take entire space, but the button don't
+                 need that much space)". So: the two DROPDOWNS (which
+                 collection, which Approach) take the whole width between
+                 them, and every BUTTON that used to spend a second row of
+                 its own is behind one ⋯ palette (js/bar-palette.js). The
+                 Approach picker moved up here from above the wheel, where
+                 it was a third stacked row; the manage buttons kept their
+                 ids and their once-wired handlers -- this is a MOVE, not a
+                 rewrite, and the palette's own body is static markup for
+                 exactly that reason (pressing Manage re-renders the bar,
+                 which must never blow the open palette away). -->
             <div id="qcrLevelBar">
               <select id="qcrLevelSelect" aria-label="Collection"></select>
-              <span id="qcrLevelManageActions" hidden>
-                <button type="button" class="qcr-icon-btn" id="qcrRenameLevelBtn" title="Rename">✎</button>
-                <button type="button" class="qcr-icon-btn danger" id="qcrArchiveLevelBtn" title="Archive">🗄</button>
-                <button type="button" class="qcr-icon-btn" id="qcrAddLevelBtn" title="Add collection">+</button>
-                <label class="qcr-archived-toggle"><input type="checkbox" id="qcrShowArchivedToggle"> Show archived</label>
-              </span>
-              <button type="button" class="qcr-manage-toggle" id="qcrManageToggleBtn">Manage</button>
+              <!-- 28 Aug 2026: "enable the Approaches on the Wheel at the
+                   QCR view" -- a mirror of the canonical Approach picker
+                   (trackableSelect), same shared source of truth as the
+                   Ayah Note screen's own toggle (round 32/34). Compatible
+                   with, not a rival to, the main Mastery Wheel: both read
+                   the same currentTrackableId, so picking one here also
+                   changes what the landing wheel and Study options show,
+                   exactly like every other Approach picker already does. -->
+              <select id="qcrApproachSelect" class="qcr-approach-select" title="Choose an Approach" aria-label="Choose an Approach"></select>
+              <div class="bar-palette-wrap" data-bar-palette-wrap="qcr">
+                <button type="button" class="qcr-icon-btn bar-palette-toggle" id="qcrPaletteBtn" data-bar-palette-toggle="qcr" title="More" aria-label="More" aria-haspopup="true" aria-expanded="false">⋯</button>
+                <div class="bar-palette" data-bar-palette="qcr">
+                  <button type="button" class="qcr-manage-toggle" id="qcrManageToggleBtn">Manage</button>
+                  <span id="qcrLevelManageActions" hidden>
+                    <button type="button" class="qcr-icon-btn" id="qcrRenameLevelBtn" title="Rename">✎</button>
+                    <button type="button" class="qcr-icon-btn danger" id="qcrArchiveLevelBtn" title="Archive">🗄</button>
+                    <button type="button" class="qcr-icon-btn" id="qcrAddLevelBtn" title="Add collection">+</button>
+                    <label class="qcr-archived-toggle"><input type="checkbox" id="qcrShowArchivedToggle"> Show archived</label>
+                  </span>
+                </div>
+              </div>
             </div>
             <div id="qcrMain">
               <div id="qcrListPane">
@@ -2605,15 +2719,10 @@
                 <button type="button" class="list-collapse-btn" id="qcrListCollapseBtn" title="Collapse list" aria-label="Collapse list" aria-pressed="false"></button>
               </div>
               <div id="qcrWheelPane">
-                <!-- 28 Aug 2026: "enable the Approaches on the Wheel at the
-                     QCR view" -- a mirror of the canonical Approach picker
-                     (trackableSelect), same shared source of truth as the
-                     Ayah Note screen's own toggle (round 32/34). Compatible
-                     with, not a rival to, the main Mastery Wheel: both read
-                     the same currentTrackableId, so picking one here also
-                     changes what the landing wheel and Study options show,
-                     exactly like every other Approach picker already does. -->
-                <select id="qcrApproachSelect" class="qcr-approach-select" title="Choose an Approach" aria-label="Choose an Approach"></select>
+                <!-- 4 Sep 2026 one-bar round: #qcrApproachSelect used to sit
+                     here, above the wheel, as a row of its own -- it is in
+                     #qcrLevelBar now, beside the collection picker, which is
+                     one of the two rows that round reclaims. -->
                 <!-- 28 Aug 2026: "I want this wheel to be resizable by me" --
                      a drag handle on the wheel's own corner. 2 Sep 2026:
                      generalized to all 8 corners/edges (see wheel-resize.js
@@ -2662,28 +2771,49 @@
                tenant document, so an edit here shows there too and vice
                versa). -->
           <div id="asmaXPanel" hidden>
+            <!-- 4 Sep 2026 one-bar round -- the owner's own ask: "Asma Main
+                 Wheel Screen: Field names change to Group, Names, Dual Names
+                 and then all buttons combined in a pallette under in one
+                 button. all In one bar." The three dropdowns keep the width;
+                 every button (Manage and its own five icon actions, plus the
+                 wheel text-size sliders, which used to carry a second A±
+                 button of their own) is behind one ⋯ palette
+                 (js/bar-palette.js). Manage and the icon actions kept their
+                 ids and their once-wired handlers -- a MOVE, not a rewrite --
+                 and the palette's own body is static markup so that pressing
+                 Manage, which re-renders the bar, can never blow the open
+                 palette away from under the reader. -->
             <div id="asmaXLevelBar">
               <!-- 30 Aug 2026 -- the owner's own order: Group, then Single,
                    then Dual. -->
               <select id="asmaXGroupSelect" aria-label="Group"></select>
-              <select id="asmaXSingleSelect" aria-label="Single Names"></select>
+              <select id="asmaXSingleSelect" aria-label="Names"></select>
               <select id="asmaXDualSelect" aria-label="Dual Names"></select>
-              <span id="asmaXLevelManageActions" hidden>
-                <button type="button" class="qcr-icon-btn" id="asmaXRenameLevelBtn" title="Rename">✎</button>
-                <button type="button" class="qcr-icon-btn danger" id="asmaXArchiveLevelBtn" title="Archive">🗄</button>
-                <button type="button" class="qcr-icon-btn" id="asmaXAddLevelBtn" title="Add collection">+</button>
-                <button type="button" class="qcr-icon-btn" id="asmaXNewNameBtn" title="Add Name">+N</button>
-                <button type="button" class="qcr-icon-btn" id="asmaXAttachRefBtn" title="Attach a reference to several Names">🔗</button>
-                <label class="qcr-archived-toggle"><input type="checkbox" id="asmaXShowArchivedToggle"> Show archived</label>
-              </span>
-              <button type="button" class="qcr-manage-toggle" id="asmaXManageToggleBtn">Manage</button>
-              <!-- 3 Sep 2026 resize round -- "enable me to resize the [Arabic]
-                   names myself" / "enable me to resize and wrapping the texts
-                   ... for groups as well." Always visible (not a Manage-mode
-                   action -- this is a personal display preference, same as
-                   the Read screen's own text-size button), filled in once by
-                   js/asma-wheel-text.js. -->
-              <span id="asmaXWheelTextSlot"></span>
+              <div class="bar-palette-wrap" data-bar-palette-wrap="asmax">
+                <button type="button" class="qcr-icon-btn bar-palette-toggle" id="asmaXPaletteBtn" data-bar-palette-toggle="asmax" title="More" aria-label="More" aria-haspopup="true" aria-expanded="false">⋯</button>
+                <div class="bar-palette" data-bar-palette="asmax">
+                  <button type="button" class="qcr-manage-toggle" id="asmaXManageToggleBtn">Manage</button>
+                  <span id="asmaXLevelManageActions" hidden>
+                    <button type="button" class="qcr-icon-btn" id="asmaXRenameLevelBtn" title="Rename">✎</button>
+                    <button type="button" class="qcr-icon-btn danger" id="asmaXArchiveLevelBtn" title="Archive">🗄</button>
+                    <button type="button" class="qcr-icon-btn" id="asmaXAddLevelBtn" title="Add collection">+</button>
+                    <button type="button" class="qcr-icon-btn" id="asmaXNewNameBtn" title="Add Name">+N</button>
+                    <button type="button" class="qcr-icon-btn" id="asmaXAttachRefBtn" title="Attach a reference to several Names">🔗</button>
+                    <label class="qcr-archived-toggle"><input type="checkbox" id="asmaXShowArchivedToggle"> Show archived</label>
+                  </span>
+                  <div class="bar-palette-divider"></div>
+                  <!-- 3 Sep 2026 resize round -- "enable me to resize the
+                       [Arabic] names myself" / "enable me to resize and
+                       wrapping the texts ... for groups as well." NOT a
+                       Manage-mode action (a personal display preference,
+                       same as the Read screen's own text-size control), so
+                       it sits below the divider, outside the hidden manage
+                       span -- available to every reader whether or not they
+                       can manage anything. Filled in once by
+                       js/asma-wheel-text.js. -->
+                  <span id="asmaXWheelTextSlot"></span>
+                </div>
+              </div>
             </div>
             <div id="asmaXMain">
               <div id="asmaXListPane">
@@ -3075,6 +3205,31 @@
     </div>
   </div>
 
+  <!-- 4 Sep 2026 -- the owner's own ask on the Asma Name screen: "Enable a
+       button at the markup space, to move the Name under a different group
+       or place in multiple group." Both halves are the same question asked
+       once -- which collections does this Name belong to -- so this is a
+       tick list over every live Group and Dual-Name collection rather than
+       a "move to…" picker (which could only ever express the first half)
+       plus a separate "add to…" one. Untick one and tick another and the
+       Name has MOVED; tick several and it is in several. The per-row
+       "Move to…" select on the Names list is untouched and still there:
+       that one acts on a Name in the context of the group being browsed,
+       this one acts on the Name itself. -->
+  <div id="asmaXGroupsOverlay">
+    <div id="asmaXGroupsCard">
+      <button type="button" id="asmaXGroupsCloseBtn" class="qcr-icon-btn" aria-label="Close">&times;</button>
+      <h3 id="asmaXGroupsTitle"></h3>
+      <p id="asmaXGroupsIntro"></p>
+      <div id="asmaXGroupsList"></div>
+      <p class="hint" id="asmaXGroupsMsg" style="display:none;"></p>
+      <div class="asmaX-edit-actions">
+        <button type="button" id="asmaXGroupsSaveBtn">Save</button>
+        <button type="button" class="secondary" id="asmaXGroupsCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module">
     import { auth, db } from "./js/firebase-init.js";
     import {
@@ -3149,7 +3304,12 @@
     } from "./js/prefs.js";
     import { wireWheelResize } from "./js/wheel-resize.js";
     import { renderTextSizeButtonHtml } from "./js/text-size.js";
-    import { renderAsmaWheelTextButtonHtml, onAsmaWheelTextScaleChange, getAsmaWheelLabelScale } from "./js/asma-wheel-text.js";
+    import { renderAsmaWheelTextRowsHtml, onAsmaWheelTextScaleChange, getAsmaWheelLabelScale } from "./js/asma-wheel-text.js";
+    // 4 Sep 2026 one-bar round -- imported for its side effect (one delegated
+    // document listener, wired at module load) plus closeAllBarPalettes(),
+    // which the panel-closing paths below call so a palette can never be
+    // left open over a screen the reader has navigated away from.
+    import { closeAllBarPalettes } from "./js/bar-palette.js";
     import {
       taglinesFrom, taglineSettingsFrom, taglineText, pickTagline,
       readTaglineState, writeTaglineState, TAGLINE_SETTING_DEFAULTS,
@@ -3566,6 +3726,19 @@
     const asmaXAttachSaveBtn = document.getElementById("asmaXAttachSaveBtn");
     const asmaXAttachCancelBtn = document.getElementById("asmaXAttachCancelBtn");
     const asmaXAttachCloseBtn = document.getElementById("asmaXAttachCloseBtn");
+
+    // 4 Sep 2026 -- "move the Name under a different group or place in
+    // multiple group": one tick list over every live collection.
+    const asmaXGroupsOverlayEl = document.getElementById("asmaXGroupsOverlay");
+    const asmaXGroupsTitleEl = document.getElementById("asmaXGroupsTitle");
+    const asmaXGroupsIntroEl = document.getElementById("asmaXGroupsIntro");
+    const asmaXGroupsListEl = document.getElementById("asmaXGroupsList");
+    const asmaXGroupsMsgEl = document.getElementById("asmaXGroupsMsg");
+    const asmaXGroupsSaveBtn = document.getElementById("asmaXGroupsSaveBtn");
+    const asmaXGroupsCancelBtn = document.getElementById("asmaXGroupsCancelBtn");
+    const asmaXGroupsCloseBtn = document.getElementById("asmaXGroupsCloseBtn");
+    let asmaXGroupsNumber = null;
+    let asmaXGroupsChecked = new Set();
 
     const taglineStripEl = document.getElementById("taglineStrip");
     const globalBannerEl = document.getElementById("globalBanner");
@@ -4979,7 +5152,14 @@
       // Compatible by construction: it just re-pools qcrItemStatus() against
       // the newly-picked Approach, the same way every other consumer here
       // re-renders against currentTrackableId rather than owning a copy of it.
-      else if (stageView === "explore" && exploreMode === "qcr" && qcrCurrentId) renderQcrCollectionView();
+      else if (stageView === "explore" && exploreMode === "qcr") {
+        // 4 Sep 2026: the mirror lives on the level bar now, which is drawn
+        // whether or not a collection is selected -- so it is synced
+        // unconditionally, and only the list+wheel below it depends on there
+        // being a collection to draw.
+        syncQcrApproachSelect();
+        if (qcrCurrentId) renderQcrCollectionView();
+      }
       rememberLastSession();
     }
 
@@ -5222,6 +5402,11 @@
         tab.setAttribute("aria-expanded", "false");
         document.getElementById(tab.dataset.panel).hidden = true;
       });
+      // 4 Sep 2026 one-bar round -- a ⋯ palette on the QCR/Asma level bar is
+      // absolutely positioned, so hiding the panel under it takes it off
+      // screen but leaves it marked open; it would then reappear already
+      // open the next time that panel is shown. Closed with the panel.
+      closeAllBarPalettes(null);
     }
 
     async function openExplore() {
@@ -5906,6 +6091,11 @@
       explorePanelEl.hidden = mode !== "quran";
       qcrPanelEl.hidden = mode !== "qcr";
       asmaXPanelEl.hidden = mode !== "asma";
+      // 4 Sep 2026 one-bar round -- same reason closeAllPanels() does it: a
+      // ⋯ palette left open on the level bar of whichever mode is being
+      // hidden goes off screen still marked open, and would come back
+      // already open the next time that mode is chosen.
+      closeAllBarPalettes(null);
     }
     explorePaletteQuranBtn.addEventListener("click", () => { setExplorePalette("quran"); renderExplore(); });
     explorePaletteQcrBtn.addEventListener("click", () => openQcrPalette());
@@ -6066,7 +6256,7 @@
     // or a level switch). Changing either slider re-renders whichever Asma
     // level is CURRENTLY on screen, since a bigger/smaller font needs its
     // wrapped lines reflowed, not just repainted at the old wrap.
-    asmaXWheelTextSlot.innerHTML = renderAsmaWheelTextButtonHtml("asmax", { btnClass: "qcr-icon-btn" });
+    asmaXWheelTextSlot.innerHTML = renderAsmaWheelTextRowsHtml("asmax");
     onAsmaWheelTextScaleChange(() => {
       if (stageView === "explore" && exploreMode === "asma") renderAsmaXPanel();
     });
@@ -6153,7 +6343,20 @@
         custom dropdown -- simpler, native, and just as reachable on a
         phone), and -- owner/prime, Manage on -- rename/archive/add-a-
         collection for whichever one is currently selected. */
+    /** The Approach mirror's own options/value. Its own function since the
+        4 Sep 2026 one-bar round moved the picker OUT of the wheel pane and
+        into #qcrLevelBar: renderQcrCollectionView(), which used to fill it,
+        returns early when there is no collection selected at all, which
+        would have left the bar showing an empty second dropdown -- the bar
+        is always drawn, so what the bar holds has to be filled from the
+        bar's own render. */
+    function syncQcrApproachSelect() {
+      qcrApproachSelect.innerHTML = buildTrackableOptionsHtml();
+      if (currentTrackableId) qcrApproachSelect.value = currentTrackableId;
+    }
+
     function renderQcrLevelBar() {
+      syncQcrApproachSelect();
       const visible = qcrShowArchived ? [...qcrCollections].sort((a, b) => a.order - b.order) : activeCollections(qcrCollections);
       qcrLevelSelect.innerHTML = visible.length
         ? visible.map((c) => {
@@ -6323,12 +6526,20 @@
         }).join("");
         return `<option value=""${selectedId ? "" : " selected"}>${escapeHtml(placeholder)}</option>${opts}`;
       };
-      asmaXGroupSelect.innerHTML = collOptionsHtml(groups, t("All Groups"), asmaXKind === "group" ? asmaXGroupId : null);
-      asmaXDualSelect.innerHTML = collOptionsHtml(duals, t("All dual Names"), asmaXKind === "dual" ? asmaXGroupId : null);
+      // 4 Sep 2026 one-bar round -- "Field names change to Group, Names,
+      // Dual Names": the three placeholders were "All Groups"/"All Names"/
+      // "All dual Names", which is what the field is showing when nothing is
+      // picked, and with three selects now sharing one phone-width row the
+      // shorter word is what actually fits. All three keys already existed
+      // in bn.js, so this costs no new translation; the three "All …" keys
+      // stay there, unused, per this project's own rule for a string that
+      // stops being called.
+      asmaXGroupSelect.innerHTML = collOptionsHtml(groups, t("Group"), asmaXKind === "group" ? asmaXGroupId : null);
+      asmaXDualSelect.innerHTML = collOptionsHtml(duals, t("Dual Names"), asmaXKind === "dual" ? asmaXGroupId : null);
 
       const singleSelectedNumber = asmaXLevel === "refs" ? asmaXNumber : null;
       asmaXSingleSelect.innerHTML = [
-        `<option value=""${singleSelectedNumber ? "" : " selected"}>${escapeHtml(t("All Names"))}</option>`,
+        `<option value=""${singleSelectedNumber ? "" : " selected"}>${escapeHtml(t("Names"))}</option>`,
         ...names.map((entry) => {
           const label = `#${entry.number} ${asmaEntryDisplayName(entry)}${entry.ref ? ` — ${entry.ref}` : ""}`;
           return `<option value="${entry.number}"${entry.number === singleSelectedNumber ? " selected" : ""}>${escapeHtml(label)}</option>`;
@@ -6593,7 +6804,8 @@
         <button type="button" class="qcr-icon-btn" id="asmaXBackFromRefsBtn" title="${escapeHtml(t("Back"))}" aria-label="${escapeHtml(t("Back"))}">◂</button>
         <span class="qcr-list-title">${escapeHtml(asmaEntryDisplayName(entry))}</span>
         ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXEditThisNameBtn" title="${escapeHtml(t("Edit"))}" aria-label="${escapeHtml(t("Edit"))}">✎</button>` : ""}
-        ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXAttachRefThisNameBtn" title="${escapeHtml(t("Attach a reference to several Names"))}" aria-label="${escapeHtml(t("Attach a reference to several Names"))}">🔗</button>` : ""}`;
+        ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXAttachRefThisNameBtn" title="${escapeHtml(t("Attach a reference to several Names"))}" aria-label="${escapeHtml(t("Attach a reference to several Names"))}">🔗</button>` : ""}
+        ${canManage ? `<button type="button" class="qcr-icon-btn" id="asmaXGroupsThisNameBtn" title="${escapeHtml(t("Groups this Name is in"))}" aria-label="${escapeHtml(t("Groups this Name is in"))}">📂</button>` : ""}`;
       document.getElementById("asmaXBackFromRefsBtn")?.addEventListener("click", () => {
         asmaXNumber = null;
         asmaXLevel = asmaXGroupId ? "names" : "groups";
@@ -6601,6 +6813,10 @@
       });
       document.getElementById("asmaXEditThisNameBtn")?.addEventListener("click", () => openAsmaXEditOverlay({ mode: "edit", number: entry.number }));
       document.getElementById("asmaXAttachRefThisNameBtn")?.addEventListener("click", () => openAsmaXAttachPopover({ prefillNumbers: [entry.number] }));
+      // 4 Sep 2026 -- the owner's own marked-up empty space on this bar:
+      // "Enable a button at the markup space, to move the Name under a
+      // different group or place in multiple group."
+      document.getElementById("asmaXGroupsThisNameBtn")?.addEventListener("click", () => openAsmaXGroupsPopover(entry.number));
       asmaXWaysListContainer.innerHTML = `
         <div id="asmaXRefCard">
           <div class="asma-ref-arabic">${escapeHtml(entry.arabic)}</div>
@@ -7006,6 +7222,105 @@
       if (!(await asmaXPersist())) {
         asmaXExtraNames = prevExtra;
         asmaXRefOverrides = prevRefOv;
+        if (!asmaXPanelEl.hidden) renderAsmaXPanel();
+      }
+    });
+
+    /** "Move the Name under a different group or place in multiple group"
+        (4 Sep 2026) -- ONE question, asked once: which collections hold this
+        Name? Every live Group and Dual-Name collection is listed with a
+        checkbox, ticked where the Name is already an item. Unticking one and
+        ticking another is a move; ticking several is multiple membership.
+
+        Deliberately built on addItem/removeItem rather than moveItem: a move
+        is just the pair, and expressing it as the pair is what makes
+        multiple membership possible at all. Archived collections are left
+        out -- putting a Name into an archived group would hide it (I4 says
+        archive rather than destroy; it does not say keep filing things into
+        the archive). A Name already sitting in one is left there untouched
+        and shown as such, rather than silently dropped by a save. */
+    async function openAsmaXGroupsPopover(number) {
+      await ensureAsmaXDataLoaded();
+      const entry = asmaXResolve(number);
+      if (!entry) return;
+      asmaXGroupsNumber = number;
+      const unitKey = buildUnitKey.name(number);
+      asmaXGroupsChecked = new Set(
+        (asmaXCollections ?? []).filter((c) => (c.items ?? []).includes(unitKey)).map((c) => c.id)
+      );
+      asmaXGroupsTitleEl.textContent = t("Groups for {name}", { name: asmaEntryDisplayName(entry) });
+      asmaXGroupsIntroEl.textContent = t("Tick every group this Name belongs to. Untick one and tick another to move it.");
+      asmaXGroupsMsgEl.style.display = "none";
+      renderAsmaXGroupsList();
+      asmaXGroupsOverlayEl.classList.add("open");
+    }
+    function closeAsmaXGroupsPopover() {
+      asmaXGroupsOverlayEl.classList.remove("open");
+    }
+    function renderAsmaXGroupsList() {
+      const unitKey = asmaXGroupsNumber != null ? buildUnitKey.name(asmaXGroupsNumber) : null;
+      // An archived collection is offered only when this Name is actually in
+      // it -- so it can be taken OUT -- never as somewhere new to file it.
+      const rows = (asmaXCollections ?? [])
+        .filter((c) => c.status !== "archived" || (unitKey && (c.items ?? []).includes(unitKey)))
+        .sort((a, b) => (a.kind === b.kind ? a.order - b.order : a.kind === "group" ? -1 : 1));
+      asmaXGroupsListEl.innerHTML = rows.length
+        ? rows.map((c) => {
+            const kindLabel = c.kind === "dual" ? t("Dual Names") : t("Group");
+            const title = langText(c.title, getAppLang()) + (c.status === "archived" ? ` (${t("Archived")})` : "");
+            return `
+            <label class="asmaX-attach-row">
+              <input type="checkbox" data-asmax-groups-check="${escapeHtml(c.id)}" ${asmaXGroupsChecked.has(c.id) ? "checked" : ""}>
+              <span>${escapeHtml(title)}</span>
+              <span class="asmaX-groups-kind ${c.kind === "dual" ? "dual" : "group"}">${escapeHtml(kindLabel)}</span>
+            </label>`;
+          }).join("")
+        : `<p class="hint">${escapeHtml(t("No collections yet."))}</p>`;
+      asmaXGroupsListEl.querySelectorAll("[data-asmax-groups-check]").forEach((box) => {
+        box.addEventListener("change", () => {
+          const id = box.dataset.asmaxGroupsCheck;
+          if (box.checked) asmaXGroupsChecked.add(id); else asmaXGroupsChecked.delete(id);
+        });
+      });
+    }
+    asmaXGroupsCancelBtn.addEventListener("click", closeAsmaXGroupsPopover);
+    asmaXGroupsCloseBtn.addEventListener("click", closeAsmaXGroupsPopover);
+    asmaXGroupsOverlayEl.addEventListener("click", (e) => { if (e.target === asmaXGroupsOverlayEl) closeAsmaXGroupsPopover(); });
+    asmaXGroupsSaveBtn.addEventListener("click", async () => {
+      if (asmaXGroupsNumber == null) return;
+      const unitKey = buildUnitKey.name(asmaXGroupsNumber);
+      const prev = asmaXCollections;
+      const prevGroupId = asmaXGroupId;
+      const prevKind = asmaXKind;
+      const prevLevel = asmaXLevel;
+      let next = asmaXCollections ?? [];
+      for (const col of prev ?? []) {
+        const was = (col.items ?? []).includes(unitKey);
+        const now = asmaXGroupsChecked.has(col.id);
+        if (was === now) continue;
+        next = now ? asmaAddItemLocal(next, col.id, unitKey) : asmaRemoveItemLocal(next, col.id, unitKey);
+      }
+      asmaXCollections = next;
+      // The Name may have just left the very group being browsed -- going
+      // back to a list it is no longer in would be a dead end, so the
+      // browsing position falls back to a collection that really does hold
+      // it, or to the Groups level if none now does.
+      if (asmaXGroupId && !asmaXGroupsChecked.has(asmaXGroupId)) {
+        const home = next.find((c) => c.status !== "archived" && (c.items ?? []).includes(unitKey));
+        if (home) { asmaXGroupId = home.id; asmaXKind = home.kind; }
+        else { asmaXGroupId = null; asmaXKind = "group"; }
+      }
+      closeAsmaXGroupsPopover();
+      if (!asmaXPanelEl.hidden) renderAsmaXPanel();
+      if (!(await asmaXPersist())) {
+        // I15: safeWrite() has already told the reader; every piece of state
+        // the optimistic render moved goes back, `asmaXKind` included -- the
+        // fallback above can change it, so restoring only the id would leave
+        // the bar pointing a Group field at a dual collection.
+        asmaXCollections = prev;
+        asmaXGroupId = prevGroupId;
+        asmaXKind = prevKind;
+        asmaXLevel = prevLevel;
         if (!asmaXPanelEl.hidden) renderAsmaXPanel();
       }
     });
@@ -7420,8 +7735,7 @@
       // 28 Aug 2026: mirror trackableSelect's own options/value here too --
       // same shared currentTrackableId, so picking one on this screen also
       // moves the canonical picker and the main wheel, and vice versa.
-      qcrApproachSelect.innerHTML = buildTrackableOptionsHtml();
-      if (currentTrackableId) qcrApproachSelect.value = currentTrackableId;
+      syncQcrApproachSelect();
       const items = col.items.map((unitKey) => {
         const disp = qcrItemDisplay(unitKey);
         const statusId = qcrItemStatus(unitKey);

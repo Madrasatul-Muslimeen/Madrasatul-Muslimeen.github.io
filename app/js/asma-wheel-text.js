@@ -93,7 +93,7 @@ function setScale(kind, value) {
   cached[kind] = n;
   try { localStorage.setItem(KINDS[kind].key, String(n)); } catch {}
   applyToRoot();
-  syncOpenPopovers();
+  syncSliders();
   listeners.forEach((fn) => { try { fn(); } catch {} });
   return cached;
 }
@@ -148,52 +148,41 @@ function sliderRowHtml(idPrefix, kind, label, value) {
     </div>`;
 }
 
-/** Reuses text-size.js's own `.text-size-*` CSS classes verbatim (the same
- *  white-card popover look, already styled and already proven to fit a
- *  narrow bar) so nothing new needed adding to the stylesheet for the look
- *  itself -- only the data-awtext-* attributes are this module's own, kept
+/** JUST the control rows -- the "All" slider, the two per-scale sliders and
+ *  Reset -- with no button and no popover of their own around them. Added
+ *  4 Sep 2026, when the owner asked for the Asma level bar's buttons to be
+ *  "combined in a pallette under in one button": this control folded INTO
+ *  that palette rather than keeping a second ⋯-sized button of its own
+ *  beside it, so the rows now need to render on their own. Reuses
+ *  text-size.js's own `.text-size-*` CSS classes verbatim (the same
+ *  white-card look, already styled and already proven to fit a narrow bar)
+ *  -- only the data-awtext-* attributes are this module's own, kept
  *  deliberately distinct from text-size.js's data-text-size-* ones so the
  *  two modules' document-level listeners can never cross-fire on each
  *  other's controls. */
-export function renderAsmaWheelTextButtonHtml(idPrefix, { btnClass = "qcr-icon-btn" } = {}) {
-  const allRow = sliderRowHtml(idPrefix, "all", t("All"), DEFAULT_LABEL_SCALE);
-  const rows = [
-    sliderRowHtml(idPrefix, "ar", t("Arabic"), getAsmaWheelArScale()),
-    sliderRowHtml(idPrefix, "label", t("Wheel labels"), getAsmaWheelLabelScale()),
-  ].join("");
+export function renderAsmaWheelTextRowsHtml(idPrefix) {
   return `
-    <div class="text-size-wrap" data-awtext-wrap="${idPrefix}">
-      <button type="button" class="${escapeHtml(btnClass)}" data-awtext-toggle="${idPrefix}" title="${escapeHtml(t("Text size"))}" aria-label="${escapeHtml(t("Text size"))}" aria-haspopup="true" aria-expanded="false">A±</button>
-      <div class="text-size-popover" data-awtext-popover="${idPrefix}">
-        ${allRow}
-        <div class="text-size-divider"></div>
-        ${rows}
-        <button type="button" class="text-size-reset" data-awtext-reset="${idPrefix}">${escapeHtml(t("Reset"))}</button>
-      </div>
-    </div>`;
+    ${sliderRowHtml(idPrefix, "all", t("All"), DEFAULT_LABEL_SCALE)}
+    <div class="text-size-divider"></div>
+    ${sliderRowHtml(idPrefix, "ar", t("Arabic"), getAsmaWheelArScale())}
+    ${sliderRowHtml(idPrefix, "label", t("Wheel labels"), getAsmaWheelLabelScale())}
+    <button type="button" class="text-size-reset" data-awtext-reset="${escapeHtml(idPrefix)}">${escapeHtml(t("Reset"))}</button>`;
 }
 
-function closeAllAwTextPopovers(exceptId) {
-  document.querySelectorAll("[data-awtext-wrap]").forEach((wrap) => {
-    if (wrap.dataset.awtextWrap === exceptId) return;
-    wrap.querySelector("[data-awtext-popover]")?.classList.remove("open");
-    wrap.querySelector("[data-awtext-toggle]")?.setAttribute("aria-expanded", "false");
-  });
-}
-
-/** Every OTHER open popover's own sliders/percentages are refreshed after a
- *  change (there is at most one of these on screen at a time today, but
- *  cheap enough to do unconditionally and it's what keeps this honest if a
- *  second instance is ever added). */
-function syncOpenPopovers() {
-  document.querySelectorAll("[data-awtext-popover].open").forEach((pop) => {
-    for (const kind of Object.keys(KINDS)) {
-      const slider = pop.querySelector(`[data-awtext-slider="${kind}"]`);
-      const pct = pop.querySelector(`[data-awtext-pct="${kind}"]`);
-      if (slider) slider.value = String(cached[kind]);
-      if (pct) pct.textContent = pctText(cached[kind]);
-    }
-  });
+/** Every slider and percentage on the page is refreshed after a change --
+ *  what "All" and Reset move is the two STORED scales, so the two per-scale
+ *  rows have to follow them rather than sit at a stale position.
+ *  Deliberately queried across the whole document rather than inside an
+ *  open `[data-awtext-popover]`, which is what it used to do: since 4 Sep
+ *  2026 these rows live inside the Asma level bar's own palette
+ *  (bar-palette.js), a container this module knows nothing about and must
+ *  not have to. "All" itself is a GESTURE, not a stored value, so it is
+ *  never written back to -- only the KINDS keys are. */
+function syncSliders() {
+  for (const kind of Object.keys(KINDS)) {
+    document.querySelectorAll(`[data-awtext-slider="${kind}"]`).forEach((el) => { el.value = String(cached[kind]); });
+    document.querySelectorAll(`[data-awtext-pct="${kind}"]`).forEach((el) => { el.textContent = pctText(cached[kind]); });
+  }
 }
 
 // Wired ONCE, at module load -- delegation on `document`, the same
@@ -201,26 +190,10 @@ function syncOpenPopovers() {
 // and text-size.js's own listeners already use.
 if (typeof document !== "undefined") {
   document.addEventListener("click", (e) => {
-    const toggle = e.target.closest("[data-awtext-toggle]");
-    if (toggle) {
-      e.stopPropagation();
-      const wrap = toggle.closest("[data-awtext-wrap]");
-      const popover = wrap?.querySelector("[data-awtext-popover]");
-      if (popover) {
-        const willOpen = !popover.classList.contains("open");
-        closeAllAwTextPopovers(willOpen ? wrap.dataset.awtextWrap : null);
-        popover.classList.toggle("open", willOpen);
-        toggle.setAttribute("aria-expanded", String(willOpen));
-        if (willOpen) syncOpenPopovers();
-      }
-      return;
-    }
-    const resetBtn = e.target.closest("[data-awtext-reset]");
-    if (resetBtn) {
-      resetAsmaWheelTextScales();
-      return;
-    }
-    if (!e.target.closest("[data-awtext-popover]")) closeAllAwTextPopovers(null);
+    // Opening/closing whatever container these rows sit in is that
+    // container's own job (bar-palette.js since 4 Sep 2026) -- this module
+    // only ever owns the controls themselves.
+    if (e.target.closest("[data-awtext-reset]")) resetAsmaWheelTextScales();
   });
 
   document.addEventListener("input", (e) => {

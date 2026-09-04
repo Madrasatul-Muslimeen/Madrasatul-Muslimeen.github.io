@@ -9305,3 +9305,79 @@ rotated-text overlap. `tools/i18n-coverage.mjs` unchanged (no new strings
 -- pure SVG/rendering-logic and one CSS-adjacent JS change). No
 `firestore.rules`, schema or Firestore data changes -- nothing to deploy
 but the static files.
+
+v07.122 (3 Sep 2026, on Claude Code on the web) is **shell round -- the
+Asma ul Husna wheel's own text gets a real, user-adjustable resize
+control, for both the Names wheel's Arabic and the Groups wheel's own
+wrapped text.** The owner's own ask, taken literally rather than as a
+one-off hardcode: *"Make the Arabic Names on the wheel of 'Asma' 50%
+bigger in size. (actually enable me to resize the names myself). Enable
+me to resize and wrapping the texts on the wheel for groups as well."*
+
+**Two independent scales, not one.** `.wheel-seg-label` (every wrapped,
+non-Arabic line -- a Group's own title, and a Name's own display-language
+name underneath its Arabic) and a new `.wheel-seg-label-ar` (the Arabic
+Name only, drawn on the Names-level wheel's first slice line) are now two
+separately-sized CSS classes, each reading its own `var()` --
+`--asmax-wheel-ar-scale` (defaults to **1.5**, the owner's own literal
+"50% bigger") and `--asmax-wheel-label-scale` (defaults to 1, since only
+the CONTROL was asked for there, not a bigger starting size). Neither
+touches the plain outer ring number, `.wheel-seg-num`, or any OTHER wheel
+in the app -- QCR, the plain Explore Quran-structure wheel and the main
+Approach wheel never set `sliceLines` at all, so they're all unaffected.
+
+**New `js/asma-wheel-text.js`**, the same localStorage-only, `document`-
+delegated button+popover shape `text-size.js` already established for the
+Quran reading screens (an "All"/"Reset" pair plus one slider per scale,
+reusing that file's own `.text-size-*` CSS verbatim rather than styling a
+second look) -- no new startup read, no collection, no `firestore.rules`
+change (I9 untouched), since it only does anything once the Explore ->
+Asma ul Husna panel is actually opened. The button ("A±") sits in
+`#asmaXLevelBar`, always visible next to Manage rather than gated behind
+it -- resizing text is a personal display preference, not an editing
+action.
+
+**Resize and wrapping are the SAME ask, and had to be built together, not
+separately**: `mastery-wheel.js`'s `renderScopedWheel()` gained
+`entry.sliceArabicLines` (a leading-line count, default 0, so every other
+caller renders byte-for-byte as before) to mark which of its
+already-wrapped `sliceLines` get the Arabic class -- a tspan's own
+`dy="…em"` resolves against ITS OWN font-size, not the line before it, so
+the Arabic line growing never throws off the spacing around it.
+`wheelLabelMaxLen()` in `quranrevival.html` (the function that decides how
+many characters fit per wrapped line, derived from the slice's own real
+arc length) now reads `getAsmaWheelLabelScale()` instead of assuming the
+old fixed 9.1px baseline, so a bigger label scale genuinely re-wraps
+tighter and a smaller one can fit more per line -- changing either slider
+re-renders whichever Asma level is currently on screen (via a new
+`onAsmaWheelTextScaleChange()` subscription), since a font-size change
+alone would have left stale, already-wrapped tspans on screen.
+
+**Verified with a focused, un-checked-in Playwright script** -- 19 checks,
+all passing: the Groups wheel's own label defaulting to 9.1px; the Names
+wheel's first line carrying real Arabic text at 13.65px (9.1 × 1.5, the
+default "50% bigger") while its own name line stays at 9.1px; the
+popover's sliders starting at the right stored values; dragging the
+Arabic slider to 200% really growing the Arabic line to 18.2px, updating
+the popover's own percentage readout, and persisting to localStorage;
+dragging the Wheel-labels slider on the Groups level really growing a
+Group's own title text and re-wrapping rather than silently keeping the
+old wrap; Reset bringing both back to 1.5/1; QCR's own wheel confirmed to
+still carry zero slice-label elements (unaffected); and the whole control
+again in Bangla, with the toggle's own title and the new "Wheel labels"
+row label both translated. `tools/i18n-verify/layout.mjs` reports the
+landing page's own measured metrics (heading position, wheel width,
+Approach rows, dock gap, overflow) byte-for-byte IDENTICAL at all eight
+viewports in both banner states against a real `HEAD` shim -- the
+`getElementById` "missing after" list is the exact same 18 pre-existing,
+already-disclosed Manage-mode-only Asma/QCR false positives this project
+has carried since v07.86, confirmed by running the unmodified `HEAD`
+copy through the identical check and getting the identical list; target
+count 221 → 222, exactly the one new `asmaXWheelTextSlot` lookup, which
+resolves fine. **`tools/i18n-coverage.mjs`: one new string ("Wheel
+labels"), translated** (marked `// ?` for the owner's own eye) -- "Text
+size", "Arabic", "All" and "Reset" are all reused verbatim from their
+existing entries; `js/asma-wheel-text.js` joined the `quran` area
+alongside `js/mastery-wheel.js`/`js/text-size.js`, which already lived
+there. No `firestore.rules`, schema or Firestore data changes -- nothing
+to deploy but the static files.

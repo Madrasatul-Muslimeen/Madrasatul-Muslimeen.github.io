@@ -2024,6 +2024,17 @@ export const BN = {
   "All Names": "সব নাম", // ?
   "Dual Names": "জোড়া নাম", // ?
   "Single Names": "একক নাম", // ?
+
+  // 4 Sep 2026 one-bar round -- the QCR/Asma level bars folded every button
+  // behind one ⋯ palette, and the Asma Name screen gained a "which groups
+  // is this Name in" picker. ("Group", "Names" and "Dual Names" -- the three
+  // shortened field names -- and "Save"/"Cancel"/"Archived" are all reused
+  // from their existing entries above; the three "All …" placeholders they
+  // replace stay where they are, unused, per this project's own rule.)
+  "More": "আরও", // ?
+  "Groups this Name is in": "এই নামটি যেসব গ্রুপে আছে", // ?
+  "Groups for {name}": "{name}-এর গ্রুপসমূহ", // ?
+  "Tick every group this Name belongs to. Untick one and tick another to move it.": "এই নামটি যেসব গ্রুপে রাখতে চান সবগুলোতে টিক দিন। সরাতে চাইলে একটি থেকে টিক তুলে অন্যটিতে টিক দিন।", // ?
   "Add Name": "নাম যোগ করুন", // ?
   "Add dual-name collection": "জোড়া-নামের সংগ্রহ যোগ করুন", // ?
   "New dual-name collection:": "নতুন জোড়া-নামের সংগ্রহ:", // ?
