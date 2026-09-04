@@ -2,7 +2,7 @@
 
 Read this first, every session. It is the standing brief.
 
-**Current milestone: QuranRevival v07.124.** Cutover to production happened
+**Current milestone: QuranRevival v07.125.** Cutover to production happened
 9 August 2026 (v07.00) — the app is now live and real, not a beta. v07.01
 (same day) added a version badge next to the app name and a link to the
 old app from the shared nav bar. v07.02 (10 Aug 2026) is Phase 6: the
@@ -9620,6 +9620,122 @@ truncation of "Operation"/"Bookmark"), **coverage byte-identical at 1,547
 scanned / 48 missing, same in every area** -- this round adds no user-visible
 strings. No `firestore.rules`, schema or Firestore data changes -- nothing to
 deploy but the static files.
+
+v07.125 (4 Sep 2026, on Claude Code on the web) is **three owner asks from a
+marked-up landing-screen screenshot: the app reopens where it was left, a
+capsule above the wheel, and the corner resize handles lose their discs.**
+
+**(1) "Enable the app opens in the last settings/options in all view."** The
+Quran module now remembers, per browser, which stage view it was left on
+(Approach wheel / Read / Note / Explore) and the study state that view was
+showing -- surah, ayah, Study Unit and its range, the chosen Approach, and the
+Reading-view ticks -- and restores both on the next open. **Nothing here
+describes that state itself, and that is the point:** it stores and replays the
+exact object `captureQuranBookmarkSettings()`/`captureNoteBookmarkSettings()`
+already build for a bookmark's own "reopen where I was" (v07.66), read back
+through the same `applyQuranBookmarkSettings()`. One shape, two readers -- a
+field added to a bookmark's settings is picked up here for free, and the two
+can never drift into disagreeing about what "where I was" means.
+`getQuranLastSession()`/`setQuranLastSession()` in `prefs.js`, localStorage,
+the same additive shape every reading preference since round 18 has used: **no
+new collection and no `firestore.rules` change.** Two guards do the real work:
+`lastSessionReady` stays false until the boot sequence has finished restoring,
+so the restore -- which moves the surah, the ayah and the stage view on its way
+in -- can never overwrite the very thing it is reading; and the write is
+debounced (250ms), because one gesture calls `renderStudyScreen()` several
+times over, so a settled state costs one write rather than one per render.
+**An explicit deep link outranks a remembered place:** `?bookmark=`, `?goto=`
+and `?resume=` are all checked first and win outright -- someone following a
+link into a specific āyah must land there.
+
+**This DOES add to the startup path, conditionally, and is flagged per I9
+rather than slipped in.** Measured: a fresh browser, or one last left on the
+wheel, is **unchanged at 9 Firestore calls / 6 sequential round trips** on Quran
+Study, byte-identical to v07.124. A browser restoring into **Read or Note**
+pays **2 more calls (11)** -- the notes and bookmarks documents that
+`ensureAyahNoteDataLoaded()` fetches, i.e. exactly the two reads that same
+reader would have paid one tap later anyway, fired together as one wait, and
+fire-and-forget on the Read branch. If the owner would rather keep boot
+untouched in every case, the narrower version of this feature (restore the
+settings, always open on the wheel) is a one-line change to
+`restoreLastSession()`. **Deliberately NOT stored:** any full-screen state
+(`immersive-read` / `note-immersive` / `explore-immersive`) -- reopening the app
+already stripped of its banner, menu and dock would read as a broken page
+rather than a restored one. And **Explore restores as the SCREEN, not a
+position inside it**: `openExplore()` resets its own drill-down on every open
+by its own long-standing rule, and reversing that is its own decision, not one
+to slip in here. Scoped to the Quran module, which is where the owner was
+looking; the other nine study pages still restore by `?resume=`/the Continue
+strip only.
+
+**(2) The capsule above the wheel.** The owner's own wording: *"in the marked-up
+space, above the wheel, let appear a capsule like text 'Approach the Quran in
+30 ways' (as it is in the middle of the circle, 'Study ...'), push the wheel
+below."* No new element was needed -- `#wheelIntroSettled` already stood in
+exactly that slot and already said very nearly this ("Approach an Ayah in 30
+ways", v07.61). It is a gold pill now rather than an italic caption,
+deliberately the SAME gradient, radius and weight as the hub's own "Study
+Quran" button one size down, so the two read as one family; and it is **visible
+from first paint** instead of only after the intro button is tapped, because
+the state the owner's screenshot shows is the veiled, not-yet-tapped one.
+**Measured: it costs exactly one Approach row on phones** (390x844 6 -> 5,
+412x915 8 -> 7, 390x700 and 360x640 5 -> 4) **and nothing on tablet or desktop**
+(10 -> 10). That cost was named by the owner up front -- "it might show only 4
+ways (currently 5 ways showing)" -- so the row is the intended result, not a
+regression. Everything else on the landing page is byte-identical: same
+wheel-heading top (103px), same wheel width at every viewport, same 9px dock
+gap, no overflow. The old string stays in `bn.js`, unused, per this project's
+own rule for a string that stops being called.
+
+**(3) "Those marked-up little circles doesn't look good, make only the arrow
+appear, not the circle."** `.wheel-resize-handle-corner` was a 26px filled gold
+disc with a dark ring and a drop shadow, carrying the `⤡` glyph on the
+bottom-right corner only -- the other three were empty divs that showed purely
+because the disc did. The disc, ring and shadow are gone; **each corner now
+carries its own correctly-angled arrow** (`⤡` on the NW-SE diagonal, `⤢` on
+the NE-SW one) rather than three of them vanishing with the disc. **The 26px
+BOX is deliberately unchanged** -- it is the finger target, and shrinking it to
+the glyph's own ink would have made a phone-sized handle harder to grab while
+nobody asked for that. A text-shadow either side keeps the glyph legible over
+both the landing wheel's dark ground and `asma-study.html`'s pale pane, without
+painting a box back in. Applied to all four wheels that share this class family
+(the Mastery Wheel, Explore's Quran-structure wheel, QCR's and Asma ul Husna's).
+
+**Verified with a focused, un-checked-in Playwright script** (this project's own
+established practice) -- **26 checks, all passing**: the capsule's exact wording,
+its pill styling by computed style, its position proven above the wheel, and
+its presence before the intro is tapped; all four handles proven to carry an
+arrow with a transparent background, no border, no shadow and a 26px box, each
+glyph proven to match its own corner; a real Read session proven written to
+localStorage carrying the surah/ayah/unit actually on screen, and a reload
+proven to reopen on the Read view with the same surah, ayah, unit and reading
+ticks; a Note session proven to store its own `position` and reopen on the exact
+āyah it was noting; a browser that has never been here proven to still open on
+the wheel; and `?goto=2:255` proven to outrank the remembered place. **Two of
+its own first-run failures were WRONG ASSERTIONS, not defects** -- opening Read
+on a Ruku' lands on that ruku's own first āyah (round 17's rule), so an ayah
+picker moving 5 -> 1 is the app behaving; the check compares the stored value
+against what is actually on screen now. Also confirmed by real screenshot in
+both the veiled and tapped states, and in Bangla (the capsule reads
+"কুরআনকে ৩০ উপায়ে অধ্যয়ন করুন"), rather than trusting the coverage report -- which
+has been wrong about what it counts nine separate times on this project.
+
+**`layout.mjs` reports exactly the one intended change and nothing else** (the
+Approach row above; heading top, wheel width, dock gap and overflow all
+identical at all eight viewports in both banner states; `getElementById`
+targets 222 -> 221, exactly the retired `wheelIntroSettledEl` lookup, and the
+"missing" list is the same 18 pre-existing Manage-mode-only Asma/QCR ids this
+project has disclosed since v07.86). **`reading.mjs` READING SCREEN OK** at all
+eight viewports, **`panel.mjs` no wrapped bar and no truncated label**,
+**`navcheck.mjs` unchanged** (still only the pre-existing 320px English
+truncation of "Operation"/"Bookmark"), **coverage byte-identical at 1,547
+scanned / 48 missing in every area** -- the capsule is a clean 1-for-1 swap of
+the string it replaces -- and **`tools/perf/measure.mjs` identical to v07.124
+on every page measured**. **Two checked-in behaviour checks (43a, 43b) were
+UPDATED rather than worked around**, because this round deliberately changed
+what they asserted: the capsule is no longer hidden until the intro is tapped.
+No `firestore.rules`, schema or Firestore data changes -- nothing to deploy but
+the static files.
 
 
 ## What this is

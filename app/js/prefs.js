@@ -599,3 +599,62 @@ export function setWheelSize(id, px) {
   writeStored(wheelSizeKey(id), String(n));
   return n;
 }
+
+// ---------------------------------------------------------------------------
+// "Enable the app opens in the last settings/options in all view" (4 Sep
+// 2026) -- the Quran module's own last session: which stage view was open
+// (the Mastery Wheel / Read / Note / Explore) and the study state that view
+// was showing (surah, ayah, Study Unit + its range, the chosen Approach, and
+// the Reading-view ticks).
+//
+// Everything here ALREADY had a shape to store it in: quranrevival.html's own
+// captureQuranBookmarkSettings()/applyQuranBookmarkSettings() pair, built for
+// a bookmark's "reopen exactly where I was" (v07.66). So this stores that
+// same object rather than inventing a second, parallel description of the
+// same state -- one shape, two readers, and a field added to one is picked up
+// by the other for free.
+//
+// localStorage, like every reading preference since round 18: no new startup
+// read, no new collection, no firestore.rules change (I9 untouched). The
+// accepted trade is the same one v07.30 named for the app language -- it is
+// per BROWSER, so a phone and a tablet each remember their own last place.
+// (An account-wide sync would ride on userIndex the way v07.37's appLang
+// does; not built, since nobody has asked for it.)
+//
+// Deliberately NOT stored: any full-screen state (immersive-read /
+// note-immersive / explore-immersive). Those are gestures within a sitting,
+// and reopening the app already stripped of its own banner, menu and dock
+// would read as a broken page rather than a restored one.
+const QURAN_LAST_SESSION_KEY = "mm_quran_last_session";
+const LAST_SESSION_VIEWS = ["wheel", "read", "note", "explore"];
+
+/** The last stage view + study state this browser left the Quran module in,
+ *  or null if it has never been there (or the stored value is unreadable --
+ *  a corrupt entry must never wedge the page, so anything unparseable reads
+ *  as "no last session" and the app opens on the wheel, exactly as before
+ *  this existed). */
+export function getQuranLastSession() {
+  try {
+    const raw = localStorage.getItem(QURAN_LAST_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    if (!LAST_SESSION_VIEWS.includes(parsed.stageView)) return null;
+    return {
+      stageView: parsed.stageView,
+      settings: parsed.settings && typeof parsed.settings === "object" ? parsed.settings : null,
+      position: typeof parsed.position === "string" ? parsed.position : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function setQuranLastSession(session) {
+  if (!session || !LAST_SESSION_VIEWS.includes(session.stageView)) return;
+  writeStored(QURAN_LAST_SESSION_KEY, JSON.stringify({
+    stageView: session.stageView,
+    settings: session.settings ?? null,
+    position: session.position ?? null,
+  }));
+}

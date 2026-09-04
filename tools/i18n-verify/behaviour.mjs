@@ -4747,10 +4747,17 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
     ctaVisible: getComputedStyle(document.getElementById("wheelCtaBtn")).display !== "none",
     hubHidden: getComputedStyle(document.getElementById("wheelHubPickers")).display === "none",
     veiled: document.getElementById("wheelStageWrap").classList.contains("wheel-veiled"),
-    settledHidden: document.getElementById("wheelIntroSettled").hidden,
+    // 4 Sep 2026: this line used to be hidden until the intro was tapped.
+    // It is the owner's own gold capsule now ("Approach the Quran in 30
+    // ways"), asked for in exactly the state their screenshot showed --
+    // the veiled, not-yet-tapped one -- so it is visible from first paint.
+    // The check is updated rather than worked around: what it describes
+    // deliberately changed.
+    capsuleShown: !document.getElementById("wheelIntroSettled").hidden
+                  && document.querySelector(".wheel-intro-capsule")?.textContent.trim() === "Approach the Quran in 30 ways",
   }));
-  check("43a the wheel starts covered by the intro button, hub pickers hidden, settled caption hidden",
-        before.ctaVisible && before.hubHidden && before.veiled && before.settledHidden, JSON.stringify(before));
+  check("43a the wheel starts covered by the intro button, hub pickers hidden, the capsule already showing above it",
+        before.ctaVisible && before.hubHidden && before.veiled && before.capsuleShown, JSON.stringify(before));
 
   await page.click("#wheelCtaBtn");
   await page.waitForTimeout(150);
@@ -4758,10 +4765,10 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
     ctaHidden: getComputedStyle(document.getElementById("wheelCtaBtn")).display === "none",
     hubVisible: getComputedStyle(document.getElementById("wheelHubPickers")).display !== "none",
     veiled: document.getElementById("wheelStageWrap").classList.contains("wheel-veiled"),
-    settledShown: !document.getElementById("wheelIntroSettled").hidden,
+    capsuleShown: !document.getElementById("wheelIntroSettled").hidden,
   }));
-  check("43b tapping it hides the button, lifts the veil, and shows the settled caption -- one time, no way back",
-        after.ctaHidden && after.hubVisible && !after.veiled && after.settledShown, JSON.stringify(after));
+  check("43b tapping it hides the button and lifts the veil -- one time, no way back -- with the capsule still in place",
+        after.ctaHidden && after.hubVisible && !after.veiled && after.capsuleShown, JSON.stringify(after));
 
   // The hub pickers are MIRRORS (same shape as #readPickers, shell round
   // 22): changing one drives the canonical control, and the canonical

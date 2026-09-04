@@ -379,9 +379,29 @@
      max-width block above), untouched. */
   .wheel-stage-wrap { position: relative; display: flex; justify-content: center; align-self: stretch; }
   .wheel-veiled #wheelContainer svg { filter: blur(1.5px) brightness(0.4) saturate(0.55); transition: filter 0.25s ease; }
+  /* 4 Sep 2026, owner: "in the marked-up space, above the wheel, let appear
+     a capsule like text 'Approach the Quran in 30 ways' (as it is in the
+     middle of the circle, 'Study ...'), push the wheel below."
+     So this line -- which already stood in exactly that slot, and already
+     said very nearly this -- is a gold capsule now rather than an italic
+     caption, deliberately the SAME pill the hub's own "Study Quran" button
+     is (`.wheel-cta-btn`'s gradient, radius and weight), one size down so
+     the two read as the same family without competing. It is also visible
+     from first paint now instead of only after the intro button is tapped:
+     the owner asked for it in the state their screenshot shows, which is
+     the veiled, not-yet-tapped one.
+     It costs landing height and the owner accepted that cost up front
+     ("it might show only 4 ways (currently 5 ways showing)") -- so an
+     Approach row fewer here is the intended result, not a regression. */
   .wheel-intro-settled {
-    text-align: center; font-family: 'Cormorant Garamond', serif; font-style: italic;
-    color: #C9A24B; font-size: 0.92rem; margin: 0 0 0.2rem;
+    text-align: center; margin: 0 0 0.3rem; max-width: 100%;
+  }
+  .wheel-intro-capsule {
+    display: inline-block; max-width: 100%;
+    background: linear-gradient(180deg, #ecd49a, #C9A24B); color: #221904;
+    border-radius: 999px; padding: 0.3rem 0.95rem;
+    font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.84rem; line-height: 1.3;
+    box-shadow: 0 6px 16px -8px rgba(0,0,0,0.6);
   }
   .wheel-cta-btn {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4;
@@ -919,12 +939,27 @@
   .wheel-resize-handle {
     position: absolute; z-index: 5; touch-action: none; user-select: none;
   }
+  /* 4 Sep 2026, owner: "those marked-up little circles doesn't look good,
+     make only the arrow appear, not the circle." So the filled gold disc
+     (and its dark ring and drop shadow) is gone -- what is left is the
+     diagonal resize arrow itself, drawn straight onto the page. The BOX is
+     unchanged at 26px: it is the finger target, and shrinking it to the
+     glyph's own ink would have made a phone-sized handle harder to grab
+     while nobody asked for that. The other three corners were empty divs
+     that only ever showed because the disc did, so each carries its own
+     correctly-angled glyph now (⤡ on the NW-SE diagonal, ⤢ on the NE-SW
+     one) rather than becoming invisible the moment the disc went. */
   .wheel-resize-handle-corner {
-    width: 26px; height: 26px; border-radius: 50%; background: #C9A24B; color: #241a06;
-    border: 2px solid #13192a; display: flex; align-items: center; justify-content: center;
-    font-size: 14px; line-height: 1; padding: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    width: 26px; height: 26px; color: #C9A24B;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; line-height: 1; padding: 0;
+    /* The corners sit over the wheel's own dark ground on the landing
+       screen but over a pale pane on asma-study.html's light theme -- a
+       plain shadow either side of the glyph keeps it legible on both
+       without painting a box back in. */
+    text-shadow: 0 0 3px rgba(0,0,0,0.75), 0 0 1px rgba(255,255,255,0.35);
   }
-  .wheel-resize-handle-corner:hover, .wheel-resize-handle-corner:active { background: #ecd49a; }
+  .wheel-resize-handle-corner:hover, .wheel-resize-handle-corner:active { color: #ecd49a; }
   .wheel-resize-handle[data-wheel-resize="se"] { bottom: -6px; right: -6px; cursor: nwse-resize; }
   .wheel-resize-handle[data-wheel-resize="sw"] { bottom: -6px; left: -6px; cursor: nesw-resize; }
   .wheel-resize-handle[data-wheel-resize="ne"] { top: -6px; right: -6px; cursor: nesw-resize; }
@@ -2181,7 +2216,7 @@
                #wheelStageWrap wraps ONLY #wheelContainer (never the legend
                below it) so the button/pickers centre on the wheel itself,
                not on the taller wheel-col box. -->
-          <p id="wheelIntroSettled" class="wheel-intro-settled" hidden>Approach an Ayah in 30 ways</p>
+          <p id="wheelIntroSettled" class="wheel-intro-settled"><span class="wheel-intro-capsule">Approach the Quran in 30 ways</span></p>
           <div id="wheelStageWrap" class="wheel-stage-wrap wheel-veiled">
             <!-- 2 Sep 2026 -- "enable all wheels ... to be expandable from
                  any side": a drag-resize wrap around #wheelContainer alone
@@ -2192,9 +2227,9 @@
             <div id="wheelResizeWrap" class="wheel-resize-wrap">
               <div id="wheelContainer" class="wheel-resize-target">Loading&hellip;</div>
               <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="se" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</div>
-              <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="sw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
-              <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="ne" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
-              <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="nw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+              <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="sw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤢</div>
+              <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="ne" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤢</div>
+              <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="nw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</div>
               <div class="wheel-resize-handle" data-wheel-resize="n" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
               <div class="wheel-resize-handle" data-wheel-resize="s" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
               <div class="wheel-resize-handle" data-wheel-resize="e" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
@@ -2529,9 +2564,9 @@
               <div id="exploreWheelResizeWrap" class="wheel-resize-wrap">
                 <div id="exploreWheelContainer" class="wheel-resize-target">Loading&hellip;</div>
                 <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="se" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</div>
-                <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="sw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
-                <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="ne" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
-                <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="nw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="sw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤢</div>
+                <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="ne" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤢</div>
+                <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="nw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</div>
                 <div class="wheel-resize-handle" data-wheel-resize="n" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
                 <div class="wheel-resize-handle" data-wheel-resize="s" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
                 <div class="wheel-resize-handle" data-wheel-resize="e" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
@@ -2594,9 +2629,9 @@
                 <div id="qcrWheelResizeWrap" class="wheel-resize-wrap">
                   <div id="qcrWheelContainer" class="wheel-resize-target"></div>
                   <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="se" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</div>
-                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="sw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
-                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="ne" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
-                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="nw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="sw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤢</div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="ne" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤢</div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="nw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</div>
                   <div class="wheel-resize-handle" data-wheel-resize="n" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
                   <div class="wheel-resize-handle" data-wheel-resize="s" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
                   <div class="wheel-resize-handle" data-wheel-resize="e" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
@@ -2665,9 +2700,9 @@
                 <div id="asmaXWheelResizeWrap" class="wheel-resize-wrap">
                   <div id="asmaXWheelContainer" class="wheel-resize-target"></div>
                   <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="se" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</div>
-                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="sw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
-                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="ne" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
-                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="nw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="sw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤢</div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="ne" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤢</div>
+                  <div class="wheel-resize-handle wheel-resize-handle-corner" data-wheel-resize="nw" title="Drag to resize the wheel" aria-label="Drag to resize the wheel">⤡</div>
                   <div class="wheel-resize-handle" data-wheel-resize="n" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
                   <div class="wheel-resize-handle" data-wheel-resize="s" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
                   <div class="wheel-resize-handle" data-wheel-resize="e" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
@@ -3110,6 +3145,7 @@
       getSidewaysReading, setSidewaysReading,
       getWheelSize, setWheelSize,
       getAyahDisplayMode, setAyahDisplayMode,
+      getQuranLastSession, setQuranLastSession,
     } from "./js/prefs.js";
     import { wireWheelResize } from "./js/wheel-resize.js";
     import { renderTextSizeButtonHtml } from "./js/text-size.js";
@@ -3412,7 +3448,6 @@
     // Reused by layoutWheelHub() to measure Bismillah's own real one-line
     // width -- one canvas, not a new one per layout pass.
     const hubMeasureCtx = document.createElement("canvas").getContext("2d");
-    const wheelIntroSettledEl = document.getElementById("wheelIntroSettled");
     const readUnitTypeSelect = document.getElementById("readUnitTypeSelect");
     const readAyahSelect = document.getElementById("readAyahSelect");
     const readSurahSelect = document.getElementById("readSurahSelect");
@@ -4465,7 +4500,6 @@
       wheelCtaBtn.hidden = true;
       wheelHubPickers.hidden = false;
       wheelHubGraphic.hidden = false;
-      wheelIntroSettledEl.hidden = false;
       wheelStageWrapEl.classList.remove("wheel-veiled");
       layoutWheelHub(); // the hub was hidden (0-width) until now -- size its content for real
     });
@@ -4926,6 +4960,7 @@
       // the newly-picked Approach, the same way every other consumer here
       // re-renders against currentTrackableId rather than owning a copy of it.
       else if (stageView === "explore" && exploreMode === "qcr" && qcrCurrentId) renderQcrCollectionView();
+      rememberLastSession();
     }
 
     /** Brings the wheel hub's own Surah/Ayah pickers into line with the ones
@@ -5243,6 +5278,81 @@
         exploreFullscreenBtn.setAttribute("aria-pressed", "false");
         exploreFullscreenBtn.classList.remove("active");
       }
+      rememberLastSession();
+    }
+
+    // -----------------------------------------------------------------------
+    // "Enable the app opens in the last settings/options in all view"
+    // (4 Sep 2026) -- this browser reopens the Quran module on the view it
+    // was last left on, with that view's own study state already restored.
+    //
+    // Nothing here describes that state itself: it stores, and replays,
+    // exactly the object captureQuranBookmarkSettings()/captureNoteBookmark
+    // Settings() already build for a bookmark's "reopen where I was"
+    // (v07.66), through the same applyQuranBookmarkSettings() that reads it
+    // back. One shape, two readers -- a field added to a bookmark's own
+    // settings is picked up here for free, and the two can never drift into
+    // disagreeing about what "where I was" means.
+    //
+    // Two guards matter. `lastSessionReady` stays false until the boot
+    // sequence has finished restoring, so the restore itself -- which moves
+    // the surah, the ayah and the stage view on its way in -- can never
+    // overwrite the very thing it is reading. And the write is debounced,
+    // because renderStudyScreen() is called several times over in a single
+    // gesture (a unit-type change re-renders the screen, the wheel and the
+    // pickers); one localStorage write per settled state, not per render.
+    // -----------------------------------------------------------------------
+    let lastSessionReady = false;
+    let rememberLastSessionTimer = null;
+
+    function rememberLastSession() {
+      if (!lastSessionReady) return;
+      clearTimeout(rememberLastSessionTimer);
+      rememberLastSessionTimer = setTimeout(() => {
+        // The Note view carries its own scope, independent of the Read
+        // screen's own position (see noteScope's own comment), so it is the
+        // one view whose state is not captureQuranBookmarkSettings()'s.
+        const noting = stageView === "note" && noteScope;
+        setQuranLastSession({
+          stageView,
+          settings: noting ? captureNoteBookmarkSettings() : captureQuranBookmarkSettings(),
+          position: noting ? noteScopeCurrentUnitKey() : null,
+        });
+      }, 250);
+    }
+
+    /** Boot step, after the two query-string deep links. An explicit link is
+        a stronger instruction than a remembered place, so ?bookmark= /
+        ?goto= / ?resume= all win outright -- someone following a link into a
+        specific ayah must land there, not wherever this browser happened to
+        stop last time. Everything else is best-effort: a stored view whose
+        own data will not load simply leaves the app on the wheel, which is
+        exactly where it opened before this existed. */
+    async function restoreLastSession() {
+      const params = new URLSearchParams(location.search);
+      if (params.get("bookmark") || params.get("goto") || params.get("resume")) return;
+      const saved = getQuranLastSession();
+      if (!saved) return;
+      // position is applied by the branches below (only the Note view has
+      // one), never here -- applyQuranBookmarkSettings() would open the Note
+      // screen for it, which is right for a bookmark and wrong for someone
+      // who left the app on Read.
+      if (saved.settings) await applyQuranBookmarkSettings(saved.settings, null);
+      if (saved.stageView === "read") {
+        ensureAyahNoteDataLoaded(); // fire-and-forget, exactly as tabReadBtn's own click does
+        setStageView("read");
+        renderStudyScreen();
+      } else if (saved.stageView === "note" && saved.position) {
+        await openNoteView(saved.position);
+      } else if (saved.stageView === "explore") {
+        setStageView("explore");
+        // openExplore() resets its own drill-down to the whole-Quran level
+        // on every open, by its own long-standing rule -- so this restores
+        // the Explore SCREEN, not a remembered position inside it. Changing
+        // that rule is its own decision, not one to slip in here.
+        await openExplore();
+      }
+      // "wheel" needs nothing: it is already what the stage shows.
     }
 
     // -----------------------------------------------------------------------
@@ -8572,6 +8682,7 @@
         the Read screen's own position. */
     function renderNoteViewNow() {
       if (!noteScope || !currentSurahData) return;
+      rememberLastSession(); // the Note view's own scope is state worth reopening on (see rememberLastSession)
       const info = noteScopeUnitInfo();
       const unitKey = info.unitKey;
       const ref = info.label;
@@ -9625,6 +9736,10 @@
     }
 
     function renderStudyScreen() {
+      // Every surah/ayah/unit/tick change lands here -- the one call that covers
+      // them all for "reopen where I was". Debounced inside, so the several
+      // renders one gesture triggers still cost a single write.
+      rememberLastSession();
       if (!currentSurahData) return;
       // Shell round 20: an ayah-attached tagline ("an article about this
       // Ayah") is about whatever is open right now, so the strip is
@@ -10288,6 +10403,14 @@
         await step("load context data", loadContextData);
         await step("open bookmark", openBookmarkFromQueryString);
         await step("open goto link", openGotoFromQueryString);
+        // Last: "the app opens in the last settings/options in all view."
+        // After the deep links on purpose -- an explicit ?bookmark=/?goto=
+        // link outranks a remembered place, and restoreLastSession() checks
+        // for exactly those before doing anything. lastSessionReady flips
+        // only once everything above has settled, so the restore's own
+        // renders can never overwrite what it just read back.
+        await step("restore last session", restoreLastSession);
+        lastSessionReady = true;
       } catch (err) {
         whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
         console.error(err);
