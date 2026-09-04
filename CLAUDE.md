@@ -3,14 +3,20 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: QuranRevival v07.128.** The app has been live and real,
+**Current milestone: QuranRevival v07.129.** The app has been live and real,
 not a beta, since the 9 August 2026 cutover (v07.00) — we are in real-use
 iteration, driven by what the owner hits using it. See "Post-cutover rollout
 order" (D13) below for whose real use comes first.
 
 **The full round-by-round build log lives in `CHANGELOG.md`** — every version
 from v07.01 onward, with what each round measured, decided and deliberately
-left undone. **Read it only when you need the background of one specific
+left undone. **A round leaving this brief is APPENDED there first** — v07.124
+through v07.128 were found missing from it on 5 Sep 2026, having only ever
+lived here, so the next round to trim the list would have destroyed one; they
+are all in `CHANGELOG.md` now, and the rule is written down so it stops being
+a thing anyone has to notice.
+
+**Read `CHANGELOG.md` only when you need the background of one specific
 feature.** The five most recent rounds are kept below, because recent context
 is usually what a new round actually needs; everything older is one file away.
 The lessons those rounds taught that still bind are in "Standing lessons"
@@ -21,109 +27,6 @@ alongside `app/js/version.js` (first two digits = big overhaul, last two = each
 new feature) and will drift if a round forgets to bump it here too.
 
 ### The five most recent rounds
-
-v07.124 (3 Sep 2026, on Claude Code on the web) is **the Mushaf page fixes --
-a Page unit is now a WHOLE page, and it turns.** Two owner reports from a
-tablet screenshot of v07.123 (Read view, Mushaf and "Page by page" both on,
-Unit = Page, Surah 36, page 441): *"The entire page should be highlighted, but
-only one Ayah is highlighted. Why? (is it because there is Ayah selector? If
-that's the case then, we won't need Ayah selector in the page unit selection.
-FIX."* and *"this page doesn't slide right nor down. Need right ways slide to
-work. Enable right slide to appear the next page in a way as if a page is
-turning right to left."* Both reproduced by measurement before anything was
-touched: 144 words on the page, **142 of them dimmed**, and the strip's own
-`scrollWidth` exactly equal to its `clientWidth` -- nothing to scroll to.
-
-**(1) The highlight bug was one wrong word in one condition, and the code's own
-comment already said what the rule should be.** `renderStudyScreen()` read
-`const from = isMushaf && !isPageUnit ? currentAyahNum : unitFrom` -- but
-`isPageUnit` names only Whole Surah and Range, so **Ruku'/Juz/Hizb/PAGE all
-took the single-ayah branch**: Mushaf drew that one ayah's page with the whole
-rest of it dimmed. The comment above it already stated the intent ("Mushaf over
-a single ayah means THAT ayah's page ... every other unit hands over its own
-bounds"), and `currentUnitAyahBounds()` already returns
-`[currentAyahNum, currentAyahNum]` for the Single Ayah unit -- so the special
-case was not only wrong, **it was never needed**. It is gone; the bounds are
-passed unconditionally.
-
-**Two smaller decisions ride with it.** The dim exists to mark "your unit,
-inside a page it only partly fills" -- when the unit IS the page there is
-nothing to mark off, so **nothing dims for a Page unit** (the owner's "the
-entire page should be highlighted", literally). And a Page unit now names its
-own page outright (`currentUnitNumber()`) rather than deriving pages from ayah
-keys: an ayah that straddles a page boundary would otherwise pull the NEXT page
-in alongside it, and a Page unit should be exactly one page.
-
-**The Ayah picker: hidden where it does nothing, kept where it does.** The
-owner's own follow-on was conditional ("**is it because** there is Ayah
-selector? **If that's the case then**, we won't need Ayah selector in the page
-unit selection") -- and it was not the cause, only implicated, since
-`currentAyahNum` is what the broken branch read. One new `unitRendersWhole()`
-is now the single rule both the Study-options picker and its reading-screen
-mirror read, so the two can never disagree: **the picker goes whenever the
-whole unit is drawn at once AND that unit is more than one ayah** -- Range and
-Whole Surah as before, plus Mushaf over a Page/Ruku'/Juz/Hizb. It **stays** for
-an ordinary (non-Mushaf) Page/Ruku'/Juz/Hizb, which still reads ayah by ayah
-and where it is the only way to move within the unit, and for Mushaf over a
-Single Ayah, where it chooses which ayah is marked on the page. Said plainly
-rather than applied more widely than it earns.
-
-**(2) The slide needed a real distinction, not a blanket fall-through.**
-v07.123 made a flow-view gesture step WITHIN the flow, on purpose: a slide
-inside a Whole Surah must never jump to the next surah (that is what the ⏭
-button is for), and that rule has its own check. But `stepFlowAyah()` returns
-false for two different reasons -- **at the end of a multi-page strip**, and
-**there is only one page, so the strip cannot move at all** -- and a Mushaf
-Page unit is the second. New `flowStripPages()` tells them apart: two or more
-and v07.123's rule stands unchanged; **exactly one and the gesture means the
-UNIT** -- the next printed page. The same one-page test is what now lets a
-sideways swipe through `touchend`'s `#pageViewContainer` guard, which had been
-deferring unconditionally to a native scroll-snap that has nothing to snap to.
-
-**(3) A real page turn, not a cut.** `turnFlowPage()` hinges the leaf at its
-**right** edge -- the spine side of an Arabic book -- so going forward swings
-the current page away about that hinge and lays the next one down from the far
-side (`perspective(1400px) rotateY(±72deg)`, 170ms out / 200ms in). Direction
-follows this page's own standing rule (v07.56/v07.114): the next unit sits to
-the LEFT, so a RIGHT swipe brings it in. Deliberately **fire-and-forget** from
-`advance()` -- `stepUnit()` is async for Juz/Hizb/Page (it fetches that unit's
-boundary table and may open a different surah) and a gesture must not wait on a
-network read -- and every style it sets is cleared in a `finally`, so a failed
-fetch can never leave the page mid-turn and invisible. One in-flight guard, for
-the same reason: `stepUnit()` can outlast `advance()`'s own 550ms cooldown on a
-slow connection, and two turns fighting over one element's transform is a real
-glitch rather than a theoretical one. **Screenshotted at both ends and
-mid-turn** rather than trusted from the assertions alone.
-
-**Verified: 800 behaviour checks pass** (was 789 -- 11 new; the 3 failures are
-the same pre-existing, environmental archive.org poster block this project has
-recorded since v07.44, and the run ends at the same pre-existing section-42
-crash carried since v07.69, both unrelated). **Sections 40d and 40e are new and
-checked in** (not
-a throwaway script -- section 40 sits before the pre-existing section-42 crash
-this project has carried since v07.69, so these are reachable): the Page unit
-proven to draw exactly its own page with **zero** dimmed words and no Ayah
-picker in either place; a right swipe proven to start a real `rotateY` turn and
-land on page 51 with the transform cleared; a left swipe proven to turn back; a
-slide up at the foot of the page proven to turn it too; and 40e proving Mushaf
-over a Single Ayah is untouched -- still one ayah marked, rest dimmed, picker
-still there. The suite gained a `swipe()` helper (synthetic
-touchstart/touchmove/touchend on the real document listeners) -- the gesture
-path had no checked-in coverage at all before this round, which is part of why
-a one-page strip was never exercised. `openMushaf()` takes a unit NUMBER now,
-waiting for the boundary table to land before selecting it.
-**`layout.mjs`: every measured landing metric byte-for-byte identical** at all
-eight viewports in both banner states against a real `HEAD` shim -- same
-heading top, wheel width, Approach rows and dock gap, `getElementById` targets
-unchanged at 222; the only flagged line is the same pre-existing false positive
-this project has disclosed since v07.86 (Manage-mode-only Asma/QCR ids that do
-not exist until Manage is toggled on). **`reading.mjs` READING SCREEN OK** at
-all eight viewports, **`panel.mjs` no wrapped bar and no truncated label**,
-**`navcheck.mjs` unchanged** (still only the pre-existing 320px English
-truncation of "Operation"/"Bookmark"), **coverage byte-identical at 1,547
-scanned / 48 missing, same in every area** -- this round adds no user-visible
-strings. No `firestore.rules`, schema or Firestore data changes -- nothing to
-deploy but the static files.
 
 v07.125 (4 Sep 2026, on Claude Code on the web) is **three owner asks from a
 marked-up landing-screen screenshot: the app reopens where it was left, a
@@ -593,6 +496,158 @@ change for anyone who had grown used to seeing them -- said here rather than
 left to be noticed.
 
 
+v07.129 (5 Sep 2026, on Claude Code on the web) is **two owner asks about the
+Asma ul Husna Names -- the movement button they could not find, and creating a
+Name (or a Dual Name) straight from the āyah being read.** Their words: *"there's
+supposed to be a button for moving a name from one group to another group and
+placing a name in multiple groups but there's nowhere movement button is shown
+in TAB, even after I set my role as 'Prime'. FIX this."* and, from the Note
+view, *"I want a button to add a new name here, attach that Ayah as reference to
+that new name, add a field where I can Create a DUAL name and attach the Ayah as
+ref to that new name."*
+
+**(1) The movement button was never broken -- it was unreachable, and the
+difference matters.** Reproduced in a real browser before anything was touched,
+at 768x1024, 1200x1920 and 390x844, as an owner AND as an owner previewing as
+Prime: `canAdminCatalogueClientSide()` returns true for a Prime preview
+(`effectiveRoles` collapses to `["prime"]`), the ⋯ palette opens fully inside
+the viewport at every width, Manage is offered, and 📂 renders and writes
+correctly once Manage is on. So the role was never the problem, which is why
+changing it changed nothing. **What was wrong is that the only route to it was
+three taps deep and forgot itself:** open the ⋯ palette, press Manage, then
+drill into a Name -- and `asmaXManageOn` is a session-only variable that falls
+back to off on **every single load**, with nothing on screen ever saying the
+button existed. The owner's own screenshot shows exactly that state: the Name's
+bar carrying a back arrow, a title, and a wide empty space.
+
+**Fixed by gating 📂 on being able to manage AT ALL, not on Manage MODE.**
+`renderAsmaXRefsLevel()` reads a new `canFileIntoGroups` (`canAdminCatalogueClientSide()`)
+for that one button; ✎ and 🔗 keep `asmaXManageOn && …`, unchanged. The line
+that decides it: **filing a Name into groups is the one action on that bar with
+no other route, and it only ever splices a membership array** (`asmaCollections`'
+own `items[]`, which I5 already keeps free of anything a claim, bookmark or note
+is keyed against) -- whereas ✎ rewrites the Name's own content and 🔗 appends
+references to many Names at once. Those two are genuine authoring and stay
+behind Manage. This is the standing lesson in its usual form: *a control that
+opens and explains itself beats a control that is not there* -- and one that is
+there only after three taps you have to repeat every visit is, in practice, not
+there. A reader who cannot manage still sees no 📂, proven by computed display
+rather than the `hidden` property.
+
+**(2) A Name, or a Dual Name, created from the āyah in front of you.** The Note
+view's Asma drawer gains **"➕ New Name from this āyah"** and **"➕ New Dual Name
+from this āyah"** beside the "🔗 Attach this āyah" button it already had
+(owner/prime only, same gate). Both open the SAME create-Name overlay Explore's
+own +N uses -- one form, one Save, one write -- with the āyah **already in its
+Reference field**, so it is that Name's own reference the moment it is saved,
+with no separate attach step. That reuses the exact `prefillRef` path the
+30 Aug 2026 round built for "attaching an Ayah… and creating New Name"; nothing
+about the create/save code was duplicated.
+
+**What is new is one row on that form: "file it under".** A `<select>` of the
+live collections of the right kind, plus a "+ New…" option that reveals its own
+title field in place rather than opening a second overlay. The two buttons
+differ by exactly one value -- that row's `kind`. **And that is what makes a
+Dual Name work at all, which is worth stating plainly rather than leaving to be
+rediscovered: a collection has no `ref` field and never has; a Name does.** So a
+"Dual Name" here is a real Name, carrying the āyah as its own reference like any
+other, filed into a Dual Names collection -- which is precisely how this app has
+distinguished Group from Dual since 30 Aug 2026 (`kind` on the collection, its
+own dropdown on the Asma bar). Building it as a collection instead would have
+produced something with nowhere to put the reference the owner asked to attach.
+**No schema change and no `firestore.rules` change** -- `asmaCollections/{tenantId}`
+is gated by tenant, not by field, and both `addExtraName` and `addCollection`
+already existed as pure helpers; this round only calls them from a second place.
+
+**Three smaller decisions ride with it.** A brand-new list takes the Name's own
+transliteration as its title when nothing was typed -- almost always what a dual
+Name's list is called, and it beats a second error message for a field the
+reader has effectively already filled. The create path's own re-render now
+follows the attach popover's guard (`if (!asmaXPanelEl.hidden) renderAsmaXPanel()`
+plus `if (stageView === "note" && noteScope) renderNoteViewNow()`), because this
+is the first time that form can be opened while the Explore panel is hidden --
+without it a successful save would have redrawn a panel nobody was looking at
+and left the drawer stale. And Explore's own +N is deliberately **untouched**:
+it gets no destination row and keeps its existing "adds to the current group if
+you are inside one" behaviour, so this round's blast radius stops at the two new
+buttons.
+
+**One trap caught by measuring, and it is this codebase's most-repeated one in a
+sixth place.** The "+ New…" title field is a `<label>`, and `#asmaXEditBody label`
+carries `display: flex` -- which beats the UA's own `[hidden] { display: none }`,
+so `hidden` on it would have done nothing and the field would have sat there
+permanently. An explicit `#asmaXEditBody label[hidden]` override is in with it.
+The same rule block also grew a `select` (it had none, so the new picker would
+have rendered as the browser's default control on a dark card) with
+`box-sizing: border-box`, so a long collection title cannot push the card wider
+than the field holding it.
+
+**Verified with a focused, un-checked-in Playwright script -- 50 checks, all
+passing** (this project's own practice for anything past `behaviour.mjs`'s
+disclosed section-42 crash point): 📂 proven **on screen with Manage mode OFF**
+at 768/1200/390px, as an owner and as an owner previewing as Prime, with ✎ and 🔗
+proven still absent in that state; proven **still absent entirely** for a reader
+previewing as Guardian; the picker proven to open with the group the Name is
+already in ticked, and a real move proven to write to `asmaCollections`; both new
+buttons proven present, drawn and beside Attach on tablet and phone; "+ New Dual
+Name" proven to open a form titled for a Dual Name with the āyah **already** its
+Reference and a file-under row that, with no dual list yet in the tenant,
+correctly defaults to "+ New…" with its title field showing; saving proven to
+write, and the new Dual Name then proven to appear in the Asma bar's own **Dual
+Names dropdown**, to be really DRAWN in that list, and to carry the āyah on its
+own reference card; "+ New Name" proven to offer the real Group list with the
+title field hidden, to file into the group actually chosen, and to reveal that
+field on "+ New…"; and all of it in Bangla, with the option VALUES proven still
+plain collection ids. **One test bug of its own was found and fixed rather than
+worked around:** the helper pressed `#tabExploreBtn` unconditionally, which
+TOGGLES Explore shut -- v07.128's own recorded trap -- so two assertions were
+reading `textContent` out of a closed panel; the helper now opens only when
+Explore is really closed and throws if the Asma panel is not actually drawn, and
+both assertions measure a rendered rect rather than text.
+
+**`behaviour.mjs`: 803 checks pass, 0 fail**, stopping at the exact
+pre-existing crash this project has carried since v07.69 -- line 4084's
+`[data-note-master-toggle]`, a stale visibility assumption from before the
+round-31 bar reorg, which now sits inside the ⋮ dropdown and so is never
+visible when that click fires. Same 803 total as v07.127's own run, and no
+checked-in check needed updating: what this round changes is the Asma Names
+surface in Explore and the Note view's Asma drawer, both of which sit past
+that crash point and have never had checked-in coverage -- which is part of
+why a button nobody could reach went unnoticed. **`tools/perf/new-tenant.mjs`
+10/10.**
+
+**`layout.mjs`: every measured landing-page metric byte-for-byte identical** to
+`HEAD` at all eight viewports in both banner states (heading 148/103px, wheel
+377/399/280/220/320/360px, Approach rows, 9px dock gap, no overflow).
+`getElementById` targets 232 → 235 -- exactly this round's three new lookups --
+and the "missing" list reads 22, **which was checked against the unmodified
+`HEAD` copy through the identical scan rather than assumed: it reports 19**, the
+pre-existing Manage-mode-and-overlay-only false positives this project has
+disclosed since v07.86. So this round adds exactly three, all of them fields
+inside the create-Name overlay body, which does not exist until that overlay is
+opened -- sitting alongside `asmaXEditTranslit`/`asmaXEditRef`, already on that
+list for the same reason. **`reading.mjs` READING SCREEN OK** at all eight
+viewports, **`panel.mjs` no wrapped bar and no truncated label** (this round
+never touches the Study options panel), **`navcheck.mjs` unchanged** (still only
+the pre-existing 320px English truncation of "Operation"/"Bookmark").
+**Coverage 1,550 → 1,559 scanned, 47 missing UNCHANGED**, compared area by area
+against a clean checkout: only `quran` moves, 321 → 330, +9 translated -- exactly
+this round's nine new strings, every other area byte-identical.
+**`tools/perf/measure.mjs` identical**: Quran Study 6 sequential round trips /
+9 Firestore calls, Deen Study, Health and Asma 7, Records 5 -- the check that
+proves this round joined nothing to the startup path (I9). Expected, since it is
+client-side UI throughout. No `firestore.rules`, schema or Firestore data
+changes -- nothing to deploy but the static files.
+
+**Flagged, not changed:** Manage mode is still session-only everywhere else, so
+✎, 🔗, the per-row "Move to…" select and the QCR bar's own icons all still need
+the ⋯ → Manage trip on every visit. Remembering that choice per browser is a
+one-line `prefs.js` addition of the same additive shape every reading preference
+since round 18 has used, and it would make the rest of Manage as findable as 📂
+now is -- but it also means edit icons appearing unbidden on a later visit, so it
+is the owner's call rather than something to slip in here.
+
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
@@ -725,6 +780,16 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   undetected for months — `#qcrLevelManageActions`/`#asmaXLevelManageActions`,
   where it meant Manage-mode buttons were on screen for every reader all
   along). **`#id[hidden]` outranks `#id`**, which is the fix for an id rule.
+- **"Unreachable" and "broken" are different bugs, and the fix is different.**
+  v07.129's own report ("the movement button is nowhere, even after I set my
+  role to Prime") reproduced as: the button rendered correctly, for an owner
+  AND for an owner previewing as Prime, at every viewport -- but only after
+  ⋯ → Manage → drill into a Name, and Manage mode is a session-only variable
+  that resets on every load. So reproduce the reported STATE before hunting a
+  gate; a role the user changed and nothing improved is a hint the gate was
+  never the problem. Where a Manage-mode action is the ONLY route to something
+  and cannot damage content, gate it on being able to manage at all, not on
+  the mode.
 - **A control that opens and explains itself beats a control that is not
   there.** v07.127 hid a whole palette because it would otherwise open empty
   for a non-admin; v07.128 reverted it the same day, on the owner's report,
