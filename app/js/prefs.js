@@ -559,6 +559,26 @@ export function setExploreJuzView(id) {
   return cachedExploreJuzView;
 }
 
+// 5 Sep 2026 (round 3) -- the same question one level up, on the owner's own
+// ask: the whole Qur'an subdivides into 30 Juz or into 114 Surahs, and they
+// wanted both offered. Same additive localStorage shape, same reasons.
+const EXPLORE_QURAN_VIEW_KEY = "mm_explore_quran_view";
+const EXPLORE_QURAN_VIEW_IDS = ["juz", "surah"];
+
+let cachedExploreQuranView = readStored(EXPLORE_QURAN_VIEW_KEY, EXPLORE_QURAN_VIEW_IDS, "juz");
+
+/** "juz" (the default, and what the whole-Quran wheel has always shown) or "surah". */
+export function getExploreQuranView() {
+  return cachedExploreQuranView;
+}
+
+export function setExploreQuranView(id) {
+  if (!EXPLORE_QURAN_VIEW_IDS.includes(id)) return cachedExploreQuranView;
+  cachedExploreQuranView = id;
+  writeStored(EXPLORE_QURAN_VIEW_KEY, id);
+  return cachedExploreQuranView;
+}
+
 // ---------------------------------------------------------------------------
 // 28 Aug 2026 -- the QCR (Ayah Collections) wheel is resizable by a drag
 // handle on its own corner, and the owner's own size sticks: "make the size

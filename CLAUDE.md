@@ -3,7 +3,7 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: QuranRevival v07.135.** The app has been live and real,
+**Current milestone: QuranRevival v07.136.** The app has been live and real,
 not a beta, since the 9 August 2026 cutover (v07.00) — we are in real-use
 iteration, driven by what the owner hits using it. See "Post-cutover rollout
 order" (D13) below for whose real use comes first.
@@ -27,83 +27,6 @@ alongside `app/js/version.js` (first two digits = big overhaul, last two = each
 new feature) and will drift if a round forgets to bump it here too.
 
 ### The five most recent rounds
-
-v07.131 (5 Sep 2026, same day) is **the owner's own "Do the same for QCR" --
-the second half of v07.130, applied to the screen it deliberately left alone.**
-That round flagged QCR as carrying the identical two-tap complaint one screen
-over and said it should probably follow; the owner said so directly, so it
-follows.
-
-**The change is the same change, and saying that plainly is the point: this is
-not a second design.** `qcrManageOn`, a session-only `let` behind its own
-Manage button, becomes `qcrCanManage()` -- a function returning
-`canAdminCatalogueClientSide()`, mirroring `asmaXCanManage()` line for line.
-The button is deleted from the palette markup, its `getElementById` lookup and
-its click handler go with it, and everything it used to gate now shows on the
-one condition that was ever meaningful: **✎ 🗄 + and "Show archived" in the ⋯
-palette, each āyah's own "Move to…" select and its × Remove, and the "+ Add
-āyah" form.** One tap on ⋯ and the controls are there. Nothing else about QCR
-moved -- no ids, no handlers, no layout.
-
-**A reader who cannot manage is unchanged from v07.128's own rule, which is the
-half worth not breaking**: the ⋯ button is never hidden, the palette opens, and
-it carries the note saying why management is off (naming the previewed role
-where a "View as" preview is the cause). So the palette still opens and
-explains itself rather than opening blank -- proven by COMPUTED display, not by
-the `hidden` property.
-
-**`.qcr-manage-toggle` is retired outright.** With both bars' Manage buttons
-gone, nothing carries that class, so its four rules are deleted rather than
-left as dead weight -- the same treatment v07.29 gave the banner-edit block's
-own orphaned rules. **The `"Manage"` STRING stays in `bn.js`, unused**, per this
-project's own standing rule for a string that stops being called; the coverage
-total falling by exactly one is that string leaving the extracted set, and it
-was confirmed by grepping for `t("Manage")` rather than inferred from the
-number.
-
-**Verified with a focused, un-checked-in Playwright script -- 32 checks, all
-passing**, and screenshotted rather than trusted from the assertions: the
-Manage button proven gone from the page entirely at 320/390/768/1280px; the QCR
-bar proven to still hold ONE line with no page overflow at each of those widths
-(the 36px/40px buttons v07.130 introduced were already costed there, and this
-round re-measures rather than assuming); one tap on ⋯ proven to reveal all
-three actions as a single row of 40px buttons, with the palette proven inside
-the viewport; each āyah's own Move-to/Remove row and the "+ Add āyah" form
-proven present **with no Manage tap anywhere in the journey**; a reader
-previewing as Guardian proven to get the ⋯ button still drawn, the actions
-really hidden by computed display, the explanatory note in words, and no
-Move-to rows or add form; **Asma proven untouched** by this round (still no
-Manage, still five actions); and QCR's own action labels proven Bangla in
-Bangla. **One test bug of its own was found and fixed rather than worked
-around:** the non-admin check asked for `#qcrPaletteWrap`, an id that does not
-exist -- the wrap is addressed by its `data-bar-palette-wrap` attribute, like
-every other bar palette. The app was right and the check was wrong.
-
-**`behaviour.mjs`: 800 checks pass, 3 fail** -- the three are section 22g, the
-environmental archive.org poster block this project has recorded since v07.44,
-and the run stops at the same pre-existing line-4084 crash carried since
-v07.69. Same 803 total as every recent run, and no checked-in check needed
-updating: QCR's Explore bar sits past that crash point and has never had
-checked-in coverage.
-
-**`layout.mjs`: every measured landing-page metric byte-for-byte identical** to
-`HEAD` at all eight viewports in both banner states (heading 148/103px, wheel
-377/399/280/220/320/360px, Approach rows, 9px dock gap, no overflow);
-`getElementById` targets 234 -> 233, exactly the retired `qcrManageToggleBtn`
-lookup, and the "missing" list is the same 22 as `HEAD`. **`reading.mjs`
-READING SCREEN OK**, **`panel.mjs` byte-identical** (this round never touches
-the Study options panel), **`navcheck.mjs` unchanged** (still only the
-pre-existing 320px English truncation of "Operation"/"Bookmark"). **Coverage
-1,560 -> 1,559 scanned, 47 missing UNCHANGED** -- only `quran` moves, 331 ->
-330, the one retired string. **`tools/perf/measure.mjs` identical** (Quran
-Study 6 sequential round trips / 9 calls) and **`new-tenant.mjs` 10/10** -- I9
-untouched, as expected for markup and a state variable becoming a function. No
-`firestore.rules`, schema or Firestore data changes.
-
-**What this closes:** both Explore bars now work the same way, and the
-"Flagged, not changed" note v07.130 left against QCR is resolved rather than
-carried. Manage mode no longer exists anywhere in this app.
-
 
 v07.132 (5 Sep 2026, same day) is **the owner's own "Enable attaching to Dual
 Name as well in Asma in Note, Read, In Explore."** -- and the useful part of
@@ -500,6 +423,80 @@ string, translated. No `firestore.rules`, schema or Firestore data changes.
 a Hizb claim does not show at all (see the limit above) -- both one boundary
 table away if the owner wants them. And Explore's breadcrumb and sidebar labels
 are still hardcoded English in Bangla, as v07.134 flagged.
+
+
+v07.136 (5 Sep 2026, same day) is **the two things v07.135 flagged and the
+owner immediately asked for: "do the ruku and hizb roll up too", and a Juz |
+Surahs switch on the whole-Quran wheel.**
+
+**(1) Ruku' and Hizb roll up now, and neither costs anything unless a claim of
+that kind exists.** v07.135 left them out for a real reason -- a Hizb's
+boundary table is not one Explore loads, and a Ruku's ayah range lives in its
+surah's own TEXT, which Explore never loads for all 114 surahs. Both are solved
+by **loading what the CLAIMS need rather than what the navigation reaches**:
+`buildExploreWiderSpans()` surveys the already-loaded chunks for `hizb:` and
+`ruku:` keys, then fetches the hizb table only if one was found and
+`getSurah()` only for the surahs that really carry a ruku claim -- a handful,
+never all 114, and cached.
+
+**That is also what makes it deterministic, which was last round's whole
+objection.** v07.135 resolved ruku spans locally, in whichever Surah level
+happened to load the surah, precisely so a Juz's colour could not depend on
+where the reader had browsed. Loading by claim removes the dilemma instead of
+trading it away. The local resolver is retired and
+`effectiveAyahStatus()`/`poolCoverageStatus()` lose the `extraSpans` parameter
+that existed only to feed it -- **a dead hook removed rather than left as a
+future trap.** All six wider units now behave identically: **Whole Surah,
+Range, Ruku', Juz, Hizb and Page each set a floor under the ayahs they cover**,
+and nothing in Explore is invisible to the tracker wheel any more.
+
+**(2) The whole-Quran wheel offers Juz (30) or Surahs (114).** The owner named
+the trade themselves: *"It's crammed to shows 114 slide in the wheel, i know,
+but it remains a choice to click, not a by-default opening. But what it will
+serve is ... 114 surah will be shown in the left sidebar as list. That's where
+the usefulness will count."* So the crowded wheel is accepted and **the sidebar
+is the point** -- every surah, named, with its status, scrollable, pick one to
+open it. **Juz stays the default**, so nobody meets 114 slices unasked.
+
+**One switch, relabelled per level, rather than a second one in the same
+slot.** It always asks the same question -- how do I subdivide the scope I am
+looking at? Whole Quran → Juz or Surahs; a Juz → Pages or Surahs; below that
+there is only one subdivision, so it is put away. Each level owns its own
+remembered choice (`mm_explore_quran_view` beside v07.133's own), proven by
+switching one and finding the other unmoved. `exploreJuzViewToggle` is
+**renamed `exploreViewToggle`** -- it is no longer juz-specific, and a name
+that lies is worse than a rename.
+
+**Verified: a focused, un-checked-in Playwright script, 26 checks, all
+passing**, screenshotted -- a Ruku' claim alone colouring its surah in the
+114-surah view; a Hizb claim colouring every surah inside it up to the last
+while the surah one below its boundary stays untouched; the Juz containing them
+correctly still not started (weakest link holds); the switch offering Juz |
+Surahs with Juz pressed by default; Surahs drawing 114 slices and **listing all
+114 by NAME, numbered, scrollable**; **picking one from the LIST opening that
+surah's ayahs** -- the owner's own stated use; and all of it in Bangla with
+values proven still plain ids. **Two of three first-run failures were WRONG
+ASSERTIONS, not defects:** Hizb 60 is 87:1 → 114:6 (read off `hizb-index.json`
+rather than remembered), so the surahs the test called "outside" were inside
+and the app was right; and a check read `localStorage` for a preference never
+SET, expecting its default -- a default lives in memory until something writes
+it. **v07.133's and v07.135's own scripts re-run 33/33 and 29/29**, with two
+more checks UPDATED rather than deleted (1b asserted the switch is NOT shown at
+the Quran level, exactly what this round changes; 12c read a renamed
+attribute).
+
+**`layout.mjs`: landing page byte-for-byte identical**, zero changed metrics;
+`getElementById` 240 -> 240 (a rename, not an addition), missing list the same
+22. **Coverage 1,566 scanned / 47 missing, both UNCHANGED** -- no new strings,
+since "Juz" and "Surahs" were already translated. No `firestore.rules`, schema
+or Firestore data changes.
+
+**One trap hit and recovered, recorded because this file has recorded it
+twice:** the first coverage read came back 1,820 / 53, because
+`app/_prev-quranrevival.html` was still on disk -- the `rm` had run from the
+wrong directory after a shell cwd reset. **It was caught only because the
+number was absurd rather than subtly wrong.** Delete the shim and re-read,
+every time.
 
 
 ## What this is

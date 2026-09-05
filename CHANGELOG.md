@@ -10969,3 +10969,100 @@ and a Hizb claim does not show at all (see the limit above) -- both are honest
 consequences of what Explore loads, and both are one boundary-table fetch away
 if the owner wants them. And Explore's breadcrumb and sidebar labels are still
 hardcoded English in Bangla, exactly as v07.134 flagged.
+
+
+v07.136 (5 Sep 2026, same day) is **the two things v07.135 flagged and the
+owner immediately asked for: "do the ruku and hizb roll up too", and a Juz |
+Surahs switch on the whole-Quran wheel.**
+
+**(1) Ruku' and Hizb roll up now, and the trick is that neither costs anything
+unless a claim of that kind exists.** v07.135 left them out for a real reason
+-- a Hizb's boundary table is not among the ones Explore loads, and a Ruku's
+ayah range lives in its surah's own TEXT, which Explore never loads for all 114
+surahs. Both are solved by **loading what the CLAIMS need rather than what the
+navigation happens to reach**: `buildExploreWiderSpans()` first surveys the
+already-loaded chunks for `hizb:` and `ruku:` keys, then fetches the hizb table
+only if one was found, and `getSurah()` only for the surahs that really carry a
+ruku claim -- usually a handful, never all 114, and cached so a surah the
+reader opens later costs nothing twice.
+
+**That is also what makes it deterministic, which was the whole objection last
+round.** v07.135 resolved ruku spans locally, in the Surah level that happened
+to load the surah, precisely so a Juz's colour could not depend on where the
+reader had browsed. Loading by claim removes the dilemma rather than trading it
+away: the same spans exist from the moment Explore opens, whatever route you
+take. The local resolver is retired and `effectiveAyahStatus()`/`poolCoverageStatus()`
+lose the `extraSpans` parameter that existed only to feed it -- **a dead hook
+removed rather than left as a future trap.** Every wider unit now behaves
+identically: **Whole Surah, Range, Ruku', Juz, Hizb and Page all set a floor
+under the ayahs they cover**, and nothing in Explore is now invisible to the
+tracker wheel.
+
+**(2) The whole-Quran wheel offers Juz (30) or Surahs (114).** The owner's own
+framing is the design and is worth quoting, because it names the trade
+honestly: *"It's crammed to shows 114 slide in the wheel, i know, but it
+remains a choice to click, not a by-default opening. But what it will serve is,
+when Surah toggle will be clicked, 114 surah will be shown in the left sidebar
+as list. That's where the usefulness will count. User can select a Surah from
+the list to display in wheel."* So the wheel at 114 IS crowded, that is
+accepted, and **the sidebar is the point** -- a real, named, scrollable list of
+every surah with its status, that you pick from. **Juz stays the default**, so
+nobody meets the crowded wheel without asking for it.
+
+**One switch, relabelled per level, rather than a second one in the same
+slot.** It always asks the same question -- *how do I subdivide the scope I am
+looking at?* Whole Quran → Juz or Surahs; a Juz → Pages or Surahs; below that
+there is only one subdivision, so it is put away. Each level owns its own
+remembered choice (`mm_explore_quran_view` beside v07.133's
+`mm_explore_juz_view`), so setting one never disturbs the other -- proven by a
+check that switches the Juz level and finds the Quran level unmoved. The id
+`exploreJuzViewToggle` is **renamed `exploreViewToggle`**, because it is no
+longer juz-specific and a name that lies is worse than a rename.
+
+**Costs no extra read**: the Surahs view pools exactly the ayahs the Juz view
+pools, grouped differently, from chunks already in memory. The 114-row sidebar
+scrolls inside its own box (`.ways-list`'s existing `max-height` +
+`overflow-y`), proven rather than assumed.
+
+**Verified with a focused, un-checked-in Playwright script -- 26 checks, all
+passing** -- and screenshotted: **a Ruku' claim alone colouring its surah in
+the 114-surah view, and a Hizb claim colouring every surah inside it right up
+to the last while the surah one below its boundary stays untouched**; the Juz
+containing them correctly still not started, because neither claim covers all
+of it and weakest-link still holds; the switch offering Juz | Surahs at the
+Quran level with Juz pressed by default; Surahs really drawing 114 slices and
+**listing all 114 by NAME in the sidebar, numbered 1..114, scrollable**;
+**picking a surah from the LIST opening that surah's own ayahs** -- the owner's
+own stated use; the trail reading "Whole Quran > Al-Ikhlaas" with no Juz in
+between; the switch put away below the Quran level and the choice surviving the
+trip back up; the same switch reading Pages | Surahs inside a Juz; and all of
+it in Bangla, including all 114 names, with the stored values proven still
+plain ids.
+
+**Two of the three first-run failures were WRONG ASSERTIONS, not defects**, and
+both are worth recording. The Hizb test asserted that surahs 91 and 92 sat
+outside Hizb 60 -- **Hizb 60 is 87:1 → 114:6, read off `hizb-index.json` rather
+than remembered**, so they are wholly inside it and the app was right; the
+check now tests the real boundary (surah 86, one below it). And a check read
+`localStorage` for a preference that had never been SET, expecting its default
+-- but a default lives in memory until something writes it, so it read `null`;
+the substantive claim ("the two levels remember separately") is proven by
+changing one and finding the other unmoved instead. **v07.133's and v07.135's
+own scripts were re-run: 33/33 and 29/29**, with **two more checks UPDATED
+rather than deleted** -- 1b asserted the switch is NOT shown at the Quran level,
+which is exactly what this round changes, and 12c read the renamed
+`data-juz-view` attribute; both carry the reason in place.
+
+**`layout.mjs`: landing page byte-for-byte identical** at all eight viewports in
+both banner states, zero changed metrics; `getElementById` targets 240 -> 240
+(a rename, not an addition), missing list the same 22 as `HEAD`. **Coverage
+1,566 scanned, 47 missing -- both UNCHANGED**, which is the right answer: this
+round adds no new strings, because "Juz" and "Surahs" were already in `bn.js`.
+No `firestore.rules`, schema or Firestore data changes.
+
+**One trap hit and recovered, worth recording because this file has recorded it
+twice already:** the first coverage read of this round came back 1,820 scanned
+/ 53 missing, because `app/_prev-quranrevival.html` was still on disk -- the
+`rm` had run from the wrong directory after a shell cwd reset. **The number was
+absurd rather than subtly wrong, which is the only reason it was caught**;
+delete the shim and re-read, every time.
