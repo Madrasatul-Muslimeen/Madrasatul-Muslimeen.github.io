@@ -3,7 +3,7 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: QuranRevival v07.132.** The app has been live and real,
+**Current milestone: QuranRevival v07.133.** The app has been live and real,
 not a beta, since the 9 August 2026 cutover (v07.00) — we are in real-use
 iteration, driven by what the owner hits using it. See "Post-cutover rollout
 order" (D13) below for whose real use comes first.
@@ -27,105 +27,6 @@ alongside `app/js/version.js` (first two digits = big overhaul, last two = each
 new feature) and will drift if a round forgets to bump it here too.
 
 ### The five most recent rounds
-
-v07.128 (4 Sep 2026, same day) is **two owner reports against v07.127, one
-cause between them -- and a THIRD bug, pre-existing and older, found while
-reproducing it.** Their words: *"In Tab, QCR, the button group is missing. FIX"*
-and *"In Asma, name movement field is no where, FIX"*.
-
-**Reproduced before anything was touched, and the two reports turned out to be
-one thing.** `canAdminCatalogueClientSide()` reads `currentPreview().effRoles`
--- so a **"View as" preview left switched on** makes an OWNER read as a
-student. That preference has lived in **localStorage since v07.75**, so it
-survives every reload on that device and can sit there for weeks unnoticed.
-With a preview on: **QCR's ⋯ vanished outright** (report 1), and **Asma's
-Manage button was hidden**, so Manage could never be turned on, so ✎/🔗/📂
-never rendered -- which is exactly *"name movement field is no where"*
-(report 2). Asma's own ⋯ stayed visible throughout, which is why the owner
-reported the missing BUTTON GROUP for QCR only and the missing FIELD for Asma.
-Measured with the preview seeded into localStorage, at 768px and 1280px, before
-a line was changed.
-
-**(1) The QCR half was v07.127's own regression, and it is reverted.** That
-round's follow-up commit hid the whole palette wrap when `canManage` was
-false, reasoning that it would otherwise open empty. That reasoning was wrong
-in the way that matters: it made the only control on that bar disappear, with
-nothing on screen to say why and no way back to it. **The button is never
-hidden now.** The general lesson, worth keeping: *a control that opens and
-explains itself beats a control that is not there* -- an empty dropdown is a
-small ugliness, a missing one is a dead end.
-
-**(2) The gate itself is correct, so it now says so in words.** An owner
-previewing as a student really is not an admin; what was wrong was that the
-app said nothing. Both palettes carry a note when management is unavailable,
-from one shared `manageUnavailableNote()` rather than two copies: with a
-preview on it names the role and points at where to turn it off ("You're
-previewing as Student, so managing is switched off. Turn the preview off on
-the People page to manage again."), and otherwise it says plainly that this is
-owner/prime only. Two new strings, both translated.
-
-**(3) The third bug, PRE-EXISTING and not introduced by v07.127 -- this
-codebase's own most-repeated trap, in a fifth place.** While screenshotting the
-fix, the ✎ 🗄 + and "Show archived" row was on screen **with Manage switched
-off**. `#qcrLevelManageActions` and `#asmaXLevelManageActions` are ID rules
-setting `display: flex`, which outranks the UA's `[hidden] { display: none }` --
-so `qcrLevelManageActions.hidden = true` **has never actually hidden anything**.
-Rename/Archive/Add and Show archived have been on screen for every reader all
-along, whether or not Manage was on and **whether or not they can manage at
-all**. It is visible in the owner's own screenshot of the round before this
-one, once you know to look. Fixed with the explicit `#id[hidden] { display:
-none }` override the standing lesson prescribes (`#id[hidden]` outranks `#id`),
-on both bars.
-
-**And the reason it survived v07.127's own verification is worth recording
-against that round's name:** its check read `element.hidden` -- the PROPERTY --
-and passed, while the icons were really on screen. That is precisely the
-mistake the standing lesson names ("Check COMPUTED display"), made by the test
-rather than the app. The check reads `getComputedStyle(...).display` now. **A
-test can carry the same blind spot as the code it guards; assert the rendered
-result, not the intent.**
-
-**Verified: 145 focused checks across four un-checked-in Playwright scripts,
-all passing** -- v07.127's own 75 + 23 re-run green, plus 47 new ones for this
-round: the QCR ⋯ proven on screen and openable while previewing as a student,
-at 768px and 390px, in English and Bangla; the note proven to appear, to name
-the previewed role, and to be Bangla in Bangla; the Manage button proven
-correctly still off; Asma's palette proven to carry the same explanation while
-its wheel text-size sliders stay available to every reader either way; no note
-at all for an owner who can manage; and **the whole path to 📂 proven to work
-on a tablet** for an owner who is not previewing -- Manage on, open a Name, the
-button present and on screen. The `[hidden]` fix is proven by COMPUTED display,
-not by the property. **One test bug of its own was found and fixed rather than
-worked around:** the helper pressed `#tabExploreBtn` a second time, which
-TOGGLES Explore shut, so the second half of each case was measuring a closed
-panel.
-
-**`behaviour.mjs`: 800 checks pass, 3 fail** -- the three are the known
-environmental archive.org poster block this project has recorded since v07.44
-(section 22g; they passed earlier the same day, when that host happened to be
-reachable, which is the giveaway), and the run stops at the same pre-existing
-line-4084 crash carried since v07.69. Same 803 total as v07.127's own run. No
-checked-in check needed updating: what this round fixes is Manage-mode surface
-on the QCR/Asma Explore bars, which sits past that crash point and has never
-had checked-in coverage -- which is exactly why the `[hidden]` bug lived so
-long.
-
-**`layout.mjs`: every measured landing-page metric byte-for-byte identical** to
-`HEAD` at all eight viewports in both banner states (heading 148/103px, wheel
-377/399/280/220/320/360px, Approach rows, 9px dock gap, no overflow);
-`getElementById` targets 230 → 232, exactly the two new note elements, and the
-"missing" list is the same 19 disclosed in v07.127. **Coverage 1,548 → 1,550
-scanned, 47 missing unchanged** -- the two new strings, both translated and
-read back off a really-rendered Bangla page rather than trusted from the
-report. No `firestore.rules`, schema or Firestore data changes -- nothing to
-deploy but the static files.
-
-**Flagged, not changed:** the `[hidden]` fix means a reader who cannot manage
-no longer sees Rename/Archive/Add at all on either bar. That is the intended
-behaviour those `hidden` attributes have always described, but it IS a visible
-change for anyone who had grown used to seeing them -- said here rather than
-left to be noticed.
-
 
 v07.129 (5 Sep 2026, on Claude Code on the web) is **two owner asks about the
 Asma ul Husna Names -- the movement button they could not find, and creating a
@@ -606,6 +507,98 @@ pre-existing, it is not what was asked, and the fix is the same file-under row
 the dual button already uses -- say the word and it is one line.
 
 
+v07.133 (5 Sep 2026, same day) is **the owner's own ask for a second reading of
+a Juz in Explore: "As clicking on Juzz 30 brings page wheel, may be enable a
+toggle view to move to Surah views (36 slides for Juzz 30) ... so user can see
+the pages belong to a buzz as well as Surat belong to a juzz in the wheel."**
+
+**Half the ask was already true, and that decided how small this round is.**
+Their second sentence -- clicking a Surah slide should bring its ayahs -- is
+the Surah level Explore has had since Phase 5. So a Surah segment did not need
+a new destination; it needed to exist. **Both readings of a Juz land on exactly
+the same place when clicked** (`exploreLevel = "surah"`), which is why nothing
+below the Juz level learned a second route in.
+
+**Nothing was fetched or derived to know which surahs a Juz holds --
+`ayahCoverage()` already said it exactly**, and `poolCoverageStatus()` has been
+calling it to COLOUR the Juz segments since Phase 5. The Surahs view is the
+same call kept per-surah instead of pooled, so the list and the colour of the
+Juz it came from can never disagree. **Measured, not assumed: Juz 30 is 37
+surahs (78 An-Naba .. 114 An-Naas), not the 36 the owner quoted** -- said
+plainly rather than shipped quietly.
+
+**The one real design question was a surah only PARTLY in the Juz, and its two
+halves are answered differently on purpose.** Juz 1 holds Al-Faatiha whole and
+Al-Baqara 1-141. The segment's **colour pools only the ayahs really in this
+Juz**; the **click opens the WHOLE surah**, which is what the Surah level has
+always meant and what the page view's own click already did. Both are on
+screen rather than guessed: the row reads "Al-Baqara ১–১৪১", the tooltip
+"(ayahs ১–১৪১ in this Juz)".
+
+**The switch is remembered, which is the standing lesson applied.**
+`openExplore()` resets the drill-down POSITION on every open; which READING of
+a Juz you want is a habit, not a position, so it is a `prefs.js` localStorage
+pair (`mm_explore_juz_view`) of the same additive shape every reading
+preference since round 18 has used -- **no new startup read, no collection, no
+`firestore.rules` change (I9 untouched)**, re-measured to prove it. Shown at
+the Juz level ONLY, the one level where the same scope splits two ways. Pages
+stays the default, so a reader who never touches it sees v07.132 exactly.
+
+**Two things caught by measuring, in a round that could have skipped it.** The
+new control got v07.129's full treatment: at 320/360/390/412/768/1280/1920px in
+both languages it is **36px on ONE line**, nothing truncated, no overflow --
+and that sweep, not any assertion, showed the partial-surah row reading
+**"আল-বাকারা 1–141": Latin digits in a Bangla label**, where every other number
+drawn in a sentence here goes through `num()`. Fixed, with its own check. The
+`[hidden]` trap was headed off rather than hit -- `#exploreJuzViewToggle` sets
+`display: flex`, so it carries the explicit `#id[hidden]` override, and the
+test reads **computed display**.
+
+**One real pre-existing defect, found by reading a rendered Bangla page and
+fixed with it:** Explore's hint printed **"&mdash;" and "&rarr;" as literal
+text in Bangla** -- `translateStatic()` swaps a TEXT NODE, so an HTML entity
+written into a `bn.js` VALUE is never decoded, while the English side is real
+markup and decodes. Real characters now. **The general rule, worth keeping:
+never write an HTML entity into a translation value; the English key decodes
+and the Bangla value does not.**
+
+**Verified with a focused, un-checked-in Playwright script -- 33 checks, all
+passing** -- plus a separate 14-point layout sweep, screenshotted and read: the
+switch absent at the Quran level and present at the Juz level by computed
+display; both buttons >=36px; Pages still the default and still showing pages
+582-604; Surahs showing all 37 surahs named rather than numbered; a Surah click
+opening that surah's own four ayahs (Al-Ikhlaas); the switch put away below the
+Juz level and still Surahs on the way back up; Juz 1's partial surah naming its
+ayahs in row and tooltip and still opening WHOLE (Al-Baqara's Ruku' groups);
+the choice stored, surviving a reload and switchable back; and all of it in
+Bangla with the stored values proven still plain ids. **Two test bugs of its
+own were found and fixed rather than worked around:** it asserted
+"An-Nas"/"Al-Ikhlas" where the data says "An-Naas"/"Al-Ikhlaas" (the app was
+right), and it read the wheel straight after the breadcrumb changed -- but
+`renderExploreSurahLevel()` `await`s `getSurah()`, so the crumb is rewritten a
+tick BEFORE the wheel, and the check was measuring the Juz wheel it had left.
+
+**`behaviour.mjs`: 802 pass, 1 fail** -- section 22g/h, the environmental
+archive.org block recorded since v07.44 -- stopping at the same pre-existing
+line-4084 crash carried since v07.69. Same 803 total. **`layout.mjs`: every
+measured landing-page metric byte-for-byte identical** to `HEAD` at all eight
+viewports in both banner states; `getElementById` targets 235 -> 238, exactly
+this round's three new lookups, and the "missing" list is **the same 22 as
+`HEAD`, checked through an identical scan rather than assumed**. **`reading.mjs`
+OK**, **`panel.mjs` no truncation and no wrapped bar**, **`navcheck.mjs`
+unchanged**. **Coverage 1,563 -> 1,565 scanned, 47 missing UNCHANGED**, compared
+against a clean `HEAD` worktree: only `quran` moves, 334 -> 336, both new
+strings translated. **`tools/perf/measure.mjs` identical** (Quran Study 6
+sequential round trips / 9 calls) and **`new-tenant.mjs` 10/10**. No
+`firestore.rules`, schema or Firestore data changes.
+
+**Flagged, not changed:** the hint under the wheel still reads "Quran → Juz →
+Surah → Ruku'" and has never mentioned Pages -- already inaccurate for the
+default view before this round, now accurate for exactly one of the two.
+Rewording it is an English-copy decision and a new translation key, so it is
+raised rather than decided here.
+
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
@@ -730,6 +723,12 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   been wrong about what it counts **nine separate times** — over- and
   under-counting both. Only reading a really-rendered page proves a screen is
   translated. Check Bangla by opening the page in Bangla.
+- **Never write an HTML entity into a translation VALUE.** `translateStatic()`
+  swaps a text NODE, so `&mdash;` in a `bn.js` value is printed literally
+  while the English side -- real markup -- decodes to an em dash. Explore's own
+  hint read "কুরআন &rarr; জুয" to every Bangla reader from the translation
+  phases until v07.133 found it by LOOKING at the rendered page; no report
+  could have. Use the real character on both sides.
 - **`layout.mjs` proves "nothing changed since last time", never "this is
   right".** When a round is a CORRECTION, compare against the last KNOWN-GOOD
   commit (`git show <sha>:app/quranrevival.html`), not just `HEAD` — otherwise

@@ -224,7 +224,7 @@ export const BN = {
   "No Approaches yet.": "এখনো কোনো পদ্ধতি নেই।",
   "Pick an Approach first.": "প্রথমে একটি পদ্ধতি বেছে নিন।",
   "Click a segment to drill in — Quran → Juz → Surah → Ruku' → an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment — it only turns fully green once every ayah inside it is Mastered.":
-    "ভেতরে যেতে যেকোনো অংশে চাপ দিন &mdash; কুরআন &rarr; জুয &rarr; সূরা &rarr; রুকু' &rarr; অধ্যয়নে একটি আয়াত। রঙগুলো এই পদ্ধতিতে আয়াতভিত্তিক প্রকৃত অগ্রগতি একত্র করে দেখায় &mdash; ভেতরের প্রতিটি আয়াতে পূর্ণ দক্ষতা অর্জিত হলেই কেবল এটি সম্পূর্ণ সবুজ হয়।",
+    "ভেতরে যেতে যেকোনো অংশে চাপ দিন — কুরআন → জুয → সূরা → রুকু' → অধ্যয়নে একটি আয়াত। রঙগুলো এই পদ্ধতিতে আয়াতভিত্তিক প্রকৃত অগ্রগতি একত্র করে দেখায় — ভেতরের প্রতিটি আয়াতে পূর্ণ দক্ষতা অর্জিত হলেই কেবল এটি সম্পূর্ণ সবুজ হয়।",
 
   // --- Choosing what to study -------------------------------------------
   "Study Unit": "অধ্যয়নের একক",
@@ -261,6 +261,11 @@ export const BN = {
     "সূরা {surah}-এর {ruku} নং রুকু' ({from}–{to} নং আয়াত)",
   "Juz {juz}": "জুয {juz}",
   "Page {page}": "পৃষ্ঠা {page}",
+  // Explore's Juz level -- the Pages/Surahs switch (5 Sep 2026). Plurals, and
+  // they label a view rather than one item, so they are their own keys rather
+  // than reusing "Page {page}"/"Surah {surah}" above.
+  "Pages": "পৃষ্ঠাসমূহ", // ?
+  "Surahs": "সূরাসমূহ", // ?
   "◂ Previous": "◂ পূর্ববর্তী",
   "Next ▸": "পরবর্তী ▸",
 

@@ -636,6 +636,20 @@
   .explore-crumb.active { color: #C9A24B; font-weight: 600; cursor: default; }
   .explore-crumb.active:hover { background: none; }
   .explore-crumb-sep { color: #556; opacity: 0.6; }
+  /* 5 Sep 2026 -- the Juz level's Pages/Surahs switch. #id[hidden] outranks
+     #id, which is what keeps `hidden` working against a rule that sets
+     display -- this codebase's own most-repeated trap (see CLAUDE.md's
+     standing lesson; #wheelSection, #studyScreen, #qcrLevelManageActions
+     have each been bitten by it). */
+  #exploreJuzViewToggle { display: flex; align-items: center; gap: 6px; margin: 4px 0 2px; flex-wrap: wrap; }
+  #exploreJuzViewToggle[hidden] { display: none; }
+  .explore-view-label { color: #8fa0c2; font-size: 0.72rem; }
+  /* ~36px tall, per the standing lesson that a 26px control is too small for
+     a finger; these are words rather than icons, so they take their own
+     width rather than a fixed square. */
+  .explore-view-btn { min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #2c3a58; background: rgba(255,255,255,0.04); color: #8fa0c2; font-family: 'Inter', sans-serif; font-size: 0.78rem; cursor: pointer; }
+  .explore-view-btn:hover { color: #F2E8D5; border-color: #3d517a; }
+  .explore-view-btn.on { background: rgba(201,162,75,0.16); border-color: #C9A24B; color: #C9A24B; font-weight: 600; }
 
   /* ---------- Study Unit picker (Phase 5) ---------- */
   /* Shell round 9: hidden by default. The wheel's own centre disc already
@@ -2786,6 +2800,20 @@
           <div id="explorePanel" class="wheel-box">
             <div class="wheel-col">
               <div id="exploreBreadcrumb"></div>
+              <!-- 5 Sep 2026 -- a Juz has two equally real readings, and the
+                   owner asked for both: the PAGES it covers (what Explore
+                   has always shown) and the SURAHS it covers ("Juz 30 has 36
+                   Surat"). One switch, shown only at the Juz level, because
+                   it is the only level where the same scope splits two ways
+                   -- the Quran level is always Juz and the Surah level is
+                   always ayahs/rukus. The choice is remembered per browser
+                   (prefs.js), so a reader who thinks in surahs is not asked
+                   again on every visit. -->
+              <div id="exploreJuzViewToggle" hidden>
+                <span class="explore-view-label">Show</span>
+                <button type="button" class="explore-view-btn on" id="exploreJuzViewPagesBtn" data-juz-view="page" aria-pressed="true">Pages</button>
+                <button type="button" class="explore-view-btn" id="exploreJuzViewSurahsBtn" data-juz-view="surah" aria-pressed="false">Surahs</button>
+              </div>
               <!-- 2 Sep 2026 -- "enable all wheels ... to be expandable
                    from any side", same mechanism as the Mastery Wheel/QCR/
                    Asma wheels. -->
@@ -3479,6 +3507,7 @@
       getWheelSize, setWheelSize,
       getAyahDisplayMode, setAyahDisplayMode,
       getQuranLastSession, setQuranLastSession,
+      getExploreJuzView, setExploreJuzView,
     } from "./js/prefs.js";
     import { wireWheelResize } from "./js/wheel-resize.js";
     import { renderTextSizeButtonHtml } from "./js/text-size.js";
@@ -3815,6 +3844,9 @@
     const wheelResizeWrapEl = document.getElementById("wheelResizeWrap");
     const wheelResizeHandleEls = Array.from(wheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
     const exploreBreadcrumb = document.getElementById("exploreBreadcrumb");
+    const exploreJuzViewToggle = document.getElementById("exploreJuzViewToggle");
+    const exploreJuzViewPagesBtn = document.getElementById("exploreJuzViewPagesBtn");
+    const exploreJuzViewSurahsBtn = document.getElementById("exploreJuzViewSurahsBtn");
     const exploreWheelResizeWrapEl = document.getElementById("exploreWheelResizeWrap");
     const exploreWheelResizeHandleEls = Array.from(exploreWheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
     const exploreWheelContainer = document.getElementById("exploreWheelContainer");
@@ -4082,6 +4114,11 @@
     let exploreChunksBySurah = null; // Map surahNum -> chunk, shared across every Explore level for one "open" -- loading it once at the Quran-wheel level covers every deeper level too (every surah belongs to some Juz), so drilling down never costs an extra Firestore read
     let exploreSubjectChunk = null; // subject_quran chunk -- Juz/Page direct-claim fallback, used when no ayah-level data exists yet to pool from
     let exploreLevel = "quran"; // "quran" | "juz" | "surah" | "ruku"
+    // Which reading of a Juz its own level shows: "page" (what Explore has
+    // always shown) or "surah". Remembered per browser, so unlike
+    // exploreJuzNum/exploreSurahNum below it deliberately SURVIVES
+    // openExplore()'s own reset -- it is a habit, not a position.
+    let exploreJuzView = getExploreJuzView();
     let exploreJuzNum = null;
     let exploreSurahNum = null;
     let exploreRukuIndex = null;
@@ -6099,8 +6136,31 @@
       updateUnitControlsVisibility();
     }
 
+    /** Shows the Pages/Surahs switch only where it means something (the Juz
+     *  level) and keeps both buttons reading the stored choice. Called from
+     *  renderExplore() rather than from the Juz renderer itself, because
+     *  every OTHER level has to be able to put it away again. */
+    function syncExploreJuzViewToggle() {
+      exploreJuzViewToggle.hidden = exploreLevel !== "juz";
+      [exploreJuzViewPagesBtn, exploreJuzViewSurahsBtn].forEach((btn) => {
+        const on = btn.dataset.juzView === exploreJuzView;
+        btn.classList.toggle("on", on);
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+    }
+
+    [exploreJuzViewPagesBtn, exploreJuzViewSurahsBtn].forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const mode = btn.dataset.juzView;
+        if (mode === exploreJuzView) return;
+        exploreJuzView = setExploreJuzView(mode);
+        renderExplore();
+      });
+    });
+
     async function renderExplore() {
       renderExploreBreadcrumb();
+      syncExploreJuzViewToggle();
       if (exploreLevel === "quran") return renderExploreQuranLevel();
       if (exploreLevel === "juz") return renderExploreJuzLevel();
       if (exploreLevel === "surah") return renderExploreSurahLevel();
@@ -6142,12 +6202,22 @@
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToJuz);
     }
 
-    /** Level 2: one segment per page that Juz covers (its own startPage..endPage -- see build-juz-index.js round 14 for why this isn't "pages tagged with this juz": a page can straddle a Juz boundary in the real data, so a boundary page correctly appears in both neighbouring Juz's page range). Click a page -> Surah level, for whichever surah that page starts on. */
+    /** Level 2, two readings of the same Juz -- the owner's own ask, 5 Sep
+     *  2026: "user can see the pages belong to a juzz as well as Surat
+     *  belong to a juzz in the wheel". Which one shows is the Pages/Surahs
+     *  switch above the wheel (exploreJuzView). BOTH land on the same place
+     *  when a segment is clicked -- the Surah level -- so nothing below this
+     *  level had to learn a second route in. */
     async function renderExploreJuzLevel() {
       const trackable = currentTrackable();
       const j = juzIndexData.find((x) => x.juz === exploreJuzNum);
       if (!trackable || !j) return;
+      if (exploreJuzView === "surah") return renderExploreJuzSurahsView(trackable, j);
+      return renderExploreJuzPagesView(trackable, j);
+    }
 
+    /** Level 2, Pages: one segment per page that Juz covers (its own startPage..endPage -- see build-juz-index.js round 14 for why this isn't "pages tagged with this juz": a page can straddle a Juz boundary in the real data, so a boundary page correctly appears in both neighbouring Juz's page range). Click a page -> Surah level, for whichever surah that page starts on. */
+    async function renderExploreJuzPagesView(trackable, j) {
       const pages = [];
       for (let p = j.startPage; p <= j.endPage; p++) {
         const entry = pageIndexData.find((x) => x.page === p);
@@ -6179,6 +6249,71 @@
       const sidebarItems = items.map((it) => ({ ...it, label: `Page ${it.key}` }));
       exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToSurahForPage);
+    }
+
+    /** Level 2, Surahs: one segment per surah this Juz covers, read straight
+     *  off ayahCoverage() -- the same helper poolCoverageStatus() already
+     *  uses to score a Juz, so the list and the colours can never disagree
+     *  about what is inside a Juz. Nothing new was fetched or derived for
+     *  this: a Juz's own {startSurah,startAyah,endSurah,endAyah} plus
+     *  surah-index.json's ayah counts already say it exactly (Juz 30 comes
+     *  out as An-Naba .. An-Naas -- 37 segments, not the 36 the owner
+     *  quoted; the data decides, and it is worth knowing the count is
+     *  one higher than the figure that is usually remembered).
+     *
+     *  A surah at either end of a Juz is usually only PARTLY inside it (Juz 1
+     *  holds Al-Baqarah 1-141, not all 286), and the two halves of that are
+     *  treated differently on purpose: the segment's COLOUR pools only the
+     *  ayahs really in this Juz -- otherwise Juz 1 would be scored on ayahs
+     *  it does not contain -- while the click opens the WHOLE surah, which
+     *  is what the Surah level has always meant and what the page view's own
+     *  click already did. The tooltip and the sidebar row say which ayahs
+     *  the colour is about, so the difference is on screen rather than left
+     *  to be guessed. */
+    async function renderExploreJuzSurahsView(trackable, j) {
+      const coverage = ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah);
+      const labelsById = statusLabelsById();
+
+      const items = coverage.map((c) => {
+        const found = surahIndex.find((s) => s.surahNumber === c.surah);
+        const name = found ? surahName(found.surahNumber, found.nameEnglish) : t("Surah {surah}", { surah: num(c.surah) });
+        const total = found?.ayahCount ?? c.to;
+        const whole = c.from === 1 && c.to >= total;
+        const pooled = poolCoverageStatus([c], trackable.id);
+        // Direct-claim fallback, exactly as the Juz and Page segments have:
+        // used only when there is nothing ayah-level to pool from at all.
+        // A whole surah inside this Juz can carry a surah claim; a partial
+        // one can only ever carry a range claim over the ayahs it really has.
+        const entries = exploreChunksBySurah.get(c.surah)?.entries ?? {};
+        const directKey = whole ? buildUnitKey.surah(c.surah) : buildUnitKey.range(c.surah, c.from, c.to);
+        const statusId = pooled ?? (entries[`${directKey}::${trackable.id}`]?.claimedStatus ?? "not_started");
+        // num() -- the ayah range is a number being DRAWN in a sentence, so
+        // it reads ১–১৪১ in Bangla like every other number on this page. The
+        // segment's own `number` stays plain, as every Explore wheel's does.
+        const part = whole ? "" : ` (ayahs ${num(c.from)}–${num(c.to)} in this Juz)`;
+        return {
+          key: c.surah,
+          number: c.surah,
+          statusId,
+          title: `${name}${part} — ${statusId.replace(/_/g, " ")}`,
+          label: whole ? name : `${name} ${num(c.from)}–${num(c.to)}`,
+        };
+      });
+
+      const jumpToSurah = (key) => {
+        exploreSurahNum = Number(key);
+        exploreRukuIndex = null;
+        exploreLevel = "surah";
+        renderExplore();
+      };
+
+      const approachName = langText(trackable.name, getAppLang(), trackable.id);
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `Juz ${exploreJuzNum}`, centerSub: approachName });
+      attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
+
+      exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+      exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
+      attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToSurah);
     }
 
     /** Level 3, dual-mode by SURAH_WHEEL_THRESHOLD, matching the old app's own navigation depth: <=30 ayahs shows every ayah directly (click -> Study, via goToAyahFromExplore); >30 shows Ruku' groups instead (click -> Ruku' level), since a 286-segment wheel for Al-Baqarah wouldn't read as anything at a glance. Needs this surah's full text (Ruku' groupings, ayah count) -- one static, cached-after-first-load fetch, same one Study would trigger opening it directly. */

@@ -531,6 +531,35 @@ export function setBookmarkMenuGroupBy(id) {
 }
 
 // ---------------------------------------------------------------------------
+// 5 Sep 2026 -- Explore's Juz level has TWO readings of the same Juz, and
+// the owner asked for both: the pages it covers, and the surahs it covers.
+// Which one a reader wants is a habit, not a per-visit decision, so it is
+// remembered here rather than reset every time Explore opens (openExplore()
+// deliberately resets the drill-down POSITION -- which juz, which surah --
+// and this is not part of that position).
+//
+// localStorage, the same additive shape every reading preference since
+// round 18 has used: no new startup read, no collection, no
+// firestore.rules change (I9 untouched).
+// ---------------------------------------------------------------------------
+const EXPLORE_JUZ_VIEW_KEY = "mm_explore_juz_view";
+const EXPLORE_JUZ_VIEW_IDS = ["page", "surah"];
+
+let cachedExploreJuzView = readStored(EXPLORE_JUZ_VIEW_KEY, EXPLORE_JUZ_VIEW_IDS, "page");
+
+/** "page" (the default, and what Explore has always shown) or "surah". */
+export function getExploreJuzView() {
+  return cachedExploreJuzView;
+}
+
+export function setExploreJuzView(id) {
+  if (!EXPLORE_JUZ_VIEW_IDS.includes(id)) return cachedExploreJuzView;
+  cachedExploreJuzView = id;
+  writeStored(EXPLORE_JUZ_VIEW_KEY, id);
+  return cachedExploreJuzView;
+}
+
+// ---------------------------------------------------------------------------
 // 28 Aug 2026 -- the QCR (Ayah Collections) wheel is resizable by a drag
 // handle on its own corner, and the owner's own size sticks: "make the size
 // persists whatever i make, unless i resize again."
