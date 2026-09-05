@@ -154,6 +154,31 @@ const POS_LABELS = {
 /** "Preposition + Relative Pronoun" in the reader's own language. Split on the
  *  joiner, translate each atom, rejoin — which is what keeps 46 entries able to
  *  express all 359 combinations the data actually contains. */
+// ---------------------------------------------------------------------------
+// Activity actions. MOVED here from js/activity.js (and re-exported there,
+// not copied) for the reason that created this file in the first place:
+// js/backup-file.js has to print one and is a pure renderer that must never
+// import Firebase, which activity.js does. Same move, same reason, as
+// confirmStateLabel above.
+//
+// `action` is a stored identifier -- "claimed" when a status is claimed
+// against a unit, "practised" when a routine's Log button is pressed -- and
+// stays the canonical stored value everywhere it is written or exported as
+// data; this is the one place it becomes text a person reads.
+// ---------------------------------------------------------------------------
+
+const ACTION_LABELS = Object.freeze({
+  claimed: "Claimed",
+  practised: "Practised",
+  confirmed: "Confirmed",
+  returned: "Returned",
+});
+
+export function activityActionLabel(action) {
+  const label = ACTION_LABELS[action];
+  return label ? t(label) : (action ?? "");
+}
+
 export function posLabel(pos) {
   if (!pos) return "";
   return String(pos)

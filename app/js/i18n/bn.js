@@ -2095,4 +2095,147 @@ export const BN = {
   // size", "Arabic", "All" and "Reset" are all reused verbatim from their
   // existing entries above.
   "Wheel labels": "চাকার লেবেল", // ?
+
+  // -------------------------------------------------------------------
+  // 5 Sep 2026 -- the Backup page (backup.html) and the backup FILE it
+  // produces (js/backup-file.js). The file is a snapshot, so it is written
+  // in whatever language the app was in when it was taken (I11) -- these
+  // are its own headings as much as the page's.
+  // -------------------------------------------------------------------
+  "Backup": "ব্যাকআপ",
+  "QuranRevival — Backup": "QuranRevival — ব্যাকআপ",
+  "backup|noun": "ব্যাকআপ",
+  "Save everything this madrasah has written — people, the catalogue, and every claim, note, bookmark and log entry — as one file on your own device. It opens in any browser, needs no internet, and is yours to keep.":
+    "এই মাদরাসার লেখা সবকিছু — মানুষ, ক্যাটালগ, এবং প্রতিটি দাবি, নোট, বুকমার্ক ও লগ এন্ট্রি — আপনার নিজের ডিভাইসে একটি ফাইল হিসেবে সংরক্ষণ করুন। এটি যেকোনো ব্রাউজারে খোলে, ইন্টারনেট লাগে না, এবং এটি আপনারই।",
+  "What gets saved": "কী কী সংরক্ষণ হয়",
+  "Everyone on the roster, their roles and who looks after whom": "তালিকার সবাই, তাদের ভূমিকা এবং কে কার দায়িত্বে",
+  "Every claim and confirmation, for each person you can record for": "প্রতিটি দাবি ও নিশ্চিতকরণ, আপনি যাদের জন্য রেকর্ড করতে পারেন তাদের প্রত্যেকের",
+  "Every āyah note, with its formatting": "প্রতিটি আয়াত-নোট, তার সাজসজ্জাসহ",
+  "Every bookmark and folder": "প্রতিটি বুকমার্ক ও ফোল্ডার",
+  "The whole activity log, week by week": "পুরো কার্যবিবরণী, সপ্তাহ ধরে ধরে",
+  "The subject tree, the Approaches, ladders, levels and domains": "বিষয়-তালিকা, অ্যাপ্রোচসমূহ, ল্যাডার, লেভেল ও ডোমেইন",
+  "Āyah collections (QCR) and Asma ul Husna collections": "আয়াত সংগ্রহ (QCR) ও আসমাউল হুসনা সংগ্রহ",
+  "Classes, course offers, enrolments and curriculum": "ক্লাস, কোর্স অফার, ভর্তি ও পাঠ্যক্রম",
+  "Homework and submissions, and your own teaching notes": "বাড়ির কাজ ও জমা, এবং আপনার নিজের শিক্ষকতার নোট",
+  "This madrasah's own settings, banner and taglines": "এই মাদরাসার নিজস্ব সেটিংস, ব্যানার ও ট্যাগলাইন",
+  "Not saved, because it is not yours to lose:": "সংরক্ষণ হয় না, কারণ এগুলো হারানোর মতো আপনার নিজস্ব কিছু নয়:",
+  "the Qur'an text, the Mushaf pages, the recitations and the app's own program code. Those are the same for everyone and are kept separately.":
+    "কুরআনের মূল পাঠ, মুসহাফের পৃষ্ঠা, তিলাওয়াত এবং অ্যাপের নিজস্ব প্রোগ্রাম কোড। এগুলো সবার জন্য একই এবং আলাদাভাবে রাখা হয়।",
+  "Make the backup": "ব্যাকআপ তৈরি করুন",
+  "Starting…": "শুরু হচ্ছে…",
+  "Reading {label}… ({done} of {total})": "{label} পড়া হচ্ছে… ({total}টির মধ্যে {done})",
+  "Done. Save the file below.": "সম্পন্ন। নিচের ফাইলটি সংরক্ষণ করুন।",
+  "⤓ Save {filename}": "⤓ {filename} সংরক্ষণ করুন",
+  "{kb} KB": "{kb} কিলোবাইট",
+  "Some things could not be read.": "কিছু জিনিস পড়া যায়নি।",
+  "They are listed in the file too.": "সেগুলোর তালিকা ফাইলেও আছে।",
+  "The backup could not be made: {message}": "ব্যাকআপ তৈরি করা যায়নি: {message}",
+  "Could not work out what to back up: {message}": "কী ব্যাকআপ করতে হবে তা বোঝা যায়নি: {message}",
+  "your account is not allowed to read this": "আপনার অ্যাকাউন্টের এটি পড়ার অনুমতি নেই",
+  "This will save everything for the whole madrasah — {names}.": "এটি পুরো মাদরাসার সবকিছু সংরক্ষণ করবে — {names}।",
+  "This will save what your account can see — {names}.": "আপনার অ্যাকাউন্ট যা দেখতে পায় তা সংরক্ষণ করবে — {names}।",
+  "Where to keep it.": "কোথায় রাখবেন।",
+  "Save it somewhere that is not this computer as well — a phone, a cloud drive, an email to yourself. A backup on the same machine as the thing it backs up is only half a backup. Making a fresh one takes a few seconds, so do it before anything unusual: a big change, a new person, a term ending.":
+    "এই কম্পিউটারের বাইরেও কোথাও রাখুন — একটি ফোন, একটি ক্লাউড ড্রাইভ, নিজেকে পাঠানো একটি ইমেইল। যে জিনিসের ব্যাকআপ, তারই মেশিনে রাখা ব্যাকআপ অর্ধেক ব্যাকআপ মাত্র। নতুন একটি বানাতে কয়েক সেকেন্ড লাগে, তাই অস্বাভাবিক কিছুর আগে করে নিন: বড় কোনো পরিবর্তন, নতুন কেউ যুক্ত হওয়া, টার্ম শেষ হওয়া।",
+  "Reading it later.": "পরে এটি পড়া।",
+  "Double-click the file. It opens as an ordinary page with everything laid out and a filter box at the top. Nothing about it needs this app to still exist.":
+    "ফাইলটিতে ডাবল-ক্লিক করুন। এটি একটি সাধারণ পাতা হিসেবে খোলে, সবকিছু সাজানো অবস্থায় এবং উপরে একটি ফিল্টার বাক্সসহ। এর কোনো কিছুর জন্যই এই অ্যাপটির টিকে থাকা প্রয়োজন নেই।",
+
+  // The backup FILE's own headings and columns.
+  "A complete copy of this account's own data, as it stood at the moment below. This file needs no internet and no app: everything in it is inside it.":
+    "এই অ্যাকাউন্টের নিজস্ব সমস্ত তথ্যের একটি সম্পূর্ণ অনুলিপি, নিচে উল্লিখিত মুহূর্তে যেমন ছিল। এই ফাইলের জন্য ইন্টারনেট বা কোনো অ্যাপ লাগে না: এর ভেতরের সবকিছু এর ভেতরেই আছে।",
+  "Madrasah / tenant": "মাদরাসা / টেন্যান্ট",
+  "Taken": "নেওয়া হয়েছে",
+  "Taken by": "নিয়েছেন",
+  "App version": "অ্যাপ সংস্করণ",
+  "Covers": "যা যা অন্তর্ভুক্ত",
+  "Everything for the whole madrasah": "পুরো মাদরাসার সবকিছু",
+  // The four weekdays onboarding.html's own picker had but bn.js did not --
+  // needed now that "Week starts on" prints a day rather than a bare number.
+  "Tuesday": "মঙ্গলবার",
+  "Wednesday": "বুধবার",
+  "Thursday": "বৃহস্পতিবার",
+  "Friday": "শুক্রবার",
+  "What this account can see": "এই অ্যাকাউন্ট যা দেখতে পায়",
+  "Tenant id": "টেন্যান্ট আইডি",
+  "Not everything could be read into this file.": "সবকিছু এই ফাইলে পড়া যায়নি।",
+  "That is usually correct rather than a fault — an account is only allowed to read what it is allowed to read. What is missing, and why:":
+    "এটি সাধারণত ত্রুটি নয়, বরং সঠিক — একটি অ্যাকাউন্ট কেবল ততটুকুই পড়তে পারে যতটুকু পড়ার অনুমতি তার আছে। কী বাদ পড়েছে, এবং কেন:",
+  "What this file is not.": "এই ফাইলটি যা নয়।",
+  "It does not contain the Qur'an text, the Mushaf pages, the recitations or the app's own program code — those are the same for everybody and are kept separately. It holds only what this madrasah wrote: its people, its catalogue, and everything studied, claimed, noted and bookmarked.":
+    "এতে কুরআনের মূল পাঠ, মুসহাফের পৃষ্ঠা, তিলাওয়াত বা অ্যাপের নিজস্ব প্রোগ্রাম কোড নেই — সেগুলো সবার জন্য একই এবং আলাদাভাবে রাখা। এতে কেবল এই মাদরাসা যা লিখেছে তাই আছে: এর মানুষ, এর ক্যাটালগ, এবং যা কিছু পড়া, দাবি করা, নোট করা ও বুকমার্ক করা হয়েছে।",
+  "Filter the tables — a name, an āyah, a date…": "টেবিলগুলো ফিল্টার করুন — একটি নাম, একটি আয়াত, একটি তারিখ…",
+  "Filter": "ফিল্টার",
+  "Open all": "সব খুলুন",
+  "Close all": "সব বন্ধ করুন",
+  "Save the data file (JSON)": "ডেটা ফাইল সংরক্ষণ করুন (JSON)",
+  "Nothing recorded.": "কিছুই নথিভুক্ত নেই।",
+  "Empty.": "খালি।",
+  "No notes.": "কোনো নোট নেই।",
+  "No per-person study data was read.": "কোনো ব্যক্তিভিত্তিক অধ্যয়নের তথ্য পড়া হয়নি।",
+  "Study — claims, notes, bookmarks and the activity log": "অধ্যয়ন — দাবি, নোট, বুকমার্ক ও কার্যবিবরণী",
+  "Subjects": "বিষয়সমূহ",
+  "Approaches": "অ্যাপ্রোচসমূহ",
+  "Āyah collections (QCR)": "আয়াত সংগ্রহ (QCR)",
+  "Asma ul Husna collections": "আসমাউল হুসনা সংগ্রহ",
+  "Classes, course offers and curriculum": "ক্লাস, কোর্স অফার ও পাঠ্যক্রম",
+  "Grade ladders and levels": "গ্রেড ল্যাডার ও লেভেল",
+  "This madrasah's own settings": "এই মাদরাসার নিজস্ব সেটিংস",
+  "Claims and confirmations": "দাবি ও নিশ্চিতকরণ",
+  "Āyah notes": "আয়াত-নোট",
+  "Folders": "ফোল্ডারসমূহ",
+  "Activity log": "কার্যবিবরণী",
+  "Grade levels": "গ্রেড লেভেল",
+  "Names added by this madrasah": "এই মাদরাসার যোগ করা নামসমূহ",
+  "Wording this madrasah changed": "এই মাদরাসার বদলানো শব্দচয়ন",
+  "Your own teaching notes": "আপনার নিজের শিক্ষকতার নোট",
+  "Submissions": "জমাসমূহ",
+  "Invitations": "আমন্ত্রণসমূহ",
+  // The counter pills on the Backup page and at the top of the file. Bangla
+  // nouns take no plural after a number, so these are the bare nouns -- "২ জন",
+  // "৪ দাবি" -- rather than English's own singular/plural pair.
+  "people": "জন",
+  "claims": "দাবি",
+  "āyah notes": "আয়াত-নোট",
+  "bookmarks": "বুকমার্ক",
+  "log entries": "লগ এন্ট্রি",
+  "subjects": "বিষয়",
+  "āyah collections": "আয়াত সংগ্রহ",
+
+  "Chunk": "চাঙ্ক", // ? -- a storage word that leaks into Records too; see the standing note there
+  "Claimed at": "দাবির সময়",
+  "By": "যিনি করেছেন",
+  "Person id": "ব্যক্তি আইডি",
+  "Looked after by": "দায়িত্বে আছেন",
+  "Description": "বিবরণ",
+  "Id": "আইডি",
+  "Position": "অবস্থান",
+  "Inside": "যার ভেতরে",
+  "Offer": "অফার",
+  "Title": "শিরোনাম",
+  "Due": "শেষ তারিখ",
+  "Assigned to": "যাকে দেওয়া হয়েছে",
+  "Assignment": "কাজ",
+  "Comment": "মন্তব্য",
+  "Written": "লেখা হয়েছে",
+  "Setting": "সেটিং",
+  "Value": "মান",
+  "Kind": "ধরন",
+  "Created": "তৈরি হয়েছে",
+  "Banner title": "ব্যানার শিরোনাম",
+  "Banner subtitle": "ব্যানার উপশিরোনাম",
+  "Holds": "যতদিন থাকে",
+  "Only on āyah": "কেবল যে আয়াতে",
+  "Domain": "ডোমেইন",
+  "Where": "কোথায়",
+  "Sent": "পাঠানো হয়েছে",
+  "Wording": "শব্দচয়ন",
+  "yes": "হ্যাঁ",
+  "{claims} claims · {notes} notes · {marks} bookmarks · {logs} log entries":
+    "{claims}টি দাবি · {notes}টি নোট · {marks}টি বুকমার্ক · {logs}টি লগ এন্ট্রি",
+  "{n} āyāt": "{n}টি আয়াত",
+  "QuranRevival backup · format {n} · the complete data is in this file, in the block below this line.":
+    "QuranRevival ব্যাকআপ · ফরম্যাট {n} · সম্পূর্ণ তথ্য এই ফাইলেই আছে, এই লাইনের নিচের ব্লকে।",
+  "To restore from it, keep this file — the \"Save the data file (JSON)\" button above extracts the machine-readable copy.":
+    "এটি থেকে পুনরুদ্ধার করতে ফাইলটি রেখে দিন — উপরের \"ডেটা ফাইল সংরক্ষণ করুন (JSON)\" বোতামটি মেশিন-পাঠযোগ্য অনুলিপিটি বের করে দেয়।",
 };

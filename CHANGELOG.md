@@ -10582,3 +10582,178 @@ used from the Note or Read view (there is no current group there), so a plain
 Name made that way is reachable only through the flat Names list. That is
 pre-existing, it is not what was asked, and the fix is the same file-under row
 the dual button already uses -- say the word and it is one line.
+
+v07.133 (5 Sep 2026, on Claude Code on the web) is **a real backup, in two
+halves** -- the owner asked for "an html file of QuranRevival for storing as a
+backup file with all its data", which reads three ways, so it was **put to them
+before anything was built** and they chose both of the real ones: a Backup page
+inside the app for their DATA, and a runnable offline archive of the app
+itself.
+
+**The diagnosis that shaped it: the code has been backed up all along and the
+data never has.** Git carries every version of every file with full history;
+reverting a bad round is one command. But `records`, `activity`, `ayahNotes`,
+`bookmarks`, `ayahCollections` and `asmaCollections` live only in Firestore,
+and until this round there was no way to get a copy of any of them out --
+Monitor's CSV export covers activity and nothing else. So the single-file
+"snapshot of the app" reading, which is the one the question sounds like, is
+the one worth the least: it would add nothing git does not already give, and
+it could not carry the Qur'an text or the Mushaf pages anyway (~130MB of
+separate files). Said to the owner with the sizes attached rather than built
+and explained afterwards.
+
+**(1) `backup.html` + `js/backup.js` + `js/backup-file.js`.** One button;
+everything the signed-in account can read comes back as ONE self-contained
+HTML file saved to their own device. It opens in any browser with **no
+network at all** -- no stylesheet link, no script src, no font download,
+proven by loading it with every non-`file://` request treated as a failure.
+Human-readable throughout (tables per person: claims, notes with their
+formatting intact, bookmarks, the week-by-week activity log, plus the
+catalogue, collections, classes, curriculum, grades, homework and the
+tenant's own settings), with a filter box, open/close-all and Print -- and
+**the complete raw JSON embedded in a `<script type="application/json">`
+block**, which is what makes it a backup rather than a printout. The tables
+are for a person; the block is for a machine, and a restore later reads the
+block.
+
+**Two rules shape every read, and both are the reason this did not become a
+403 the owner discovered.** Every collection is fetched through **the app's
+own existing helper** -- `listAllRecordsForPerson`, `getBookmarks`,
+`getAyahNotes`, `listClasses`, `getQcrDoc` and the rest -- because those query
+shapes are already proven against the deployed rules; inventing new ones is
+exactly the shape v07.18 found (a read that looks right and fails only once
+the rules see it). And **a refusal is recorded, never thrown**: a guardian
+cannot read `memberships`, a non-admin cannot read `tenantInvites`, and those
+are correct refusals, so they are listed in the file ("not included, and
+why") and on screen. A partial backup that says what it is beats no backup.
+Activity has no list query anywhere in this app (one document per week, read
+by id -- see `activity.js`), so the export walks week keys from the tenant's
+own `createdAt` to today, fired together per person: one wait each, not one
+per week.
+
+**No `firestore.rules` change, no schema change, no new collection, and
+nothing on any startup path** -- it is all reads of documents that already
+exist, on an explicit button press. `tools/perf/measure.mjs` re-run to prove
+it: Quran Study still **6 sequential round trips / 9 Firestore calls**,
+unchanged; `new-tenant.mjs` 10/10.
+
+**(2) The offline archive.** `zip -r` of the whole site: **7.0 MB** for the
+app plus all 114 surahs, the translations, the word-by-word data, the
+juz/hizb/page tables, the three search indexes and the bundled Arabic fonts
+(36MB raw -- JSON compresses hard); **101 MB** with the Mushaf's own 604 page
+fonts added, which barely compress at all. **Proven to run, not assumed:**
+the core archive was extracted to a clean folder, served on its own port, and
+the app booted from it with the same Firebase stub the checked-in harness uses
+-- real Qur'an text rendered, all 114 surahs in the picker, a bundled Arabic
+face really `loaded` rather than falling back, and a real English search
+returning real hits off the 900KB index, with **zero failed local requests**.
+A `README-FIRST.txt` rides with it saying plainly that double-clicking
+`quranrevival.html` will NOT work (browsers refuse to load a page's module
+scripts off the disk), what one line to run instead, and that sign-in still
+needs the internet because sign-in and the data both live on Google's servers.
+
+**The backup FILE is translated, and that was a reversal made mid-build.**
+The first draft wrote it in English on the reasoning that a backup might be
+read years later by someone helping. That is a real argument and it is not
+mine to make: I11 says every user-visible name is language-keyed, and the
+person who reads a backup is the person who was using the app. `t()` runs at
+BUILD time, so the finished file is still one static self-contained document
+with no i18n machinery inside it -- only the builder needs the catalogue.
+**`js/backup-file.js` imports nothing that touches Firebase**, which is what
+keeps it testable without a browser: 32 checks run against it in plain node.
+
+**`activityActionLabel` MOVED from `js/activity.js` to `js/labels.js` and is
+re-exported there, not copied** -- the same move, for the same reason, that
+created `labels.js` in the first place (v07.34) and that v07.36 made for
+`confirmStateLabel`: a pure renderer has to print one and must never gain a
+Firebase dependency, which `activity.js` has. Both existing call sites
+(`monitor.html`, `records.html`) import it from `activity.js` and needed no
+change at all -- that is what the re-export is for. `activity.js`'s own now-
+unused `t` import went with it.
+
+**Five real defects were found, every one of them by LOOKING at a rendered
+page rather than by a passing check, and two of them were mine.**
+
+- **The Save button was navy text on a navy background.** `#result a` (an ID
+  rule) beat `.download-link` (a class) outright, so the finished button was
+  an unreadable block -- while every assertion passed, because the element and
+  its `download` attribute were both perfectly correct. **A passing check
+  carrying the same blind spot as the code it guards**, exactly the standing
+  lesson. There is one colour rule now, so there is no specificity contest
+  left to lose, and the check measures the rendered text colour against its
+  own background rather than the element's existence.
+- **The tenant's own name came out English on a Bangla page.** `nameOf()`
+  read `.en` directly instead of going through `langText()` -- the identical
+  I11 bug v07.35 found in `classes.html`.
+- **A Bangla export was called `quranrevival-backup-tenant-<date>.html`.**
+  Stripping a Bangla tenant name to `[a-z0-9]` leaves nothing. The filename
+  reads the tenant's ENGLISH name now, deliberately: a file name should not
+  change meaning because someone switched interface language between one
+  backup and the next.
+- **"২ people" on a fully-Bangla page, with the coverage report reading
+  100%.** The pill labels reached `t()` as a *variable* inside a loop --
+  phase 4's own documented blind spot, in a new place. Written out as literal
+  `t("…")` calls now, which is what makes them countable.
+- **Raw stored ids where the app shows words** -- "pending", "practised",
+  "active", "owner, prime". The file goes through `statusLabel()`,
+  `confirmStateLabel()`, `entityStatusLabel()`, `activityActionLabel()` and
+  `roleListLabel()` now, so a backup reads the way the app reads, while the
+  canonical ids stay untouched in the data block. `weekStartsOn` prints a day
+  name rather than the bare `6` it used to.
+
+**One failing check was investigated and proved a WRONG ASSERTION, not a
+defect** -- it expected the raw ids `owner, prime` where the app correctly
+renders "Owner, Prime". The app was right.
+
+**Notes are sanitised on the way into the file** -- a note is the one thing
+here that is HTML rather than text, it has never been through a sanitiser
+anywhere in this app, and a backup is a local file opened by double-clicking,
+so it runs with `file://` privileges. Formatting is preserved and stripped to
+the tag list the Notes palette can actually produce, with **every attribute
+dropped** -- no `href`, no `style`, no `onclick`, no `src`. Preserving what a
+note SAID never requires preserving what it could DO. The raw note is kept
+byte-exact in the data block, which does not execute.
+
+**Verified: 32 checks on the pure file-builder in plain node** (the sanitiser
+against a deliberately hostile note: script elements and their bodies, event
+handlers, `javascript:` URLs, an `<img onerror>` and an `<iframe>` all proven
+gone while the real formatting and the stripped tags' own words survive; the
+document proven complete, network-free and parseable back out of its own JSON
+block) **plus 53 checks against the real page in a browser** (the file
+captured from the page's own blob and read for real: both people, real claims,
+the records chunk, all three confirm states, the subject tree, this week's
+activity, the version stamp; the Save link proven readable and pressable; and
+the whole thing again in Bangla, where the FILE itself is proven Bangla --
+headings, intro, toolbar, the People section, Bengali digits, `lang="bn"` --
+while the data block is proven to keep canonical English ids and real numbers)
+**plus 7 checks proving the offline archive really runs.**
+
+**`behaviour.mjs`: 802 pass, 1 fail**, stopping at the same pre-existing
+line-4084 crash carried since v07.69. The one failure is `8e` (typing Bengali
+digits into the Go box) and it is a **timing flake under load, proven so
+rather than assumed**: reproduced 4 times out of 4 green in isolation, and
+`app/quranrevival.html` is byte-unmodified by this round. archive.org happened
+to be reachable this run, so section 22g's usual three environmental failures
+did not appear -- same 803 total either way. **`layout.mjs`: every measured
+landing-page metric byte-for-byte identical** to `HEAD` at all eight viewports
+in both banner states (heading 148/103px, wheel 377/399/280/220/320/360px,
+Approach rows, 9px dock gap, no overflow), `getElementById` targets unchanged
+at 235 and the "missing" list the same 22 as `HEAD`. **`reading.mjs` READING
+SCREEN OK**, **`panel.mjs` no truncation and no wrapped bar**, **`navcheck.mjs`
+unchanged** (still only the pre-existing 320px English truncation of
+"Operation"/"Bookmark"). **Coverage 1,563 → 1,701 scanned, 47 missing
+UNCHANGED** -- the baseline -- with `backup.html`/`js/backup.js`/
+`js/backup-file.js` registered in the `admin` area; `tracking` drops 2 and
+`shell` gains 2, which is exactly `activityActionLabel` moving files.
+
+**Flagged, not changed.** The backup is one-way: this round WRITES the file
+and nothing reads it back. Restoring is a genuinely different and riskier job
+(it writes to Firestore, and D6/I4 mean it can only ever add or revive, never
+overwrite), so it is the owner's own call as its own round -- the file already
+carries everything a restore would need, which is why the JSON block is in
+there. The count pills read "1 bookmarks" in English for a count of one;
+Bangla is unaffected (its nouns take no plural after a number), and inventing
+eight singular strings for a stat row was not worth it. And **`nav.js`'s
+Backup link is deliberately NOT owner/prime-only**, unlike Taglines beside it:
+the page exports exactly what the account may already read, so a guardian
+backing up their own children's notes is reading nothing new.

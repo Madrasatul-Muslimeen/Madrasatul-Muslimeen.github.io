@@ -51,7 +51,13 @@ const AREAS = {
   // js/modules.js and js/study-lock.js joined in phase 5: the module
   // registry is what catalogue.html's own Modules table renders, and the
   // handover lock's refusal message is shown on people.html.
-  admin: ["people.html", "catalogue.html", "curriculum.html", "classes.html", "js/catalogue.js", "js/people.js", "js/curriculum.js", "js/classes.js", "js/grades.js", "js/invites.js", "js/identity.js", "js/resources.js", "js/modules.js", "js/study-lock.js", "taglines.html"],
+  admin: ["people.html", "catalogue.html", "curriculum.html", "classes.html", "js/catalogue.js", "js/people.js", "js/curriculum.js", "js/classes.js", "js/grades.js", "js/invites.js", "js/identity.js", "js/resources.js", "js/modules.js", "js/study-lock.js", "taglines.html",
+    // Backup joined here rather than in `tracking`: it sits under Home ->
+    // Settings beside taglines.html, and it is a whole-tenant tool. Note
+    // js/backup-file.js carries the BACKUP FILE's own headings, which are
+    // built with t() at export time -- the file is a snapshot, so it is
+    // written in whatever language the app was in (I11).
+    "backup.html", "js/backup.js", "js/backup-file.js"],
   asma: ["js/asma-data.js", "js/asma-posters.js"],
 };
 

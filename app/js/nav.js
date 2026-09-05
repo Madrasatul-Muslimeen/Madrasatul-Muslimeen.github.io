@@ -106,7 +106,15 @@ const BOOKMARK_LINKS = [{ href: "bookmarks.html", label: "Manage bookmarks…" }
 const SETTINGS_PLACEHOLDERS = ["Appearance"];
 // Shell round 20: the moving tagline strip's own editing screen. Tenant
 // content, so owner/prime only -- see renderSettings().
-const SETTINGS_LINKS = [{ href: "taglines.html", label: "Taglines", ownerPrimeOnly: true }];
+// Backup is deliberately NOT ownerPrimeOnly, unlike Taglines beside it: the
+// page exports exactly what the signed-in account is already allowed to
+// read, so a guardian backing up their own children's notes and claims is
+// reading nothing new. An admin gets the whole tenant; everyone else gets
+// their own corner of it, and the file says which it is.
+const SETTINGS_LINKS = [
+  { href: "taglines.html", label: "Taglines", ownerPrimeOnly: true },
+  { href: "backup.html", label: "Backup" },
+];
 
 // Phase 13 round 1: About reads the feature registry live (getFullRegistry()).
 const ABOUT_LINKS = [{ href: "about.html", label: "About" }];

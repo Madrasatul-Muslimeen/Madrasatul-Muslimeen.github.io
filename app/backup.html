@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — Backup</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 1.5rem auto; padding: 0 1rem 5rem; color: #222; }
+  h1 { font-size: 1.4rem; margin-bottom: 0.2rem; }
+  h2 { font-size: 1.05rem; margin-top: 1.8rem; }
+  p.intro { color: #555; font-size: 0.94rem; }
+  button {
+    font-size: 0.9rem; padding: 0.35rem 0.8rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  button#makeBtn { font-size: 1rem; padding: 0.55rem 1.2rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  .card { border: 1px solid #e5e5e5; border-radius: 0.6rem; padding: 0.9rem 1rem; margin-top: 0.8rem; }
+  .note { font-size: 0.85rem; color: #666; margin: 0.4rem 0 0; }
+  .warn { background: #fff8e6; border: 1px solid #f0d9a0; border-radius: 0.5rem; padding: 0.6rem 0.8rem; font-size: 0.88rem; }
+  ul.plain { margin: 0.3rem 0 0; padding-left: 1.1rem; font-size: 0.88rem; color: #444; }
+  ul.plain li { margin: 0.15rem 0; }
+  /* The progress line is a real readout, not a spinner: an export of a live
+     tenant is dozens of round trips and a button that just sits there reads
+     as broken. */
+  #progress { font-size: 0.88rem; color: #444; margin-top: 0.7rem; min-height: 1.3em; }
+  #bar { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; margin-top: 0.4rem; }
+  #barFill { height: 100%; width: 0; background: #B8862F; transition: width 0.2s; }
+  #result { margin-top: 0.9rem; }
+  /* The one rule that colours this link. An earlier draft ALSO carried
+     `#result a { color: #1F3A6E }`, which is an ID selector and therefore
+     beats this class outright -- navy text on a navy background, an
+     unreadable button that every assertion still passed because the element
+     and its download attribute were both perfectly correct. Found by looking
+     at the screenshot, not by the tests. There is only one colour rule now,
+     so there is no specificity contest left to lose. */
+  #result a.download-link {
+    display: inline-block; background: #1F3A6E; color: #fff; text-decoration: none;
+    padding: 0.55rem 1.1rem; border-radius: 0.4rem; font-size: 1rem; font-weight: 600;
+  }
+  #result a.download-link:hover { background: #16305c; }
+  .stat { display: inline-block; background: #f3f1ea; border: 1px solid #e6e1d2; border-radius: 2rem; padding: 0.15rem 0.65rem; font-size: 0.82rem; margin: 0.15rem 0.2rem 0 0; }
+</style>
+</head>
+<body>
+  <h1>Backup</h1>
+  <p class="intro">Save everything this madrasah has written — people, the catalogue, and every claim, note, bookmark and log entry — as one file on your own device. It opens in any browser, needs no internet, and is yours to keep.</p>
+
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
+
+  <div id="app" style="display:none;">
+    <div class="card">
+      <h2 style="margin-top:0;">What gets saved</h2>
+      <ul class="plain">
+        <li>Everyone on the roster, their roles and who looks after whom</li>
+        <li>Every claim and confirmation, for each person you can record for</li>
+        <li>Every āyah note, with its formatting</li>
+        <li>Every bookmark and folder</li>
+        <li>The whole activity log, week by week</li>
+        <li>The subject tree, the Approaches, ladders, levels and domains</li>
+        <li>Āyah collections (QCR) and Asma ul Husna collections</li>
+        <li>Classes, course offers, enrolments and curriculum</li>
+        <li>Homework and submissions, and your own teaching notes</li>
+        <li>This madrasah's own settings, banner and taglines</li>
+      </ul>
+      <p class="note"><b>Not saved, because it is not yours to lose:</b> the Qur'an text, the Mushaf pages, the recitations and the app's own program code. Those are the same for everyone and are kept separately.</p>
+    </div>
+
+    <div class="card">
+      <p id="scopeLine" class="note" style="margin-top:0;"></p>
+      <p><button type="button" id="makeBtn" disabled>Make the backup</button></p>
+      <div id="bar" hidden><div id="barFill"></div></div>
+      <p id="progress"></p>
+      <div id="result"></div>
+    </div>
+
+    <div class="card">
+      <p class="note" style="margin-top:0;"><b>Where to keep it.</b> Save it somewhere that is not this computer as well — a phone, a cloud drive, an email to yourself. A backup on the same machine as the thing it backs up is only half a backup. Making a fresh one takes a few seconds, so do it before anything unusual: a big change, a new person, a term ending.</p>
+      <p class="note"><b>Reading it later.</b> Double-click the file. It opens as an ordinary page with everything laid out and a filter box at the top. Nothing about it needs this app to still exist.</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { bootstrapContext } from "./js/session-context.js";
+    import { renderNavBar, renderHomeExtras } from "./js/nav.js";
+    import { mountBookmarkMenu } from "./js/bookmark-nav.js";
+    import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { langText } from "./js/lang.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
+    import { APP_VERSION } from "./js/version.js";
+    import { collectBackup } from "./js/backup.js";
+    import { buildBackupHtml, backupFilename } from "./js/backup-file.js";
+
+    translateStatic();
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    const makeBtn = document.getElementById("makeBtn");
+    const progressEl = document.getElementById("progress");
+    const barEl = document.getElementById("bar");
+    const barFill = document.getElementById("barFill");
+    const resultEl = document.getElementById("result");
+    const scopeLineEl = document.getElementById("scopeLine");
+
+    let activeTenantId = null;
+    let myPersonId = null;
+    let roster = [];
+    let canAdmin = false;
+    // The last object URL handed out, so a second backup in the same visit
+    // releases the first rather than leaking a whole file's worth of memory.
+    let lastUrl = null;
+
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid });
+      mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => myPersonId });
+    }
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    makeBtn.addEventListener("click", async () => {
+      makeBtn.disabled = true;
+      resultEl.innerHTML = "";
+      barEl.hidden = false;
+      barFill.style.width = "0%";
+      progressEl.textContent = t("Starting…");
+      if (lastUrl) { URL.revokeObjectURL(lastUrl); lastUrl = null; }
+
+      try {
+        const data = await collectBackup(db, {
+          tenantId: activeTenantId,
+          uid: auth.currentUser.uid,
+          userEmail: auth.currentUser.email,
+          people: roster,
+          myPersonId,
+          canAdmin,
+          appVersion: APP_VERSION,
+          onProgress: (done, total, label) => {
+            barFill.style.width = `${Math.min(100, Math.round((done / total) * 100))}%`;
+            progressEl.textContent = t("Reading {label}… ({done} of {total})", { label, done: num(done), total: num(total) });
+          },
+        });
+
+        const html = buildBackupHtml(data);
+        const filename = backupFilename(data);
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        lastUrl = URL.createObjectURL(blob);
+
+        // Offered as a real link the reader clicks, not an automatic download:
+        // a browser that blocks a script-started download would otherwise
+        // leave them looking at a finished-looking page with no file, and
+        // this way the same link can be long-pressed and saved on a phone.
+        const a = document.createElement("a");
+        a.href = lastUrl;
+        a.download = filename;
+        a.textContent = t("⤓ Save {filename}", { filename });
+        a.className = "download-link";
+
+        const claims = data.study.reduce((n, p) => n + (p.records?.length ?? 0), 0);
+        const notes = data.study.reduce((n, p) => n + Object.keys(p.ayahNotes?.notes ?? {}).length, 0);
+        const marks = data.study.reduce((n, p) => n + (p.bookmarks?.saved?.length ?? 0), 0);
+        const logs = data.study.reduce((n, p) => n + (p.activityWeeks ?? []).reduce((m, w) => m + (w.entries?.length ?? 0), 0), 0);
+
+        barFill.style.width = "100%";
+        progressEl.textContent = t("Done. Save the file below.");
+        resultEl.appendChild(a);
+        const stats = document.createElement("p");
+        stats.style.marginTop = "0.6rem";
+        // The labels are written out as literal t("…") calls rather than
+        // looped over as bare strings: t() reading a VARIABLE is invisible to
+        // tools/i18n-coverage.mjs (phase 4's own documented blind spot), and
+        // an earlier draft of exactly this loop shipped "২ people" onto a
+        // fully-Bangla page with the report still reading 100%.
+        for (const [n, label] of [[data.people.length, t("people")], [claims, t("claims")], [notes, t("āyah notes")], [marks, t("bookmarks")], [logs, t("log entries")]]) {
+          const span = document.createElement("span");
+          span.className = "stat";
+          span.textContent = `${num(n)} ${label}`;
+          stats.appendChild(span);
+        }
+        const size = document.createElement("span");
+        size.className = "stat";
+        size.textContent = t("{kb} KB", { kb: num(Math.max(1, Math.round(blob.size / 1024))) });
+        stats.appendChild(size);
+        resultEl.appendChild(stats);
+
+        // I15 in its plainest form: a collection that could not be read is
+        // named on screen, not only inside the file, so the person knows
+        // before they file it away that it is a partial copy.
+        if (data.couldNotRead.length) {
+          const warn = document.createElement("div");
+          warn.className = "warn";
+          warn.style.marginTop = "0.7rem";
+          const p = document.createElement("p");
+          p.style.margin = "0 0 0.3rem";
+          p.innerHTML = `<b>${t("Some things could not be read.")}</b> ${t("They are listed in the file too.")}`;
+          warn.appendChild(p);
+          const ul = document.createElement("ul");
+          ul.className = "plain";
+          for (const n of data.couldNotRead) {
+            const li = document.createElement("li");
+            li.textContent = `${n.label} — ${n.reason}`; // tenant/rule text, never HTML
+            ul.appendChild(li);
+          }
+          warn.appendChild(ul);
+          resultEl.appendChild(warn);
+        }
+      } catch (err) {
+        progressEl.textContent = "";
+        const warn = document.createElement("div");
+        warn.className = "warn";
+        warn.textContent = t("The backup could not be made: {message}", { message: err?.message ?? String(err) });
+        resultEl.appendChild(warn);
+      } finally {
+        makeBtn.disabled = false;
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = t("Not signed in.");
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = t("Signed in as {email}", { email: user.email });
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+      appEl.style.display = "block";
+
+      try {
+        const userIndexSnap = await getDoc(doc(db, TENANT.USER_INDEX, user.uid));
+        if (adoptAppLangFromUserIndex(userIndexSnap)) return;
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+        const { context, memberships } = await bootstrapContext(db, user.uid, defaultTenantId);
+        if (!context) return;
+        activeTenantId = context.tenantId;
+        myPersonId = context.personId;
+        const roles = memberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [];
+        renderNav(roles, null);
+        canAdmin = roles.includes("owner") || roles.includes("prime");
+
+        // Which people's own study data this login may read. Deliberately the
+        // SAME rule the study screens use for their own Person picker: an
+        // admin sees the whole roster, anyone else sees themselves plus
+        // whoever they look after. Asking for more would only collect a list
+        // of refusals; asking for less would quietly leave data out.
+        const { getDocs, query, collection, where } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+        const snap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+        const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        roster = canAdmin ? all : all.filter((p) => p.id === myPersonId || p.managedByPersonId === myPersonId);
+
+        const names = roster.map((p) => langText(p.name, getAppLang(), p.id)).join(", ");
+        scopeLineEl.textContent = canAdmin
+          ? t("This will save everything for the whole madrasah — {names}.", { names })
+          : t("This will save what your account can see — {names}.", { names });
+        makeBtn.disabled = false;
+      } catch (err) {
+        console.error(err);
+        scopeLineEl.textContent = t("Could not work out what to back up: {message}", { message: err?.message ?? String(err) });
+      }
+    });
+  </script>
+</body>
+</html>

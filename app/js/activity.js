@@ -17,7 +17,6 @@ import { doc, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.1
 import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
 import { parseUnitKey } from "./unit-keys.js";
-import { t } from "./i18n.js";
 
 /**
  * ISO date (YYYY-MM-DD) of the start of the week containing `date`, per the
@@ -145,14 +144,9 @@ export function computeStreak(weekDocs, subjectId, todayDate = new Date()) {
 // one place it becomes text a person reads.
 // ---------------------------------------------------------------------------
 
-const ACTION_LABELS = Object.freeze({
-  claimed: "Claimed",
-  practised: "Practised",
-  confirmed: "Confirmed",
-  returned: "Returned",
-});
-
-export function activityActionLabel(action) {
-  const label = ACTION_LABELS[action];
-  return label ? t(label) : (action ?? "");
-}
+// Moved to js/labels.js and RE-EXPORTED here, not copied -- this module owns
+// WRITING an activity entry, but js/backup-file.js has to PRINT one and is a
+// pure renderer (I2) that must never import Firebase, which this file does.
+// Same shape, and the same reason, as records.js's own confirmStateLabel
+// re-export.
+export { activityActionLabel } from "./labels.js";
