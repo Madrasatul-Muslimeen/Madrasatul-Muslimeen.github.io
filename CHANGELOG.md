@@ -10719,3 +10719,123 @@ translation key, so it is raised rather than decided here. And the Surahs view
 is offered at the **Juz** level only; the equivalent question one level up
 ("which surahs does the whole Qur'an hold") is the Surah picker's job, not a
 wheel's.
+
+
+v07.134 (5 Sep 2026, same day) is **the owner's own "there's no approach
+selector there to check the status of an approach across the wheel (entire
+Quran) ... place the approach selector over the wheel ... place it like a
+capsule."**
+
+**Their diagnosis was half right, and the half that is not is the useful
+part -- this is "unreachable, not broken" for the third time in this file.**
+Explore's Quran wheel has ALWAYS coloured itself for exactly one Approach:
+`renderExploreQuranLevel()` reads `currentTrackable()`, pools every ayah of
+each Juz against it, and even prints its name in the hub as `centerSub`. So
+the function the owner asked for was already there and already correct. What
+was missing is a way to say WHICH from inside Explore: the only picker was
+Study options bar 4, behind a different dock tab, which means the reader has
+to leave the thing they are reading to change what it means. **Measured
+before touching anything** -- the wheel really does re-colour per Approach --
+so this round adds a control, not a mechanism.
+
+**One control, and deliberately not a new idea.** `#exploreApproachSelect` is
+a MIRROR of the canonical picker, the fifth reader of `currentTrackableId`
+alongside Study options, the Ayah Note screen, QCR's own bar and the landing
+wheel. It writes through the same `changeCurrentTrackable()` every other
+picker writes through, and its options come from the same
+`buildTrackableOptionsHtml()` -- so there is one source of truth for what is
+offered and one for what is chosen, and picking here moves the landing wheel
+and Study options exactly as picking there moves this. `changeCurrentTrackable()`
+gained one branch (`stageView === "explore" && exploreMode === "quran"`)
+sitting beside the QCR branch it was modelled on.
+
+**"Like a capsule" already had an answer in this app, and using it was the
+whole point.** `.wheel-intro-capsule` -- the gold pill above the landing
+page's own wheel -- was added on this owner's own ask, 4 Sep 2026, in this
+exact slot ("in the marked-up space, above the wheel, let appear a capsule
+... push the wheel below"). So Explore's picker is that same pill rather than
+a second pill invented for the same job: same gradient, same 999px radius,
+same weight. The difference is that this one is a CONTROL -- the `<select>`
+is stripped of its native chrome, wears the pill, and carries a caret beside
+it so it still reads as something you can open. The whole pill is the tap
+target, label included, at **36px**, per the standing lesson that a 26px
+control is too small for a finger.
+
+**It is shown at EVERY Explore level, not only the Quran one**, because Juz,
+Surah and Ruku' segments are pooled for the same Approach -- it is the
+panel's context throughout, not a Quran-level decoration.
+
+**Two decisions worth recording because they went the other way from what
+this project usually does.** The hub's own `centerSub` -- the Approach name
+drawn small inside the wheel -- is **KEPT**, even though the capsule now says
+the same thing 40px above it. That looks like exactly the duplication v07.52
+removed (the reciter caption) and shell round 22 removed (`#readRef`), and it
+was nearly removed for the same reason. It stays because the two are not
+actually the same thing here: the wheel is resizable and `#exploreScroll`
+scrolls, so on a tall wheel the capsule can scroll off the top while the wheel
+is still on screen -- and then the hub label is the only thing naming the
+Approach. One is the control, the other travels with the thing it labels.
+Said here rather than left to look like an oversight. And the capsule was
+NOT given its own remembered state: the Approach is already shared app-wide
+state, and a second memory of it is exactly how two pickers start disagreeing.
+
+**Verified with a focused, un-checked-in Playwright script -- 23 checks, all
+passing** -- and the one that matters needed the harness to be fixed first,
+which is the round's real testing lesson. **The stub's own tenant has no
+progress worth pooling**, so the whole-Quran wheel is not_started for EVERY
+Approach and a naive "did the colours change?" check passes or fails for
+reasons that have nothing to do with the feature. `poolCoverageStatus()` is
+weakest-link, so a Juz only leaves not_started when **every** ayah in it is
+claimed -- 148 of them for Juz 1. So the test seeds Juz 1 (surah 1 entire,
+surah 2 ayahs 1-141) as really mastered for `memorise` alone, via the
+`extraSeedJs` hook v07.76 added, and then proves: **Juz 1 green for the
+Approach it was mastered for while the other 29 are not; switching Approach
+really re-colours the whole-Quran wheel; and Juz 1 specifically stops reading
+mastered.** That is the owner's feature, proven by colour rather than by a
+dropdown's own value. Also proven: the capsule is a real 999px pill, >=36px,
+above the wheel, offering the same list as the canonical picker and opening on
+the Approach really in force; the canonical picker moves with it AND it moves
+with the canonical picker (a change made in Study options reaches it); the hub
+names the new Approach too; it is present at the Juz and Surah levels; and all
+of it in Bangla -- the pill's own word, the Approach name, **and its
+screen-reader name** (`aria-label`, which `translateStatic()` covers via
+TRANSLATABLE_ATTRS -- checked on the rendered page rather than assumed, per
+v07.132's own lesson) -- with the option VALUES proven still plain trackable
+ids.
+
+**Measured, because a NEW control is a layout change** (v07.129's lesson): at
+320/360/390/412/768/1280/1920px in both languages the capsule is **258x36 in
+English, 169x36 in Bangla**, always on screen, always above the wheel, nothing
+clipped, no page overflow -- and the Pages/Surahs switch v07.133 added still
+holds ONE line beside it. **NO PROBLEMS** across all fourteen rows. v07.133's
+own 33-check script was re-run unchanged and still passes with the capsule
+above it. **One test bug of its own was found and fixed rather than worked
+around:** both scripts opened Explore by reading `aria-expanded` on
+`#tabExploreBtn` -- but Explore is a STAGE VIEW, so its tab carries
+`aria-pressed`, and reading the wrong attribute made "open it only if it is
+closed" always click, which TOGGLES it shut when it was already open. That is
+v07.128's own recorded trap, hit again by a test rather than by the app.
+
+**`layout.mjs`: every measured landing-page metric byte-for-byte identical**
+to `HEAD` at all eight viewports in both banner states (heading 148/103px,
+wheel 377/399/280/220/320/360px, Approach rows, 9px dock gap, no overflow);
+`getElementById` targets 238 -> 239, exactly the one new lookup, and the
+"missing" list is the same 22 as `HEAD`. **Coverage 1,565/47 missing --
+UNCHANGED, and that is the correct answer, not a miss**: this round adds no
+new strings at all. "Approach" and "Choose an Approach" were both already in
+`bn.js`, translated, from Study options bar 4 and the Ayah Note screen's own
+toggle -- reusing them is the same reuse the picker itself is. No
+`firestore.rules`, schema or Firestore data changes, and no new Firestore read
+either: switching Approach re-pools `exploreChunksBySurah`, already in memory
+from `openExplore()` (I9 untouched).
+
+**Flagged, not changed -- and it is cheaper than it looks.** Explore's
+breadcrumb and sidebar labels are hardcoded English even in Bangla ("Whole
+Quran", "Juz 1", "Page 582"), visible in this round's own Bangla screenshot
+beside a fully-Bangla capsule. **The translations already exist and are simply
+never called**: `"Whole Quran"`, `"Juz {juz}"`, `"Page {page}"` and
+`"Surah {surah}"` are all in `bn.js` today, translated. So the fix is wrapping
+six or seven template literals in `t()` with `num()` on the number -- not a
+translation job. It is out of this round's scope and would have broken the
+English assertions in both focused scripts, so it is raised rather than
+slipped in.
