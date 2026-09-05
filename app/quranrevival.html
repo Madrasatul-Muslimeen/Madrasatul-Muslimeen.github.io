@@ -650,6 +650,37 @@
   .explore-view-btn { min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #2c3a58; background: rgba(255,255,255,0.04); color: #8fa0c2; font-family: 'Inter', sans-serif; font-size: 0.78rem; cursor: pointer; }
   .explore-view-btn:hover { color: #F2E8D5; border-color: #3d517a; }
   .explore-view-btn.on { background: rgba(201,162,75,0.16); border-color: #C9A24B; color: #C9A24B; font-weight: 600; }
+  /* 5 Sep 2026, owner: "place the approach selector over the wheel ... place
+     it like a capsule." Deliberately the SAME gold pill the landing page's
+     own .wheel-intro-capsule already is -- that capsule was added on this
+     owner's own ask, in this exact slot (above a wheel, pushing it down), so
+     this is the app's existing language rather than a second one invented
+     for the same job. The difference is that this capsule is a CONTROL: the
+     <select> is stripped of its native chrome and wears the pill, with the
+     caret drawn beside it so it still reads as something you can open. */
+  .explore-approach-row { display: flex; justify-content: center; margin: 4px 0 2px; }
+  .explore-approach-capsule {
+    display: inline-flex; align-items: center; gap: 0.4rem; max-width: 100%;
+    background: linear-gradient(180deg, #ecd49a, #C9A24B); color: #221904;
+    border-radius: 999px; padding: 0.2rem 0.7rem 0.2rem 0.85rem;
+    /* ~36px, per the standing lesson that a 26px control is too small for a
+       finger. The whole pill is the tap target, label included. */
+    min-height: 36px; box-sizing: border-box;
+    font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.8rem; line-height: 1.3;
+    box-shadow: 0 6px 16px -8px rgba(0,0,0,0.6); cursor: pointer;
+  }
+  .explore-approach-capsule-word { flex: none; opacity: 0.72; font-weight: 700; }
+  /* min-width:0 is what lets a long tenant-authored Approach name shrink
+     inside the pill instead of pushing it wider than the panel. */
+  .explore-approach-capsule select {
+    flex: 1 1 auto; min-width: 0;
+    appearance: none; -webkit-appearance: none;
+    background: transparent; border: none; padding: 0; margin: 0;
+    color: #221904; font-family: inherit; font-weight: 800; font-size: inherit;
+    cursor: pointer; text-overflow: ellipsis;
+  }
+  .explore-approach-capsule select:focus-visible { outline: 2px solid #221904; outline-offset: 2px; border-radius: 4px; }
+  .explore-approach-capsule-caret { flex: none; font-size: 0.7rem; opacity: 0.75; pointer-events: none; }
 
   /* ---------- Study Unit picker (Phase 5) ---------- */
   /* Shell round 9: hidden by default. The wheel's own centre disc already
@@ -2800,6 +2831,28 @@
           <div id="explorePanel" class="wheel-box">
             <div class="wheel-col">
               <div id="exploreBreadcrumb"></div>
+              <!-- 5 Sep 2026, owner: "there's no approach selector there to
+                   check the status of an approach across the wheel (entire
+                   Quran) ... place the approach selector over the wheel."
+                   The COLOURS here have always been one Approach's real
+                   progress -- what was missing is a way to say WHICH from
+                   inside Explore, without leaving for Study options bar 4.
+                   So this is a mirror of the canonical picker, exactly like
+                   QCR's own (#qcrApproachSelect) and the Ayah Note screen's:
+                   all of them write the same currentTrackableId through
+                   changeCurrentTrackable(), so there is one source of truth
+                   and picking here also moves the landing wheel and Study
+                   options, as every other Approach picker already does.
+                   Shown at EVERY Explore level, not only the Quran one --
+                   Juz, Surah and Ruku' segments are pooled for the same
+                   Approach, so it is the panel's context throughout. -->
+              <div class="explore-approach-row">
+                <label class="explore-approach-capsule" for="exploreApproachSelect">
+                  <span class="explore-approach-capsule-word">Approach</span>
+                  <select id="exploreApproachSelect" aria-label="Choose an Approach"></select>
+                  <span class="explore-approach-capsule-caret" aria-hidden="true">&#9662;</span>
+                </label>
+              </div>
               <!-- 5 Sep 2026 -- a Juz has two equally real readings, and the
                    owner asked for both: the PAGES it covers (what Explore
                    has always shown) and the SURAHS it covers ("Juz 30 has 36
@@ -3844,6 +3897,7 @@
     const wheelResizeWrapEl = document.getElementById("wheelResizeWrap");
     const wheelResizeHandleEls = Array.from(wheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
     const exploreBreadcrumb = document.getElementById("exploreBreadcrumb");
+    const exploreApproachSelect = document.getElementById("exploreApproachSelect");
     const exploreJuzViewToggle = document.getElementById("exploreJuzViewToggle");
     const exploreJuzViewPagesBtn = document.getElementById("exploreJuzViewPagesBtn");
     const exploreJuzViewSurahsBtn = document.getElementById("exploreJuzViewSurahsBtn");
@@ -5404,6 +5458,12 @@
       // Compatible by construction: it just re-pools qcrItemStatus() against
       // the newly-picked Approach, the same way every other consumer here
       // re-renders against currentTrackableId rather than owning a copy of it.
+      // 5 Sep 2026: Explore's own Quran wheel is a FIFTH reader of this same
+      // shared state. Re-pooling costs no Firestore read -- every surah's
+      // chunk was loaded once by openExplore() and is still in
+      // exploreChunksBySurah -- so switching Approach re-colours the whole
+      // Qur'an from data already in hand (I9 untouched).
+      else if (stageView === "explore" && exploreMode === "quran") renderExplore();
       else if (stageView === "explore" && exploreMode === "qcr") {
         // 4 Sep 2026: the mirror lives on the level bar now, which is drawn
         // whether or not a collection is selected -- so it is synced
@@ -6136,6 +6196,24 @@
       updateUnitControlsVisibility();
     }
 
+    /** Keeps Explore's own Approach capsule showing what currentTrackableId
+     *  really is. Same shape as syncQcrApproachSelect() beside it, off the
+     *  same buildTrackableOptionsHtml() -- one source of truth for what is
+     *  offered, wherever it is offered. Rebuilt on every renderExplore() so
+     *  an Approach renamed (or picked in Study options, or in the Note
+     *  screen) can never leave this capsule reading the old name. */
+    function syncExploreApproachSelect() {
+      exploreApproachSelect.innerHTML = buildTrackableOptionsHtml();
+      if (currentTrackableId) exploreApproachSelect.value = currentTrackableId;
+    }
+
+    exploreApproachSelect.addEventListener("change", () => {
+      // changeCurrentTrackable() is the one place an Approach changes; its
+      // own explore branch re-pools and re-draws this panel, so there is
+      // nothing to re-render here.
+      changeCurrentTrackable(exploreApproachSelect.value);
+    });
+
     /** Shows the Pages/Surahs switch only where it means something (the Juz
      *  level) and keeps both buttons reading the stored choice. Called from
      *  renderExplore() rather than from the Juz renderer itself, because
@@ -6160,6 +6238,7 @@
 
     async function renderExplore() {
       renderExploreBreadcrumb();
+      syncExploreApproachSelect();
       syncExploreJuzViewToggle();
       if (exploreLevel === "quran") return renderExploreQuranLevel();
       if (exploreLevel === "juz") return renderExploreJuzLevel();
