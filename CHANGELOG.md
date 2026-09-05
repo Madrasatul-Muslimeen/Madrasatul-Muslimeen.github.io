@@ -10582,3 +10582,140 @@ used from the Note or Read view (there is no current group there), so a plain
 Name made that way is reachable only through the flat Names list. That is
 pre-existing, it is not what was asked, and the fix is the same file-under row
 the dual button already uses -- say the word and it is one line.
+
+
+v07.133 (5 Sep 2026, on Claude Code on the web) is **the owner's own ask for a
+second reading of a Juz in Explore: "As clicking on Juzz 30 brings page wheel,
+may be enable a toggle view to move to Surah views (36 slides for Juzz 30) ...
+so user can see the pages belong to a buzz as well as Surat belong to a juzz in
+the wheel."**
+
+**The half of the ask that was already true is worth saying first, because it
+decided how small this round is.** The second sentence -- *"as clicking on a
+page brings the Surah Wheel and Ayat belongs to It as slide, so is the clicking
+on Surah slide should bring the Ayah belongs to It in the wheel"* -- describes
+the Surah level Explore has had since Phase 5. So a Surah segment did not need
+a new destination; it needed to exist. **Both readings of a Juz land on exactly
+the same place when clicked** (`exploreLevel = "surah"`), which is why nothing
+below the Juz level learned a second route in, and why the Surah/Ruku'/ayah
+levels are untouched.
+
+**Nothing was fetched, derived or built to know which surahs a Juz holds --
+`ayahCoverage()` already said it exactly.** That helper turns a Juz's own
+`{startSurah, startAyah, endSurah, endAyah}` into per-surah ayah ranges using
+`surah-index.json`'s counts, and `poolCoverageStatus()` has been calling it to
+COLOUR the Juz segments since Phase 5. The Surahs view is the same call, kept
+per-surah instead of pooled -- so the list on screen and the colour of the Juz
+it came from can never disagree about what is inside a Juz. **Measured rather
+than taken on trust: Juz 30 comes out as 37 surahs (78 An-Naba .. 114
+An-Naas), not the 36 the owner quoted.** Said plainly rather than quietly
+shipped, because the difference is the kind of thing that is noticed later and
+read as a bug.
+
+**The one real design question was a surah that is only PARTLY in the Juz, and
+its two halves are answered differently on purpose.** Juz 1 holds Al-Faatiha
+whole and Al-Baqara 1-141, not all 286. The segment's **colour pools only the
+ayahs really in this Juz** -- scoring Juz 1 on ayahs it does not contain would
+make the Juz wheel and its own inside disagree -- while **the click opens the
+WHOLE surah**, which is what the Surah level has always meant and exactly what
+the page view's own click already did. Both halves are on screen rather than
+left to be guessed: the row reads "Al-Baqara ১–১৪১" and the tooltip
+"Al-Baqara (ayahs ১–১৪১ in this Juz)".
+
+**The switch is remembered, and that is the standing lesson applied rather than
+a new idea.** `openExplore()` deliberately resets the drill-down POSITION on
+every open (which Juz, which surah); which READING of a Juz you want is a
+habit, not a position, so it is a `prefs.js` localStorage pair
+(`mm_explore_juz_view`) of the same additive shape every reading preference
+since round 18 has used -- **no new startup read, no collection, no
+`firestore.rules` change (I9 untouched)**, and re-measured to prove it. It is
+shown at the Juz level ONLY, because that is the one level where the same
+scope splits two ways; the Quran level is always Juz and the Surah level is
+always ayahs or rukus. Pages stays the default, so a reader who never touches
+it sees byte-identical behaviour to v07.132.
+
+**Two things caught by measuring, in a round that could easily have skipped
+it.** The new control is a NEW control, so it got the full treatment v07.129
+earned: at 320/360/390/412/768/1280/1920px in both languages the switch is
+**36px on ONE line** with nothing truncated, on screen and no page overflow --
+and it was that sweep, not any assertion, that showed the partial-surah row
+reading **"আল-বাকারা 1–141": Latin digits in a Bangla label.** Every other
+number drawn in a sentence on this page goes through `num()`; this new one did
+not. Fixed, and it now has its own check. (The segment's own `number` stays
+plain, as every Explore wheel's always has.) The `[hidden]` trap was headed off
+rather than hit: `#exploreJuzViewToggle` sets `display: flex`, so it carries
+the explicit `#exploreJuzViewToggle[hidden] { display: none }` override the
+standing lesson prescribes, and the test reads **computed display**, never the
+`hidden` property.
+
+**One real pre-existing defect was found by looking at a rendered Bangla page
+and is fixed with it.** Explore's own hint paragraph printed **"&mdash;" and
+"&rarr;" as literal text in Bangla** -- `translateStatic()` swaps a TEXT
+NODE's content, so an HTML entity written into a `bn.js` VALUE is never
+decoded, while the English side is real markup and decodes fine. Real
+characters now, so both languages read the same. It was visible in this
+round's own screenshot, and in every Bangla reader's Explore panel since the
+translation phases. (A second entity of the same shape survives in `bn.js` --
+the splash motto's `&bull;` -- but that key maps to itself, so nothing on
+screen differs in either language; flagged, not touched.)
+
+**Verified with a focused, un-checked-in Playwright script -- 33 checks, all
+passing** (this project's own practice for anything past `behaviour.mjs`'s
+disclosed section-42 crash point, and the Explore drill has never had
+checked-in coverage at all), plus a separate 14-point layout sweep, and every
+screen screenshotted and read rather than trusted from the assertions: the
+switch proven absent at the Quran level and present at the Juz level **by
+computed display**; both buttons proven >=36px; Pages proven still the default
+and proven to still show Juz 30's own pages 582-604; Surahs proven to show all
+37 surahs 78-114 with the sidebar naming them rather than numbering them; a
+Surah click proven to open **that surah's own four ayahs** (Al-Ikhlaas) with
+the trail reading "Whole Quran > Juz 30 > Al-Ikhlaas"; the switch proven put
+away again below the Juz level and proven still Surahs on the way back up; Juz
+1 proven to read as two surahs with the partial one naming its ayahs in both
+the row and the tooltip; a partly-covered surah proven to still open as the
+WHOLE surah (Al-Baqara's Ruku' groups, not 141 ayahs); the choice proven
+stored, proven to survive a reload, and proven switchable back; and all of it
+in Bangla -- both button labels, the switch's own "Show", the surah names, the
+Bengali-digit ayah range -- with the stored values proven still plain ids
+("page"/"surah"). **Two test bugs of its own were found and fixed rather than
+worked around:** it asserted "An-Nas"/"Al-Ikhlas" where the data says
+"An-Naas"/"Al-Ikhlaas" (the app was right and the check was wrong), and it read
+the wheel straight after the breadcrumb changed -- but `renderExploreSurahLevel()`
+`await`s `getSurah()`, so the crumb is rewritten a tick BEFORE the wheel is,
+and the check was measuring the Juz wheel it had just left.
+
+**`behaviour.mjs`: 802 checks pass, 1 fails** -- the one is section 22h, the
+environmental archive.org poster block this project has recorded since v07.44
+(this sandbox's proxy blocks that host) -- stopping at the same pre-existing
+line-4084 crash carried since v07.69. Same 803 total as every recent run, and
+no checked-in check needed updating: Explore's own drill sits past that crash
+point and has never had checked-in coverage.
+
+**`layout.mjs`: every measured landing-page metric byte-for-byte identical** to
+`HEAD` at all eight viewports in both banner states (heading 148/103px, wheel
+377/399/280/220/320/360px, Approach rows, 9px dock gap, no overflow);
+`getElementById` targets 235 -> 238, exactly this round's three new lookups,
+and the "missing" list is **the same 22 as `HEAD` -- checked against the
+unmodified `HEAD` copy through an identical scan rather than assumed** (none of
+the three new ids joins it; they live in markup that always exists).
+**`reading.mjs` READING SCREEN OK** at all eight viewports in both languages,
+**`panel.mjs` no truncation and no wrapped bar** (this round never touches the
+Study options panel), **`navcheck.mjs` unchanged** (still only the pre-existing
+320px English truncation of "Operation"/"Bookmark"). **Coverage 1,563 -> 1,565
+scanned, 47 missing UNCHANGED**, compared area by area against a clean
+`HEAD` worktree rather than trusting the number: only `quran` moves, 334 ->
+336, exactly this round's two new strings, both translated.
+**`tools/perf/measure.mjs` identical** -- Quran Study 6 sequential round trips
+/ 9 Firestore calls, Deen Study, Health and Asma 6, Records 5 -- and
+**`new-tenant.mjs` 10/10**, which is the check that proves this round joined
+nothing to the startup path (I9). No `firestore.rules`, schema or Firestore
+data changes -- nothing to deploy but the static files.
+
+**Flagged, not changed:** the hint under the wheel still describes the drill as
+"Quran → Juz → Surah → Ruku'" and has never mentioned Pages -- which was
+already inaccurate for the default view before this round and is now accurate
+for exactly one of the two. Rewording it is an English-copy decision and a new
+translation key, so it is raised rather than decided here. And the Surahs view
+is offered at the **Juz** level only; the equivalent question one level up
+("which surahs does the whole Qur'an hold") is the Surah picker's job, not a
+wheel's.
