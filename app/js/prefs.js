@@ -565,9 +565,13 @@ export function setExploreJuzView(id) {
 const EXPLORE_QURAN_VIEW_KEY = "mm_explore_quran_view";
 const EXPLORE_QURAN_VIEW_IDS = ["juz", "surah"];
 
-let cachedExploreQuranView = readStored(EXPLORE_QURAN_VIEW_KEY, EXPLORE_QURAN_VIEW_IDS, "juz");
+// 5 Sep 2026, owner, having used it: "The Surah view, It looks actually good!
+// So, make the Surah view as the default view on Explore, rather than Juzz."
+// A reader who has already chosen still gets their own choice -- a stored
+// value always wins; this only changes what someone who has never chosen sees.
+let cachedExploreQuranView = readStored(EXPLORE_QURAN_VIEW_KEY, EXPLORE_QURAN_VIEW_IDS, "surah");
 
-/** "juz" (the default, and what the whole-Quran wheel has always shown) or "surah". */
+/** "surah" (the default since 5 Sep 2026) or "juz". */
 export function getExploreQuranView() {
   return cachedExploreQuranView;
 }
