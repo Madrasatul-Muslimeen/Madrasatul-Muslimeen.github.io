@@ -266,6 +266,10 @@ export const BN = {
   // than reusing "Page {page}"/"Surah {surah}" above.
   "Pages": "পৃষ্ঠাসমূহ", // ?
   "Surahs": "সূরাসমূহ", // ?
+  // The Explore wheel's own Approach capsule (5 Sep 2026) -- the owner's own
+  // wording. The pill says only this; WHICH Approach is in force is read off
+  // the wheel's hub.
+  "Track the Status of Approaches": "পদ্ধতির অবস্থা পর্যবেক্ষণ করুন", // ?
   "◂ Previous": "◂ পূর্ববর্তী",
   "Next ▸": "পরবর্তী ▸",
 

@@ -10839,3 +10839,133 @@ six or seven template literals in `t()` with `num()` on the number -- not a
 translation job. It is out of this round's scope and would have broken the
 English assertions in both focused scripts, so it is raised rather than
 slipped in.
+
+
+v07.135 (5 Sep 2026, same day) is **five owner asks against v07.134's own
+capsule, one of them a real defect they photographed and one a tracking bug
+that turned out to be bigger than reported.**
+
+**(1) The capsule is renamed and emptied of the Approach name.** Their words:
+*"name this capsule 'Track the Status of Approaches', show only the name on the
+capsule. then, show the approaches on click so user can choose from there."*
+Built exactly so -- and it is also the fix for (2), which is why the two are
+one change rather than two.
+
+**(2) The mobile overflow, and its actual cause.** Their screenshot shows the
+pill running off BOTH edges of the phone, reading "proach  Reading (with
+Tajweed)". v07.134 had measured this at seven widths in two languages and
+reported it clean -- **because the harness's test tenant has SHORT Approach
+names and the owner's real one does not.** The capsule wore a `<select>`, and
+a `<select>`'s intrinsic width is its LONGEST OPTION; that width then travels
+up the flex chain, because `min-width` defaults to `auto`, and stretched the
+whole panel past the viewport. So the round measured the right thing and was
+told the truth about the wrong data. **Reproduced first by seeding a
+real-shaped long name ("Reading (with Tajweed) and Reflection") -- the pill
+went off screen exactly as photographed -- then fixed and re-measured.** The
+lesson is worth keeping: *a fixture's own data can hide a layout defect that a
+real tenant will hit on day one; when a control is sized by CONTENT, measure it
+with content the length a real tenant actually has.* The pill now carries fixed
+wording, so it cannot be stretched by a name at all, and `min-width: 0` is set
+down the whole chain so nothing else can do it either.
+
+**Where the Approach name went is the part worth not undoing.** It is read off
+the wheel's own hub, which names it under the centre label -- and that is
+precisely the `centerSub` v07.134 deliberately KEPT while noting it looked like
+duplication. One round later it is the only thing naming the Approach, so
+keeping it was right for a reason that had not happened yet.
+
+**(3) The list opens through `js/bar-palette.js`**, the same one-delegated-
+listener popover QCR and Asma already use -- outside-click, "only one drops
+down at a time" and the open/close bookkeeping all come free, and there is no
+second mechanism to keep in step (I2). The list is grouped by section from the
+same `quranTrackables` `buildTrackableOptionsHtml()` reads, the one in force is
+marked `aria-selected`, and choosing closes the palette and goes through
+`changeCurrentTrackable()` like every other picker. Only the list INSIDE the
+popover is ever replaced, never the popover itself, so a re-render cannot close
+it under the reader's finger -- the point `bar-palette.js`'s own header makes.
+The popover is anchored **centred** on the pill (`left: 50%; translateX(-50%)`)
+rather than to its right edge, because the pill is centred: v07.71 fixed
+exactly this shape on the Note bar, where a right-anchored popover ran off the
+LEFT of the screen.
+
+**(4) The trail and the Pages/Surahs switch share one line**, their own ask
+("saves from reducing the wheel size") -- three rows above the wheel become
+two. **Costed rather than trimmed by feel: the pair needs 313px and gets 308px
+at 390px**, so something had to give. The candidates were measured and the
+cheapest honest one taken: the visible **"Show" label is gone**, worth 35px
+(29px of text plus its gap), and the buttons' side padding goes 12px -> 10px
+for 8px more. Next to "Whole Quran > Juz 30" a Pages/Surahs pair says what it
+is without a label, and the pressed state says which is on; **"Show" survives
+as the group's `aria-label`**, so a screen reader still hears it. **Measured
+after: 271px needed against 308px at 390px and 278px at 360px -- one line at
+360/390/412/768/1280/1920px in BOTH languages, and only 320px (below every real
+device here) takes a tidy second line rather than cutting anything.**
+
+**(5) The tracking bug, and it was broader than the owner suspected.** They
+wrote *"check, I think 'whole surah' tracking doesn't reflect in the tracker
+wheel"*. Reproduced before touching anything, and **every wider unit was
+invisible, not only Whole Surah**: Range, Ruku', Juz, Hizb and Page too. The
+cause is exact -- this wheel has only ever read `ayah:` keys. Each level DID
+carry a direct-claim fallback for its own unit, but written `pooled ?? direct`,
+and `pooled` is null only when every ayah in range is Not Applicable. In any
+real tenant pooling always answers (an unclaimed ayah counts as not_started),
+so **that fallback has been dead code since Phase 5** and a Juz claimed
+outright showed grey on its own slice.
+
+**The rule now, stated plainly because it decides what the colours MEAN: a
+claim on a wider unit is a FLOOR under every ayah it covers.** Claiming "Surah
+1, Mastered" is a statement about all seven of its ayahs, so each reads at
+least Mastered, and an ayah claimed higher on its own keeps its own higher
+status. **Not Applicable still wins outright** -- it is an explicit exclusion
+(I7), not a point on the ramp. `effectiveAyahStatus()` is the one place that
+decides it and `poolCoverageStatus()` now runs on its result, so every level
+inherits the rule at once. **Nothing is recalculated or rewritten (I6 holds --
+this reads claims, never touches them) and no Firestore read was added**: every
+span is derived from chunks `openExplore()` had already loaded, plus the juz
+and page tables already in memory (I9 untouched, perf re-measured to prove it).
+
+**One deliberate limit, and the reasoning behind it.** A Ruku's ayah range
+lives in its surah's own TEXT, which Explore never loads for all 114 surahs.
+So ruku spans are resolved **locally, by the Surah level that loads that surah
+anyway**, and deliberately NOT folded into the shared map -- doing that would
+make a Juz's colour depend on whether the reader had happened to open one of
+its surahs first, and **a wheel that changes with your browsing history is
+worse than one with a stated limit.** So a Ruku' claim shows inside its own
+surah and does not roll up into the Juz or whole-Quran wheels. Hizb is the
+other gap: its boundary table is not among the ones Explore loads.
+
+**Verified with a focused, un-checked-in Playwright script -- 29 checks, all
+passing**, and screenshotted: the pill named exactly as asked and carrying
+NOTHING else; proven on screen at 390px **with a long real-shaped Approach
+name**, the case that used to break it, with no sideways page scroll; the wheel
+proven to still name which Approach is in force; the list proven closed at
+first, proven to open on a click, to offer every Approach grouped by section
+with the one in force marked, to stay on screen, to close on choosing and to
+really change the Approach everywhere; the trail and the switch proven on ONE
+line with the switch after the trail; and, for the tracking rule -- **a Juz
+claim colouring its own Juz slice, an unclaimed Juz still not started, Juz 1
+still not started because weakest-link still holds, a WHOLE SURAH claim
+colouring that surah AND every one of its seven ayahs (the owner's own
+report), a partially-claimed surah correctly NOT going green, a Ruku' claim
+colouring its own ruku, and a Range claim colouring the ayahs it really
+covers** -- plus all of it in Bangla with ids proven still plain. **A separate
+14-row sweep** at 320-1920px in both languages: capsule **231x36 (en) /
+157x36 (bn)**, always on screen, never clipped, **the open list on screen at
+every width including 320px**, head row 36px (one line) everywhere but 320px --
+**NO PROBLEMS**. v07.133's own 33-check script was re-run; **one check was
+UPDATED rather than deleted** (12b asserted the "Show" label this round
+deliberately removed -- it now asserts the group's accessible name, with the
+reason recorded in place).
+
+**`behaviour.mjs`, `layout.mjs`: landing page byte-for-byte identical** at all
+eight viewports in both banner states; `getElementById` targets 239 -> 240 (the
+retired select against the new button and list), missing list the same 22 as
+`HEAD`. **Coverage 1,565 -> 1,566 scanned, 47 missing UNCHANGED** -- one new
+string, "Track the Status of Approaches", translated (marked `// ?` for the
+owner's eye). No `firestore.rules`, schema or Firestore data changes.
+
+**Flagged, not changed:** a Ruku' claim does not roll up past its own surah,
+and a Hizb claim does not show at all (see the limit above) -- both are honest
+consequences of what Explore loads, and both are one boundary-table fetch away
+if the owner wants them. And Explore's breadcrumb and sidebar labels are still
+hardcoded English in Bangla, exactly as v07.134 flagged.

@@ -647,7 +647,7 @@
   /* ~36px tall, per the standing lesson that a 26px control is too small for
      a finger; these are words rather than icons, so they take their own
      width rather than a fixed square. */
-  .explore-view-btn { min-height: 36px; padding: 0 12px; border-radius: 8px; border: 1px solid #2c3a58; background: rgba(255,255,255,0.04); color: #8fa0c2; font-family: 'Inter', sans-serif; font-size: 0.78rem; cursor: pointer; }
+  .explore-view-btn { min-height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid #2c3a58; background: rgba(255,255,255,0.04); color: #8fa0c2; font-family: 'Inter', sans-serif; font-size: 0.78rem; cursor: pointer; }
   .explore-view-btn:hover { color: #F2E8D5; border-color: #3d517a; }
   .explore-view-btn.on { background: rgba(201,162,75,0.16); border-color: #C9A24B; color: #C9A24B; font-weight: 600; }
   /* 5 Sep 2026, owner: "place the approach selector over the wheel ... place
@@ -658,29 +658,58 @@
      for the same job. The difference is that this capsule is a CONTROL: the
      <select> is stripped of its native chrome and wears the pill, with the
      caret drawn beside it so it still reads as something you can open. */
-  .explore-approach-row { display: flex; justify-content: center; margin: 4px 0 2px; }
+  /* The trail and the Pages/Surahs switch share one line (owner's own ask,
+     5 Sep 2026 2nd round). min-width:0 on the trail is what lets it shrink
+     rather than pushing the switch off; the switch itself never shrinks. */
+  .explore-head-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 2px; }
+  /* Measured (trail + switch, both languages): 271px needed against 308px at
+     390px and 278px at 360px, so they share one line on every phone this
+     project tests except 320px, where the switch takes a tidy line of its own
+     rather than anything being cut. */
+  .explore-head-row #exploreBreadcrumb { flex: 1 1 auto; min-width: 0; }
+  .explore-head-row #exploreJuzViewToggle { flex: 0 0 auto; margin: 0; }
+  /* The capsule row. min-width:0 all the way down is deliberate: the pill
+     used to hold a <select>, whose intrinsic width is its LONGEST option, and
+     that width travelled up the flex chain (min-width defaults to `auto`) and
+     pushed the whole panel past both screen edges on a phone -- the owner's
+     own screenshot. The pill carries fixed wording now, and these rules make
+     it structurally unable to recur whatever it holds. */
+  .explore-approach-row { display: flex; justify-content: center; min-width: 0; margin: 4px 0 2px; }
+  .explore-approach-wrap { max-width: 100%; min-width: 0; }
   .explore-approach-capsule {
-    display: inline-flex; align-items: center; gap: 0.4rem; max-width: 100%;
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+    max-width: 100%; width: auto; border: none;
     background: linear-gradient(180deg, #ecd49a, #C9A24B); color: #221904;
-    border-radius: 999px; padding: 0.2rem 0.7rem 0.2rem 0.85rem;
+    border-radius: 999px; padding: 0.25rem 0.85rem;
     /* ~36px, per the standing lesson that a 26px control is too small for a
-       finger. The whole pill is the tap target, label included. */
+       finger. The whole pill is the tap target, wording included. */
     min-height: 36px; box-sizing: border-box;
     font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.8rem; line-height: 1.3;
-    box-shadow: 0 6px 16px -8px rgba(0,0,0,0.6); cursor: pointer;
+    text-align: center; box-shadow: 0 6px 16px -8px rgba(0,0,0,0.6); cursor: pointer;
   }
-  .explore-approach-capsule-word { flex: none; opacity: 0.72; font-weight: 700; }
-  /* min-width:0 is what lets a long tenant-authored Approach name shrink
-     inside the pill instead of pushing it wider than the panel. */
-  .explore-approach-capsule select {
-    flex: 1 1 auto; min-width: 0;
-    appearance: none; -webkit-appearance: none;
-    background: transparent; border: none; padding: 0; margin: 0;
-    color: #221904; font-family: inherit; font-weight: 800; font-size: inherit;
-    cursor: pointer; text-overflow: ellipsis;
+  .explore-approach-capsule:hover { filter: brightness(1.06); }
+  /* Wraps rather than truncating -- a label with nowrap + ellipsis fails
+     SILENTLY, which is this page's own most-repeated layout trap. */
+  .explore-approach-capsule-word { min-width: 0; white-space: normal; }
+  .explore-approach-capsule-caret { flex: none; font-size: 0.7rem; opacity: 0.75; }
+  /* The palette hangs from the pill, which is CENTRED, so it is anchored on
+     both edges rather than only its right one -- v07.71 fixed exactly this
+     shape on the Note bar, where a short bar let a right-anchored popover run
+     off the left of the screen. */
+  .explore-approach-palette { right: auto; left: 50%; transform: translateX(-50%); top: 2.5rem; width: 20rem; }
+  .explore-approach-opt {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    padding: 0.45rem 0.5rem; border-radius: 0.35rem; cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 0.82rem; color: #222; line-height: 1.3;
   }
-  .explore-approach-capsule select:focus-visible { outline: 2px solid #221904; outline-offset: 2px; border-radius: 4px; }
-  .explore-approach-capsule-caret { flex: none; font-size: 0.7rem; opacity: 0.75; pointer-events: none; }
+  .explore-approach-opt:hover { background: #f1efe8; }
+  .explore-approach-opt[aria-selected="true"] { background: rgba(201,162,75,0.2); font-weight: 700; }
+  .explore-approach-group {
+    margin: 0.4rem 0 0.15rem; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em;
+    text-transform: uppercase; color: #8a7b52;
+  }
+  .explore-approach-group:first-child { margin-top: 0; }
+  .explore-approach-list-scroll { max-height: 60vh; overflow-y: auto; }
 
   /* ---------- Study Unit picker (Phase 5) ---------- */
   /* Shell round 9: hidden by default. The wheel's own centre disc already
@@ -2830,42 +2859,53 @@
         <div id="exploreScroll">
           <div id="explorePanel" class="wheel-box">
             <div class="wheel-col">
-              <div id="exploreBreadcrumb"></div>
-              <!-- 5 Sep 2026, owner: "there's no approach selector there to
-                   check the status of an approach across the wheel (entire
-                   Quran) ... place the approach selector over the wheel."
-                   The COLOURS here have always been one Approach's real
-                   progress -- what was missing is a way to say WHICH from
-                   inside Explore, without leaving for Study options bar 4.
-                   So this is a mirror of the canonical picker, exactly like
-                   QCR's own (#qcrApproachSelect) and the Ayah Note screen's:
-                   all of them write the same currentTrackableId through
-                   changeCurrentTrackable(), so there is one source of truth
-                   and picking here also moves the landing wheel and Study
-                   options, as every other Approach picker already does.
-                   Shown at EVERY Explore level, not only the Quran one --
-                   Juz, Surah and Ruku' segments are pooled for the same
-                   Approach, so it is the panel's context throughout. -->
-              <div class="explore-approach-row">
-                <label class="explore-approach-capsule" for="exploreApproachSelect">
-                  <span class="explore-approach-capsule-word">Approach</span>
-                  <select id="exploreApproachSelect" aria-label="Choose an Approach"></select>
-                  <span class="explore-approach-capsule-caret" aria-hidden="true">&#9662;</span>
-                </label>
+              <!-- 5 Sep 2026 (2nd round), owner: "is it possible to move
+                   'show, page, surah' on the same line with 'Whole Quran,
+                   Juzz'? (saves from reducing the wheel size)". So the trail
+                   and the Pages/Surahs switch share one line -- three rows
+                   above the wheel become two, and every pixel saved is the
+                   wheel's. The trail shrinks (min-width:0) and the switch
+                   never does, the same fixed-`auto`-column shape v07.130
+                   used for the Note drawer's own tiles. -->
+              <div class="explore-head-row">
+                <div id="exploreBreadcrumb"></div>
+                <div id="exploreJuzViewToggle" role="group" aria-label="Show" hidden>
+                  <button type="button" class="explore-view-btn on" id="exploreJuzViewPagesBtn" data-juz-view="page" aria-pressed="true">Pages</button>
+                  <button type="button" class="explore-view-btn" id="exploreJuzViewSurahsBtn" data-juz-view="surah" aria-pressed="false">Surahs</button>
+                </div>
               </div>
-              <!-- 5 Sep 2026 -- a Juz has two equally real readings, and the
-                   owner asked for both: the PAGES it covers (what Explore
-                   has always shown) and the SURAHS it covers ("Juz 30 has 36
-                   Surat"). One switch, shown only at the Juz level, because
-                   it is the only level where the same scope splits two ways
-                   -- the Quran level is always Juz and the Surah level is
-                   always ayahs/rukus. The choice is remembered per browser
-                   (prefs.js), so a reader who thinks in surahs is not asked
-                   again on every visit. -->
-              <div id="exploreJuzViewToggle" hidden>
-                <span class="explore-view-label">Show</span>
-                <button type="button" class="explore-view-btn on" id="exploreJuzViewPagesBtn" data-juz-view="page" aria-pressed="true">Pages</button>
-                <button type="button" class="explore-view-btn" id="exploreJuzViewSurahsBtn" data-juz-view="surah" aria-pressed="false">Surahs</button>
+              <!-- The Approach capsule. 5 Sep 2026 (2nd round), owner: "name
+                   this capsule 'Track the Status of Approaches', show only
+                   the name on the capsule, then show the approaches on click
+                   so user can choose from there."
+                   That also removes the defect their screenshot caught: the
+                   capsule used to wear a <select>, and a <select>'s intrinsic
+                   width is its LONGEST option -- a real tenant Approach name
+                   ("Reading (with Tajweed)") pushed the pill past both edges
+                   of a phone, because that intrinsic width travels up the
+                   flex chain through min-width:auto. A button with fixed
+                   wording cannot do that.
+                   The list opens through js/bar-palette.js -- the same
+                   one-delegated-listener popover QCR and Asma already use, so
+                   outside-click, Escape and "only one drops down at a time"
+                   all come free and there is no second mechanism to keep in
+                   step (I2). -->
+              <div class="explore-approach-row">
+                <div class="bar-palette-wrap explore-approach-wrap" data-bar-palette-wrap="exploreApproach">
+                  <button type="button" class="explore-approach-capsule bar-palette-toggle"
+                          id="exploreApproachBtn" data-bar-palette-toggle="exploreApproach"
+                          aria-haspopup="true" aria-expanded="false">
+                    <span class="explore-approach-capsule-word">Track the Status of Approaches</span>
+                    <span class="explore-approach-capsule-caret" aria-hidden="true">&#9662;</span>
+                  </button>
+                  <div class="bar-palette explore-approach-palette" data-bar-palette="exploreApproach">
+                    <!-- The popover element itself is never replaced, only
+                         this list inside it -- so a re-render can never blow
+                         an open palette away from under the reader's finger
+                         (bar-palette.js's own header makes the same point). -->
+                    <div id="exploreApproachList" role="listbox" aria-label="Choose an Approach"></div>
+                  </div>
+                </div>
               </div>
               <!-- 2 Sep 2026 -- "enable all wheels ... to be expandable
                    from any side", same mechanism as the Mastery Wheel/QCR/
@@ -3897,7 +3937,8 @@
     const wheelResizeWrapEl = document.getElementById("wheelResizeWrap");
     const wheelResizeHandleEls = Array.from(wheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
     const exploreBreadcrumb = document.getElementById("exploreBreadcrumb");
-    const exploreApproachSelect = document.getElementById("exploreApproachSelect");
+    const exploreApproachBtn = document.getElementById("exploreApproachBtn");
+    const exploreApproachList = document.getElementById("exploreApproachList");
     const exploreJuzViewToggle = document.getElementById("exploreJuzViewToggle");
     const exploreJuzViewPagesBtn = document.getElementById("exploreJuzViewPagesBtn");
     const exploreJuzViewSurahsBtn = document.getElementById("exploreJuzViewSurahsBtn");
@@ -4166,6 +4207,10 @@
     let juzIndexData = null; // loaded lazily on first Explore open
     let pageIndexData = null; // loaded lazily on first Explore open
     let exploreChunksBySurah = null; // Map surahNum -> chunk, shared across every Explore level for one "open" -- loading it once at the Quran-wheel level covers every deeper level too (every surah belongs to some Juz), so drilling down never costs an extra Firestore read
+    // Wider-unit claims (Whole Surah / Range / Ruku' / Juz / Page), flattened
+    // to the ayah ranges they cover -- see effectiveAyahStatus() for the rule
+    // and why this exists. Rebuilt with the chunks on every Explore open.
+    let exploreWiderSpans = new Map();
     let exploreSubjectChunk = null; // subject_quran chunk -- Juz/Page direct-claim fallback, used when no ayah-level data exists yet to pool from
     let exploreLevel = "quran"; // "quran" | "juz" | "surah" | "ruku"
     // Which reading of a Juz its own level shows: "page" (what Explore has
@@ -6118,13 +6163,12 @@
     const RAMP_ORDER = STATUSES.filter((s) => s.onRamp).map((s) => s.id); // not_started .. mastered, in ramp order
 
     /** "Weakest link" pooled status across every ayah a coverage range covers, for one trackable, reading from the shared exploreChunksBySurah loaded once per Explore open. Ayahs never claimed count as not_started (matches ayahStatusesForCurrentTrackable's own default). Not Applicable ayahs are excluded from the pool entirely (I7), not counted as a low score. Returns null if nothing at all is countable yet -- the caller falls back to a direct claim at that level in that case. */
-    function poolCoverageStatus(coverage, trackableId) {
+    function poolCoverageStatus(coverage, trackableId, extraSpans = null) {
       let worstIdx = null;
       let anyCounted = false;
       for (const { surah, from, to } of coverage) {
-        const entries = exploreChunksBySurah.get(surah)?.entries ?? {};
         for (let a = from; a <= to; a++) {
-          const statusId = entries[`${buildUnitKey.ayah(surah, a)}::${trackableId}`]?.claimedStatus ?? "not_started";
+          const statusId = effectiveAyahStatus(surah, a, trackableId, extraSpans);
           if (statusId === "not_applicable") continue;
           anyCounted = true;
           const idx = RAMP_ORDER.indexOf(statusId);
@@ -6132,6 +6176,132 @@
         }
       }
       return anyCounted ? RAMP_ORDER[worstIdx] : null;
+    }
+
+    /**
+     * 5 Sep 2026 -- the owner's own report: "check, I think 'whole surah'
+     * tracking doesn't reflect in the tracker wheel". Reproduced, and it was
+     * true of EVERY wider unit, not only Whole Surah.
+     *
+     * Why: this wheel has only ever read `ayah:` keys. Each level did carry a
+     * direct-claim fallback for its own unit (`juz:`, `page:`, `surah:`,
+     * `ruku:`) -- but it was written `pooled ?? direct`, and `pooled` is null
+     * only when every ayah in range is Not Applicable. In any real tenant
+     * pooling always answers (an unclaimed ayah counts as not_started), so the
+     * fallback was dead code and a Whole Surah / Range / Ruku' / Juz / Hizb /
+     * Page claim was invisible everywhere in Explore.
+     *
+     * The rule now, stated plainly because it decides what the colours MEAN:
+     * a claim on a wider unit is a FLOOR under every ayah it covers. Claiming
+     * "Surah 1, Mastered" is a statement about all seven of its ayahs, so each
+     * reads at least Mastered; an ayah claimed higher on its own keeps its own
+     * higher status. Not Applicable still wins outright, because it is an
+     * explicit exclusion (I7) rather than a point on the ramp.
+     *
+     * Nothing is recalculated or rewritten -- I6 holds, this reads claims and
+     * never touches them -- and no Firestore read was added: every span below
+     * comes from chunks openExplore() has already loaded (I9).
+     */
+    function effectiveAyahStatus(surah, ayah, trackableId, extraSpans = null) {
+      const entries = exploreChunksBySurah.get(surah)?.entries ?? {};
+      const own = entries[`${buildUnitKey.ayah(surah, ayah)}::${trackableId}`]?.claimedStatus ?? "not_started";
+      if (own === "not_applicable") return own;
+      let bestIdx = RAMP_ORDER.indexOf(own);
+      const apply = (spans) => {
+        for (const span of spans ?? []) {
+          if (span.surah !== surah || ayah < span.from || ayah > span.to) continue;
+          const idx = RAMP_ORDER.indexOf(span.statusId);
+          if (idx > bestIdx) bestIdx = idx;
+        }
+      };
+      apply(exploreWiderSpans.get(trackableId));
+      apply(extraSpans);
+      return bestIdx < 0 ? own : RAMP_ORDER[bestIdx];
+    }
+
+    /**
+     * Every wider-unit claim in the loaded chunks, flattened to the ayah
+     * ranges it covers, keyed by trackable. Built once per Explore open,
+     * beside the chunks themselves.
+     *
+     * Ruku' is the one unit that cannot be resolved here: a ruku's ayah range
+     * lives in the surah's own TEXT, and Explore deliberately never loads all
+     * 114 of those. Its spans are folded in later, per surah, by the Surah
+     * level -- which loads that surah anyway -- via rukuSpansForSurah(),
+     * and only there (see that function for why it stays local).
+     */
+    function buildExploreWiderSpans() {
+      exploreWiderSpans = new Map();
+      const push = (trackableId, span) => {
+        if (!exploreWiderSpans.has(trackableId)) exploreWiderSpans.set(trackableId, []);
+        exploreWiderSpans.get(trackableId).push(span);
+      };
+      const spansForKey = (unitKey) => {
+        const parts = unitKey.split(":");
+        if (parts[0] === "surah") {
+          const n = Number(parts[1]);
+          const count = surahIndex.find((x) => x.surahNumber === n)?.ayahCount;
+          return count ? [{ surah: n, from: 1, to: count }] : [];
+        }
+        if (parts[0] === "range") {
+          const n = Number(parts[1]);
+          const [from, to] = String(parts[2] ?? "").split("-").map(Number);
+          return from && to ? [{ surah: n, from, to }] : [];
+        }
+        if (parts[0] === "juz") {
+          const j = juzIndexData?.find((x) => x.juz === Number(parts[1]));
+          return j ? ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah) : [];
+        }
+        if (parts[0] === "page") {
+          // page:<edition>:<n>
+          const pg = pageIndexData?.find((x) => x.page === Number(parts[2]));
+          return pg ? ayahCoverage(pg.startSurah, pg.startAyah, pg.endSurah, pg.endAyah) : [];
+        }
+        return []; // ruku (see above) and hizb (its table is not loaded here)
+      };
+      const scan = (chunk) => {
+        for (const [key, entry] of Object.entries(chunk?.entries ?? {})) {
+          const [unitKey, trackableId] = key.split("::");
+          if (!trackableId || !unitKey || unitKey.startsWith("ayah:")) continue;
+          const statusId = entry?.claimedStatus;
+          if (!statusId || statusId === "not_started" || RAMP_ORDER.indexOf(statusId) < 0) continue;
+          for (const sp of spansForKey(unitKey)) push(trackableId, { ...sp, statusId });
+        }
+      };
+      for (const chunk of exploreChunksBySurah.values()) scan(chunk);
+      scan(exploreSubjectChunk);
+    }
+
+    /**
+     * This surah's own Ruku' claims as ayah spans, now that its text (and so
+     * each ruku's real range) is in hand. Deliberately NOT folded into the
+     * shared map: that would make a Juz's colour depend on whether the reader
+     * had happened to open one of its surahs first, and a wheel that changes
+     * with your browsing history is worse than one with a stated limit. So a
+     * Ruku' claim shows inside its own surah, and does not roll up into the
+     * Juz or whole-Quran wheels -- said out loud rather than left to be
+     * discovered.
+     */
+    function rukuSpansForSurah(surahNum, surahData) {
+      const ranges = new Map();
+      for (const a of surahData.ayahs) {
+        const idx = rukuIndexInSurah(surahData.ayahs, a.ruku);
+        const g = ranges.get(idx) ?? { from: a.ayah, to: a.ayah };
+        g.from = Math.min(g.from, a.ayah);
+        g.to = Math.max(g.to, a.ayah);
+        ranges.set(idx, g);
+      }
+      const out = new Map(); // trackableId -> spans
+      for (const [key, entry] of Object.entries(exploreChunksBySurah.get(surahNum)?.entries ?? {})) {
+        const [unitKey, trackableId] = key.split("::");
+        if (!trackableId || !unitKey?.startsWith("ruku:")) continue;
+        const range = ranges.get(Number(unitKey.split(":")[2]));
+        const statusId = entry?.claimedStatus;
+        if (!range || !statusId || statusId === "not_started" || RAMP_ORDER.indexOf(statusId) < 0) continue;
+        if (!out.has(trackableId)) out.set(trackableId, []);
+        out.get(trackableId).push({ surah: surahNum, from: range.from, to: range.to, statusId });
+      }
+      return out;
     }
 
     /** Loads every surah's records chunk once per Explore "open" (the Quran-wheel's own cost, described above), plus the subject_quran chunk (Juz/Page direct-claim fallback) -- shared by every level's renderer below, so drilling deeper never re-reads Firestore. */
@@ -6149,6 +6319,7 @@
         })
       );
       exploreSubjectChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, "subject_quran");
+      buildExploreWiderSpans();
     }
 
     /** Clickable "Whole Quran › Juz N › Surah name › Ruku' N" trail, one crumb per level actually visited so far. Clicking an earlier crumb jumps back to that level and clears everything deeper than it -- the current level's own crumb is shown but not clickable. */
@@ -6196,22 +6367,50 @@
       updateUnitControlsVisibility();
     }
 
-    /** Keeps Explore's own Approach capsule showing what currentTrackableId
-     *  really is. Same shape as syncQcrApproachSelect() beside it, off the
-     *  same buildTrackableOptionsHtml() -- one source of truth for what is
-     *  offered, wherever it is offered. Rebuilt on every renderExplore() so
-     *  an Approach renamed (or picked in Study options, or in the Note
-     *  screen) can never leave this capsule reading the old name. */
-    function syncExploreApproachSelect() {
-      exploreApproachSelect.innerHTML = buildTrackableOptionsHtml();
-      if (currentTrackableId) exploreApproachSelect.value = currentTrackableId;
+    /** The Approach list inside the capsule's palette. The capsule itself
+     *  says only "Track the Status of Approaches" (the owner's own wording,
+     *  5 Sep 2026) -- WHICH Approach is in force is read off the wheel's own
+     *  hub, which names it under the centre label, so the pill never has to
+     *  carry a tenant-authored name and can never be stretched by one.
+     *  Grouped by section, exactly as buildTrackableOptionsHtml()'s own
+     *  optgroups are, from the same quranTrackables -- one source of truth
+     *  for what is offered. Only this list is replaced, never the popover
+     *  around it, so a re-render cannot close an open palette. */
+    function renderExploreApproachList() {
+      if (!quranTrackables.length) {
+        exploreApproachList.innerHTML = `<p class="bar-palette-note">${t("(no Quran Approaches yet)")}</p>`;
+        return;
+      }
+      const bySection = new Map();
+      for (const item of quranTrackables) {
+        const key = item.group ?? 0;
+        if (!bySection.has(key)) bySection.set(key, { groupName: item.groupName, items: [] });
+        bySection.get(key).items.push(item);
+      }
+      const html = [...bySection.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([, { groupName, items }]) => {
+          const label = groupName ? `<div class="explore-approach-group">${escapeHtml(langText(groupName, getAppLang()))}</div>` : "";
+          const rows = items
+            .map((item) => {
+              const on = item.id === currentTrackableId;
+              return `<button type="button" class="explore-approach-opt" role="option" data-approach-id="${item.id}" aria-selected="${on ? "true" : "false"}">${escapeHtml(langText(item.name, getAppLang(), item.id))}</button>`;
+            })
+            .join("");
+          return label + rows;
+        })
+        .join("");
+      exploreApproachList.innerHTML = `<div class="explore-approach-list-scroll">${html}</div>`;
     }
 
-    exploreApproachSelect.addEventListener("change", () => {
+    exploreApproachList.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-approach-id]");
+      if (!btn) return;
+      closeAllBarPalettes(null); // choosing is done -- put the list away
       // changeCurrentTrackable() is the one place an Approach changes; its
       // own explore branch re-pools and re-draws this panel, so there is
       // nothing to re-render here.
-      changeCurrentTrackable(exploreApproachSelect.value);
+      changeCurrentTrackable(btn.dataset.approachId);
     });
 
     /** Shows the Pages/Surahs switch only where it means something (the Juz
@@ -6238,7 +6437,7 @@
 
     async function renderExplore() {
       renderExploreBreadcrumb();
-      syncExploreApproachSelect();
+      renderExploreApproachList();
       syncExploreJuzViewToggle();
       if (exploreLevel === "quran") return renderExploreQuranLevel();
       if (exploreLevel === "juz") return renderExploreJuzLevel();
@@ -6401,6 +6600,7 @@
       if (!trackable || exploreSurahNum == null) return;
       exploreWheelContainer.innerHTML = t("Loading this surah…");
       const surahData = await getSurah(exploreSurahNum);
+      const rukuSpans = rukuSpansForSurah(exploreSurahNum, surahData).get(trackable.id) ?? null; // Ruku' spans need the surah's own text; now we have it
       const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
       const currentSurahName = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
@@ -6409,7 +6609,7 @@
 
       if (surahData.ayahCount <= SURAH_WHEEL_THRESHOLD) {
         const items = surahData.ayahs.map((a) => {
-          const statusId = entries[`${buildUnitKey.ayah(exploreSurahNum, a.ayah)}::${trackable.id}`]?.claimedStatus ?? "not_started";
+          const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id, rukuSpans);
           return { key: a.ayah, number: a.ayah, statusId, title: `Ayah ${a.ayah} — ${statusId.replace(/_/g, " ")}` };
         });
         const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
@@ -6434,7 +6634,7 @@
       const rukus = [...rukuRanges.entries()].sort((a, b) => a[0] - b[0]);
       const items = rukus.map(([idx, range]) => {
         const coverage = [{ surah: exploreSurahNum, from: range.from, to: range.to }];
-        const pooled = poolCoverageStatus(coverage, trackable.id);
+        const pooled = poolCoverageStatus(coverage, trackable.id, rukuSpans);
         const statusId = pooled ?? (entries[`${buildUnitKey.ruku(exploreSurahNum, idx)}::${trackable.id}`]?.claimedStatus ?? "not_started");
         return { key: idx, number: idx, statusId, title: `Ruku' ${idx} (ayahs ${range.from}–${range.to}) — ${statusId.replace(/_/g, " ")}` };
       });
@@ -6456,10 +6656,11 @@
       const trackable = currentTrackable();
       if (!trackable || exploreSurahNum == null || exploreRukuIndex == null) return;
       const surahData = await getSurah(exploreSurahNum); // already cached from the Surah level's own fetch
+      const rukuSpans = rukuSpansForSurah(exploreSurahNum, surahData).get(trackable.id) ?? null;
       const ayahsInRuku = surahData.ayahs.filter((a) => rukuIndexInSurah(surahData.ayahs, a.ruku) === exploreRukuIndex);
       const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
       const items = ayahsInRuku.map((a) => {
-        const statusId = entries[`${buildUnitKey.ayah(exploreSurahNum, a.ayah)}::${trackable.id}`]?.claimedStatus ?? "not_started";
+        const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id, rukuSpans);
         return { key: a.ayah, number: a.ayah, statusId, title: `Ayah ${a.ayah} — ${statusId.replace(/_/g, " ")}` };
       });
       const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
