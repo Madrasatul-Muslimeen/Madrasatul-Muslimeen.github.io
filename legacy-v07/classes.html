@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — Classes</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.15rem; margin-top: 2.2rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+  label { display: block; margin: 0.8rem 0 0.3rem; font-weight: 600; font-size: 0.92rem; }
+  input[type="text"], select, textarea { width: 100%; padding: 0.45rem; font-size: 0.95rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box; }
+  .row { display: flex; gap: 0.8rem; flex-wrap: wrap; align-items: flex-end; }
+  .row > div { flex: 1; min-width: 10rem; }
+  button {
+    font-size: 0.92rem; padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.small { padding: 0.2rem 0.5rem; font-size: 0.8rem; }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  fieldset { border: 1px solid #ddd; border-radius: 0.5rem; margin-top: 1rem; }
+  .subjectChecks label { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 400; margin: 0.2rem 0.6rem 0.2rem 0; }
+  .subjectChecks input { width: auto; }
+  .card { border: 1px solid #eee; border-radius: 0.5rem; padding: 0.8rem; margin-top: 0.8rem; }
+  .card h3 { margin: 0 0 0.3rem; font-size: 1rem; }
+  .muted { color: #888; font-size: 0.85rem; }
+  .pill { display: inline-block; padding: 0.05rem 0.5rem; border-radius: 0.7rem; font-size: 0.75rem; }
+  .pill-active { background: #deede4; color: #2e6b4f; }
+  .pill-archived { background: #eee; color: #888; }
+  .pill-teacher { background: #f5ebd6; color: #8a6220; }
+  .pill-student { background: #dde4f0; color: #1F3A6E; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  .contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; font-size: 0.9rem; }
+  .contextBar label { margin: 0; }
+</style>
+</head>
+<body>
+  <h1>Classes</h1>
+  <p>Create a class, then enrol students and teachers into it. A teacher
+     enrolled here can record and confirm progress for this class's students
+     — and only them. Class-wide bulk confirm clears every pending entry for
+     every actively-enrolled student in one go.</p>
+
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
+
+  <div id="app" style="display:none;">
+    <div class="contextBar">
+      <label>Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+    </div>
+
+    <fieldset id="createFieldset" style="display:none;">
+      <legend>New class</legend>
+      <label for="classNameInput">Name</label>
+      <input type="text" id="classNameInput" />
+      <label for="classGlossInput">Gloss (optional)</label>
+      <input type="text" id="classGlossInput" />
+      <label>Subjects (optional)</label>
+      <div class="subjectChecks" id="subjectChecks"></div>
+      <button id="createClassBtn" style="margin-top:0.8rem;">Create class</button>
+      <div id="createResult" class="muted"></div>
+    </fieldset>
+
+    <h2>Classes</h2>
+    <div id="classesBody"><p class="muted">Loading…</p></div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { roleListLabel, roleLabel as roleInClassLabel, entityStatusLabel } from "./js/labels.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
+    import { safeWrite } from "./js/errors.js";
+    import {
+      bootstrapContext,
+      getActiveContext,
+      setActiveContext,
+      effectiveRoles,
+      scopedRoster,
+    } from "./js/session-context.js";
+    import { getSubjectTree } from "./js/catalogue.js";
+    import { createClass, listClasses, setClassStatus } from "./js/classes.js";
+    import { enrolPerson, endEnrollment, listEnrollmentsForOffer } from "./js/course-offers.js";
+    import { bulkConfirmClass } from "./js/records.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+import { mountBookmarkMenu } from "./js/bookmark-nav.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
+
+    // Phase 1 of the full translation: turn this page's own static markup
+    // (headings, labels, buttons) into the chosen language before anything
+    // else runs, so a Bangla reader never sees an English frame first.
+    translateStatic();
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
+      mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null , getRoster: () => roster });
+    }
+    const tenantSelect = document.getElementById("tenantSelect");
+    const createFieldset = document.getElementById("createFieldset");
+    const classNameInput = document.getElementById("classNameInput");
+    const classGlossInput = document.getElementById("classGlossInput");
+    const subjectChecks = document.getElementById("subjectChecks");
+    const createClassBtn = document.getElementById("createClassBtn");
+    const createResult = document.getElementById("createResult");
+    const classesBody = document.getElementById("classesBody");
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+
+    let activeTenantId = null;
+    let myMemberships = [];
+    let roster = [];
+    let visibleRoster = [];
+    let subjectTree = [];
+    let classes = [];
+    let myPersonId = null;
+    let canAdmin = false; // owner/prime -- create classes, manage any enrolment/roster
+
+    function currentPreview() {
+      const context = getActiveContext();
+      const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      const realRoles = activeMembership?.roles ?? [];
+      const viewAsRole = context?.viewAsRole ?? null;
+      return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: activeMembership?.personId ?? null };
+    }
+
+    async function loadContextData() {
+      const rosterSnap = await getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId)));
+      roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+      const preview = currentPreview();
+      const { viewAsRole, effRoles } = preview;
+      myPersonId = preview.myPersonId;
+      renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
+
+      visibleRoster = scopedRoster(roster, effRoles, myPersonId);
+      canAdmin = effRoles.some((r) => ["owner", "prime"].includes(r));
+      createFieldset.style.display = canAdmin ? "" : "none";
+
+      subjectTree = await getSubjectTree(db, activeTenantId);
+      const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
+      subjectChecks.innerHTML = leaves
+        .map((n) => `<label><input type="checkbox" value="${n.id}" /> ${langText(n.name, getAppLang(), n.id)}</label>`)
+        .join("") || `<span class="muted">${t("No subjects yet.")}</span>`;
+
+      await refreshClasses();
+    }
+
+    function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
+    function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; }
+
+    // -----------------------------------------------------------------------
+    // Classes.
+    // -----------------------------------------------------------------------
+
+    async function refreshClasses() {
+      classesBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
+      try {
+        classes = (await listClasses(db, activeTenantId)).filter((c) => canAdmin || c.status === "active");
+        classesBody.innerHTML = classes.length
+          ? (await Promise.all(classes.map(renderClassCard))).join("")
+          : `<p class="muted">${t("No classes yet.")}</p>`;
+        wireClassCardActions();
+      } catch (err) {
+        classesBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load classes:")} ${err.code ?? ""} ${err.message}</p>`;
+        console.error(err);
+      }
+    }
+
+    async function renderClassCard(c) {
+      const subjectsLine = (c.subjectIds ?? []).map(subjectName).join(", ") || t("(no subjects set)");
+      const rosterHtml = await renderClassRoster(c);
+      const archiveBtn = canAdmin && c.status === "active"
+        ? `<button class="small secondary archiveClassBtn" data-class="${c.id}">${t("Archive")}</button>`
+        : "";
+      const bulkConfirmBtn = canAdmin && c.status === "active"
+        ? `<button class="small secondary bulkConfirmClassBtn" data-class="${c.id}">${t("Bulk confirm all pending for this class")}</button>`
+        : "";
+      const enrolControls = canAdmin && c.status === "active" ? renderEnrolControls(c) : "";
+      return `<div class="card">
+        <h3>${langText(c.name, getAppLang(), c.id)} <span class="pill pill-${c.status}">${entityStatusLabel(c.status)}</span></h3>
+        <div class="muted">${subjectsLine}</div>
+        <!-- The gloss is tenant-authored, language-keyed data (I11). It was
+             read straight off .en, so a tenant that HAD authored Bangla for
+             it still saw English -- a real pre-existing bug, not a
+             translation gap. -->
+        ${c.gloss ? `<div class="muted">${langText(c.gloss, getAppLang(), "")}</div>` : ""}
+        ${enrolControls}
+        ${rosterHtml}
+        ${c.status === "active" ? `<div style="margin-top:0.5rem;">${bulkConfirmBtn} ${archiveBtn}</div>` : ""}
+        <div class="muted bulkResult" data-class="${c.id}"></div>
+      </div>`;
+    }
+
+    function renderEnrolControls(c) {
+      const personOptions = roster.map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`).join("");
+      return `<div class="row" style="margin-top:0.5rem;">
+        <div><label>${t("Person")}</label><select class="enrolPersonSelect" data-class="${c.id}">${personOptions}</select></div>
+        <div><label>${t("Role")}</label><select class="enrolRoleSelect" data-class="${c.id}">
+          <option value="student">${t("Student")}</option>
+          <option value="teacher">${t("Teacher")}</option>
+        </select></div>
+        <div><button class="small enrolBtn" data-class="${c.id}">${t("Enrol")}</button></div>
+      </div>`;
+    }
+
+    async function renderClassRoster(c) {
+      const enrolled = await listEnrollmentsForOffer(db, activeTenantId, c.id); // generic by contextId
+      const active = enrolled.filter((e) => e.status === "active");
+      if (!active.length) return `<div class="muted" style="margin-top:0.4rem;">${t("No one enrolled yet.")}</div>`;
+      const rows = active.map((e) => {
+        const endBtn = canAdmin ? `<button class="small secondary endEnrolBtn" data-class="${c.id}" data-person="${e.personId}">${t("End")}</button>` : "";
+        return `<div class="muted">${personName(e.personId)} <span class="pill pill-${e.roleInClass}">${roleInClassLabel(e.roleInClass)}</span> ${endBtn}</div>`;
+      }).join("");
+      return `<div style="margin-top:0.5rem;">${rows}</div>`;
+    }
+
+    function wireClassCardActions() {
+      classesBody.querySelectorAll(".enrolBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const classId = btn.dataset.class;
+          const personSel = classesBody.querySelector(`.enrolPersonSelect[data-class="${classId}"]`);
+          const roleSel = classesBody.querySelector(`.enrolRoleSelect[data-class="${classId}"]`);
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => enrolPerson(db, activeTenantId, {
+              contextId: classId, contextType: "class", personId: personSel.value, roleInClass: roleSel.value, subjectIds: [],
+            }, auth.currentUser.uid),
+            { collection: "enrollments", action: "enrolPerson (class)" }
+          );
+          btn.disabled = false;
+          if (outcome.ok) await refreshClasses();
+          else alert(outcome.entry.message);
+        });
+      });
+      classesBody.querySelectorAll(".archiveClassBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setClassStatus(db, activeTenantId, btn.dataset.class, "archived"),
+            { collection: "classes", action: "setClassStatus" }
+          );
+          if (outcome.ok) await refreshClasses();
+          else { alert(outcome.entry.message); btn.disabled = false; }
+        });
+      });
+      classesBody.querySelectorAll(".endEnrolBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => endEnrollment(db, activeTenantId, btn.dataset.class, btn.dataset.person, auth.currentUser.uid),
+            { collection: "enrollments", action: "endEnrollment (class)" }
+          );
+          if (outcome.ok) await refreshClasses();
+          else { alert(outcome.entry.message); btn.disabled = false; }
+        });
+      });
+      classesBody.querySelectorAll(".bulkConfirmClassBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const classId = btn.dataset.class;
+          const resultEl = classesBody.querySelector(`.bulkResult[data-class="${classId}"]`);
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => bulkConfirmClass(db, { tenantId: activeTenantId, classId, confirmedByPersonId: myPersonId }),
+            { collection: "records", action: "bulkConfirmClass" }
+          );
+          btn.disabled = false;
+          if (outcome.ok) {
+            resultEl.textContent = t(
+              outcome.result.totalConfirmed === 1
+                ? "Confirmed {count} pending entry across {students} students."
+                : "Confirmed {count} pending entries across {students} students.",
+              { count: num(outcome.result.totalConfirmed), students: num(outcome.result.perStudent.length) }
+            );
+          }
+          else resultEl.textContent = outcome.entry.message;
+        });
+      });
+    }
+
+    createClassBtn.addEventListener("click", async () => {
+      createResult.textContent = "";
+      if (!classNameInput.value.trim()) { createResult.textContent = t("Enter a name first."); return; }
+      const subjectIds = Array.from(subjectChecks.querySelectorAll("input:checked")).map((c) => c.value);
+
+      createClassBtn.disabled = true;
+      const outcome = await safeWrite(
+        () => createClass(db, activeTenantId, {
+          name: classNameInput.value.trim(),
+          gloss: classGlossInput.value.trim(),
+          subjectIds,
+        }, auth.currentUser.uid),
+        { collection: "classes", action: "createClass" }
+      );
+      createClassBtn.disabled = false;
+      if (outcome.ok) {
+        createResult.textContent = t("Class created.");
+        classNameInput.value = ""; classGlossInput.value = "";
+        subjectChecks.querySelectorAll("input:checked").forEach((c) => (c.checked = false));
+        await refreshClasses();
+      } else {
+        createResult.textContent = outcome.entry.message;
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = t("Not signed in.");
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = t("Signed in as {email}", { email: user.email });
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+
+      async function step(name, fn) {
+        try { return await fn(); }
+        catch (err) { err.stepName = err.stepName ?? name; throw err; }
+      }
+
+      try {
+        const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
+        // v07.37: if this account has a language set on another device, take it
+        // and reload. Costs no extra read -- the snapshot is already in hand.
+        if (adoptAppLangFromUserIndex(userIndexSnap)) return;
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+
+        // One membership load, not two: bootstrapContext() hands back the
+        // list it used to choose the context, which this page then used to
+        // fetch a second time, one round trip later, for the tenant picker.
+        const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
+        if (!context) {
+          whoEl.innerHTML += noAccountMessageHtml();
+          return;
+        }
+        activeTenantId = context.tenantId;
+
+        myMemberships = memberships;
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+          .join("");
+
+        appEl.style.display = "block";
+        await step("load context data", loadContextData);
+      } catch (err) {
+        whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
+        console.error(err);
+      }
+    });
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      await loadContextData();
+    });
+  </script>
+</body>
+</html>

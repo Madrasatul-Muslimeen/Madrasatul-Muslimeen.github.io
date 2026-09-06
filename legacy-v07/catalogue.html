@@ -1,0 +1,1045 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — Catalogue</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.15rem; margin-top: 2.2rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+  label { display: block; margin: 0.8rem 0 0.3rem; font-weight: 600; font-size: 0.92rem; }
+  input[type="text"], input[type="number"], select { padding: 0.45rem; font-size: 0.95rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box; }
+  button {
+    font-size: 0.92rem; padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.small { padding: 0.2rem 0.5rem; font-size: 0.82rem; }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.6rem; }
+  th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid #eee; font-size: 0.88rem; vertical-align: top; }
+  .depth-1 { padding-left: 1.2rem; }
+  .depth-2 { padding-left: 2.4rem; }
+  .depth-3 { padding-left: 3.6rem; }
+  .tag { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 0.8rem; font-size: 0.75rem; background: #eef1f7; color: #1F3A6E; margin-right: 0.2rem; }
+  .subj-toggle-btn { background: none; border: none; cursor: pointer; padding: 0.1rem 0.6rem 0.1rem 0; font-size: 1.3rem; font-weight: 700; line-height: 1; min-width: 1.6rem; color: #1F3A6E; }
+  .module-row { cursor: pointer; }
+  .module-row:hover { background: #f7f9fc; }
+  @keyframes subjRowFlash { from { background: #fff3cd; } to { background: transparent; } }
+  .subj-row-flash { animation: subjRowFlash 1.6s ease; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  #seedStatus { margin: 0.8rem 0; padding: 0.6rem; border-radius: 0.4rem; font-size: 0.88rem; display: none; }
+  #seedStatus.ok { background: #d7f4d7; }
+  #seedStatus.fail { background: #f8d7da; }
+  fieldset { border: 1px solid #ddd; border-radius: 0.5rem; margin-top: 1rem; }
+  .guideBox { font-size: 0.85rem; color: #444; background: #fafafa; padding: 0.5rem; border-radius: 0.3rem; margin-top: 0.3rem; }
+  .readonly-note { font-size: 0.85rem; color: #777; margin-top: 0.4rem; }
+
+</style>
+</head>
+<body>
+  <h1>Catalogue</h1>
+  <p>Modules, the subject tree, the 30 Approaches, and ladders and levels —
+     the data every study screen reads from. Anyone in the madrasah can look;
+     only the owner and a prime can edit.</p>
+
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
+
+  <div id="app" style="display:none;">
+    <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
+      <label style="margin:0;">Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+    </div>
+
+    <div id="seedStatus"></div>
+
+    <h2>Modules</h2>
+    <table>
+      <thead><tr><th>Module</th><th>Renderer</th><th>Status</th><th id="moduleActionsHead" style="display:none;">Move</th></tr></thead>
+      <tbody id="modulesBody"></tbody>
+    </table>
+
+    <h2>Subject tree</h2>
+    <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
+      <input type="checkbox" id="showArchivedSubjects" /> Show archived subjects
+    </label>
+    <table>
+      <thead><tr><th>Name</th><th>Gloss</th><th>Modules</th><th>Level (parent)</th><th>Status</th><th>Confirmation</th><th>Resource</th><th id="subjActionsHead" style="display:none;">Edit</th></tr></thead>
+      <tbody id="subjectsBody"></tbody>
+    </table>
+
+    <fieldset id="addSubjectBox" style="display:none;">
+      <legend>Add a tenant-specific subject</legend>
+      <label for="newSubjName">Name</label>
+      <input id="newSubjName" type="text" maxlength="80" />
+      <label for="newSubjParent">Parent</label>
+      <select id="newSubjParent"></select>
+      <label for="newSubjGloss">Gloss (optional)</label>
+      <input id="newSubjGloss" type="text" maxlength="160" />
+      <label for="newSubjResourceType">Resource (optional — leave blank to add later, once you have the content ready)</label>
+      <select id="newSubjResourceType">
+        <option value="">No resource yet</option>
+        <option value="link">Link (URL)</option>
+        <option value="text">Text (typed in directly)</option>
+      </select>
+      <div id="newSubjResourceValueBox" style="display:none;">
+        <input id="newSubjResourceUrl" type="text" placeholder="https://…" style="width:100%; box-sizing:border-box; display:none;" />
+        <textarea id="newSubjResourceBody" rows="4" placeholder="What this topic actually covers…" style="width:100%; box-sizing:border-box; display:none;"></textarea>
+      </div>
+      <button id="addSubjBtn" style="margin-top:0.8rem;">Add subject</button>
+      <div id="addSubjResult" style="margin-top:0.5rem; font-size:0.88rem;"></div>
+    </fieldset>
+
+    <h2>The 30 Approaches</h2>
+    <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
+      <input type="checkbox" id="showArchivedTrackables" /> Show archived Approaches
+    </label>
+    <table>
+      <thead><tr><th>#</th><th>Approach</th><th>Section</th><th>Status</th><th>Guide</th><th id="trkActionsHead" style="display:none;">Edit</th></tr></thead>
+      <tbody id="trackablesBody"></tbody>
+    </table>
+
+    <h2>Ladders &amp; levels</h2>
+    <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
+      <input type="checkbox" id="showArchivedLadders" /> Show archived ladders/levels
+    </label>
+    <table>
+      <thead><tr><th>Ladder</th><th>Actions</th><th>Levels</th></tr></thead>
+      <tbody id="laddersBody"></tbody>
+    </table>
+
+    <fieldset id="addLadderBox" style="display:none;">
+      <legend>Add a ladder</legend>
+      <label for="newLadderName">Name</label>
+      <input id="newLadderName" type="text" maxlength="60" placeholder="e.g. General Grades" />
+      <button id="addLadderBtn" style="margin-top:0.8rem;">Add ladder</button>
+
+      <label for="levelLadderSelect" style="margin-top:1.2rem;">Add a level to</label>
+      <select id="levelLadderSelect"></select>
+      <label for="newLevelName">Level name</label>
+      <input id="newLevelName" type="text" maxlength="60" placeholder="e.g. Year 1" />
+      <label for="newLevelOrder">Order</label>
+      <input id="newLevelOrder" type="number" value="1" style="width:6rem;" />
+      <button id="addLevelBtn" style="margin-top:0.8rem;">Add level</button>
+      <div id="ladderResult" style="margin-top:0.5rem; font-size:0.88rem;"></div>
+    </fieldset>
+
+    <p class="readonly-note" id="readOnlyNote" style="display:none;">
+      You're viewing as a role that cannot edit the catalogue (owner/prime
+      only). Everything above is read-only for you.
+    </p>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { roleListLabel, entityStatusLabel } from "./js/labels.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
+    import { safeWrite } from "./js/errors.js";
+    import {
+      bootstrapContext,
+      getActiveContext,
+      setActiveContext,
+      effectiveRoles,
+    } from "./js/session-context.js";
+    import { ensureModulesSeeded, listModules, swapModuleOrder } from "./js/modules.js";
+    import {
+      ensureSubjectTemplatesSeeded,
+      ensureTenantCatalogueSeeded,
+      getSubjectTree,
+      getTrackables,
+      editCatalogueNode,
+      reparentSubject,
+      setSubjectStatus,
+      setTrackableStatus,
+      setLadderStatus,
+      setLevelStatus,
+      createLadder,
+      createLevel,
+      listLadders,
+      listLevels,
+      createTopicSubject,
+      ensureHealthStudyReparented,
+      ensureLifeSkillReparented,
+      ensureLdogReparented,
+    } from "./js/catalogue.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+import { mountBookmarkMenu } from "./js/bookmark-nav.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
+
+    // Phase 1 of the full translation: turn this page's own static markup
+    // (headings, labels, buttons) into the chosen language before anything
+    // else runs, so a Bangla reader never sees an English frame first.
+    translateStatic();
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
+      mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null });
+    }
+    const tenantSelect = document.getElementById("tenantSelect");
+    const seedStatusEl = document.getElementById("seedStatus");
+    const modulesBody = document.getElementById("modulesBody");
+    const moduleActionsHead = document.getElementById("moduleActionsHead");
+    const subjectsBody = document.getElementById("subjectsBody");
+    const subjActionsHead = document.getElementById("subjActionsHead");
+    const trackablesBody = document.getElementById("trackablesBody");
+    const trkActionsHead = document.getElementById("trkActionsHead");
+    const laddersBody = document.getElementById("laddersBody");
+    const addSubjectBox = document.getElementById("addSubjectBox");
+    const newSubjParent = document.getElementById("newSubjParent");
+    const newSubjResourceType = document.getElementById("newSubjResourceType");
+    const newSubjResourceValueBox = document.getElementById("newSubjResourceValueBox");
+    const newSubjResourceUrl = document.getElementById("newSubjResourceUrl");
+    const newSubjResourceBody = document.getElementById("newSubjResourceBody");
+    const addSubjBtn = document.getElementById("addSubjBtn");
+    const addSubjResult = document.getElementById("addSubjResult");
+    const addLadderBox = document.getElementById("addLadderBox");
+    const levelLadderSelect = document.getElementById("levelLadderSelect");
+    const addLadderBtn = document.getElementById("addLadderBtn");
+    const addLevelBtn = document.getElementById("addLevelBtn");
+    const ladderResult = document.getElementById("ladderResult");
+    const readOnlyNote = document.getElementById("readOnlyNote");
+    const showArchivedSubjects = document.getElementById("showArchivedSubjects");
+    const showArchivedTrackables = document.getElementById("showArchivedTrackables");
+    const showArchivedLadders = document.getElementById("showArchivedLadders");
+
+    let activeTenantId = null;
+    let myMemberships = [];
+    let canEdit = false;
+    let subjectTree = [];
+    // Owner ask (10 Aug 2026): clicking a module jumps to its subjects, and
+    // the subject list is collapsible per-subject -- session-only state
+    // (not persisted), a row is hidden if ANY of its ancestors is collapsed.
+    let collapsedSubjectIds = new Set();
+    // Owner follow-up: subjects should start collapsed, opened on demand --
+    // but only on a genuinely fresh view (first load / tenant switch), not
+    // after an in-place edit/add/archive silently re-collapses whatever the
+    // owner currently has open. loadSubjects() only (re-)seeds the default
+    // collapsed set while this is false, then flips it true; the tenant
+    // switch handler resets it so switching tenants gets its own fresh
+    // collapsed start.
+    let collapseInitialized = false;
+
+    showArchivedSubjects.addEventListener("change", renderSubjects);
+    showArchivedTrackables.addEventListener("change", renderTrackables);
+    showArchivedLadders.addEventListener("change", loadLadders);
+
+    // Round 10 fix (8 Aug 2026): old wording told anyone with no account to
+    // create one on onboarding.html -- wrong for someone with a real pending
+    // invite who hasn't clicked their invite link yet. Points there first.
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    function depthOf(node) {
+      return Math.min(node.ancestorIds?.length ?? 0, 3);
+    }
+
+    // A module's own name, for the tags in the subject rows below. Built
+    // from the modules actually loaded (so it follows langText and any admin
+    // rename) rather than from a second hardcoded list.
+    let moduleNameById = new Map();
+    function moduleName(id) { return moduleNameById.get(id) ?? id; }
+
+    // "ayah" / "topic" / "routine" / "asma" -- which study screen a module
+    // draws with. A stored identifier, so it gets a label map like every
+    // other one (see js/labels.js's note on the convention).
+    const RENDERER_LABELS = Object.freeze({
+      ayah: "Ayah by ayah",
+      topic: "Topic",
+      routine: "Routine",
+      asma: "Asma ul Husna",
+    });
+    const rendererLabel = (r) => (RENDERER_LABELS[r] ? t(RENDERER_LABELS[r]) : (r ?? ""));
+
+    async function loadModules() {
+      const modules = await listModules(db);
+      moduleNameById = new Map(modules.map((m) => [m.id, langText(m.name, getAppLang(), m.id)]));
+      modulesBody.innerHTML = modules
+        .map((m, i) => {
+          const moveCell = canEdit
+            ? `<td>
+                <button type="button" class="small secondary moduleMoveUpBtn" data-id="${m.id}" ${i === 0 ? "disabled" : ""} title="${t("Move up")}">▲</button>
+                <button type="button" class="small secondary moduleMoveDownBtn" data-id="${m.id}" ${i === modules.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button>
+              </td>`
+            : "";
+          return `<tr class="module-row" data-module-id="${m.id}" title="${t("Click to jump to this module's subjects below")}">
+            <td>${m.icon ?? ""} ${langText(m.name, getAppLang(), m.id)}</td><td>${rendererLabel(m.renderer)}</td><td>${entityStatusLabel(m.status)}</td>${moveCell}
+          </tr>`;
+        })
+        .join("");
+
+      modulesBody.querySelectorAll(".module-row").forEach((row) => {
+        row.addEventListener("click", () => jumpToModuleSubjects(row.dataset.moduleId));
+      });
+
+      // Owner ask (10 Aug 2026): move a module up/down in the flat list.
+      // stopPropagation so clicking these doesn't also fire the row's own
+      // jump-to-subjects click handler above.
+      modulesBody.querySelectorAll(".moduleMoveUpBtn").forEach((btn) => {
+        btn.addEventListener("click", (e) => { e.stopPropagation(); moveModule(modules, btn.dataset.id, "up"); });
+      });
+      modulesBody.querySelectorAll(".moduleMoveDownBtn").forEach((btn) => {
+        btn.addEventListener("click", (e) => { e.stopPropagation(); moveModule(modules, btn.dataset.id, "down"); });
+      });
+    }
+
+    /** modules is already sorted by order (listModules()'s own contract). Swaps order with the immediate neighbour -- the whole "move" operation for a flat, non-hierarchical list. */
+    async function moveModule(modules, moduleId, direction) {
+      const idx = modules.findIndex((m) => m.id === moduleId);
+      const swapWithIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (idx === -1 || swapWithIdx < 0 || swapWithIdx >= modules.length) return;
+      const a = modules[idx];
+      const b = modules[swapWithIdx];
+      const outcome = await safeWrite(
+        () => swapModuleOrder(db, a.id, a.order ?? 0, b.id, b.order ?? 0),
+        { collection: "modules", action: "reorder", id: a.id }
+      );
+      if (outcome.ok) await loadModules();
+      else alert(outcome.entry.message);
+    }
+
+    /** Owner ask: clicking a module jumps to its subject-tree section below. Each module's own top-level subject (parentId: null) is the anchor -- expands it if collapsed, then scrolls it into view with a brief highlight. subjectTree may not be loaded yet if clicked before loadSubjects() finishes; a no-op in that case rather than an error. */
+    function jumpToModuleSubjects(moduleId) {
+      const rootNode = subjectTree.find((n) => (n.moduleIds ?? []).includes(moduleId) && !n.parentId);
+      if (!rootNode) return;
+      if (collapsedSubjectIds.has(rootNode.id)) {
+        collapsedSubjectIds.delete(rootNode.id);
+        renderSubjects();
+      }
+      const targetRow = document.getElementById(`subj-row-${rootNode.id}`);
+      if (!targetRow) return;
+      targetRow.scrollIntoView({ behavior: "smooth", block: "center" });
+      targetRow.classList.add("subj-row-flash");
+      setTimeout(() => targetRow.classList.remove("subj-row-flash"), 1600);
+    }
+
+    let editingSubjectId = null;
+    let movingSubjectId = null;
+
+    // Options for a parent-picker, excluding the node itself, anything
+    // beneath it in the tree (picking a descendant as your new parent would
+    // create a cycle; reparentSubject() also refuses this server-side, but
+    // there's no reason to offer an invalid choice at all), and anything
+    // archived (nothing new should be filed under a subject that's been
+    // taken out of active use).
+    function parentOptionsHtml(selectedParentId, excludeId) {
+      const excludeIds = new Set(excludeId ? [excludeId] : []);
+      if (excludeId) {
+        for (const n of subjectTree) {
+          if ((n.ancestorIds ?? []).includes(excludeId)) excludeIds.add(n.id);
+        }
+      }
+      // Module tag added to each option (owner feedback: a flat 40+ row
+      // list with only indentation to go on made it easy to pick the wrong
+      // parent, e.g. a General Study subject landing under the wrong
+      // branch without noticing).
+      const options = subjectTree
+        .filter((n) => !excludeIds.has(n.id) && (n.status !== "archived" || n.id === selectedParentId))
+        .map((n) => `<option value="${n.id}" ${n.id === selectedParentId ? "selected" : ""}>${"— ".repeat(depthOf(n))}${langText(n.name, getAppLang(), n.id)} [${(n.moduleIds ?? []).map(moduleName).join(", ") || t("no module")}]</option>`)
+        .join("");
+      return `<option value="" ${!selectedParentId ? "selected" : ""}>${t("(top level)")}</option>${options}`;
+    }
+
+    function parentDisplayName(node) {
+      if (!node.parentId) return t("(top level)");
+      const parent = subjectTree.find((n) => n.id === node.parentId);
+      return parent ? langText(parent.name, getAppLang(), parent.id) : node.parentId;
+    }
+
+    // confirmationRequired: null/undefined = "auto" (Architecture s6's
+    // computed rule -- does this person have a teacher/guardian/prime).
+    // true/false is an explicit per-subject override ("confirmation can be
+    // switched on or off per subject").
+    function confirmationLabel(node) {
+      if (node.confirmationRequired === true) return t("Always required");
+      if (node.confirmationRequired === false) return t("Never required");
+      return t("Auto (computed)");
+    }
+
+    function confirmationOptionsHtml(node) {
+      const v = node.confirmationRequired === true ? "true" : node.confirmationRequired === false ? "false" : "auto";
+      return `<option value="auto" ${v === "auto" ? "selected" : ""}>${t("Auto (computed)")}</option>
+        <option value="true" ${v === "true" ? "selected" : ""}>${t("Always required")}</option>
+        <option value="false" ${v === "false" ? "selected" : ""}>${t("Never required")}</option>`;
+    }
+
+    // Only meaningful for leaf/topic nodes -- a branch with children isn't
+    // itself claimable, so "no resource" there isn't a gap to flag.
+    function resourceLabel(node) {
+      if (!node.isTrackable) return "";
+      return (node.resourceIds ?? []).length > 0 ? t("Yes") : "—";
+    }
+
+    // Owner ask: the subject list is collapsible per-subject -- a toggle
+    // shows only for nodes with at least one child (branches), computed
+    // fresh from the tree's actual structure each render rather than
+    // trusting isTrackable (which only tracks claimability, not "does this
+    // specific render currently have children").
+    function subjectHasChildren(nodeId) {
+      return subjectTree.some((n) => n.parentId === nodeId);
+    }
+
+    function subjectToggleHtml(node) {
+      if (!subjectHasChildren(node.id)) return "";
+      const collapsed = collapsedSubjectIds.has(node.id);
+      return `<button type="button" class="subj-toggle-btn" data-toggle-id="${node.id}" title="${collapsed ? t("Expand") : t("Collapse")}">${collapsed ? "▸" : "▾"}</button>`;
+    }
+
+    /** Same-parent siblings, sorted by order -- the scope "move up/down" operates within. */
+    function siblingsOf(node) {
+      return subjectTree.filter((n) => n.parentId === node.parentId).sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    }
+
+    function subjectRowHtml(node) {
+      const modules = (node.moduleIds ?? []).map((id) => `<span class="tag">${moduleName(id)}</span>`).join("");
+
+      if (canEdit && movingSubjectId === node.id) {
+        return `<tr id="subj-row-${node.id}">
+          <td class="depth-${depthOf(node)}">${langText(node.name, getAppLang(), node.id)}</td>
+          <td>${node.gloss ? langText(node.gloss, getAppLang(), "") : ""}</td>
+          <td>${modules}</td>
+          <td><select class="movingParentSelect">${parentOptionsHtml(node.parentId, node.id)}</select></td>
+          <td>${entityStatusLabel(node.status)}</td>
+          <td>${confirmationLabel(node)}</td>
+          <td>${resourceLabel(node)}</td>
+          <td>
+            <button class="small moveSaveBtn" data-id="${node.id}">${t("Move here")}</button>
+            <button class="small secondary moveCancelBtn" data-id="${node.id}">${t("Cancel")}</button>
+          </td>
+        </tr>`;
+      }
+
+      if (canEdit && editingSubjectId === node.id) {
+        const escapedName = langText(node.name, getAppLang(), node.id).replace(/"/g, "&quot;");
+        return `<tr id="subj-row-${node.id}">
+          <td class="depth-${depthOf(node)}"><input type="text" class="editNameInput" value="${escapedName}" /></td>
+          <td>${node.gloss ? langText(node.gloss, getAppLang(), "") : ""}</td>
+          <td>${modules}</td>
+          <td><select class="editParentSelect">${parentOptionsHtml(node.parentId, node.id)}</select></td>
+          <td>${entityStatusLabel(node.status)}</td>
+          <td><select class="editConfirmSelect">${confirmationOptionsHtml(node)}</select></td>
+          <td>${resourceLabel(node)}</td>
+          <td>
+            <button class="small saveSubjBtn" data-id="${node.id}">${t("Save")}</button>
+            <button class="small secondary cancelSubjBtn" data-id="${node.id}">${t("Cancel")}</button>
+          </td>
+        </tr>`;
+      }
+
+      const archiveBtn = canEdit
+        ? `<button class="small secondary archiveSubjBtn" data-id="${node.id}" data-next="${node.status === "archived" ? "active" : "archived"}">${node.status === "archived" ? t("Restore") : t("Archive")}</button>`
+        : "";
+      // Owner ask (10 Aug 2026): move up/down among siblings (auto-renumbers
+      // via a simple order swap) plus a one-click "Move to..." for
+      // re-parenting -- previously only reachable buried inside the full
+      // Edit form's Parent dropdown.
+      let moveButtons = "";
+      if (canEdit) {
+        const siblings = siblingsOf(node);
+        const idx = siblings.findIndex((n) => n.id === node.id);
+        moveButtons = `<button class="small secondary moveUpBtn" data-id="${node.id}" ${idx <= 0 ? "disabled" : ""} title="${t("Move up")}">▲</button>
+          <button class="small secondary moveDownBtn" data-id="${node.id}" ${idx === -1 || idx >= siblings.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button>
+          <button class="small secondary moveToBtn" data-id="${node.id}" title="${t("Move to a different parent")}">${t("Move to…")}</button><br/>`;
+      }
+      const actionCell = canEdit
+        ? `<td>${moveButtons}<button class="small secondary editSubjBtn" data-id="${node.id}">${t("Edit")}</button> ${archiveBtn}</td>`
+        : "";
+      return `<tr id="subj-row-${node.id}">
+        <td class="depth-${depthOf(node)}">${subjectToggleHtml(node)}${langText(node.name, getAppLang(), node.id)}</td>
+        <td>${node.gloss ? langText(node.gloss, getAppLang(), "") : ""}</td>
+        <td>${modules}</td>
+        <td>${parentDisplayName(node)}</td>
+        <td>${entityStatusLabel(node.status)}</td>
+        <td>${confirmationLabel(node)}</td>
+        <td>${resourceLabel(node)}</td>
+        ${actionCell}
+      </tr>`;
+    }
+
+    async function loadSubjects() {
+      subjectTree = await getSubjectTree(db, activeTenantId);
+      if (!collapseInitialized) {
+        collapsedSubjectIds = new Set(
+          subjectTree.filter((n) => subjectTree.some((c) => c.parentId === n.id)).map((n) => n.id)
+        );
+        collapseInitialized = true;
+      }
+      renderSubjects();
+      newSubjParent.innerHTML = parentOptionsHtml(null, null);
+    }
+
+    /** Swaps `order` with the immediate sibling in the given direction -- the whole "move" operation, auto-renumbered since it's just the two affected ranks trading places. */
+    async function moveSubject(nodeId, direction) {
+      const node = subjectTree.find((n) => n.id === nodeId);
+      if (!node) return;
+      const siblings = siblingsOf(node);
+      const idx = siblings.findIndex((n) => n.id === nodeId);
+      const swapWithIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (idx === -1 || swapWithIdx < 0 || swapWithIdx >= siblings.length) return;
+      const other = siblings[swapWithIdx];
+
+      const outcome = await safeWrite(
+        () => Promise.all([
+          editCatalogueNode(db, TENANT.SUBJECTS, activeTenantId, node.id, { order: other.order ?? 0 }, auth.currentUser.uid),
+          editCatalogueNode(db, TENANT.SUBJECTS, activeTenantId, other.id, { order: node.order ?? 0 }, auth.currentUser.uid),
+        ]),
+        { collection: "subjects", action: "reorder", id: node.id }
+      );
+      if (outcome.ok) await loadSubjects();
+      else alert(outcome.entry.message);
+    }
+
+    function renderSubjects() {
+      const archivedFiltered = showArchivedSubjects.checked
+        ? subjectTree
+        : subjectTree.filter((n) => n.status !== "archived");
+      // Collapsible-by-subject: hide a row if any of its ancestors is collapsed.
+      const visible = archivedFiltered.filter(
+        (n) => !(n.ancestorIds ?? []).some((id) => collapsedSubjectIds.has(id))
+      );
+      subjectsBody.innerHTML = visible.map(subjectRowHtml).join("");
+
+      subjectsBody.querySelectorAll(".subj-toggle-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const id = btn.dataset.toggleId;
+          if (collapsedSubjectIds.has(id)) collapsedSubjectIds.delete(id);
+          else collapsedSubjectIds.add(id);
+          renderSubjects();
+        });
+      });
+
+      subjectsBody.querySelectorAll(".editSubjBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          movingSubjectId = null;
+          editingSubjectId = btn.dataset.id;
+          renderSubjects();
+        });
+      });
+
+      subjectsBody.querySelectorAll(".cancelSubjBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          editingSubjectId = null;
+          renderSubjects();
+        });
+      });
+
+      subjectsBody.querySelectorAll(".moveUpBtn").forEach((btn) => {
+        btn.addEventListener("click", () => moveSubject(btn.dataset.id, "up"));
+      });
+      subjectsBody.querySelectorAll(".moveDownBtn").forEach((btn) => {
+        btn.addEventListener("click", () => moveSubject(btn.dataset.id, "down"));
+      });
+      subjectsBody.querySelectorAll(".moveToBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          editingSubjectId = null;
+          movingSubjectId = btn.dataset.id;
+          renderSubjects();
+        });
+      });
+      subjectsBody.querySelectorAll(".moveCancelBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          movingSubjectId = null;
+          renderSubjects();
+        });
+      });
+      subjectsBody.querySelectorAll(".moveSaveBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const node = subjectTree.find((n) => n.id === btn.dataset.id);
+          const row = btn.closest("tr");
+          const nextParentId = row.querySelector(".movingParentSelect").value || null;
+          if (nextParentId === node.parentId) { movingSubjectId = null; renderSubjects(); return; }
+
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => reparentSubject(db, activeTenantId, node.id, nextParentId, auth.currentUser.uid),
+            { collection: "subjects", action: "reparent", id: node.id }
+          );
+          if (outcome.ok) {
+            movingSubjectId = null;
+            await loadSubjects();
+          } else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      subjectsBody.querySelectorAll(".archiveSubjBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const node = subjectTree.find((n) => n.id === btn.dataset.id);
+          const nextStatus = btn.dataset.next;
+          const childCount = subjectTree.filter((n) => n.parentId === node.id).length;
+          const warning = childCount > 0
+            ? " " + t("It has {count} item(s) underneath it — they stay active, just nested under an archived subject.", { count: num(childCount) })
+            : "";
+          const name = langText(node.name, getAppLang(), node.id);
+          const question = nextStatus === "archived"
+            ? t("Archive \"{name}\"?", { name })
+            : t("Restore \"{name}\"?", { name });
+          if (!confirm(`${question}${warning}`)) return;
+
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setSubjectStatus(db, activeTenantId, node.id, nextStatus, auth.currentUser.uid),
+            { collection: "subjects", action: "setStatus", id: node.id }
+          );
+          if (outcome.ok) await loadSubjects();
+          else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      subjectsBody.querySelectorAll(".saveSubjBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const node = subjectTree.find((n) => n.id === btn.dataset.id);
+          const row = btn.closest("tr");
+          const nextName = row.querySelector(".editNameInput").value.trim();
+          const nextParentId = row.querySelector(".editParentSelect").value || null;
+          const nextConfirmRaw = row.querySelector(".editConfirmSelect").value;
+          const nextConfirm = nextConfirmRaw === "true" ? true : nextConfirmRaw === "false" ? false : null;
+          if (!nextName) {
+            alert(t("Name can't be empty."));
+            return;
+          }
+
+          btn.disabled = true;
+          if (nextName !== langText(node.name, getAppLang(), node.id)) {
+            const outcome = await safeWrite(
+              () => editCatalogueNode(db, TENANT.SUBJECTS, activeTenantId, node.id, { name: { ...node.name, en: nextName } }, auth.currentUser.uid),
+              { collection: "subjects", action: "editName", id: node.id }
+            );
+            if (!outcome.ok) {
+              alert(outcome.entry.message);
+              btn.disabled = false;
+              return;
+            }
+          }
+
+          if (nextConfirm !== (node.confirmationRequired ?? null)) {
+            const outcome = await safeWrite(
+              () => editCatalogueNode(db, TENANT.SUBJECTS, activeTenantId, node.id, { confirmationRequired: nextConfirm }, auth.currentUser.uid),
+              { collection: "subjects", action: "editConfirmation", id: node.id }
+            );
+            if (!outcome.ok) {
+              alert(outcome.entry.message);
+              btn.disabled = false;
+              return;
+            }
+          }
+
+          if (nextParentId !== node.parentId) {
+            const outcome = await safeWrite(
+              () => reparentSubject(db, activeTenantId, node.id, nextParentId, auth.currentUser.uid),
+              { collection: "subjects", action: "reparent", id: node.id }
+            );
+            if (!outcome.ok) {
+              alert(outcome.entry.message);
+              btn.disabled = false;
+              return;
+            }
+          }
+
+          editingSubjectId = null;
+          await loadSubjects();
+        });
+      });
+    }
+
+    function trackableRowHtml(row) {
+      const archiveBtn = canEdit
+        ? `<button class="small secondary archiveTrkBtn" data-id="${row.id}" data-next="${row.status === "archived" ? "active" : "archived"}">${row.status === "archived" ? t("Restore") : t("Archive")}</button>`
+        : "";
+      const actionCell = canEdit
+        ? `<td><button class="small secondary editTrkBtn" data-id="${row.id}">${t("Edit")}</button> ${archiveBtn}</td>`
+        : "";
+      return `<tr>
+        <td>${num(row.order)}</td>
+        <td>${langText(row.name, getAppLang(), row.id)}</td>
+        <td>${langText(row.groupName, getAppLang(), t("Section {n}", { n: num(row.group) }))}</td>
+        <td>${entityStatusLabel(row.status)}</td>
+        <td>
+          <button class="small secondary guideBtn" data-id="${row.id}">${t("Guide")}</button>
+          <div class="guideBox" id="guide-${row.id}" style="display:none;">
+            <strong>${t("What:")}</strong> ${langText(row.guide?.what, getAppLang(), "")}<br/>
+            <strong>${t("How:")}</strong> ${langText(row.guide?.how, getAppLang(), "")}<br/>
+            <strong>${t("Measure:")}</strong> ${langText(row.guide?.measure, getAppLang(), "")}
+          </div>
+        </td>
+        ${actionCell}
+      </tr>`;
+    }
+
+    let trackableList = [];
+
+    async function loadTrackables() {
+      trackableList = await getTrackables(db, activeTenantId);
+      renderTrackables();
+    }
+
+    function renderTrackables() {
+      const visible = showArchivedTrackables.checked
+        ? trackableList
+        : trackableList.filter((row) => row.status !== "archived");
+      trackablesBody.innerHTML = visible.map(trackableRowHtml).join("");
+
+      trackablesBody.querySelectorAll(".guideBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const box = document.getElementById(`guide-${btn.dataset.id}`);
+          box.style.display = box.style.display === "none" ? "block" : "none";
+        });
+      });
+
+      trackablesBody.querySelectorAll(".editTrkBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const row = trackableList.find((x) => x.id === btn.dataset.id);
+          const nextName = prompt(t("New name for this Approach:"), langText(row.name, getAppLang(), row.id));
+          if (nextName == null || nextName.trim() === "") return;
+          const outcome = await safeWrite(
+            () => editCatalogueNode(db, TENANT.TRACKABLES, activeTenantId, row.id, { name: { ...row.name, en: nextName.trim() } }, auth.currentUser.uid),
+            { collection: "trackables", action: "editName", id: row.id }
+          );
+          if (outcome.ok) await loadTrackables();
+          else alert(outcome.entry.message);
+        });
+      });
+
+      trackablesBody.querySelectorAll(".archiveTrkBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const row = trackableList.find((x) => x.id === btn.dataset.id);
+          const nextStatus = btn.dataset.next;
+          const name = langText(row.name, getAppLang(), row.id);
+          if (!confirm(nextStatus === "archived" ? t("Archive \"{name}\"?", { name }) : t("Restore \"{name}\"?", { name }))) return;
+
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setTrackableStatus(db, activeTenantId, row.id, nextStatus, auth.currentUser.uid),
+            { collection: "trackables", action: "setStatus", id: row.id }
+          );
+          if (outcome.ok) await loadTrackables();
+          else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    async function loadLadders() {
+      const showArchived = showArchivedLadders.checked;
+      const allLadders = await listLadders(db, activeTenantId);
+      const ladders = showArchived ? allLadders : allLadders.filter((l) => l.status !== "archived");
+
+      levelLadderSelect.innerHTML = allLadders
+        .filter((l) => l.status !== "archived")
+        .map((l) => `<option value="${l.id}">${langText(l.name, getAppLang(), l.id)}</option>`)
+        .join("");
+
+      const rows = [];
+      for (const ladder of ladders) {
+        const allLevels = await listLevels(db, activeTenantId, ladder.id);
+        const levels = showArchived ? allLevels : allLevels.filter((lv) => lv.status !== "archived");
+        const levelChips = levels.length
+          ? levels.map((lv) => {
+              const archiveBtn = canEdit
+                ? `<button class="small secondary archiveLevelBtn" data-id="${lv.id}" data-next="${lv.status === "archived" ? "active" : "archived"}">${lv.status === "archived" ? t("Restore") : t("Archive")}</button>`
+                : "";
+              return `<span style="display:inline-block; margin:0.15rem 0.4rem 0.15rem 0;">${langText(lv.name, getAppLang(), lv.id)}${lv.status === "archived" ? ` (${t("archived")})` : ""} ${archiveBtn}</span>`;
+            }).join("")
+          : t("(no levels yet)");
+        const ladderArchiveBtn = canEdit
+          ? `<button class="small secondary archiveLadderBtn" data-id="${ladder.id}" data-next="${ladder.status === "archived" ? "active" : "archived"}">${ladder.status === "archived" ? t("Restore") : t("Archive")}</button>`
+          : "";
+        rows.push(`<tr>
+          <td>${langText(ladder.name, getAppLang(), ladder.id)}${ladder.status === "archived" ? ` (${t("archived")})` : ""}</td>
+          <td>${ladderArchiveBtn}</td>
+          <td>${levelChips}</td>
+        </tr>`);
+      }
+      laddersBody.innerHTML = rows.join("") || `<tr><td colspan="3">${t("No ladders yet.")}</td></tr>`;
+
+      laddersBody.querySelectorAll(".archiveLadderBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const nextStatus = btn.dataset.next;
+          if (!confirm(nextStatus === "archived" ? t("Archive this ladder?") : t("Restore this ladder?"))) return;
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setLadderStatus(db, activeTenantId, btn.dataset.id, nextStatus, auth.currentUser.uid),
+            { collection: "ladders", action: "setStatus", id: btn.dataset.id }
+          );
+          if (outcome.ok) await loadLadders();
+          else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
+        });
+      });
+
+      laddersBody.querySelectorAll(".archiveLevelBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const nextStatus = btn.dataset.next;
+          if (!confirm(nextStatus === "archived" ? t("Archive this level?") : t("Restore this level?"))) return;
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => setLevelStatus(db, activeTenantId, btn.dataset.id, nextStatus, auth.currentUser.uid),
+            { collection: "levels", action: "setStatus", id: btn.dataset.id }
+          );
+          if (outcome.ok) await loadLadders();
+          else {
+            alert(outcome.entry.message);
+            btn.disabled = false;
+          }
+        });
+      });
+    }
+
+    async function runSeedIfNeeded() {
+      seedStatusEl.style.display = "block";
+      seedStatusEl.className = "";
+      seedStatusEl.textContent = t("Checking catalogue…");
+      try {
+        await ensureModulesSeeded(db, auth.currentUser.uid);
+        await ensureSubjectTemplatesSeeded(db, auth.currentUser.uid);
+        const result = await ensureTenantCatalogueSeeded(db, activeTenantId, auth.currentUser.uid);
+        await ensureHealthStudyReparented(db, activeTenantId, auth.currentUser.uid);
+        await ensureLifeSkillReparented(db, activeTenantId, auth.currentUser.uid);
+        await ensureLdogReparented(db, activeTenantId, auth.currentUser.uid);
+        seedStatusEl.className = "ok";
+        seedStatusEl.textContent = result.seeded
+          ? t("Catalogue set up: {subjects} subjects and {approaches} Approaches.",
+              { subjects: num(result.subjectCount), approaches: num(result.trackableCount) })
+          : t("Catalogue is already set up.");
+      } catch (err) {
+        seedStatusEl.className = "fail";
+        seedStatusEl.textContent = `${t("Could not set up the catalogue:")} ${err.code ?? ""} ${err.message}`;
+        console.error(err);
+        throw err;
+      }
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = t("Not signed in.");
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = t("Signed in as {email}", { email: user.email });
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+
+      async function step(name, fn) {
+        try {
+          return await fn();
+        } catch (err) {
+          err.stepName = err.stepName ?? name;
+          throw err;
+        }
+      }
+
+      try {
+        const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
+        // v07.37: if this account has a language set on another device, take it
+        // and reload. Costs no extra read -- the snapshot is already in hand.
+        if (adoptAppLangFromUserIndex(userIndexSnap)) return;
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+
+        // One membership load, not two: bootstrapContext() hands back the
+        // list it used to choose the context, which this page then used to
+        // fetch a second time, one round trip later, for the tenant picker.
+        const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
+        if (!context) {
+          whoEl.innerHTML += noAccountMessageHtml();
+          return;
+        }
+        activeTenantId = context.tenantId;
+
+        myMemberships = memberships;
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+          .join("");
+
+        const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+        // Round 11 -- "View as" wired up for real: previewing as a role that
+        // can't edit the catalogue now actually hides the edit controls,
+        // same as it would for that role genuinely. effectiveRoles() falls
+        // back to the real roles unchanged when no preview is active.
+        const viewAsRole = getActiveContext()?.viewAsRole ?? null;
+        const effRoles = effectiveRoles(activeMembership?.roles ?? [], viewAsRole);
+        canEdit = effRoles.includes("owner") || effRoles.includes("prime");
+        renderNav(activeMembership?.roles ?? [], viewAsRole);
+        moduleActionsHead.style.display = canEdit ? "" : "none";
+        subjActionsHead.style.display = canEdit ? "" : "none";
+        trkActionsHead.style.display = canEdit ? "" : "none";
+        addSubjectBox.style.display = canEdit ? "block" : "none";
+        addLadderBox.style.display = canEdit ? "block" : "none";
+        readOnlyNote.style.display = canEdit ? "none" : "block";
+
+        appEl.style.display = "block";
+        await step("set up catalogue", runSeedIfNeeded);
+        await step("load modules", loadModules);
+        await step("load subjects", loadSubjects);
+        await step("load trackables", loadTrackables);
+        await step("load ladders", loadLadders);
+      } catch (err) {
+        whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
+        console.error(err);
+      }
+    });
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      renderNav(chosen.roles, null); // switching tenants resets any active preview
+      canEdit = chosen.roles.includes("owner") || chosen.roles.includes("prime");
+      moduleActionsHead.style.display = canEdit ? "" : "none";
+      subjActionsHead.style.display = canEdit ? "" : "none";
+      trkActionsHead.style.display = canEdit ? "" : "none";
+      addSubjectBox.style.display = canEdit ? "block" : "none";
+      addLadderBox.style.display = canEdit ? "block" : "none";
+      readOnlyNote.style.display = canEdit ? "none" : "block";
+      collapseInitialized = false; // fresh view for this tenant -- back to all-collapsed
+
+      await runSeedIfNeeded();
+      await loadSubjects();
+      await loadTrackables();
+      await loadLadders();
+    });
+
+    newSubjResourceType.addEventListener("change", () => {
+      const type = newSubjResourceType.value;
+      newSubjResourceValueBox.style.display = type ? "block" : "none";
+      newSubjResourceUrl.style.display = type === "link" ? "block" : "none";
+      newSubjResourceBody.style.display = type === "text" ? "block" : "none";
+    });
+
+    addSubjBtn.addEventListener("click", async () => {
+      const name = document.getElementById("newSubjName").value.trim();
+      const parentId = newSubjParent.value || null;
+      const gloss = document.getElementById("newSubjGloss").value.trim();
+      if (!name) {
+        addSubjResult.textContent = t("Enter a name first.");
+        return;
+      }
+      const parentNode = parentId ? subjectTree.find((n) => n.id === parentId) : null;
+
+      const resourceType = newSubjResourceType.value;
+      let resource = null;
+      if (resourceType === "link") {
+        const url = newSubjResourceUrl.value.trim();
+        if (url) resource = { type: "link", url };
+      } else if (resourceType === "text") {
+        const body = newSubjResourceBody.value.trim();
+        if (body) resource = { type: "text", body };
+      }
+
+      // Own study record for whoever's adding this -- session-context's
+      // active membership, same "who is acting" the rest of the app uses.
+      const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+
+      addSubjBtn.disabled = true;
+      const outcome = await safeWrite(
+        () => createTopicSubject(db, activeTenantId, parentNode, {
+          name, gloss, resource, addedByPersonId: activeMembership?.personId ?? null,
+        }, auth.currentUser.uid),
+        { collection: "subjects", action: "addTenantSubject" }
+      );
+      addSubjBtn.disabled = false;
+      if (outcome.ok) {
+        addSubjResult.textContent = t("Added.");
+        document.getElementById("newSubjName").value = "";
+        document.getElementById("newSubjGloss").value = "";
+        newSubjResourceType.value = "";
+        newSubjResourceUrl.value = "";
+        newSubjResourceBody.value = "";
+        newSubjResourceValueBox.style.display = "none";
+        await loadSubjects();
+      } else {
+        addSubjResult.textContent = outcome.entry.message;
+      }
+    });
+
+    addLadderBtn.addEventListener("click", async () => {
+      const name = document.getElementById("newLadderName").value.trim();
+      if (!name) return;
+      addLadderBtn.disabled = true;
+      const outcome = await safeWrite(
+        () => createLadder(db, activeTenantId, name, auth.currentUser.uid),
+        { collection: "ladders", action: "createLadder" }
+      );
+      addLadderBtn.disabled = false;
+      if (outcome.ok) {
+        document.getElementById("newLadderName").value = "";
+        ladderResult.textContent = t("Ladder added.");
+        await loadLadders();
+      } else {
+        ladderResult.textContent = outcome.entry.message;
+      }
+    });
+
+    addLevelBtn.addEventListener("click", async () => {
+      const ladderId = levelLadderSelect.value;
+      const name = document.getElementById("newLevelName").value.trim();
+      const order = Number(document.getElementById("newLevelOrder").value) || 1;
+      if (!ladderId || !name) {
+        ladderResult.textContent = t("Add a ladder first, then name the level.");
+        return;
+      }
+      addLevelBtn.disabled = true;
+      const outcome = await safeWrite(
+        () => createLevel(db, activeTenantId, ladderId, name, order, auth.currentUser.uid),
+        { collection: "levels", action: "createLevel" }
+      );
+      addLevelBtn.disabled = false;
+      if (outcome.ok) {
+        document.getElementById("newLevelName").value = "";
+        ladderResult.textContent = t("Level added.");
+        await loadLadders();
+      } else {
+        ladderResult.textContent = outcome.entry.message;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -3,10 +3,30 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: QuranRevival v07.139.** The app has been live and real,
-not a beta, since the 9 August 2026 cutover (v07.00) — we are in real-use
-iteration, driven by what the owner hits using it. See "Post-cutover rollout
-order" (D13) below for whose real use comes first.
+**The v07 line is CLOSED. Its final build is v07.139, archived at
+`legacy-v07/`. The next version number is v08.00 — bump `app/js/version.js`
+and this line together in the round that opens it.** The owner drew the line
+on 6 Sep 2026, the same way v06 had one drawn under it at the cutover: v07's
+app is frozen and reachable, `app/` carries on as v08. Nothing about how the
+app WORKS changed when the line was drawn — see the "v07 closed and archived"
+entry below.
+
+**The app has been live and real, not a beta, since the 9 August 2026 cutover
+(v07.00)** — we are in real-use iteration, driven by what the owner hits using
+it. See "Post-cutover rollout order" (D13) below for whose real use comes
+first.
+
+**Three lines of this app now exist, all reachable, and only ONE is edited:**
+
+| URL | What | Rule |
+|---|---|---|
+| `/legacy/index.html` | v06.30, the single-file pre-cutover app (10,146 lines) | **Reference only — never edit** |
+| `/legacy-v07/` | v07.139, the multi-page Firebase rebuild, frozen 6 Sep 2026 | **Reference only — never edit** |
+| `/app/` | v08.00 onward | The live app. All work happens here |
+
+Both archives sign in to the same `study-monitoring` Firebase project and
+**write real data** — they are runnable history, not screenshots. The version
+badge beside the app name is what tells them apart on screen.
 
 **The full round-by-round build log lives in `CHANGELOG.md`** — every version
 from v07.01 onward, with what each round measured, decided and deliberately
@@ -27,101 +47,6 @@ alongside `app/js/version.js` (first two digits = big overhaul, last two = each
 new feature) and will drift if a round forgets to bump it here too.
 
 ### The five most recent rounds
-
-v07.135 (5 Sep 2026, same day) is **five owner asks against v07.134's own
-capsule -- one a defect they photographed, one a tracking bug bigger than
-reported.**
-
-**(1) The capsule is renamed and emptied of the Approach name** ("name this
-capsule 'Track the Status of Approaches', show only the name on the capsule.
-then, show the approaches on click") -- which is also the fix for (2).
-
-**(2) The mobile overflow, and its real cause.** Their screenshot shows the
-pill off BOTH edges, reading "proach  Reading (with Tajweed)". v07.134 had
-measured this at seven widths in two languages and reported it clean --
-**because the harness's tenant has SHORT Approach names and the owner's real
-one does not.** The pill wore a `<select>`, whose intrinsic width is its
-LONGEST OPTION; that width travels up the flex chain (`min-width` defaults to
-`auto`) and stretched the panel past the viewport. Reproduced by seeding a
-real-shaped long name, then fixed and re-measured. **The lesson: a fixture's
-own data can hide a layout defect a real tenant hits on day one -- when a
-control is sized by CONTENT, measure it with content the length a real tenant
-has.** Fixed wording cannot be stretched, and `min-width: 0` down the chain
-means nothing else can do it either. **Where the Approach name went matters:
-the wheel's own hub names it -- the `centerSub` v07.134 deliberately KEPT while
-noting it looked like duplication. One round later it is the only thing naming
-the Approach, so keeping it was right for a reason that had not happened yet.**
-
-**(3) The list opens through `js/bar-palette.js`** -- the same
-one-delegated-listener popover QCR and Asma use, so outside-click and "only one
-at a time" come free and there is no second mechanism to keep in step (I2).
-Grouped by section off the same `quranTrackables`, the one in force marked, and
-choosing goes through `changeCurrentTrackable()` like every other picker. Only
-the list INSIDE the popover is replaced, never the popover, so a re-render
-cannot close it under the reader's finger. It is anchored **centred** on the
-pill, not to its right edge -- v07.71 fixed exactly that shape on the Note bar.
-
-**(4) The trail and the Pages/Surahs switch share one line**, their own ask
-("saves from reducing the wheel size"): three rows above the wheel become two.
-**Costed, not trimmed by feel -- the pair needs 313px and gets 308px at
-390px.** The visible **"Show" label goes** (35px) and the buttons' side padding
-12px -> 10px (8px more); next to "Whole Quran > Juz 30" the pair says what it
-is, and **"Show" survives as the group's `aria-label`**. Measured after: 271px
-needed against 308px -- one line at 360px and up in BOTH languages, with only
-320px taking a tidy second line rather than cutting anything.
-
-**(5) The tracking bug was broader than reported.** "Whole surah tracking
-doesn't reflect in the tracker wheel" -- reproduced, and **every wider unit was
-invisible**: Range, Ruku', Juz, Hizb and Page too. This wheel has only ever
-read `ayah:` keys; each level DID carry a direct-claim fallback for its own
-unit, but written `pooled ?? direct`, and `pooled` is null only when every ayah
-in range is Not Applicable -- so **that fallback has been dead code since Phase
-5** and a Juz claimed outright showed grey on its own slice.
-
-**The rule now, stated plainly because it decides what the colours MEAN: a
-claim on a wider unit is a FLOOR under every ayah it covers.** An ayah claimed
-higher on its own keeps its own status; **Not Applicable still wins outright**,
-being an explicit exclusion (I7) rather than a point on the ramp.
-`effectiveAyahStatus()` is the single place that decides it and
-`poolCoverageStatus()` runs on its result, so every level inherits it at once.
-**I6 holds** (this reads claims, never rewrites them) and **no Firestore read
-was added** -- every span comes from chunks `openExplore()` already loaded plus
-the juz/page tables already in memory (I9, re-measured).
-
-**One deliberate limit:** a Ruku's ayah range lives in its surah's own TEXT,
-which Explore never loads for all 114 surahs -- so ruku spans are resolved
-locally by the Surah level that loads that surah anyway, and deliberately NOT
-folded into the shared map, because **a wheel that changes with your browsing
-history is worse than one with a stated limit.** A Ruku' claim therefore shows
-inside its own surah and does not roll up. Hizb's boundary table is not loaded
-here at all.
-
-**Verified: a focused, un-checked-in Playwright script, 29 checks, all
-passing**, screenshotted -- the pill named as asked and carrying nothing else,
-proven on screen at 390px **with a long real-shaped Approach name**; the list
-proven to open, offer every Approach grouped and marked, stay on screen, close
-on choosing and really change the Approach everywhere; the trail and switch
-proven on ONE line; and for the tracking rule, **a Juz claim colouring its own
-slice, a WHOLE SURAH claim colouring that surah AND all seven of its ayahs, a
-partially-claimed surah correctly NOT going green, weakest-link still holding
-for Juz 1, and Ruku'/Range claims colouring exactly what they cover** -- all of
-it in Bangla with ids proven still plain. **A separate 14-row sweep** at
-320-1920px in both languages: capsule 231x36 (en) / 157x36 (bn), never clipped,
-**the open list on screen at every width including 320px** -- **NO PROBLEMS**.
-v07.133's 33-check script re-run, with **one check UPDATED rather than
-deleted** (12b asserted the "Show" label this round removed; it now asserts the
-group's accessible name).
-
-**`layout.mjs`: landing page byte-for-byte identical** at all eight viewports
-in both banner states; `getElementById` 239 -> 240, missing list the same 22 as
-`HEAD`. **Coverage 1,565 -> 1,566 scanned, 47 missing UNCHANGED** -- one new
-string, translated. No `firestore.rules`, schema or Firestore data changes.
-
-**Flagged, not changed:** a Ruku' claim does not roll up past its own surah and
-a Hizb claim does not show at all (see the limit above) -- both one boundary
-table away if the owner wants them. And Explore's breadcrumb and sidebar labels
-are still hardcoded English in Bangla, as v07.134 flagged.
-
 
 v07.136 (5 Sep 2026, same day) is **the two things v07.135 flagged and the
 owner immediately asked for: "do the ruku and hizb roll up too", and a Juz |
@@ -618,6 +543,61 @@ row fewer (3 -> 2), which is the 9px the control costs landing on a row
 boundary at the smallest phone this project measures; English at 320px, and
 both languages at every other width, keep every row.
 
+**v07 CLOSED AND ARCHIVED (6 Sep 2026, on Claude Code on the web)** is not a
+feature round — the owner's instruction to draw a line under v07 exactly the
+way v06 had one drawn under it: *"I want the current version app also to be
+put as legacy v07. And then, we will start the next features and upgrade from
+here and we call the versions onward v08.00 in a new session."*
+
+**`app/` is byte-for-byte untouched** (`git diff app` empty), so **v07.139
+stays the final v07 build and `version.js` was deliberately NOT bumped** — the
+app did not change, only a copy of it was taken, and bumping the badge for an
+archiving round would leave the archive reading one version while the "last
+v07 build" was another.
+
+**`legacy-v07/` is a `cp -a` of `app/`** — 105 files, 2.6MB, proven identical
+by `diff -rq`. It sits BESIDE `/legacy/index.html` rather than inside it, so
+the URL 22 pages already link to is untouched.
+
+**A folder copy works because the app is genuinely self-contained, measured
+rather than assumed:** every page, script, stylesheet and font is referenced
+RELATIVELY, and a grep for absolute paths across all of `app/*.html` and
+`app/js/*.js` returns exactly one — `/tools/quran-data-pull/output`. **Nothing
+anywhere names `/app/` itself**, which is the fact the whole approach rests
+on. The archive therefore carries its own `js/version.js`, and that is what
+freezes its badge at v07.139 while `app/` moves on.
+
+**Two things it deliberately SHARES with the live app**, both written into its
+own `README-ARCHIVE.txt` rather than left to be discovered: the Qur'an data
+(`/tools/quran-data-pull/output`, 31MB) and the Mushaf's 604 pages
+(`/mushaf/`, 98MB, fetched via raw.githubusercontent) — **sharing them is what
+keeps the archive at 2.6MB instead of ~130MB**, at the stated cost that a
+future round which RESHAPES those files (rather than adding to them) breaks
+it, the fix then being to copy the v07-era `output/` into the archive at that
+point; and the same `study-monitoring` Firestore, so **the archive reads and
+WRITES real data**, exactly as the v06 app does. A claim made in it is a real
+claim; the version badge is what tells the two apart on screen.
+
+**Verified: a focused, un-checked-in Playwright script, 10 checks, all
+passing**, screenshotted at 390x844 — all 28 archive pages served; the landing
+page booting with no page errors; the badge really reading **v07.139**; **real
+Arabic really rendering**, which is what proves the shared `/tools/` path
+still resolves from the new folder depth; the wheel really drawing its
+segments; **zero requests out of `/app/`**, read off
+`performance.getEntriesByType("resource")` rather than off the source; **zero
+failed local requests**, which is how a broken relative path would have shown
+up; a second, quite different page (`records.html`) booting clean; and on the
+other side of the line, **the live `/app/` still booting at v07.139** and
+**`/legacy/index.html` still served at v06.30**.
+
+**Flagged, not done, deliberately: the nav's "Legacy App - v06" link did NOT
+gain a "v07" sibling.** While `app/` is still v07.139 that link would point at
+a byte-identical copy of the page it sits on, which reads as a bug rather than
+an archive. It belongs in the v08.00 round, added to `app/` AFTER this
+snapshot — so the frozen copy never gains a link the version it froze did not
+have. The retired `QuranRevival---ClaudeCode` repo (folded into this one at
+v07.78, last at v07.77) was left alone rather than re-diverged.
+
 ## What this is
 
 A multi-tenant Madrasah platform, being rebuilt from a single-file HTML app
@@ -642,6 +622,7 @@ decision-oriented. Corrections come promptly when framing drifts.
 | `QuranRevival_Subject_Catalogue_v3.md` | 31 subjects, 30 Approaches in 7 sections. **Approved as-is (D11).** Phase 2 input. |
 | `QuranRevival_Parked_Items_Register.html` | 36 deferred items. **Do not build these.** |
 | `legacy/index.html` | The pre-cutover production app. **REFERENCE ONLY — NEVER EDIT.** No longer live at the production URL as of 9 Aug 2026 (cutover) — archived here, reachable at `https://madrasatul-muslimeen.github.io/legacy/index.html`. (Since v07.78's repo fold, this repo's root `index.html` is a DIFFERENT file — the live redirect stub into `/app/index.html` — not this one; don't confuse the two.) |
+| `legacy-v07/` | **The v07 app, frozen at v07.139** (6 Sep 2026) — a `cp -a` of `app/`, reachable at `https://madrasatul-muslimeen.github.io/legacy-v07/`. **REFERENCE ONLY — NEVER EDIT**, same rule as `legacy/index.html`; a fix belongs in `app/`. Its own `README-ARCHIVE.txt` records the two things it shares with the live app (the `/tools/quran-data-pull/output` Qur'an data, and the real Firestore) and what would break it. |
 | `CHANGELOG.md` | **The full round-by-round build log**, v07.01 onward, split out of this file 4 Sep 2026. History, not brief — open it for the background of one specific feature, never as routine reading. |
 | `LAYOUT-BACKLOG.md` | **The pick-up list for outstanding layout work** (opened 13 Aug 2026, after shell round 11), ordered as the owner wants it taken. Item 1 (one global Language preference) is agreed and ready to build in its own session. Read it before starting any layout round — it also records the measure-before-and-after method every round since v07.22 has used. |
 
