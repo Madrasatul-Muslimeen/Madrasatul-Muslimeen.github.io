@@ -540,9 +540,16 @@ export const BN = {
   "ONE Ayah a Day": "প্রতিদিন একটি আয়াত", // ?
   "Approach an Ayah in 30 ways": "একটি আয়াতকে ৩০ উপায়ে অধ্যয়ন করুন", // ?
   "Approach the Quran in 30 ways": "কুরআনকে ৩০ উপায়ে অধ্যয়ন করুন", // ?
+  // 6 Sep 2026 -- the capsule beside the caption, which is what makes every
+  // Study Unit approachable from the Approach view rather than only an ayah.
+  "Choose a Unit": "একটি একক বাছুন", // ?
 
   // --- Claiming, and the Approach modal ----------------------------------
   "Track this unit": "এই এককটি চিহ্নিত করুন",
+  // The Coverage tab, for a Juz/Hizb/Page: ayah-by-ayah colouring is drawn
+  // from one surah's own chunk, so a Qur'an-wide unit says so in words.
+  "Ayah-by-ayah coverage isn't available at this granularity — switch Study Unit to Ayah, Range, Whole Surah or Ruku' to see it.":
+    "এই স্তরে আয়াত-ভিত্তিক অগ্রগতি দেখানো যায় না — দেখতে হলে অধ্যয়নের একক আয়াত, পরিসর, পূর্ণ সূরা বা রুকু' বাছুন।", // ?
   // Shortened to one word in shell round 14, so the Approach name beside it
   // gets the room instead. The longer wording above is kept, unused here.
   "Track": "চিহ্নিত করুন",

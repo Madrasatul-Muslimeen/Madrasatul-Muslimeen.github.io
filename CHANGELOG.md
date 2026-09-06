@@ -11350,3 +11350,158 @@ eight singular strings for a stat row was not worth it. And **`nav.js`'s
 Backup link is deliberately NOT owner/prime-only**, unlike Taglines beside it:
 the page exports exactly what the account may already read, so a guardian
 backing up their own children's notes is reading nothing new.
+
+v07.139 (6 Sep 2026, on Claude Code on the web) is **every Study Unit made
+approachable from the Approach view, and the Note view made to claim it** --
+the owner's own ask, with their own diagnosis attached: *"Currently, in the
+APPROACH view, only approaching unit available is Ayah unit. Enable all units
+to be approachable from the APPROACH ... A click on one of the slide (Ayah)
+takes to the NOTE view and there the approach is recorded (claimed). So, when
+you enable other units now, you should enable the NOTE view to be worked for
+claiming the respective unit."*
+
+**This is the long-parked item this brief has carried since 13 Aug 2026** --
+"make the Mastery Wheel itself reflect the selected Study Unit", deferred by
+the owner at the time with "do not build it unprompted, but do not lose it
+either". They have now prompted it. **Two of the three things that round said
+had to be settled first are simply moot**, which is why it fits one round now
+rather than the six-answer design conversation it looked like then: the
+centre's Arabic per unit type cannot be asked any more, because since v07.63
+the wheel draws NO text of its own at all -- the hub overlay (Ta'awwudh,
+Bismillah, Surah, Ayah) is the whole of what the centre shows -- and the "juz
+and page need a second records read on the landing path" objection is answered
+by not putting it on the landing path (below). What was left was real work,
+not a decision.
+
+**Measured before touching anything, because the split was the point:** the
+wheel's segments have read `buildUnitKey.ayah(currentSurahNum, currentAyahNum)`
+since Phase 5, and the Note view's own Track/Guide/Breakdown/Coverage card was
+gated on `noteScope.unitType === "ayah"`. So a Range, a Whole Surah, a Ruku', a
+Juz, a Hizb and a Page could only ever be claimed through a DIFFERENT control
+("Track this unit", the floating overlay in Study options) -- which is exactly
+the split the owner reported. Both halves are gone: `renderWheel()` reads
+`currentUnitInfo()`, and a slice click opens the Note view on that same unit
+key, where the card reads and claims it.
+
+**One new control, and deliberately the app's own existing one.** A second
+gold capsule sits beside the "Approach the Quran in 30 ways" caption, above
+the wheel: **"Choose a Unit"**, opening a palette holding Study Unit, the
+unit's own number (Ruku'/Juz/Hizb/Page), and From/To for a Range. Every
+control in it is a **MIRROR** of the canonical one in Study options -- the
+same shape `#readPickers` and the hub's own Surah/Ayah pair already use, and
+they join that same mirror list, so picking here really is picking there and
+`goToUnitNumber()` stays the only code that decides anything. It opens through
+`js/bar-palette.js`, the one-delegated-listener popover Explore, QCR and Asma
+already share, so outside-click, Escape and "only one at a time" come free
+(I2). **The capsule's wording is FIXED** -- v07.135's own lesson: a unit label
+can run to "Ruku' 1 of Surah 2 (ayahs 1-7)", and a pill sized by its content
+is what ran off both edges of the owner's phone that round. What is in force
+is named inside the palette and in the dock's own Tracking line instead.
+
+**The wheel shows each Approach's OWN claim on that exact unit, deliberately
+not a pooled roll-up** the way Explore colours a Juz from the ayahs inside it.
+The card a slice opens claims THIS unit, so a green slice sitting over "Not
+claimed yet" would be the screen contradicting itself. Explore's pooling is
+unchanged and still does the other job.
+
+**Juz, Hizb and Page claims live in `subject_quran`, a different document from
+`surah_N`, and it is fetched ON FIRST USE and cached per person** -- the same
+treatment the reciter timing map (v07.39), the search index (v07.40) and the
+three boundary tables (v07.44) already get. Someone who never picks one of
+those three units never fetches it, so **nothing joined the startup path (I9)
+and the load-speed contract is untouched -- re-measured, Quran Study still 6
+sequential round trips / 9 Firestore calls**. The cache is shared: "Track this
+unit"'s own floating card and Explore's `exploreSubjectChunk` both read
+through it now (Explore still forces one fresh read per open, exactly as
+before), so **one document, one copy, and the wheel and the cards can never
+disagree about what has been claimed**.
+
+**Two real defects were found by measuring, both invisible in a screenshot,
+and one of them was the fix silently losing.** The palette was anchored on the
+little pill that opens it, and at 390px a 272px popover centred on a pill that
+sits at the RIGHT end of the caption row ran **55px off the screen** -- the
+shape v07.71 fixed on the Note bar, where a short bar let a right-anchored
+popover run off the LEFT. Anchoring it on the ROW fixes it in both directions.
+**But the first attempt at that did nothing at all**: `.wheel-unit-wrap {
+position: static }` and `.bar-palette-wrap { position: relative }` are equal
+specificity and the latter is declared later in the file, so source order won
+-- this page's own most-repeated CSS trap, caught by re-measuring rather than
+by re-reading. And the palette stayed open over the wheel after a choice was
+made, so **choosing a unit that needs nothing more now closes it** (a unit
+that still needs a number, or a From and a To, keeps it open, because the
+control that finishes the job is inside it) -- Explore's own "choosing is
+done" rule.
+
+**Measured, English, both pills on one line: the pair needs 364px and gets
+347px at 360px** (Bangla needs 286px and fits everywhere). Rather than let the
+row wrap -- a whole Approach row, 42px, to save 17 -- both pills take one size
+down below 380px, and one more below 340px; the tap target is untouched at
+36px, only the type and the side padding shrink. The row is 9px taller for
+carrying a real control, and that is paid back out of its own bottom margin
+(0.3rem -> 0) and the wheel column's own three gaps (0.3rem -> 0.2rem), costed
+against the real numbers: at 412x915 with the tenant banner set the sixth
+row's bottom had landed 2px past the dock's top edge.
+
+**`layout.mjs`: every measured landing-page metric byte-for-byte identical to
+`HEAD`** at all eight viewports in both banner states -- same wheel-heading
+top (148/103px), same wheel width (377/399/280/220/320/360px), **same Approach
+row count everywhere**, same 9px dock gap, dock fully visible, no overflow --
+with `getElementById` targets 240 -> 246 (exactly this round's six new
+elements, none of them missing) and the same 22-entry pre-existing missing
+list as `HEAD`. **`reading.mjs` READING SCREEN OK in both languages**,
+**`panel.mjs` no truncated label and no wrapped bar** at any of the eight
+viewports in either language, **`navcheck.mjs` unchanged** (still only the
+pre-existing 320px ENGLISH truncation of "Operation"/"Bookmark").
+**Coverage 1,705 -> 1,708 scanned, 46 missing UNCHANGED**, measured against a
+clean `HEAD` worktree (and with `app/_prev-quranrevival.html` deleted first,
+this file's own recorded trap): only the `quran` area moved, 338 -> 341, its
+own missing count unchanged at 5. **`tools/perf/new-tenant.mjs` 10/10.** No
+`firestore.rules`, schema or Firestore data changes -- every unit key and
+every chunk key this round reads or writes is one records.js already
+understood.
+
+**Verified: a focused, un-checked-in Playwright script, 46 checks, all
+passing**, screenshotted in both languages -- the capsule a real 999px pill,
+>=36px, above the wheel and on screen; the palette opening, staying on screen
+and offering all seven units with their VALUES proven still plain ids; and
+then the substance, proven by COLOUR rather than by a dropdown's own value,
+with a whole-surah claim, a range claim, a ruku' claim, a juz claim and a page
+claim seeded for different Approaches: **Single Ayah reading the ayah's own
+claim, Whole Surah reading the SURAH's, a Range reading the RANGE's, a Ruku'
+reading the RUKU's, and Juz and Page reading theirs out of the second
+document** -- with `subject_quran` proven NOT read on the landing path, read
+exactly once the moment a Juz is picked, and not re-read for the Page after
+it. Then the Note view: **a slice click opening it scoped to the whole surah
+rather than the ayah, the card headed "Track this unit" and naming the surah,
+its Track tab showing that surah's own claim, a real claim writing
+`entries.surah:1::memorise` into `t1__p1__surah_1`, and the same again for a
+Juz writing `entries.juz:1::memorise` into `t1__p1__subject_quran`** and the
+card re-reading the fresh document afterwards -- while a single āyah still
+reads "Track this āyah" and still names the āyah. All of it again in Bangla,
+read off the rendered page, with Bengali digits in the tracking line.
+
+**`behaviour.mjs`: 800 pass, 3 fail**, stopping at the same pre-existing
+line-4084 crash carried since v07.69 -- the same 803 total, and the same
+three, as every recent run (section 22g, the environmental archive.org
+poster block this sandbox's proxy blocks). No check anywhere the suite
+reaches needed updating: this round adds a control and widens what an
+existing one covers, it does not change anything an existing check
+describes.
+
+**Two strings are new and both are translated**: "Choose a Unit", and the
+Coverage tab's own "ayah-by-ayah coverage isn't available at this granularity"
+sentence -- which was a bare English literal in "Track this unit"'s own card
+since Phase 5, on a screen the rest of which is translated, and now goes
+through `t()` at both sites.
+
+**Flagged, not changed.** The wheel colours a unit by its own direct claim
+(above), so a Juz whose every ayah is mastered still reads not started on this
+wheel until the Juz itself is claimed -- Explore is where pooling lives, and
+mixing the two here would make the card lie. The Note view's own unit-number
+picker still offers only the numbers that appear WITHIN the loaded surah
+(v07.69's own stated limit, unchanged) -- the capsule's palette, which mirrors
+the canonical picker, is where the whole Qur'an's numbering is offered. And at
+**320px in Bangla with the tenant banner set** the Approaches list shows one
+row fewer (3 -> 2), which is the 9px the control costs landing on a row
+boundary at the smallest phone this project measures; English at 320px, and
+both languages at every other width, keep every row.
