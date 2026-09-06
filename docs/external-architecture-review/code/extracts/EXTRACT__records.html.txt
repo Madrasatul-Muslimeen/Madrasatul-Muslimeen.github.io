@@ -1,0 +1,243 @@
+================================================================================
+EXTRACT — app/records.html  (QuranRevival v08.00)
+================================================================================
+app/records.html (700 lines) is the teacher/guardian review screen: the ONLY
+place in the app where a claim is confirmed or returned. Reproduced VERBATIM
+below, with original line numbers.
+
+  A  300–345    Role gating: currentPreview(), canConfirm, bulk-confirm button
+                visibility
+  B  425–500    renderEntries(): the confirm/return wiring, and entryRowHtml()
+                — the Claimed vs Confirmed vs State columns
+  C  520–560    The claim path from this screen (claimStatus)
+  D  595–640    Bulk confirm (chunk scope and week scope)
+================================================================================
+
+
+================================================================================
+REGION A — app/records.html lines 300-345
+================================================================================
+   300      let subjectTree = [];
+   301      let trackableList = [];
+   302      let domainList = [];
+   303      let tenantWeekStartsOn = 6;
+   304      let selectedPersonId = null;
+   305      let canConfirm = true; // round 11 -- false only while previewing as Student ("View as", people.html)
+   306  
+   307      /** Round 11 -- "View as" wired up for real. Falls back to real roles/full roster when no preview is active, so normal (non-preview) behaviour is unchanged. */
+   308      function currentPreview() {
+   309        const context = getActiveContext();
+   310        const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+   311        const realRoles = activeMembership?.roles ?? [];
+   312        const viewAsRole = context?.viewAsRole ?? null;
+   313        return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: activeMembership?.personId ?? null };
+   314      }
+   315  
+   316      async function loadContextData() {
+   317        // LOAD SPEED (Aug 2026): the subject tree, the trackables and the
+   318        // domains were each awaited in turn after this pair had already come
+   319        // back -- five round trips in a row for five reads that do not depend
+   320        // on one another.
+   321        const [rosterSnap, tenantSnap, loadedTree, loadedTrackables, loadedDomains] = await Promise.all([
+   322          getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+   323          getDoc(doc(db, TENANT.TENANTS, activeTenantId)),
+   324          getSubjectTree(db, activeTenantId),
+   325          getTrackables(db, activeTenantId),
+   326          listDomains(db, activeTenantId),
+   327        ]);
+   328        roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+   329        tenantWeekStartsOn = tenantSnap.exists() ? (tenantSnap.data().weekStartsOn ?? 6) : 6;
+   330  
+   331        const { viewAsRole, effRoles, myPersonId } = currentPreview();
+   332        canConfirm = viewAsRole !== "student";
+   333        bulkConfirmChunkBtn.style.display = canConfirm ? "" : "none";
+   334        bulkConfirmWeekBtn.style.display = canConfirm ? "" : "none";
+   335        renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
+   336  
+   337        const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster).filter((p) => p.status !== "archived");
+   338        personSelect.innerHTML = visibleRoster
+   339          .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+   340          .join("");
+   341        // Fix round (25 Aug 2026): a Person selection now stays chosen across
+   342        // pages and reloads, until manually changed. Bookmark-issues round:
+   343        // myPersonId is a fallback below stored, above the first roster row.
+   344        const storedPersonId = getSelectedPersonId();
+   345        selectedPersonId = visibleRoster.some((p) => p.id === storedPersonId) ? storedPersonId
+
+
+================================================================================
+REGION B — app/records.html lines 425-500
+================================================================================
+   425        renderEntries(chunk, chunkKey);
+   426      }
+   427  
+   428      function renderEntries(chunk, chunkKey) {
+   429        const entries = chunk?.entries ?? {};
+   430        let rows = Object.entries(entries);
+   431        if (pendingOnly.checked) rows = rows.filter(([, e]) => e.confirmState === "pending");
+   432        entriesBody.innerHTML = rows.length
+   433          ? rows.map(([entryKey, e]) => entryRowHtml(chunkKey, entryKey, e)).join("")
+   434          : `<tr><td colspan="8" style="color:#888;">${t("Nothing here yet.")}</td></tr>`;
+   435  
+   436        entriesBody.querySelectorAll(".confirmBtn").forEach((btn) => {
+   437          btn.addEventListener("click", async () => {
+   438            btn.disabled = true;
+   439            const outcome = await safeWrite(
+   440              () => confirmEntry(db, {
+   441                tenantId: activeTenantId, personId: selectedPersonId,
+   442                chunkKey: btn.dataset.chunk, entryKey: btn.dataset.entry,
+   443                confirmedByPersonId: currentActingPersonId(),
+   444              }),
+   445              { collection: "records", action: "confirmEntry" }
+   446            );
+   447            if (outcome.ok) await refreshChunk();
+   448            else { alert(outcome.entry.message); btn.disabled = false; }
+   449          });
+   450        });
+   451        entriesBody.querySelectorAll(".returnBtn").forEach((btn) => {
+   452          btn.addEventListener("click", async () => {
+   453            const note = prompt(t("Note for the return (optional):"), "");
+   454            if (note === null) return;
+   455            btn.disabled = true;
+   456            const outcome = await safeWrite(
+   457              () => returnEntry(db, {
+   458                tenantId: activeTenantId, personId: selectedPersonId,
+   459                chunkKey: btn.dataset.chunk, entryKey: btn.dataset.entry, note,
+   460              }),
+   461              { collection: "records", action: "returnEntry" }
+   462            );
+   463            if (outcome.ok) await refreshChunk();
+   464            else { alert(outcome.entry.message); btn.disabled = false; }
+   465          });
+   466        });
+   467      }
+   468  
+   469      function entryRowHtml(chunkKey, entryKey, e) {
+   470        const trackableName = trackableList.find((t) => t.id === e.trackableId);
+   471        const domainNames = (e.domainIds ?? []).map((id) => domainList.find((d) => d.id === id)).filter(Boolean)
+   472          .map((d) => `<span class="tag">${langText(d.name, getAppLang(), d.id)}</span>`).join("");
+   473        const pillClass = `pill pill-${e.confirmState}`;
+   474        // Round 11 -- "View as" wired up for real: a Student preview can't
+   475        // confirm their own attainment (Architecture s6's role table), so
+   476        // these actions just don't render while canConfirm is false.
+   477        const actions = !canConfirm
+   478          ? ""
+   479          : e.confirmState === "pending"
+   480            ? `<button class="small confirmBtn" data-chunk="${chunkKey}" data-entry="${entryKey}">${t("Confirm")}</button>
+   481               <button class="small secondary returnBtn" data-chunk="${chunkKey}" data-entry="${entryKey}">${t("Return")}</button>`
+   482            : e.confirmState === "returned"
+   483              ? `<button class="small confirmBtn" data-chunk="${chunkKey}" data-entry="${entryKey}">${t("Confirm anyway")}</button>`
+   484              : "";
+   485        return `<tr>
+   486          <td>${unitKeyLabel(entryKey.split("::")[0])}</td>
+   487          <td>${trackableName ? langText(trackableName.name, getAppLang(), e.trackableId) : e.trackableId}</td>
+   488          <td class="status-${e.claimedStatus}">${statusLabel(e.claimedStatus)}</td>
+   489          <td class="status-${e.confirmedStatus}">${e.confirmedStatus ? statusLabel(e.confirmedStatus) : "—"}</td>
+   490          <td><span class="${pillClass}">${confirmStateLabel(e.confirmState)}</span>${e.returnNote ? `<div style="font-size:0.78rem; color:#9c3b2e;">${e.returnNote}</div>` : ""}</td>
+   491          <td>${domainNames || "—"}</td>
+   492          <td>${e.notes || ""}</td>
+   493          <td>${actions}</td>
+   494        </tr>`;
+   495      }
+   496  
+   497      function currentActingPersonId() {
+   498        const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
+   499        return membership?.personId ?? selectedPersonId;
+   500      }
+
+
+================================================================================
+REGION C — app/records.html lines 520-560
+================================================================================
+   520          : `<tr><td colspan="5" style="color:#888;">${t("Nothing logged this week yet.")}</td></tr>`;
+   521      }
+   522  
+   523      claimBtn.addEventListener("click", async () => {
+   524        claimResult.textContent = "";
+   525        if (!selectedPersonId) { claimResult.textContent = t("Add a person first."); return; }
+   526        if (!unitRef.value.trim()) { claimResult.textContent = t("Enter a reference first."); return; }
+   527        let unitKey;
+   528        try {
+   529          unitKey = buildUnitKeyFromInput(unitTypeSelect.value, unitRef.value);
+   530        } catch (err) {
+   531          claimResult.textContent = t("Couldn't read that reference: {message}", { message: err.message });
+   532          return;
+   533        }
+   534        const trackableId = trackableSelect.value;
+   535        if (!trackableId) { claimResult.textContent = t("No Approach selected — pick a subject that has Approaches (Quran, for now)."); return; }
+   536        const domainIds = Array.from(domainChips.querySelectorAll("input[type=checkbox]:checked")).map((c) => c.value);
+   537  
+   538        claimBtn.disabled = true;
+   539        const outcome = await safeWrite(
+   540          () => claimStatus(db, {
+   541            tenantId: activeTenantId,
+   542            personId: selectedPersonId,
+   543            subjectId: subjectSelect.value,
+   544            unitKey,
+   545            trackableId,
+   546            statusId: statusSelect.value,
+   547            notes: notesInput.value.trim(),
+   548            domainIds,
+   549            claimedByPersonId: currentActingPersonId(),
+   550            claimedByUid: auth.currentUser.uid,
+   551          }),
+   552          { collection: "records", action: "claimStatus" }
+   553        );
+   554  
+   555        if (outcome.ok) {
+   556          await logActivity(db, {
+   557            tenantId: activeTenantId,
+   558            personId: selectedPersonId,
+   559            date: new Date(),
+   560            weekStartsOn: tenantWeekStartsOn,
+
+
+================================================================================
+REGION D — app/records.html lines 595-640
+================================================================================
+   595      });
+   596  
+   597      pendingOnly.addEventListener("change", refreshChunk);
+   598  
+   599      bulkConfirmChunkBtn.addEventListener("click", async () => {
+   600        const chunkKey = currentChunkKey();
+   601        if (!chunkKey) return;
+   602        bulkConfirmChunkBtn.disabled = true;
+   603        const outcome = await safeWrite(
+   604          () => bulkConfirmChunk(db, {
+   605            tenantId: activeTenantId, personId: selectedPersonId, chunkKey,
+   606            confirmedByPersonId: currentActingPersonId(),
+   607          }),
+   608          { collection: "records", action: "bulkConfirmChunk" }
+   609        );
+   610        bulkConfirmChunkBtn.disabled = false;
+   611        if (outcome.ok) {
+   612          const n = outcome.result.confirmedCount;
+   613          claimResult.textContent = t(
+   614            n === 1 ? "Confirmed {count} entry in this chunk." : "Confirmed {count} entries in this chunk.",
+   615            { count: num(n) }
+   616          );
+   617          await refreshChunk();
+   618        }
+   619        else alert(outcome.entry.message);
+   620      });
+   621  
+   622      bulkConfirmWeekBtn.addEventListener("click", async () => {
+   623        const weekKey = weekKeyFor(new Date(), tenantWeekStartsOn);
+   624        bulkConfirmWeekBtn.disabled = true;
+   625        const outcome = await safeWrite(
+   626          () => bulkConfirmWeek(db, {
+   627            tenantId: activeTenantId, personId: selectedPersonId, weekKey,
+   628            confirmedByPersonId: currentActingPersonId(),
+   629          }),
+   630          { collection: "records", action: "bulkConfirmWeek" }
+   631        );
+   632        bulkConfirmWeekBtn.disabled = false;
+   633        activityResult.textContent = outcome.ok
+   634          ? t(
+   635              outcome.result.confirmedCount === 1
+   636                ? "Confirmed {count} entry touched this week."
+   637                : "Confirmed {count} entries touched this week.",
+   638              { count: num(outcome.result.confirmedCount) }
+   639            )
+   640          : outcome.entry.message;

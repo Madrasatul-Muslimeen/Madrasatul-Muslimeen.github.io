@@ -1,0 +1,1366 @@
+================================================================================
+EXTRACT — app/quranrevival.html  (QuranRevival v08.00)
+================================================================================
+app/quranrevival.html is 12,027 lines. It is a single-page app containing the
+Quran study screen, the Mastery Wheel, the Note view and the whole Explore
+module inline in one <script type="module"> block.
+
+Only the regions relevant to the Arabic-learning integration are reproduced
+below, VERBATIM, with their original line numbers. Nothing is edited,
+reordered or summarised. Line numbers refer to the real file in the repo.
+
+Region index
+------------
+  A  4460–4560    Approach (trackable) selection: currentTrackable(), the
+                  Approach <select> options, manage-permission note
+  B  4752–5060    Study Unit machinery: unit bounds, currentUnitInfo(),
+                  unit-number picker, goToUnitNumber(), stepUnit()
+  C  5445–5480    loadContextData(): where the 30 Approaches are actually
+                  read from Firestore into quranTrackables[]
+  D  5545–5800    Records chunk loading + the landing Mastery Wheel:
+                  refreshChunkAndWheel(), the subject_quran cache,
+                  approachStatusesForCurrentUnit(), renderWheel()
+  E  6450–6660    Explore aggregation: ayahCoverage(), poolCoverageStatus(),
+                  effectiveAyahStatus(), buildExploreWiderSpans(),
+                  ensureExploreChunksLoaded()
+  F  6777–7100    Explore level renderers: Quran / Juz / Surah / Ruku levels,
+                  both Juz and Surah readings of the whole Quran
+  G  10920–10983  The claim write path from the Note view's Approach card
+                  (calls records.js claimStatus() + activity.js logActivity())
+================================================================================
+
+
+================================================================================
+REGION A — app/quranrevival.html lines 4460-4560
+================================================================================
+  4460      function currentTrackable() {
+  4461        return quranTrackables.find((t) => t.id === currentTrackableId) ?? null;
+  4462      }
+  4463  
+  4464      /** Round 11 -- "View as" wired up for real. Falls back to real roles/full roster when no preview is active, so normal (non-preview) behaviour is unchanged. */
+  4465      function currentPreview() {
+  4466        const context = getActiveContext();
+  4467        const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
+  4468        const realRoles = membership?.roles ?? [];
+  4469        const viewAsRole = context?.viewAsRole ?? null;
+  4470        return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: membership?.personId ?? null };
+  4471      }
+  4472  
+  4473      function canAdminCatalogueClientSide() {
+  4474        const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
+  4475        if (!membership) return false;
+  4476        return currentPreview().effRoles.some((r) => r === "owner" || r === "prime");
+  4477      }
+  4478  
+  4479      /** Why Manage is not on offer, in words -- filled into the QCR/Asma ⋯
+  4480          palettes (4 Sep 2026, same-day fix). Before this, a reader who could
+  4481          not manage got a palette with nothing in it and no hint why, and the
+  4482          overwhelmingly likely reason is one they can undo in two taps: a
+  4483          "View as" preview left switched on, which has lived in localStorage
+  4484          since v07.75 and so survives every reload on that device. An owner
+  4485          previewing as a student really is not an admin, so the gate itself is
+  4486          correct -- what was wrong was that it said nothing. */
+  4487      function manageUnavailableNote() {
+  4488        if (canAdminCatalogueClientSide()) return "";
+  4489        const { viewAsRole } = currentPreview();
+  4490        if (viewAsRole) {
+  4491          return t("You're previewing as {role}, so managing is switched off. Turn the preview off on the People page to manage again.", { role: roleLabel(viewAsRole) });
+  4492        }
+  4493        return t("Only the owner or prime can manage this.");
+  4494      }
+  4495  
+  4496      /** Both palettes carry the same note in the same place, so this is one
+  4497          function rather than two copies that could drift. */
+  4498      function renderManageNote(noteEl) {
+  4499        const text = manageUnavailableNote();
+  4500        noteEl.textContent = text;
+  4501        noteEl.hidden = !text;
+  4502      }
+  4503  
+  4504      function renderPersonSelectOptions() {
+  4505        const prev = personSelect.value;
+  4506        const { viewAsRole, effRoles, myPersonId } = currentPreview();
+  4507        const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster).filter((p) => p.status !== "archived");
+  4508        personSelect.innerHTML = visibleRoster.map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`).join("");
+  4509        // Fix round (25 Aug 2026): prefer whatever this page's own re-render
+  4510        // already had selected; failing that (a fresh page load), fall back
+  4511        // to the last Person chosen anywhere in the app rather than always
+  4512        // the first roster row.
+  4513        // Bookmark-issues round: a THIRD fallback, below stored, above "first
+  4514        // roster row" -- the signed-in login's own person (myPersonId). A
+  4515        // fresh browser with nothing stored yet used to land on whichever row
+  4516        // Firestore happened to return first (undefined ordering, not a real
+  4517        // guarantee); it now lands on the person the login itself IS.
+  4518        const stored = getSelectedPersonId();
+  4519        const candidate = visibleRoster.some((p) => p.id === prev) ? prev
+  4520          : (visibleRoster.some((p) => p.id === stored) ? stored
+  4521          : (visibleRoster.some((p) => p.id === myPersonId) ? myPersonId : null));
+  4522        if (candidate) personSelect.value = candidate;
+  4523      }
+  4524  
+  4525      /** Grouped by section (owner request, 5 Aug 2026: section names should show, in whichever language is chosen) -- also just a nicer 30-item dropdown than one flat list. Note the loop variable is `item`, not `t` -- shadowing the imported t() here is exactly the trap phase 2/5 already hit at other call sites, and this function now calls t() below. */
+  4526      function buildTrackableOptionsHtml() {
+  4527        if (!quranTrackables.length) {
+  4528          return `<option value="">${t("(no Quran Approaches yet)")}</option>`;
+  4529        }
+  4530        const bySection = new Map();
+  4531        for (const item of quranTrackables) {
+  4532          const key = item.group ?? 0;
+  4533          if (!bySection.has(key)) bySection.set(key, { groupName: item.groupName, items: [] });
+  4534          bySection.get(key).items.push(item);
+  4535        }
+  4536        return [...bySection.entries()]
+  4537          .sort((a, b) => a[0] - b[0])
+  4538          .map(([, { groupName, items }]) => {
+  4539            const label = groupName ? langText(groupName, getAppLang()) : "";
+  4540            const options = items
+  4541              .map((item) => `<option value="${item.id}">${langText(item.name, getAppLang(), item.id)}</option>`)
+  4542              .join("");
+  4543            return label ? `<optgroup label="${label}">${options}</optgroup>` : options;
+  4544          })
+  4545          .join("");
+  4546      }
+  4547  
+  4548      /** The canonical Approach picker (Study options bar 4). Shares its options with the Ayah Note screen's own Approach toggle (round 32) via buildTrackableOptionsHtml() above -- one source of truth for what's offered, wherever it's offered. */
+  4549      function renderTrackableSelectOptions() {
+  4550        const prev = trackableSelect.value;
+  4551        trackableSelect.innerHTML = buildTrackableOptionsHtml();
+  4552        if (quranTrackables.some((t) => t.id === prev)) trackableSelect.value = prev;
+  4553      }
+  4554  
+  4555      // -----------------------------------------------------------------------
+  4556      // Phase 5 -- Global banner (legacy appSettings/global parity, tenant-
+  4557      // scoped here rather than platform-wide, since D2/tenant isolation means
+  4558      // there's no single shared platform banner to begin with -- this is
+  4559      // "your tenant's own eyebrow/title," written to tenants/{tenantId}
+  4560      // (already owner/prime/platformAdmin-writable via canAdminIdentity() in
+
+
+================================================================================
+REGION B — app/quranrevival.html lines 4752-5060
+================================================================================
+  4752      function currentUnitAyahBounds() {
+  4753        const ayahs = currentSurahData.ayahs;
+  4754        const current = ayahs.find((a) => a.ayah === currentAyahNum);
+  4755        if (currentUnitType === "range") return [Math.min(rangeFrom, rangeTo), Math.max(rangeFrom, rangeTo)];
+  4756        if (currentUnitType === "surah") return [1, currentSurahData.ayahCount];
+  4757        if (currentUnitType === "ruku") {
+  4758          const inRuku = ayahs.filter((a) => a.ruku === current.ruku).map((a) => a.ayah);
+  4759          return [Math.min(...inRuku), Math.max(...inRuku)];
+  4760        }
+  4761        if (currentUnitType === "juz") {
+  4762          const inJuz = ayahs.filter((a) => a.juz === current.juz).map((a) => a.ayah);
+  4763          return [Math.min(...inJuz), Math.max(...inJuz)];
+  4764        }
+  4765        if (currentUnitType === "hizb") {
+  4766          // A hizb is four hizbQuarters (the field the pulled data actually
+  4767          // carries), so this compares quarters rather than a "hizb" field that
+  4768          // does not exist in the ayah data.
+  4769          const hizbNow = Math.ceil(current.hizbQuarter / 4);
+  4770          const inHizb = ayahs.filter((a) => Math.ceil(a.hizbQuarter / 4) === hizbNow).map((a) => a.ayah);
+  4771          return [Math.min(...inHizb), Math.max(...inHizb)];
+  4772        }
+  4773        if (currentUnitType === "page") {
+  4774          const inPage = ayahs.filter((a) => a.page === current.page).map((a) => a.ayah);
+  4775          return [Math.min(...inPage), Math.max(...inPage)];
+  4776        }
+  4777        return [currentAyahNum, currentAyahNum]; // ayah
+  4778      }
+  4779  
+  4780      /** True when the reading draws the WHOLE chosen unit at once AND that unit
+  4781          is more than one ayah -- so nothing on screen depends on which ayah is
+  4782          "current", and an Ayah picker beside it would move nothing.
+  4783          Mushaf over a Single Ayah is the one whole-unit view that still needs
+  4784          it: that ayah is what gets marked on the page. One rule, read by both
+  4785          the Study options picker and its reading-screen mirror, so the two can
+  4786          never disagree about when it is offered. */
+  4787      function unitRendersWhole() {
+  4788        if (currentUnitType === "ayah") return false;
+  4789        return mushafToggle.checked || currentUnitType === "surah" || currentUnitType === "range";
+  4790      }
+  4791  
+  4792      /** { unitType, unitKey, chunkKey, label } for whatever's currently selected -- the single source of truth both "Track this unit" and the drill controls build on. chunkKey mirrors records.js's own chunkKeyFor() exactly (surah-chunked for ayah/range/surah/ruku, subject-chunked for juz/page) so it always matches the real document a claim will land in. */
+  4793      function currentUnitInfo() {
+  4794        const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
+  4795        const surahChunkKey = `surah_${currentSurahNum}`;
+  4796        if (currentUnitType === "range") {
+  4797          const from = Math.min(rangeFrom, rangeTo), to = Math.max(rangeFrom, rangeTo);
+  4798          return { unitType: "range", unitKey: buildUnitKey.range(currentSurahNum, from, to), chunkKey: surahChunkKey, label: t("Ayahs {from}–{to} of Surah {surah}", { from: num(from), to: num(to), surah: num(currentSurahNum) }) };
+  4799        }
+  4800        if (currentUnitType === "surah") {
+  4801          return { unitType: "surah", unitKey: buildUnitKey.surah(currentSurahNum), chunkKey: surahChunkKey, label: t("Whole Surah {surah}", { surah: num(currentSurahNum) }) };
+  4802        }
+  4803        if (currentUnitType === "ruku") {
+  4804          const idx = rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku);
+  4805          const [from, to] = currentUnitAyahBounds();
+  4806          return { unitType: "ruku", unitKey: buildUnitKey.ruku(currentSurahNum, idx), chunkKey: surahChunkKey, label: t("Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})", { ruku: num(idx), surah: num(currentSurahNum), from: num(from), to: num(to) }) };
+  4807        }
+  4808        if (currentUnitType === "juz") {
+  4809          return { unitType: "juz", unitKey: buildUnitKey.juz(ayah.juz), chunkKey: "subject_quran", label: t("Juz {juz}", { juz: num(ayah.juz) }) };
+  4810        }
+  4811        if (currentUnitType === "hizb") {
+  4812          const hizbNow = Math.ceil(ayah.hizbQuarter / 4);
+  4813          return { unitType: "hizb", unitKey: buildUnitKey.hizb(hizbNow), chunkKey: "subject_quran", label: t("Hizb {hizb}", { hizb: num(hizbNow) }) };
+  4814        }
+  4815        if (currentUnitType === "page") {
+  4816          return { unitType: "page", unitKey: buildUnitKey.page(PAGE_EDITION, ayah.page), chunkKey: "subject_quran", label: t("Page {page}", { page: num(ayah.page) }) };
+  4817        }
+  4818        return { unitType: "ayah", unitKey: buildUnitKey.ayah(currentSurahNum, currentAyahNum), chunkKey: surahChunkKey, label: t("Surah {surah}, Ayah {ayah}", { surah: num(currentSurahNum), ayah: num(currentAyahNum) }) };
+  4819      }
+  4820  
+  4821      function renderUnitLabel() {
+  4822        if (!currentSurahData) return;
+  4823        const info = currentUnitInfo();
+  4824        // The wheel's centre disc already shows the current surah and ayah, and
+  4825        // the wheel's segments are always that one ayah's statuses -- so for the
+  4826        // Single Ayah unit this line is pure duplication. For every other unit
+  4827        // type it is the only place the tracked unit is named, so it reappears.
+  4828        const duplicatesTheWheel = info.unitType === "ayah";
+  4829        unitLabelEl.style.display = duplicatesTheWheel ? "none" : "block";
+  4830        unitLabelEl.textContent = duplicatesTheWheel ? "" : t("Tracking: {unit}", { unit: info.label });
+  4831      }
+  4832  
+  4833      function renderRangeSelects() {
+  4834        const count = currentSurahData?.ayahCount ?? 1;
+  4835        const options = Array.from({ length: count }, (_, i) => i + 1).map((n) => `<option value="${n}">${num(n)}</option>`).join("");
+  4836        rangeFromSelect.innerHTML = options;
+  4837        rangeToSelect.innerHTML = options;
+  4838        rangeFromSelect.value = String(rangeFrom);
+  4839        rangeToSelect.value = String(rangeTo);
+  4840      }
+  4841  
+  4842      function updateUnitControlsVisibility() {
+  4843        const isRange = currentUnitType === "range";
+  4844        rangeControls.style.display = isRange ? "" : "none";
+  4845        rangeToControls.style.display = isRange ? "" : "none";
+  4846        if (isRange) renderRangeSelects();
+  4847        renderUnitLabel();
+  4848        renderUnitNumberPicker();
+  4849        syncWheelUnitPalette(); // the Approach view's own copy of these controls
+  4850      }
+  4851  
+  4852      // -----------------------------------------------------------------------
+  4853      // Shell round 18 — picking a Ruku', Juz, Hizb or Page BY ITS NUMBER.
+  4854      //
+  4855      // Before this, those four unit types were only ever inferred from whichever
+  4856      // ayah happened to be open: choosing "Juz" claimed the juz the current ayah
+  4857      // sat in, and there was no way to say "Juz 17" without first finding an
+  4858      // ayah inside it. The owner's ask, in their words: "when Page, Ruku and
+  4859      // Juzz are selected, the next field should show their respective number
+  4860      // choices," with the surah and the ayah range it covers shown beside it.
+  4861      //
+  4862      // Ruku' needs no index file — a surah's own ayahs carry their ruku, so its
+  4863      // numbers come from the loaded surah. Juz, Hizb and Page come from the
+  4864      // three small boundary tables (4KB / 12KB / 64KB), fetched ON FIRST USE and
+  4865      // cached — nothing here joins the startup path (I9), and someone who never
+  4866      // picks one of these units never downloads any of them.
+  4867      // -----------------------------------------------------------------------
+  4868      let unitIndexes = { juz: null, hizb: null, page: null };
+  4869      const NUMBERED_UNITS = ["ruku", "juz", "hizb", "page"];
+  4870  
+  4871      async function ensureUnitIndex(unitType) {
+  4872        if (unitType === "juz" && !unitIndexes.juz) unitIndexes.juz = await getJuzIndex();
+  4873        if (unitType === "hizb" && !unitIndexes.hizb) unitIndexes.hizb = await getHizbIndex();
+  4874        if (unitType === "page" && !unitIndexes.page) unitIndexes.page = await getPageIndex();
+  4875        return unitIndexes[unitType] ?? null;
+  4876      }
+  4877  
+  4878      /** The rows of the current unit type's boundary table, or null for Ruku'
+  4879          (whose numbering is per-surah and comes from the surah's own ayahs). */
+  4880      function unitRows(unitType = currentUnitType) {
+  4881        if (unitType === "juz") return unitIndexes.juz;
+  4882        if (unitType === "hizb") return unitIndexes.hizb;
+  4883        if (unitType === "page") return unitIndexes.page;
+  4884        return null;
+  4885      }
+  4886  
+  4887      function unitRowNumber(row, unitType = currentUnitType) {
+  4888        return row[unitType]; // each table names its own column: {juz}, {hizb}, {page}
+  4889      }
+  4890  
+  4891      /** Which number of the current unit type the open ayah sits in. */
+  4892      function currentUnitNumber() {
+  4893        if (!currentSurahData) return null;
+  4894        const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
+  4895        if (!ayah) return null;
+  4896        if (currentUnitType === "ruku") return rukuIndexInSurah(currentSurahData.ayahs, ayah.ruku);
+  4897        if (currentUnitType === "juz") return ayah.juz;
+  4898        if (currentUnitType === "hizb") return Math.ceil(ayah.hizbQuarter / 4);
+  4899        if (currentUnitType === "page") return ayah.page;
+  4900        return null;
+  4901      }
+  4902  
+  4903      const UNIT_NUM_LABELS = { ruku: "Ruku' №", juz: "Juz №", hizb: "Hizb №", page: "Page №" };
+  4904      // Enhancement round -- the Note view's own bar 1 picker offers the same
+  4905      // seven Study Unit choices #unitTypeSelect does, in the same wording, so
+  4906      // switching between the two feels like the same control.
+  4907      const NOTE_UNIT_TYPE_LABELS = { ayah: "Single Ayah", range: "Range of Ayahs", surah: "Whole Surah", ruku: "Ruku'", juz: "Juz", hizb: "Hizb", page: "Page" };
+  4908  
+  4909      function renderUnitNumberPicker() {
+  4910        const numbered = NUMBERED_UNITS.includes(currentUnitType);
+  4911        unitNumControl.style.display = numbered ? "" : "none";
+  4912        // Always name the cell, even while it is hidden: its label is read by
+  4913        // the translation checks, and a bare "№" is not a word in any language.
+  4914        unitNumLabel.textContent = numbered ? t(UNIT_NUM_LABELS[currentUnitType]) : t("Number");
+  4915        if (!numbered || !currentSurahData) { unitSpanReadout.hidden = true; return; }
+  4916  
+  4917        let numbers = [];
+  4918        if (currentUnitType === "ruku") {
+  4919          const rukus = new Set(currentSurahData.ayahs.map((a) => rukuIndexInSurah(currentSurahData.ayahs, a.ruku)));
+  4920          numbers = [...rukus].sort((a, b) => a - b);
+  4921        } else {
+  4922          const rows = unitRows();
+  4923          if (!rows) { ensureUnitIndex(currentUnitType).then(renderUnitNumberPicker).catch(() => {}); return; }
+  4924          numbers = rows.map((r) => unitRowNumber(r));
+  4925        }
+  4926        unitNumSelect.innerHTML = numbers.map((n) => `<option value="${n}">${num(n)}</option>`).join("");
+  4927        const current = currentUnitNumber();
+  4928        if (current !== null && numbers.includes(current)) unitNumSelect.value = String(current);
+  4929        renderUnitSpanReadout();
+  4930        // Round 22: Juz/Hizb/Page fill this list only once their boundary table
+  4931        // has arrived, which is AFTER renderStudyScreen() has already synced the
+  4932        // reading screen's copy -- so it has to be told again here, or the
+  4933        // reading screen shows an empty number cell for those three units.
+  4934        syncReadPickers();
+  4935        syncWheelUnitPalette(); // and the Approach view's copy, for the same reason
+  4936      }
+  4937  
+  4938      /** What the chosen unit covers, in words. The owner's own rule for a unit
+  4939          that spans several surahs: name the TOP and the BOTTOM, never the ones
+  4940          in between — "Surah 2:142 → Surah 3:9", not a list of four. */
+  4941      function renderUnitSpanReadout() {
+  4942        if (!NUMBERED_UNITS.includes(currentUnitType) || !currentSurahData) { unitSpanReadout.hidden = true; return; }
+  4943        const numberNow = currentUnitNumber();
+  4944        let text = "";
+  4945        if (currentUnitType === "ruku") {
+  4946          const [from, to] = currentUnitAyahBounds();
+  4947          text = t("{surah} · Ayahs {from}–{to}", { surah: surahDisplayName(currentSurahNum), from: num(from), to: num(to) });
+  4948        } else {
+  4949          const row = (unitRows() ?? []).find((r) => unitRowNumber(r) === numberNow);
+  4950          if (!row) { unitSpanReadout.hidden = true; return; }
+  4951          text = row.startSurah === row.endSurah
+  4952            ? t("{surah} · Ayahs {from}–{to}", { surah: surahDisplayName(row.startSurah), from: num(row.startAyah), to: num(row.endAyah) })
+  4953            : t("{fromSurah} {fromAyah} → {toSurah} {toAyah}", {
+  4954                fromSurah: surahDisplayName(row.startSurah), fromAyah: num(row.startAyah),
+  4955                toSurah: surahDisplayName(row.endSurah), toAyah: num(row.endAyah),
+  4956              });
+  4957        }
+  4958        unitSpanReadout.textContent = text;
+  4959        unitSpanReadout.hidden = false;
+  4960      }
+  4961  
+  4962      /** "Surah 2 Al-Baqara" -- surahName() needs the English name handed to it
+  4963          (it only knows the Bangla side by number), the same call shape the
+  4964          surah picker and the search results already use. */
+  4965      function surahDisplayName(surahNum) {
+  4966        const meta = surahIndex.find((s) => s.surahNumber === surahNum);
+  4967        return t("Surah {n} {name}", { n: num(surahNum), name: surahName(surahNum, meta?.nameEnglish) });
+  4968      }
+  4969  
+  4970      /** Jump to a chosen unit number: load its surah if it is a different one,
+  4971          then land on the unit's own first ayah — the same rule the Read tab
+  4972          follows, so "open the unit" means one thing everywhere. */
+  4973      async function goToUnitNumber(numberValue) {
+  4974        if (!NUMBERED_UNITS.includes(currentUnitType)) return;
+  4975        stopDrill();
+  4976        if (currentUnitType === "ruku") {
+  4977          const target = currentSurahData.ayahs.find((a) => rukuIndexInSurah(currentSurahData.ayahs, a.ruku) === numberValue);
+  4978          if (!target) return;
+  4979          currentAyahNum = target.ayah;
+  4980        } else {
+  4981          const row = (unitRows() ?? []).find((r) => unitRowNumber(r) === numberValue);
+  4982          if (!row) return;
+  4983          if (row.startSurah !== currentSurahNum) {
+  4984            currentSurahNum = row.startSurah;
+  4985            surahSelect.value = String(row.startSurah);
+  4986            await loadSurah(); // resets currentAyahNum to 1 and reloads this surah's records chunk
+  4987          }
+  4988          currentAyahNum = row.startAyah;
+  4989        }
+  4990        if (ayahSelect.querySelector(`option[value="${currentAyahNum}"]`)) ayahSelect.value = String(currentAyahNum);
+  4991        updateUnitControlsVisibility();
+  4992        renderStudyScreen();
+  4993        renderWheel();
+  4994      }
+  4995  
+  4996      unitNumSelect.addEventListener("change", () => { goToUnitNumber(Number(unitNumSelect.value)); });
+  4997  
+  4998      // -----------------------------------------------------------------------
+  4999      // Shell round 21 -- Prev and Next move THE UNIT, whatever the unit is.
+  5000      //
+  5001      // The owner's rule, in their words: "any choice which reflects in the
+  5002      // reading screen should have a button to choose next of the same choice
+  5003      // (example, if a range of 5 Ayat is chosen, then the 'next' button should
+  5004      // bring the next 5 Ayat)." So Next means the next ayah, the next five, the
+  5005      // next surah, the next ruku', juz, hizb or page -- one button, seven
+  5006      // meanings, read off currentUnitType.
+  5007      //
+  5008      // It CROSSES SURAH BOUNDARIES, which is the owner's own answer to a
+  5009      // question put to them before building: reading does not stop at the end
+  5010      // of a surah, and Juz/Hizb/Page cross by nature anyway, so stopping only
+  5011      // Ayah and Range there made Next mean two different things. The only real
+  5012      // ends are 1:1 and the last ayah of 114.
+  5013      //
+  5014      // Note this is NOT the same pair as Previous/Next under the text: that one
+  5015      // still walks a single ayah inside a multi-ayah unit (the owner's answer to
+  5016      // the other question -- "keep both", two different jobs). For Single Ayah
+  5017      // the two would be identical, so the inner row hides; see renderStudyScreen.
+  5018      // -----------------------------------------------------------------------
+  5019      const LAST_SURAH = 114;
+  5020  
+  5021      /** Open a different surah and land on a chosen ayah -- "last" for its
+  5022          final one. loadSurah() resets currentAyahNum to 1, so the landing is
+  5023          always applied after it, never before. */
+  5024      async function openSurahAt(surahNum, ayahTarget) {
+  5025        currentSurahNum = surahNum;
+  5026        surahSelect.value = String(surahNum);
+  5027        await loadSurah();
+  5028        const count = currentSurahData.ayahCount;
+  5029        currentAyahNum = ayahTarget === "last" ? count : Math.min(Math.max(1, ayahTarget), count);
+  5030      }
+  5031  
+  5032      /** This surah's ruku' numbers, ascending. Per-surah numbering (I5, and
+  5033          buildUnitKey.ruku has always recorded it that way), so the "next ruku'"
+  5034          after a surah's last one is ruku' 1 of the next surah. */
+  5035      function rukuNumbersInCurrentSurah() {
+  5036        const seen = new Set(currentSurahData.ayahs.map((a) => rukuIndexInSurah(currentSurahData.ayahs, a.ruku)));
+  5037        return [...seen].sort((a, b) => a - b);
+  5038      }
+  5039  
+  5040      function firstAyahOfRuku(idx) {
+  5041        return currentSurahData.ayahs.find((a) => rukuIndexInSurah(currentSurahData.ayahs, a.ruku) === idx)?.ayah ?? 1;
+  5042      }
+  5043  
+  5044      async function stepUnit(dir) {
+  5045        if (!currentSurahData) return;
+  5046        stopDrill();
+  5047        const count = currentSurahData.ayahCount;
+  5048  
+  5049        if (currentUnitType === "ayah") {
+  5050          const target = currentAyahNum + dir;
+  5051          if (target >= 1 && target <= count) currentAyahNum = target;
+  5052          else if (dir > 0 && currentSurahNum < LAST_SURAH) await openSurahAt(currentSurahNum + 1, 1);
+  5053          else if (dir < 0 && currentSurahNum > 1) await openSurahAt(currentSurahNum - 1, "last");
+  5054          else return;
+  5055  
+  5056        } else if (currentUnitType === "range") {
+  5057          // The window keeps its own length. At a surah's end it gives a short
+  5058          // tail rather than reaching into the next surah mid-window -- a range
+  5059          // is keyed to one surah (buildUnitKey.range), so a window spanning two
+  5060          // could not be claimed at all.
+
+
+================================================================================
+REGION C — app/quranrevival.html lines 5445-5480
+================================================================================
+  5445      async function loadContextData() {
+  5446        const { collection, query, where, getDocs } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+  5447        // LOAD SPEED (Aug 2026): one wave, not three. The trackables read used
+  5448        // to happen twice -- once inside syncUnneditedTrackableNames() and
+  5449        // again right after it -- and both waited on the roster read first,
+  5450        // which none of them depends on. The surah index is a bundled JSON
+  5451        // file, not Firestore, but it was also being waited for in turn.
+  5452        const [rosterSnap, tenantSnap, allTrackables, loadedSurahIndex] = await Promise.all([
+  5453          getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+  5454          getDoc(doc(db, TENANT.TENANTS, activeTenantId)),
+  5455          getTrackables(db, activeTenantId),
+  5456          getSurahIndex(),
+  5457        ]);
+  5458        roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  5459        currentTenantDoc = tenantSnap.exists() ? tenantSnap.data() : null;
+  5460        tenantWeekStartsOn = currentTenantDoc?.weekStartsOn ?? 6;
+  5461        renderPersonSelectOptions();
+  5462        selectedPersonId = personSelect.value || null; // whichever person is actually visible/selected (round 11: may be scoped by an active "View as" preview)
+  5463        renderBanner();
+  5464        // Shell round 20: the tenant's own tagline list rides along on the
+  5465        // tenant document this wave already fetches -- no extra read (I9).
+  5466        applyTaglineData(currentTenantDoc);
+  5467  
+  5468        quranTrackables = allTrackables.filter((t) => t.subjectId === "quran" && t.status !== "archived");
+  5469        // Asma-in-Explore round -- studied_asma rides along on this SAME
+  5470        // already-fetched tenant-wide read (I9: no second Firestore call),
+  5471        // the exact trackable asma-study.js's own openWayModal() already
+  5472        // claims against, for the Note view's own Track/Guide embed.
+  5473        asmaTrackable = allTrackables.find((t) => t.id === ASMA_TRACKABLE_ID) ?? null;
+  5474        renderTrackableSelectOptions();
+  5475        currentTrackableId = quranTrackables[0]?.id ?? null;
+  5476  
+  5477        surahIndex = loadedSurahIndex;
+  5478        surahSelect.innerHTML = surahIndex
+  5479          // The option's VALUE stays a plain number -- it is parsed back with
+  5480          // Number() on every change. Only the text a person reads is translated.
+
+
+================================================================================
+REGION D — app/quranrevival.html lines 5545-5800
+================================================================================
+  5545      async function refreshChunkAndWheel() {
+  5546        if (!selectedPersonId) return;
+  5547        const chunkKey = `surah_${currentSurahNum}`;
+  5548        currentChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, chunkKey);
+  5549        // 28 Aug 2026: a claim made from the Note view (or the floating "Track
+  5550        // this unit" modal) used to leave exploreChunksBySurah -- Explore/QCR's
+  5551        // own once-per-"open" cache -- pointing at the OLD currentChunk object,
+  5552        // since this function reassigns currentChunk to a freshly-fetched one
+  5553        // rather than mutating the old object in place. The QCR wheel (and the
+  5554        // plain Explore wheel) read status through that cache, not currentChunk
+  5555        // directly, so a real claim never showed as a real colour change until
+  5556        // Explore was fully closed and reopened. No extra read: this surah's
+  5557        // chunk was just fetched above for currentChunk anyway -- only touch
+  5558        // the cache at all if Explore has actually been opened this session
+  5559        // (exploreChunksBySurah stays null until then). Unconditionally, not
+  5560        // only "if already present": a surah with NO prior claims never got an
+  5561        // entry at all from ensureExploreChunksLoaded() (it only .set()s a
+  5562        // truthy chunk) -- the exact case a first-ever claim on a surah hits --
+  5563        // so gating on .has() left the very claim this fix exists for unseen.
+  5564        if (exploreChunksBySurah) {
+  5565          if (currentChunk) exploreChunksBySurah.set(currentSurahNum, currentChunk);
+  5566          else exploreChunksBySurah.delete(currentSurahNum);
+  5567        }
+  5568        renderWheel();
+  5569      }
+  5570  
+  5571      /** Follow-up round: which of selectedPersonId's active course-offer enrolments cover "quran" -- QuranRevival's whole subject tree is that one leaf (unlike topic-renderer modules), so this only ever needs the one key. Best-effort, same risk tolerance as refreshChunkAndWheel -- a lookup failure here shouldn't block studying. */
+  5572      async function refreshProgramMap() {
+  5573        if (!selectedPersonId) { programBySubjectId = new Map(); return; }
+  5574        const enrollments = await listEnrollmentsForPerson(db, activeTenantId, selectedPersonId);
+  5575        programBySubjectId = programSubjectMapFromEnrollments(enrollments);
+  5576      }
+  5577  
+  5578      function ayahStatusesForCurrentTrackable() {
+  5579        const entries = currentChunk?.entries ?? {};
+  5580        return currentSurahData.ayahs.map((a) => {
+  5581          const unitKey = buildUnitKey.ayah(currentSurahNum, a.ayah);
+  5582          const entry = entries[`${unitKey}::${currentTrackableId}`];
+  5583          return { ayah: a.ayah, statusId: entry?.claimedStatus ?? "not_started" };
+  5584        });
+  5585      }
+  5586  
+  5587      // -----------------------------------------------------------------------
+  5588      // 6 Sep 2026 -- the subject_quran records chunk.
+  5589      //
+  5590      // Ayah/Range/Whole Surah/Ruku' claims all live in surah_N, which
+  5591      // refreshChunkAndWheel() has already loaded. Juz, Hizb and Page are
+  5592      // Qur'an-wide, so records.js chunks them into subject_quran instead -- a
+  5593      // DIFFERENT document (see currentUnitInfo()'s own chunkKey). Until this
+  5594      // round nothing on the landing path ever needed it: the wheel was
+  5595      // hardcoded to the current ayah and "Track this unit" fetched it on the
+  5596      // spot each time it opened.
+  5597      //
+  5598      // Fetched ON FIRST USE and cached per person -- the same treatment the
+  5599      // reciter timing map (v07.39), the search index (v07.40) and the three
+  5600      // boundary tables (v07.44) already get. Someone who never picks a Juz,
+  5601      // Hizb or Page never downloads it, so nothing joins the startup path
+  5602      // (I9) and the load-speed contract is untouched.
+  5603      // -----------------------------------------------------------------------
+  5604      let quranSubjectChunk = null;
+  5605      let quranSubjectChunkFor = null; // whose chunk the cache above holds -- a different person needs a different document
+  5606      let quranSubjectChunkPromise = null;
+  5607  
+  5608      async function ensureQuranSubjectChunk({ force = false } = {}) {
+  5609        if (!selectedPersonId) return null;
+  5610        if (!force && quranSubjectChunkFor === selectedPersonId) return quranSubjectChunk;
+  5611        if (force) quranSubjectChunkPromise = null;
+  5612        if (!quranSubjectChunkPromise) {
+  5613          quranSubjectChunkPromise = getRecordsChunk(db, activeTenantId, selectedPersonId, "subject_quran")
+  5614            .then((chunk) => {
+  5615              quranSubjectChunk = chunk;
+  5616              quranSubjectChunkFor = selectedPersonId;
+  5617              quranSubjectChunkPromise = null;
+  5618              return chunk;
+  5619            })
+  5620            .catch((err) => { quranSubjectChunkPromise = null; throw err; });
+  5621        }
+  5622        return quranSubjectChunkPromise;
+  5623      }
+  5624  
+  5625      /** Whether the cache above is genuinely in hand for whoever is selected --
+  5626          what tells "no claims yet" apart from "not fetched yet", so a render
+  5627          can ask for it once and never spin. */
+  5628      function quranSubjectChunkReady() {
+  5629        return quranSubjectChunkFor === selectedPersonId;
+  5630      }
+  5631  
+  5632      /** The already-loaded chunk a unit's claims live in, or null when it is a
+  5633          subject_quran unit whose document has not been fetched yet. Purely a
+  5634          lookup -- callers that can wait use ensureUnitChunkThen() below. */
+  5635      function chunkForUnitInfo(info) {
+  5636        if (info.chunkKey === `surah_${currentSurahNum}`) return currentChunk;
+  5637        if (info.chunkKey === "subject_quran") return quranSubjectChunkReady() ? quranSubjectChunk : null;
+  5638        return null;
+  5639      }
+  5640  
+  5641      /** Fetch-once-then-redraw: a render that needs subject_quran and does not
+  5642          have it asks for it and re-runs itself when it lands. It cannot loop --
+  5643          quranSubjectChunkReady() is true afterwards whether or not the document
+  5644          exists, so the second pass never asks again. */
+  5645      function ensureUnitChunkThen(info, redraw) {
+  5646        if (info.chunkKey !== "subject_quran" || quranSubjectChunkReady() || !selectedPersonId) return;
+  5647        ensureQuranSubjectChunk().then(() => redraw()).catch(() => {});
+  5648      }
+  5649  
+  5650      /** Every Approach's status for the unit currently being tracked -- the
+  5651          axis the old app's real Mastery Wheel uses (index.html:4932,
+  5652          `state.ways.map`), not "every ayah for one Approach."
+  5653          6 Sep 2026, the owner's own ask ("enable all units to be approachable
+  5654          from the APPROACH"): the unit is whatever currentUnitInfo() says --
+  5655          Single Ayah, a Range, a Whole Surah, a Ruku', a Juz, a Hizb or a Page
+  5656          -- not the hardcoded current ayah this has read since Phase 5, which
+  5657          is the long-parked "make the Mastery Wheel reflect the selected Study
+  5658          Unit" item, now asked for.
+  5659          This is each Approach's OWN claim on that exact unit key, deliberately
+  5660          not a pooled/rolled-up status the way Explore's wheel colours a Juz
+  5661          from the ayahs inside it: the card a slice opens claims THIS unit, so
+  5662          a green slice over "Not claimed yet" would be the screen contradicting
+  5663          itself. Reads a chunk already in memory -- no Firestore read per
+  5664          render either way. */
+  5665      function approachStatusesForCurrentUnit() {
+  5666        const info = currentUnitInfo();
+  5667        const entries = chunkForUnitInfo(info)?.entries ?? {};
+  5668        return quranTrackables.map((trackable) => ({
+  5669          trackable,
+  5670          statusId: entries[`${info.unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started",
+  5671        }));
+  5672      }
+  5673  
+  5674      /** The Study-page Mastery Wheel (Phase 5 round 13 -- axis corrected to
+  5675          match the old app's real one): one segment per Approach, all for the
+  5676          current ayah, Arabic ayah text in the centre disc, same as
+  5677          index.html's actual Mastery Wheel. Depends on currentAyahNum now, not
+  5678          just currentTrackableId/currentChunk -- every place that changes the
+  5679          current ayah must call this too (see the ayah-nav buttons, the
+  5680          playback ayah-change handler, and Explore's jumpToJuz below). */
+  5681      function renderWheel() {
+  5682        if (!quranTrackables.length || !currentSurahData) {
+  5683          wheelContainer.innerHTML = `<p style="color:#8fa0c2;">${t("No Approaches yet.")}</p>`;
+  5684          wheelSidebarContainer.innerHTML = "";
+  5685          return;
+  5686        }
+  5687        const unitInfo = currentUnitInfo();
+  5688        // A Juz/Hizb/Page unit's claims live in subject_quran, which may not be
+  5689        // in memory the first time one is picked -- ask for it and redraw once
+  5690        // it lands (see ensureUnitChunkThen()). Until then every slice reads
+  5691        // not_started, which is what an unfetched document honestly looks like.
+  5692        ensureUnitChunkThen(unitInfo, renderWheel);
+  5693        const approachStatuses = approachStatusesForCurrentUnit();
+  5694        // Same fix as Explore's own tooltips, one line, while it is under the
+  5695        // hand: a raw status id with its underscores swapped for spaces
+  5696        // ("not started") is meaningless in either language and was never
+  5697        // translated. Pre-existing here, not introduced by this round.
+  5698        const wheelLabels = statusLabelsById();
+  5699        const items = approachStatuses.map(({ trackable, statusId }) => ({
+  5700          key: trackable.id,
+  5701          number: trackable.order ?? "",
+  5702          statusId,
+  5703          title: segTitle(langText(trackable.name, getAppLang(), trackable.id), statusId, wheelLabels),
+  5704        }));
+  5705        // The hub's own overlay (Ta'awwudh/Bismillah, permanently, plus the
+  5706        // Surah/Ayah pickers) now occupies this whole spot -- the owner's own
+  5707        // instruction, after the chosen ayah's own Arabic text kept showing
+  5708        // through behind/around the narrower HTML overlay (it was still being
+  5709        // drawn by the SVG underneath, unrelated to and unbounded by the
+  5710        // overlay's own safe-width fitting -- that stray fragment in their
+  5711        // screenshot). centerArabic/centerRef are passed as empty strings
+  5712        // rather than left out entirely: centerLabelMarkup() only draws the
+  5713        // dark hub circle + gold ring AT ALL when centerArabic is defined, so
+  5714        // an empty string keeps that backdrop while drawing no text into it.
+  5715        wheelContainer.innerHTML = renderScopedWheel(items, {
+  5716          centerArabic: "",
+  5717          centerRef: "",
+  5718        });
+  5719        // Real wheel content now exists, so #wheelStageWrap is finally at its
+  5720        // real, final size -- safe to reveal the intro button (started hidden,
+  5721        // see its own markup comment) without the visible reflow that used to
+  5722        // happen when it appeared before the wheel did.
+  5723        if (!wheelIntroDismissed) wheelCtaBtn.hidden = false;
+  5724  
+  5725        // Matches the old app's own wheel-click behaviour: clicking a segment
+  5726        // is about that Approach for the ayah on screen -- it does not
+  5727        // navigate anywhere else. It now opens there INSIDE the Ayah Note
+  5728        // screen (the owner's own framing: reading is study, this card is
+  5729        // assessment) rather than a floating pop-up over the wheel. Also
+  5730        // focuses the Approach dropdown on the clicked one, since Explore and
+  5731        // "Track this unit" still operate on a single selected Approach.
+  5732        // 6 Sep 2026: the Note view opens on the unit the wheel is actually
+  5733        // showing, not always the single ayah -- "when you enable other units
+  5734        // now, you should enable the NOTE view to be worked for claiming the
+  5735        // respective unit" (the owner's own words). openNoteView() already
+  5736        // understands every unit key shape, and the Track card inside it now
+  5737        // claims whatever scope it is opened on.
+  5738        const jumpToApproach = (key) => {
+  5739          currentTrackableId = key;
+  5740          trackableSelect.value = key;
+  5741          openNoteView(unitInfo.unitKey);
+  5742        };
+  5743        attachScopedWheelClickHandler(wheelContainer, jumpToApproach);
+  5744  
+  5745        const labelsById = statusLabelsById();
+  5746        wheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+  5747  
+  5748        const sidebarItems = approachStatuses.map(({ trackable, statusId }) => ({
+  5749          key: trackable.id,
+  5750          number: trackable.order ?? "",
+  5751          label: langText(trackable.name, getAppLang(), trackable.id),
+  5752          statusId,
+  5753        }));
+  5754        wheelSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
+  5755        attachWheelSidebarClickHandler(wheelSidebarContainer, jumpToApproach);
+  5756  
+  5757        syncWheelHubPickers();
+  5758        syncWheelUnitPalette();
+  5759        layoutWheelHub();
+  5760      }
+  5761  
+  5762      /** Shared by the canonical Study-options Approach picker (trackableSelect)
+  5763          and the Ayah Note screen's own Approach toggle (round 32) -- whichever
+  5764          one is used, currentTrackableId changes, the two stay in sync (each
+  5765          writes the other's value), the wheel re-renders, and whichever stage
+  5766          view is actually open (the reading screen or the Note screen's own
+  5767          Track/Guide/Breakdown/Coverage card) is rebuilt against the new
+  5768          Approach. */
+  5769      function changeCurrentTrackable(id) {
+  5770        currentTrackableId = id;
+  5771        trackableSelect.value = id;
+  5772        renderWheel();
+  5773        if (stageView === "read") renderStudyScreen();
+  5774        else if (stageView === "note" && noteScope) renderNoteViewNow();
+  5775        // 28 Aug 2026: the QCR wheel's own Approach mirror -- a fourth reader
+  5776        // of this same shared state, alongside Study options/the Note view.
+  5777        // Compatible by construction: it just re-pools qcrItemStatus() against
+  5778        // the newly-picked Approach, the same way every other consumer here
+  5779        // re-renders against currentTrackableId rather than owning a copy of it.
+  5780        // 5 Sep 2026: Explore's own Quran wheel is a FIFTH reader of this same
+  5781        // shared state. Re-pooling costs no Firestore read -- every surah's
+  5782        // chunk was loaded once by openExplore() and is still in
+  5783        // exploreChunksBySurah -- so switching Approach re-colours the whole
+  5784        // Qur'an from data already in hand (I9 untouched).
+  5785        else if (stageView === "explore" && exploreMode === "quran") renderExplore();
+  5786        else if (stageView === "explore" && exploreMode === "qcr") {
+  5787          // 4 Sep 2026: the mirror lives on the level bar now, which is drawn
+  5788          // whether or not a collection is selected -- so it is synced
+  5789          // unconditionally, and only the list+wheel below it depends on there
+  5790          // being a collection to draw.
+  5791          syncQcrApproachSelect();
+  5792          if (qcrCurrentId) renderQcrCollectionView();
+  5793        }
+  5794        rememberLastSession();
+  5795      }
+  5796  
+  5797      /** Brings the wheel hub's own Surah/Ayah pickers into line with the ones
+  5798          they mirror -- same shape as syncReadPickers() (shell round 22), just
+  5799          the two controls the hub has room for. Options are only rebuilt when
+  5800          they have actually changed (a surah's ayah list can be 286 entries,
+
+
+================================================================================
+REGION E — app/quranrevival.html lines 6450-6660
+================================================================================
+  6450      /** Which (surah, ayah-range) pairs a boundary spans, using only surah-index.json's ayah counts -- never loads full surah text just to find this out. Generic over Juz/Page/Ruku' -- any {startSurah,startAyah,endSurah,endAyah} shape works. */
+  6451      function ayahCoverage(startSurah, startAyah, endSurah, endAyah) {
+  6452        if (startSurah === endSurah) return [{ surah: startSurah, from: startAyah, to: endAyah }];
+  6453        const ranges = [];
+  6454        const startCount = surahIndex.find((s) => s.surahNumber === startSurah)?.ayahCount ?? startAyah;
+  6455        ranges.push({ surah: startSurah, from: startAyah, to: startCount });
+  6456        for (let s = startSurah + 1; s < endSurah; s++) {
+  6457          const count = surahIndex.find((x) => x.surahNumber === s)?.ayahCount ?? 0;
+  6458          if (count) ranges.push({ surah: s, from: 1, to: count });
+  6459        }
+  6460        ranges.push({ surah: endSurah, from: 1, to: endAyah });
+  6461        return ranges;
+  6462      }
+  6463  
+  6464      const RAMP_ORDER = STATUSES.filter((s) => s.onRamp).map((s) => s.id); // not_started .. mastered, in ramp order
+  6465  
+  6466      /** "Weakest link" pooled status across every ayah a coverage range covers, for one trackable, reading from the shared exploreChunksBySurah loaded once per Explore open. Ayahs never claimed count as not_started (matches ayahStatusesForCurrentTrackable's own default). Not Applicable ayahs are excluded from the pool entirely (I7), not counted as a low score. Returns null if nothing at all is countable yet -- the caller falls back to a direct claim at that level in that case. */
+  6467      function poolCoverageStatus(coverage, trackableId) {
+  6468        let worstIdx = null;
+  6469        let anyCounted = false;
+  6470        for (const { surah, from, to } of coverage) {
+  6471          for (let a = from; a <= to; a++) {
+  6472            const statusId = effectiveAyahStatus(surah, a, trackableId);
+  6473            if (statusId === "not_applicable") continue;
+  6474            anyCounted = true;
+  6475            const idx = RAMP_ORDER.indexOf(statusId);
+  6476            if (worstIdx === null || idx < worstIdx) worstIdx = idx;
+  6477          }
+  6478        }
+  6479        return anyCounted ? RAMP_ORDER[worstIdx] : null;
+  6480      }
+  6481  
+  6482      /**
+  6483       * 5 Sep 2026 -- the owner's own report: "check, I think 'whole surah'
+  6484       * tracking doesn't reflect in the tracker wheel". Reproduced, and it was
+  6485       * true of EVERY wider unit, not only Whole Surah.
+  6486       *
+  6487       * Why: this wheel has only ever read `ayah:` keys. Each level did carry a
+  6488       * direct-claim fallback for its own unit (`juz:`, `page:`, `surah:`,
+  6489       * `ruku:`) -- but it was written `pooled ?? direct`, and `pooled` is null
+  6490       * only when every ayah in range is Not Applicable. In any real tenant
+  6491       * pooling always answers (an unclaimed ayah counts as not_started), so the
+  6492       * fallback was dead code and a Whole Surah / Range / Ruku' / Juz / Hizb /
+  6493       * Page claim was invisible everywhere in Explore.
+  6494       *
+  6495       * The rule now, stated plainly because it decides what the colours MEAN:
+  6496       * a claim on a wider unit is a FLOOR under every ayah it covers. Claiming
+  6497       * "Surah 1, Mastered" is a statement about all seven of its ayahs, so each
+  6498       * reads at least Mastered; an ayah claimed higher on its own keeps its own
+  6499       * higher status. Not Applicable still wins outright, because it is an
+  6500       * explicit exclusion (I7) rather than a point on the ramp.
+  6501       *
+  6502       * Nothing is recalculated or rewritten -- I6 holds, this reads claims and
+  6503       * never touches them -- and no Firestore read was added: every span below
+  6504       * comes from chunks openExplore() has already loaded (I9).
+  6505       */
+  6506      function effectiveAyahStatus(surah, ayah, trackableId) {
+  6507        const entries = exploreChunksBySurah.get(surah)?.entries ?? {};
+  6508        const own = entries[`${buildUnitKey.ayah(surah, ayah)}::${trackableId}`]?.claimedStatus ?? "not_started";
+  6509        if (own === "not_applicable") return own;
+  6510        let bestIdx = RAMP_ORDER.indexOf(own);
+  6511        const apply = (spans) => {
+  6512          for (const span of spans ?? []) {
+  6513            if (span.surah !== surah || ayah < span.from || ayah > span.to) continue;
+  6514            const idx = RAMP_ORDER.indexOf(span.statusId);
+  6515            if (idx > bestIdx) bestIdx = idx;
+  6516          }
+  6517        };
+  6518        apply(exploreWiderSpans.get(trackableId));
+  6519        return bestIdx < 0 ? own : RAMP_ORDER[bestIdx];
+  6520      }
+  6521  
+  6522      /**
+  6523       * Every wider-unit claim in the loaded chunks, flattened to the ayah
+  6524       * ranges it covers, keyed by trackable. Built once per Explore open,
+  6525       * beside the chunks themselves.
+  6526       *
+  6527       * 5 Sep 2026 (round 3), owner: "do the ruku and hizb roll up too". They
+  6528       * do now, and the point is that neither costs anything unless a claim of
+  6529       * that kind actually exists. A Hizb's own boundary table (12KB) is fetched
+  6530       * only when a `hizb:` claim is found; a Ruku's ayah range lives in its
+  6531       * surah's TEXT, so ONLY the surahs that really carry a `ruku:` claim are
+  6532       * loaded -- usually a handful, never all 114. That is also what makes ruku
+  6533       * roll up DETERMINISTICALLY: which surahs get loaded is decided by the
+  6534       * claims, not by where the reader has browsed, so a Juz's colour is the
+  6535       * same however you arrived at it.
+  6536       */
+  6537      async function buildExploreWiderSpans() {
+  6538        exploreWiderSpans = new Map();
+  6539        // What the claims need, resolved before any span can be built.
+  6540        const rukuSurahs = new Set();
+  6541        let needsHizb = false;
+  6542        const survey = (chunk) => {
+  6543          for (const key of Object.keys(chunk?.entries ?? {})) {
+  6544            const unitKey = key.split("::")[0] ?? "";
+  6545            if (unitKey.startsWith("ruku:")) rukuSurahs.add(Number(unitKey.split(":")[1]));
+  6546            else if (unitKey.startsWith("hizb:")) needsHizb = true;
+  6547          }
+  6548        };
+  6549        for (const chunk of exploreChunksBySurah.values()) survey(chunk);
+  6550        survey(exploreSubjectChunk);
+  6551        const hizbIndex = needsHizb ? await getHizbIndex() : null;
+  6552        // getSurah() is cached, so a surah the reader opens later costs nothing twice.
+  6553        const rukuRangesBySurah = new Map();
+  6554        await Promise.all([...rukuSurahs].filter(Boolean).map(async (n) => {
+  6555          const data = await getSurah(n);
+  6556          const ranges = new Map();
+  6557          for (const a of data.ayahs) {
+  6558            const idx = rukuIndexInSurah(data.ayahs, a.ruku);
+  6559            const g = ranges.get(idx) ?? { from: a.ayah, to: a.ayah };
+  6560            g.from = Math.min(g.from, a.ayah);
+  6561            g.to = Math.max(g.to, a.ayah);
+  6562            ranges.set(idx, g);
+  6563          }
+  6564          rukuRangesBySurah.set(n, ranges);
+  6565        }));
+  6566        const push = (trackableId, span) => {
+  6567          if (!exploreWiderSpans.has(trackableId)) exploreWiderSpans.set(trackableId, []);
+  6568          exploreWiderSpans.get(trackableId).push(span);
+  6569        };
+  6570        const spansForKey = (unitKey) => {
+  6571          const parts = unitKey.split(":");
+  6572          if (parts[0] === "surah") {
+  6573            const n = Number(parts[1]);
+  6574            const count = surahIndex.find((x) => x.surahNumber === n)?.ayahCount;
+  6575            return count ? [{ surah: n, from: 1, to: count }] : [];
+  6576          }
+  6577          if (parts[0] === "range") {
+  6578            const n = Number(parts[1]);
+  6579            const [from, to] = String(parts[2] ?? "").split("-").map(Number);
+  6580            return from && to ? [{ surah: n, from, to }] : [];
+  6581          }
+  6582          if (parts[0] === "juz") {
+  6583            const j = juzIndexData?.find((x) => x.juz === Number(parts[1]));
+  6584            return j ? ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah) : [];
+  6585          }
+  6586          if (parts[0] === "page") {
+  6587            // page:<edition>:<n>
+  6588            const pg = pageIndexData?.find((x) => x.page === Number(parts[2]));
+  6589            return pg ? ayahCoverage(pg.startSurah, pg.startAyah, pg.endSurah, pg.endAyah) : [];
+  6590          }
+  6591          if (parts[0] === "ruku") {
+  6592            const n = Number(parts[1]);
+  6593            const r = rukuRangesBySurah.get(n)?.get(Number(parts[2]));
+  6594            return r ? [{ surah: n, from: r.from, to: r.to }] : [];
+  6595          }
+  6596          if (parts[0] === "hizb") {
+  6597            const h = hizbIndex?.find((x) => x.hizb === Number(parts[1]));
+  6598            return h ? ayahCoverage(h.startSurah, h.startAyah, h.endSurah, h.endAyah) : [];
+  6599          }
+  6600          return [];
+  6601        };
+  6602        const scan = (chunk) => {
+  6603          for (const [key, entry] of Object.entries(chunk?.entries ?? {})) {
+  6604            const [unitKey, trackableId] = key.split("::");
+  6605            if (!trackableId || !unitKey || unitKey.startsWith("ayah:")) continue;
+  6606            const statusId = entry?.claimedStatus;
+  6607            if (!statusId || statusId === "not_started" || RAMP_ORDER.indexOf(statusId) < 0) continue;
+  6608            for (const sp of spansForKey(unitKey)) push(trackableId, { ...sp, statusId });
+  6609          }
+  6610        };
+  6611        for (const chunk of exploreChunksBySurah.values()) scan(chunk);
+  6612        scan(exploreSubjectChunk);
+  6613      }
+  6614  
+  6615      /* The per-surah Ruku' resolver that stood here is retired: Ruku' claims
+  6616         now resolve in buildExploreWiderSpans() alongside every other wider
+  6617         unit, so they roll up into the Juz and whole-Quran wheels instead of
+  6618         only showing inside their own surah. Still deterministic -- see that
+  6619         function for why loading by CLAIM rather than by navigation is what
+  6620         makes it so. */
+  6621  
+  6622      /** Loads every surah's records chunk once per Explore "open" (the Quran-wheel's own cost, described above), plus the subject_quran chunk (Juz/Page direct-claim fallback) -- shared by every level's renderer below, so drilling deeper never re-reads Firestore. */
+  6623      async function ensureExploreChunksLoaded() {
+  6624        if (!juzIndexData) juzIndexData = await getJuzIndex();
+  6625        if (!pageIndexData) pageIndexData = await getPageIndex();
+  6626        const neededSurahs = new Set();
+  6627        for (const j of juzIndexData) for (const c of ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah)) neededSurahs.add(c.surah);
+  6628        exploreChunksBySurah = new Map();
+  6629        await Promise.all(
+  6630          [...neededSurahs].map(async (surahNum) => {
+  6631            if (surahNum === currentSurahNum && currentChunk) { exploreChunksBySurah.set(surahNum, currentChunk); return; }
+  6632            const chunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, `surah_${surahNum}`);
+  6633            if (chunk) exploreChunksBySurah.set(surahNum, chunk);
+  6634          })
+  6635        );
+  6636        // Read through the shared cache (force: a fresh read per Explore open,
+  6637        // exactly as before) so the landing wheel's own copy of this document
+  6638        // and Explore's can never drift apart -- same number of reads either way.
+  6639        exploreSubjectChunk = await ensureQuranSubjectChunk({ force: true });
+  6640        await buildExploreWiderSpans();
+  6641      }
+  6642  
+  6643      /** A segment's tooltip: the unit's own translated label, then its status
+  6644       *  as a real LABEL rather than the raw id with underscores swapped for
+  6645       *  spaces ("not_started" -> "not started"), which was meaningless in
+  6646       *  either language and untranslated in Bangla. */
+  6647      function segTitle(label, statusId, labelsById) {
+  6648        return `${label} — ${labelsById[statusId] ?? statusId}`;
+  6649      }
+  6650  
+  6651      /** Clickable "Whole Quran › Juz N › Surah name › Ruku' N" trail, one crumb per level actually visited so far. Clicking an earlier crumb jumps back to that level and clears everything deeper than it -- the current level's own crumb is shown but not clickable. */
+  6652      function renderExploreBreadcrumb() {
+  6653        const crumbs = [{ label: t("Whole Quran"), level: "quran" }];
+  6654        if (exploreJuzNum != null) crumbs.push({ label: t("Juz {juz}", { juz: num(exploreJuzNum) }), level: "juz" });
+  6655        if (exploreSurahNum != null) {
+  6656          const found = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
+  6657          const name = found ? surahName(found.surahNumber, found.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
+  6658          crumbs.push({ label: name, level: "surah" });
+  6659        }
+  6660        if (exploreRukuIndex != null) crumbs.push({ label: t("Ruku' {ruku}", { ruku: num(exploreRukuIndex) }), level: "ruku" });
+
+
+================================================================================
+REGION F — app/quranrevival.html lines 6777-7100
+================================================================================
+  6777      async function renderExplore() {
+  6778        renderExploreBreadcrumb();
+  6779        renderExploreApproachList();
+  6780        syncExploreViewToggle();
+  6781        if (exploreLevel === "quran") return renderExploreQuranLevel();
+  6782        if (exploreLevel === "juz") return renderExploreJuzLevel();
+  6783        if (exploreLevel === "surah") return renderExploreSurahLevel();
+  6784        if (exploreLevel === "ruku") return renderExploreRukuLevel();
+  6785      }
+  6786  
+  6787      /** Level 1, two readings of the whole Qur'an -- 30 Juz (the default and
+  6788       *  what this wheel has always shown) or all 114 Surahs. */
+  6789      async function renderExploreQuranLevel() {
+  6790        const trackable = currentTrackable();
+  6791        if (!trackable) {
+  6792          exploreWheelContainer.innerHTML = `<p style="color:#8fa0c2;">${t("Pick an Approach first.")}</p>`;
+  6793          exploreWheelLegendContainer.innerHTML = "";
+  6794          exploreSidebarContainer.innerHTML = "";
+  6795          return;
+  6796        }
+  6797        if (exploreQuranView === "surah") return renderExploreQuranSurahsView(trackable);
+  6798        const items = juzIndexData.map((j) => {
+  6799          const coverage = ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah);
+  6800          const pooled = poolCoverageStatus(coverage, trackable.id);
+  6801          const statusId = pooled ?? (exploreSubjectChunk?.entries?.[`${buildUnitKey.juz(j.juz)}::${trackable.id}`]?.claimedStatus ?? "not_started");
+  6802          return { key: j.juz, number: j.juz, statusId, label: t("Juz {juz}", { juz: num(j.juz) }) };
+  6803        });
+  6804  
+  6805        const jumpToJuz = (key) => {
+  6806          exploreJuzNum = Number(key);
+  6807          exploreSurahNum = null;
+  6808          exploreRukuIndex = null;
+  6809          exploreLevel = "juz";
+  6810          renderExplore();
+  6811        };
+  6812  
+  6813        const approachName = langText(trackable.name, getAppLang(), trackable.id);
+  6814        const labelsById = statusLabelsById();
+  6815        for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
+  6816        exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName });
+  6817        attachScopedWheelClickHandler(exploreWheelContainer, jumpToJuz);
+  6818  
+  6819        exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+  6820        exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
+  6821        attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToJuz);
+  6822      }
+  6823  
+  6824      /**
+  6825       * Level 1, Surahs: all 114, the owner's own round-3 ask. Their framing is
+  6826       * the design and is worth keeping: *"It's crammed to show 114 slides in
+  6827       * the wheel, i know, but it remains a choice to click, not a by-default
+  6828       * opening. But what it will serve is ... 114 surah will be shown in the
+  6829       * left sidebar as list. That's where the usefulness will count."* So the
+  6830       * wheel is honestly crowded at this count and that is accepted; the SIDEBAR
+  6831       * is the point -- a real, named, scrollable list of every surah, with its
+  6832       * status, that you pick from. Juz stays the default, so nobody meets the
+  6833       * crowded wheel without asking for it.
+  6834       *
+  6835       * Costs no extra read: every surah's chunk is already loaded, and this
+  6836       * pools exactly the same ayahs the Juz view pools, only grouped by surah.
+  6837       */
+  6838      async function renderExploreQuranSurahsView(trackable) {
+  6839        const labelsById = statusLabelsById();
+  6840        const items = surahIndex.map((sx) => {
+  6841          const coverage = [{ surah: sx.surahNumber, from: 1, to: sx.ayahCount }];
+  6842          const pooled = poolCoverageStatus(coverage, trackable.id);
+  6843          const entries = exploreChunksBySurah.get(sx.surahNumber)?.entries ?? {};
+  6844          const statusId = pooled ?? (entries[`${buildUnitKey.surah(sx.surahNumber)}::${trackable.id}`]?.claimedStatus ?? "not_started");
+  6845          const name = surahName(sx.surahNumber, sx.nameEnglish);
+  6846          return { key: sx.surahNumber, number: sx.surahNumber, statusId, label: name, title: segTitle(name, statusId, labelsById) };
+  6847        });
+  6848  
+  6849        const jumpToSurah = (key) => {
+  6850          exploreSurahNum = Number(key);
+  6851          exploreRukuIndex = null;
+  6852          exploreLevel = "surah";
+  6853          renderExplore();
+  6854        };
+  6855  
+  6856        const approachName = langText(trackable.name, getAppLang(), trackable.id);
+  6857        exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName });
+  6858        attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
+  6859  
+  6860        exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+  6861        exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
+  6862        attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToSurah);
+  6863      }
+  6864  
+  6865      /** Level 2, two readings of the same Juz -- the owner's own ask, 5 Sep
+  6866       *  2026: "user can see the pages belong to a juzz as well as Surat
+  6867       *  belong to a juzz in the wheel". Which one shows is the Pages/Surahs
+  6868       *  switch above the wheel (exploreJuzView). BOTH land on the same place
+  6869       *  when a segment is clicked -- the Surah level -- so nothing below this
+  6870       *  level had to learn a second route in. */
+  6871      async function renderExploreJuzLevel() {
+  6872        const trackable = currentTrackable();
+  6873        const j = juzIndexData.find((x) => x.juz === exploreJuzNum);
+  6874        if (!trackable || !j) return;
+  6875        if (exploreJuzView === "surah") return renderExploreJuzSurahsView(trackable, j);
+  6876        return renderExploreJuzPagesView(trackable, j);
+  6877      }
+  6878  
+  6879      /** Level 2, Pages: one segment per page that Juz covers (its own startPage..endPage -- see build-juz-index.js round 14 for why this isn't "pages tagged with this juz": a page can straddle a Juz boundary in the real data, so a boundary page correctly appears in both neighbouring Juz's page range). Click a page -> Surah level, for whichever surah that page starts on. */
+  6880      async function renderExploreJuzPagesView(trackable, j) {
+  6881        const pages = [];
+  6882        for (let p = j.startPage; p <= j.endPage; p++) {
+  6883          const entry = pageIndexData.find((x) => x.page === p);
+  6884          if (entry) pages.push(entry);
+  6885        }
+  6886  
+  6887        const items = pages.map((p) => {
+  6888          const coverage = ayahCoverage(p.startSurah, p.startAyah, p.endSurah, p.endAyah);
+  6889          const pooled = poolCoverageStatus(coverage, trackable.id);
+  6890          const statusId = pooled ?? (exploreSubjectChunk?.entries?.[`${buildUnitKey.page(PAGE_EDITION, p.page)}::${trackable.id}`]?.claimedStatus ?? "not_started");
+  6891          return { key: p.page, number: p.page, statusId, label: t("Page {page}", { page: num(p.page) }) };
+  6892        });
+  6893  
+  6894        const jumpToSurahForPage = (key) => {
+  6895          const p = pages.find((x) => x.page === Number(key));
+  6896          if (!p) return;
+  6897          exploreSurahNum = p.startSurah;
+  6898          exploreRukuIndex = null;
+  6899          exploreLevel = "surah";
+  6900          renderExplore();
+  6901        };
+  6902  
+  6903        const approachName = langText(trackable.name, getAppLang(), trackable.id);
+  6904        const labelsById = statusLabelsById();
+  6905        for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
+  6906        exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName });
+  6907        attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurahForPage);
+  6908  
+  6909        exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+  6910        exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
+  6911        attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToSurahForPage);
+  6912      }
+  6913  
+  6914      /** Level 2, Surahs: one segment per surah this Juz covers, read straight
+  6915       *  off ayahCoverage() -- the same helper poolCoverageStatus() already
+  6916       *  uses to score a Juz, so the list and the colours can never disagree
+  6917       *  about what is inside a Juz. Nothing new was fetched or derived for
+  6918       *  this: a Juz's own {startSurah,startAyah,endSurah,endAyah} plus
+  6919       *  surah-index.json's ayah counts already say it exactly (Juz 30 comes
+  6920       *  out as An-Naba .. An-Naas -- 37 segments, not the 36 the owner
+  6921       *  quoted; the data decides, and it is worth knowing the count is
+  6922       *  one higher than the figure that is usually remembered).
+  6923       *
+  6924       *  A surah at either end of a Juz is usually only PARTLY inside it (Juz 1
+  6925       *  holds Al-Baqarah 1-141, not all 286), and the two halves of that are
+  6926       *  treated differently on purpose: the segment's COLOUR pools only the
+  6927       *  ayahs really in this Juz -- otherwise Juz 1 would be scored on ayahs
+  6928       *  it does not contain -- while the click opens the WHOLE surah, which
+  6929       *  is what the Surah level has always meant and what the page view's own
+  6930       *  click already did. The tooltip and the sidebar row say which ayahs
+  6931       *  the colour is about, so the difference is on screen rather than left
+  6932       *  to be guessed. */
+  6933      async function renderExploreJuzSurahsView(trackable, j) {
+  6934        const coverage = ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah);
+  6935        const labelsById = statusLabelsById();
+  6936  
+  6937        const items = coverage.map((c) => {
+  6938          const found = surahIndex.find((s) => s.surahNumber === c.surah);
+  6939          const name = found ? surahName(found.surahNumber, found.nameEnglish) : t("Surah {surah}", { surah: num(c.surah) });
+  6940          const total = found?.ayahCount ?? c.to;
+  6941          const whole = c.from === 1 && c.to >= total;
+  6942          const pooled = poolCoverageStatus([c], trackable.id);
+  6943          // Direct-claim fallback, exactly as the Juz and Page segments have:
+  6944          // used only when there is nothing ayah-level to pool from at all.
+  6945          // A whole surah inside this Juz can carry a surah claim; a partial
+  6946          // one can only ever carry a range claim over the ayahs it really has.
+  6947          const entries = exploreChunksBySurah.get(c.surah)?.entries ?? {};
+  6948          const directKey = whole ? buildUnitKey.surah(c.surah) : buildUnitKey.range(c.surah, c.from, c.to);
+  6949          const statusId = pooled ?? (entries[`${directKey}::${trackable.id}`]?.claimedStatus ?? "not_started");
+  6950          // num() -- the ayah range is a number being DRAWN in a sentence, so
+  6951          // it reads ১–১৪১ in Bangla like every other number on this page. The
+  6952          // segment's own `number` stays plain, as every Explore wheel's does.
+  6953          // Parentheses are punctuation, not grammar, so composing them around
+  6954          // a translated phrase is safe in either language.
+  6955          const part = whole ? "" : ` (${t("ayahs {from}–{to} in this Juz", { from: num(c.from), to: num(c.to) })})`;
+  6956          return {
+  6957            key: c.surah,
+  6958            number: c.surah,
+  6959            statusId,
+  6960            title: segTitle(`${name}${part}`, statusId, labelsById),
+  6961            label: whole ? name : `${name} ${num(c.from)}–${num(c.to)}`,
+  6962          };
+  6963        });
+  6964  
+  6965        const jumpToSurah = (key) => {
+  6966          exploreSurahNum = Number(key);
+  6967          exploreRukuIndex = null;
+  6968          exploreLevel = "surah";
+  6969          renderExplore();
+  6970        };
+  6971  
+  6972        const approachName = langText(trackable.name, getAppLang(), trackable.id);
+  6973        exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName });
+  6974        attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
+  6975  
+  6976        exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+  6977        exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
+  6978        attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToSurah);
+  6979      }
+  6980  
+  6981      /** Level 3, dual-mode by SURAH_WHEEL_THRESHOLD, matching the old app's own navigation depth: <=30 ayahs shows every ayah directly (click -> Study, via goToAyahFromExplore); >30 shows Ruku' groups instead (click -> Ruku' level), since a 286-segment wheel for Al-Baqarah wouldn't read as anything at a glance. Needs this surah's full text (Ruku' groupings, ayah count) -- one static, cached-after-first-load fetch, same one Study would trigger opening it directly. */
+  6982      async function renderExploreSurahLevel() {
+  6983        const trackable = currentTrackable();
+  6984        if (!trackable || exploreSurahNum == null) return;
+  6985        exploreWheelContainer.innerHTML = t("Loading this surah…");
+  6986        const surahData = await getSurah(exploreSurahNum);
+  6987        const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
+  6988        const currentSurahName = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
+  6989        const approachName = langText(trackable.name, getAppLang(), trackable.id);
+  6990        const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
+  6991        const labelsById = statusLabelsById();
+  6992  
+  6993        if (surahData.ayahCount <= SURAH_WHEEL_THRESHOLD) {
+  6994          const items = surahData.ayahs.map((a) => {
+  6995            const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
+  6996            const label = t("Ayah {ayah}", { ayah: num(a.ayah) });
+  6997            return { key: a.ayah, number: a.ayah, statusId, label, title: segTitle(label, statusId, labelsById) };
+  6998          });
+  6999          const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
+  7000          exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: currentSurahName, centerSub: approachName });
+  7001          attachScopedWheelClickHandler(exploreWheelContainer, jumpToStudy);
+  7002          exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+  7003          exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
+  7004          attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToStudy);
+  7005          return;
+  7006        }
+  7007  
+  7008        // Long surah -- group ayahs by their per-surah Ruku' index.
+  7009        const rukuRanges = new Map(); // per-surah ruku index -> {from, to}
+  7010        for (const a of surahData.ayahs) {
+  7011          const idx = rukuIndexInSurah(surahData.ayahs, a.ruku);
+  7012          const g = rukuRanges.get(idx) ?? { from: a.ayah, to: a.ayah };
+  7013          g.from = Math.min(g.from, a.ayah);
+  7014          g.to = Math.max(g.to, a.ayah);
+  7015          rukuRanges.set(idx, g);
+  7016        }
+  7017        const rukus = [...rukuRanges.entries()].sort((a, b) => a[0] - b[0]);
+  7018        const items = rukus.map(([idx, range]) => {
+  7019          const coverage = [{ surah: exploreSurahNum, from: range.from, to: range.to }];
+  7020          const pooled = poolCoverageStatus(coverage, trackable.id);
+  7021          const statusId = pooled ?? (entries[`${buildUnitKey.ruku(exploreSurahNum, idx)}::${trackable.id}`]?.claimedStatus ?? "not_started");
+  7022          const label = t("Ruku' {ruku}", { ruku: num(idx) });
+  7023          const full = t("Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})", { ruku: num(idx), surah: num(exploreSurahNum), from: num(range.from), to: num(range.to) });
+  7024          return { key: idx, number: idx, statusId, label, title: segTitle(full, statusId, labelsById) };
+  7025        });
+  7026        const jumpToRuku = (key) => {
+  7027          exploreRukuIndex = Number(key);
+  7028          exploreLevel = "ruku";
+  7029          renderExplore();
+  7030        };
+  7031        exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: currentSurahName, centerSub: approachName });
+  7032        attachScopedWheelClickHandler(exploreWheelContainer, jumpToRuku);
+  7033        exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+  7034        exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
+  7035        attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToRuku);
+  7036      }
+  7037  
+  7038      /** Level 4 (long surahs only): every ayah in one Ruku', direct per-ayah status, same shape as the Surah level's own short-surah branch. Click -> Study, via goToAyahFromExplore. */
+  7039      async function renderExploreRukuLevel() {
+  7040        const trackable = currentTrackable();
+  7041        if (!trackable || exploreSurahNum == null || exploreRukuIndex == null) return;
+  7042        const surahData = await getSurah(exploreSurahNum); // already cached from the Surah level's own fetch
+  7043        const ayahsInRuku = surahData.ayahs.filter((a) => rukuIndexInSurah(surahData.ayahs, a.ruku) === exploreRukuIndex);
+  7044        const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
+  7045        const items = ayahsInRuku.map((a) => {
+  7046          const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
+  7047          return { key: a.ayah, number: a.ayah, statusId, label: t("Ayah {ayah}", { ayah: num(a.ayah) }) };
+  7048        });
+  7049        const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
+  7050        const currentSurahName = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
+  7051        const approachName = langText(trackable.name, getAppLang(), trackable.id);
+  7052        const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
+  7053  
+  7054        const labelsById = statusLabelsById();
+  7055        for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
+  7056        // " · " is a separator, not grammar, so composing the two translated
+  7057        // halves around it is safe in either language.
+  7058        exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `${currentSurahName} · ${t("Ruku' {ruku}", { ruku: num(exploreRukuIndex) })}`, centerSub: approachName });
+  7059        attachScopedWheelClickHandler(exploreWheelContainer, jumpToStudy);
+  7060        exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
+  7061        exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
+  7062        attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToStudy);
+  7063      }
+  7064  
+  7065      // -----------------------------------------------------------------------
+  7066      // Ayah Collections (QCR), 26 Aug 2026 -- Explore's own palette, alongside
+  7067      // the Quran-structure drill-down above (#explorePanel, untouched by this
+  7068      // round). A demo was shown and confirmed before this was built (this
+  7069      // project's own standing practice for a genuine design/scope decision);
+  7070      // see js/qcr.js's own header for the full reasoning on storage, I4/I5
+  7071      // and what changed between the demo and this build.
+  7072      //
+  7073      // Reused rather than re-invented: renderScopedWheel/renderWheelLegend
+  7074      // (mastery-wheel.js) draw the wheel and legend exactly as every other
+  7075      // Explore level already does; goToReference() (the Search/"Go to" box's
+  7076      // own canonical jump) does the surah-loading and range/ayah split;
+  7077      // openNoteView() (the ⋮ menu's own "Note & more…" target) is what a
+  7078      // tapped āyah actually opens -- the owner's own ask ("moving to the Note
+  7079      // view and enable working as regular note"), so Bookmark/Notes/Play/
+  7080      // word-by-word all just work on a QCR āyah, unchanged. Colour reuses the
+  7081      // SAME exploreChunksBySurah every other Explore wheel already loads on
+  7082      // open (Q3's own reversal, 26 Aug 2026: "reflect a gradual increase of
+  7083      // deep shades of colour") -- costs nothing extra, since ensureExplore
+  7084      // ChunksLoaded() already runs unconditionally the moment Explore opens,
+  7085      // whichever palette entry is picked afterwards.
+  7086      //
+  7087      // The one real new cost, disclosed rather than hidden: opening ONE
+  7088      // collection's wheel fetches that collection's own DISTINCT surahs'
+  7089      // full text (getSurah, for the English snippet in the sidebar) -- a
+  7090      // handful of surahs, not all 114, and the same static, cached-after-
+  7091      // first-load fetch Explore's own Surah/Ruku levels already accept.
+  7092      function escapeHtml(s) {
+  7093        return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  7094      }
+  7095  
+  7096      let qcrCollectionsTenantId = null; // which tenant qcrCollections was loaded for -- re-fetched if the person switches tenants while it's already cached
+  7097  
+  7098      function setExplorePalette(mode) {
+  7099        exploreMode = mode;
+  7100        explorePaletteQuranBtn.classList.toggle("on", mode === "quran");
+
+
+================================================================================
+REGION G — app/quranrevival.html lines 10920-10983
+================================================================================
+ 10920          card on screen (no Approach selected yet). This card deliberately
+ 10921          does NOT live-update the way Arabic/English/Bangla/Notes do above it
+ 10922          -- it only changes when the reader taps Claim right here, same as it
+ 10923          always has. */
+ 10924      function wireApproachEmbed(info) {
+ 10925        const unitKey = info.unitKey;
+ 10926        // Scoped to the Approach field itself: Asma ul Husna's own Track card
+ 10927        // (#asmaTrackEmbedWrap) uses the same .way-embed class and can be on
+ 10928        // screen at the same time, so a bare query could bind this claim
+ 10929        // handler to the wrong card.
+ 10930        const embedEl = noteView.querySelector('[data-note-field="approach"] .way-embed');
+ 10931        const trackable = currentTrackable();
+ 10932        if (!embedEl || !trackable) return;
+ 10933        attachWayEmbedHandlers(embedEl);
+ 10934        const claimBtn = embedEl.querySelector(".way-claim-btn");
+ 10935        const statusSelectEl = embedEl.querySelector(".way-status-select");
+ 10936        const resultEl = embedEl.querySelector(".way-claim-result");
+ 10937        wireAssignDropdown(embedEl, claimBtn);
+ 10938        claimBtn.addEventListener("click", async () => {
+ 10939          claimBtn.disabled = true;
+ 10940          const assignees = checkedAssignees(embedEl, selectedPersonId);
+ 10941          const outcomes = await Promise.all(assignees.map(async (a) => {
+ 10942            const r = await safeWrite(
+ 10943              () => claimStatus(db, {
+ 10944                tenantId: activeTenantId,
+ 10945                personId: a.id,
+ 10946                subjectId: "quran",
+ 10947                unitKey,
+ 10948                trackableId: trackable.id,
+ 10949                statusId: statusSelectEl.value,
+ 10950                notes: "",
+ 10951                domainIds: [],
+ 10952                claimedByPersonId: currentActingPersonId(),
+ 10953                claimedByUid: auth.currentUser.uid,
+ 10954              }),
+ 10955              { collection: "records", action: "claimStatus" }
+ 10956            );
+ 10957            if (r.ok) {
+ 10958              await logActivity(db, {
+ 10959                tenantId: activeTenantId, personId: a.id, date: new Date(),
+ 10960                weekStartsOn: tenantWeekStartsOn, subjectId: "quran", unitKey,
+ 10961                trackableId: trackable.id, action: "claimed", uid: auth.currentUser.uid,
+ 10962                viaProgramId: programBySubjectId.get("quran") ?? null,
+ 10963              });
+ 10964            }
+ 10965            return { name: a.name, ok: r.ok, needsConfirmation: r.ok ? r.result.needsConfirmation : null, message: r.ok ? null : r.entry.message };
+ 10966          }));
+ 10967          const message = buildClaimResultMessage(outcomes);
+ 10968          if (outcomes.some((o) => o.ok)) {
+ 10969            // Re-read the document the claim actually landed in: surah_N for
+ 10970            // ayah/range/surah/ruku (refreshChunkAndWheel(), which redraws the
+ 10971            // wheel itself), subject_quran for a Juz/Hizb/Page claim.
+ 10972            if (info.chunkKey === "subject_quran") { await ensureQuranSubjectChunk({ force: true }); renderWheel(); }
+ 10973            else await refreshChunkAndWheel();
+ 10974            renderNoteViewNow(); // rebuilds the whole Note view, including this card, against the fresh chunk
+ 10975            const freshResultEl = noteView.querySelector(".way-claim-result");
+ 10976            if (freshResultEl) freshResultEl.textContent = message;
+ 10977          } else {
+ 10978            resultEl.textContent = message;
+ 10979            claimBtn.disabled = false;
+ 10980          }
+ 10981        });
+ 10982      }
+ 10983  
