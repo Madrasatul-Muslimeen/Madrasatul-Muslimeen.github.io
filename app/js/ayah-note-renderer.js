@@ -320,6 +320,11 @@ export function renderNoteView({
   notesHtml, wbwHtml, rootsHtml, derivativesHtml,
   isBookmarked = false, isFullscreen = false,
   isWbwOn = false, isRootsOn = false, isDerivativesOn = false, hasNote = false, approachHtml = "", isNotesOpen = false,
+  // 6 Sep 2026 -- the card claims whatever unit the Note view is scoped to
+  // now (a Range, a Whole Surah, a Ruku', a Juz, a Hizb, a Page), so its own
+  // heading cannot keep saying "āyah". The caller passes the right words;
+  // the default is what every single-āyah scope still reads.
+  approachLabel = "",
   // Note view enhancement round -- the Track/Guide/Breakdown/Coverage card
   // collapses like Arabic/English/Bangla/Notes do (the owner's own "like
   // the languages"), default CLOSED. approachOptionsHtml/showApproach are
@@ -464,10 +469,12 @@ export function renderNoteView({
              Update bookmark. Approach USED to live here too, disabled with
              "Single āyah only" when the scope wasn't a single āyah -- it
              moved into the Track card's own header (round after: "change
-             the approach from inside the card straight away"), and since
-             that card only ever shows for a single āyah anyway (unchanged),
-             there is nothing left here to explain either way, so the row
-             is gone rather than kept as a second, now-pointless copy. -->
+             the approach from inside the card straight away"), so there is
+             nothing left here to explain either way and the row is gone
+             rather than kept as a second, now-pointless copy. (6 Sep 2026:
+             that card shows for EVERY unit now, not only a single āyah, so
+             the wording it used to carry would be wrong as well as
+             duplicated.) -->
         <div class="note-dot-wrap">
           <button type="button" class="note-icon-btn" data-note-menu-toggle="more" aria-haspopup="true" aria-expanded="false" title="${t("Mapping My Journey")}">⋯</button>
           <div class="quick-menu" data-note-menu="more">
@@ -600,7 +607,7 @@ export function renderNoteView({
         <div class="note-field" data-note-field="approach">
           <div class="note-field-label-row">
             <button type="button" class="note-field-toggle" data-note-field-toggle>${isApproachOpen ? "▾" : "▸"}</button>
-            <span class="note-field-label">${t("Track this āyah")}</span>
+            <span class="note-field-label">${approachLabel || t("Track this āyah")}</span>
           </div>
           <div class="note-field-body" style="${isApproachOpen ? "" : "display:none"}">
             <div class="note-approach">${approachHtml}</div>

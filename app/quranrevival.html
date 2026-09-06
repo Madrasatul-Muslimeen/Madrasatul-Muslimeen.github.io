@@ -394,7 +394,11 @@
      ("it might show only 4 ways (currently 5 ways showing)") -- so an
      Approach row fewer here is the intended result, not a regression. */
   .wheel-intro-settled {
-    text-align: center; margin: 0 0 0.3rem; max-width: 100%;
+    /* margin-bottom 0.3rem -> 0, 6 Sep 2026: the row is 9px taller now that
+       it carries a real control beside the caption, so some of that height is
+       paid back here rather than taken entirely out of the Approaches list.
+       Measured before and after -- see the round's own numbers. */
+    text-align: center; margin: 0; max-width: 100%;
   }
   .wheel-intro-capsule {
     display: inline-block; max-width: 100%;
@@ -402,6 +406,76 @@
     border-radius: 999px; padding: 0.3rem 0.95rem;
     font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.84rem; line-height: 1.3;
     box-shadow: 0 6px 16px -8px rgba(0,0,0,0.6);
+  }
+  /* 6 Sep 2026 -- the "Choose a Unit" capsule beside the caption. Same gold
+     pill, one control apart: this one OPENS something, so it carries a caret
+     and a real tap target (>=36px, the standing lesson that a 26px control is
+     too small for a finger). Its wording is fixed, so its width cannot be
+     stretched by a long unit label -- see the markup's own comment. */
+  .wheel-intro-settled { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.35rem; position: relative; }
+  /* The palette is anchored on the ROW, not on the little pill that opens it
+     -- position:static here hands the containing block to
+     .wheel-intro-settled below. Measured, at 390px, before this was done:
+     centred on a pill that sits at the right end of the caption row, a 272px
+     popover ran off the right edge of the screen. Exactly the shape v07.71
+     fixed on the Note bar, where a short bar let a right-anchored popover run
+     off the LEFT. Anchoring on the row cannot do either: the row is as wide
+     as the wheel column. */
+  /* Two classes deliberately: `.bar-palette-wrap { position: relative }` is
+     declared LATER in this file, and at equal specificity source order wins
+     -- a bare `.wheel-unit-wrap { position: static }` here silently lost, and
+     the popover stayed anchored on the pill (measured: it ran 55px off the
+     right edge at 390px). This page's own most-repeated CSS trap. */
+  .wheel-intro-settled .wheel-unit-wrap { max-width: 100%; min-width: 0; display: inline-block; position: static; }
+  .wheel-unit-capsule {
+    display: inline-flex; align-items: center; justify-content: center; gap: 0.35rem;
+    max-width: 100%; width: auto; border: none;
+    min-height: 36px; box-sizing: border-box;
+    padding: 0.25rem 0.8rem; cursor: pointer;
+  }
+  .wheel-unit-capsule:hover { filter: brightness(1.06); }
+  /* Wraps rather than truncating -- nowrap + ellipsis fails SILENTLY, this
+     page's own most-repeated layout trap. */
+  .wheel-unit-capsule-word { min-width: 0; white-space: normal; }
+  .wheel-unit-capsule-caret { flex: none; font-size: 0.7rem; opacity: 0.75; }
+  /* Centred on the ROW (see the position:static rule above), never on the
+     pill's own right edge: .bar-palette's own default is `right: 0`, which
+     would hang this off whichever end the pill happens to sit at. */
+  .wheel-unit-palette { right: auto; left: 50%; transform: translateX(-50%); top: 2.6rem; width: 17rem; text-align: left; }
+  .wheel-unit-row { display: flex; align-items: center; gap: 0.4rem; margin: 0 0 0.4rem; }
+  .wheel-unit-row label {
+    flex: 0 0 auto; font-family: 'Inter', sans-serif; font-size: 0.72rem; font-weight: 600; color: #555;
+  }
+  .wheel-unit-row select {
+    flex: 1 1 auto; min-width: 0; box-sizing: border-box;
+    font-family: 'Inter', sans-serif; font-size: 0.82rem; padding: 0.3rem 0.35rem;
+    min-height: 34px; border: 1px solid #d8d2c2; border-radius: 0.35rem; background: #fff; color: #222;
+  }
+  /* Both states behind mutually exclusive conditions is not available here
+     (this is an attribute, not a media query), so the [hidden] override is --
+     .wheel-unit-row's own `display:flex` outranks the UA's [hidden] rule
+     outright, the trap this page has hit at least six times. */
+  .wheel-unit-row[hidden] { display: none; }
+  #wheelUnitNowLine { margin: 0.15rem 0 0; }
+  /* Measured, English, both pills on one line: the pair needs 364px and gets
+     347px at 360px wide (Bangla needs 286px and fits everywhere). Rather than
+     let the row wrap -- which costs a whole Approach row, 42px, to save 17 --
+     both pills take one size down below 380px. The tap target is untouched:
+     min-height stays 36px, only the type and the side padding shrink. Same
+     shape as the 340px block shell round 15 used, and re-measured after:
+     ~323px needed against 347px, one line at 360px. At 320px the pair
+     genuinely does not fit either way and takes a tidy second line, which is
+     what Explore's own capsule row does at that width too. */
+  @media (max-width: 380px) {
+    .wheel-intro-capsule { font-size: 0.74rem; padding: 0.25rem 0.7rem; }
+    .wheel-unit-capsule { padding: 0.25rem 0.6rem; }
+  }
+  /* One size down again at the smallest phone this project measures: the
+     pair needs 315px there and gets 307px. Measured after: ~280px, one line.
+     Same 340px floor shell round 15 used for the same kind of reason. */
+  @media (max-width: 340px) {
+    .wheel-intro-capsule { font-size: 0.67rem; padding: 0.25rem 0.55rem; }
+    .wheel-unit-capsule { padding: 0.25rem 0.5rem; }
   }
   .wheel-cta-btn {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 4;
@@ -525,7 +599,13 @@
        because on a phone those two are what the approaches list is competing
        against -- every pixel taken off them becomes another visible row. */
     #wheelSection { flex-direction: column; flex-wrap: nowrap; gap: 0.35rem; padding: 0.4rem 0.4rem; }
-    #wheelSection .wheel-col { flex: 0 0 auto; gap: 0.3rem; align-self: stretch; }
+    /* 0.3rem -> 0.2rem, 6 Sep 2026: the column's own three gaps (caption row,
+       wheel, legend) pay back the ~4px the new "Choose a Unit" capsule adds
+       to the caption row, so the Approaches list keeps every row it had.
+       Measured, not trimmed by feel -- at 412x915 with the tenant banner set
+       the sixth row's bottom landed 2px past the dock's top edge before this;
+       shell round 10's own method. */
+    #wheelSection .wheel-col { flex: 0 0 auto; gap: 0.2rem; align-self: stretch; }
     #wheelSection .wheel-sidebar { flex: 1 1 auto; max-width: none; min-width: 0; }
     /* Owner's ask (shell round 8): the wheel reaches both screen edges. The
        card breaks out of body's own 1rem gutter so the limit is the screen,
@@ -2518,7 +2598,61 @@
                #wheelStageWrap wraps ONLY #wheelContainer (never the legend
                below it) so the button/pickers centre on the wheel itself,
                not on the taller wheel-col box. -->
-          <p id="wheelIntroSettled" class="wheel-intro-settled"><span class="wheel-intro-capsule">Approach the Quran in 30 ways</span></p>
+          <!-- 6 Sep 2026, owner: "in the APPROACH view, only approaching unit
+               available is Ayah unit. Enable all units to be approachable from
+               the APPROACH." So this row now carries a SECOND capsule beside
+               the caption -- "Choose a Unit" -- which is what says WHICH unit
+               the wheel is colouring, all seven of them, not only the single
+               āyah the wheel has been hardcoded to since Phase 5.
+               A <div>, not the <p> this row used to be: a popover is a <div>
+               and a <div> inside a <p> silently closes the paragraph early.
+               The row is 9px taller for carrying a 36px control; that is paid
+               back out of its own margin and the wheel column's own gaps, so
+               the landing page keeps every Approach row it had at every
+               viewport layout.mjs measures.
+               The capsule's own wording is FIXED, exactly like Explore's own
+               Approach capsule (v07.135): a unit's real label can run to
+               "Ruku' 1 of Surah 2 (ayahs 1-7)", and a pill sized by its own
+               content is what ran off both edges of the owner's phone that
+               round. What is in force is named inside the palette instead,
+               and in the dock's own Tracking line.
+               The list opens through js/bar-palette.js -- the same
+               one-delegated-listener popover Explore, QCR and Asma already
+               use, so outside-click, Escape and "only one drops down at a
+               time" all come free (I2). -->
+          <div id="wheelIntroSettled" class="wheel-intro-settled">
+            <span class="wheel-intro-capsule">Approach the Quran in 30 ways</span>
+            <span class="bar-palette-wrap wheel-unit-wrap" data-bar-palette-wrap="wheelUnit">
+              <button type="button" id="wheelUnitBtn" class="wheel-intro-capsule wheel-unit-capsule bar-palette-toggle"
+                      data-bar-palette-toggle="wheelUnit" aria-haspopup="true" aria-expanded="false">
+                <span class="wheel-unit-capsule-word">Choose a Unit</span>
+                <span class="wheel-unit-capsule-caret" aria-hidden="true">&#9662;</span>
+              </button>
+              <!-- Every control in here is a MIRROR of the canonical one in
+                   Study options (same shape as #readPickers and the hub's own
+                   Surah/Ayah pair): it copies that control's options and
+                   value and forwards a change straight back to it, so
+                   currentUnitType/goToUnitNumber() keep living in exactly one
+                   place and picking here is picking there. -->
+              <div class="bar-palette wheel-unit-palette" data-bar-palette="wheelUnit">
+                <div class="wheel-unit-row">
+                  <label for="wheelUnitTypeSelect">Study Unit</label>
+                  <select id="wheelUnitTypeSelect"></select>
+                </div>
+                <div class="wheel-unit-row" id="wheelUnitNumRow" hidden>
+                  <label for="wheelUnitNumSelect" id="wheelUnitNumLabel">Number</label>
+                  <select id="wheelUnitNumSelect"></select>
+                </div>
+                <div class="wheel-unit-row" id="wheelUnitRangeRow" hidden>
+                  <label for="wheelUnitFromSelect">From</label>
+                  <select id="wheelUnitFromSelect"></select>
+                  <label for="wheelUnitToSelect">To</label>
+                  <select id="wheelUnitToSelect"></select>
+                </div>
+                <p class="bar-palette-note" id="wheelUnitNowLine"></p>
+              </div>
+            </span>
+          </div>
           <div id="wheelStageWrap" class="wheel-stage-wrap wheel-veiled">
             <!-- 2 Sep 2026 -- "enable all wheels ... to be expandable from
                  any side": a drag-resize wrap around #wheelContainer alone
@@ -3902,13 +4036,28 @@
     // READ_PICKER_MIRRORS just above, just two controls and synced from
     // renderWheel() (syncWheelHubPickers()) rather than from the reading
     // screen's own render pass.
+    // 6 Sep 2026 -- the four unit controls in the "Choose a Unit" capsule's
+    // own palette join this same list, so they are synced and forwarded by
+    // exactly the same two loops the hub's Surah/Ayah pair already used.
+    // Nothing new decides anything: a change here sets the canonical
+    // control's value and re-fires its own change event.
     const WHEEL_HUB_MIRRORS = [
       ["wheelHubSurahSelect", "surahSelect"],
       ["wheelHubAyahSelect", "ayahSelect"],
+      ["wheelUnitTypeSelect", "unitTypeSelect"],
+      ["wheelUnitNumSelect", "unitNumSelect"],
+      ["wheelUnitFromSelect", "rangeFromSelect"],
+      ["wheelUnitToSelect", "rangeToSelect"],
     ].map(([mirrorId, sourceId]) => ({
       mirror: document.getElementById(mirrorId),
       source: document.getElementById(sourceId),
     }));
+    const wheelUnitTypeSelect = document.getElementById("wheelUnitTypeSelect");
+    const wheelUnitNumSelect = document.getElementById("wheelUnitNumSelect");
+    const wheelUnitNumRow = document.getElementById("wheelUnitNumRow");
+    const wheelUnitNumLabel = document.getElementById("wheelUnitNumLabel");
+    const wheelUnitRangeRow = document.getElementById("wheelUnitRangeRow");
+    const wheelUnitNowLine = document.getElementById("wheelUnitNowLine");
     const wheelStageWrapEl = document.getElementById("wheelStageWrap");
     const wheelCtaBtn = document.getElementById("wheelCtaBtn");
     const wheelHubPickers = document.getElementById("wheelHubPickers");
@@ -4696,6 +4845,7 @@
       if (isRange) renderRangeSelects();
       renderUnitLabel();
       renderUnitNumberPicker();
+      syncWheelUnitPalette(); // the Approach view's own copy of these controls
     }
 
     // -----------------------------------------------------------------------
@@ -4781,6 +4931,7 @@
       // reading screen's copy -- so it has to be told again here, or the
       // reading screen shows an empty number cell for those three units.
       syncReadPickers();
+      syncWheelUnitPalette(); // and the Approach view's copy, for the same reason
     }
 
     /** What the chosen unit covers, in words. The owner's own rule for a unit
@@ -5027,6 +5178,17 @@
       });
     }
 
+    // Choosing is done -- put the list away, the same rule Explore's own
+    // Approach capsule follows. A unit that still needs a NUMBER (Ruku'/Juz/
+    // Hizb/Page) or a From and a To (Range) leaves it open, because the
+    // control that finishes the job is inside the palette itself. Registered
+    // after the mirror loop above, so currentUnitType is already the new one
+    // by the time this runs.
+    wheelUnitTypeSelect?.addEventListener("change", () => {
+      if (!NUMBERED_UNITS.includes(currentUnitType) && currentUnitType !== "range") closeAllBarPalettes(null);
+    });
+    wheelUnitNumSelect?.addEventListener("change", () => closeAllBarPalettes(null));
+
     // The wheel's own one-time intro (session-only -- a fresh load shows the
     // button again). Dismissing it just hides the button and lifts the veil;
     // the wheel underneath was always fully rendered and functional, it was
@@ -5040,14 +5202,18 @@
       layoutWheelHub(); // the hub was hidden (0-width) until now -- size its content for real
     });
 
+    // 6 Sep 2026: all three of these now redraw the wheel as well. They never
+    // needed to before -- the wheel was hardcoded to the current ayah, so a
+    // change of unit could not change a single slice. It can now.
     unitTypeSelect.addEventListener("change", () => {
       currentUnitType = unitTypeSelect.value;
       if (currentUnitType === "range") { rangeFrom = currentAyahNum; rangeTo = Math.min(currentAyahNum + 4, currentSurahData?.ayahCount ?? currentAyahNum); rememberRangeSpan(); }
       updateUnitControlsVisibility();
       renderStudyScreen();
+      renderWheel();
     });
-    rangeFromSelect.addEventListener("change", () => { rangeFrom = Number(rangeFromSelect.value); rememberRangeSpan(); renderStudyScreen(); });
-    rangeToSelect.addEventListener("change", () => { rangeTo = Number(rangeToSelect.value); rememberRangeSpan(); renderStudyScreen(); });
+    rangeFromSelect.addEventListener("change", () => { rangeFrom = Number(rangeFromSelect.value); rememberRangeSpan(); renderStudyScreen(); renderWheel(); });
+    rangeToSelect.addEventListener("change", () => { rangeTo = Number(rangeToSelect.value); rememberRangeSpan(); renderStudyScreen(); renderWheel(); });
     mushafToggle.addEventListener("change", renderStudyScreen);
 
     // -----------------------------------------------------------------------
@@ -5417,13 +5583,90 @@
       });
     }
 
-    /** Every Approach's status for the currently-shown ayah -- the axis the old app's real Mastery Wheel uses (index.html:4932, `state.ways.map`), not "every ayah for one Approach." Reads currentChunk's own entries directly (already holds every trackable's records for this surah, not just the selected one) -- no extra Firestore read to build this. */
-    function approachStatusesForCurrentAyah() {
-      const entries = currentChunk?.entries ?? {};
-      const unitKey = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
+    // -----------------------------------------------------------------------
+    // 6 Sep 2026 -- the subject_quran records chunk.
+    //
+    // Ayah/Range/Whole Surah/Ruku' claims all live in surah_N, which
+    // refreshChunkAndWheel() has already loaded. Juz, Hizb and Page are
+    // Qur'an-wide, so records.js chunks them into subject_quran instead -- a
+    // DIFFERENT document (see currentUnitInfo()'s own chunkKey). Until this
+    // round nothing on the landing path ever needed it: the wheel was
+    // hardcoded to the current ayah and "Track this unit" fetched it on the
+    // spot each time it opened.
+    //
+    // Fetched ON FIRST USE and cached per person -- the same treatment the
+    // reciter timing map (v07.39), the search index (v07.40) and the three
+    // boundary tables (v07.44) already get. Someone who never picks a Juz,
+    // Hizb or Page never downloads it, so nothing joins the startup path
+    // (I9) and the load-speed contract is untouched.
+    // -----------------------------------------------------------------------
+    let quranSubjectChunk = null;
+    let quranSubjectChunkFor = null; // whose chunk the cache above holds -- a different person needs a different document
+    let quranSubjectChunkPromise = null;
+
+    async function ensureQuranSubjectChunk({ force = false } = {}) {
+      if (!selectedPersonId) return null;
+      if (!force && quranSubjectChunkFor === selectedPersonId) return quranSubjectChunk;
+      if (force) quranSubjectChunkPromise = null;
+      if (!quranSubjectChunkPromise) {
+        quranSubjectChunkPromise = getRecordsChunk(db, activeTenantId, selectedPersonId, "subject_quran")
+          .then((chunk) => {
+            quranSubjectChunk = chunk;
+            quranSubjectChunkFor = selectedPersonId;
+            quranSubjectChunkPromise = null;
+            return chunk;
+          })
+          .catch((err) => { quranSubjectChunkPromise = null; throw err; });
+      }
+      return quranSubjectChunkPromise;
+    }
+
+    /** Whether the cache above is genuinely in hand for whoever is selected --
+        what tells "no claims yet" apart from "not fetched yet", so a render
+        can ask for it once and never spin. */
+    function quranSubjectChunkReady() {
+      return quranSubjectChunkFor === selectedPersonId;
+    }
+
+    /** The already-loaded chunk a unit's claims live in, or null when it is a
+        subject_quran unit whose document has not been fetched yet. Purely a
+        lookup -- callers that can wait use ensureUnitChunkThen() below. */
+    function chunkForUnitInfo(info) {
+      if (info.chunkKey === `surah_${currentSurahNum}`) return currentChunk;
+      if (info.chunkKey === "subject_quran") return quranSubjectChunkReady() ? quranSubjectChunk : null;
+      return null;
+    }
+
+    /** Fetch-once-then-redraw: a render that needs subject_quran and does not
+        have it asks for it and re-runs itself when it lands. It cannot loop --
+        quranSubjectChunkReady() is true afterwards whether or not the document
+        exists, so the second pass never asks again. */
+    function ensureUnitChunkThen(info, redraw) {
+      if (info.chunkKey !== "subject_quran" || quranSubjectChunkReady() || !selectedPersonId) return;
+      ensureQuranSubjectChunk().then(() => redraw()).catch(() => {});
+    }
+
+    /** Every Approach's status for the unit currently being tracked -- the
+        axis the old app's real Mastery Wheel uses (index.html:4932,
+        `state.ways.map`), not "every ayah for one Approach."
+        6 Sep 2026, the owner's own ask ("enable all units to be approachable
+        from the APPROACH"): the unit is whatever currentUnitInfo() says --
+        Single Ayah, a Range, a Whole Surah, a Ruku', a Juz, a Hizb or a Page
+        -- not the hardcoded current ayah this has read since Phase 5, which
+        is the long-parked "make the Mastery Wheel reflect the selected Study
+        Unit" item, now asked for.
+        This is each Approach's OWN claim on that exact unit key, deliberately
+        not a pooled/rolled-up status the way Explore's wheel colours a Juz
+        from the ayahs inside it: the card a slice opens claims THIS unit, so
+        a green slice over "Not claimed yet" would be the screen contradicting
+        itself. Reads a chunk already in memory -- no Firestore read per
+        render either way. */
+    function approachStatusesForCurrentUnit() {
+      const info = currentUnitInfo();
+      const entries = chunkForUnitInfo(info)?.entries ?? {};
       return quranTrackables.map((trackable) => ({
         trackable,
-        statusId: entries[`${unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started",
+        statusId: entries[`${info.unitKey}::${trackable.id}`]?.claimedStatus ?? "not_started",
       }));
     }
 
@@ -5440,7 +5683,13 @@
         wheelSidebarContainer.innerHTML = "";
         return;
       }
-      const approachStatuses = approachStatusesForCurrentAyah();
+      const unitInfo = currentUnitInfo();
+      // A Juz/Hizb/Page unit's claims live in subject_quran, which may not be
+      // in memory the first time one is picked -- ask for it and redraw once
+      // it lands (see ensureUnitChunkThen()). Until then every slice reads
+      // not_started, which is what an unfetched document honestly looks like.
+      ensureUnitChunkThen(unitInfo, renderWheel);
+      const approachStatuses = approachStatusesForCurrentUnit();
       // Same fix as Explore's own tooltips, one line, while it is under the
       // hand: a raw status id with its underscores swapped for spaces
       // ("not started") is meaningless in either language and was never
@@ -5479,10 +5728,16 @@
       // assessment) rather than a floating pop-up over the wheel. Also
       // focuses the Approach dropdown on the clicked one, since Explore and
       // "Track this unit" still operate on a single selected Approach.
+      // 6 Sep 2026: the Note view opens on the unit the wheel is actually
+      // showing, not always the single ayah -- "when you enable other units
+      // now, you should enable the NOTE view to be worked for claiming the
+      // respective unit" (the owner's own words). openNoteView() already
+      // understands every unit key shape, and the Track card inside it now
+      // claims whatever scope it is opened on.
       const jumpToApproach = (key) => {
         currentTrackableId = key;
         trackableSelect.value = key;
-        openNoteView(buildUnitKey.ayah(currentSurahNum, currentAyahNum));
+        openNoteView(unitInfo.unitKey);
       };
       attachScopedWheelClickHandler(wheelContainer, jumpToApproach);
 
@@ -5499,6 +5754,7 @@
       attachWheelSidebarClickHandler(wheelSidebarContainer, jumpToApproach);
 
       syncWheelHubPickers();
+      syncWheelUnitPalette();
       layoutWheelHub();
     }
 
@@ -5551,6 +5807,33 @@
         if (stale) mirror.innerHTML = source.innerHTML;
         if (mirror.value !== source.value) mirror.value = source.value;
       }
+    }
+
+    /** The "Choose a Unit" capsule's own palette, on top of the plain mirror
+        sync above: which rows apply to the unit in force, what the number
+        row is called, and -- since the capsule's own wording is fixed -- the
+        one place inside it that names what the wheel is currently coloured
+        for. Reuses renderUnitLabel()'s own sentence, so the palette and the
+        dock can never word the same fact two ways.
+        The number mirror is refreshed by unit type as well as by the generic
+        staleness test: Ruku' 1-N and Juz 1-30 can be the same length with the
+        same first and last values, and copying the wrong list would offer
+        numbers that belong to another unit entirely. */
+    function syncWheelUnitPalette() {
+      if (!wheelUnitNumSelect || !currentSurahData) return;
+      if (wheelUnitNumSelect.dataset.unitType !== currentUnitType
+          || wheelUnitNumSelect.options.length !== unitNumSelect.options.length) {
+        wheelUnitNumSelect.innerHTML = unitNumSelect.innerHTML;
+        wheelUnitNumSelect.dataset.unitType = currentUnitType;
+      }
+      if (wheelUnitNumSelect.value !== unitNumSelect.value) wheelUnitNumSelect.value = unitNumSelect.value;
+      if (wheelUnitTypeSelect.options.length !== unitTypeSelect.options.length) wheelUnitTypeSelect.innerHTML = unitTypeSelect.innerHTML;
+      if (wheelUnitTypeSelect.value !== unitTypeSelect.value) wheelUnitTypeSelect.value = unitTypeSelect.value;
+      const numbered = NUMBERED_UNITS.includes(currentUnitType);
+      wheelUnitNumRow.hidden = !numbered;
+      wheelUnitRangeRow.hidden = currentUnitType !== "range";
+      wheelUnitNumLabel.textContent = numbered ? t(UNIT_NUM_LABELS[currentUnitType]) : t("Number");
+      wheelUnitNowLine.textContent = t("Tracking: {unit}", { unit: currentUnitInfo().label });
     }
 
     /** Sizes the hub's own content (Ta'awwudh, Bismillah, Surah, Ayah) so
@@ -6349,7 +6632,10 @@
           if (chunk) exploreChunksBySurah.set(surahNum, chunk);
         })
       );
-      exploreSubjectChunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, "subject_quran");
+      // Read through the shared cache (force: a fresh read per Explore open,
+      // exactly as before) so the landing wheel's own copy of this document
+      // and Explore's can never drift apart -- same number of reads either way.
+      exploreSubjectChunk = await ensureQuranSubjectChunk({ force: true });
       await buildExploreWiderSpans();
     }
 
@@ -9942,7 +10228,20 @@
       const ref = info.label;
       const showAyatText = noteScopeShowAyatText();
       const canWbwRoot = noteScopeCanWbwRoot();
-      const showApproach = noteScope.unitType === "ayah";
+      // 6 Sep 2026, the owner's own ask: the Track/Guide/Breakdown/Coverage
+      // card is offered for EVERY unit now, not only a single āyah. It was
+      // ayah-only because the wheel that opens it was ayah-only and a wider
+      // unit had its own separate path ("Track this unit" in Study options);
+      // with the wheel able to show any unit, that split is exactly what the
+      // owner reported. renderApproachEmbedHtml() claims whatever
+      // noteScopeUnitInfo() resolves to, so nothing here decides the scope.
+      const showApproach = true;
+      // A Juz/Hizb/Page scope claims into subject_quran, which may not be in
+      // memory yet -- ask once and redraw when it lands (see
+      // ensureUnitChunkThen()); the card reads "Not claimed yet" until then.
+      ensureUnitChunkThen(info, () => {
+        if (stageView === "note" && noteScope && noteScopeCurrentUnitKey() === unitKey) renderNoteViewNow();
+      });
 
       let textBlocks = { arabicText: "", englishText: "", banglaText: "" };
       let arabicHtml = "";
@@ -10108,9 +10407,13 @@
         hasNote,
         isBookmarked,
         isFullscreen: noteFullscreenOn,
-        // The wheel-slice card, only for a single-āyah scope (unchanged from
-        // before this round) -- see renderApproachEmbedHtml()'s own comment.
-        approachHtml: showApproach ? renderApproachEmbedHtml(currentSurahNum, noteScope.ayahNum) : "",
+        // The wheel-slice card -- for whatever unit this view is scoped to
+        // (6 Sep 2026), not only a single āyah. See
+        // renderApproachEmbedHtml()'s own comment.
+        approachHtml: showApproach ? renderApproachEmbedHtml(info) : "",
+        // "Track this āyah" is only true for a single āyah; every other scope
+        // says what it really is.
+        approachLabel: noteScope.unitType === "ayah" ? t("Track this āyah") : t("Track this unit"),
         isNotesOpen: noteNotesOpen,
         isApproachOpen: noteApproachCardOpen,
         wideNoteHtml,
@@ -10277,7 +10580,7 @@
         noteApproachCardOpen = noteView.querySelector('[data-note-field="approach"] .note-field-body').style.display !== "none";
       });
       wireNotePickerBar();
-      if (showApproach) wireApproachEmbed(unitKey);
+      if (showApproach) wireApproachEmbed(info);
       wireAsmaXNoteFields(unitKey);
       // PC popup: title bar text + side pane, every render/nav step. A no-op
       // below 900px (renderNotePopupSide() checks isPcNotePopup() itself).
@@ -10565,14 +10868,22 @@
         currentTrackableId, the same "whichever Approach was last picked"
         state the wheel-click path and "Track this unit" both already
         operate on -- empty string when nothing's selected yet, the same
-        guard the old floating card had. */
-    function renderApproachEmbedHtml(surah, ayahNum) {
+        guard the old floating card had.
+        6 Sep 2026 -- it takes the SCOPE ({unitKey, chunkKey, label}, straight
+        from noteScopeUnitInfo()) instead of a surah and an ayah number, which
+        is the whole of "enable the NOTE view to be worked for claiming the
+        respective unit": a Range, a Whole Surah, a Ruku', a Juz, a Hizb and a
+        Page each read and claim their own unit key, in the document that
+        unit's records actually live in (surah_N for the first four, the
+        Qur'an-wide subject_quran for the last three). */
+    function renderApproachEmbedHtml(info) {
       const trackable = currentTrackable();
       if (!trackable) return "";
-      const unitKey = buildUnitKey.ayah(surah, ayahNum);
+      const unitKey = info.unitKey;
       const entryKey = `${unitKey}::${trackable.id}`;
-      const entry = currentChunk?.entries?.[entryKey] ?? null;
-      const statusIdsForTrackable = Object.values(currentChunk?.entries ?? {})
+      const chunk = chunkForUnitInfo(info);
+      const entry = chunk?.entries?.[entryKey] ?? null;
+      const statusIdsForTrackable = Object.values(chunk?.entries ?? {})
         .filter((e) => e.trackableId === trackable.id)
         .map((e) => e.claimedStatus);
       // Note view enhancement round -- the Approach picker itself moves
@@ -10590,9 +10901,15 @@
         Track: renderTrackTab(entry, entry?.claimedStatus ?? "not_started"),
         Guide: renderGuideTab(trackable, getAppLang()),
         Breakdown: renderBreakdownTab(statusIdsForTrackable),
-        Coverage: renderCoverageTab(ayahStatusesForCurrentTrackable()),
+        // Ayah-by-ayah coverage is drawn from the surah's own chunk, so a
+        // Qur'an-wide unit says so in words rather than showing an empty
+        // strip -- the same answer, now translated, that "Track this unit"'s
+        // own floating card has always given for Juz/Hizb/Page.
+        Coverage: info.chunkKey === `surah_${currentSurahNum}`
+          ? renderCoverageTab(ayahStatusesForCurrentTrackable())
+          : `<div class="way-coverage"><p>${t("Ayah-by-ayah coverage isn't available at this granularity — switch Study Unit to Ayah, Range, Whole Surah or Ruku' to see it.")}</p></div>`,
       };
-      return renderWayEmbed(ayahRefLabel(surah, ayahNum), tabBodies, undefined, renderAssignDropdown(assignableRoster(), selectedPersonId), approachSelectHtml);
+      return renderWayEmbed(info.label, tabBodies, undefined, renderAssignDropdown(assignableRoster(), selectedPersonId), approachSelectHtml);
     }
 
     /** Wires the embedded card's tabs + Claim button, right after
@@ -10603,8 +10920,13 @@
         does NOT live-update the way Arabic/English/Bangla/Notes do above it
         -- it only changes when the reader taps Claim right here, same as it
         always has. */
-    function wireApproachEmbed(unitKey) {
-      const embedEl = noteView.querySelector(".way-embed");
+    function wireApproachEmbed(info) {
+      const unitKey = info.unitKey;
+      // Scoped to the Approach field itself: Asma ul Husna's own Track card
+      // (#asmaTrackEmbedWrap) uses the same .way-embed class and can be on
+      // screen at the same time, so a bare query could bind this claim
+      // handler to the wrong card.
+      const embedEl = noteView.querySelector('[data-note-field="approach"] .way-embed');
       const trackable = currentTrackable();
       if (!embedEl || !trackable) return;
       attachWayEmbedHandlers(embedEl);
@@ -10643,7 +10965,11 @@
         }));
         const message = buildClaimResultMessage(outcomes);
         if (outcomes.some((o) => o.ok)) {
-          await refreshChunkAndWheel();
+          // Re-read the document the claim actually landed in: surah_N for
+          // ayah/range/surah/ruku (refreshChunkAndWheel(), which redraws the
+          // wheel itself), subject_quran for a Juz/Hizb/Page claim.
+          if (info.chunkKey === "subject_quran") { await ensureQuranSubjectChunk({ force: true }); renderWheel(); }
+          else await refreshChunkAndWheel();
           renderNoteViewNow(); // rebuilds the whole Note view, including this card, against the fresh chunk
           const freshResultEl = noteView.querySelector(".way-claim-result");
           if (freshResultEl) freshResultEl.textContent = message;
@@ -11559,7 +11885,10 @@
       const info = currentUnitInfo();
       const entryKey = `${info.unitKey}::${trackable.id}`;
       const surahChunkKey = `surah_${currentSurahNum}`;
-      const chunk = info.chunkKey === surahChunkKey ? currentChunk : await getRecordsChunk(db, activeTenantId, selectedPersonId, info.chunkKey);
+      // 6 Sep 2026: through the shared subject_quran cache rather than its own
+      // read each time this opens -- one document, one copy, so this card and
+      // the wheel can never disagree about what has been claimed.
+      const chunk = info.chunkKey === surahChunkKey ? currentChunk : await ensureQuranSubjectChunk();
       const entry = chunk?.entries?.[entryKey] ?? null;
 
       const statusIdsForTrackable = Object.values(chunk?.entries ?? {})
@@ -11573,7 +11902,10 @@
         Breakdown: renderBreakdownTab(statusIdsForTrackable),
         Coverage: info.chunkKey === surahChunkKey
           ? renderCoverageTab(ayahStatusesForCurrentTrackable())
-          : `<div class="way-coverage"><p>Ayah-by-ayah coverage isn't available at this granularity — switch Study Unit to Ayah, Range, Whole Surah or Ruku' to see it.</p></div>`,
+          // Same sentence as the Note view's own embedded card, and through
+          // t() at both sites now -- it was a bare English literal here since
+          // Phase 5, on a screen the rest of which is translated.
+          : `<div class="way-coverage"><p>${t("Ayah-by-ayah coverage isn't available at this granularity — switch Study Unit to Ayah, Range, Whole Surah or Ruku' to see it.")}</p></div>`,
       };
       wayModalMount.innerHTML = renderWayModalShell(title, tabBodies, undefined, renderAssignDropdown(assignableRoster(), selectedPersonId));
       wayModalOverlay.classList.add("open");
@@ -11607,6 +11939,7 @@
         const message = buildClaimResultMessage(outcomes);
         if (outcomes.some((o) => o.ok)) {
           if (info.chunkKey === surahChunkKey) await refreshChunkAndWheel();
+          else { await ensureQuranSubjectChunk({ force: true }); renderWheel(); } // the wheel can be showing this very Juz/Hizb/Page now
           await openUnitWayModal();
           const freshResultEl = wayModalMount.querySelector(".way-claim-result");
           if (freshResultEl) freshResultEl.textContent = message;
