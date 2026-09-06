@@ -3,13 +3,19 @@
 Read this first, every session. It is the standing brief.
 
 
-**The v07 line is CLOSED. Its final build is v07.139, archived at
-`legacy-v07/`. The next version number is v08.00 — bump `app/js/version.js`
-and this line together in the round that opens it.** The owner drew the line
-on 6 Sep 2026, the same way v06 had one drawn under it at the cutover: v07's
-app is frozen and reachable, `app/` carries on as v08. Nothing about how the
-app WORKS changed when the line was drawn — see the "v07 closed and archived"
-entry below.
+**Current milestone: v08.00 — the v08 line is OPEN.** `app/js/version.js`
+reads `08.00` and the badge beside the app name says so on screen. The v07
+line is closed behind it: its final build, **v07.139**, is frozen at
+`legacy-v07/` and reachable, exactly the way v06 had a line drawn under it at
+the cutover. The owner drew this one on 6 Sep 2026; v08.00 opened it the same
+day. **Nothing about how the app WORKS changed** in either the closing round
+or the opening one — no feature, no schema, no rule; see the "v07 closed and
+archived" entry below and the v08.00 entry in `CHANGELOG.md`.
+
+**Version numbering from here: `08` is this overhaul, and the last two digits
+bump on every new feature within it** — so the next feature round is v08.01.
+`app/js/version.js` is the single source of truth; nothing else hardcodes the
+string. Bump it and this line together, every round.
 
 **The app has been live and real, not a beta, since the 9 August 2026 cutover
 (v07.00)** — we are in real-use iteration, driven by what the owner hits using
@@ -28,9 +34,11 @@ first.
 App - v06 ↗" and "Legacy App - v07 ↗", static markup in all 22 nav-bearing
 pages (not `nav.js`). Both sign in to the same `study-monitoring` Firebase
 project and **write real data** — they are runnable history, not screenshots.
-The version badge beside the app name is what tells them apart on screen, so
-**`app/` reading v08.00 is what makes the v07 link mean anything**; until that
-bump it points at an identical build.
+The version badge beside the app name is what tells them apart on screen, and
+since v08.00 it really does: `/app/` reads **v08.00**, `/legacy-v07/` reads
+**v07.139**, `/legacy/index.html` reads **v06.30**. A claim made in either
+archive is a real claim, so the badge is the only thing that says which line
+you are in.
 
 **The full round-by-round build log lives in `CHANGELOG.md`** — every version
 from v07.01 onward, with what each round measured, decided and deliberately
@@ -51,80 +59,6 @@ alongside `app/js/version.js` (first two digits = big overhaul, last two = each
 new feature) and will drift if a round forgets to bump it here too.
 
 ### The five most recent rounds
-
-v07.136 (5 Sep 2026, same day) is **the two things v07.135 flagged and the
-owner immediately asked for: "do the ruku and hizb roll up too", and a Juz |
-Surahs switch on the whole-Quran wheel.**
-
-**(1) Ruku' and Hizb roll up now, and neither costs anything unless a claim of
-that kind exists.** v07.135 left them out for a real reason -- a Hizb's
-boundary table is not one Explore loads, and a Ruku's ayah range lives in its
-surah's own TEXT, which Explore never loads for all 114 surahs. Both are solved
-by **loading what the CLAIMS need rather than what the navigation reaches**:
-`buildExploreWiderSpans()` surveys the already-loaded chunks for `hizb:` and
-`ruku:` keys, then fetches the hizb table only if one was found and
-`getSurah()` only for the surahs that really carry a ruku claim -- a handful,
-never all 114, and cached.
-
-**That is also what makes it deterministic, which was last round's whole
-objection.** v07.135 resolved ruku spans locally, in whichever Surah level
-happened to load the surah, precisely so a Juz's colour could not depend on
-where the reader had browsed. Loading by claim removes the dilemma instead of
-trading it away. The local resolver is retired and
-`effectiveAyahStatus()`/`poolCoverageStatus()` lose the `extraSpans` parameter
-that existed only to feed it -- **a dead hook removed rather than left as a
-future trap.** All six wider units now behave identically: **Whole Surah,
-Range, Ruku', Juz, Hizb and Page each set a floor under the ayahs they cover**,
-and nothing in Explore is invisible to the tracker wheel any more.
-
-**(2) The whole-Quran wheel offers Juz (30) or Surahs (114).** The owner named
-the trade themselves: *"It's crammed to shows 114 slide in the wheel, i know,
-but it remains a choice to click, not a by-default opening. But what it will
-serve is ... 114 surah will be shown in the left sidebar as list. That's where
-the usefulness will count."* So the crowded wheel is accepted and **the sidebar
-is the point** -- every surah, named, with its status, scrollable, pick one to
-open it. **Juz stays the default**, so nobody meets 114 slices unasked.
-
-**One switch, relabelled per level, rather than a second one in the same
-slot.** It always asks the same question -- how do I subdivide the scope I am
-looking at? Whole Quran → Juz or Surahs; a Juz → Pages or Surahs; below that
-there is only one subdivision, so it is put away. Each level owns its own
-remembered choice (`mm_explore_quran_view` beside v07.133's own), proven by
-switching one and finding the other unmoved. `exploreJuzViewToggle` is
-**renamed `exploreViewToggle`** -- it is no longer juz-specific, and a name
-that lies is worse than a rename.
-
-**Verified: a focused, un-checked-in Playwright script, 26 checks, all
-passing**, screenshotted -- a Ruku' claim alone colouring its surah in the
-114-surah view; a Hizb claim colouring every surah inside it up to the last
-while the surah one below its boundary stays untouched; the Juz containing them
-correctly still not started (weakest link holds); the switch offering Juz |
-Surahs with Juz pressed by default; Surahs drawing 114 slices and **listing all
-114 by NAME, numbered, scrollable**; **picking one from the LIST opening that
-surah's ayahs** -- the owner's own stated use; and all of it in Bangla with
-values proven still plain ids. **Two of three first-run failures were WRONG
-ASSERTIONS, not defects:** Hizb 60 is 87:1 → 114:6 (read off `hizb-index.json`
-rather than remembered), so the surahs the test called "outside" were inside
-and the app was right; and a check read `localStorage` for a preference never
-SET, expecting its default -- a default lives in memory until something writes
-it. **v07.133's and v07.135's own scripts re-run 33/33 and 29/29**, with two
-more checks UPDATED rather than deleted (1b asserted the switch is NOT shown at
-the Quran level, exactly what this round changes; 12c read a renamed
-attribute).
-
-**`layout.mjs`: landing page byte-for-byte identical**, zero changed metrics;
-`getElementById` 240 -> 240 (a rename, not an addition), missing list the same
-22. **Coverage 1,566 scanned / 47 missing, both UNCHANGED** -- no new strings,
-since "Juz" and "Surahs" were already translated. No `firestore.rules`, schema
-or Firestore data changes.
-
-**One trap hit and recovered, recorded because this file has recorded it
-twice:** the first coverage read came back 1,820 / 53, because
-`app/_prev-quranrevival.html` was still on disk -- the `rm` had run from the
-wrong directory after a shell cwd reset. **It was caught only because the
-number was absurd rather than subtly wrong.** Delete the shim and re-read,
-every time.
-
 
 v07.137 (5 Sep 2026, same day) is **Explore in Bangla end to end, and the Surah
 view promoted to the default** -- the owner having used v07.136: *"Subhanallah!
@@ -654,6 +588,40 @@ that repo's own commit history refers to, and rewriting them would make the
 history unreadable for no gain; the notice says plainly that none of it is
 current. Nothing is destroyed: the old brief is in that repo's git history,
 and v07.78 merged all 233 of its commits into this one anyway.
+
+**v08.00 (6 Sep 2026, on Claude Code on the web) OPENS the v08 line** — the
+counterpart of the round above it, and the owner's own numbering plan. **One
+line of code changed:** `app/js/version.js` reads **`08.00`**, and its header
+comment now states the scheme — `08` is this overhaul, the last two digits bump
+on each feature within it, so the next feature round is **v08.01**. That file
+was re-proven to be the single source of truth rather than assumed: all four
+references to the version across `app/` are `import`s of `APP_VERSION`
+(`quranrevival.html`'s badge, `about.html`'s version line, `backup.html` and
+`js/backup-file.js`, which stamp the exported backup), so **nothing retypes the
+string** and one edit moved every surface. **This is what makes the v07 nav
+link mean something** — `/app/` v08.00, `/legacy-v07/` v07.139,
+`/legacy/index.html` v06.30, all three writing real data, the badge the only
+thing on screen that says which line a claim was made in. `app/` is otherwise
+byte-for-byte untouched, both archives untouched, no rules/schema/data change,
+no new string, nothing on any startup path.
+
+**Verified: a focused, un-checked-in Playwright script, 18 checks, all
+passing**, screenshotted in both languages — the badge read off the RENDERED
+page as `v08.00` with no `07.` anywhere, with a real box, really displayed and
+fully on screen rather than merely in the DOM, and `#appTitleText` itself
+ending in `v08.00`; the same again in Bangla; `about.html`'s own version line
+as a second, quite different surface; and the other side of the line,
+**`/legacy-v07/` still reading v07.139** and **`/legacy/index.html` still
+served and still stamped 06.30**, which is what proves the archives were not
+edited. **`layout.mjs`: every measured landing-page metric byte-for-byte
+identical** at all eight viewports in both banner states, `getElementById`
+246 → 246, same 22-entry pre-existing missing list — and **the comparison was
+set up so it could actually fail**: the shim imports `HEAD`'s own `version.js`
+as `js/_prev-version.js` (this project's documented technique), so "before"
+really rendered v07.139 against "after" v08.00; without that both sides would
+have read v08.00 and the run would have proven nothing. **Coverage 1,713
+scanned / 46 missing, both UNCHANGED** (no new string; a version number is
+never translated). Both shims deleted before any other number was read.
 
 ## What this is
 

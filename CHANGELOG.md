@@ -11627,3 +11627,81 @@ that repo's own commit history refers to, and rewriting them would make the
 history unreadable for no gain; the notice says plainly that none of it is
 current. Nothing is destroyed: the old brief is in that repo's git history,
 and v07.78 merged all 233 of its commits into this one anyway.
+
+v08.00 (6 Sep 2026, on Claude Code on the web) **opens the v08 line.** It is
+not a feature round — it is the counterpart of the archiving round before it,
+and the owner's own numbering plan: v07 was closed and frozen at
+`legacy-v07/`, and this is `app/` picking up as v08.
+
+**One line of code changed.** `app/js/version.js` reads **`08.00`** where it
+read `07.139`, and its header comment now states the scheme in the owner's own
+terms — **`08` is this overhaul, the last two digits bump on each feature
+within it**, so the next feature round is v08.01. That file is the single
+source of truth and was **re-proven to be**, not assumed: a grep across all of
+`app/*.html` and `app/js/*.js` finds exactly four references to the version and
+every one of them is an `import` of `APP_VERSION` (`quranrevival.html`'s badge,
+`about.html`'s version line, `backup.html` and `js/backup-file.js`, which stamp
+the exported backup). **Nothing anywhere retypes the string**, so one edit
+moved every surface that shows it.
+
+**This is what makes the v07 nav link mean something.** The archiving round
+recorded the awkwardness knowingly: until `app/` bumped, "Legacy App - v07 ↗"
+pointed at a build identical to the live one. From this round the two really
+diverge — `/app/` reads **v08.00**, `/legacy-v07/` reads **v07.139**,
+`/legacy/index.html` reads **v06.30** — and since all three sign in to the same
+`study-monitoring` project and write real data, the badge is the only thing on
+screen that says which line a claim was made in.
+
+**`CLAUDE.md`'s milestone section was rewritten to read as the CURRENT
+milestone** rather than as an instruction to a future round. It had said "the
+v07 line is CLOSED … the next version number is v08.00 — bump `version.js` and
+this line together in the round that opens it"; that round is this one, so the
+brief now opens on "Current milestone: v08.00 — the v08 line is OPEN", states
+the numbering rule for what comes next, and keeps both of the things that round
+put there: the three-lines table (`/legacy/index.html`, `/legacy-v07/`, `/app/`)
+and the fact that **both archives write real data**, which is why the badge
+matters. The "v07 closed and archived" entry below it is untouched — it is the
+history of how the line was drawn, and rewriting it out from under itself is
+exactly what this project's own append-first rule exists to prevent.
+
+**`app/` is otherwise byte-for-byte untouched, and so are both archives** —
+`git diff` over this round is `app/js/version.js`, `CLAUDE.md` and this file,
+nothing else. No `firestore.rules`, no schema, no Firestore data, no new
+string, nothing on any startup path. **Nothing about how the app WORKS
+changed.**
+
+**Verified: a focused, un-checked-in Playwright script, 18 checks, all
+passing**, screenshotted in both languages — because a version constant that
+never reaches the screen is exactly the kind of thing a passing grep would
+still call done. Read off the RENDERED page: the badge reading `v08.00` and
+carrying no `07.` anywhere; the badge having a real box, really displayed, and
+fully on screen rather than merely present in the DOM; and the `#appTitleText`
+line itself ending in `v08.00`, so a badge that rendered somewhere else
+entirely would have failed. All of that again in **Bangla**, where the app name
+and badge sit above a fully Bengali page. Then a second, quite different
+surface — **`about.html`'s own version line reading "QuranRevival v08.00"** —
+and the other side of the line: **`/legacy-v07/` still reading v07.139** and
+**`/legacy/index.html` still served and still stamped 06.30**, which is what
+proves the archives were not edited.
+
+**`layout.mjs`: every measured landing-page metric byte-for-byte identical**
+at all eight viewports in both banner states — heading 148/103px, wheel
+377/399/280/220/320/360px, the same Approach row count everywhere, 9px dock
+gap, dock fully visible, no overflow anywhere — with `getElementById` targets
+**246 → 246** and the same 22-entry pre-existing missing list on both sides.
+**The comparison was set up so it could actually FAIL**: the shim imports
+`HEAD`'s own `js/version.js` (dropped beside it as `js/_prev-version.js`, this
+project's documented technique), so the "before" page really renders `v07.139`
+and the "after" one `v08.00`. Without that the shim would have imported the
+LIVE module, both sides would have read v08.00, and the run would have proven
+nothing about the change. The badge is genuinely narrower now — six characters
+instead of seven — and the h1 absorbs it with no measurable effect. Both shims
+were deleted before any other number was read.
+
+**Coverage 1,713 scanned / 46 missing, both UNCHANGED** — this round adds no
+user-visible string, and the version is a bare number that is never translated.
+
+**Flagged, not changed.** The next round is a third-party review package
+(`AI_APP_REVIEW_PACKAGE/`), which is documentation only and by the owner's own
+instruction touches no application code — so **v08.01 is still unclaimed**, and
+the first real v08 feature is whatever that review comes back recommending.
