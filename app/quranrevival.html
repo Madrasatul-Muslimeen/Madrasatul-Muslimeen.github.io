@@ -5441,11 +5441,16 @@
         return;
       }
       const approachStatuses = approachStatusesForCurrentAyah();
+      // Same fix as Explore's own tooltips, one line, while it is under the
+      // hand: a raw status id with its underscores swapped for spaces
+      // ("not started") is meaningless in either language and was never
+      // translated. Pre-existing here, not introduced by this round.
+      const wheelLabels = statusLabelsById();
       const items = approachStatuses.map(({ trackable, statusId }) => ({
         key: trackable.id,
         number: trackable.order ?? "",
         statusId,
-        title: `${langText(trackable.name, getAppLang(), trackable.id)} — ${statusId.replace(/_/g, " ")}`,
+        title: segTitle(langText(trackable.name, getAppLang(), trackable.id), statusId, wheelLabels),
       }));
       // The hub's own overlay (Ta'awwudh/Bismillah, permanently, plus the
       // Surah/Ayah pickers) now occupies this whole spot -- the owner's own
@@ -6348,16 +6353,24 @@
       await buildExploreWiderSpans();
     }
 
+    /** A segment's tooltip: the unit's own translated label, then its status
+     *  as a real LABEL rather than the raw id with underscores swapped for
+     *  spaces ("not_started" -> "not started"), which was meaningless in
+     *  either language and untranslated in Bangla. */
+    function segTitle(label, statusId, labelsById) {
+      return `${label} — ${labelsById[statusId] ?? statusId}`;
+    }
+
     /** Clickable "Whole Quran › Juz N › Surah name › Ruku' N" trail, one crumb per level actually visited so far. Clicking an earlier crumb jumps back to that level and clears everything deeper than it -- the current level's own crumb is shown but not clickable. */
     function renderExploreBreadcrumb() {
-      const crumbs = [{ label: "Whole Quran", level: "quran" }];
-      if (exploreJuzNum != null) crumbs.push({ label: `Juz ${exploreJuzNum}`, level: "juz" });
+      const crumbs = [{ label: t("Whole Quran"), level: "quran" }];
+      if (exploreJuzNum != null) crumbs.push({ label: t("Juz {juz}", { juz: num(exploreJuzNum) }), level: "juz" });
       if (exploreSurahNum != null) {
         const found = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
         const name = found ? surahName(found.surahNumber, found.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
         crumbs.push({ label: name, level: "surah" });
       }
-      if (exploreRukuIndex != null) crumbs.push({ label: `Ruku' ${exploreRukuIndex}`, level: "ruku" });
+      if (exploreRukuIndex != null) crumbs.push({ label: t("Ruku' {ruku}", { ruku: num(exploreRukuIndex) }), level: "ruku" });
 
       exploreBreadcrumb.innerHTML = crumbs
         .map((c) => `<button type="button" class="explore-crumb${c.level === exploreLevel ? " active" : ""}" data-level="${c.level}">${c.label}</button>`)
@@ -6499,7 +6512,7 @@
         const coverage = ayahCoverage(j.startSurah, j.startAyah, j.endSurah, j.endAyah);
         const pooled = poolCoverageStatus(coverage, trackable.id);
         const statusId = pooled ?? (exploreSubjectChunk?.entries?.[`${buildUnitKey.juz(j.juz)}::${trackable.id}`]?.claimedStatus ?? "not_started");
-        return { key: j.juz, number: j.juz, statusId, title: `Juz ${j.juz} — ${statusId.replace(/_/g, " ")}` };
+        return { key: j.juz, number: j.juz, statusId, label: t("Juz {juz}", { juz: num(j.juz) }) };
       });
 
       const jumpToJuz = (key) => {
@@ -6511,13 +6524,13 @@
       };
 
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: "Whole Quran", centerSub: approachName });
+      const labelsById = statusLabelsById();
+      for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToJuz);
 
-      const labelsById = statusLabelsById();
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
-      const sidebarItems = items.map((it) => ({ ...it, label: `Juz ${it.key}` }));
-      exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
+      exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToJuz);
     }
 
@@ -6543,13 +6556,7 @@
         const entries = exploreChunksBySurah.get(sx.surahNumber)?.entries ?? {};
         const statusId = pooled ?? (entries[`${buildUnitKey.surah(sx.surahNumber)}::${trackable.id}`]?.claimedStatus ?? "not_started");
         const name = surahName(sx.surahNumber, sx.nameEnglish);
-        return {
-          key: sx.surahNumber,
-          number: sx.surahNumber,
-          statusId,
-          title: `${name} — ${statusId.replace(/_/g, " ")}`,
-          label: name,
-        };
+        return { key: sx.surahNumber, number: sx.surahNumber, statusId, label: name, title: segTitle(name, statusId, labelsById) };
       });
 
       const jumpToSurah = (key) => {
@@ -6560,7 +6567,7 @@
       };
 
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: "Whole Quran", centerSub: approachName });
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Whole Quran"), centerSub: approachName });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
 
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
@@ -6594,7 +6601,7 @@
         const coverage = ayahCoverage(p.startSurah, p.startAyah, p.endSurah, p.endAyah);
         const pooled = poolCoverageStatus(coverage, trackable.id);
         const statusId = pooled ?? (exploreSubjectChunk?.entries?.[`${buildUnitKey.page(PAGE_EDITION, p.page)}::${trackable.id}`]?.claimedStatus ?? "not_started");
-        return { key: p.page, number: p.page, statusId, title: `Page ${p.page} — ${statusId.replace(/_/g, " ")}` };
+        return { key: p.page, number: p.page, statusId, label: t("Page {page}", { page: num(p.page) }) };
       });
 
       const jumpToSurahForPage = (key) => {
@@ -6607,13 +6614,13 @@
       };
 
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `Juz ${exploreJuzNum}`, centerSub: approachName });
+      const labelsById = statusLabelsById();
+      for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurahForPage);
 
-      const labelsById = statusLabelsById();
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
-      const sidebarItems = items.map((it) => ({ ...it, label: `Page ${it.key}` }));
-      exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
+      exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToSurahForPage);
     }
 
@@ -6656,12 +6663,14 @@
         // num() -- the ayah range is a number being DRAWN in a sentence, so
         // it reads ১–১৪১ in Bangla like every other number on this page. The
         // segment's own `number` stays plain, as every Explore wheel's does.
-        const part = whole ? "" : ` (ayahs ${num(c.from)}–${num(c.to)} in this Juz)`;
+        // Parentheses are punctuation, not grammar, so composing them around
+        // a translated phrase is safe in either language.
+        const part = whole ? "" : ` (${t("ayahs {from}–{to} in this Juz", { from: num(c.from), to: num(c.to) })})`;
         return {
           key: c.surah,
           number: c.surah,
           statusId,
-          title: `${name}${part} — ${statusId.replace(/_/g, " ")}`,
+          title: segTitle(`${name}${part}`, statusId, labelsById),
           label: whole ? name : `${name} ${num(c.from)}–${num(c.to)}`,
         };
       });
@@ -6674,7 +6683,7 @@
       };
 
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `Juz ${exploreJuzNum}`, centerSub: approachName });
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: t("Juz {juz}", { juz: num(exploreJuzNum) }), centerSub: approachName });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToSurah);
 
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
@@ -6697,14 +6706,14 @@
       if (surahData.ayahCount <= SURAH_WHEEL_THRESHOLD) {
         const items = surahData.ayahs.map((a) => {
           const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
-          return { key: a.ayah, number: a.ayah, statusId, title: `Ayah ${a.ayah} — ${statusId.replace(/_/g, " ")}` };
+          const label = t("Ayah {ayah}", { ayah: num(a.ayah) });
+          return { key: a.ayah, number: a.ayah, statusId, label, title: segTitle(label, statusId, labelsById) };
         });
         const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
         exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: currentSurahName, centerSub: approachName });
         attachScopedWheelClickHandler(exploreWheelContainer, jumpToStudy);
         exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
-        const sidebarItems = items.map((it) => ({ ...it, label: `Ayah ${it.key}` }));
-        exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
+        exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
         attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToStudy);
         return;
       }
@@ -6723,7 +6732,9 @@
         const coverage = [{ surah: exploreSurahNum, from: range.from, to: range.to }];
         const pooled = poolCoverageStatus(coverage, trackable.id);
         const statusId = pooled ?? (entries[`${buildUnitKey.ruku(exploreSurahNum, idx)}::${trackable.id}`]?.claimedStatus ?? "not_started");
-        return { key: idx, number: idx, statusId, title: `Ruku' ${idx} (ayahs ${range.from}–${range.to}) — ${statusId.replace(/_/g, " ")}` };
+        const label = t("Ruku' {ruku}", { ruku: num(idx) });
+        const full = t("Ruku' {ruku} of Surah {surah} (ayahs {from}–{to})", { ruku: num(idx), surah: num(exploreSurahNum), from: num(range.from), to: num(range.to) });
+        return { key: idx, number: idx, statusId, label, title: segTitle(full, statusId, labelsById) };
       });
       const jumpToRuku = (key) => {
         exploreRukuIndex = Number(key);
@@ -6733,8 +6744,7 @@
       exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: currentSurahName, centerSub: approachName });
       attachScopedWheelClickHandler(exploreWheelContainer, jumpToRuku);
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
-      const sidebarItems = items.map((it) => ({ ...it, label: `Ruku' ${it.key}` }));
-      exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
+      exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToRuku);
     }
 
@@ -6747,19 +6757,21 @@
       const entries = exploreChunksBySurah.get(exploreSurahNum)?.entries ?? {};
       const items = ayahsInRuku.map((a) => {
         const statusId = effectiveAyahStatus(exploreSurahNum, a.ayah, trackable.id);
-        return { key: a.ayah, number: a.ayah, statusId, title: `Ayah ${a.ayah} — ${statusId.replace(/_/g, " ")}` };
+        return { key: a.ayah, number: a.ayah, statusId, label: t("Ayah {ayah}", { ayah: num(a.ayah) }) };
       });
       const exploreSurah = surahIndex.find((s) => s.surahNumber === exploreSurahNum);
       const currentSurahName = exploreSurah ? surahName(exploreSurah.surahNumber, exploreSurah.nameEnglish) : t("Surah {surah}", { surah: num(exploreSurahNum) });
       const approachName = langText(trackable.name, getAppLang(), trackable.id);
       const jumpToStudy = (key) => goToAyahFromExplore(exploreSurahNum, Number(key));
 
-      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `${currentSurahName} · Ruku' ${exploreRukuIndex}`, centerSub: approachName });
-      attachScopedWheelClickHandler(exploreWheelContainer, jumpToStudy);
       const labelsById = statusLabelsById();
+      for (const it of items) it.title = segTitle(it.label, it.statusId, labelsById);
+      // " · " is a separator, not grammar, so composing the two translated
+      // halves around it is safe in either language.
+      exploreWheelContainer.innerHTML = renderScopedWheel(items, { centerLabel: `${currentSurahName} · ${t("Ruku' {ruku}", { ruku: num(exploreRukuIndex) })}`, centerSub: approachName });
+      attachScopedWheelClickHandler(exploreWheelContainer, jumpToStudy);
       exploreWheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
-      const sidebarItems = items.map((it) => ({ ...it, label: `Ayah ${it.key}` }));
-      exploreSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
+      exploreSidebarContainer.innerHTML = renderWheelSidebar(items, labelsById);
       attachWheelSidebarClickHandler(exploreSidebarContainer, jumpToStudy);
     }
 

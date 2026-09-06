@@ -11066,3 +11066,87 @@ twice already:** the first coverage read of this round came back 1,820 scanned
 `rm` had run from the wrong directory after a shell cwd reset. **The number was
 absurd rather than subtly wrong, which is the only reason it was caught**;
 delete the shim and re-read, every time.
+
+
+v07.137 (5 Sep 2026, same day) is **Explore in Bangla end to end, and the Surah
+view promoted to the default** -- the owner having used what v07.136 shipped:
+*"Subhanallah! The Surah view, It looks actually good! So, make the Surah view
+as the default view on Explore, rather than Juzz."*
+
+**(1) The trail, the wheel hubs, the sidebar labels and the tooltips are all
+translated.** This closes the item v07.134 and v07.135 both flagged, and the
+flag was right about how cheap it would be: **"Whole Quran", "Juz {juz}",
+"Page {page}" and "Surah {surah}" were already in `bn.js`, translated, and
+simply never called.** Only three keys were genuinely new -- `"Ayah {ayah}"`,
+`"Ruku' {ruku}"` and `"ayahs {from}–{to} in this Juz"`. Every number goes
+through `num()`, so a Bangla reader sees "জুয ১", "পৃষ্ঠা ৫৮২", "আয়াত ৭" rather
+than Bengali words wrapped around Latin digits -- the half of this that is easy
+to get wrong and invisible in a coverage report.
+
+**Two compositions are deliberate and safe:** the partial-surah tooltip wraps a
+translated phrase in parentheses, and the Ruku' hub joins the surah name and
+the ruku with " · ". Both are PUNCTUATION rather than grammar, so neither
+reverses in Bangla -- unlike the possessives and concatenated verbs phases 4
+and 5 had to rebuild as whole sentences.
+
+**(2) A defect fixed in passing, in seven places: the wheels printed a raw
+status id.** Every segment tooltip read `statusId.replace(/_/g, " ")` --
+"not_started" rendered as "not started" -- which is a storage value, meaningless
+in either language and untranslated in Bangla. A new one-line `segTitle()`
+routes them all through `statusLabelsById()`, the same helper the legend and
+the sidebar chips already use. **Six of the seven are Explore's; the seventh is
+the landing page's own Mastery Wheel**, which had the identical bug and is
+fixed with them -- pre-existing, not introduced here, and one line while the
+hand was already on it.
+
+**(3) Surah is the default whole-Quran view.** One word in `prefs.js`. **A
+reader who has already chosen keeps their own choice** -- a stored value always
+wins, so this only changes what someone who has never touched the switch sees.
+Proven both ways: nothing is stored on a fresh browser AND it opens on 114
+surahs; a browser that stored "juz" still opens on 30.
+
+**Verified with a focused, un-checked-in Playwright script -- 25 checks, all
+passing** -- and screenshotted, because a coverage number has never once proved
+a screen is translated on this project: Explore opening on the Surah view with
+Juz one tap away and **nothing stored** (a default, not a remembered choice),
+and a reader who chose Juz keeping it; English proven unchanged, including the
+tooltip now reading "Juz 1 — Not started" rather than "Juz 1 — not started";
+and in Bangla, **read off the rendered page** -- the trail's "Whole Quran", the
+hub, all 114 surah names, the Juz list ("জুয ১", Bangla word AND Bengali digits,
+with no Latin character or digit anywhere in it), the Juz tooltip end to end,
+the trail's Juz crumb, the page list, the ruku list ("রুকু' ১"), the ruku
+tooltip, the trail's Ruku' crumb, the ayah list ("আয়াত ১"), a short surah's ayah
+list, and the hub naming surah and ruku together. Plus the Mastery Wheel's own
+tooltip proven to carry no raw status id and to read in Bangla.
+
+**Coverage 1,566 -> 1,567 scanned, and missing 47 -> 46 -- one FEWER, which is
+the interesting number.** Compared against a clean `HEAD` worktree and diffed
+string by string: the one that left the missing list is **`"Ruku' {ruku}"`,
+which was already being called somewhere in the app and had no Bangla at all**
+-- a real pre-existing gap this round closed as a side effect of needing the
+same key. The other three areas' missing lists are byte-identical to `HEAD`
+(shell 1, modules 2, admin 1, later phases 37), so nothing new went untranslated.
+The scanned total moved by +1 rather than +2 because one literal the tool's
+generic-text extractor used to pick up is gone with the template strings this
+round replaced.
+
+**Four focused scripts re-run, and SIX checks UPDATED rather than deleted**,
+each because this round deliberately changed what it asserted: three assumed
+the Quran level opens on Juz (it opens on Surahs now), one waited on an English
+breadcrumb that is Bangla now, one asserted Juz was the default, and one
+expected a stored pair that the new default reorders. **One was a wrong
+assertion of mine rather than a stale one** -- it expected `["surah","surah"]`
+where the real sequence leaves `["juz","surah"]`, which actually proves the
+"two levels remember separately" claim better than matching values would.
+Totals: **34 + 29 + 27 + 25, all passing.**
+
+**`layout.mjs`: landing page byte-for-byte identical** at all eight viewports in
+both banner states, zero changed metrics; `getElementById` 240 -> 240, missing
+list the same 22 as `HEAD`. No `firestore.rules`, schema or Firestore data
+changes.
+
+**Flagged, not changed:** the Explore hint paragraph under the legend still
+describes the drill as "Quran → Juz → Surah → Ruku'", which is now the
+non-default path -- it reads "Quran → Surah → …" for most readers. Rewording it
+is an English-copy decision and a new translation key, so it is raised rather
+than decided here, exactly as v07.133 raised it.

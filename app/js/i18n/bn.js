@@ -261,6 +261,12 @@ export const BN = {
     "সূরা {surah}-এর {ruku} নং রুকু' ({from}–{to} নং আয়াত)",
   "Juz {juz}": "জুয {juz}",
   "Page {page}": "পৃষ্ঠা {page}",
+  // Explore's own wheel/sidebar/trail labels (5 Sep 2026). Everything else
+  // they need -- "Whole Quran", "Juz {juz}", "Page {page}", "Surah {surah}" --
+  // was already here and simply never called.
+  "Ayah {ayah}": "আয়াত {ayah}",
+  "Ruku' {ruku}": "রুকু' {ruku}",
+  "ayahs {from}–{to} in this Juz": "এই জুযে {from}–{to} নং আয়াত", // ?
   // Explore's Juz level -- the Pages/Surahs switch (5 Sep 2026). Plurals, and
   // they label a view rather than one item, so they are their own keys rather
   // than reusing "Page {page}"/"Surah {surah}" above.
