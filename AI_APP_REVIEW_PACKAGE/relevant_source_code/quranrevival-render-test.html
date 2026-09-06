@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Render test — no auth needed</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 50rem; margin: 2rem auto; padding: 0 1rem; }
+  .ayah-arabic { font-family: 'Traditional Arabic', 'Amiri', serif; font-size: 1.7rem; line-height: 2.6rem; text-align: right; margin: 0.6rem 0; }
+  .ayah-num { color: #B8862F; font-size: 1rem; }
+  .ayah-translation { font-size: 0.95rem; color: #333; margin: 0.3rem 0; }
+  .ayah-translation-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; }
+  .wbw-strip, .root-deriv-strip { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.6rem 0; direction: rtl; }
+  .wbw-word, .root-row { border: 1px solid #eee; border-radius: 0.4rem; padding: 0.3rem 0.5rem; text-align: center; min-width: 4.5rem; direction: ltr; }
+  .wbw-arabic, .root-word, .root-root, .root-lemma { font-family: 'Amiri', serif; font-size: 1.15rem; }
+  .wbw-translit { font-size: 0.72rem; color: #888; font-style: italic; }
+  .wbw-gloss { font-size: 0.8rem; }
+  .wbw-gloss-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; }
+  .root-pos { font-size: 0.7rem; color: #888; }
+  .root-root { color: #1F3A6E; }
+  .root-count { font-size: 0.65rem; color: #999; margin-left: 0.2rem; }
+  .tajweed-ham_wasl, .tajweed-laam_shamsiyah, .tajweed-slnt, .tajweed-silent { color: #9aa3b5; }
+  .tajweed-madda_normal, .tajweed-ghunnah { color: #FF7E1E; }
+  .tajweed-madda_necessary, .tajweed-madda_obligatory, .tajweed-qalaqah { color: #e04040; }
+  .tajweed-madda_permissible { color: #4d7dff; }
+  .tajweed-ikhafa, .tajweed-ikhafa_shafawi { color: #c651c6; }
+  .tajweed-iqlab { color: #26bffd; }
+  .tajweed-idgham_ghunnah, .tajweed-idgham_wo_ghunnah, .tajweed-idgham_mutajanisayn, .tajweed-idgham_mutaqaribayn, .tajweed-idgham_shafawi { color: #1fa87a; }
+  .tajweed-end { color: #B8862F; }
+  .mastery-wheel { max-width: 320px; }
+  .wheel-seg { cursor: pointer; stroke: #fff; stroke-width: 0.5; }
+  .wheel-legend { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.82rem; margin-top: 0.5rem; }
+  .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  fieldset { margin: 1rem 0; }
+</style>
+</head>
+<body>
+  <h1>Phase 4 render test (no Firebase auth needed)</h1>
+  <p>Exercises quran-data.js, ayah-renderer.js and mastery-wheel.js directly against the real pulled data, to check the rendering logic before the owner's own sign-in click-through.</p>
+
+  <fieldset>
+    <legend>Ayah 2:255 (Ayat al-Kursi) — text, tajweed, translation, word-by-word, root/derivative</legend>
+    <label><input type="checkbox" id="tajweedToggle" /> Tajweed colours</label>
+    <label><input type="checkbox" id="banglaToggle" /> Show Bangla</label>
+    <div id="ayahOut"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Mastery Wheel — Surah 1 (Al-Fatiha), fake statuses</legend>
+    <div id="wheelOut"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Round 11 — "View as" logic (effectiveRoles/scopedRoster) + nav preview notice</legend>
+    <div id="viewAsOut" style="font-size:0.85rem; white-space:pre-wrap;"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Shell round 2 — splash screens (splash.js)</legend>
+    <p>Click to trigger each splash on demand (not on a real page-load timer). Check the gear icon (top-right of the overlay) for the Every time/Once a day/Once a week panel. "Reset splash prefs" clears localStorage so repeat testing starts fresh.</p>
+    <button type="button" id="triggerBootSplash">Show boot splash</button>
+    <button type="button" id="triggerQuranSplash">Show Quran splash</button>
+    <button type="button" id="resetSplashPrefs">Reset splash prefs</button>
+    <div id="splashTestLog" style="font-size:0.85rem; color:#555; margin-top:0.5rem;"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Shell round 1 — shared nav (nav.js)</legend>
+    <p>Non-admin roles (["self"]) on quranrevival.html should only see Study + Records. Owner/prime should also see People + Catalogue.</p>
+    <div id="navOut1"></div>
+    <div id="navOut2"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Phase 5 round 7 — Mushaf page view (hifz-renderer.js) against the real hosted QUL data</legend>
+    <p>Surah 1 (Al-Fatiha, page 1), highlighting ayahs 1:1-5 as if a Range unit, dimming the rest of the page. Then simulates a drill "playing" 1:3 via <code>setActiveAyah</code> without a re-render.</p>
+    <div id="hifzOut" style="max-width:420px;"></div>
+    <button type="button" id="hifzSimulatePlay">Simulate: highlight 1:3 as currently playing</button>
+  </fieldset>
+
+  <div id="errors" style="color:#9c3b2e; white-space:pre-wrap;"></div>
+
+  <style>
+    .app-splash-overlay { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at top, #2a3a57 0%, #1B2A41 55%, #121b2c 100%); font-family: 'Inter', system-ui, sans-serif; }
+    .splash-slide { display: none; text-align: center; padding: 40px 24px; max-width: 560px; }
+    .splash-slide.show { display: block; animation: splashFade .6s ease; }
+    @keyframes splashFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .splash-arabic { font-family: 'Amiri', serif; font-size: 44px; color: #C9A24B; line-height: 1.6; margin-bottom: 18px; direction: rtl; }
+    .splash-translit { font-family: 'Cormorant Garamond', serif; font-size: 18px; color: #b9c2d4; font-style: italic; margin-bottom: 10px; }
+    .splash-english { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: #F2E8D5; line-height: 1.5; }
+    .splash-gear { position: absolute; top: 18px; right: 18px; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15); color: #e2e8f0; font-size: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .splash-gear:hover { background: rgba(255,255,255,.16); }
+    .splash-panel { display: none; position: absolute; top: 60px; right: 18px; width: 230px; background: #13192a; border: 1px solid rgba(201,162,75,.3); border-radius: 10px; padding: 14px; text-align: left; box-shadow: 0 10px 30px rgba(0,0,0,.4); }
+    .splash-panel.open { display: block; }
+    .splash-panel h4 { margin: 0 0 10px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #C9A24B; }
+    .splash-panel label { display: block; font-size: 13px; color: #e2e8f0; margin-bottom: 8px; cursor: pointer; }
+    .splash-panel input { margin-right: 8px; }
+    .splash-qs-wrap { max-width: 640px; padding: 40px 28px; text-align: center; }
+    .splash-qs-item { opacity: 0; transform: translateY(10px); animation: splashQsFade .9s ease forwards; }
+    @keyframes splashQsFade { to { opacity: 1; transform: translateY(0); } }
+    .splash-qs-title { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: clamp(36px,6vw,58px); color: #C9A24B; letter-spacing: .01em; margin: 0 0 12px; }
+    .splash-qs-tagline1 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: clamp(16px,2.4vw,21px); color: #F2E8D5; margin: 0 0 30px; }
+    .splash-qs-divider { width: 70px; height: 1px; background: linear-gradient(to right, transparent, #C9A24B, transparent); margin: 0 auto 30px; position: relative; }
+    .splash-qs-divider:after { content: ""; position: absolute; left: 50%; top: -3px; width: 6px; height: 6px; background: #C9A24B; transform: translateX(-50%) rotate(45deg); }
+    .splash-qs-project { font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .16em; font-size: 12px; color: #b9c2d4; margin: 0 0 14px; }
+    .splash-qs-tagline2 { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: clamp(14px,1.8vw,17px); color: #c7cfe0; line-height: 1.5; margin: 0 auto 28px; max-width: 480px; }
+    .splash-qs-motto { font-family: 'Inter', sans-serif; font-size: 12.5px; letter-spacing: .16em; text-transform: uppercase; color: #A4823A; }
+    .hifz-page { background: #fbf6e9; color: #1b1b16; border-radius: 10px; padding: 18px 16px; width: 100%; max-width: 420px; margin: 0 auto 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.18); container-type: inline-size; }
+    .hifz-page-num { font-size: 11px; color: #8a7c55; text-align: center; margin-bottom: 10px; letter-spacing: 0.05em; }
+    .hifz-line { display: flex; flex-wrap: nowrap; direction: rtl; gap: 0.12em; padding: 0.15em 0; font-size: 34px; font-size: 6.07cqw; line-height: 2.05; }
+    .hifz-line.centered { justify-content: center; }
+    .hifz-line:not(.centered) { width: fit-content; max-width: 100%; margin-left: auto; margin-right: 0; }
+    .hifz-word { white-space: nowrap; }
+    .hifz-word.dim { opacity: 0.32; }
+    .hifz-word.playing { color: #1F3A6E; text-shadow: 0 0 1px rgba(31,58,110,0.4); }
+    .hifz-surah-header { justify-content: center; background: rgba(201,162,75,0.14); border: 1px solid rgba(201,162,75,0.4); border-radius: 6px; font-size: 16px; font-size: 4.5cqw; font-family: system-ui, sans-serif; color: #7a5f1e; padding: 0.3em 0.6em; }
+    .hifz-surah-header.glyph-loaded { background: none; border: none; padding: 0.2em 0; font-size: 20px; font-size: 6cqw; }
+    .hifz-basmallah { justify-content: center; font-size: 16px; font-size: 4.5cqw; }
+    .hifz-line-error { font-size: 13px; color: #a33; text-align: center; }
+  </style>
+
+  <script type="module">
+    import { getAyah, getSurah, getSurahIndex } from "./js/quran-data.js";
+    import { renderArabicPanel, renderTranslationPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel } from "./js/ayah-renderer.js";
+    import { renderMasteryWheel, renderWheelLegend } from "./js/mastery-wheel.js";
+    import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
+    import { renderNavBar } from "./js/nav.js";
+    import { showBootSplash, showQuranSplash } from "./js/splash.js";
+    import { effectiveRoles, scopedRoster } from "./js/session-context.js";
+    import { translateStatic } from "./js/i18n.js";
+
+    // Phase 1 of the full translation: turn this page's own static markup
+    // (headings, labels, buttons) into the chosen language before anything
+    // else runs, so a Bangla reader never sees an English frame first.
+    translateStatic();
+
+    try {
+      const fakeRoster = [
+        { id: "p_owner", name: { en: "Owner Self" } },
+        { id: "p_kid1", name: { en: "Kid One" }, managedByPersonId: "p_owner" },
+        { id: "p_kid2", name: { en: "Kid Two" }, managedByPersonId: "p_owner" },
+        { id: "p_other", name: { en: "Someone Else's Child" }, managedByPersonId: "p_someone_else" },
+      ];
+      const cases = [
+        { real: ["owner"], viewAs: null },
+        { real: ["owner"], viewAs: "student" },
+        { real: ["owner"], viewAs: "guardian" },
+        { real: ["owner"], viewAs: "teacher" },
+      ];
+      const lines = cases.map(({ real, viewAs }) => {
+        const eff = effectiveRoles(real, viewAs);
+        const visible = viewAs ? scopedRoster(fakeRoster, eff, "p_owner") : fakeRoster;
+        return `viewAs=${viewAs ?? "(none)"} -> effectiveRoles=[${eff.join(",")}], visible=[${visible.map((p) => p.id).join(",")}]`;
+      });
+      lines.push("---");
+      lines.push("navBar with no preview: " + renderNavBar(["owner"], null));
+      lines.push("navBar previewing as student: " + renderNavBar(["owner"], "student"));
+      lines.push("navBar previewing as teacher: " + renderNavBar(["owner"], "teacher"));
+      document.getElementById("viewAsOut").textContent = lines.join("\n");
+    } catch (err) { reportError("View as logic (effectiveRoles/scopedRoster/nav notice)", err); }
+
+    try {
+      const log = document.getElementById("splashTestLog");
+      document.getElementById("triggerBootSplash").addEventListener("click", () => {
+        showBootSplash(() => { log.textContent = "Boot splash closed (onDone fired)."; });
+      });
+      document.getElementById("triggerQuranSplash").addEventListener("click", () => {
+        showQuranSplash(() => { log.textContent = "Quran splash closed (onDone fired)."; });
+      });
+      document.getElementById("resetSplashPrefs").addEventListener("click", () => {
+        ["mm_splash_pref", "mm_splash_last_date", "mm_qs_splash_pref", "mm_qs_splash_last_date"].forEach((k) => localStorage.removeItem(k));
+        log.textContent = "Splash prefs cleared from localStorage.";
+      });
+    } catch (err) { reportError("splash test wiring", err); }
+
+    const errorsEl = document.getElementById("errors");
+    function reportError(label, err) {
+      errorsEl.textContent += `${label}: ${err.message}\n`;
+      console.error(label, err);
+    }
+
+    const tajweedToggle = document.getElementById("tajweedToggle");
+    const banglaToggle = document.getElementById("banglaToggle");
+    const ayahOut = document.getElementById("ayahOut");
+
+    let ayah255 = null;
+    async function renderAyah() {
+      if (!ayah255) return;
+      const langs = banglaToggle.checked ? ["en", "bn"] : ["en"];
+      ayahOut.innerHTML =
+        renderArabicPanel(ayah255, { tajweedOn: tajweedToggle.checked }) +
+        renderTranslationPanel(ayah255, langs) +
+        `<h4>Word by word</h4>` + renderWordByWordPanel(ayah255, { langs }) +
+        `<h4>Root</h4>` + renderRootPanel(ayah255) +
+        `<h4>Derivatives</h4>` + renderDerivativesPanel(ayah255);
+    }
+    tajweedToggle.addEventListener("change", renderAyah);
+    banglaToggle.addEventListener("change", renderAyah);
+
+    try {
+      ayah255 = await getAyah(2, 255);
+      await renderAyah();
+    } catch (err) { reportError("getAyah(2,255)", err); }
+
+    try {
+      const index = await getSurahIndex();
+      if (index.length !== 114) throw new Error(`Expected 114 surahs in index, got ${index.length}`);
+      console.log("surah-index.json OK:", index.length, "entries. First:", index[0], "Last:", index[113]);
+    } catch (err) { reportError("getSurahIndex()", err); }
+
+    try {
+      const fatiha = await getSurah(1);
+      const fakeStatuses = fatiha.ayahs.map((a, i) => ({
+        ayah: a.ayah,
+        statusId: ["not_applicable", "not_started", "learning", "practising", "achieved", "mastered", "not_started"][i % 7],
+      }));
+      document.getElementById("wheelOut").innerHTML =
+        renderMasteryWheel(fakeStatuses) +
+        renderWheelLegend({
+          not_applicable: "Not Applicable", not_started: "Not started", learning: "Learning",
+          practising: "Practising", achieved: "Achieved", mastered: "Mastered",
+        });
+    } catch (err) { reportError("wheel render", err); }
+
+    try {
+      document.getElementById("navOut1").innerHTML = "self: " + renderNavBar(["self"]);
+      document.getElementById("navOut2").innerHTML = "owner: " + renderNavBar(["owner"]);
+    } catch (err) { reportError("nav bar render", err); }
+
+    const hifzOut = document.getElementById("hifzOut");
+    try {
+      await ensureMushafData();
+      const ayahKeys = ["1:1", "1:2", "1:3", "1:4", "1:5"];
+      const pages = getMushafPagesForKeys(ayahKeys);
+      if (!pages.length) throw new Error("getMushafPagesForKeys returned no pages for Surah 1 -- ayah->page index is broken.");
+      console.log("Surah 1 ayahs 1-5 resolved to Mushaf page(s):", pages);
+      await renderMushafPages(hifzOut, pages, new Set(ayahKeys), (surahNum) => (surahNum === 1 ? "سورة الفاتحة" : null));
+      document.getElementById("hifzSimulatePlay").addEventListener("click", () => setActiveAyah("1:3"));
+    } catch (err) { reportError("Mushaf page render (hifz-renderer.js)", err); }
+  </script>
+</body>
+</html>

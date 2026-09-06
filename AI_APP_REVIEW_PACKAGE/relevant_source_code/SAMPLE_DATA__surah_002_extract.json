@@ -1,0 +1,1069 @@
+{
+ "surahNumber": 2,
+ "surahNameArabic": "سُورَةُ البَقَرَةِ",
+ "surahNameEnglish": "Al-Baqara",
+ "surahNameTranslation": "The Cow",
+ "revelationType": "Medinan",
+ "ayahCount": 286,
+ "_note": "EXTRACT ONLY -- ayahs 1, 2, 3 and 255 of Surah Al-Baqarah, taken verbatim from tools/quran-data-pull/output/surahs/surah_002.json (the real file is 1.6 MB and holds all 286 ayahs). Structure is byte-identical; only the ayah list is shortened.",
+ "ayahs": [
+  {
+   "ayah": 1,
+   "uthmaniText": "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ الٓمٓ",
+   "tajweedText": "ا<tajweed class=madda_necessary>لٓ</tajweed><tajweed class=madda_necessary>مٓ</tajweed> <span class=end>١</span>",
+   "translations": {
+    "en": "Alif, Lam, Meem.",
+    "bn": "আলিফ লাম মীম।"
+   },
+   "juz": 1,
+   "page": 2,
+   "ruku": 2,
+   "manzil": 1,
+   "hizbQuarter": 1,
+   "sajda": false,
+   "words": [
+    {
+     "position": 1,
+     "arabic": "الٓمٓ",
+     "transliteration": "alif-lam-meem",
+     "translation": {
+      "en": "Alif Laam Meem",
+      "bn": "আলিফ লা-ম মী-ম"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "",
+      "pos": "Quranic Initials",
+      "rootCount": 0
+     }
+    }
+   ]
+  },
+  {
+   "ayah": 2,
+   "uthmaniText": "ذَٰلِكَ ٱلْكِتَٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًۭى لِّلْمُتَّقِينَ",
+   "tajweedText": "ذ<tajweed class=madda_normal>َٲ</tajweed>لِكَ <tajweed class=ham_wasl>ٱ</tajweed>لْكِتَ<tajweed class=madda_normal>ـٰ</tajweed>بُ لَا رَيْبَ‌ۛ فِيهِ‌ۛ هُ<tajweed class=idgham_wo_ghunnah>دًى ل</tajweed>ِّلْمُتَّق<tajweed class=madda_permissible>ِي</tajweed>نَ <span class=end>٢</span>",
+   "translations": {
+    "en": "This is the Book about which there is no doubt, a guidance for those conscious of Allah -",
+    "bn": "এ সেই কিতাব যাতে কোনই সন্দেহ নেই। পথ প্রদর্শনকারী পরহেযগারদের জন্য,"
+   },
+   "juz": 1,
+   "page": 2,
+   "ruku": 2,
+   "manzil": 1,
+   "hizbQuarter": 1,
+   "sajda": false,
+   "words": [
+    {
+     "position": 1,
+     "arabic": "ذَٰلِكَ",
+     "transliteration": "dhālika",
+     "translation": {
+      "en": "That",
+      "bn": "(এটা) সেই"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "ذَٰلِك",
+      "pos": "Demonstrative Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 2,
+     "arabic": "ٱلْكِتَـٰبُ",
+     "transliteration": "l-kitābu",
+     "translation": {
+      "en": "(is) the book",
+      "bn": "মহাগ্রন্থ (আল্লাহর)"
+     },
+     "morphology": {
+      "root": "كتب",
+      "lemma": "كِتَٰب",
+      "pos": "Determiner + Noun",
+      "rootCount": 319
+     }
+    },
+    {
+     "position": 3,
+     "arabic": "لَا",
+     "transliteration": "lā",
+     "translation": {
+      "en": "no",
+      "bn": "নেই"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "لَا",
+      "pos": "Negative Particle",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 4,
+     "arabic": "رَيْبَ ۛ",
+     "transliteration": "rayba",
+     "translation": {
+      "en": "doubt",
+      "bn": "কোনো সন্দেহ"
+     },
+     "morphology": {
+      "root": "ريب",
+      "lemma": "رَيْب",
+      "pos": "Noun",
+      "rootCount": 36
+     }
+    },
+    {
+     "position": 5,
+     "arabic": "فِيهِ ۛ",
+     "transliteration": "fīhi",
+     "translation": {
+      "en": "in it",
+      "bn": "তাঁরমধ্যে"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "فِى",
+      "pos": "Preposition + Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 6,
+     "arabic": "هُدًۭى",
+     "transliteration": "hudan",
+     "translation": {
+      "en": "a Guidance",
+      "bn": "সৎপথ নির্দেশ (হেদায়াত)"
+     },
+     "morphology": {
+      "root": "هدي",
+      "lemma": "هُدًى",
+      "pos": "Noun",
+      "rootCount": 316
+     }
+    },
+    {
+     "position": 7,
+     "arabic": "لِّلْمُتَّقِينَ",
+     "transliteration": "lil'muttaqīna",
+     "translation": {
+      "en": "for the God-conscious",
+      "bn": "মুত্তাকীদের জন্য"
+     },
+     "morphology": {
+      "root": "وقي",
+      "lemma": "مُتَّقِين",
+      "pos": "Preposition + Determiner + Noun",
+      "rootCount": 258
+     }
+    }
+   ]
+  },
+  {
+   "ayah": 3,
+   "uthmaniText": "ٱلَّذِينَ يُؤْمِنُونَ بِٱلْغَيْبِ وَيُقِيمُونَ ٱلصَّلَوٰةَ وَمِمَّا رَزَقْنَٰهُمْ يُنفِقُونَ",
+   "tajweedText": "ٱلَّذِينَ يُؤْمِنُونَ بِ<tajweed class=ham_wasl>ٱ</tajweed>لْغَيْبِ وَيُقِيمُونَ <tajweed class=ham_wasl>ٱ</tajweed><tajweed class=laam_shamsiyah>ل</tajweed>صَّلَ<tajweed class=slnt>و</tajweed><tajweed class=madda_normal>ٲ</tajweed>ةَ وَمِ<tajweed class=ghunnah>مّ</tajweed>َا رَزَ<tajweed class=qalaqah>قْ</tajweed>نَ<tajweed class=madda_normal>ـٰ</tajweed>هُمْ يُ<tajweed class=ikhafa>نف</tajweed>ِق<tajweed class=madda_permissible>ُو</tajweed>نَ <span class=end>٣</span>",
+   "translations": {
+    "en": "Who believe in the unseen, establish prayer, and spend out of what We have provided for them,",
+    "bn": "যারা অদেখা বিষয়ের উপর বিশ্বাস স্থাপন করে এবং নামায প্রতিষ্ঠা করে। আর আমি তাদেরকে যে রুযী দান করেছি তা থেকে ব্যয় করে"
+   },
+   "juz": 1,
+   "page": 2,
+   "ruku": 2,
+   "manzil": 1,
+   "hizbQuarter": 1,
+   "sajda": false,
+   "words": [
+    {
+     "position": 1,
+     "arabic": "ٱلَّذِينَ",
+     "transliteration": "alladhīna",
+     "translation": {
+      "en": "Those who",
+      "bn": "যারা"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "ٱلَّذِى",
+      "pos": "Relative Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 2,
+     "arabic": "يُؤْمِنُونَ",
+     "transliteration": "yu'minūna",
+     "translation": {
+      "en": "believe",
+      "bn": "বিশ্বাস করে"
+     },
+     "morphology": {
+      "root": "امن",
+      "lemma": "ءَامَنَ",
+      "pos": "Verb + Pronoun",
+      "rootCount": 879
+     }
+    },
+    {
+     "position": 3,
+     "arabic": "بِٱلْغَيْبِ",
+     "transliteration": "bil-ghaybi",
+     "translation": {
+      "en": "in the unseen",
+      "bn": "অদৃশ্যের ওপর"
+     },
+     "morphology": {
+      "root": "غيب",
+      "lemma": "غَيْب",
+      "pos": "Preposition + Determiner + Noun",
+      "rootCount": 60
+     }
+    },
+    {
+     "position": 4,
+     "arabic": "وَيُقِيمُونَ",
+     "transliteration": "wayuqīmūna",
+     "translation": {
+      "en": "and establish",
+      "bn": "এবং প্রতিষ্ঠিত করে"
+     },
+     "morphology": {
+      "root": "قوم",
+      "lemma": "أَقَامَ",
+      "pos": "Conjunction + Verb + Pronoun",
+      "rootCount": 660
+     }
+    },
+    {
+     "position": 5,
+     "arabic": "ٱلصَّلَوٰةَ",
+     "transliteration": "l-ṣalata",
+     "translation": {
+      "en": "the prayer",
+      "bn": "সালাত"
+     },
+     "morphology": {
+      "root": "صلو",
+      "lemma": "صَلَوٰة",
+      "pos": "Determiner + Noun",
+      "rootCount": 124
+     }
+    },
+    {
+     "position": 6,
+     "arabic": "وَمِمَّا",
+     "transliteration": "wamimmā",
+     "translation": {
+      "en": "and out of what",
+      "bn": "ও তা হতে যা"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "مِن",
+      "pos": "Resumption Particle + Preposition + Relative Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 7,
+     "arabic": "رَزَقْنَـٰهُمْ",
+     "transliteration": "razaqnāhum",
+     "translation": {
+      "en": "We have provided them",
+      "bn": "তাদের আমরা জীবিকা দিয়েছি"
+     },
+     "morphology": {
+      "root": "رزق",
+      "lemma": "رَزَقَ",
+      "pos": "Verb + Pronoun + Pronoun",
+      "rootCount": 123
+     }
+    },
+    {
+     "position": 8,
+     "arabic": "يُنفِقُونَ",
+     "transliteration": "yunfiqūna",
+     "translation": {
+      "en": "they spend",
+      "bn": "তারা ব্যয় করে"
+     },
+     "morphology": {
+      "root": "نفق",
+      "lemma": "أَنفَقَ",
+      "pos": "Verb + Pronoun",
+      "rootCount": 111
+     }
+    }
+   ]
+  },
+  {
+   "ayah": 255,
+   "uthmaniText": "ٱللَّهُ لَآ إِلَٰهَ إِلَّا هُوَ ٱلْحَىُّ ٱلْقَيُّومُ ۚ لَا تَأْخُذُهُۥ سِنَةٌۭ وَلَا نَوْمٌۭ ۚ لَّهُۥ مَا فِى ٱلسَّمَٰوَٰتِ وَمَا فِى ٱلْأَرْضِ ۗ مَن ذَا ٱلَّذِى يَشْفَعُ عِندَهُۥٓ إِلَّا بِإِذْنِهِۦ ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ ۖ وَلَا يُحِيطُونَ بِشَىْءٍۢ مِّنْ عِلْمِهِۦٓ إِلَّا بِمَا شَآءَ ۚ وَسِعَ كُرْسِيُّهُ ٱلسَّمَٰوَٰتِ وَٱلْأَرْضَ ۖ وَلَا يَـُٔودُهُۥ حِفْظُهُمَا ۚ وَهُوَ ٱلْعَلِىُّ ٱلْعَظِيمُ",
+   "tajweedText": "ٱللَّهُ ل<tajweed class=madda_obligatory>َآ</tajweed> إِلَ<tajweed class=madda_normal>ـٰ</tajweed>هَ إِلَّا هُوَ <tajweed class=ham_wasl>ٱ</tajweed>لْحَىُّ <tajweed class=ham_wasl>ٱ</tajweed>لْقَيُّومُ‌ۚ لَا تَأْخُذُهُ<tajweed class=madda_normal>ۥ</tajweed> سِنَ<tajweed class=idgham_ghunnah>ةٌ و</tajweed>َلَا نَوْ<tajweed class=idgham_wo_ghunnah>مٌ‌ۚ ل</tajweed>َّهُ<tajweed class=madda_normal>ۥ</tajweed> مَا فِى <tajweed class=ham_wasl>ٱ</tajweed><tajweed class=laam_shamsiyah>ل</tajweed>سَّمَ<tajweed class=madda_normal>ـٰ</tajweed>و<tajweed class=madda_normal>َٲ</tajweed>تِ وَمَا فِى <tajweed class=ham_wasl>ٱ</tajweed>لْأَرْضِ‌ۗ مَ<tajweed class=ikhafa>ن ذ</tajweed>َا <tajweed class=ham_wasl>ٱ</tajweed>لَّذِى يَشْفَعُ عِ<tajweed class=ikhafa>ند</tajweed>َهُ<tajweed class=madda_obligatory>ۥٓ</tajweed> إِلَّا بِإِذْنِه<tajweed class=madda_normal>ِۦ</tajweed>‌ۚ يَعْلَمُ مَا بَيْنَ أَيْدِيهِمْ وَمَا خَلْفَهُمْ‌ۖ وَلَا يُحِيطُونَ بِش<tajweed class=idgham_ghunnah>َىْءٍ م</tajweed>ِّنْ عِلْمِه<tajweed class=madda_obligatory>ِۦٓ</tajweed> إِلَّا بِمَا ش<tajweed class=madda_obligatory>َا</tajweed>ٓءَ‌ۚ وَسِعَ كُرْسِيُّهُ <tajweed class=ham_wasl>ٱ</tajweed><tajweed class=laam_shamsiyah>ل</tajweed>سَّمَ<tajweed class=madda_normal>ـٰ</tajweed>و<tajweed class=madda_normal>َٲ</tajweed>تِ وَ<tajweed class=ham_wasl>ٱ</tajweed>لْأَرْضَ‌ۖ وَلَا يَــُٔودُهُ<tajweed class=madda_normal>ۥ</tajweed> حِفْظُهُمَا‌ۚ وَهُوَ <tajweed class=ham_wasl>ٱ</tajweed>لْعَلِىُّ <tajweed class=ham_wasl>ٱ</tajweed>لْعَظ<tajweed class=madda_permissible>ِي</tajweed>مُ <span class=end>٢٥٥</span>",
+   "translations": {
+    "en": "Allah - there is no deity except Him, the Ever-Living, the Sustainer of [all] existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth. Who is it that can intercede with Him except by His permission? He knows what is [presently] before them and what will be after them, and they encompass not a thing of His knowledge except for what He wills. His Kursi extends over the heavens and the earth, and their preservation tires Him not. And He is the Most High, the Most Great.",
+    "bn": "আল্লাহ ছাড়া অন্য কোন উপাস্য নেই, তিনি জীবিত, সবকিছুর ধারক। তাঁকে তন্দ্রাও স্পর্শ করতে পারে না এবং নিদ্রাও নয়। আসমান ও যমীনে যা কিছু রয়েছে, সবই তাঁর। কে আছ এমন, যে সুপারিশ করবে তাঁর কাছে তাঁর অনুমতি ছাড়া? দৃষ্টির সামনে কিংবা পিছনে যা কিছু রয়েছে সে সবই তিনি জানেন। তাঁর জ্ঞানসীমা থেকে তারা কোন কিছুকেই পরিবেষ্টিত করতে পারে না, কিন্তু যতটুকু তিনি ইচ্ছা করেন। তাঁর সিংহাসন সমস্ত আসমান ও যমীনকে পরিবেষ্টিত করে আছে। আর সেগুলোকে ধারণ করা তাঁর পক্ষে কঠিন নয়। তিনিই সর্বোচ্চ এবং সর্বাপেক্ষা মহান।"
+   },
+   "juz": 3,
+   "page": 42,
+   "ruku": 35,
+   "manzil": 1,
+   "hizbQuarter": 17,
+   "sajda": false,
+   "words": [
+    {
+     "position": 1,
+     "arabic": "ٱللَّهُ",
+     "transliteration": "al-lahu",
+     "translation": {
+      "en": "Allah ",
+      "bn": "আল্লাহ"
+     },
+     "morphology": {
+      "root": "اله",
+      "lemma": "ٱللَّه",
+      "pos": "Proper Noun",
+      "rootCount": 2851
+     }
+    },
+    {
+     "position": 2,
+     "arabic": "لَآ",
+     "transliteration": "lā",
+     "translation": {
+      "en": "(there is) no",
+      "bn": "নেই"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "لَا",
+      "pos": "Negative Particle",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 3,
+     "arabic": "إِلَـٰهَ",
+     "transliteration": "ilāha",
+     "translation": {
+      "en": "God",
+      "bn": "কোনো ইলাহ"
+     },
+     "morphology": {
+      "root": "اله",
+      "lemma": "إِلَٰه",
+      "pos": "Noun",
+      "rootCount": 2851
+     }
+    },
+    {
+     "position": 4,
+     "arabic": "إِلَّا",
+     "transliteration": "illā",
+     "translation": {
+      "en": "except",
+      "bn": "ছাড়া"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "إِلَّا",
+      "pos": "Exceptive Particle",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 5,
+     "arabic": "هُوَ",
+     "transliteration": "huwa",
+     "translation": {
+      "en": "Him",
+      "bn": "তিনি"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "",
+      "pos": "Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 6,
+     "arabic": "ٱلْحَىُّ",
+     "transliteration": "l-ḥayu",
+     "translation": {
+      "en": "the Ever-Living",
+      "bn": "চিরঞ্জীব"
+     },
+     "morphology": {
+      "root": "حيي",
+      "lemma": "حَيّ",
+      "pos": "Determiner + Noun",
+      "rootCount": 184
+     }
+    },
+    {
+     "position": 7,
+     "arabic": "ٱلْقَيُّومُ ۚ",
+     "transliteration": "l-qayūmu",
+     "translation": {
+      "en": "the Sustainer of all that exists",
+      "bn": "সর্বসত্তার ধারক"
+     },
+     "morphology": {
+      "root": "قوم",
+      "lemma": "قَيُّوم",
+      "pos": "Determiner + Adjective",
+      "rootCount": 660
+     }
+    },
+    {
+     "position": 8,
+     "arabic": "لَا",
+     "transliteration": "lā",
+     "translation": {
+      "en": "Not",
+      "bn": "না"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "لَا",
+      "pos": "Negative Particle",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 9,
+     "arabic": "تَأْخُذُهُۥ",
+     "transliteration": "takhudhuhu",
+     "translation": {
+      "en": "overtakes Him",
+      "bn": "তাকে স্পর্শ করতে পারে"
+     },
+     "morphology": {
+      "root": "اخذ",
+      "lemma": "أَخَذَ",
+      "pos": "Verb + Pronoun",
+      "rootCount": 273
+     }
+    },
+    {
+     "position": 10,
+     "arabic": "سِنَةٌۭ",
+     "transliteration": "sinatun",
+     "translation": {
+      "en": "slumber",
+      "bn": "তন্দ্রা"
+     },
+     "morphology": {
+      "root": "وسن",
+      "lemma": "سِنَة",
+      "pos": "Noun",
+      "rootCount": 1
+     }
+    },
+    {
+     "position": 11,
+     "arabic": "وَلَا",
+     "transliteration": "walā",
+     "translation": {
+      "en": "[and] not",
+      "bn": "আর না"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "لَا",
+      "pos": "Conjunction + Negative Particle",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 12,
+     "arabic": "نَوْمٌۭ ۚ",
+     "transliteration": "nawmun",
+     "translation": {
+      "en": "sleep",
+      "bn": "ঘুম"
+     },
+     "morphology": {
+      "root": "نوم",
+      "lemma": "نَوْم",
+      "pos": "Noun",
+      "rootCount": 9
+     }
+    },
+    {
+     "position": 13,
+     "arabic": "لَّهُۥ",
+     "transliteration": "lahu",
+     "translation": {
+      "en": "To Him (belongs)",
+      "bn": "তাঁরই জন্য"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "",
+      "pos": "Preposition + Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 14,
+     "arabic": "مَا",
+     "transliteration": "mā",
+     "translation": {
+      "en": "what(ever)",
+      "bn": "যা কিছু"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "مَا",
+      "pos": "Relative Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 15,
+     "arabic": "فِى",
+     "transliteration": "fī",
+     "translation": {
+      "en": "(is) in",
+      "bn": "মধ্যে (আছে)"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "فِى",
+      "pos": "Preposition",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 16,
+     "arabic": "ٱلسَّمَـٰوَٰتِ",
+     "transliteration": "l-samāwāti",
+     "translation": {
+      "en": "the heavens",
+      "bn": "আকাশ সমূহের"
+     },
+     "morphology": {
+      "root": "سمو",
+      "lemma": "سَمَا^ء",
+      "pos": "Determiner + Noun",
+      "rootCount": 381
+     }
+    },
+    {
+     "position": 17,
+     "arabic": "وَمَا",
+     "transliteration": "wamā",
+     "translation": {
+      "en": "and what(ever)",
+      "bn": "এবং যা কিছু"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "مَا",
+      "pos": "Conjunction + Relative Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 18,
+     "arabic": "فِى",
+     "transliteration": "fī",
+     "translation": {
+      "en": "(is) in",
+      "bn": "মধ্যে (আছে)"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "فِى",
+      "pos": "Preposition",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 19,
+     "arabic": "ٱلْأَرْضِ ۗ",
+     "transliteration": "l-arḍi",
+     "translation": {
+      "en": "the earth",
+      "bn": "পৃথিবীর"
+     },
+     "morphology": {
+      "root": "ارض",
+      "lemma": "أَرْض",
+      "pos": "Determiner + Noun",
+      "rootCount": 461
+     }
+    },
+    {
+     "position": 20,
+     "arabic": "مَن",
+     "transliteration": "man",
+     "translation": {
+      "en": "Who",
+      "bn": "কে"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "مَن",
+      "pos": "Interrogative Particle",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 21,
+     "arabic": "ذَا",
+     "transliteration": "dhā",
+     "translation": {
+      "en": "(is) the one",
+      "bn": "সে (এমন সম্পন্ন)"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "ذَا",
+      "pos": "Demonstrative Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 22,
+     "arabic": "ٱلَّذِى",
+     "transliteration": "alladhī",
+     "translation": {
+      "en": "who",
+      "bn": "যে"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "ٱلَّذِى",
+      "pos": "Relative Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 23,
+     "arabic": "يَشْفَعُ",
+     "transliteration": "yashfaʿu",
+     "translation": {
+      "en": "can intercede",
+      "bn": "সুপারিশ করবে"
+     },
+     "morphology": {
+      "root": "شفع",
+      "lemma": "يَشْفَعُ",
+      "pos": "Verb",
+      "rootCount": 31
+     }
+    },
+    {
+     "position": 24,
+     "arabic": "عِندَهُۥٓ",
+     "transliteration": "ʿindahu",
+     "translation": {
+      "en": "with Him",
+      "bn": "তাঁর কাছে"
+     },
+     "morphology": {
+      "root": "عند",
+      "lemma": "عِند",
+      "pos": "Location Adverb + Pronoun",
+      "rootCount": 201
+     }
+    },
+    {
+     "position": 25,
+     "arabic": "إِلَّا",
+     "transliteration": "illā",
+     "translation": {
+      "en": "except",
+      "bn": "ছাড়া"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "إِلَّا",
+      "pos": "Exceptive Particle",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 26,
+     "arabic": "بِإِذْنِهِۦ ۚ",
+     "transliteration": "bi-idh'nihi",
+     "translation": {
+      "en": "by His permission",
+      "bn": "তাঁর অনুমতি"
+     },
+     "morphology": {
+      "root": "اذن",
+      "lemma": "إِذْن",
+      "pos": "Preposition + Noun + Pronoun",
+      "rootCount": 102
+     }
+    },
+    {
+     "position": 27,
+     "arabic": "يَعْلَمُ",
+     "transliteration": "yaʿlamu",
+     "translation": {
+      "en": "He knows",
+      "bn": "তিনি জানেন"
+     },
+     "morphology": {
+      "root": "علم",
+      "lemma": "عَلِمَ",
+      "pos": "Verb",
+      "rootCount": 854
+     }
+    },
+    {
+     "position": 28,
+     "arabic": "مَا",
+     "transliteration": "mā",
+     "translation": {
+      "en": "what",
+      "bn": "যা (আছে)"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "مَا",
+      "pos": "Relative Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 29,
+     "arabic": "بَيْنَ",
+     "transliteration": "bayna",
+     "translation": {
+      "en": "(is)",
+      "bn": "(মাঝে)"
+     },
+     "morphology": {
+      "root": "بين",
+      "lemma": "بَيْن",
+      "pos": "Location Adverb",
+      "rootCount": 523
+     }
+    },
+    {
+     "position": 30,
+     "arabic": "أَيْدِيهِمْ",
+     "transliteration": "aydīhim",
+     "translation": {
+      "en": "before them",
+      "bn": "তাদের সামনে(হাতের)"
+     },
+     "morphology": {
+      "root": "يدي",
+      "lemma": "يَد",
+      "pos": "Noun + Pronoun",
+      "rootCount": 120
+     }
+    },
+    {
+     "position": 31,
+     "arabic": "وَمَا",
+     "transliteration": "wamā",
+     "translation": {
+      "en": "and what",
+      "bn": "এবং যা কিছু"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "مَا",
+      "pos": "Conjunction + Relative Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 32,
+     "arabic": "خَلْفَهُمْ ۖ",
+     "transliteration": "khalfahum",
+     "translation": {
+      "en": "(is) behind them",
+      "bn": "তাদের পিছনে"
+     },
+     "morphology": {
+      "root": "خلف",
+      "lemma": "خَلْف",
+      "pos": "Location Adverb + Pronoun",
+      "rootCount": 127
+     }
+    },
+    {
+     "position": 33,
+     "arabic": "وَلَا",
+     "transliteration": "walā",
+     "translation": {
+      "en": "And not",
+      "bn": "এবং না"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "لَا",
+      "pos": "Conjunction + Negative Particle",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 34,
+     "arabic": "يُحِيطُونَ",
+     "transliteration": "yuḥīṭūna",
+     "translation": {
+      "en": "they encompass",
+      "bn": "তারা আয়ত্ত করতে পারে"
+     },
+     "morphology": {
+      "root": "حوط",
+      "lemma": "أَحَاطَ",
+      "pos": "Verb + Pronoun",
+      "rootCount": 28
+     }
+    },
+    {
+     "position": 35,
+     "arabic": "بِشَىْءٍۢ",
+     "transliteration": "bishayin",
+     "translation": {
+      "en": "anything",
+      "bn": "সামান্য কিছুও"
+     },
+     "morphology": {
+      "root": "شيا",
+      "lemma": "شَىْء",
+      "pos": "Preposition + Noun",
+      "rootCount": 519
+     }
+    },
+    {
+     "position": 36,
+     "arabic": "مِّنْ",
+     "transliteration": "min",
+     "translation": {
+      "en": "of",
+      "bn": "হতে"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "مَن",
+      "pos": "Interrogative Particle",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 37,
+     "arabic": "عِلْمِهِۦٓ",
+     "transliteration": "ʿil'mihi",
+     "translation": {
+      "en": "His Knowledge",
+      "bn": "তাঁর জ্ঞান"
+     },
+     "morphology": {
+      "root": "علم",
+      "lemma": "عِلْم",
+      "pos": "Noun + Pronoun",
+      "rootCount": 854
+     }
+    },
+    {
+     "position": 38,
+     "arabic": "إِلَّا",
+     "transliteration": "illā",
+     "translation": {
+      "en": "except",
+      "bn": "এছাড়া"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "إِلَّا",
+      "pos": "Exceptive Particle",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 39,
+     "arabic": "بِمَا",
+     "transliteration": "bimā",
+     "translation": {
+      "en": "[of] what",
+      "bn": "যা সে বিষয়ে"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "مَا",
+      "pos": "Preposition + Relative Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 40,
+     "arabic": "شَآءَ ۚ",
+     "transliteration": "shāa",
+     "translation": {
+      "en": "He willed",
+      "bn": "তিনি চান"
+     },
+     "morphology": {
+      "root": "شيا",
+      "lemma": "شَا^ءَ",
+      "pos": "Verb",
+      "rootCount": 519
+     }
+    },
+    {
+     "position": 41,
+     "arabic": "وَسِعَ",
+     "transliteration": "wasiʿa",
+     "translation": {
+      "en": "Extends",
+      "bn": "পরিব্যাপ্ত করে আছে"
+     },
+     "morphology": {
+      "root": "وسع",
+      "lemma": "وَسِعَ",
+      "pos": "Verb",
+      "rootCount": 32
+     }
+    },
+    {
+     "position": 42,
+     "arabic": "كُرْسِيُّهُ",
+     "transliteration": "kur'siyyuhu",
+     "translation": {
+      "en": "His Seat",
+      "bn": "তাঁর (কর্তৃত্ব) আসন"
+     },
+     "morphology": {
+      "root": "كرس",
+      "lemma": "كُرْسِيّ",
+      "pos": "Noun + Pronoun",
+      "rootCount": 2
+     }
+    },
+    {
+     "position": 43,
+     "arabic": "ٱلسَّمَـٰوَٰتِ",
+     "transliteration": "l-samāwāti",
+     "translation": {
+      "en": "(to) the heavens",
+      "bn": "আকাশ সমূহে"
+     },
+     "morphology": {
+      "root": "سمو",
+      "lemma": "سَمَا^ء",
+      "pos": "Determiner + Noun",
+      "rootCount": 381
+     }
+    },
+    {
+     "position": 44,
+     "arabic": "وَٱلْأَرْضَ ۖ",
+     "transliteration": "wal-arḍa",
+     "translation": {
+      "en": "and the earth",
+      "bn": "ও পৃথিবীতে"
+     },
+     "morphology": {
+      "root": "ارض",
+      "lemma": "أَرْض",
+      "pos": "Conjunction + Determiner + Noun",
+      "rootCount": 461
+     }
+    },
+    {
+     "position": 45,
+     "arabic": "وَلَا",
+     "transliteration": "walā",
+     "translation": {
+      "en": "And not",
+      "bn": "এবং না"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "لَا",
+      "pos": "Conjunction + Negative Particle",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 46,
+     "arabic": "يَـُٔودُهُۥ",
+     "transliteration": "yaūduhu",
+     "translation": {
+      "en": "tires Him",
+      "bn": "তাঁকে ক্লান্ত করে"
+     },
+     "morphology": {
+      "root": "اود",
+      "lemma": "يَـ#ُودُ",
+      "pos": "Verb + Pronoun",
+      "rootCount": 1
+     }
+    },
+    {
+     "position": 47,
+     "arabic": "حِفْظُهُمَا ۚ",
+     "transliteration": "ḥif'ẓuhumā",
+     "translation": {
+      "en": "(the) guarding of both of them",
+      "bn": "এ দুটোর রক্ষণাবেক্ষণ"
+     },
+     "morphology": {
+      "root": "حفظ",
+      "lemma": "حِفْظ",
+      "pos": "Noun + Pronoun",
+      "rootCount": 44
+     }
+    },
+    {
+     "position": 48,
+     "arabic": "وَهُوَ",
+     "transliteration": "wahuwa",
+     "translation": {
+      "en": "And He",
+      "bn": "এবং তিনি"
+     },
+     "morphology": {
+      "root": "",
+      "lemma": "",
+      "pos": "Resumption Particle + Pronoun",
+      "rootCount": 0
+     }
+    },
+    {
+     "position": 49,
+     "arabic": "ٱلْعَلِىُّ",
+     "transliteration": "l-ʿaliyu",
+     "translation": {
+      "en": "(is) the Most High",
+      "bn": "সুউচ্চ (সত্তা)"
+     },
+     "morphology": {
+      "root": "علو",
+      "lemma": "عَلِيّ",
+      "pos": "Determiner + Noun",
+      "rootCount": 70
+     }
+    },
+    {
+     "position": 50,
+     "arabic": "ٱلْعَظِيمُ",
+     "transliteration": "l-ʿaẓīmu",
+     "translation": {
+      "en": "the Most Great",
+      "bn": "সুমহান"
+     },
+     "morphology": {
+      "root": "عظم",
+      "lemma": "عَظِيم",
+      "pos": "Determiner + Adjective",
+      "rootCount": 128
+     }
+    }
+   ]
+  }
+ ]
+}
