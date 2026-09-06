@@ -11562,11 +11562,58 @@ booting clean; and -- on the other side of the line -- **the live `/app/`
 still booting and still reading v07.139**, and **`/legacy/index.html` still
 served and still reading v06.30**.
 
-**Flagged, not done, deliberately.** The shared nav's "Legacy App - v06" link
-did NOT gain a "v07" sibling this round: while `app/` is still v07.139 that
-link would point at a byte-identical copy of the page it is on, which reads as
-a bug rather than an archive. It belongs in the v08.00 round, added to `app/`
-AFTER this snapshot was taken so the frozen copy never gains a link the
-version it froze did not have. Say the word and it goes in now instead. The
-retired `QuranRevival---ClaudeCode` repo (folded into this one at v07.78, last
-at v07.77) was left alone rather than re-diverged.
+**The nav link WAS added, same session, on the owner's own follow-up ("add
+the v07 nav link now") -- and the ordering is the whole point: the archive
+was snapshotted FIRST, so `app/` gained the link and the frozen copy did
+not.** `legacy-v07/`'s own Home menu still offers exactly one legacy link
+(v06), and a check asserts it, because a frozen build quietly acquiring a link
+the version it froze never had is the one way this could go wrong without
+anyone noticing.
+
+On the `app/` side it is one identical line inserted after the v06 link in all
+**22** nav-bearing pages. It lives 22 times rather than in `nav.js` because it
+is static pre-JS markup (v07.08's anti-flash fix) -- and the 6 pages that
+never carried the v06 link (`accept-invite`, `admin-self-check`, `index`,
+`migrate`, `onboarding`, `quranrevival-render-test`) correctly did not gain
+this one either.
+
+**The URL deliberately names `index.html`**, matching the v06 link's own
+style, rather than ending at the folder. A bare `/legacy-v07/` relies on the
+host serving a directory index: GitHub Pages does, this project's own
+`serve.js` does not, so the folder form 404'd in the harness. Naming the file
+is provable locally AND immune to a host quirk -- and the check that fetches
+it is only worth anything because of that. **A local server's gap is not
+proof the production host has one, but "prove it here too" beat "trust the
+host" for the cost of eight characters.**
+
+**Measured before and after -- the Home dropdown, six widths, both languages:
+436 -> 479px tall in English, 432 -> 461px in Bangla, width unchanged at
+169px.** At the shortest viewport this project measures (640px) its bottom
+lands at 567px, leaving **73px of headroom**: fully on screen, neither link
+clipped in either language, no page overflow at 320px or anywhere else. The
+dropdown is absolutely positioned (v07.57) and starts closed, which is exactly
+why the landing page cannot move.
+
+**`version.js` was still NOT bumped -- it stays 07.139 until the v08.00 round
+opens**, which is the owner's own numbering plan. For the short window until
+then the link points at a build identical to the live one; that is the
+awkwardness this was originally deferred over, now accepted knowingly rather
+than discovered afterwards. The moment `app/` reads v08.00 the two diverge and
+the link says something true.
+
+**Verified: a focused, un-checked-in Playwright script, 12 checks, all
+passing**, screenshotted in both languages -- the link present in the Home
+menu, pointing at the archive, opening in a new tab with `rel="noopener"`,
+reading "Legacy App - v07 ↗", sitting directly after the v06 link with exactly
+two legacy links present, a real tap target, present on a second page too, the
+archive it names really serving, all of it again in Bangla with the URL proven
+untouched, and **the frozen archive proven NOT to have gained it**.
+**`layout.mjs` against `HEAD`'s own copy: byte-for-byte identical at all eight
+viewports in both banner states**, `getElementById` 246 -> 246. **Coverage
+1,708 -> 1,713 scanned, 46 missing UNCHANGED** -- the +5 is one string counted
+once in each of the five areas whose files carry it, with its Bangla in every
+one. **`navcheck.mjs` unchanged** (still only the pre-existing 320px ENGLISH
+truncation of "Operation"/"Bookmark").
+
+The retired `QuranRevival---ClaudeCode` repo (folded into this one at v07.78,
+last at v07.77) was left alone rather than re-diverged.

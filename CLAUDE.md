@@ -24,9 +24,13 @@ first.
 | `/legacy-v07/` | v07.139, the multi-page Firebase rebuild, frozen 6 Sep 2026 | **Reference only — never edit** |
 | `/app/` | v08.00 onward | The live app. All work happens here |
 
-Both archives sign in to the same `study-monitoring` Firebase project and
-**write real data** — they are runnable history, not screenshots. The version
-badge beside the app name is what tells them apart on screen.
+**Both archives are reachable from inside the app** — Home ▾ carries "Legacy
+App - v06 ↗" and "Legacy App - v07 ↗", static markup in all 22 nav-bearing
+pages (not `nav.js`). Both sign in to the same `study-monitoring` Firebase
+project and **write real data** — they are runnable history, not screenshots.
+The version badge beside the app name is what tells them apart on screen, so
+**`app/` reading v08.00 is what makes the v07 link mean anything**; until that
+bump it points at an identical build.
 
 **The full round-by-round build log lives in `CHANGELOG.md`** — every version
 from v07.01 onward, with what each round measured, decided and deliberately
@@ -590,13 +594,56 @@ up; a second, quite different page (`records.html`) booting clean; and on the
 other side of the line, **the live `/app/` still booting at v07.139** and
 **`/legacy/index.html` still served at v06.30**.
 
-**Flagged, not done, deliberately: the nav's "Legacy App - v06" link did NOT
-gain a "v07" sibling.** While `app/` is still v07.139 that link would point at
-a byte-identical copy of the page it sits on, which reads as a bug rather than
-an archive. It belongs in the v08.00 round, added to `app/` AFTER this
-snapshot — so the frozen copy never gains a link the version it froze did not
-have. The retired `QuranRevival---ClaudeCode` repo (folded into this one at
-v07.78, last at v07.77) was left alone rather than re-diverged.
+**The nav link was added in the same session, on the owner's own follow-up
+("add the v07 nav link now"), and the ordering is the point: the archive was
+snapshotted FIRST, so `app/` gained the link and the frozen copy did not.**
+`legacy-v07/`'s own Home menu still offers exactly one legacy link (v06), and
+a check asserts that, because a frozen build silently acquiring a link the
+version it froze never had is the one way this could go quietly wrong. The
+`app/` side is one identical line inserted after the v06 link in all **22**
+nav-bearing pages -- it is static pre-JS markup (v07.08's anti-flash fix), so
+it genuinely lives 22 times rather than in `nav.js`; the 6 pages that never
+carried the v06 link (`accept-invite`, `admin-self-check`, `index`, `migrate`,
+`onboarding`, `quranrevival-render-test`) correctly did not gain this one.
+
+**The URL deliberately names `index.html`**, matching the v06 link's own
+style, rather than ending at the folder. A bare `/legacy-v07/` relies on the
+host serving a directory index -- GitHub Pages does, the project's own
+`serve.js` does not, so the folder form 404'd in the harness. Naming the file
+is provable locally AND cannot be affected by a host quirk; the check that
+fetches it is only worth anything because of that.
+
+**Measured before and after, the Home dropdown at six widths in both
+languages: 436 -> 479px tall in English, 432 -> 461px in Bangla, width
+unchanged at 169px.** At the shortest viewport this project measures (640px)
+its bottom lands at 567px, so **73px of headroom remain** -- fully on screen,
+neither link clipped in either language, no page overflow anywhere. The
+dropdown is absolutely positioned (v07.57) and starts closed, which is why the
+landing page itself cannot move: `layout.mjs` against `HEAD`'s own copy is
+byte-for-byte identical at all eight viewports in both banner states,
+`getElementById` 246 -> 246. **Coverage 1,708 -> 1,713 scanned, 46 missing
+UNCHANGED** -- the +5 is one string counted once in each of the five areas
+whose files carry it, and its Bangla ("পুরাতন অ্যাপ - v07 ↗") landed in every
+one of them. `navcheck.mjs` unchanged (still only the pre-existing 320px
+ENGLISH truncation of "Operation"/"Bookmark").
+
+**`version.js` was still NOT bumped, deliberately: it stays 07.139 until the
+v08.00 round opens**, which is the owner's own numbering plan. So for the
+short window until then the link points at a build identical to the live one
+-- the awkwardness this was originally deferred over, now accepted knowingly
+rather than discovered. The moment `app/` reads v08.00 the two diverge and the
+link means what it says.
+
+**Verified: a focused, un-checked-in Playwright script, 12 checks, all
+passing**, screenshotted in both languages -- the link present in the Home
+menu, pointing at the archive, opening in a new tab with `rel="noopener"`,
+reading "Legacy App - v07 ↗", sitting directly after the v06 link with exactly
+two legacy links present, a real tap target, present on a second page too, the
+archive it names really serving, the whole thing in Bangla with the URL proven
+untouched, and **the frozen archive proven NOT to have gained it**.
+
+The retired `QuranRevival---ClaudeCode` repo (folded into this one at v07.78,
+last at v07.77) was left alone rather than re-diverged.
 
 ## What this is
 
