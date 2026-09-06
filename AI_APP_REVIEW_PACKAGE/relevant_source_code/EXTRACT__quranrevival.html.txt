@@ -1,0 +1,518 @@
+EXTRACT — app/quranrevival.html
+================================
+
+app/quranrevival.html is 12,027 lines (728 KB) and hosts the Qur'an study
+screen in its entirety: the Mastery Wheel, the Read view, the Note view, the
+Explore navigator, all Study options, plus the Asma/QCR side panels. Only a
+small part of it concerns Word Study.
+
+Rather than ship 12,027 lines of mostly unrelated code, this file reproduces
+VERBATIM every region of that file that touches the word-by-word, root or
+derivatives system. Line numbers are the real ones in the source file at
+v08.00, so every excerpt can be located exactly.
+
+Full file: app/quranrevival.html in the repository.
+
+
+==============================================================================
+LINES 1765-1790 — CSS for every Word Study element (.wbw-strip, .wbw-word, .root-row, .root-root, .root-pos, .root-lemma, .root-count)
+==============================================================================
+
+  1765    .ayah-translation { font-size: calc(0.95rem * var(--qr-en-scale, 1)); color: #333; margin: 0.3rem 0; }
+  1766    .ayah-translation-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; font-size: calc(0.95rem * var(--qr-bn-scale, 1)); }
+  1767    /* Shell round 24 -- the words of an ayah run RIGHT TO LEFT. The owner spotted
+  1768       this: the chips were laid out left to right, so the FIRST word of the ayah
+  1769       sat at the left of the row and reading them in order meant reading the
+  1770       Arabic backwards. `direction: rtl` on the flex container is what reverses
+  1771       the order of the chips; wrapping still stacks downward as before. */
+  1772    .wbw-strip, .root-deriv-strip { display: flex; flex-wrap: wrap; gap: 0.6rem; margin: 0.6rem 0; direction: rtl; }
+  1773    /* ...and each chip goes back to normal inside, because its transliteration
+  1774       and its gloss are left-to-right scripts. The Arabic lines carry their own
+  1775       dir="rtl" from the renderer, so they are unaffected. */
+  1776    .wbw-word, .root-row { border: 1px solid #eee; border-radius: 0.4rem; padding: 0.3rem 0.5rem; text-align: center; min-width: 4.5rem; direction: ltr; }
+  1777    .wbw-arabic, .root-word, .root-root, .root-lemma { font-family: var(--quran-font); font-size: 1.15rem; }
+  1778    .wbw-translit { font-size: 0.72rem; color: #888; font-style: italic; }
+  1779    .wbw-gloss { font-size: 0.8rem; }
+  1780    .wbw-gloss-bn { font-family: 'Noto Sans Bengali', sans-serif; color: #555; }
+  1781    .root-pos { font-size: 0.7rem; color: #888; }
+  1782    .root-root { color: #1F3A6E; }
+  1783    .root-count { font-size: 0.65rem; color: #999; margin-left: 0.2rem; }
+  1784    .wbw-empty { color: #888; font-size: 0.85rem; }
+  1785    .panel-notes, .panel-reflection, .panel-writing textarea { width: 100%; box-sizing: border-box; margin: 0.4rem 0; }
+  1786    .panel-checklist { font-weight: 400; }
+  1787  
+  1788    /* Tajweed colours -- same proven values as the legacy app (reference only, never imported). */
+  1789    .tajweed-ham_wasl, .tajweed-laam_shamsiyah, .tajweed-slnt, .tajweed-silent { color: #9aa3b5; }
+  1790    .tajweed-madda_normal, .tajweed-ghunnah { color: #FF7E1E; }
+
+==============================================================================
+LINES 3420-3470 — The Study-options reading-ticks row: #wbwShowToggle, #rootsToggle, #derivativesToggle, and #wbwLangSelect
+==============================================================================
+
+  3420               Approaches in the catalogue, 12 declared no text panel (picking one
+  3421               took the Qur'an off the reading screen), 25 no audio (Listening
+  3422               disabled itself), 26 no loop and 31 no word-by-word. -->
+  3423          <div class="opt-card" id="readingViewCard">
+  3424            <h4>Reading view</h4>
+  3425            <!-- Tajweed, Word-by-Word and the translations are tickable AT THE
+  3426                 SAME TIME (shell round 18), and they ADD to whatever the chosen
+  3427                 Approach shows rather than replacing it -- so an Approach still
+  3428                 means what it always meant, and what "Track this unit" claims is
+  3429                 untouched. -->
+  3430            <div class="reading-ticks">
+  3431              <label id="tajweedControl"><input type="checkbox" id="tajweedToggle" /> Tajweed colours</label>
+  3432              <label id="wbwShowControl"><input type="checkbox" id="wbwShowToggle" /> Word by Word</label>
+  3433              <!-- Round 27: its own choice, not a passenger on Word by Word. The
+  3434                   two used to be one panel, so asking for the words always got
+  3435                   the grammar table too -- the owner's own report. -->
+  3436              <label id="rootsControl"><input type="checkbox" id="rootsToggle" /> Root</label>
+  3437              <!-- Enhancement round: the owner's own follow-up report -- Root
+  3438                   and Derivatives still "appeared together, merged" in the one
+  3439                   "Roots & derivatives" panel/tick, the same complaint round 27
+  3440                   already fixed once for Word by Word. Its own choice now too:
+  3441                   Root shows the shared root letters + how often that root
+  3442                   occurs; Derivatives shows this word's own derived form
+  3443                   (part of speech + lemma). -->
+  3444              <label id="derivativesControl"><input type="checkbox" id="derivativesToggle" /> Derivatives</label>
+  3445              <!-- Round 28: the owner's own "let the page move from left to
+  3446                   right". On by default, because that is what they asked; the
+  3447                   tick is the way back for anyone who prefers scrolling. -->
+  3448              <label id="sidewaysControl"><input type="checkbox" id="sidewaysToggle" checked /> Page by page</label>
+  3449              <label id="trEnControl"><input type="checkbox" id="trEnToggle" checked /> English translation</label>
+  3450              <label id="trBnControl"><input type="checkbox" id="trBnToggle" /> বাংলা translation</label>
+  3451              <!-- Mushaf is the one choice that cannot share the screen: it is a
+  3452                   photograph of a printed page, not a stack of panels. So it is a
+  3453                   tick like the others (never hidden, never blocked -- it works on
+  3454                   a Single Ayah too, showing the page that ayah sits on with the
+  3455                   ayah highlighted, which is exactly what the owner's one-ayah
+  3456                   memorising programme needs) and ticking it greys the other four
+  3457                   out rather than hiding them. -->
+  3458              <label id="mushafControl"><input type="checkbox" id="mushafToggle" /> Mushaf view</label>
+  3459            </div>
+  3460            <div class="row" id="wbwLangControl" style="display:none;">
+  3461              <div><label for="wbwLangSelect">Word by Word language</label><select id="wbwLangSelect">
+  3462                <option value="auto">Follow translation language</option>
+  3463                <option value="en">English only</option>
+  3464                <option value="bn">বাংলা only</option>
+  3465                <option value="both">English + বাংলা</option>
+  3466              </select></div>
+  3467            </div>
+  3468            <p class="opt-note" id="mushafNote" hidden>Mushaf view shows the printed page, so the other reading choices do not apply while it is on.</p>
+  3469            <!-- Shell round 23 -- which typeface the Qur'an is set in. The
+  3470                 owner's ask, from comparing our Arabic with another app's:
+
+==============================================================================
+LINES 3920-3945 — Element lookups for those controls
+==============================================================================
+
+  3920      // which is what the owner asked for and what the old one-of-two picker
+  3921      // could not express.
+  3922      const trEnToggle = document.getElementById("trEnToggle");
+  3923      const trBnToggle = document.getElementById("trBnToggle");
+  3924      const wbwShowToggle = document.getElementById("wbwShowToggle");
+  3925      const rootsToggle = document.getElementById("rootsToggle");
+  3926      const rootsControl = document.getElementById("rootsControl");
+  3927      const derivativesToggle = document.getElementById("derivativesToggle");
+  3928      const derivativesControl = document.getElementById("derivativesControl");
+  3929      const sidewaysToggle = document.getElementById("sidewaysToggle");
+  3930      const wbwShowControl = document.getElementById("wbwShowControl");
+  3931      const unitNumControl = document.getElementById("unitNumControl");
+  3932      const unitNumLabel = document.getElementById("unitNumLabel");
+  3933      const unitNumSelect = document.getElementById("unitNumSelect");
+  3934      const unitSpanReadout = document.getElementById("unitSpanReadout");
+  3935      const readPlayBtn = document.getElementById("readPlayBtn");
+  3936      const readStopBtn = document.getElementById("readStopBtn");
+  3937      const wbwLangControl = document.getElementById("wbwLangControl");
+  3938      const wbwLangSelect = document.getElementById("wbwLangSelect");
+  3939      const wheelContainer = document.getElementById("wheelContainer");
+  3940      // The wheel's own drag-resize clamps its max width against this, not
+  3941      // #wheelStageWrap -- that wrap shrink-wraps to the wheel itself
+  3942      // (display:flex; justify-content:center with one child), so it can
+  3943      // never report more room than the wheel already uses; .wheel-col is the
+  3944      // real flex item sharing space with the sidebar at >=900px.
+  3945      const wheelSectionEl = document.getElementById("wheelSection");
+
+==============================================================================
+LINES 4325-4340 — let wbwLangMode = "auto" -- module-scope, NEVER persisted (finding G-12)
+==============================================================================
+
+  4325      // Shell round 13 (13 Aug 2026) -- `currentLang` is gone. It used to be
+  4326      // declared here and nowhere else in the app, doing two unrelated jobs at
+  4327      // once: which language NAMES appear in (Approach/section names, person
+  4328      // names, the Guide tab -- global, every module) and whether the Bangla
+  4329      // ayah TRANSLATION shows (Quran reading only). Those are now two separate
+  4330      // stored preferences in js/prefs.js: getAppLang(), set under Home ->
+  4331      // Settings, and getQuranTranslationLang(), set in the Reading view card.
+  4332      // Both are read live at render time rather than copied into a local, so
+  4333      // there is no second copy to keep in sync.
+  4334      let wbwLangMode = "auto"; // "auto" follows the translation language; "en"/"bn"/"both" is an explicit per-panel override (owner request, 5 Aug 2026)
+  4335      let currentReciterId = "ar"; // persisted across renderAudioControls() rebuilds -- a fresh <select> is built on every ayah nav/toggle, so without this the choice silently reverts to the first option each time
+  4336      let loopIsOn = false;
+  4337  
+  4338      // Phase 5 -- Study Unit picker state (PHASE-5-STATUS.md parity gap: the
+  4339      // legacy app tracked 6 granularities; only "ayah" existed here before).
+  4340      let currentUnitType = "ayah"; // ayah | range | surah | ruku | juz | page
+
+==============================================================================
+LINES 9080-9100 — bismillahHtmlFor() and wbwLangs() -- which language(s) the word-by-word panel uses
+==============================================================================
+
+  9080          decorative heading and once as the ayah's own content, since Al-
+  9081          Fatiha's ayah 1 literally reads "In the name of Allah..."). On both
+  9082          the Read screen (single-ayah and flow) and the Note view. One place
+  9083          decides this so all three call sites can never disagree. */
+  9084      function bismillahHtmlFor(surahNum, ayahNum) {
+  9085        if (ayahNum !== 1 || surahNum === 9 || surahNum === 1) return "";
+  9086        return `<div class="ayah-bismillah" dir="rtl" lang="ar">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>`;
+  9087      }
+  9088  
+  9089      /** Word-by-word panel: "auto" follows the language above; otherwise the owner's explicit choice wins (owner request, 5 Aug 2026 -- an explicit fallback alongside the automatic behaviour, not instead of it). */
+  9090      function wbwLangs() {
+  9091        if (wbwLangMode === "en") return ["en"];
+  9092        if (wbwLangMode === "bn") return ["bn"];
+  9093        if (wbwLangMode === "both") return ["en", "bn"];
+  9094        return translationLangs();
+  9095      }
+  9096  
+  9097      /** Whole surah -> every ayah; range -> just the selected ayahs. Same bounds logic as currentUnitAyahBounds() for those two unit types, kept separate since that function also has to handle ruku/juz/page. */
+  9098      /**
+  9099       * Phase 5 round 7 -- Whole Surah / Range page view (PHASE-5-STATUS.md
+  9100       * round 6 spec). "mushaf" renders the true page-for-page glyph replica
+
+==============================================================================
+LINES 9145-9200 — READ VIEW, FLOW MODE -- one block per ayah, quick menu + renderLayoutA()
+==============================================================================
+
+  9145        // ayah. Round 19 folded the old four-way "Page display" picker into the
+  9146        // ordinary Reading view ticks -- one set of choices, whatever the unit.
+  9147        const ayahs = currentSurahData.ayahs.filter((a) => a.ayah >= fromAyah && a.ayah <= toAyah);
+  9148        // data-ayah is what lets the recitation mark its place (round 27). A
+  9149        // Range or a Whole Surah draws every ayah at once, so nothing on screen
+  9150        // moved as the audio advanced -- the owner's "the Ayah playing should
+  9151        // display on the screen (now it remains static)".
+  9152        // Ayah Note panel: the ⋮ badge rides along with each flow ayah -- "any
+  9153        // study-mode", per the owner, EXCEPT Mushaf (this branch never runs for
+  9154        // it), which returns above before reaching here.
+  9155        pageViewContainer.innerHTML = ayahs
+  9156          .map((ayah) => {
+  9157            const unitKey = buildUnitKey.ayah(currentSurahNum, ayah.ayah);
+  9158            // The ⋮ badge is its own header row, ABOVE the ayah content, not
+  9159            // overlaid on it -- see the .ayah-quick-header CSS comment.
+  9160            const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
+  9161            // Fix round -- Bismillah goes INSIDE the first ayah's own block
+  9162            // (not a sibling of it), since every direct child of
+  9163            // #pageViewContainer is treated as one full-width "page" in
+  9164            // sideways mode (round 28's own CSS) -- a bare sibling div would
+  9165            // have become a blank extra page rather than a heading.
+  9166            // Text-tools round -- the ⋮ badge carries the same Word by Word /
+  9167            // Root / Derivatives / Collapse group the Note view's own menu
+  9168            // does ("also place these options at the appropriate READ view
+  9169            // too"). The three toggles are screen-wide reading choices (the
+  9170            // canonical Study-options ticks); Collapse is per-āyah, which is
+  9171            // what the data-ayah-collapsible-for wrapper below is for -- one
+  9172            // āyah of a Range can be folded away without touching the rest.
+  9173            return `<div class="page-flow-ayah" data-ayah="${ayah.ayah}"><div class="ayah-quick-header">${renderQuickMenu(unitKey, {
+  9174              hasNote: ayahHasNote(ayahNotesDoc, unitKey), isBookmarked,
+  9175              showTextTools: true,
+  9176              isWbwOn: wbwShowToggle.checked, isRootsOn: rootsToggle.checked, isDerivativesOn: derivativesToggle.checked,
+  9177            })}</div><div class="ayah-flow-body" data-ayah-collapsible-for="${unitKey}">${bismillahHtmlFor(currentSurahNum, ayah.ayah)}${renderLayoutA(ayah, panels, {
+  9178              tajweedOn: tajweedToggle.checked,
+  9179              langs: translationLangs(),
+  9180              wbwLangs: wbwLangs(),
+  9181            })}</div></div>`;
+  9182          })
+  9183          .join("");
+  9184        attachAyahQuickMenus(pageViewContainer);
+  9185        // Fix round -- only mark an āyah as SOUNDING when something really is.
+  9186        // This used to run unconditionally, so a fresh flow always painted the
+  9187        // gold "now playing" band on currentAyahNum with nothing playing --
+  9188        // which, now that the reader's own position has its own (blue)
+  9189        // highlight, meant two different colours for two different ideas
+  9190        // sitting on screen at once, and the first āyah wearing the wrong one.
+  9191        // Gold means what its own CSS comment says again: the ayah being
+  9192        // recited. The playback callbacks that drive it during a recitation are
+  9193        // untouched.
+  9194        if (isPlaying() || isPaused()) markPlayingAyah(currentAyahNum, { scroll: false });
+  9195        wireFlowInViewHighlight();
+  9196      }
+  9197  
+  9198      /**
+  9199       * Shell round 27 -- mark the ayah that is sounding, in the flow view.
+  9200       *
+
+==============================================================================
+LINES 9500-9580 — captureQuranBookmarkSettings() / applyQuranBookmarkSettings() -- persists wbwOn/rootsOn/derivativesOn, NOT wbwLangMode
+==============================================================================
+
+  9500          onToggleWbw: toggleNoteWbw,
+  9501          onToggleRoots: toggleNoteRoots,
+  9502          onToggleDerivatives: toggleNoteDerivatives,
+  9503        });
+  9504      }
+  9505  
+  9506      /** Enhancement round -- the settings a Quran bookmark restores on reopen (item 4). Only what actually resets on a fresh load/session (checkbox state, unit type/position, Approach) -- device-wide reading prefs (translation languages, reciters, Arabic font) already come back on their own via prefs.js/localStorage, so capturing them here too would be redundant. */
+  9507      function captureQuranBookmarkSettings() {
+  9508        return {
+  9509          unitType: currentUnitType,
+  9510          surahNum: currentSurahNum,
+  9511          ayahNum: currentAyahNum,
+  9512          rangeFrom: currentUnitType === "range" ? rangeFrom : null,
+  9513          rangeTo: currentUnitType === "range" ? rangeTo : null,
+  9514          trackableId: currentTrackableId,
+  9515          tajweedOn: tajweedToggle.checked,
+  9516          wbwOn: wbwShowToggle.checked,
+  9517          rootsOn: rootsToggle.checked,
+  9518          derivativesOn: derivativesToggle.checked,
+  9519          mushafOn: mushafToggle.checked,
+  9520        };
+  9521      }
+  9522  
+  9523      /** Note view's own equivalent -- reads noteScope instead of the
+  9524          canonical Read-view position, since a Note-view bookmark can (this
+  9525          round) describe a different scope than whatever the Read screen is
+  9526          showing at the time (see noteScope's own comment). Reading-view
+  9527          prefs (tajweed/WbW/roots/Mushaf) still come from the shared,
+  9528          canonical toggles -- those aren't scope-specific. */
+  9529      function captureNoteBookmarkSettings() {
+  9530        return {
+  9531          unitType: noteScope.unitType,
+  9532          surahNum: currentSurahNum,
+  9533          ayahNum: noteScope.ayahNum,
+  9534          rangeFrom: noteScope.unitType === "range" ? noteScope.rangeFrom : null,
+  9535          rangeTo: noteScope.unitType === "range" ? noteScope.rangeTo : null,
+  9536          trackableId: currentTrackableId,
+  9537          tajweedOn: tajweedToggle.checked,
+  9538          wbwOn: wbwShowToggle.checked,
+  9539          rootsOn: rootsToggle.checked,
+  9540          derivativesOn: derivativesToggle.checked,
+  9541          mushafOn: mushafToggle.checked,
+  9542        };
+  9543      }
+  9544  
+  9545      /** The other half of captureQuranBookmarkSettings() -- restores every field it captured, then lands on the bookmarked āyah's own Note screen (item 6: "open the same place where the bookmark was created from"). Silently tolerant of a settings object from before this round (null, or missing fields) -- every field is optional and simply left alone. */
+  9546      async function applyQuranBookmarkSettings(settings, position) {
+  9547        if (settings) {
+  9548          if (typeof settings.surahNum === "number" && settings.surahNum !== currentSurahNum && surahIndex.some((s) => s.surahNumber === settings.surahNum)) {
+  9549            currentSurahNum = settings.surahNum;
+  9550            surahSelect.value = String(settings.surahNum);
+  9551            await loadSurah();
+  9552          }
+  9553          if (typeof settings.ayahNum === "number") {
+  9554            currentAyahNum = settings.ayahNum;
+  9555            if (ayahSelect.querySelector(`option[value="${currentAyahNum}"]`)) ayahSelect.value = String(currentAyahNum);
+  9556          }
+  9557          if (settings.unitType) {
+  9558            currentUnitType = settings.unitType;
+  9559            unitTypeSelect.value = currentUnitType;
+  9560          }
+  9561          if (currentUnitType === "range") {
+  9562            rangeFrom = settings.rangeFrom ?? currentAyahNum;
+  9563            rangeTo = settings.rangeTo ?? currentAyahNum;
+  9564            rememberRangeSpan();
+  9565          }
+  9566          if (typeof settings.tajweedOn === "boolean") tajweedToggle.checked = settings.tajweedOn;
+  9567          if (typeof settings.wbwOn === "boolean") wbwShowToggle.checked = settings.wbwOn;
+  9568          if (typeof settings.rootsOn === "boolean") rootsToggle.checked = settings.rootsOn;
+  9569          if (typeof settings.derivativesOn === "boolean") derivativesToggle.checked = settings.derivativesOn;
+  9570          if (typeof settings.mushafOn === "boolean") mushafToggle.checked = settings.mushafOn;
+  9571          if (typeof settings.trackableId === "string" && quranTrackables.some((tr) => tr.id === settings.trackableId)) {
+  9572            currentTrackableId = settings.trackableId;
+  9573            trackableSelect.value = settings.trackableId;
+  9574          }
+  9575          updateUnitControlsVisibility();
+  9576          renderStudyScreen();
+  9577          renderWheel();
+  9578        }
+  9579        if (position) await openNoteView(position);
+  9580      }
+
+==============================================================================
+LINES 10225-10240 — canWbwRoot = noteScopeCanWbwRoot()
+==============================================================================
+
+ 10225        if (!noteScope || !currentSurahData) return;
+ 10226        rememberLastSession(); // the Note view's own scope is state worth reopening on (see rememberLastSession)
+ 10227        const info = noteScopeUnitInfo();
+ 10228        const unitKey = info.unitKey;
+ 10229        const ref = info.label;
+ 10230        const showAyatText = noteScopeShowAyatText();
+ 10231        const canWbwRoot = noteScopeCanWbwRoot();
+ 10232        // 6 Sep 2026, the owner's own ask: the Track/Guide/Breakdown/Coverage
+ 10233        // card is offered for EVERY unit now, not only a single āyah. It was
+ 10234        // ayah-only because the wheel that opens it was ayah-only and a wider
+ 10235        // unit had its own separate path ("Track this unit" in Study options);
+ 10236        // with the wheel able to show any unit, that split is exactly what the
+ 10237        // owner reported. renderApproachEmbedHtml() claims whatever
+ 10238        // noteScopeUnitInfo() resolves to, so nothing here decides the scope.
+ 10239        const showApproach = true;
+ 10240        // A Juz/Hizb/Page scope claims into subject_quran, which may not be in
+
+==============================================================================
+LINES 10315-10340 — NOTE VIEW -- perAyahPanels() builds wbwHtml / rootsHtml / derivativesHtml
+==============================================================================
+
+ 10315            banglaHtml = inScope.map((a) => translationLineHtml(a.ayah, a.translations?.bn, "bn")).join("");
+ 10316          }
+ 10317          bismillahHtml = bismillahHtmlFor(currentSurahNum, info.fromAyah);
+ 10318  
+ 10319          // Word by Word / Root / Derivatives, once per āyah in scope. The
+ 10320          // ticks themselves are the canonical Study-options ones (fix round:
+ 10321          // "a choice of setting anywhere should work everywhere"), so this
+ 10322          // only decides HOW MUCH to draw, never whether the choice is on.
+ 10323          const perAyahPanels = (panelFn) => inScope
+ 10324            .map((a) => (inScope.length > 1
+ 10325              ? `<div class="ayah-num-row"><span class="ayah-num-badge">${num(a.ayah)}</span></div>${panelFn(a)}`
+ 10326              : panelFn(a)))
+ 10327            .join("");
+ 10328          if (canWbwRoot && wbwShowToggle.checked) wbwHtml = perAyahPanels((a) => renderWordByWordPanel(a, { langs: wbwLangs() }));
+ 10329          if (canWbwRoot && rootsToggle.checked) rootsHtml = perAyahPanels((a) => renderRootPanel(a));
+ 10330          if (canWbwRoot && derivativesToggle.checked) derivativesHtml = perAyahPanels((a) => renderDerivativesPanel(a));
+ 10331        }
+ 10332  
+ 10333        const isBookmarked = !!findSavedBookmark(bookmarksDoc, { moduleId: "quranrevival", subjectId: "quran", position: unitKey });
+ 10334        const hasNote = ayahHasNote(ayahNotesDoc, unitKey);
+ 10335        const wideNotes = noteScopeWiderNotes();
+ 10336        const wideNoteHtml = wideNotes.length
+ 10337          ? `<div class="note-wide-notes"><span>${t("Also noted at:")}</span>${wideNotes.map((w) => `<button type="button" class="note-wide-pill" data-note-wide-open="${w.unitType}">${w.label} →</button>`).join("")}</div>`
+ 10338          : "";
+ 10339        const readViewLinkHtml = !showAyatText
+ 10340          ? `<span>${info.label} — ${t("read it on the Read screen")}</span><button type="button" data-note-open-read>${t("Open in Read")} ▸</button>`
+
+==============================================================================
+LINES 10395-10412 — NOTE VIEW -- the three flags handed to renderNoteView()
+==============================================================================
+
+ 10395          // panel per āyah (see the perAyahPanels() builder above).
+ 10396          // Fix round -- WbW/Root/Derivatives read the SAME canonical
+ 10397          // Study-options ticks the Read screen uses, instead of their own
+ 10398          // separate noteWbwOn/noteRootsOn/noteDerivativesOn flags -- ticking
+ 10399          // one anywhere now shows up everywhere, with no separate click
+ 10400          // needed in the Note view.
+ 10401          wbwHtml,
+ 10402          isWbwOn: canWbwRoot && wbwShowToggle.checked,
+ 10403          rootsHtml,
+ 10404          isRootsOn: canWbwRoot && rootsToggle.checked,
+ 10405          derivativesHtml,
+ 10406          isDerivativesOn: canWbwRoot && derivativesToggle.checked,
+ 10407          canWbwRoot,
+ 10408          hasNote,
+ 10409          isBookmarked,
+ 10410          isFullscreen: noteFullscreenOn,
+ 10411          // The wheel-slice card -- for whatever unit this view is scoped to
+ 10412          // (6 Sep 2026), not only a single āyah. See
+
+==============================================================================
+LINES 11282-11322 — toggleNoteWbw/Roots/Derivatives -- the Note and Read menus flip the SAME canonical checkboxes
+==============================================================================
+
+ 11282      }
+ 11283  
+ 11284      /** Bar 2's Word-by-word toggle (round 31) -- a reading preference, not
+ 11285          per-āyah state, so it deliberately stays on across Prev/Next within
+ 11286          the Note view rather than resetting each time (matching how the
+ 11287          ordinary reading screen's own ticks behave). Fix round -- flips the
+ 11288          SAME canonical wbwShowToggle checkbox Study options uses, rather
+ 11289          than a separate flag, so the Read screen picks up the change too
+ 11290          the next time it renders. Text-tools round -- the Read screen's own
+ 11291          ⋮ badge calls these three as well, so they re-render whichever
+ 11292          screen is open (onReadingTickChanged) rather than the Note view
+ 11293          alone; the name is kept because the mechanism is unchanged. */
+ 11294      function toggleNoteWbw() {
+ 11295        wbwShowToggle.checked = !wbwShowToggle.checked;
+ 11296        onReadingTickChanged();
+ 11297      }
+ 11298  
+ 11299      /** Bar 2's Root toggle (enhancement round) -- same "reading preference,
+ 11300          not per-āyah state" shape as toggleNoteWbw() above: stays on across
+ 11301          Prev/Next until the reader clicks it again, via the shared
+ 11302          rootsToggle checkbox. */
+ 11303      function toggleNoteRoots() {
+ 11304        rootsToggle.checked = !rootsToggle.checked;
+ 11305        onReadingTickChanged();
+ 11306      }
+ 11307  
+ 11308      /** Bar 2's own, separate Derivatives toggle -- same shape as
+ 11309          toggleNoteRoots() above, via the shared derivativesToggle
+ 11310          checkbox so the two settings stay independent (Root and
+ 11311          Derivatives used to be one merged panel/tick) but still shared
+ 11312          between the Read and Note screens. */
+ 11313      function toggleNoteDerivatives() {
+ 11314        derivativesToggle.checked = !derivativesToggle.checked;
+ 11315        onReadingTickChanged();
+ 11316      }
+ 11317  
+ 11318      /** Note view's own ⋯-menu "show ayah by ayah" toggle -- a shared,
+ 11319          localStorage preference (js/prefs.js), not per-āyah state, since it's
+ 11320          "which layout do I read a multi-āyah unit in", the same class of
+ 11321          reading preference every other Note-view toggle already is. */
+ 11322      function toggleNoteAyahDisplayMode() {
+
+==============================================================================
+LINES 11385-11402 — Panel-list assembly; all reading ticks disabled while Mushaf view is on (finding G-22)
+==============================================================================
+
+ 11385        // working panels -- notes, reflection, writing, the checklist -- still
+ 11386        // come from the Approach, because those are its METHOD rather than the
+ 11387        // view (the owner's own call: "we will design that later according to the
+ 11388        // nature of the approach").
+ 11389        const approachPanels = trackable?.panels ?? [];
+ 11390        const panels = ["text", ...approachPanels.filter((p) => p !== "text")];
+ 11391        if (wbwShowToggle.checked && !panels.includes("wordByWord")) panels.push("wordByWord");
+ 11392        if (rootsToggle.checked && !panels.includes("root")) panels.push("root");
+ 11393        if (derivativesToggle.checked && !panels.includes("derivatives")) panels.push("derivatives");
+ 11394  
+ 11395        // Mushaf is a photograph of a printed page: nothing else can share it.
+ 11396        // The other reading choices are DISABLED rather than hidden, so the
+ 11397        // reader can see what they would get back by turning Mushaf off.
+ 11398        [tajweedToggle, wbwShowToggle, rootsToggle, derivativesToggle, trEnToggle, trBnToggle].forEach((el) => { el.disabled = isMushaf; });
+ 11399        [tajweedControl, wbwShowControl, rootsControl, derivativesControl, trEnControl, trBnControl].forEach((el) => { el.style.opacity = isMushaf ? "0.45" : ""; });
+ 11400        mushafNote.hidden = !isMushaf;
+ 11401        wbwLangControl.style.display = !isMushaf && panels.includes("wordByWord") ? "" : "none";
+ 11402  
+
+==============================================================================
+LINES 11455-11475 — READ VIEW, SINGLE-AYAH MODE -- renderLayoutA() into #ayahPanels
+==============================================================================
+
+ 11455          const ayah = currentSurahData.ayahs.find((a) => a.ayah === currentAyahNum);
+ 11456          if (!ayah) return;
+ 11457          ayahPosition.textContent = t("Surah {surah} — Ayah {ayah} of {total}", { surah: num(currentSurahNum), ayah: num(currentAyahNum), total: num(currentSurahData.ayahCount) });
+ 11458          ayahSelect.value = String(currentAyahNum);
+ 11459          prevAyahBtn.disabled = currentAyahNum <= 1;
+ 11460          nextAyahBtn.disabled = currentAyahNum >= currentSurahData.ayahCount;
+ 11461          ayahPanels.innerHTML = bismillahHtmlFor(currentSurahNum, currentAyahNum) + renderLayoutA(ayah, panels, {
+ 11462            tajweedOn: tajweedToggle.checked,
+ 11463            langs: translationLangs(),
+ 11464            wbwLangs: wbwLangs(),
+ 11465          });
+ 11466          // Text-tools round -- what the ⋮ menu's Collapse item folds away.
+ 11467          // #ayahPanels itself survives every re-render (only its innerHTML is
+ 11468          // replaced), so the class has to be cleared here or a collapse left
+ 11469          // on would silently hide the NEXT āyah too -- collapse is a "hide
+ 11470          // what's in front of me now" gesture, not a stored preference, the
+ 11471          // same as the Note view's own master toggle.
+ 11472          ayahPanels.dataset.ayahCollapsibleFor = buildUnitKey.ayah(currentSurahNum, currentAyahNum);
+ 11473          ayahPanels.classList.remove("collapsed");
+ 11474          // Round 31 -- the owner's own question: "why should the three dot
+ 11475          // take space over the Ayah?" Mounted on #readBar instead of a
+
+==============================================================================
+LINES 11835-11850 — #wbwLangSelect change handler
+==============================================================================
+
+ 11835      sidewaysToggle.checked = getSidewaysReading();
+ 11836      applySidewaysReading();
+ 11837      sidewaysToggle.addEventListener("change", () => {
+ 11838        setSidewaysReading(sidewaysToggle.checked);
+ 11839        applySidewaysReading();
+ 11840        renderStudyScreen();
+ 11841      });
+ 11842      wbwLangSelect.addEventListener("change", () => {
+ 11843        wbwLangMode = wbwLangSelect.value;
+ 11844        renderStudyScreen();
+ 11845      });
+ 11846  
+ 11847      surahSelect.addEventListener("change", async () => { currentSurahNum = Number(surahSelect.value); await loadSurah(); });
+ 11848      trackableSelect.addEventListener("change", () => changeCurrentTrackable(trackableSelect.value));
+ 11849      personSelect.addEventListener("change", async () => {
+ 11850        selectedPersonId = personSelect.value;
