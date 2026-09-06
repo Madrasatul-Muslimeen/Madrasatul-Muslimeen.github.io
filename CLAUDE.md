@@ -642,8 +642,18 @@ two legacy links present, a real tap target, present on a second page too, the
 archive it names really serving, the whole thing in Bangla with the URL proven
 untouched, and **the frozen archive proven NOT to have gained it**.
 
-The retired `QuranRevival---ClaudeCode` repo (folded into this one at v07.78,
-last at v07.77) was left alone rather than re-diverged.
+**The retired `QuranRevival---ClaudeCode` repo now REDIRECTS here.** Its own
+`CLAUDE.md` was still the full 362KB / 5,248-line standing brief, frozen at
+v07.77 — so any session opening that repo would have read a brief that stopped
+being true a hundred rounds ago and treated it as authoritative, while a fix
+committed there reaches nobody (the live site is served from this repo's
+`app/`). It is a 3KB redirect notice now, plus a new `README.md` so GitHub's
+own repo page carries it too. **Its code was deliberately NOT touched** —
+`app/`, `tools/`, `firestore.rules` and the `PHASE-*-STATUS.md` files are what
+that repo's own commit history refers to, and rewriting them would make the
+history unreadable for no gain; the notice says plainly that none of it is
+current. Nothing is destroyed: the old brief is in that repo's git history,
+and v07.78 merged all 233 of its commits into this one anyway.
 
 ## What this is
 
