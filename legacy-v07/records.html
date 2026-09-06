@@ -1,0 +1,699 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — Records</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.15rem; margin-top: 2.2rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+  label { display: block; margin: 0.8rem 0 0.3rem; font-weight: 600; font-size: 0.92rem; }
+  input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 0.45rem; font-size: 0.95rem; border: 1px solid #ccc; border-radius: 0.35rem; box-sizing: border-box; }
+  .row { display: flex; gap: 0.8rem; flex-wrap: wrap; }
+  .row > div { flex: 1; min-width: 10rem; }
+  button {
+    font-size: 0.92rem; padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.small { padding: 0.2rem 0.5rem; font-size: 0.8rem; }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.6rem; }
+  th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid #eee; font-size: 0.85rem; vertical-align: top; }
+  .tag { display: inline-block; padding: 0.1rem 0.4rem; border-radius: 0.8rem; font-size: 0.72rem; background: #eef1f7; color: #1F3A6E; margin: 0.1rem 0.2rem 0.1rem 0; }
+  .status-not_applicable { color: #999; }
+  .status-not_started { color: #888; }
+  .status-learning { color: #b8862f; }
+  .status-practising { color: #9c3b2e; }
+  .status-achieved { color: #1f3a6e; font-weight: 600; }
+  .status-mastered { color: #2e6b4f; font-weight: 700; }
+  .pill { display: inline-block; padding: 0.05rem 0.4rem; border-radius: 0.7rem; font-size: 0.72rem; }
+  .pill-pending { background: #f5ebd6; color: #8a6220; }
+  .pill-confirmed { background: #deede4; color: #2e6b4f; }
+  .pill-returned { background: #f6e3df; color: #9c3b2e; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  #claimResult, #activityResult { margin-top: 0.6rem; font-size: 0.88rem; }
+  fieldset { border: 1px solid #ddd; border-radius: 0.5rem; margin-top: 1rem; }
+  .domainChips label { display: inline-flex; align-items: center; gap: 0.3rem; font-weight: 400; margin: 0.2rem 0.6rem 0.2rem 0; }
+  .domainChips input { width: auto; }
+
+</style>
+</head>
+<body>
+  <h1>Records</h1>
+  <p>Claim a status against a unit of study, see it confirmed or returned, and
+     confirm a whole surah, subject or week in one go.</p>
+
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
+
+  <div id="app" style="display:none;">
+    <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
+      <label style="margin:0;">Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label style="margin:0;">Person
+        <select id="personSelect" style="width:auto;"></select>
+      </label>
+    </div>
+
+    <fieldset>
+      <legend>Claim a status</legend>
+      <div class="row">
+        <div>
+          <label for="subjectSelect">Subject</label>
+          <select id="subjectSelect"></select>
+        </div>
+        <div>
+          <label for="trackableSelect">Approach</label>
+          <select id="trackableSelect"></select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="unitTypeSelect">Unit type</label>
+          <!-- Options are rendered from UNIT_TYPES by the script below, so the
+               list and its labels have one source of truth and turn over with
+               the language. The VALUES stay the bare identifiers. -->
+          <select id="unitTypeSelect"></select>
+        </div>
+        <div>
+          <label for="unitRef">Reference</label>
+          <input id="unitRef" type="text" />
+          <div id="unitRefHint" style="font-size:0.78rem; color:#777; margin-top:0.2rem;"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label for="statusSelect">Status</label>
+          <select id="statusSelect"></select>
+        </div>
+        <div>
+          <label>Domain tags</label>
+          <div class="domainChips" id="domainChips"></div>
+          <div style="margin-top:0.4rem;">
+            <input id="newDomainName" type="text" placeholder="New domain tag" style="width:auto; display:inline-block;" />
+            <button class="small secondary" id="addDomainBtn" type="button">+ Add</button>
+          </div>
+        </div>
+      </div>
+      <label for="notesInput">Notes (optional)</label>
+      <textarea id="notesInput" rows="2"></textarea>
+
+      <button id="claimBtn" style="margin-top:1rem;">Claim</button>
+      <div id="claimResult"></div>
+    </fieldset>
+
+    <h2>Entries in this chunk</h2>
+    <p style="font-size:0.85rem; color:#666;" id="chunkLabel"></p>
+    <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
+      <input type="checkbox" id="pendingOnly" /> Pending only
+    </label>
+    <button class="small secondary" id="bulkConfirmChunkBtn" style="margin-left:0.6rem;">Bulk confirm all pending here</button>
+    <table>
+      <thead><tr><th>Unit</th><th>Approach</th><th>Claimed</th><th>Confirmed</th><th>State</th><th>Domains</th><th>Notes</th><th>Actions</th></tr></thead>
+      <tbody id="entriesBody"></tbody>
+    </table>
+
+    <h2>This week's activity</h2>
+    <p style="font-size:0.85rem; color:#666;" id="weekLabel"></p>
+    <button class="small secondary" id="bulkConfirmWeekBtn">Bulk confirm all pending this week</button>
+    <table>
+      <thead><tr><th>Date</th><th>Subject</th><th>Unit</th><th>Approach</th><th>Action</th></tr></thead>
+      <tbody id="activityBody"></tbody>
+    </table>
+    <div id="activityResult"></div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { roleListLabel } from "./js/labels.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
+    import { safeWrite } from "./js/errors.js";
+    import {
+      bootstrapContext,
+      getActiveContext,
+      setActiveContext,
+      effectiveRoles,
+      scopedRoster,
+      getSelectedPersonId,
+      setSelectedPersonId,
+    } from "./js/session-context.js";
+    import { getSubjectTree, getTrackables } from "./js/catalogue.js";
+    import {
+      buildUnitKey, STATUSES, UNIT_TYPES,
+      statusLabel as translatedStatusLabel, unitTypeLabel, unitKeyLabel,
+    } from "./js/unit-keys.js";
+    import {
+      chunkKeyFor,
+      getRecordsChunk,
+      claimStatus,
+      confirmEntry,
+      returnEntry,
+      bulkConfirmChunk,
+      bulkConfirmWeek,
+      confirmStateLabel,
+    } from "./js/records.js";
+    import { weekKeyFor, getWeekActivity, logActivity, activityActionLabel } from "./js/activity.js";
+    import { createDomain, listDomains } from "./js/domains.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+import { mountBookmarkMenu } from "./js/bookmark-nav.js";
+    import { translateStatic, t, num, parseNum } from "./js/i18n.js";
+
+    // Phase 1 of the full translation: turn this page's own static markup
+    // (headings, labels, buttons) into the chosen language before anything
+    // else runs, so a Bangla reader never sees an English frame first.
+    translateStatic();
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
+      mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => selectedPersonId , getRoster: () => roster });
+    }
+    const tenantSelect = document.getElementById("tenantSelect");
+    const personSelect = document.getElementById("personSelect");
+    const subjectSelect = document.getElementById("subjectSelect");
+    const trackableSelect = document.getElementById("trackableSelect");
+    const unitTypeSelect = document.getElementById("unitTypeSelect");
+    const unitRef = document.getElementById("unitRef");
+    const unitRefHint = document.getElementById("unitRefHint");
+    const statusSelect = document.getElementById("statusSelect");
+    const domainChips = document.getElementById("domainChips");
+    const newDomainName = document.getElementById("newDomainName");
+    const addDomainBtn = document.getElementById("addDomainBtn");
+    const notesInput = document.getElementById("notesInput");
+    const claimBtn = document.getElementById("claimBtn");
+    const claimResult = document.getElementById("claimResult");
+    const chunkLabel = document.getElementById("chunkLabel");
+    const pendingOnly = document.getElementById("pendingOnly");
+    const bulkConfirmChunkBtn = document.getElementById("bulkConfirmChunkBtn");
+    const entriesBody = document.getElementById("entriesBody");
+    const weekLabel = document.getElementById("weekLabel");
+    const bulkConfirmWeekBtn = document.getElementById("bulkConfirmWeekBtn");
+    const activityBody = document.getElementById("activityBody");
+    const activityResult = document.getElementById("activityResult");
+
+    // Full app translation, phase 4. Each hint is a sentence plus an EXAMPLE
+    // reference; the example's digits go through num(), because a Bangla
+    // reader is about to type into a box that accepts Bengali digits
+    // (parseNum below) and the hint should show them what to type.
+    const UNIT_HINTS = {
+      ayah: () => t("surah:ayah — e.g. {example}", { example: num("2:255") }),
+      range: () => t("surah:from-to — e.g. {example}", { example: num("2:255-257") }),
+      surah: () => t("surah — e.g. {example}", { example: num("2") }),
+      page: () => t("edition:page — e.g. {example}", { example: `madani:${num("127")}` }),
+      ruku: () => t("surah:ruku — e.g. {example}", { example: num("2:34") }),
+      juz: () => t("juz — e.g. {example}", { example: num("3") }),
+      hizb: () => t("hizb — e.g. {example}", { example: num("5") }),
+      rub: () => t("rub — e.g. {example}", { example: num("20") }),
+      manzil: () => t("manzil — e.g. {example}", { example: num("2") }),
+      hadith: () => t("collection:number — e.g. {example}", { example: `bukhari:${num("5678")}` }),
+      topic: () => t("topicId — e.g. {example}", { example: "topic_0042" }),
+      name: () => t("number — e.g. {example}", { example: num("17") }),
+    };
+
+    // The option TEXT is translated; the option VALUE stays the bare
+    // identifier, because every handler below reads it back as one.
+    unitTypeSelect.innerHTML = UNIT_TYPES
+      .map((u) => `<option value="${u}">${unitTypeLabel(u)}</option>`)
+      .join("");
+    // ...and the status picker goes through the shared translated helper
+    // rather than STATUSES' own English `label`, which is the stored value.
+    // It was reading the raw label, so this picker stayed English in Bangla
+    // even after phase 1 translated statuses everywhere else.
+    statusSelect.innerHTML = STATUSES.map((s) => `<option value="${s.id}">${translatedStatusLabel(s.id)}</option>`).join("");
+    unitTypeSelect.addEventListener("change", updateUnitHint);
+    function updateUnitHint() {
+      unitRefHint.textContent = UNIT_HINTS[unitTypeSelect.value]?.() ?? "";
+    }
+    updateUnitHint();
+
+    function buildUnitKeyFromInput(unitType, reference) {
+      // parseNum: a Bangla-only reader on a Bangla keyboard types ২:২৫৫, and
+      // the hint above has just shown them Bengali digits. A box that then
+      // refuses what the interface taught them to type is where someone
+      // gives up. Always safe -- a reference with no Bengali digits (or a
+      // non-numeric one like topic_0042) comes back unchanged.
+      const ref = parseNum(reference.trim());
+      switch (unitType) {
+        case "ayah": { const [s, a] = ref.split(":"); return buildUnitKey.ayah(s, a); }
+        case "range": { const [s, rest] = ref.split(":"); const [from, to] = (rest ?? "").split("-"); return buildUnitKey.range(s, from, to); }
+        case "surah": return buildUnitKey.surah(ref);
+        case "page": { const [ed, p] = ref.split(":"); return buildUnitKey.page(ed, p); }
+        case "ruku": { const [s, r] = ref.split(":"); return buildUnitKey.ruku(s, r); }
+        case "juz": return buildUnitKey.juz(ref);
+        case "hizb": return buildUnitKey.hizb(ref);
+        case "rub": return buildUnitKey.rub(ref);
+        case "manzil": return buildUnitKey.manzil(ref);
+        case "hadith": { const [c, n] = ref.split(":"); return buildUnitKey.hadith(c, n); }
+        case "topic": return buildUnitKey.topic(ref);
+        case "name": return buildUnitKey.name(ref);
+        default: throw new Error(`Unknown unit type "${unitType}".`);
+      }
+    }
+
+    // Round 10 fix (8 Aug 2026): old wording told anyone with no account to
+    // create one on onboarding.html -- wrong for someone with a real pending
+    // invite who hasn't clicked their invite link yet. Points there first.
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+    let activeTenantId = null;
+    let myMemberships = [];
+    let roster = [];
+    let subjectTree = [];
+    let trackableList = [];
+    let domainList = [];
+    let tenantWeekStartsOn = 6;
+    let selectedPersonId = null;
+    let canConfirm = true; // round 11 -- false only while previewing as Student ("View as", people.html)
+
+    /** Round 11 -- "View as" wired up for real. Falls back to real roles/full roster when no preview is active, so normal (non-preview) behaviour is unchanged. */
+    function currentPreview() {
+      const context = getActiveContext();
+      const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      const realRoles = activeMembership?.roles ?? [];
+      const viewAsRole = context?.viewAsRole ?? null;
+      return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: activeMembership?.personId ?? null };
+    }
+
+    async function loadContextData() {
+      // LOAD SPEED (Aug 2026): the subject tree, the trackables and the
+      // domains were each awaited in turn after this pair had already come
+      // back -- five round trips in a row for five reads that do not depend
+      // on one another.
+      const [rosterSnap, tenantSnap, loadedTree, loadedTrackables, loadedDomains] = await Promise.all([
+        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        getDoc(doc(db, TENANT.TENANTS, activeTenantId)),
+        getSubjectTree(db, activeTenantId),
+        getTrackables(db, activeTenantId),
+        listDomains(db, activeTenantId),
+      ]);
+      roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      tenantWeekStartsOn = tenantSnap.exists() ? (tenantSnap.data().weekStartsOn ?? 6) : 6;
+
+      const { viewAsRole, effRoles, myPersonId } = currentPreview();
+      canConfirm = viewAsRole !== "student";
+      bulkConfirmChunkBtn.style.display = canConfirm ? "" : "none";
+      bulkConfirmWeekBtn.style.display = canConfirm ? "" : "none";
+      renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
+
+      const visibleRoster = (viewAsRole ? scopedRoster(roster, effRoles, myPersonId) : roster).filter((p) => p.status !== "archived");
+      personSelect.innerHTML = visibleRoster
+        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+        .join("");
+      // Fix round (25 Aug 2026): a Person selection now stays chosen across
+      // pages and reloads, until manually changed. Bookmark-issues round:
+      // myPersonId is a fallback below stored, above the first roster row.
+      const storedPersonId = getSelectedPersonId();
+      selectedPersonId = visibleRoster.some((p) => p.id === storedPersonId) ? storedPersonId
+        : (visibleRoster.some((p) => p.id === myPersonId) ? myPersonId : (visibleRoster[0]?.id ?? null));
+      personSelect.value = selectedPersonId ?? "";
+
+      subjectTree = loadedTree;
+      const leaves = subjectTree.filter((n) => n.isTrackable && n.status !== "archived");
+      subjectSelect.innerHTML = leaves
+        .map((n) => `<option value="${n.id}">${langText(n.name, getAppLang(), n.id)}</option>`)
+        .join("");
+
+      trackableList = loadedTrackables;
+      domainList = loadedDomains;
+      renderDomainChips();
+      renderTrackableOptions();
+      // The records chunk and this week's activity are independent of each
+      // other -- fired together instead of one after the other.
+      await Promise.all([refreshChunk(), refreshWeek()]);
+    }
+
+    function renderDomainChips() {
+      const active = domainList.filter((d) => d.status !== "archived");
+      domainChips.innerHTML = active.length
+        ? active.map((d) => `<label><input type="checkbox" value="${d.id}" /> ${langText(d.name, getAppLang(), d.id)}</label>`).join("")
+        : `<span style='color:#888; font-size:0.85rem;'>${t("No domain tags yet.")}</span>`;
+    }
+
+    function renderTrackableOptions() {
+      const subjectId = subjectSelect.value;
+      const options = trackableList.filter((t) => t.subjectId === subjectId && t.status !== "archived");
+      trackableSelect.innerHTML = options.length
+        ? options.map((t) => `<option value="${t.id}">${langText(t.name, getAppLang(), t.id)}</option>`).join("")
+        : `<option value="">${t("(no Approaches for this subject yet)")}</option>`;
+    }
+
+    subjectSelect.addEventListener("change", async () => {
+      renderTrackableOptions();
+      await refreshChunk();
+    });
+    personSelect.addEventListener("change", async () => {
+      selectedPersonId = personSelect.value;
+      setSelectedPersonId(selectedPersonId);
+      await refreshChunk();
+      await refreshWeek();
+    });
+    unitTypeSelect.addEventListener("change", refreshChunk);
+    unitRef.addEventListener("change", refreshChunk);
+
+    function statusLabel(id) {
+      // Full translation, phase 1: the shared helper in unit-keys.js is now
+      // the one place a status becomes readable text, so it is translated
+      // everywhere at once rather than page by page.
+      return id ? translatedStatusLabel(id) : "—";
+    }
+
+    function currentChunkKey() {
+      try {
+        const unitKey = buildUnitKeyFromInput(unitTypeSelect.value, unitRef.value || placeholderFor(unitTypeSelect.value));
+        return chunkKeyFor(unitKey, subjectSelect.value);
+      } catch {
+        return null;
+      }
+    }
+    function placeholderFor(unitType) {
+      // A harmless default so the chunk view has something to show before
+      // the owner types a real reference -- purely for the "which chunk am
+      // I looking at" preview, never used to actually claim anything.
+      const defaults = { ayah: "1:1", range: "1:1-2", surah: "1", page: "madani:1", ruku: "1:1", juz: "1", hizb: "1", rub: "1", manzil: "1", hadith: "bukhari:1", topic: "topic_0001", name: "1" };
+      return defaults[unitType];
+    }
+
+    async function refreshChunk() {
+      if (!selectedPersonId) return;
+      const unitKey = (() => { try { return buildUnitKeyFromInput(unitTypeSelect.value, unitRef.value || placeholderFor(unitTypeSelect.value)); } catch { return null; } })();
+      if (!unitKey) return;
+      const chunkKey = chunkKeyFor(unitKey, subjectSelect.value);
+      // The chunk key itself is an identifier (surah_1 / subject_quran),
+      // so only the word around it is translated -- turning the key into
+      // Bengali digits would stop it matching what is stored.
+      chunkLabel.textContent = t("Chunk: {chunkKey}", { chunkKey });
+      const chunk = await getRecordsChunk(db, activeTenantId, selectedPersonId, chunkKey);
+      renderEntries(chunk, chunkKey);
+    }
+
+    function renderEntries(chunk, chunkKey) {
+      const entries = chunk?.entries ?? {};
+      let rows = Object.entries(entries);
+      if (pendingOnly.checked) rows = rows.filter(([, e]) => e.confirmState === "pending");
+      entriesBody.innerHTML = rows.length
+        ? rows.map(([entryKey, e]) => entryRowHtml(chunkKey, entryKey, e)).join("")
+        : `<tr><td colspan="8" style="color:#888;">${t("Nothing here yet.")}</td></tr>`;
+
+      entriesBody.querySelectorAll(".confirmBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => confirmEntry(db, {
+              tenantId: activeTenantId, personId: selectedPersonId,
+              chunkKey: btn.dataset.chunk, entryKey: btn.dataset.entry,
+              confirmedByPersonId: currentActingPersonId(),
+            }),
+            { collection: "records", action: "confirmEntry" }
+          );
+          if (outcome.ok) await refreshChunk();
+          else { alert(outcome.entry.message); btn.disabled = false; }
+        });
+      });
+      entriesBody.querySelectorAll(".returnBtn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const note = prompt(t("Note for the return (optional):"), "");
+          if (note === null) return;
+          btn.disabled = true;
+          const outcome = await safeWrite(
+            () => returnEntry(db, {
+              tenantId: activeTenantId, personId: selectedPersonId,
+              chunkKey: btn.dataset.chunk, entryKey: btn.dataset.entry, note,
+            }),
+            { collection: "records", action: "returnEntry" }
+          );
+          if (outcome.ok) await refreshChunk();
+          else { alert(outcome.entry.message); btn.disabled = false; }
+        });
+      });
+    }
+
+    function entryRowHtml(chunkKey, entryKey, e) {
+      const trackableName = trackableList.find((t) => t.id === e.trackableId);
+      const domainNames = (e.domainIds ?? []).map((id) => domainList.find((d) => d.id === id)).filter(Boolean)
+        .map((d) => `<span class="tag">${langText(d.name, getAppLang(), d.id)}</span>`).join("");
+      const pillClass = `pill pill-${e.confirmState}`;
+      // Round 11 -- "View as" wired up for real: a Student preview can't
+      // confirm their own attainment (Architecture s6's role table), so
+      // these actions just don't render while canConfirm is false.
+      const actions = !canConfirm
+        ? ""
+        : e.confirmState === "pending"
+          ? `<button class="small confirmBtn" data-chunk="${chunkKey}" data-entry="${entryKey}">${t("Confirm")}</button>
+             <button class="small secondary returnBtn" data-chunk="${chunkKey}" data-entry="${entryKey}">${t("Return")}</button>`
+          : e.confirmState === "returned"
+            ? `<button class="small confirmBtn" data-chunk="${chunkKey}" data-entry="${entryKey}">${t("Confirm anyway")}</button>`
+            : "";
+      return `<tr>
+        <td>${unitKeyLabel(entryKey.split("::")[0])}</td>
+        <td>${trackableName ? langText(trackableName.name, getAppLang(), e.trackableId) : e.trackableId}</td>
+        <td class="status-${e.claimedStatus}">${statusLabel(e.claimedStatus)}</td>
+        <td class="status-${e.confirmedStatus}">${e.confirmedStatus ? statusLabel(e.confirmedStatus) : "—"}</td>
+        <td><span class="${pillClass}">${confirmStateLabel(e.confirmState)}</span>${e.returnNote ? `<div style="font-size:0.78rem; color:#9c3b2e;">${e.returnNote}</div>` : ""}</td>
+        <td>${domainNames || "—"}</td>
+        <td>${e.notes || ""}</td>
+        <td>${actions}</td>
+      </tr>`;
+    }
+
+    function currentActingPersonId() {
+      const membership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      return membership?.personId ?? selectedPersonId;
+    }
+
+    async function refreshWeek() {
+      if (!selectedPersonId) return;
+      const weekKey = weekKeyFor(new Date(), tenantWeekStartsOn);
+      weekLabel.textContent = t("Week starting: {weekKey}", { weekKey: num(weekKey) });
+      const week = await getWeekActivity(db, activeTenantId, selectedPersonId, weekKey);
+      const entries = week?.entries ?? [];
+      activityBody.innerHTML = entries.length
+        ? entries.map((e) => {
+            const subj = subjectTree.find((n) => n.id === e.subjectId);
+            const trk = trackableList.find((t) => t.id === e.trackableId);
+            return `<tr>
+              <td>${num(e.date)}</td>
+              <td>${subj ? langText(subj.name, getAppLang(), e.subjectId) : e.subjectId}</td>
+              <td>${unitKeyLabel(e.unitKey)}</td>
+              <td>${trk ? langText(trk.name, getAppLang(), e.trackableId) : e.trackableId}</td>
+              <td>${activityActionLabel(e.action)}</td>
+            </tr>`;
+          }).join("")
+        : `<tr><td colspan="5" style="color:#888;">${t("Nothing logged this week yet.")}</td></tr>`;
+    }
+
+    claimBtn.addEventListener("click", async () => {
+      claimResult.textContent = "";
+      if (!selectedPersonId) { claimResult.textContent = t("Add a person first."); return; }
+      if (!unitRef.value.trim()) { claimResult.textContent = t("Enter a reference first."); return; }
+      let unitKey;
+      try {
+        unitKey = buildUnitKeyFromInput(unitTypeSelect.value, unitRef.value);
+      } catch (err) {
+        claimResult.textContent = t("Couldn't read that reference: {message}", { message: err.message });
+        return;
+      }
+      const trackableId = trackableSelect.value;
+      if (!trackableId) { claimResult.textContent = t("No Approach selected — pick a subject that has Approaches (Quran, for now)."); return; }
+      const domainIds = Array.from(domainChips.querySelectorAll("input[type=checkbox]:checked")).map((c) => c.value);
+
+      claimBtn.disabled = true;
+      const outcome = await safeWrite(
+        () => claimStatus(db, {
+          tenantId: activeTenantId,
+          personId: selectedPersonId,
+          subjectId: subjectSelect.value,
+          unitKey,
+          trackableId,
+          statusId: statusSelect.value,
+          notes: notesInput.value.trim(),
+          domainIds,
+          claimedByPersonId: currentActingPersonId(),
+          claimedByUid: auth.currentUser.uid,
+        }),
+        { collection: "records", action: "claimStatus" }
+      );
+
+      if (outcome.ok) {
+        await logActivity(db, {
+          tenantId: activeTenantId,
+          personId: selectedPersonId,
+          date: new Date(),
+          weekStartsOn: tenantWeekStartsOn,
+          subjectId: subjectSelect.value,
+          unitKey,
+          trackableId,
+          action: "claimed",
+          uid: auth.currentUser.uid,
+        });
+        claimResult.textContent = outcome.result.needsConfirmation
+          ? t("Claimed — waiting for confirmation.")
+          : t("Claimed and confirmed (self-confirmed).");
+        notesInput.value = "";
+        await refreshChunk();
+        await refreshWeek();
+      } else {
+        claimResult.textContent = outcome.entry.message;
+      }
+      claimBtn.disabled = false;
+    });
+
+    addDomainBtn.addEventListener("click", async () => {
+      const name = newDomainName.value.trim();
+      if (!name) return;
+      addDomainBtn.disabled = true;
+      const outcome = await safeWrite(
+        () => createDomain(db, activeTenantId, name, auth.currentUser.uid),
+        { collection: "domains", action: "createDomain" }
+      );
+      addDomainBtn.disabled = false;
+      if (outcome.ok) {
+        newDomainName.value = "";
+        domainList = await listDomains(db, activeTenantId);
+        renderDomainChips();
+      } else {
+        alert(outcome.entry.message);
+      }
+    });
+
+    pendingOnly.addEventListener("change", refreshChunk);
+
+    bulkConfirmChunkBtn.addEventListener("click", async () => {
+      const chunkKey = currentChunkKey();
+      if (!chunkKey) return;
+      bulkConfirmChunkBtn.disabled = true;
+      const outcome = await safeWrite(
+        () => bulkConfirmChunk(db, {
+          tenantId: activeTenantId, personId: selectedPersonId, chunkKey,
+          confirmedByPersonId: currentActingPersonId(),
+        }),
+        { collection: "records", action: "bulkConfirmChunk" }
+      );
+      bulkConfirmChunkBtn.disabled = false;
+      if (outcome.ok) {
+        const n = outcome.result.confirmedCount;
+        claimResult.textContent = t(
+          n === 1 ? "Confirmed {count} entry in this chunk." : "Confirmed {count} entries in this chunk.",
+          { count: num(n) }
+        );
+        await refreshChunk();
+      }
+      else alert(outcome.entry.message);
+    });
+
+    bulkConfirmWeekBtn.addEventListener("click", async () => {
+      const weekKey = weekKeyFor(new Date(), tenantWeekStartsOn);
+      bulkConfirmWeekBtn.disabled = true;
+      const outcome = await safeWrite(
+        () => bulkConfirmWeek(db, {
+          tenantId: activeTenantId, personId: selectedPersonId, weekKey,
+          confirmedByPersonId: currentActingPersonId(),
+        }),
+        { collection: "records", action: "bulkConfirmWeek" }
+      );
+      bulkConfirmWeekBtn.disabled = false;
+      activityResult.textContent = outcome.ok
+        ? t(
+            outcome.result.confirmedCount === 1
+              ? "Confirmed {count} entry touched this week."
+              : "Confirmed {count} entries touched this week.",
+            { count: num(outcome.result.confirmedCount) }
+          )
+        : outcome.entry.message;
+      if (outcome.ok) await refreshChunk();
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = t("Not signed in.");
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = t("Signed in as {email}", { email: user.email });
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+
+      async function step(name, fn) {
+        try { return await fn(); }
+        catch (err) { err.stepName = err.stepName ?? name; throw err; }
+      }
+
+      try {
+        const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
+        // v07.37: if this account has a language set on another device, take it
+        // and reload. Costs no extra read -- the snapshot is already in hand.
+        if (adoptAppLangFromUserIndex(userIndexSnap)) return;
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+
+        // One membership load, not two: bootstrapContext() hands back the
+        // list it used to choose the context, which this page then used to
+        // fetch a second time, one round trip later, for the tenant picker.
+        const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
+        if (!context) {
+          whoEl.innerHTML += noAccountMessageHtml();
+          return;
+        }
+        activeTenantId = context.tenantId;
+
+        myMemberships = memberships;
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+          .join("");
+
+        appEl.style.display = "block";
+        await step("load context data", loadContextData); // reads the current preview state and renders navBar itself
+      } catch (err) {
+        whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
+        console.error(err);
+      }
+    });
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      await loadContextData(); // re-reads the (now-reset) preview state and re-renders navBar itself
+    });
+  </script>
+</body>
+</html>

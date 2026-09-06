@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — Asma ul Husna</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 56rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  button {
+    font-size: 0.92rem; padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.secondary { background: white; color: #1F3A6E; }
+  select { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #ccc; border-radius: 0.35rem; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+
+  /* ---------- Continue strip (Phase 7) ---------- */
+  .continue-strip { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.6rem 0 1rem; }
+  .continue-chip { background: #eef1f7; color: #1F3A6E; border: 1px solid #d3dbea; border-radius: 999px; padding: 0.3rem 0.8rem; font-size: 0.82rem; text-decoration: none; }
+  .continue-chip:hover { border-color: #1F3A6E; }
+
+  /* ---------- Asma grid ---------- */
+  .asma-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr)); gap: 0.7rem; margin-top: 1rem; }
+  .asma-card {
+    display: flex; flex-direction: column; align-items: center; gap: 0.3rem; text-align: center;
+    padding: 0.8rem 0.6rem; border: 1px solid #e0e0e0; border-radius: 0.6rem; background: white; color: #222; cursor: pointer;
+  }
+  .asma-card:hover { border-color: #1F3A6E; }
+  .asma-card-number { font-size: 0.72rem; color: #999; }
+  .asma-card-arabic { font-size: 1.3rem; }
+  .asma-card-translit { font-weight: 600; }
+  .asma-card-meaning { font-size: 0.78rem; color: #666; }
+  .asma-status-chip { color: white; padding: 0.15rem 0.55rem; border-radius: 0.8rem; font-size: 0.72rem; }
+  .asma-status-unclaimed { background: #888 !important; }
+
+  .asma-detail { border: 1px solid #e0e0e0; border-radius: 0.6rem; padding: 1.2rem; margin-top: 1.2rem; text-align: center; }
+  .topic-bookmark-btn { font-size: 0.95rem; vertical-align: middle; background: none; border: 1px solid #ccc; border-radius: 0.35rem; cursor: pointer; color: #B8862F; padding: 0.05rem 0.35rem; }
+  .topic-bookmark-btn.active { background: #B8862F; color: #fff; border-color: #B8862F; }
+  .asma-detail-number { color: #999; font-size: 0.85rem; }
+  .asma-detail-arabic { font-size: 2.2rem; margin: 0.4rem 0; }
+  .asma-detail-meaning { color: #555; }
+
+  #wayModalOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 50; }
+  #wayModalOverlay.open { display: flex; }
+  #wayModalMount { background: white; border-radius: 0.6rem; padding: 1.2rem; max-width: 32rem; width: 92%; max-height: 85vh; overflow-y: auto; }
+  .way-tab-bar { display: flex; gap: 0.4rem; margin: 0.8rem 0; }
+  .way-tab-btn { background: #eef1f7; color: #1F3A6E; border: none; }
+  .way-tab-btn.active { background: #1F3A6E; color: white; }
+  .way-tab-panel { display: none; }
+  .way-tab-panel.active { display: block; }
+  .way-modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.4rem; }
+  .way-header-row { display: flex; align-items: flex-start; gap: 0.4rem; flex: 1; min-width: 0; }
+  .way-header-row h3 { flex: 1; min-width: 0; margin: 0; }
+  .way-close-btn { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: #888; flex-shrink: 0; }
+
+  /* "Assign to" -- one Claim recorded for several people at once. A compact
+     dropdown pinned top-right of the card (Track/way-modal.js) rather than a
+     block that pushes the rest of the card down; opening/closing is wired
+     once, at module load, by way-modal.js itself. */
+  .assign-trigger-wrap { position: relative; flex-shrink: 0; }
+  .assign-trigger {
+    display: flex; align-items: center; gap: 0.3rem;
+    background: #fff; border: 1.5px solid rgba(31,58,110,0.35);
+    color: #1F3A6E; font-weight: 700; font-size: 0.78rem;
+    padding: 0.28rem 0.55rem; border-radius: 1.2rem; cursor: pointer;
+    white-space: nowrap; font-family: inherit;
+  }
+  .assign-trigger .caret { font-size: 0.65rem; opacity: 0.7; }
+  .assign-popover {
+    position: absolute; top: calc(100% + 0.35rem); right: 0; width: 12.5rem;
+    background: #fff; border: 1px solid rgba(31,58,110,0.22);
+    border-radius: 10px; padding: 0.6rem 0.65rem 0.65rem;
+    box-shadow: 0 10px 26px rgba(20,40,80,0.18); z-index: 5;
+    display: none;
+  }
+  .assign-popover.open { display: block; }
+  .assign-popover-label {
+    font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
+    font-weight: 700; color: #666; margin: 0 0 0.4rem;
+  }
+  .assign-hint { font-size: 0.76rem; color: #777; margin: 0 0 0.55rem; }
+  .assign-list { display: flex; flex-direction: column; gap: 0.3rem; }
+  .assign-row { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; cursor: pointer; user-select: none; padding: 0.1rem 0; }
+  .assign-row input[type="checkbox"] { width: 1.05rem; height: 1.05rem; accent-color: #1F3A6E; cursor: pointer; flex-shrink: 0; }
+  .assign-row .who-name { flex: 1; }
+  .assign-row .who-tag { font-size: 0.66rem; color: #777; background: #f6f7fb; border: 1px solid #eee; border-radius: 0.6rem; padding: 0.02rem 0.4rem; }
+
+  /* ---------- Screensaver ---------- */
+  #screensaverOverlay { display: none; position: fixed; inset: 0; background: #000; align-items: center; justify-content: center; z-index: 60; cursor: pointer; }
+  #screensaverOverlay.open { display: flex; }
+  .asma-screensaver-slide { text-align: center; color: white; max-width: 90vw; }
+  .asma-screensaver-img { max-width: 90vw; max-height: 80vh; border-radius: 0.5rem; }
+  .asma-screensaver-caption { margin-top: 1rem; font-size: 1.1rem; }
+  .asma-screensaver-arabic { font-size: 3rem; margin-bottom: 1rem; }
+  #screensaverCloseBtn { position: fixed; top: 1rem; right: 1.2rem; background: rgba(255,255,255,0.15); color: white; border: none; font-size: 1.6rem; padding: 0.2rem 0.7rem; border-radius: 0.4rem; z-index: 61; }
+
+  /* ---------- Round 3: the A4 poster (standalone view + screensaver slide) ---------- */
+  #posterOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); align-items: center; justify-content: center; z-index: 65; }
+  #posterOverlay.open { display: flex; }
+  #posterCloseBtn { position: fixed; top: 1rem; right: 1.2rem; background: rgba(255,255,255,0.15); color: white; border: none; font-size: 1.6rem; padding: 0.2rem 0.7rem; border-radius: 0.4rem; z-index: 67; }
+  #posterPrintBtn { position: fixed; top: 1rem; right: 4.2rem; z-index: 67; }
+
+  .asma-poster {
+    width: 320px; aspect-ratio: 210 / 297;
+    background: radial-gradient(circle at 50% 8%, #164f4c 0%, #0b3a3a 55%, #072423 100%);
+    border: 1px solid rgba(230,197,106,0.4); border-radius: 8px;
+    color: #f3ecd9; display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+    padding: 2rem 1.4rem 1.6rem; text-align: center; box-shadow: 0 20px 44px rgba(0,0,0,0.45);
+  }
+  .asma-poster-screensaver { width: min(90vw, 420px); }
+  .poster-eyebrow { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: #c9a24b; }
+  .poster-main { margin: 0.6rem 0; }
+  .poster-ar { font-size: 2.6rem; color: #e6c56a; line-height: 1.15; }
+  .poster-translit { font-style: italic; font-size: 1.05rem; color: #d9cfae; margin-top: 0.3rem; }
+  .poster-bn { font-size: 0.95rem; margin-top: 0.5rem; line-height: 1.5; max-width: 22ch; }
+  .poster-ref { font-size: 0.68rem; color: #a8987a; margin-top: auto; padding-top: 0.7rem; }
+  .poster-footer { font-size: 0.5rem; letter-spacing: 0.1em; color: #6d6448; text-transform: uppercase; margin-top: 0.3rem; }
+
+  @media print {
+    body * { visibility: hidden; }
+    #posterOverlay, #posterOverlay * { visibility: visible; }
+    #posterOverlay { position: absolute; inset: 0; background: white; display: flex !important; }
+    #posterCloseBtn, #posterPrintBtn { display: none !important; }
+    .asma-poster { width: 100%; height: 100vh; aspect-ratio: auto; border: none; border-radius: 0; box-shadow: none; }
+    @page { size: A4 portrait; margin: 0; }
+  }
+
+  /* ---------- Asma Collections: "Browse by Category" panel ---------- */
+  .hint { font-size: 0.85rem; color: #888; }
+  .asma-cat-level-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0 0.8rem; }
+  .asma-icon-btn { background: white; border: 1px solid #ccc; color: #1F3A6E; border-radius: 0.35rem; padding: 0.2rem 0.5rem; cursor: pointer; font-size: 0.85rem; }
+  .asma-icon-btn.danger:hover { border-color: #b3372c; color: #b3372c; }
+  .asma-manage-toggle { background: white; color: #1F3A6E; border: 1px solid #1F3A6E; border-radius: 0.35rem; padding: 0.35rem 0.7rem; cursor: pointer; font-size: 0.85rem; }
+  .asma-manage-toggle.on { background: #1F3A6E; color: white; }
+  .asma-archived-toggle { font-size: 0.8rem; color: #555; display: inline-flex; align-items: center; gap: 0.3rem; }
+  .asma-cat-main { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.4rem; align-items: start; }
+  @media (max-width: 720px) { .asma-cat-main { grid-template-columns: 1fr; } }
+  .asma-cat-list-header { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+  .asma-cat-list-header .t { font-weight: 700; color: #1F3A6E; }
+  .asma-cat-list-header .c { font-size: 0.8rem; color: #888; }
+  .asma-ways-list { display: flex; flex-direction: column; gap: 0.45rem; }
+  .asma-way-row { border: 1px solid #e5e5e5; border-radius: 0.5rem; padding: 0.55rem 0.65rem; background: white; }
+  /* 30 Aug 2026 -- the same "one row after the name" layout quranrevival.html's
+     own Explore panel got, brought here too since both pages render the
+     exact same renderAsmaCollectionListHtml() markup: status chip moved to
+     the end of the row, Move-to/Archive/Remove/Edit sit beside the name
+     rather than stacked below it, wrapping onto their own line on a narrow
+     screen instead of a separate breakpoint. */
+  .asma-way-main { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; width: 100%; }
+  .asma-way-row .way-click { display: flex; align-items: center; gap: 0.6rem; background: none; border: none; padding: 0; cursor: pointer; text-align: left; color: inherit; font: inherit; flex: 0 1 auto; min-width: 0; }
+  .asma-way-row .badge { font-size: 0.72rem; color: #999; flex: 0 0 auto; }
+  .asma-way-row .name { font-weight: 600; }
+  .asma-status-chip { margin-left: auto; }
+  .asma-way-badges { display: flex; gap: 0.3rem; margin: 0.35rem 0 0; flex-wrap: wrap; }
+  .asma-item-badge { font-size: 0.65rem; font-weight: 600; padding: 0.06rem 0.4rem; border-radius: 0.6rem; }
+  .asma-item-badge.beyond99 { background: #f0e6c8; color: #8a6a1f; }
+  .asma-item-badge.phrase { background: #e1e9f6; color: #2c4f8f; }
+  .asma-item-badge.weak { background: #f6dfd4; color: #a2551f; }
+  .asma-way-meaning { display: block; font-size: 0.78rem; color: #666; margin-top: 0.25rem; }
+  .asma-way-manage { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+  .asma-way-manage select { font-size: 0.78rem; padding: 0.15rem 0.3rem; max-width: 9rem; }
+  .asma-add-form { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.8rem; flex-wrap: wrap; }
+  .asma-add-form select { font-size: 0.82rem; padding: 0.25rem 0.4rem; max-width: 20rem; }
+  .asma-detail-badges { display: flex; gap: 0.35rem; justify-content: center; flex-wrap: wrap; margin: 0.4rem 0; }
+  .asma-detail-badge { font-size: 0.68rem; font-weight: 600; padding: 0.08rem 0.5rem; border-radius: 0.7rem; }
+  .asma-detail-badge.beyond99 { background: #f0e6c8; color: #8a6a1f; }
+  .asma-detail-badge.phrase { background: #e1e9f6; color: #2c4f8f; }
+  .asma-detail-badge.weak { background: #f6dfd4; color: #a2551f; }
+  .asma-detail-ref { font-size: 0.78rem; color: #888; }
+
+  /* Round 2 -- Qur'an/Hadith reference chips */
+  .asma-xref-block { margin: 0.7rem 0; text-align: left; }
+  .asma-xref-label { font-size: 0.68rem; letter-spacing: 0.05em; text-transform: uppercase; color: #999; margin-bottom: 0.35rem; }
+  .asma-xref-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .asma-xref-chip { font-size: 0.8rem; padding: 0.3rem 0.65rem; border-radius: 999px; display: inline-flex; align-items: center; gap: 0.3rem; text-decoration: none; }
+  .asma-xref-chip.quran { background: #e6f6ec; border: 1px solid #8fd4ab; color: #1e6b3d; cursor: pointer; }
+  .asma-xref-chip.quran:hover { background: #d3f0dd; }
+  .asma-xref-chip.hadith { background: #f2f2f2; border: 1px solid #ddd; color: #555; }
+
+  /* mastery-wheel.js's own SVG output (renderScopedWheel/renderWheelLegend)
+     has no shared CSS file -- defined per-page, same as quranrevival.html's
+     own copy, adapted for this page's light background. */
+  .asma-cat-wheel-pane { display: flex; flex-direction: column; align-items: center; gap: 0.6rem; }
+  .mastery-wheel { width: 100%; max-width: 300px; height: auto; }
+  .wheel-seg { cursor: pointer; stroke: #fff; stroke-width: 1; transition: stroke .15s, stroke-width .15s; }
+  .wheel-seg:hover { stroke: #1F3A6E; stroke-width: 1.5; }
+  .wheel-seg-num { font-family: 'Inter', sans-serif; font-size: 8px; font-weight: 600; fill: #fff; }
+  .wheel-legend { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; font-size: 0.76rem; color: #555; }
+  .legend-item { display: flex; align-items: center; gap: 0.35rem; }
+  .legend-swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+</style>
+</head>
+<body>
+  <h1>Asma ul Husna</h1>
+  <p>The 99 Names of Allah — read the meaning of each, then track your own
+     progress through them. Open the screensaver to slowly cycle through the
+     Names for reflection.</p>
+
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
+
+  <div id="app" style="display:none;">
+    <div id="continueStrip"></div>
+    <div id="contextBar" style="display:flex; gap:1rem; align-items:center; flex-wrap:wrap; margin:1rem 0; font-size:0.9rem;">
+      <label style="margin:0;">Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label style="margin:0;">Person
+        <select id="personSelect" style="width:auto;"></select>
+      </label>
+      <button type="button" id="screensaverBtn" class="secondary">Screensaver</button>
+      <button type="button" id="asmaCatToggleBtn" class="secondary">Browse by Category</button>
+    </div>
+
+    <div id="gridContainer"></div>
+    <div id="detailContainer"></div>
+
+    <!-- Asma Collections round -- the same "named groups + wheel" template
+         as Ayah Collections (QCR) on the Quran module, adapted for a page
+         with no Explore/dock stage system of its own: a toggle swaps the
+         plain 99-grid above out for this panel, rather than a separate
+         full-screen view. -->
+    <div id="asmaCatPanel" hidden>
+      <div class="asma-cat-level-bar">
+        <select id="asmaCatLevelSelect" aria-label="Group"></select>
+        <span id="asmaCatManageActions" hidden>
+          <button type="button" class="asma-icon-btn" id="asmaCatRenameBtn" title="Rename">✎</button>
+          <button type="button" class="asma-icon-btn danger" id="asmaCatArchiveBtn" title="Archive">🗄</button>
+          <button type="button" class="asma-icon-btn" id="asmaCatAddGroupBtn" title="Add group">+</button>
+          <label class="asma-archived-toggle"><input type="checkbox" id="asmaCatShowArchivedToggle"> Show archived</label>
+        </span>
+        <button type="button" class="asma-manage-toggle" id="asmaCatManageToggleBtn" hidden>Manage</button>
+        <button type="button" class="secondary" id="asmaCatBackBtn">← <span>All 99 Names</span></button>
+      </div>
+      <div class="asma-cat-main">
+        <div>
+          <div class="asma-cat-list-header" id="asmaCatListHeader"></div>
+          <div class="asma-ways-list" id="asmaCatWaysListContainer"></div>
+          <div id="asmaCatAddFormSlot"></div>
+        </div>
+        <div class="asma-cat-wheel-pane">
+          <div id="asmaCatWheelContainer"></div>
+          <div id="asmaCatLegendContainer"></div>
+          <p class="hint" id="asmaCatHint" style="font-size:0.8rem;color:#888;text-align:center;"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="wayModalOverlay"><div id="wayModalMount"></div></div>
+
+  <div id="screensaverOverlay">
+    <button type="button" id="screensaverCloseBtn" aria-label="Close screensaver">&times;</button>
+    <div id="screensaverMount"></div>
+  </div>
+
+  <!-- Round 3 -- the standalone A4 poster view, one Name at a time. -->
+  <div id="posterOverlay">
+    <button type="button" id="posterPrintBtn" class="secondary">🖨 <span>Print</span></button>
+    <button type="button" id="posterCloseBtn" aria-label="Close poster">&times;</button>
+    <div id="posterMount"></div>
+  </div>
+
+  <script type="module">
+    import { initAsmaStudyPage } from "./js/asma-study.js";
+    import { translateStatic } from "./js/i18n.js";
+
+    // Phase 1 of the full translation: turn this page's own static markup
+    // (headings, labels, buttons) into the chosen language before anything
+    // else runs, so a Bangla reader never sees an English frame first.
+    translateStatic();
+    initAsmaStudyPage();
+  </script>
+</body>
+</html>

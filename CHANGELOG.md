@@ -11505,3 +11505,68 @@ the canonical picker, is where the whole Qur'an's numbering is offered. And at
 row fewer (3 -> 2), which is the 9px the control costs landing on a row
 boundary at the smallest phone this project measures; English at 320px, and
 both languages at every other width, keep every row.
+
+
+**v07 CLOSED AND ARCHIVED (6 Sep 2026, on Claude Code on the web).** Not a
+feature round -- the owner's own instruction to draw a line under v07 exactly
+the way v06 had one drawn under it: *"I want the current version app also to
+be put as legacy v07. And then, we will start the next features and upgrade
+from here and we call the versions onward v08.00 in a new session."*
+
+**`app/` is byte-for-byte untouched by this round** (`git diff app` is empty),
+so **v07.139 remains the final v07 build** and `version.js` was deliberately
+NOT bumped: the app did not change, only a copy of it was taken. A round that
+bumps the badge for archiving would leave the archive reading one version and
+the "last v07 build" being another.
+
+**The archive is `legacy-v07/`, a `cp -a` of `app/`** -- 105 files, 2.6MB,
+proven identical by `diff -rq` -- reachable at
+`https://madrasatul-muslimeen.github.io/legacy-v07/`. It sits BESIDE
+`/legacy/index.html` (the v06.30 single-file app) rather than inside it, so
+the URL 22 pages already link to is untouched. The three lines of the app's
+own history are now `/legacy/index.html` (v06.30), `/legacy-v07/` (v07.139)
+and `/app/` (v08.00 onward).
+
+**A folder copy works because the app turned out to be genuinely
+self-contained, which was measured rather than assumed:** every page, script,
+stylesheet and font in `app/` is referenced RELATIVELY, and a grep for
+absolute paths across all of `app/*.html` and `app/js/*.js` returns exactly
+one -- `/tools/quran-data-pull/output`, the Qur'an data. Nothing anywhere
+names `/app/` itself. So the archive carries its own `js/version.js` (which
+is what freezes its badge at v07.139 while `app/` moves on) and its own
+everything else.
+
+**Two things it deliberately SHARES with the live app, both recorded in the
+archive's own `README-ARCHIVE.txt` rather than left to be discovered.** The
+Qur'an text, translations, word-by-word data and the juz/hizb/page tables come
+from `/tools/quran-data-pull/output` (31MB) and the Mushaf's 604 pages from
+`/mushaf/` via raw.githubusercontent (98MB) -- **sharing them is what keeps
+this archive at 2.6MB instead of ~130MB**, and the stated cost is that a
+future round which RESHAPES those files (rather than adding to them) would
+break it; the fix, if that ever happens, is to copy the v07-era `output/` into
+the archive at that point. And it signs in to the same `study-monitoring`
+Firebase project: **the archive reads and WRITES real data**, exactly as the
+v06 app does, so a claim made in it is a real claim. The version badge is how
+the two are told apart.
+
+**Verified, not assumed: a focused, un-checked-in Playwright script, 10
+checks, all passing**, screenshotted at 390x844 -- all 28 of the archive's own
+pages served; its landing page booting with no page errors; the badge really
+reading **v07.139**; **real Arabic really rendering**, which is what proves
+the shared `/tools/` data path still resolves from the new folder depth; the
+Mastery Wheel really drawing its segments; **zero requests out of `/app/`**,
+read off `performance.getEntriesByType("resource")` rather than by reading
+the source; **zero failed local requests**, which is what a broken relative
+path would have shown up as; a second, quite different page (`records.html`)
+booting clean; and -- on the other side of the line -- **the live `/app/`
+still booting and still reading v07.139**, and **`/legacy/index.html` still
+served and still reading v06.30**.
+
+**Flagged, not done, deliberately.** The shared nav's "Legacy App - v06" link
+did NOT gain a "v07" sibling this round: while `app/` is still v07.139 that
+link would point at a byte-identical copy of the page it is on, which reads as
+a bug rather than an archive. It belongs in the v08.00 round, added to `app/`
+AFTER this snapshot was taken so the frozen copy never gains a link the
+version it froze did not have. Say the word and it goes in now instead. The
+retired `QuranRevival---ClaudeCode` repo (folded into this one at v07.78, last
+at v07.77) was left alone rather than re-diverged.

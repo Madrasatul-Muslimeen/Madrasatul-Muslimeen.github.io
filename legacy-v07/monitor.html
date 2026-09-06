@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<title>QuranRevival — Monitor</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 62rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.15rem; margin-top: 2.2rem; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+  label { display: block; margin: 0.8rem 0 0.3rem; font-weight: 600; font-size: 0.92rem; }
+  select, input[type="date"], input[type="month"] { padding: 0.4rem; font-size: 0.92rem; border: 1px solid #ccc; border-radius: 0.35rem; }
+  button {
+    font-size: 0.92rem; padding: 0.4rem 0.9rem; border-radius: 0.4rem; border: 1px solid #ccc;
+    background: #1F3A6E; color: white; cursor: pointer;
+  }
+  button.small { padding: 0.2rem 0.5rem; font-size: 0.8rem; }
+  button.secondary { background: white; color: #1F3A6E; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  table { width: 100%; border-collapse: collapse; margin-top: 0.6rem; }
+  th, td { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid #eee; font-size: 0.85rem; vertical-align: top; }
+  .status-not_applicable { color: #999; }
+  .status-not_started { color: #888; }
+  .status-learning { color: #b8862f; }
+  .status-practising { color: #9c3b2e; }
+  .status-achieved { color: #1f3a6e; font-weight: 600; }
+  .status-mastered { color: #2e6b4f; font-weight: 700; }
+  #who { margin: 1rem 0; font-size: 0.95rem; color: #555; }
+  .contextBar { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; font-size: 0.9rem; }
+  .contextBar label { margin: 0; display: inline-flex; align-items: center; gap: 0.4rem; }
+  .rangeBar { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; }
+  .tabBtn { background: white; color: #1F3A6E; border: 1px solid #1F3A6E; }
+  .tabBtn.active { background: #1F3A6E; color: white; }
+  .rangeLabel { font-size: 0.88rem; color: #555; margin-left: 0.4rem; }
+  .actions { margin: 0.8rem 0; display: flex; gap: 0.6rem; }
+  .muted { color: #888; font-size: 0.85rem; }
+  #reportBody, #quranBody { }
+
+</style>
+</head>
+<body>
+  <h1>Monitor</h1>
+  <p>One report covering every module — whatever has actually been claimed or
+     logged. Quran gets an extra Approach-status section below, since it is
+     the only subject with structured progress data today.</p>
+
+  <nav class="app-nav" id="topNav">
+    <details class="nav-cat nav-cat-home">
+      <summary>Home</summary>
+      <div class="nav-cat-links">
+        <a href="https://madrasatul-muslimeen.github.io/legacy/index.html" class="nav-legacy-link" target="_blank" rel="noopener">Legacy App - v06 ↗</a>
+        <div id="who">Checking sign-in…</div>
+        <button id="signInBtn" style="display:none;">Sign in with Google</button>
+        <button id="signOutBtn" class="secondary" style="display:none;">Sign out</button>
+        <div id="navHomeExtra"></div>
+      </div>
+    </details>
+    <div id="navBar"></div>
+  </nav>
+
+  <div id="app" style="display:none;">
+    <div class="contextBar">
+      <label>Tenant
+        <select id="tenantSelect" style="width:auto;"></select>
+      </label>
+      <label>Student
+        <select id="personSelect" style="width:auto;"></select>
+      </label>
+      <label><input type="checkbox" id="wholeRoster" /> Whole roster (weekly/monthly report only)</label>
+    </div>
+
+    <h2>Weekly / monthly report</h2>
+    <div class="rangeBar">
+      <button class="tabBtn active" id="weekTabBtn" type="button">Week</button>
+      <button class="tabBtn" id="monthTabBtn" type="button">Month</button>
+      <span id="weekControls">
+        <button class="small secondary" id="weekPrevBtn" type="button">◀</button>
+        <input type="date" id="weekAnchor" />
+        <button class="small secondary" id="weekNextBtn" type="button">▶</button>
+      </span>
+      <span id="monthControls" style="display:none;">
+        <button class="small secondary" id="monthPrevBtn" type="button">◀</button>
+        <input type="month" id="monthAnchor" />
+        <button class="small secondary" id="monthNextBtn" type="button">▶</button>
+      </span>
+      <span class="rangeLabel" id="rangeLabel"></span>
+    </div>
+
+    <div class="actions">
+      <button class="small secondary" id="csvBtn" type="button">📥 Download CSV</button>
+      <button class="small secondary" id="printBtn" type="button">🖨 Print report</button>
+    </div>
+
+    <div id="reportBody">
+      <p class="muted">Loading…</p>
+    </div>
+
+    <h2>Quran Approach breakdown — <span id="quranStudentName"></span></h2>
+    <p class="muted">Current claimed status per Approach, across every ayah/juz/page this student has ever touched — not scoped to the week/month above (this is a status snapshot, not an activity log).</p>
+    <div id="quranBody">
+      <p class="muted">Loading…</p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-init.js";
+    import {
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { TENANT } from "./js/collections.js";
+    import { langText } from "./js/lang.js";
+    import { roleListLabel } from "./js/labels.js";
+    import { getAppLang } from "./js/prefs.js";
+    import { adoptAppLangFromUserIndex, mountSyncedAppLangControl } from "./js/lang-sync.js";
+    import {
+      bootstrapContext,
+      getActiveContext,
+      setActiveContext,
+      effectiveRoles,
+      scopedRoster,
+      getSelectedPersonId,
+      setSelectedPersonId,
+    } from "./js/session-context.js";
+    import { getSubjectTree, getTrackables } from "./js/catalogue.js";
+    import { activityForRoster, monthWeekKeys, filterEntriesToMonth, summarizeByStudent, summarizeBySubject, summarizeQuranApproaches, entriesToCsvRows, downloadCsv, printReportHtml } from "./js/monitor.js";
+    import { weekKeyFor } from "./js/activity.js";
+    import { listAllRecordsForPerson } from "./js/records.js";
+    import { statusLabel, unitKeyLabel } from "./js/unit-keys.js";
+    import { activityActionLabel } from "./js/activity.js";
+    import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
+import { mountBookmarkMenu } from "./js/bookmark-nav.js";
+    import { translateStatic, t, num } from "./js/i18n.js";
+
+    // Phase 1 of the full translation: turn this page's own static markup
+    // (headings, labels, buttons) into the chosen language before anything
+    // else runs, so a Bangla reader never sees an English frame first.
+    translateStatic();
+
+    const whoEl = document.getElementById("who");
+    const signInBtn = document.getElementById("signInBtn");
+    const signOutBtn = document.getElementById("signOutBtn");
+    const appEl = document.getElementById("app");
+    const navBar = document.getElementById("navBar");
+    const navHomeExtra = document.getElementById("navHomeExtra");
+    function renderNav(roles, viewAsRole) {
+      navBar.innerHTML = renderNavBar(roles, viewAsRole);
+      navHomeExtra.innerHTML = renderHomeExtras(roles);
+      mountSyncedAppLangControl(navHomeExtra, { db, uid: auth.currentUser?.uid }); // v07.37 -- Settings -> Language, saved to the account so it follows this person to their other devices
+      mountBookmarkMenu(navBar, { db, getTenantId: () => activeTenantId, getPersonId: () => myMemberships.find((m) => m.tenantId === activeTenantId)?.personId ?? null , getRoster: () => roster });
+    }
+    const tenantSelect = document.getElementById("tenantSelect");
+    const personSelect = document.getElementById("personSelect");
+    const wholeRoster = document.getElementById("wholeRoster");
+    const weekTabBtn = document.getElementById("weekTabBtn");
+    const monthTabBtn = document.getElementById("monthTabBtn");
+    const weekControls = document.getElementById("weekControls");
+    const monthControls = document.getElementById("monthControls");
+    const weekAnchor = document.getElementById("weekAnchor");
+    const monthAnchor = document.getElementById("monthAnchor");
+    const weekPrevBtn = document.getElementById("weekPrevBtn");
+    const weekNextBtn = document.getElementById("weekNextBtn");
+    const monthPrevBtn = document.getElementById("monthPrevBtn");
+    const monthNextBtn = document.getElementById("monthNextBtn");
+    const rangeLabel = document.getElementById("rangeLabel");
+    const csvBtn = document.getElementById("csvBtn");
+    const printBtn = document.getElementById("printBtn");
+    const reportBody = document.getElementById("reportBody");
+    const quranStudentName = document.getElementById("quranStudentName");
+    const quranBody = document.getElementById("quranBody");
+
+    signInBtn.addEventListener("click", () => {
+      signInWithPopup(auth, new GoogleAuthProvider()).catch((err) => {
+        whoEl.textContent = t("Sign-in failed: {message}", { message: err.message });
+      });
+    });
+    signOutBtn.addEventListener("click", () => signOut(auth));
+
+
+    let activeTenantId = null;
+    let myMemberships = [];
+    let roster = [];
+    let visibleRoster = [];
+    let subjectTree = [];
+    let trackableList = [];
+    let tenantWeekStartsOn = 6;
+    let reportMode = "week"; // "week" | "month"
+    let lastEntries = [];
+    let lastCsvRows = [];
+
+    function currentPreview() {
+      const context = getActiveContext();
+      const activeMembership = myMemberships.find((m) => m.tenantId === activeTenantId);
+      const realRoles = activeMembership?.roles ?? [];
+      const viewAsRole = context?.viewAsRole ?? null;
+      return { viewAsRole, effRoles: effectiveRoles(realRoles, viewAsRole), myPersonId: activeMembership?.personId ?? null };
+    }
+
+    function toDateInputValue(d) { return d.toISOString().slice(0, 10); }
+
+    // Full app translation, phase 4. Two shapes of date appear on this page:
+    // an ISO string that IS the stored value (an activity entry's date, a
+    // weekKey) -- num() only, so it stays recognisable next to what is
+    // stored -- and a human-formatted one, which takes the reader's own
+    // locale so month names come out in their language too. The <input
+    // type="date"/"month"> values are never touched: the browser parses
+    // those back, and they must stay plain.
+    const dateLocale = () => (getAppLang() === "bn" ? "bn-BD" : undefined);
+    const fmtDate = (d) => num(d.toLocaleDateString(dateLocale()));
+
+    async function loadContextData() {
+      const [rosterSnap, tenantSnap] = await Promise.all([
+        getDocs(query(collection(db, TENANT.TENANT_PEOPLE), where("tenantId", "==", activeTenantId))),
+        getDoc(doc(db, TENANT.TENANTS, activeTenantId)),
+      ]);
+      roster = rosterSnap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      tenantWeekStartsOn = tenantSnap.exists() ? (tenantSnap.data().weekStartsOn ?? 6) : 6;
+
+      const { viewAsRole, effRoles, myPersonId } = currentPreview();
+      renderNav(myMemberships.find((m) => m.tenantId === activeTenantId)?.roles ?? [], viewAsRole);
+
+      // Always scoped to what this login can actually see, real roles or
+      // previewed -- unlike records.html's own personSelect (which lists
+      // everyone and lets Firestore's rules deny the read per-person), a
+      // report iterates the WHOLE visible set in one go, so scoping it up
+      // front avoids a batch of denied reads breaking the whole report.
+      visibleRoster = scopedRoster(roster, effRoles, myPersonId).filter((p) => p.status !== "archived");
+      personSelect.innerHTML = visibleRoster
+        .map((p) => `<option value="${p.id}">${langText(p.name, getAppLang(), p.id)}</option>`)
+        .join("");
+      // Fix round (25 Aug 2026): a Person selection now stays chosen across
+      // pages and reloads, until manually changed. Bookmark-issues round:
+      // myPersonId is a fallback below stored, above the browser's own
+      // default (first roster row).
+      const storedPersonId = getSelectedPersonId();
+      if (visibleRoster.some((p) => p.id === storedPersonId)) personSelect.value = storedPersonId;
+      else if (visibleRoster.some((p) => p.id === myPersonId)) personSelect.value = myPersonId;
+
+      if (!weekAnchor.value) weekAnchor.value = toDateInputValue(new Date());
+      if (!monthAnchor.value) monthAnchor.value = new Date().toISOString().slice(0, 7);
+
+      subjectTree = await getSubjectTree(db, activeTenantId);
+      trackableList = await getTrackables(db, activeTenantId);
+
+      await refreshReport();
+      await refreshQuranBreakdown();
+    }
+
+    // ---------------------------------------------------------------------
+    // Weekly / monthly report
+    // ---------------------------------------------------------------------
+
+    function scopedPersonIds() {
+      if (wholeRoster.checked) return visibleRoster.map((p) => p.id);
+      return personSelect.value ? [personSelect.value] : [];
+    }
+
+    function weekRangeLabelFor(anchorDateIso) {
+      const wk = weekKeyFor(new Date(anchorDateIso + "T00:00:00Z"), tenantWeekStartsOn);
+      const start = new Date(wk + "T00:00:00Z");
+      const end = new Date(start); end.setUTCDate(end.getUTCDate() + 6);
+      return {
+        weekKey: wk,
+        label: t("Week of {weekKey} — {start} to {end}", { weekKey: num(wk), start: fmtDate(start), end: fmtDate(end) }),
+      };
+    }
+
+    async function refreshReport() {
+      const personIds = scopedPersonIds();
+      if (personIds.length === 0) { reportBody.innerHTML = `<p class="muted">${t("Pick a student first.")}</p>`; lastEntries = []; return; }
+
+      reportBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
+      try {
+        let entries;
+        if (reportMode === "week") {
+          const { weekKey, label } = weekRangeLabelFor(weekAnchor.value || toDateInputValue(new Date()));
+          rangeLabel.textContent = label;
+          entries = await activityForRoster(db, activeTenantId, personIds, [weekKey]);
+        } else {
+          const [y, m] = (monthAnchor.value || new Date().toISOString().slice(0, 7)).split("-").map(Number);
+          rangeLabel.textContent = num(new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(dateLocale(), { month: "long", year: "numeric" }));
+          const weekKeys = monthWeekKeys(y, m, tenantWeekStartsOn);
+          const raw = await activityForRoster(db, activeTenantId, personIds, weekKeys);
+          entries = filterEntriesToMonth(raw, y, m);
+        }
+        lastEntries = entries;
+        renderReport(entries, personIds);
+      } catch (err) {
+        reportBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load the report:")} ${err.code ?? ""} ${err.message}</p>`;
+        console.error(err);
+      }
+    }
+
+    function renderReport(entries, personIds) {
+      const scopedRosterForReport = visibleRoster.filter((p) => personIds.includes(p.id));
+      const byStudent = summarizeByStudent(entries, scopedRosterForReport);
+      const bySubject = summarizeBySubject(entries, subjectTree);
+      lastCsvRows = entriesToCsvRows(entries, { roster, subjectTree, trackables: trackableList });
+
+      const studentRows = byStudent.length
+        ? byStudent.map((s) => `<tr>
+            <td>${s.name}</td>
+            <td>${num(s.dayCount)}</td>
+            <td>${num(s.entryCount)}</td>
+            <td>${s.subjectBreakdown.map(([id, n]) => `${subjectName(id)} (${num(n)})`).join(", ") || "—"}</td>
+          </tr>`).join("")
+        : `<tr><td colspan="4" class="muted">${t("No students in scope.")}</td></tr>`;
+
+      const subjectRows = bySubject.length
+        ? bySubject.map((s) => `<tr><td>${s.name}</td><td>${num(s.entryCount)}</td><td>${num(s.studentCount)}</td><td>${num(s.unitCount)}</td></tr>`).join("")
+        : `<tr><td colspan="4" class="muted">${t("Nothing logged in this range.")}</td></tr>`;
+
+      const entryRows = entries.length
+        ? [...entries].sort((a, b) => a.date.localeCompare(b.date)).map((e) => `<tr>
+            <td>${num(e.date)}</td><td>${personName(e.personId)}</td><td>${subjectName(e.subjectId)}</td>
+            <td>${unitKeyLabel(e.unitKey)}</td><td>${trackableName(e.trackableId)}</td><td>${activityActionLabel(e.action)}</td>
+          </tr>`).join("")
+        : `<tr><td colspan="6" class="muted">${t("Nothing logged in this range.")}</td></tr>`;
+
+      reportBody.innerHTML = `
+        <h3 style="font-size:1rem;">${t("Per student")}</h3>
+        <table><thead><tr><th>${t("Student")}</th><th>${t("Days active")}</th><th>${t("Entries")}</th><th>${t("By subject")}</th></tr></thead>
+        <tbody>${studentRows}</tbody></table>
+
+        <h3 style="font-size:1rem; margin-top:1.4rem;">${t("Per subject")}</h3>
+        <table><thead><tr><th>${t("Subject")}</th><th>${t("Entries")}</th><th>${t("Students")}</th><th>${t("Distinct units")}</th></tr></thead>
+        <tbody>${subjectRows}</tbody></table>
+
+        <h3 style="font-size:1rem; margin-top:1.4rem;">${t("Raw entries")}</h3>
+        <table><thead><tr><th>${t("Date")}</th><th>${t("Student")}</th><th>${t("Subject")}</th><th>${t("Unit")}</th><th>${t("Approach")}</th><th>${t("Action")}</th></tr></thead>
+        <tbody>${entryRows}</tbody></table>
+      `;
+    }
+
+    function personName(id) { const p = roster.find((r) => r.id === id); return p ? langText(p.name, getAppLang(), id) : id; }
+    function subjectName(id) { const n = subjectTree.find((s) => s.id === id); return n ? langText(n.name, getAppLang(), id) : id; }
+    function trackableName(id) { const t = trackableList.find((tr) => tr.id === id); return t ? langText(t.name, getAppLang(), id) : (id ?? "—"); }
+
+    weekTabBtn.addEventListener("click", () => {
+      reportMode = "week";
+      weekTabBtn.classList.add("active"); monthTabBtn.classList.remove("active");
+      weekControls.style.display = ""; monthControls.style.display = "none";
+      refreshReport();
+    });
+    monthTabBtn.addEventListener("click", () => {
+      reportMode = "month";
+      monthTabBtn.classList.add("active"); weekTabBtn.classList.remove("active");
+      monthControls.style.display = ""; weekControls.style.display = "none";
+      refreshReport();
+    });
+    weekAnchor.addEventListener("change", refreshReport);
+    monthAnchor.addEventListener("change", refreshReport);
+    weekPrevBtn.addEventListener("click", () => { shiftWeek(-7); });
+    weekNextBtn.addEventListener("click", () => { shiftWeek(7); });
+    monthPrevBtn.addEventListener("click", () => { shiftMonth(-1); });
+    monthNextBtn.addEventListener("click", () => { shiftMonth(1); });
+
+    function shiftWeek(days) {
+      const d = new Date((weekAnchor.value || toDateInputValue(new Date())) + "T00:00:00Z");
+      d.setUTCDate(d.getUTCDate() + days);
+      weekAnchor.value = toDateInputValue(d);
+      refreshReport();
+    }
+    function shiftMonth(delta) {
+      let [y, m] = (monthAnchor.value || new Date().toISOString().slice(0, 7)).split("-").map(Number);
+      m += delta;
+      if (m > 12) { m = 1; y++; } if (m < 1) { m = 12; y--; }
+      monthAnchor.value = `${y}-${String(m).padStart(2, "0")}`;
+      refreshReport();
+    }
+
+    personSelect.addEventListener("change", () => { setSelectedPersonId(personSelect.value); refreshReport(); refreshQuranBreakdown(); });
+    wholeRoster.addEventListener("change", refreshReport);
+
+    csvBtn.addEventListener("click", () => {
+      if (!lastCsvRows.length) return;
+      const filename = reportMode === "week" ? `monitor-week-${weekAnchor.value}.csv` : `monitor-month-${monthAnchor.value}.csv`;
+      downloadCsv(filename, lastCsvRows);
+    });
+    printBtn.addEventListener("click", () => {
+      const heading = t("Monitor report");
+      printReportHtml(`${heading} — ${rangeLabel.textContent}`, `<h1>${heading}</h1><p>${rangeLabel.textContent}</p>${reportBody.innerHTML}`);
+    });
+
+    // ---------------------------------------------------------------------
+    // Quran Approach breakdown -- single selected student, status snapshot.
+    // ---------------------------------------------------------------------
+
+    async function refreshQuranBreakdown() {
+      const personId = personSelect.value;
+      if (!personId) { quranBody.innerHTML = `<p class="muted">${t("Pick a student first.")}</p>`; quranStudentName.textContent = ""; return; }
+      quranStudentName.textContent = personName(personId);
+      quranBody.innerHTML = `<p class="muted">${t("Loading…")}</p>`;
+      try {
+        const entries = await listAllRecordsForPerson(db, activeTenantId, personId);
+        const rows = summarizeQuranApproaches(entries, trackableList);
+        quranBody.innerHTML = rows.length
+          ? `<table><thead><tr><th>${t("Approach")}</th><th>${t("Section")}</th>
+               <th>${statusLabel("not_started")}</th><th>${statusLabel("learning")}</th>
+               <th>${statusLabel("practising")}</th><th>${statusLabel("achieved")}</th>
+               <th>${statusLabel("mastered")}</th><th>${t("Achieved+")}</th></tr></thead>
+             <tbody>${rows.map(approachRowHtml).join("")}</tbody></table>`
+          : `<p class="muted">${t("No Quran Approaches set up for this tenant yet.")}</p>`;
+      } catch (err) {
+        quranBody.innerHTML = `<p style="color:#9c3b2e;">${t("Couldn't load the breakdown:")} ${err.code ?? ""} ${err.message}</p>`;
+        console.error(err);
+      }
+    }
+
+    function approachRowHtml(r) {
+      return `<tr>
+        <td>${r.name}</td>
+        <td>${r.groupName}</td>
+        <td class="status-not_started">${num(r.byStatus.not_started)}</td>
+        <td class="status-learning">${num(r.byStatus.learning)}</td>
+        <td class="status-practising">${num(r.byStatus.practising)}</td>
+        <td class="status-achieved">${num(r.byStatus.achieved)}</td>
+        <td class="status-mastered">${num(r.byStatus.mastered)}</td>
+        <td>${r.ratio != null
+          ? t("{count} ({percent}%) of {total}", { count: num(r.achievedOrBetter), percent: num(Math.round(r.ratio * 100)), total: num(r.countedTotal) })
+          : t("{count} of {total}", { count: num(r.achievedOrBetter), total: num(r.countedTotal) })}</td>
+      </tr>`;
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        whoEl.textContent = t("Not signed in.");
+        signInBtn.style.display = "inline-block";
+        signOutBtn.style.display = "none";
+        appEl.style.display = "none";
+        return;
+      }
+      whoEl.textContent = t("Signed in as {email}", { email: user.email });
+      signInBtn.style.display = "none";
+      signOutBtn.style.display = "inline-block";
+
+      async function step(name, fn) {
+        try { return await fn(); }
+        catch (err) { err.stepName = err.stepName ?? name; throw err; }
+      }
+
+      try {
+        const userIndexSnap = await step("read your userIndex", () => getDoc(doc(db, TENANT.USER_INDEX, user.uid)));
+        // v07.37: if this account has a language set on another device, take it
+        // and reload. Costs no extra read -- the snapshot is already in hand.
+        if (adoptAppLangFromUserIndex(userIndexSnap)) return;
+        const defaultTenantId = userIndexSnap.exists() ? userIndexSnap.data().defaultTenantId : null;
+
+        // One membership load, not two: bootstrapContext() hands back the
+        // list it used to choose the context, which this page then used to
+        // fetch a second time, one round trip later, for the tenant picker.
+        const { context, memberships } = await step("initialize active context", () => bootstrapContext(db, user.uid, defaultTenantId));
+        if (!context) {
+          whoEl.innerHTML += noAccountMessageHtml();
+          return;
+        }
+        activeTenantId = context.tenantId;
+
+        myMemberships = memberships;
+        tenantSelect.innerHTML = myMemberships
+          .map((m) => `<option value="${m.tenantId}" ${m.tenantId === activeTenantId ? "selected" : ""}>${m.tenantName} (${roleListLabel(m.roles)})</option>`)
+          .join("");
+
+        appEl.style.display = "block";
+        await step("load context data", loadContextData);
+      } catch (err) {
+        whoEl.textContent += ` — failed at "${err.stepName ?? "unknown step"}": ${err.code ?? ""} ${err.message}`;
+        console.error(err);
+      }
+    });
+
+    tenantSelect.addEventListener("change", async () => {
+      const chosen = myMemberships.find((m) => m.tenantId === tenantSelect.value);
+      if (!chosen) return;
+      activeTenantId = chosen.tenantId;
+      setActiveContext({ tenantId: chosen.tenantId, personId: chosen.personId, roles: chosen.roles, viewAsRole: null });
+      await loadContextData();
+    });
+  </script>
+</body>
+</html>
