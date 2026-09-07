@@ -752,8 +752,12 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         (quranrevival.html sorts its wheel by exactly this field). The others
         still render, and are still fully editable -- they just have no
         position among Approaches, because they are not Approaches. */
+    function allApproaches() {
+      return trackableList.filter((row) => row.subjectId === "quran");
+    }
+
     function visibleTrackables() {
-      return notRemoved(trackableList.filter((row) => row.subjectId === "quran"));
+      return notRemoved(allApproaches());
     }
 
     /** Everything else this tenant has: the per-module "Studied" rows. */
@@ -874,8 +878,21 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       const visible = visibleTrackables();
       const from = visible.findIndex((x) => x.id === id);
       if (from === -1 || toIndex < 0 || toIndex >= visible.length || toIndex === from) return true;
-      const ids = visible.map((x) => x.id);
-      ids.splice(toIndex, 0, ids.splice(from, 1)[0]);
+
+      // Renumber across ALL of Quran's Approaches, removed ones included,
+      // even though the owner is choosing among the visible ones. Numbering
+      // only what is on screen would hand 1..29 to the visible rows while a
+      // removed Approach kept its old number -- two rows sharing a position,
+      // invisible until the day it is restored and the list shows "5" twice.
+      // A removed Approach keeps its place in the running order; it is
+      // removed from the wheel, not from the sequence.
+      const all = allApproaches();
+      const target = visible[toIndex];
+      const ids = all.map((x) => x.id);
+      const fromAll = ids.indexOf(id);
+      const toAll = ids.indexOf(target.id);
+      if (fromAll === -1 || toAll === -1 || fromAll === toAll) return true;
+      ids.splice(toAll, 0, ids.splice(fromAll, 1)[0]);
 
       const outcome = await safeWrite(
         () => reorderTrackables(db, activeTenantId, ids, trackableList, auth.currentUser.uid),
