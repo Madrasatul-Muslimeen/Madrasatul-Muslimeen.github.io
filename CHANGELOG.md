@@ -11956,9 +11956,17 @@ one asserted a nudge writes exactly 2 documents, and was measuring the whole
 test's accumulated writes rather than the nudge's — a section change
 legitimately renumbers everything between the old section and the new.
 
-**`behaviour.mjs`: 803 pass, 0 fail**, stopping at the same pre-existing
+**`behaviour.mjs`: 800 pass, 3 fail**, stopping at the same pre-existing
 section-42 crash carried since v07.69 — the same 803 total as every recent
-run. **`navcheck.mjs` unchanged** (still only the pre-existing 320px English
+run, and the same three: section 22g, the environmental archive.org poster
+block this sandbox's proxy imposes (they work for the owner). **Check 20e
+was a REAL failure of this round's own, found here and fixed** — it reads the
+first row of the Approach table, which is now a section heading, and every
+Approach was landing under "(not set)" because the shared fixture's trackables
+carry a `groupName` but no `group`, so none matched a known section. An
+Approach whose section number matches nothing still KNOWS its own section
+name, so it is grouped under that rather than swept into "(not set)" —
+better behaviour, not just a green check. **`navcheck.mjs` unchanged** (still only the pre-existing 320px English
 truncation of "Operation"/"Bookmark"). **Coverage 1,724 → 1,732 scanned, 46
 missing UNCHANGED.** No `firestore.rules` change, no schema change, no new
 collection, and nothing new on any startup path.

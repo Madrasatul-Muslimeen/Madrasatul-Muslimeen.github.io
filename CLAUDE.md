@@ -524,8 +524,15 @@ the reason, never deleted** — three read the now-removed Section cell or
 counted full-width rows as separators (both kinds have real class names now);
 one asserted Position offers all 30 slots where it now offers the section's
 own; one was measuring the whole test's accumulated writes rather than the
-nudge's. **`behaviour.mjs` 803 pass / 0 fail**, same total and same
-pre-existing section-42 stop as every recent run. **`navcheck.mjs`
+nudge's. **`behaviour.mjs` 800 pass / 3 fail**, same 803 total and same
+pre-existing section-42 stop as every recent run, the three being the
+environmental archive.org block (section 22g). **Check 20e was a REAL
+failure of this round's own, found there and fixed**: it reads the first row
+of the Approach table, which is now a section heading, and every Approach was
+landing under "(not set)" because the shared fixture's trackables carry a
+`groupName` but no `group`. An Approach whose section number matches nothing
+still KNOWS its own section name, so it is grouped under that rather than
+swept into "(not set)" — better behaviour, not just a green check. **`navcheck.mjs`
 unchanged.** **Coverage 1,724 → 1,732 scanned, 46 missing UNCHANGED.**
 
 **Flagged, not changed.** Colouring the wheel's 30 slices by their 7 sections
