@@ -200,7 +200,12 @@ export const SUBJECT_TEMPLATES = [
 // The 30 Approaches (Part 3) -- trackables, not subjects. All belong to
 // QuranRevival / the "quran" subject node. 7 sections, matching the doc.
 // ---------------------------------------------------------------------------
-const SECTION_NAMES = {
+/** The 7 Approach sections. Exported since v08.01: catalogue.html's own
+    Approach editor lets the owner move an Approach between sections, and
+    changing `group` has to set the matching `groupName` on the same write
+    -- the two are stored side by side on every trackable doc and a screen
+    that printed one against the other's number would simply be wrong. */
+export const SECTION_NAMES = {
   1: nameLang("Building Foundation / Learning Tools", "ভিত্তি নির্মাণ / শেখার হাতিয়ার"),
   2: nameLang("Engagement / Attachment", "সম্পৃক্ততা / সংযুক্তি"),
   3: nameLang("Critical Reasoning: Nazar / 'Aql", "যৌক্তিক চিন্তা: নজর / আকল"),

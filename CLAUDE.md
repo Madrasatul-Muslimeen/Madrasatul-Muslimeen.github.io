@@ -3,8 +3,10 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: v08.00 — the v08 line is OPEN.** `app/js/version.js`
-reads `08.00` and the badge beside the app name says so on screen. The v07
+**Current milestone: v08.01.** `app/js/version.js` reads `08.01` and the badge
+beside the app name says so on screen. v08.00 opened the line;
+**v08.01 is its first real feature round — the 30 Approaches made fully
+editable by the owner** (see the round entry below). The v07
 line is closed behind it: its final build, **v07.139**, is frozen at
 `legacy-v07/` and reachable, exactly the way v06 had a line drawn under it at
 the cutover. The owner drew this one on 6 Sep 2026; v08.00 opened it the same
@@ -13,7 +15,7 @@ or the opening one — no feature, no schema, no rule; see the "v07 closed and
 archived" entry below and the v08.00 entry in `CHANGELOG.md`.
 
 **Version numbering from here: `08` is this overhaul, and the last two digits
-bump on every new feature within it** — so the next feature round is v08.01.
+bump on every new feature within it** — so the next feature round is v08.02.
 `app/js/version.js` is the single source of truth; nothing else hardcodes the
 string. Bump it and this line together, every round.
 
@@ -28,14 +30,14 @@ first.
 |---|---|---|
 | `/legacy/index.html` | v06.30, the single-file pre-cutover app (10,146 lines) | **Reference only — never edit** |
 | `/legacy-v07/` | v07.139, the multi-page Firebase rebuild, frozen 6 Sep 2026 | **Reference only — never edit** |
-| `/app/` | v08.00 onward | The live app. All work happens here |
+| `/app/` | v08.01 onward | The live app. All work happens here |
 
 **Both archives are reachable from inside the app** — Home ▾ carries "Legacy
 App - v06 ↗" and "Legacy App - v07 ↗", static markup in all 22 nav-bearing
 pages (not `nav.js`). Both sign in to the same `study-monitoring` Firebase
 project and **write real data** — they are runnable history, not screenshots.
 The version badge beside the app name is what tells them apart on screen, and
-since v08.00 it really does: `/app/` reads **v08.00**, `/legacy-v07/` reads
+since v08.00 it really does: `/app/` reads **v08.01**, `/legacy-v07/` reads
 **v07.139**, `/legacy/index.html` reads **v06.30**. A claim made in either
 archive is a real claim, so the badge is the only thing that says which line
 you are in.
@@ -59,72 +61,6 @@ alongside `app/js/version.js` (first two digits = big overhaul, last two = each
 new feature) and will drift if a round forgets to bump it here too.
 
 ### The five most recent rounds
-
-v07.137 (5 Sep 2026, same day) is **Explore in Bangla end to end, and the Surah
-view promoted to the default** -- the owner having used v07.136: *"Subhanallah!
-The Surah view, It looks actually good! So, make the Surah view as the default
-view on Explore, rather than Juzz."*
-
-**(1) Trail, wheel hubs, sidebar labels and tooltips are all translated**,
-closing the item v07.134 and v07.135 both flagged -- and the flag was right
-about the cost: **"Whole Quran", "Juz {juz}", "Page {page}" and "Surah {surah}"
-were already in `bn.js`, translated, and simply never called.** Only three keys
-were new. Every number goes through `num()`, so a Bangla reader sees "জুয ১",
-"পৃষ্ঠা ৫৮২", "আয়াত ৭" rather than Bengali words wrapped around Latin digits --
-the half that is easy to get wrong and invisible in a coverage report. **Two
-compositions are deliberate and safe:** parentheses around a translated phrase,
-and " · " joining a surah name to its ruku. Both are PUNCTUATION rather than
-grammar, so neither reverses in Bangla -- unlike the possessives phases 4 and 5
-had to rebuild as whole sentences.
-
-**(2) A defect fixed in passing, in seven places: the wheels printed a raw
-status id.** Every segment tooltip read `statusId.replace(/_/g, " ")` --
-"not_started" as "not started" -- a storage value, meaningless in either
-language and untranslated in Bangla. A one-line `segTitle()` routes them all
-through `statusLabelsById()`, the helper the legend and the sidebar chips
-already use. Six are Explore's; **the seventh is the landing page's own Mastery
-Wheel**, identical bug, fixed with them.
-
-**(3) Surah is the default whole-Quran view** -- one word in `prefs.js`. **A
-reader who has already chosen keeps their choice**, since a stored value always
-wins; this only changes what someone who never touched the switch sees. Proven
-both ways.
-
-**Verified: a focused, un-checked-in Playwright script, 25 checks, all
-passing**, screenshotted -- because a coverage number has never once proved a
-screen is translated on this project. In Bangla, read off the rendered page:
-the trail's "Whole Quran", the hub, all 114 surah names, the Juz list ("জুয ১",
-Bangla word AND Bengali digits, no Latin character or digit anywhere), the Juz
-tooltip end to end, the trail's Juz crumb, the page list, the ruku list, the
-ruku tooltip, the Ruku' crumb, the ayah list, a short surah's ayah list, and
-the hub naming surah and ruku together -- plus the Mastery Wheel's own tooltip
-proven free of raw status ids and reading in Bangla.
-
-**Coverage 1,566 -> 1,567 scanned, and missing 47 -> 46 -- one FEWER, which is
-the interesting number.** Diffed string by string against a clean `HEAD`
-worktree: the one that left is **`"Ruku' {ruku}"`, already called somewhere in
-the app and with no Bangla at all** -- a real pre-existing gap closed as a side
-effect of needing the same key. The other areas' missing lists are
-byte-identical to `HEAD`, so nothing new went untranslated.
-
-**Four focused scripts re-run, and SIX checks UPDATED rather than deleted**,
-each because this round deliberately changed what it asserted (three assumed
-the Quran level opens on Juz; one waited on an English breadcrumb; one asserted
-Juz was the default; one expected a stored pair the new default reorders).
-**One was a wrong assertion of mine rather than a stale one** -- it expected
-`["surah","surah"]` where the real sequence leaves `["juz","surah"]`, which
-proves the "two levels remember separately" claim better than matching values
-would. Totals: **34 + 29 + 27 + 25, all passing.**
-
-**`layout.mjs`: landing page byte-for-byte identical**, zero changed metrics;
-`getElementById` 240 -> 240, missing list the same 22. No `firestore.rules`,
-schema or Firestore data changes.
-
-**Flagged, not changed:** the Explore hint under the legend still describes the
-drill as "Quran → Juz → Surah → Ruku'", which is now the non-default path.
-Rewording it is an English-copy decision and a new translation key, so it is
-raised rather than decided here.
-
 
 v07.138 (6 Sep 2026, on Claude Code on the web) is **a real backup, in two
 halves** -- the owner asked for "an html file of QuranRevival for storing as a
@@ -622,6 +558,94 @@ really rendered v07.139 against "after" v08.00; without that both sides would
 have read v08.00 and the run would have proven nothing. **Coverage 1,713
 scanned / 46 missing, both UNCHANGED** (no new string; a version number is
 never translated). Both shims deleted before any other number was read.
+
+**v08.01 (7 Sep 2026, on Claude Code on the web) is the 30 Approaches made
+FULLY EDITABLE by the owner** — their own ask: *"What is the main sources of 30
+approaches in the app? Enable that be editable by me... my edit should reflect
+everywhere an approach affects."* Then: *"yes, make it fully editable, add a
+delete button for me as a owner."*
+
+**The diagnosis reversed the question's own premise.** The owner believed the
+Approach list on the landing page was NOT the source ("it doesn't show
+sections, you built it later from other sources"). **It IS the source** —
+`renderWheel()` builds that sidebar straight from the tenant's own Firestore
+`trackables` documents, and all nine consumers across the app read through the
+same `getTrackables()`. Nothing reads `APPROACH_TEMPLATES` at render time: that
+constant is the SEED, copied into Firestore once by
+`ensureTenantCatalogueSeeded()` and thereafter consulted only by
+`syncUnneditedTrackableNames()`. So there was nothing to "promote" — the real
+gap was that the source's only editor was one `prompt()` box. **The sections
+were never invented later either**: `group` (1-7) and `groupName` have been on
+all 30 documents since the first seed; the wheel's sidebar simply doesn't print
+them.
+
+**Delete was put to the owner as its own decision rather than built or
+refused** — `firestore.rules` bans delete on `trackables` (I4/D6), and a real
+one orphans data, since claims are keyed by `trackableId` (I5) and Records,
+Monitor and every backup would print a bare `approach_07` forever. Three
+options with those costs attached; **the owner chose the reversible one**. The
+button says **"Remove"**, the confirm says in words that it can be restored,
+and the STORED value stays the canonical `archived` every other screen already
+reads. No rules change, no schema change, and `__fsLog` is asserted to carry
+**zero delete calls**.
+
+**Everything a reader ever sees is editable now** — both names, the section,
+the position, and the Guide's What/How/Measure (live text, printed by the Note
+view's own Guide tab via `renderGuideTab()`, not documentation) — each as a
+real English/Bangla pair shown side by side. **That shape fixes a live I11
+defect rather than patching it:** the old rename pre-filled with whichever
+language you were reading in and then always wrote `name.en`, so renaming while
+in Bangla silently overwrote the ENGLISH name and left the Bangla one
+untouched. Both boxes are read on every save now.
+
+**Two real hazards were found by MEASURING, neither visible in a screenshot.**
+**(1) `getTrackables()` returns more than the 30** — every topic-based module
+has its own "Studied" row, and this table has listed them all under a heading
+saying "The 30 Approaches" since Phase 2. Harmless beside rename and archive;
+NOT harmless beside a position picker, where renumbering one flat list would
+rewrite the `order` of trackables in modules the owner was not even looking at.
+Ordering is scoped to the Quran set now; the rest render below a labelled
+separator, still fully editable, with no position control implying one they do
+not have. **(2) A missing `group` would have silently re-sectioned an
+Approach** — a `<select>` with no matching option defaults to its first, so
+opening such a row and pressing Save would have moved it to Section 1 unseen. A
+`sectionOf()` helper falls back to matching `groupName` and offers "(not set)"
+rather than guessing; `group` and `groupName` are always written together.
+
+**`reorderTrackables()` deliberately does NOT go through `editCatalogueNode()`**,
+which stamps `edited: true` — re-ordering the wheel is not the tenant claiming
+authorship of an Approach's WORDING, and a reorder that froze all 30 names
+would mean a later platform translation fix could never reach this tenant
+again. It also writes only the documents whose number actually changed: a
+one-place nudge writes exactly 2, and "move to position 30" is one action
+rather than 29 nudges.
+
+**Verified: a focused, un-checked-in Playwright script, 84 checks, all passing
+in both languages**, screenshotted — every write proven by its VALUES, not by
+an element existing. **The harness itself needed patching to see any of it**:
+its `writeBatch()` is a pure counter whose `update()` records nothing and whose
+`commit()` touches no data, so a batched reorder left no trace and the page
+re-rendered from stale rows. It was given the same treatment `updateDoc`
+already gets. **Three failing checks were investigated and all three proved
+WRONG ASSERTIONS** — one expected Bangla guide text the templates have never
+carried; one counted rows with a hardcoded `slice(0, 30)` that made it unable
+to fail (after a removal it counted 29 Approaches plus an "other" and reported
+30); one expected 30 rows where the shared fixture adds 10 invented ones.
+
+**`layout.mjs`: every measured landing-page metric byte-for-byte identical** at
+all eight viewports in both banner states, `getElementById` 246 → 246, same
+22-entry pre-existing missing list — `app/quranrevival.html` is byte-for-byte
+untouched. **Page overflow byte-identical to `HEAD`** at 390/768/1100px
+(439/61/0px, all pre-existing, from the subject table). **`navcheck.mjs`
+unchanged.** **Coverage 1,713 → 1,724 scanned, 46 missing UNCHANGED** — the
++11 is exactly this round's eleven new strings, all translated.
+
+**Flagged, not changed. Adding a 31st Approach is deliberately NOT built** — it
+was raised before the round and the owner did not ask for it. The wheel is
+drawn as 30 slices, the module is named "the 30 Approaches" throughout, and a
+new Approach needs an id scheme, a section and a position decided rather than
+inferred. A removed Approach's existing claims are kept and stay readable, but
+no longer appear on the wheel — which is what "removed" means here.
 
 ## What this is
 

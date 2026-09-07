@@ -11705,3 +11705,138 @@ user-visible string, and the version is a bare number that is never translated.
 (`AI_APP_REVIEW_PACKAGE/`), which is documentation only and by the owner's own
 instruction touches no application code — so **v08.01 is still unclaimed**, and
 the first real v08 feature is whatever that review comes back recommending.
+
+---
+
+**v08.01 (7 Sep 2026, on Claude Code on the web) is the 30 Approaches made
+fully editable by the owner** — their own ask, in two parts: *"What is the
+main sources of 30 approaches in the app? Enable that be editable by me...
+Direct me to the main source now so that I can edit it and my edit should
+reflect everywhere an approach affects."* Then, on being shown what existed:
+*"yes, make it fully editable, add a delete button for me as a owner."*
+
+**The diagnosis reversed the question's own premise, and that was worth
+saying before building anything.** The owner suspected the Approach list on
+the landing page was NOT the source ("it doesn't show sections, you built it
+later from other sources"). It is the source: `renderWheel()` builds that
+sidebar straight from `quranTrackables`, the tenant's own Firestore
+`trackables` documents, and every one of the nine consumers across the app
+(`quranrevival.html`, `records.html`, `monitor.html`, `catalogue.html`,
+`backup.js`, `self-check.js`, `topic-study.js`, `routine-study.js`,
+`asma-study.js`) reads through the same `getTrackables()`. Nothing reads
+`APPROACH_TEMPLATES` at render time — that constant is the SEED, copied into
+Firestore once by `ensureTenantCatalogueSeeded()` and never consulted again
+except by `syncUnneditedTrackableNames()`. So "make the Approach list the
+main source" had nothing to promote, and the real gap was that the source's
+only editor was one `prompt()` box.
+
+**The sections were never invented later either** — `group` (1-7) and
+`groupName` have been on all 30 documents since the first seed. That screen
+simply doesn't print them, because the wheel has 30 slices and its sidebar
+is their 1:1 legend.
+
+**Delete was put to the owner as its own decision rather than built or
+refused.** `firestore.rules` bans delete on `trackables` outright (I4/D6),
+and a real one orphans data: claims are keyed by `trackableId` (I5), so
+deleting Approach 7 would leave Records, Monitor and every backup file
+printing a bare `approach_07` forever. Three options were offered with those
+costs attached — reversible Remove, a real delete for never-claimed
+Approaches only, or an unconditional delete — and **the owner chose the
+reversible one**. So the button says **"Remove"**, the confirm says in words
+that it disappears from the Mastery Wheel and every list and can be restored
+at any time, and the STORED value stays the canonical `archived` that every
+other screen and the backup file already read. **No `firestore.rules`
+change, no schema change, and `__fsLog` is asserted to carry zero delete
+calls.**
+
+**Everything a reader ever sees is editable now**: both names, the section,
+the position, and the Guide's What / How / Measure — that last one being
+live text, printed by the Note view's own Guide tab via `renderGuideTab()`,
+not documentation. Each field is a real English/Bangla pair shown side by
+side.
+
+**A live I11 defect is fixed by that shape rather than patched.** The old
+rename pre-filled with whichever language you were reading in and then always
+wrote `name.en` (`{ ...row.name, en: nextName }`). So renaming while in
+Bangla silently overwrote the ENGLISH name and left the Bangla one untouched
+— the same class of bug v07.35 and v07.138 both found. Both boxes are read
+on every save, so neither language can be clobbered by an edit made while
+reading the other.
+
+**Two real hazards were found by MEASURING against the harness, and neither
+would have shown in a screenshot.**
+
+- **`getTrackables()` returns more than the 30.** Every topic-based module
+  carries its own module-wide "Studied" row, and this table has listed them
+  all under a heading that says "The 30 Approaches" since Phase 2 — harmless
+  while the only actions were rename and archive, but NOT harmless beside a
+  position picker: renumbering one flat list 1..n would silently rewrite the
+  `order` of trackables belonging to modules the owner was not even looking
+  at. Ordering is scoped to the Quran set now (the only set whose order means
+  anything — it is what the wheel sorts by), and the rest render below a
+  labelled separator, still fully editable, with no position control implying
+  one they do not have.
+- **A missing `group` would have silently re-sectioned an Approach.** The
+  fixture has `groupName` without `group`, and a `<select>` with no matching
+  option defaults to its first — so opening such a row's editor and pressing
+  Save would have moved it to Section 1 with nobody seeing it happen. A
+  `sectionOf()` helper falls back to matching the stored `groupName`, and
+  offers "(not set)" rather than guessing when neither is readable. `group`
+  and `groupName` are always written together, since a document carrying one
+  section's number and another's name is a screen that lies.
+
+**`reorderTrackables()` deliberately does NOT go through
+`editCatalogueNode()`**, which stamps `edited: true`. Re-ordering the wheel
+is not the tenant claiming authorship of an Approach's wording, and a reorder
+that froze all 30 names would mean a later platform translation fix could
+never reach this tenant again. Renaming and guide edits still set the flag,
+because those genuinely are the tenant making the node their own. It also
+writes only the documents whose number actually changed — proven: a one-place
+nudge writes exactly 2, and "move to position 30" is one action rather than
+29 nudges.
+
+**Verified: a focused, un-checked-in Playwright script, 84 checks, all
+passing in both languages**, screenshotted. Every write is proven by its
+VALUES, not by an element existing: both names written, guide text in both
+languages with the untouched half preserved, `group` AND `groupName` moving
+together, `edited: true` set on an edit and absent from a reorder, the
+numbers written 1-based and sequential, Remove writing `status: archived`,
+and the rendered page really showing each change. **The harness itself needed
+patching to see any of it**: its `writeBatch()` is a pure counter whose
+`update()` records nothing and whose `commit()` touches no data, so a batched
+reorder left no trace and the page re-rendered from stale rows — it was given
+the same treatment `updateDoc` already gets.
+
+**Three failing checks were investigated and all three proved WRONG
+ASSERTIONS rather than defects.** One expected Bangla guide text where
+`APPROACH_TEMPLATES` has only ever carried English — an empty, present Bangla
+box is the honest state and the whole reason this editor exists. One counted
+rows with a hardcoded `slice(0, 30)`, which made it unable to fail: after one
+Approach was removed it counted 29 Approaches plus an "other" trackable and
+happily reported 30. One expected 30 rows where the shared fixture adds 10
+invented Quran approaches on top of the real ones.
+
+**Measured, not assumed: the page's horizontal overflow is byte-identical to
+`HEAD` at 390px, 768px and 1100px** (439 / 61 / 0 px — all pre-existing, from
+the subject table, and the editor adds nothing to it). The form's Save and
+Cancel were promoted off `.small` after measuring them at 23px high, under
+the ~40px this project settled on for anything a finger presses; they are
+31-33px now, the same role "Add subject" has on this page.
+
+**`layout.mjs`: every measured landing-page metric byte-for-byte identical**
+at all eight viewports in both banner states, `getElementById` 246 → 246,
+same 22-entry pre-existing missing list — `app/quranrevival.html` is
+byte-for-byte untouched this round. **`navcheck.mjs` unchanged** (still only
+the pre-existing 320px ENGLISH truncation of "Operation"/"Bookmark").
+**Coverage 1,713 → 1,724 scanned, 46 missing UNCHANGED**, measured against a
+clean `HEAD` worktree: the +11 is exactly this round's eleven new strings,
+all in the `admin` area, every one of them translated.
+
+**Flagged, not changed.** **Adding a 31st Approach is deliberately not
+built** — it was raised before the round and the owner did not ask for it.
+The wheel is drawn as 30 slices, the module is named "the 30 Approaches"
+throughout, and a new Approach needs an id scheme, a section and a position
+decided rather than inferred. **A removed Approach's existing claims are
+kept and stay readable** — that is the point of the reversible choice — but
+they no longer appear on the wheel, which is correct and is what "removed"
+means here.

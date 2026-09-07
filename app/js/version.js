@@ -5,4 +5,4 @@
 // last two digits bump on every new feature within it.
 // Single source of truth -- every place that shows the version imports
 // this, never retypes the string.
-export const APP_VERSION = "08.00";
+export const APP_VERSION = "08.01";
