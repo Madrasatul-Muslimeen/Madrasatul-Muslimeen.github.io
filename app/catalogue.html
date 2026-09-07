@@ -106,12 +106,22 @@
       <div id="addSubjResult" style="margin-top:0.5rem; font-size:0.88rem;"></div>
     </fieldset>
 
+    <h2>Approach Sections</h2>
+    <p class="readonly-note" id="sectionsIntro">The 7 groups the 30 Approaches are organised into. Renaming one here renames it everywhere it appears — this list, the Approach picker, Explore, and the Mastery Wheel's own sidebar.</p>
+    <table>
+      <thead><tr><th>#</th><th>Section</th><th>Approaches</th><th id="secActionsHead" style="display:none;">Edit</th></tr></thead>
+      <tbody id="sectionsBody"></tbody>
+    </table>
+    <div id="addSectionBox" style="display:none; margin-top:0.6rem;">
+      <button id="addSectionBtn" class="secondary">Add a section</button>
+    </div>
+
     <h2>The 30 Approaches</h2>
     <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
       <input type="checkbox" id="showArchivedTrackables" /> Show removed Approaches
     </label>
     <table>
-      <thead><tr><th>#</th><th>Approach</th><th>Section</th><th>Status</th><th>Guide</th><th id="trkActionsHead" style="display:none;">Edit</th></tr></thead>
+      <thead><tr><th>#</th><th>Approach</th><th>Status</th><th>Guide</th><th id="trkActionsHead" style="display:none;">Edit</th></tr></thead>
       <tbody id="trackablesBody"></tbody>
     </table>
 
@@ -178,6 +188,10 @@
       setSubjectStatus,
       setTrackableStatus,
       reorderTrackables,
+      sectionsFromTenantDoc,
+      tenantOwnsSections,
+      getTenantDoc,
+      saveApproachSections,
       setLadderStatus,
       setLevelStatus,
       createLadder,
@@ -218,6 +232,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     const subjectsBody = document.getElementById("subjectsBody");
     const subjActionsHead = document.getElementById("subjActionsHead");
     const trackablesBody = document.getElementById("trackablesBody");
+    const sectionsBody = document.getElementById("sectionsBody");
+    const secActionsHead = document.getElementById("secActionsHead");
+    const addSectionBox = document.getElementById("addSectionBox");
+    const addSectionBtn = document.getElementById("addSectionBtn");
     const trkActionsHead = document.getElementById("trkActionsHead");
     const laddersBody = document.getElementById("laddersBody");
     const addSubjectBox = document.getElementById("addSubjectBox");
@@ -257,6 +275,14 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
     showArchivedSubjects.addEventListener("change", renderSubjects);
     showArchivedTrackables.addEventListener("change", () => { editingTrackableId = null; renderTrackables(); });
+
+    addSectionBtn.addEventListener("click", () => {
+      // No `from`: nothing points at it yet, so it saves as a real but empty
+      // section that Approaches can then be moved into from the editor below.
+      sections.push({ n: sections.length + 1, name: { en: "", bn: "" }, from: null });
+      renderSections();
+      sectionsBody.querySelector(`.secNameInput[data-i="${sections.length - 1}"][data-lang="en"]`)?.focus();
+    });
     showArchivedLadders.addEventListener("change", loadLadders);
 
     // Round 10 fix (8 Aug 2026): old wording told anyone with no account to
@@ -687,6 +713,134 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       });
     }
 
+    // v08.02 -- the sections themselves, made the tenant's own. Until this
+    // round the 7 sections were the one part of the 30 Approaches nobody could
+    // change: SECTION_NAMES in catalogue-data.js was the only copy, and they
+    // had no home on this page at all. They live on the tenant document now
+    // (see catalogue.js -- no new collection, because deploying a rules change
+    // is not always possible and a read the rules have never seen is a 403).
+    //
+    // `sections` is the working copy this page edits; `from` remembers which
+    // section number each row STARTED as, which is what lets a reorder carry
+    // every Approach to its section's new number in one pass.
+    let tenantDoc = null;
+    let sections = [];
+
+    function approachCountIn(n) {
+      return trackableList.filter((r) => r.subjectId === "quran" && Number(r.group) === n).length;
+    }
+
+    function sectionRowHtml(sec, i) {
+      const count = sec.from == null ? 0 : approachCountIn(sec.from);
+      const actions = canEdit
+        ? `<td>
+             <button class="small secondary secUpBtn" data-i="${i}" ${i === 0 ? "disabled" : ""} title="${t("Move up")}">▲</button>
+             <button class="small secondary secDownBtn" data-i="${i}" ${i === sections.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button>
+           </td>`
+        : "";
+      const nameCell = canEdit
+        ? `<td>
+             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(15rem, 1fr)); gap:0.5rem;">
+               <div>
+                 <label style="font-size:0.78rem; font-weight:400; margin:0 0 0.1rem;">${t("English")}</label>
+                 <input type="text" class="secNameInput" data-i="${i}" data-lang="en" value="${esc(sec.name?.en)}" style="width:100%;" />
+               </div>
+               <div>
+                 <label style="font-size:0.78rem; font-weight:400; margin:0 0 0.1rem;">${t("Bangla")}</label>
+                 <input type="text" class="secNameInput" data-i="${i}" data-lang="bn" value="${esc(sec.name?.bn)}" style="width:100%;" />
+               </div>
+             </div>
+           </td>`
+        : `<td>${langText(sec.name, getAppLang(), "")}</td>`;
+      return `<tr>
+        <td>${num(i + 1)}</td>
+        ${nameCell}
+        <td>${num(count)}</td>
+        ${actions}
+      </tr>`;
+    }
+
+    function renderSections() {
+      secActionsHead.style.display = canEdit ? "" : "none";
+      addSectionBox.style.display = canEdit ? "" : "none";
+      sectionsBody.innerHTML = sections.map(sectionRowHtml).join("")
+        + (canEdit
+          ? `<tr><td colspan="4" style="border-bottom:none; padding-top:0.7rem;">
+               <button id="saveSectionsBtn">${t("Save sections")}</button>
+               <button id="revertSectionsBtn" class="secondary">${t("Cancel")}</button>
+               <span id="sectionsMsg" style="margin-left:0.6rem; font-size:0.85rem; color:#555;"></span>
+             </td></tr>`
+          : "");
+      if (!canEdit) return;
+
+      // Typing is held in the working copy rather than re-rendering on every
+      // keystroke -- a re-render would rebuild the inputs and throw away the
+      // caret mid-word.
+      sectionsBody.querySelectorAll(".secNameInput").forEach((el) => {
+        el.addEventListener("input", () => {
+          const sec = sections[Number(el.dataset.i)];
+          sec.name = { ...(sec.name ?? {}), [el.dataset.lang]: el.value };
+        });
+      });
+      sectionsBody.querySelectorAll(".secUpBtn").forEach((b) => {
+        b.addEventListener("click", () => moveSection(Number(b.dataset.i), -1));
+      });
+      sectionsBody.querySelectorAll(".secDownBtn").forEach((b) => {
+        b.addEventListener("click", () => moveSection(Number(b.dataset.i), 1));
+      });
+      document.getElementById("saveSectionsBtn").addEventListener("click", saveSections);
+      document.getElementById("revertSectionsBtn").addEventListener("click", () => { loadSections(); });
+    }
+
+    /** The Approach counts can only be right once the Approaches are loaded,
+        and sections are deliberately loaded FIRST (their table groups the
+        Approaches). So the counts are filled in afterwards, in place --
+        never by re-rendering, which would rebuild the name inputs and throw
+        away whatever the owner had half-typed into them. */
+    function refreshSectionCounts() {
+      sectionsBody.querySelectorAll("tr").forEach((tr, i) => {
+        const sec = sections[i];
+        if (!sec || !tr.cells[2]) return;
+        tr.cells[2].textContent = num(sec.from == null ? 0 : approachCountIn(sec.from));
+      });
+    }
+
+    function moveSection(i, delta) {
+      const j = i + delta;
+      if (j < 0 || j >= sections.length) return;
+      [sections[i], sections[j]] = [sections[j], sections[i]];
+      renderSections();
+    }
+
+    async function loadSections() {
+      tenantDoc = await getTenantDoc(db, activeTenantId);
+      // `from` is the number each row currently HAS in the data; a row added
+      // in this sitting has none until it is saved.
+      sections = sectionsFromTenantDoc(tenantDoc).map((sec) => ({ ...sec, from: sec.n }));
+      renderSections();
+    }
+
+    async function saveSections() {
+      const btn = document.getElementById("saveSectionsBtn");
+      const msg = document.getElementById("sectionsMsg");
+      if (sections.some((sec) => !sec.name?.en && !sec.name?.bn)) {
+        msg.textContent = t("A section needs a name in at least one language.");
+        return;
+      }
+      btn.disabled = true;
+      msg.textContent = t("Saving…");
+      const outcome = await safeWrite(
+        () => saveApproachSections(db, activeTenantId, sections, trackableList, auth.currentUser.uid),
+        { collection: "tenants", action: "saveSections", id: activeTenantId }
+      );
+      if (!outcome.ok) { msg.textContent = ""; alert(outcome.entry.message); btn.disabled = false; return; }
+      // The Approaches carry groupName, so their table has to be re-read too.
+      await loadTrackables();
+      await loadSections();
+      const saved = document.getElementById("sectionsMsg");
+      if (saved) saved.textContent = t("Saved.");
+    }
+
     // v08.01 -- the Approach editor. Until this round the 30 Approaches were
     // the app's central content and the ONLY thing an owner could change
     // about one was its name, through a browser prompt() that always wrote
@@ -709,7 +863,8 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     // reversible one. The STORED value stays the canonical "archived" that
     // every other screen and the backup file already read -- only this
     // table's wording follows the owner's word for what they are doing.
-    const SECTION_OPTIONS = Object.keys(SECTION_NAMES).map(Number).sort((a, b) => a - b);
+    const sectionOptionNumbers = () => sections.map((sec) => sec.n);
+    const sectionNameFor = (n) => sections.find((sec) => sec.n === n)?.name ?? SECTION_NAMES[n];
 
     /** An Approach's section number. Prefers the stored `group`, which
         ensureTenantCatalogueSeeded() always writes -- but falls back to
@@ -722,9 +877,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         guessing one. */
     function sectionOf(row) {
       const stored = Number(row.group);
-      if (SECTION_OPTIONS.includes(stored)) return stored;
-      const byName = SECTION_OPTIONS.find((n) =>
-        ["en", "bn"].some((l) => row.groupName?.[l] && row.groupName[l] === SECTION_NAMES[n]?.[l]));
+      const numbers = sectionOptionNumbers();
+      if (numbers.includes(stored)) return stored;
+      const byName = numbers.find((n) =>
+        ["en", "bn"].some((l) => row.groupName?.[l] && row.groupName[l] === sectionNameFor(n)?.[l]));
       return byName ?? null;
     }
 
@@ -756,8 +912,36 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       return trackableList.filter((row) => row.subjectId === "quran");
     }
 
+    /** Every Approach in DISPLAY order: section by section, and by `order`
+        within each. v08.02 made sections a visible grouping, and that creates
+        an invariant the flat list did not have -- **a section must be a
+        contiguous block of the running order**. If Approach 1 sat in section
+        5 while Approach 2 sat in section 1, the Mastery Wheel's sidebar would
+        print section 5's heading, then section 1's, then section 5's again:
+        the same section named three times down one list. So this ordering is
+        what every reorder renumbers against, which keeps the blocks
+        contiguous by construction. */
+    function approachesInDisplayOrder() {
+      const rank = new Map(sections.map((sec, i) => [sec.n, i]));
+      return allApproaches().slice().sort((a, b) => {
+        const ra = rank.has(sectionOf(a)) ? rank.get(sectionOf(a)) : Number.MAX_SAFE_INTEGER;
+        const rb = rank.has(sectionOf(b)) ? rank.get(sectionOf(b)) : Number.MAX_SAFE_INTEGER;
+        return ra !== rb ? ra - rb : (a.order ?? 0) - (b.order ?? 0);
+      });
+    }
+
     function visibleTrackables() {
-      return notRemoved(allApproaches());
+      return notRemoved(approachesInDisplayOrder());
+    }
+
+    /** The Approaches an ▲▼ or a Position choice actually steps through: its
+        OWN section's, not all 30. Moving between sections is the Section
+        dropdown's job -- letting ▼ walk an Approach across a heading would
+        move it on screen while its stored section stayed put, which is the
+        contradiction the ordering rule above exists to prevent. */
+    function sectionSiblings(row) {
+      const sec = sectionOf(row);
+      return visibleTrackables().filter((r) => sectionOf(r) === sec);
     }
 
     /** Everything else this tenant has: the per-module "Studied" rows. */
@@ -793,22 +977,22 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       // visibleTrackables(). A module-wide "Studied" row has no place in the
       // Approach running order, so it is given no control that implies one.
       const isApproach = row.subjectId === "quran";
-      const visible = visibleTrackables();
-      const here = visible.findIndex((x) => x.id === row.id);
+      const siblings = sectionSiblings(row);
+      const here = siblings.findIndex((x) => x.id === row.id);
       const posBox = isApproach
         ? `<div>
-            <strong style="font-size:0.88rem;">${t("Position")}</strong>
+            <strong style="font-size:0.88rem;">${t("Position in section")}</strong>
             <select class="trkPositionSelect" style="width:100%; margin-top:0.2rem;">${
-              visible.map((_, i) => `<option value="${i}" ${here === i ? "selected" : ""}>${num(i + 1)}</option>`).join("")
+              siblings.map((_, i) => `<option value="${i}" ${here === i ? "selected" : ""}>${num(i + 1)}</option>`).join("")
             }</select>
           </div>`
         : "";
-      const sectionOptions = SECTION_OPTIONS
-        .map((n) => `<option value="${n}" ${sectionOf(row) === n ? "selected" : ""}>${num(n)} — ${langText(SECTION_NAMES[n], getAppLang(), "")}</option>`)
+      const sectionOptions = sectionOptionNumbers()
+        .map((n) => `<option value="${n}" ${sectionOf(row) === n ? "selected" : ""}>${num(n)} — ${langText(sectionNameFor(n), getAppLang(), "")}</option>`)
         .join("");
       const noSection = sectionOf(row) === null
         ? `<option value="" selected>${t("(not set)")}</option>` : "";
-      return `<tr id="trk-row-${row.id}"><td colspan="6" style="background:#fafbfd;">
+      return `<tr id="trk-row-${row.id}"><td colspan="5" style="background:#fafbfd;">
         ${bilingualField("trkNameInput", t("Approach name"), row.name)}
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(13rem, 1fr)); gap:0.6rem; margin-top:0.8rem;">
           <div>
@@ -835,10 +1019,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         : "";
       let moveButtons = "";
       if (canEdit && row.subjectId === "quran") {
-        const visible = visibleTrackables();
-        const idx = visible.findIndex((x) => x.id === row.id);
+        const siblings = sectionSiblings(row);
+        const idx = siblings.findIndex((x) => x.id === row.id);
         moveButtons = `<button class="small secondary trkUpBtn" data-id="${row.id}" ${idx <= 0 ? "disabled" : ""} title="${t("Move up")}">▲</button>
-          <button class="small secondary trkDownBtn" data-id="${row.id}" ${idx === -1 || idx >= visible.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button><br/>`;
+          <button class="small secondary trkDownBtn" data-id="${row.id}" ${idx === -1 || idx >= siblings.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button><br/>`;
       }
       const actionCell = canEdit
         ? `<td>${moveButtons}<button class="small secondary editTrkBtn" data-id="${row.id}">${t("Edit")}</button> ${removeBtn}</td>`
@@ -846,7 +1030,6 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       return `<tr id="trk-row-${row.id}">
         <td>${num(row.order)}</td>
         <td>${langText(row.name, getAppLang(), row.id)}</td>
-        <td>${langText(row.groupName, getAppLang(), t("Section {n}", { n: num(row.group) }))}</td>
         <td>${approachStatusLabel(row.status)}</td>
         <td>
           <button class="small secondary guideBtn" data-id="${row.id}">${t("Guide")}</button>
@@ -866,6 +1049,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     async function loadTrackables() {
       trackableList = await getTrackables(db, activeTenantId);
       renderTrackables();
+      refreshSectionCounts();
     }
 
     /** Reads the whole visible order off screen, moves one Approach within
@@ -875,20 +1059,23 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         shape the subject tree uses) is what makes "move this to position 1"
         from position 30 a single action instead of 29 nudges. */
     async function moveTrackable(id, toIndex) {
-      const visible = visibleTrackables();
-      const from = visible.findIndex((x) => x.id === id);
-      if (from === -1 || toIndex < 0 || toIndex >= visible.length || toIndex === from) return true;
+      const row = trackableList.find((x) => x.id === id);
+      if (!row) return true;
+      const siblings = sectionSiblings(row);
+      const from = siblings.findIndex((x) => x.id === id);
+      if (from === -1 || toIndex < 0 || toIndex >= siblings.length || toIndex === from) return true;
 
-      // Renumber across ALL of Quran's Approaches, removed ones included,
-      // even though the owner is choosing among the visible ones. Numbering
-      // only what is on screen would hand 1..29 to the visible rows while a
-      // removed Approach kept its old number -- two rows sharing a position,
-      // invisible until the day it is restored and the list shows "5" twice.
-      // A removed Approach keeps its place in the running order; it is
-      // removed from the wheel, not from the sequence.
-      const all = allApproaches();
-      const target = visible[toIndex];
-      const ids = all.map((x) => x.id);
+      // Renumber across ALL of Quran's Approaches in DISPLAY order, removed
+      // ones included, even though the owner is choosing among the visible
+      // ones in one section. Two reasons, both learned by measuring:
+      //   * numbering only what is on screen would hand 1..29 to the visible
+      //     rows while a removed Approach kept its old number -- two rows
+      //     sharing a position, invisible until the day it is restored;
+      //   * numbering in display order is what keeps each section a
+      //     CONTIGUOUS block of the running order, so the wheel's sidebar
+      //     names each section exactly once.
+      const target = siblings[toIndex];
+      const ids = approachesInDisplayOrder().map((x) => x.id);
       const fromAll = ids.indexOf(id);
       const toAll = ids.indexOf(target.id);
       if (fromAll === -1 || toAll === -1 || fromAll === toAll) return true;
@@ -903,15 +1090,66 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       return true;
     }
 
+    /** v08.02, the owner's ask: one heading per section instead of the same
+        section name repeated down a column on every row. The heading carries
+        colspan across the whole row and is what tells the two groups apart. */
+    function sectionHeadingHtml(sec, count) {
+      return `<tr class="trk-section-heading"><td colspan="5" style="padding-top:1rem; border-bottom:none;">
+        <strong style="font-size:0.95rem;">${langText(sec.name, getAppLang(), t("Section {n}", { n: num(sec.n) }))}</strong>
+        <span style="color:#777; font-weight:400;"> — ${t("{n} Approaches", { n: num(count) })}</span>
+      </td></tr>`;
+    }
+
+    /** Renumbers `order` to match display order, so each section is a
+        contiguous block. Called after a move between sections; a no-op when
+        nothing actually shifted, because reorderTrackables() only writes the
+        documents whose number really changed. */
+    async function normaliseApproachOrder() {
+      const ids = approachesInDisplayOrder().map((x) => x.id);
+      const outcome = await safeWrite(
+        () => reorderTrackables(db, activeTenantId, ids, trackableList, auth.currentUser.uid),
+        { collection: "trackables", action: "normaliseOrder", id: activeTenantId }
+      );
+      if (!outcome.ok) { alert(outcome.entry.message); return false; }
+      await loadTrackables();
+      return true;
+    }
+
     function renderTrackables() {
       const others = visibleOtherTrackables();
       const separator = others.length
-        ? `<tr><td colspan="6" style="padding-top:1.1rem; border-bottom:none; color:#555; font-size:0.85rem;">
+        ? `<tr class="trk-other-separator"><td colspan="5" style="padding-top:1.1rem; border-bottom:none; color:#555; font-size:0.85rem;">
              <strong>${t("Other trackables")}</strong> — ${t("one per module, outside the 30 Approaches. Editable, but they have no position among the Approaches.")}
            </td></tr>`
         : "";
-      trackablesBody.innerHTML = visibleTrackables().map(trackableRowHtml).join("")
-        + separator + others.map(trackableRowHtml).join("");
+      // Grouped by section, in the sections' own order, with anything whose
+      // section is unreadable gathered at the end rather than dropped.
+      const approaches = visibleTrackables();
+      const seen = new Set();
+      let grouped = "";
+      for (const sec of sections) {
+        const inSec = approaches.filter((row) => sectionOf(row) === sec.n);
+        if (!inSec.length) continue;
+        inSec.forEach((row) => seen.add(row.id));
+        grouped += sectionHeadingHtml(sec, inSec.length) + inSec.map(trackableRowHtml).join("");
+      }
+      const orphans = approaches.filter((row) => !seen.has(row.id));
+      if (orphans.length) {
+        const byOwnName = new Map();
+        for (const row of orphans) {
+          const label = row.groupName ? langText(row.groupName, getAppLang(), "") : "";
+          const key = label || "\u0000";
+          if (!byOwnName.has(key)) byOwnName.set(key, { label, rows: [] });
+          byOwnName.get(key).rows.push(row);
+        }
+        for (const { label, rows } of byOwnName.values()) {
+          grouped += `<tr class="trk-section-heading"><td colspan="5" style="padding-top:1rem; border-bottom:none;">
+              <strong style="font-size:0.95rem;">${label || t("(not set)")}</strong>
+              <span style="color:#777; font-weight:400;"> — ${t("{n} Approaches", { n: num(rows.length) })}</span>
+            </td></tr>` + rows.map(trackableRowHtml).join("");
+        }
+      }
+      trackablesBody.innerHTML = grouped + separator + others.map(trackableRowHtml).join("");
 
       trackablesBody.querySelectorAll(".guideBtn").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -963,6 +1201,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
           const rawGroup = tr.querySelector(".trkSectionSelect").value;
           const nextGroup = rawGroup === "" ? null : Number(rawGroup);
+          const sectionChanged = nextGroup != null && nextGroup !== sectionOf(row);
           const posSelect = tr.querySelector(".trkPositionSelect");
           const toIndex = posSelect ? Number(posSelect.value) : -1;
 
@@ -974,7 +1213,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
               // section 3's number and section 5's name is a screen that
               // lies, and groupName is what every reader actually prints.
               group: nextGroup ?? (row.group ?? null),
-              groupName: (nextGroup && SECTION_NAMES[nextGroup]) ? SECTION_NAMES[nextGroup] : (row.groupName ?? null),
+              groupName: (nextGroup && sectionNameFor(nextGroup)) ? sectionNameFor(nextGroup) : (row.groupName ?? null),
               guide: {
                 what: readPair("trkWhatInput", row.guide?.what),
                 how: readPair("trkHowInput", row.guide?.how),
@@ -990,7 +1229,12 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           // Position last, and only if it really changed: it is a separate,
           // order-only write (see reorderTrackables) and must not drag the
           // edited:true flag onto the 29 Approaches it renumbers past.
-          if (toIndex >= 0) await moveTrackable(row.id, toIndex);
+          // If the SECTION changed, the position picked in the old section no
+          // longer means anything -- what matters is that the running order is
+          // renumbered so every section stays a contiguous block (see
+          // approachesInDisplayOrder). If it did not change, apply the move.
+          if (sectionChanged) await normaliseApproachOrder();
+          else if (toIndex >= 0) await moveTrackable(row.id, toIndex);
         });
       });
 
@@ -1173,6 +1417,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         await step("set up catalogue", runSeedIfNeeded);
         await step("load modules", loadModules);
         await step("load subjects", loadSubjects);
+        await step("load Approach sections", loadSections);
         await step("load trackables", loadTrackables);
         await step("load ladders", loadLadders);
       } catch (err) {
@@ -1198,6 +1443,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       await runSeedIfNeeded();
       await loadSubjects();
+      await loadSections(); // before the Approaches: their table groups by these
       await loadTrackables();
       await loadLadders();
     });

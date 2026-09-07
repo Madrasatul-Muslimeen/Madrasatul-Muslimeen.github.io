@@ -11840,3 +11840,142 @@ decided rather than inferred. **A removed Approach's existing claims are
 kept and stay readable** — that is the point of the reversible choice — but
 they no longer appear on the wheel, which is correct and is what "removed"
 means here.
+
+---
+
+**v08.02 (7 Sep 2026, on Claude Code on the web) makes the 7 sections the
+tenant's own, groups the Approach list by them, and names them on the Mastery
+Wheel's sidebar** — the owner's follow-up to v08.01: *"Where did the
+'category/ sections' of the 30 approaches go? Who allowed you to remove
+those?"*
+
+**Nothing had been removed, and that was checked before anything was said.**
+`app/quranrevival.html` was byte-for-byte identical to the round before, the
+Catalogue's Section column was character-for-character the same line, and
+rendering `main` showed all 7 sections split 6/7/2/4/4/3/4 with no empty
+cell. What the question turned out to be pointing at was real, though: the
+sections were the one part of the 30 Approaches nobody could change, and they
+had no home on the Catalogue page at all. Put back to the owner as three
+concrete options; they chose all three.
+
+**(1) The 7 sections are editable, and they live on the TENANT document.**
+`SECTION_NAMES` in `catalogue-data.js` was their only copy. A new Firestore
+collection would have been the tidy answer and is the wrong one here: this
+sandbox has no Firebase CLI, a collection the deployed rules have never seen
+is a 403 for the owner (v07.18's own lesson), so the list is an additive
+`approachSections` field on `tenants/{tenantId}` instead — a document
+`session-context.js` already reads at startup, already owner/prime-writable
+(`allow update: if canAdminIdentity(tenantId)`, unrestricted on fields).
+**No new collection, no new read, no rules change.** A new "Approach
+Sections" area on `catalogue.html` renames each section in both languages,
+reorders them, and adds a new (empty) one.
+
+**`group` stays the plain section number every reader already sorts by** and
+`groupName` stays denormalized on each trackable, so the Study-options
+picker, Explore's palette, Monitor and the backup file all keep working
+untouched — renaming a section rewrites the name in both places rather than
+teaching anything a new shape. Renumbering on reorder is safe because
+**nothing keys off `group`**: a claim is keyed by trackableId (I5), and
+records/activity never store a section at all.
+
+**A trap that would have shipped silently, found by really reloading the
+page.** `syncUnneditedTrackableNames()` resets `name` AND `groupName` from
+the platform template for every copy with `edited !== true` — which is all of
+them, because renaming a SECTION is deliberately not an edit to the Approach.
+So a rename was reverted to the platform wording on the next landing-page
+load. Worse, it still looked correct on the load that did it: the sync is
+fire-and-forget, off the blocking path, so the damage only showed the time
+after. A `keepSectionNames` guard reads the tenant doc already fetched in the
+same wave (no extra read). **Proven both ways** — with the guard removed, the
+check really fails, naming all 6 reverted Approaches.
+
+**(2) The Approach table is grouped by section** — one heading per group
+instead of the same section name repeated down a column on six consecutive
+rows, and the redundant column is gone.
+
+**That grouping created an invariant the flat list never had, and getting it
+wrong was caught by a failing check rather than by reading the code.** If
+section and running order can disagree — Approach 1 in section 5 while
+Approach 2 is in section 1 — then the wheel's sidebar prints section 5's
+heading, then section 1's, then section 5's again: **the same section named
+three times down one list.** So **a section is now a contiguous block of the
+running order**, every reorder renumbers against display order to keep it
+that way, and ▲▼ and Position step through an Approach's OWN section (moving
+between sections is the Section dropdown's job — letting ▼ walk an Approach
+across a heading would move it on screen while its stored section stayed
+put). A check asserts each section is named exactly once.
+
+**(3) The Mastery Wheel's sidebar names its sections**, the way the
+Study-options picker and Explore's palette already did. The label comes off
+the trackable's own denormalized `groupName`, so **it costs no read**. The
+heading is opt-in per item, because `renderWheelSidebar()` is shared with all
+six of Explore's own sidebars, which have no sections — and it is
+deliberately NOT a `.way-row`, because that class is a name with meaning:
+`layout.mjs` counts it to report visible Approach rows, and a heading wearing
+it would have inflated every row measurement this project has recorded.
+
+**Measured, and it costs real rows, which is reported rather than buried.**
+The first attempt cost 13.2px per heading plus the list's own 4px gap — 17.2px
+against a 36px row — and took **two** rows off a 412x915 phone. Tightened
+(8px type, negative margins absorbing the gap, 8.8px total) it costs **one
+row, at one viewport: 412x915 (6→5 with the tenant banner, 7→6 without).**
+Every other measured viewport keeps every row, and heading position, wheel
+width, dock gap, dock visibility and overflow are byte-for-byte identical at
+all eight in both banner states. **In Bangla the heading needed its own
+size** — Bengali carries matras above and below the line and has no capitals,
+so uppercasing does nothing and 8px was genuinely cramped, read off the
+rendered page rather than assumed. At 10.5px (9.5px on phones), with
+`text-transform` and `letter-spacing` dropped, Bangla costs one row at four
+phone configurations and never more than one; tablet and desktop are
+untouched. `layout.mjs` measures English only, so the Bangla numbers were
+measured separately rather than assumed from it.
+
+**A translation defect found by reading what the coverage report NAMED** —
+the one thing that number is good for. `translateStatic()` keys a text node
+on `raw.trim()`, which trims the outside but keeps internal newlines and
+indentation, so the new Sections intro paragraph — wrapped prettily across
+three lines in the markup — looked up a key no catalogue could ever hold and
+would have stayed English on a Bangla page. It is one line now, and a check
+reads the rendered paragraph in both languages.
+
+**Verified: three focused, un-checked-in Playwright scripts — 90 + 40 + 18
+checks, all passing in both languages**, screenshotted. Renames proven by
+their stored VALUES in both languages, the tenant write and the six
+`groupName` rewrites proven to carry no `edited: true`, a reorder proven to
+renumber sections and carry their Approaches, an added section proven stored
+empty, all 30 Approaches proven still present after every operation, and the
+rename proven to survive a real landing-page reload.
+
+**Five checks from v08.01 were UPDATED in place, with the reason recorded,
+never deleted** — each because this round deliberately changed what it
+asserted: three read the row's now-removed Section cell or counted
+full-width rows as separators (the two kinds of full-width row have real
+class names now, `trk-section-heading` and `trk-other-separator`); one
+asserted Position offers all 30 slots, where it now offers the section's own;
+one asserted a nudge writes exactly 2 documents, and was measuring the whole
+test's accumulated writes rather than the nudge's — a section change
+legitimately renumbers everything between the old section and the new.
+
+**`behaviour.mjs`: 800 pass, 3 fail**, stopping at the same pre-existing
+section-42 crash carried since v07.69 — the same 803 total as every recent
+run, and the same three: section 22g, the environmental archive.org poster
+block this sandbox's proxy imposes (they work for the owner). **Check 20e
+was a REAL failure of this round's own, found here and fixed** — it reads the
+first row of the Approach table, which is now a section heading, and every
+Approach was landing under "(not set)" because the shared fixture's trackables
+carry a `groupName` but no `group`, so none matched a known section. An
+Approach whose section number matches nothing still KNOWS its own section
+name, so it is grouped under that rather than swept into "(not set)" —
+better behaviour, not just a green check. **`navcheck.mjs` unchanged** (still only the pre-existing 320px English
+truncation of "Operation"/"Bookmark"). **Coverage 1,724 → 1,732 scanned, 46
+missing UNCHANGED.** No `firestore.rules` change, no schema change, no new
+collection, and nothing new on any startup path.
+
+**Flagged, not changed.** Colouring the wheel's 30 slices by their 7 sections
+was raised and deliberately not built: those slices are coloured by CLAIM
+STATUS, which is the whole job of a Mastery Wheel, and a second meaning
+competing for the same colour would cost more than it gives. A section
+divider drawn as an arc around the wheel is the shape worth considering if
+the owner wants it, and it is a real layout change on the most tightly
+measured screen in the app. **Adding a 31st Approach is still not built** —
+the owner said they would edit the list first and see.
