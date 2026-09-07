@@ -1419,6 +1419,19 @@ export const BN = {
   // action; the canonical id is untouched everywhere else.
   "Removed": "সরানো হয়েছে",
   "(not set)": "(নির্ধারিত নয়)",
+  // v08.02 -- the Approach Sections editor (catalogue.html) and the section
+  // headings the Mastery Wheel's sidebar now carries.
+  "Approach Sections": "পদ্ধতির বিভাগসমূহ",
+  "The 7 groups the 30 Approaches are organised into. Renaming one here renames it everywhere it appears — this list, the Approach picker, Explore, and the Mastery Wheel's own sidebar.":
+    "৩০টি পদ্ধতি যে ৭টি দলে সাজানো, সেগুলো। এখানে কোনো একটির নাম বদলালে যেখানেই এটি দেখা যায় সেখানেই বদলে যাবে — এই তালিকা, পদ্ধতি নির্বাচক, এক্সপ্লোর, এবং মাস্টারি হুইলের নিজস্ব পাশের তালিকা।",
+  "Approaches": "পদ্ধতিসমূহ",
+  "Add a section": "একটি বিভাগ যোগ করুন",
+  "Position in section": "বিভাগের ভেতরে অবস্থান",
+  "Save sections": "বিভাগগুলো সংরক্ষণ করুন",
+  "Saved.": "সংরক্ষিত হয়েছে।",
+  "{n} Approaches": "{n}টি পদ্ধতি",
+  "A section needs a name in at least one language.":
+    "একটি বিভাগের অন্তত একটি ভাষায় নাম থাকা দরকার।",
   "Other trackables": "অন্যান্য ট্র্যাকযোগ্য বিষয়",
   "one per module, outside the 30 Approaches. Editable, but they have no position among the Approaches.":
     "প্রতি মডিউলে একটি, ৩০টি পদ্ধতির বাইরে। সম্পাদনাযোগ্য, তবে পদ্ধতিগুলোর ক্রমে এদের কোনো অবস্থান নেই।",

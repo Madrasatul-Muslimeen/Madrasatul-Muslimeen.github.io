@@ -25,13 +25,14 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   query,
   where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { createDocument, commitEnvelopeBatch, updateDocument } from "./envelope.js";
-import { SUBJECT_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES } from "./catalogue-data.js";
+import { SUBJECT_TEMPLATES, APPROACH_TEMPLATES, TOPIC_TRACKABLE_TEMPLATES, SECTION_NAMES } from "./catalogue-data.js";
 import { createResource } from "./resources.js";
 
 /**
@@ -315,7 +316,7 @@ export async function getTrackables(db, tenantId) {
  * 2026) into tenants that seeded before those keys existed, without
  * re-running the whole seed or touching anything else on the doc.
  */
-export async function syncUnneditedTrackableNames(db, tenantId, uid) {
+export async function syncUnneditedTrackableNames(db, tenantId, uid, { keepSectionNames = false } = {}) {
   const existing = await getTrackables(db, tenantId);
   const byTemplateId = new Map(APPROACH_TEMPLATES.map((t) => [t.id, t]));
   const updates = [];
@@ -324,12 +325,21 @@ export async function syncUnneditedTrackableNames(db, tenantId, uid) {
     const template = byTemplateId.get(t.sourceTemplateId);
     if (!template) continue;
     const nameChanged = JSON.stringify(t.name) !== JSON.stringify(template.name);
-    const groupNameChanged = JSON.stringify(t.groupName) !== JSON.stringify(template.sectionName);
+    // v08.02: once the tenant has renamed its own sections, this must stop
+    // touching groupName -- otherwise a rename made on the Catalogue page is
+    // silently reverted to the platform wording on the very next landing-page
+    // load, because these copies are `edited: false` (a section rename is
+    // deliberately not an edit to the APPROACH). The Approach NAME half keeps
+    // syncing exactly as before.
+    const groupNameChanged = !keepSectionNames
+      && JSON.stringify(t.groupName) !== JSON.stringify(template.sectionName);
     if (!nameChanged && !groupNameChanged) continue;
+    const data = { name: template.name };
+    if (groupNameChanged) data.groupName = template.sectionName;
     updates.push({
       collectionName: TENANT.TRACKABLES,
       docId: `${tenantId}__${t.id}`,
-      data: { name: template.name, groupName: template.sectionName },
+      data,
     });
   }
   if (updates.length) await commitUpdatesInChunks(db, updates, uid);
@@ -560,6 +570,100 @@ export async function reorderTrackables(db, tenantId, orderedIds, current, uid) 
     }));
   if (updates.length) await commitUpdatesInChunks(db, updates, uid);
   return { updatedCount: updates.length };
+}
+
+// ---------------------------------------------------------------------------
+// The 7 Approach sections, made the tenant's own (v08.02).
+//
+// WHERE THEY LIVE, and why it is not a new collection: sections had no
+// storage of their own at all -- SECTION_NAMES in catalogue-data.js was the
+// only copy, and each trackable carried a denormalized `groupName` beside its
+// numeric `group`. A new Firestore collection would need a firestore.rules
+// change to be readable at all (v07.18's own lesson: a query that looks right
+// and 403s once the rules see it), so the list lives as an additive
+// `approachSections` field on the TENANT document instead -- already read at
+// startup by session-context.js, and already owner/prime-writable
+// (`allow update: if canAdminIdentity(tenantId)`, unrestricted on fields).
+// No new collection, no new read, no rules change.
+//
+// `group` STAYS the plain section number every reader already sorts by
+// (quranrevival.html's Approach picker and Explore's palette both do
+// `a[0] - b[0]` on it), and `groupName` stays denormalized on each trackable,
+// so every existing screen keeps working untouched. Renaming a section
+// rewrites the name in both places; nothing has to learn a new shape.
+//
+// Renumbering on reorder is safe: NOTHING keys off `group`. A claim is keyed
+// by trackableId (I5), and records/activity never store a section at all --
+// it is a display grouping, not an identity.
+// ---------------------------------------------------------------------------
+
+/** The tenant's own section list if it has one, else the platform default --
+    so a tenant that has never edited sections behaves exactly as before. */
+export function sectionsFromTenantDoc(tenantData) {
+  const stored = tenantData?.approachSections;
+  if (Array.isArray(stored) && stored.length) {
+    return stored
+      .map((sec, i) => ({ n: Number(sec.n ?? i + 1), name: sec.name ?? {} }))
+      .sort((a, b) => a.n - b.n);
+  }
+  return Object.keys(SECTION_NAMES)
+    .map(Number)
+    .sort((a, b) => a - b)
+    .map((n) => ({ n, name: SECTION_NAMES[n] }));
+}
+
+/** True once the tenant has taken the section names over -- the flag
+    syncUnneditedTrackableNames() reads to stop overwriting them. */
+export function tenantOwnsSections(tenantData) {
+  return Array.isArray(tenantData?.approachSections) && tenantData.approachSections.length > 0;
+}
+
+export async function getTenantDoc(db, tenantId) {
+  const snap = await getDoc(doc(db, TENANT.TENANTS, tenantId));
+  return snap.exists() ? snap.data() : null;
+}
+
+/**
+ * Writes the section list, in the order given, as sections 1..N -- and
+ * carries every affected Approach with it, so `group`, `groupName` and the
+ * tenant's own list can never disagree.
+ *
+ * `sections` entries carry `from`: the section number an entry USED to be,
+ * or null for a newly added one. That is what lets a reorder move each
+ * Approach to its section's new number in the same pass.
+ *
+ * Trackables are updated with order-only writes (no `edited: true`): a
+ * section rename is not the tenant claiming authorship of an Approach's own
+ * NAME, and stamping the flag would freeze all 30 names away from future
+ * platform translation fixes -- the same reasoning reorderTrackables() is
+ * built on.
+ */
+export async function saveApproachSections(db, tenantId, sections, trackables, uid) {
+  const renumbered = sections.map((sec, i) => ({ ...sec, n: i + 1 }));
+  const byFrom = new Map(renumbered.filter((s) => s.from != null).map((s) => [s.from, s]));
+
+  const updates = [{
+    collectionName: TENANT.TENANTS,
+    docId: tenantId,
+    data: { approachSections: renumbered.map(({ n, name }) => ({ n, name })) },
+  }];
+
+  for (const tr of trackables) {
+    if (tr.subjectId !== "quran") continue;
+    const target = byFrom.get(Number(tr.group));
+    if (!target) continue; // its section was not touched (or was removed from the list)
+    const groupChanged = Number(tr.group) !== target.n;
+    const nameChanged = JSON.stringify(tr.groupName ?? null) !== JSON.stringify(target.name ?? null);
+    if (!groupChanged && !nameChanged) continue;
+    updates.push({
+      collectionName: TENANT.TRACKABLES,
+      docId: `${tenantId}__${tr.id}`,
+      data: { group: target.n, groupName: target.name },
+    });
+  }
+
+  await commitUpdatesInChunks(db, updates, uid);
+  return { sectionCount: renumbered.length, trackablesTouched: updates.length - 1 };
 }
 
 export async function setLadderStatus(db, tenantId, ladderId, status, uid) {
