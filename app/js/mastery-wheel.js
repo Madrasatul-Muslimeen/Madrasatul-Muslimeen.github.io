@@ -375,14 +375,29 @@ export function renderWheelLegend(labelsById) {
  * changes. Visually equivalent, just not literally the same class names.
  */
 export function renderWheelSidebar(items, labelsById) {
+  // v08.02 -- an item may carry `groupLabel`, and a heading is emitted each
+  // time it changes. OPT-IN on purpose: this renderer is shared with all six
+  // of Explore's own sidebars (surahs, juz, pages, ruku', ayahs), which have
+  // no sections and must keep rendering exactly as they did.
+  //
+  // The heading is NOT a `.way-row`. That class is a name with MEANING here --
+  // tools/i18n-verify/layout.mjs counts it to report how many Approach rows
+  // are visible above the dock -- so giving a heading that class would inflate
+  // every historical row measurement this project has recorded.
+  let lastGroup = null;
   const rows = items
-    .map(
-      (item) => `<div class="way-row" data-key="${item.key}">
+    .map((item) => {
+      let heading = "";
+      if (item.groupLabel && item.groupLabel !== lastGroup) {
+        lastGroup = item.groupLabel;
+        heading = `<div class="ways-group">${item.groupLabel}</div>`;
+      }
+      return `${heading}<div class="way-row" data-key="${item.key}">
         <span class="badge">${item.number ?? item.key}</span>
         <span class="name">${item.label}</span>
         <span class="status-chip chip-${item.statusId}">${labelsById[item.statusId] ?? item.statusId}</span>
-      </div>`
-    )
+      </div>`;
+    })
     .join("");
   return `<div class="ways-list">${rows}</div>`;
 }

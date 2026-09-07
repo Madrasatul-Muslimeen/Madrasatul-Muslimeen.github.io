@@ -106,12 +106,22 @@
       <div id="addSubjResult" style="margin-top:0.5rem; font-size:0.88rem;"></div>
     </fieldset>
 
+    <h2>Approach Sections</h2>
+    <p class="readonly-note" id="sectionsIntro">The 7 groups the 30 Approaches are organised into. Renaming one here renames it everywhere it appears — this list, the Approach picker, Explore, and the Mastery Wheel's own sidebar.</p>
+    <table>
+      <thead><tr><th>#</th><th>Section</th><th>Approaches</th><th id="secActionsHead" style="display:none;">Edit</th></tr></thead>
+      <tbody id="sectionsBody"></tbody>
+    </table>
+    <div id="addSectionBox" style="display:none; margin-top:0.6rem;">
+      <button id="addSectionBtn" class="secondary">Add a section</button>
+    </div>
+
     <h2>The 30 Approaches</h2>
     <label style="display:inline-flex; align-items:center; gap:0.4rem; font-weight:400;">
-      <input type="checkbox" id="showArchivedTrackables" /> Show archived Approaches
+      <input type="checkbox" id="showArchivedTrackables" /> Show removed Approaches
     </label>
     <table>
-      <thead><tr><th>#</th><th>Approach</th><th>Section</th><th>Status</th><th>Guide</th><th id="trkActionsHead" style="display:none;">Edit</th></tr></thead>
+      <thead><tr><th>#</th><th>Approach</th><th>Status</th><th>Guide</th><th id="trkActionsHead" style="display:none;">Edit</th></tr></thead>
       <tbody id="trackablesBody"></tbody>
     </table>
 
@@ -177,6 +187,11 @@
       reparentSubject,
       setSubjectStatus,
       setTrackableStatus,
+      reorderTrackables,
+      sectionsFromTenantDoc,
+      tenantOwnsSections,
+      getTenantDoc,
+      saveApproachSections,
       setLadderStatus,
       setLevelStatus,
       createLadder,
@@ -188,6 +203,7 @@
       ensureLifeSkillReparented,
       ensureLdogReparented,
     } from "./js/catalogue.js";
+    import { SECTION_NAMES } from "./js/catalogue-data.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
 import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     import { translateStatic, t, num } from "./js/i18n.js";
@@ -216,6 +232,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     const subjectsBody = document.getElementById("subjectsBody");
     const subjActionsHead = document.getElementById("subjActionsHead");
     const trackablesBody = document.getElementById("trackablesBody");
+    const sectionsBody = document.getElementById("sectionsBody");
+    const secActionsHead = document.getElementById("secActionsHead");
+    const addSectionBox = document.getElementById("addSectionBox");
+    const addSectionBtn = document.getElementById("addSectionBtn");
     const trkActionsHead = document.getElementById("trkActionsHead");
     const laddersBody = document.getElementById("laddersBody");
     const addSubjectBox = document.getElementById("addSubjectBox");
@@ -254,7 +274,15 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     let collapseInitialized = false;
 
     showArchivedSubjects.addEventListener("change", renderSubjects);
-    showArchivedTrackables.addEventListener("change", renderTrackables);
+    showArchivedTrackables.addEventListener("change", () => { editingTrackableId = null; renderTrackables(); });
+
+    addSectionBtn.addEventListener("click", () => {
+      // No `from`: nothing points at it yet, so it saves as a real but empty
+      // section that Approaches can then be moved into from the editor below.
+      sections.push({ n: sections.length + 1, name: { en: "", bn: "" }, from: null });
+      renderSections();
+      sectionsBody.querySelector(`.secNameInput[data-i="${sections.length - 1}"][data-lang="en"]`)?.focus();
+    });
     showArchivedLadders.addEventListener("change", loadLadders);
 
     // Round 10 fix (8 Aug 2026): old wording told anyone with no account to
@@ -685,18 +713,324 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       });
     }
 
-    function trackableRowHtml(row) {
-      const archiveBtn = canEdit
-        ? `<button class="small secondary archiveTrkBtn" data-id="${row.id}" data-next="${row.status === "archived" ? "active" : "archived"}">${row.status === "archived" ? t("Restore") : t("Archive")}</button>`
+    // v08.02 -- the sections themselves, made the tenant's own. Until this
+    // round the 7 sections were the one part of the 30 Approaches nobody could
+    // change: SECTION_NAMES in catalogue-data.js was the only copy, and they
+    // had no home on this page at all. They live on the tenant document now
+    // (see catalogue.js -- no new collection, because deploying a rules change
+    // is not always possible and a read the rules have never seen is a 403).
+    //
+    // `sections` is the working copy this page edits; `from` remembers which
+    // section number each row STARTED as, which is what lets a reorder carry
+    // every Approach to its section's new number in one pass.
+    let tenantDoc = null;
+    let sections = [];
+
+    function approachCountIn(n) {
+      return trackableList.filter((r) => r.subjectId === "quran" && Number(r.group) === n).length;
+    }
+
+    function sectionRowHtml(sec, i) {
+      const count = sec.from == null ? 0 : approachCountIn(sec.from);
+      const actions = canEdit
+        ? `<td>
+             <button class="small secondary secUpBtn" data-i="${i}" ${i === 0 ? "disabled" : ""} title="${t("Move up")}">▲</button>
+             <button class="small secondary secDownBtn" data-i="${i}" ${i === sections.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button>
+           </td>`
         : "";
-      const actionCell = canEdit
-        ? `<td><button class="small secondary editTrkBtn" data-id="${row.id}">${t("Edit")}</button> ${archiveBtn}</td>`
-        : "";
+      const nameCell = canEdit
+        ? `<td>
+             <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(15rem, 1fr)); gap:0.5rem;">
+               <div>
+                 <label style="font-size:0.78rem; font-weight:400; margin:0 0 0.1rem;">${t("English")}</label>
+                 <input type="text" class="secNameInput" data-i="${i}" data-lang="en" value="${esc(sec.name?.en)}" style="width:100%;" />
+               </div>
+               <div>
+                 <label style="font-size:0.78rem; font-weight:400; margin:0 0 0.1rem;">${t("Bangla")}</label>
+                 <input type="text" class="secNameInput" data-i="${i}" data-lang="bn" value="${esc(sec.name?.bn)}" style="width:100%;" />
+               </div>
+             </div>
+           </td>`
+        : `<td>${langText(sec.name, getAppLang(), "")}</td>`;
       return `<tr>
+        <td>${num(i + 1)}</td>
+        ${nameCell}
+        <td>${num(count)}</td>
+        ${actions}
+      </tr>`;
+    }
+
+    function renderSections() {
+      secActionsHead.style.display = canEdit ? "" : "none";
+      addSectionBox.style.display = canEdit ? "" : "none";
+      sectionsBody.innerHTML = sections.map(sectionRowHtml).join("")
+        + (canEdit
+          ? `<tr><td colspan="4" style="border-bottom:none; padding-top:0.7rem;">
+               <button id="saveSectionsBtn">${t("Save sections")}</button>
+               <button id="revertSectionsBtn" class="secondary">${t("Cancel")}</button>
+               <span id="sectionsMsg" style="margin-left:0.6rem; font-size:0.85rem; color:#555;"></span>
+             </td></tr>`
+          : "");
+      if (!canEdit) return;
+
+      // Typing is held in the working copy rather than re-rendering on every
+      // keystroke -- a re-render would rebuild the inputs and throw away the
+      // caret mid-word.
+      sectionsBody.querySelectorAll(".secNameInput").forEach((el) => {
+        el.addEventListener("input", () => {
+          const sec = sections[Number(el.dataset.i)];
+          sec.name = { ...(sec.name ?? {}), [el.dataset.lang]: el.value };
+        });
+      });
+      sectionsBody.querySelectorAll(".secUpBtn").forEach((b) => {
+        b.addEventListener("click", () => moveSection(Number(b.dataset.i), -1));
+      });
+      sectionsBody.querySelectorAll(".secDownBtn").forEach((b) => {
+        b.addEventListener("click", () => moveSection(Number(b.dataset.i), 1));
+      });
+      document.getElementById("saveSectionsBtn").addEventListener("click", saveSections);
+      document.getElementById("revertSectionsBtn").addEventListener("click", () => { loadSections(); });
+    }
+
+    /** The Approach counts can only be right once the Approaches are loaded,
+        and sections are deliberately loaded FIRST (their table groups the
+        Approaches). So the counts are filled in afterwards, in place --
+        never by re-rendering, which would rebuild the name inputs and throw
+        away whatever the owner had half-typed into them. */
+    function refreshSectionCounts() {
+      sectionsBody.querySelectorAll("tr").forEach((tr, i) => {
+        const sec = sections[i];
+        if (!sec || !tr.cells[2]) return;
+        tr.cells[2].textContent = num(sec.from == null ? 0 : approachCountIn(sec.from));
+      });
+    }
+
+    function moveSection(i, delta) {
+      const j = i + delta;
+      if (j < 0 || j >= sections.length) return;
+      [sections[i], sections[j]] = [sections[j], sections[i]];
+      renderSections();
+    }
+
+    async function loadSections() {
+      tenantDoc = await getTenantDoc(db, activeTenantId);
+      // `from` is the number each row currently HAS in the data; a row added
+      // in this sitting has none until it is saved.
+      sections = sectionsFromTenantDoc(tenantDoc).map((sec) => ({ ...sec, from: sec.n }));
+      renderSections();
+    }
+
+    async function saveSections() {
+      const btn = document.getElementById("saveSectionsBtn");
+      const msg = document.getElementById("sectionsMsg");
+      if (sections.some((sec) => !sec.name?.en && !sec.name?.bn)) {
+        msg.textContent = t("A section needs a name in at least one language.");
+        return;
+      }
+      btn.disabled = true;
+      msg.textContent = t("Saving…");
+      const outcome = await safeWrite(
+        () => saveApproachSections(db, activeTenantId, sections, trackableList, auth.currentUser.uid),
+        { collection: "tenants", action: "saveSections", id: activeTenantId }
+      );
+      if (!outcome.ok) { msg.textContent = ""; alert(outcome.entry.message); btn.disabled = false; return; }
+      // The Approaches carry groupName, so their table has to be re-read too.
+      await loadTrackables();
+      await loadSections();
+      const saved = document.getElementById("sectionsMsg");
+      if (saved) saved.textContent = t("Saved.");
+    }
+
+    // v08.01 -- the Approach editor. Until this round the 30 Approaches were
+    // the app's central content and the ONLY thing an owner could change
+    // about one was its name, through a browser prompt() that always wrote
+    // the English key regardless of which language they were reading in (so
+    // renaming while in Bangla silently overwrote the ENGLISH name and left
+    // the Bangla one untouched -- an I11 breach, fixed here by giving each
+    // language its own field rather than guessing which one is meant).
+    //
+    // Everything on the doc that a reader ever sees is editable now: both
+    // names, the section, the position, and the Guide's What/How/Measure in
+    // both languages -- that last one being live text, printed by the Note
+    // view's own Guide tab (renderGuideTab), not just documentation.
+    //
+    // "Remove" is the owner's own word for the action, and it is a status
+    // flip, not a delete: firestore.rules bans delete on trackables (I4/D6),
+    // and a real one would orphan every claim already made against that
+    // Approach -- claims are keyed by trackableId (I5), so Records, Monitor
+    // and the backup file would print a bare "approach_07" forever after.
+    // Put to the owner as its own decision (7 Sep 2026); they chose the
+    // reversible one. The STORED value stays the canonical "archived" that
+    // every other screen and the backup file already read -- only this
+    // table's wording follows the owner's word for what they are doing.
+    const sectionOptionNumbers = () => sections.map((sec) => sec.n);
+    const sectionNameFor = (n) => sections.find((sec) => sec.n === n)?.name ?? SECTION_NAMES[n];
+
+    /** An Approach's section number. Prefers the stored `group`, which
+        ensureTenantCatalogueSeeded() always writes -- but falls back to
+        matching the stored `groupName` rather than trusting a <select> to
+        default to its first option: a doc that reached Firestore without a
+        `group` would otherwise be silently RE-SECTIONED to 1 the first time
+        anyone opened its editor and pressed Save, which is a data change
+        nobody asked for and nobody would see happen. Returns null when
+        neither is readable, and the form then offers no section rather than
+        guessing one. */
+    function sectionOf(row) {
+      const stored = Number(row.group);
+      const numbers = sectionOptionNumbers();
+      if (numbers.includes(stored)) return stored;
+      const byName = numbers.find((n) =>
+        ["en", "bn"].some((l) => row.groupName?.[l] && row.groupName[l] === sectionNameFor(n)?.[l]));
+      return byName ?? null;
+    }
+
+    function approachStatusLabel(status) {
+      return status === "archived" ? t("Removed") : entityStatusLabel(status);
+    }
+
+    function notRemoved(rows) {
+      return showArchivedTrackables.checked ? rows : rows.filter((row) => row.status !== "archived");
+    }
+
+    /** The rows the position picker and the up/down buttons actually step
+        through -- Quran's Approaches ONLY, and only the ones on screen.
+        
+        getTrackables() returns every trackable this tenant has, and that is
+        more than the 30: each topic-based module carries its own module-wide
+        "Studied" row (catalogue-data.js's TOPIC_TRACKABLE_TEMPLATES), plus
+        Asma's. This table has always listed them all under a heading that
+        says "The 30 Approaches" -- harmless while the only actions were
+        rename and archive, but NOT harmless now that there is a position:
+        renumbering one flat list 1..n would silently rewrite the `order` of
+        trackables belonging to other modules, which is a data change in a
+        module the owner was not even looking at. So ordering is scoped to
+        the Quran set, which is also the only set whose order means anything
+        (quranrevival.html sorts its wheel by exactly this field). The others
+        still render, and are still fully editable -- they just have no
+        position among Approaches, because they are not Approaches. */
+    function allApproaches() {
+      return trackableList.filter((row) => row.subjectId === "quran");
+    }
+
+    /** Every Approach in DISPLAY order: section by section, and by `order`
+        within each. v08.02 made sections a visible grouping, and that creates
+        an invariant the flat list did not have -- **a section must be a
+        contiguous block of the running order**. If Approach 1 sat in section
+        5 while Approach 2 sat in section 1, the Mastery Wheel's sidebar would
+        print section 5's heading, then section 1's, then section 5's again:
+        the same section named three times down one list. So this ordering is
+        what every reorder renumbers against, which keeps the blocks
+        contiguous by construction. */
+    function approachesInDisplayOrder() {
+      const rank = new Map(sections.map((sec, i) => [sec.n, i]));
+      return allApproaches().slice().sort((a, b) => {
+        const ra = rank.has(sectionOf(a)) ? rank.get(sectionOf(a)) : Number.MAX_SAFE_INTEGER;
+        const rb = rank.has(sectionOf(b)) ? rank.get(sectionOf(b)) : Number.MAX_SAFE_INTEGER;
+        return ra !== rb ? ra - rb : (a.order ?? 0) - (b.order ?? 0);
+      });
+    }
+
+    function visibleTrackables() {
+      return notRemoved(approachesInDisplayOrder());
+    }
+
+    /** The Approaches an ▲▼ or a Position choice actually steps through: its
+        OWN section's, not all 30. Moving between sections is the Section
+        dropdown's job -- letting ▼ walk an Approach across a heading would
+        move it on screen while its stored section stayed put, which is the
+        contradiction the ordering rule above exists to prevent. */
+    function sectionSiblings(row) {
+      const sec = sectionOf(row);
+      return visibleTrackables().filter((r) => sectionOf(r) === sec);
+    }
+
+    /** Everything else this tenant has: the per-module "Studied" rows. */
+    function visibleOtherTrackables() {
+      return notRemoved(trackableList.filter((row) => row.subjectId !== "quran"));
+    }
+
+    function esc(v) {
+      return String(v ?? "").replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    /** One label + English/Bangla pair. Both languages are always shown
+        together rather than editing "the current language": an owner writing
+        a Bangla name needs to see the English one it belongs to, and the old
+        single-field form is exactly what made the language bug invisible. */
+    function bilingualField(cls, label, value, { textarea = false } = {}) {
+      const box = (lang, langLabel) => textarea
+        ? `<label style="font-size:0.8rem; font-weight:400; margin:0.25rem 0 0.1rem;">${langLabel}</label>
+           <textarea class="${cls}" data-lang="${lang}" rows="2" style="width:100%; box-sizing:border-box; font-family:inherit; font-size:0.88rem; padding:0.35rem; border:1px solid #ccc; border-radius:0.35rem;">${esc(value?.[lang])}</textarea>`
+        : `<label style="font-size:0.8rem; font-weight:400; margin:0.25rem 0 0.1rem;">${langLabel}</label>
+           <input type="text" class="${cls}" data-lang="${lang}" value="${esc(value?.[lang])}" style="width:100%;" />`;
+      return `<div style="margin-top:0.6rem;">
+        <strong style="font-size:0.88rem;">${label}</strong>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(13rem, 1fr)); gap:0.6rem; margin-top:0.2rem;">
+          <div>${box("en", t("English"))}</div>
+          <div>${box("bn", t("Bangla"))}</div>
+        </div>
+      </div>`;
+    }
+
+    function trackableEditRowHtml(row) {
+      // Position is offered only where it means something -- see
+      // visibleTrackables(). A module-wide "Studied" row has no place in the
+      // Approach running order, so it is given no control that implies one.
+      const isApproach = row.subjectId === "quran";
+      const siblings = sectionSiblings(row);
+      const here = siblings.findIndex((x) => x.id === row.id);
+      const posBox = isApproach
+        ? `<div>
+            <strong style="font-size:0.88rem;">${t("Position in section")}</strong>
+            <select class="trkPositionSelect" style="width:100%; margin-top:0.2rem;">${
+              siblings.map((_, i) => `<option value="${i}" ${here === i ? "selected" : ""}>${num(i + 1)}</option>`).join("")
+            }</select>
+          </div>`
+        : "";
+      const sectionOptions = sectionOptionNumbers()
+        .map((n) => `<option value="${n}" ${sectionOf(row) === n ? "selected" : ""}>${num(n)} — ${langText(sectionNameFor(n), getAppLang(), "")}</option>`)
+        .join("");
+      const noSection = sectionOf(row) === null
+        ? `<option value="" selected>${t("(not set)")}</option>` : "";
+      return `<tr id="trk-row-${row.id}"><td colspan="5" style="background:#fafbfd;">
+        ${bilingualField("trkNameInput", t("Approach name"), row.name)}
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(13rem, 1fr)); gap:0.6rem; margin-top:0.8rem;">
+          <div>
+            <strong style="font-size:0.88rem;">${t("Section")}</strong>
+            <select class="trkSectionSelect" style="width:100%; margin-top:0.2rem;">${noSection}${sectionOptions}</select>
+          </div>
+          ${posBox}
+        </div>
+        ${bilingualField("trkWhatInput", t("Guide — What"), row.guide?.what, { textarea: true })}
+        ${bilingualField("trkHowInput", t("Guide — How"), row.guide?.how, { textarea: true })}
+        ${bilingualField("trkMeasureInput", t("Guide — Measure"), row.guide?.measure, { textarea: true })}
+        <div style="margin-top:0.9rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button class="saveTrkBtn" data-id="${row.id}">${t("Save")}</button>
+          <button class="secondary cancelTrkBtn" data-id="${row.id}">${t("Cancel")}</button>
+        </div>
+      </td></tr>`;
+    }
+
+    function trackableRowHtml(row) {
+      if (canEdit && editingTrackableId === row.id) return trackableEditRowHtml(row);
+
+      const removeBtn = canEdit
+        ? `<button class="small secondary archiveTrkBtn" data-id="${row.id}" data-next="${row.status === "archived" ? "active" : "archived"}">${row.status === "archived" ? t("Restore") : t("Remove")}</button>`
+        : "";
+      let moveButtons = "";
+      if (canEdit && row.subjectId === "quran") {
+        const siblings = sectionSiblings(row);
+        const idx = siblings.findIndex((x) => x.id === row.id);
+        moveButtons = `<button class="small secondary trkUpBtn" data-id="${row.id}" ${idx <= 0 ? "disabled" : ""} title="${t("Move up")}">▲</button>
+          <button class="small secondary trkDownBtn" data-id="${row.id}" ${idx === -1 || idx >= siblings.length - 1 ? "disabled" : ""} title="${t("Move down")}">▼</button><br/>`;
+      }
+      const actionCell = canEdit
+        ? `<td>${moveButtons}<button class="small secondary editTrkBtn" data-id="${row.id}">${t("Edit")}</button> ${removeBtn}</td>`
+        : "";
+      return `<tr id="trk-row-${row.id}">
         <td>${num(row.order)}</td>
         <td>${langText(row.name, getAppLang(), row.id)}</td>
-        <td>${langText(row.groupName, getAppLang(), t("Section {n}", { n: num(row.group) }))}</td>
-        <td>${entityStatusLabel(row.status)}</td>
+        <td>${approachStatusLabel(row.status)}</td>
         <td>
           <button class="small secondary guideBtn" data-id="${row.id}">${t("Guide")}</button>
           <div class="guideBox" id="guide-${row.id}" style="display:none;">
@@ -710,17 +1044,112 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
     }
 
     let trackableList = [];
+    let editingTrackableId = null;
 
     async function loadTrackables() {
       trackableList = await getTrackables(db, activeTenantId);
       renderTrackables();
+      refreshSectionCounts();
+    }
+
+    /** Reads the whole visible order off screen, moves one Approach within
+        it, and hands the resulting id list to reorderTrackables() -- which
+        writes only the documents whose number actually changed. Doing it as
+        a whole-list renumber rather than a two-document order SWAP (the
+        shape the subject tree uses) is what makes "move this to position 1"
+        from position 30 a single action instead of 29 nudges. */
+    async function moveTrackable(id, toIndex) {
+      const row = trackableList.find((x) => x.id === id);
+      if (!row) return true;
+      const siblings = sectionSiblings(row);
+      const from = siblings.findIndex((x) => x.id === id);
+      if (from === -1 || toIndex < 0 || toIndex >= siblings.length || toIndex === from) return true;
+
+      // Renumber across ALL of Quran's Approaches in DISPLAY order, removed
+      // ones included, even though the owner is choosing among the visible
+      // ones in one section. Two reasons, both learned by measuring:
+      //   * numbering only what is on screen would hand 1..29 to the visible
+      //     rows while a removed Approach kept its old number -- two rows
+      //     sharing a position, invisible until the day it is restored;
+      //   * numbering in display order is what keeps each section a
+      //     CONTIGUOUS block of the running order, so the wheel's sidebar
+      //     names each section exactly once.
+      const target = siblings[toIndex];
+      const ids = approachesInDisplayOrder().map((x) => x.id);
+      const fromAll = ids.indexOf(id);
+      const toAll = ids.indexOf(target.id);
+      if (fromAll === -1 || toAll === -1 || fromAll === toAll) return true;
+      ids.splice(toAll, 0, ids.splice(fromAll, 1)[0]);
+
+      const outcome = await safeWrite(
+        () => reorderTrackables(db, activeTenantId, ids, trackableList, auth.currentUser.uid),
+        { collection: "trackables", action: "reorder", id }
+      );
+      if (!outcome.ok) { alert(outcome.entry.message); return false; }
+      await loadTrackables();
+      return true;
+    }
+
+    /** v08.02, the owner's ask: one heading per section instead of the same
+        section name repeated down a column on every row. The heading carries
+        colspan across the whole row and is what tells the two groups apart. */
+    function sectionHeadingHtml(sec, count) {
+      return `<tr class="trk-section-heading"><td colspan="5" style="padding-top:1rem; border-bottom:none;">
+        <strong style="font-size:0.95rem;">${langText(sec.name, getAppLang(), t("Section {n}", { n: num(sec.n) }))}</strong>
+        <span style="color:#777; font-weight:400;"> — ${t("{n} Approaches", { n: num(count) })}</span>
+      </td></tr>`;
+    }
+
+    /** Renumbers `order` to match display order, so each section is a
+        contiguous block. Called after a move between sections; a no-op when
+        nothing actually shifted, because reorderTrackables() only writes the
+        documents whose number really changed. */
+    async function normaliseApproachOrder() {
+      const ids = approachesInDisplayOrder().map((x) => x.id);
+      const outcome = await safeWrite(
+        () => reorderTrackables(db, activeTenantId, ids, trackableList, auth.currentUser.uid),
+        { collection: "trackables", action: "normaliseOrder", id: activeTenantId }
+      );
+      if (!outcome.ok) { alert(outcome.entry.message); return false; }
+      await loadTrackables();
+      return true;
     }
 
     function renderTrackables() {
-      const visible = showArchivedTrackables.checked
-        ? trackableList
-        : trackableList.filter((row) => row.status !== "archived");
-      trackablesBody.innerHTML = visible.map(trackableRowHtml).join("");
+      const others = visibleOtherTrackables();
+      const separator = others.length
+        ? `<tr class="trk-other-separator"><td colspan="5" style="padding-top:1.1rem; border-bottom:none; color:#555; font-size:0.85rem;">
+             <strong>${t("Other trackables")}</strong> — ${t("one per module, outside the 30 Approaches. Editable, but they have no position among the Approaches.")}
+           </td></tr>`
+        : "";
+      // Grouped by section, in the sections' own order, with anything whose
+      // section is unreadable gathered at the end rather than dropped.
+      const approaches = visibleTrackables();
+      const seen = new Set();
+      let grouped = "";
+      for (const sec of sections) {
+        const inSec = approaches.filter((row) => sectionOf(row) === sec.n);
+        if (!inSec.length) continue;
+        inSec.forEach((row) => seen.add(row.id));
+        grouped += sectionHeadingHtml(sec, inSec.length) + inSec.map(trackableRowHtml).join("");
+      }
+      const orphans = approaches.filter((row) => !seen.has(row.id));
+      if (orphans.length) {
+        const byOwnName = new Map();
+        for (const row of orphans) {
+          const label = row.groupName ? langText(row.groupName, getAppLang(), "") : "";
+          const key = label || "\u0000";
+          if (!byOwnName.has(key)) byOwnName.set(key, { label, rows: [] });
+          byOwnName.get(key).rows.push(row);
+        }
+        for (const { label, rows } of byOwnName.values()) {
+          grouped += `<tr class="trk-section-heading"><td colspan="5" style="padding-top:1rem; border-bottom:none;">
+              <strong style="font-size:0.95rem;">${label || t("(not set)")}</strong>
+              <span style="color:#777; font-weight:400;"> — ${t("{n} Approaches", { n: num(rows.length) })}</span>
+            </td></tr>` + rows.map(trackableRowHtml).join("");
+        }
+      }
+      trackablesBody.innerHTML = grouped + separator + others.map(trackableRowHtml).join("");
 
       trackablesBody.querySelectorAll(".guideBtn").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -730,16 +1159,82 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
       });
 
       trackablesBody.querySelectorAll(".editTrkBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          editingTrackableId = btn.dataset.id;
+          renderTrackables();
+        });
+      });
+
+      trackablesBody.querySelectorAll(".cancelTrkBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          editingTrackableId = null;
+          renderTrackables();
+        });
+      });
+
+      trackablesBody.querySelectorAll(".trkUpBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const visible = visibleTrackables();
+          moveTrackable(btn.dataset.id, visible.findIndex((x) => x.id === btn.dataset.id) - 1);
+        });
+      });
+      trackablesBody.querySelectorAll(".trkDownBtn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const visible = visibleTrackables();
+          moveTrackable(btn.dataset.id, visible.findIndex((x) => x.id === btn.dataset.id) + 1);
+        });
+      });
+
+      trackablesBody.querySelectorAll(".saveTrkBtn").forEach((btn) => {
         btn.addEventListener("click", async () => {
           const row = trackableList.find((x) => x.id === btn.dataset.id);
-          const nextName = prompt(t("New name for this Approach:"), langText(row.name, getAppLang(), row.id));
-          if (nextName == null || nextName.trim() === "") return;
+          const tr = btn.closest("tr");
+          // Reads BOTH language boxes every time, so neither language can be
+          // clobbered by an edit made while reading the other one.
+          const readPair = (cls, existing) => {
+            const next = { ...(existing ?? {}) };
+            tr.querySelectorAll(`.${cls}`).forEach((el) => { next[el.dataset.lang] = el.value.trim(); });
+            return next;
+          };
+          const name = readPair("trkNameInput", row.name);
+          if (!name.en && !name.bn) { alert(t("An Approach needs a name in at least one language.")); return; }
+
+          const rawGroup = tr.querySelector(".trkSectionSelect").value;
+          const nextGroup = rawGroup === "" ? null : Number(rawGroup);
+          const sectionChanged = nextGroup != null && nextGroup !== sectionOf(row);
+          const posSelect = tr.querySelector(".trkPositionSelect");
+          const toIndex = posSelect ? Number(posSelect.value) : -1;
+
+          btn.disabled = true;
           const outcome = await safeWrite(
-            () => editCatalogueNode(db, TENANT.TRACKABLES, activeTenantId, row.id, { name: { ...row.name, en: nextName.trim() } }, auth.currentUser.uid),
-            { collection: "trackables", action: "editName", id: row.id }
+            () => editCatalogueNode(db, TENANT.TRACKABLES, activeTenantId, row.id, {
+              name,
+              // group and groupName always move together -- a doc carrying
+              // section 3's number and section 5's name is a screen that
+              // lies, and groupName is what every reader actually prints.
+              group: nextGroup ?? (row.group ?? null),
+              groupName: (nextGroup && sectionNameFor(nextGroup)) ? sectionNameFor(nextGroup) : (row.groupName ?? null),
+              guide: {
+                what: readPair("trkWhatInput", row.guide?.what),
+                how: readPair("trkHowInput", row.guide?.how),
+                measure: readPair("trkMeasureInput", row.guide?.measure),
+              },
+            }, auth.currentUser.uid),
+            { collection: "trackables", action: "edit", id: row.id }
           );
-          if (outcome.ok) await loadTrackables();
-          else alert(outcome.entry.message);
+          if (!outcome.ok) { alert(outcome.entry.message); btn.disabled = false; return; }
+
+          editingTrackableId = null;
+          await loadTrackables();
+          // Position last, and only if it really changed: it is a separate,
+          // order-only write (see reorderTrackables) and must not drag the
+          // edited:true flag onto the 29 Approaches it renumbers past.
+          // If the SECTION changed, the position picked in the old section no
+          // longer means anything -- what matters is that the running order is
+          // renumbered so every section stays a contiguous block (see
+          // approachesInDisplayOrder). If it did not change, apply the move.
+          if (sectionChanged) await normaliseApproachOrder();
+          else if (toIndex >= 0) await moveTrackable(row.id, toIndex);
         });
       });
 
@@ -748,7 +1243,10 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
           const row = trackableList.find((x) => x.id === btn.dataset.id);
           const nextStatus = btn.dataset.next;
           const name = langText(row.name, getAppLang(), row.id);
-          if (!confirm(nextStatus === "archived" ? t("Archive \"{name}\"?", { name }) : t("Restore \"{name}\"?", { name }))) return;
+          const ask = nextStatus === "archived"
+            ? t("Remove \"{name}\"? It disappears from the Mastery Wheel and every list. Anything already claimed against it is kept, and you can restore it here at any time.", { name })
+            : t("Restore \"{name}\"?", { name });
+          if (!confirm(ask)) return;
 
           btn.disabled = true;
           const outcome = await safeWrite(
@@ -919,6 +1417,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
         await step("set up catalogue", runSeedIfNeeded);
         await step("load modules", loadModules);
         await step("load subjects", loadSubjects);
+        await step("load Approach sections", loadSections);
         await step("load trackables", loadTrackables);
         await step("load ladders", loadLadders);
       } catch (err) {
@@ -944,6 +1443,7 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
 
       await runSeedIfNeeded();
       await loadSubjects();
+      await loadSections(); // before the Approaches: their table groups by these
       await loadTrackables();
       await loadLadders();
     });

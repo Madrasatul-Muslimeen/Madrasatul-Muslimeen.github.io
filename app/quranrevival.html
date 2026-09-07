@@ -637,6 +637,8 @@
     #wheelSection .way-row { padding: 5px 8px; gap: 8px; }
     #wheelSection .way-row .badge { width: 20px; height: 20px; font-size: 10px; }
     #wheelSection .way-row .status-chip { font-size: 9.5px; padding: 2px 7px; }
+    #wheelSection .ways-group { font-size: 8px; padding: 0 2px; line-height: 1.1; margin: 0 0 -2px; }
+    html[lang="bn"] #wheelSection .ways-group { font-size: 9.5px; }
     /* Shell round 17: on a phone the reading is the screen, so the study card
        gives its gutter back to the text -- full-bleed sides, the same trick
        the wheel card uses one rule above. The negative margin goes on the
@@ -701,6 +703,17 @@
   .way-row .badge { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 700; flex-shrink: 0; color: #241a06; background: #C9A24B; }
   .way-row .name { flex: 1; font-size: 13px; color: #dde3ee; }
   .way-row .status-chip { font-size: 10px; padding: 3px 9px; border-radius: 10px; text-transform: uppercase; letter-spacing: .04em; font-weight: 600; white-space: nowrap; }
+  /* v08.02 -- the section heading above each group of Approaches. Kept
+     deliberately small and tight: it is pure structure, and every pixel here
+     costs an Approach row at 390x844, where only four or five ever show. */
+  .ways-group { font-size: 9.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+               color: #a08a52; padding: 5px 2px 0; line-height: 1.2; }
+  .ways-group:first-child { padding-top: 0; }
+  /* Bengali carries matras above and below the line and has no capitals, so
+     uppercasing does nothing and 8px is genuinely cramped -- read off the
+     rendered page, not assumed. It gets its own size and drops the two Latin
+     typographic tricks. */
+  html[lang="bn"] .ways-group { font-size: 10.5px; text-transform: none; letter-spacing: 0; }
   /* Named by status id, not position (chip-0..chip-4 the way index.html did it) -- this build's six statuses are id-keyed (I5), not order-keyed. */
   .chip-not_applicable { background: rgba(255,255,255,0.03); color: #6b7688; border: 1px dashed rgba(255,255,255,0.18); }
   .chip-not_started { background: rgba(255,255,255,0.08); color: #8fa0c2; }
@@ -3683,7 +3696,7 @@
     import { roleListLabel, roleLabel } from "./js/labels.js";
     import { safeWrite } from "./js/errors.js";
     import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
-    import { getTrackables, syncUnneditedTrackableNames } from "./js/catalogue.js";
+    import { getTrackables, syncUnneditedTrackableNames, tenantOwnsSections } from "./js/catalogue.js";
     import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
@@ -5515,7 +5528,14 @@
       // be drawn. Deliberately not awaited -- the names already on screen are
       // correct, they are simply refreshed a moment later if they drifted.
       if (canAdminCatalogueClientSide()) {
-        syncUnneditedTrackableNames(db, activeTenantId, auth.currentUser.uid)
+        // v08.02: `keepSectionNames` reads the tenant doc already fetched in
+        // the wave above (no extra read). Without it, a section renamed on the
+        // Catalogue page would be silently reverted to the platform wording
+        // here, on the very next load -- these copies are `edited: false`,
+        // because renaming a SECTION is deliberately not an edit to the
+        // Approach itself.
+        syncUnneditedTrackableNames(db, activeTenantId, auth.currentUser.uid,
+            { keepSectionNames: tenantOwnsSections(currentTenantDoc) })
           .catch((err) => console.warn("Trackable name sync skipped:", err.message));
       }
     }
@@ -5745,10 +5765,14 @@
       const labelsById = statusLabelsById();
       wheelLegendContainer.innerHTML = renderWheelLegend(labelsById);
 
+      // v08.02, the owner's ask: the sidebar names its sections, the way the
+      // Study-options picker and Explore's palette already do. The label comes
+      // off the trackable's own denormalized groupName, so this costs no read.
       const sidebarItems = approachStatuses.map(({ trackable, statusId }) => ({
         key: trackable.id,
         number: trackable.order ?? "",
         label: langText(trackable.name, getAppLang(), trackable.id),
+        groupLabel: trackable.groupName ? langText(trackable.groupName, getAppLang(), "") : "",
         statusId,
       }));
       wheelSidebarContainer.innerHTML = renderWheelSidebar(sidebarItems, labelsById);
