@@ -532,6 +532,36 @@ export async function setTrackableStatus(db, tenantId, trackableId, status, uid)
   return editCatalogueNode(db, TENANT.TRACKABLES, tenantId, trackableId, { status }, uid);
 }
 
+/**
+ * Renumbers the Approaches so `orderedIds` becomes their display order,
+ * 1..n, writing `order` on the ones that actually moved and nothing else.
+ *
+ * Deliberately NOT routed through editCatalogueNode(): that stamps
+ * edited:true, which permanently freezes a copy away from
+ * syncUnneditedTrackableNames() (Architecture Layer 1's
+ * "update-without-overwrite"). Re-ordering the wheel is not the tenant
+ * claiming authorship of an Approach's WORDING -- a reorder that silently
+ * froze all 30 names would mean a later platform translation fix could
+ * never reach this tenant again. Renaming and guide edits still set the
+ * flag, because those genuinely are the tenant making the node their own.
+ *
+ * Writes only what changed, so the common one-place nudge is 2 documents,
+ * not 30.
+ */
+export async function reorderTrackables(db, tenantId, orderedIds, current, uid) {
+  const orderById = new Map(current.map((t) => [t.id, t.order ?? 0]));
+  const updates = orderedIds
+    .map((id, i) => ({ id, order: i + 1 }))
+    .filter(({ id, order }) => orderById.get(id) !== order)
+    .map(({ id, order }) => ({
+      collectionName: TENANT.TRACKABLES,
+      docId: `${tenantId}__${id}`,
+      data: { order },
+    }));
+  if (updates.length) await commitUpdatesInChunks(db, updates, uid);
+  return { updatedCount: updates.length };
+}
+
 export async function setLadderStatus(db, tenantId, ladderId, status, uid) {
   return updateDocument(db, TENANT.LADDERS, `${tenantId}__${ladderId}`, { status });
 }

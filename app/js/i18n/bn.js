@@ -1414,7 +1414,23 @@ export const BN = {
   "How:": "কীভাবে:",
   "Measure:": "মাপকাঠি:",
   "Section {n}": "বিভাগ {n}",
-  "New name for this Approach:": "এই পদ্ধতির নতুন নাম:",
+  // v08.01 -- the Approach editor (catalogue.html). "Removed" deliberately
+  // renders the stored "archived" status in the owner's own word for the
+  // action; the canonical id is untouched everywhere else.
+  "Removed": "সরানো হয়েছে",
+  "(not set)": "(নির্ধারিত নয়)",
+  "Other trackables": "অন্যান্য ট্র্যাকযোগ্য বিষয়",
+  "one per module, outside the 30 Approaches. Editable, but they have no position among the Approaches.":
+    "প্রতি মডিউলে একটি, ৩০টি পদ্ধতির বাইরে। সম্পাদনাযোগ্য, তবে পদ্ধতিগুলোর ক্রমে এদের কোনো অবস্থান নেই।",
+  "Show removed Approaches": "সরানো পদ্ধতিগুলো দেখান",
+  "Approach name": "পদ্ধতির নাম",
+  "Guide — What": "নির্দেশিকা — কী",
+  "Guide — How": "নির্দেশিকা — কীভাবে",
+  "Guide — Measure": "নির্দেশিকা — মাপকাঠি",
+  "An Approach needs a name in at least one language.":
+    "একটি পদ্ধতির অন্তত একটি ভাষায় নাম থাকা দরকার।",
+  "Remove \"{name}\"? It disappears from the Mastery Wheel and every list. Anything already claimed against it is kept, and you can restore it here at any time.":
+    "\"{name}\" সরিয়ে ফেলবেন? এটি মাস্টারি হুইল ও সব তালিকা থেকে অদৃশ্য হয়ে যাবে। এর বিপরীতে আগে দাবি করা সবকিছু রক্ষিত থাকবে, এবং আপনি যেকোনো সময় এখান থেকে ফিরিয়ে আনতে পারবেন।",
   "Checking catalogue…": "তালিকা যাচাই করা হচ্ছে…",
   "Catalogue set up: {subjects} subjects and {approaches} Approaches.":
     "তালিকা তৈরি হয়েছে: {subjects}টি বিষয় ও {approaches}টি পদ্ধতি।",
