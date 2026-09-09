@@ -11979,3 +11979,58 @@ divider drawn as an arc around the wheel is the shape worth considering if
 the owner wants it, and it is a real layout change on the most tightly
 measured screen in the app. **Adding a 31st Approach is still not built** —
 the owner said they would edit the list first and see.
+
+**Source bundle (9 Sep 2026, on Claude Code on the web) — not a version
+round.** The owner asked for "the entire app codes in html file". Put to them
+as two readings, because they are days apart in effort: a readable/shareable
+bundle of the source, or a single-file *runnable* app (the shape v06 had).
+They chose the bundle, so **`app/` is byte-for-byte untouched and
+`version.js` was deliberately NOT bumped** — nothing about how the app works
+changed, the same rule the v07-archiving round followed.
+
+**Built as a tool, not a one-off dump**: `tools/source-bundle/template.html`
+(the page) + `tools/source-bundle/build.mjs` (reads the files off disk and
+injects them), producing `APP-SOURCE-BUNDLE.html` at the repository root —
+**104 files, 43,668 lines, 2.57 MB**, regenerable with one command so it can
+never quietly drift from what is checked out. It carries all 28 pages, all 69
+modules, the 3 translation files, `shell.css`, and — deliberately, since a
+reviewer cannot judge access control without it — `firestore.rules`,
+`firebase.json` and the root redirect stub. Excluded and said so on the page
+itself: both frozen archives, the Qur'an data, the 604 Mushaf images, the test
+harness, the status documents and the binary fonts.
+
+**Self-contained was the load-bearing claim and it is measured, not asserted:
+zero non-`file://` requests**, read off Playwright's own request events rather
+than off the source. No CDN, no font fetch, no syntax-highlighting library —
+which is also why a 12,051-line file opens instantly: the code is one text
+node beside a plain gutter, so there is no per-line DOM.
+
+**The escaping is load-bearing too, and that was checked before trusting it**:
+every one of the 28 pages contains a literal `</script>`, so the payload JSON
+escapes every `<` to `\u003c` — proven by reading `about.html` back out of the
+parsed data and finding its `</script>` intact. Six files were compared
+character-for-character against disk, chosen for the hard cases: the largest
+(`quranrevival.html`, 12,051 lines), one containing `</script>`, the Bengali/
+Arabic `i18n/bn.js`, and `firestore.rules` from outside `app/`.
+
+**Three real defects were found by measuring, and one of them is this file's
+own most-repeated trap.** `.filebar { display: flex }` outranks the UA's
+`[hidden] { display: none }`, so an empty file bar with a dead "Copy this file"
+button sat on screen before any file was chosen — invisible to a check that
+asserts the `hidden` property, which is exactly the standing lesson about
+asserting the RENDERED result. Fixed with an explicit `.filebar[hidden]`
+override, and the check now reads computed display and a measured rect.
+Deep links only worked on a fresh load (no `hashchange` listener). And the
+phone's Files button measured **32px**, under this project's own ~40px
+tap-target rule — now 40px, with every header button asserted ≥36px.
+
+**Verified: a focused, un-checked-in Playwright script, 57 checks, all
+passing**, screenshotted on desktop and phone in both themes — every file
+present and nothing extra, against a list read from the filesystem rather than
+hardcoded; search finding 111 matches for `buildUnitKey`, with the clicked
+line proven from disk to really contain it and the highlight proven to land at
+the right pixel offset; the "Copy everything" payload proven to carry all 104
+`FILE:` headers and the largest file and the rules in full; the reported line
+total reconciled against disk; dark theme proven to really repaint rather than
+inherit; no horizontal overflow at 390px; and the whole thing booting clean
+**over http as well as from disk**, since it is reachable on Pages too.
