@@ -65,9 +65,9 @@ check("teacher automatic read is limited to an active linked student",
 check("tenant administrator read remains tenant-scoped",
   contract.access.tenantAdministrator.scope === "authorised-tenant-only" &&
   contract.access.tenantAdministrator.read === "automatic");
-check("teacher and administrator edit authority remains unresolved",
+check("teacher and administrator receive no automatic edit authority",
   [contract.access.teacher, contract.access.tenantAdministrator, contract.access.platformAdministrator]
-    .every((entry) => entry.edit === "owner-decision-required"));
+    .every((entry) => entry.edit === "no-automatic-authority"));
 
 console.log("\n=== Existing application remains untouched ===");
 check("legacy ayahNotes collection remains explicit",
