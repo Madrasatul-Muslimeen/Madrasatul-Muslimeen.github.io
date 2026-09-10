@@ -27,7 +27,7 @@ Normative intent flows downward; evidence of reality flows upward. A lower sourc
 - Continue autonomously only after ACCEPT and only when no Owner Control Gate is crossed.
 - Deferred means STOP/ASK; it never authorises implementation.
 - BR-4 and BR-5 require explicit Owner authority.
-- Firestore production-versus-repository Rules parity is **NOT VERIFIED — HARD LOCK**.
+- Firestore production-versus-repository Rules parity is **VERIFIED** (2026-09-10): content-identical, with one additional terminal newline in the repository copy. No Rules modification, implementation proposal, or deployment is authorised.
 
 ## Documents
 

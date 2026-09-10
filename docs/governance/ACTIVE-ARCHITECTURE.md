@@ -38,4 +38,4 @@ Preserve identifiers and records. Prefer additive structures and compatibility. 
 
 ## Current hard gate
 
-Firestore production Rules parity is **NOT VERIFIED — HARD LOCK**. Repository Rules are evidence only. No Rules modification, implementation proposal, or deployment is authorised until authoritative production Rules are obtained, fully compared, discrepancies resolved, audited, and explicitly authorised.
+Firestore production-versus-repository Rules parity is **VERIFIED** (2026-09-10). The authoritative production Rules and repository Rules are content-identical; the repository copy has one additional terminal newline. This verification does not authorise any Rules modification, implementation proposal, or deployment. Each remains an Owner Control Gate requiring explicit authority.

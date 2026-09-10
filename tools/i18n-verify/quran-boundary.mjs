@@ -111,7 +111,10 @@ check("active architecture keeps MMJ distinct from a separate Notebook subsystem
 console.log("\n=== Protected boundaries ===");
 check("active architecture protects authentication", /Authentication/.test(activeArchitecture));
 check("active architecture protects Firestore architecture and Rules", /Firestore architecture\/Rules/.test(activeArchitecture));
-check("active architecture preserves the Rules parity hard lock", /NOT VERIFIED — HARD LOCK/.test(activeArchitecture));
+check("active architecture records verified Rules parity without modification authority",
+  /Rules parity is \*\*VERIFIED\*\*/.test(activeArchitecture) &&
+  /does not authorise any Rules modification/.test(activeArchitecture) &&
+  /deployment/.test(activeArchitecture));
 
 console.log(`\n==== ${passed} passed, ${failed} failed ====`);
 process.exit(failed === 0 ? 0 : 1);
