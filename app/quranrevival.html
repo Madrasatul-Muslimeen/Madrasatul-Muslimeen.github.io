@@ -3590,8 +3590,8 @@
              (jumpToApproach() -> openNoteView()). -->
         <button type="button" class="qr-tab qr-tab-view" id="tabApproachBtn" aria-controls="wheelSection" aria-pressed="true">Approach</button>
         <div id="studyPillarWrap">
-          <button type="button" class="qr-tab qr-tab-view" id="tabStudyBtn" aria-haspopup="menu" aria-controls="studyPillarMenu" aria-expanded="false" aria-pressed="false">Study</button>
-          <div id="studyPillarMenu" role="menu" hidden>
+          <button type="button" class="qr-tab" id="tabStudyBtn" aria-haspopup="menu" aria-controls="studyPillarMenu" aria-expanded="false" aria-pressed="false">Study</button>
+          <div id="studyPillarMenu" role="menu" aria-labelledby="tabStudyBtn" hidden>
             <button type="button" class="study-pillar-action" id="tabReadBtn" data-study-action="read" role="menuitem" aria-controls="readView">Read</button>
             <button type="button" class="study-pillar-action" id="tabNoteBtn" data-study-action="note" role="menuitem" aria-controls="noteView">Note</button>
             <button type="button" class="study-pillar-action" id="tabStudyOptionsBtn" data-study-action="options" data-panel="panelStudyOptions" role="menuitem" aria-controls="panelStudyOptions" aria-expanded="false">Options</button>
@@ -4011,7 +4011,7 @@
     // Panel tabs only. Read/Note/Approach are stage-view switches with no
     // panel behind them, so none of the three may be in this list --
     // closeAllPanels() looks each of these up by data-panel.
-    const dockTabs = Array.from(document.querySelectorAll(".qr-tab[data-panel]"));
+    const dockTabs = Array.from(document.querySelectorAll('#dock [data-panel="panelStudyOptions"]'));
     const tabStudyBtn = document.getElementById("tabStudyBtn");
     const studyPillarMenu = document.getElementById("studyPillarMenu");
     const tabReadBtn = document.getElementById("tabReadBtn");
