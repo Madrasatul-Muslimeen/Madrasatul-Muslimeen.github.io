@@ -58,13 +58,16 @@ check("top-level pillars appear in the approved order",
   approachPillarAt >= 0 && approachPillarAt < studyPillarAt &&
   studyPillarAt < explorePillarAt && explorePillarAt < journeyPillarAt);
 check("Study pillar exposes an accessible selector",
-  /id="tabStudyBtn"[^>]*aria-haspopup="menu"/.test(quranShell));
+  /id="tabStudyBtn"[^>]*aria-haspopup="menu"/.test(quranShell) &&
+  /id="studyPillarMenu"[^>]*role="menu"[^>]*aria-labelledby="tabStudyBtn"/.test(quranShell));
 for (const action of ["read", "note", "options"]) {
   check(`Study selector retains the ${action} internal seam`,
     new RegExp(`data-study-action="${action}"`).test(quranShell));
 }
 check("Mapping My Journey pillar is explicitly unavailable",
   /id="tabJourneyBtn"[^>]*(?:disabled|aria-disabled="true")/.test(quranShell));
+check("relocated Options action remains wired to the existing panel controller",
+  /querySelectorAll\(['"]#dock \[data-panel=\\?"panelStudyOptions\\?"\]['"]\)/.test(quranShell));
 check("existing internal stage view identifiers remain unchanged",
   containsAll(quranShell, ['view === "read"', 'view === "note"', 'view === "explore"', 'view === "wheel"']));
 
