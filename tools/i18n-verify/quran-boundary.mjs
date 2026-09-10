@@ -31,6 +31,7 @@ function containsAll(source, values) {
 }
 
 const quranShell = read("app/quranrevival.html");
+const ayahNoteRenderer = read("app/js/ayah-note-renderer.js");
 const unitKeys = read("app/js/unit-keys.js");
 const records = read("app/js/records.js");
 const activity = read("app/js/activity.js");
@@ -45,7 +46,8 @@ for (const pillar of ["APPROACH", "STUDY", "EXPLORE", "MAPPING MY JOURNEY"]) {
 check("Quran shell retains an Approach surface", /Approach/i.test(quranShell));
 check("Quran shell retains a Study surface", /Study/i.test(quranShell));
 check("Quran shell retains an Explore surface", /Explore/i.test(quranShell));
-check("Quran shell retains a Mapping My Journey surface", /Mapping My Journey/i.test(quranShell));
+check("Quran surface retains a Mapping My Journey placeholder",
+  /ayah-note-renderer\\.js/.test(quranShell) && /Mapping My Journey/i.test(ayahNoteRenderer));
 
 console.log("\n=== Permanent Study Unit identity ===");
 const namespaces = [
