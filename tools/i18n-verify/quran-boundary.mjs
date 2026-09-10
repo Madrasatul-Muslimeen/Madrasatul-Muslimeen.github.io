@@ -49,6 +49,25 @@ check("Quran shell retains an Explore surface", /Explore/i.test(quranShell));
 check("Quran surface retains a Mapping My Journey placeholder",
   /ayah-note-renderer\.js/.test(quranShell) && /Mapping My Journey/i.test(ayahNoteRenderer));
 
+console.log("\n=== Approved four-pillar shell presentation ===");
+const approachPillarAt = quranShell.indexOf('id="tabApproachBtn"');
+const studyPillarAt = quranShell.indexOf('id="tabStudyBtn"');
+const explorePillarAt = quranShell.indexOf('id="tabExploreBtn"');
+const journeyPillarAt = quranShell.indexOf('id="tabJourneyBtn"');
+check("top-level pillars appear in the approved order",
+  approachPillarAt >= 0 && approachPillarAt < studyPillarAt &&
+  studyPillarAt < explorePillarAt && explorePillarAt < journeyPillarAt);
+check("Study pillar exposes an accessible selector",
+  /id="tabStudyBtn"[^>]*aria-haspopup="menu"/.test(quranShell));
+for (const action of ["read", "note", "options"]) {
+  check(`Study selector retains the ${action} internal seam`,
+    new RegExp(`data-study-action="${action}"`).test(quranShell));
+}
+check("Mapping My Journey pillar is explicitly unavailable",
+  /id="tabJourneyBtn"[^>]*(?:disabled|aria-disabled="true")/.test(quranShell));
+check("existing internal stage view identifiers remain unchanged",
+  containsAll(quranShell, ['view === "read"', 'view === "note"', 'view === "explore"', 'view === "wheel"']));
+
 console.log("\n=== Permanent Study Unit identity ===");
 const namespaces = [
   "ayah", "range", "surah", "page", "ruku", "juz", "hizb", "rub",
