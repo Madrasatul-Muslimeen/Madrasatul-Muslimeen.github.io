@@ -610,10 +610,12 @@ referenced in older instructions but were never supplied and do not exist.
   known to be poor.
 - **Routine work follows the current bounded instruction.** Repository edits,
   tests, and git operations may proceed when they are explicitly inside that
-  accepted task. Firestore architecture and Firestore Rules are never routine:
-  production-versus-repository Rules parity is **NOT VERIFIED — HARD LOCK**.
-  Do not edit, propose for implementation, or deploy Rules until the parity
-  gate is closed and explicit authority exists.
+  accepted task. Firestore architecture and Firestore Rules are never routine.
+  Production-versus-repository Rules parity is **VERIFIED** (2026-09-10): the
+  authoritative production Rules and repository Rules are content-identical;
+  the repository copy has one additional terminal newline. Verification does
+  not authorise Rules modification, implementation proposal, or deployment;
+  each remains an Owner Control Gate requiring explicit authority.
 - **Integration follows the current accepted instruction.** A completed change
   is not automatically accepted or integrated. Do not merge, deploy, or push
   directly to protected production state merely because implementation is
