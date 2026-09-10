@@ -31,17 +31,17 @@
     "teacher": {
       "scope": "active-linked-student-only",
       "read": "automatic",
-      "edit": "owner-decision-required"
+      "edit": "no-automatic-authority"
     },
     "tenantAdministrator": {
       "scope": "authorised-tenant-only",
       "read": "automatic",
-      "edit": "owner-decision-required"
+      "edit": "no-automatic-authority"
     },
     "platformAdministrator": {
       "scope": "authorised-platform-role",
       "read": "automatic",
-      "edit": "owner-decision-required"
+      "edit": "no-automatic-authority"
     },
     "managedChildWithoutLogin": {
       "scope": "guardian-session-selected-child",
