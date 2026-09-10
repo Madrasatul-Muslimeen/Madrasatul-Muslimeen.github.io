@@ -47,7 +47,7 @@ check("Quran shell retains an Approach surface", /Approach/i.test(quranShell));
 check("Quran shell retains a Study surface", /Study/i.test(quranShell));
 check("Quran shell retains an Explore surface", /Explore/i.test(quranShell));
 check("Quran surface retains a Mapping My Journey placeholder",
-  /ayah-note-renderer\\.js/.test(quranShell) && /Mapping My Journey/i.test(ayahNoteRenderer));
+  /ayah-note-renderer\.js/.test(quranShell) && /Mapping My Journey/i.test(ayahNoteRenderer));
 
 console.log("\n=== Permanent Study Unit identity ===");
 const namespaces = [
