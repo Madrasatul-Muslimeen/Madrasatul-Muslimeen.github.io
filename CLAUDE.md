@@ -568,6 +568,8 @@ reality; then repository documentation and historical evidence. Normative
 authority flows downward; evidence of reality flows upward. A lower source may
 expose drift or contradiction but may not silently override a higher source.
 When a conflict cannot be resolved deterministically, STOP and escalate it.
+Concise active governance is maintained in `docs/governance/`. Full accepted
+reports and audits remain in the Owner-controlled durable archive.
 
 | File | Role |
 |---|---|
@@ -877,10 +879,7 @@ Ethics (social) and Akhlaq (personal) are **distinct** nodes. Confirmed.
 
 ---
 
-## Recorded decisions (D1–D14; authority requires item-level governance)
-
-STAGE-2-TASK-03 reconciled D1–D13 only. D14 remains outside that accepted
-classification and cannot independently authorise any administrative action.
+## Recorded decisions (D1–D13; authority requires item-level governance)
 
 | # | Decision |
 |---|---|
@@ -897,7 +896,6 @@ classification and cannot independently authorise any administrative action.
 | D11 | **`QuranRevival_Subject_Catalogue_v3.md` approved as-is**, at the start of Phase 2 (2026-07-31): 6 top-level subject-tree nodes (Quran, Hadith, Arabic Language, Deen Study, General Study, Nature-Life), 31 studiable subjects, 30 Approaches in 7 sections, Hadith kept top-level and mandatory in its own right, Ethics/Akhlaq distinct. One resolved ambiguity: the doc tags Hadith `[QuranRevival / Deen]`, but Part 5 also states no node uses `moduleIds[]` for more than one module, and the Architecture doc's Phase 12 list names Hadith as its own fifth remaining module (alongside Arabic, General Study, Health, Nature-Life). Built as: **Hadith is its own module** (`moduleIds: ["hadith"]`), its bracket tag read as descriptive text about its role, not a literal dual-module assignment. Flagged for the owner to correct if the intent was actually a shared/dual-module node. |
 | D12 | **New Phase 3 collection `domains`** (`domains/{tenantId}__{domainId}`), not in the original Architecture doc, added to back the `records.entries.domainIds[]` field the doc names but never defines a collection for. Same shape as D9 (a small supporting collection the doc's own named fields required). Tenant-authored, no platform seed, mirrors `ladders`/`levels` — matches the legacy app's free-text, user-defined "Domains" tag on subjects, promoted to a permanent-ID registry (I5) since `domainIds` is now a plural array on each record entry. *Approved-by-precedent deviation, flagged for the owner to correct if a different shape was intended.* Also Phase 3: **records chunking** ("one doc per surah/subject") is implemented as *surah* for unit types that carry their own surah number (`ayah`/`range`/`surah`/`ruku`) and *subject* for everything else (`juz`/`hizb`/`rub`/`manzil`/`page`/`hadith`/`topic`/`name` — Quran-wide divisions or non-Quran, with no single surah to group by). Re-chunking later is a data migration, not an architecture change (I5 only pins the unit key itself). And **`subjects.confirmationRequired`** (`true`/`false`/`null`) was added as a new, additive field so "confirmation can be switched on or off per subject" (Architecture s6) has somewhere to live — editable from `catalogue.html`'s existing subject edit form. |
 | D13 | **Post-cutover rollout order** (confirmed 9 Aug 2026, QuranRevival v07.00): make it work for the **owner's own real use first** — before family, before external students, before the rest of the role/tenant model the Architecture doc already plans for. Then family. Then external students. Then everyone/everything else, as originally planned. **This reorders priority, not scope** — nothing here changes what gets built, only what gets fixed/polished first when something's wrong. Concretely: if the owner hits real friction using the app themselves, that outranks a family- or student-facing gap, which outranks a general multi-tenant/other-role gap, regardless of build-phase numbering. Don't re-derive this from the Architecture doc's own phase order — this is a use-rollout sequence layered on top of it, not a replacement for Phase 6–15's own scope. |
-| D14 | **The Owner's account historically received `platformAdmin: true`**, granted directly 10 Aug 2026 (v07.08) via a one-time administrative Firestore write, not through an app-side flow. I10 ("`platformAdmin` cannot be self-granted") governs the app's own code paths. This entry preserves historical evidence only; its current authority and administrative procedure have not been reconciled by STAGE-2-TASK-03, and it cannot independently authorise another grant or any Rules/data change. |
 
 ---
 
