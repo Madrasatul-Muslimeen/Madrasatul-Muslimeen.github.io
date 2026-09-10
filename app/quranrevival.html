@@ -183,6 +183,17 @@
     border-top: 1px solid #e3e8f2; padding: 0.5rem 0 0.55rem; margin-top: 0.55rem;
   }
   #tabRow { display: flex; gap: 0.4rem; }
+  #studyPillarWrap { position: relative; flex: 1 1 0; display: flex; }
+  #studyPillarWrap > .qr-tab { width: 100%; }
+  #studyPillarMenu {
+    position: absolute; left: 0; right: 0; bottom: calc(100% + 0.35rem); z-index: 2;
+    display: grid; gap: 0.25rem; padding: 0.35rem; background: white;
+    border: 1px solid #ddd; border-radius: 0.55rem;
+    box-shadow: 0 -8px 24px rgba(20,30,55,0.16);
+  }
+  #studyPillarMenu[hidden] { display: none; }
+  .study-pillar-action { background: white; color: #1F3A6E; border: 0; border-radius: 0.35rem; padding: 0.5rem; text-align: left; font-weight: 700; }
+  .study-pillar-action:hover, .study-pillar-action:focus-visible { background: #eef3fb; }
   /* Same border/radius/weight/caret language as the nav bar's own category
      buttons and shell round 5's disclosure -- one collapsible idiom on this
      page, not a third novelty. */
@@ -3573,23 +3584,26 @@
              any time, matching whichever view #stage is actually showing.
              Approach starts pressed because the wheel is #stage's own
              default view (the landing page is unchanged by this round). -->
-        <button type="button" class="qr-tab" id="tabStudyOptionsBtn" data-panel="panelStudyOptions" aria-controls="panelStudyOptions" aria-expanded="false">Options</button>
-        <button type="button" class="qr-tab qr-tab-view" id="tabReadBtn" aria-controls="readView" aria-pressed="false">Read</button>
-        <!-- Opens the Ayah Note screen for whichever āyah is currently open
-             -- the same screen the wheel's own slice click and the ⋮ quick
-             menu's "Note & more" already land on, now reachable directly. -->
-        <button type="button" class="qr-tab qr-tab-view" id="tabNoteBtn" aria-controls="noteView" aria-pressed="false">Note</button>
         <!-- Opens the Mastery Wheel + its full Approaches list, unchanged
              from what already renders as the landing screen -- clicking a
              slice or a list row still hands off to Note, exactly as today
              (jumpToApproach() -> openNoteView()). -->
         <button type="button" class="qr-tab qr-tab-view" id="tabApproachBtn" aria-controls="wheelSection" aria-pressed="true">Approach</button>
+        <div id="studyPillarWrap">
+          <button type="button" class="qr-tab qr-tab-view" id="tabStudyBtn" aria-haspopup="menu" aria-controls="studyPillarMenu" aria-expanded="false" aria-pressed="false">Study</button>
+          <div id="studyPillarMenu" role="menu" hidden>
+            <button type="button" class="study-pillar-action" id="tabReadBtn" data-study-action="read" role="menuitem" aria-controls="readView">Read</button>
+            <button type="button" class="study-pillar-action" id="tabNoteBtn" data-study-action="note" role="menuitem" aria-controls="noteView">Note</button>
+            <button type="button" class="study-pillar-action" id="tabStudyOptionsBtn" data-study-action="options" data-panel="panelStudyOptions" role="menuitem" aria-controls="panelStudyOptions" aria-expanded="false">Options</button>
+          </div>
+        </div>
         <!-- Ayah Collections round 2 -- Explore stops being a small drawer
              (the owner's own ask: "the Explore panel should increase to the
              entire screen") and becomes a fourth full-#stage view, exactly
              the same "tap the open tab to close it" idiom Read/Note/Approach
              already use. -->
         <button type="button" class="qr-tab qr-tab-view" id="tabExploreBtn" aria-controls="exploreView" aria-pressed="false">Explore</button>
+        <button type="button" class="qr-tab qr-tab-view" id="tabJourneyBtn" disabled aria-disabled="true" title="Coming later">Mapping My Journey</button>
       </div>
       <div id="unitLabel"></div>
     </div><!-- /#dock -->
@@ -3998,6 +4012,8 @@
     // panel behind them, so none of the three may be in this list --
     // closeAllPanels() looks each of these up by data-panel.
     const dockTabs = Array.from(document.querySelectorAll(".qr-tab[data-panel]"));
+    const tabStudyBtn = document.getElementById("tabStudyBtn");
+    const studyPillarMenu = document.getElementById("studyPillarMenu");
     const tabReadBtn = document.getElementById("tabReadBtn");
     const tabNoteBtn = document.getElementById("tabNoteBtn");
     const tabApproachBtn = document.getElementById("tabApproachBtn");
@@ -6089,6 +6105,9 @@
       // screen but leaves it marked open; it would then reappear already
       // open the next time that panel is shown. Closed with the panel.
       closeAllBarPalettes(null);
+      studyPillarMenu.hidden = true;
+      tabStudyBtn.setAttribute("aria-expanded", "false");
+      tabStudyBtn.setAttribute("aria-pressed", stageView === "read" || stageView === "note" ? "true" : "false");
     }
 
     async function openExplore() {
@@ -6110,6 +6129,7 @@
         if (wasOpen) return;
         tab.setAttribute("aria-expanded", "true");
         document.getElementById(tab.dataset.panel).hidden = false;
+        tabStudyBtn.setAttribute("aria-pressed", "true");
         // Study options holds the reciters, so opening it is another real
         // gesture that may precede Play -- warm the timing map here too.
         if (tab.dataset.panel === "panelStudyOptions") warmSegmentedTimestamps();
@@ -6149,6 +6169,7 @@
       exploreView.hidden = !exploring;
       tabReadBtn.setAttribute("aria-pressed", reading ? "true" : "false");
       tabNoteBtn.setAttribute("aria-pressed", noting ? "true" : "false");
+      tabStudyBtn.setAttribute("aria-pressed", reading || noting ? "true" : "false");
       tabApproachBtn.setAttribute("aria-pressed", onWheel ? "true" : "false");
       tabExploreBtn.setAttribute("aria-pressed", exploring ? "true" : "false");
       // The READING screen's own full screen (immersive-read) is unrelated
@@ -6389,6 +6410,16 @@
       // back. Now that Mushaf is a tick rather than a unit-type accident, this
       // applies to a single ayah's page too.
       if (mushafToggle.checked) setImmersive(true);
+    });
+
+    tabStudyBtn.addEventListener("click", () => {
+      const opening = studyPillarMenu.hidden;
+      studyPillarMenu.hidden = !opening;
+      tabStudyBtn.setAttribute("aria-expanded", opening ? "true" : "false");
+    });
+    studyPillarMenu.addEventListener("click", () => {
+      studyPillarMenu.hidden = true;
+      tabStudyBtn.setAttribute("aria-expanded", "false");
     });
 
     // Enhancement round -- Note as its own dock tab. Opens the Ayah Note
