@@ -559,13 +559,21 @@ decision-oriented. Corrections come promptly when framing drifts.
 
 ---
 
-## Source of truth
+## Authority and repository evidence
+
+Authority is governed in this order: current explicit Owner decision; the
+Master Architect Baseline Lock; MAP v4; accepted Master Architect controls and
+accepted audits/reports; current code/config/data contracts as evidence of
+reality; then repository documentation and historical evidence. Normative
+authority flows downward; evidence of reality flows upward. A lower source may
+expose drift or contradiction but may not silently override a higher source.
+When a conflict cannot be resolved deterministically, STOP and escalate it.
 
 | File | Role |
 |---|---|
-| `QuranRevival_Complete_Architecture.html` | **THE source of truth.** Schema, invariants, roles, renderers, unit keys, 15 build phases, load-speed budget. Confirmed by the owner. |
-| `QuranRevival_Subject_Catalogue_v3.md` | 31 subjects, 30 Approaches in 7 sections. **Approved as-is (D11).** Phase 2 input. |
-| `QuranRevival_Parked_Items_Register.html` | 36 deferred items. **Do not build these.** |
+| `QuranRevival_Complete_Architecture.html` | **Superseded historical architecture evidence — not current authority.** May support provenance and independently verified historical/live-system evidence only. |
+| `QuranRevival_Subject_Catalogue_v3.md` | Supporting evidence for the existing catalogue: 31 subjects, 30 Approaches in 7 sections. D11 records its historical approval. |
+| `QuranRevival_Parked_Items_Register.html` | Stale supporting/parked evidence. No item is reactivated without current authority. |
 | `legacy/index.html` | The pre-cutover production app. **REFERENCE ONLY — NEVER EDIT.** No longer live at the production URL as of 9 Aug 2026 (cutover) — archived here, reachable at `https://madrasatul-muslimeen.github.io/legacy/index.html`. (Since v07.78's repo fold, this repo's root `index.html` is a DIFFERENT file — the live redirect stub into `/app/index.html` — not this one; don't confuse the two.) |
 | `legacy-v07/` | **The v07 app, frozen at v07.139** (6 Sep 2026) — a `cp -a` of `app/`, reachable at `https://madrasatul-muslimeen.github.io/legacy-v07/`. **REFERENCE ONLY — NEVER EDIT**, same rule as `legacy/index.html`; a fix belongs in `app/`. Its own `README-ARCHIVE.txt` records the two things it shares with the live app (the `/tools/quran-data-pull/output` Qur'an data, and the real Firestore) and what would break it. |
 | `CHANGELOG.md` | **The full round-by-round build log**, v07.01 onward, split out of this file 4 Sep 2026. History, not brief — open it for the background of one specific feature, never as routine reading. |
@@ -582,8 +590,11 @@ referenced in older instructions but were never supplied and do not exist.
 ## How to work
 
 - **Master Software Architect.** Diagnose before changing anything.
-- **One phase at a time.** Present the plan and its blast radius; get explicit
-  sign-off; then build.
+- **One bounded task at a time.** State the task boundary and blast radius,
+  report the result, and perform a separate Master Architect audit. After an
+  ACCEPT result, Work may continue automatically only when the next bounded
+  task is within accepted authority and crosses no Owner Control Gate. This is
+  not authority for broad autonomous implementation.
 - **Read only what the current task needs.** Do not re-survey the whole file.
   Do not restate the architecture.
 - **Verify, do not guess.** Before claiming anything works: check syntax,
@@ -595,31 +606,26 @@ referenced in older instructions but were never supplied and do not exist.
 - **State the blast radius before writing code.**
 - **If a plan proves wrong mid-build, STOP and say so.** Do not build something
   known to be poor.
-- **No permission-asking for routine building/fixing work.** The owner has
-  said this repeatedly and explicitly: do not pause to ask before file
-  edits, git operations (add/commit/status/log/diff/init), running or
-  stopping the local test server, or any Firebase CLI action on the
-  `study-monitoring` project — including deploying `firestore.rules`. This
-  covers everything in this project's folder and everything on that
-  Firebase project. Just do it and report what was done afterward. The
-  only things that still need the owner's actual input are genuine
-  design/scope decisions — an architecture deviation, an ambiguous spec, a
-  real "which approach" choice — the kind of thing that needs their
-  opinion, not their permission.
-- **On Claude Code on the web: merge your own PRs, every time, without being
-  asked.** This project has been worked on both via the Claude Code CLI
-  (local files, no GitHub layer, changes are just immediately there) and via
-  Claude Code on the web (each session gets its own working branch on
-  `Madrasatul-Muslimeen/QuranRevival---ClaudeCode`; nothing reaches `main` —
-  what the owner actually tests — until a PR merges it in). The owner's own
-  click-through always happens against `main`. A session that finishes work
-  and leaves it sitting on an unmerged branch has, from the owner's side,
-  done nothing yet — this already caused real confusion once (Phase 4
-  round 2: real fixes, pushed, but invisible until merged two rounds later).
-  So: open the PR and merge it yourself as the last step of finishing any
-  chunk of work on this repo, same as the other git operations above — no
-  permission needed, don't leave it pending "for the owner to merge" unless
-  they've explicitly said they want to review first.
+- **Routine work follows the current bounded instruction.** Repository edits,
+  tests, and git operations may proceed when they are explicitly inside that
+  accepted task. Firestore architecture and Firestore Rules are never routine:
+  production-versus-repository Rules parity is **NOT VERIFIED — HARD LOCK**.
+  Do not edit, propose for implementation, or deploy Rules until the parity
+  gate is closed and explicit authority exists.
+- **Integration follows the current accepted instruction.** A completed change
+  is not automatically accepted or integrated. Do not merge, deploy, or push
+  directly to protected production state merely because implementation is
+  complete. An accepted autonomous documentation task may be integrated only
+  when its bounded instruction explicitly includes integration.
+- **Owner Control Gates.** STOP and ask when work would require a new product
+  or architecture choice; reverse an accepted decision; activate parked or
+  deferred work; cross BR-4 or BR-5; affect authentication, tenancy, roles,
+  production identifiers, permanent Study Unit keys, live records, or
+  protected legacy architecture; change Firestore architecture or Rules;
+  depend on production Rules parity; perform destructive/irreversible
+  migration; begin a major stage requiring Owner acceptance; resolve a
+  material governing conflict non-deterministically; choose among materially
+  different product behaviours; or continue with unreliable context.
 - **Be proactive.** Flag anything adjacent that is broken or risky rather than
   working around it silently.
 - **Report every time:** what was done, what is pending, what the owner should
@@ -871,7 +877,10 @@ Ethics (social) and Akhlaq (personal) are **distinct** nodes. Confirmed.
 
 ---
 
-## Approved decisions (D1–D13)
+## Recorded decisions (D1–D14; authority requires item-level governance)
+
+STAGE-2-TASK-03 reconciled D1–D13 only. D14 remains outside that accepted
+classification and cannot independently authorise any administrative action.
 
 | # | Decision |
 |---|---|
@@ -888,7 +897,7 @@ Ethics (social) and Akhlaq (personal) are **distinct** nodes. Confirmed.
 | D11 | **`QuranRevival_Subject_Catalogue_v3.md` approved as-is**, at the start of Phase 2 (2026-07-31): 6 top-level subject-tree nodes (Quran, Hadith, Arabic Language, Deen Study, General Study, Nature-Life), 31 studiable subjects, 30 Approaches in 7 sections, Hadith kept top-level and mandatory in its own right, Ethics/Akhlaq distinct. One resolved ambiguity: the doc tags Hadith `[QuranRevival / Deen]`, but Part 5 also states no node uses `moduleIds[]` for more than one module, and the Architecture doc's Phase 12 list names Hadith as its own fifth remaining module (alongside Arabic, General Study, Health, Nature-Life). Built as: **Hadith is its own module** (`moduleIds: ["hadith"]`), its bracket tag read as descriptive text about its role, not a literal dual-module assignment. Flagged for the owner to correct if the intent was actually a shared/dual-module node. |
 | D12 | **New Phase 3 collection `domains`** (`domains/{tenantId}__{domainId}`), not in the original Architecture doc, added to back the `records.entries.domainIds[]` field the doc names but never defines a collection for. Same shape as D9 (a small supporting collection the doc's own named fields required). Tenant-authored, no platform seed, mirrors `ladders`/`levels` — matches the legacy app's free-text, user-defined "Domains" tag on subjects, promoted to a permanent-ID registry (I5) since `domainIds` is now a plural array on each record entry. *Approved-by-precedent deviation, flagged for the owner to correct if a different shape was intended.* Also Phase 3: **records chunking** ("one doc per surah/subject") is implemented as *surah* for unit types that carry their own surah number (`ayah`/`range`/`surah`/`ruku`) and *subject* for everything else (`juz`/`hizb`/`rub`/`manzil`/`page`/`hadith`/`topic`/`name` — Quran-wide divisions or non-Quran, with no single surah to group by). Re-chunking later is a data migration, not an architecture change (I5 only pins the unit key itself). And **`subjects.confirmationRequired`** (`true`/`false`/`null`) was added as a new, additive field so "confirmation can be switched on or off per subject" (Architecture s6) has somewhere to live — editable from `catalogue.html`'s existing subject edit form. |
 | D13 | **Post-cutover rollout order** (confirmed 9 Aug 2026, QuranRevival v07.00): make it work for the **owner's own real use first** — before family, before external students, before the rest of the role/tenant model the Architecture doc already plans for. Then family. Then external students. Then everyone/everything else, as originally planned. **This reorders priority, not scope** — nothing here changes what gets built, only what gets fixed/polished first when something's wrong. Concretely: if the owner hits real friction using the app themselves, that outranks a family- or student-facing gap, which outranks a general multi-tenant/other-role gap, regardless of build-phase numbering. Don't re-derive this from the Architecture doc's own phase order — this is a use-rollout sequence layered on top of it, not a replacement for Phase 6–15's own scope. |
-| D14 | **The owner's own account (uid `3ff4BoGFLeV6FYBoTiJkMr7sFuV2`, `smahk9@gmail.com`) holds `platformAdmin: true`**, granted directly 10 Aug 2026 (v07.08) via a one-time administrative Firestore write, not through any app-side flow. I10 ("`platformAdmin` cannot be self-granted") is about closing the S1 self-service escalation hole in the app's own code paths — it was never meant to block a legitimate one-time grant to someone who is, in every real sense, already the platform's sole administrator (Firebase project owner, GitHub repo owner, the one real tenant's owner). Concretely needed because `modules/{moduleId}` is platform-wide (Architecture Layer 1) and `firestore.rules` restricts writing it to `isPlatformAdmin()` only — the Catalogue page's new module-reorder buttons (v07.08) would 403 for the owner otherwise. *Approved by the owner, asked directly before granting.* |
+| D14 | **The Owner's account historically received `platformAdmin: true`**, granted directly 10 Aug 2026 (v07.08) via a one-time administrative Firestore write, not through an app-side flow. I10 ("`platformAdmin` cannot be self-granted") governs the app's own code paths. This entry preserves historical evidence only; its current authority and administrative procedure have not been reconciled by STAGE-2-TASK-03, and it cannot independently authorise another grant or any Rules/data change. |
 
 ---
 
