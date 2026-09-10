@@ -1,0 +1,62 @@
+{
+  "status": "testing-only-future-contract",
+  "foundationCollections": [
+    "notes",
+    "noteSources",
+    "noteFolders",
+    "notePlacements",
+    "noteRevisions"
+  ],
+  "deferredCollections": [
+    "noteImportBatches",
+    "noteImportItems",
+    "noteDerivedLinks"
+  ],
+  "identity": {
+    "noteId": "opaque-stable-non-derived",
+    "studyUnitKeyUse": "source-reference-only",
+    "folderPlacement": "many-to-many-relation"
+  },
+  "access": {
+    "self": {
+      "scope": "same-auth-linked-tenant-person",
+      "read": "automatic",
+      "edit": "automatic"
+    },
+    "guardian": {
+      "scope": "linked-managed-child-only",
+      "read": "automatic",
+      "edit": "per-note-guardian-approval"
+    },
+    "teacher": {
+      "scope": "active-linked-student-only",
+      "read": "automatic",
+      "edit": "owner-decision-required"
+    },
+    "tenantAdministrator": {
+      "scope": "authorised-tenant-only",
+      "read": "automatic",
+      "edit": "owner-decision-required"
+    },
+    "platformAdministrator": {
+      "scope": "authorised-platform-role",
+      "read": "automatic",
+      "edit": "owner-decision-required"
+    },
+    "managedChildWithoutLogin": {
+      "scope": "guardian-session-selected-child",
+      "read": "view-only-by-default",
+      "edit": "per-note-guardian-approval"
+    }
+  },
+  "legacyCompatibility": {
+    "ayahNotesUnchanged": true,
+    "dualWrite": false,
+    "automaticMigration": false,
+    "userControlledCopyWithProvenance": true
+  },
+  "revisionDirection": "immutable-full-snapshot-measure-before-implementation",
+  "implementationAuthorised": false,
+  "rulesModificationAuthorised": false,
+  "deploymentAuthorised": false
+}
