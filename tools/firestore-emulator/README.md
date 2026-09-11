@@ -21,12 +21,21 @@ node tools/firestore-emulator/run.mjs
 node tools/i18n-verify/note-foundation-emulator-scaffold.mjs
 ```
 
-Future prerequisites, not supplied or authorised by STAGE-5-TASK-12:
+STAGE-5-TASK-13 adds a locked, isolated tooling workspace and one local smoke
+test. From this directory:
 
-1. independently verify current compatible versions of Firebase CLI,
-   Firebase JavaScript SDK, and `@firebase/rules-unit-testing`;
-2. add an isolated tooling package manifest and lockfile;
-3. add `tests/firestore/note-foundation.rules.test.mjs`;
-4. obtain explicit authority before modifying proposed Rules;
-5. run only against the fixed demo project and local emulator;
-6. obtain separate authority before any Rules or index deployment.
+```sh
+npm ci
+npm run smoke
+```
+
+The smoke test uses the current repository Rules unchanged and proves only
+that the demo-only local emulator starts and denies an unauthenticated read
+of an unimplemented Note Foundation path. It does not validate future Rules.
+
+Future prerequisites, not supplied or authorised by STAGE-5-TASK-12/13:
+
+1. add `tests/firestore/note-foundation.rules.test.mjs`;
+2. obtain explicit authority before modifying proposed Rules;
+3. run only against the fixed demo project and local emulator;
+4. obtain separate authority before any Rules or index deployment.

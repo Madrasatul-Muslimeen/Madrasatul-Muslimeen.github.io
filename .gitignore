@@ -16,6 +16,12 @@ package-lock.json
 # itself has no dependencies (D4), so it is not project config either.
 package.json
 
+# Stage 5 Note Foundation emulator tooling is deliberately isolated from the
+# dependency-free browser app. These two manifests are reproducible test
+# infrastructure; all other package manifests remain machine-local/ignored.
+!tools/firestore-emulator/package.json
+!tools/firestore-emulator/package-lock.json
+
 # Playwright is installed as a symlink in some sandboxes, which the
 # trailing-slash rule above does not match.
 node_modules
