@@ -31,6 +31,7 @@ const envelope = read("app/js/envelope.js");
 const ayahNotes = read("app/js/ayah-notes.js");
 const firestoreRules = read("firestore.rules");
 const quranShell = read("app/quranrevival.html");
+const foundation = read("app/js/note-foundation.js");
 
 console.log("\n=== Approved physical Note Foundation test contract ===");
 check("contract records bounded implementation authority", contract.status === "implementation-authorised-contract");
@@ -91,6 +92,13 @@ check("five Foundation collection constants are implemented exactly",
 check("read-dependent writes remain inside the envelope gateway",
   /export async function runEnvelopeTransaction/.test(envelope) &&
   /runTransaction\(db/.test(envelope));
+check("Foundation data layer preserves atomic full-snapshot revisions",
+  /createPermanentNote/.test(foundation) && /updatePermanentNoteContent/.test(foundation) &&
+  /TENANT\.NOTE_REVISIONS/.test(foundation) && /expectedRevisionId/.test(foundation));
+check("Foundation data layer has no legacy fallback or dual write",
+  !/TENANT\.AYAH_NOTES|from\s+["']\.\/ayah-notes\.js["']|saveAyahNote\s*\(/.test(foundation));
+check("Foundation data layer remains uninvoked by the Quran shell",
+  !/note-foundation\.js/.test(quranShell));
 check("no Foundation Rules match is implemented",
   contract.foundationCollections.every((name) => !firestoreRules.includes(`match /${name}/`)));
 check("no per-Note guardian approval UI is implemented",
