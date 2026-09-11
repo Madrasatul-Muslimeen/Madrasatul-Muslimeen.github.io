@@ -13,6 +13,7 @@ import {
   setDoc,
   updateDoc,
   writeBatch,
+  runTransaction,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -96,4 +97,47 @@ export async function commitEnvelopeBatch(db, { creates = [], updates = [] }, ui
   }
 
   await batch.commit();
+}
+
+/**
+ * Run a read-dependent atomic operation without allowing feature modules to
+ * call Firestore transaction writes directly. The callback receives only the
+ * envelope-safe operations needed by the Note Foundation.
+ */
+export async function runEnvelopeTransaction(db, uid, callback) {
+  if (!uid) {
+    throw new Error("runEnvelopeTransaction refused: no uid supplied for transaction actor.");
+  }
+  if (typeof callback !== "function") {
+    throw new Error("runEnvelopeTransaction refused: callback must be a function.");
+  }
+
+  return runTransaction(db, async (transaction) => {
+    const refFor = (collectionName, docId) => doc(db, collectionName, docId);
+    const api = Object.freeze({
+      get(collectionName, docId) {
+        return transaction.get(refFor(collectionName, docId));
+      },
+      create(collectionName, docId, data) {
+        const ref = refFor(collectionName, docId);
+        transaction.set(ref, {
+          ...data,
+          schemaVersion: CURRENT_SCHEMA_VERSION,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          createdBy: uid,
+        });
+        return ref;
+      },
+      update(collectionName, docId, data) {
+        const ref = refFor(collectionName, docId);
+        transaction.update(ref, {
+          ...data,
+          updatedAt: serverTimestamp(),
+        });
+        return ref;
+      },
+    });
+    return callback(api);
+  });
 }
