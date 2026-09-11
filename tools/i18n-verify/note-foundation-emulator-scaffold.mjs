@@ -34,7 +34,9 @@ check("fixed project is demo-only", matrix.projectId === launcher.DEMO_PROJECT_I
 check("production project identifier is absent", !JSON.stringify({ matrix, config }).includes("study-monitoring"));
 check("emulator binds only to loopback", config.emulators.firestore.host === "127.0.0.1" && launcher.EMULATOR_HOST === "127.0.0.1:8085");
 check("emulator UI is disabled", config.emulators.ui.enabled === false);
-check("normal launcher starts nothing", launcher.scaffoldStatus().executableRulesTestPresent === false);
+check("normal launcher starts nothing unless --execute is explicit",
+  /if \(!process\.argv\.includes\("--execute"\)\)/.test(read("tools/firestore-emulator/run.mjs")) &&
+  launcher.scaffoldStatus().executableRulesTestPresent === true);
 check("non-demo project is rejected", (() => { try { launcher.assertDemoOnly("production-project"); return false; } catch { return true; } })());
 
 console.log("\n=== Accepted contract decisions ===");
