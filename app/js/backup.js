@@ -49,6 +49,7 @@ import { listAssignmentsForTenant, listAssignmentsForReader, listSubmissionsForA
 import { listInvitesForTenant } from "./invites.js";
 import { getQcrDoc } from "./qcr.js";
 import { getAsmaCollectionsDoc } from "./asma-collections.js";
+import { listFoundationCollectionForOwner } from "./note-foundation.js";
 
 /**
  * Firestore hands back Timestamp objects, DocumentReferences and nested
@@ -241,6 +242,15 @@ export async function collectBackup(db, {
 
     const bookmarks = await attempt(notes, `Bookmarks for ${name}`, () => getBookmarks(db, tenantId, pid).then(toPlain), null);
     const ayahNotes = await attempt(notes, `Āyah notes for ${name}`, () => getAyahNotes(db, tenantId, pid).then(toPlain), null);
+    const noteFoundation = {};
+    for (const [key, collectionName] of Object.entries({
+      notes: TENANT.NOTES, noteSources: TENANT.NOTE_SOURCES,
+      noteFolders: TENANT.NOTE_FOLDERS, notePlacements: TENANT.NOTE_PLACEMENTS,
+      noteRevisions: TENANT.NOTE_REVISIONS,
+    })) {
+      noteFoundation[key] = await attempt(notes, `Permanent Notes (${key}) for ${name}`,
+        () => listFoundationCollectionForOwner(db, { tenantId, ownerPersonId: pid, collectionName }).then(toPlain), []);
+    }
     step(`Notes & bookmarks — ${name}`);
 
     // One getDoc per week, because that is the only way activity can be read
@@ -257,7 +267,7 @@ export async function collectBackup(db, {
     const enrolments = await attempt(notes, `Enrolments for ${name}`, () => listEnrollmentsForPerson(db, tenantId, pid).then(toPlain), []);
     step(`Enrolments — ${name}`);
 
-    perPerson.push({ personId: pid, name, records, bookmarks, ayahNotes, activityWeeks: weeks, levels: levelsNow, enrolments });
+    perPerson.push({ personId: pid, name, records, bookmarks, ayahNotes, noteFoundation, activityWeeks: weeks, levels: levelsNow, enrolments });
   }
 
   // ---- Layer 3: homework ------------------------------------------------

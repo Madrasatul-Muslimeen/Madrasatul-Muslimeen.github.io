@@ -3718,6 +3718,7 @@
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText } from "./js/ayah-note-renderer.js";
+    import { createPermanentNote, getPermanentNote, listNotesForSource, updatePermanentNoteContent, grantManagedChildNoteApproval, revokeManagedChildNoteApproval } from "./js/note-foundation.js";
     import { initPopupWindow, initSideSplitter, initListCollapse, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
     import {
       collectionsFrom, activeCollections,
@@ -4329,6 +4330,11 @@
     // collapses the same way (default closed, "like the languages"), and
     // needs the identical survive-a-rebuild fix Notes already has above.
     let noteApproachCardOpen = false;
+    let permanentNotesForSource = [];
+    let permanentNotesLoadedKey = null;
+    let permanentNotesLoadFailed = false;
+    let selectedPermanentNote = null;
+    let localApprovedPermanentNoteId = null;
     let tenantWeekStartsOn = 6;
     let currentTenantDoc = null;
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
@@ -10395,6 +10401,46 @@
         ? `<span>${info.label} — ${t("read it on the Read screen")}</span><button type="button" data-note-open-read>${t("Open in Read")} ▸</button>`
         : "";
 
+      if (permanentNotesLoadedKey !== `${selectedPersonId}|${unitKey}`) {
+        permanentNotesLoadedKey = `${selectedPersonId}|${unitKey}`;
+        permanentNotesForSource = [];
+        permanentNotesLoadFailed = false;
+        selectedPermanentNote = null;
+        if (activeTenantId && selectedPersonId) {
+          listNotesForSource(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, sourceKind: "quran", sourceKey: unitKey })
+            .then((rows) => {
+              if (permanentNotesLoadedKey !== `${selectedPersonId}|${unitKey}`) return;
+              permanentNotesForSource = rows;
+              if (stageView === "note" && noteScopeCurrentUnitKey() === unitKey) renderNoteViewNow();
+            })
+            .catch(() => {
+              permanentNotesLoadFailed = true;
+              if (stageView === "note" && noteScopeCurrentUnitKey() === unitKey) renderNoteViewNow();
+            });
+        }
+      }
+      const myPersonId = currentPreview().myPersonId;
+      const managedChild = !!myPersonId && selectedPersonId !== myPersonId;
+      const sourceListFailed = permanentNotesLoadFailed;
+      const mayEditSelected = !managedChild || selectedPermanentNote?.noteId === localApprovedPermanentNoteId;
+      const permanentNotesHtml = `
+        <div class="note-field" data-note-field="permanent-notes">
+          <div class="note-field-label-row"><span class="note-field-label">${t("Permanent Notes for this source")}</span></div>
+          <div class="note-field-body">
+            ${sourceListFailed ? `<p>${t("Permanent Notes could not be checked. Creation is disabled for safety.")}</p>` : `
+              <button type="button" data-note-save-permanent>${t("Save as permanent Note")}</button>
+              ${permanentNotesForSource.length ? permanentNotesForSource.map((note) => `<button type="button" data-note-open-permanent="${escapeHtml(note.noteId)}">${escapeHtml(note.title || t("Untitled permanent Note"))}</button>`).join("") : `<p>${t("No permanent Notes for this source yet.")}</p>`}
+            `}
+            ${selectedPermanentNote ? `
+              <div class="permanent-note-editor">
+                <input data-note-permanent-title value="${escapeHtml(selectedPermanentNote.title || "")}" ${mayEditSelected ? "" : "readonly"}>
+                <div data-note-permanent-editor data-note-id="${escapeHtml(selectedPermanentNote.noteId)}" data-revision-id="${escapeHtml(selectedPermanentNote.currentRevisionId)}" contenteditable="${mayEditSelected ? "true" : "false"}">${selectedPermanentNote.bodyHtml || ""}</div>
+                ${mayEditSelected ? `<button type="button" data-note-permanent-save>${t("Save permanent Note")}</button>` : `<p>${t("View only until guardian approval")}</p>`}
+                ${managedChild ? `<button type="button" data-note-guardian-approval>${t("Approve editing for 30 minutes")}</button><button type="button" data-note-guardian-revoke>${t("Revoke editing approval")}</button>` : ""}
+              </div>` : ""}
+          </div>
+        </div>`;
+
       // Ayah Collections round 2 -- the collection this āyah was tapped
       // FROM, if any (noteOriginCollectionId, set by goToAyahFromQcr()).
       // Looked up by id every render rather than cached as a label, so a
@@ -10478,6 +10524,7 @@
         backToCollectionLabel,
         isCollectionsOpen: wasQcrDrawerOpen,
         collectionsPopoverHtml: renderQcrDrawerHtml(unitKey, openQcrDdKey),
+        permanentNotesHtml,
       });
       if (showApproach && quranTrackables.some((tr) => tr.id === currentTrackableId)) {
         noteView.querySelectorAll("[data-note-approach-select]").forEach((sel) => { sel.value = currentTrackableId; });
@@ -10510,6 +10557,58 @@
           ayahNotesDoc = { ...ayahNotesDoc, notes: { ...(ayahNotesDoc.notes ?? {}), [unitKey]: { html, updatedAt: new Date().toISOString() } } };
           renderStudyScreen();
           return { ok: true };
+        },
+        onSavePermanentNote: async () => {
+          if (!auth.currentUser || !selectedPersonId || sourceListFailed) return;
+          const bodyHtml = ayahNoteHtml(ayahNotesDoc, unitKey);
+          if (!bodyHtml) return;
+          if (permanentNotesForSource.length && !confirm(t("A permanent Note already exists for this source. Create another?"))) return;
+          const outcome = await safeWrite(() => createPermanentNote(db, {
+            tenantId: activeTenantId, ownerPersonId: selectedPersonId,
+            ownerUid: managedChild ? null : auth.currentUser.uid,
+            title: ref, bodyHtml, actorUid: auth.currentUser.uid,
+            source: { sourceKind: "quran", sourceKey: unitKey, relationshipKind: "origin", provenanceKind: "copied-from-legacy-ayah-note" },
+          }), { collection: TENANT.NOTES, action: "createPermanentNote" });
+          if (!outcome.ok) return;
+          permanentNotesLoadedKey = null;
+          renderNoteViewNow();
+        },
+        onOpenPermanentNote: async (noteId) => {
+          selectedPermanentNote = await getPermanentNote(db, { tenantId: activeTenantId, noteId });
+          renderNoteViewNow();
+        },
+        onSavePermanentEdit: async ({ noteId, expectedRevisionId, title, bodyHtml }) => {
+          const outcome = await safeWrite(() => updatePermanentNoteContent(db, {
+            tenantId: activeTenantId, noteId, expectedRevisionId, title, bodyHtml,
+            actorUid: auth.currentUser.uid,
+          }), { collection: TENANT.NOTES, action: "updatePermanentNoteContent" });
+          if (!outcome.ok) {
+            const latest = await getPermanentNote(db, { tenantId: activeTenantId, noteId });
+            if (confirm(t("This Note changed elsewhere. Reload the latest version? Cancel keeps your text available to copy into a new Note."))) selectedPermanentNote = latest;
+          } else {
+            selectedPermanentNote = await getPermanentNote(db, { tenantId: activeTenantId, noteId });
+          }
+          renderNoteViewNow();
+        },
+        onGrantGuardianApproval: async () => {
+          if (!selectedPermanentNote || !myPersonId) return;
+          const outcome = await safeWrite(() => grantManagedChildNoteApproval(db, {
+            tenantId: activeTenantId, noteId: selectedPermanentNote.noteId,
+            childPersonId: selectedPersonId, guardianPersonId: myPersonId,
+            actorUid: auth.currentUser.uid,
+          }), { collection: TENANT.NOTES, action: "grantManagedChildNoteApproval" });
+          if (outcome.ok) localApprovedPermanentNoteId = selectedPermanentNote.noteId;
+          renderNoteViewNow();
+        },
+        onRevokeGuardianApproval: async () => {
+          if (!selectedPermanentNote || !myPersonId) return;
+          const outcome = await safeWrite(() => revokeManagedChildNoteApproval(db, {
+            tenantId: activeTenantId, noteId: selectedPermanentNote.noteId,
+            childPersonId: selectedPersonId, guardianPersonId: myPersonId,
+            actorUid: auth.currentUser.uid,
+          }), { collection: TENANT.NOTES, action: "revokeManagedChildNoteApproval" });
+          if (outcome.ok) localApprovedPermanentNoteId = null;
+          renderNoteViewNow();
         },
         onToggleBookmark: () => toggleAyahBookmark(unitKey, ref, captureNoteBookmarkSettings()),
         onUpdateBookmark: () => updateOpenedBookmark(),

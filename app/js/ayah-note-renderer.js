@@ -382,6 +382,7 @@ export function renderNoteView({
   // their own fields, just for a dismissible sub-popover instead of a
   // plain collapsible one.
   isCollectionsOpen = false,
+  permanentNotesHtml = "",
 }) {
   const copySharePopover = (kind, goAttr) => `
         <div class="note-sub-wrap" data-note-sub-wrap="${kind}">
@@ -591,6 +592,8 @@ export function renderNoteView({
           </div>
         </div>
 
+        ${permanentNotesHtml}
+
         <!-- The Approach card (Track/Guide/Breakdown/Coverage + Claim), only
              for a single-āyah scope (unchanged from before this round) --
              claiming/tracking a wider unit already has its own path ("Track
@@ -708,6 +711,20 @@ export function attachNoteViewHandlers(container, callbacks) {
   });
 
   view.querySelector("[data-note-bookmark]")?.addEventListener("click", () => callbacks.onToggleBookmark?.());
+  view.querySelector("[data-note-save-permanent]")?.addEventListener("click", () => callbacks.onSavePermanentNote?.());
+  view.querySelectorAll("[data-note-open-permanent]").forEach((button) => {
+    button.addEventListener("click", () => callbacks.onOpenPermanentNote?.(button.dataset.noteOpenPermanent));
+  });
+  view.querySelector("[data-note-permanent-save]")?.addEventListener("click", () => {
+    const editor = view.querySelector("[data-note-permanent-editor]");
+    callbacks.onSavePermanentEdit?.({
+      noteId: editor?.dataset.noteId, expectedRevisionId: editor?.dataset.revisionId,
+      title: view.querySelector("[data-note-permanent-title]")?.value ?? "",
+      bodyHtml: editor?.innerHTML ?? "",
+    });
+  });
+  view.querySelector("[data-note-guardian-approval]")?.addEventListener("click", () => callbacks.onGrantGuardianApproval?.());
+  view.querySelector("[data-note-guardian-revoke]")?.addEventListener("click", () => callbacks.onRevokeGuardianApproval?.());
   view.querySelector("[data-note-update-bookmark]")?.addEventListener("click", () => {
     closeAllDotMenus(null);
     callbacks.onUpdateBookmark?.();
