@@ -54,9 +54,13 @@ function levelPanel(level, word, layers, context) {
     </div>`;
   }
   if (level === "basic") {
+    const refs = (items) => (items?.length ? `<ol class="word-card-occurrences">${items.slice(0, 20).map((r) => `<li>${r.surah}:${r.ayah}:${r.position}</li>`).join("")}</ol>` : "");
     return `<div role="tabpanel" data-word-card-panel="basic">
       <dl><dt>Lemma</dt><dd>${escapeHtml(layers.lemma || "Unknown")}</dd><dt>Root</dt><dd>${escapeHtml(layers.root || "Unknown")}</dd><dt>Part of speech</dt><dd>${escapeHtml(word.morphology?.pos || "Unknown")}</dd></dl>
-      <p>${layers.root ? `${Number(context.rootOccurrenceCount || 0)} root-linked occurrences` : "Root unavailable in the approved dataset"}</p>
+      <p>${layers.root ? `${Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)} root-linked occurrences` : "Root unavailable in the approved dataset"}</p>${refs(context.rootOccurrences)}
+      <p>${layers.lemma ? `${Number(context.lemmaOccurrenceCount ?? context.lemmaOccurrences?.length ?? 0)} lemma-linked occurrences` : "Lemma unavailable in the approved dataset"}</p>${refs(context.lemmaOccurrences)}
+      ${context.occurrencesLoading ? "<p>Loading occurrences…</p>" : ""}
+      ${context.occurrencesError ? `<p role="status">Occurrence list unavailable: ${escapeHtml(context.occurrencesError)}</p>` : ""}
     </div>`;
   }
   const dictionaryLink = context.dictionaryUrl
@@ -83,4 +87,3 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
     ${levelPanel(state.level, word, layers, context)}
   </section>`;
 }
-

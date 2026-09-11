@@ -30,4 +30,5 @@ check("persistent card Arabic is double the card body size", () => { assert.matc
 check("card integration introduces no Firebase write path", () => {
   const module = readFileSync(join(root, "app/js/quran-word-card.js"), "utf8"); assert.doesNotMatch(module, /firebase|setDoc|updateDoc|addDoc/);
 });
+check("occurrence indexes hydrate only from the explicit card controller", () => { assert.match(page, /async function hydrateWordCardOccurrences/); assert.match(page, /occurrenceRefsFor\("root"/); assert.match(page, /occurrenceRefsFor\("lemma"/); assert.doesNotMatch(page.slice(0, page.indexOf("<script type=\"module\">")), /roots-index|lemmas-index/); });
 console.log(`\n==== Quran Word Card Study integration: ${passed} passed, 0 failed ====`);

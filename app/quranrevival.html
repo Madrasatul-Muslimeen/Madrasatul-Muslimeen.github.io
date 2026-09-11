@@ -3776,6 +3776,7 @@
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard } from "./js/quran-word-card.js";
+    import { occurrenceRefsFor } from "./js/quran-word-index.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
@@ -4370,6 +4371,7 @@
     let currentAyahNum = 1;
     let currentChunk = null;
     let quranWordCardState = createWordCardState();
+    let quranWordCardContext = {};
     // Guards wheelCtaBtn's own first reveal (see renderWheel()) -- once the
     // reader has dismissed the intro this session, a later renderWheel() must
     // never bring the button back.
@@ -9188,17 +9190,39 @@
       if (!ayah || !word) { mount.innerHTML = ""; return; }
       const ids = wordCardOccurrenceIds();
       const at = ids.indexOf(quranWordCardState.occurrenceId);
-      mount.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: word.morphology?.rootCount ?? 0 } });
+      mount.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 } });
+    }
+
+    async function hydrateWordCardOccurrences() {
+      const requestedId = quranWordCardState.occurrenceId;
+      if (!requestedId || !currentSurahData) return;
+      const ref = parseQuranWordOccurrenceId(requestedId);
+      const ayah = currentSurahData.ayahs.find((a) => a.ayah === ref.ayah);
+      const word = ayah?.words?.find((w) => w.position === ref.position);
+      if (!word) return;
+      quranWordCardContext = { occurrencesLoading: true };
+      renderPersistentWordCard();
+      try {
+        const [rootOccurrences, lemmaOccurrences] = await Promise.all([
+          occurrenceRefsFor("root", word.morphology?.root), occurrenceRefsFor("lemma", word.morphology?.lemma),
+        ]);
+        if (quranWordCardState.occurrenceId !== requestedId) return;
+        quranWordCardContext = { rootOccurrences, lemmaOccurrences, rootOccurrenceCount: rootOccurrences.length, lemmaOccurrenceCount: lemmaOccurrences.length };
+      } catch (error) {
+        if (quranWordCardState.occurrenceId !== requestedId) return;
+        quranWordCardContext = { occurrencesError: error.message };
+      }
+      renderPersistentWordCard();
     }
 
     document.getElementById("readView").addEventListener("click", (event) => {
       const occurrence = event.target.closest("[data-word-occurrence]");
-      if (occurrence) { quranWordCardState = openWordCard(quranWordCardState, occurrence.dataset.wordOccurrence); renderPersistentWordCard(); return; }
+      if (occurrence) { quranWordCardState = openWordCard(quranWordCardState, occurrence.dataset.wordOccurrence); quranWordCardContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); return; }
       const level = event.target.closest("[data-word-card-level]");
       if (level) { quranWordCardState = selectWordCardLevel(quranWordCardState, level.dataset.wordCardLevel); renderPersistentWordCard(); return; }
       if (event.target.closest("[data-word-card-close]")) { quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); return; }
       const move = event.target.closest("[data-word-card-move]");
-      if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); renderPersistentWordCard(); }
+      if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); quranWordCardContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); }
     });
 
     /** Whole surah -> every ayah; range -> just the selected ayahs. Same bounds logic as currentUnitAyahBounds() for those two unit types, kept separate since that function also has to handle ruku/juz/page. */
