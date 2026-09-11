@@ -27,6 +27,7 @@ function check(name, condition, detail = "") {
 
 const contract = JSON.parse(read("tools/i18n-verify/note-foundation-contract.json"));
 const collections = read("app/js/collections.js");
+const envelope = read("app/js/envelope.js");
 const ayahNotes = read("app/js/ayah-notes.js");
 const firestoreRules = read("firestore.rules");
 const quranShell = read("app/quranrevival.html");
@@ -83,8 +84,13 @@ check("legacy notes remain keyed by unitKey",
   /notes\?\.\[unitKey\]\?\.html/.test(ayahNotes) && /`notes\.\$\{unitKey\}`/.test(ayahNotes));
 check("legacy save remains one-entry overwrite behaviour",
   /\[`notes\.\$\{unitKey\}`\]: entry/.test(ayahNotes));
-check("no Foundation collection constant is implemented",
-  contract.foundationCollections.every((name) => !collections.includes(`"${name}"`)));
+check("five Foundation collection constants are implemented exactly",
+  contract.foundationCollections.every((name) => collections.includes(`"${name}"`)) &&
+  ["NOTES", "NOTE_SOURCES", "NOTE_FOLDERS", "NOTE_PLACEMENTS", "NOTE_REVISIONS"]
+    .every((name) => new RegExp(`\\b${name}:`).test(collections)));
+check("read-dependent writes remain inside the envelope gateway",
+  /export async function runEnvelopeTransaction/.test(envelope) &&
+  /runTransaction\(db/.test(envelope));
 check("no Foundation Rules match is implemented",
   contract.foundationCollections.every((name) => !firestoreRules.includes(`match /${name}/`)));
 check("no per-Note guardian approval UI is implemented",
