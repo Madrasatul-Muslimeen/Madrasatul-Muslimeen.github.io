@@ -44,7 +44,10 @@ check("managed-child ownerUid exception is narrow", matrix.decisions.ownerUid ==
 check("guardian remains custodian not owner", matrix.decisions.guardianRole === "custodian-and-actor-not-owner");
 check("teacher and administrator edit is not automatic", matrix.decisions.teacherAdministratorEdit === "no-automatic-authority");
 check("managed child remains view-only by default", matrix.decisions.managedChildDefault === "view-only");
-check("approval duration remains explicitly deferred", matrix.decisions.managedChildApproval.endsWith("duration-deferred"));
+check("approval duration is locked to 30 minutes", matrix.decisions.managedChildApproval === "30-minute-server-expiring-note-specific-window");
+check("approval renewal and early termination are locked",
+  matrix.decisions.managedChildApprovalRenewal === "guardian-quick-approval" &&
+  matrix.decisions.managedChildApprovalEarlyTermination === "revocation-or-context-exit-where-enforceable");
 check("approval coverage remains content and revision only", matrix.decisions.approvalCoverage === "title-body-and-atomic-revision-only");
 
 console.log("\n=== Security matrix completeness ===");
@@ -54,7 +57,7 @@ for (const area of ["authentication", "self", "guardian", "teacher", "administra
 }
 check("guardian approval isolation cases are present", /another Note/.test(statements) && /expired or revoked/.test(statements));
 check("legacy ayahNotes regression is present", /legacy ayahNotes/.test(statements));
-check("Rules implementation remains unauthorised", matrix.rulesImplementationAuthorised === false);
+check("Rules implementation authority is recorded", matrix.rulesImplementationAuthorised === true);
 check("production access remains unauthorised", matrix.productionAccessAuthorised === false);
 
 console.log(`\n==== ${passed} passed, ${failed} failed ====`);
