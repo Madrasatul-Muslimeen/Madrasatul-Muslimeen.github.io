@@ -1,5 +1,5 @@
 {
-  "status": "testing-only-future-contract",
+  "status": "implementation-authorised-contract",
   "foundationCollections": [
     "notes",
     "noteSources",
@@ -47,6 +47,14 @@
       "scope": "guardian-session-selected-child",
       "read": "view-only-by-default",
       "edit": "per-note-guardian-approval"
+    },
+    "managedChildApproval": {
+      "durationMinutes": 30,
+      "clock": "server-enforced",
+      "scope": "one-note-one-guardian-one-child-one-tenant",
+      "renewal": "guardian-quick-approval",
+      "earlyTermination": "revocation-or-context-exit-where-enforceable",
+      "coverage": "title-body-and-atomic-revision-only"
     }
   },
   "legacyCompatibility": {
@@ -56,7 +64,7 @@
     "userControlledCopyWithProvenance": true
   },
   "revisionDirection": "immutable-full-snapshot-measure-before-implementation",
-  "implementationAuthorised": false,
-  "rulesModificationAuthorised": false,
+  "implementationAuthorised": true,
+  "rulesModificationAuthorised": true,
   "deploymentAuthorised": false
 }

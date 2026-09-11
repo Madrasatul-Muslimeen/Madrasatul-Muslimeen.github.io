@@ -1,7 +1,7 @@
 {
   "status": "scaffold-only-no-firestore-access",
   "projectId": "demo-quranrevival-note-foundation",
-  "rulesImplementationAuthorised": false,
+  "rulesImplementationAuthorised": true,
   "productionAccessAuthorised": false,
   "collections": [
     "notes",
@@ -17,7 +17,9 @@
     "teacherAdministratorRead": "automatic-within-scoped-relationship-or-governance",
     "teacherAdministratorEdit": "no-automatic-authority",
     "managedChildDefault": "view-only",
-    "managedChildApproval": "short-server-expiring-note-specific-window-duration-deferred",
+    "managedChildApproval": "30-minute-server-expiring-note-specific-window",
+    "managedChildApprovalRenewal": "guardian-quick-approval",
+    "managedChildApprovalEarlyTermination": "revocation-or-context-exit-where-enforceable",
     "approvalCoverage": "title-body-and-atomic-revision-only"
   },
   "cases": [

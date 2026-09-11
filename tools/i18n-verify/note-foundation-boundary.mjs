@@ -1,7 +1,7 @@
 // STAGE-5-TASK-08 — testing-only Note Foundation contract and absence
 // characterisation. This does not implement collections, Rules, UI, data
 // access, migration, or deployment. It protects the accepted legacy boundary
-// and records unresolved edit-authority decisions without guessing them.
+// and locks implementation authority without granting deployment authority.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -32,7 +32,7 @@ const firestoreRules = read("firestore.rules");
 const quranShell = read("app/quranrevival.html");
 
 console.log("\n=== Approved physical Note Foundation test contract ===");
-check("contract remains testing-only", contract.status === "testing-only-future-contract");
+check("contract records bounded implementation authority", contract.status === "implementation-authorised-contract");
 check("five Foundation collections are named exactly once",
   contract.foundationCollections.length === 5 &&
   new Set(contract.foundationCollections).size === 5);
@@ -68,6 +68,13 @@ check("tenant administrator read remains tenant-scoped",
 check("teacher and administrator receive no automatic edit authority",
   [contract.access.teacher, contract.access.tenantAdministrator, contract.access.platformAdministrator]
     .every((entry) => entry.edit === "no-automatic-authority"));
+check("managed-child approval is locked to 30 server-enforced minutes",
+  contract.access.managedChildApproval.durationMinutes === 30 &&
+  contract.access.managedChildApproval.clock === "server-enforced" &&
+  contract.access.managedChildApproval.scope === "one-note-one-guardian-one-child-one-tenant");
+check("managed-child approval is renewable and terminable early",
+  contract.access.managedChildApproval.renewal === "guardian-quick-approval" &&
+  contract.access.managedChildApproval.earlyTermination === "revocation-or-context-exit-where-enforceable");
 
 console.log("\n=== Existing application remains untouched ===");
 check("legacy ayahNotes collection remains explicit",
@@ -84,8 +91,8 @@ check("no per-Note guardian approval UI is implemented",
   !/data-note-guardian-approval|approveGuardianNoteEdit/.test(quranShell));
 
 console.log("\n=== Explicit non-authority ===");
-check("no implementation is authorised", contract.implementationAuthorised === false);
-check("no Rules modification is authorised", contract.rulesModificationAuthorised === false);
+check("Stage 5 implementation is authorised", contract.implementationAuthorised === true);
+check("Stage 5 Rules modification is authorised", contract.rulesModificationAuthorised === true);
 check("no deployment is authorised", contract.deploymentAuthorised === false);
 check("legacy compatibility forbids dual write and automatic migration",
   contract.legacyCompatibility.ayahNotesUnchanged === true &&
