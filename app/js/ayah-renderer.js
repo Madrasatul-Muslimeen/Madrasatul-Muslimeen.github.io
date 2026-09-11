@@ -110,16 +110,18 @@ export function renderTranslationPanel(ayah, langs = ["en"]) {
  * the word-by-word strip; renderRootPanel/renderDerivativesPanel below are
  * the other two, separate panels over the same word list.
  */
-export function renderWordByWordPanel(ayah, { langs = ["en"] } = {}) {
+export function renderWordByWordPanel(ayah, { langs = ["en"], interactive = false, surahNumber = null } = {}) {
   if (!ayah.words?.length) return `<div class="wbw-empty">${t("No word-by-word data for this ayah.")}</div>`;
   const chips = ayah.words
     .map((w) => {
+      const clickable = interactive && Number.isInteger(surahNumber);
+      const contentTag = clickable ? "span" : "div";
       const glosses = langs
         .map((lang) => {
           const text = w.translation?.[lang];
           if (!text) return "";
           const cls = lang === "bn" ? "wbw-gloss wbw-gloss-bn" : "wbw-gloss";
-          return `<div class="${cls}" ${lang === "bn" ? 'lang="bn"' : ""}>${escapeHtml(text)}</div>`;
+          return `<${contentTag} class="${cls}" ${lang === "bn" ? 'lang="bn"' : ""}>${escapeHtml(text)}</${contentTag}>`;
         })
         .join("");
       // Shell round 24 -- the transliteration is a LATIN-script pronunciation
@@ -130,13 +132,19 @@ export function renderWordByWordPanel(ayah, { langs = ["en"] } = {}) {
       // (A Bangla-script transliteration would be a different thing entirely
       // -- the pulled data has no such field, only the Latin one.)
       const translit = langs.includes("en")
-        ? `<div class="wbw-translit">${escapeHtml(w.transliteration)}</div>`
+        ? `<${contentTag} class="wbw-translit">${escapeHtml(w.transliteration)}</${contentTag}>`
         : "";
-      return `<div class="wbw-word" data-position="${w.position}">
-        <div class="wbw-arabic" dir="rtl" lang="ar">${escapeHtml(w.arabic)}</div>
+      const occurrenceAttrs = clickable
+        ? ` data-word-occurrence="quran-word-occurrence:v1:${surahNumber}:${ayah.ayah}:${w.position}" data-surah="${surahNumber}" data-ayah="${ayah.ayah}"`
+        : "";
+      const tag = occurrenceAttrs ? "button" : "div";
+      const type = occurrenceAttrs ? ' type="button"' : "";
+      const accessibleName = occurrenceAttrs ? ` aria-label="${escapeHtml(`${w.arabic} — ${w.translation?.en || w.translation?.bn || "Quran word"}`)}"` : "";
+      return `<${tag}${type} class="wbw-word${occurrenceAttrs ? " wbw-word-clickable" : ""}" data-position="${w.position}"${occurrenceAttrs}${accessibleName}>
+        <${contentTag} class="wbw-arabic" dir="rtl" lang="ar">${escapeHtml(w.arabic)}</${contentTag}>
         ${translit}
         ${glosses}
-      </div>`;
+      </${tag}>`;
     })
     .join("");
   return `<div class="wbw-strip">${chips}</div>`;
@@ -210,7 +218,7 @@ const PANEL_RENDERERS = {
   // wbwLangs, if given, overrides langs for this panel only -- lets the
   // caller offer an explicit word-by-word language choice independent of
   // the ayah translation panel's language (owner request, 5 Aug 2026).
-  wordByWord: (ayah, opts) => renderWordByWordPanel(ayah, { langs: opts.wbwLangs ?? opts.langs }),
+  wordByWord: (ayah, opts) => renderWordByWordPanel(ayah, { langs: opts.wbwLangs ?? opts.langs, interactive: opts.wordCardInteractive, surahNumber: opts.surahNumber }),
   root: (ayah) => renderRootPanel(ayah),
   derivatives: (ayah) => renderDerivativesPanel(ayah),
   notes: () => `<textarea class="panel-notes" placeholder="${t("Notes")}"></textarea>`,
