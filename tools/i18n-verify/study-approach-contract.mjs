@@ -18,12 +18,22 @@ check("WbW maps to approach 04 and remains dedicated state", () => { assert.equa
 check("80 percent completes Listening", () => { assert.equal(qualifiesListeningCompletion({ playedSeconds: 79.9, selectedUnitSeconds: 100 }), false); assert.equal(qualifiesListeningCompletion({ playedSeconds: 80, selectedUnitSeconds: 100 }), true); });
 check("invalid Listening durations do not complete", () => assert.equal(qualifiesListeningCompletion({ playedSeconds: 5, selectedUnitSeconds: 0 }), false));
 check("unit-day retry keys are deterministic", () => {
-  const input = { eventType: "reading.completed", personId: "p1", unitKey: "ayah:2:255", dateIso: "2026-09-11T12:00:00Z" };
+  const input = { eventType: "reading.completed", tenantId: "t1", personId: "p1", unitKey: "ayah:2:255", dateIso: "2026-09-11T12:00:00Z", mode: "plain" };
   assert.equal(studyEventDedupeKey(input), studyEventDedupeKey(input));
 });
+check("tenant and approach variants never collide", () => {
+  const input = { eventType: "reading.completed", tenantId: "t1", personId: "p1", unitKey: "ayah:2:255", dateIso: "2026-09-11", mode: "plain" };
+  assert.notEqual(studyEventDedupeKey(input), studyEventDedupeKey({ ...input, tenantId: "t2" }));
+  assert.notEqual(studyEventDedupeKey(input), studyEventDedupeKey({ ...input, mode: "with-meaning" }));
+});
+check("missing mode and impossible dates are rejected", () => {
+  const input = { eventType: "listening.completed", tenantId: "t1", personId: "p1", unitKey: "ayah:2:255", dateIso: "2026-09-11" };
+  assert.throws(() => studyEventDedupeKey(input), /mode/);
+  assert.throws(() => studyEventDedupeKey({ ...input, mode: "arabic-only", dateIso: "2026-02-30" }), /dateIso/);
+});
 check("Note creation deduplicates for the lifetime of that creation event", () => {
-  const a = studyEventDedupeKey({ eventType: "journal.note-created", personId: "p1", noteId: "n1", dateIso: "2026-09-11" });
-  const b = studyEventDedupeKey({ eventType: "journal.note-created", personId: "p1", noteId: "n1", dateIso: "2026-09-12" });
+  const a = studyEventDedupeKey({ eventType: "journal.note-created", tenantId: "t1", personId: "p1", noteId: "n1", dateIso: "2026-09-11" });
+  const b = studyEventDedupeKey({ eventType: "journal.note-created", tenantId: "t1", personId: "p1", noteId: "n1", dateIso: "2026-09-12" });
   assert.equal(a, b);
 });
 check("only explicit claim and confirmation may change mastery state", () => { assert.equal(eventMayGrantMastery("status.claimed"), true); assert.equal(eventMayGrantMastery("status.confirmed"), true); });
