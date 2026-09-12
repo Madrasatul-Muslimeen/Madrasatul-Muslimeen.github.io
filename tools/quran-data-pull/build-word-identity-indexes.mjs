@@ -58,4 +58,3 @@ const manifest = {
 };
 writeFileSync(join(outDir, "word-identity-index-manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
 console.log(JSON.stringify(manifest, null, 2));
-
