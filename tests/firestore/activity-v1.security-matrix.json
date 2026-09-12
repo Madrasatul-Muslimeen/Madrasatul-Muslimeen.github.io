@@ -62,7 +62,7 @@
     {
       "id": "ENTRY-01",
       "expect": "allow",
-      "statement": "authorised bounded generic claim practice or selfCheck and Study v1 keyed append"
+      "statement": "authorised bounded generic claim practice or selfCheck keyed append"
     },
     {
       "id": "ENTRY-02",
@@ -82,7 +82,7 @@
     {
       "id": "ENTRY-05",
       "expect": "deny",
-      "statement": "unsupported contract action or unrecognised Study Approach and Mastery field"
+      "statement": "unsupported contract including source-derived Study evidence remains denied pending proof"
     },
     {
       "id": "ENTRY-06",
@@ -128,6 +128,11 @@
       "id": "ENTRY-10",
       "expect": "deny",
       "statement": "generic map key cannot disagree with action date identity context or scope fields"
+    },
+    {
+      "id": "ENTRY-11",
+      "expect": "deny",
+      "statement": "sparse Study evidence with forged source-derived key is denied until canonical verification exists"
     }
   ]
 }

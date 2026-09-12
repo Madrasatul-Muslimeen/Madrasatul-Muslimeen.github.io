@@ -42,6 +42,10 @@ const week = { tenantId, personId, weekKey, entries: [], v1Events: { [key]: valu
     await assertFails(setDoc(doc(self, "activity", "t1__p1__2026-09-08"), week));
     await assertFails(setDoc(ref, { ...week, entries: [entry], v1Events: {} }));
     await assertFails(setDoc(ref, { ...week, v1Events: { forged: value }, lastEventKey: "forged" }));
+    const studyKey = '["study-approach-contract:v1","t1","p1","reading.completed"]';
+    const studyValue = { eventKey: studyKey, contractVersion: "study-approach-contract:v1",
+      date: "2026-09-12", unitKey: "ayah:2:255", subjectId: "quran", trackableId: "approach_01", action: "practised" };
+    await assertFails(setDoc(ref, { ...week, v1Events: { [studyKey]: studyValue }, lastEventKey: studyKey }));
     await assertSucceeds(setDoc(ref, week));
     await assertSucceeds(getDoc(ref));
     await assertFails(getDoc(doc(other, "activity", id)));

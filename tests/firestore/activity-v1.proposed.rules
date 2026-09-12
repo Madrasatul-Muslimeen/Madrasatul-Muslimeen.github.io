@@ -894,12 +894,8 @@ service cloud.firestore {
                 && events[key].trackableId.matches('^[A-Za-z0-9_-]{1,128}$')
                 && (events[key].viaProgramId == null || events[key].viaProgramId is string && events[key].viaProgramId.matches('^[A-Za-z0-9_-]{1,128}$'))
                 && (events[key].viaSessionId == null || events[key].viaSessionId is string && events[key].viaSessionId.matches('^[A-Za-z0-9_-]{1,128}$')))
-              || (events[key].contractVersion == 'study-approach-contract:v1'
-                && key.matches('^\\["study-approach-contract:v1",.*')
-                && events[key].keys().hasOnly(['eventKey', 'contractVersion', 'date', 'unitKey', 'subjectId', 'trackableId', 'action'])
-                && events[key].keys().hasAll(['eventKey', 'contractVersion', 'date', 'unitKey', 'subjectId', 'trackableId', 'action'])
-                && events[key].subjectId == 'quran' && events[key].action == 'practised'
-                && events[key].trackableId in ['approach_01', 'approach_03', 'approach_04', 'approach_07', 'approach_08', 'approach_10'])
+              // The sparse Study evidence cannot prove its source-derived key
+              // in Rules yet; no caller is wired. Keep this variant denied.
             )
             && events[key].date is string && events[key].date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
             && events[key].unitKey is string && events[key].subjectId is string
