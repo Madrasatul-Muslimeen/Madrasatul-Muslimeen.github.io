@@ -35,3 +35,67 @@ The existing rule permits `create` for `canRecordFor(request.resource.data.tenan
 ## Acceptance locks
 
 The existing `firestore.rules` file is unchanged by Task 48. Static checks and an allow/deny matrix are preparation only. Emulator Rules execution, exact runtime verification, authenticated QA and independent regression audit remain **PENDING**. Keep the app branch and Rules branch isolated; do not merge, push, deploy or access production.
+
+---
+
+## Emulator runtime execution — 2026-09-12, reconciliation session
+
+The Task 48 acceptance locks recorded emulator Rules execution as **PENDING**.
+It has now been executed. This section records what the run proved and, more
+importantly, what it did **not** prove. The draft's status is **unchanged: still
+REJECTED for acceptance.**
+
+**How it was run.** `firebase-tools` and the Java runtime are both available in
+this sandbox, so the suite really ran rather than being recorded as blocked.
+`tools/firestore-emulator/activity-v1.rules.test.mjs` against project
+`demo-quranrevival-activity-v1` on the Firestore emulator. One correction was
+needed to run it at all: the CLI refuses a rules path outside the project
+directory, which is exactly the isolation the draft was given deliberately, so a
+throwaway in-directory copy was used only to boot the emulator. The test itself
+still reads the canonical `tests/firestore/activity-v1.proposed.rules` and
+installs it through `initializeTestEnvironment`, so the candidate under test is
+the canonical file and nothing else. The temporary files were deleted; neither
+is committed. `firestore.rules` was never loaded, and the project id is
+asserted `demo-` and asserted not to be `study-monitoring`.
+
+**Result: the suite passes** — 1 test, all 27 allow/deny assertions (7
+`assertSucceeds`, 20 `assertFails`).
+
+**A green suite here is not a working rule, and this is the finding.** Reading
+the emulator log rather than the exit code: of the 13 denials the engine logged,
+**9 were refused with "Unable to evaluate the expression as the maximum of 1000
+expressions to evaluate has been reached" at the `update` branch (L928)** — not
+by the security logic. Those cases are wrapped in `assertFails`, so they are
+counted as correct denials, and they were denied, but for the wrong reason: the
+rule ran out of Firestore's expression-evaluation budget before it reached the
+check the case was written to exercise. Two consequences, both material:
+
+1. **Those 9 deny-cases prove nothing about the candidate's security logic.**
+   The engine never evaluated it. Any statement that the emulator confirmed
+   fail-closed behaviour for them would be false.
+2. **Denial by budget exhaustion is not fail-closed by design, it is
+   fail-closed by accident, and it is not stable.** The same exhaustion will
+   refuse *legitimate* appends as a week's `entries` and `v1Events` grow. The
+   7 passing cases show the happy path is currently under budget; they do not
+   show it stays under budget at realistic week sizes.
+
+This is direct runtime evidence for the concern Task 48 raised on static
+grounds — that Option B's weekly size and Rules cost had to be measured before
+selection. It converts that from a caution into a measured defect.
+
+**Unchanged by this run.** The two audit gaps Task 48 already recorded still
+stand: the draft legacy branch can still substitute duplicate historical array
+entries, and Rules still cannot validate a client-supplied event key's canonical
+semantics. Neither is addressed by an emulator pass.
+
+**Isolation re-proved.** The candidate differs from production Rules only inside
+the Activity match — 82 diff lines against `main`'s `firestore.rules`, all of
+them in that block. `firestore.rules` is byte-for-byte unchanged.
+
+**OWNER DECISION REQUIRED — not actioned here.** Option B cannot be accepted on
+this evidence, and the fix is an architecture choice, not a correction: either a
+bounded shape whose per-update expression count is provably below the limit at a
+realistic week size, or Option C's create-only per-event receipts, or deferring
+Activity Rules integration. Choosing between materially different product
+behaviours, and any Rules change, are Owner Control Gates. No redesign was
+attempted and no rule was rewritten.
