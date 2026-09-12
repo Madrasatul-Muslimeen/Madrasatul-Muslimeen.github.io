@@ -13,12 +13,11 @@
 // Load-speed budget: "Activity -- one document per week / never a year at
 // once." weekKeyFor never looks past the single date it's given.
 
-import { doc, getDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
-import { createDocument, updateDocument } from "./envelope.js";
 import { parseUnitKey } from "./unit-keys.js";
 import { runEnvelopeTransaction } from "./envelope.js";
-import { planStudyActivityAppend, planKeyedStudyActivityAppend } from "./study-activity-week.js";
+import { planStudyActivityAppend, planKeyedStudyActivityAppend, planGeneralActivityAppend, projectMixedWeekEntries } from "./study-activity-week.js";
 
 /**
  * ISO date (YYYY-MM-DD) of the start of the week containing `date`, per the
@@ -38,15 +37,20 @@ function activityDocId(tenantId, personId, weekKey) {
   return `${tenantId}__${personId}__${weekKey}`;
 }
 
-export async function getWeekActivity(db, tenantId, personId, weekKey) {
+export async function getWeekActivityRaw(db, tenantId, personId, weekKey) {
   const snap = await getDoc(doc(db, TENANT.ACTIVITY, activityDocId(tenantId, personId, weekKey)));
   return snap.exists() ? { id: snap.id, ...snap.data() } : null;
 }
 
+export async function getWeekActivity(db, tenantId, personId, weekKey) {
+  const raw = await getWeekActivityRaw(db, tenantId, personId, weekKey);
+  return raw ? { ...raw, entries: projectMixedWeekEntries(raw) } : null;
+}
+
 /**
  * Appends one activity entry to the week containing `date`. Creates the
- * week's document on first use, otherwise arrayUnion-appends -- append-only,
- * matching I4 (nothing here is ever rewritten or removed, only added to).
+ * week's document on first use. Future entries use a bounded keyed map;
+ * historical entries[] are immutable on every subsequent transaction.
  */
 export async function logActivity(db, {
   tenantId, personId, date, weekStartsOn, subjectId, unitKey, trackableId,
@@ -67,34 +71,26 @@ export async function logActivity(db, {
     viaSessionId: viaSessionId ?? null,
   };
 
-  const existingSnap = await getDoc(doc(db, TENANT.ACTIVITY, docId));
-  if (existingSnap.exists()) {
-    await updateDocument(db, TENANT.ACTIVITY, docId, { entries: arrayUnion(entry), tenantId, personId, weekKey });
-  } else {
-    await createDocument(db, TENANT.ACTIVITY, docId, { tenantId, personId, weekKey, entries: [entry] }, uid);
-  }
+  if (!uid) throw new TypeError("Activity actor uid is required.");
+  planGeneralActivityAppend(null, { tenantId, personId, weekKey, entry });
+  await runEnvelopeTransaction(db, uid, async (transaction) => {
+    const snap = await transaction.get(TENANT.ACTIVITY, docId);
+    const plan = planGeneralActivityAppend(snap.exists() ? snap.data() : null, { tenantId, personId, weekKey, entry });
+    if (!plan.appended) return;
+    const fields = { tenantId, personId, weekKey, v1Events: plan.v1Events, lastEventKey: plan.lastEventKey };
+    if (snap.exists()) transaction.update(TENANT.ACTIVITY, docId, fields);
+    else transaction.create(TENANT.ACTIVITY, docId, { ...fields, entries: [] });
+  });
 
   return { weekKey };
 }
 
-/** Atomically append one v1 Study event or return a retry hit. No legacy row is rewritten. */
+/** Compatibility entry point: all future Study evidence also uses the keyed map. */
 export async function logStudyActivityEvidence(db, evidence, { weekStartsOn, uid }) {
-  if (!uid) throw new TypeError("Activity actor uid is required.");
-  // Validate before opening a transaction; the callback validates again against the actual week.
-  const weekKey = planStudyActivityAppend(null, evidence, weekStartsOn).weekKey;
-  const docId = activityDocId(evidence.tenantId, evidence.personId, weekKey);
-  return runEnvelopeTransaction(db, uid, async (transaction) => {
-    const snap = await transaction.get(TENANT.ACTIVITY, docId);
-    const plan = planStudyActivityAppend(snap.exists() ? snap.data() : null, evidence, weekStartsOn);
-    if (!plan.appended) return { weekKey, appended: false };
-    const fields = { tenantId: evidence.tenantId, personId: evidence.personId, weekKey, entries: plan.entries };
-    if (snap.exists()) transaction.update(TENANT.ACTIVITY, docId, fields);
-    else transaction.create(TENANT.ACTIVITY, docId, fields);
-    return { weekKey, appended: true };
-  });
+  return logKeyedStudyActivityEvidence(db, evidence, { weekStartsOn, uid });
 }
 
-/** Draft raw-keyed writer. Uninvoked pending Rules and mixed-week read audit. */
+/** Raw-keyed Study writer; future evidence only, historical entries[] stay frozen. */
 export async function logKeyedStudyActivityEvidence(db, evidence, { weekStartsOn, uid }) {
   if (!uid) throw new TypeError("Activity actor uid is required.");
   const weekKey = planKeyedStudyActivityAppend(null, evidence, weekStartsOn).weekKey;

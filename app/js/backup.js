@@ -34,7 +34,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { listAllRecordsForPerson } from "./records.js";
-import { weekKeyFor, getWeekActivity } from "./activity.js";
+import { weekKeyFor, getWeekActivityRaw } from "./activity.js";
 import { getBookmarks } from "./bookmarks.js";
 import { getAyahNotes } from "./ayah-notes.js";
 import { getSubjectTree, getTrackables, listLadders, listLevels } from "./catalogue.js";
@@ -258,7 +258,7 @@ export async function collectBackup(db, {
     // after another -- a two-month-old tenant is ~10 weeks, so this is one
     // wait per person, not ten.
     const weeks = await attempt(notes, `Activity for ${name}`, async () => {
-      const docs = await Promise.all(weekKeys.map((wk) => getWeekActivity(db, tenantId, pid, wk)));
+      const docs = await Promise.all(weekKeys.map((wk) => getWeekActivityRaw(db, tenantId, pid, wk)));
       return docs.filter(Boolean).map(toPlain);
     }, []);
     step(`Activity — ${name}`);

@@ -4,7 +4,7 @@ export const MAX_STUDY_WEEK_ENTRIES = 500;
 // Conservative preflight only; Firestore's encoded document size must still be measured.
 export const MAX_STUDY_WEEK_JSON_BYTES = 750_000;
 
-function validActivityId(value) {
+export function validActivityId(value) {
   return typeof value === "string" && value.length <= 128 &&
     /^[A-Za-z0-9_-]+$/.test(value) && !value.includes("__");
 }
@@ -89,9 +89,40 @@ export function projectMixedWeekEntries(week) {
     throw new TypeError("Invalid or oversized mixed Activity week.");
   }
   for (const [key, value] of Object.entries(map)) {
-    if (value?.eventKey !== key || value.contractVersion !== "study-approach-contract:v1") throw new TypeError("Invalid versioned Activity entry.");
+    if (value?.eventKey !== key || !["study-approach-contract:v1", "activity-entry:v1"].includes(value.contractVersion)) throw new TypeError("Invalid versioned Activity entry.");
   }
   return [...entries, ...Object.values(map).map((value) => ({
-    ...value, unitType: value.unitKey.split(":", 1)[0], viaProgramId: null, viaSessionId: null,
+    ...value, unitType: value.unitType ?? value.unitKey.split(":", 1)[0],
+    viaProgramId: value.viaProgramId ?? null, viaSessionId: value.viaSessionId ?? null,
   }))];
+}
+
+/** Option B: one keyed future Activity entry, with the old array frozen. */
+export function planGeneralActivityAppend(existing, { tenantId, personId, weekKey, entry } = {}) {
+  if (!validActivityId(tenantId) || !validActivityId(personId) ||
+      typeof weekKey !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(weekKey) ||
+      !entry || typeof entry !== "object" || Array.isArray(entry) ||
+      !["claimed", "practised", "selfCheck"].includes(entry.action) ||
+      !["subjectId", "unitKey", "unitType", "trackableId", "date"].every((key) => typeof entry[key] === "string" && entry[key].length > 0 && entry[key].length <= 256) ||
+      !["viaProgramId", "viaSessionId"].every((key) => entry[key] === null || typeof entry[key] === "string" && entry[key].length <= 128) ||
+      Object.keys(entry).sort().join() !== ["action", "date", "subjectId", "trackableId", "unitKey", "unitType", "viaProgramId", "viaSessionId"].join() ||
+      entry.unitType !== entry.unitKey.split(":", 1)[0] ||
+      studyActivityWeekKey(entry.date, new Date(`${weekKey}T00:00:00Z`).getUTCDay()) !== weekKey) {
+    throw new TypeError("Invalid general Activity entry.");
+  }
+  if (existing && (existing.tenantId !== tenantId || existing.personId !== personId || existing.weekKey !== weekKey)) throw new TypeError("Weekly Activity scope mismatch.");
+  const entries = existing?.entries ?? [];
+  const oldMap = existing?.v1Events ?? {};
+  if (!Array.isArray(entries) || !oldMap || typeof oldMap !== "object" || Array.isArray(oldMap)) throw new TypeError("Invalid weekly Activity shape.");
+  // Identical source fields had identical arrayUnion values in the old writer.
+  const key = JSON.stringify(["activity-entry:v1", tenantId, personId, weekKey,
+    entry.date, entry.subjectId, entry.unitKey, entry.trackableId, entry.action,
+    entry.viaProgramId, entry.viaSessionId]);
+  if (new TextEncoder().encode(key).length > 1200) throw new RangeError("Activity key exceeds byte budget.");
+  if (Object.hasOwn(oldMap, key)) return Object.freeze({ appended: false, weekKey });
+  if (entries.some((legacy) => ["date", "subjectId", "unitKey", "unitType", "trackableId", "action", "viaProgramId", "viaSessionId"].every((field) => legacy?.[field] === entry[field]))) return Object.freeze({ appended: false, weekKey });
+  if (entries.length + Object.keys(oldMap).length >= MAX_STUDY_WEEK_ENTRIES) throw new RangeError("Weekly mixed Activity entry limit reached.");
+  const v1Events = { ...oldMap, [key]: { ...entry, eventKey: key, contractVersion: "activity-entry:v1" } };
+  if (new TextEncoder().encode(JSON.stringify({ tenantId, personId, weekKey, entries, v1Events })).length > MAX_STUDY_WEEK_JSON_BYTES) throw new RangeError("Weekly Activity byte preflight exceeded.");
+  return Object.freeze({ appended: true, weekKey, entries, v1Events, lastEventKey: key });
 }
