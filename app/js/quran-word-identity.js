@@ -63,4 +63,3 @@ export function wordIdentityLayers({ surah, ayah, position, arabic, morphology }
     grammaticalFamily: null,
   };
 }
-

@@ -37,4 +37,3 @@ for (const filename of fs.readdirSync(dir).filter((f) => f.endsWith(".json"))) {
 }
 check("all packaged occurrences have unique v1 identities", () => { assert.equal(words, 77429); assert.equal(ids.size, words); });
 console.log(`\n==== Quran word identity contract: ${passed} passed, 0 failed ====`);
-

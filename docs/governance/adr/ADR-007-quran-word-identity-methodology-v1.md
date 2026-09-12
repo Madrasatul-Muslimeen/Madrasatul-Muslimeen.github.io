@@ -13,4 +13,3 @@
 - **Consequences:** A pure identity module, deterministic indexes and a persistent word card may now be implemented additively. Phase 3 progress may reference v1 occurrence IDs only after its own bounded storage task is authorised and tested.
 - **Rollback:** UI/index modules may be removed without touching existing records. Permanent v1 IDs already written must remain readable and must not be recycled.
 - **Supersession:** Supersedes only ADR-002's deferred exact-method prerequisite; ADR-002's identity separation remains fully active.
-
