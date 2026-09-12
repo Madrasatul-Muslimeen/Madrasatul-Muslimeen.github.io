@@ -25,7 +25,19 @@ check("WbW engagement maps to Approach 04 Activity, not approval", () => {
 });
 check("WbW evidence rejects malformed or mismatched occurrence identity", () => {
   assert.throws(() => projectStudyActivityEvidence({ ...common, eventType: "wbw.engaged", occurrenceId: "word:2:255:1" }), /invalid shape/);
-  assert.throws(() => projectStudyActivityEvidence({ ...common, eventType: "wbw.engaged", occurrenceId: "quran-word-occurrence:v1:2:254:1" }), /selected ayah/);
+  assert.throws(() => projectStudyActivityEvidence({ ...common, eventType: "wbw.engaged", occurrenceId: "quran-word-occurrence:v1:2:254:1" }), /selected Study Unit/);
+});
+check("WbW range and surah scopes accept only contained occurrences", () => {
+  const eventType = "wbw.engaged", occurrenceId = "quran-word-occurrence:v1:2:255:1";
+  assert.ok(projectStudyActivityEvidence({ ...common, eventType, occurrenceId, unitKey: "range:2:254-256" }));
+  assert.ok(projectStudyActivityEvidence({ ...common, eventType, occurrenceId, unitKey: "surah:2" }));
+  assert.throws(() => projectStudyActivityEvidence({ ...common, eventType, occurrenceId, unitKey: "range:2:250-254" }), /selected Study Unit/);
+  assert.throws(() => projectStudyActivityEvidence({ ...common, eventType, occurrenceId, unitKey: "surah:3" }), /selected Study Unit/);
+});
+check("unrelated and malformed unit keys cannot create Quran Activity", () => {
+  for (const unitKey of ["hadith:bukhari:1", "topic:42", "ayah:2:x", "ayah:115:1", "range:2:256-254", "surah:0"]) {
+    assert.throws(() => projectStudyActivityEvidence({ ...common, eventType: "reading.completed", mode: "plain", unitKey }), /Study Unit|coordinates/);
+  }
 });
 check("unapproved/open interactions and status claims do not use this adapter", () => {
   assert.equal(projectStudyActivityEvidence({ ...common, eventType: "reading.opened" }), null);
