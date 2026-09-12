@@ -24,6 +24,18 @@ check("forged event key and Approach reject", () => {
   assert.throws(() => planStudyActivityAppend(null, { ...evidence, eventKey: "fake" }, 1), /contract/);
   assert.throws(() => planStudyActivityAppend(null, { ...evidence, trackableId: "approach_03" }, 1), /contract/);
 });
+check("path-unsafe or delimiter-ambiguous identities cannot address Activity", () => {
+  for (const tenantId of ["bad/tenant", "tenant__person", ".", "x".repeat(129)]) {
+    const candidate = projectStudyActivityEvidence({ eventType: "reading.completed", tenantId, personId: "p1", unitKey: "ayah:2:255", dateIso: "2026-09-12", mode: "plain" });
+    assert.throws(() => planStudyActivityAppend(null, candidate, 1), /Invalid versioned/);
+  }
+  const candidate = projectStudyActivityEvidence({ eventType: "reading.completed", tenantId: "t1", personId: "p__1", unitKey: "ayah:2:255", dateIso: "2026-09-12", mode: "plain" });
+  assert.throws(() => planStudyActivityAppend(null, candidate, 1), /Invalid versioned/);
+});
+check("oversized event evidence is rejected before a weekly write", () => {
+  const candidate = projectStudyActivityEvidence({ eventType: "journal.note-created", tenantId: "t1", personId: "p1", unitKey: "ayah:2:255", noteId: "n".repeat(1100), dateIso: "2026-09-12" });
+  assert.throws(() => planStudyActivityAppend(null, candidate, 1), /Invalid versioned/);
+});
 check("invalid dates and week starts reject", () => {
   assert.throws(() => studyActivityWeekKey("2026-02-30", 1), /date/);
   assert.throws(() => studyActivityWeekKey("2026-09-12", 7), /week start/);

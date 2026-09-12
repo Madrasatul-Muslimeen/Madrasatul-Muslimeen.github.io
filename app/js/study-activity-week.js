@@ -2,6 +2,11 @@
 import { projectStudyActivityEvidence } from "./study-activity-evidence.js";
 export const MAX_STUDY_WEEK_ENTRIES = 500;
 
+function validActivityId(value) {
+  return typeof value === "string" && value.length <= 128 &&
+    /^[A-Za-z0-9_-]+$/.test(value) && !value.includes("__");
+}
+
 export function studyActivityWeekKey(dateIso, weekStartsOn) {
   if (typeof dateIso !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(dateIso)) throw new TypeError("UTC date is required.");
   const date = new Date(`${dateIso}T00:00:00Z`);
@@ -14,10 +19,9 @@ export function studyActivityWeekKey(dateIso, weekStartsOn) {
 export function planStudyActivityAppend(existing, evidence, weekStartsOn) {
   if (!evidence || evidence.contractVersion !== "study-approach-contract:v1" || evidence.masteryEffect !== "none" ||
       evidence.action !== "practised" || evidence.subjectId !== "quran" ||
-      typeof evidence.eventKey !== "string" || !evidence.eventKey ||
-      typeof evidence.tenantId !== "string" || !evidence.tenantId ||
-      typeof evidence.personId !== "string" || !evidence.personId ||
-      typeof evidence.unitKey !== "string" || !evidence.unitKey ||
+      typeof evidence.eventKey !== "string" || !evidence.eventKey || evidence.eventKey.length > 1024 ||
+      !validActivityId(evidence.tenantId) || !validActivityId(evidence.personId) ||
+      typeof evidence.unitKey !== "string" || !evidence.unitKey || evidence.unitKey.length > 256 ||
       !/^approach_(01|03|04|07|08|10)$/.test(evidence.trackableId)) {
     throw new TypeError("Invalid versioned Study Activity evidence.");
   }
