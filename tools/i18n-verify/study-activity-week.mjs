@@ -61,6 +61,7 @@ check("keyed draft preserves legacy entries and projects one v1 entry", () => {
   const result = planKeyedStudyActivityAppend(existing, evidence, 1);
   assert.equal(result.entries, legacy);
   assert.equal(result.v1Events[evidence.eventKey].eventKey, evidence.eventKey);
+  assert.deepEqual(Object.keys(result.v1Events[evidence.eventKey]).sort(), ["eventKey", "contractVersion", "date", "unitKey", "subjectId", "trackableId", "action"].sort());
   assert.equal(planKeyedStudyActivityAppend({ ...existing, v1Events: result.v1Events }, evidence, 1).appended, false);
   const mixed = projectMixedWeekEntries({ ...existing, v1Events: result.v1Events });
   assert.equal(mixed.length, 3); assert.equal(mixed[0], legacy[0]); assert.equal(mixed[1], legacy[1]);

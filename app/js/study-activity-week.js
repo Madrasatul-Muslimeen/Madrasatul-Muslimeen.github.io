@@ -67,7 +67,12 @@ export function planKeyedStudyActivityAppend(existing, evidence, weekStartsOn) {
   }
   if ((existing?.entries?.length ?? 0) + Object.keys(oldMap).length >= MAX_STUDY_WEEK_ENTRIES) throw new RangeError("Weekly mixed Activity entry limit reached.");
   const entry = validated.entries.at(-1);
-  const v1Events = { ...oldMap, [key]: entry };
+  const v1Value = {
+    eventKey: entry.eventKey, contractVersion: entry.contractVersion, date: entry.date,
+    unitKey: entry.unitKey, subjectId: entry.subjectId, trackableId: entry.trackableId,
+    action: entry.action,
+  };
+  const v1Events = { ...oldMap, [key]: v1Value };
   const entries = existing?.entries ?? [];
   if (new TextEncoder().encode(JSON.stringify({ tenantId: evidence.tenantId, personId: evidence.personId, weekKey: validated.weekKey, entries, v1Events })).length > MAX_STUDY_WEEK_JSON_BYTES) {
     throw new RangeError("Keyed weekly Activity byte preflight exceeded.");
@@ -86,5 +91,7 @@ export function projectMixedWeekEntries(week) {
   for (const [key, value] of Object.entries(map)) {
     if (value?.eventKey !== key || value.contractVersion !== "study-approach-contract:v1") throw new TypeError("Invalid versioned Activity entry.");
   }
-  return [...entries, ...Object.values(map)];
+  return [...entries, ...Object.values(map).map((value) => ({
+    ...value, unitType: value.unitKey.split(":", 1)[0], viaProgramId: null, viaSessionId: null,
+  }))];
 }
