@@ -27,4 +27,6 @@ const end = "    // domains/";
 assert.equal(candidate.slice(0, candidate.indexOf(start)), active.slice(0, active.indexOf(start)), "Candidate changed a pre-Activity rule");
 assert.equal(candidate.slice(candidate.indexOf(end)), active.slice(active.indexOf(end)), "Candidate changed a post-Activity rule");
 assert.notEqual(candidate, active);
+assert.match(candidate, /function v1Create\(\)/);
+assert.match(candidate, /events\.keys\(\)\.hasOnly\(\[key\]\)/);
 console.log("==== Activity Rules proposal matrix: 22 cases structurally verified; executable Rules unchanged ====");

@@ -877,6 +877,19 @@ service cloud.firestore {
             && get(tenantPersonRef(personId)).data.tenantId == tenantId;
       }
       function v1Map(data) { return data.get('v1Events', {}) is map; }
+      function v1Create() {
+        let events = request.resource.data.get('v1Events', {});
+        let key = request.resource.data.get('lastEventKey', '');
+        return request.resource.data.entries == [] && events is map
+            && events.size() == 1 && key is string && key.size() <= 1200
+            && events.keys().hasOnly([key]) && events[key] is map
+            && events[key].keys().hasOnly(['eventKey', 'contractVersion', 'date', 'unitKey', 'subjectId', 'trackableId', 'action'])
+            && events[key].keys().hasAll(['eventKey', 'contractVersion', 'date', 'unitKey', 'subjectId', 'trackableId', 'action'])
+            && events[key].eventKey == key
+            && events[key].contractVersion == 'study-approach-contract:v1'
+            && events[key].subjectId == 'quran' && events[key].action == 'practised'
+            && events[key].trackableId in ['approach_01', 'approach_03', 'approach_04', 'approach_07', 'approach_08', 'approach_10'];
+      }
       function v1Added() {
         let before = resource.data.get('v1Events', {});
         let after = request.resource.data.get('v1Events', {});
@@ -914,7 +927,7 @@ service cloud.firestore {
           && request.resource.data.entries is list
           && request.resource.data.entries.size() <= 500
           && v1Map(request.resource.data)
-          && request.resource.data.get('v1Events', {}).size() == 0;
+          && (request.resource.data.get('v1Events', {}).size() == 0 || v1Create());
       allow update: if boundActivityKey(resource.data)
           && boundActivityKey(request.resource.data)
           && personTenantBound(resource.data.tenantId, resource.data.personId)
