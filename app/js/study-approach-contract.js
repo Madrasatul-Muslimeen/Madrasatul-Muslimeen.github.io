@@ -23,8 +23,14 @@ export function studyEventApproachId(eventType, mode) {
   const policy = studyEventPolicy(eventType);
   if (!policy) return null;
   if (policy.approachId) return policy.approachId;
-  if (eventType === "reading.completed") return mode === "with-meaning" ? "approach_03" : "approach_01";
-  if (eventType === "listening.completed") return mode === "with-meaning" ? "approach_08" : "approach_07";
+  if (eventType === "reading.completed") {
+    if (mode !== "plain" && mode !== "with-meaning") throw new TypeError("Reading mode must be plain or with-meaning.");
+    return mode === "with-meaning" ? "approach_03" : "approach_01";
+  }
+  if (eventType === "listening.completed") {
+    if (mode !== "arabic-only" && mode !== "with-meaning") throw new TypeError("Listening mode must be arabic-only or with-meaning.");
+    return mode === "with-meaning" ? "approach_08" : "approach_07";
+  }
   return null;
 }
 
@@ -35,11 +41,16 @@ export function qualifiesListeningCompletion({ playedSeconds, selectedUnitSecond
 }
 
 /** Stable retry key for bounded v1 Activity effects. */
-export function studyEventDedupeKey({ eventType, personId, unitKey, occurrenceId, noteId, dateIso } = {}) {
+export function studyEventDedupeKey({ eventType, tenantId, personId, unitKey, occurrenceId, noteId, dateIso, mode } = {}) {
   const policy = studyEventPolicy(eventType);
   if (!policy) throw new TypeError(`Unknown Study event: ${eventType}.`);
-  if (!personId || !dateIso) throw new TypeError("personId and dateIso are required.");
+  if (!tenantId || !personId || !dateIso) throw new TypeError("tenantId, personId and dateIso are required.");
   const day = String(dateIso).slice(0, 10);
+  const parsed = new Date(`${day}T00:00:00Z`);
+  if (typeof dateIso !== "string" || !/^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)?$/.test(dateIso) || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day) {
+    throw new TypeError("dateIso must start with a valid UTC ISO calendar date.");
+  }
+  const approachId = studyEventApproachId(eventType, mode);
   let target;
   switch (policy.dedupe) {
     case "unit-day": target = unitKey; break;
@@ -49,7 +60,7 @@ export function studyEventDedupeKey({ eventType, personId, unitKey, occurrenceId
     default: target = unitKey || occurrenceId || noteId || "record";
   }
   if (!target) throw new TypeError(`A target is required for ${eventType}.`);
-  return `${STUDY_APPROACH_CONTRACT_VERSION}:${eventType}:${personId}:${target}:${policy.dedupe === "note-create" ? "once" : day}`;
+  return JSON.stringify([STUDY_APPROACH_CONTRACT_VERSION, tenantId, personId, eventType, approachId, target, policy.dedupe === "note-create" ? "once" : day]);
 }
 
 export function eventMayGrantMastery(eventType) {
