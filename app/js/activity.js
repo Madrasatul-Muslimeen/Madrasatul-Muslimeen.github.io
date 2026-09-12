@@ -85,12 +85,13 @@ export async function logActivity(db, {
   return { weekKey };
 }
 
-/** Compatibility entry point: all future Study evidence also uses the keyed map. */
+/** Uninvoked Study adapter: keyed locally, but its sparse source-derived key
+ * remains denied by the isolated Rules proposal until contract proof exists. */
 export async function logStudyActivityEvidence(db, evidence, { weekStartsOn, uid }) {
   return logKeyedStudyActivityEvidence(db, evidence, { weekStartsOn, uid });
 }
 
-/** Raw-keyed Study writer; future evidence only, historical entries[] stay frozen. */
+/** Raw-keyed Study candidate only; historical entries[] stay frozen. */
 export async function logKeyedStudyActivityEvidence(db, evidence, { weekStartsOn, uid }) {
   if (!uid) throw new TypeError("Activity actor uid is required.");
   const weekKey = planKeyedStudyActivityAppend(null, evidence, weekStartsOn).weekKey;
