@@ -4,27 +4,125 @@
   "productionAccessAuthorised": false,
   "rulesDeploymentAuthorised": false,
   "cases": [
-    { "id": "AUTH-01", "expect": "deny", "statement": "unauthenticated existing weekly read" },
-    { "id": "AUTH-02", "expect": "deny", "statement": "unauthenticated create or update" },
-    { "id": "SCOPE-01", "expect": "allow", "statement": "authenticated self reads same-tenant own week" },
-    { "id": "SCOPE-02", "expect": "deny", "statement": "self reads another person's week" },
-    { "id": "SCOPE-03", "expect": "deny", "statement": "self reads cross-tenant week with same person ID" },
-    { "id": "SCOPE-04", "expect": "deny", "statement": "unlinked or inactive teacher writes student week" },
-    { "id": "SCOPE-05", "expect": "deny", "statement": "guardian writes unrelated child's week" },
-    { "id": "SCOPE-06", "expect": "deny", "statement": "unbounded or cross-tenant list" },
-    { "id": "IDENT-01", "expect": "deny", "statement": "create document ID differs from tenant/person/week fields" },
-    { "id": "IDENT-02", "expect": "deny", "statement": "update mutates tenant person week or envelope origin" },
-    { "id": "IDENT-03", "expect": "deny", "statement": "forged weekKey or person belongs to another tenant" },
-    { "id": "ENTRY-01", "expect": "allow", "statement": "authorised bounded v1 Study Activity event append" },
-    { "id": "ENTRY-02", "expect": "deny", "statement": "remove reorder or replace historical entry" },
-    { "id": "ENTRY-03", "expect": "deny", "statement": "replace one of two identical legacy entries while keeping list size" },
-    { "id": "ENTRY-04", "expect": "deny", "statement": "duplicate deterministic event key appended" },
-    { "id": "ENTRY-05", "expect": "deny", "statement": "unsupported contract or Approach or Mastery/word approval field" },
-    { "id": "ENTRY-06", "expect": "deny", "statement": "over weekly entry or encoded document size limit" },
-    { "id": "ENTRY-07", "expect": "allow", "statement": "same event retry performs no write" },
-    { "id": "LEGACY-01", "expect": "preserve", "statement": "legacy create and normal arrayUnion append" },
-    { "id": "LEGACY-02", "expect": "deny", "statement": "legacy path mutates or removes v1 keyed evidence" },
-    { "id": "REG-01", "expect": "preserve", "statement": "Records and Note Foundation security suites" },
-    { "id": "SAFE-01", "expect": "deny", "statement": "production project ID or non-emulator endpoint" }
+    {
+      "id": "AUTH-01",
+      "expect": "deny",
+      "statement": "unauthenticated existing weekly read"
+    },
+    {
+      "id": "AUTH-02",
+      "expect": "deny",
+      "statement": "unauthenticated create or update"
+    },
+    {
+      "id": "SCOPE-01",
+      "expect": "allow",
+      "statement": "authenticated self reads same-tenant own week"
+    },
+    {
+      "id": "SCOPE-02",
+      "expect": "deny",
+      "statement": "self reads another person's week"
+    },
+    {
+      "id": "SCOPE-03",
+      "expect": "deny",
+      "statement": "self reads cross-tenant week with same person ID"
+    },
+    {
+      "id": "SCOPE-04",
+      "expect": "deny",
+      "statement": "unlinked or inactive teacher writes student week"
+    },
+    {
+      "id": "SCOPE-05",
+      "expect": "deny",
+      "statement": "guardian writes unrelated child's week"
+    },
+    {
+      "id": "SCOPE-06",
+      "expect": "deny",
+      "statement": "unbounded or cross-tenant list"
+    },
+    {
+      "id": "IDENT-01",
+      "expect": "deny",
+      "statement": "create document ID differs from tenant/person/week fields"
+    },
+    {
+      "id": "IDENT-02",
+      "expect": "deny",
+      "statement": "update mutates tenant person week or envelope origin"
+    },
+    {
+      "id": "IDENT-03",
+      "expect": "deny",
+      "statement": "forged weekKey or person belongs to another tenant"
+    },
+    {
+      "id": "ENTRY-01",
+      "expect": "allow",
+      "statement": "authorised bounded generic claim practice or selfCheck and Study v1 keyed append"
+    },
+    {
+      "id": "ENTRY-02",
+      "expect": "deny",
+      "statement": "historical entries array removal reorder replacement or append"
+    },
+    {
+      "id": "ENTRY-03",
+      "expect": "deny",
+      "statement": "replace one of two identical legacy entries while keeping list size"
+    },
+    {
+      "id": "ENTRY-04",
+      "expect": "deny",
+      "statement": "duplicate deterministic event key appended"
+    },
+    {
+      "id": "ENTRY-05",
+      "expect": "deny",
+      "statement": "unsupported contract action or unrecognised Study Approach and Mastery field"
+    },
+    {
+      "id": "ENTRY-06",
+      "expect": "deny",
+      "statement": "over weekly entry or encoded document size limit"
+    },
+    {
+      "id": "ENTRY-07",
+      "expect": "allow",
+      "statement": "same event retry performs no write"
+    },
+    {
+      "id": "LEGACY-01",
+      "expect": "deny",
+      "statement": "new legacy create or any array append is denied while historical entries remain readable"
+    },
+    {
+      "id": "LEGACY-02",
+      "expect": "deny",
+      "statement": "legacy path mutates or removes v1 keyed evidence"
+    },
+    {
+      "id": "REG-01",
+      "expect": "preserve",
+      "statement": "Records and Note Foundation security suites"
+    },
+    {
+      "id": "SAFE-01",
+      "expect": "deny",
+      "statement": "production project ID or non-emulator endpoint"
+    },
+    {
+      "id": "ENTRY-08",
+      "expect": "allow",
+      "statement": "existing historical array remains unchanged when a new keyed event is added"
+    },
+    {
+      "id": "ENTRY-09",
+      "expect": "deny",
+      "statement": "attempt to modify an existing keyed event while adding another key"
+    }
   ]
 }

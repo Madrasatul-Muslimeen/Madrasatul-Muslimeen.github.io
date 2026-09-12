@@ -866,8 +866,8 @@ service cloud.firestore {
           && personTenantBound(resource.data.tenantId, resource.data.personId)
           && canRecordFor(resource.data.tenantId, resource.data.personId);
 
-      // DRAFT MAP P4: v1 evidence is a bounded keyed map; legacy entries
-      // remain separately writable. This candidate is NOT accepted or deployed.
+      // Option B proposal: historical entries[] frozen. Every new Activity
+      // action adds exactly one bounded key to v1Events. Emulator acceptance pending.
       function boundActivityKey(data) {
         return data.tenantId is string && data.personId is string && data.weekKey is string
             && activityKey == data.tenantId + '__' + data.personId + '__' + data.weekKey;
@@ -876,58 +876,45 @@ service cloud.firestore {
         return exists(tenantPersonRef(personId))
             && get(tenantPersonRef(personId)).data.tenantId == tenantId;
       }
-      function v1Map(data) { return data.get('v1Events', {}) is map; }
-      function v1Create() {
-        let events = request.resource.data.get('v1Events', {});
-        let key = request.resource.data.get('lastEventKey', '');
-        return request.resource.data.entries == [] && events is map
-            && events.size() == 1 && key is string && key.size() <= 1200
-            && events.keys().hasOnly([key]) && events[key] is map
-            && events[key].keys().hasOnly(['eventKey', 'contractVersion', 'date', 'unitKey', 'subjectId', 'trackableId', 'action'])
-            && events[key].keys().hasAll(['eventKey', 'contractVersion', 'date', 'unitKey', 'subjectId', 'trackableId', 'action'])
-            && events[key].eventKey == key
-            && events[key].contractVersion == 'study-approach-contract:v1'
-            && events[key].subjectId == 'quran' && events[key].action == 'practised'
-            && events[key].trackableId in ['approach_01', 'approach_03', 'approach_04', 'approach_07', 'approach_08', 'approach_10'];
+      function validNewEvent(events, key) {
+        return key is string && key.size() <= 1200
+            && events[key] is map && events[key].eventKey == key
+            && (
+              (events[key].contractVersion == 'activity-entry:v1'
+                && key.matches('^\\["activity-entry:v1",.*')
+                && events[key].keys().hasOnly(['eventKey', 'contractVersion', 'date', 'unitKey', 'unitType', 'subjectId', 'trackableId', 'action', 'viaProgramId', 'viaSessionId'])
+                && events[key].keys().hasAll(['eventKey', 'contractVersion', 'date', 'unitKey', 'unitType', 'subjectId', 'trackableId', 'action', 'viaProgramId', 'viaSessionId'])
+                && events[key].action in ['claimed', 'practised', 'selfCheck']
+                && events[key].unitType is string
+                && (events[key].viaProgramId == null || events[key].viaProgramId is string)
+                && (events[key].viaSessionId == null || events[key].viaSessionId is string))
+              || (events[key].contractVersion == 'study-approach-contract:v1'
+                && key.matches('^\\["study-approach-contract:v1",.*')
+                && events[key].keys().hasOnly(['eventKey', 'contractVersion', 'date', 'unitKey', 'subjectId', 'trackableId', 'action'])
+                && events[key].keys().hasAll(['eventKey', 'contractVersion', 'date', 'unitKey', 'subjectId', 'trackableId', 'action'])
+                && events[key].subjectId == 'quran' && events[key].action == 'practised'
+                && events[key].trackableId in ['approach_01', 'approach_03', 'approach_04', 'approach_07', 'approach_08', 'approach_10'])
+            )
+            && events[key].date is string && events[key].date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+            && events[key].unitKey is string && events[key].subjectId is string
+            && events[key].trackableId is string;
       }
-      function v1Added() {
-        let before = resource.data.get('v1Events', {});
-        let after = request.resource.data.get('v1Events', {});
-        let key = request.resource.data.get('lastEventKey', '');
-        return before is map && after is map && key is string && key.size() <= 1200
-            && key.matches('^\\["study-approach-contract:v1",.*')
-            && before.size() < 500 && after.size() == before.size() + 1
+      function oneNewEvent(before, after, key) {
+        return before is map && after is map
+            && after.size() == before.size() + 1
             && after.diff(before).addedKeys().size() == 1
             && after.diff(before).addedKeys().hasOnly([key])
             && after.diff(before).changedKeys().size() == 0
             && after.diff(before).removedKeys().size() == 0
-            && after[key] is map
-            && after[key].keys().hasOnly(['eventKey', 'contractVersion', 'date', 'unitKey', 'subjectId', 'trackableId', 'action'])
-            && after[key].keys().hasAll(['eventKey', 'contractVersion', 'date', 'unitKey', 'subjectId', 'trackableId', 'action'])
-            && after[key].eventKey == key
-            && after[key].contractVersion == 'study-approach-contract:v1'
-            && after[key].subjectId == 'quran' && after[key].action == 'practised'
-            && after[key].trackableId in ['approach_01', 'approach_03', 'approach_04', 'approach_07', 'approach_08', 'approach_10']
-            && after[key].date is string && after[key].date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
-            && after[key].unitKey is string;
-      }
-      function v1Update() {
-        return request.resource.data.entries == resource.data.entries
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['v1Events', 'lastEventKey', 'updatedAt'])
-            && v1Added();
-      }
-      function legacyUpdate() {
-        return request.resource.data.get('v1Events', {}) == resource.data.get('v1Events', {})
-            && request.resource.data.get('lastEventKey', '') == resource.data.get('lastEventKey', '')
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['entries', 'updatedAt']);
+            && validNewEvent(after, key);
       }
       allow create: if boundActivityKey(request.resource.data)
           && personTenantBound(request.resource.data.tenantId, request.resource.data.personId)
           && canRecordFor(request.resource.data.tenantId, request.resource.data.personId)
-          && request.resource.data.entries is list
-          && request.resource.data.entries.size() <= 500
-          && v1Map(request.resource.data)
-          && (request.resource.data.get('v1Events', {}).size() == 0 || v1Create());
+          && request.resource.data.entries == []
+          && request.resource.data.v1Events is map
+          && request.resource.data.v1Events.size() == 1
+          && oneNewEvent({}, request.resource.data.v1Events, request.resource.data.lastEventKey);
       allow update: if boundActivityKey(resource.data)
           && boundActivityKey(request.resource.data)
           && personTenantBound(resource.data.tenantId, resource.data.personId)
@@ -935,7 +922,12 @@ service cloud.firestore {
           && request.resource.data.personId == resource.data.personId
           && request.resource.data.weekKey == resource.data.weekKey
           && canRecordFor(resource.data.tenantId, resource.data.personId)
-          && (v1Update() || legacyUpdate());
+          && resource.data.entries is list
+          && resource.data.get('v1Events', {}) is map
+          && resource.data.entries.size() + resource.data.get('v1Events', {}).size() < 500
+          && request.resource.data.entries == resource.data.entries
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['v1Events', 'lastEventKey', 'updatedAt'])
+          && oneNewEvent(resource.data.get('v1Events', {}), request.resource.data.v1Events, request.resource.data.lastEventKey);
       // No delete (I4/D6).
     }
 
