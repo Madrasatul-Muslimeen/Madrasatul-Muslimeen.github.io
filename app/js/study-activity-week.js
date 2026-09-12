@@ -1,6 +1,8 @@
 // Pure weekly Activity transition for ADR-008. Legacy entries remain untouched.
 import { projectStudyActivityEvidence } from "./study-activity-evidence.js";
 export const MAX_STUDY_WEEK_ENTRIES = 500;
+// Conservative preflight only; Firestore's encoded document size must still be measured.
+export const MAX_STUDY_WEEK_JSON_BYTES = 750_000;
 
 function validActivityId(value) {
   return typeof value === "string" && value.length <= 128 &&
@@ -44,5 +46,9 @@ export function planStudyActivityAppend(existing, evidence, weekStartsOn) {
     trackableId: evidence.trackableId, action: "practised", viaProgramId: null,
     viaSessionId: null, eventKey: evidence.eventKey, contractVersion: evidence.contractVersion,
   });
-  return Object.freeze({ appended: true, weekKey, entries: [...entries, entry] });
+  const nextEntries = [...entries, entry];
+  if (new TextEncoder().encode(JSON.stringify({ entries: nextEntries, tenantId: evidence.tenantId, personId: evidence.personId, weekKey })).length > MAX_STUDY_WEEK_JSON_BYTES) {
+    throw new RangeError("Weekly Activity byte preflight exceeded.");
+  }
+  return Object.freeze({ appended: true, weekKey, entries: nextEntries });
 }

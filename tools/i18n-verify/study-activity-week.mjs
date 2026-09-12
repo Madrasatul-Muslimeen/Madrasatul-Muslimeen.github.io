@@ -46,6 +46,10 @@ check("weekly cap rejects a new entry, permits a retry", () => {
   assert.throws(() => planStudyActivityAppend(existing, evidence, 1), /limit/);
   assert.equal(planStudyActivityAppend({ ...existing, entries: [...entries.slice(1), first.entries[0]] }, evidence, 1).appended, false);
 });
+check("byte preflight rejects a large legacy week before appending", () => {
+  const existing = { tenantId: "t1", personId: "p1", weekKey: first.weekKey, entries: [{ legacyBody: "x".repeat(750_000) }] };
+  assert.throws(() => planStudyActivityAppend(existing, evidence, 1), /byte preflight/);
+});
 check("Listening requires qualifying playback on revalidation", () => {
   const listening = projectStudyActivityEvidence({ ...evidence, eventType: "listening.completed", mode: "arabic-only", playedSeconds: 80, selectedUnitSeconds: 100 });
   assert.ok(planStudyActivityAppend(null, listening, 1).appended);
