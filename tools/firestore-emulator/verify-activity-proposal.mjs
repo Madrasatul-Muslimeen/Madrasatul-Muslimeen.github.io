@@ -8,7 +8,7 @@ assert.equal(matrix.status, "proposal-only-not-executed");
 assert.match(matrix.projectId, /^demo-/);
 assert.equal(matrix.productionAccessAuthorised, false);
 assert.equal(matrix.rulesDeploymentAuthorised, false);
-assert.equal(matrix.cases.length, 24);
+assert.equal(matrix.cases.length, 25);
 assert.equal(new Set(matrix.cases.map((c) => c.id)).size, matrix.cases.length);
 for (const row of matrix.cases) {
   assert.match(row.id, /^[A-Z]+-\d{2}$/);
@@ -29,5 +29,6 @@ assert.equal(candidate.slice(candidate.indexOf(end)), active.slice(active.indexO
 assert.notEqual(candidate, active);
 assert.match(candidate, /function oneNewEvent\(before, after, key\)/);
 assert.match(candidate, /request\.resource\.data\.entries == resource\.data\.entries/);
+assert.match(candidate, /key == 'activity-entry:v1\|' \+ request\.resource\.data\.tenantId/);
 assert.doesNotMatch(candidate, /function legacyUpdate\(\)/);
-console.log("==== Activity Rules proposal matrix: 24 cases structurally verified; executable Rules unchanged ====");
+console.log("==== Activity Rules proposal matrix: 25 cases structurally verified; executable Rules unchanged ====");

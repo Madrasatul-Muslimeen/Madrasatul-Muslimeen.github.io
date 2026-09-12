@@ -123,6 +123,11 @@
       "id": "ENTRY-09",
       "expect": "deny",
       "statement": "attempt to modify an existing keyed event while adding another key"
+    },
+    {
+      "id": "ENTRY-10",
+      "expect": "deny",
+      "statement": "generic map key cannot disagree with action date identity context or scope fields"
     }
   ]
 }

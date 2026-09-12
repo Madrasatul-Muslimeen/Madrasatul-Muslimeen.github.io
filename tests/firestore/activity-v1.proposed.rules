@@ -869,7 +869,9 @@ service cloud.firestore {
       // Option B proposal: historical entries[] frozen. Every new Activity
       // action adds exactly one bounded key to v1Events. Emulator acceptance pending.
       function boundActivityKey(data) {
-        return data.tenantId is string && data.personId is string && data.weekKey is string
+        return data.tenantId is string && data.tenantId.matches('^[A-Za-z0-9_-]{1,128}$')
+            && data.personId is string && data.personId.matches('^[A-Za-z0-9_-]{1,128}$')
+            && data.weekKey is string && data.weekKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
             && activityKey == data.tenantId + '__' + data.personId + '__' + data.weekKey;
       }
       function personTenantBound(tenantId, personId) {
@@ -881,13 +883,17 @@ service cloud.firestore {
             && events[key] is map && events[key].eventKey == key
             && (
               (events[key].contractVersion == 'activity-entry:v1'
-                && key.matches('^\\["activity-entry:v1",.*')
+                && key == 'activity-entry:v1|' + request.resource.data.tenantId + '|' + request.resource.data.personId + '|' + request.resource.data.weekKey + '|' + events[key].date + '|' + events[key].subjectId + '|' + events[key].unitKey + '|' + events[key].trackableId + '|' + events[key].action + '|' + (events[key].viaProgramId == null ? '' : events[key].viaProgramId) + '|' + (events[key].viaSessionId == null ? '' : events[key].viaSessionId)
                 && events[key].keys().hasOnly(['eventKey', 'contractVersion', 'date', 'unitKey', 'unitType', 'subjectId', 'trackableId', 'action', 'viaProgramId', 'viaSessionId'])
                 && events[key].keys().hasAll(['eventKey', 'contractVersion', 'date', 'unitKey', 'unitType', 'subjectId', 'trackableId', 'action', 'viaProgramId', 'viaSessionId'])
                 && events[key].action in ['claimed', 'practised', 'selfCheck']
                 && events[key].unitType is string
-                && (events[key].viaProgramId == null || events[key].viaProgramId is string)
-                && (events[key].viaSessionId == null || events[key].viaSessionId is string))
+                && events[key].unitType.matches('^[A-Za-z0-9_-]{1,128}$')
+                && events[key].unitKey.matches('^[A-Za-z0-9:_-]{1,256}$')
+                && events[key].subjectId.matches('^[A-Za-z0-9_-]{1,128}$')
+                && events[key].trackableId.matches('^[A-Za-z0-9_-]{1,128}$')
+                && (events[key].viaProgramId == null || events[key].viaProgramId is string && events[key].viaProgramId.matches('^[A-Za-z0-9_-]{1,128}$'))
+                && (events[key].viaSessionId == null || events[key].viaSessionId is string && events[key].viaSessionId.matches('^[A-Za-z0-9_-]{1,128}$')))
               || (events[key].contractVersion == 'study-approach-contract:v1'
                 && key.matches('^\\["study-approach-contract:v1",.*')
                 && events[key].keys().hasOnly(['eventKey', 'contractVersion', 'date', 'unitKey', 'subjectId', 'trackableId', 'action'])
