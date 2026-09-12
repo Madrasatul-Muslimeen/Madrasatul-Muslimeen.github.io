@@ -22,6 +22,8 @@ check("shared noninteractive WbW remains a div", () => {
   assert.match(html, /<div class="wbw-word"/); assert.doesNotMatch(html, /data-word-occurrence/);
 });
 check("Study surface has one persistent card mount", () => assert.equal((page.match(/id="quranWordCardMount"/g) || []).length, 1));
+check("card mount is outside the scrolling Study body", () => assert.match(page, /<\/div><!\-\- \/#studyScreen \-\->\s*<\/div>\s*<div id="quranWordCardMount"/));
+check("keyboard focus and async response lifecycle are guarded", () => { assert.match(page, /focusSelector/); assert.match(page, /quranWordCardRequest\+\+/); assert.match(page, /event\.key === "Escape"/); });
 check("single and flow render paths enable Word Card identity", () => assert.equal((page.match(/wordCardInteractive: true/g) || []).length, 2));
 check("controller delegates occurrence, tab, navigation and close actions", () => {
   for (const marker of ["[data-word-occurrence]", "[data-word-card-level]", "[data-word-card-move]", "[data-word-card-close]"]) assert.ok(page.includes(marker));

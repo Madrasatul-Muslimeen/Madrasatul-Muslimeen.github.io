@@ -1812,7 +1812,7 @@
   .panel-notes, .panel-reflection, .panel-writing textarea { width: 100%; box-sizing: border-box; margin: 0.4rem 0; }
   .panel-checklist { font-weight: 400; }
   #quranWordCardMount:empty { display: none; }
-  #quranWordCardMount { position: sticky; bottom: 0; z-index: 12; padding: 0.5rem; background: rgba(255,255,255,0.97); border-top: 1px solid #d8c68a; }
+  #quranWordCardMount { flex: 0 0 auto; max-height: min(45vh, 24rem); overflow-y: auto; padding: 0.5rem; background: rgba(255,255,255,0.97); border-top: 1px solid #d8c68a; }
   .quran-word-card { max-width: 42rem; margin: 0 auto; border: 1px solid #d8c68a; border-radius: 0.65rem; background: #fffdf6; padding: 0.65rem; box-shadow: 0 -0.2rem 1rem rgba(0,0,0,0.08); }
   .quran-word-card header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: center; }
   .word-card-arabic { font-family: var(--quran-font); font-size: 2rem; line-height: 1.5; }
@@ -2941,8 +2941,8 @@
             <div id="ayahPanels"></div>
             <div id="pageViewContainer" style="display:none;"></div>
           </div><!-- /#studyScreen -->
-          <div id="quranWordCardMount" aria-live="polite"></div>
         </div>
+        <div id="quranWordCardMount" aria-live="polite"></div>
         <div id="readHint" hidden>Press the ⤢ button to bring the menus back.</div>
       </div><!-- /#readView -->
 
@@ -4372,6 +4372,8 @@
     let currentChunk = null;
     let quranWordCardState = createWordCardState();
     let quranWordCardContext = {};
+    let quranWordCardRequest = 0;
+    let quranWordCardTrigger = null;
     // Guards wheelCtaBtn's own first reveal (see renderWheel()) -- once the
     // reader has dismissed the intro this session, a later renderWheel() must
     // never bring the button back.
@@ -5582,6 +5584,9 @@
     }
 
     async function loadSurah() {
+      quranWordCardRequest++;
+      quranWordCardState = closeWordCard(quranWordCardState);
+      document.getElementById("quranWordCardMount").replaceChildren();
       currentSurahData = await getSurah(currentSurahNum);
       currentAyahNum = 1;
       // Owner ask (10 Aug 2026): Prev/Next alone made jumping to, say, ayah
@@ -9182,6 +9187,12 @@
     function renderPersistentWordCard() {
       const mount = document.getElementById("quranWordCardMount");
       if (!mount || !quranWordCardState.open || !currentSurahData) { if (mount) mount.innerHTML = ""; return; }
+      const focused = mount.contains(document.activeElement) ? document.activeElement : null;
+      const focusSelector = focused?.dataset.wordCardLevel
+        ? `[data-word-card-level="${focused.dataset.wordCardLevel}"]`
+        : focused?.dataset.wordCardMove
+          ? `[data-word-card-move="${focused.dataset.wordCardMove}"]`
+          : focused?.hasAttribute("data-word-card-close") ? "[data-word-card-close]" : null;
       let ref;
       try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { quranWordCardState = closeWordCard(quranWordCardState); mount.innerHTML = ""; return; }
       if (ref.surah !== currentSurahNum) { mount.innerHTML = ""; return; }
@@ -9191,10 +9202,12 @@
       const ids = wordCardOccurrenceIds();
       const at = ids.indexOf(quranWordCardState.occurrenceId);
       mount.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 } });
+      if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 
     async function hydrateWordCardOccurrences() {
       const requestedId = quranWordCardState.occurrenceId;
+      const request = ++quranWordCardRequest;
       if (!requestedId || !currentSurahData) return;
       const ref = parseQuranWordOccurrenceId(requestedId);
       const ayah = currentSurahData.ayahs.find((a) => a.ayah === ref.ayah);
@@ -9206,23 +9219,38 @@
         const [rootOccurrences, lemmaOccurrences] = await Promise.all([
           occurrenceRefsFor("root", word.morphology?.root), occurrenceRefsFor("lemma", word.morphology?.lemma),
         ]);
-        if (quranWordCardState.occurrenceId !== requestedId) return;
+        if (request !== quranWordCardRequest || !quranWordCardState.open || quranWordCardState.occurrenceId !== requestedId || currentSurahNum !== ref.surah) return;
         quranWordCardContext = { rootOccurrences, lemmaOccurrences, rootOccurrenceCount: rootOccurrences.length, lemmaOccurrenceCount: lemmaOccurrences.length };
       } catch (error) {
-        if (quranWordCardState.occurrenceId !== requestedId) return;
+        if (request !== quranWordCardRequest || !quranWordCardState.open || quranWordCardState.occurrenceId !== requestedId || currentSurahNum !== ref.surah) return;
         quranWordCardContext = { occurrencesError: error.message };
       }
       renderPersistentWordCard();
     }
 
     document.getElementById("readView").addEventListener("click", (event) => {
+      if (!(event.target instanceof Element)) return;
       const occurrence = event.target.closest("[data-word-occurrence]");
-      if (occurrence) { quranWordCardState = openWordCard(quranWordCardState, occurrence.dataset.wordOccurrence); quranWordCardContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); return; }
+      if (occurrence) { quranWordCardTrigger = occurrence; quranWordCardState = openWordCard(quranWordCardState, occurrence.dataset.wordOccurrence); quranWordCardContext = {}; renderPersistentWordCard(); document.querySelector("#quranWordCardMount [data-word-card-close]")?.focus({ preventScroll: true }); hydrateWordCardOccurrences(); return; }
       const level = event.target.closest("[data-word-card-level]");
       if (level) { quranWordCardState = selectWordCardLevel(quranWordCardState, level.dataset.wordCardLevel); renderPersistentWordCard(); return; }
-      if (event.target.closest("[data-word-card-close]")) { quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); return; }
+      if (event.target.closest("[data-word-card-close]")) { quranWordCardRequest++; quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected) quranWordCardTrigger.focus({ preventScroll: true }); return; }
       const move = event.target.closest("[data-word-card-move]");
       if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); quranWordCardContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); }
+    });
+    document.getElementById("readView").addEventListener("keydown", (event) => {
+      if (!quranWordCardState.open || !(event.target instanceof Element)) return;
+      if (event.key === "Escape" && event.target.closest("#quranWordCardMount")) {
+        event.preventDefault();
+        document.querySelector("#quranWordCardMount [data-word-card-close]")?.click();
+      }
+      const tab = event.target.closest("[data-word-card-level]");
+      if (!tab || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const levels = ["wbw", "basic", "depth"];
+      const at = levels.indexOf(tab.dataset.wordCardLevel);
+      const next = event.key === "Home" ? 0 : event.key === "End" ? levels.length - 1 : (at + (event.key === "ArrowRight" ? 1 : -1) + levels.length) % levels.length;
+      document.querySelector(`#quranWordCardMount [data-word-card-level="${levels[next]}"]`)?.click();
     });
 
     /** Whole surah -> every ayah; range -> just the selected ayahs. Same bounds logic as currentUnitAyahBounds() for those two unit types, kept separate since that function also has to handle ruku/juz/page. */

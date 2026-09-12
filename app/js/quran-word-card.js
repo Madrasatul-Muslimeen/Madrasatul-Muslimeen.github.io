@@ -9,6 +9,14 @@ function escapeHtml(value) {
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+function safeDictionaryUrl(value) {
+  if (typeof value !== "string") return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.href : null;
+  } catch { return null; }
+}
+
 function validLevel(level) {
   if (!WORD_CARD_LEVELS.includes(level)) throw new TypeError(`Unknown word-card level: ${level}.`);
   return level;
@@ -63,8 +71,9 @@ function levelPanel(level, word, layers, context) {
       ${context.occurrencesError ? `<p role="status">Occurrence list unavailable: ${escapeHtml(context.occurrencesError)}</p>` : ""}
     </div>`;
   }
-  const dictionaryLink = context.dictionaryUrl
-    ? `<a href="${escapeHtml(context.dictionaryUrl)}" target="_blank" rel="noopener noreferrer">Open dictionary source</a>`
+  const dictionaryUrl = safeDictionaryUrl(context.dictionaryUrl);
+  const dictionaryLink = dictionaryUrl
+    ? `<a href="${escapeHtml(dictionaryUrl)}" target="_blank" rel="noopener noreferrer">Open dictionary source</a>`
     : `<span>Dictionary source unavailable</span>`;
   return `<div role="tabpanel" data-word-card-panel="depth">
     <p>${escapeHtml(context.semanticRange || "Semantic range not yet supplied")}</p>${dictionaryLink}
