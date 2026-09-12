@@ -97,12 +97,15 @@ check("Foundation data layer preserves atomic full-snapshot revisions",
   /TENANT\.NOTE_REVISIONS/.test(foundation) && /expectedRevisionId/.test(foundation));
 check("Foundation data layer has no legacy fallback or dual write",
   !/TENANT\.AYAH_NOTES|from\s+["']\.\/ayah-notes\.js["']|saveAyahNote\s*\(/.test(foundation));
-check("Foundation data layer remains uninvoked by the Quran shell",
-  !/note-foundation\.js/.test(quranShell));
+check("Foundation data layer is invoked only through explicit permanent Note actions",
+  /note-foundation\.js/.test(quranShell) &&
+  /data-note-save-permanent/.test(quranShell) &&
+  /copied-from-legacy-ayah-note/.test(quranShell));
 check("no Foundation Rules match is implemented",
   contract.foundationCollections.every((name) => !firestoreRules.includes(`match /${name}/`)));
-check("no per-Note guardian approval UI is implemented",
-  !/data-note-guardian-approval|approveGuardianNoteEdit/.test(quranShell));
+check("per-Note guardian approval UI is Note-scoped and explicitly revocable",
+  /data-note-guardian-approval/.test(quranShell) &&
+  /data-note-guardian-revoke/.test(quranShell));
 
 console.log("\n=== Explicit non-authority ===");
 check("Stage 5 implementation is authorised", contract.implementationAuthorised === true);

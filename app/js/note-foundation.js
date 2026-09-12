@@ -5,10 +5,13 @@
 
 import {
   collection,
+  doc,
+  getDoc,
   getDocs,
   limit,
   orderBy,
   query,
+  serverTimestamp,
   where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
@@ -216,5 +219,85 @@ export async function listNoteRevisions(db, { tenantId, ownerPersonId, noteId, m
     where("noteId", "==", requireToken("noteId", noteId)),
     orderBy("createdAt", "desc"), limit(maximum));
   const snapshot = await getDocs(q);
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+export async function getPermanentNote(db, { tenantId, noteId }) {
+  const snapshot = await getDoc(doc(db, TENANT.NOTES, noteFoundationDocId(tenantId, noteId)));
+  return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
+}
+
+export async function listNotesForSource(db, {
+  tenantId, ownerPersonId, sourceKind, sourceKey, maximum = 100,
+}) {
+  const sourceQuery = query(collection(db, TENANT.NOTE_SOURCES),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("sourceKind", "==", requireToken("sourceKind", sourceKind)),
+    where("sourceKey", "==", requireToken("sourceKey", sourceKey)),
+    where("status", "==", NOTE_STATUS.ACTIVE), limit(maximum));
+  const links = await getDocs(sourceQuery);
+  const notes = await Promise.all(links.docs.map((item) => getPermanentNote(db, {
+    tenantId, noteId: item.data().noteId,
+  })));
+  return notes.filter((note) => note?.status === NOTE_STATUS.ACTIVE);
+}
+
+export async function grantManagedChildNoteApproval(db, {
+  tenantId, noteId, childPersonId, guardianPersonId, actorUid,
+}) {
+  requireToken("childPersonId", childPersonId);
+  requireToken("guardianPersonId", guardianPersonId);
+  requireToken("actorUid", actorUid);
+  const noteDocId = noteFoundationDocId(tenantId, noteId);
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const snapshot = await transaction.get(TENANT.NOTES, noteDocId);
+    if (!snapshot.exists()) throw new Error("Note does not exist.");
+    const note = snapshot.data();
+    if (note.status !== NOTE_STATUS.ACTIVE || note.ownerPersonId !== childPersonId) {
+      throw new Error("Approval requires the active managed-child Note.");
+    }
+    transaction.update(TENANT.NOTES, noteDocId, {
+      guardianApproval: {
+        guardianPersonId, childPersonId, grantedAt: serverTimestamp(),
+        durationMinutes: 30, revokedAt: null,
+      },
+    });
+  });
+}
+
+export async function revokeManagedChildNoteApproval(db, {
+  tenantId, noteId, childPersonId, guardianPersonId, actorUid,
+}) {
+  requireToken("childPersonId", childPersonId);
+  requireToken("guardianPersonId", guardianPersonId);
+  requireToken("actorUid", actorUid);
+  const noteDocId = noteFoundationDocId(tenantId, noteId);
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const snapshot = await transaction.get(TENANT.NOTES, noteDocId);
+    if (!snapshot.exists() || snapshot.data().ownerPersonId !== childPersonId) {
+      throw new Error("Approval target does not match the managed child.");
+    }
+    transaction.update(TENANT.NOTES, noteDocId, {
+      guardianApproval: {
+        guardianPersonId, childPersonId, grantedAt: null,
+        durationMinutes: 30, revokedAt: serverTimestamp(),
+      },
+    });
+  });
+}
+
+export async function listFoundationCollectionForOwner(db, {
+  tenantId, ownerPersonId, collectionName, maximum = 5000,
+}) {
+  const allowed = new Set([
+    TENANT.NOTES, TENANT.NOTE_SOURCES, TENANT.NOTE_FOLDERS,
+    TENANT.NOTE_PLACEMENTS, TENANT.NOTE_REVISIONS,
+  ]);
+  if (!allowed.has(collectionName)) throw new Error("Unsupported Note Foundation collection.");
+  const snapshot = await getDocs(query(collection(db, collectionName),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    limit(maximum)));
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
 }

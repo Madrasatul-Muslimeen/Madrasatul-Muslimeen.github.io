@@ -1798,6 +1798,9 @@
      and its gloss are left-to-right scripts. The Arabic lines carry their own
      dir="rtl" from the renderer, so they are unaffected. */
   .wbw-word, .root-row { border: 1px solid #eee; border-radius: 0.4rem; padding: 0.3rem 0.5rem; text-align: center; min-width: 4.5rem; direction: ltr; }
+  button.wbw-word-clickable { background: #fff; color: inherit; font: inherit; cursor: pointer; }
+  button.wbw-word-clickable > span { display: block; }
+  button.wbw-word-clickable:hover, button.wbw-word-clickable:focus-visible { border-color: #1F3A6E; box-shadow: 0 0 0 2px rgba(31,58,110,0.15); outline: none; }
   .wbw-arabic, .root-word, .root-root, .root-lemma { font-family: var(--quran-font); font-size: 1.15rem; }
   .wbw-translit { font-size: 0.72rem; color: #888; font-style: italic; }
   .wbw-gloss { font-size: 0.8rem; }
@@ -1808,6 +1811,16 @@
   .wbw-empty { color: #888; font-size: 0.85rem; }
   .panel-notes, .panel-reflection, .panel-writing textarea { width: 100%; box-sizing: border-box; margin: 0.4rem 0; }
   .panel-checklist { font-weight: 400; }
+  #quranWordCardMount:empty { display: none; }
+  #quranWordCardMount { flex: 0 0 auto; max-height: min(45vh, 24rem); overflow-y: auto; padding: 0.5rem; background: rgba(255,255,255,0.97); border-top: 1px solid #d8c68a; }
+  .quran-word-card { max-width: 42rem; margin: 0 auto; border: 1px solid #d8c68a; border-radius: 0.65rem; background: #fffdf6; padding: 0.65rem; box-shadow: 0 -0.2rem 1rem rgba(0,0,0,0.08); }
+  .quran-word-card header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: center; }
+  .word-card-arabic { font-family: var(--quran-font); font-size: 2rem; line-height: 1.5; }
+  .word-card-reference, .word-card-transliteration, .quran-word-card dd, .quran-word-card p { font-size: 0.9rem; }
+  .quran-word-card [role="tablist"] { display: flex; gap: 0.35rem; margin: 0.5rem 0; flex-wrap: wrap; }
+  .quran-word-card [role="tab"][aria-selected="true"] { background: #1F3A6E; color: white; }
+  .quran-word-card dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 0.75rem; }
+  .quran-word-card dt { font-weight: 700; }
 
   /* Tajweed colours -- same proven values as the legacy app (reference only, never imported). */
   .tajweed-ham_wasl, .tajweed-laam_shamsiyah, .tajweed-slnt, .tajweed-silent { color: #9aa3b5; }
@@ -2929,6 +2942,7 @@
             <div id="pageViewContainer" style="display:none;"></div>
           </div><!-- /#studyScreen -->
         </div>
+        <div id="quranWordCardMount" aria-live="polite"></div>
         <div id="readHint" hidden>Press the ⤢ button to bring the menus back.</div>
       </div><!-- /#readView -->
 
@@ -3718,6 +3732,7 @@
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
     import { renderQuickMenu, attachQuickMenuHandlers, renderNoteView, attachNoteViewHandlers, notesToPlainText } from "./js/ayah-note-renderer.js";
+    import { createPermanentNote, getPermanentNote, listNotesForSource, updatePermanentNoteContent, grantManagedChildNoteApproval, revokeManagedChildNoteApproval } from "./js/note-foundation.js";
     import { initPopupWindow, initSideSplitter, initListCollapse, loadSideViewMode, saveSideViewMode } from "./js/note-popup.js";
     import {
       collectionsFrom, activeCollections,
@@ -3759,6 +3774,9 @@
     // nothing at load: it fetches its index only when a search actually runs.
     import { searchQuran } from "./js/quran-search.js";
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah } from "./js/ayah-renderer.js";
+    import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
+    import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard } from "./js/quran-word-card.js";
+    import { occurrenceRefsFor } from "./js/quran-word-index.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
@@ -4329,6 +4347,11 @@
     // collapses the same way (default closed, "like the languages"), and
     // needs the identical survive-a-rebuild fix Notes already has above.
     let noteApproachCardOpen = false;
+    let permanentNotesForSource = [];
+    let permanentNotesLoadedKey = null;
+    let permanentNotesLoadFailed = false;
+    let selectedPermanentNote = null;
+    let localApprovedPermanentNoteId = null;
     let tenantWeekStartsOn = 6;
     let currentTenantDoc = null;
     // Follow-up round: Map(subjectId -> courseOffer contextId) for
@@ -4347,6 +4370,10 @@
     let currentTrackableId = null;
     let currentAyahNum = 1;
     let currentChunk = null;
+    let quranWordCardState = createWordCardState();
+    let quranWordCardContext = {};
+    let quranWordCardRequest = 0;
+    let quranWordCardTrigger = null;
     // Guards wheelCtaBtn's own first reveal (see renderWheel()) -- once the
     // reader has dismissed the intro this session, a later renderWheel() must
     // never bring the button back.
@@ -5557,6 +5584,9 @@
     }
 
     async function loadSurah() {
+      quranWordCardRequest++;
+      quranWordCardState = closeWordCard(quranWordCardState);
+      document.getElementById("quranWordCardMount").replaceChildren();
       currentSurahData = await getSurah(currentSurahNum);
       currentAyahNum = 1;
       // Owner ask (10 Aug 2026): Prev/Next alone made jumping to, say, ayah
@@ -9149,6 +9179,84 @@
       return translationLangs();
     }
 
+    function wordCardOccurrenceIds() {
+      if (!currentSurahData) return [];
+      return currentSurahData.ayahs.flatMap((a) => (a.words ?? []).map((w) => `quran-word-occurrence:v1:${currentSurahNum}:${a.ayah}:${w.position}`));
+    }
+
+    function renderPersistentWordCard() {
+      const mount = document.getElementById("quranWordCardMount");
+      if (!mount || !quranWordCardState.open || !currentSurahData) { if (mount) mount.innerHTML = ""; return; }
+      const focused = mount.contains(document.activeElement) ? document.activeElement : null;
+      const focusSelector = focused?.dataset.wordCardLevel
+        ? `[data-word-card-level="${focused.dataset.wordCardLevel}"]`
+        : focused?.dataset.wordCardMove
+          ? `[data-word-card-move="${focused.dataset.wordCardMove}"]`
+          : focused?.hasAttribute("data-word-card-close") ? "[data-word-card-close]" : null;
+      let ref;
+      try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { quranWordCardState = closeWordCard(quranWordCardState); mount.innerHTML = ""; return; }
+      if (ref.surah !== currentSurahNum) { mount.innerHTML = ""; return; }
+      const ayah = currentSurahData.ayahs.find((a) => a.ayah === ref.ayah);
+      const word = ayah?.words?.find((w) => w.position === ref.position);
+      if (!ayah || !word) { mount.innerHTML = ""; return; }
+      const ids = wordCardOccurrenceIds();
+      const at = ids.indexOf(quranWordCardState.occurrenceId);
+      mount.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 } });
+      if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
+    }
+
+    async function hydrateWordCardOccurrences() {
+      const requestedId = quranWordCardState.occurrenceId;
+      const request = ++quranWordCardRequest;
+      if (!requestedId || !currentSurahData) return;
+      const ref = parseQuranWordOccurrenceId(requestedId);
+      const ayah = currentSurahData.ayahs.find((a) => a.ayah === ref.ayah);
+      const word = ayah?.words?.find((w) => w.position === ref.position);
+      if (!word) return;
+      quranWordCardContext = { occurrencesLoading: true };
+      renderPersistentWordCard();
+      try {
+        const [rootOccurrences, lemmaOccurrences] = await Promise.all([
+          occurrenceRefsFor("root", word.morphology?.root), occurrenceRefsFor("lemma", word.morphology?.lemma),
+        ]);
+        if (request !== quranWordCardRequest || !quranWordCardState.open || quranWordCardState.occurrenceId !== requestedId || currentSurahNum !== ref.surah) return;
+        quranWordCardContext = { rootOccurrences, lemmaOccurrences, rootOccurrenceCount: rootOccurrences.length, lemmaOccurrenceCount: lemmaOccurrences.length };
+      } catch (error) {
+        if (request !== quranWordCardRequest || !quranWordCardState.open || quranWordCardState.occurrenceId !== requestedId || currentSurahNum !== ref.surah) return;
+        quranWordCardContext = { occurrencesError: error.message };
+      }
+      renderPersistentWordCard();
+    }
+
+    document.getElementById("readView").addEventListener("click", (event) => {
+      if (!(event.target instanceof Element)) return;
+      const occurrence = event.target.closest("[data-word-occurrence]");
+      if (occurrence) { quranWordCardTrigger = occurrence; quranWordCardState = openWordCard(quranWordCardState, occurrence.dataset.wordOccurrence); quranWordCardContext = {}; renderPersistentWordCard(); document.querySelector("#quranWordCardMount [data-word-card-close]")?.focus({ preventScroll: true }); hydrateWordCardOccurrences(); return; }
+      const level = event.target.closest("[data-word-card-level]");
+      if (level) { quranWordCardState = selectWordCardLevel(quranWordCardState, level.dataset.wordCardLevel); renderPersistentWordCard(); return; }
+      if (event.target.closest("[data-word-card-close]")) { quranWordCardRequest++; quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected) quranWordCardTrigger.focus({ preventScroll: true }); return; }
+      const move = event.target.closest("[data-word-card-move]");
+      if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); quranWordCardContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); }
+    });
+    document.getElementById("readView").addEventListener("keydown", (event) => {
+      if (!quranWordCardState.open || !(event.target instanceof Element)) return;
+      if (event.key === "Escape" && event.target.closest("#quranWordCardMount")) {
+        event.preventDefault();
+        document.querySelector("#quranWordCardMount [data-word-card-close]")?.click();
+      }
+      const tab = event.target.closest("[data-word-card-level]");
+      if (!tab || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      const levels = ["wbw", "basic", "depth"];
+      const at = levels.indexOf(tab.dataset.wordCardLevel);
+      const next = event.key === "Home" ? 0 : event.key === "End" ? levels.length - 1 : (at + (event.key === "ArrowRight" ? 1 : -1) + levels.length) % levels.length;
+      const nextTab = document.querySelector(`#quranWordCardMount [data-word-card-level="${levels[next]}"]`);
+      nextTab?.click();
+      // The click replaces the card markup. Move focus to the newly selected
+      // tab so keyboard focus and the roving tabindex remain in agreement.
+      document.querySelector(`#quranWordCardMount [data-word-card-level="${levels[next]}"]`)?.focus({ preventScroll: true });
+    });
+
     /** Whole surah -> every ayah; range -> just the selected ayahs. Same bounds logic as currentUnitAyahBounds() for those two unit types, kept separate since that function also has to handle ruku/juz/page. */
     /**
      * Phase 5 round 7 -- Whole Surah / Range page view (PHASE-5-STATUS.md
@@ -9233,10 +9341,13 @@
             tajweedOn: tajweedToggle.checked,
             langs: translationLangs(),
             wbwLangs: wbwLangs(),
+            wordCardInteractive: true,
+            surahNumber: currentSurahNum,
           })}</div></div>`;
         })
         .join("");
       attachAyahQuickMenus(pageViewContainer);
+      renderPersistentWordCard();
       // Fix round -- only mark an āyah as SOUNDING when something really is.
       // This used to run unconditionally, so a fresh flow always painted the
       // gold "now playing" band on currentAyahNum with nothing playing --
@@ -10395,6 +10506,46 @@
         ? `<span>${info.label} — ${t("read it on the Read screen")}</span><button type="button" data-note-open-read>${t("Open in Read")} ▸</button>`
         : "";
 
+      if (permanentNotesLoadedKey !== `${selectedPersonId}|${unitKey}`) {
+        permanentNotesLoadedKey = `${selectedPersonId}|${unitKey}`;
+        permanentNotesForSource = [];
+        permanentNotesLoadFailed = false;
+        selectedPermanentNote = null;
+        if (activeTenantId && selectedPersonId) {
+          listNotesForSource(db, { tenantId: activeTenantId, ownerPersonId: selectedPersonId, sourceKind: "quran", sourceKey: unitKey })
+            .then((rows) => {
+              if (permanentNotesLoadedKey !== `${selectedPersonId}|${unitKey}`) return;
+              permanentNotesForSource = rows;
+              if (stageView === "note" && noteScopeCurrentUnitKey() === unitKey) renderNoteViewNow();
+            })
+            .catch(() => {
+              permanentNotesLoadFailed = true;
+              if (stageView === "note" && noteScopeCurrentUnitKey() === unitKey) renderNoteViewNow();
+            });
+        }
+      }
+      const myPersonId = currentPreview().myPersonId;
+      const managedChild = !!myPersonId && selectedPersonId !== myPersonId;
+      const sourceListFailed = permanentNotesLoadFailed;
+      const mayEditSelected = !managedChild || selectedPermanentNote?.noteId === localApprovedPermanentNoteId;
+      const permanentNotesHtml = `
+        <div class="note-field" data-note-field="permanent-notes">
+          <div class="note-field-label-row"><span class="note-field-label">${t("Permanent Notes for this source")}</span></div>
+          <div class="note-field-body">
+            ${sourceListFailed ? `<p>${t("Permanent Notes could not be checked. Creation is disabled for safety.")}</p>` : `
+              <button type="button" data-note-save-permanent>${t("Save as permanent Note")}</button>
+              ${permanentNotesForSource.length ? permanentNotesForSource.map((note) => `<button type="button" data-note-open-permanent="${escapeHtml(note.noteId)}">${escapeHtml(note.title || t("Untitled permanent Note"))}</button>`).join("") : `<p>${t("No permanent Notes for this source yet.")}</p>`}
+            `}
+            ${selectedPermanentNote ? `
+              <div class="permanent-note-editor">
+                <input data-note-permanent-title value="${escapeHtml(selectedPermanentNote.title || "")}" ${mayEditSelected ? "" : "readonly"}>
+                <div data-note-permanent-editor data-note-id="${escapeHtml(selectedPermanentNote.noteId)}" data-revision-id="${escapeHtml(selectedPermanentNote.currentRevisionId)}" contenteditable="${mayEditSelected ? "true" : "false"}">${selectedPermanentNote.bodyHtml || ""}</div>
+                ${mayEditSelected ? `<button type="button" data-note-permanent-save>${t("Save permanent Note")}</button>` : `<p>${t("View only until guardian approval")}</p>`}
+                ${managedChild ? `<button type="button" data-note-guardian-approval>${t("Approve editing for 30 minutes")}</button><button type="button" data-note-guardian-revoke>${t("Revoke editing approval")}</button>` : ""}
+              </div>` : ""}
+          </div>
+        </div>`;
+
       // Ayah Collections round 2 -- the collection this āyah was tapped
       // FROM, if any (noteOriginCollectionId, set by goToAyahFromQcr()).
       // Looked up by id every render rather than cached as a label, so a
@@ -10478,6 +10629,7 @@
         backToCollectionLabel,
         isCollectionsOpen: wasQcrDrawerOpen,
         collectionsPopoverHtml: renderQcrDrawerHtml(unitKey, openQcrDdKey),
+        permanentNotesHtml,
       });
       if (showApproach && quranTrackables.some((tr) => tr.id === currentTrackableId)) {
         noteView.querySelectorAll("[data-note-approach-select]").forEach((sel) => { sel.value = currentTrackableId; });
@@ -10510,6 +10662,58 @@
           ayahNotesDoc = { ...ayahNotesDoc, notes: { ...(ayahNotesDoc.notes ?? {}), [unitKey]: { html, updatedAt: new Date().toISOString() } } };
           renderStudyScreen();
           return { ok: true };
+        },
+        onSavePermanentNote: async () => {
+          if (!auth.currentUser || !selectedPersonId || sourceListFailed) return;
+          const bodyHtml = ayahNoteHtml(ayahNotesDoc, unitKey);
+          if (!bodyHtml) return;
+          if (permanentNotesForSource.length && !confirm(t("A permanent Note already exists for this source. Create another?"))) return;
+          const outcome = await safeWrite(() => createPermanentNote(db, {
+            tenantId: activeTenantId, ownerPersonId: selectedPersonId,
+            ownerUid: managedChild ? null : auth.currentUser.uid,
+            title: ref, bodyHtml, actorUid: auth.currentUser.uid,
+            source: { sourceKind: "quran", sourceKey: unitKey, relationshipKind: "origin", provenanceKind: "copied-from-legacy-ayah-note" },
+          }), { collection: TENANT.NOTES, action: "createPermanentNote" });
+          if (!outcome.ok) return;
+          permanentNotesLoadedKey = null;
+          renderNoteViewNow();
+        },
+        onOpenPermanentNote: async (noteId) => {
+          selectedPermanentNote = await getPermanentNote(db, { tenantId: activeTenantId, noteId });
+          renderNoteViewNow();
+        },
+        onSavePermanentEdit: async ({ noteId, expectedRevisionId, title, bodyHtml }) => {
+          const outcome = await safeWrite(() => updatePermanentNoteContent(db, {
+            tenantId: activeTenantId, noteId, expectedRevisionId, title, bodyHtml,
+            actorUid: auth.currentUser.uid,
+          }), { collection: TENANT.NOTES, action: "updatePermanentNoteContent" });
+          if (!outcome.ok) {
+            const latest = await getPermanentNote(db, { tenantId: activeTenantId, noteId });
+            if (confirm(t("This Note changed elsewhere. Reload the latest version? Cancel keeps your text available to copy into a new Note."))) selectedPermanentNote = latest;
+          } else {
+            selectedPermanentNote = await getPermanentNote(db, { tenantId: activeTenantId, noteId });
+          }
+          renderNoteViewNow();
+        },
+        onGrantGuardianApproval: async () => {
+          if (!selectedPermanentNote || !myPersonId) return;
+          const outcome = await safeWrite(() => grantManagedChildNoteApproval(db, {
+            tenantId: activeTenantId, noteId: selectedPermanentNote.noteId,
+            childPersonId: selectedPersonId, guardianPersonId: myPersonId,
+            actorUid: auth.currentUser.uid,
+          }), { collection: TENANT.NOTES, action: "grantManagedChildNoteApproval" });
+          if (outcome.ok) localApprovedPermanentNoteId = selectedPermanentNote.noteId;
+          renderNoteViewNow();
+        },
+        onRevokeGuardianApproval: async () => {
+          if (!selectedPermanentNote || !myPersonId) return;
+          const outcome = await safeWrite(() => revokeManagedChildNoteApproval(db, {
+            tenantId: activeTenantId, noteId: selectedPermanentNote.noteId,
+            childPersonId: selectedPersonId, guardianPersonId: myPersonId,
+            actorUid: auth.currentUser.uid,
+          }), { collection: TENANT.NOTES, action: "revokeManagedChildNoteApproval" });
+          if (outcome.ok) localApprovedPermanentNoteId = null;
+          renderNoteViewNow();
         },
         onToggleBookmark: () => toggleAyahBookmark(unitKey, ref, captureNoteBookmarkSettings()),
         onUpdateBookmark: () => updateOpenedBookmark(),
@@ -11517,6 +11721,8 @@
           tajweedOn: tajweedToggle.checked,
           langs: translationLangs(),
           wbwLangs: wbwLangs(),
+          wordCardInteractive: true,
+          surahNumber: currentSurahNum,
         });
         // Text-tools round -- what the ⋮ menu's Collapse item folds away.
         // #ayahPanels itself survives every re-render (only its innerHTML is
@@ -11555,6 +11761,7 @@
         });
         attachAyahQuickMenus(readQuickMenuSlot);
       }
+      renderPersistentWordCard();
 
       renderListeningControls();
       renderUnitLabel();
