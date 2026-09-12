@@ -9250,7 +9250,11 @@
       const levels = ["wbw", "basic", "depth"];
       const at = levels.indexOf(tab.dataset.wordCardLevel);
       const next = event.key === "Home" ? 0 : event.key === "End" ? levels.length - 1 : (at + (event.key === "ArrowRight" ? 1 : -1) + levels.length) % levels.length;
-      document.querySelector(`#quranWordCardMount [data-word-card-level="${levels[next]}"]`)?.click();
+      const nextTab = document.querySelector(`#quranWordCardMount [data-word-card-level="${levels[next]}"]`);
+      nextTab?.click();
+      // The click replaces the card markup. Move focus to the newly selected
+      // tab so keyboard focus and the roving tabindex remain in agreement.
+      document.querySelector(`#quranWordCardMount [data-word-card-level="${levels[next]}"]`)?.focus({ preventScroll: true });
     });
 
     /** Whole surah -> every ayah; range -> just the selected ayahs. Same bounds logic as currentUnitAyahBounds() for those two unit types, kept separate since that function also has to handle ruku/juz/page. */
