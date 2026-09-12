@@ -18,7 +18,7 @@ import { TENANT } from "./collections.js";
 import { createDocument, updateDocument } from "./envelope.js";
 import { parseUnitKey } from "./unit-keys.js";
 import { runEnvelopeTransaction } from "./envelope.js";
-import { planStudyActivityAppend } from "./study-activity-week.js";
+import { planStudyActivityAppend, planKeyedStudyActivityAppend } from "./study-activity-week.js";
 
 /**
  * ISO date (YYYY-MM-DD) of the start of the week containing `date`, per the
@@ -88,6 +88,23 @@ export async function logStudyActivityEvidence(db, evidence, { weekStartsOn, uid
     const plan = planStudyActivityAppend(snap.exists() ? snap.data() : null, evidence, weekStartsOn);
     if (!plan.appended) return { weekKey, appended: false };
     const fields = { tenantId: evidence.tenantId, personId: evidence.personId, weekKey, entries: plan.entries };
+    if (snap.exists()) transaction.update(TENANT.ACTIVITY, docId, fields);
+    else transaction.create(TENANT.ACTIVITY, docId, fields);
+    return { weekKey, appended: true };
+  });
+}
+
+/** Draft raw-keyed writer. Uninvoked pending Rules and mixed-week read audit. */
+export async function logKeyedStudyActivityEvidence(db, evidence, { weekStartsOn, uid }) {
+  if (!uid) throw new TypeError("Activity actor uid is required.");
+  const weekKey = planKeyedStudyActivityAppend(null, evidence, weekStartsOn).weekKey;
+  const docId = activityDocId(evidence.tenantId, evidence.personId, weekKey);
+  return runEnvelopeTransaction(db, uid, async (transaction) => {
+    const snap = await transaction.get(TENANT.ACTIVITY, docId);
+    const plan = planKeyedStudyActivityAppend(snap.exists() ? snap.data() : null, evidence, weekStartsOn);
+    if (!plan.appended) return { weekKey, appended: false };
+    const fields = { tenantId: evidence.tenantId, personId: evidence.personId, weekKey,
+      entries: plan.entries, v1Events: plan.v1Events, lastEventKey: plan.lastEventKey };
     if (snap.exists()) transaction.update(TENANT.ACTIVITY, docId, fields);
     else transaction.create(TENANT.ACTIVITY, docId, fields);
     return { weekKey, appended: true };
