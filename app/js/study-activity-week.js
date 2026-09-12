@@ -103,8 +103,11 @@ export function planGeneralActivityAppend(existing, { tenantId, personId, weekKe
       typeof weekKey !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(weekKey) ||
       !entry || typeof entry !== "object" || Array.isArray(entry) ||
       !["claimed", "practised", "selfCheck"].includes(entry.action) ||
-      !["subjectId", "unitKey", "unitType", "trackableId", "date"].every((key) => typeof entry[key] === "string" && entry[key].length > 0 && entry[key].length <= 256) ||
-      !["viaProgramId", "viaSessionId"].every((key) => entry[key] === null || typeof entry[key] === "string" && entry[key].length <= 128) ||
+      !["subjectId", "trackableId"].every((key) => validActivityId(entry[key])) ||
+      typeof entry.unitKey !== "string" || !/^[A-Za-z0-9:_-]{1,256}$/.test(entry.unitKey) ||
+      typeof entry.unitType !== "string" || !/^[A-Za-z0-9_-]{1,128}$/.test(entry.unitType) ||
+      typeof entry.date !== "string" ||
+      !["viaProgramId", "viaSessionId"].every((key) => entry[key] === null || validActivityId(entry[key])) ||
       Object.keys(entry).sort().join() !== ["action", "date", "subjectId", "trackableId", "unitKey", "unitType", "viaProgramId", "viaSessionId"].join() ||
       entry.unitType !== entry.unitKey.split(":", 1)[0] ||
       studyActivityWeekKey(entry.date, new Date(`${weekKey}T00:00:00Z`).getUTCDay()) !== weekKey) {
@@ -115,9 +118,9 @@ export function planGeneralActivityAppend(existing, { tenantId, personId, weekKe
   const oldMap = existing?.v1Events ?? {};
   if (!Array.isArray(entries) || !oldMap || typeof oldMap !== "object" || Array.isArray(oldMap)) throw new TypeError("Invalid weekly Activity shape.");
   // Identical source fields had identical arrayUnion values in the old writer.
-  const key = JSON.stringify(["activity-entry:v1", tenantId, personId, weekKey,
+  const key = ["activity-entry:v1", tenantId, personId, weekKey,
     entry.date, entry.subjectId, entry.unitKey, entry.trackableId, entry.action,
-    entry.viaProgramId, entry.viaSessionId]);
+    entry.viaProgramId ?? "", entry.viaSessionId ?? ""].join("|");
   if (new TextEncoder().encode(key).length > 1200) throw new RangeError("Activity key exceeds byte budget.");
   if (Object.hasOwn(oldMap, key)) return Object.freeze({ appended: false, weekKey });
   if (entries.some((legacy) => ["date", "subjectId", "unitKey", "unitType", "trackableId", "action", "viaProgramId", "viaSessionId"].every((field) => legacy?.[field] === entry[field]))) return Object.freeze({ appended: false, weekKey });
