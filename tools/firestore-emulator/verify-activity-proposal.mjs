@@ -20,4 +20,11 @@ for (const id of ["SCOPE-03", "IDENT-02", "ENTRY-03", "ENTRY-04", "LEGACY-02", "
 }
 const rulesDiff = execFileSync("git", ["diff", "--", "firestore.rules"], { cwd: new URL("../..", import.meta.url), encoding: "utf8" });
 assert.equal(rulesDiff, "", "Task 48 must not modify executable Rules");
+const active = fs.readFileSync(new URL("../../firestore.rules", import.meta.url), "utf8");
+const candidate = fs.readFileSync(new URL("../../tests/firestore/activity-v1.proposed.rules", import.meta.url), "utf8");
+const start = "    match /activity/{activityKey} {";
+const end = "    // domains/";
+assert.equal(candidate.slice(0, candidate.indexOf(start)), active.slice(0, active.indexOf(start)), "Candidate changed a pre-Activity rule");
+assert.equal(candidate.slice(candidate.indexOf(end)), active.slice(active.indexOf(end)), "Candidate changed a post-Activity rule");
+assert.notEqual(candidate, active);
 console.log("==== Activity Rules proposal matrix: 22 cases structurally verified; executable Rules unchanged ====");
