@@ -9,15 +9,21 @@ export function keyedStudyEventId(eventKey) {
   return createHash("sha256").update(eventKey, "utf8").digest("hex");
 }
 
+export function rawStudyEventFieldKey(eventKey) {
+  if (typeof eventKey !== "string" || !eventKey.startsWith('["study-approach-contract:v1",') ||
+      Buffer.byteLength(eventKey, "utf8") > 1200) throw new TypeError("Bounded canonical-looking raw event key required.");
+  return eventKey;
+}
+
 /** Models a transaction's state transition, including a historical legacy list. */
-export function prototypeKeyedWeek(existing, evidence) {
+export function prototypeKeyedWeek(existing, evidence, keyFor = keyedStudyEventId) {
   if (!evidence || evidence.contractVersion !== "study-approach-contract:v1" ||
       evidence.action !== "practised" || evidence.masteryEffect !== "none" ||
       !evidence.eventKey || !evidence.date || !evidence.unitKey) throw new TypeError("Versioned Activity evidence required.");
   const entries = existing?.entries ?? [];
   const v1Events = existing?.v1Events ?? {};
   if (!Array.isArray(entries) || v1Events === null || typeof v1Events !== "object" || Array.isArray(v1Events)) throw new TypeError("Invalid weekly document shape.");
-  const id = keyedStudyEventId(evidence.eventKey);
+  const id = keyFor(evidence.eventKey);
   if (Object.hasOwn(v1Events, id)) {
     if (v1Events[id].eventKey !== evidence.eventKey) throw new Error("Event-key hash collision or mismatched stored key.");
     return { appended: false, id, document: existing };
@@ -31,4 +37,8 @@ export function prototypeKeyedWeek(existing, evidence) {
   const document = { ...existing, entries, v1Events: { ...v1Events, [id]: value } };
   if (Buffer.byteLength(JSON.stringify(document), "utf8") > PROTOTYPE_JSON_BUDGET_BYTES) throw new RangeError("Prototype byte budget exceeded.");
   return { appended: true, id, document };
+}
+
+export function prototypeRawKeyedWeek(existing, evidence) {
+  return prototypeKeyedWeek(existing, evidence, rawStudyEventFieldKey);
 }
