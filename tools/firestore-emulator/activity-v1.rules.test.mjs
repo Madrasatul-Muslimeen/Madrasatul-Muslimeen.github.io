@@ -41,6 +41,8 @@ const week = { tenantId, personId, weekKey, entries: [], v1Events: { [key]: valu
     await assertFails(setDoc(doc(anon, "activity", id), week));
     await assertFails(setDoc(doc(other, "activity", id), week));
     await assertFails(setDoc(doc(self, "activity", "t1__p1__2026-09-08"), week));
+    await assertFails(setDoc(doc(self, "activity", "t2__p1__2026-09-07"),
+      { ...week, tenantId: "t2", v1Events: { [key.replace("|t1|", "|t2|")]: { ...value, eventKey: key.replace("|t1|", "|t2|") } }, lastEventKey: key.replace("|t1|", "|t2|") }));
     const ambiguousKey = key.replace("|p1|", "|p1__x|");
     await assertFails(setDoc(doc(self, "activity", "t1__p1__x__2026-09-07"),
       { ...week, personId: "p1__x", v1Events: { [ambiguousKey]: { ...value, eventKey: ambiguousKey } }, lastEventKey: ambiguousKey }));
@@ -66,6 +68,22 @@ const week = { tenantId, personId, weekKey, entries: [], v1Events: { [key]: valu
     const persisted = await assertSucceeds(getDoc(ref));
     assert.deepEqual(persisted.data().entries, []);
     assert.equal(Object.keys(persisted.data().v1Events).length, 2);
+    const oldId = "t1__p1__2026-09-14";
+    const oldRef = doc(self, "activity", oldId);
+    const duplicate = { date: "2026-09-15", action: "claimed", unitKey: "ayah:2:255" };
+    const oldWeek = { tenantId, personId, weekKey: "2026-09-14", entries: [duplicate, duplicate], ...envelope };
+    await env.withSecurityRulesDisabled(async (ctx) => setDoc(doc(ctx.firestore(), "activity", oldId), oldWeek));
+    const oldKey = ["activity-entry:v1", tenantId, personId, "2026-09-14", "2026-09-15", "quran", "ayah:2:255", "recitation", "practised", "", ""].join("|");
+    const oldValue = { ...value, date: "2026-09-15", eventKey: oldKey };
+    await assertFails(updateDoc(oldRef, { entries: [duplicate, { ...duplicate, action: "practised" }], v1Events: { [oldKey]: oldValue }, lastEventKey: oldKey }));
+    await assertSucceeds(updateDoc(oldRef, { v1Events: { [oldKey]: oldValue }, lastEventKey: oldKey }));
+    assert.deepEqual((await assertSucceeds(getDoc(oldRef))).data().entries, [duplicate, duplicate]);
+    const fullId = "t1__p1__2026-09-21";
+    const fullRef = doc(self, "activity", fullId);
+    await env.withSecurityRulesDisabled(async (ctx) => setDoc(doc(ctx.firestore(), "activity", fullId),
+      { ...oldWeek, weekKey: "2026-09-21", entries: Array(500).fill(duplicate) }));
+    const fullKey = oldKey.replace("2026-09-14", "2026-09-21").replace("2026-09-15", "2026-09-22");
+    await assertFails(updateDoc(fullRef, { v1Events: { [fullKey]: { ...oldValue, eventKey: fullKey, date: "2026-09-22" } }, lastEventKey: fullKey }));
   } finally {
     await env.cleanup();
   }
