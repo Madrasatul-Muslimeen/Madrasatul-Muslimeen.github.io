@@ -20,5 +20,7 @@ for (const bad of [{ viaProgramId: {} }, { unitType: "ruku" }, { date: "2026-09-
   assert.throws(() => planGeneralActivityAppend(null, { ...scope, entry: { ...entry, ...bad } }));
 }
 assert.throws(() => planGeneralActivityAppend({ ...scope, entries: Array(500).fill(entry) }, { ...scope, entry: { ...entry, action: "claimed" } }), RangeError);
+assert.equal(projectMixedWeekEntries({ ...scope, entries: Array(501).fill(entry) }).length, 501,
+  "historical weeks above the new write ceiling must remain readable");
 assert.throws(() => planGeneralActivityAppend({ ...scope, entries: [] }, { ...scope, personId: "other", entry }), /scope mismatch/);
 console.log("==== General Activity week: mixed reads, retry, immutable legacy, context and bounds passed ====");

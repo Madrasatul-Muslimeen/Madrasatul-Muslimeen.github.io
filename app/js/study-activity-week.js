@@ -80,13 +80,13 @@ export function planKeyedStudyActivityAppend(existing, evidence, weekStartsOn) {
   return Object.freeze({ appended: true, weekKey: validated.weekKey, entries, v1Events, lastEventKey: key });
 }
 
-/** Bounded read model for a mixed legacy/v1 week; source objects are untouched. */
+/** Mixed legacy/v1 read model; historical arrays are preserved even if they
+ * predate the new 500-entry write ceiling. Firestore already bounds each doc. */
 export function projectMixedWeekEntries(week) {
   const entries = week?.entries ?? [];
   const map = week?.v1Events ?? {};
-  if (!Array.isArray(entries) || !map || typeof map !== "object" || Array.isArray(map) ||
-      entries.length + Object.keys(map).length > MAX_STUDY_WEEK_ENTRIES) {
-    throw new TypeError("Invalid or oversized mixed Activity week.");
+  if (!Array.isArray(entries) || !map || typeof map !== "object" || Array.isArray(map)) {
+    throw new TypeError("Invalid mixed Activity week.");
   }
   for (const [key, value] of Object.entries(map)) {
     if (value?.eventKey !== key || !["study-approach-contract:v1", "activity-entry:v1"].includes(value.contractVersion)) throw new TypeError("Invalid versioned Activity entry.");
