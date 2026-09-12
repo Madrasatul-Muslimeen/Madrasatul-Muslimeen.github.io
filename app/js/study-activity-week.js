@@ -110,7 +110,13 @@ export function planGeneralActivityAppend(existing, { tenantId, personId, weekKe
       !["viaProgramId", "viaSessionId"].every((key) => entry[key] === null || validActivityId(entry[key])) ||
       Object.keys(entry).sort().join() !== ["action", "date", "subjectId", "trackableId", "unitKey", "unitType", "viaProgramId", "viaSessionId"].join() ||
       entry.unitType !== entry.unitKey.split(":", 1)[0] ||
-      studyActivityWeekKey(entry.date, new Date(`${weekKey}T00:00:00Z`).getUTCDay()) !== weekKey) {
+      !/^\d{4}-\d{2}-\d{2}$/.test(entry.date) ||
+      !Number.isFinite(Date.parse(`${entry.date}T00:00:00Z`)) ||
+      new Date(`${entry.date}T00:00:00Z`).toISOString().slice(0, 10) !== entry.date ||
+      !Number.isFinite(Date.parse(`${weekKey}T00:00:00Z`)) ||
+      new Date(`${weekKey}T00:00:00Z`).toISOString().slice(0, 10) !== weekKey ||
+      (Date.parse(`${entry.date}T00:00:00Z`) - Date.parse(`${weekKey}T00:00:00Z`)) / 86_400_000 < -1 ||
+      (Date.parse(`${entry.date}T00:00:00Z`) - Date.parse(`${weekKey}T00:00:00Z`)) / 86_400_000 > 7) {
     throw new TypeError("Invalid general Activity entry.");
   }
   if (existing && (existing.tenantId !== tenantId || existing.personId !== personId || existing.weekKey !== weekKey)) throw new TypeError("Weekly Activity scope mismatch.");

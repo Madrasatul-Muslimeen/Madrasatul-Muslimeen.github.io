@@ -73,5 +73,10 @@ assert.equal(week.entries.length, 2);
 assert.equal(week.entries[1].viaProgramId, "program1");
 assert.equal((await getWeekActivityRaw({}, "t1", "p1", "2026-09-07")).entries.length, 0);
 await assert.rejects(logActivity({}, { ...general, uid: "" }), /uid/);
+if (process.env.TZ === "Australia/Sydney") {
+  const crossBoundary = await logActivity({}, { ...general, date: new Date("2026-09-13T14:30:00Z") });
+  assert.equal(crossBoundary.weekKey, "2026-09-14", "local Monday after UTC Sunday must retain tenant week");
+  assert.equal((await getWeekActivity({}, "t1", "p1", "2026-09-14")).entries[0].date, "2026-09-13");
+}
 delete globalThis.__activityStub;
 console.log("==== Study weekly Activity adapter: serialized retry, append and rejection passed ====");

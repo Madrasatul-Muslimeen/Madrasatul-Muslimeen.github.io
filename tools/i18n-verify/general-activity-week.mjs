@@ -9,10 +9,14 @@ assert.equal(planGeneralActivityAppend({ ...scope, ...first }, { ...scope, entry
 const second = planGeneralActivityAppend({ ...scope, ...first }, { ...scope, entry: { ...entry, viaSessionId: "class1", action: "selfCheck" } });
 assert.equal(projectMixedWeekEntries(second)[1].viaSessionId, "class1");
 assert.equal(Object.keys(second.v1Events).length, 2);
+assert.equal(planGeneralActivityAppend(null, { ...scope, entry: { ...entry, date: "2026-09-06" } }).appended, true,
+  "UTC may precede the local week start by one day");
+assert.equal(planGeneralActivityAppend(null, { ...scope, entry: { ...entry, date: "2026-09-14" } }).appended, true,
+  "UTC may follow the local week end by one day");
 const legacy = { ...scope, entries: [entry, entry] };
 assert.equal(planGeneralActivityAppend(legacy, { ...scope, entry }).appended, false);
 assert.deepEqual(planGeneralActivityAppend(legacy, { ...scope, entry: { ...entry, action: "claimed" } }).entries, legacy.entries);
-for (const bad of [{ viaProgramId: {} }, { unitType: "ruku" }, { date: "2026-09-19" }, { action: "invented" }, { trackableId: "x".repeat(300) }]) {
+for (const bad of [{ viaProgramId: {} }, { unitType: "ruku" }, { date: "2026-09-19" }, { date: "2026-02-30" }, { action: "invented" }, { trackableId: "x".repeat(300) }]) {
   assert.throws(() => planGeneralActivityAppend(null, { ...scope, entry: { ...entry, ...bad } }));
 }
 assert.throws(() => planGeneralActivityAppend({ ...scope, entries: Array(500).fill(entry) }, { ...scope, entry: { ...entry, action: "claimed" } }), RangeError);
