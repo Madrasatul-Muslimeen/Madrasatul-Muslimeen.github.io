@@ -52,3 +52,39 @@ export function planStudyActivityAppend(existing, evidence, weekStartsOn) {
   }
   return Object.freeze({ appended: true, weekKey, entries: nextEntries });
 }
+
+/** Draft raw-keyed v1 shape. Keeps historical array entries byte-for-byte. */
+export function planKeyedStudyActivityAppend(existing, evidence, weekStartsOn) {
+  const validated = planStudyActivityAppend(existing, evidence, weekStartsOn);
+  const key = evidence.eventKey;
+  if (new TextEncoder().encode(key).length > 1200) throw new RangeError("Raw Study event field key exceeds byte budget.");
+  const oldMap = existing?.v1Events ?? {};
+  if (!oldMap || typeof oldMap !== "object" || Array.isArray(oldMap)) throw new TypeError("Invalid versioned Activity map.");
+  if (!validated.appended) return Object.freeze({ appended: false, weekKey: validated.weekKey });
+  if (Object.hasOwn(oldMap, key)) {
+    if (oldMap[key]?.eventKey !== key) throw new TypeError("Stored Study event key mismatch.");
+    return Object.freeze({ appended: false, weekKey: validated.weekKey });
+  }
+  if ((existing?.entries?.length ?? 0) + Object.keys(oldMap).length >= MAX_STUDY_WEEK_ENTRIES) throw new RangeError("Weekly mixed Activity entry limit reached.");
+  const entry = validated.entries.at(-1);
+  const v1Events = { ...oldMap, [key]: entry };
+  const entries = existing?.entries ?? [];
+  if (new TextEncoder().encode(JSON.stringify({ tenantId: evidence.tenantId, personId: evidence.personId, weekKey: validated.weekKey, entries, v1Events })).length > MAX_STUDY_WEEK_JSON_BYTES) {
+    throw new RangeError("Keyed weekly Activity byte preflight exceeded.");
+  }
+  return Object.freeze({ appended: true, weekKey: validated.weekKey, entries, v1Events, lastEventKey: key });
+}
+
+/** Bounded read model for a mixed legacy/v1 week; source objects are untouched. */
+export function projectMixedWeekEntries(week) {
+  const entries = week?.entries ?? [];
+  const map = week?.v1Events ?? {};
+  if (!Array.isArray(entries) || !map || typeof map !== "object" || Array.isArray(map) ||
+      entries.length + Object.keys(map).length > MAX_STUDY_WEEK_ENTRIES) {
+    throw new TypeError("Invalid or oversized mixed Activity week.");
+  }
+  for (const [key, value] of Object.entries(map)) {
+    if (value?.eventKey !== key || value.contractVersion !== "study-approach-contract:v1") throw new TypeError("Invalid versioned Activity entry.");
+  }
+  return [...entries, ...Object.values(map)];
+}

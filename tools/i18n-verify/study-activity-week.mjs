@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { projectStudyActivityEvidence } from "../../app/js/study-activity-evidence.js";
-import { planStudyActivityAppend, studyActivityWeekKey, MAX_STUDY_WEEK_ENTRIES } from "../../app/js/study-activity-week.js";
+import { planStudyActivityAppend, planKeyedStudyActivityAppend, projectMixedWeekEntries, studyActivityWeekKey, MAX_STUDY_WEEK_ENTRIES } from "../../app/js/study-activity-week.js";
 
 let passed = 0;
 const check = (name, fn) => { fn(); passed++; console.log(`  PASS  ${name}`); };
@@ -54,5 +54,27 @@ check("Listening requires qualifying playback on revalidation", () => {
   const listening = projectStudyActivityEvidence({ ...evidence, eventType: "listening.completed", mode: "arabic-only", playedSeconds: 80, selectedUnitSeconds: 100 });
   assert.ok(planStudyActivityAppend(null, listening, 1).appended);
   assert.throws(() => planStudyActivityAppend(null, { ...listening, playedSeconds: 1 }, 1), /contract/);
+});
+check("keyed draft preserves legacy entries and projects one v1 entry", () => {
+  const legacy = [{ action: "claimed", marker: "identical" }, { action: "claimed", marker: "identical" }];
+  const existing = { tenantId: "t1", personId: "p1", weekKey: first.weekKey, entries: legacy };
+  const result = planKeyedStudyActivityAppend(existing, evidence, 1);
+  assert.equal(result.entries, legacy);
+  assert.equal(result.v1Events[evidence.eventKey].eventKey, evidence.eventKey);
+  assert.equal(planKeyedStudyActivityAppend({ ...existing, v1Events: result.v1Events }, evidence, 1).appended, false);
+  const mixed = projectMixedWeekEntries({ ...existing, v1Events: result.v1Events });
+  assert.equal(mixed.length, 3); assert.equal(mixed[0], legacy[0]); assert.equal(mixed[1], legacy[1]);
+});
+check("keyed draft rejects malformed maps and oversized raw keys", () => {
+  assert.throws(() => planKeyedStudyActivityAppend({ tenantId: "t1", personId: "p1", weekKey: first.weekKey, entries: [], v1Events: [] }, evidence, 1), /map/);
+  assert.throws(() => projectMixedWeekEntries({ entries: [], v1Events: { forged: { eventKey: "other", contractVersion: "study-approach-contract:v1" } } }), /Invalid versioned/);
+  const large = projectStudyActivityEvidence({ eventType: "journal.note-created", tenantId: "t1", personId: "p1", unitKey: "ayah:2:255", noteId: "ñ".repeat(590), dateIso: "2026-09-12" });
+  assert.throws(() => planKeyedStudyActivityAppend(null, large, 1), /field key/);
+});
+check("keyed draft bounds legacy and versioned entries together", () => {
+  const existing = { tenantId: "t1", personId: "p1", weekKey: first.weekKey,
+    entries: Array.from({ length: 250 }, (_, i) => ({ marker: i })),
+    v1Events: Object.fromEntries(Array.from({ length: 250 }, (_, i) => [`old:${i}`, { eventKey: `old:${i}` }])) };
+  assert.throws(() => planKeyedStudyActivityAppend(existing, evidence, 1), /mixed Activity entry limit/);
 });
 console.log(`\n==== Study weekly Activity planning: ${passed} passed, 0 failed ====`);
