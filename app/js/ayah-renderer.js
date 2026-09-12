@@ -139,7 +139,15 @@ export function renderWordByWordPanel(ayah, { langs = ["en"], interactive = fals
         : "";
       const tag = occurrenceAttrs ? "button" : "div";
       const type = occurrenceAttrs ? ' type="button"' : "";
-      const accessibleName = occurrenceAttrs ? ` aria-label="${escapeHtml(`${w.arabic} — ${w.translation?.en || w.translation?.bn || "Quran word"}`)}"` : "";
+      // I11 -- a screen reader's ONLY name for this button is its aria-label,
+      // so it follows the reader's language like any other visible text. It
+      // used to hardcode an English "Quran word" fallback and to prefer the
+      // English gloss outright, which read the wrong language aloud to
+      // exactly the reader the Bangla is for. Prefers the gloss languages
+      // already chosen for this panel, in their own order.
+      const spokenGloss = langs.map((l) => w.translation?.[l]).find(Boolean)
+        || w.translation?.en || w.translation?.bn || t("Quran word");
+      const accessibleName = occurrenceAttrs ? ` aria-label="${escapeHtml(`${w.arabic} — ${spokenGloss}`)}"` : "";
       return `<${tag}${type} class="wbw-word${occurrenceAttrs ? " wbw-word-clickable" : ""}" data-position="${w.position}"${occurrenceAttrs}${accessibleName}>
         <${contentTag} class="wbw-arabic" dir="rtl" lang="ar">${escapeHtml(w.arabic)}</${contentTag}>
         ${translit}

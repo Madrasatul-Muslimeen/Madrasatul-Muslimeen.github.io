@@ -188,6 +188,60 @@ for (const lang of ["en", "bn"]) {
   await ctx.close();
 }
 
+// Responsive. A new control is a layout change and gets measured like one --
+// this project's own lesson, learned when a card was reported clean at seven
+// widths and then ran off both edges of the owner's phone. Measured at every
+// width behaviour.mjs uses, in both languages, on the RENDERED box.
+{
+  console.log("\n=== the card fits, at every viewport, in both languages ===");
+  const VIEWPORTS = [
+    ["320x640", 320, 640], ["360x640", 360, 640], ["390x844", 390, 844],
+    ["412x915", 412, 915], ["768x1024", 768, 1024], ["1280x800", 1280, 800],
+  ];
+  for (const lang of ["en", "bn"]) {
+    for (const [name, width, height] of VIEWPORTS) {
+      const ctx = await newContext(browser, { appLang: lang, viewport: { width, height } });
+      const { page } = await openPage(ctx, "/app/quranrevival.html");
+      await enterReadWithWbw(page);
+      const n = await page.locator("[data-word-occurrence]").count();
+      if (!n) { check(`${lang} ${name} words render`, false, "no clickable words"); await ctx.close(); continue; }
+      await page.locator("[data-word-occurrence]").first().click();
+      await page.waitForTimeout(400);
+      await page.click('[data-word-card-level="basic"]');
+      await page.waitForTimeout(400);
+      const m = await page.evaluate((vw) => {
+        const c = document.querySelector(".quran-word-card");
+        if (!c) return null;
+        const r = c.getBoundingClientRect();
+        const tabs = [...c.querySelectorAll('[role="tab"]')].map((t) => {
+          const tr = t.getBoundingClientRect();
+          return { top: Math.round(tr.top), h: Math.round(tr.height), w: Math.round(tr.width) };
+        });
+        const btns = [...c.querySelectorAll("button")].map((b) => {
+          const br = b.getBoundingClientRect();
+          return Math.min(Math.round(br.width), Math.round(br.height));
+        });
+        return {
+          left: Math.round(r.left), right: Math.round(r.right), w: Math.round(r.width),
+          tabRows: new Set(tabs.map((t) => t.top)).size,
+          smallestTap: btns.length ? Math.min(...btns) : 0,
+          docOverflow: document.documentElement.scrollWidth > vw,
+        };
+      }, width);
+      check(`${lang} ${name} card is on screen, neither edge cut`,
+            !!m && m.left >= 0 && m.right <= width, JSON.stringify(m && { left: m.left, right: m.right, vw: width }));
+      check(`${lang} ${name} the page does not scroll sideways`, m && !m.docOverflow, JSON.stringify(m?.docOverflow));
+      check(`${lang} ${name} the three tabs stay on one line`, m && m.tabRows === 1, `rows=${m?.tabRows}`);
+      // ~40px is what this project settled on for anything a finger presses;
+      // these were 29px. Measured on the smallest side of every button in the
+      // card, so a shrunken arrow or close button fails here too.
+      check(`${lang} ${name} every button is a real tap target`,
+            m && m.smallestTap >= 36, `smallest=${m?.smallestTap}px`);
+      await ctx.close();
+    }
+  }
+}
+
 console.log(`\n==== MAP Phase 2 rendered acceptance: ${pass} passed, ${fail} failed ====`);
 await browser.close();
 process.exit(fail ? 1 : 0);

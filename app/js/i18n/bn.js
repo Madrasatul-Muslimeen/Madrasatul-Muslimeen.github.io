@@ -2176,6 +2176,7 @@ export const BN = {
   "Make the backup": "ব্যাকআপ তৈরি করুন",
   // MAP Phase 2 -- the persistent Quran Word Card. Every string the card can
   // print, so a Bangla reader never meets an English panel (I11).
+  "Quran word": "কুরআনের শব্দ",
   "Quran word card": "কুরআন শব্দ কার্ড",
   "Arabic learning level": "আরবি শেখার স্তর",
   "Previous word": "আগের শব্দ",

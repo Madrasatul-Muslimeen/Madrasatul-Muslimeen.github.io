@@ -1815,10 +1815,34 @@
   #quranWordCardMount { flex: 0 0 auto; max-height: min(45vh, 24rem); overflow-y: auto; padding: 0.5rem; background: rgba(255,255,255,0.97); border-top: 1px solid #d8c68a; }
   .quran-word-card { max-width: 42rem; margin: 0 auto; border: 1px solid #d8c68a; border-radius: 0.65rem; background: #fffdf6; padding: 0.65rem; box-shadow: 0 -0.2rem 1rem rgba(0,0,0,0.08); }
   .quran-word-card header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: center; }
+  /* Previous / next / close. Square, fixed, never shrinking, so the three read
+     as one group rather than three sizes -- and 40px, not the 29px they were.
+     flex-shrink: 0 keeps them intact when a long Arabic word squeezes the row;
+     the middle column is what gives. */
+  .quran-word-card header button { flex: 0 0 auto; width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; padding: 0; font-size: 1.25rem; line-height: 1; border: 1px solid #d8c68a; border-radius: 0.35rem; background: #fff; color: #1F3A6E; cursor: pointer; }
+  .quran-word-card header button:disabled { opacity: 0.4; cursor: default; }
+  .quran-word-card header > div { flex: 1 1 auto; min-width: 0; }
   .word-card-arabic { font-family: var(--quran-font); font-size: 2rem; line-height: 1.5; }
   .word-card-reference, .word-card-transliteration, .quran-word-card dd, .quran-word-card p { font-size: 0.9rem; }
+  /* The boxes do not overlap -- measured, bottom meets top exactly -- but an
+     Arabic kasra paints below its line box, so the reference sat against the
+     glyph. A small gap, not a line-height change, which would move the Arabic. */
+  .word-card-reference { margin-top: 0.2rem; }
   .quran-word-card [role="tablist"] { display: flex; gap: 0.35rem; margin: 0.5rem 0; flex-wrap: wrap; }
+  /* The three level tabs. Measured, not guessed: English needs 302px for the
+     row and a 320px phone offers 249px, so at the two narrow phone widths the
+     row wrapped into the ragged two-line stack this project has shipped once
+     before and had to be sent a photo of. They share the row (flex 1 1 auto,
+     min-width 0 so a long label cannot push the row wider) and step their type
+     and side padding down at 380px and again at 340px -- the same shape used
+     for the Approach capsules. The TAP TARGET does not shrink with them: it
+     was 29px, under the ~40px this project settled on, and is 40px at every
+     width now. The two media queries are deliberately placed AFTER the base
+     rule -- equal specificity, so source order is what makes them win. */
+  .quran-word-card [role="tab"] { flex: 1 1 auto; min-width: 0; min-height: 40px; padding: 0.5rem 0.8rem; font-size: 0.88rem; line-height: 1.2; white-space: nowrap; border: 1px solid #d8c68a; border-radius: 0.35rem; background: #fff; color: #1F3A6E; cursor: pointer; }
   .quran-word-card [role="tab"][aria-selected="true"] { background: #1F3A6E; color: white; }
+  @media (max-width: 380px) { .quran-word-card [role="tab"] { padding: 0.5rem 0.4rem; font-size: 0.82rem; } }
+  @media (max-width: 340px) { .quran-word-card [role="tab"] { padding: 0.5rem 0.25rem; font-size: 0.75rem; } }
   .quran-word-card dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 0.75rem; }
   .quran-word-card dt { font-weight: 700; }
 
