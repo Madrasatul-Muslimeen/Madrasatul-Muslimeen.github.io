@@ -5,6 +5,38 @@ import { quranWordOccurrenceId, wordIdentityLayers } from "./quran-word-identity
 
 export const WORD_CARD_LEVELS = Object.freeze(["wbw", "basic", "depth"]);
 
+/**
+ * Every user-visible string the card can print (I11). A caller passes its
+ * reader's own language for each; these English values are only the fallback.
+ * {count} and {error} are substituted, so a translation may place them
+ * wherever that language needs them.
+ */
+export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
+  cardRegion: "Quran word card",
+  tablist: "Arabic learning level",
+  previous: "Previous word",
+  next: "Next word",
+  close: "Close word card",
+  wbw: "WbW",
+  basic: "Basic Arabic",
+  depth: "Arabic in Depth",
+  meaningUnavailableEn: "Meaning unavailable",
+  meaningUnavailableBn: "অর্থ পাওয়া যায়নি",
+  lemma: "Lemma",
+  root: "Root",
+  partOfSpeech: "Part of speech",
+  unknown: "Unknown",
+  rootOccurrences: "{count} root-linked occurrences",
+  lemmaOccurrences: "{count} lemma-linked occurrences",
+  rootUnavailable: "Root unavailable in the approved dataset",
+  lemmaUnavailable: "Lemma unavailable in the approved dataset",
+  loadingOccurrences: "Loading occurrences…",
+  occurrencesUnavailable: "Occurrence list unavailable: {error}",
+  semanticRangeMissing: "Semantic range not yet supplied",
+  openDictionary: "Open dictionary source",
+  dictionaryUnavailable: "Dictionary source unavailable",
+});
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
@@ -53,30 +85,34 @@ function tabButton(level, selected, label) {
   return `<button type="button" role="tab" data-word-card-level="${level}" aria-selected="${selected}" tabindex="${selected ? "0" : "-1"}">${escapeHtml(label)}</button>`;
 }
 
-function levelPanel(level, word, layers, context) {
+function levelPanel(level, word, layers, context, text) {
   if (level === "wbw") {
+    // Deliberately bilingual: WbW shows the English and Bangla gloss together
+    // whatever the reader's language, so each fallback stays in its own
+    // language rather than following the interface setting.
     return `<div role="tabpanel" data-word-card-panel="wbw">
-      <p class="word-card-meaning word-card-meaning-en" lang="en">${escapeHtml(word.translation?.en || "Meaning unavailable")}</p>
-      <p class="word-card-meaning word-card-meaning-bn" lang="bn">${escapeHtml(word.translation?.bn || "অর্থ পাওয়া যায়নি")}</p>
+      <p class="word-card-meaning word-card-meaning-en" lang="en">${escapeHtml(word.translation?.en || text.meaningUnavailableEn)}</p>
+      <p class="word-card-meaning word-card-meaning-bn" lang="bn">${escapeHtml(word.translation?.bn || text.meaningUnavailableBn)}</p>
       ${word.transliteration ? `<p class="word-card-transliteration">${escapeHtml(word.transliteration)}</p>` : ""}
     </div>`;
   }
   if (level === "basic") {
     const refs = (items) => (items?.length ? `<ol class="word-card-occurrences">${items.slice(0, 20).map((r) => `<li>${r.surah}:${r.ayah}:${r.position}</li>`).join("")}</ol>` : "");
+    const count = (template, n) => escapeHtml(String(template).replace("{count}", String(n)));
     return `<div role="tabpanel" data-word-card-panel="basic">
-      <dl><dt>Lemma</dt><dd>${escapeHtml(layers.lemma || "Unknown")}</dd><dt>Root</dt><dd>${escapeHtml(layers.root || "Unknown")}</dd><dt>Part of speech</dt><dd>${escapeHtml(word.morphology?.pos || "Unknown")}</dd></dl>
-      <p>${layers.root ? `${Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)} root-linked occurrences` : "Root unavailable in the approved dataset"}</p>${refs(context.rootOccurrences)}
-      <p>${layers.lemma ? `${Number(context.lemmaOccurrenceCount ?? context.lemmaOccurrences?.length ?? 0)} lemma-linked occurrences` : "Lemma unavailable in the approved dataset"}</p>${refs(context.lemmaOccurrences)}
-      ${context.occurrencesLoading ? "<p>Loading occurrences…</p>" : ""}
-      ${context.occurrencesError ? `<p role="status">Occurrence list unavailable: ${escapeHtml(context.occurrencesError)}</p>` : ""}
+      <dl><dt>${escapeHtml(text.lemma)}</dt><dd>${escapeHtml(layers.lemma || text.unknown)}</dd><dt>${escapeHtml(text.root)}</dt><dd>${escapeHtml(layers.root || text.unknown)}</dd><dt>${escapeHtml(text.partOfSpeech)}</dt><dd>${escapeHtml(word.morphology?.pos || text.unknown)}</dd></dl>
+      <p>${layers.root ? count(text.rootOccurrences, Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)) : escapeHtml(text.rootUnavailable)}</p>${refs(context.rootOccurrences)}
+      <p>${layers.lemma ? count(text.lemmaOccurrences, Number(context.lemmaOccurrenceCount ?? context.lemmaOccurrences?.length ?? 0)) : escapeHtml(text.lemmaUnavailable)}</p>${refs(context.lemmaOccurrences)}
+      ${context.occurrencesLoading ? `<p>${escapeHtml(text.loadingOccurrences)}</p>` : ""}
+      ${context.occurrencesError ? `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", context.occurrencesError))}</p>` : ""}
     </div>`;
   }
   const dictionaryUrl = safeDictionaryUrl(context.dictionaryUrl);
   const dictionaryLink = dictionaryUrl
-    ? `<a href="${escapeHtml(dictionaryUrl)}" target="_blank" rel="noopener noreferrer">Open dictionary source</a>`
-    : `<span>Dictionary source unavailable</span>`;
+    ? `<a href="${escapeHtml(dictionaryUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text.openDictionary)}</a>`
+    : `<span>${escapeHtml(text.dictionaryUnavailable)}</span>`;
   return `<div role="tabpanel" data-word-card-panel="depth">
-    <p>${escapeHtml(context.semanticRange || "Semantic range not yet supplied")}</p>${dictionaryLink}
+    <p>${escapeHtml(context.semanticRange || text.semanticRangeMissing)}</p>${dictionaryLink}
   </div>`;
 }
 
@@ -86,13 +122,16 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
   const occurrenceId = quranWordOccurrenceId(chapter.surahNumber, ayah.ayah, word.position);
   if (occurrenceId !== state.occurrenceId) throw new Error("Word Card data does not match its persistent occurrence identity.");
   const layers = wordIdentityLayers({ surah: chapter.surahNumber, ayah: ayah.ayah, position: word.position, arabic: word.arabic, morphology: word.morphology });
-  const text = { previous: "Previous word", next: "Next word", close: "Close word card", wbw: "WbW", basic: "Basic Arabic", depth: "Arabic in Depth", ...labels };
-  return `<section class="quran-word-card" role="region" aria-label="Quran word card" data-occurrence-id="${escapeHtml(occurrenceId)}">
+  // I11: every user-visible string here is overridable, so the page can hand
+  // the card its reader's own language. The English values are the fallback
+  // for a caller that supplies nothing, never the only thing a reader can get.
+  const text = { ...WORD_CARD_DEFAULT_LABELS, ...labels };
+  return `<section class="quran-word-card" role="region" aria-label="${escapeHtml(text.cardRegion)}" data-occurrence-id="${escapeHtml(occurrenceId)}">
     <header><button type="button" data-word-card-move="previous" aria-label="${escapeHtml(text.previous)}"${context.hasPrevious ? "" : " disabled"}>‹</button>
       <div><div class="word-card-arabic" dir="rtl" lang="ar">${escapeHtml(layers.surfaceToken)}</div><div class="word-card-reference">${chapter.surahNumber}:${ayah.ayah}:${word.position}</div></div>
       <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
-    <div role="tablist" aria-label="Arabic learning level">${tabButton("wbw", state.level === "wbw", text.wbw)}${tabButton("basic", state.level === "basic", text.basic)}${tabButton("depth", state.level === "depth", text.depth)}</div>
-    ${levelPanel(state.level, word, layers, context)}
+    <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabButton("wbw", state.level === "wbw", text.wbw)}${tabButton("basic", state.level === "basic", text.basic)}${tabButton("depth", state.level === "depth", text.depth)}</div>
+    ${levelPanel(state.level, word, layers, context, text)}
   </section>`;
 }

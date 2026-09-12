@@ -62,9 +62,42 @@ const openHome = async (page) => {
   await page.evaluate(() => { const d = document.querySelector(".nav-cat-home"); if (d) d.open = true; });
   await page.waitForTimeout(80);
 };
+// UPDATED (reconciliation round): Study options no longer sits on the tab
+// row itself -- it moved inside the STUDY pillar menu (#studyPillarMenu,
+// the APPROACH | STUDY | EXPLORE | MAPPING MY JOURNEY structure), which
+// starts [hidden]. #tabStudyOptionsBtn therefore resolves but measures 0x0
+// and can never be clicked, which is what stopped this suite dead in
+// section 8 on main itself. Open the pillar first, exactly as a reader does.
+// Asserted on the RENDERED box, not on .hidden -- this page's own standing
+// lesson is that [hidden] is routinely overruled by a display rule.
+// Every real tap on Study options, open OR close. The pillar menu hides
+// itself again after each of its own clicks (studyPillarMenu's click
+// handler), so reachability is re-established on every call rather than
+// once. Checks the RENDERED box, never .hidden -- this page's own standing
+// lesson is that [hidden] loses to a display rule.
+const clickStudyOptions = async (page) => {
+  const reachable = await page.evaluate(() => {
+    const b = document.getElementById("tabStudyOptionsBtn");
+    return !!b && b.getBoundingClientRect().width > 0;
+  });
+  if (!reachable) { await page.click("#tabStudyBtn"); await page.waitForTimeout(120); }
+  await page.click("#tabStudyOptionsBtn");
+};
+// Read and Note moved into the same pillar menu, so a direct click on either
+// hits a 0x0 element for exactly the reason Options did.
+const clickStudyPillarItem = async (page, id) => {
+  const reachable = await page.evaluate((i) => {
+    const b = document.getElementById(i);
+    return !!b && b.getBoundingClientRect().width > 0;
+  }, id);
+  if (!reachable) { await page.click("#tabStudyBtn"); await page.waitForTimeout(120); }
+  await page.click(`#${id}`);
+};
 const openStudyOptions = async (page) => {
   const open = await page.evaluate(() => !document.getElementById("panelStudyOptions").hidden);
-  if (!open) { await page.click("#tabStudyOptionsBtn"); await page.waitForTimeout(180); }
+  if (open) return;
+  await clickStudyOptions(page);
+  await page.waitForTimeout(180);
 };
 const openCats = async (page) => {
   await page.evaluate(() => document.querySelectorAll(".nav-cat").forEach((d) => (d.open = true)));
@@ -1043,7 +1076,7 @@ console.log("\n=== 26. v07.39: the 460KB reciter timing map is not on the load p
   // Shell round 19 retired the Listening card, so the gestures that warm the
   // map are Study options, the Read tab, ticking a reciter and Play itself.
   // Opening Study options is the first of them.
-  await page.click("#tabStudyOptionsBtn");
+  await clickStudyOptions(page);
   await page.waitForTimeout(700);
   check("26b opening Study options warms it", timingRequests.length >= 1,
         `${timingRequests.length} request(s) after opening the panel`);
@@ -1067,7 +1100,7 @@ console.log("\n=== 27. Shell round 14: the Study options bars, and Search ===");
   check("27a no search index is fetched on load", searchRequests.length === 0,
         `${searchRequests.length} request(s) during load`);
 
-  await page.click("#tabStudyOptionsBtn");
+  await clickStudyOptions(page);
   await page.waitForTimeout(200);
 
   // The owner's four tablines. Ids are asserted, not positions: the round's
@@ -1343,12 +1376,18 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   check("29a the landing screen is still the wheel", before.wheelShown && before.readHidden);
   check("29a the Study screen has LEFT the Study options drawer", !before.studyInPanel);
   check("29a ...and lives on the stage", before.studyOnStage);
-  // Enhancement round -- five tabs now: Options, Read, Note, Approach, Explore.
-  check("29a the dock carries five tabs",
-        before.tabs.length === 5 && before.tabs.join(",") === "Options,Read,Note,Approach,Explore",
+  // UPDATED (reconciliation round): the dock is FOUR pillars now, not five
+  // tabs. Options/Read/Note stopped being their own dock tabs and became
+  // items inside the STUDY pillar menu; the dock itself carries the
+  // architecture's primary structure, APPROACH | STUDY | EXPLORE | MAPPING
+  // MY JOURNEY (docs/governance/ACTIVE-ARCHITECTURE.md). The old expectation
+  // described the pre-pillar dock, so it is restated rather than deleted --
+  // the app is right here and the check was out of date.
+  check("29a the dock carries the four pillars",
+        before.tabs.length === 4 && before.tabs.join(",") === "Approach,Study,Explore,Mapping My Journey",
         JSON.stringify(before.tabs));
 
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
   const reading = await page.evaluate(() => ({
     readShown: !document.getElementById("readView").hidden,
@@ -1387,14 +1426,14 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
 
   // Study options is ONE tap away while reading -- the owner's own reason for
   // choosing this shape over "reading replaces the wheel".
-  await page.click("#tabStudyOptionsBtn");
+  await clickStudyOptions(page);
   await page.waitForTimeout(300);
   const opts = await page.evaluate(() => ({
     panelOpen: !document.getElementById("panelStudyOptions").hidden,
     stillReading: !document.getElementById("readView").hidden,
   }));
   check("29c Study options opens over the reading in one tap", opts.panelOpen && opts.stillReading);
-  await page.click("#tabStudyOptionsBtn");
+  await clickStudyOptions(page);
   await page.waitForTimeout(250);
 
   // Full screen, and the tap that carries the cycle round. Round 22 made this
@@ -1463,7 +1502,7 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
     await page.waitForTimeout(300);
   }
 
-  await page.click("#tabReadBtn"); // tapping the open tab returns to the wheel
+  await clickStudyPillarItem(page, "tabReadBtn"); // tapping the open tab returns to the wheel
   await page.waitForTimeout(350);
   const back = await page.evaluate(() => ({
     // Fix round -- measured, not read off `display`: v07.115's own
@@ -1483,7 +1522,7 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   check("29e ...and Full screen is dropped on the way out", !back.immersive);
 
   // The owner's answer to "where does a multi-ayah unit open?": the first ayah.
-  await page.click("#tabStudyOptionsBtn");
+  await clickStudyOptions(page);
   await page.waitForTimeout(250);
   await page.selectOption("#surahSelect", "2");
   await page.waitForTimeout(1200);
@@ -1491,9 +1530,9 @@ console.log("\n=== 29. Shell round 17: the reading screen ===");
   await page.waitForTimeout(400);
   await page.selectOption("#unitTypeSelect", "ruku");
   await page.waitForTimeout(400);
-  await page.click("#tabStudyOptionsBtn");
+  await clickStudyOptions(page);
   await page.waitForTimeout(200);
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(600);
   const firstAyah = await page.evaluate(() => ({
     position: document.getElementById("ayahPosition").textContent.trim(),
@@ -1519,7 +1558,7 @@ console.log("\n=== 29h. The reading screen in Bangla ===");
   const { page } = await openPage(ctx, "/app/quranrevival.html");
   const tab = await page.evaluate(() => document.getElementById("tabReadBtn").textContent.trim());
   check("29h the Read tab is Bangla", BANGLA.test(tab), tab);
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
   // Shell round 21 removed the "◂ Mastery Wheel" button from this bar on the
   // owner's own reasoning (the dock's Read tab already returns to the wheel),
@@ -1709,7 +1748,7 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
         listening.oldPlayGone && JSON.stringify(listening.playButtons) === '["drillPlayBtn"]', JSON.stringify(listening.playButtons));
 
   // The transport itself, on the reading screen where the owner asked for it.
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(600);
   // Shell round 21 merged Pause INTO Play (one button reading the audio's real
   // state) and gave the freed slot to Full screen -- the owner's own plan. So
@@ -1778,7 +1817,7 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   // round 28 made it seven ("Page by page", the sideways reading); the
   // enhancement round that split Root/Derivatives apart made it eight.
   check("30l every Reading view tick is Bangla", bn.ticks.length === 8 && bn.ticks.every((x) => BANGLA.test(x)), JSON.stringify(bn.ticks));
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(500);
   // Round 22: icons carry no words, so what must be in Bangla is their name.
   // Direct children only -- see the enhancement-round comment at 30j above
@@ -1904,7 +1943,7 @@ console.log("\n=== 31f. The timing map still cannot reach the load path ===");
   check("31f nothing fetches it on load", hits.length === 0, String(hits.length));
   // Opening the READING screen warms it -- the owner's own case: arriving
   // from a bookmark and pressing Play without ever opening Study options.
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(900);
   check("31f opening the reading screen warms it", hits.length >= 1, String(hits.length));
   await page.close();
@@ -2293,13 +2332,13 @@ console.log("\n=== 33. Shell round 21: unit Prev/Next, and configurable full scr
 
 const openRead = async (page) => {
   const reading = await page.evaluate(() => !document.getElementById("readView").hidden);
-  if (!reading) { await page.click("#tabReadBtn"); await page.waitForTimeout(350); }
+  if (!reading) { await clickStudyPillarItem(page, "tabReadBtn"); await page.waitForTimeout(350); }
 };
 const setUnit = async (page, unit) => {
   await openStudyOptions(page);
   await page.selectOption("#unitTypeSelect", unit);
   await page.waitForTimeout(450);
-  await page.click("#tabStudyOptionsBtn"); // close it again
+  await clickStudyOptions(page); // close it again
   await page.waitForTimeout(150);
 };
 const readRef = readingRef; // round 22: #readRef is retired, see readingRef above
@@ -2448,7 +2487,7 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
         ticks.ids.join() === "banner,topnav,readbar,transport,dock", JSON.stringify(ticks.ids));
   check("33f ...and all are on by default (the owner's 'entire mobile screen')", ticks.allOn);
 
-  await page.click("#tabStudyOptionsBtn");
+  await clickStudyOptions(page);
   await openRead(page);
   // Round 22: three states, so the bare one is two presses away.
   await page.click("#hideChromeBtn");
@@ -2836,8 +2875,8 @@ console.log("\n=== 35. Shell round 23: the bundled Qur'an typefaces ===");
 
   // The face must actually be DOWNLOADED, not merely named -- that is the
   // whole defect this round fixes.
-  await page.click("#tabStudyOptionsBtn");
-  await page.click("#tabReadBtn");
+  await clickStudyOptions(page);
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(900);
   check("35b the woff2 is really fetched, not just referenced",
         fontHits.includes("scheherazade.woff2"), JSON.stringify(fontHits));
@@ -2944,8 +2983,8 @@ console.log("\n=== 36. Shell round 24: word-by-word direction and transliteratio
 
   await page.selectOption("#wbwLangSelect", "both");
   await page.waitForTimeout(500);
-  await page.click("#tabStudyOptionsBtn");
-  await page.click("#tabReadBtn");
+  await clickStudyOptions(page);
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(700);
   const both = await readChips();
 
@@ -3014,8 +3053,8 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   await page.check("#rootsToggle");
   await page.check("#derivativesToggle");
   await page.waitForTimeout(400);
-  await page.click("#tabStudyOptionsBtn");
-  await page.click("#tabReadBtn");
+  await clickStudyOptions(page);
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(900);
 
   const m = await page.evaluate(() => {
@@ -3298,7 +3337,7 @@ console.log("\n=== 38. Shell round 26: listening ===");
   // that is the state in which the old code stopped it.
   const moved = await waitFor(page, () => Number(document.getElementById("ayahSelect").value) > 1, 15000);
   check("38d the recitation really advances ayah by ayah", moved, await ayahNow(page));
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(500);
   check("38d tapping Read mid-recitation keeps it playing",
         /Pause|থামান/.test(await playLabel(page)), await playLabel(page));
@@ -3310,8 +3349,8 @@ console.log("\n=== 38. Shell round 26: listening ===");
     a.value = "4"; a.dispatchEvent(new Event("change"));
   });
   await page.waitForTimeout(400);
-  await page.click("#tabReadBtn"); // leave
-  await page.click("#tabReadBtn"); // and come back
+  await clickStudyPillarItem(page, "tabReadBtn"); // leave
+  await clickStudyPillarItem(page, "tabReadBtn"); // and come back
   await page.waitForTimeout(400);
   check("38d with nothing playing it still opens at the unit's first ayah",
         await page.evaluate(() => document.getElementById("ayahSelect").value === "1"),
@@ -3615,7 +3654,7 @@ async function openMushaf(page, unit = null, unitNumber = null) {
   if (unitNumber !== null) { await page.waitForTimeout(900); await page.selectOption("#unitNumSelect", String(unitNumber)); await page.waitForTimeout(1000); }
   await page.check("#mushafToggle");
   await page.waitForTimeout(2500);
-  await page.click("#tabStudyOptionsBtn");
+  await clickStudyOptions(page);
   await page.waitForTimeout(200);
   await openRead(page);
   await page.waitForTimeout(1500);
@@ -3987,7 +4026,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400); // ensureAyahNoteDataLoaded() is fire-and-forget from this same click
 
   const badge = await page.evaluate(() => {
@@ -4137,7 +4176,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   // Leaving: no × button anywhere in the view -- the dock is the only way out.
   const hasCloseBtn = await page.evaluate(() => !!document.querySelector(".note-view [data-note-close], .note-view .modal-close, .note-view .close-btn"));
   check("42h there is no × / close button in the view", !hasCloseBtn);
-  await page.click("#tabReadBtn"); // tapping the SAME tab is how you leave -- same idiom as every other dock tab
+  await clickStudyPillarItem(page, "tabReadBtn"); // tapping the SAME tab is how you leave -- same idiom as every other dock tab
   await page.waitForTimeout(300);
   const closed = await page.evaluate(() => ({
     noteHidden: document.getElementById("noteView").hidden,
@@ -4158,7 +4197,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(300);
   await openStudyOptions(page);
   await page.selectOption("#unitTypeSelect", "surah");
@@ -4184,7 +4223,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
   const single = await page.evaluate(() => ({
     onReadBar: !!document.querySelector("#readBar #readQuickMenuSlot .ayah-quick-wrap"),
@@ -4226,7 +4265,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
@@ -4278,7 +4317,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   async function barLayout(viewport) {
     const ctx = await ctxFor({ banner: false, viewport });
     const { page } = await openPage(ctx, "/app/quranrevival.html");
-    await page.click("#tabReadBtn");
+    await clickStudyPillarItem(page, "tabReadBtn");
     await page.waitForTimeout(400);
     await page.click("#readQuickMenuSlot [data-qm-toggle]");
     await page.waitForTimeout(150);
@@ -4333,7 +4372,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
@@ -4392,7 +4431,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
@@ -4440,7 +4479,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
@@ -4484,7 +4523,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
@@ -4581,7 +4620,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 {
   const ctx = await ctxFor({ banner: true });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
@@ -4631,7 +4670,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   // leaving normally and re-opening later never carries a stale full-
   // screen flag across -- each open starts in state one, per the owner's
   // own description of it.
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(300);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
@@ -4657,7 +4696,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 {
   const ctx = await ctxFor({ banner: false, appLang: "bn" });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
@@ -4785,7 +4824,7 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
   await page.waitForTimeout(300);
   const hubSurahAfter = await page.evaluate(() => document.getElementById("wheelHubSurahSelect").value);
   check("43d changing the canonical Surah picker keeps the hub mirror in sync", hubSurahAfter === "2", hubSurahAfter);
-  await page.click("#tabStudyOptionsBtn"); // close the panel again -- same tap-to-close idiom every dock tab uses
+  await clickStudyOptions(page); // close the panel again -- same tap-to-close idiom every dock tab uses
   await page.waitForTimeout(150);
   // Changing surah can bring the Quran-entry splash back; openPage() only
   // clears it once, right after the initial load.
@@ -5016,7 +5055,7 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
 
   // The Read screen's own ⋮ menu now offers Bookmark too, not just the Note view.
@@ -5038,7 +5077,7 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   await page.waitForTimeout(150);
   await page.click("#tajweedToggle");
   await page.waitForTimeout(100);
-  await page.click("#tabStudyOptionsBtn"); // close the panel again -- it overlaps #readQuickMenuSlot while open
+  await clickStudyOptions(page); // close the panel again -- it overlaps #readQuickMenuSlot while open
   await page.waitForTimeout(150);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
@@ -5143,7 +5182,7 @@ console.log("\n=== 48. Fixes round item 1 -- the bookmark popover's own folder p
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
 
   // Bookmark #1: name it and create a brand-new folder in the same step.
@@ -5230,7 +5269,7 @@ console.log("\n=== 49. Fixes round items 2/3 -- the nav bar's own live Bookmark 
   // Create a second bookmark, filed into a brand-new folder, via the popover
   // (item 1). The folder must show up in the SAME dropdown collapsed by
   // default (item 3), with its own bookmark reachable only once expanded.
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
@@ -5305,7 +5344,7 @@ console.log("\n=== 50. Fixes round 2 -- the expanded/collapsed OPTION, and the p
 
   // Make a bookmark inside a folder, tagged for a DIFFERENT person than the
   // one whose list it lives in -- the guardian/child shape this is for.
-  await page.click("#tabReadBtn");
+  await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);

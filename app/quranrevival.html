@@ -9184,6 +9184,38 @@
       return currentSurahData.ayahs.flatMap((a) => (a.words ?? []).map((w) => `quran-word-occurrence:v1:${currentSurahNum}:${a.ayah}:${w.position}`));
     }
 
+    // I11 -- the card module is pure and holds no i18n, so the page hands it
+    // the reader's own language for every string it can print. Built fresh on
+    // each render rather than cached, so switching language in place is
+    // reflected without a reload, the way every other surface here behaves.
+    function wordCardLabels() {
+      return {
+        cardRegion: t("Quran word card"),
+        tablist: t("Arabic learning level"),
+        previous: t("Previous word"),
+        next: t("Next word"),
+        close: t("Close word card"),
+        wbw: t("WbW"),
+        basic: t("Basic Arabic"),
+        depth: t("Arabic in Depth"),
+        meaningUnavailableEn: "Meaning unavailable",
+        meaningUnavailableBn: "\u0985\u09B0\u09CD\u09A5 \u09AA\u09BE\u0993\u09AF\u09BC\u09BE \u09AF\u09BE\u09AF\u09BC\u09A8\u09BF",
+        lemma: t("Lemma"),
+        root: t("Root"),
+        partOfSpeech: t("Part of speech"),
+        unknown: t("Unknown"),
+        rootOccurrences: t("{count} root-linked occurrences"),
+        lemmaOccurrences: t("{count} lemma-linked occurrences"),
+        rootUnavailable: t("Root unavailable in the approved dataset"),
+        lemmaUnavailable: t("Lemma unavailable in the approved dataset"),
+        loadingOccurrences: t("Loading occurrences\u2026"),
+        occurrencesUnavailable: t("Occurrence list unavailable: {error}"),
+        semanticRangeMissing: t("Semantic range not yet supplied"),
+        openDictionary: t("Open dictionary source"),
+        dictionaryUnavailable: t("Dictionary source unavailable"),
+      };
+    }
+
     function renderPersistentWordCard() {
       const mount = document.getElementById("quranWordCardMount");
       if (!mount || !quranWordCardState.open || !currentSurahData) { if (mount) mount.innerHTML = ""; return; }
@@ -9201,7 +9233,7 @@
       if (!ayah || !word) { mount.innerHTML = ""; return; }
       const ids = wordCardOccurrenceIds();
       const at = ids.indexOf(quranWordCardState.occurrenceId);
-      mount.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 } });
+      mount.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 }, labels: wordCardLabels() });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 

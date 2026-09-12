@@ -318,6 +318,55 @@ export function writeBatch() {
   let n = 0;
   return { set() { n++; }, update() { n++; }, async commit() { return __trip("batchCommit", "(batch of " + n + ")", null, function () {}); } };
 }
+
+// runTransaction -- added because app/js/envelope.js (the Note Foundation
+// transaction gateway, STAGE-5-TASK-19) imports it from the real Firebase
+// module. Without it here every page that transitively loads envelope.js
+// died with a module-level SyntaxError, which took behaviour.mjs from its
+// ~800-pass baseline down to 20 pass / 180 fail on main itself.
+//
+// Faithful enough to be worth trusting: reads see DATA, writes are recorded
+// in __stubWrites the way updateDoc records them, and -- following this
+// project's own standing lesson that a handler which writes and then
+// re-reads must not see stale data -- committed writes are applied to the
+// in-memory DATA so a read-after-write inside one suite behaves as it does
+// against real Firestore. Nothing is applied unless the callback resolves,
+// so a throwing transaction leaves DATA untouched, as a real abort does.
+export async function runTransaction(db, callback) {
+  const staged = [];
+  const rowFor = (ref) => (DATA[ref && ref.__col] || []).find((d) => d._id === (ref && ref.__id));
+  const tx = {
+    async get(ref) {
+      return __trip("txGet", ref && ref.__col, ref && ref.__id, function () {
+        const row = rowFor(ref);
+        return row ? snapDoc(row) : { id: ref && ref.__id, exists: () => false, data: () => undefined };
+      });
+    },
+    set(ref, data) { staged.push({ op: "set", ref: ref, data: data }); return tx; },
+    update(ref, data) { staged.push({ op: "update", ref: ref, data: data }); return tx; },
+    delete(ref) { staged.push({ op: "delete", ref: ref }); return tx; },
+  };
+  const result = await callback(tx);
+  return __trip("txCommit", "(transaction of " + staged.length + ")", null, function () {
+    staged.forEach(function (w) {
+      const col = w.ref && w.ref.__col, id = w.ref && w.ref.__id;
+      if (!col || !id) return;
+      DATA[col] = DATA[col] || [];
+      const at = DATA[col].findIndex((d) => d._id === id);
+      if (w.op === "delete") { if (at >= 0) DATA[col].splice(at, 1); return; }
+      const next = w.op === "set"
+        ? Object.assign({ _id: id }, w.data)
+        : Object.assign({}, at >= 0 ? DATA[col][at] : { _id: id }, w.data);
+      if (at >= 0) DATA[col][at] = next; else DATA[col].push(next);
+      try {
+        const prior = JSON.parse(sessionStorage.getItem("__stubWrites") || "[]");
+        prior.push({ col: col, id: id, data: Object.keys(w.data || {}).sort(), tx: true, op: w.op });
+        sessionStorage.setItem("__stubWrites", JSON.stringify(prior));
+      } catch (e) {}
+    });
+    return result;
+  });
+}
 `;
 
 // A tenant seeded weeks ago -- the owner's real situation, and the one the
