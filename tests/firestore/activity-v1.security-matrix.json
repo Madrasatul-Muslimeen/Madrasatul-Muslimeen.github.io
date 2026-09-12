@@ -1,0 +1,148 @@
+{
+  "status": "proposal-only-not-executed",
+  "projectId": "demo-quranrevival-activity-v1",
+  "productionAccessAuthorised": false,
+  "rulesDeploymentAuthorised": false,
+  "cases": [
+    {
+      "id": "AUTH-01",
+      "expect": "deny",
+      "statement": "unauthenticated existing weekly read"
+    },
+    {
+      "id": "AUTH-02",
+      "expect": "deny",
+      "statement": "unauthenticated create or update"
+    },
+    {
+      "id": "SCOPE-01",
+      "expect": "allow",
+      "statement": "authenticated self reads same-tenant own week"
+    },
+    {
+      "id": "SCOPE-02",
+      "expect": "deny",
+      "statement": "self reads another person's week"
+    },
+    {
+      "id": "SCOPE-03",
+      "expect": "deny",
+      "statement": "self reads cross-tenant week with same person ID"
+    },
+    {
+      "id": "SCOPE-04",
+      "expect": "deny",
+      "statement": "unlinked or inactive teacher writes student week"
+    },
+    {
+      "id": "SCOPE-05",
+      "expect": "deny",
+      "statement": "guardian writes unrelated child's week"
+    },
+    {
+      "id": "SCOPE-06",
+      "expect": "deny",
+      "statement": "unbounded or cross-tenant list"
+    },
+    {
+      "id": "IDENT-01",
+      "expect": "deny",
+      "statement": "create document ID differs from tenant/person/week fields"
+    },
+    {
+      "id": "IDENT-02",
+      "expect": "deny",
+      "statement": "update mutates tenant person week or envelope origin"
+    },
+    {
+      "id": "IDENT-03",
+      "expect": "deny",
+      "statement": "forged weekKey or person belongs to another tenant"
+    },
+    {
+      "id": "ENTRY-01",
+      "expect": "allow",
+      "statement": "authorised bounded generic claim practice or selfCheck keyed append"
+    },
+    {
+      "id": "ENTRY-02",
+      "expect": "deny",
+      "statement": "historical entries array removal reorder replacement or append"
+    },
+    {
+      "id": "ENTRY-03",
+      "expect": "deny",
+      "statement": "replace one of two identical legacy entries while keeping list size"
+    },
+    {
+      "id": "ENTRY-04",
+      "expect": "deny",
+      "statement": "duplicate deterministic event key appended"
+    },
+    {
+      "id": "ENTRY-05",
+      "expect": "deny",
+      "statement": "unsupported contract including source-derived Study evidence remains denied pending proof"
+    },
+    {
+      "id": "ENTRY-06",
+      "expect": "deny",
+      "statement": "over weekly entry or encoded document size limit"
+    },
+    {
+      "id": "ENTRY-07",
+      "expect": "allow",
+      "statement": "same event retry performs no write"
+    },
+    {
+      "id": "LEGACY-01",
+      "expect": "deny",
+      "statement": "new legacy create or any array append is denied while historical entries remain readable"
+    },
+    {
+      "id": "LEGACY-02",
+      "expect": "deny",
+      "statement": "legacy path mutates or removes v1 keyed evidence"
+    },
+    {
+      "id": "REG-01",
+      "expect": "preserve",
+      "statement": "Records and Note Foundation security suites"
+    },
+    {
+      "id": "SAFE-01",
+      "expect": "deny",
+      "statement": "production project ID or non-emulator endpoint"
+    },
+    {
+      "id": "ENTRY-08",
+      "expect": "allow",
+      "statement": "existing historical array remains unchanged when a new keyed event is added"
+    },
+    {
+      "id": "ENTRY-09",
+      "expect": "deny",
+      "statement": "attempt to modify an existing keyed event while adding another key"
+    },
+    {
+      "id": "ENTRY-10",
+      "expect": "deny",
+      "statement": "generic map key cannot disagree with action date identity context or scope fields"
+    },
+    {
+      "id": "ENTRY-11",
+      "expect": "deny",
+      "statement": "sparse Study evidence with forged source-derived key is denied until canonical verification exists"
+    },
+    {
+      "id": "IDENT-04",
+      "expect": "deny",
+      "statement": "create with extra top-level approval or forged envelope origin field is denied"
+    },
+    {
+      "id": "IDENT-05",
+      "expect": "deny",
+      "statement": "double underscore delimiter ambiguity in tenant or person identity is denied"
+    }
+  ]
+}
