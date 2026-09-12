@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { quranWordOccurrenceId as id } from "../../app/js/quran-word-identity.js";
-import { computeWbwCoverage } from "../../app/js/quran-word-coverage.js";
+import { computeWbwCoverage, occurrenceIdsForAyahRange } from "../../app/js/quran-word-coverage.js";
+import { readFileSync } from "node:fs";
 
 let passed = 0;
 function check(label, fn) { fn(); passed++; console.log(`  PASS  ${label}`); }
@@ -12,4 +13,12 @@ check("approved occurrences outside selected scope do not inflate coverage", () 
 check("complete coverage is exactly 100 percent", () => assert.equal(computeWbwCoverage([a, b], [a, b]).percent, 100));
 check("unknown identity versions are rejected", () => assert.throws(() => computeWbwCoverage([a], ["quran-word-occurrence:v2:1:1:1"]), /Unsupported/));
 check("raw actions cannot be used in place of approved occurrence IDs", () => assert.throws(() => computeWbwCoverage([a], ["wbw.engaged"]), /invalid shape/));
+const chapter = JSON.parse(readFileSync(new URL("../quran-data-pull/output/surahs/surah_001.json", import.meta.url), "utf8"));
+check("range scope uses already-loaded Surah word positions", () => assert.deepEqual(occurrenceIdsForAyahRange(chapter, 1, 1), [a, b, c, id(1, 1, 4)]));
+check("multi-ayah scope is bounded to selected ayahs", () => {
+  const ids = occurrenceIdsForAyahRange(chapter, 1, 2);
+  assert.equal(ids.length, chapter.ayahs[0].words.length + chapter.ayahs[1].words.length);
+  assert.equal(ids.at(-1), id(1, 2, chapter.ayahs[1].words.at(-1).position));
+});
+check("invalid or out-of-range bounds fail closed", () => assert.throws(() => occurrenceIdsForAyahRange(chapter, 5, 8), /bounded/));
 console.log(`\n==== Pure WbW coverage: ${passed} passed, 0 failed ====`);

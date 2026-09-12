@@ -2,7 +2,22 @@
 // Callers provide a bounded set of v1 occurrence IDs and explicit approved IDs.
 // No reading, listening, or opening event implies approval.
 
-import { parseQuranWordOccurrenceId } from "./quran-word-identity.js";
+import { parseQuranWordOccurrenceId, quranWordOccurrenceId } from "./quran-word-identity.js";
+
+/** Bounded selection from one already-loaded Surah; no corpus/index fetch. */
+export function occurrenceIdsForAyahRange(chapter, fromAyah, toAyah) {
+  if (!Number.isInteger(chapter?.surahNumber) || !Array.isArray(chapter.ayahs) ||
+      !Number.isInteger(fromAyah) || !Number.isInteger(toAyah) ||
+      fromAyah < 1 || toAyah < fromAyah || toAyah > chapter.ayahs.length) {
+    throw new TypeError("A valid, bounded Surah ayah range is required.");
+  }
+  const ids = [];
+  for (const ayah of chapter.ayahs) {
+    if (ayah.ayah < fromAyah || ayah.ayah > toAyah) continue;
+    for (const word of ayah.words ?? []) ids.push(quranWordOccurrenceId(chapter.surahNumber, ayah.ayah, word.position));
+  }
+  return ids;
+}
 
 export function computeWbwCoverage(occurrenceIds, approvedIds) {
   if (!Array.isArray(occurrenceIds) || !Array.isArray(approvedIds)) {
@@ -26,4 +41,3 @@ export function computeWbwCoverage(occurrenceIds, approvedIds) {
     percent: scope.size ? Math.round(approved.size * 10000 / scope.size) / 100 : 0,
   });
 }
-
