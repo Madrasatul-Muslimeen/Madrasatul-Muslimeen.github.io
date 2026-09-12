@@ -9233,7 +9233,7 @@
       if (!ayah || !word) { mount.innerHTML = ""; return; }
       const ids = wordCardOccurrenceIds();
       const at = ids.indexOf(quranWordCardState.occurrenceId);
-      mount.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 }, labels: wordCardLabels() });
+      mount.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 }, labels: wordCardLabels(), formatNumber: num });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 

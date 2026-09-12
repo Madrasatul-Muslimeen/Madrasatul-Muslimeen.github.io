@@ -18,6 +18,20 @@
 // Usage: node tools/i18n-verify/panel.mjs [en|bn]
 import { chromium, newContext, openPage } from "./harness.mjs";
 
+// The STUDY pillar menu (#studyPillarMenu) holds Read/Note/Options and
+// starts hidden, so these buttons resolve but measure 0x0 and a direct click
+// times out. Open the pillar first, the way a reader does. Checks the
+// RENDERED box, never .hidden.
+async function clickStudyPillarItem(page, id) {
+  const reachable = await page.evaluate((i) => {
+    const b = document.getElementById(i);
+    return !!b && b.getBoundingClientRect().width > 0;
+  }, id);
+  if (!reachable) { await page.click("#tabStudyBtn"); await page.waitForTimeout(120); }
+  await page.click(`#${id}`);
+}
+
+
 const EXE = process.env.CHROMIUM_PATH || undefined;
 const LANG = process.argv[2] === "bn" ? "bn" : "en";
 
@@ -45,7 +59,7 @@ export const VIEWPORTS = [
 export async function measurePanel(ctx, path, unitType = "ayah") {
   const { page, errors } = await openPage(ctx, path);
   // The panel is a hidden dock panel; press its tab, which is the real flow.
-  await page.click("#tabStudyOptionsBtn");
+  await clickStudyPillarItem(page, "tabStudyOptionsBtn");
   await page.waitForTimeout(250);
   if (unitType !== "ayah") {
     await page.selectOption("#unitTypeSelect", unitType);

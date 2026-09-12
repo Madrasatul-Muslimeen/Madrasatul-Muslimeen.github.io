@@ -92,4 +92,34 @@ check("Bangla exists for every card string the page asks for", () => {
   assert.deepEqual(missing, [], `untranslated: ${missing.join(" | ")}`);
 });
 
+// A COUNT follows the reader's digits; an IDENTIFIER never does. The card
+// showed "381" on a Bangla page, against this app's own existing rule.
+check("a count uses the reader's digits, references keep plain ones", () => {
+  const bnDigits = (v) => String(v).replace(/[0-9]/g, (d) => "০১২৩৪৫৬৭৮৯"[Number(d)]);
+  const html = renderQuranWordCard({
+    state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"),
+    chapter, ayah, word,
+    context: { rootOccurrenceCount: 381, rootOccurrences: [{ surah: 2, ayah: 19, position: 4 }] },
+    labels: { rootOccurrences: "ধাতু-সম্পর্কিত {count}টি ব্যবহার" },
+    formatNumber: bnDigits,
+  });
+  assert.match(html, /ধাতু-সম্পর্কিত ৩৮১টি ব্যবহার/);
+  assert.doesNotMatch(html, /381/);
+  // The occurrence reference is an identifier and stays as it is.
+  assert.match(html, /<li>2:19:4<\/li>/);
+});
+
+check("without a formatter a count is still printed, unchanged", () => {
+  const html = renderQuranWordCard({
+    state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"),
+    chapter, ayah, word, context: { rootOccurrenceCount: 381 },
+  });
+  assert.match(html, /381 root-linked/);
+});
+
+check("the page passes the app's own number formatter", () => {
+  const page = fs.readFileSync(new URL("../../app/quranrevival.html", import.meta.url), "utf8");
+  assert.match(page, /formatNumber:\s*num\b/);
+});
+
 console.log(`\n==== Persistent Quran Word Card: ${passed} passed, 0 failed ====`);

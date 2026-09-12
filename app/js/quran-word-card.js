@@ -85,7 +85,7 @@ function tabButton(level, selected, label) {
   return `<button type="button" role="tab" data-word-card-level="${level}" aria-selected="${selected}" tabindex="${selected ? "0" : "-1"}">${escapeHtml(label)}</button>`;
 }
 
-function levelPanel(level, word, layers, context, text) {
+function levelPanel(level, word, layers, context, text, formatNumber) {
   if (level === "wbw") {
     // Deliberately bilingual: WbW shows the English and Bangla gloss together
     // whatever the reader's language, so each fallback stays in its own
@@ -98,7 +98,7 @@ function levelPanel(level, word, layers, context, text) {
   }
   if (level === "basic") {
     const refs = (items) => (items?.length ? `<ol class="word-card-occurrences">${items.slice(0, 20).map((r) => `<li>${r.surah}:${r.ayah}:${r.position}</li>`).join("")}</ol>` : "");
-    const count = (template, n) => escapeHtml(String(template).replace("{count}", String(n)));
+    const count = (template, n) => escapeHtml(String(template).replace("{count}", formatNumber(n)));
     return `<div role="tabpanel" data-word-card-panel="basic">
       <dl><dt>${escapeHtml(text.lemma)}</dt><dd>${escapeHtml(layers.lemma || text.unknown)}</dd><dt>${escapeHtml(text.root)}</dt><dd>${escapeHtml(layers.root || text.unknown)}</dd><dt>${escapeHtml(text.partOfSpeech)}</dt><dd>${escapeHtml(word.morphology?.pos || text.unknown)}</dd></dl>
       <p>${layers.root ? count(text.rootOccurrences, Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)) : escapeHtml(text.rootUnavailable)}</p>${refs(context.rootOccurrences)}
@@ -116,8 +116,16 @@ function levelPanel(level, word, layers, context, text) {
   </div>`;
 }
 
-/** Renders one card without fetching, writing, or inferring missing linguistic data. */
-export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, labels = {} } = {}) {
+/**
+ * Renders one card without fetching, writing, or inferring missing linguistic
+ * data.
+ *
+ * `formatNumber` renders a COUNT in the reader's own digits -- Bengali digits
+ * on a Bangla page, following this app's existing rule. It is deliberately not
+ * applied to the surah:ayah:position references below, which are identifiers
+ * and stay in plain digits, nor to anything else.
+ */
+export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, labels = {}, formatNumber = String } = {}) {
   if (!state?.open || !word) return "";
   const occurrenceId = quranWordOccurrenceId(chapter.surahNumber, ayah.ayah, word.position);
   if (occurrenceId !== state.occurrenceId) throw new Error("Word Card data does not match its persistent occurrence identity.");
@@ -132,6 +140,6 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
       <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
     <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabButton("wbw", state.level === "wbw", text.wbw)}${tabButton("basic", state.level === "basic", text.basic)}${tabButton("depth", state.level === "depth", text.depth)}</div>
-    ${levelPanel(state.level, word, layers, context, text)}
+    ${levelPanel(state.level, word, layers, context, text, formatNumber)}
   </section>`;
 }
