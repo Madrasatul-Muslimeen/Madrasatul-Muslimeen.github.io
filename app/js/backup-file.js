@@ -23,6 +23,7 @@
 import { t, num } from "./i18n.js";
 import { getAppLang } from "./prefs.js";
 import { langText } from "./lang.js";
+import { projectMixedWeekEntries } from "./study-activity-week.js";
 // The same label helpers the app's own screens use, so a backup reads the way
 // the app reads rather than printing raw stored ids ("pending", "practised",
 // "active"). Both modules are Firebase-free -- labels.js exists precisely so a
@@ -163,7 +164,7 @@ function personSections(study, peopleById) {
     const notes = Object.entries(p.ayahNotes?.notes ?? {});
     const saved = (p.bookmarks?.saved ?? []);
     const folders = (p.bookmarks?.folders ?? []);
-    const activity = (p.activityWeeks ?? []).flatMap((w) => (w.entries ?? []).map((e) => ({ ...e, weekKey: w.weekKey ?? w.id })));
+    const activity = (p.activityWeeks ?? []).flatMap((w) => projectMixedWeekEntries(w).map((e) => ({ ...e, weekKey: w.weekKey ?? w.id })));
 
     const notesHtml = notes.length
       ? notes.map(([unitKey, note]) => `<article class="note">
@@ -228,7 +229,7 @@ export function buildBackupHtml(data) {
     claims: study.reduce((n, p) => n + (p.records?.length ?? 0), 0),
     notes: study.reduce((n, p) => n + Object.keys(p.ayahNotes?.notes ?? {}).length, 0),
     bookmarks: study.reduce((n, p) => n + (p.bookmarks?.saved?.length ?? 0), 0),
-    activity: study.reduce((n, p) => n + (p.activityWeeks ?? []).reduce((m, w) => m + (w.entries?.length ?? 0), 0), 0),
+    activity: study.reduce((n, p) => n + (p.activityWeeks ?? []).reduce((m, w) => m + projectMixedWeekEntries(w).length, 0), 0),
     subjects: (cat.subjects ?? []).length,
     approaches: (cat.trackables ?? []).length,
     qcr: qcr.length,
