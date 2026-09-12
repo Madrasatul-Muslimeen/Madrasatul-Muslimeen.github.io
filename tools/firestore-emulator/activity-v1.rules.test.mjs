@@ -31,6 +31,7 @@ const week = { tenantId, personId, weekKey, entries: [], v1Events: { [key]: valu
       const db = ctx.firestore();
       await setDoc(doc(db, "tenantPeople", personId), { tenantId, authUid: "self" });
       await setDoc(doc(db, "tenantPeople", "p2"), { tenantId, authUid: "other" });
+      await setDoc(doc(db, "tenantPeople", "p1__x"), { tenantId, authUid: "self" });
     });
     const self = env.authenticatedContext("self").firestore();
     const other = env.authenticatedContext("other").firestore();
@@ -40,7 +41,12 @@ const week = { tenantId, personId, weekKey, entries: [], v1Events: { [key]: valu
     await assertFails(setDoc(doc(anon, "activity", id), week));
     await assertFails(setDoc(doc(other, "activity", id), week));
     await assertFails(setDoc(doc(self, "activity", "t1__p1__2026-09-08"), week));
+    const ambiguousKey = key.replace("|p1|", "|p1__x|");
+    await assertFails(setDoc(doc(self, "activity", "t1__p1__x__2026-09-07"),
+      { ...week, personId: "p1__x", v1Events: { [ambiguousKey]: { ...value, eventKey: ambiguousKey } }, lastEventKey: ambiguousKey }));
     await assertFails(setDoc(ref, { ...week, entries: [entry], v1Events: {} }));
+    await assertFails(setDoc(ref, { ...week, masteryEffect: "approved" }));
+    await assertFails(setDoc(ref, { ...week, createdBy: "other" }));
     await assertFails(setDoc(ref, { ...week, v1Events: { forged: value }, lastEventKey: "forged" }));
     const studyKey = '["study-approach-contract:v1","t1","p1","reading.completed"]';
     const studyValue = { eventKey: studyKey, contractVersion: "study-approach-contract:v1",

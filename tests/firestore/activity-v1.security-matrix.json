@@ -133,6 +133,16 @@
       "id": "ENTRY-11",
       "expect": "deny",
       "statement": "sparse Study evidence with forged source-derived key is denied until canonical verification exists"
+    },
+    {
+      "id": "IDENT-04",
+      "expect": "deny",
+      "statement": "create with extra top-level approval or forged envelope origin field is denied"
+    },
+    {
+      "id": "IDENT-05",
+      "expect": "deny",
+      "statement": "double underscore delimiter ambiguity in tenant or person identity is denied"
     }
   ]
 }

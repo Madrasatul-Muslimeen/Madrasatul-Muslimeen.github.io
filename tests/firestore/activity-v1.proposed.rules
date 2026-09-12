@@ -870,7 +870,9 @@ service cloud.firestore {
       // action adds exactly one bounded key to v1Events. Emulator acceptance pending.
       function boundActivityKey(data) {
         return data.tenantId is string && data.tenantId.matches('^[A-Za-z0-9_-]{1,128}$')
+            && !data.tenantId.matches('.*__.*')
             && data.personId is string && data.personId.matches('^[A-Za-z0-9_-]{1,128}$')
+            && !data.personId.matches('.*__.*')
             && data.weekKey is string && data.weekKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
             && activityKey == data.tenantId + '__' + data.personId + '__' + data.weekKey;
       }
@@ -913,6 +915,12 @@ service cloud.firestore {
       allow create: if boundActivityKey(request.resource.data)
           && personTenantBound(request.resource.data.tenantId, request.resource.data.personId)
           && canRecordFor(request.resource.data.tenantId, request.resource.data.personId)
+          && request.resource.data.keys().hasOnly(['tenantId', 'personId', 'weekKey', 'entries', 'v1Events', 'lastEventKey', 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'])
+          && request.resource.data.keys().hasAll(['tenantId', 'personId', 'weekKey', 'entries', 'v1Events', 'lastEventKey', 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'])
+          && request.resource.data.schemaVersion == 1
+          && request.resource.data.createdBy == myUid()
+          && request.resource.data.createdAt is timestamp
+          && request.resource.data.updatedAt is timestamp
           && request.resource.data.entries == []
           && request.resource.data.v1Events is map
           && request.resource.data.v1Events.size() == 1
