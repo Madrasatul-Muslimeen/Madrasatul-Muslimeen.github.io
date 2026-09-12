@@ -26,6 +26,16 @@ check("five backup collections", ["NOTES", "NOTE_SOURCES", "NOTE_FOLDERS", "NOTE
 check("retired notes are not filtered from backup", /listFoundationCollectionForOwner/.test(backup));
 check("backup failures are isolated", /await attempt\(notes, `Permanent Notes/.test(backup));
 check("Bangla visible strings", /এই উৎসের স্থায়ী নোটসমূহ/.test(bn));
-check("version 08.09", /APP_VERSION = "08\.09"/.test(read("app/js/version.js")));
+// UPDATED: this pinned the exact string "08.09", which contradicted the
+// standing rule that every development tranche increments the version -- so
+// it was guaranteed to fail on the very next tranche, and did. What it
+// actually means is "the reconstruction has landed", i.e. the version is on
+// the v08 line and has not gone backwards past the round that added this.
+check("version is on the v08 line and at or beyond 08.09", (() => {
+  const m = /APP_VERSION = "(\d\d)\.(\d\d)"/.exec(read("app/js/version.js"));
+  if (!m) return false;
+  const [major, minor] = [Number(m[1]), Number(m[2])];
+  return major > 8 || (major === 8 && minor >= 9);
+})());
 
 console.log(`==== Stage 5 reconstructed application boundary: ${passed} passed ====`);

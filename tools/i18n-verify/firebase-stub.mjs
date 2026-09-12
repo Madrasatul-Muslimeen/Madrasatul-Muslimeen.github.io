@@ -265,6 +265,13 @@ export function doc(db, name, id) {
   return { __col: name, __id: id };
 }
 export function where(field, op, value) { return { field, op, value }; }
+// orderBy/limit -- added with runTransaction: note-foundation.js's list
+// queries use both, and their absence was the same module-level SyntaxError.
+// Tagged rather than treated as filters, because matches() would silently
+// pass an unrecognised clause and the suite would then be asserting against
+// an unordered, unbounded result while looking green.
+export function orderBy(field, direction = "asc") { return { __orderBy: field, __dir: direction }; }
+export function limit(n) { return { __limit: n }; }
 export function query(col, ...clauses) { return { __col: col.__col, __clauses: clauses.filter(Boolean) }; }
 
 function matches(d, c) {
@@ -280,7 +287,22 @@ function matches(d, c) {
 
 export async function getDocs(q) {
   return __trip("getDocs", q.__col, null, function () {
-    const rows = (DATA[q.__col] || []).filter((d) => (q.__clauses || []).every((c) => matches(d, c)));
+    const all = q.__clauses || [];
+    const filters = all.filter((c) => c && c.__orderBy === undefined && c.__limit === undefined);
+    const order = all.find((c) => c && c.__orderBy !== undefined);
+    const cap = all.find((c) => c && c.__limit !== undefined);
+    let rows = (DATA[q.__col] || []).filter((d) => filters.every((c) => matches(d, c)));
+    if (order) {
+      const f = order.__orderBy, sign = order.__dir === "desc" ? -1 : 1;
+      rows = rows.slice().sort((a, b) => {
+        const x = a[f], y = b[f];
+        if (x === y) return 0;
+        if (x === undefined || x === null) return 1;
+        if (y === undefined || y === null) return -1;
+        return (x > y ? 1 : -1) * sign;
+      });
+    }
+    if (cap && Number.isFinite(cap.__limit)) rows = rows.slice(0, cap.__limit);
     return { docs: rows.map(snapDoc), empty: rows.length === 0, size: rows.length, forEach(f) { this.docs.forEach(f); } };
   });
 }
