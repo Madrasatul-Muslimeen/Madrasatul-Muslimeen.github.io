@@ -3,8 +3,18 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: v08.02.** `app/js/version.js` reads `08.02` and the badge
-beside the app name says so on screen. v08.00 opened the line; **v08.01 made
+**Current milestone: v08.13** (on branch `claude/pensive-knuth-2pu3jj`, not yet
+merged to `main`, which reads 08.04). `app/js/version.js` is the single source
+of truth and the badge beside the app name says so on screen. **This line said
+`v08.02` while `main` was already on 08.04 — the drift this file warns about,
+found on 12 Sep 2026. Check it against `app/js/version.js` every session.**
+
+**The 12 Sep 2026 round is the one to read before touching the test harness**
+(`CHANGELOG.md`, v08.05–v08.13): `behaviour.mjs` was scoring 20 pass / 180 fail
+on `main` itself, and two whole classes of harness breakage were fixed. Two new
+standing lessons came out of it, both now in "Standing lessons" below.
+
+v08.00 opened the line; **v08.01 made
 the 30 Approaches fully editable by the owner, and v08.02 did the same for the
 7 sections they sit in** (see the round entries below). The v07
 line is closed behind it: its final build, **v07.139**, is frozen at
@@ -790,6 +800,21 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   audio and Asma posters will fail here and work for the owner.
 - **A check that describes what a round deliberately changed gets UPDATED in
   place, with the reason recorded — never deleted, never worked around.**
+- **A name the app imports from Firebase and the stub does not export is not a
+  missing feature — it is a module-level SyntaxError that stops every page
+  booting, and it fails ONLY in the harness.** The real SDK exports it, so
+  production is fine and nothing is visibly wrong; the suite just collapses and
+  reads like a catastrophic app regression. `runTransaction` did exactly this
+  on `main` (800-pass baseline → 20 pass / 180 fail), then `limit` and
+  `orderBy`. `tools/i18n-verify/stub-parity.mjs` now guards the whole class and
+  names the file that first imports an offender — run it before hunting a
+  mysterious full-suite failure.
+- **When a control moves inside a menu, every direct `page.click` on it starts
+  timing out, and the element still RESOLVES.** Options, Read and Note moved
+  into `#studyPillarMenu`, which starts hidden: the buttons are found, measure
+  0x0, and 46 call sites across three suites hung one after another. Open the
+  container first and assert on the rendered box — this is the `[hidden]` trap
+  in a new costume.
 
 **On reporting**
 
