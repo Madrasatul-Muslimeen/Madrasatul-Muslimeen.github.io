@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuranRevival — Phase 2–3 verification merge candidate</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>QuranRevival — Phase 2–3 verification merge candidate</h1>
+<ul><li><strong>Date:</strong> 2026-09-13</li><li><strong>Purpose:</strong> let the Owner run and personally verify the real integrated app through accepted MAP Phase 3, before Phase 4 proceeds.</li></ul>
+<hr>
+<h2>1. Identity</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>Candidate branch</strong></td><td><code>phase2-3-verification-merge</code></td></tr>
+<tr><td><strong>Candidate HEAD</strong></td><td><code>d0c8eec676397151fdfe35089e673854e665628b</code></td></tr>
+<tr><td><strong>Base <code>main</code> SHA</strong></td><td><code>4833b19ce8899f269977980ebf783d95ce2688e2</code></td></tr>
+<tr><td><strong>App version</strong></td><td><strong>08.19</strong> (unchanged)</td></tr>
+<tr><td><strong>Source development branch</strong></td><td><code>claude/pensive-knuth-2pu3jj</code> @ <code>b0221ce4…</code> (untouched, preserved)</td></tr>
+</tbody></table></div>
+<p><code>APP VERSION BEFORE CANDIDATE: 08.19</code> <code>APP VERSION AFTER CANDIDATE: 08.19</code> <code>VERSION UPDATE VERIFIED: PASS — NO NEW APPLICATION CAPABILITY ADDED</code></p>
+<p>No application code was written to make this candidate work. Every application change in it was <strong>selected</strong> from already-accepted work, at file or hunk granularity. It is therefore a selection, not a correction tranche.</p>
+<h2>2. Method — why this is not &quot;the branch minus a few files&quot;</h2>
+<p>The development branch changes <strong>78 files</strong>. This candidate changes <strong>50</strong>.</p>
+<p>It was built by branching from the exact <code>origin/main</code> and adding back only the accepted dependency set. Two files could not be taken wholesale, because each mixes accepted and gated work inside one file:</p>
+<p><strong><code>app/quranrevival.html</code></strong> — the branch&#x27;s copy carries unaccepted <strong>Phase 5 permanent-Note UI</strong>: a six-function import of <code>note-foundation.js</code>, five state variables, and three render/handler blocks. The page was rebuilt from <em>main&#x27;s own copy</em> with only the accepted hunks applied — <strong>15 of the branch&#x27;s 19 hunks</strong>, plus one line dropped from a mixed import hunk (which also carried genuine Phase 3 imports). Verified afterwards: <strong>zero</strong> permanent-Note references remain, and all Phase 2/3 wiring is present.</p>
+<p><strong><code>app/js/i18n/bn.js</code></strong> — 7 Phase 5 translation entries excluded, every Phase 2/3 string kept.</p>
+<p><strong><code>tools/firestore-emulator/package.json</code></strong> — rebuilt from main&#x27;s with only the Phase 3 <code>word-progress</code> script added. The rejected Phase 4 <code>activity-proposal</code> script is absent (proven: <code>npm run activity-proposal</code> → <em>Missing script</em>).</p>
+<h2>3. Accepted Phase 2 contents included</h2>
+<p>Word occurrence identity (ADR-007) · on-demand root/lemma occurrence indexes · clickable Quran words · the persistent Word Card · WbW · Basic Arabic · Arabic in Depth · occurrence lookup · keyboard/accessibility behaviour · responsive behaviour · localisation · malformed-index/reference handling.</p>
+<p>Modules: <code>quran-word-identity.js</code>, <code>quran-word-index.js</code>, <code>quran-word-card.js</code>, the clickable-word change to <code>ayah-renderer.js</code>, and the Word Card markup/CSS/ handlers in <code>quranrevival.html</code>. Data: <code>roots-index.json</code>, <code>lemmas-index.json</code>, <code>word-identity-index-manifest.json</code> and their build script.</p>
+<h2>4. Accepted Phase 3 contents included</h2>
+<p>WbW word-progress state model · self-progress · managed/student states · teacher/supervisor approval · Arabic coverage · Explore coverage integration · storage safeguards · tenant/role boundaries at application and data-contract level · the associated UI and localisation.</p>
+<p>Modules: <code>quran-word-progress.js</code>, <code>quran-word-progress-data.js</code>, <code>quran-word-coverage.js</code>, the two new collection names in <code>collections.js</code>, and the progress block + Explore coverage strip in <code>quranrevival.html</code>.</p>
+<p><strong>Progress/wheel integration as accepted:</strong> the coverage strip sits beside the Explore wheel as its own row. The wheel&#x27;s slice colours are <strong>untouched</strong> — they colour an Approach&#x27;s claim status, and a second meaning competing for the same colour was weighed and declined.</p>
+<h2>5. Future / gated material EXCLUDED — all 28 files</h2>
+<p><strong>Phase 4 (partial implementation, not accepted)</strong> <code>app/js/activity.js</code> · <code>app/js/backup.js</code> · <code>app/js/backup-file.js</code> · <code>app/js/study-activity-week.js</code> · <code>app/js/study-activity-evidence.js</code> · <code>app/js/study-approach-contract.js</code> · <code>docs/governance/adr/ADR-008-study-approach-event-contract-v1.md</code> · <code>tools/i18n-verify/study-activity-week.mjs</code> · <code>tools/i18n-verify/study-activity-evidence.mjs</code> · <code>tools/i18n-verify/study-activity-writer.mjs</code> · <code>tools/i18n-verify/study-approach-contract.mjs</code> · <code>tools/i18n-verify/general-activity-week.mjs</code> · <code>tools/i18n-verify/activity-backup-render.mjs</code></p>
+<p><strong>Phase 4 Activity Rules — REJECTED candidate and its evidence</strong> <code>tests/firestore/activity-v1.proposed.rules</code> · <code>tests/firestore/activity-v1.security-matrix.json</code> · <code>docs/governance/activity-rules-proposal-2026-09-12.md</code> · <code>tools/firestore-emulator/activity-v1.firebase.json</code> · <code>tools/firestore-emulator/activity-v1.rules.test.mjs</code> · <code>tools/firestore-emulator/verify-activity-proposal.mjs</code> · <code>tools/firestore-emulator/activity-keyed-week-prototype.mjs</code> · <code>tools/firestore-emulator/activity-keyed-week-prototype.test.mjs</code></p>
+<p><strong>Phase 5 Note Foundation, beyond what <code>main</code> already carried</strong> <code>app/js/note-foundation.js</code> (branch additions) · <code>app/js/ayah-note-renderer.js</code> (branch additions) · <code>tests/firestore/note-foundation.rules.test.mjs</code> · <code>tools/i18n-verify/note-foundation-boundary.mjs</code> · <code>tools/i18n-verify/note-foundation-emulator-scaffold.mjs</code> · <code>tools/i18n-verify/note-foundation-reconstruction.mjs</code> · <code>tools/i18n-verify/note-foundation-rules-candidate.mjs</code> · plus the permanent-Note UI inside <code>quranrevival.html</code> and its 7 <code>bn.js</code> strings.</p>
+<p><strong>Proven, not asserted.</strong> Every one of the five Phase 4/5 application modules is <strong>byte-for-byte identical to <code>main</code></strong> on this candidate; every gated file listed above is <strong>absent</strong>. No Phase 6–8 implementation exists on the source branch, so none could be carried.</p>
+<h2>6. Unavoidable dependencies</h2>
+<p><strong>None.</strong> No accepted Phase 2–3 feature required importing a later-phase module. Every <code>import</code> in the candidate resolves to a file present in it — checked mechanically across <code>app/js/*.js</code> and <code>app/quranrevival.html</code>.</p>
+<p>Two things that <em>look</em> like Phase 5 dependencies are not: <code>app/js/note-foundation.js</code> exists on <code>main</code> already (merged as #87) and is kept at <strong>main&#x27;s</strong> version, uninvoked; and the Firebase stub&#x27;s <code>runTransaction</code>/<code>limit</code>/<code>orderBy</code> exports are required <strong>because main&#x27;s own <code>note-foundation.js</code> imports them</strong> — without them every page fails to boot in the harness with a module-level SyntaxError.</p>
+<h2>7. Harness corrections preserved, and why</h2>
+<p>Without these the accepted work cannot be tested at all:</p>
+<ul><li><code>tools/i18n-verify/firebase-stub.mjs</code> — the three missing Firebase exports above, plus the write-values channel the Phase 3 suites read.</li><li><code>tools/i18n-verify/behaviour.mjs</code>, <code>panel.mjs</code>, <code>reading.mjs</code> — the STUDY-pillar menu fixes (Options/Read/Note moved inside a hidden container, so 46 direct clicks across three suites were timing out).</li><li><code>tools/i18n-verify/stub-parity.mjs</code> — new; guards the whole SyntaxError class.</li></ul>
+<h2>8. Files changed versus <code>main</code> — 50</h2>
+<p>6 new app modules · 4 modified app files (<code>quranrevival.html</code>, <code>ayah-renderer.js</code>, <code>collections.js</code>, <code>bn.js</code>) · <code>version.js</code> · 3 Quran data files + 2 data scripts · 12 new test suites + 4 harness corrections · 1 Rules candidate + 3 emulator files · 8 governance/report documents · <code>md2report.py</code> · <code>CLAUDE.md</code> · <code>CHANGELOG.md</code> · <code>.gitignore</code>.</p>
+<h2>9. Regression results — run on the CANDIDATE itself</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th><th>Against</th></tr></thead><tbody>
+<tr><td><code>behaviour.mjs</code></td><td><strong>802 pass / 1 fail</strong></td><td>identical to <code>main</code>&#x27;s own baseline</td></tr>
+<tr><td><code>layout.mjs</code></td><td><strong>every metric byte-for-byte identical to <code>main</code></strong>, 8 viewports × 2 banner states, 0 changed lines; <code>getElementById</code> 248 → 250</td><td>—</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>unchanged — 1 pre-existing 320px English truncation of &quot;Operation&quot;/&quot;Bookmark&quot;</td><td>same as <code>main</code></td></tr>
+<tr><td><code>reading.mjs</code></td><td>READING SCREEN OK, en + bn</td><td>—</td></tr>
+<tr><td><code>panel.mjs</code></td><td>15 labels, no truncation, en + bn</td><td>—</td></tr>
+<tr><td>Phase 2 node suites (5)</td><td>56 / 0</td><td>—</td></tr>
+<tr><td>Phase 3 node suites (4)</td><td>133 / 0</td><td>—</td></tr>
+<tr><td><code>stub-parity.mjs</code></td><td>3 / 0</td><td>—</td></tr>
+<tr><td><code>note-foundation-boundary</code> / <code>-emulator-scaffold</code> (main&#x27;s own)</td><td>30 / 0 and 31 / 0</td><td>unchanged</td></tr>
+<tr><td>Emulator Rules candidate</td><td><strong>42 / 0</strong> (23 denials, 19 allows); zero expression-limit references in the log</td><td>—</td></tr>
+<tr><td>Translation coverage</td><td><code>main</code> 1,733 / 46 → candidate <strong>1,783 / 47</strong></td><td>see below</td></tr>
+</tbody></table></div>
+<p>The single <code>behaviour.mjs</code> failure is <code>ERR_TUNNEL_CONNECTION_FAILED</code> — this sandbox&#x27;s proxy blocking archive.org. It is present on <code>main</code> too.</p>
+<p>The <strong>+1 missing translation</strong> was named, not assumed: it is <code>&quot;Meaning unavailable&quot;</code>, the deliberate English fallback on the <code>lang=&quot;en&quot;</code> line of the <strong>bilingual</strong> WbW panel. The Bangla line carries its own Bangla fallback (<code>&quot;অর্থ পাওয়া যায়নি&quot;</code>). Confirmed by reading the module: that panel shows both glosses together whatever the interface language. Every other area&#x27;s missing list is <strong>identical to <code>main</code>&#x27;s</strong>.</p>
+<h2>10. Rendered results — both languages</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td>Phase 2 Word Card rendered acceptance</td><td><strong>92 / 0</strong>, en + bn, 6 viewports</td></tr>
+<tr><td>Phase 3 WbW progress rendered</td><td><strong>81 / 0</strong>, en + bn, 6 viewports</td></tr>
+<tr><td>Explore Arabic coverage rendered</td><td><strong>35 / 0</strong>, en + bn</td></tr>
+</tbody></table></div>
+<p>Explicitly verified in the browser, read off <code>window.__fsLog</code> and <code>window.__stubWriteData</code> rather than off the source:</p>
+<ul><li><strong>No startup-path regression.</strong> Zero word-progress reads on the landing path, zero from opening Read. Exactly 2 reads when a word card is opened; exactly 2 queries when Explore reaches a surah.</li><li><strong>No unexpected Firestore writes from opening or browsing the Word Card.</strong> Opening a word, moving between words and switching Arabic level write <strong>nothing</strong>. Only an explicit state or decision button press writes.</li><li><strong>Nothing written to <code>records</code> or <code>activity</code></strong> in any flow.</li></ul>
+<h2>11. Firestore Rules / index / migration / deployment status</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>firestore.rules</code> vs <code>main</code></td><td><strong>zero-line diff — byte-for-byte identical</strong></td></tr>
+<tr><td>Firestore index files</td><td><strong>none changed</strong></td></tr>
+<tr><td>Migration / backfill</td><td><strong>none</strong></td></tr>
+<tr><td>Production write</td><td><strong>none</strong></td></tr>
+<tr><td>Deployment</td><td><strong>none</strong></td></tr>
+</tbody></table></div>
+<p>The Phase 3 Rules candidate is carried as <code>tests/firestore/word-progress-v1.proposed.rules</code> — a <strong>candidate file only</strong>, never loaded by the app, never deployed. Its deployment remains an Owner Control Gate.</p>
+<p><strong>Consequence the Owner should know:</strong> until those Rules are deployed, the two new collections (<code>quranWordProgress</code>, <code>quranWordApprovals</code>) have no server-side rule. The word-progress feature is therefore verifiable by the Owner&#x27;s own account, but is <strong>not</strong> usable by a student or teacher account against production. That is a deliberate consequence of not crossing the gate.</p>
+<h2>12. Recommended merge method</h2>
+<p>``<code> git checkout main git merge --no-ff phase2-3-verification-merge </code>``</p>
+<p><code>--no-ff</code> deliberately: it keeps one merge commit that names this candidate, so the merge is a single identifiable point to inspect or revert. The candidate branches directly from <code>main</code>&#x27;s current tip, so <strong>no conflict is possible</strong> unless <code>main</code> moves first.</p>
+<p>Do <strong>not</strong> merge <code>claude/pensive-knuth-2pu3jj</code> — that branch carries the gated Phase 4/5 material this candidate exists to keep out. It remains as the durable development history and is not deleted or rewritten.</p>
+<h2>13. Rollback point</h2>
+<p><code>4833b19ce8899f269977980ebf783d95ce2688e2</code> — <code>main</code> as it stands now.</p>
+<p><code>git reset --hard 4833b19c</code> on <code>main</code> (or <code>git revert -m 1 &lt;merge-sha&gt;</code> if the merge has already been pushed and shared) restores the exact pre-merge state. No data migration accompanies this merge, so a rollback is code-only: nothing written by the new feature needs undoing, and any word-progress documents a test created remain readable and simply stop being displayed.</p>
+<h2>14. Owner verification steps after merge</h2>
+<p><strong>This candidate is not viewable online until it is merged.</strong> This repository is a <code>&lt;user&gt;.github.io</code> Pages site and <strong>GitHub Pages serves the default branch <code>main</code> only</strong>. Pushing the candidate branch publishes nothing.</p>
+<p>After merging to <code>main</code>, at <code>https://madrasatul-muslimeen.github.io/app/quranrevival.html</code>:</p>
+<ol><li><strong>Version badge</strong> beside the app name reads <strong>v08.19</strong>.</li><li><strong>Study → Read</strong>, turn on the word-by-word panel. Each word is now a <strong>button</strong>; click one.</li><li>The <strong>Word Card</strong> appears and stays. Check the three tabs — <strong>WbW</strong>, <strong>Basic Arabic</strong>, <strong>Arabic in Depth</strong> — and the ‹ › arrows.</li><li>Under the WbW gloss, <strong>Word progress</strong>: three buttons — <em>Not started</em>, <em>Learning</em>, <em>Achieved</em>. Press one; the selection and the line <em>&quot;N of M words known in this ayah&quot;</em> update immediately.</li><li><strong>Pick a child from the person dropdown</strong>, open a word, press <em>Achieved</em>. It should read <strong>&quot;Waiting to be checked&quot;</strong> and count <strong>0</strong> in coverage — then <strong>Confirm</strong>, and only then does it count.</li><li><strong>Explore</strong> → drill into a Surah. Under the legend: <em>&quot;N of M Arabic words known&quot;</em>. At <strong>Whole Quran</strong> and <strong>Juz</strong> level it says the figure is not available at that granularity — that is correct, not a bug.</li><li>Switch the app to <strong>Bangla</strong> and repeat 2–6. Everything above should be in Bangla, with Bengali digits in the counts.</li><li>Try it on a <strong>phone</strong>.</li></ol>
+<h2>15. Correction recorded</h2>
+<p>While comparing translation coverage, <code>git checkout origin/main -- .</code> was run against this branch before it had any commit, which reverted the 13 modified files in the working tree. It was caught immediately by re-checking the tree, the modified set was rebuilt from scratch, and the candidate was committed before any further verification. <strong>Every result in §9 and §10 above was re-run against the committed candidate</strong>, and the first (contaminated) <code>behaviour.mjs</code> run — which stopped early at 284 checks — was discarded and re-run twice, the final clean run being the 802/1 reported.</p>
+<hr>
+<p><strong>MERGE CANDIDATE: READY FOR MASTER ARCHITECT AUDIT</strong></p>
+<p><code>CLAUDE SESSION CONTINUITY: START NEW SESSION NOW</code></p>
+</main></body></html>
