@@ -28,3 +28,6 @@ node_modules
 
 # Load-speed measurement output, regenerated on every run
 tools/perf/results/
+
+# Firestore emulator run log, regenerated on every run
+tools/firestore-emulator/*.log

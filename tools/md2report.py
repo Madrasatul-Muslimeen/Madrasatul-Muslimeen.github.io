@@ -65,9 +65,15 @@ CSS = """<style>
   tr:last-child td { border-bottom:0 }
   @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
 </style>"""
+# The title was hardcoded to one report's own name, so every report generated
+# afterwards carried the wrong title in its browser tab. It is derived from the
+# document's own first H1 now, with that report's name as the fallback so
+# nothing that already relied on it changes.
+_h1 = re.search(r'^#\s+(.+)$', md, re.M)
+_title = html.escape(_h1.group(1).strip()) if _h1 else 'QuranRevival — Reconciliation and MAP Phase 2 closure (2026-09-12)'
 doc = ('<!doctype html>\n<html lang="en"><head><meta charset="utf-8">\n'
  '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
- '<title>QuranRevival — Reconciliation and MAP Phase 2 closure (2026-09-12)</title>\n'
+ '<title>' + _title + '</title>\n'
  + CSS + '</head><body><main>\n' + "\n".join(out) + '\n</main></body></html>\n')
 io.open(sys.argv[2], "w", encoding="utf-8").write(doc)
 print("written", sys.argv[2])

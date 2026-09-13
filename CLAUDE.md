@@ -3,11 +3,44 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: v08.13** (on branch `claude/pensive-knuth-2pu3jj`, not yet
+**Current milestone: v08.19** (on branch `claude/pensive-knuth-2pu3jj`, not yet
 merged to `main`, which reads 08.04). `app/js/version.js` is the single source
 of truth and the badge beside the app name says so on screen. **This line said
 `v08.02` while `main` was already on 08.04 — the drift this file warns about,
 found on 12 Sep 2026. Check it against `app/js/version.js` every session.**
+
+**MAP Phase 3 (Arabic Progress & Coverage) is BUILT, v08.14–v08.19, 13 Sep
+2026** — six bounded tranches, full evidence in
+`docs/reports/2026-09-13-map-phase3-arabic-progress.md`. What a later session
+most needs to know:
+
+- Word progress lives in **two** collections, `quranWordProgress` (the
+  learner's own claims) and `quranWordApprovals` (a supervisor's decisions),
+  one document per (person, level, ayah). **The split by actor role is the
+  security design, not tidiness**: each document belongs to one (person, role)
+  pair, so a rule authorises it at document level and never has to prove which
+  key of a map a writer touched. It is also what keeps the candidate rule away
+  from the expression budget that sank the Phase 4 Activity candidate.
+- **It is not an Approach claim and must never become one.** Nothing in
+  `quran-word-progress.js` or its data layer may name `records`, `activity`, a
+  `chunkKey` or a `trackableId` — checks assert that by reading the source.
+- **I6 is structural here.** A supervisor's decision is pinned to the exact
+  claim instant it was given for; a claim never touches the supervisor lane.
+  An earlier shape re-opened a review by writing over the stored decision,
+  which really did edit a frozen confirmation and destroy the real one in
+  history. Do not reintroduce a mutation-based re-open.
+- **Basic Arabic and Arabic in Depth are refused, not merely unimplemented** —
+  at the state model, the data layer and the candidate Rules. Their claim unit
+  is an open DDR item.
+- **`firestore.rules` is byte-for-byte unchanged.** The candidate is at
+  `tests/firestore/word-progress-v1.proposed.rules` (42 emulator assertions
+  passing) and **deployment is an Owner Control Gate**. Until it is deployed
+  the two collections have no server-side rule, so the feature is the Owner's
+  own to exercise and is not usable by a student or teacher account against
+  production.
+- **Cross-surah coverage (juz, hizb, rub, manzil, page) is deliberately not
+  computed.** Covering only the loaded surah would understate every juz, so
+  those levels say so in words and read zero documents to do it.
 
 **The 12 Sep 2026 round is the one to read before touching the test harness**
 (`CHANGELOG.md`, v08.05–v08.13): `behaviour.mjs` was scoring 20 pass / 180 fail
@@ -817,6 +850,20 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   in a new costume.
 
 **On reporting**
+
+- **A screenshot is not a measurement, but it catches what measurements miss,
+  and it must be LOOKED at.** MAP Phase 3 shipped two defects past complete,
+  passing rect assertions, both found by opening the PNG: three buttons sitting
+  below a card's own scroll cap at 320x640, so the control was unreachable; and
+  a coverage line rendered in the Word Card's navy on Explore's dark panel at
+  1.89:1. Measure REACHABILITY (is it inside its scroll container's visible
+  box?) and measure rendered CONTRAST against the real background, not just
+  position and size. And when a screenshot comes back blank, that is a finding
+  too -- an overlay or splash is sitting on top of the thing being proved.
+- **A palette belongs to a SURFACE, not to a feature.** The same component
+  rendered into a light card and a dark panel needs two palettes. Reusing the
+  one that worked on the light card is how v07.138 and MAP Phase 3 both
+  produced invisible-but-perfect markup.
 
 - **A measurement probe must carry the real element's computed style.**
   v07.132 cloned a `<select>` to size its longest option but left the clone

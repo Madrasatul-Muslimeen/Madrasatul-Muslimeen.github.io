@@ -12129,3 +12129,72 @@ truncation of "Operation"/"Bookmark"); `reading.mjs` READING SCREEN OK;
 19 node suites green; coverage 1733/46 on `main` → **1778/47**, the single extra
 being `"Meaning unavailable"`, the deliberate English fallback on the `lang="en"`
 line of a bilingual panel, confirmed correct on the rendered page.
+
+## v08.14 – v08.19 — MAP Phase 3: Arabic Progress & Coverage (13 Sep 2026)
+
+Six bounded tranches on `claude/pensive-knuth-2pu3jj`, under MAP v4 with all
+three governing documents supplied and read first. Full evidence:
+`docs/reports/2026-09-13-map-phase3-arabic-progress.md` (and `.html`).
+
+**v08.14 — the pure state model.** `app/js/quran-word-progress.js`: what a WbW
+word state is, who may set it, how one transition folds into the next. No
+Firebase, no DOM. The three MAP locks are asserted, not commented: no
+event-to-state projection exists (a check reads the source), nothing names
+`records` or a `trackableId`, and `basic`/`depth` are REFUSED with "deferred"
+rather than stored as `wbw`.
+
+**v08.15 — storage, and a real I6 defect.** Two collections,
+`quranWordProgress` (the learner's claims) and `quranWordApprovals` (a
+supervisor's decisions), one document per (person, level, ayah). The split by
+actor role is what the storage paper required before a writer could exist: the
+whole document belongs to one (person, role) pair, so authority is exact at
+document level and no rule ever walks a map. Measured: one ayah = 2 reads, one
+surah = 2 QUERIES (not 2 per ayah), a claim = 1 write.
+
+The defect, found by a failing check rather than by reading code: re-opening a
+review wrote `pending` over the stored decision, editing a frozen confirmation
+(I6) and destroying the real one in history (I4). Freezing is structural now —
+a decision is pinned to the claim instant it was given for, a claim never
+touches the supervisor lane, and an ordinary claim dropped from two writes to
+one.
+
+**v08.16 — coverage.** The denominator is the SCOPE from the dataset, never
+the number of records that exist. An unread word is `unknown`, not
+`not_started`. `known` is the only thing `percent` counts, so a claim awaiting
+a teacher scores zero. A trap caught before shipping: the dataset's `ruku`
+field is a GLOBAL index while a ruku' unit key carries the per-surah one, so a
+direct comparison would have scored every ruku' against its neighbour.
+
+**v08.17 — the Word Card.** Three state buttons, the review line, a
+supervisor's Confirm/Send back pair, and the ayah's coverage. Proved against
+the shared fixture's own two people: p1 (owner, no confirmation required,
+claim counts at once, no decision buttons) and p2 (managed child, claim waits,
+scores zero, teacher decides). D10: switching student clears both caches.
+**A defect found by LOOKING at a screenshot** — at 320×640 all three buttons
+sat below the card's scroll cap, unreachable.
+
+**v08.18 — Explore.** A coverage strip at the surah and ruku' levels, costing
+two queries; Juz and Whole Qur'an say plainly that the figure is not available
+at that granularity and read ZERO documents to say it, because covering only
+the loaded part would understate every juz. **A second screenshot defect**:
+the strip first rendered navy on Explore's dark panel at 1.89:1 — v07.138
+again — now 12.88:1, with rendered contrast measured by a check that is proven
+able to fail.
+
+**v08.19 — Rules candidate, NOT deployed.**
+`tests/firestore/word-progress-v1.proposed.rules`, 42 emulator assertions
+passing (23 denials, 19 allows), every denial paired with an allow differing
+in exactly one fact. `canSuperviseRecordFor()` is `canRecordFor()` minus
+`isSelfPerson()` — nobody signs off their own claim. `firestore.rules` is
+byte-for-byte unchanged and deployment remains an Owner Control Gate.
+
+**Five failing checks investigated, four were WRONG ASSERTIONS**, all updated
+in place with the reason. `behaviour.mjs` 800/3 (the documented archive.org
+block). `layout.mjs` byte-for-byte identical, `getElementById` 249 → 250.
+Coverage 1,778 → 1,794 scanned, missing UNCHANGED at 47.
+
+**Flagged, not changed:** the wheel's slice colours (claim status stays their
+only meaning); cross-surah coverage; a pre-existing breakage that stops
+`npm run activity-proposal` starting at all in this environment, left alone
+because it is a rejected candidate's evidence base at an Owner gate.
+
