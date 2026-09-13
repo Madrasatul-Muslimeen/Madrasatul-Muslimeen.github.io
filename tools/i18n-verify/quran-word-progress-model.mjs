@@ -128,24 +128,40 @@ check("a confirmation records who decided and WHICH claim it was for", () => {
   assert.equal(confirmed.supervisor.review, "confirmed");
   assert.equal(confirmed.supervisor.byPersonId, "t9");
   assert.equal(confirmed.supervisor.forState, "achieved");
+  assert.equal(confirmed.supervisor.forClaimAt, achieved.learner.at, "and WHEN that claim was made");
+});
+check("a decision pinned to a different claim instant cannot bless this one", () => {
+  const stale = { ...confirmed.supervisor, forClaimAt: "2020-01-01T00:00:00.000Z" };
+  assert.equal(resolveWordProgress({ learner: confirmed.learner, supervisor: stale, confirmationRequired: true }).countsAsKnown, false);
 });
 
 // --- 8. I6 -- frozen confirmation ------------------------------------------
-check("a later claim re-opens the REVIEW but never edits the decision given", () => {
+// UPDATED after the data-layer suite caught a real defect in the shape these
+// two checks were written against. The old model re-opened a review by
+// writing "pending" over the stored decision -- which really did edit a frozen
+// confirmation, and then pushed that phantom "pending" into history in place
+// of the confirmation a supervisor had actually given. Freezing is structural
+// now: a claim never touches the supervisor lane at all, and a decision is
+// pinned to the claim instant it was given for. So these assert the RESOLVED
+// result a reader sees, which is what they were always really about.
+check("a later claim gets its own look, and the decision given is not edited", () => {
   const withdrawn = claimLearnerState({ currentLearner: confirmed.learner, currentSupervisor: confirmed.supervisor, state: "learning", actorPersonId: "p1", atIso: LATER, confirmationRequired: true });
-  // Stepping back is a withdrawal, not a new claim: nothing is re-opened.
-  assert.equal(withdrawn.supervisor.review, "confirmed");
+  assert.equal(withdrawn.supervisor, confirmed.supervisor, "the supervisor lane is not touched by a claim");
   const reclaimed = claimLearnerState({ currentLearner: withdrawn.learner, currentSupervisor: withdrawn.supervisor, state: "achieved", actorPersonId: "p1", atIso: "2026-09-14T09:00:00.000Z", confirmationRequired: true });
-  assert.equal(reclaimed.supervisor.review, "pending", "a NEW achieved claim must get its own look");
+  const view = resolveWordProgress({ learner: reclaimed.learner, supervisor: reclaimed.supervisor, confirmationRequired: true });
+  assert.equal(view.review, "pending", "a NEW achieved claim must get its own look");
+  assert.equal(view.countsAsKnown, false, "and must not be blessed by the old approval");
   assert.equal(reclaimed.supervisor.at, confirmed.supervisor.at, "the decision's own timestamp is frozen");
   assert.equal(reclaimed.supervisor.byPersonId, "t9", "who decided is frozen");
+  assert.equal(reclaimed.supervisor.review, "confirmed", "and the decision itself is NOT rewritten");
 });
-check("a re-claim where confirmation is NOT required re-opens nothing", () => {
-  const r = claimLearnerState({ currentLearner: { state: "learning", at: NOW, byPersonId: "p1" }, currentSupervisor: confirmed.supervisor, state: "achieved", actorPersonId: "p1", atIso: LATER, confirmationRequired: false });
-  assert.equal(r.supervisor.review, "confirmed");
+check("a claim costs no supervisor write even when confirmation is required", () => {
+  const r = claimLearnerState({ currentLearner: { state: "learning", at: NOW, byPersonId: "p1" }, currentSupervisor: confirmed.supervisor, state: "achieved", actorPersonId: "p1", atIso: LATER, confirmationRequired: true });
+  assert.equal(r.supervisor, confirmed.supervisor);
 });
 check("a superseded decision is kept, not destroyed (I4)", () => {
   const returned = decideApproval({ currentLearner: confirmed.learner, currentSupervisor: confirmed.supervisor, review: "returned", byPersonId: "t9", atIso: "2026-09-15T09:00:00.000Z", note: "check the vowel" });
+  assert.equal(returned.supervisor.history[0].forClaimAt, confirmed.supervisor.forClaimAt, "the superseded decision keeps the claim it was given for");
   assert.equal(returned.supervisor.review, "returned");
   assert.equal(returned.supervisor.history.length, 1);
   assert.equal(returned.supervisor.history[0].review, "confirmed");

@@ -28,11 +28,13 @@
 //    level later is additive and can never reinterpret a v1 record.
 //
 // I6 is the fourth lock and the subtle one: a confirmation is frozen when
-// marked and never recalculated. A fresh learner claim after an approval
-// resets only the REVIEW state to pending, so the new claim gets its own
-// look; the approval that was actually given stays exactly as it was until a
-// supervisor decides again. This mirrors records.js's rule deliberately --
-// two different confirmation semantics in one app would be a defect.
+// marked and never recalculated. Here that is STRUCTURAL, not procedural: a
+// supervisor's decision records the exact claim instant it was given for, and
+// a later claim simply stops matching it. Nothing rewrites a decision, so the
+// new claim gets its own look and the decision that was actually given keeps
+// its reviewer, its timestamp and its place in history. This is the same
+// promise records.js makes -- two different confirmation semantics in one app
+// would be a defect -- reached by a shape that cannot be got wrong by a caller.
 
 import { parseQuranWordOccurrenceId, quranWordOccurrenceId } from "./quran-word-identity.js";
 
@@ -252,11 +254,11 @@ function encodeLearnerEntry(entry) {
 
 export function decodeSupervisorEntry(raw) {
   if (!raw || typeof raw !== "object") {
-    return Object.freeze({ review: "pending", at: null, byPersonId: null, note: null, forState: null, history: Object.freeze([]), historyTruncated: 0 });
+    return Object.freeze({ review: "pending", at: null, byPersonId: null, note: null, forState: null, forClaimAt: null, history: Object.freeze([]), historyTruncated: 0 });
   }
   const review = CODE_TO_REVIEW[raw.r] ?? "pending";
   const history = Array.isArray(raw.h)
-    ? raw.h.map((h) => Object.freeze({ review: CODE_TO_REVIEW[h.r] ?? "pending", at: h.at ?? null, byPersonId: h.by ?? null, note: h.n ?? null, forState: CODE_TO_STATE[h.s] ?? null }))
+    ? raw.h.map((h) => Object.freeze({ review: CODE_TO_REVIEW[h.r] ?? "pending", at: h.at ?? null, byPersonId: h.by ?? null, note: h.n ?? null, forState: CODE_TO_STATE[h.s] ?? null, forClaimAt: h.fc ?? null }))
     : [];
   return Object.freeze({
     review,
@@ -264,6 +266,7 @@ export function decodeSupervisorEntry(raw) {
     byPersonId: raw.by ?? null,
     note: raw.n ?? null,
     forState: CODE_TO_STATE[raw.s] ?? null,
+    forClaimAt: raw.fc ?? null,
     history: Object.freeze(history),
     historyTruncated: Number.isInteger(raw.ht) ? raw.ht : 0,
   });
@@ -276,20 +279,31 @@ function encodeSupervisorEntry(entry) {
     by: entry.byPersonId,
     n: entry.note,
     s: entry.forState ? STATE_TO_CODE[entry.forState] : null,
-    h: entry.history.map((h) => ({ r: REVIEW_TO_CODE[h.review], at: h.at, by: h.byPersonId, n: h.note, s: h.forState ? STATE_TO_CODE[h.forState] : null })),
+    fc: entry.forClaimAt ?? null,
+    h: entry.history.map((h) => ({ r: REVIEW_TO_CODE[h.review], at: h.at, by: h.byPersonId, n: h.note, s: h.forState ? STATE_TO_CODE[h.forState] : null, fc: h.forClaimAt ?? null })),
     ht: entry.historyTruncated,
   };
 }
 
 /**
  * A learner (or a supervisor acting for a managed student) sets one word's
- * state. Returns BOTH lanes' new values, because a fresh claim is exactly the
- * moment I6 applies: the review goes back to pending so the NEW claim is
- * looked at, and the decision already given is left untouched.
+ * state.
+ *
+ * I6, and this is the correction that made the rule structural rather than
+ * procedural: a claim NEVER touches the supervisor lane. An earlier shape
+ * re-opened the review by writing `pending` over the stored decision, which
+ * really did edit a frozen confirmation -- the supervisor's own `confirmed`
+ * was replaced by a `pending` nobody had made, and was then pushed into
+ * history as if it were a decision, losing the real one (found by a failing
+ * data-layer check, not by reading the code). Instead a decision records the
+ * exact claim instant it was given for, and resolveWordProgress() below asks
+ * whether that still matches. A new claim therefore stops counting the moment
+ * it is made, with nothing overwritten and nothing to write -- so an ordinary
+ * claim is always exactly ONE document write.
  *
  * A no-op claim (the same state again) returns `changed: false` and writes
- * nothing, so re-tapping a toggle cannot churn a document or reset a review
- * that was already given for that same state.
+ * nothing, so re-tapping a toggle cannot churn a document or restart a review
+ * that was already given for that same claim.
  */
 export function claimLearnerState({ currentLearner, currentSupervisor, state, actorPersonId, atIso, confirmationRequired = false } = {}) {
   if (!WBW_WORD_STATES.includes(state)) throw new TypeError(`Unknown WbW word state: ${state}.`);
@@ -301,14 +315,7 @@ export function claimLearnerState({ currentLearner, currentSupervisor, state, ac
     return Object.freeze({ changed: false, learner, supervisor });
   }
   const nextLearner = Object.freeze({ state, at: atIso, byPersonId: actorPersonId });
-  // The review only re-opens where a review is actually required and the
-  // claim is one that asks for sign-off. Stepping BACK to learning or
-  // not_started is the learner withdrawing a claim, not making a new one.
-  const reopens = confirmationRequired && state === "achieved";
-  const nextSupervisor = reopens && supervisor.review !== "pending"
-    ? Object.freeze({ ...supervisor, review: "pending" })
-    : supervisor;
-  return Object.freeze({ changed: true, learner: nextLearner, supervisor: nextSupervisor });
+  return Object.freeze({ changed: true, learner: nextLearner, supervisor });
 }
 
 /**
@@ -330,9 +337,12 @@ export function decideApproval({ currentLearner, currentSupervisor, review, byPe
   }
   const supervisor = currentSupervisor ?? decodeSupervisorEntry(null);
   // I4/I6: the decision being replaced is kept, not overwritten in silence.
-  const carried = supervisor.review === "pending" && !supervisor.at
+  // `supervisor.at` is the reliable test for "a decision was actually made
+  // here" -- an untouched entry decodes to pending with no timestamp, and a
+  // pending review is never something a person decided.
+  const carried = !supervisor.at
     ? supervisor.history
-    : [Object.freeze({ review: supervisor.review, at: supervisor.at, byPersonId: supervisor.byPersonId, note: supervisor.note, forState: supervisor.forState }), ...supervisor.history];
+    : [Object.freeze({ review: supervisor.review, at: supervisor.at, byPersonId: supervisor.byPersonId, note: supervisor.note, forState: supervisor.forState, forClaimAt: supervisor.forClaimAt }), ...supervisor.history];
   const kept = carried.slice(0, MAX_RETAINED_DECISIONS);
   return Object.freeze({
     changed: true,
@@ -343,6 +353,9 @@ export function decideApproval({ currentLearner, currentSupervisor, review, byPe
       byPersonId,
       note: note ?? null,
       forState: learner.state,
+      // WHICH claim this decision was given for. A later claim gets a new
+      // instant, so the decision simply stops matching -- it is never edited.
+      forClaimAt: learner.at,
       history: Object.freeze(kept),
       historyTruncated: supervisor.historyTruncated + (carried.length - kept.length),
     }),
@@ -361,7 +374,10 @@ export function resolveWordProgress({ learner, supervisor, confirmationRequired 
   const l = learner ?? emptyWordProgressEntry();
   const s = supervisor ?? decodeSupervisorEntry(null);
   const claimed = l.state === "achieved";
-  const decisionAppliesToThisClaim = claimed && s.forState === "achieved" && s.review !== "pending";
+  // A decision applies only to the exact claim it was given for. Comparing
+  // the claim instant is what keeps a frozen confirmation from silently
+  // blessing a later, unreviewed claim -- without ever rewriting the decision.
+  const decisionAppliesToThisClaim = claimed && s.review !== "pending" && s.forState === "achieved" && !!s.forClaimAt && s.forClaimAt === l.at;
   const review = !confirmationRequired ? "not_required" : claimed ? (decisionAppliesToThisClaim ? s.review : "pending") : "none";
   return Object.freeze({
     contractVersion: WORD_PROGRESS_CONTRACT,
