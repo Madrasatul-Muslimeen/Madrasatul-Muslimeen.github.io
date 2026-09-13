@@ -1811,8 +1811,13 @@
   .wbw-empty { color: #888; font-size: 0.85rem; }
   .panel-notes, .panel-reflection, .panel-writing textarea { width: 100%; box-sizing: border-box; margin: 0.4rem 0; }
   .panel-checklist { font-weight: 400; }
-  #quranWordCardMount:empty { display: none; }
-  #quranWordCardMount { flex: 0 0 auto; max-height: min(45vh, 24rem); overflow-y: auto; padding: 0.5rem; background: rgba(255,255,255,0.97); border-top: 1px solid #d8c68a; }
+  /* v08.20 -- the mount is no longer hidden by :empty, because it now holds
+     static resize handles and so is never empty. It is hidden by [hidden]
+     instead, written as #id[hidden] on purpose: this file's own most-repeated
+     trap is a class/ID rule beating the UA's plain [hidden], and the rule
+     right below sets display on the same ID. */
+  #quranWordCardMount[hidden], #quranWordCardMountNote[hidden] { display: none !important; }
+  #quranWordCardMount, #quranWordCardMountNote { flex: 0 0 auto; max-height: min(45vh, 24rem); overflow-y: auto; padding: 0.5rem; background: rgba(255,255,255,0.97); border-top: 1px solid #d8c68a; }
   /* MAP Phase 3. The progress block made the card taller, and MEASURED at
      320x640 the 45vh cap left it 49px short -- far enough that the three
      state buttons themselves were below the fold, so the control a reader
@@ -1823,7 +1828,50 @@
      reading height ONLY while a word card is open, which is exactly when the
      card is what the reader is looking at. Taller screens are untouched:
      min() already picks 24rem there. */
-  @media (max-height: 720px) { #quranWordCardMount { max-height: min(62vh, 24rem); } }
+  @media (max-height: 720px) { #quranWordCardMount, #quranWordCardMountNote { max-height: min(62vh, 24rem); } }
+
+  /* v08.20 -- clickable occurrences (Basic Arabic) and the way back. */
+  .word-card-occurrences { display: flex; flex-wrap: wrap; gap: 0.3rem; list-style: none; margin: 0.3rem 0; padding: 0; }
+  .word-card-occurrences li { margin: 0; }
+  /* 40px, not the 32px this shipped at first: an occurrence is something a
+     finger presses, and quran-word-card-rendered.mjs's own >=36px tap-target
+     check caught it. This file's own standing rule is ~40px for anything
+     tapped, so it matches the card's other controls rather than merely
+     clearing the bar. */
+  .word-card-occurrence-link {
+    min-height: 40px; padding: 0.35rem 0.6rem; font-size: 0.82rem; line-height: 1.2;
+    border: 1px solid #d8c68a; border-radius: 0.35rem; background: #fff; color: #1F3A6E; cursor: pointer;
+  }
+  .word-card-occurrence-link:hover { background: #f3ecd8; }
+  .word-card-origin { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin: 0.35rem 0 0; }
+  .word-card-origin span { font-size: 0.78rem; color: #7a6a3c; }
+  .word-card-origin button {
+    min-height: 36px; padding: 0.3rem 0.6rem; font-size: 0.82rem;
+    border: 1px solid #B8862F; border-radius: 0.35rem; background: #B8862F; color: #fff; cursor: pointer;
+  }
+
+  /* v08.20 -- on a desktop the card floats as its own small window, the same
+     treatment #noteView/#wheelPopupView/#exploreView already get and at the
+     same 900px breakpoint, so "popup on desktop, docked strip on touch" stays
+     one rule for the whole app rather than a second one just for this card.
+     Below 900px NONE of this applies and the card is the docked strip it has
+     been since Phase 2. */
+  @media (min-width: 900px) {
+    #quranWordCardMount, #quranWordCardMountNote {
+      position: fixed; z-index: 60; max-height: none; border: 1px solid #d8c68a; border-top: 1px solid #d8c68a;
+      border-radius: 0.6rem; box-shadow: 0 0.6rem 2rem rgba(0,0,0,0.28); display: flex; flex-direction: column;
+      /* The WINDOW must not scroll -- its content does (.word-card-content
+         below). The base rule's overflow-y:auto would otherwise CLIP the
+         resize handles, which sit deliberately 3px outside the box: that is
+         exactly why the south edge would not resize while the corners did. */
+      overflow: visible;
+    }
+    #quranWordCardMount[hidden], #quranWordCardMountNote[hidden] { display: none !important; }
+    .word-card-content { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+    /* The header is the drag handle (initPopupWindow's dragFromSelector). */
+    #quranWordCardMount .quran-word-card header, #quranWordCardMountNote .quran-word-card header { cursor: move; touch-action: none; }
+    #quranWordCardMount .quran-word-card, #quranWordCardMountNote .quran-word-card { max-width: none; box-shadow: none; border: none; }
+  }
   .quran-word-card { max-width: 42rem; margin: 0 auto; border: 1px solid #d8c68a; border-radius: 0.65rem; background: #fffdf6; padding: 0.65rem; box-shadow: 0 -0.2rem 1rem rgba(0,0,0,0.08); }
   .quran-word-card header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: center; }
   /* Previous / next / close. Square, fixed, never shrinking, so the three read
@@ -3014,7 +3062,25 @@
             <div id="pageViewContainer" style="display:none;"></div>
           </div><!-- /#studyScreen -->
         </div>
-        <div id="quranWordCardMount" aria-live="polite"></div>
+        <!-- v08.20 -- the card's own content is the ONLY part replaced on a
+             tab switch or a move between words. The eight resize handles sit
+             OUTSIDE it, exactly as #noteView's own chrome sits outside
+             #noteViewMount and for the identical reason: a listener bound to
+             something innerHTML replaces dies with it. They reuse
+             .note-popup-resize, which is already display:none below 900px
+             and absolutely positioned above it, so the phone layout is
+             untouched and no new CSS decides when they appear. -->
+        <div id="quranWordCardMount" hidden>
+          <div class="word-card-content" data-word-card-content aria-live="polite"></div>
+          <div class="note-popup-resize" data-note-resize="n"></div>
+          <div class="note-popup-resize" data-note-resize="s"></div>
+          <div class="note-popup-resize" data-note-resize="e"></div>
+          <div class="note-popup-resize" data-note-resize="w"></div>
+          <div class="note-popup-resize" data-note-resize="ne"></div>
+          <div class="note-popup-resize" data-note-resize="nw"></div>
+          <div class="note-popup-resize" data-note-resize="se"></div>
+          <div class="note-popup-resize" data-note-resize="sw"></div>
+        </div>
         <div id="readHint" hidden>Press the ⤢ button to bring the menus back.</div>
       </div><!-- /#readView -->
 
@@ -3067,6 +3133,24 @@
           </div>
           <div id="notePopupSplitter" class="note-popup-splitter" role="separator" aria-orientation="vertical" title="Drag to resize"></div>
           <div id="noteViewMount"></div>
+        </div>
+        <!-- v08.20 -- the Note view's own Word Card. Deliberately a SIBLING
+             of #notePopupBody, so it lives outside #noteViewMount: opening,
+             closing, retabbing or moving the card therefore never re-enters
+             renderNoteViewNow(), and the note's own contenteditable
+             ([data-note-editor]) is never rebuilt under the reader's caret.
+             That is what "preserve note text and editing state" means here --
+             a structural guarantee, not a save-and-restore dance. -->
+        <div id="quranWordCardMountNote" hidden>
+          <div class="word-card-content" data-word-card-content aria-live="polite"></div>
+        <div class="note-popup-resize" data-note-resize="n"></div>
+        <div class="note-popup-resize" data-note-resize="s"></div>
+        <div class="note-popup-resize" data-note-resize="e"></div>
+        <div class="note-popup-resize" data-note-resize="w"></div>
+        <div class="note-popup-resize" data-note-resize="ne"></div>
+        <div class="note-popup-resize" data-note-resize="nw"></div>
+        <div class="note-popup-resize" data-note-resize="se"></div>
+        <div class="note-popup-resize" data-note-resize="sw"></div>
         </div>
         <div class="note-popup-resize" data-note-resize="n"></div>
         <div class="note-popup-resize" data-note-resize="s"></div>
@@ -4451,6 +4535,15 @@
     let quranWordCardContext = {};
     let quranWordCardRequest = 0;
     let quranWordCardTrigger = null;
+    /** v08.20 -- set ONLY while the reader followed a Basic-Arabic occurrence
+     *  link out of a word, and cleared the moment they go back or close the
+     *  card. It holds the word they came FROM plus the study context to
+     *  restore (surah, ayah and which stage view they were in), which is what
+     *  makes "a clear way back to the original word AND study context" one
+     *  action rather than three manual steps. Origin is deliberately kept
+     *  distinct from the destination the card is currently showing -- the
+     *  same separation MAP locks for Note Origin / Note Destination. */
+    let quranWordCardOrigin = null;
     // MAP Phase 3. `confirmationRequired` is the same computed answer
     // records.js already gives ("does this person have a teacher, guardian or
     // prime?"), fetched ON FIRST USE and cached per person -- the same
@@ -5674,7 +5767,7 @@
     async function loadSurah() {
       quranWordCardRequest++;
       quranWordCardState = closeWordCard(quranWordCardState);
-      document.getElementById("quranWordCardMount").replaceChildren();
+      clearWordCardMounts();
       currentSurahData = await getSurah(currentSurahNum);
       currentAyahNum = 1;
       // Owner ask (10 Aug 2026): Prev/Next alone made jumping to, say, ayah
@@ -7447,6 +7540,32 @@
       dragHandleEl: exploreBarEl,
       resizeHandleEls: explorePopupResizeHandles,
       maximizeBtn: explorePopupMaximizeBtn,
+    });
+    // v08.20 -- the Word Card floats as its own small window on a desktop,
+    // dragged by its header and resized from any edge or corner, exactly the
+    // treatment the four stage views already get and at the same 900px
+    // breakpoint. Two differences, both deliberate:
+    //   * `dragFromSelector: "header"` -- the card's header is rewritten on
+    //     every tab switch, so it cannot itself be the handle; the static
+    //     mount is, and this keeps the drag to the header regardless.
+    //   * a 320x240 floor instead of the stage views' 480x360 -- this is a
+    //     card, and 480x360 is most of a laptop's height for three lines.
+    //     Still comfortably above the 40px controls inside it.
+    // Each mount gets its OWN remembered geometry, so moving the Read view's
+    // card never shoves the Note view's one somewhere the reader didn't put
+    // it. Below 900px initPopupWindow applies no inline geometry at all and
+    // the docked strip is untouched.
+    [["quranWordCardMount", "wordcard"], ["quranWordCardMountNote", "wordcard-note"]].forEach(([mountId, geomId]) => {
+      const mountEl = document.getElementById(mountId);
+      if (!mountEl) return;
+      initPopupWindow(mountEl, {
+        id: geomId,
+        dragHandleEl: mountEl,
+        dragFromSelector: "header",
+        resizeHandleEls: [...mountEl.querySelectorAll("[data-note-resize]")],
+        minWidth: 320,
+        minHeight: 240,
+      });
     });
 
     // 2 Sep 2026 -- "enable the list blocks expandable/shrinkable/
@@ -9361,6 +9480,10 @@
         unknown: t("Unknown"),
         rootOccurrences: t("{count} root-linked occurrences"),
         lemmaOccurrences: t("{count} lemma-linked occurrences"),
+        goToOccurrence: t("Go to {ref}"),
+        backToWord: t("Back to {ref}"),
+        backToWordTitle: t("Back to the word you came from"),
+        visitingFrom: t("Visiting from {ref}"),
         rootUnavailable: t("Root unavailable in the approved dataset"),
         lemmaUnavailable: t("Lemma unavailable in the approved dataset"),
         loadingOccurrences: t("Loading occurrences…"),
@@ -9488,9 +9611,29 @@
       renderPersistentWordCard();
     }
 
+    /** v08.20 -- the Word Card now has TWO homes, the Read view's and the Note
+     *  view's, and exactly one of them is on screen at a time. These three
+     *  helpers are the whole of what makes the card view-agnostic: everything
+     *  below asks for "the active mount" and never names a view. */
+    function wordCardMountEls() {
+      return ["quranWordCardMount", "quranWordCardMountNote"].map((id) => document.getElementById(id)).filter(Boolean);
+    }
+    function activeWordCardMount() {
+      return document.getElementById(stageView === "note" ? "quranWordCardMountNote" : "quranWordCardMount");
+    }
+    /** Empties the CONTENT of both mounts and hides them. Never touches the
+     *  mount's own children beyond that -- the eight resize handles are
+     *  static chrome and must outlive every render (see the markup comment). */
+    function clearWordCardMounts() {
+      wordCardMountEls().forEach((m) => {
+        m.hidden = true;
+        const content = m.querySelector("[data-word-card-content]");
+        if (content) content.innerHTML = "";
+      });
+    }
     function renderPersistentWordCard() {
-      const mount = document.getElementById("quranWordCardMount");
-      if (!mount || !quranWordCardState.open || !currentSurahData) { if (mount) mount.innerHTML = ""; return; }
+      const mount = activeWordCardMount();
+      if (!mount || !quranWordCardState.open || !currentSurahData) { clearWordCardMounts(); return; }
       const focused = mount.contains(document.activeElement) ? document.activeElement : null;
       const focusSelector = focused?.dataset.wordCardLevel
         ? `[data-word-card-level="${focused.dataset.wordCardLevel}"]`
@@ -9502,14 +9645,17 @@
               ? `[data-word-progress-decide="${focused.dataset.wordProgressDecide}"]`
               : focused?.hasAttribute("data-word-card-close") ? "[data-word-card-close]" : null;
       let ref;
-      try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { quranWordCardState = closeWordCard(quranWordCardState); mount.innerHTML = ""; return; }
-      if (ref.surah !== currentSurahNum) { mount.innerHTML = ""; return; }
+      try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { quranWordCardState = closeWordCard(quranWordCardState); clearWordCardMounts(); return; }
+      if (ref.surah !== currentSurahNum) { clearWordCardMounts(); return; }
       const ayah = currentSurahData.ayahs.find((a) => a.ayah === ref.ayah);
       const word = ayah?.words?.find((w) => w.position === ref.position);
-      if (!ayah || !word) { mount.innerHTML = ""; return; }
+      if (!ayah || !word) { clearWordCardMounts(); return; }
       const ids = wordCardOccurrenceIds();
       const at = ids.indexOf(quranWordCardState.occurrenceId);
-      mount.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordProgressContext(ref), hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      wordCardMountEls().forEach((m) => { if (m !== mount) { m.hidden = true; const c = m.querySelector("[data-word-card-content]"); if (c) c.innerHTML = ""; } });
+      mount.hidden = false;
+      const content = mount.querySelector("[data-word-card-content]") ?? mount;
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordProgressContext(ref), origin: quranWordCardOrigin, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 
@@ -9536,10 +9682,76 @@
       renderPersistentWordCard();
     }
 
-    document.getElementById("readView").addEventListener("click", (event) => {
+    /** v08.20 -- follow a Basic-Arabic occurrence to the place it names.
+     *  The destination is opened in the READ view even when the reader
+     *  started in the Note view: the Note view is showing ONE ayah's note,
+     *  and quietly re-pointing it at a different ayah would rebuild its
+     *  contenteditable and take the reader's unsaved text with it. Switching
+     *  stage view only toggles `hidden`, so the note's own DOM -- text, caret
+     *  content and all -- is still there, untouched, when "back" returns. */
+    async function goToWordOccurrence(refText) {
+      const parts = String(refText).split(":").map(Number);
+      if (parts.length !== 3 || parts.some((n) => !Number.isInteger(n) || n < 1)) return;
+      const [surah, ayah, position] = parts;
+      const originRef = quranWordCardState.occurrenceId ? (() => {
+        try { const o = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); return `${o.surah}:${o.ayah}:${o.position}`; } catch { return null; }
+      })() : null;
+      // Only the FIRST hop records an origin, so a chain of jumps always
+      // offers the way back to the word the reader actually started from
+      // rather than to the previous hop.
+      if (originRef && !quranWordCardOrigin) {
+        quranWordCardOrigin = { occurrenceId: quranWordCardState.occurrenceId, ref: originRef, surah: currentSurahNum, ayah: currentAyahNum, stageView, unitType: currentUnitType };
+      }
+      await openWordOccurrenceAt(surah, ayah, position, "read");
+    }
+    /** The shared half of "go there and open that word" -- used by both the
+     *  occurrence link above and the way back below. */
+    async function openWordOccurrenceAt(surah, ayah, position, view) {
+      quranWordCardRequest++;
+      setStageView(view);
+      if (surah !== currentSurahNum) {
+        currentSurahNum = surah;
+        surahSelect.value = String(surah);
+        await loadSurah(); // closes the card and clears both mounts -- reopened below, on the destination
+      }
+      currentAyahNum = ayah;
+      if (ayahSelect.querySelector(`option[value="${ayah}"]`)) ayahSelect.value = String(ayah);
+      renderStudyScreen();
+      quranWordCardState = openWordCard(quranWordCardState, `quran-word-occurrence:v1:${surah}:${ayah}:${position}`);
+      quranWordCardContext = {};
+      renderPersistentWordCard();
+      activeWordCardMount()?.querySelector("[data-word-card-close]")?.focus({ preventScroll: true });
+      hydrateWordCardOccurrences();
+      hydrateWordProgress();
+    }
+    /** The way back: the original word AND the study context it was read in. */
+    async function returnToWordCardOrigin() {
+      const origin = quranWordCardOrigin;
+      if (!origin) return;
+      quranWordCardOrigin = null;
+      if (origin.unitType && origin.unitType !== currentUnitType) {
+        currentUnitType = origin.unitType;
+        unitTypeSelect.value = origin.unitType;
+        updateUnitControlsVisibility();
+      }
+      let ref;
+      try { ref = parseQuranWordOccurrenceId(origin.occurrenceId); } catch { return; }
+      await openWordOccurrenceAt(ref.surah, ref.ayah, ref.position, origin.stageView === "note" ? "note" : "read");
+    }
+
+    // v08.20 -- the Read view and the Note view share ONE set of handlers.
+    // Neither is named inside them: every lookup goes through
+    // activeWordCardMount(), so the card behaves identically in both.
+    ["readView", "noteView"].forEach((viewId) => {
+    document.getElementById(viewId).addEventListener("click", (event) => {
       if (!(event.target instanceof Element)) return;
       const occurrence = event.target.closest("[data-word-occurrence]");
-      if (occurrence) { quranWordCardTrigger = occurrence; quranWordCardState = openWordCard(quranWordCardState, occurrence.dataset.wordOccurrence); quranWordCardContext = {}; renderPersistentWordCard(); document.querySelector("#quranWordCardMount [data-word-card-close]")?.focus({ preventScroll: true }); hydrateWordCardOccurrences(); hydrateWordProgress(); return; }
+      // Opening a word directly is a fresh start: any "visiting from" trail
+      // from an earlier occurrence hop is over.
+      if (occurrence) { quranWordCardTrigger = occurrence; quranWordCardOrigin = null; quranWordCardState = openWordCard(quranWordCardState, occurrence.dataset.wordOccurrence); quranWordCardContext = {}; renderPersistentWordCard(); activeWordCardMount()?.querySelector("[data-word-card-close]")?.focus({ preventScroll: true }); hydrateWordCardOccurrences(); hydrateWordProgress(); return; }
+      const goto = event.target.closest("[data-word-occurrence-goto]");
+      if (goto) { goToWordOccurrence(goto.dataset.wordOccurrenceGoto); return; }
+      if (event.target.closest("[data-word-card-origin-back]")) { returnToWordCardOrigin(); return; }
       // The two Phase 3 controls. Nothing above this line writes: opening a
       // word, moving between words and switching tab are all reads.
       const progressState = event.target.closest("[data-word-progress-state]");
@@ -9548,15 +9760,15 @@
       if (progressDecide) { runWordProgressAction({ kind: "decide", review: progressDecide.dataset.wordProgressDecide }); return; }
       const level = event.target.closest("[data-word-card-level]");
       if (level) { quranWordCardState = selectWordCardLevel(quranWordCardState, level.dataset.wordCardLevel); renderPersistentWordCard(); return; }
-      if (event.target.closest("[data-word-card-close]")) { quranWordCardRequest++; quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected) quranWordCardTrigger.focus({ preventScroll: true }); return; }
+      if (event.target.closest("[data-word-card-close]")) { quranWordCardRequest++; quranWordCardOrigin = null; quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected) quranWordCardTrigger.focus({ preventScroll: true }); return; }
       const move = event.target.closest("[data-word-card-move]");
       if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); quranWordCardContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); hydrateWordProgress(); }
     });
-    document.getElementById("readView").addEventListener("keydown", (event) => {
+    document.getElementById(viewId).addEventListener("keydown", (event) => {
       if (!quranWordCardState.open || !(event.target instanceof Element)) return;
-      if (event.key === "Escape" && event.target.closest("#quranWordCardMount")) {
+      if (event.key === "Escape" && event.target.closest("[data-word-card-content]")) {
         event.preventDefault();
-        document.querySelector("#quranWordCardMount [data-word-card-close]")?.click();
+        activeWordCardMount()?.querySelector("[data-word-card-close]")?.click();
       }
       const tab = event.target.closest("[data-word-card-level]");
       if (!tab || !["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
@@ -9564,11 +9776,12 @@
       const levels = ["wbw", "basic", "depth"];
       const at = levels.indexOf(tab.dataset.wordCardLevel);
       const next = event.key === "Home" ? 0 : event.key === "End" ? levels.length - 1 : (at + (event.key === "ArrowRight" ? 1 : -1) + levels.length) % levels.length;
-      const nextTab = document.querySelector(`#quranWordCardMount [data-word-card-level="${levels[next]}"]`);
-      nextTab?.click();
+      const mountEl = activeWordCardMount();
+      mountEl?.querySelector(`[data-word-card-level="${levels[next]}"]`)?.click();
       // The click replaces the card markup. Move focus to the newly selected
       // tab so keyboard focus and the roving tabindex remain in agreement.
-      document.querySelector(`#quranWordCardMount [data-word-card-level="${levels[next]}"]`)?.focus({ preventScroll: true });
+      activeWordCardMount()?.querySelector(`[data-word-card-level="${levels[next]}"]`)?.focus({ preventScroll: true });
+    });
     });
 
     /** Whole surah -> every ayah; range -> just the selected ayahs. Same bounds logic as currentUnitAyahBounds() for those two unit types, kept separate since that function also has to handle ruku/juz/page. */
@@ -10805,7 +11018,10 @@
             ? `<div class="ayah-num-row"><span class="ayah-num-badge">${num(a.ayah)}</span></div>${panelFn(a)}`
             : panelFn(a)))
           .join("");
-        if (canWbwRoot && wbwShowToggle.checked) wbwHtml = perAyahPanels((a) => renderWordByWordPanel(a, { langs: wbwLangs() }));
+        // v08.20 -- the Note view's own Word by Word is interactive now, the
+        // same as the Read view's. This one missing pair of options is the
+        // whole of why a word was tappable in READ and inert in NOTE.
+        if (canWbwRoot && wbwShowToggle.checked) wbwHtml = perAyahPanels((a) => renderWordByWordPanel(a, { langs: wbwLangs(), interactive: true, surahNumber: currentSurahNum }));
         if (canWbwRoot && rootsToggle.checked) rootsHtml = perAyahPanels((a) => renderRootPanel(a));
         if (canWbwRoot && derivativesToggle.checked) derivativesHtml = perAyahPanels((a) => renderDerivativesPanel(a));
       }

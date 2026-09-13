@@ -81,9 +81,9 @@ function writeJson(key, value) {
   }
 }
 
-function defaultGeometry() {
-  const width = Math.max(MIN_WIDTH, Math.min(920, Math.round(window.innerWidth * 0.86)));
-  const height = Math.max(MIN_HEIGHT, Math.min(720, Math.round(window.innerHeight * 0.82)));
+function defaultGeometry(minW = MIN_WIDTH, minH = MIN_HEIGHT) {
+  const width = Math.max(minW, Math.min(920, Math.round(window.innerWidth * 0.86)));
+  const height = Math.max(minH, Math.min(720, Math.round(window.innerHeight * 0.82)));
   return {
     width, height,
     top: Math.max(0, Math.round((window.innerHeight - height) / 2)),
@@ -91,9 +91,9 @@ function defaultGeometry() {
   };
 }
 
-function clampGeometry(g) {
-  const width = Math.max(MIN_WIDTH, Math.min(g.width, window.innerWidth));
-  const height = Math.max(MIN_HEIGHT, Math.min(g.height, window.innerHeight));
+function clampGeometry(g, minW = MIN_WIDTH, minH = MIN_HEIGHT) {
+  const width = Math.max(minW, Math.min(g.width, window.innerWidth));
+  const height = Math.max(minH, Math.min(g.height, window.innerHeight));
   // A window can never be dragged fully off-screen -- at least a corner
   // (120x60) always stays reachable to drag it back.
   const left = Math.max(0, Math.min(g.left, window.innerWidth - Math.min(width, 120)));
@@ -101,13 +101,13 @@ function clampGeometry(g) {
   return { width, height, top, left };
 }
 
-function loadGeometry(id) {
+function loadGeometry(id, minW = MIN_WIDTH, minH = MIN_HEIGHT) {
   const saved = readJson(geometryKeyFor(id));
   if (saved && Number.isFinite(saved.width) && Number.isFinite(saved.height)
       && Number.isFinite(saved.top) && Number.isFinite(saved.left)) {
-    return clampGeometry(saved);
+    return clampGeometry(saved, minW, minH);
   }
-  return defaultGeometry();
+  return defaultGeometry(minW, minH);
 }
 function saveGeometry(g, id) { writeJson(geometryKeyFor(id), g); }
 
@@ -235,9 +235,22 @@ function clearGeometry(el) {
  * 2 Sep 2026) keeps reading/writing the exact key it always has. Pass
  * "wheel" or "explore" to give the Mastery Wheel / Explore popups their own,
  * independent remembered shape.
+ *
+ * `minWidth`/`minHeight` (v08.20) let ONE caller float smaller than the
+ * 480x360 every stage view uses. The Word Card is a card, not a stage view,
+ * and 480x360 is most of a laptop's height for three lines of Arabic. Both
+ * default to the shared constants, so every existing call site keeps the
+ * exact floor it has always had.
+ *
+ * `dragFromSelector` (v08.20) restricts which part of `dragHandleEl` starts a
+ * drag. The Word Card's own header is rewritten on every tab switch, so it
+ * cannot BE the handle (the listener would die with it) -- the static mount
+ * is the handle, and this selector is what keeps a drag to the header the
+ * owner actually asked to drag by. Omitted, the whole handle drags, exactly
+ * as the four stage views already do.
  */
-export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls = [], maximizeBtn, onMaximizeChange } = {}) {
-  let geometry = loadGeometry(id);
+export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls = [], maximizeBtn, onMaximizeChange, minWidth = MIN_WIDTH, minHeight = MIN_HEIGHT, dragFromSelector = null } = {}) {
+  let geometry = loadGeometry(id, minWidth, minHeight);
   let wasPopupViewport = isPopupViewport();
   if (wasPopupViewport) applyGeometry(el, geometry); else clearGeometry(el);
   let maximized = false;
@@ -252,12 +265,13 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
   dragHandleEl?.addEventListener("pointerdown", (e) => {
     if (maximized) return;
     if (e.target.closest("button, select, input, a")) return; // the title bar's own buttons stay clickable
+    if (dragFromSelector && !e.target.closest(dragFromSelector)) return; // v08.20: only the named part of the handle drags
     if (e.button !== undefined && e.button !== 0) return; // left-click/primary touch only
     e.preventDefault();
     const startX = e.clientX, startY = e.clientY, startGeom = { ...geometry };
     dragHandleEl.setPointerCapture(e.pointerId);
     const move = (ev) => {
-      commit(clampGeometry({ ...startGeom, left: startGeom.left + (ev.clientX - startX), top: startGeom.top + (ev.clientY - startY) }), { persist: false });
+      commit(clampGeometry({ ...startGeom, left: startGeom.left + (ev.clientX - startX), top: startGeom.top + (ev.clientY - startY) }, minWidth, minHeight), { persist: false });
     };
     const up = () => {
       dragHandleEl.removeEventListener("pointermove", move);
@@ -282,7 +296,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
         if (dir.includes("s")) height = startGeom.height + dy;
         if (dir.includes("w")) { width = startGeom.width - dx; left = startGeom.left + dx; }
         if (dir.includes("n")) { height = startGeom.height - dy; top = startGeom.top + dy; }
-        commit(clampGeometry({ width, height, top, left }), { persist: false });
+        commit(clampGeometry({ width, height, top, left }, minWidth, minHeight), { persist: false });
       };
       const up = () => {
         handle.removeEventListener("pointermove", move);
@@ -296,7 +310,7 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
 
   maximizeBtn?.addEventListener("click", () => {
     if (maximized) {
-      commit(preMaximizeGeometry ?? loadGeometry(id));
+      commit(preMaximizeGeometry ?? loadGeometry(id, minWidth, minHeight));
       maximized = false;
     } else {
       preMaximizeGeometry = { ...geometry };
@@ -319,12 +333,12 @@ export function initPopupWindow(el, { id = "note", dragHandleEl, resizeHandleEls
     if (nowPopupViewport !== wasPopupViewport) {
       wasPopupViewport = nowPopupViewport;
       if (!nowPopupViewport) { clearGeometry(el); return; }
-      applyGeometry(el, clampGeometry(geometry));
+      applyGeometry(el, clampGeometry(geometry, minWidth, minHeight));
       return;
     }
     if (!nowPopupViewport) return; // nothing to re-clamp -- no inline geometry to have drifted
     if (maximized) { commit({ width: window.innerWidth - 24, height: window.innerHeight - 24, top: 12, left: 12 }, { persist: false }); return; }
-    commit(clampGeometry(geometry), { persist: false });
+    commit(clampGeometry(geometry, minWidth, minHeight), { persist: false });
   });
 }
 

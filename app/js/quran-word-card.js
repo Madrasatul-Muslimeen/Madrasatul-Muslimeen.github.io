@@ -28,6 +28,10 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   unknown: "Unknown",
   rootOccurrences: "{count} root-linked occurrences",
   lemmaOccurrences: "{count} lemma-linked occurrences",
+  goToOccurrence: "Go to {ref}",
+  backToWord: "Back to {ref}",
+  backToWordTitle: "Back to the word you came from",
+  visitingFrom: "Visiting from {ref}",
   rootUnavailable: "Root unavailable in the approved dataset",
   lemmaUnavailable: "Lemma unavailable in the approved dataset",
   loadingOccurrences: "Loading occurrences…",
@@ -164,7 +168,16 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     </div>`;
   }
   if (level === "basic") {
-    const refs = (items) => (items?.length ? `<ol class="word-card-occurrences">${items.slice(0, 20).map((r) => `<li>${r.surah}:${r.ayah}:${r.position}</li>`).join("")}</ol>` : "");
+    // v08.20 -- each occurrence is a real control that opens that location.
+    // `data-word-occurrence-goto` carries the SAME permanent occurrence
+    // identity (ADR-007) the Word Card itself is keyed by, never a label to
+    // be re-parsed: the page hands it straight back to openWordCard().
+    const refs = (items) => (items?.length
+      ? `<ol class="word-card-occurrences">${items.slice(0, 20).map((r) => {
+          const ref = `${r.surah}:${r.ayah}:${r.position}`;
+          return `<li><button type="button" class="word-card-occurrence-link" data-word-occurrence-goto="${escapeHtml(ref)}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", ref))}">${escapeHtml(ref)}</button></li>`;
+        }).join("")}</ol>`
+      : "");
     const count = (template, n) => escapeHtml(String(template).replace("{count}", formatNumber(n)));
     return `<div role="tabpanel" data-word-card-panel="basic">
       <dl><dt>${escapeHtml(text.lemma)}</dt><dd>${escapeHtml(layers.lemma || text.unknown)}</dd><dt>${escapeHtml(text.root)}</dt><dd>${escapeHtml(layers.root || text.unknown)}</dd><dt>${escapeHtml(text.partOfSpeech)}</dt><dd>${escapeHtml(word.morphology?.pos || text.unknown)}</dd></dl>
@@ -192,6 +205,21 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
  * applied to the surah:ayah:position references below, which are identifiers
  * and stay in plain digits, nor to anything else.
  */
+/**
+ * v08.20 -- the way back. `context.origin` is set only while the reader
+ * followed an occurrence link OUT of a word; it names the word they came
+ * from (MAP's own Note Origin / Note Destination distinction, applied to the
+ * same shape here: the origin word is not the destination word, and the card
+ * never conflates them). Absent, this renders nothing at all, so a word
+ * opened directly is byte-for-byte the card it always was.
+ */
+function originBar(origin, text) {
+  if (!origin?.occurrenceId) return "";
+  const ref = String(origin.ref ?? origin.occurrenceId);
+  return `<div class="word-card-origin"><span>${escapeHtml(String(text.visitingFrom).replace("{ref}", ref))}</span>` +
+    `<button type="button" data-word-card-origin-back title="${escapeHtml(text.backToWordTitle)}" aria-label="${escapeHtml(String(text.backToWord).replace("{ref}", ref))}">↩ ${escapeHtml(ref)}</button></div>`;
+}
+
 export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, labels = {}, formatNumber = String } = {}) {
   if (!state?.open || !word) return "";
   const occurrenceId = quranWordOccurrenceId(chapter.surahNumber, ayah.ayah, word.position);
@@ -206,6 +234,7 @@ export function renderQuranWordCard({ state, chapter, ayah, word, context = {}, 
       <div><div class="word-card-arabic" dir="rtl" lang="ar">${escapeHtml(layers.surfaceToken)}</div><div class="word-card-reference">${chapter.surahNumber}:${ayah.ayah}:${word.position}</div></div>
       <button type="button" data-word-card-move="next" aria-label="${escapeHtml(text.next)}"${context.hasNext ? "" : " disabled"}>›</button>
       <button type="button" data-word-card-close aria-label="${escapeHtml(text.close)}">×</button></header>
+    ${originBar(context.origin, text)}
     <div role="tablist" aria-label="${escapeHtml(text.tablist)}">${tabButton("wbw", state.level === "wbw", text.wbw)}${tabButton("basic", state.level === "basic", text.basic)}${tabButton("depth", state.level === "depth", text.depth)}</div>
     ${levelPanel(state.level, word, layers, context, text, formatNumber)}
   </section>`;

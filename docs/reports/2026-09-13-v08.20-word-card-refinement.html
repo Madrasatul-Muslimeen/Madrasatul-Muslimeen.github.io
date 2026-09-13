@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuranRevival v08.20 — Word Card Refinement</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>QuranRevival v08.20 — Word Card Refinement</h1>
+<p><strong>Date:</strong> 2026-09-13 <strong>Repository:</strong> <code>Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io</code> <strong>Base:</strong> <code>6bee64ae59e105f98d413bf0e32a65190d0a9ace</code> (main, v08.19) <strong>App version:</strong> 08.19 → <strong>08.20</strong> <strong>Status:</strong> BUILT AND VERIFIED — <strong>NOT Owner-accepted.</strong> Awaiting live verification.</p>
+<hr>
+<h2>1. Governing check, before any code</h2>
+<p>Read <code>docs/governance/ACTIVE-ARCHITECTURE.md</code> and <code>docs/governance/DDR.md</code> first. <strong>No conflict was found, and three clauses actively shaped the build:</strong></p>
+<div class='tw'><table><thead><tr><th>Clause</th><th>Effect on this round</th></tr></thead><tbody>
+<tr><td>&quot;READ and NOTE evolve into the unified user-facing STUDY concept <strong>without crude forced code merging</strong>&quot;</td><td>Directly authorises request 1. It also rules out merging the two views: the Word Card became a <em>shared component used by both</em>, which is what I2 (&quot;renderers are shared components&quot;) already requires.</td></tr>
+<tr><td>&quot;<strong>Note Origin ≠ Note Destination</strong>&quot; (locked distinction)</td><td>Applied to request 2. The word you came <em>from</em> and the word you are <em>looking at</em> are held as separate state and never conflated; the origin is a distinct record, and the card renders nothing at all when there is no origin.</td></tr>
+<tr><td>&quot;<strong>Surface Token ≠ Lemma ≠ Root ≠ Grammatical Family</strong>&quot; (locked)</td><td>The occurrence lists stay split by layer exactly as before — root occurrences and lemma occurrences remain separate lists with separate counts. Making them clickable did not merge them.</td></tr>
+</tbody></table></div>
+<p>No Owner Control Gate is crossed: no authentication, tenancy, role, Firestore architecture, Rules, production identifier, permanent Study Unit key, live record, claim/approval or protected legacy change. DDR-001 to DDR-004 are all untouched — this round adds no non-Quran progress model, no teacher-authority change, no translator selection, and no change to the 30 Approaches.</p>
+<p><strong>Blast radius:</strong> 5 application files (+2 test files updated in place). 314 insertions, 41 deletions.</p>
+<p>``<code> app/js/i18n/bn.js          +4     four new strings, translated app/js/note-popup.js       46 ±   two additive options on the shared popup window app/js/quran-word-card.js  31 ±   clickable occurrences + the origin bar app/js/version.js          1 ±    08.19 -&gt; 08.20 app/quranrevival.html      258 ±  two card mounts, shared handlers, navigation, CSS </code>``</p>
+<hr>
+<h2>2. What was found before building</h2>
+<p>Measured, not assumed:</p>
+<ul><li><strong>The Word Card could not appear in the Note view because its mount lived inside <code>#readView</code>.</strong> One mount, one view.</li><li><strong>The Note view&#x27;s own Word-by-Word panel was built without interactivity.</strong> The Read view calls <code>renderWordByWordPanel(..., { interactive: true, surahNumber })</code>; the Note view called it with neither. That single missing pair of options is the whole reason a word was tappable in READ and inert in NOTE.</li><li><strong>Occurrences were inert text</strong> — <code>&lt;li&gt;2:255:3&lt;/li&gt;</code>, no control.</li><li><strong>The app already had a drag-and-resize window system.</strong> <code>initPopupWindow()</code> in <code>app/js/note-popup.js</code> already does drag-by-handle, resize from all eight edges and corners, viewport clamping, per-window remembered geometry, and a clean fall back to plain flow below 900px. The Note, Approach and Explore views all use it. <strong>Request 3 was therefore a reuse job, not a new system.</strong></li></ul>
+<hr>
+<h2>3. What was built</h2>
+<h3>3.1 The Word Card works in the Note view</h3>
+<p>A second mount, <code>#quranWordCardMountNote</code>, sits in <code>#noteView</code> as a <strong>sibling of <code>#notePopupBody</code></strong> — deliberately <em>outside</em> <code>#noteViewMount</code>.</p>
+<p>That placement is the whole guarantee for &quot;preserve note text and editing state&quot;. <code>renderNoteViewNow()</code> replaces <code>#noteViewMount</code>&#x27;s innerHTML on every render, and the note editor (<code>[data-note-editor]</code>, a contenteditable) lives inside it. Because the card mount is outside that element, <strong>opening, closing, retabbing or moving the card never re-enters the note render path at all.</strong> This is a structural guarantee, not a save-and-restore dance — and the checks prove it by asserting the editor is the <em>same DOM node</em> before and after.</p>
+<p>The Read view&#x27;s mount and the Note view&#x27;s mount share one set of handlers. Neither view is named inside them: every lookup goes through <code>activeWordCardMount()</code>.</p>
+<h3>3.2 Each Basic Arabic occurrence is clickable</h3>
+<p>Every root-linked and lemma-linked occurrence is now a real <code>&lt;button&gt;</code> carrying <code>data-word-occurrence-goto</code>, which holds the same permanent occurrence identity (ADR-007) the card itself is keyed by — never a label to be re-parsed.</p>
+<p>Clicking one loads that surah if needed, moves to that āyah, and opens the card on that exact word.</p>
+<p><strong>The way back</strong> is a bar in the card reading &quot;Visiting from 2:255:3&quot; with a &quot;↩ 2:255:3&quot; button. It restores the original word <em>and</em> the study context — surah, āyah, unit type, and which stage view the reader was in. Only the <strong>first</strong> hop records an origin, so a chain of jumps still offers the way back to where the reader actually started, not to the previous hop.</p>
+<p><strong>Following an occurrence out of the Note view opens the destination in the READ view.</strong> This is deliberate: the Note view is showing one āyah&#x27;s note, and quietly re-pointing it at a different āyah would rebuild its contenteditable and take unsaved text with it. Switching stage view only toggles <code>hidden</code>, so the note&#x27;s DOM — text and all — is still intact when &quot;back&quot; returns to it.</p>
+<h3>3.3 Desktop drag and resize</h3>
+<p>At ≥900px both mounts become floating windows through the <strong>existing</strong> <code>initPopupWindow()</code>, at the same breakpoint the Note, Approach and Explore views already use. Below 900px none of it applies and the card is the docked strip it has been since Phase 2 — no inline geometry is written at all.</p>
+<p>Two additive options were added to the shared module; <strong>both default to the existing values, so all four existing call sites are behaviourally unchanged:</strong></p>
+<ul><li><code>minWidth</code> / <code>minHeight</code> — the card floats to a <strong>320×240</strong> floor instead of the stage views&#x27; 480×360. It is a card, not a stage view, and 480×360 is most of a laptop&#x27;s height for three lines of Arabic.</li><li><code>dragFromSelector</code> — the card&#x27;s header is rewritten on every tab switch, so it cannot <em>be</em> the handle (a listener bound to replaced markup dies with it). The static mount is the handle and this selector keeps drags to the header.</li></ul>
+<p>Each mount has its own remembered geometry, so moving the Read view&#x27;s card never shoves the Note view&#x27;s one. The card cannot be dragged off-screen.</p>
+<hr>
+<h2>4. Two real defects found by measuring</h2>
+<p>Both were in this round&#x27;s own work, and both were caught by checks rather than by reading the code.</p>
+<p><strong>(1) The occurrence buttons were too small.</strong> They shipped at 32px against <code>quran-word-card-rendered.mjs</code>&#x27;s own ≥36px tap-target rule, which failed across 12 viewport/language combinations. Raised to <strong>40px</strong>, this project&#x27;s own standing target for anything a finger presses, so they match the card&#x27;s other controls rather than merely clearing the bar.</p>
+<p><strong>(2) The south edge could not be resized.</strong> Corners and the east edge worked; the south edge did nothing. The cause was the mount&#x27;s inherited <code>overflow-y: auto</code>, which <strong>clipped the resize handles</strong> — they sit deliberately 3px outside the box. The window must not scroll; its content does. Fixed with <code>overflow: visible</code> on the window and the scroll moved to <code>.word-card-content</code>. A screenshot would never have shown this.</p>
+<hr>
+<h2>5. Test results</h2>
+<p>Every result below was executed. Nothing is reported as passing that was not run.</p>
+<h3>New behaviour — focused scripts, both languages, read off the rendered page</h3>
+<div class='tw'><table><thead><tr><th>Script</th><th>Result</th></tr></thead><tbody>
+<tr><td>Part 1 — Word Card in the Note view</td><td><strong>26 passed, 0 failed</strong></td></tr>
+<tr><td>Part 2 — occurrences, drag/resize, mobile</td><td><strong>41 passed, 4 failed</strong> (all 4 environmental, see below)</td></tr>
+</tbody></table></div>
+<p>Part 1 proves, in English and Bangla: the Note view renders tappable words; the card opens inside the Note view; the Read view&#x27;s mount stays hidden; the card mount is outside <code>#noteViewMount</code>; <strong>the note text survives opening the card</strong>; <strong>the editor is the same DOM node</strong> (so it was never re-rendered); and all of that again after closing the card.</p>
+<p>Part 2 proves: occurrences are real buttons and real tap targets; following one opens that location and the app really navigated there (read off <code>#surahSelect</code>, not off the card); a way back is offered and names the original word; back returns to it; the trail clears; the card floats with eight visible handles; dragging the header moves it; resizing works from <code>se</code>, <code>nw</code>, <code>e</code> <strong>and <code>s</code></strong>; it cannot be dragged off-screen; it keeps its 320×240 floor; and on mobile it stays a docked strip with no inline geometry, handles hidden, no sideways scroll.</p>
+<p><strong>The 4 failures are one environmental cause, counted twice per language:</strong> <code>raw.githubusercontent.com/.../gtaf_bangla_timestamps.json</code> returns <code>ERR_CONNECTION_RESET</code>. That file is fetched by <code>app/js/audio-player.js</code>, which <strong>is not in this round&#x27;s diff</strong>, and CLAUDE.md already records that this sandbox cannot reach those hosts. It is not this round&#x27;s failure and it is not claimed as a pass.</p>
+<h3>Existing suites</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>quran-word-card-rendered.mjs</code></td><td><strong>92 passed, 0 failed</strong></td></tr>
+<tr><td><code>quran-word-progress-rendered.mjs</code></td><td><strong>81 passed, 0 failed</strong></td></tr>
+<tr><td><code>quran-word-explore-rendered.mjs</code></td><td><strong>35 passed, 0 failed</strong></td></tr>
+<tr><td><code>quran-word-card.mjs</code></td><td>23 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-card-integration.mjs</code></td><td>10 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-identity-contract.mjs</code></td><td>6 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-indexes.mjs</code></td><td>9 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-index-loader.mjs</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-progress-model.mjs</code></td><td>57 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-progress-data.mjs</code></td><td>37 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-coverage.mjs</code></td><td>10 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-coverage-arabic.mjs</code></td><td>29 passed, 0 failed</td></tr>
+<tr><td><code>stub-parity.mjs</code></td><td>3 passed, 0 failed</td></tr>
+<tr><td><code>reading.mjs</code> en / bn</td><td><code>READING SCREEN OK</code> in both</td></tr>
+<tr><td><code>panel.mjs</code> en / bn</td><td>48 configurations each; <strong>0 truncated labels, 0 wrapped bars</strong></td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>1 problem — <strong>pre-existing</strong>, see below</td></tr>
+<tr><td><code>layout.mjs</code></td><td><strong>every landing-page metric byte-for-byte identical</strong></td></tr>
+<tr><td><code>behaviour.mjs</code></td><td><strong>803 passed, 0 failed</strong> — see note below</td></tr>
+</tbody></table></div>
+<p><strong><code>layout.mjs</code>:</strong> 16 measurements (8 viewports × 2 banner states). Wheel heading top, wheel width, Approach row count, dock gap, dock visibility and page overflow are all identical before → after, with the same 22-entry pre-existing missing-ID list. <code>getElementById</code> targets read <strong>250 → 249</strong>: that is one fewer <em>literal</em> <code>getElementById(&quot;…&quot;)</code> call, because the card&#x27;s lookups now go through <code>activeWordCardMount()</code> / <code>wordCardMountEls()</code> with a variable id. <strong>No ID target went missing</strong> — the missing list is unchanged.</p>
+<p><strong><code>behaviour.mjs</code>: 803 passed, 0 failed</strong>, stopping at the documented pre-existing section-42 crash — the stale <code>[data-note-master-toggle]</code> visibility assumption carried since v07.69, reproduced here character-for- character (<code>behaviour.mjs:4123</code>, &quot;element is not visible&quot;). That is the same <strong>803 total</strong> every recent run reports. It differs from the recorded baseline in one way worth stating plainly: the three section-22g failures CLAUDE.md records (this sandbox&#x27;s proxy blocking the archive.org poster) <strong>passed this run</strong>, so the split is 803/0 rather than 800/3. Nothing in this round touches that code; the proxy simply served those requests this time.</p>
+<p><strong><code>navcheck.mjs</code>:</strong> the single problem is the 320px <strong>English</strong> truncation of &quot;Operation&quot; and &quot;Bookmark&quot; (73px needed, 65px available) — character-for- character the issue CLAUDE.md records as long-standing. It cannot have come from this round: <code>app/js/nav.js</code> is untouched and the page&#x27;s <code>&lt;nav&gt;</code> block is byte-for-byte identical to the base commit.</p>
+<h3>Translation</h3>
+<div class='tw'><table><thead><tr><th></th><th>Scanned</th><th>Bangla</th><th>Missing</th></tr></thead><tbody>
+<tr><td>Base (v08.19)</td><td>1,783</td><td>1,736</td><td>47</td></tr>
+<tr><td>This round (v08.20)</td><td>1,787</td><td>1,740</td><td>47</td></tr>
+</tbody></table></div>
+<p><strong>+4 scanned, exactly this round&#x27;s four new strings, and missing is unchanged</strong> — all four are translated (&quot;Go to {ref}&quot;, &quot;Back to {ref}&quot;, &quot;Back to the word you came from&quot;, &quot;Visiting from {ref}&quot;). Confirmed by name against the missing list, and by reading the rendered Bangla page: the &quot;visiting from&quot; line is asserted to contain real Bengali script.</p>
+<h3>Two existing checks updated in place, with the reason recorded</h3>
+<p>Never deleted, never worked around:</p>
+<ol><li><code>quran-word-card.mjs</code> — asserted <code>&lt;li&gt;2:19:4&lt;/li&gt;</code>. An occurrence is a control now, so the reference is the button&#x27;s label. <strong>What the check actually guards is unchanged and still asserted:</strong> the reference keeps plain digits and is never run through the reader&#x27;s number formatter.</li><li><code>quran-word-card-integration.mjs</code> — asserted the mount tag sits literally adjacent to <code>&lt;/div&gt;&lt;!-- /#studyScreen --&gt;</code>. An explanatory comment now sits between them. <strong>The guarantee it exists to prove is unchanged and still proven:</strong> the mount closes <code>#studyScreen</code> and its scrolling wrapper before it opens.</li></ol>
+<hr>
+<h2>6. Rules, indexes, migration, deployment</h2>
+<div class='tw'><table><thead><tr><th></th><th>Status</th></tr></thead><tbody>
+<tr><td><code>firestore.rules</code></td><td><strong>UNCHANGED</strong> — not in the diff</td></tr>
+<tr><td><code>tests/firestore/word-progress-v1.proposed.rules</code></td><td><strong>UNTOUCHED, still NOT deployed.</strong> Still a separate Owner Control Gate</td></tr>
+<tr><td>Firestore indexes</td><td><strong>None changed, none deployed</strong></td></tr>
+<tr><td>Migration / backfill</td><td><strong>None</strong></td></tr>
+<tr><td>Production data writes</td><td><strong>None</strong> — this round adds no write path</td></tr>
+<tr><td>Phase 4</td><td><strong>Not started</strong></td></tr>
+</tbody></table></div>
+<p>This round reads and writes nothing new. It adds no Firestore call of any kind: the occurrence indexes it navigates by are the packaged JSON files already fetched on demand, and the card&#x27;s own content comes from the surah data already loaded.</p>
+<hr>
+<h2>7. What the Owner should test</h2>
+<p>Open <strong>https://madrasatul-muslimeen.github.io/app/</strong> → <strong>Quran Study</strong>. Check the badge reads <strong>v08.20</strong> (hard-refresh if it still says 08.19).</p>
+<p><strong>1 — The Word Card in the Note view</strong> Open <strong>Study options</strong> → tick <strong>Word by Word</strong>. Tap the <strong>⋮</strong> on an āyah → <strong>Note &amp; more</strong>. In the Note screen, type something into the note box, then tap an Arabic word. <em>Expect:</em> the Word Card opens inside the Note screen, and <strong>your typed note text is still exactly where you left it</strong>. Close the card — the text is still there.</p>
+<p><strong>2 — Clickable occurrences</strong> With the card open, tap <strong>Basic Arabic</strong>. Under the root and lemma counts you will see a row of reference buttons (like <code>2:19:4</code>). Tap one. <em>Expect:</em> the app moves to that place in the Qur&#x27;an and opens the card on that word. A bar appears reading <strong>&quot;Visiting from …&quot;</strong> with a <strong>↩</strong> button naming the word you came from. Tap it. <em>Expect:</em> you are returned to the original word and the screen you were on, and the &quot;Visiting from&quot; bar disappears.</p>
+<p><strong>3 — Drag and resize (desktop/laptop only)</strong> On a computer, open a Word Card. Drag it by its <strong>header</strong> (the row with the Arabic word and the ‹ › × buttons). <em>Expect:</em> the card moves. Now drag any <strong>edge or corner</strong>. <em>Expect:</em> it resizes from all eight, it will not shrink below a usable size, and it cannot be pushed off the screen. On a phone or tablet nothing changes — the card stays the strip along the bottom.</p>
+<h3>Known issues that will affect your test</h3>
+<ul><li><strong>Saving word progress still fails, and that is still expected.</strong> The Phase 3 Rules candidate is deliberately not deployed, so the progress section of the card still errors. Unchanged by this round.</li><li><strong>&quot;Root unavailable&quot; / &quot;Lemma unavailable&quot; is still normal</strong> for many words — the approved dataset has no root for 27,458 of 77,429 words.</li><li><strong>A word with no occurrences shows no buttons.</strong> If a word&#x27;s root and lemma are both unavailable, there is nothing to click; try a more common word.</li><li><strong>320px English phones</strong> still clip the nav labels &quot;Operation&quot;/&quot;Bookmark&quot;. Pre-existing, untouched.</li></ul>
+<hr>
+<h2>8. Status</h2>
+<p><strong>v08.20 is BUILT AND VERIFIED — it is NOT Owner-accepted.</strong> Nothing here is marked Owner-verified. Phase 4 was not started, no Rules were changed or deployed, and no migration or backfill was performed.</p>
+</main></body></html>

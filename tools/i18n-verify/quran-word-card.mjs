@@ -118,7 +118,12 @@ check("a count uses the reader's digits, references keep plain ones", () => {
   assert.match(html, /ধাতু-সম্পর্কিত ৩৮১টি ব্যবহার/);
   assert.doesNotMatch(html, /381/);
   // The occurrence reference is an identifier and stays as it is.
-  assert.match(html, /<li>2:19:4<\/li>/);
+  // UPDATED v08.20: an occurrence is a real control now (the owner's own ask
+  // -- "make each Basic Arabic occurrence clickable"), so the reference is
+  // the button's LABEL rather than bare <li> text. The thing this check
+  // actually guards is unchanged and still asserted: the reference keeps its
+  // plain digits and is never run through the reader's number formatter.
+  assert.match(html, /<button[^>]*data-word-occurrence-goto="2:19:4"[^>]*>2:19:4<\/button>/);
 });
 
 check("without a formatter a count is still printed, unchanged", () => {
