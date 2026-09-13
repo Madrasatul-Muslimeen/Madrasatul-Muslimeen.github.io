@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuranRevival — Reconciliation and MAP Phase 2 closure (2026-09-12)</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>QuranRevival — Reconciliation and MAP Phase 2 closure</h1>
+<ul><li><strong>Date:</strong> 2026-09-12</li><li><strong>Branch:</strong> <code>claude/pensive-knuth-2pu3jj</code></li><li><strong>Repository:</strong> <code>Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io</code></li><li><strong>App version:</strong> 08.04 (main) → <strong>08.13</strong></li><li><strong>Status:</strong> evidence at a checkpoint, not a request for permission. <code>OWNER ACTION: NONE</code> except the one gate named in §7.</li></ul>
+<hr>
+<h2>1. Remote baseline verified</h2>
+<p>All four tips confirmed directly from <code>origin</code>. No bundle recovery was needed or attempted.</p>
+<div class='tw'><table><thead><tr><th>Branch</th><th>Expected</th><th>Found</th><th></th></tr></thead><tbody>
+<tr><td><code>main</code></td><td><code>4833b19c…</code></td><td><code>4833b19ce8899f269977980ebf783d95ce2688e2</code></td><td>✅</td></tr>
+<tr><td><code>stage5-autonomous-isolated</code></td><td><code>d30d4e92…</code></td><td><code>d30d4e9290c6e519af5de8ffeff3999d77b8408f</code></td><td>✅</td></tr>
+<tr><td><code>stage5-rules-isolated</code></td><td><code>b27d0ebf…</code></td><td><code>b27d0ebf9397ddbdb196f262d65d2f3c6c2e6927</code></td><td>✅</td></tr>
+<tr><td><code>map-pure-foundation-review</code></td><td><code>3811377d…</code></td><td><code>3811377d2b7b097be37fd143752fba48d8408581</code></td><td>✅</td></tr>
+</tbody></table></div>
+<p><strong>Documents not found.</strong> MAP v4, the execution ledger and the recovery report are <strong>not present in any branch</strong> of this repository and were not attached to this session. Rather than stop, position was reconstructed from the phase requirements stated in the session instruction itself, <code>docs/governance/</code> (ACTIVE-ARCHITECTURE, ADR-001…008, DDR) and the actual code. <strong>If those three documents contain requirements not in the instruction text, this reconciliation has not seen them.</strong> That is the one place this report may be incomplete through no measurement.</p>
+<h2>2. Reconciliation — what the three isolated branches actually contain</h2>
+<p>Read as code, not inferred from commit messages.</p>
+<p><strong>Both isolated branches are direct descendants of <code>main</code>&#x27;s exact tip.</strong> Their merge-base with <code>main</code> <em>is</em> <code>4833b19</code>, and no commit on <code>main</code> is absent from either. They are also <strong>disjoint from each other</strong> — not one file is touched by both. So reconciliation needed no rebase, no conflict resolution and no judgement call about precedence.</p>
+<div class='tw'><table><thead><tr><th>Branch</th><th>Verdict</th></tr></thead><tbody>
+<tr><td><code>stage5-autonomous-isolated</code></td><td><strong>PRESERVED IN FULL.</strong> 28 commits, 38 files: word identity + indexes, Word Card, WbW coverage, keyed Activity writer/week/evidence, backup rendering. Merged whole. Defects corrected rather than discarded (§4).</td></tr>
+<tr><td><code>stage5-rules-isolated</code></td><td><strong>PRESERVED IN FULL.</strong> 13 commits, 12 files: Activity Rules proposal, security matrix, emulator suite. Confined to <code>tests/</code> and <code>tools/</code>.</td></tr>
+<tr><td><code>map-pure-foundation-review</code></td><td><strong>SUPERSEDED — not independently merge-worthy.</strong> Its three substantive commits are reproduced verbatim inside <code>stage5-autonomous-isolated</code>. Proven by content diff across all 11 shared files: the only difference was a stray trailing blank line on four of them, which that branch&#x27;s fourth commit normalized away. That normalization is its sole unique contribution and has been carried across; the branch itself adds nothing further.</td></tr>
+</tbody></table></div>
+<p><strong><code>firestore.rules</code> is byte-for-byte unchanged</strong> from <code>main</code> on the reconciled branch — proven by <code>git diff origin/main HEAD -- firestore.rules</code> returning empty. No Owner Control Gate was crossed.</p>
+<h2>3. The harness was broken on <code>main</code>, and that hid everything</h2>
+<p>The single largest finding, and it predates this session.</p>
+<p><code>behaviour.mjs</code> — the project&#x27;s main regression suite, whose documented baseline is roughly 800 pass / 3 fail — scored <strong>20 pass / 180 fail on a clean <code>main</code> worktree</strong>, dying before it reached any Phase 2 surface.</p>
+<p>Cause: <code>app/js/envelope.js</code> (the Note Foundation transaction gateway, merged to <code>main</code> as #86) imports <code>runTransaction</code>, and the test stub did not export it. Because the stub replaces the whole Firebase module, a name it lacks is not a missing feature — it is a <strong>module-level SyntaxError that stops every page booting</strong>. Two more of the same followed from <code>note-foundation.js</code>: <code>limit</code> and <code>orderBy</code>.</p>
+<p><strong>Production was never affected.</strong> The real Firebase 10.12.2 module exports all three; this failed only in the harness, which is exactly why it survived.</p>
+<p>Recovery, each step measured on a clean <code>main</code> worktree:</p>
+<div class='tw'><table><thead><tr><th>State</th><th>behaviour.mjs</th></tr></thead><tbody>
+<tr><td><code>main</code> as found</td><td>20 pass / 180 fail</td></tr>
+<tr><td>+ <code>runTransaction</code> on the stub</td><td>231 pass / 0 fail</td></tr>
+<tr><td>+ STUDY-pillar helpers</td><td>493 pass / 2 fail</td></tr>
+<tr><td>reconciled branch, all fixes</td><td><strong>802 pass / 1 fail</strong></td></tr>
+</tbody></table></div>
+<p>The remaining 1 is the documented environmental block (this sandbox cannot reach archive.org), and the suite stops at the documented pre-existing section-42 crash — the project&#x27;s own historical stopping point.</p>
+<p>The second cause was the <strong>STUDY pillar menu</strong>: Options, Read and Note stopped being dock tabs and became items inside <code>#studyPillarMenu</code>, which starts hidden. Their buttons still resolve but measure 0×0, so every direct click timed out. 15 Options sites and 31 Read sites now open the pillar first, checking the <strong>rendered box</strong>, never <code>.hidden</code>. <code>reading.mjs</code> and <code>panel.mjs</code> had the identical breakage and are now green.</p>
+<p><code>tools/i18n-verify/stub-parity.mjs</code> was added so this class cannot recur: it checks every named Firebase import across <code>app/</code> against the stub&#x27;s exports and names the offending file. Proven able to fail.</p>
+<h2>4. Defects corrected in the preserved work</h2>
+<p>Valid work was kept; these were fixed, not discarded.</p>
+<ol><li><strong>I11 — the Word Card was English-only.</strong> It printed a dozen hardcoded English strings and <code>quranrevival.html</code> passed it <strong>no labels at all</strong>, so a Bangla reader met an English panel on a Phase 2 acceptance surface. Every string is overridable now, the page supplies each through <code>t()</code>, and Bangla was added for all of them. The module stays pure.</li><li><strong>I11 — the clickable word&#x27;s accessible name.</strong> Its <code>aria-label</code> — a screen reader&#x27;s only name for that button — hardcoded an English <code>&quot;Quran word&quot;</code> fallback and preferred the English gloss outright. It now follows the panel&#x27;s own gloss languages, in their order.</li><li><strong>Bengali digits on counts.</strong> Found by <em>looking</em> at a screenshot, not by a failing check: the Basic Arabic panel read <code>ধাতু-সম্পর্কিত 381টি ব্যবহার</code> — Bangla words, Western digits. Counts now use <code>i18n.js</code>&#x27;s <code>num()</code>. Applied to the count only; <code>surah:ayah:position</code> references are identifiers and keep plain digits.</li><li><strong>The tab row wrapped.</strong> At 320px and 360px in English, and 320px in Bangla, the three level tabs broke into a two-line ragged stack — the failure this project has shipped once before and had to be sent a photo of. Measured: English needs 302px, a 320px phone offers 249px. The tabs share the row and step type and padding down at 380px and 340px. One line everywhere now.</li><li><strong>Every button was 29px</strong>, against the ~40px this project settled on. Tabs are 40px tall; previous/next/close are fixed 40px squares that never shrink.</li><li><strong>A brittle check</strong> pinned the exact version string <code>08.09</code>, contradicting the rule that every tranche increments it — guaranteed to fail on the next tranche, and did. Restated as what it means.</li></ol>
+<p>Defects 4 and 5 existed because Phase 2&#x27;s responsive criterion had only ever been checked at one viewport.</p>
+<h2>5. Phase 2 — evidence per acceptance criterion</h2>
+<p>The existing <code>quran-word-card-integration.mjs</code> is <strong>static source inspection</strong> (<code>readFileSync</code> + regex). It proves the code was written, never that a reader can click a word and see a card. Phase 2 had <strong>no rendered proof at all</strong>. <code>tools/i18n-verify/quran-word-card-rendered.mjs</code> now supplies it: <strong>92 checks, both languages, six viewports</strong>, reading measured rects, real text and <code>document.activeElement</code>.</p>
+<div class='tw'><table><thead><tr><th>Criterion</th><th>Evidence</th><th>Status</th></tr></thead><tbody>
+<tr><td>Word occurrence identity</td><td>6 contract + 9 index checks</td><td>✅</td></tr>
+<tr><td>Clickable Quran words</td><td>rendered: real <code>&lt;button&gt;</code>, click opens the card</td><td>✅</td></tr>
+<tr><td>Persistent Word Card</td><td>22 unit + rendered on screen, inside viewport</td><td>✅</td></tr>
+<tr><td>WbW tab</td><td>rendered, both languages</td><td>✅</td></tr>
+<tr><td>Basic Arabic tab</td><td>rendered; Bangla carries no leftover English</td><td>✅</td></tr>
+<tr><td>Arabic in Depth tab</td><td>rendered; Bangla carries no leftover English</td><td>✅</td></tr>
+<tr><td>Occurrence lookup</td><td>8 loader checks; on-demand proven off the load path</td><td>✅</td></tr>
+<tr><td>Keyboard accessibility</td><td>Home/ArrowRight move focus <strong>and</strong> selection; Escape closes; focus returns to the word that opened it</td><td>✅</td></tr>
+<tr><td>Responsive behaviour</td><td>6 viewports × 2 languages: on screen, no sideways scroll, one tab line, every button ≥36px</td><td>✅</td></tr>
+<tr><td>Malformed index/reference handling</td><td>rejected version, bounds, packing, contract</td><td>✅</td></tr>
+</tbody></table></div>
+<p><strong>I9 / load-speed contract respected:</strong> neither occurrence index is fetched on the landing path, nor merely by opening Read — read off <code>performance.getEntriesByType(&quot;resource&quot;)</code>, not off the source. <strong>No write path added:</strong> <code>__fsLog</code> carries zero writes from opening and browsing the card.</p>
+<h2>6. Full verification state</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>behaviour.mjs</code></td><td>802 pass / 1 fail (documented archive.org block); stops at documented section-42 crash</td></tr>
+<tr><td><code>layout.mjs</code></td><td>every landing-page metric <strong>byte-for-byte identical</strong> to <code>main</code>, 8 viewports × 2 banner states</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td><strong>unchanged</strong> — its 1 problem is the documented 320px English truncation of &quot;Operation&quot;/&quot;Bookmark&quot;</td></tr>
+<tr><td><code>reading.mjs</code></td><td>READING SCREEN OK, 8 viewports × 2 banner states</td></tr>
+<tr><td><code>panel.mjs</code></td><td>47 configurations, no truncated label, no wrapped bar</td></tr>
+<tr><td><code>quran-word-card-rendered.mjs</code></td><td>92 pass / 0 fail</td></tr>
+<tr><td>19 node suites</td><td>all green</td></tr>
+<tr><td>Firestore emulator Rules</td><td>27 allow/deny assertions pass — <strong>see §7</strong></td></tr>
+<tr><td>Translation coverage</td><td><code>main</code> 1733/46 → 1778/47. +45 scanned, <strong>+1 missing</strong>, and that one is <code>&quot;Meaning unavailable&quot;</code>, the deliberate English fallback on the <code>lang=&quot;en&quot;</code> line of a bilingual panel, confirmed correct on the rendered page</td></tr>
+</tbody></table></div>
+<h2>7. OWNER CONTROL GATE — the Activity Rules candidate</h2>
+<p>The acceptance locks recorded emulator execution as PENDING. It has now been run: <code>firebase-tools</code> and Java are both available here.</p>
+<p><strong>The suite passes. It is still not acceptance, and that is the finding.</strong> Reading the emulator log rather than the exit code: <strong>9 of the 13 logged denials were refused by hitting Firestore&#x27;s 1000-expression evaluation limit</strong> at the <code>update</code> branch, not by the security logic. They sit inside <code>assertFails</code>, so they count as correct denials while proving nothing about the rule they were written to exercise — and denial by budget exhaustion is not stable: the same exhaustion will refuse <em>legitimate</em> appends as a week grows.</p>
+<p>This is runtime evidence for exactly the weekly-size concern Task 48 raised on static grounds. The draft&#x27;s status is <strong>unchanged: REJECTED for acceptance.</strong></p>
+<p><strong>No rule was rewritten.</strong> The remedy is an architecture choice — a provably bounded shape, Option C&#x27;s create-only receipts, or deferring Activity Rules integration — and choosing between materially different product behaviours, as well as any Rules change, are Owner Control Gates. Full detail is appended to <code>docs/governance/activity-rules-proposal-2026-09-12.md</code>.</p>
+<p>This gate blocks <strong>Phase 4&#x27;s Rules integration only</strong>. It does not block Phase 3.</p>
+<h2>8. Position and next action</h2>
+<p><strong>Phase 2: closed</strong> on the executable criteria above. <strong>Next: Phase 3</strong> — WbW self-progress, managed/student states, teacher approval, Arabic coverage, Explore and wheel integration, storage safeguards. The pure coverage projection (<code>quran-word-coverage.js</code>, 10 checks) and the storage options paper are already in place from the preserved branch; what is missing is the application wiring and the state model.</p>
+<p><code>Surface Token ≠ Lemma ≠ Root ≠ Grammatical Family</code> and <code>Activity ≠ Mastery</code> are preserved: the card renders each layer separately, reports absence honestly rather than deriving one from another, and writes nothing.</p>
+<p><strong>OWNER ACTION: NONE for §1–§6 and §8 — CONTINUING AUTHORISED EXECUTION.</strong> <strong>OWNER ACTION REQUIRED for §7</strong> before Activity Rules integration in Phase 4.</p>
+</main></body></html>

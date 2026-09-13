@@ -1,10 +1,73 @@
 # QuranRevival — Project Memory
 
+> **THIS BRANCH IS THE PHASE 2-3 VERIFICATION MERGE CANDIDATE**
+> (`phase2-3-verification-merge`, cut from `main` at `4833b19c`, 13 Sep 2026.)
+>
+> It is **`main` + accepted MAP Phase 2 + accepted MAP Phase 3, and nothing
+> materially beyond that** — built so the Owner can run and verify the real
+> integrated app before Phase 4 proceeds.
+>
+> **Deliberately NOT here**, though it exists on the development branch
+> `claude/pensive-knuth-2pu3jj`: the partial Phase 4 Activity implementation
+> and its rejected Rules proposal, the Phase 5 Note Foundation work beyond what
+> `main` already carried, and their test material. The round entries below
+> describe the full development history and therefore mention work this branch
+> does not contain — that is the history being accurate, not this branch being
+> incomplete. `docs/reports/2026-09-13-phase2-3-verification-merge-candidate.md`
+> lists every excluded file.
+>
+> `firestore.rules` is byte-for-byte identical to `main`. Nothing here is
+> deployed.
+
+
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: v08.02.** `app/js/version.js` reads `08.02` and the badge
-beside the app name says so on screen. v08.00 opened the line; **v08.01 made
+**Current milestone: v08.19** (on branch `claude/pensive-knuth-2pu3jj`, not yet
+merged to `main`, which reads 08.04). `app/js/version.js` is the single source
+of truth and the badge beside the app name says so on screen. **This line said
+`v08.02` while `main` was already on 08.04 — the drift this file warns about,
+found on 12 Sep 2026. Check it against `app/js/version.js` every session.**
+
+**MAP Phase 3 (Arabic Progress & Coverage) is BUILT, v08.14–v08.19, 13 Sep
+2026** — six bounded tranches, full evidence in
+`docs/reports/2026-09-13-map-phase3-arabic-progress.md`. What a later session
+most needs to know:
+
+- Word progress lives in **two** collections, `quranWordProgress` (the
+  learner's own claims) and `quranWordApprovals` (a supervisor's decisions),
+  one document per (person, level, ayah). **The split by actor role is the
+  security design, not tidiness**: each document belongs to one (person, role)
+  pair, so a rule authorises it at document level and never has to prove which
+  key of a map a writer touched. It is also what keeps the candidate rule away
+  from the expression budget that sank the Phase 4 Activity candidate.
+- **It is not an Approach claim and must never become one.** Nothing in
+  `quran-word-progress.js` or its data layer may name `records`, `activity`, a
+  `chunkKey` or a `trackableId` — checks assert that by reading the source.
+- **I6 is structural here.** A supervisor's decision is pinned to the exact
+  claim instant it was given for; a claim never touches the supervisor lane.
+  An earlier shape re-opened a review by writing over the stored decision,
+  which really did edit a frozen confirmation and destroy the real one in
+  history. Do not reintroduce a mutation-based re-open.
+- **Basic Arabic and Arabic in Depth are refused, not merely unimplemented** —
+  at the state model, the data layer and the candidate Rules. Their claim unit
+  is an open DDR item.
+- **`firestore.rules` is byte-for-byte unchanged.** The candidate is at
+  `tests/firestore/word-progress-v1.proposed.rules` (42 emulator assertions
+  passing) and **deployment is an Owner Control Gate**. Until it is deployed
+  the two collections have no server-side rule, so the feature is the Owner's
+  own to exercise and is not usable by a student or teacher account against
+  production.
+- **Cross-surah coverage (juz, hizb, rub, manzil, page) is deliberately not
+  computed.** Covering only the loaded surah would understate every juz, so
+  those levels say so in words and read zero documents to do it.
+
+**The 12 Sep 2026 round is the one to read before touching the test harness**
+(`CHANGELOG.md`, v08.05–v08.13): `behaviour.mjs` was scoring 20 pass / 180 fail
+on `main` itself, and two whole classes of harness breakage were fixed. Two new
+standing lessons came out of it, both now in "Standing lessons" below.
+
+v08.00 opened the line; **v08.01 made
 the 30 Approaches fully editable by the owner, and v08.02 did the same for the
 7 sections they sit in** (see the round entries below). The v07
 line is closed behind it: its final build, **v07.139**, is frozen at
@@ -790,8 +853,37 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   audio and Asma posters will fail here and work for the owner.
 - **A check that describes what a round deliberately changed gets UPDATED in
   place, with the reason recorded — never deleted, never worked around.**
+- **A name the app imports from Firebase and the stub does not export is not a
+  missing feature — it is a module-level SyntaxError that stops every page
+  booting, and it fails ONLY in the harness.** The real SDK exports it, so
+  production is fine and nothing is visibly wrong; the suite just collapses and
+  reads like a catastrophic app regression. `runTransaction` did exactly this
+  on `main` (800-pass baseline → 20 pass / 180 fail), then `limit` and
+  `orderBy`. `tools/i18n-verify/stub-parity.mjs` now guards the whole class and
+  names the file that first imports an offender — run it before hunting a
+  mysterious full-suite failure.
+- **When a control moves inside a menu, every direct `page.click` on it starts
+  timing out, and the element still RESOLVES.** Options, Read and Note moved
+  into `#studyPillarMenu`, which starts hidden: the buttons are found, measure
+  0x0, and 46 call sites across three suites hung one after another. Open the
+  container first and assert on the rendered box — this is the `[hidden]` trap
+  in a new costume.
 
 **On reporting**
+
+- **A screenshot is not a measurement, but it catches what measurements miss,
+  and it must be LOOKED at.** MAP Phase 3 shipped two defects past complete,
+  passing rect assertions, both found by opening the PNG: three buttons sitting
+  below a card's own scroll cap at 320x640, so the control was unreachable; and
+  a coverage line rendered in the Word Card's navy on Explore's dark panel at
+  1.89:1. Measure REACHABILITY (is it inside its scroll container's visible
+  box?) and measure rendered CONTRAST against the real background, not just
+  position and size. And when a screenshot comes back blank, that is a finding
+  too -- an overlay or splash is sitting on top of the thing being proved.
+- **A palette belongs to a SURFACE, not to a feature.** The same component
+  rendered into a light card and a dark panel needs two palettes. Reusing the
+  one that worked on the light card is how v07.138 and MAP Phase 3 both
+  produced invisible-but-perfect markup.
 
 - **A measurement probe must carry the real element's computed style.**
   v07.132 cloned a `<select>` to size its longest option but left the clone

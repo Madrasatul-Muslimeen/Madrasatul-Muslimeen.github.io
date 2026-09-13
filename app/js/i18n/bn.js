@@ -1153,6 +1153,23 @@ export const BN = {
   "State": "নিশ্চিতকরণ", // ? the column showing pending/confirmed/returned
   "Action": "কার্যক্রম", // ?
   "Actions": "কার্যক্রম", // ?
+  // MAP Phase 3 -- Arabic word coverage in Explore.
+  "Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it.":
+    "এই স্তরে আরবি শব্দের অগ্রগতি দেখানো যায় না — দেখতে হলে একটি সূরা বা রুকু খুলুন।",
+  "{known} of {total} Arabic words known": "{total}টি আরবি শব্দের মধ্যে {known}টি জানা",
+  // MAP Phase 3 -- WbW word progress on the Quran Word Card.
+  "Word progress": "শব্দের অগ্রগতি",
+  "Waiting to be checked": "যাচাইয়ের অপেক্ষায়",
+  "Checked and confirmed": "যাচাই করে নিশ্চিত করা হয়েছে",
+  "Sent back: {note}": "ফেরত পাঠানো হয়েছে: {note}",
+  "Sent back to look at again": "আবার দেখার জন্য ফেরত পাঠানো হয়েছে",
+  "Send back": "ফেরত পাঠান",
+  "Loading progress…": "অগ্রগতি লোড হচ্ছে…",
+  "Progress not loaded yet": "অগ্রগতি এখনও লোড হয়নি",
+  "You are not able to record Arabic progress for this person.": "এই ব্যক্তির আরবি অগ্রগতি রেকর্ড করার অনুমতি আপনার নেই।",
+  "{known} of {total} words known in this ayah": "এই আয়াতের {total}টি শব্দের মধ্যে {known}টি জানা",
+  "{unknown} not loaded yet": "{unknown}টি এখনও লোড হয়নি",
+  "What should they look at again?": "তাকে আবার কী দেখতে হবে?",
   "Confirm": "নিশ্চিত করুন",
   "Return": "ফেরত পাঠান",
   "Confirm anyway": "তবুও নিশ্চিত করুন",
@@ -2174,6 +2191,34 @@ export const BN = {
   "the Qur'an text, the Mushaf pages, the recitations and the app's own program code. Those are the same for everyone and are kept separately.":
     "কুরআনের মূল পাঠ, মুসহাফের পৃষ্ঠা, তিলাওয়াত এবং অ্যাপের নিজস্ব প্রোগ্রাম কোড। এগুলো সবার জন্য একই এবং আলাদাভাবে রাখা হয়।",
   "Make the backup": "ব্যাকআপ তৈরি করুন",
+  // MAP Phase 2 -- the persistent Quran Word Card. Every string the card can
+  // print, so a Bangla reader never meets an English panel (I11).
+  "Quran word": "কুরআনের শব্দ",
+  "Quran word card": "কুরআন শব্দ কার্ড",
+  "Arabic learning level": "আরবি শেখার স্তর",
+  "Previous word": "আগের শব্দ",
+  "Next word": "পরের শব্দ",
+  "Close word card": "শব্দ কার্ড বন্ধ করুন",
+  "WbW": "শব্দে শব্দে",
+  "Basic Arabic": "প্রাথমিক আরবি",
+  "Arabic in Depth": "গভীরে আরবি",
+  "Lemma": "মূল রূপ",
+  "Root": "ধাতু",
+  "Part of speech": "পদ",
+  "Unknown": "অজানা",
+  "{count} root-linked occurrences": "ধাতু-সম্পর্কিত {count}টি ব্যবহার",
+  "{count} lemma-linked occurrences": "মূল রূপ-সম্পর্কিত {count}টি ব্যবহার",
+  "Root unavailable in the approved dataset": "অনুমোদিত তথ্যভাণ্ডারে ধাতু পাওয়া যায়নি",
+  "Lemma unavailable in the approved dataset": "অনুমোদিত তথ্যভাণ্ডারে মূল রূপ পাওয়া যায়নি",
+  "Loading occurrences…": "ব্যবহারসমূহ লোড হচ্ছে…",
+  "Occurrence list unavailable: {error}": "ব্যবহারের তালিকা পাওয়া যায়নি: {error}",
+  "Semantic range not yet supplied": "অর্থের পরিধি এখনো দেওয়া হয়নি",
+  "Open dictionary source": "অভিধানের উৎস খুলুন",
+  "Dictionary source unavailable": "অভিধানের উৎস পাওয়া যায়নি",
+  "View only until guardian approval": "অভিভাবকের অনুমোদন না হওয়া পর্যন্ত শুধু দেখা যাবে",
+  "Approve editing for 30 minutes": "৩০ মিনিটের জন্য সম্পাদনার অনুমোদন দিন",
+  "Revoke editing approval": "সম্পাদনার অনুমোদন বাতিল করুন",
+  "This Note changed elsewhere. Reload the latest version? Cancel keeps your text available to copy into a new Note.": "এই নোটটি অন্য কোথাও পরিবর্তিত হয়েছে। সর্বশেষ সংস্করণ পুনরায় লোড করবেন? বাতিল করলে আপনার লেখা নতুন নোটে কপি করার জন্য থাকবে।",
   "Starting…": "শুরু হচ্ছে…",
   "Reading {label}… ({done} of {total})": "{label} পড়া হচ্ছে… ({total}টির মধ্যে {done})",
   "Done. Save the file below.": "সম্পন্ন। নিচের ফাইলটি সংরক্ষণ করুন।",

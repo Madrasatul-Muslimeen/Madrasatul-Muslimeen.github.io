@@ -66,6 +66,8 @@ export const TENANT = Object.freeze({
   ACTIVITY: "activity",
   BOOKMARKS: "bookmarks",
   AYAH_NOTES: "ayahNotes", // Ayah Note panel, phase 1: one doc per person (resume-shaped, not append-only) holding free per-ayah rich-text notes, keyed by unitKey. Same "small additive collection, no schema precedent to reuse" shape as D12's domains — nothing existing fits a free per-ayah journal entry.
+  QURAN_WORD_PROGRESS: "quranWordProgress", // MAP Phase 3: the learner's own WbW word claims, one doc per (tenant, person, level, ayah). Deliberately NOT `records` -- a WbW word state is not an Approach claim (MAP v4 s3), and its permanent identity is ADR-007's occurrence contract, not a Study Unit key.
+  QURAN_WORD_APPROVALS: "quranWordApprovals", // MAP Phase 3: a supervisor's decisions on those claims, same doc id shape, a SEPARATE collection. Split by actor role on purpose: the whole document then belongs to one (person, role) pair, so a security rule can authorise it at document level and never has to prove which key of a map a writer touched -- the limitation this file's records/subjects/trackables comments already record.
   NOTES: "notes",
   NOTE_SOURCES: "noteSources",
   NOTE_FOLDERS: "noteFolders",

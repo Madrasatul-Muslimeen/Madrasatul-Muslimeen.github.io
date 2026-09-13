@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuranRevival — MAP Phase 3 delivery: Arabic Progress &amp; Coverage</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>QuranRevival — MAP Phase 3 delivery: Arabic Progress &amp; Coverage</h1>
+<ul><li><strong>Date:</strong> 2026-09-13</li><li><strong>Branch:</strong> <code>claude/pensive-knuth-2pu3jj</code></li><li><strong>App version:</strong> 08.13 → <strong>08.19</strong></li><li><strong>Status:</strong> evidence at a checkpoint. <code>OWNER ACTION: NONE — CONTINUING AUTHORISED EXECUTION</code>, except the one gate named in §8.</li></ul>
+<hr>
+<h2>1. Verified start</h2>
+<div class='tw'><table><thead><tr><th></th><th>Expected</th><th>Found</th><th></th></tr></thead><tbody>
+<tr><td>Branch HEAD at session start</td><td><code>b548be51…</code></td><td><code>b548be515a00a22852be4f54ed7ff27e827b41dc</code></td><td>✅</td></tr>
+<tr><td>App version at session start</td><td><code>08.13</code></td><td><code>08.13</code></td><td>✅</td></tr>
+<tr><td><code>behaviour.mjs</code> baseline</td><td>~800 pass</td><td>802 pass / 1 fail</td><td>✅</td></tr>
+<tr><td>20 node suites</td><td>green</td><td>all green</td><td>✅</td></tr>
+</tbody></table></div>
+<p>All three governing documents (MAP v4, the execution ledger v02, the recovery report) were supplied to this session and read before any code was touched — the process defect the ledger recorded against the previous session.</p>
+<h2>2. What was built, in six bounded tranches</h2>
+<div class='tw'><table><thead><tr><th>Version</th><th>Tranche</th></tr></thead><tbody>
+<tr><td>08.14</td><td>Pure word-progress state model</td></tr>
+<tr><td>08.15</td><td>Persisted storage / data layer</td></tr>
+<tr><td>08.16</td><td>Arabic coverage calculation</td></tr>
+<tr><td>08.17</td><td>WbW self-progress, managed states, teacher approval on the Word Card</td></tr>
+<tr><td>08.18</td><td>Arabic coverage in Explore</td></tr>
+<tr><td>08.19</td><td>Rules candidate, safeguards and this report</td></tr>
+</tbody></table></div>
+<p>Every tranche read <code>app/js/version.js</code> first and incremented it in the same commit, with BEFORE/AFTER/VERIFIED stated in the commit message.</p>
+<h2>3. The three MAP locks, enforced rather than asserted</h2>
+<p><strong>Activity ≠ Mastery.</strong> <code>quran-word-progress.js</code> has no <code>projectWordState(event)</code> and never can: a check reads its own source and fails if an event type appears in it. In the browser, opening a word, moving between words and switching Arabic level are proven to write <strong>nothing</strong>, by counting recorded writes after each. Where confirmation is required, a claim awaiting a teacher scores <strong>zero</strong> in coverage — the lock as arithmetic.</p>
+<p><strong>A WbW toggle ≠ an Approach claim.</strong> Word progress lives in its own two collections with its own vocabulary. Neither module names <code>records</code>, <code>activity</code>, a <code>chunkKey</code> or a <code>trackableId</code>; asserted by source inspection and again in the browser, where <code>__stubWriteData</code> carries zero writes to either collection across every flow.</p>
+<p><strong>Surface Token ≠ Lemma ≠ Root ≠ Grammatical Family.</strong> Untouched from Phase 2; this phase addresses occurrences only, by their permanent ADR-007 id.</p>
+<p><strong>Arabic levels stay independent.</strong> Every stored lane names its level, and <code>basic</code>/<code>depth</code> are refused with &quot;deferred&quot; — in the state model, in the data layer, and in the candidate Rules, so the DDR item cannot be crossed by a client bug.</p>
+<h2>4. A real defect found, and made structural</h2>
+<p>The state model re-opened a review by writing <code>pending</code> over the stored decision. That <strong>edited a frozen confirmation</strong> (I6) and then pushed the phantom <code>pending</code> into history in place of the confirmation a supervisor had actually given, destroying it (I4). Found by a failing data-layer check, not by reading the code.</p>
+<p>Freezing is structural now: a decision records the exact claim instant it was given for, a claim never touches the supervisor lane at all, and the resolver asks whether the decision still matches. Strictly better — nothing is rewritten, the real decision survives in history, and an ordinary claim dropped from two writes to one. Proven able to fail: removing the claim-instant comparison makes three checks across two suites fail by name.</p>
+<h2>5. Two defects found by LOOKING at a screenshot</h2>
+<p>Both after every rect assertion had already passed.</p>
+<ol><li>At <strong>320×640</strong> the taller Word Card overflowed its 45vh cap by 49px, far enough that all three state buttons sat below the fold — the control a reader came for was unreachable unless they discovered the card scrolls. The cap is raised on short viewports only, and reachability is asserted at every viewport now.</li><li>Explore&#x27;s coverage strip first reused the Word Card&#x27;s light-card palette, rendering navy on Explore&#x27;s dark gradient at <strong>1.89:1</strong> against a 4.5:1 minimum — v07.138&#x27;s exact defect. It follows the wheel legend&#x27;s own light-on-dark palette now (<strong>12.88:1</strong>), and the suite measures rendered contrast. Proven able to fail at 1.03:1.</li></ol>
+<h2>6. Measured cost</h2>
+<p>Dataset traversal: 114 surahs, 6,236 ayahs, 77,429 occurrences; longest ayah 2:282 at 128 words; largest surah 2 at 6,116.</p>
+<div class='tw'><table><thead><tr><th>Operation</th><th>Cost</th></tr></thead><tbody>
+<tr><td>Landing path</td><td><strong>0</strong> reads</td></tr>
+<tr><td>Opening Read</td><td><strong>0</strong> reads</td></tr>
+<tr><td>Opening one word card</td><td>2 reads, then 0</td></tr>
+<tr><td>Explore reaching a surah</td><td><strong>2 queries</strong> (not 2 per ayah)</td></tr>
+<tr><td>Full Al-Baqarah coverage</td><td>2 queries vs 6,116 reads for a per-occurrence store</td></tr>
+<tr><td>One claim</td><td>1 write</td></tr>
+<tr><td>One decision</td><td>1 write</td></tr>
+</tbody></table></div>
+<p>Worst-case lane documents, JSON proxy, 2:282 fully populated: learner 9,716 bytes, supervisor 101,111 bytes with full history. Not a Firestore encoded size and not a billing figure.</p>
+<h2>7. Verification</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>quran-word-progress-model.mjs</code></td><td>57 / 0</td></tr>
+<tr><td><code>quran-word-progress-data.mjs</code></td><td>37 / 0</td></tr>
+<tr><td><code>quran-word-coverage-arabic.mjs</code></td><td>29 / 0</td></tr>
+<tr><td><code>quran-word-progress-rendered.mjs</code></td><td><strong>81 / 0</strong>, 2 languages, 6 viewports</td></tr>
+<tr><td><code>quran-word-explore-rendered.mjs</code></td><td><strong>35 / 0</strong>, 2 languages</td></tr>
+<tr><td>Emulator Rules candidate</td><td><strong>42 / 0</strong> (23 denials, 19 allows)</td></tr>
+<tr><td><code>behaviour.mjs</code></td><td>800 / 3 — the documented steady state; the 3 are section 22g&#x27;s archive.org poster block this sandbox cannot reach</td></tr>
+<tr><td><code>layout.mjs</code></td><td>every landing-page metric <strong>byte-for-byte identical</strong> at 8 viewports × 2 banner states; <code>getElementById</code> 249 → 250, exactly one new element</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>unchanged (pre-existing 320px English truncation only)</td></tr>
+<tr><td><code>reading.mjs</code> / <code>panel.mjs</code></td><td>OK both languages, no truncated label</td></tr>
+<tr><td>All node suites</td><td>green</td></tr>
+<tr><td>Translation coverage</td><td>1,778 → 1,794 scanned, <strong>missing UNCHANGED at 47</strong></td></tr>
+</tbody></table></div>
+<p><strong>Five failing checks were investigated; four proved WRONG ASSERTIONS</strong> — a Bangla coverage line correctly reordered against an English-order assumption; a create path asserted in the update shape; an Explore navigation step that does not exist (the Whole Quran level opens on 114 surahs, not 30 Juz); and a self-containment guard that matched its own candidate&#x27;s prose. The fifth was the real I6 defect in §4. Checks describing what a tranche changed were <strong>updated in place with the reason</strong>, never deleted.</p>
+<h2>8. OWNER CONTROL GATE — Rules deployment</h2>
+<p><code>firestore.rules</code> is <strong>byte-for-byte unchanged</strong>. The candidate lives at <code>tests/firestore/word-progress-v1.proposed.rules</code> and is <strong>not deployed</strong>.</p>
+<p>Until it is, the two new collections have no server-side rule, so this feature is exercisable on this branch and by the Owner&#x27;s own account only — not by a student or teacher account against production. That is a deliberate consequence of not crossing the gate.</p>
+<p>Full analysis, including the one limitation stated plainly, is in <code>docs/governance/phase3-word-progress-rules-candidate-2026-09-13.md</code>.</p>
+<h2>9. Deferred items confirmed untouched</h2>
+<ul><li><strong>DDR-001</strong> non-Quran progress — untouched.</li><li><strong>DDR-002</strong> subject-scoped teacher authority — untouched; word progress uses the existing student-scoped <code>canRecordFor</code> shape unchanged.</li><li><strong>DDR-003</strong> translator selection — untouched.</li><li><strong>DDR-004</strong> the 30 Approaches — untouched; no trackable was added, removed or reinterpreted.</li><li><strong>Basic Arabic / Arabic in Depth claim unit</strong> — deferred, and now refused at three layers rather than merely unimplemented.</li><li><strong>Phase 4 Activity Rules candidate</strong> — still rejected, still gated, not touched. Phase 3 never depended on it.</li></ul>
+<h2>10. Flagged, not changed</h2>
+<ul><li><strong>The wheel&#x27;s slice colours are untouched.</strong> They colour an Approach&#x27;s claim status; a second meaning competing for the same colour costs more than it gives, as v08.02 already weighed and declined for sections.</li><li><strong>Juz, hizb, rub, manzil and page coverage is deliberately not computed.</strong> They span surahs; covering only the loaded part would understate every one. Those levels say so in words and read zero documents to do it.</li><li><strong><code>npm run activity-proposal</code> cannot start in this environment</strong> — a pre-existing config path breakage, reproduced and documented, deliberately left unfixed because that suite is the evidence base for a rejected candidate at an Owner gate. The one-line remedy is named in the governance document.</li><li><strong><code>md2report.py</code> hardcoded one report&#x27;s title</strong>, so every report generated after it carried the wrong browser-tab title. Fixed at source; the existing report&#x27;s body regenerates byte-identically.</li></ul>
+<p><code>CLAUDE SESSION CONTINUITY: CONTINUE CURRENT SESSION</code></p>
+</main></body></html>

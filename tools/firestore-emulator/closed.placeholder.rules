@@ -1,0 +1,17 @@
+rules_version = '2';
+// Deliberately DENY-ALL, and deliberately inside this folder.
+//
+// firebase-tools refuses a `rules` path outside the directory holding
+// firebase.json ("... is outside of project directory"), so an emulator
+// config cannot point at ../../tests/firestore/ any more. The candidate
+// under test is not loaded from here anyway: each rules suite reads its own
+// candidate with readFileSync and hands it to initializeTestEnvironment(),
+// which is what actually installs the ruleset for that project. This file is
+// only the emulator's boot-time default, and it denies everything so a suite
+// that forgot to install its candidate fails loudly instead of passing
+// against something permissive.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} { allow read, write: if false; }
+  }
+}

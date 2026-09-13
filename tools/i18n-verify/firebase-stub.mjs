@@ -265,6 +265,13 @@ export function doc(db, name, id) {
   return { __col: name, __id: id };
 }
 export function where(field, op, value) { return { field, op, value }; }
+// orderBy/limit -- added with runTransaction: note-foundation.js's list
+// queries use both, and their absence was the same module-level SyntaxError.
+// Tagged rather than treated as filters, because matches() would silently
+// pass an unrecognised clause and the suite would then be asserting against
+// an unordered, unbounded result while looking green.
+export function orderBy(field, direction = "asc") { return { __orderBy: field, __dir: direction }; }
+export function limit(n) { return { __limit: n }; }
 export function query(col, ...clauses) { return { __col: col.__col, __clauses: clauses.filter(Boolean) }; }
 
 function matches(d, c) {
@@ -280,7 +287,22 @@ function matches(d, c) {
 
 export async function getDocs(q) {
   return __trip("getDocs", q.__col, null, function () {
-    const rows = (DATA[q.__col] || []).filter((d) => (q.__clauses || []).every((c) => matches(d, c)));
+    const all = q.__clauses || [];
+    const filters = all.filter((c) => c && c.__orderBy === undefined && c.__limit === undefined);
+    const order = all.find((c) => c && c.__orderBy !== undefined);
+    const cap = all.find((c) => c && c.__limit !== undefined);
+    let rows = (DATA[q.__col] || []).filter((d) => filters.every((c) => matches(d, c)));
+    if (order) {
+      const f = order.__orderBy, sign = order.__dir === "desc" ? -1 : 1;
+      rows = rows.slice().sort((a, b) => {
+        const x = a[f], y = b[f];
+        if (x === y) return 0;
+        if (x === undefined || x === null) return 1;
+        if (y === undefined || y === null) return -1;
+        return (x > y ? 1 : -1) * sign;
+      });
+    }
+    if (cap && Number.isFinite(cap.__limit)) rows = rows.slice(0, cap.__limit);
     return { docs: rows.map(snapDoc), empty: rows.length === 0, size: rows.length, forEach(f) { this.docs.forEach(f); } };
   });
 }
@@ -290,8 +312,25 @@ export async function getDoc(ref) {
     return row ? snapDoc(row) : { id: ref.__id, exists: () => false, data: () => undefined };
   });
 }
-export async function setDoc(ref) {
-  return __trip("setDoc", ref && ref.__col, ref && ref.__id, function () {});
+// A write's VALUES, recorded on window so a test can prove what was actually
+// stored rather than only which document was touched. Added for MAP Phase 3,
+// whose whole subject is what a stored word state says.
+//
+// Deliberately a SECOND channel: __stubWrites below keeps its existing
+// shape (field names only, in sessionStorage) because checks across this
+// suite already read it, and DATA is still not mutated -- changing either
+// would move numbers in suites this round has no business touching. A module
+// that patches its own cache after a successful write, which is the better
+// production behaviour anyway, renders correctly against this.
+function __recordWriteData(kind, ref, data) {
+  try {
+    window.__stubWriteData = window.__stubWriteData || [];
+    window.__stubWriteData.push({ kind, col: ref && ref.__col, id: ref && ref.__id, data: JSON.parse(JSON.stringify(data ?? {})) });
+  } catch (e) {}
+}
+
+export async function setDoc(ref, data) {
+  return __trip("setDoc", ref && ref.__col, ref && ref.__id, function () { __recordWriteData("set", ref, data); });
 }
 // Records what was written so a test can prove the save really happened and
 // carried the right field. A no-op before v07.37; the language sync is the
@@ -306,6 +345,7 @@ export async function updateDoc(ref, data) {
       prior.push({ col: ref && ref.__col, id: ref && ref.__id, data: Object.keys(data).sort(), appLang: data.appLang });
       sessionStorage.setItem("__stubWrites", JSON.stringify(prior));
     } catch (e) {}
+    __recordWriteData("update", ref, data);
   });
 }
 export async function getCountFromServer(q) {
@@ -317,6 +357,55 @@ export function arrayUnion(...v) { return v; }
 export function writeBatch() {
   let n = 0;
   return { set() { n++; }, update() { n++; }, async commit() { return __trip("batchCommit", "(batch of " + n + ")", null, function () {}); } };
+}
+
+// runTransaction -- added because app/js/envelope.js (the Note Foundation
+// transaction gateway, STAGE-5-TASK-19) imports it from the real Firebase
+// module. Without it here every page that transitively loads envelope.js
+// died with a module-level SyntaxError, which took behaviour.mjs from its
+// ~800-pass baseline down to 20 pass / 180 fail on main itself.
+//
+// Faithful enough to be worth trusting: reads see DATA, writes are recorded
+// in __stubWrites the way updateDoc records them, and -- following this
+// project's own standing lesson that a handler which writes and then
+// re-reads must not see stale data -- committed writes are applied to the
+// in-memory DATA so a read-after-write inside one suite behaves as it does
+// against real Firestore. Nothing is applied unless the callback resolves,
+// so a throwing transaction leaves DATA untouched, as a real abort does.
+export async function runTransaction(db, callback) {
+  const staged = [];
+  const rowFor = (ref) => (DATA[ref && ref.__col] || []).find((d) => d._id === (ref && ref.__id));
+  const tx = {
+    async get(ref) {
+      return __trip("txGet", ref && ref.__col, ref && ref.__id, function () {
+        const row = rowFor(ref);
+        return row ? snapDoc(row) : { id: ref && ref.__id, exists: () => false, data: () => undefined };
+      });
+    },
+    set(ref, data) { staged.push({ op: "set", ref: ref, data: data }); return tx; },
+    update(ref, data) { staged.push({ op: "update", ref: ref, data: data }); return tx; },
+    delete(ref) { staged.push({ op: "delete", ref: ref }); return tx; },
+  };
+  const result = await callback(tx);
+  return __trip("txCommit", "(transaction of " + staged.length + ")", null, function () {
+    staged.forEach(function (w) {
+      const col = w.ref && w.ref.__col, id = w.ref && w.ref.__id;
+      if (!col || !id) return;
+      DATA[col] = DATA[col] || [];
+      const at = DATA[col].findIndex((d) => d._id === id);
+      if (w.op === "delete") { if (at >= 0) DATA[col].splice(at, 1); return; }
+      const next = w.op === "set"
+        ? Object.assign({ _id: id }, w.data)
+        : Object.assign({}, at >= 0 ? DATA[col][at] : { _id: id }, w.data);
+      if (at >= 0) DATA[col][at] = next; else DATA[col].push(next);
+      try {
+        const prior = JSON.parse(sessionStorage.getItem("__stubWrites") || "[]");
+        prior.push({ col: col, id: id, data: Object.keys(w.data || {}).sort(), tx: true, op: w.op });
+        sessionStorage.setItem("__stubWrites", JSON.stringify(prior));
+      } catch (e) {}
+    });
+    return result;
+  });
 }
 `;
 

@@ -1,0 +1,182 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // MAP Phase 3 — CANDIDATE Rules for Arabic word progress.
+    //
+    // STATUS: CANDIDATE. NOT DEPLOYED. NOT MERGED INTO firestore.rules.
+    // Deploying Rules is an Owner Control Gate; this file exists so the
+    // shape can be reasoned about and EXECUTED against the emulator before
+    // anyone is asked to approve it.
+    //
+    // This is a SELF-CONTAINED extract: it carries only the helpers these
+    // two collections need, reproduced from the deployed rules unchanged, so
+    // the emulator can run it in isolation. It is deliberately NOT a copy of
+    // the whole production file, and it must never be deployed as one.
+    //
+    // WHY TWO COLLECTIONS, which is the entire security design:
+    //
+    // A Firestore rule cannot cheaply prove that every changed key of an
+    // arbitrarily-keyed map was written by someone entitled to write THAT
+    // key — the limitation the deployed rules already record for records,
+    // subjects and trackables. Phase 3's storage paper said what to do about
+    // it: "If Rules cannot distinguish self-state from teacher-state writes,
+    // separate them into role-specific documents before enabling a writer."
+    //
+    // So a learner's own claims and a supervisor's decisions live in
+    // DIFFERENT documents. Each document then belongs to exactly one
+    // (person, role) pair, and document-level authority is both sufficient
+    // and exact. No rule below walks a map, counts entries, or inspects a
+    // dynamic key.
+    //
+    // That also keeps this candidate far away from the failure that rejected
+    // the Phase 4 Activity candidate, where 9 of 13 logged denials were
+    // refused by Firestore's 1000-expression evaluation limit rather than by
+    // the security logic — a denial by budget exhaustion that would later
+    // refuse legitimate writes as the document grew. Every rule here costs a
+    // fixed handful of get()/exists() calls regardless of how many words a
+    // person has learned, because the document's SIZE never enters a rule.
+    //
+    // WHAT IS DELIBERATELY NOT ENFORCED HERE, stated rather than hidden:
+    // the per-entry SHAPE (which state code, which timestamp) is validated
+    // client-side, exactly as records.entries already is. That is the same
+    // accepted trust boundary, not a new gap. What the rules do enforce is
+    // who may write the document at all, and that its identity fields can
+    // never be repointed at another tenant or person.
+    // =====================================================================
+
+    function signedIn() { return request.auth != null; }
+    function myUid() { return request.auth.uid; }
+
+    function tenantPersonRef(personId) { return /databases/$(database)/documents/tenantPeople/$(personId); }
+    function memberUidRef(tenantId)    { return /databases/$(database)/documents/tenantMemberUids/$(tenantId + '__' + myUid()); }
+    function teacherStudentLinkRef(tenantId, teacherPersonId, studentPersonId) {
+      return /databases/$(database)/documents/teacherStudentLinks/$(tenantId + '__' + teacherPersonId + '__' + studentPersonId);
+    }
+
+    function hasRoleIn(tenantId, role) {
+      return signedIn() && exists(memberUidRef(tenantId))
+          && role in get(memberUidRef(tenantId)).data.get('roles', []);
+    }
+    function myPersonIdIn(tenantId) {
+      return signedIn() && exists(memberUidRef(tenantId))
+           ? get(memberUidRef(tenantId)).data.get('personId', null) : null;
+    }
+    function isPlatformAdmin() {
+      return signedIn()
+          && exists(/databases/$(database)/documents/userIndex/$(myUid()))
+          && get(/databases/$(database)/documents/userIndex/$(myUid())).data.get('platformAdmin', false) == true;
+    }
+    function isOwnerIn(tenantId)    { return hasRoleIn(tenantId, 'owner'); }
+    function isPrimeIn(tenantId)    { return hasRoleIn(tenantId, 'prime'); }
+    function isTeacherIn(tenantId)  { return hasRoleIn(tenantId, 'teacher'); }
+    function isGuardianIn(tenantId) { return hasRoleIn(tenantId, 'guardian'); }
+    function canAdminIdentity(tenantId) { return isOwnerIn(tenantId) || isPrimeIn(tenantId) || isPlatformAdmin(); }
+    function isGuardianOf(tenantId, childPersonId) {
+      return isGuardianIn(tenantId)
+          && exists(tenantPersonRef(childPersonId))
+          && get(tenantPersonRef(childPersonId)).data.get('managedByPersonId', null) == myPersonIdIn(tenantId);
+    }
+    function isCoEnrolledTeacherOf(tenantId, studentPersonId) {
+      return signedIn() && myPersonIdIn(tenantId) != null
+          && exists(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId))
+          && get(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId)).data.get('active', false) == true;
+    }
+    function isSelfPerson(personId) {
+      return signedIn() && exists(tenantPersonRef(personId))
+          && get(tenantPersonRef(personId)).data.get('authUid', null) == myUid();
+    }
+
+    // Reproduced UNCHANGED from the deployed rules.
+    function canRecordFor(tenantId, personId) {
+      return canAdminIdentity(tenantId)
+          || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, personId))
+          || isGuardianOf(tenantId, personId)
+          || isSelfPerson(personId);
+    }
+
+    // NEW, and the only genuinely new authority idea in this candidate:
+    // canRecordFor MINUS isSelfPerson. "Someone who may act for this person
+    // and is not this person." Nobody signs off their own claim.
+    function canSuperviseRecordFor(tenantId, personId) {
+      return canAdminIdentity(tenantId)
+          || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, personId))
+          || isGuardianOf(tenantId, personId);
+    }
+
+    // Identity fields are write-once. A learner may change WHAT a word's
+    // state is; nobody may repoint the document at another tenant, another
+    // person, another level or another ayah — which is what would let a
+    // valid writer smuggle a write into someone else's data.
+    // `resource != null` is not decoration. Firestore evaluates EVERY matching
+    // allow clause, so a create request also runs the update clause -- where
+    // `resource` is null and `resource.data.tenantId` throws. The engine turns
+    // that throw into false and the create still succeeds through its own
+    // clause, so nothing was broken; but it fills the emulator log with
+    // "evaluation error" denials, which is precisely the shape that made the
+    // Phase 4 Activity candidate's own denials impossible to trust. Guarding
+    // it means every denial this candidate produces is a decision the rules
+    // made, not an exception they tripped over -- and the log is then usable
+    // as evidence instead of noise. Same S8-class defensiveness the deployed
+    // rules already apply to their reads.
+    function wordLaneIdentityUnchanged() {
+      return resource != null
+          && request.resource.data.tenantId == resource.data.tenantId
+          && request.resource.data.personId == resource.data.personId
+          && request.resource.data.level    == resource.data.level
+          && request.resource.data.surah    == resource.data.surah
+          && request.resource.data.ayah     == resource.data.ayah
+          && request.resource.data.lane     == resource.data.lane;
+    }
+
+    // A created lane must say what it is, and only `wbw` may be written:
+    // Basic Arabic and Arabic in Depth have no approved claim unit, so the
+    // deferral is enforced at the database, not only in the client.
+    function isWordLaneCreate(lane) {
+      return request.resource.data.get('contractVersion', '') == 'quran-word-progress:v1'
+          && request.resource.data.get('identityContract', '') == 'quran-word-occurrence:v1'
+          && request.resource.data.get('lane', '') == lane
+          && request.resource.data.get('level', '') == 'wbw'
+          && request.resource.data.surah is int && request.resource.data.surah >= 1 && request.resource.data.surah <= 114
+          && request.resource.data.ayah  is int && request.resource.data.ayah  >= 1 && request.resource.data.ayah  <= 286;
+    }
+
+    // ---------------------------------------------------------------------
+    // The learner's own claims.
+    // ---------------------------------------------------------------------
+    match /quranWordProgress/{laneKey} {
+      allow read: if isPlatformAdmin();
+      // Same S8-class allowance the deployed records rule makes: the client
+      // reads a lane before deciding create-vs-update, and a nonexistent
+      // document has no data to expose.
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/quranWordProgress/$(laneKey));
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId)
+                    && isWordLaneCreate('learner');
+      allow update: if resource != null
+                    && canRecordFor(resource.data.tenantId, resource.data.personId)
+                    && wordLaneIdentityUnchanged();
+      // No delete (I4/D6). Clearing a word writes not_started, a real state.
+    }
+
+    // ---------------------------------------------------------------------
+    // A supervisor's decisions. THE LEARNER MAY READ THIS AND NEVER WRITE IT.
+    // ---------------------------------------------------------------------
+    match /quranWordApprovals/{laneKey} {
+      allow read: if isPlatformAdmin();
+      allow read: if signedIn() && !exists(/databases/$(database)/documents/quranWordApprovals/$(laneKey));
+      // A learner SEES their own approvals — being told your work was sent
+      // back is the point of sending it back.
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      allow create: if canSuperviseRecordFor(request.resource.data.tenantId, request.resource.data.personId)
+                    && isWordLaneCreate('supervisor');
+      allow update: if resource != null
+                    && canSuperviseRecordFor(resource.data.tenantId, resource.data.personId)
+                    && wordLaneIdentityUnchanged();
+      // No delete (I4/D6). A superseded decision is kept in history.
+    }
+  }
+}
