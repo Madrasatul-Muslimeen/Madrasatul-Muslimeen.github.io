@@ -14,6 +14,20 @@
 // the banner is the one piece of chrome that varies per tenant.
 import { chromium, newContext, openPage } from "./harness.mjs";
 
+// The STUDY pillar menu (#studyPillarMenu) holds Read/Note/Options and
+// starts hidden, so these buttons resolve but measure 0x0 and a direct click
+// times out. Open the pillar first, the way a reader does. Checks the
+// RENDERED box, never .hidden.
+async function clickStudyPillarItem(page, id) {
+  const reachable = await page.evaluate((i) => {
+    const b = document.getElementById(i);
+    return !!b && b.getBoundingClientRect().width > 0;
+  }, id);
+  if (!reachable) { await page.click("#tabStudyBtn"); await page.waitForTimeout(120); }
+  await page.click(`#${id}`);
+}
+
+
 const EXE = process.env.CHROMIUM_PATH || undefined;
 const LANG = process.argv[2] === "bn" ? "bn" : "en";
 
@@ -79,7 +93,7 @@ for (const banner of [true, false]) {
   for (const [name, viewport] of VIEWPORTS) {
     const ctx = await newContext(browser, { banner, viewport, appLang: LANG === "bn" ? "bn" : null });
     const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
-    await page.click("#tabReadBtn");
+    await clickStudyPillarItem(page, "tabReadBtn");
     await page.waitForTimeout(400);
     const m = await page.evaluate(readMetrics);
     // Shell round 22: full screen is a THREE-state cycle now (normal ->

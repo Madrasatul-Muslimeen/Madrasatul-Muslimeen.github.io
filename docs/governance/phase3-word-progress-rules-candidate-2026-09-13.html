@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phase 3 — word-progress Rules candidate and storage safeguards</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Phase 3 — word-progress Rules candidate and storage safeguards</h1>
+<p><strong>Date:</strong> 2026-09-13. <strong>Status:</strong> CANDIDATE, <strong>NOT DEPLOYED</strong>, not merged into <code>firestore.rules</code>. Deploying Rules is an Owner Control Gate. Nothing in this document or in the branch it describes changes production.</p>
+<p>Candidate: <code>tests/firestore/word-progress-v1.proposed.rules</code> Suite: <code>tools/firestore-emulator/word-progress-v1.rules.test.mjs</code> (<code>npm run word-progress</code> from <code>tools/firestore-emulator/</code>)</p>
+<h2>1. The storage decision, and the measurement behind it</h2>
+<p>The Phase 3 storage paper set the gate: compare viable approaches, report read and write cost, and separate self-state from teacher-state writes if Rules cannot tell them apart. Measured against the packaged dataset (114 surahs, 6,236 ayahs, 77,429 occurrences; longest ayah 2:282 at 128 words; largest surah 2 at 6,116 words):</p>
+<div class='tw'><table><thead><tr><th></th><th>per-occurrence document</th><th><strong>per-ayah, per-role lane (chosen)</strong></th></tr></thead><tbody>
+<tr><td>Documents per person (ceiling)</td><td>77,429</td><td>12,472 (two lanes × 6,236)</td></tr>
+<tr><td>Reads for one word</td><td>1</td><td>2 (one per lane), then cached</td></tr>
+<tr><td>Reads for a whole Al-Baqarah</td><td>6,116</td><td><strong>2 queries</strong>, returning only the ayahs actually touched</td></tr>
+<tr><td>Writes for one claim</td><td>1</td><td>1</td></tr>
+<tr><td>Writes for one decision</td><td>1</td><td>1</td></tr>
+<tr><td>Rules must walk a map?</td><td>no</td><td><strong>no</strong></td></tr>
+</tbody></table></div>
+<p>Worst-case document size, measured as a JSON proxy with realistic 20–24 character identifiers, ayah 2:282 fully populated: <strong>learner lane 9,716 bytes</strong>, <strong>supervisor lane 101,111 bytes</strong> with six retained decisions per word. Both are far inside Firestore&#x27;s 1 MiB document limit. This is a JSON byte count, <strong>not</strong> a Firestore encoded size and <strong>not</strong> a billing figure.</p>
+<p>Safeguards actually implemented, not just proposed:</p>
+<ul><li><code>MAX_WORDS_PER_AYAH = 128</code> refuses a 129th word in a lane.</li><li><code>MAX_RETAINED_DECISIONS = 6</code> bounds the per-word decision history, and <code>historyTruncated</code> records what fell off, so a truncated history is never reported as complete.</li><li><code>MAX_LANES_PER_SURAH_READ = 300</code> caps a surah read; going over reports <code>truncated</code> and deliberately does <strong>not</strong> cache as complete, because a short read would understate coverage.</li><li>Nothing joins the startup path. Verified in a browser off <code>window.__fsLog</code>: zero reads on the landing path, zero from opening Read, exactly two the moment a word card is opened, exactly two queries when Explore reaches a surah.</li></ul>
+<h2>2. Why two collections — the security design</h2>
+<p>A Firestore rule cannot cheaply prove that every changed key of an arbitrarily-keyed map was written by someone entitled to write <strong>that</strong> key. The deployed rules already record this limitation for <code>records</code>, <code>subjects</code> and <code>trackables</code>. The storage paper&#x27;s instruction was explicit: <em>&quot;If Rules cannot distinguish self-state from teacher-state writes, separate them into role-specific documents before enabling a writer.&quot;</em></p>
+<p>So the learner&#x27;s claims live in <code>quranWordProgress</code> and a supervisor&#x27;s decisions in <code>quranWordApprovals</code>, same document id. Each document then belongs to exactly one (person, role) pair, and document-level authority is both sufficient and exact. The only new authority idea is <code>canSuperviseRecordFor()</code> — <code>canRecordFor()</code> minus <code>isSelfPerson()</code>: <em>someone who may act for this person and is not this person</em>. Nobody signs off their own claim.</p>
+<p>A learner <strong>reads</strong> their approvals lane and can never write it. Being told your work was sent back is the point of sending it back.</p>
+<h2>3. The Phase 4 failure mode, and why this candidate is not in it</h2>
+<p>The Phase 4 Activity Rules candidate was rejected because 9 of its 13 logged denials were refused by Firestore&#x27;s 1000-expression evaluation limit rather than by the security logic — denials that sat inside <code>assertFails</code> and so looked correct while proving nothing, and that would later refuse <em>legitimate</em> writes as a week grew.</p>
+<p>No rule in this candidate walks a map, counts entries, or inspects a dynamic key. The cost of a write does not grow with the number of words a person has learned, <strong>because the document&#x27;s size never enters a rule</strong>. That is asserted rather than argued: the suite fills a lane to the full 128 words of 2:282 and then writes one more word, as an <code>assertSucceeds</code> in both lanes — so exhaustion would appear as a FAILURE, never as a tidy green denial. The emulator log contains <strong>zero</strong> references to the expression limit.</p>
+<h2>4. Result, and the one limitation stated plainly</h2>
+<p><strong>42 assertions, all passing</strong> against the Firestore emulator: 23 denials and 19 allows.</p>
+<p><strong>Every denial is paired with an allow that differs in exactly one fact</strong> — actor, subject, operation, or field — on the same collection. A ruleset that denied by exception rather than by decision would have denied the paired allow too. Deletes have no legitimate counterpart, so those three are paired on the ACTOR instead: each is refused a delete on a document the same actor has already been allowed to write.</p>
+<p><strong>The limitation.</strong> The emulator log still carries <code>evaluation error</code> lines on denied operations. What was established about them, by measurement:</p>
+<ul><li>A run containing <strong>only allowed operations produces zero</strong> of them.</li><li>They arise from <code>DefaultEmulatorRulesAuthorizer.withVerboseErrors</code> — the emulator&#x27;s diagnostic path, which runs <em>when a request is denied</em> to build a readable message — named directly in the stack trace.</li><li>A probe with four independent single-helper clauses produced them uniformly across all four, so they do not localise to any one helper.</li><li>Guarding the update clauses with <code>resource != null</code> (S8-class defensiveness the deployed rules already apply to reads) reduced them from 38 to 32.</li></ul>
+<p>That evidence points to a denial-reporting artefact rather than a cause of denial, and it is <strong>not</strong> the expression-budget shape that sank Phase 4. But it is not a complete characterisation, and this document does not claim one. The allow/deny pairing above is what the acceptance argument rests on.</p>
+<h2>5. What is NOT enforced here, stated rather than hidden</h2>
+<p>The per-entry <strong>shape</strong> — which state code, which timestamp — is validated client-side, exactly as <code>records.entries</code> already is. Same accepted trust boundary, not a new gap. What the rules enforce is who may write the document at all, that its identity fields can never be repointed at another tenant, person, level or ayah, that only <code>wbw</code> may be written (Basic Arabic and Arabic in Depth have no approved claim unit, so the deferral is enforced at the database, not only in the client), and that nothing is ever deleted (I4/D6).</p>
+<h2>6. Owner Control Gate</h2>
+<p>Deployment of these Rules requires explicit Owner authority and is <strong>not</strong> requested by this document. Until they are deployed, the two collections have no server-side rule, so the feature is exercisable on this branch and by the Owner&#x27;s own account only; it is not usable by a student or teacher account against production. That is a deliberate consequence of not crossing the gate, not an oversight.</p>
+<h2>7. A pre-existing breakage found, and not silently worked around</h2>
+<p><code>tools/firestore-emulator/activity-v1.firebase.json</code> points its <code>rules</code> at <code>../../tests/firestore/activity-v1.proposed.rules</code>, and the installed firebase-tools refuses a path outside the directory holding <code>firebase.json</code> (&quot;… is outside of project directory&quot;). <strong><code>npm run activity-proposal</code> therefore cannot start at all</strong> in this environment — it fails before any assertion runs. This predates Phase 3 and was reproduced directly.</p>
+<p>It is left unfixed on purpose: that suite is the evidence base for a REJECTED candidate sitting at an Owner gate, and quietly changing how it runs is not this tranche&#x27;s business. The remedy is one line — point its <code>rules</code> at a file inside <code>tools/firestore-emulator/</code>, as <code>word-progress-v1.firebase.json</code> now does with <code>closed.placeholder.rules</code> (deliberately deny-all, so a suite that forgot to install its candidate fails loudly rather than passing against something permissive). The candidate under test is supplied by <code>initializeTestEnvironment()</code> from <code>readFileSync</code> in every case, so the config&#x27;s path never determined what was actually tested.</p>
+</main></body></html>

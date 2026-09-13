@@ -12034,3 +12034,167 @@ the right pixel offset; the "Copy everything" payload proven to carry all 104
 total reconciled against disk; dark theme proven to really repaint rather than
 inherit; no horizontal overflow at 390px; and the whole thing booting clean
 **over http as well as from disk**, since it is reachable on Pages too.
+
+---
+
+**v08.05–v08.13 (12 Sep 2026, on Claude Code on the web) — reconciliation of
+the three isolated MAP branches, recovery of the test harness, and MAP Phase 2
+closed.** Full evidence in `docs/reports/2026-09-12-reconciliation-and-phase2.md`
+(and `.html`).
+
+**The four remote tips were verified from `origin` before anything else** and
+all four matched, so no bundle recovery was attempted. **MAP v4, the execution
+ledger and the recovery report are not in any branch of this repository and
+were not supplied** — position was reconstructed from the session instruction,
+`docs/governance/` and the code, and that limit is recorded in the report
+rather than papered over.
+
+**Reconciliation was clean because the branches turned out to be trivially
+compatible, which was measured rather than assumed.** Both `stage5-autonomous-
+isolated` and `stage5-rules-isolated` have `main`'s exact tip as their
+merge-base, no commit on `main` is missing from either, and **not one file is
+touched by both** — so no rebase, no conflict, no precedence call. Both merged
+whole. **`map-pure-foundation-review` is superseded**: its three substantive
+commits are reproduced verbatim inside the autonomous branch, proven by content
+diff across all 11 shared files, whose only difference was a stray trailing
+blank line on four of them; that normalization was carried across and the
+branch adds nothing else. **`firestore.rules` is byte-for-byte unchanged.**
+
+**The largest finding predates this round: the test harness was broken on
+`main` and it hid everything behind it.** `behaviour.mjs` scored **20 pass /
+180 fail on a clean `main` worktree** against its ~800-pass baseline, because
+`app/js/envelope.js` (merged as #86) imports `runTransaction` and the stub did
+not export it. The stub replaces the whole Firebase module, so a name it lacks
+is not a missing feature but **a module-level SyntaxError that stops every page
+booting** — and it fails only in the harness, since the real SDK exports it,
+which is exactly why it survived. `limit` and `orderBy` were the same. Recovery
+was measured at each step on a clean `main`: 20 → 231 (stub) → 493 (pillar
+helpers) → **802 on the reconciled branch**, and the final run is **800 pass /
+3 fail stopping at section 42** — the project's own documented baseline,
+exactly. `tools/i18n-verify/stub-parity.mjs` now checks every Firebase import
+in `app/` against the stub and names the offending file, so the class cannot
+recur.
+
+**The second harness cause was the STUDY pillar menu.** Options, Read and Note
+stopped being dock tabs and became items inside `#studyPillarMenu`, which
+starts hidden — their buttons still resolve but measure 0x0, so every direct
+click timed out. 15 Options sites and 31 Read sites open the pillar first now,
+checking the RENDERED box rather than `.hidden`. `reading.mjs` and `panel.mjs`
+had the identical breakage. Check 29a was restated in place with the reason:
+the dock carries the four pillars of `ACTIVE-ARCHITECTURE.md`, not the old five
+tabs — the app was right and the check described the pre-pillar dock.
+
+**Phase 2 had no rendered proof at all.** `quran-word-card-integration.mjs` is
+static source inspection — `readFileSync` plus regex — so it proves the code
+was written, never that a reader can click a word and see a card: the exact
+blind spot this file's own lessons warn about.
+`tools/i18n-verify/quran-word-card-rendered.mjs` supplies it, **92 checks in
+both languages across six viewports**, reading measured rects, real text and
+`document.activeElement`.
+
+**Six defects were corrected in the preserved work, four of them found only by
+measuring or by looking.** (1) The Word Card printed a dozen hardcoded English
+strings and the page passed it **no labels at all**, so a Bangla reader met an
+English panel — every string is overridable now, supplied through `t()`, with
+Bangla added. (2) The clickable word's `aria-label`, a screen reader's only
+name for it, hardcoded an English fallback and preferred the English gloss.
+(3) Counts printed Western digits on a Bangla page — `num()` now, on the count
+only, never on the `surah:ayah:position` references, which are identifiers.
+(4) The three level tabs **wrapped into a two-line ragged stack** at 320px and
+360px in English and 320px in Bangla — English needs 302px and a 320px phone
+offers 249px — so they share the row and step type and padding down at 380px
+and 340px. (5) **Every button in the card was 29px**, against the ~40px this
+project settled on; tabs are 40px and the arrows and close are fixed 40px
+squares that never shrink. (6) A check pinned the exact string `08.09`,
+contradicting the rule that every tranche bumps the version — guaranteed to
+fail next round, and did.
+
+**The Activity Rules emulator suite was executed** — `firebase-tools` and Java
+are both available here, so the long-standing PENDING was discharged rather
+than re-recorded. **It passes, and that is not acceptance.** Reading the
+emulator log rather than the exit code, **9 of the 13 logged denials were
+refused by hitting Firestore's 1000-expression evaluation limit**, not by the
+security logic; they sit inside `assertFails` so they count as correct denials
+while proving nothing, and denial by budget exhaustion is not stable — the same
+exhaustion will refuse legitimate appends as a week grows. Runtime evidence for
+the weekly-size concern Task 48 raised on static grounds. The draft stays
+**REJECTED for acceptance**; the remedy is an architecture choice and is left
+as an **Owner Control Gate**, unactioned.
+
+**Measured:** `layout.mjs` every landing-page metric **byte-for-byte identical**
+to `main` at all eight viewports in both banner states, re-run after the CSS
+changes; `navcheck.mjs` **unchanged** (still only the pre-existing 320px English
+truncation of "Operation"/"Bookmark"); `reading.mjs` READING SCREEN OK;
+`panel.mjs` 47 configurations with no truncated label and no wrapped bar;
+19 node suites green; coverage 1733/46 on `main` → **1778/47**, the single extra
+being `"Meaning unavailable"`, the deliberate English fallback on the `lang="en"`
+line of a bilingual panel, confirmed correct on the rendered page.
+
+## v08.14 – v08.19 — MAP Phase 3: Arabic Progress & Coverage (13 Sep 2026)
+
+Six bounded tranches on `claude/pensive-knuth-2pu3jj`, under MAP v4 with all
+three governing documents supplied and read first. Full evidence:
+`docs/reports/2026-09-13-map-phase3-arabic-progress.md` (and `.html`).
+
+**v08.14 — the pure state model.** `app/js/quran-word-progress.js`: what a WbW
+word state is, who may set it, how one transition folds into the next. No
+Firebase, no DOM. The three MAP locks are asserted, not commented: no
+event-to-state projection exists (a check reads the source), nothing names
+`records` or a `trackableId`, and `basic`/`depth` are REFUSED with "deferred"
+rather than stored as `wbw`.
+
+**v08.15 — storage, and a real I6 defect.** Two collections,
+`quranWordProgress` (the learner's claims) and `quranWordApprovals` (a
+supervisor's decisions), one document per (person, level, ayah). The split by
+actor role is what the storage paper required before a writer could exist: the
+whole document belongs to one (person, role) pair, so authority is exact at
+document level and no rule ever walks a map. Measured: one ayah = 2 reads, one
+surah = 2 QUERIES (not 2 per ayah), a claim = 1 write.
+
+The defect, found by a failing check rather than by reading code: re-opening a
+review wrote `pending` over the stored decision, editing a frozen confirmation
+(I6) and destroying the real one in history (I4). Freezing is structural now —
+a decision is pinned to the claim instant it was given for, a claim never
+touches the supervisor lane, and an ordinary claim dropped from two writes to
+one.
+
+**v08.16 — coverage.** The denominator is the SCOPE from the dataset, never
+the number of records that exist. An unread word is `unknown`, not
+`not_started`. `known` is the only thing `percent` counts, so a claim awaiting
+a teacher scores zero. A trap caught before shipping: the dataset's `ruku`
+field is a GLOBAL index while a ruku' unit key carries the per-surah one, so a
+direct comparison would have scored every ruku' against its neighbour.
+
+**v08.17 — the Word Card.** Three state buttons, the review line, a
+supervisor's Confirm/Send back pair, and the ayah's coverage. Proved against
+the shared fixture's own two people: p1 (owner, no confirmation required,
+claim counts at once, no decision buttons) and p2 (managed child, claim waits,
+scores zero, teacher decides). D10: switching student clears both caches.
+**A defect found by LOOKING at a screenshot** — at 320×640 all three buttons
+sat below the card's scroll cap, unreachable.
+
+**v08.18 — Explore.** A coverage strip at the surah and ruku' levels, costing
+two queries; Juz and Whole Qur'an say plainly that the figure is not available
+at that granularity and read ZERO documents to say it, because covering only
+the loaded part would understate every juz. **A second screenshot defect**:
+the strip first rendered navy on Explore's dark panel at 1.89:1 — v07.138
+again — now 12.88:1, with rendered contrast measured by a check that is proven
+able to fail.
+
+**v08.19 — Rules candidate, NOT deployed.**
+`tests/firestore/word-progress-v1.proposed.rules`, 42 emulator assertions
+passing (23 denials, 19 allows), every denial paired with an allow differing
+in exactly one fact. `canSuperviseRecordFor()` is `canRecordFor()` minus
+`isSelfPerson()` — nobody signs off their own claim. `firestore.rules` is
+byte-for-byte unchanged and deployment remains an Owner Control Gate.
+
+**Five failing checks investigated, four were WRONG ASSERTIONS**, all updated
+in place with the reason. `behaviour.mjs` 800/3 (the documented archive.org
+block). `layout.mjs` byte-for-byte identical, `getElementById` 249 → 250.
+Coverage 1,778 → 1,794 scanned, missing UNCHANGED at 47.
+
+**Flagged, not changed:** the wheel's slice colours (claim status stays their
+only meaning); cross-surah coverage; a pre-existing breakage that stops
+`npm run activity-proposal` starting at all in this environment, left alone
+because it is a rejected candidate's evidence base at an Owner gate.
+
