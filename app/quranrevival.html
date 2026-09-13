@@ -1860,6 +1860,20 @@
      a three-column grid rather than flex-wrap, so the three buttons take
      equal widths and step their type down together instead of breaking
      into the ragged stack v07.129 shipped once. */
+  /* MAP Phase 3 -- Explore's Arabic coverage strip. Sized like the legend it
+     sits under, and it never wraps into the wheel: its own row, full width. */
+  /* COLOURS ARE LIGHT-ON-DARK, and that is the whole point of this block.
+     The first attempt reused the Word Card's palette -- navy #1F3A6E on
+     .wheel-box's dark radial gradient -- and MEASURED at 1.89:1 against a
+     4.5:1 minimum: v07.138's exact defect, navy text on a navy background,
+     with every element assertion passing because the markup was perfect.
+     These follow .wheel-legend's own #cdd5e3 instead, and a check now
+     measures the rendered contrast rather than the element's existence. */
+  .explore-arabic-coverage { margin-top: 0.35rem; font-size: 0.82rem; line-height: 1.35; color: #cdd5e3; text-align: center; }
+  .explore-arabic-coverage[hidden] { display: none; }
+  .explore-arabic-coverage .eac-figure { font-weight: 700; color: #E8C77A; }
+  .explore-arabic-coverage .eac-incomplete { color: #F0A98A; }
+  .explore-arabic-coverage .eac-unavailable { color: #b6c0d2; font-style: italic; }
   .word-card-progress { margin-top: 0.6rem; padding-top: 0.55rem; border-top: 1px solid #e8dcae; }
   .word-progress-heading { margin: 0 0 0.35rem; font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #5b4a20; }
   .word-progress-states, .word-progress-decide { display: grid; gap: 0.35rem; }
@@ -3161,6 +3175,13 @@
                 <div class="wheel-resize-handle" data-wheel-resize="w" title="Drag to resize the wheel" aria-label="Drag to resize the wheel"></div>
               </div>
               <div id="exploreWheelLegendContainer"></div>
+              <!-- MAP Phase 3. Arabic word coverage for the scope on screen.
+                   Deliberately its own strip and NOT a second meaning poured
+                   into the wheel's slice colours: those colour an Approach's
+                   CLAIM status, which is the whole job of this wheel, and
+                   v08.02 already weighed and declined letting a second
+                   meaning compete for the same colour. -->
+              <div id="exploreArabicCoverage" class="explore-arabic-coverage" hidden></div>
               <p class="hint">Click a segment to drill in &mdash; Quran &rarr; Juz &rarr; Surah &rarr; Ruku' &rarr; an ayah in Study. Colours pool this Approach's real ayah-by-ayah progress across whatever's inside each segment &mdash; it only turns fully green once every ayah inside it is Mastered.</p>
             </div>
             <div class="list-splitter" id="exploreListSplitter" role="separator" aria-orientation="vertical" title="Drag to resize">
@@ -3836,8 +3857,8 @@
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard } from "./js/quran-word-card.js";
     import { occurrenceRefsFor } from "./js/quran-word-index.js";
     import { wordProgressAuthority, WBW_WORD_STATES } from "./js/quran-word-progress.js";
-    import { primeAyahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
-    import { computeArabicCoverage, occurrenceIdsForAyah } from "./js/quran-word-coverage.js";
+    import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
+    import { computeArabicCoverage, occurrenceIdsForAyah, occurrenceIdsForAyahRange, occurrenceIdsForSurah } from "./js/quran-word-coverage.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
@@ -4213,6 +4234,7 @@
     const exploreWheelResizeHandleEls = Array.from(exploreWheelResizeWrapEl.querySelectorAll(".wheel-resize-handle"));
     const exploreWheelContainer = document.getElementById("exploreWheelContainer");
     const exploreWheelLegendContainer = document.getElementById("exploreWheelLegendContainer");
+    const exploreArabicCoverageEl = document.getElementById("exploreArabicCoverage");
     const exploreSidebarContainer = document.getElementById("exploreSidebarContainer");
     const exploreListSplitter = document.getElementById("exploreListSplitter");
     const exploreListCollapseBtn = document.getElementById("exploreListCollapseBtn");
@@ -6931,8 +6953,75 @@
       });
     });
 
+    // -----------------------------------------------------------------------
+    // MAP Phase 3 -- Arabic word coverage in Explore.
+    //
+    // WHY IT IS NOT OFFERED AT EVERY LEVEL, which is the whole design.
+    // A Juz or the Whole Qur'an spans many surahs, and this contract stores
+    // progress one document per ayah. Covering the Qur'an would mean reading
+    // up to 12,472 lane documents for one number on a wheel, and covering
+    // only the part already loaded would UNDERSTATE every juz -- the exact
+    // "a mismatch is unknown, not zero" failure the storage paper names. So
+    // those levels say plainly that the figure is not available at that
+    // granularity, which is the app's own existing precedent (the Note
+    // view's Coverage tab says the same thing in the same words).
+    //
+    // At the surah and ruku' levels it IS available and costs TWO QUERIES --
+    // not two reads per ayah -- and only when Explore is actually open.
+    // -----------------------------------------------------------------------
+    async function renderExploreArabicCoverage() {
+      const el = exploreArabicCoverageEl;
+      if (!el) return;
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      const scoped = exploreLevel === "surah" || exploreLevel === "ruku";
+      if (!tenantId || !subjectPersonId || exploreSurahNum == null || !scoped) {
+        el.hidden = !(exploreLevel === "quran" || exploreLevel === "juz");
+        if (!el.hidden) {
+          el.innerHTML = `<span class="eac-unavailable">${escapeHtml(t("Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it."))}</span>`;
+        }
+        return;
+      }
+      el.hidden = false;
+      el.innerHTML = `<span class="eac-unavailable">${escapeHtml(t("Loading progress…"))}</span>`;
+      const requestedLevel = exploreLevel, requestedSurah = exploreSurahNum, requestedRuku = exploreRukuIndex;
+      let figure = null, truncated = false;
+      try {
+        const surahData = await getSurah(requestedSurah);
+        await wordProgressConfirmationRequired(tenantId, subjectPersonId);
+        ({ truncated } = await getSurahProgress(db, { tenantId, personId: subjectPersonId, surah: requestedSurah }));
+        const scope = requestedLevel === "ruku" && requestedRuku != null
+          ? rukuScopeOccurrenceIds(surahData, requestedRuku)
+          : occurrenceIdsForSurah(surahData);
+        if (!scope) throw new Error(t("Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it."));
+        const confirmationRequired = !!wordProgressConfirmRequired;
+        const views = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+        figure = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `${requestedLevel}:${requestedSurah}` });
+      } catch (error) {
+        reportWriteFailure(error, { what: "read Arabic word coverage", surah: requestedSurah }); // I15
+        el.innerHTML = `<span class="eac-unavailable">${escapeHtml(t("Progress not loaded yet"))}</span>`;
+        return;
+      }
+      // A slow read must not paint over a scope the reader has since left.
+      if (exploreLevel !== requestedLevel || exploreSurahNum !== requestedSurah || exploreRukuIndex !== requestedRuku) return;
+      const line = t("{known} of {total} Arabic words known", { known: num(figure.known), total: num(figure.total) });
+      // A partial read is NEVER printed as a finished percentage: the caveat
+      // rides with the figure, in the reader's own language and digits.
+      const caveat = figure.complete && !truncated
+        ? ""
+        : ` <span class="eac-incomplete">${escapeHtml(t("{unknown} not loaded yet", { unknown: num(figure.unknown) }))}</span>`;
+      el.innerHTML = `<span class="eac-figure">${escapeHtml(line)}</span>${caveat}`;
+    }
+
+    /** The occurrence ids of one per-surah ruku' index, using the app's own global-to-relative conversion. */
+    function rukuScopeOccurrenceIds(surahData, rukuIndex) {
+      const ayahs = surahData.ayahs.filter((a) => rukuIndexInSurah(surahData.ayahs, Number(a.ruku)) === Number(rukuIndex));
+      if (!ayahs.length) return null;
+      return occurrenceIdsForAyahRange(surahData, ayahs[0].ayah, ayahs.at(-1).ayah);
+    }
+
     async function renderExplore() {
       renderExploreBreadcrumb();
+      renderExploreArabicCoverage();
       renderExploreApproachList();
       syncExploreViewToggle();
       if (exploreLevel === "quran") return renderExploreQuranLevel();

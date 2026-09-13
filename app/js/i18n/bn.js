@@ -1153,6 +1153,10 @@ export const BN = {
   "State": "নিশ্চিতকরণ", // ? the column showing pending/confirmed/returned
   "Action": "কার্যক্রম", // ?
   "Actions": "কার্যক্রম", // ?
+  // MAP Phase 3 -- Arabic word coverage in Explore.
+  "Arabic word coverage isn't available at this granularity — open a Surah or a Ruku' to see it.":
+    "এই স্তরে আরবি শব্দের অগ্রগতি দেখানো যায় না — দেখতে হলে একটি সূরা বা রুকু খুলুন।",
+  "{known} of {total} Arabic words known": "{total}টি আরবি শব্দের মধ্যে {known}টি জানা",
   // MAP Phase 3 -- WbW word progress on the Quran Word Card.
   "Word progress": "শব্দের অগ্রগতি",
   "Waiting to be checked": "যাচাইয়ের অপেক্ষায়",
