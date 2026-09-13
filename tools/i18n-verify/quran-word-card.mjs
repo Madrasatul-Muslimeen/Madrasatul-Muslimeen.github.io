@@ -73,8 +73,15 @@ check("an error message is placed by the translation, not appended", () => {
 
 check("the page really hands the card its reader's language", () => {
   const page = fs.readFileSync(new URL("../../app/quranrevival.html", import.meta.url), "utf8");
-  assert.match(page, /labels:\s*wordCardLabels\(\)/);
+  // UPDATED for MAP Phase 3: the call site now spreads TWO label sets --
+  // wordCardLabels() plus the Phase 3 wordProgressLabels() -- so the exact
+  // old literal no longer appears. What this check is really about is that
+  // the page hands the card labels built from t() rather than typing English
+  // at the call site, and that is asserted below, for both sets.
+  assert.match(page, /labels:\s*\{[^}]*\.\.\.wordCardLabels\(\)/);
   assert.match(page, /function wordCardLabels\(\)/);
+  assert.match(page, /\.\.\.wordProgressLabels\(\)/);
+  assert.match(page, /function wordProgressLabels\(\)/);
   // Each label must come from t(), not a literal typed at the call site.
   const body = page.slice(page.indexOf("function wordCardLabels()"));
   const block = body.slice(0, body.indexOf("\n    }"));
@@ -82,15 +89,20 @@ check("the page really hands the card its reader's language", () => {
     .forEach((k) => assert.ok(block.includes(`t("${k}")`), `${k} is not translated at the call site`));
 });
 
-check("Bangla exists for every card string the page asks for", () => {
-  const page = fs.readFileSync(new URL("../../app/quranrevival.html", import.meta.url), "utf8");
-  const body = page.slice(page.indexOf("function wordCardLabels()"));
-  const block = body.slice(0, body.indexOf("\n    }"));
-  const keys = [...block.matchAll(/t\("((?:[^"\\]|\\.)*)"\)/g)].map((m) => JSON.parse(`"${m[1]}"`));
-  assert.ok(keys.length >= 20, `expected the full label set, saw ${keys.length}`);
-  const missing = keys.filter((k) => !BN[k]);
-  assert.deepEqual(missing, [], `untranslated: ${missing.join(" | ")}`);
-});
+// WIDENED for MAP Phase 3 to cover the progress label set too -- a new set of
+// reader-visible strings on the same card is exactly what this check exists
+// to catch going untranslated (I11).
+for (const fn of ["wordCardLabels", "wordProgressLabels"]) {
+  check(`Bangla exists for every string ${fn}() asks for`, () => {
+    const page = fs.readFileSync(new URL("../../app/quranrevival.html", import.meta.url), "utf8");
+    const body = page.slice(page.indexOf(`function ${fn}()`));
+    const block = body.slice(0, body.indexOf("\n    }"));
+    const keys = [...block.matchAll(/t\("((?:[^"\\]|\\.)*)"\)/g)].map((m) => JSON.parse(`"${m[1]}"`));
+    assert.ok(keys.length >= (fn === "wordCardLabels" ? 20 : 10), `expected the full label set, saw ${keys.length}`);
+    const missing = keys.filter((k) => !BN[k]);
+    assert.deepEqual(missing, [], `untranslated: ${missing.join(" | ")}`);
+  });
+}
 
 // A COUNT follows the reader's digits; an IDENTIFIER never does. The card
 // showed "381" on a Bangla page, against this app's own existing rule.

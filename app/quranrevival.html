@@ -1813,6 +1813,17 @@
   .panel-checklist { font-weight: 400; }
   #quranWordCardMount:empty { display: none; }
   #quranWordCardMount { flex: 0 0 auto; max-height: min(45vh, 24rem); overflow-y: auto; padding: 0.5rem; background: rgba(255,255,255,0.97); border-top: 1px solid #d8c68a; }
+  /* MAP Phase 3. The progress block made the card taller, and MEASURED at
+     320x640 the 45vh cap left it 49px short -- far enough that the three
+     state buttons themselves were below the fold, so the control a reader
+     came for was unreachable unless they discovered the card scrolls. Found
+     by LOOKING at a screenshot; every rect measurement passed.
+     45vh of a 640px screen is 288px against a 337px card, so the cap is
+     raised only on short viewports, where it is the one that binds. It costs
+     reading height ONLY while a word card is open, which is exactly when the
+     card is what the reader is looking at. Taller screens are untouched:
+     min() already picks 24rem there. */
+  @media (max-height: 720px) { #quranWordCardMount { max-height: min(62vh, 24rem); } }
   .quran-word-card { max-width: 42rem; margin: 0 auto; border: 1px solid #d8c68a; border-radius: 0.65rem; background: #fffdf6; padding: 0.65rem; box-shadow: 0 -0.2rem 1rem rgba(0,0,0,0.08); }
   .quran-word-card header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; text-align: center; }
   /* Previous / next / close. Square, fixed, never shrinking, so the three read
@@ -1843,6 +1854,29 @@
   .quran-word-card [role="tab"][aria-selected="true"] { background: #1F3A6E; color: white; }
   @media (max-width: 380px) { .quran-word-card [role="tab"] { padding: 0.5rem 0.4rem; font-size: 0.82rem; } }
   @media (max-width: 340px) { .quran-word-card [role="tab"] { padding: 0.5rem 0.25rem; font-size: 0.75rem; } }
+  /* MAP Phase 3 -- the WbW progress block. Every button here is a real
+     finger target: 40px is what this project settled on after a round of
+     26px icon buttons the owner had to complain about. The state row uses
+     a three-column grid rather than flex-wrap, so the three buttons take
+     equal widths and step their type down together instead of breaking
+     into the ragged stack v07.129 shipped once. */
+  .word-card-progress { margin-top: 0.6rem; padding-top: 0.55rem; border-top: 1px solid #e8dcae; }
+  .word-progress-heading { margin: 0 0 0.35rem; font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #5b4a20; }
+  .word-progress-states, .word-progress-decide { display: grid; gap: 0.35rem; }
+  .word-progress-states { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .word-progress-decide { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 0.4rem; }
+  .word-card-progress button { min-height: 40px; min-width: 0; padding: 0.5rem 0.4rem; font-size: 0.85rem; line-height: 1.15; border: 1px solid #d8c68a; border-radius: 0.35rem; background: #fff; color: #1F3A6E; cursor: pointer; }
+  /* aria-pressed is the selected state, so the colour follows the attribute
+     rather than a separate class the two could drift apart on. */
+  .word-card-progress button[aria-pressed="true"] { background: #1F3A6E; color: #fff; border-color: #1F3A6E; font-weight: 700; }
+  .word-card-progress button:disabled { opacity: 0.45; cursor: default; }
+  .word-progress-decide button { background: #1F3A6E; color: #fff; border-color: #1F3A6E; }
+  .word-progress-decide button[data-word-progress-decide="returned"] { background: #fff; color: #8a3b16; border-color: #d8a98a; }
+  .word-progress-state, .word-progress-coverage { margin: 0.4rem 0 0; font-size: 0.85rem; }
+  .word-progress-coverage { color: #5b4a20; }
+  .word-progress-incomplete { color: #8a3b16; }
+  @media (max-width: 380px) { .word-card-progress button { padding: 0.5rem 0.25rem; font-size: 0.78rem; } }
+  @media (max-width: 340px) { .word-card-progress button { padding: 0.5rem 0.15rem; font-size: 0.72rem; } }
   .quran-word-card dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.25rem 0.75rem; }
   .quran-word-card dt { font-weight: 700; }
 
@@ -3746,11 +3780,11 @@
     import { TENANT } from "./js/collections.js";
     import { langText, setLangText } from "./js/lang.js";
     import { roleListLabel, roleLabel } from "./js/labels.js";
-    import { safeWrite } from "./js/errors.js";
+    import { safeWrite, reportWriteFailure } from "./js/errors.js";
     import { bootstrapContext, getActiveContext, setActiveContext, effectiveRoles, scopedRoster, getSelectedPersonId, setSelectedPersonId } from "./js/session-context.js";
     import { getTrackables, syncUnneditedTrackableNames, tenantOwnsSections } from "./js/catalogue.js";
-    import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById } from "./js/unit-keys.js";
-    import { chunkKeyFor, getRecordsChunk, claimStatus } from "./js/records.js";
+    import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById, statusLabel } from "./js/unit-keys.js";
+    import { chunkKeyFor, getRecordsChunk, claimStatus, getSubjectConfirmationOverride, computeConfirmationRequired } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
     import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree } from "./js/bookmarks.js";
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
@@ -3801,6 +3835,9 @@
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
     import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard } from "./js/quran-word-card.js";
     import { occurrenceRefsFor } from "./js/quran-word-index.js";
+    import { wordProgressAuthority, WBW_WORD_STATES } from "./js/quran-word-progress.js";
+    import { primeAyahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
+    import { computeArabicCoverage, occurrenceIdsForAyah } from "./js/quran-word-coverage.js";
     import { ensureMushafData, getMushafPagesForKeys, renderMushafPages, setActiveAyah } from "./js/hifz-renderer.js";
     import { renderNavBar, renderHomeExtras, noAccountMessageHtml } from "./js/nav.js";
     import { mountBookmarkMenu } from "./js/bookmark-nav.js";
@@ -4398,6 +4435,17 @@
     let quranWordCardContext = {};
     let quranWordCardRequest = 0;
     let quranWordCardTrigger = null;
+    // MAP Phase 3. `confirmationRequired` is the same computed answer
+    // records.js already gives ("does this person have a teacher, guardian or
+    // prime?"), fetched ON FIRST USE and cached per person -- the same
+    // on-first-use treatment the reciter timing map and the boundary tables
+    // get. I9: it is NOT on the startup path and NOT on the landing path; it
+    // is read the first time a reader actually opens a word card, so the
+    // load-speed contract is untouched. Asking records.js rather than
+    // recomputing it here is what stops the two ever disagreeing.
+    let wordProgressConfirmRequired = null;
+    let wordProgressConfirmFor = null;
+    let wordProgressBusy = false;
     // Guards wheelCtaBtn's own first reveal (see renderWheel()) -- once the
     // reader has dismissed the intro this session, a later renderWheel() must
     // never bring the button back.
@@ -9240,6 +9288,123 @@
       };
     }
 
+    // -----------------------------------------------------------------------
+    // MAP Phase 3 -- WbW word progress on the Word Card.
+    //
+    // "Activity != Mastery" is enforced by what is NOT here: opening a word,
+    // moving between words, or switching tab writes nothing. The only writes
+    // are the three state buttons and the two decision buttons, each an
+    // explicit press by a person.
+    // -----------------------------------------------------------------------
+
+    /** Who the progress belongs to, and who is recording it. */
+    function wordProgressActor() {
+      const { effRoles, myPersonId } = currentPreview();
+      const subjectPersonId = selectedPersonId;
+      const actorPersonId = myPersonId ?? subjectPersonId;
+      // A supervisor is anyone the existing role model lets act for someone
+      // else. Deliberately read off currentPreview().effRoles, so a "View as"
+      // preview narrows these controls exactly as it narrows every other one
+      // -- the stale-preview trap this project has recorded.
+      const isSupervisor = !!subjectPersonId && actorPersonId !== subjectPersonId
+        && effRoles.some((r) => r === "owner" || r === "prime" || r === "teacher" || r === "guardian");
+      return { tenantId: activeTenantId, subjectPersonId, actorPersonId, isSupervisor };
+    }
+
+    /** On first use only, per person. Never called from the landing path (I9). */
+    async function wordProgressConfirmationRequired(tenantId, personId) {
+      if (wordProgressConfirmFor === `${tenantId}|${personId}`) return wordProgressConfirmRequired;
+      const override = await getSubjectConfirmationOverride(db, tenantId, "quran");
+      const required = await computeConfirmationRequired(db, tenantId, personId, override);
+      wordProgressConfirmFor = `${tenantId}|${personId}`;
+      wordProgressConfirmRequired = required;
+      return required;
+    }
+
+    function wordProgressLabels() {
+      return {
+        progressHeading: t("Word progress"),
+        // The three rungs borrow the app's own status vocabulary and its own
+        // translations, so a word and a Study Unit never name the same rung
+        // differently on two screens.
+        stateNotStarted: statusLabel("not_started"),
+        stateLearning: statusLabel("learning"),
+        stateAchieved: statusLabel("achieved"),
+        awaitingReview: t("Waiting to be checked"),
+        reviewConfirmed: t("Checked and confirmed"),
+        reviewReturned: t("Sent back: {note}"),
+        reviewReturnedNoNote: t("Sent back to look at again"),
+        confirm: t("Confirm"),
+        sendBack: t("Send back"),
+        progressLoading: t("Loading progress…"),
+        progressUnknown: t("Progress not loaded yet"),
+        progressNotAllowed: t("You are not able to record Arabic progress for this person."),
+        coverage: t("{known} of {total} words known in this ayah"),
+        coverageIncomplete: t("{unknown} not loaded yet"),
+      };
+    }
+
+    /** The progress, authority and ayah coverage the card renders. Synchronous -- everything it needs is already cached by the time it runs. */
+    function wordProgressContext(ref) {
+      const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
+      if (!tenantId || !subjectPersonId || !actorPersonId) return {};
+      const confirmationRequired = !!wordProgressConfirmRequired;
+      const progress = wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: quranWordCardState.occurrenceId, confirmationRequired });
+      const authority = wordProgressAuthority({ actorPersonId, subjectPersonId, isSupervisor, confirmationRequired });
+      let coverage = null;
+      try {
+        const scope = occurrenceIdsForAyah(currentSurahData, ref.ayah);
+        const views = new Map(scope.map((occ) => [occ, wordProgressFor({ tenantId, personId: subjectPersonId, occurrenceId: occ, confirmationRequired })]));
+        coverage = computeArabicCoverage({ scopeOccurrenceIds: scope, views, label: `ayah:${ref.surah}:${ref.ayah}` });
+      } catch { coverage = null; }
+      return { progress: { ...progress, loading: wordProgressBusy && !progress.loaded }, authority, coverage };
+    }
+
+    /** Read this ayah's two lanes, then re-render. Called on open and on move, never at startup. */
+    async function hydrateWordProgress() {
+      const { tenantId, subjectPersonId } = wordProgressActor();
+      if (!tenantId || !subjectPersonId || !quranWordCardState.occurrenceId) return;
+      let ref;
+      try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { return; }
+      const requestedId = quranWordCardState.occurrenceId;
+      wordProgressBusy = true;
+      try {
+        await wordProgressConfirmationRequired(tenantId, subjectPersonId);
+        await primeAyahProgress(db, { tenantId, personId: subjectPersonId, surah: ref.surah, ayah: ref.ayah });
+      } catch (error) {
+        // I15: a failed read must reach the reader, never console alone. This
+        // is the app's own failure surface, the same one every write here
+        // already uses. The card keeps saying "not loaded yet" rather than
+        // inventing a state from a read that did not happen.
+        reportWriteFailure(error, { what: "read Arabic word progress", surah: ref.surah, ayah: ref.ayah });
+      } finally {
+        wordProgressBusy = false;
+      }
+      if (quranWordCardState.open && quranWordCardState.occurrenceId === requestedId) renderPersistentWordCard();
+    }
+
+    async function runWordProgressAction(action) {
+      const { tenantId, subjectPersonId, actorPersonId, isSupervisor } = wordProgressActor();
+      if (!tenantId || !subjectPersonId || !actorPersonId || !quranWordCardState.occurrenceId) return;
+      const confirmationRequired = !!wordProgressConfirmRequired;
+      const common = {
+        tenantId, personId: subjectPersonId, occurrenceId: quranWordCardState.occurrenceId,
+        actorPersonId, actorUid: auth.currentUser?.uid, isSupervisor, confirmationRequired,
+      };
+      // I15 throughout: safeWrite() is this app's own "a failed write must
+      // reach the user" wrapper, and it is what every other write on this
+      // page already goes through.
+      if (action.kind === "state") {
+        await safeWrite(() => setWordState(db, { ...common, state: action.state }),
+          { what: "record Arabic word progress", occurrenceId: common.occurrenceId });
+      } else {
+        const note = action.review === "returned" ? (window.prompt(t("What should they look at again?")) ?? null) : null;
+        await safeWrite(() => decideWordApproval(db, { ...common, review: action.review, note }),
+          { what: "decide Arabic word progress", occurrenceId: common.occurrenceId });
+      }
+      renderPersistentWordCard();
+    }
+
     function renderPersistentWordCard() {
       const mount = document.getElementById("quranWordCardMount");
       if (!mount || !quranWordCardState.open || !currentSurahData) { if (mount) mount.innerHTML = ""; return; }
@@ -9248,7 +9413,11 @@
         ? `[data-word-card-level="${focused.dataset.wordCardLevel}"]`
         : focused?.dataset.wordCardMove
           ? `[data-word-card-move="${focused.dataset.wordCardMove}"]`
-          : focused?.hasAttribute("data-word-card-close") ? "[data-word-card-close]" : null;
+          : focused?.dataset.wordProgressState
+            ? `[data-word-progress-state="${focused.dataset.wordProgressState}"]`
+            : focused?.dataset.wordProgressDecide
+              ? `[data-word-progress-decide="${focused.dataset.wordProgressDecide}"]`
+              : focused?.hasAttribute("data-word-card-close") ? "[data-word-card-close]" : null;
       let ref;
       try { ref = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); } catch { quranWordCardState = closeWordCard(quranWordCardState); mount.innerHTML = ""; return; }
       if (ref.surah !== currentSurahNum) { mount.innerHTML = ""; return; }
@@ -9257,7 +9426,7 @@
       if (!ayah || !word) { mount.innerHTML = ""; return; }
       const ids = wordCardOccurrenceIds();
       const at = ids.indexOf(quranWordCardState.occurrenceId);
-      mount.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 }, labels: wordCardLabels(), formatNumber: num });
+      mount.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordProgressContext(ref), hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 
@@ -9287,12 +9456,18 @@
     document.getElementById("readView").addEventListener("click", (event) => {
       if (!(event.target instanceof Element)) return;
       const occurrence = event.target.closest("[data-word-occurrence]");
-      if (occurrence) { quranWordCardTrigger = occurrence; quranWordCardState = openWordCard(quranWordCardState, occurrence.dataset.wordOccurrence); quranWordCardContext = {}; renderPersistentWordCard(); document.querySelector("#quranWordCardMount [data-word-card-close]")?.focus({ preventScroll: true }); hydrateWordCardOccurrences(); return; }
+      if (occurrence) { quranWordCardTrigger = occurrence; quranWordCardState = openWordCard(quranWordCardState, occurrence.dataset.wordOccurrence); quranWordCardContext = {}; renderPersistentWordCard(); document.querySelector("#quranWordCardMount [data-word-card-close]")?.focus({ preventScroll: true }); hydrateWordCardOccurrences(); hydrateWordProgress(); return; }
+      // The two Phase 3 controls. Nothing above this line writes: opening a
+      // word, moving between words and switching tab are all reads.
+      const progressState = event.target.closest("[data-word-progress-state]");
+      if (progressState) { runWordProgressAction({ kind: "state", state: progressState.dataset.wordProgressState }); return; }
+      const progressDecide = event.target.closest("[data-word-progress-decide]");
+      if (progressDecide) { runWordProgressAction({ kind: "decide", review: progressDecide.dataset.wordProgressDecide }); return; }
       const level = event.target.closest("[data-word-card-level]");
       if (level) { quranWordCardState = selectWordCardLevel(quranWordCardState, level.dataset.wordCardLevel); renderPersistentWordCard(); return; }
       if (event.target.closest("[data-word-card-close]")) { quranWordCardRequest++; quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected) quranWordCardTrigger.focus({ preventScroll: true }); return; }
       const move = event.target.closest("[data-word-card-move]");
-      if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); quranWordCardContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); }
+      if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); quranWordCardContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); hydrateWordProgress(); }
     });
     document.getElementById("readView").addEventListener("keydown", (event) => {
       if (!quranWordCardState.open || !(event.target instanceof Element)) return;
@@ -12168,6 +12343,16 @@
       selectedPersonId = personSelect.value;
       setSelectedPersonId(selectedPersonId);
       openedBookmarkId = null; // bookmarks are per-person documents -- a different person has no "currently open" bookmark of their own yet
+      // MAP Phase 3, and D10 is exactly why this matters: teaching several
+      // children in one sitting and logging each in turn from this dropdown
+      // is the normal fast workflow, so a stale cache here would show one
+      // child's Arabic progress under another child's name. The lane cache is
+      // keyed by person and could not serve the wrong one, but the computed
+      // "does this person need confirmation" answer is a single value and
+      // must be re-asked for the new person.
+      clearWordProgressCache();
+      wordProgressConfirmFor = null;
+      wordProgressConfirmRequired = null;
       await refreshChunkAndWheel();
       await refreshProgramMap();
       // A different acting person has their own notes/bookmarks -- the cache

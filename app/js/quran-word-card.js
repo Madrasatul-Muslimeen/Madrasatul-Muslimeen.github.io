@@ -35,6 +35,23 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   semanticRangeMissing: "Semantic range not yet supplied",
   openDictionary: "Open dictionary source",
   dictionaryUnavailable: "Dictionary source unavailable",
+  // MAP Phase 3 -- the WbW progress block. Every one of these is a string a
+  // reader sees, so every one is overridable (I11).
+  progressHeading: "Word progress",
+  stateNotStarted: "Not started",
+  stateLearning: "Learning",
+  stateAchieved: "Achieved",
+  awaitingReview: "Waiting to be checked",
+  reviewConfirmed: "Checked and confirmed",
+  reviewReturned: "Sent back: {note}",
+  reviewReturnedNoNote: "Sent back to look at again",
+  confirm: "Confirm",
+  sendBack: "Send back",
+  progressLoading: "Loading progress…",
+  progressUnknown: "Progress not loaded yet",
+  progressNotAllowed: "You are not able to record Arabic progress for this person.",
+  coverage: "{known} of {total} words known in this ayah",
+  coverageIncomplete: "{unknown} not loaded yet",
 });
 
 function escapeHtml(value) {
@@ -47,6 +64,55 @@ function safeDictionaryUrl(value) {
     const url = new URL(value);
     return url.protocol === "https:" ? url.href : null;
   } catch { return null; }
+}
+
+/**
+ * MAP Phase 3 -- the WbW progress block.
+ *
+ * Pure, like the rest of this module: it is handed a resolved progress view,
+ * an authority projection and a coverage figure, and renders them. It never
+ * decides who may do what and never derives a state.
+ *
+ * `authority.mayClaim === false` renders the reason IN WORDS rather than
+ * rendering nothing -- v07.128's lesson, that "missing" is a dead end with
+ * nothing on screen to say why, while "present and explained" is a small
+ * ugliness. The decision row is different: where no confirmation is required
+ * there is genuinely no decision to make, so nothing is withheld and nothing
+ * needs explaining.
+ */
+function progressBlock(progress, authority, coverage, text, formatNumber) {
+  if (!progress) return "";
+  if (progress.loaded === false) {
+    return `<div class="word-card-progress" data-word-progress><p class="word-progress-state">${escapeHtml(progress.loading ? text.progressLoading : text.progressUnknown)}</p></div>`;
+  }
+  const stateLabel = { not_started: text.stateNotStarted, learning: text.stateLearning, achieved: text.stateAchieved };
+  const reviewLine = progress.awaitingReview
+    ? text.awaitingReview
+    : progress.review === "confirmed"
+      ? text.reviewConfirmed
+      : progress.review === "returned"
+        ? (progress.returnNote ? String(text.reviewReturned).replace("{note}", progress.returnNote) : text.reviewReturnedNoNote)
+        : null;
+  const stateButton = (state) => `<button type="button" data-word-progress-state="${state}" aria-pressed="${progress.state === state}"${authority?.mayClaim ? "" : " disabled"}>${escapeHtml(stateLabel[state])}</button>`;
+  const decisions = authority?.mayDecide && progress.state === "achieved"
+    ? `<div class="word-progress-decide">
+        <button type="button" data-word-progress-decide="confirmed">${escapeHtml(text.confirm)}</button>
+        <button type="button" data-word-progress-decide="returned">${escapeHtml(text.sendBack)}</button>
+      </div>`
+    : "";
+  const coverageLine = coverage
+    ? `<p class="word-progress-coverage">${escapeHtml(String(text.coverage).replace("{known}", formatNumber(coverage.known)).replace("{total}", formatNumber(coverage.total)))}${
+        coverage.complete ? "" : ` <span class="word-progress-incomplete">${escapeHtml(String(text.coverageIncomplete).replace("{unknown}", formatNumber(coverage.unknown)))}</span>`
+      }</p>`
+    : "";
+  return `<div class="word-card-progress" data-word-progress>
+    <h3 class="word-progress-heading">${escapeHtml(text.progressHeading)}</h3>
+    <div class="word-progress-states" role="group" aria-label="${escapeHtml(text.progressHeading)}">${stateButton("not_started")}${stateButton("learning")}${stateButton("achieved")}</div>
+    ${reviewLine ? `<p class="word-progress-state" data-word-progress-review>${escapeHtml(reviewLine)}</p>` : ""}
+    ${authority && !authority.mayClaim ? `<p class="word-progress-state" data-word-progress-blocked>${escapeHtml(text.progressNotAllowed)}</p>` : ""}
+    ${decisions}
+    ${coverageLine}
+  </div>`;
 }
 
 function validLevel(level) {
@@ -94,6 +160,7 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
       <p class="word-card-meaning word-card-meaning-en" lang="en">${escapeHtml(word.translation?.en || text.meaningUnavailableEn)}</p>
       <p class="word-card-meaning word-card-meaning-bn" lang="bn">${escapeHtml(word.translation?.bn || text.meaningUnavailableBn)}</p>
       ${word.transliteration ? `<p class="word-card-transliteration">${escapeHtml(word.transliteration)}</p>` : ""}
+      ${progressBlock(context.progress, context.authority, context.coverage, text, formatNumber)}
     </div>`;
   }
   if (level === "basic") {

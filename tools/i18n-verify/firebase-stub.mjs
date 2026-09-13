@@ -312,8 +312,25 @@ export async function getDoc(ref) {
     return row ? snapDoc(row) : { id: ref.__id, exists: () => false, data: () => undefined };
   });
 }
-export async function setDoc(ref) {
-  return __trip("setDoc", ref && ref.__col, ref && ref.__id, function () {});
+// A write's VALUES, recorded on window so a test can prove what was actually
+// stored rather than only which document was touched. Added for MAP Phase 3,
+// whose whole subject is what a stored word state says.
+//
+// Deliberately a SECOND channel: __stubWrites below keeps its existing
+// shape (field names only, in sessionStorage) because checks across this
+// suite already read it, and DATA is still not mutated -- changing either
+// would move numbers in suites this round has no business touching. A module
+// that patches its own cache after a successful write, which is the better
+// production behaviour anyway, renders correctly against this.
+function __recordWriteData(kind, ref, data) {
+  try {
+    window.__stubWriteData = window.__stubWriteData || [];
+    window.__stubWriteData.push({ kind, col: ref && ref.__col, id: ref && ref.__id, data: JSON.parse(JSON.stringify(data ?? {})) });
+  } catch (e) {}
+}
+
+export async function setDoc(ref, data) {
+  return __trip("setDoc", ref && ref.__col, ref && ref.__id, function () { __recordWriteData("set", ref, data); });
 }
 // Records what was written so a test can prove the save really happened and
 // carried the right field. A no-op before v07.37; the language sync is the
@@ -328,6 +345,7 @@ export async function updateDoc(ref, data) {
       prior.push({ col: ref && ref.__col, id: ref && ref.__id, data: Object.keys(data).sort(), appLang: data.appLang });
       sessionStorage.setItem("__stubWrites", JSON.stringify(prior));
     } catch (e) {}
+    __recordWriteData("update", ref, data);
   });
 }
 export async function getCountFromServer(q) {

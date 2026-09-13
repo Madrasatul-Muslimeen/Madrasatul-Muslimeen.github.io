@@ -1153,6 +1153,19 @@ export const BN = {
   "State": "নিশ্চিতকরণ", // ? the column showing pending/confirmed/returned
   "Action": "কার্যক্রম", // ?
   "Actions": "কার্যক্রম", // ?
+  // MAP Phase 3 -- WbW word progress on the Quran Word Card.
+  "Word progress": "শব্দের অগ্রগতি",
+  "Waiting to be checked": "যাচাইয়ের অপেক্ষায়",
+  "Checked and confirmed": "যাচাই করে নিশ্চিত করা হয়েছে",
+  "Sent back: {note}": "ফেরত পাঠানো হয়েছে: {note}",
+  "Sent back to look at again": "আবার দেখার জন্য ফেরত পাঠানো হয়েছে",
+  "Send back": "ফেরত পাঠান",
+  "Loading progress…": "অগ্রগতি লোড হচ্ছে…",
+  "Progress not loaded yet": "অগ্রগতি এখনও লোড হয়নি",
+  "You are not able to record Arabic progress for this person.": "এই ব্যক্তির আরবি অগ্রগতি রেকর্ড করার অনুমতি আপনার নেই।",
+  "{known} of {total} words known in this ayah": "এই আয়াতের {total}টি শব্দের মধ্যে {known}টি জানা",
+  "{unknown} not loaded yet": "{unknown}টি এখনও লোড হয়নি",
+  "What should they look at again?": "তাকে আবার কী দেখতে হবে?",
   "Confirm": "নিশ্চিত করুন",
   "Return": "ফেরত পাঠান",
   "Confirm anyway": "তবুও নিশ্চিত করুন",
