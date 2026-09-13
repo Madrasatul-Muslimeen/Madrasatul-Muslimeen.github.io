@@ -17,7 +17,51 @@ check("WbW renders Arabic and both meanings", () => { const html = renderQuranWo
 check("three level tabs are always present", () => { const html = renderQuranWordCard({ state: openWordCard(createWordCardState(), id), chapter, ayah, word }); assert.equal((html.match(/role="tab"/g) || []).length, 3); });
 check("level selection persists while occurrence stays open", () => { const state = selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"); assert.equal(state.level, "basic"); assert.equal(state.open, true); assert.equal(state.occurrenceId, id); });
 check("Basic Arabic keeps root and lemma separate", () => { const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: { rootOccurrenceCount: 381 } }); assert.match(html, /سمو/); assert.match(html, /ٱسْم/); assert.match(html, /381 root-linked/); });
-check("Basic Arabic renders bounded root and lemma occurrence references", () => { const refs = Array.from({ length: 25 }, (_, i) => ({ surah: 2, ayah: i + 1, position: 1 })); const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: { rootOccurrences: refs, lemmaOccurrences: refs.slice(0, 2) } }); assert.equal((html.match(/<li>/g) || []).length, 22); assert.doesNotMatch(html, /2:21:1/); });
+// UPDATED v08.21: Basic Arabic is the SUMMARY now -- the owner's own ask,
+// "Basic should show the summary only; move the detailed occurrence lists out
+// of Basic". So the assertion is inverted rather than dropped: Basic must list
+// NO individual occurrences at all. The bounding this check used to guard has
+// moved to Arabic in Depth, where one form's own occurrences are capped and
+// the cap is stated on screen -- covered by the Depth checks below.
+check("Basic Arabic lists no individual occurrences", () => { const refs = Array.from({ length: 25 }, (_, i) => ({ surah: 2, ayah: i + 1, position: 1 })); const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: { rootOccurrences: refs, lemmaOccurrences: refs.slice(0, 2) } }); assert.equal((html.match(/data-word-occurrence-goto/g) || []).length, 0); assert.doesNotMatch(html, /2:19:1/); });
+
+// v08.21 -- the derived-forms summary, and the three honesty rules it carries.
+const formsContext = { rootForms: { root: "سمو", totalOccurrences: 12, formCount: 2, unclassified: 1, forms: [ { lemma: "ٱسْم", count: 8, refs: [] }, { lemma: "سَمَآء", count: 3, refs: [] } ] } };
+check("Basic Arabic lists every derived form, in order, with real counts", () => {
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
+  assert.equal((html.match(/word-card-form-arabic/g) || []).length, 2);
+  assert.ok(html.indexOf("ٱسْم") < html.indexOf("سَمَآء"), "forms must render in the order given");
+  assert.match(html, /8 occurrences/); assert.match(html, /3 occurrences/);
+  assert.match(html, /12 occurrences in 2 derived forms/);
+});
+check("an unclassified remainder is reported, never hidden", () => {
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
+  assert.match(html, /1 occurrences of this root are not assigned to a form/);
+});
+check("no grammatical category is invented for a form", () => {
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
+  assert.match(html, /A grammatical category is not shown per form/);
+  // The form rows themselves must not carry a Noun/Verb label.
+  const rows = html.split("word-card-form-arabic").slice(1).join("");
+  assert.doesNotMatch(rows.split("word-card-forms-note")[0], /\bNoun\b|\bVerb\b/);
+});
+check("the form number is not passed off as an Arabic verb form", () => {
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
+  assert.match(html, /not the traditional Arabic verb form/);
+});
+check("Depth lists the same forms and expands one of them", () => {
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: { ...formsContext, expandedForm: "ٱسْم", formOccurrences: [{ surah: 1, ayah: 1, position: 1, arabic: "بِسْمِ" }], formOccurrencesTotal: 8 } });
+  assert.equal((html.match(/word-card-form-arabic/g) || []).length, 2);
+  assert.match(html, /aria-expanded="true"/);
+  assert.match(html, /بِسْمِ/);                       // the word AS WRITTEN there
+  assert.match(html, /data-word-occurrence-goto="1:1:1"/);
+  assert.match(html, /Showing the first 1 of 8 occurrences/); // the cap is stated
+});
+check("Depth puts the occurrence section before the dictionary detail", () => {
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: formsContext });
+  assert.ok(html.indexOf("word-card-forms") < html.indexOf("word-card-depth-rest"));
+  assert.match(html, /Dictionary source unavailable/); // preserved, not dropped
+});
 check("missing root is reported honestly", () => { const noRoot = { ...word, morphology: { pos: "Particle" } }; const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word: noRoot }); assert.match(html, /Root unavailable/); });
 check("Depth never invents dictionary or semantic data", () => { const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word }); assert.match(html, /Semantic range not yet supplied/); assert.match(html, /Dictionary source unavailable/); });
 check("supplied HTTPS dictionary links encode unsafe URL characters", () => { const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: { dictionaryUrl: 'https://example.test/?q="x"' } }); assert.match(html, /q=%22x%22/); assert.match(html, /noopener noreferrer/); });
@@ -118,12 +162,23 @@ check("a count uses the reader's digits, references keep plain ones", () => {
   assert.match(html, /ধাতু-সম্পর্কিত ৩৮১টি ব্যবহার/);
   assert.doesNotMatch(html, /381/);
   // The occurrence reference is an identifier and stays as it is.
-  // UPDATED v08.20: an occurrence is a real control now (the owner's own ask
-  // -- "make each Basic Arabic occurrence clickable"), so the reference is
-  // the button's LABEL rather than bare <li> text. The thing this check
-  // actually guards is unchanged and still asserted: the reference keeps its
-  // plain digits and is never run through the reader's number formatter.
-  assert.match(html, /<button[^>]*data-word-occurrence-goto="2:19:4"[^>]*>2:19:4<\/button>/);
+  // UPDATED v08.20, again v08.21. v08.20 made an occurrence a real control, so
+  // the reference became the button's label. v08.21 moved those occurrences
+  // out of Basic into Arabic in Depth (the owner's own ask), so the reference
+  // is asserted THERE now. What this check actually guards is unchanged in
+  // both rounds and still asserted below: a reference keeps its plain digits
+  // and is never run through the reader's number formatter, even on a Bangla
+  // page rendering every count in Bengali digits.
+  const depthHtml = renderQuranWordCard({
+    state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"),
+    chapter, ayah, word,
+    context: { rootForms: { root: "سمو", totalOccurrences: 381, formCount: 1, unclassified: 0, forms: [{ lemma: "ٱسْم", count: 381, refs: [] }] },
+               expandedForm: "ٱسْم", formOccurrences: [{ surah: 2, ayah: 19, position: 4, arabic: "ٱسْمِ" }], formOccurrencesTotal: 381 },
+    labels: { rootOccurrences: "ধাতু-সম্পর্কিত {count}টি ব্যবহার" },
+    formatNumber: bnDigits,
+  });
+  assert.match(depthHtml, /data-word-occurrence-goto="2:19:4"/);
+  assert.match(depthHtml, />2:19:4</);
 });
 
 check("without a formatter a count is still printed, unchanged", () => {

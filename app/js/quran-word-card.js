@@ -28,6 +28,20 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   unknown: "Unknown",
   rootOccurrences: "{count} root-linked occurrences",
   lemmaOccurrences: "{count} lemma-linked occurrences",
+  derivedForms: "Derived forms of this root",
+  rootFormsSummary: "{total} occurrences in {forms} derived forms",
+  formOrdinal: "Form {n}",
+  formOccurrences: "{count} occurrences",
+  formNumberNote: "The number is this form's position in the list below, not the traditional Arabic verb form (I, II, III…).",
+  formCategoryNote: "A grammatical category is not shown per form: the packaged data classifies each written word together with its attached particles, not the dictionary form.",
+  formsUnclassified: "{count} occurrences of this root are not assigned to a form in the packaged data.",
+  noDerivedForms: "No derived forms are listed for this root in the packaged data.",
+  loadingForms: "Loading derived forms…",
+  formsUnavailable: "Derived forms unavailable: {error}",
+  showOccurrences: "Show occurrences",
+  hideOccurrences: "Hide occurrences",
+  noOccurrencesListed: "No occurrences are listed for this form.",
+  showingFirst: "Showing the first {shown} of {total} occurrences.",
   goToOccurrence: "Go to {ref}",
   backToWord: "Back to {ref}",
   backToWordTitle: "Back to the word you came from",
@@ -151,6 +165,93 @@ export function moveWordCard(state, orderedOccurrenceIds, direction) {
   return target ? Object.freeze({ ...state, occurrenceId: target, open: true }) : state;
 }
 
+/**
+ * v08.21 -- the derived forms of the selected word's root, rendered the SAME
+ * way and in the SAME order for Basic Arabic and Arabic in Depth. Only the
+ * expandability differs: Basic is the summary, Depth opens each form's own
+ * occurrences.
+ *
+ * Three honesty rules are built into this, not bolted on:
+ *
+ *  1. NO grammatical category is printed for a form. The packaged `pos`
+ *     describes a written token together with its attached particles and
+ *     pronouns ("Determiner + Noun"), and measured across the corpus 2,067 of
+ *     4,832 lemmas carry more than one value -- so it does not classify a
+ *     dictionary form. The card says that in words instead of guessing.
+ *  2. The "Form n" number is a LIST POSITION. It is not the traditional
+ *     Arabic verb form (I, II, III...), and the card says so, because the two
+ *     look identical on screen and mean entirely different things.
+ *  3. A count this data cannot stand behind is reported, never printed as if
+ *     it were whole: `unclassified` occurrences are named, and a truncated
+ *     occurrence list says how many of how many it is showing.
+ */
+function formsSection(layers, context, text, formatNumber, { expandable }) {
+  if (!layers.root) return "";
+  const data = context.rootForms;
+  if (context.rootFormsError) {
+    return `<section class="word-card-forms"><h4>${escapeHtml(text.derivedForms)}</h4>` +
+      `<p role="status">${escapeHtml(String(text.formsUnavailable).replace("{error}", context.rootFormsError))}</p></section>`;
+  }
+  if (!data) {
+    return `<section class="word-card-forms"><h4>${escapeHtml(text.derivedForms)}</h4>` +
+      `<p>${escapeHtml(text.loadingForms)}</p></section>`;
+  }
+  if (!data.forms?.length) {
+    return `<section class="word-card-forms"><h4>${escapeHtml(text.derivedForms)}</h4>` +
+      `<p>${escapeHtml(text.noDerivedForms)}</p></section>`;
+  }
+  const summary = String(text.rootFormsSummary)
+    .replace("{total}", formatNumber(data.totalOccurrences))
+    .replace("{forms}", formatNumber(data.formCount));
+  const unclassified = data.unclassified
+    ? `<p class="word-card-forms-note">${escapeHtml(String(text.formsUnclassified).replace("{count}", formatNumber(data.unclassified)))}</p>`
+    : "";
+  const rows = data.forms.map((form, i) => {
+    const n = i + 1;
+    const label = String(text.formOrdinal).replace("{n}", formatNumber(n));
+    const occurrences = escapeHtml(String(text.formOccurrences).replace("{count}", formatNumber(form.count)));
+    const head = `<span class="word-card-form-n">${escapeHtml(label)}</span>` +
+      `<span class="word-card-form-arabic" dir="rtl" lang="ar">${escapeHtml(form.lemma)}</span>` +
+      `<span class="word-card-form-count">${occurrences}</span>`;
+    if (!expandable) return `<li class="word-card-form">${head}</li>`;
+    const open = context.expandedForm === form.lemma;
+    const toggleLabel = open ? text.hideOccurrences : text.showOccurrences;
+    return `<li class="word-card-form">` +
+      `<button type="button" class="word-card-form-toggle" data-word-form-toggle="${escapeHtml(form.lemma)}" aria-expanded="${open ? "true" : "false"}" aria-label="${escapeHtml(`${toggleLabel} — ${form.lemma}`)}">${head}<span class="word-card-form-caret" aria-hidden="true">${open ? "▾" : "▸"}</span></button>` +
+      (open ? formOccurrenceList(form, context, text, formatNumber) : "") +
+      `</li>`;
+  }).join("");
+  return `<section class="word-card-forms">
+    <h4>${escapeHtml(text.derivedForms)}</h4>
+    <p class="word-card-forms-summary">${escapeHtml(summary)}</p>
+    <ol class="word-card-form-list">${rows}</ol>
+    ${unclassified}
+    <p class="word-card-forms-note">${escapeHtml(text.formNumberNote)}</p>
+    <p class="word-card-forms-note">${escapeHtml(text.formCategoryNote)}</p>
+  </section>`;
+}
+
+/** One expanded form's own occurrences: the exact written word at each place,
+ *  and its reference, each one a control that opens that ayah. */
+function formOccurrenceList(form, context, text, formatNumber) {
+  if (context.formOccurrencesError) {
+    return `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", context.formOccurrencesError))}</p>`;
+  }
+  const items = context.formOccurrences;
+  if (!items) return `<p>${escapeHtml(text.loadingOccurrences)}</p>`;
+  if (!items.length) return `<p>${escapeHtml(text.noOccurrencesListed)}</p>`;
+  const truncated = Number(context.formOccurrencesTotal ?? items.length) > items.length
+    ? `<p class="word-card-forms-note">${escapeHtml(String(text.showingFirst).replace("{shown}", formatNumber(items.length)).replace("{total}", formatNumber(Number(context.formOccurrencesTotal))))}</p>`
+    : "";
+  const rows = items.map((o) => {
+    const ref = `${o.surah}:${o.ayah}:${o.position}`;
+    return `<li><button type="button" class="word-card-occurrence-link" data-word-occurrence-goto="${escapeHtml(ref)}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", ref))}">` +
+      `<span class="word-card-occurrence-arabic" dir="rtl" lang="ar">${escapeHtml(o.arabic || form.lemma)}</span>` +
+      `<span class="word-card-occurrence-ref">${escapeHtml(ref)}</span></button></li>`;
+  }).join("");
+  return `<div class="word-card-form-occurrences"><ol class="word-card-occurrences">${rows}</ol>${truncated}</div>`;
+}
+
 function tabButton(level, selected, label) {
   return `<button type="button" role="tab" data-word-card-level="${level}" aria-selected="${selected}" tabindex="${selected ? "0" : "-1"}">${escapeHtml(label)}</button>`;
 }
@@ -168,21 +269,12 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
     </div>`;
   }
   if (level === "basic") {
-    // v08.20 -- each occurrence is a real control that opens that location.
-    // `data-word-occurrence-goto` carries the SAME permanent occurrence
-    // identity (ADR-007) the Word Card itself is keyed by, never a label to
-    // be re-parsed: the page hands it straight back to openWordCard().
-    const refs = (items) => (items?.length
-      ? `<ol class="word-card-occurrences">${items.slice(0, 20).map((r) => {
-          const ref = `${r.surah}:${r.ayah}:${r.position}`;
-          return `<li><button type="button" class="word-card-occurrence-link" data-word-occurrence-goto="${escapeHtml(ref)}" aria-label="${escapeHtml(String(text.goToOccurrence).replace("{ref}", ref))}">${escapeHtml(ref)}</button></li>`;
-        }).join("")}</ol>`
-      : "");
     const count = (template, n) => escapeHtml(String(template).replace("{count}", formatNumber(n)));
     return `<div role="tabpanel" data-word-card-panel="basic">
       <dl><dt>${escapeHtml(text.lemma)}</dt><dd>${escapeHtml(layers.lemma || text.unknown)}</dd><dt>${escapeHtml(text.root)}</dt><dd>${escapeHtml(layers.root || text.unknown)}</dd><dt>${escapeHtml(text.partOfSpeech)}</dt><dd>${escapeHtml(word.morphology?.pos || text.unknown)}</dd></dl>
-      <p>${layers.root ? count(text.rootOccurrences, Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)) : escapeHtml(text.rootUnavailable)}</p>${refs(context.rootOccurrences)}
-      <p>${layers.lemma ? count(text.lemmaOccurrences, Number(context.lemmaOccurrenceCount ?? context.lemmaOccurrences?.length ?? 0)) : escapeHtml(text.lemmaUnavailable)}</p>${refs(context.lemmaOccurrences)}
+      <p>${layers.root ? count(text.rootOccurrences, Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)) : escapeHtml(text.rootUnavailable)}</p>
+      <p>${layers.lemma ? count(text.lemmaOccurrences, Number(context.lemmaOccurrenceCount ?? context.lemmaOccurrences?.length ?? 0)) : escapeHtml(text.lemmaUnavailable)}</p>
+      ${formsSection(layers, context, text, formatNumber, { expandable: false })}
       ${context.occurrencesLoading ? `<p>${escapeHtml(text.loadingOccurrences)}</p>` : ""}
       ${context.occurrencesError ? `<p role="status">${escapeHtml(String(text.occurrencesUnavailable).replace("{error}", context.occurrencesError))}</p>` : ""}
     </div>`;
@@ -191,8 +283,13 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
   const dictionaryLink = dictionaryUrl
     ? `<a href="${escapeHtml(dictionaryUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(text.openDictionary)}</a>`
     : `<span>${escapeHtml(text.dictionaryUnavailable)}</span>`;
+  // v08.21 -- the occurrence section comes FIRST, then the dictionary and the
+  // rest of Depth's existing detail, which is the owner's own ordering.
   return `<div role="tabpanel" data-word-card-panel="depth">
-    <p>${escapeHtml(context.semanticRange || text.semanticRangeMissing)}</p>${dictionaryLink}
+    ${formsSection(layers, context, text, formatNumber, { expandable: true })}
+    <div class="word-card-depth-rest">
+      <p>${escapeHtml(context.semanticRange || text.semanticRangeMissing)}</p>${dictionaryLink}
+    </div>
   </div>`;
 }
 

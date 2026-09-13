@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuranRevival v08.21 — Word Card: derived forms</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>QuranRevival v08.21 — Word Card: derived forms</h1>
+<p><strong>Date:</strong> 2026-09-13 <strong>Repository:</strong> <code>Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io</code> <strong>Base:</strong> <code>a06a62dd26b7ca53d13a8fe2942178ee7f2e4182</code> (main, v08.20) <strong>App version:</strong> 08.20 → <strong>08.21</strong> <strong>Status:</strong> BUILT AND VERIFIED — <strong>NOT Owner-accepted.</strong> Pending live verification.</p>
+<hr>
+<h2>1. Governing check, before any code</h2>
+<p><code>docs/governance/ACTIVE-ARCHITECTURE.md</code> and <code>DDR.md</code> were read first. No conflict. One locked distinction governs this round directly:</p>
+<p>&gt; <strong>Surface Token ≠ Lemma ≠ Root ≠ Grammatical Family</strong></p>
+<p>That is exactly what this feature is made of, so it is honoured literally: a <strong>root</strong> groups, a <strong>lemma</strong> is a derived form, and the <strong>surface token</strong> is the word as actually written at a location. The card never substitutes one for another — in particular, an occurrence shows the surface token read from that āyah&#x27;s own data, never the lemma reprinted.</p>
+<p>&quot;Note Origin ≠ Note Destination&quot; continues to govern the way back, now extended to carry the expanded form.</p>
+<p>No Owner Control Gate is crossed: no authentication, tenancy, role, Firestore architecture, Rules, production identifier, permanent Study Unit key, live record or claim/approval change. DDR-001 to DDR-004 untouched.</p>
+<p><strong>Blast radius:</strong> 5 application files + 1 test file. 386 insertions, 30 deletions. No new file, no new fetch, no new Firestore call.</p>
+<hr>
+<h2>2. What the data can and cannot support — measured first</h2>
+<p>This round&#x27;s instruction was explicit that a count or classification the data cannot support must be reported, not invented. So the packaged corpus was measured before any UI was designed.</p>
+<h3>Supported, exactly</h3>
+<div class='tw'><table><thead><tr><th>Question</th><th>Finding</th></tr></thead><tbody>
+<tr><td>Do root occurrences map to lemmas?</td><td><strong>All of them.</strong> 49,971 root-bearing occurrences, <strong>0 unmapped</strong>.</td></tr>
+<tr><td>Can one lemma belong to two roots?</td><td><strong>No.</strong> 0 of 4,657 lemmas span more than one root — it is a strict function.</td></tr>
+<tr><td>How many forms does a root have?</td><td><strong>1 to 22</strong>, median 2. A compact, listable set.</td></tr>
+<tr><td>Do the numbers add up?</td><td>Verified per root: <code>sum(form counts) + unclassified === root total</code>.</td></tr>
+</tbody></table></div>
+<p>So <strong>root → derived forms, each with an exact occurrence count, is fully supported</strong>, and the totals are real counts rather than estimates.</p>
+<h3>NOT supported — and therefore not shown</h3>
+<p><strong>A grammatical category per form.</strong> The packaged <code>pos</code> field does not classify a dictionary form. It describes a <em>written token together with whatever particles and pronouns are attached to it</em> — 359 distinct values such as <code>&quot;Determiner + Noun&quot;</code>, <code>&quot;Conjunction + Verb + Pronoun&quot;</code>, <code>&quot;Preposition + Proper Noun&quot;</code>. Measured across the corpus, <strong>2,067 of 4,832 lemmas carry more than one <code>pos</code> value</strong>: <code>رَّحِيم</code> alone appears as <code>Adjective</code>, <code>Determiner + Adjective</code>, <code>Determiner + Noun</code> and <code>Noun</code>.</p>
+<p>Labelling a form &quot;Noun&quot; or &quot;Verb&quot; from that data would be inventing a classification the source does not make. <strong>The card therefore prints no category per form</strong>, and says so on screen in both languages rather than leaving a silent gap.</p>
+<hr>
+<h2>3. What was built</h2>
+<h3>3.1 Basic Arabic — summary only</h3>
+<p>Below the existing Lemma / Root / Part of speech list (the selected word&#x27;s own data, unchanged), Basic now shows:</p>
+<ul><li><strong><code>{total} occurrences in {forms} derived forms</code></strong> — both exact.</li><li>A numbered list, one row per form: <strong><code>Form n</code> — the Arabic form — <code>{count} occurrences</code></strong>.</li><li>Two honest notes: that the number is a <strong>list position, not the traditional Arabic verb form (I, II, III…)</strong>, and why no per-form category is shown.</li><li>An explicit line if any of the root&#x27;s occurrences are unassigned in the data.</li></ul>
+<p><strong>The detailed occurrence lists are gone from Basic</strong>, as instructed. Basic now renders zero <code>data-word-occurrence-goto</code> controls — asserted, not assumed.</p>
+<h3>3.2 Arabic in Depth — same forms, same order, expandable</h3>
+<p>The <strong>same list in the same order</strong> (count descending, then the lemma itself — deterministic, so the two tabs can never disagree). Each row is a real expander.</p>
+<p>Expanding one reveals its occurrences, and each occurrence shows <strong>the exact Arabic word as written at that location</strong> plus its <code>surah:ayah:position</code> reference. This is the part the locked distinction matters for, and it is visible in the verified output: the one form رَحِمَ/حَمْد family renders as <strong>ٱلْحَمْدُ</strong> at 1:2:1, <strong>بِحَمْدِكَ</strong> at 2:30:20, <strong>وَٱلْحَمْدُ</strong> at 6:45 — genuinely different surface tokens, each read from its own surah&#x27;s data.</p>
+<p>Each occurrence opens that āyah. <strong>Back to Word Card</strong> then restores the original word, <strong>the Depth tab, and the form that was expanded</strong>, plus the prior Study context (surah, āyah, unit type, and which stage view the reader was in).</p>
+<p><strong>Ordering, as instructed:</strong> the occurrence section comes first; the semantic range and dictionary link follow it in <code>.word-card-depth-rest</code>, functionality preserved.</p>
+<h3>3.3 Presentation</h3>
+<p>Arabic is deliberately much larger than the surrounding English: the card body runs at 0.9rem, a form&#x27;s Arabic at <strong>1.5rem (~1.7×)</strong> and an occurrence&#x27;s at <strong>1.35rem (~1.5×)</strong>, stepping down at ≤380px. Asserted by measuring computed font sizes against the panel&#x27;s own, not by eye. Every row is a ≥44px target. All 14 new strings are translated; counts render in Bengali digits on a Bangla page while references keep plain digits.</p>
+<hr>
+<h2>4. A real defect of this round&#x27;s own</h2>
+<p><strong><code>ReferenceError: expandWordForm is not defined</code></strong> — the expand/collapse functions were placed inside the <code>[&quot;readView&quot;,&quot;noteView&quot;].forEach(...)</code> callback, so the click handler inside the same closure could see them while <code>hydrateWordCardOccurrences()</code> could not. The visible symptom was narrow and misleading: expanding a form by hand worked perfectly, but <strong>Back to Word Card restored a row that said &quot;expanded&quot; with nothing under it</strong>. Found by probing the live console rather than by re-reading the code; fixed by moving both functions to module scope.</p>
+<p>That is also why the restore is now performed <strong>where the data lands</strong> (inside the hydrate, once the forms index resolves) rather than at the call site: the index resolves after the card first paints, so any caller asking earlier finds no form yet.</p>
+<hr>
+<h2>5. Test results — what actually ran</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><strong>v08.21 focused acceptance</strong> (both languages, both views)</td><td><strong>59 passed, 0 failed</strong></td></tr>
+<tr><td><code>quran-word-card.mjs</code></td><td><strong>29 passed, 0 failed</strong> (was 23 — six new checks)</td></tr>
+<tr><td><code>quran-word-card-rendered.mjs</code></td><td><strong>92 passed, 0 failed</strong></td></tr>
+<tr><td><code>quran-word-progress-rendered.mjs</code></td><td><strong>81 passed, 0 failed</strong></td></tr>
+<tr><td><code>quran-word-card-integration.mjs</code></td><td>10 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-identity-contract.mjs</code></td><td>6 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-indexes.mjs</code></td><td>9 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-index-loader.mjs</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-progress-model.mjs</code></td><td>57 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-progress-data.mjs</code></td><td>37 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-coverage.mjs</code></td><td>10 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-coverage-arabic.mjs</code></td><td>29 passed, 0 failed</td></tr>
+<tr><td><code>stub-parity.mjs</code></td><td>3 passed, 0 failed</td></tr>
+<tr><td><code>layout.mjs</code></td><td><strong>every landing-page metric byte-for-byte identical</strong></td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>1 problem — <strong>pre-existing</strong></td></tr>
+<tr><td><code>reading.mjs</code> en / bn</td><td><code>READING SCREEN OK</code> in both</td></tr>
+<tr><td><code>panel.mjs</code></td><td>en/bn: 48 configurations each; <strong>0 truncated labels, 0 wrapped bars</strong></td></tr>
+<tr><td><code>behaviour.mjs</code></td><td><strong>755 passed, 0 failed</strong> through section 40 of 42 — <strong>did not complete</strong>, see note</td></tr>
+<tr><td>Root/lemma data integrity probe</td><td>0 unmapped, 0 cross-root lemmas, counts exact</td></tr>
+</tbody></table></div>
+<p>The focused acceptance proves, in English <strong>and</strong> Bangla: the forms section renders with real Arabic and real counts; Basic carries the summary and <strong>no</strong> occurrence controls; both honesty notes are present; Depth lists the same number of forms; expanding reveals occurrences each carrying the written word and a valid reference; an occurrence opens that āyah and the app really navigated (read off <code>#surahSelect</code>); Back restores the word, the Depth tab and the expanded form; Arabic measures ≥1.4× the body text; every control is a real tap target. Plus the Note view rendering forms with note text and editor node intact, and no sideways scroll at 390px.</p>
+<p><strong><code>layout.mjs</code>:</strong> 16 measurements (8 viewports × 2 banner states) — wheel heading, wheel width, Approach row count, dock gap, dock visibility and page overflow all identical before → after; <code>getElementById</code> <strong>249 → 249</strong>; same 22-entry pre-existing missing list.</p>
+<p><strong><code>behaviour.mjs</code> is reported exactly as it ran: 755 checks passed, 0 failed, reaching section 40 of 42 — and it had NOT finished when this report was written.</strong> It stalls in section 40 (the Mushaf page), which fetches page images from <code>raw.githubusercontent.com</code>, a host this sandbox cannot reach; each request has to time out. The same run in v08.20 eventually cleared that section and finished at 803 pass / 0 fail, so this is expected slowness rather than a failure — but <strong>the remaining checks are not claimed as passing, because they did not run.</strong> What did run passed: 755 of them, including section 37 (&quot;grammar labels, and the control row&quot;), the section most exposed to this round&#x27;s changes.</p>
+<p><strong><code>navcheck.mjs</code>:</strong> the one problem is the 320px <strong>English</strong> truncation of &quot;Operation&quot;/&quot;Bookmark&quot; (73px vs 65px) — character-for-character the long-standing issue, and untouched here (<code>nav.js</code> is not in this diff).</p>
+<p><strong>Coverage:</strong> 1,787 → <strong>1,801 scanned</strong>, <strong>47 missing UNCHANGED</strong> — the +14 is exactly this round&#x27;s fourteen new strings, every one translated (verified by name against the missing list, and by reading the rendered Bangla page).</p>
+<h3>Checks updated in place, with the reason recorded — never deleted</h3>
+<ol><li><em>&quot;Basic Arabic renders bounded root and lemma occurrence references&quot;</em> — asserted 22 <code>&lt;li&gt;</code> in Basic. The owner moved those lists out of Basic, so the assertion is <strong>inverted rather than dropped</strong>: Basic must now render no individual occurrences at all. The bounding it guarded moved to Depth, where it is covered by new checks including the stated cap.</li><li>The v08.20 <em>&quot;reference keeps plain digits&quot;</em> check followed the occurrences into Depth. Its actual guarantee — a reference is never run through the reader&#x27;s number formatter, even on a Bangla page — is unchanged and still asserted there.</li></ol>
+<p>Six new checks were added covering the forms list, its order, the exact counts, the unclassified remainder, the absence of an invented category, the form-number caveat, the expansion, and the Depth ordering.</p>
+<hr>
+<h2>6. Limits, stated rather than hidden</h2>
+<ul><li><strong>No grammatical category per form</strong> — see §2. The reason is printed on the card in both languages.</li><li><strong>A form&#x27;s occurrence list is capped at 50</strong>, because each occurrence needs its own surah&#x27;s data to read the word as written there. When a form has more, the card says <strong>&quot;Showing the first N of M occurrences&quot;</strong> rather than truncating silently.</li><li><strong>Roots absent from the packaged index</strong> show the existing &quot;Root unavailable in the approved dataset&quot; message; 27,458 of 77,429 words have no root at all.</li><li><strong>Tracking was left in the Word-by-Word tab, where it already lives.</strong> The instruction to put &quot;dictionary information, tracking, and the other existing Depth details after the occurrence section&quot; was read as ordering <em>within</em> Depth; tracking is not currently a Depth control, and moving it would remove it from where it is verified today. Flagged for the Owner rather than decided unilaterally.</li></ul>
+<hr>
+<h2>7. Rules, indexes, migration, deployment</h2>
+<div class='tw'><table><thead><tr><th></th><th>Status</th></tr></thead><tbody>
+<tr><td><code>firestore.rules</code></td><td><strong>UNCHANGED</strong> — not in the diff</td></tr>
+<tr><td><code>tests/firestore/word-progress-v1.proposed.rules</code></td><td><strong>UNTOUCHED, still NOT deployed</strong></td></tr>
+<tr><td>Firestore indexes</td><td><strong>None changed, none deployed</strong></td></tr>
+<tr><td>Migration / backfill</td><td><strong>None</strong></td></tr>
+<tr><td>Production data writes</td><td><strong>None</strong> — this round adds no write path</td></tr>
+<tr><td>Phase 4</td><td><strong>Not started</strong></td></tr>
+</tbody></table></div>
+<p>The derived forms are computed from the two packaged JSON indexes the Basic tab has already fetched on demand since Phase 2. <strong>No new network request and no Firestore call of any kind was added.</strong></p>
+<hr>
+<h2>8. What the Owner should test</h2>
+<p>Open <strong>https://madrasatul-muslimeen.github.io/app/</strong> → <strong>Quran Study</strong>. Badge should read <strong>v08.21</strong> (hard-refresh if it still says 08.20).</p>
+<p><strong>1 — The forms list in Basic Arabic</strong> Study options → tick <strong>Word by Word</strong>. Move to <strong>āyah 2</strong> of Sūrah 1 and tap the word <strong>ٱلْحَمْدُ</strong>. In the card, tap <strong>Basic Arabic</strong>. <em>Expect:</em> under Part of speech, a line reading &quot;<em>N occurrences in M derived forms</em>&quot;, then a numbered list — each row a large Arabic form and its own occurrence count. Two small notes explain that the number is a list position, not an Arabic verb form, and why no category is shown. <strong>No clickable reference buttons here</strong> — that is deliberate.</p>
+<p><strong>2 — Expanding a form in Arabic in Depth</strong> Tap <strong>Arabic in Depth</strong>. <em>Expect:</em> the same forms, in the same order, each with a ▸. Tap one. <em>Expect:</em> it opens and lists occurrences, each showing <strong>the Arabic word as it actually appears there</strong> (they will differ from each other — ٱلْحَمْدُ, بِحَمْدِكَ, وَٱلْحَمْدُ) with its <code>surah:ayah:position</code>. The dictionary information appears <strong>below</strong> this section.</p>
+<p><strong>3 — Go to an occurrence and come back</strong> Tap any occurrence. <em>Expect:</em> the app moves to that place and opens the card on that word, with a <strong>&quot;Visiting from …&quot;</strong> bar and a <strong>↩</strong> button. Tap it. <em>Expect:</em> you are back at the original word, <strong>on the Arabic in Depth tab, with the same form still expanded</strong>, on the screen you started from.</p>
+<p><strong>4 — In the Note view, and in Bangla</strong> Repeat 1–2 from <strong>⋮ → Note &amp; more</strong> (type something in the note first — it must survive), then switch the app to Bangla. <em>Expect:</em> headings and notes in Bangla, counts in Bengali digits, references still in plain digits.</p>
+<h3>Known issues that will affect your test</h3>
+<ul><li><strong>Saving word progress still fails</strong> — the Phase 3 Rules candidate remains undeployed by your decision. Unchanged by this round.</li><li><strong>A word with no root shows no forms section</strong> — 27,458 of 77,429 words have no root in the dataset. Try a common word.</li><li><strong>Long forms say &quot;Showing the first 50 of N&quot;</strong> — that cap is real and stated.</li><li><strong>320px English phones</strong> still clip &quot;Operation&quot;/&quot;Bookmark&quot;. Pre-existing.</li></ul>
+<hr>
+<h2>9. Status</h2>
+<p><strong>v08.21 is BUILT AND VERIFIED — NOT Owner-accepted.</strong> Phase 4 was not started, no Rules were changed or deployed, and no migration, backfill or production write was performed.</p>
+</main></body></html>
