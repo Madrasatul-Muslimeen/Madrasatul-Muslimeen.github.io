@@ -16,7 +16,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { initializeTestEnvironment, assertSucceeds } from "@firebase/rules-unit-testing";
 import { doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, writeBatch,
-         collection, query, where, limit } from "firebase/firestore";
+         collection, query, where, orderBy, limit } from "firebase/firestore";
 
 const PROJECT = "demo-quranrevival-note-foundation-v1";
 const HOST = "127.0.0.1";
@@ -55,8 +55,8 @@ const revDoc = (o = {}) => ({
   actorUid: "uid-p1", schemaVersion: 1, createdAt: new Date(), updatedAt: new Date(), createdBy: "uid-p1", ...o });
 const srcDoc = (o = {}) => ({
   sourceLinkId: "src0000000000000000000000000001", noteId: NOTE, tenantId: T, ownerPersonId: "p1",
-  ownerUid: "uid-p1", sourceKind: "quran-ayah", sourceKey: "ayah:2:255", relationshipKind: "origin",
-  approachId: null, provenanceKind: "reader-created", status: "active",
+  ownerUid: "uid-p1", sourceKind: "quran-unit", sourceKey: "ayah:2:255", relationshipKind: "origin",
+  approachId: null, provenanceKind: "study-note", status: "active",
   schemaVersion: 1, createdAt: new Date(), updatedAt: new Date(), createdBy: "uid-p1", ...o });
 
 /** A Note and its initial revision, committed together -- the real client path. */
@@ -303,6 +303,41 @@ test("candidate Note Foundation Rules: the accepted security matrix", async () =
       where("tenantId", "==", T), where("ownerPersonId", "==", "p1"))));
     await no("ADMIN-04b", "a platform administrator cannot list across tenants", getDocs(query(
       collection(plat, "notes"), limit(50))));
+
+    // --- P5-E: the READ side of ADR-009 ------------------------------------
+    // These are the EXACT query shapes note-foundation.js runs, orderBy and
+    // all, so what is proven here is the real read path rather than a
+    // simplified stand-in. Fresh ACTIVE source links are seeded first, because
+    // a list over a set that matches NOTHING succeeds trivially and would
+    // prove nothing at all -- REL-05 retired the only link p1 had.
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      const db = ctx.firestore();
+      for (const id of ["p5esrc00000000000000000000000001", "p5esrc00000000000000000000000002"]) {
+        await setDoc(doc(db, "noteSources", nk(T, id)), srcDoc({ sourceLinkId: id }));
+      }
+      await setDoc(doc(db, "noteSources", nk(T, "p5eunl0000000000000000000000001")),
+        srcDoc({ sourceLinkId: "p5eunl0000000000000000000000001", noteId: "unlnote0000000000000000000000001",
+                 ownerPersonId: "unl", ownerUid: "uid-unl", createdBy: "uid-unl" }));
+    });
+
+    const unitSources = (db, personId) => query(collection(db, "noteSources"),
+      where("tenantId", "==", T), where("ownerPersonId", "==", personId),
+      where("sourceKey", "==", "ayah:2:255"), where("status", "==", "active"),
+      orderBy("createdAt", "desc"), limit(31));
+
+    await ok("QUERY-04", "owner lists their own source links for one Study Unit", getDocs(unitSources(p1, "p1")));
+    await no("QUERY-05", "an UNSCOPED list over noteSources is refused", getDocs(query(
+      collection(p1, "noteSources"), limit(50))));
+    await no("QUERY-06", "an UNBOUNDED list of source links is refused even when scoped", getDocs(query(
+      collection(p1, "noteSources"),
+      where("tenantId", "==", T), where("ownerPersonId", "==", "p1"))));
+    await ok("QUERY-07", "a teacher lists an actively linked student's source links", getDocs(unitSources(tch, "p1")));
+    await no("QUERY-08", "a teacher cannot list an UNLINKED student's source links", getDocs(unitSources(tch, "unl")));
+    await no("QUERY-09", "another person cannot list my source links", getDocs(unitSources(p2, "p1")));
+    await ok("QUERY-10", "owner lists one Note's revision history", getDocs(query(
+      collection(p1, "noteRevisions"),
+      where("tenantId", "==", T), where("ownerPersonId", "==", "p1"), where("noteId", "==", NOTE),
+      orderBy("createdAt", "desc"), limit(100))));
 
     // --- REG-01: the legacy note surface is untouched by this candidate -----
     await no("REG-01", "this candidate governs no legacy ayahNotes rule", setDoc(doc(p1, "ayahNotes", `${T}__p1`), { tenantId: T, personId: "p1", notes: {} }));

@@ -5,6 +5,8 @@
 
 import {
   collection,
+  doc,
+  getDoc,
   getDocs,
   limit,
   orderBy,
@@ -217,4 +219,59 @@ export async function listNoteRevisions(db, { tenantId, ownerPersonId, noteId, m
     orderBy("createdAt", "desc"), limit(maximum));
   const snapshot = await getDocs(q);
   return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+// ---------------------------------------------------------------------------
+// MAP Phase 5 (P5-E) — reading a unit's Notes back
+// ---------------------------------------------------------------------------
+// ADR-009 gave a Note a source binding and nothing ever read one: `noteSources`
+// was write-only. These two functions are the read side of it. They are the
+// data layer only — a unit key is JUDGED by `study-note-binding.js` and nowhere
+// else, so nothing here inspects the shape of `sourceKey`.
+
+/**
+ * The source links binding one permanent Study Unit key to this person's Notes.
+ *
+ * ORDERED, and that is not decoration. The bound exists to stop an unbounded
+ * read; without an order, hitting it would return an ARBITRARY subset and the
+ * reader would silently lose Notes they wrote. Ordered newest-first, a
+ * truncation means "the most recent N", which a surface can state honestly.
+ *
+ * The order costs a composite index — see
+ * `docs/governance/phase5-note-foundation-indexes-candidate-2026-09-15.json`.
+ * Until that index exists in the project, this query fails in production with
+ * `failed-precondition`, and the emulator will NOT warn about it.
+ */
+export async function listNoteSourcesForUnit(db, {
+  tenantId, ownerPersonId, sourceKey, status = NOTE_STATUS.ACTIVE, maximum = 100,
+}) {
+  const q = query(collection(db, TENANT.NOTE_SOURCES),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("sourceKey", "==", requireToken("sourceKey", sourceKey)),
+    where("status", "==", status),
+    orderBy("createdAt", "desc"), limit(maximum));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+/**
+ * Notes by their permanent ids, as one parallel batch.
+ *
+ * One read per Note, deliberately, rather than a `documentId() in [...]`
+ * query: `activity.js` already resolves a set of documents this way
+ * (`Promise.all` over the week keys it needs), so this is the shape this
+ * codebase already has rather than a new one. The typical cost is one or two
+ * reads — the number of Notes a person actually wrote on one unit — and the
+ * caller's bound is the cap, not the expected cost.
+ *
+ * A missing id is DROPPED rather than throwing: a source link can outlive the
+ * Note it names, and one dangling link must not deny a reader every other Note
+ * on the unit.
+ */
+export async function getNotesByIds(db, tenantId, noteIds) {
+  requireToken("tenantId", tenantId);
+  const snapshots = await Promise.all(noteIds.map(
+    (noteId) => getDoc(doc(db, TENANT.NOTES, noteFoundationDocId(tenantId, noteId)))));
+  return snapshots.filter((snap) => snap.exists()).map((snap) => ({ id: snap.id, ...snap.data() }));
 }

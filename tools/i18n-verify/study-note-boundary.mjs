@@ -107,7 +107,10 @@ check("no app source imports the binding or the service", () => {
     const text = fs.readFileSync(file, "utf8");
     for (const guarded of GUARDED) {
       const base = guarded.replace(/\.js$/, "");
-      if (new RegExp(`["'\`][./]*(?:js/)?${base}\\.js["'\`]`).test(text)) {
+      // The delimiter class alone matched a BACKTICK, so a prose `study-note-binding.js`
+      // in a doc comment counted as an import and reported a wiring that did not
+      // exist. Requiring a from/import keyword in front makes it an import scan.
+      if (new RegExp(String.raw`(?:from|import)\s*["'\`][./]*(?:js/)?${base}\.js["'\`]`).test(text)) {
         importers.push(`${path.relative(root, file)} -> ${guarded}`);
       }
     }
@@ -163,8 +166,19 @@ function unchangedSinceMain(relPath) {
 check("app/js/ayah-notes.js is byte-identical to origin/main -- existing notes preserved", () => {
   unchangedSinceMain("app/js/ayah-notes.js");
 });
-check("app/js/note-foundation.js is byte-identical to origin/main -- not activated, not reshaped", () => {
-  unchangedSinceMain("app/js/note-foundation.js");
+check("app/js/note-foundation.js changed by INSERTION ONLY -- nothing removed or reshaped", () => {
+  // UPDATED 2026-09-15 (P5-E), with the reason recorded rather than the check
+  // deleted. P5-E adds the read side of ADR-009 to this file, so byte-identity
+  // is no longer the right claim -- but "not reshaped" still is, and it is the
+  // one that matters: every existing export must behave exactly as it did.
+  // An addition-only diff proves that mechanically, and is a STRICTER thing to
+  // assert than "some lines changed and I read them and they looked fine".
+  const diff = execFileSync("git", ["diff", "--numstat", "origin/main", "--", "app/js/note-foundation.js"],
+    { cwd: root, encoding: "utf8" }).trim();
+  if (diff === "") return; // identical to origin/main
+  const [added, removed] = diff.split(/\s+/);
+  assert.equal(removed, "0", `note-foundation.js has ${removed} REMOVED lines -- an existing behaviour may have been reshaped`);
+  assert.ok(Number(added) > 0, "a non-empty diff with no additions makes no sense");
 });
 check("app/js/activity.js and records.js are byte-identical to origin/main", () => {
   unchangedSinceMain("app/js/activity.js");
@@ -221,6 +235,40 @@ check("the service performs a COPY, never a move: nothing clears a source", () =
   for (const forbidden of ["deleteField", "delete ", "clear(", "remove("]) {
     assert.ok(!text.includes(forbidden), `the promotion path names ${forbidden} -- a copy must not remove anything`);
   }
+});
+
+check("every source-binding word written by a FIXTURE is in the accepted vocabulary", () => {
+  // The drift ADR-009 closed lived in test fixtures, not in app code -- two of
+  // them spelling the same two facts four ways. Correcting them once is not the
+  // fix; binding them to the vocabulary is, because the next fixture would
+  // otherwise invent a fifth spelling with nothing to catch it.
+  const SOURCE_KINDS = ["quran-unit", "hadith-unit", "topic-unit", "name-unit"];
+  const files = [];
+  (function walk(dir) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === "node_modules") continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (/\.(mjs|js|json)$/.test(entry.name)) files.push(full);
+    }
+  })(path.join(root, "tools"));
+
+  const offenders = [];
+  for (const file of files) {
+    // A line that CALLS studyNoteSource() is exercising the validator, not
+    // seeding a document -- proving a bad word is refused necessarily means
+    // writing that bad word down. Skipping those lines keeps this a check about
+    // FIXTURES, which is what it is for, rather than a filename exception.
+    const lines = fs.readFileSync(file, "utf8").split("\n").filter((l) => !l.includes("studyNoteSource("));
+    for (const [field, allowed] of [["sourceKind", SOURCE_KINDS],
+                                    ["relationshipKind", RELATIONSHIP_KINDS],
+                                    ["provenanceKind", PROVENANCE_KINDS]]) {
+      for (const m of lines.join("\n").matchAll(new RegExp(`${field}:\\s*"([^"]+)"`, "g"))) {
+        if (!allowed.includes(m[1])) offenders.push(`${path.relative(root, file)} ${field}: "${m[1]}"`);
+      }
+    }
+  }
+  assert.deepEqual(offenders, [], `fixtures spell source-binding fields outside ADR-009: ${offenders.join(" | ")}`);
 });
 
 check("approach_10 still IS Journaling", () => {

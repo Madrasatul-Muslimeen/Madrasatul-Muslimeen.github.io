@@ -31,6 +31,13 @@ the single source of truth and the badge beside the app name says so on screen.
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
 
+**THREE items sit in the pending-dependency ledger, all on the same external
+Firebase Console access, and item 3 is easy to miss:** (1) the Phase 4
+Activity-evidence Rules amendment + merging `claude/phase4-wiring` (`c4fca4a`,
+v08.26); (2) the Phase 5 Note Foundation Rules candidate; (3) the Phase 5 Note
+Foundation **INDEX** candidate — **deploy 2 without 3 and the Note Foundation
+can authorise queries it cannot execute.**
+
 **15 Sep 2026 — MAP PHASE 5 IS UNDER WAY. Read this before touching Notes.**
 
 **Two Firestore Rules candidates now wait on the SAME external dependency, and
@@ -100,10 +107,38 @@ evidence breadth on purpose**: a Note may be anchored to any permanent unit key,
 `juz` and `topic` included, while ADR-008 records Journaling for
 `ayah`/`range`/`surah` only.
 
+**P5-E (15 Sep 2026) found that THIS PROJECT HAS NEVER DECLARED A FIRESTORE
+COMPOSITE INDEX, and the Note Foundation is the first thing that needs one.**
+`firebase.json` has no `indexes` key; no `firestore.indexes.json` exists. That
+was harmless for the life of the app because every query outside the Note
+Foundation is equality-only (zero range filters anywhere), and Firestore serves
+those from single-field indexes. **The complete list of `orderBy` call sites in
+the whole app is two, both in `note-foundation.js`** — now three — and each needs
+a composite index or fails in production with `failed-precondition`. **Deploying
+the Note Foundation Rules ALONE would leave the collections able to authorise
+queries they cannot execute.** Rules and indexes must go together. The candidate
+is `docs/governance/phase5-note-foundation-indexes-candidate-2026-09-15.json`;
+`firebase.json` is untouched and a check asserts it stays that way.
+
+**No emulator run can catch a missing index — proven, not argued.**
+`tools/firestore-emulator/index-probe.test.mjs` starts the emulator with an
+index file declaring ZERO indexes and the query is served anyway. The guard is
+`tools/i18n-verify/firestore-index-requirements.mjs`, which reads every
+`query(...)` in `app/js` and asserts each index-requiring one is declared.
+
+**P5-E also gave ADR-009 its read side.** `noteSources` was written by ADR-009
+and **read by nothing**. `listNoteSourcesForUnit()` + `notesForStudyUnit()` now
+answer "which Notes are about this unit" — the only question a Study surface or
+Phase 6 actually asks. Three behaviours worth knowing: a **retired Note is
+excluded by the NOTE's status, not the link's** (retiring never touches source
+links per I4, so an active link on a retired Note is the NORMAL state); a link
+naming a missing Note is dropped, not thrown; and truncation is reported by
+asking for one more than the cap.
+
 **P5-D — the Note editor surface — is deliberately NOT built.** It is a real
 behaviour change (version bump, full layout measurement) and every write it made
-would be denied until the Note Foundation Rules are deployed. Held behind the
-same gate as the Phase 4 wiring.
+would be denied until the Note Foundation Rules **and indexes** are deployed.
+Held behind the same gate as the Phase 4 wiring.
 
 **`noteFolders` and `notePlacements` are Phase 6 and stay UNRULED** — an unruled
 collection is denied by default, and the suite asserts it. Do not add rules for
@@ -999,6 +1034,14 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   every case green. Ask the walker first for something unmistakably wired
   (`records.js`) and assert a chain really comes back. Same family as the
   `layout.mjs` shim: set the comparison up so it CAN fail.
+- **The emulator does not enforce composite indexes, so a green emulator suite
+  says NOTHING about whether a query works in production.** Proven in P5-E with
+  an emulator started on an index file declaring zero indexes: the query was
+  served. A query combining equality filters with an `orderBy` on a different
+  field, or any range filter, needs a declared composite index or dies in
+  production with `failed-precondition`. Equality-only queries do not — which is
+  why this app ran for its whole life with no index file and nothing broke.
+  Read the queries; no test environment here will tell you.
 - **Bind a closed vocabulary to the document that records it, both ways.** A
   vocabulary that drifts from its own ADR is just a second spelling with extra
   steps. P5-C's boundary suite reads the words out of ADR-009 and the accepted

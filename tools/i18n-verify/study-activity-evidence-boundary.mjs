@@ -117,7 +117,7 @@ function directImportersOf() {
     if (GUARDED.includes(path.basename(file))) continue;
     for (const guarded of GUARDED) {
       const base = guarded.replace(/\.js$/, "");
-      if (new RegExp(String.raw`["'\`][./]*(?:js/)?${base}\.js["'\`]`).test(text)) importers.push(path.basename(file));
+      if (new RegExp(String.raw`(?:from|import)\s*["'\`][./]*(?:js/)?${base}\.js["'\`]`).test(text)) importers.push(path.basename(file));
     }
   }
   return [...new Set(importers)].sort();

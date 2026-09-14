@@ -51,7 +51,7 @@ const created = await foundation.createPermanentNote({}, {
   tenantId: "tenant", ownerPersonId: "person", ownerUid: "owner-uid",
   noteId: "note-1", revisionId: "rev-1", title: "Title", bodyHtml: "<p>Body</p>",
   actorUid: "owner-uid",
-  source: { sourceLinkId: "source-1", sourceKind: "quran", sourceKey: "ayah:1:1", relationshipKind: "origin", provenanceKind: "created-in-study" },
+  source: { sourceLinkId: "source-1", sourceKind: "quran-unit", sourceKey: "ayah:1:1", relationshipKind: "origin", provenanceKind: "study-note" },
 });
 assert.deepEqual(created, { noteId: "note-1", revisionId: "rev-1", noteDocId: "tenant__note-1", revisionDocId: "tenant__rev-1" });
 assert.deepEqual(writes.map(({ collectionName }) => collectionName), ["noteRevisions", "notes", "noteSources"]);

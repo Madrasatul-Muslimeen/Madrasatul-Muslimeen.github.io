@@ -84,9 +84,11 @@ check("A9 provenanceKind accepts exactly the two ADR-009 names", () => {
     assert.equal(studyNoteSource({ unitKey: "ayah:1:1", provenanceKind: ok }).provenanceKind, ok);
   }
 });
-check("A10 the repository's OWN two drifting fixture spellings are now refused", () => {
-  // ADR-009 §Context: these are the four real values already checked in, in two
-  // fixtures that disagree with each other. Each must now fail closed.
+check("A10 the four drifting spellings this repository carried are refused", () => {
+  // ADR-009 §Context: these are the four real values that were checked in, in
+  // two fixtures that disagreed with each other. P5-E corrected both fixtures
+  // to the accepted vocabulary; these assertions stay, and are now the only
+  // record in code of what must never come back.
   for (const bad of ["created-in-study", "reader-created"]) {
     assert.throws(() => studyNoteSource({ unitKey: "ayah:2:255", provenanceKind: bad }), /provenanceKind/, bad);
   }

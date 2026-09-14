@@ -1,0 +1,1 @@
+{"firestore":{"rules":"index-probe.open.rules","indexes":"index-probe.empty.indexes.json"},"emulators":{"firestore":{"host":"127.0.0.1","port":8097},"ui":{"enabled":false},"singleProjectMode":true}}

@@ -12718,3 +12718,95 @@ behind the same dependency as the Phase 4 wiring.
 **No Rules deployed, no index, no migration, no backfill, no production write.
 Phase 4 state preserved exactly: `main` v08.25, `claude/phase4-wiring` at
 `c4fca4a` unmerged, the 208-line Rules amendment undeployed.**
+
+---
+
+**15 Sep 2026 — MAP Phase 5 P5-E: the Note read model, and the Firestore index
+requirement nobody had recorded.** No application behaviour changed, so **no
+version increment** — `main` stays v08.25. Both changed files are still
+unreachable from every page.
+
+**The finding came first, and it would have broken P5-D AFTER the Rules were
+deployed.** `firebase.json` has no `indexes` key and no `firestore.indexes.json`
+exists: **this project has never declared a single Firestore composite index.**
+Harmless for the whole life of the app, because — measured, not assumed — every
+query outside the Note Foundation is equality-only and Firestore serves those
+from single-field indexes. There are **zero** range or inequality filters in
+`app/js`, and the complete list of `orderBy` call sites in the entire
+application is two, both in `note-foundation.js`. Those two are the first
+queries combining equality filters with an `orderBy` on a different field, and
+each needs a composite index or fails in production with
+`failed-precondition: The query requires an index`. **So the Note Foundation,
+even with its Rules deployed, could not have listed a single Note.**
+
+**No emulator run could ever have caught it, and that is proven rather than
+argued.** `tools/firestore-emulator/index-probe.test.mjs` starts the emulator
+with an index file declaring ZERO indexes and the query is served anyway.
+Every Phase 5 emulator assertion is silent about index requirements.
+
+**And `noteSources` was write-only.** ADR-009 defined how a Note binds to a
+Study Unit and nothing ever read one back — there was no way to ask "which
+Notes are about this āyah", which is the only question a Study surface or
+Phase 6's Mapping My Journey actually asks.
+
+**The read side is now there, as additions only** — `note-foundation.js` is
+**57 insertions, 0 deletions**, so no existing behaviour could have been
+reshaped. `listNoteSourcesForUnit()` is scoped, **ordered newest-first** and
+bounded: the order is not decoration, because without it hitting the bound
+returns an ARBITRARY subset and the reader silently loses Notes they wrote.
+`notesForStudyUnit()` validates the unit key through ADR-009's binding — still
+the only place a unit key is judged — and **two Notes on the same āyah both
+come back as two Notes**, the read-side half of ADR-008's amendment.
+
+**Three behaviours the tests pin, none of them obvious.** A **retired Note is
+excluded by the NOTE's status, not the link's**: `retirePermanentNote()` never
+touches source links (I4), so an active link pointing at a retired Note is the
+NORMAL post-retirement state and filtering on the link would show retired Notes
+for ever. A link naming a Note that no longer exists is **dropped, not thrown**
+— one dangling link must not deny every other Note on the unit. And truncation
+is **reported**: the query asks for one more than the cap, so "there is more" is
+read off the data rather than guessed when a page comes back exactly full.
+
+**The durable fix is a new suite, not three corrected queries.**
+`firestore-index-requirements.mjs` extracts every balanced `query(...)`
+expression in `app/js`, resolves its collection through `collections.js` rather
+than a retyped name, decides from the operators whether single-field indexes
+suffice, and asserts every requiring query has a declared candidate index and
+that the candidate declares nothing unused. It carries a **positive control**
+and asserts index-requiring queries appear ONLY in `note-foundation.js`, so the
+first one written elsewhere fails by name. The candidate stays a candidate: a
+check asserts `firebase.json` still declares no indexes and nothing sits at the
+deploy path.
+
+**Three checks corrected in place, none deleted or excepted.** (1) The P5-C
+importer scan's delimiter class included a **backtick**, so a prose
+`` `study-note-binding.js` `` in a doc comment counted as an import and reported
+a wiring that did not exist; requiring a `from`/`import` keyword makes it an
+import scan. Same flaw fixed in the Phase 4 suite. (2) `note-foundation.js`
+byte-identity became an **addition-only** assertion — stricter than "lines
+changed and they looked fine". (3) **Both drifting fixtures are corrected AND
+bound**: a new check reads every `.mjs`/`.js`/`.json` under `tools/` and fails
+on any source-binding word outside ADR-009, skipping lines that CALL
+`studyNoteSource()` — proving a bad word is refused means writing it down —
+so it stays a check about fixtures rather than a filename exception.
+
+**Tests: 29 + 17 + 7 pure, and the Phase 5 emulator suite at 60 assertions**
+(was 53), 0 failures, 0 expression-budget denials, 31 of 37 matrix cases. The
+seven new emulator cases run the EXACT query shapes the app executes, `orderBy`
+and all, with fresh ACTIVE source links seeded first — a list over a set that
+matches nothing succeeds trivially and proves nothing. **8 code mutations and 2
+Rules mutations all proven to fail the suites.**
+
+**The guardian approval window is still NOT built, and the reason is recorded:**
+the accepted contract describes a 30-minute server-expiring, Note-specific
+approval but names no collection to hold it, and neither its
+`foundationCollections` nor its `deferredCollections` list includes one.
+Choosing that storage is a new architecture choice — an Owner Control Gate.
+Guardian content edits stay denied outright, strictly safer than the accepted
+design.
+
+**A third pending-dependency item now exists**, and it matters to the second:
+deploying the Note Foundation Rules **alone** would leave the collections able
+to authorise queries they cannot execute. Rules and indexes must go together.
+`firestore.rules`, `firebase.json`, `ayah-notes.js`, `activity.js` and
+`records.js` are all byte-identical to `origin/main`.

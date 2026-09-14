@@ -27,12 +27,15 @@
 
 import { weekKeyFor } from "./activity.js";
 import {
+  NOTE_STATUS,
   createPermanentNote,
+  getNotesByIds,
+  listNoteSourcesForUnit,
   retirePermanentNote,
   updatePermanentNoteContent,
 } from "./note-foundation.js";
 import { journalEvidenceArgs } from "./note-journal-evidence.js";
-import { studyNoteSource } from "./study-note-binding.js";
+import { bindableUnitType, studyNoteSource } from "./study-note-binding.js";
 import { writeStudyActivityEvidence } from "./study-activity-evidence-store.js";
 
 /** ADR-009 §4 — a Note composed in a Study/Note surface. */
@@ -133,4 +136,62 @@ export async function recordJournalEvidence(db, evidence, uid) {
   if (!evidence) return { eventId: null, written: false, skipped: true };
   const outcome = await writeStudyActivityEvidence(db, { ...evidence, uid });
   return { ...outcome, skipped: false };
+}
+
+// ---------------------------------------------------------------------------
+// The read side of ADR-009
+// ---------------------------------------------------------------------------
+
+/**
+ * The most Notes one read will return for a single Study Unit.
+ *
+ * A cap, not an expected cost: the usual number of Notes a person has written
+ * on one āyah is one or two. It exists so that a pathological unit cannot turn
+ * opening a Study screen into an unbounded read.
+ */
+export const MAX_NOTES_PER_UNIT = 30;
+
+/**
+ * Every active Note this person has bound to one permanent Study Unit key,
+ * newest first, as `{ rows, truncated }` where each row is
+ * `{ source, note }`.
+ *
+ * TWO NOTES ON ONE UNIT BOTH COME BACK. That is the read-side half of ADR-008's
+ * own amendment — permanent Note identity exists precisely so that a second
+ * Note on the same āyah is a second Note and not a collision — and it is what
+ * the old quick-note surface, keyed by unit alone, can never express.
+ *
+ * A RETIRED NOTE IS EXCLUDED, and the filter is on the NOTE's status rather
+ * than the link's, deliberately. `retirePermanentNote()` updates the Note and
+ * does not touch its source links (I4 — the link is not destroyed either), so
+ * an active link pointing at a retired Note is the NORMAL state after a
+ * retirement, not a corruption. Filtering on the link would show retired Notes
+ * to the reader for ever.
+ *
+ * `truncated` is returned rather than swallowed so a surface can say "showing
+ * the 30 most recent" instead of quietly losing the rest.
+ */
+export async function notesForStudyUnit(db, {
+  tenantId, ownerPersonId, unitKey, maximum = MAX_NOTES_PER_UNIT,
+} = {}) {
+  if (!bindableUnitType(unitKey)) {
+    throw new TypeError(`notesForStudyUnit: ${JSON.stringify(unitKey)} is not a permanent Study Unit key.`);
+  }
+
+  // One more than the cap, so "there are more" is a fact read off the data
+  // rather than a guess made when the page happens to come back exactly full.
+  const sources = await listNoteSourcesForUnit(db, {
+    tenantId, ownerPersonId, sourceKey: unitKey, maximum: maximum + 1,
+  });
+  const truncated = sources.length > maximum;
+  const kept = sources.slice(0, maximum);
+
+  const notes = await getNotesByIds(db, tenantId, [...new Set(kept.map((s) => s.noteId))]);
+  const byId = new Map(notes.map((note) => [note.noteId, note]));
+
+  const rows = kept
+    .map((source) => ({ source, note: byId.get(source.noteId) ?? null }))
+    .filter((row) => row.note !== null && row.note.status === NOTE_STATUS.ACTIVE);
+
+  return { rows, truncated };
 }

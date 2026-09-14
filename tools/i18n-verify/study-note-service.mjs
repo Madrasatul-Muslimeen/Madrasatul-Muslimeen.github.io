@@ -26,7 +26,7 @@ let source = fs.readFileSync(path.join(root, "app/js/study-note-service.js"), "u
 source = source
   .replace(/import \{ weekKeyFor \} from "\.\/activity\.js";/, "const { weekKeyFor } = globalThis.__snsActivity;")
   .replace(/import \{[\s\S]*?\} from "\.\/note-foundation\.js";/,
-    "const { createPermanentNote, retirePermanentNote, updatePermanentNoteContent } = globalThis.__snsNoteFoundation;")
+    "const { NOTE_STATUS, createPermanentNote, getNotesByIds, listNoteSourcesForUnit, retirePermanentNote, updatePermanentNoteContent } = globalThis.__snsNoteFoundation;")
   .replace(/import \{ writeStudyActivityEvidence \} from "\.\/study-activity-evidence-store\.js";/,
     "const { writeStudyActivityEvidence } = globalThis.__snsStore;")
   .replace(/from "\.\/note-journal-evidence\.js"/, `from "${appUrl("note-journal-evidence.js")}"`)
@@ -37,7 +37,9 @@ for (const leftover of [/from "\.\//, /gstatic\.com/]) {
 }
 
 // --- stand-ins that really record what was asked of them --------------------
-const calls = { create: [], update: [], retire: [], evidence: [] };
+const calls = { create: [], update: [], retire: [], evidence: [], sourceQuery: [], noteFetch: [] };
+let sourceRows = [];
+let noteRows = [];
 let nextIds = [];
 let failNext = null;
 
@@ -61,6 +63,9 @@ globalThis.__snsNoteFoundation = {
     return nextIds.shift()[1];
   },
   retirePermanentNote: async (_db, args) => { calls.retire.push(args); },
+  NOTE_STATUS: Object.freeze({ ACTIVE: "active", RETIRED: "retired" }),
+  listNoteSourcesForUnit: async (_db, args) => { calls.sourceQuery.push(args); return sourceRows.slice(0, args.maximum); },
+  getNotesByIds: async (_db, tenantId, ids) => { calls.noteFetch.push({ tenantId, ids }); return noteRows.filter((n) => ids.includes(n.noteId)); },
 };
 globalThis.__snsStore = {
   writeStudyActivityEvidence: async (_db, args) => {
@@ -70,13 +75,16 @@ globalThis.__snsStore = {
 };
 function reset(ids = []) {
   calls.create.length = 0; calls.update.length = 0; calls.retire.length = 0; calls.evidence.length = 0;
+  calls.sourceQuery.length = 0; calls.noteFetch.length = 0;
+  sourceRows = []; noteRows = [];
   nextIds = ids; failNext = null;
 }
 
 const mod = await import(`data:text/javascript,${encodeURIComponent(source)}`);
 const {
   PROVENANCE_PROMOTED_QUICK_NOTE, PROVENANCE_STUDY_NOTE,
-  createStudyNote, promoteQuickNoteToStudyNote, recordJournalEvidence,
+  MAX_NOTES_PER_UNIT,
+  createStudyNote, notesForStudyUnit, promoteQuickNoteToStudyNote, recordJournalEvidence,
   retireStudyNote, reviseStudyNote,
 } = mod;
 
@@ -241,6 +249,90 @@ await check("S19 nothing the service produces can name a status", async () => {
   for (const forbidden of ["claimStatus", "achieved", "mastered", "confirmEntry", "chunkKey"]) {
     assert.ok(!blob.includes(forbidden), forbidden);
   }
+});
+
+// --- P5-E: the READ side of ADR-009 ----------------------------------------
+const src = (noteId, over = {}) => ({ sourceLinkId: `s-${noteId}`, noteId, tenantId: "t1",
+  ownerPersonId: "p1", sourceKey: "ayah:2:255", status: "active", ...over });
+const note = (noteId, over = {}) => ({ noteId, tenantId: "t1", ownerPersonId: "p1",
+  title: "t", status: "active", ...over });
+
+await check("R1 the query is scoped to tenant + owner + the unit key, and bounded", async () => {
+  reset(); sourceRows = [src(NOTE_A)]; noteRows = [note(NOTE_A)];
+  await notesForStudyUnit(db, { tenantId: "t1", ownerPersonId: "p1", unitKey: "ayah:2:255" });
+  const q = calls.sourceQuery[0];
+  assert.equal(q.tenantId, "t1");
+  assert.equal(q.ownerPersonId, "p1");
+  assert.equal(q.sourceKey, "ayah:2:255", "the permanent unit key is the sourceKey, verbatim (I5)");
+  assert.equal(q.maximum, MAX_NOTES_PER_UNIT + 1, "one over the cap, so truncation is read off the data");
+});
+
+await check("R2 TWO Notes on the SAME unit both come back (ADR-008's amendment, read side)", async () => {
+  reset(); sourceRows = [src(NOTE_A), src(NOTE_B)]; noteRows = [note(NOTE_A), note(NOTE_B)];
+  const { rows } = await notesForStudyUnit(db, { tenantId: "t1", ownerPersonId: "p1", unitKey: "ayah:2:255" });
+  assert.deepEqual(rows.map((r) => r.note.noteId), [NOTE_A, NOTE_B]);
+});
+
+await check("R3 a RETIRED Note is excluded even though its source link is still active", async () => {
+  // retirePermanentNote() updates the Note and never touches its links (I4), so
+  // an active link pointing at a retired Note is the NORMAL post-retirement
+  // state. Filtering on the link would show retired Notes for ever.
+  reset(); sourceRows = [src(NOTE_A), src(NOTE_B)];
+  noteRows = [note(NOTE_A, { status: "retired" }), note(NOTE_B)];
+  const { rows } = await notesForStudyUnit(db, { tenantId: "t1", ownerPersonId: "p1", unitKey: "ayah:2:255" });
+  assert.deepEqual(rows.map((r) => r.note.noteId), [NOTE_B]);
+});
+
+await check("R4 a source link naming a Note that no longer exists is DROPPED, not thrown", async () => {
+  reset(); sourceRows = [src(NOTE_A), src(NOTE_B)]; noteRows = [note(NOTE_B)];
+  const { rows } = await notesForStudyUnit(db, { tenantId: "t1", ownerPersonId: "p1", unitKey: "ayah:2:255" });
+  assert.deepEqual(rows.map((r) => r.note.noteId), [NOTE_B], "one dangling link must not deny the other Notes");
+});
+
+await check("R5 truncation is REPORTED, never silent", async () => {
+  reset();
+  sourceRows = Array.from({ length: MAX_NOTES_PER_UNIT + 1 }, (_, i) => src(`n${i}`.padEnd(32, "0")));
+  noteRows = sourceRows.map((s2) => note(s2.noteId));
+  const { rows, truncated } = await notesForStudyUnit(db, { tenantId: "t1", ownerPersonId: "p1", unitKey: "ayah:2:255" });
+  assert.equal(truncated, true);
+  assert.equal(rows.length, MAX_NOTES_PER_UNIT, "the cap is honoured");
+});
+await check("R6 a result that exactly fills the cap is NOT reported as truncated", async () => {
+  reset();
+  sourceRows = Array.from({ length: MAX_NOTES_PER_UNIT }, (_, i) => src(`n${i}`.padEnd(32, "0")));
+  noteRows = sourceRows.map((s2) => note(s2.noteId));
+  const { truncated } = await notesForStudyUnit(db, { tenantId: "t1", ownerPersonId: "p1", unitKey: "ayah:2:255" });
+  assert.equal(truncated, false, "one-over is what proves there is more -- a full page is not proof");
+});
+
+await check("R7 duplicate links to one Note cost ONE document read, not two", async () => {
+  reset(); sourceRows = [src(NOTE_A), src(NOTE_A, { sourceLinkId: "s-dup" })]; noteRows = [note(NOTE_A)];
+  await notesForStudyUnit(db, { tenantId: "t1", ownerPersonId: "p1", unitKey: "ayah:2:255" });
+  assert.deepEqual(calls.noteFetch[0].ids, [NOTE_A]);
+});
+
+await check("R8 a bad unit key is refused BEFORE any read", async () => {
+  reset();
+  await assert.rejects(() => notesForStudyUnit(db, { tenantId: "t1", ownerPersonId: "p1", unitKey: "Surah 2 ayah 255" }),
+    /not a permanent Study Unit key/);
+  assert.equal(calls.sourceQuery.length, 0, "nothing reached the database");
+  assert.equal(calls.noteFetch.length, 0);
+});
+
+await check("R9 a juz and a topic are readable -- binding breadth, not evidence breadth", async () => {
+  for (const unitKey of ["juz:30", "topic:t42"]) {
+    reset(); sourceRows = [src(NOTE_A, { sourceKey: unitKey })]; noteRows = [note(NOTE_A)];
+    const { rows } = await notesForStudyUnit(db, { tenantId: "t1", ownerPersonId: "p1", unitKey });
+    assert.equal(rows.length, 1, unitKey);
+  }
+});
+
+await check("R10 reading a unit records no Activity and names no status", async () => {
+  reset(); sourceRows = [src(NOTE_A)]; noteRows = [note(NOTE_A)];
+  const out = await notesForStudyUnit(db, { tenantId: "t1", ownerPersonId: "p1", unitKey: "ayah:2:255" });
+  assert.equal(calls.evidence.length, 0, "reading is not journaling");
+  const blob = JSON.stringify(out);
+  for (const forbidden of ["claimStatus", "achieved", "mastered", "chunkKey"]) assert.ok(!blob.includes(forbidden), forbidden);
 });
 
 console.log(`\n${passed} passed`);

@@ -1,0 +1,55 @@
+{
+  "_comment": [
+    "CANDIDATE ONLY — NOT DEPLOYED, AND NOT REFERENCED BY firebase.json.",
+    "MAP Phase 5 (P5-E). This file exists because the repository declares NO",
+    "Firestore composite index anywhere: firebase.json has no `indexes` key and",
+    "no firestore.indexes.json exists. That was harmless until Phase 5, because",
+    "every other query in the app is equality-only and Firestore serves those",
+    "without a declared composite index. The Note Foundation introduced the",
+    "first three queries that combine equality filters with an orderBy on a",
+    "different field, and each one of those requires a composite index or fails",
+    "in production with `failed-precondition: The query requires an index`.",
+    "The Firestore EMULATOR does not enforce this — proven by",
+    "tools/firestore-emulator/index-probe.test.mjs, which serves such a query",
+    "even when started with an index file declaring zero indexes. So no passing",
+    "emulator suite says anything at all about index requirements.",
+    "Deploying indexes is an Owner Control Gate, like Rules."
+  ],
+  "indexes": [
+    {
+      "_query": "note-foundation.js listNotesForOwner() — a person's own Notes, newest first",
+      "collectionGroup": "notes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "ownerPersonId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "_query": "note-foundation.js listNoteRevisions() — one Note's revision history, newest first",
+      "collectionGroup": "noteRevisions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "ownerPersonId", "order": "ASCENDING" },
+        { "fieldPath": "noteId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "_query": "note-foundation.js listNoteSourcesForUnit() — ADR-009's read side, newest first",
+      "collectionGroup": "noteSources",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "ownerPersonId", "order": "ASCENDING" },
+        { "fieldPath": "sourceKey", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
