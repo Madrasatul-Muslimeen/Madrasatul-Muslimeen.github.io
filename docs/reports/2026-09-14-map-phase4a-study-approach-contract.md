@@ -311,16 +311,24 @@ the page is byte-identical to `HEAD`.
 | Production data writes | **none** |
 | `tests/firestore/word-progress-v1.proposed.rules` | still **CANDIDATE ONLY, NOT DEPLOYED** — unchanged Owner Control Gate |
 | `quranWordProgress` / `quranWordApprovals` | still have **no server-side rule**, so word progress still works only for the Owner's own account. Unchanged by this round, repeated because it affects what you see |
-| GitHub Pages | serves `main`, so pushing `main` is the deployment |
+| GitHub Pages | serves `main`. **This tranche is on `claude/dreamy-tesla-0clj36`, NOT on `main`, so it is NOT live.** The live app still reads **v08.23** until the branch is merged |
 
 ---
 
 ## 9. Live test — ninety seconds
 
+**First, the honest position on where this is.** The work is pushed to
+`claude/dreamy-tesla-0clj36`, not to `main`. GitHub Pages serves `main`, so
+**the live app still reads v08.23 and will keep doing so until this branch is
+merged.** Merging is an integration decision (MAP Gate E) and is yours, not
+mine; say the word and it will be done, or test it from the branch first.
+
 This tranche deliberately changes **nothing you can see except the version
 number**, so the test is mostly a test that nothing broke.
 
-1. Open the app. The badge beside the name should read **v08.24**.
+1. Open the app. Once the branch is merged, the badge beside the name should
+   read **v08.24**. Until then it correctly still reads **v08.23** — that is not
+   a failure.
 2. Study → Read, word-by-word on, tap any Arabic word. The Word Card should
    open exactly as it did in v08.23 — one tidy group per row
    (`Noun  سَلَٰم  42 occurrences`), no long empty gap mid-row, and `Proper
@@ -340,7 +348,9 @@ looks different, that is a finding — say so and it will be treated as one.
 
 ## 10. What is pending, and the next eligible task
 
-**Pending Owner action:** live verification of v08.24 (§9).
+**Pending Owner action, two things:** (a) the integration decision — this
+tranche sits on `claude/dreamy-tesla-0clj36` and is not on `main`, so it is not
+live; (b) live verification of v08.24 once it is (§9).
 
 **Next eligible task, needing no new authority:** there is none inside Phase 4.
 Tasks (2) and (3) both sit behind the Owner Control Gate in §6. The honest next

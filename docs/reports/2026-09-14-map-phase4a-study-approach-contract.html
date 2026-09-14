@@ -156,17 +156,18 @@
 <tr><td>Production data writes</td><td><strong>none</strong></td></tr>
 <tr><td><code>tests/firestore/word-progress-v1.proposed.rules</code></td><td>still <strong>CANDIDATE ONLY, NOT DEPLOYED</strong> — unchanged Owner Control Gate</td></tr>
 <tr><td><code>quranWordProgress</code> / <code>quranWordApprovals</code></td><td>still have <strong>no server-side rule</strong>, so word progress still works only for the Owner&#x27;s own account. Unchanged by this round, repeated because it affects what you see</td></tr>
-<tr><td>GitHub Pages</td><td>serves <code>main</code>, so pushing <code>main</code> is the deployment</td></tr>
+<tr><td>GitHub Pages</td><td>serves <code>main</code>. <strong>This tranche is on <code>claude/dreamy-tesla-0clj36</code>, NOT on <code>main</code>, so it is NOT live.</strong> The live app still reads <strong>v08.23</strong> until the branch is merged</td></tr>
 </tbody></table></div>
 <hr>
 <h2>9. Live test — ninety seconds</h2>
+<p><strong>First, the honest position on where this is.</strong> The work is pushed to <code>claude/dreamy-tesla-0clj36</code>, not to <code>main</code>. GitHub Pages serves <code>main</code>, so <strong>the live app still reads v08.23 and will keep doing so until this branch is merged.</strong> Merging is an integration decision (MAP Gate E) and is yours, not mine; say the word and it will be done, or test it from the branch first.</p>
 <p>This tranche deliberately changes <strong>nothing you can see except the version number</strong>, so the test is mostly a test that nothing broke.</p>
-<ol><li>Open the app. The badge beside the name should read <strong>v08.24</strong>.</li><li>Study → Read, word-by-word on, tap any Arabic word. The Word Card should open exactly as it did in v08.23 — one tidy group per row (<code>Noun  سَلَٰم  42 occurrences</code>), no long empty gap mid-row, and <code>Proper Noun +1</code> on one line.</li><li>Open <strong>Arabic in Depth</strong>, expand a form; the occurrence rows should still be grouped the same way.</li><li>Go back to the landing page. All your Approach rows, the Mastery Wheel and the dock should look exactly as before.</li><li>Switch to Bangla and glance at the same two screens.</li></ol>
+<ol><li>Open the app. Once the branch is merged, the badge beside the name should read <strong>v08.24</strong>. Until then it correctly still reads <strong>v08.23</strong> — that is not a failure.</li><li>Study → Read, word-by-word on, tap any Arabic word. The Word Card should open exactly as it did in v08.23 — one tidy group per row (<code>Noun  سَلَٰم  42 occurrences</code>), no long empty gap mid-row, and <code>Proper Noun +1</code> on one line.</li><li>Open <strong>Arabic in Depth</strong>, expand a form; the occurrence rows should still be grouped the same way.</li><li>Go back to the landing page. All your Approach rows, the Mastery Wheel and the dock should look exactly as before.</li><li>Switch to Bangla and glance at the same two screens.</li></ol>
 <p><strong>Expected result: no visible change anywhere except <code>v08.24</code>.</strong> If anything looks different, that is a finding — say so and it will be treated as one.</p>
 <p><strong>v08.24 is NOT Owner-verified until you confirm it.</strong></p>
 <hr>
 <h2>10. What is pending, and the next eligible task</h2>
-<p><strong>Pending Owner action:</strong> live verification of v08.24 (§9).</p>
+<p><strong>Pending Owner action, two things:</strong> (a) the integration decision — this tranche sits on <code>claude/dreamy-tesla-0clj36</code> and is not on <code>main</code>, so it is not live; (b) live verification of v08.24 once it is (§9).</p>
 <p><strong>Next eligible task, needing no new authority:</strong> there is none inside Phase 4. Tasks (2) and (3) both sit behind the Owner Control Gate in §6. The honest next bounded task under MAP §21 is therefore either the Owner&#x27;s decision on that gate, or a Phase 4 task that needs neither storage nor Rules — of which the contract was the last.</p>
 <p><strong>STATUS: AWAITING HUMAN SIGN-OFF.</strong></p>
 </main></body></html>
