@@ -23,13 +23,13 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: v08.22** (on `main`, 14 Sep 2026). `app/js/version.js` is
+**Current milestone: v08.23** (on `main`, 14 Sep 2026). `app/js/version.js` is
 the single source of truth and the badge beside the app name says so on screen.
 **This line has drifted twice already — it read `v08.02` while `main` was on
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
 
-**v08.20 → v08.22 are the Word Card rounds, all three now in `CHANGELOG.md`**
+**v08.20 → v08.23 are the Word Card rounds, all four now in `CHANGELOG.md`**
 (v08.20 and v08.21 had been left out of it, found and appended 14 Sep 2026).
 The one a later session most needs: **v08.22 corrected v08.21's own reading of
 `morphology.pos`.** v08.21 measured that 2,067 of 4,832 lemmas carry more than
@@ -41,6 +41,14 @@ have exactly one category.** The categories are shown now, `Form n` is gone
 from the UI entirely, and a new on-demand packaged index
 (`lemma-pos-index.json`) carries them. **Re-measure what a conclusion rests on,
 not just the number it quotes.**
+
+**v08.23 then corrected v08.22's own layout**, on the owner's screenshot: "the
+count remains on the right" was built as right-EDGE alignment and left 645–768px
+of empty card mid-row. The category, the Arabic and the count are ONE cluster
+with equal small gaps now. Two standing lessons came out of it, both below:
+**on an `align-items: center` row, compare vertical CENTRES not tops** (a
+top-based check called every row wrapped when none was), and **attribute a page
+overflow to the element that actually causes it** before blaming the round.
 
 **MAP Phase 3 (Arabic Progress & Coverage) is BUILT, v08.14–v08.19, 13 Sep
 2026** — six bounded tranches, full evidence in

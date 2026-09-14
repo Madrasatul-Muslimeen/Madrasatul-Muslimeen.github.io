@@ -12333,3 +12333,49 @@ inside the Arabic (`سَمَا^ء`, `مَٰلِك2`) — the corpus's own notati
 to correspond to `ءَا` and to homograph disambiguation. It reads as corrupted
 Arabic on screen, predates this tranche, and correcting it means transforming
 the packaged text — an Owner decision, not a layout correction.
+
+---
+
+## v08.23 — Word Card row grouping (14 Sep 2026)
+
+The owner reported from a screenshot that v08.22's spacing defect remained.
+**They were right, and it was my misreading.** v08.22's instruction said
+"occurrence count remains on the right" and I built right-EDGE alignment
+(`margin-inline-start: auto`) — which is precisely the distribution across the
+full card width they objected to. Full evidence:
+`docs/reports/2026-09-14-v08.23-word-card-row-grouping.md`.
+
+**Measured before:** Arabic → count gap **645–768px** at 1280 and 65–138px at
+390; cluster span 892px of an 899px row; the `+n` marker on its OWN line under
+the category on every row that has one. **After: 8px everywhere**, cluster span
+126–252px, `+n` on its label's line, row height unchanged.
+
+Three layout changes, no logic, no data, no strings: the auto margin removed;
+the `+n` moved inside a new `.word-card-form-pos-label` (v08.22 made it a third
+child of a `flex-direction: column` box, which is exactly why it dropped a
+line); and `flex-wrap: wrap` + explicit `justify-content: flex-start` so a
+cluster that cannot fit wraps as a unit with the count at the LEFT of the next
+line. The occurrence rows carried the same auto margin and got the same
+treatment, so one list does not carry two alignments.
+
+**The wrap was proven, not assumed.** At 320px with root اخر — which holds the
+corpus's longest lemma, `مُسْتَـ#ْخِرِين` — nothing wraps at all. To show the rule
+works rather than merely exists, the run repeats with the browser's default
+text size at 26px, a real accessibility setting: that forces the wrap, and the
+wrap is clean.
+
+**Two of my own checks were wrong and were caught before being believed.** A
+top-based wrap detector called EVERY row wrapped — the row is
+`align-items: center`, so a 15px count box inside a 41px Arabic row
+legitimately has a lower `top` on the same line; the screenshot is what
+settled it. And a 320px page-overflow failure proved to be the page's own
+pre-existing overflow, not the card's. **Compare centres, not tops, on a
+centred row; and attribute an overflow to the element that actually causes
+it.**
+
+**30 rendered-geometry checks added** to `quran-word-card-rendered.mjs`
+(92 → 122), reading the rendered page because CSS is the only place this can
+regress — and **proven able to fail**: with the v08.22 auto margin restored the
+suite drops to 116/6 and prints the real gaps. `behaviour.mjs` 800/3, same
+stopping point. `layout.mjs` byte-for-byte identical, `getElementById`
+250 → 250. Coverage 1,803 / 47, both unchanged.

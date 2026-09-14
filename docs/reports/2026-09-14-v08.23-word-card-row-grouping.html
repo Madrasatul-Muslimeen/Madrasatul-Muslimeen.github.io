@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuranRevival v08.23 — Word Card row grouping (spacing correction)</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>QuranRevival v08.23 — Word Card row grouping (spacing correction)</h1>
+<p><strong>Date:</strong> 14 September 2026 <strong>Scope:</strong> one defect, reported by the Owner from a screenshot of v08.22. <strong>Status:</strong> built and verified against the rendered page at desktop and mobile widths, with before/after screenshots. <strong>PENDING OWNER LIVE VERIFICATION.</strong> <strong>Not in this round:</strong> no new feature, no data change, no Firestore Rules or index change, no migration, no Phase 4.</p>
+<hr>
+<h2>1. Version</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Before</td><td><code>08.22</code></td></tr>
+<tr><td>After</td><td><strong><code>08.23</code></strong></td></tr>
+</tbody></table></div>
+<p>Read from <code>app/js/version.js</code> on disk before bumping — it said <code>08.22</code>, and <code>origin/main</code> was at <code>38612ba</code>, whose copy of that file also reads <code>08.22</code>. No version was assumed and none was overwritten.</p>
+<hr>
+<h2>2. What was wrong, and that it was my error</h2>
+<p>The Owner&#x27;s v08.22 instruction ended with &quot;<em>Occurrence count remains on the right</em>&quot;, and I implemented that as <strong>right-edge alignment</strong> — <code>margin-inline-start: auto</code> on the count. That is not what &quot;on the right&quot; meant, and the result is exactly what the Owner then objected to: the three items distributed across the whole card with a large empty gap in the middle.</p>
+<p>Measured on the rendered page at the v08.22 commit, root <code>سلم</code> (16 forms):</p>
+<div class='tw'><table><thead><tr><th></th><th>v08.22 (before)</th></tr></thead><tbody>
+<tr><td>Gap between the Arabic and the count, desktop 1280px</td><td><strong>645 – 768 px</strong></td></tr>
+<tr><td>Gap between the Arabic and the count, phone 390px</td><td><strong>65 – 138 px</strong></td></tr>
+<tr><td>Cluster span (category left edge → count right edge)</td><td><strong>892 px</strong> of an 899 px row</td></tr>
+<tr><td><code>+n</code> marker on the same line as its category</td><td><strong>No, on every row that has one</strong></td></tr>
+</tbody></table></div>
+<p>The <code>+n</code> was a third child of a <code>flex-direction: column</code> box, so it printed on its own line underneath the category name.</p>
+<hr>
+<h2>3. The fix</h2>
+<p><strong>Three changes, all layout. No logic, no data, no strings.</strong></p>
+<ol><li><strong><code>margin-inline-start: auto</code> removed from <code>.word-card-form-count</code>.</strong> The count is now an ordinary member of the row, one <code>0.5rem</code> gap from the Arabic — the same gap that separates the category from the Arabic. Nothing is pushed anywhere.</li><li><strong>The <code>+n</code> marker moved inside a new <code>.word-card-form-pos-label</code></strong>, an <code>inline-flex</code> baseline row holding the category name and the marker together. The English sub-line (Bangla readers only) still sits below.</li><li><strong>The row gained <code>flex-wrap: wrap</code> and explicit <code>justify-content: flex-start</code></strong>, so when the cluster genuinely cannot fit it wraps as a unit and the count starts at the <strong>left</strong> of the next line — never at the opposite edge.</li></ol>
+<p>The occurrence rows underneath (Arabic … <code>2:19:4</code>) carried the identical auto margin and had the identical stretch. <strong>I applied the same grouping to them</strong>, because leaving them right-aligned directly beneath newly grouped form rows would have left two different alignments in one list. That was my judgement, not an explicit instruction — say the word if you wanted those left alone.</p>
+<hr>
+<h2>4. Measured result — before and after, same script, same words</h2>
+<p>Root <code>سلم</code> (surah 2, āyah 71, word 13): 16 derived forms, long Arabic, and forms carrying <strong>two and three</strong> recorded categories, so the <code>+n</code> marker is really on screen.</p>
+<div class='tw'><table><thead><tr><th>Measure</th><th>Before (v08.22)</th><th>After (v08.23)</th></tr></thead><tbody>
+<tr><td>Arabic → count gap, en 1280</td><td>690 – 718 px</td><td><strong>8 px</strong></td></tr>
+<tr><td>Arabic → count gap, bn 1280</td><td>701 – 768 px</td><td><strong>8 px</strong></td></tr>
+<tr><td>Arabic → count gap, en 390</td><td>65 – 138 px</td><td><strong>8 px</strong></td></tr>
+<tr><td>Cluster span, 1280</td><td>892 px</td><td><strong>126 – 252 px</strong></td></tr>
+<tr><td>Cluster span, 390</td><td>312 px</td><td><strong>176 – 252 px</strong></td></tr>
+<tr><td><code>+n</code> on its label&#x27;s line</td><td><strong>false</strong> everywhere</td><td><strong>true</strong> everywhere</td></tr>
+<tr><td>Row height</td><td>52 – 56 px</td><td><strong>52 – 56 px (unchanged)</strong></td></tr>
+<tr><td>Category → Arabic gap</td><td>8 px</td><td>8 px (27 px where a <code>+n</code> sits between them)</td></tr>
+</tbody></table></div>
+<p>Identical in Basic and in Depth, in both languages, at both widths.</p>
+<h3>Narrow screens and the wrap</h3>
+<p>Tested at <strong>320 px</strong>, the narrowest viewport this project measures, in both languages, using root <code>اخر</code> — which contains <code>مُسْتَـ#ْخِرِين</code>, <strong>the longest lemma in the whole packaged corpus</strong> (15 characters) — plus forms with <code>+1</code> and <code>+2</code>.</p>
+<ul><li>At 320 px, with that content, <strong>nothing wraps</strong>: every row is still one clean line, and nothing overflows the card or scrolls the page sideways.</li><li>To prove the wrap rule actually works rather than merely being present, the same run repeats with the browser&#x27;s <strong>default text size raised to 26 px</strong> — a real accessibility setting, not a synthetic hack. That does force a wrap, and the wrap is clean: category + Arabic on line one, <strong>count and caret starting at the left of line two</strong>, nothing thrown to the opposite edge, nothing overflowing.</li></ul>
+<p><strong>Narrow-screen suite: 25 checks, 25 passed.</strong></p>
+<hr>
+<h2>5. Two of my own checks were wrong, and were corrected before being believed</h2>
+<ol><li><strong>A false &quot;wrapped&quot; reading on every row.</strong> My first wrap detector compared the count&#x27;s <code>top</code> against the Arabic&#x27;s <code>top</code>. The row is <code>align-items: center</code>, so a 15 px count box inside a 41 px Arabic row legitimately has a lower <code>top</code> on the <em>same</em> line — it reported every row as wrapped. Confirmed against the screenshot, then changed to compare the count&#x27;s vertical <strong>centre</strong> against the Arabic&#x27;s box.</li><li><strong>A page-overflow failure that was not the card&#x27;s.</strong> At 320 px with 26 px text the <em>page</em> overflowed by 84 px. Re-measured against the element that actually exceeds the viewport: it is the page&#x27;s own pre-existing overflow, not the Word Card. The check now asserts what it means to — that the <strong>card</strong> fits the viewport — and passes.</li></ol>
+<hr>
+<h2>6. Tests executed</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>quran-word-card-rendered.mjs</code></td><td><strong>122 passed, 0 failed</strong> (was 92 — <strong>30 new geometry checks</strong>)</td></tr>
+<tr><td><code>quran-word-card.mjs</code></td><td>36 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-card-integration.mjs</code></td><td>10 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-progress-rendered.mjs</code></td><td>81 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-explore-rendered.mjs</code></td><td>35 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-index-loader.mjs</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-indexes.mjs</code></td><td>9 passed, 0 failed</td></tr>
+<tr><td><code>quran-boundary.mjs</code></td><td>30 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-progress-model.mjs</code></td><td>57 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-progress-data.mjs</code></td><td>37 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-coverage-arabic.mjs</code></td><td>29 passed, 0 failed</td></tr>
+<tr><td><code>stub-parity.mjs</code></td><td>3 passed, 0 failed</td></tr>
+<tr><td>Narrow-screen wrap script</td><td>25 passed, 0 failed</td></tr>
+<tr><td><code>behaviour.mjs</code></td><td><strong>800 passed, 3 failed</strong> — identical to the v08.22 run</td></tr>
+</tbody></table></div>
+<p>The 3 are section 22g, the archive.org poster block this sandbox&#x27;s proxy enforces. The run then stops at the documented section-42 <code>[data-note-master-toggle]</code> crash carried since v07.69. Same 803 total, same three, same stopping point as v08.22 — no check the suite reaches needed updating.</p>
+<h3>The new checks are checked in, and proven able to fail</h3>
+<p>Thirty geometry assertions were added to <code>quran-word-card-rendered.mjs</code> — reading the <strong>rendered</strong> page, because CSS is the only place this can regress. They assert that the count sits beside the Arabic (≤ 24 px), that the category sits beside the Arabic, that a <code>+n</code> stays on its label&#x27;s line, and that nothing runs past the card — in Basic and Depth, English and Bangla, at 1280 px and 390 px.</p>
+<p><strong>Proven able to fail:</strong> with the v08.22 <code>margin-inline-start: auto</code> put back, the suite drops to <strong>116 passed / 6 failed</strong> and prints the real gaps (<code>[693, 679, 710, 649, …]</code>). It is not a check that passes because it cannot fail.</p>
+<h3>Regression</h3>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>layout.mjs</code> vs v08.22 (<code>38612ba</code>)</td><td><strong>Every landing-page metric byte-for-byte identical</strong> at all eight viewports in both banner states; <code>getElementById</code> <strong>250 → 250</strong>; same 22-entry pre-existing missing list</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>Unchanged — only the pre-existing 320 px English truncation of &quot;Operation&quot;/&quot;Bookmark&quot;</td></tr>
+<tr><td><code>reading.mjs</code></td><td>READING SCREEN OK</td></tr>
+<tr><td><code>panel.mjs</code></td><td>48 configurations, no truncated label anywhere</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 scanned / 47 missing — both unchanged.</strong> No string was added, removed or altered</td></tr>
+</tbody></table></div>
+<p>The before/after comparison used <code>HEAD</code>&#x27;s own <code>quranrevival.html</code>, <code>version.js</code> and <code>quran-word-card.js</code> as <code>_prev-</code> shims, so &quot;before&quot; really rendered the v08.22 build; all shims were deleted before the coverage total was read.</p>
+<hr>
+<h2>7. Files changed</h2>
+<div class='tw'><table><thead><tr><th>File</th><th>Change</th></tr></thead><tbody>
+<tr><td><code>app/js/version.js</code></td><td><code>08.22</code> → <code>08.23</code></td></tr>
+<tr><td><code>app/quranrevival.html</code></td><td>Row CSS: auto margins removed, wrap enabled, <code>+n</code> label row added; occurrence rows grouped the same way</td></tr>
+<tr><td><code>app/js/quran-word-card.js</code></td><td><code>+n</code> wrapped inside <code>.word-card-form-pos-label</code> with the category name</td></tr>
+<tr><td><code>tools/i18n-verify/quran-word-card-rendered.mjs</code></td><td>30 rendered-geometry checks added</td></tr>
+</tbody></table></div>
+<p>No data file, no index, no <code>firestore.rules</code>, no schema, no translation.</p>
+<hr>
+<h2>8. Deployment</h2>
+<p>Pushed to <code>main</code>; GitHub Pages serves <code>main</code>&#x27;s <code>app/</code>, so the push is the deployment.</p>
+<p><strong>No Firestore Rules change.</strong> <code>quranWordProgress</code> and <code>quranWordApprovals</code> still have no server-side rule, so word-progress reads and writes still fail against production for anyone but the Owner — unchanged, and repeated because it affects what you see if you test those controls.</p>
+<p>Commit: <code>610badea73d6f6b3482cb6b8604695bb6dff5faa</code></p>
+<hr>
+<h2>9. Live test — two minutes</h2>
+<ol><li>Open the app; the badge beside the name should read <strong>v08.23</strong>.</li><li>Study → Read, word-by-word on, tap any Arabic word, open <strong>Basic Arabic</strong>.</li><li>Each derived-form row should read as <strong>one group</strong>: <code>Noun  سَلَٰم  42 occurrences</code> — the three items close together on the left, with a large plain margin to their right. <strong>No long empty gap in the middle of the row.</strong></li><li>A row with more than one recorded category should read <strong><code>Proper Noun +1</code></strong> on <strong>one line</strong>, not with the <code>+1</code> dropped underneath.</li><li>Open <strong>Arabic in Depth</strong> — identical rows. Expand one; the occurrence rows under it should be grouped the same way (<code>ٱلسَّمَآء  2:19:4</code>), not stretched.</li><li>Switch to Bangla and repeat: <code>নামবাচক বিশেষ্য +১</code> on one line, English underneath, then the Arabic, then the count — all one cluster.</li><li>On a phone, the same rows should fit without sideways scrolling.</li></ol>
+<p><strong>v08.23 is NOT Owner-verified until you confirm it.</strong></p>
+</main></body></html>
