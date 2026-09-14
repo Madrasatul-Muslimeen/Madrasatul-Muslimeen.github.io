@@ -1,0 +1,302 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // MAP Phase 4 (P4-B) — CANDIDATE Rules for Study Activity evidence.
+    //
+    // STATUS: CANDIDATE. NOT DEPLOYED. NOT MERGED INTO firestore.rules.
+    // Deploying Rules is an Owner Control Gate. This file exists so the
+    // shape can be reasoned about and later EXECUTED against the emulator
+    // before anyone is asked to approve it.
+    //
+    // SELF-CONTAINED EXTRACT: it carries only the helpers this one
+    // subcollection needs, reproduced unchanged from the deployed rules, so
+    // the emulator can run it in isolation. It is deliberately NOT a copy of
+    // the whole production file and must never be deployed as one.
+    //
+    // ---------------------------------------------------------------------
+    // WHY A DOCUMENT PER EVENT, which is the entire security design
+    // ---------------------------------------------------------------------
+    //
+    // The rejected Phase 4 candidate stored versioned Study evidence in a
+    // MAP inside the weekly Activity document. Its own recorded outcome is
+    // the reason this candidate does not: 9 of its 13 logged denials were
+    // refused by Firestore's 1000-expression evaluation limit rather than by
+    // the security logic. That is a denial by budget exhaustion, which grows
+    // worse as the document grows, and would eventually refuse LEGITIMATE
+    // writes. A rule whose cost scales with stored data is not a rule.
+    //
+    // Phase 3's accepted storage principle says what to do instead: when
+    // Rules cannot cheaply reason about a key inside a map, give the thing
+    // its own document. Here that is exact, because the unit of
+    // authorisation and the unit of deduplication are the SAME THING — one
+    // ADR-008 event.
+    //
+    // Consequences, all of them good and none of them clever:
+    //
+    //   * Deduplication is enforced by the DATABASE, not by a rule. The
+    //     event's identity IS the document id, and `allow create` on a
+    //     document that already exists fails unconditionally. A retry is a
+    //     no-op because Firestore says so.
+    //   * Immutability is one line: `allow update, delete: if false`.
+    //     Nothing accepted can ever be edited, by anyone, including the
+    //     writer, including an admin.
+    //   * Every rule below costs a FIXED handful of get()/exists() calls
+    //     regardless of how much a person has studied. Document size never
+    //     enters a rule.
+    //   * Tenant, person and week come from the PATH, so binding them costs
+    //     zero reads.
+    //
+    // ---------------------------------------------------------------------
+    // WHY THE IDENTITY IS A DELIMITER-JOINED STRING, NOT A HASH OR JSON
+    // ---------------------------------------------------------------------
+    //
+    // Rules can concatenate strings and compare the result to the {eventId}
+    // wildcard. It therefore RE-DERIVES the identity from the document's own
+    // declared fields and rejects any id that does not match. That is a
+    // server-side guarantee.
+    //
+    // Rules cannot compute SHA-256, and cannot reproduce JSON.stringify's
+    // quoting and escaping. An identity in either of those forms can only be
+    // taken on trust from the client, which is not identity enforcement at
+    // all. Neither is used here.
+    //
+    // The separator is '__'. Every component of the id is constrained by
+    // format (an exact literal set for eventType and trackableId, a digits-
+    // and-colons regex for unitKey, 'once' or an ISO day for dedupeScope),
+    // and NONE of those forms can contain '_'. So no two distinct component
+    // tuples can produce the same id, without spending a single expression
+    // on a separate hygiene check.
+    //
+    // ---------------------------------------------------------------------
+    // WHAT THIS DELIBERATELY DOES NOT ENFORCE, stated rather than hidden
+    // ---------------------------------------------------------------------
+    //
+    // 1. THAT THE INTERACTION REALLY HAPPENED. Rules cannot know whether a
+    //    person truly read an ayah or truly played 80% of a recitation. A
+    //    client entitled to write for that person can assert a well-formed
+    //    event that never occurred. This is the SAME trust boundary the
+    //    deployed rules already accept for records.entries and for
+    //    quranWordProgress, not a new gap — but it must never be described
+    //    as a server-enforced proof of study.
+    // 2. THE ORDERING OR COMPLETENESS of evidence. Nothing here proves a
+    //    person did not simply omit events.
+    // 3. THAT dateIso IS "TODAY". A writer may backdate within the week the
+    //    path names; the week binding is enforced, the day within it is not
+    //    (Rules has no reliable client-clock-independent calendar, and
+    //    request.time is server time, which is not the learner's day).
+    //    Bounded, and stated.
+    // =====================================================================
+
+    function signedIn() { return request.auth != null; }
+    function myUid()    { return request.auth.uid; }
+
+    function tenantPersonRef(personId) { return /databases/$(database)/documents/tenantPeople/$(personId); }
+    function memberUidRef(tenantId)    { return /databases/$(database)/documents/tenantMemberUids/$(tenantId + '__' + myUid()); }
+    function teacherStudentLinkRef(tenantId, teacherPersonId, studentPersonId) {
+      return /databases/$(database)/documents/teacherStudentLinks/$(tenantId + '__' + teacherPersonId + '__' + studentPersonId);
+    }
+
+    function hasRoleIn(tenantId, role) {
+      return signedIn() && exists(memberUidRef(tenantId))
+          && role in get(memberUidRef(tenantId)).data.get('roles', []);
+    }
+    function myPersonIdIn(tenantId) {
+      return signedIn() && exists(memberUidRef(tenantId))
+           ? get(memberUidRef(tenantId)).data.get('personId', null) : null;
+    }
+    function isPlatformAdmin() {
+      return signedIn()
+          && exists(/databases/$(database)/documents/userIndex/$(myUid()))
+          && get(/databases/$(database)/documents/userIndex/$(myUid())).data.get('platformAdmin', false) == true;
+    }
+    function isOwnerIn(tenantId)    { return hasRoleIn(tenantId, 'owner'); }
+    function isPrimeIn(tenantId)    { return hasRoleIn(tenantId, 'prime'); }
+    function isTeacherIn(tenantId)  { return hasRoleIn(tenantId, 'teacher'); }
+    function isGuardianIn(tenantId) { return hasRoleIn(tenantId, 'guardian'); }
+    function canAdminIdentity(tenantId) { return isOwnerIn(tenantId) || isPrimeIn(tenantId) || isPlatformAdmin(); }
+    function isGuardianOf(tenantId, childPersonId) {
+      return isGuardianIn(tenantId)
+          && exists(tenantPersonRef(childPersonId))
+          && get(tenantPersonRef(childPersonId)).data.get('managedByPersonId', null) == myPersonIdIn(tenantId);
+    }
+    function isCoEnrolledTeacherOf(tenantId, studentPersonId) {
+      return signedIn() && myPersonIdIn(tenantId) != null
+          && exists(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId))
+          && get(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId)).data.get('active', false) == true;
+    }
+    function isSelfPerson(personId) {
+      return signedIn() && exists(tenantPersonRef(personId))
+          && get(tenantPersonRef(personId)).data.get('authUid', null) == myUid();
+    }
+    // Reproduced UNCHANGED from the deployed rules.
+    function canRecordFor(tenantId, personId) {
+      return canAdminIdentity(tenantId)
+          || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, personId))
+          || isGuardianOf(tenantId, personId)
+          || isSelfPerson(personId);
+    }
+
+    // ---------------------------------------------------------------------
+    // ADR-008 Study Activity evidence.
+    //
+    //   activity/{activityKey}/evidence/{eventId}
+    //   activityKey = tenantId__personId__weekKey   (the EXISTING weekly id)
+    //   eventId     = eventType__trackableId__unitKey__dedupeScope
+    //
+    // The parent weekly document does NOT have to exist; a subcollection is
+    // independent of its parent in Firestore, so nothing here depends on, or
+    // writes to, the legacy entries[] array. Legacy Activity is untouched by
+    // construction, not by promise.
+    // ---------------------------------------------------------------------
+    match /activity/{activityKey}/evidence/{eventId} {
+
+      function d() { return request.resource.data; }
+
+      // ------------------------------------------------------------------
+      // COST IS A SECURITY PROPERTY HERE, so the shape below is chosen for
+      // cheapness as deliberately as for correctness.
+      //
+      // Firestore Rules has no variable binding: every helper call is
+      // re-evaluated, and a request that exceeds 1000 evaluated expressions
+      // is DENIED for that reason rather than by the logic. A first draft of
+      // this very file was measured against the emulator and 11 of its 36
+      // assertions were refused by budget exhaustion -- the identical defect
+      // that rejected the earlier Activity candidate, reproduced by accident
+      // while trying to avoid it. Three changes removed it entirely:
+      //
+      //   1. NO split(). The path/body binding is ONE string comparison --
+      //      activityKey == tenantId + '__' + personId + '__' + weekKey --
+      //      instead of splitting the key and indexing it three times.
+      //      Ambiguous splits stop mattering because nothing splits.
+      //   2. NO separator-hygiene regexes. The format constraints below
+      //      already forbid '_' inside every component of the event id, so
+      //      the "could a crafted value forge another identity" guard the
+      //      first draft spent four .matches() calls on is already implied.
+      //   3. ONE combined event/Approach check instead of three overlapping
+      //      ones, and hasAll() reduced to the four envelope fields that are
+      //      not separately checked by value.
+      //
+      // Cheap literal and regex checks are evaluated FIRST so a malformed
+      // write short-circuits before any get(); the two document reads
+      // (canRecordFor, personInTenant) are last.
+      // ------------------------------------------------------------------
+
+      // The PATH is the authority. One concatenation, compared once. A body
+      // may not describe a different tenant, person or week than the parent
+      // weekly key it was filed under.
+      function scopeMatchesPath() {
+        return activityKey == d().tenantId + '__' + d().personId + '__' + d().weekKey;
+      }
+
+      // THE IDENTITY ENFORCEMENT: the document id is re-derived from the
+      // document's own fields and must match exactly, so a client cannot
+      // choose an id that does not describe what it is storing. This is a
+      // plain string comparison, which Rules can do -- unlike a SHA-256
+      // digest or a JSON.stringify form, neither of which Rules can
+      // reproduce, and either of which would reduce "identity" to something
+      // taken on trust from the client.
+      function idIsDerivedIdentity() {
+        return eventId == d().eventType + '__' + d().trackableId + '__'
+                        + d().unitKey   + '__' + d().dedupeScope;
+      }
+
+      // ADR-008 v1: the five automatic events, each pinned to exactly the
+      // Approach(es) the contract gives it. status.claimed and
+      // status.confirmed are absent on purpose -- they belong to the
+      // explicit Mastery workflow in records/ and must never be expressible
+      // here. This single expression replaces the first draft's separate
+      // "is a known event", "is a mapped Approach" and "do they agree"
+      // checks, which overlapped completely.
+      function eventAndApproachAgree() {
+        return (d().eventType == 'reading.completed'    && (d().trackableId == 'approach_01' || d().trackableId == 'approach_03'))
+            || (d().eventType == 'listening.completed'  && (d().trackableId == 'approach_07' || d().trackableId == 'approach_08'))
+            || (d().eventType == 'journal.note-created' && d().trackableId == 'approach_10')
+            || (d().eventType == 'journal.note-revised' && d().trackableId == 'approach_10')
+            || (d().eventType == 'wbw.engaged'          && d().trackableId == 'approach_04');
+      }
+
+      // Permanent Study Unit identity (I5), and only the three unit types
+      // ADR-008's evidence contract accepts: a juz/page/topic/hadith key is
+      // refused at the database, matching the pure module's own behaviour.
+      // None of these forms can contain '_', which is what makes the event
+      // id unambiguous without a separate hygiene check.
+      //
+      // unitType is checked HERE, paired with the key it must describe,
+      // rather than as `unitType == unitKey.split(':')[0]`. That is not only
+      // cheaper -- the first cost-reduction pass dropped the split() form and
+      // silently lost the check with it, which the emulator suite caught as a
+      // real defect: a document could then store unitKey 'surah:2' while
+      // declaring unitType 'ayah', and every report that filters by unitType
+      // would mis-file it. Pairing them makes the check impossible to lose.
+      function unitIdentityOk() {
+        return (d().unitType == 'ayah'  && d().unitKey.matches('ayah:[0-9]{1,3}:[0-9]{1,3}'))
+            || (d().unitType == 'range' && d().unitKey.matches('range:[0-9]{1,3}:[0-9]{1,3}-[0-9]{1,3}'))
+            || (d().unitType == 'surah' && d().unitKey.matches('surah:[0-9]{1,3}'));
+      }
+
+      // ADR-008's own deduplication boundaries: 'once' for a Note's creation
+      // (which must dedupe for the life of that note, not per day), the UTC
+      // day for everything else. Neither form can contain '_'.
+      function dedupeScopeOk() {
+        return d().eventType == 'journal.note-created'
+             ? d().dedupeScope == 'once'
+             : d().dedupeScope == d().dateIso;
+      }
+
+      // Cross-tenant binding. isSelfPerson() proves "this login owns that
+      // person" but NOT "that person belongs to this tenant", so without
+      // this a self-person in tenant A could file evidence under tenant B.
+      // Reads the same tenantPeople document canRecordFor already reads.
+      function personInTenant() {
+        return exists(/databases/$(database)/documents/tenantPeople/$(d().personId))
+            && get(/databases/$(database)/documents/tenantPeople/$(d().personId)).data.get('tenantId', null) == d().tenantId;
+      }
+
+      // ACTIVITY != MASTERY, enforced at the database. hasOnly() is the
+      // load-bearing half: no status, claimedStatus, confirmedStatus or
+      // confirmState field is even permitted to exist on one of these
+      // documents, so nothing stored here can be read as a claim. Mastery
+      // continues to live only in records/.
+      function isWellFormedEvidence() {
+        return d().keys().hasOnly([
+                 'contractVersion', 'eventType', 'tenantId', 'personId', 'weekKey',
+                 'dateIso', 'subjectId', 'unitKey', 'unitType', 'trackableId',
+                 'action', 'dedupeScope', 'masteryEffect', 'occurrenceId', 'noteId',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll(['schemaVersion', 'createdAt', 'updatedAt', 'createdBy'])
+            && d().contractVersion == 'study-approach-contract:v1'
+            && d().action == 'practised'
+            && d().masteryEffect == 'none'
+            && d().subjectId == 'quran'
+            && eventAndApproachAgree()
+            && unitIdentityOk()
+            && d().dateIso.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+            && d().weekKey.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+            && dedupeScopeOk()
+            && idIsDerivedIdentity()
+            && scopeMatchesPath()
+            && d().createdBy == request.auth.uid;
+      }
+
+      // READ: exactly the deployed activity rule's own audience, so this
+      // introduces no new visibility.
+      allow read: if isPlatformAdmin();
+      allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);
+
+      // CREATE: the only write this collection ever permits. Cheap checks
+      // first, the two document reads last.
+      allow create: if isWellFormedEvidence()
+                    && canRecordFor(d().tenantId, d().personId)
+                    && personInTenant();
+
+      // NEVER. Accepted evidence is frozen (I4, and I6 in spirit), and
+      // deduplication RELIES on create-only semantics: an update would let a
+      // retry overwrite a real event, and a delete would let a writer erase
+      // evidence and re-create it differently.
+      allow update, delete: if false;
+    }
+  }
+}
