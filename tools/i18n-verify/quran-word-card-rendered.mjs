@@ -242,6 +242,65 @@ for (const lang of ["en", "bn"]) {
   }
 }
 
+// v08.23 -- the derived-form row is ONE cluster, not three items spread across
+// the card. v08.22 pushed the count to the far edge with an auto margin, which
+// left 645-768px of empty card between the Arabic and the count at desktop
+// width; the owner reported it from a screenshot. Geometry, read off the
+// rendered page, because CSS is the only place this can regress.
+for (const [lang, width, height] of [["en", 1280, 900], ["bn", 1280, 900], ["en", 390, 844]]) {
+  const ctx = await newContext(browser, { appLang: lang, viewport: { width, height } });
+  const { page } = await openPage(ctx, "/app/quranrevival.html");
+  try {
+    const reachable = await page.evaluate(() => { const b = document.getElementById("tabReadBtn"); return !!b && b.getBoundingClientRect().width > 0; });
+    if (!reachable) { await page.click("#tabStudyBtn"); await page.waitForTimeout(200); }
+    await page.click("#tabReadBtn"); await page.waitForTimeout(500);
+    await page.evaluate(() => { const t = document.getElementById("wbwShowToggle"); if (t && !t.checked) { t.checked = true; t.dispatchEvent(new Event("change", { bubbles: true })); } });
+    await page.waitForTimeout(700);
+    // Surah 2 āyah 71: root سلم -- 16 forms, long Arabic, and forms carrying
+    // two and three recorded categories, so the "+n" marker is really present.
+    await page.evaluate(() => { const s = document.getElementById("surahSelect"); s.value = "2"; s.dispatchEvent(new Event("change", { bubbles: true })); });
+    await page.waitForTimeout(2500);
+    await page.evaluate(() => { const s = document.getElementById("ayahSelect"); if (s.querySelector('option[value="71"]')) { s.value = "71"; s.dispatchEvent(new Event("change", { bubbles: true })); } });
+    await page.waitForTimeout(1500);
+    await page.evaluate(() => { (document.querySelector('#readView [data-word-occurrence$=":2:71:13"]') || document.querySelector("#readView [data-word-occurrence]"))?.click(); });
+    await page.waitForTimeout(1000);
+    for (const tab of ["basic", "depth"]) {
+      await page.click(`#quranWordCardMount [data-word-card-level="${tab}"]`);
+      await page.waitForTimeout(2800);
+      const rows = await page.evaluate(() => {
+        const card = document.querySelector(".word-card-content").getBoundingClientRect();
+        return [...document.querySelectorAll('[data-word-card-panel] .word-card-form')].map((li) => {
+          const q = (sel) => { const e = li.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom }; };
+          const pos = q(".word-card-form-pos-name"), ar = q(".word-card-form-arabic"), ct = q(".word-card-form-count"), more = q(".word-card-form-pos-more");
+          const mid = (x) => x ? (x.t + x.b) / 2 : null;
+          // Same line only when the count's vertical CENTRE sits inside the
+          // Arabic's box -- the row is align-items:center, so comparing tops
+          // reports a false wrap on every single row.
+          const sameLine = ct && ar && mid(ct) >= ar.t && mid(ct) <= ar.b;
+          return {
+            gapArabicToCount: sameLine ? Math.round(ct.l - ar.r) : null,
+            gapPosToArabic: pos && ar ? Math.round(ar.l - pos.r) : null,
+            moreOnLabelLine: more && pos ? Math.abs(mid(more) - mid(pos)) < 10 : null,
+            countWithinCard: ct ? ct.r <= card.right + 1 : true,
+          };
+        });
+      });
+      check(`${lang} ${width}px ${tab} forms render`, rows.length > 0, `n=${rows.length}`);
+      check(`${lang} ${width}px ${tab} the count sits beside the Arabic, not at the far edge`,
+            rows.every((r) => r.gapArabicToCount === null || r.gapArabicToCount <= 24),
+            JSON.stringify(rows.map((r) => r.gapArabicToCount)));
+      check(`${lang} ${width}px ${tab} the category sits beside the Arabic`,
+            rows.every((r) => r.gapPosToArabic !== null && r.gapPosToArabic <= 40),
+            JSON.stringify(rows.map((r) => r.gapPosToArabic)));
+      check(`${lang} ${width}px ${tab} a "+n" marker stays on its label's line`,
+            rows.every((r) => r.moreOnLabelLine !== false),
+            JSON.stringify(rows.map((r) => r.moreOnLabelLine)));
+      check(`${lang} ${width}px ${tab} nothing runs past the card`, rows.every((r) => r.countWithinCard));
+    }
+  } catch (e) { check(`${lang} ${width}px derived-form row geometry ran`, false, e.message.split("\n")[0]); }
+  await ctx.close();
+}
+
 console.log(`\n==== MAP Phase 2 rendered acceptance: ${pass} passed, ${fail} failed ====`);
 await browser.close();
 process.exit(fail ? 1 : 0);

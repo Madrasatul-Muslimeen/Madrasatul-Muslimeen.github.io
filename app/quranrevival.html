@@ -1860,13 +1860,15 @@
      flex row -- made the label claim the whole width and pushed the Arabic and
      the count out to the far edge. That is the layout defect, in CSS. */
   .word-card-form-toggle {
-    display: flex; align-items: center; gap: 0.5rem; width: 100%;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start;
+    gap: 0.5rem; width: 100%;
     min-height: 44px; padding: 0.35rem 0.2rem; background: none; border: 0;
     text-align: left; cursor: pointer; color: inherit; font: inherit;
   }
   li.word-card-form { display: block; }
   li.word-card-form:not(:has(.word-card-form-toggle)) {
-    display: flex; align-items: center; gap: 0.5rem; min-height: 44px; padding: 0.35rem 0.2rem;
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start;
+    gap: 0.5rem; min-height: 44px; padding: 0.35rem 0.2rem;
   }
   .word-card-form-toggle:hover { background: #faf6e8; }
   /* v08.22 -- [CATEGORY] [ARABIC] .......... [N occurrences].
@@ -1879,18 +1881,27 @@
     flex: 0 1 auto; min-width: 0; display: flex; flex-direction: column;
     font-size: 0.8rem; line-height: 1.25; color: #5a4a2a; overflow-wrap: anywhere;
   }
+  /* v08.23 -- the category name and its "+n" marker are ONE line. In v08.22
+     the marker was a sibling of the name inside a column box, so it printed
+     underneath it. */
+  .word-card-form-pos-label { display: inline-flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem; }
   .word-card-form-pos-en { font-size: 0.68rem; color: #8a7a4c; }
   .word-card-form-pos-unknown { color: #8a7a4c; font-style: italic; }
-  .word-card-form-pos-more { font-size: 0.66rem; color: #8a7a4c; }
+  .word-card-form-pos-more { flex: 0 0 auto; font-size: 0.66rem; color: #8a7a4c; }
   .word-card-form-arabic { flex: 0 0 auto; min-width: 0; font-size: 1.5rem; line-height: 1.7; }
-  .word-card-form-count { flex: 0 0 auto; margin-inline-start: auto; padding-inline-start: 0.4rem; font-size: 0.78rem; color: #5a4a2a; white-space: nowrap; }
+  /* v08.23 -- NO auto margin. The count belongs to the same cluster as the
+     category and the Arabic, one row gap away, and wraps with them. */
+  .word-card-form-count { flex: 0 0 auto; font-size: 0.78rem; color: #5a4a2a; white-space: nowrap; }
   .word-card-pos-en { display: block; font-size: 0.7rem; color: #8a7a4c; }
   .word-card-form-caret { flex: 0 0 auto; color: #7a6a3c; }
   .word-card-form-occurrences { padding: 0 0 0.4rem 0.2rem; }
   .word-card-form-occurrences .word-card-occurrences { flex-direction: column; }
-  .word-card-occurrence-link { display: flex; align-items: center; gap: 0.5rem; width: 100%; text-align: left; }
-  .word-card-occurrence-arabic { font-size: 1.35rem; line-height: 1.7; }
-  .word-card-occurrence-ref { font-size: 0.76rem; color: #7a6a3c; margin-inline-start: auto; }
+  /* v08.23 -- the occurrence rows sit directly under the form rows and had the
+     same stretch (an auto margin on the reference). Grouped the same way, so
+     the two lists read as one thing rather than two different alignments. */
+  .word-card-occurrence-link { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: 0.5rem; width: 100%; text-align: left; }
+  .word-card-occurrence-arabic { flex: 0 0 auto; font-size: 1.35rem; line-height: 1.7; }
+  .word-card-occurrence-ref { flex: 0 0 auto; font-size: 0.76rem; color: #7a6a3c; }
   .word-card-depth-rest { margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid #ece3c9; }
   @media (max-width: 380px) {
     .word-card-form-arabic { font-size: 1.3rem; }

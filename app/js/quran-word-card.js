@@ -259,10 +259,13 @@ function posCell(category, form, text, formatNumber) {
   const more = others.length
     ? `<span class="word-card-form-pos-more" title="${escapeHtml(String(text.formCategoryOtherTitle).replace("{list}", others.map((o) => posName(o, text).name).join(", ")))}">${escapeHtml(String(text.formCategoryOther).replace("{count}", formatNumber(others.length)))}</span>`
     : "";
+  // v08.23 -- the "+n" marker is part of the LABEL, on the label's own line.
+  // v08.22 emitted it as a third child of a column-direction box, which put it
+  // on a line of its own underneath the category name.
   return `<span class="word-card-form-pos">` +
-    `<span class="word-card-form-pos-name">${escapeHtml(name)}</span>` +
+    `<span class="word-card-form-pos-label"><span class="word-card-form-pos-name">${escapeHtml(name)}</span>${more}</span>` +
     (en ? `<span class="word-card-form-pos-en" lang="en">${escapeHtml(en)}</span>` : "") +
-    more + `</span>`;
+    `</span>`;
 }
 
 function formsSection(layers, context, text, formatNumber, { expandable }) {
@@ -286,11 +289,13 @@ function formsSection(layers, context, text, formatNumber, { expandable }) {
   const unclassified = data.unclassified
     ? `<p class="word-card-forms-note">${escapeHtml(String(text.formsUnclassified).replace("{count}", formatNumber(data.unclassified)))}</p>`
     : "";
-  // v08.22 -- [CATEGORY] [ARABIC] .......... [N occurrences]. The category and
-  // the written form sit together in one left-hand group; only the count is
-  // pushed to the far side (the CSS does that with margin, never by letting
-  // the Arabic stretch). Rows stay keyed by LEMMA, so two distinct written
-  // forms that share a category remain two rows.
+  // v08.23 -- [CATEGORY] [ARABIC] [N occurrences], all three in ONE cluster
+  // with small, equal gaps. v08.22 pushed the count to the far edge with an
+  // auto margin, which left 645-768px of empty card between the Arabic and the
+  // count at desktop width -- the owner's own report. Nothing is distributed
+  // across the card now; on a narrow screen the cluster wraps as a unit rather
+  // than throwing the count to the opposite side. Rows stay keyed by LEMMA, so
+  // two distinct written forms that share a category remain two rows.
   const rows = data.forms.map((form) => {
     const occurrences = escapeHtml(String(text.formOccurrences).replace("{count}", formatNumber(form.count)));
     const head = posCell(form.pos, form, text, formatNumber) +
