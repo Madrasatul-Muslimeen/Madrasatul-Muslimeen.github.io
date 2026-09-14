@@ -1,33 +1,87 @@
 # QuranRevival — Project Memory
 
-> **THIS BRANCH IS THE PHASE 2-3 VERIFICATION MERGE CANDIDATE**
-> (`phase2-3-verification-merge`, cut from `main` at `4833b19c`, 13 Sep 2026.)
+> **`main` CARRIES THE ACCEPTED PHASE 2–3 VERIFICATION MERGE.**
+> The merge completed 13 Sep 2026 (`07ebbde`, v08.19) and GitHub Pages serves
+> `main`, so the live app IS this code. The header that used to stand here said
+> the opposite — "this branch is the merge candidate … nothing here is
+> deployed" — which was true of the candidate branch and false of `main`; a
+> session reading it would have believed the live app was an unmerged
+> candidate. Corrected 14 Sep 2026 (v08.24).
 >
-> It is **`main` + accepted MAP Phase 2 + accepted MAP Phase 3, and nothing
-> materially beyond that** — built so the Owner can run and verify the real
-> integrated app before Phase 4 proceeds.
+> **Still deliberately NOT here**, and still on the development branch
+> `claude/pensive-knuth-2pu3jj`: the **keyed Activity writer** (the rewritten
+> `app/js/activity.js`, `study-activity-week.js`,
+> `tests/firestore/activity-v1.proposed.rules`) and the Phase 5 Note Foundation
+> work beyond what `main` already carried.
+> **v08.24 brought over only the PURE half of MAP Phase 4** — ADR-008 and the
+> two uninvoked policy modules. The keyed writer is an Owner Control Gate: see
+> the v08.24 entry below for the four things it needs, and
+> `docs/reports/2026-09-14-map-phase4a-study-approach-contract.md`.
 >
-> **Deliberately NOT here**, though it exists on the development branch
-> `claude/pensive-knuth-2pu3jj`: the partial Phase 4 Activity implementation
-> and its rejected Rules proposal, the Phase 5 Note Foundation work beyond what
-> `main` already carried, and their test material. The round entries below
-> describe the full development history and therefore mention work this branch
-> does not contain — that is the history being accurate, not this branch being
-> incomplete. `docs/reports/2026-09-13-phase2-3-verification-merge-candidate.md`
-> lists every excluded file.
->
-> `firestore.rules` is byte-for-byte identical to `main`. Nothing here is
-> deployed.
+> `firestore.rules` is byte-for-byte identical to the pre-merge `main`. Nothing
+> has been deployed to Firestore.
 
 
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: v08.23** (on `main`, 14 Sep 2026). `app/js/version.js` is
+**Current milestone: v08.24** (on `main`, 14 Sep 2026). `app/js/version.js` is
 the single source of truth and the badge beside the app name says so on screen.
 **This line has drifted twice already — it read `v08.02` while `main` was on
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
+
+**v08.24 (14 Sep 2026) is MAP Phase 4 task P4-A — the Study-to-Approach event
+contract, landed as PURE, UNINVOKED policy.** Read this before picking up any
+Phase 4 work.
+
+**The reconciliation changed what the task was.** The two 12 September
+governance records are historical checkpoints; their `main` is `4833b19c`, and
+`main` is now well past it. Their "next bounded task" (extract a pure P2/P4
+tranche onto current `main`) was **half-done**: the P2 half — word identity, the
+generated indexes, the Word Card — is on `main`; **the P4 half was never
+extracted.** `docs/governance/adr/` held ADR-001…**007** only, so ADR-008, the
+*accepted* Study-event contract, existed only on `claude/pensive-knuth-2pu3jj`.
+**An accepted decision that is not in the repository is not part of the accepted
+baseline** — that was the conflict, and v08.24 closes it. Phase 4 had literally
+nothing on `main`, proven rather than assumed: `activity.js` there is still the
+original `arrayUnion` append path.
+
+**What landed:** ADR-008, plus `app/js/study-approach-contract.js` (Reading →
+`approach_01`/`approach_03` by mode; Listening → `approach_07`/`approach_08`
+past **80%** of the selected unit; Journaling → `approach_10`; WbW →
+`approach_04`; only `status.claimed`/`status.confirmed` may move mastery —
+**ADR-003 untouched**) and `app/js/study-activity-evidence.js`, which projects
+one candidate Activity row and persists nothing. **Both are imported by
+nothing**, so no behaviour changed: BR-0, removable by deleting the files.
+
+**The keyed Activity writer is deliberately still OUT, and it is a real gate.**
+Its own Task 50 audit caveat is why: the prototype hashes the raw `eventKey`
+with SHA-256 for a safe map field name, and **Firestore Rules cannot recompute
+that hash from the payload** — so Rules can enforce create-only keys but cannot
+prove two supplied hash keys do not carry the same raw event key. And the
+branch's `activity.js` moves new general-activity writes off `entries[]` into a
+`v1Events` map: a **BR-3 change to the write shape of a live collection holding
+real owner data**, with deployed Rules that would not enforce the new
+invariants. Integrating it needs all four of: the storage design approved; a
+Rules candidate passing a full emulator allow/deny suite; an explicit deploy
+decision; accepted compatibility/rollback analysis for existing `entries[]`.
+**Until then Phase 4's remaining two tasks — the persisting writer, and the
+Reading/Listening/Journaling/WbW event wiring — are blocked, and there is no
+further Phase 4 task that needs no new authority.**
+
+**A third suite was written because the two extracted ones could not see what
+matters.** `study-approach-contract-boundary.mjs` (16 checks) asserts that no
+`.js` or `.html` under `app/` imports either module; that neither can reach
+`firebasejs`, `runTransaction`, `arrayUnion`, `activity.js`, `records.js`,
+`claimStatus`, `achieved` or `mastered`; that `activity.js` still uses its own
+`arrayUnion` path; that every hardcoded Approach id still carries the exact
+English name it means, read out of `APPROACH_TEMPLATES`; and that the unit keys
+accepted are the ones `buildUnitKey` produces, with `juz`/`ruku`/`page`/
+`hizb`/`topic`/`name` failing closed (I5). **Proven able to fail on four
+deliberate mutations.** `behaviour.mjs` 800/3 at the same section-42 stop;
+`layout.mjs` byte-for-byte identical at all 16 configurations, `getElementById`
+250 → 250; coverage 1,803 / 47 both unchanged.
 
 **v08.20 → v08.23 are the Word Card rounds, all four now in `CHANGELOG.md`**
 (v08.20 and v08.21 had been left out of it, found and appended 14 Sep 2026).
@@ -760,6 +814,19 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   outright. ~40px is the target for anything a finger presses; a square,
   fixed, `flex-shrink: 0` tile is what keeps a row of them looking like one
   group instead of several sizes.
+- **A hardcoded id is a silent-drift hazard — bind it back to its own source of
+  truth in a check.** v08.24's contract names `approach_07` as a literal. Every
+  one of its 24 function checks would stay green after a catalogue renumber
+  while real study was credited to the wrong Approach, and nothing on any screen
+  would show it. The check reads `APPROACH_TEMPLATES` and asserts the id still
+  carries the exact name it means. Same shape for a permanent unit key: build it
+  with `buildUnitKey` in the check rather than retyping the string.
+- **A "this changes nothing" claim is about WIRING, and no function-level test
+  can see wiring.** v08.24 landed two pure modules whose whole safety case was
+  that nothing imports them. That needed a check that reads every `.js` and
+  `.html` under `app/` looking for an import — not a suite that calls the
+  modules' functions, which would pass just as happily once they were wired into
+  a live write path.
 - **The coverage number is never evidence, but it IS a to-do list worth
   reading.** v07.132's own extra "missing" was real: an `aria-label="Show"`
   hardcoded in English on a new picker. A screen reader's only name for a
