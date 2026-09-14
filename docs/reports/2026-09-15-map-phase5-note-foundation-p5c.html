@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 5 — P5-C: Study↔Note Source Binding and Quick-Note Reconciliation</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 5 — P5-C: Study↔Note Source Binding and Quick-Note Reconciliation</h1>
+<ul><li><strong>Date:</strong> 2026-09-15</li><li><strong>Task:</strong> MAP Phase 5, task P5-C, executed under the Continuous MAP Execution Directive</li><li><strong>Method:</strong> PRESERVE → RECONCILE → EXTEND; IMPLEMENT → TEST → AUDIT → CORRECT</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> No application behaviour changed. No tracked file under <code>app/</code> was modified; two new files were added and nothing imports them.</li><li><strong>Application version:</strong> <strong>08.25, deliberately unchanged.</strong> Nothing a reader can reach behaves differently, and a version bump for an unreachable module would make the badge lie about what shipped.</li><li><strong>Result:</strong> ACCEPT — 8 of 8 mutations proven to fail the suites; 0 failures across 13 suites.</li></ul>
+<hr>
+<h2>1. What this task had to answer, and what it found first</h2>
+<p>P5-A produced the Note Foundation Rules candidate; P5-B produced the permanent Journaling identity that closes the deferred P4-D3 dependency. Neither answered the two questions that stand between the Note Foundation and any editor built on it:</p>
+<ol><li><strong>What does a Note&#x27;s link to a Study Unit actually contain?</strong></li><li><strong>What is the relationship between the Note Foundation and the per-āyah quick note that holds real Owner data today?</strong></li></ol>
+<h3>The drift found while answering the first</h3>
+<p><code>note-foundation.js</code> has always written a <code>noteSources</code> document with four descriptive fields — <code>sourceKind</code>, <code>sourceKey</code>, <code>relationshipKind</code>, <code>provenanceKind</code>. <strong>Nothing ever decided what they may contain.</strong> The P5-A Rules candidate constrains them only to &quot;a non-empty string&quot;, and the repository already carries the consequence: two fixtures, written months apart, disagree with each other about two of the four.</p>
+<div class='tw'><table><thead><tr><th>Fixture</th><th><code>sourceKind</code></th><th><code>provenanceKind</code></th></tr></thead><tbody>
+<tr><td><code>tools/i18n-verify/note-foundation-data-layer.mjs</code></td><td><code>quran</code></td><td><code>created-in-study</code></td></tr>
+<tr><td><code>tools/firestore-emulator/note-foundation-v1.rules.test.mjs</code></td><td><code>quran-ayah</code></td><td><code>reader-created</code></td></tr>
+</tbody></table></div>
+<p>Neither was wrong, because there was nothing to be wrong against. Left alone, the first real Note surface would have minted a third spelling — and a Note&#x27;s provenance, which ADR-004 requires migration and import to <em>preserve</em>, would have been unqueryable across the very set it exists to describe.</p>
+<hr>
+<h2>2. ADR-009 — the decision, and why most of it is not a new one</h2>
+<p><code>docs/governance/adr/ADR-009-study-note-source-binding-v1.md</code>, contract identifier <code>study-note-binding:v1</code>.</p>
+<div class='tw'><table><thead><tr><th>§</th><th>Decision</th></tr></thead><tbody>
+<tr><td>1</td><td><code>sourceKey</code> is the permanent Study Unit key, stored verbatim (I5)</td></tr>
+<tr><td>2</td><td><code>sourceKind</code> is <strong>derived</strong> from that key and cannot be supplied at all</td></tr>
+<tr><td>3</td><td><code>relationshipKind</code> is a closed set of exactly two: <code>origin</code>, <code>reference</code></td></tr>
+<tr><td>4</td><td><code>provenanceKind</code> is a closed set of exactly two: <code>study-note</code>, <code>promoted-ayah-note</code></td></tr>
+<tr><td>5</td><td>The quick note is <strong>promoted, never migrated</strong></td></tr>
+<tr><td>6</td><td>Binding breadth is wider than evidence breadth, deliberately</td></tr>
+<tr><td>7</td><td><code>approachId</code> on a source link is descriptive only — ADR-003 untouched</td></tr>
+</tbody></table></div>
+<p><strong>§2 is the whole fix for the drift.</strong> A field nobody types is a field nobody can spell two ways. Nine Quran unit types share one <code>quran-unit</code> kind on purpose: the unit type is already the key&#x27;s own leading segment, so storing it again would create two places for one truth and one of them would go stale.</p>
+<p><strong>§5 turned out to be an implementation of an already-accepted term, not a new decision.</strong> The accepted Note Foundation contract (<code>tools/i18n-verify/note-foundation-contract.json</code>) already fixes all four facts it rests on:</p>
+<p>``<code> &quot;legacyCompatibility&quot;: {   &quot;ayahNotesUnchanged&quot;: true,   &quot;dualWrite&quot;: false,   &quot;automaticMigration&quot;: false,   &quot;userControlledCopyWithProvenance&quot;: true } </code>``</p>
+<p>&quot;User-controlled copy with provenance&quot; <em>is</em> the promotion; the three terms beside it are the three alternatives ADR-009 rejects. The same file&#x27;s <code>identity.studyUnitKeyUse: &quot;source-reference-only&quot;</code> is what §1 and §2 implement. A boundary check now reads those values out of the contract rather than restating them, so if the accepted terms ever change, §5 stops being an implementation of them <strong>in a failing check</strong> rather than silently.</p>
+<h3>The three rejected alternatives, with their costs</h3>
+<div class='tw'><table><thead><tr><th>Alternative</th><th>Rejected because</th></tr></thead><tbody>
+<tr><td>Migrate <code>ayahNotes</code> into <code>notes</code></td><td>Destructive migration of live Owner data, outside current authority, irreversible the moment a reader edits the new copy</td></tr>
+<tr><td>Dual-write both on every save</td><td>Two writers for one piece of text with no defined winner; a partial failure silently forks the reader&#x27;s own note</td></tr>
+<tr><td>Leave them wholly unrelated</td><td>No reconciliation at all, and two note fields on one screen with nothing to say which is which</td></tr>
+</tbody></table></div>
+<hr>
+<h2>3. What was built</h2>
+<p>Both modules are <strong>uninvoked</strong>. Nothing under <code>app/</code> imports either, and no page can reach either by any chain of any length.</p>
+<h3><code>app/js/study-note-binding.js</code> — pure policy</h3>
+<p>No Firebase, no DOM, no mutable state, no I/O. Derives <code>sourceKind</code>, validates the unit key against the exact shapes <code>buildUnitKey</code> produces, enforces both closed vocabularies, and returns a <strong>frozen</strong> payload so a caller cannot re-spell a field afterwards. A unit key that is not a permanent unit key <em>throws</em> rather than returning null — a Note bound to a non-unit is a caller defect with no correct silent handling.</p>
+<h3><code>app/js/study-note-service.js</code> — the orchestration</h3>
+<p>Three things it deliberately <strong>cannot</strong> do:</p>
+<ol><li><strong>It cannot touch the quick note.</strong> The promotion takes the HTML as an <em>argument</em>; the module holds no reference to <code>ayah-notes.js</code> of any kind. That is what makes &quot;promotion cannot damage the quick note&quot; provable by reading the imports rather than by trusting the code.</li><li><strong>It cannot grant status.</strong> Nothing names <code>records</code>, <code>claimStatus</code>, <code>confirmEntry</code>, <code>achieved</code> or <code>mastered</code> (ADR-003).</li><li><strong>It cannot write Activity evidence as a side effect of saving a Note.</strong> Every function returns the evidence <em>arguments</em> and stops. Recording them is a separate call the surface makes, so a failed evidence write is surfaced by the caller (I15) instead of being buried inside a save that already succeeded. This is the same split P4-D uses.</li></ol>
+<p>Which Journaling event is recorded comes from the <strong>revision chain</strong> (<code>previousRevisionId == null</code> ⇒ created), never from a flag a caller could set wrongly. Retirement records nothing, and returns <code>evidence: null</code> explicitly so a caller cannot read an absent field as &quot;not yet computed&quot;.</p>
+<hr>
+<h2>4. Tests</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Cases</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>tools/i18n-verify/study-note-binding.mjs</code></td><td>16</td><td>16 passed</td></tr>
+<tr><td><code>tools/i18n-verify/study-note-service.mjs</code></td><td>19</td><td>19 passed</td></tr>
+<tr><td><code>tools/i18n-verify/study-note-boundary.mjs</code></td><td>16</td><td>16 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p>The service suite runs the <strong>real shipping source</strong> with its database imports rewritten to injected globals — the technique <code>study-activity-evidence-store.mjs</code> already uses — so the file under test is the file that would ship, not a copy of it.</p>
+<p>Two checks are worth naming because they pin a claim no functional test can see:</p>
+<ul><li><strong>A10</strong> asserts that the repository&#x27;s own two drifting fixture spellings (<code>created-in-study</code>, <code>reader-created</code>, <code>quran</code>, <code>quran-ayah</code>) are now each refused or overridden. The drift is tested against by name.</li><li><strong>S4</strong> strips <em>both</em> comment forms from the service source before searching for <code>ayah-notes</code>. Its first version stripped only whole-line <code>//</code> comments and failed against the module&#x27;s own doc comment — which names <code>ayah-notes.js</code> in order to say it is never reached. A line filter alone would have made the check unmaintainable rather than wrong, and it was the failure that showed it.</li></ul>
+<h3>Mutation testing — 8 of 8 proven able to fail</h3>
+<div class='tw'><table><thead><tr><th>#</th><th>Mutation</th><th>Caught by</th></tr></thead><tbody>
+<tr><td>M1</td><td><code>provenanceKind</code> vocabulary re-opened to <code>reader-created</code></td><td>A9 (first failure after A8)</td></tr>
+<tr><td>M2</td><td>A supplied <code>sourceKind</code> is honoured</td><td>A1 — &quot;the derived value wins over a supplied one&quot;</td></tr>
+<tr><td>M3</td><td>Unit-key validation relaxed to a bare split</td><td>A6 — &quot;Missing expected exception: <code>ayah:2</code>&quot;</td></tr>
+<tr><td>M4</td><td>Saving a Note records evidence as a side effect</td><td>S1 — &quot;a save must not record Activity as a side effect&quot;</td></tr>
+<tr><td>M5</td><td>Promotion lets a caller override its provenance</td><td>S7 (first failure after S6)</td></tr>
+<tr><td>M6</td><td>A failed Note write is swallowed (I15 broken)</td><td>S16 — &quot;Missing expected rejection&quot;</td></tr>
+<tr><td>M7</td><td>An app file imports the service (<code>.js</code> and <code>.html</code> forms)</td><td>boundary — names the offending file</td></tr>
+<tr><td>M8</td><td><code>ayah-notes.js</code> edited</td><td>boundary — &quot;NOT byte-identical to <code>origin/main</code>&quot;</td></tr>
+</tbody></table></div>
+<p>All restored; suites returned to 16 / 19 / 16 with a clean tree.</p>
+<hr>
+<h2>5. A correction made to Phase 4&#x27;s own boundary suite</h2>
+<p><code>study-activity-evidence-boundary.mjs</code> went <strong>red</strong> the moment P5-C landed: two of its cases asserted that <em>nothing</em> under <code>app/</code> imports the evidence writer, and <code>study-note-service.js</code> imports it.</p>
+<p><strong>The claim those cases stand for was still true</strong> — no Study surface records evidence — but their mechanism had stopped being able to express it. The cheap answer would have been an exception for that one filename, which is exactly the &quot;worked around&quot; this project forbids: the next importer would need another exception and the tenth would be a live wiring nobody noticed.</p>
+<p>So the mechanism was made <strong>stricter, not looser</strong>, and updated in place with the reason recorded. It now walks the import graph from every page in <code>app/</code> and asserts the writer is unreachable from all of them by any chain of any length — which catches a wiring wherever in that chain it happens, not only at the first hop. The set of direct importers is additionally <strong>pinned</strong> to <code>[&quot;study-note-service.js&quot;]</code>, so a new importer is a fact a later session must audit deliberately even while it is still unreachable.</p>
+<p><strong>The walker carries a positive control</strong>, because without one a broken regex would make every chain come back empty and all three cases would pass vacuously — a check that cannot fail, which this project has shipped before. It first asks for a module that <em>is</em> unmistakably wired (<code>records.js</code>) and asserts a chain comes back naming <code>quranrevival.html</code>.</p>
+<p>Proven both ways: with a single <code>import &quot;./study-note-service.js&quot;;</code> added to <code>records.js</code>, the suite fails and prints the reachability chain from <strong>16 pages</strong> (<code>app/quranrevival.html -&gt; records.js -&gt; study-note-service.js -&gt; study-activity-evidence-store.js</code>, and fifteen more). Restored: 15 passed, 0 failed.</p>
+<hr>
+<h2>6. Preservation — verified, not asserted</h2>
+<div class='tw'><table><thead><tr><th>Claim</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Existing user notes preserved</td><td><code>app/js/ayah-notes.js</code> <strong>byte-identical</strong> to <code>origin/main</code></td></tr>
+<tr><td>Note Foundation not activated or reshaped</td><td><code>app/js/note-foundation.js</code> <strong>byte-identical</strong></td></tr>
+<tr><td>Activity and Records untouched</td><td><code>app/js/activity.js</code>, <code>app/js/records.js</code> <strong>byte-identical</strong></td></tr>
+<tr><td>Nothing deployed, nothing proposed in place</td><td><code>firestore.rules</code> <strong>byte-identical</strong></td></tr>
+<tr><td>No destructive migration</td><td>Neither module names <code>migrat</code>, <code>backfill</code>, <code>deleteDoc</code> or <code>writeBatch</code>; the promotion path names no <code>delete</code>, <code>clear(</code> or <code>remove(</code> — a copy must not remove anything</td></tr>
+<tr><td>No historical isolated work activated</td><td>The gated keyed-Activity material is still absent (P4 boundary case, still passing)</td></tr>
+<tr><td>No layout or behaviour change</td><td><code>git status --porcelain app/</code> lists <strong>only the two new untracked files</strong>; no tracked file under <code>app/</code> is modified, so every page&#x27;s byte content and its entire import closure are unchanged</td></tr>
+</tbody></table></div>
+<p><code>layout.mjs</code> was <strong>not</strong> re-run, and that is a deliberate, stated choice rather than an omission: it compares a rendered page against a previous build, and no page — nor any module any page can reach — differs from <code>origin/main</code> by a single byte. The git evidence above is the stronger proof of the same claim.</p>
+<h3>Full regression sweep</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>stub-parity</code></td><td>3 passed, 0 failed</td></tr>
+<tr><td><code>study-approach-contract</code></td><td>13 passed, 0 failed</td></tr>
+<tr><td><code>study-approach-contract-boundary</code></td><td>16 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence</code></td><td>11 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-id</code></td><td>29 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-store</code></td><td>19 passed, 0 failed</td></tr>
+<tr><td><code>study-activity-evidence-boundary</code></td><td><strong>15 passed, 0 failed</strong> (updated, §5)</td></tr>
+<tr><td><code>note-journal-evidence</code></td><td>18 passed, 0 failed</td></tr>
+<tr><td><code>note-foundation-boundary</code></td><td>30 passed, 0 failed</td></tr>
+<tr><td><code>note-foundation-data-layer</code></td><td>15 assertions passed</td></tr>
+<tr><td><code>note-foundation-transaction</code></td><td>16 assertions passed</td></tr>
+<tr><td><code>note-foundation-size-preflight</code></td><td>5 synthetic fixtures measured</td></tr>
+<tr><td><code>quran-word-identity-contract</code></td><td>6 passed, 0 failed</td></tr>
+</tbody></table></div>
+<p>No new user-visible string was added — neither module carries any UI text — so translation coverage is unchanged by construction.</p>
+<hr>
+<h2>7. What was deliberately NOT done</h2>
+<ul><li><strong>No Note editor surface.</strong> Building one is a real behaviour change: a version bump, a full layout measurement at 8 viewports × 2 languages × 2 banner states, and — because the Note Foundation collections have no deployed Rule — a surface every write of which would be denied in production, with I15 requiring that denial to reach the reader. It is the next task (P5-D), held behind the same dependency as the Phase 4 wiring, not collapsed into this one.</li><li><strong>No <code>noteFolders</code> / <code>notePlacements</code> activation.</strong> Phase 6 material.</li><li><strong>No amendment to the P5-A Rules candidate.</strong> Its string constraints are deliberately looser than this vocabulary: the server enforces structure, the contract enforces meaning. Tightening Rules to a closed word list would make every future vocabulary addition a production Rules deployment.</li><li><strong>No change to the two drifting fixtures.</strong> They are test data for suites this task did not own; correcting them is a separate, visible change and they are now tested <em>against</em> by name (A10) rather than quietly rewritten.</li></ul>
+<hr>
+<h2>8. Phase 4 state — preserved exactly, as directed</h2>
+<div class='tw'><table><thead><tr><th>Item</th><th>State</th></tr></thead><tbody>
+<tr><td><code>main</code></td><td><code>08.25</code>, safe, no wiring</td></tr>
+<tr><td>Wiring candidate</td><td><code>claude/phase4-wiring</code> at <code>c4fca4a</code> (v08.26) — <strong>not merged</strong></td></tr>
+<tr><td>Rules amendment</td><td>208-line addition-only block, tested, <strong>not deployed</strong></td></tr>
+<tr><td>Blocker</td><td>Firebase Console access, external to this session</td></tr>
+</tbody></table></div>
+<p>Unchanged by this task in every respect.</p>
+<hr>
+<h2>9. Standing dependencies</h2>
+<ol><li><strong>Phase 4 production deployment</strong> — the 208-line Rules block, then the merge of <code>claude/phase4-wiring</code>.</li><li><strong>Phase 5 Note Foundation Rules deployment</strong> — the P5-A candidate. Until it is deployed, <code>notes</code> / <code>noteRevisions</code> / <code>noteSources</code> have no server-side rule, so P5-C&#x27;s service and the P5-D editor stay unwired.</li></ol>
+<p>Neither blocks further Phase 5 design or implementation work that does not write to production.</p>
+</main></body></html>

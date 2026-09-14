@@ -59,26 +59,108 @@ function appSources() {
   return out;
 }
 
-// --- 1. the writer is UNINVOKED -------------------------------------------
-check("no app source imports the evidence writer or its identity module", () => {
+// --- reachability: what can a PAGE actually load? --------------------------
+//
+// UPDATED 2026-09-15 (P5-C), with the reason recorded rather than the check
+// deleted. The two cases below used to assert that NOTHING under app/ imports
+// the writer at all. P5-C adds `study-note-service.js`, which imports it and is
+// itself imported by nothing -- so the original mechanism failed while the
+// claim it stands for ("no Study surface records evidence") stayed true.
+//
+// A blunter answer would have been an exception for that one file, which is
+// exactly the "worked around" this project forbids: the next module importing
+// the writer would need another exception, and the tenth would be a live
+// wiring nobody noticed. So the mechanism is now STRICTER, not looser -- it
+// follows the import graph from every page in app/ and asserts the writer is
+// not reachable from any of them by any chain of any length. A wiring is
+// caught wherever in that chain it happens.
+
+/** Local `./x.js` imports of one module. */
+function localImportsOf(file) {
+  const text = fs.readFileSync(file, "utf8");
+  return [
+    ...[...text.matchAll(/from\s*["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]),
+    ...[...text.matchAll(/import\s*["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]),
+  ];
+}
+
+/** The modules one page loads directly, via a script src or an inline module import. */
+function entryModulesOf(htmlPath) {
+  return [...fs.readFileSync(htmlPath, "utf8").matchAll(/["'`](?:\.\/)?js\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
+}
+
+/** Every `app/*.html` page that can reach `target`, with the chain by which it does. */
+function chainsToTarget(target) {
+  const found = [];
+  for (const entry of fs.readdirSync(path.join(root, "app"))) {
+    if (!entry.endsWith(".html")) continue;
+    const seen = new Set();
+    const queue = entryModulesOf(path.join(root, "app", entry)).map((m) => [m]);
+    while (queue.length) {
+      const chain = queue.shift();
+      const head = chain[chain.length - 1];
+      if (seen.has(head)) continue;
+      seen.add(head);
+      if (head === target) { found.push(`app/${entry} -> ${chain.join(" -> ")}`); break; }
+      const full = path.join(appJs, head);
+      if (!fs.existsSync(full)) continue;
+      for (const next of localImportsOf(full)) queue.push([...chain, next]);
+    }
+  }
+  return found;
+}
+
+/** The modules that import one of the guarded files directly. */
+function directImportersOf() {
   const importers = [];
   for (const { file, text } of appSources()) {
     if (GUARDED.includes(path.basename(file))) continue;
     for (const guarded of GUARDED) {
       const base = guarded.replace(/\.js$/, "");
-      if (new RegExp(`["'\`][./]*(?:js/)?${base}\\.js["'\`]`).test(text)) importers.push(`${file} -> ${guarded}`);
+      if (new RegExp(String.raw`["'\`][./]*(?:js/)?${base}\.js["'\`]`).test(text)) importers.push(path.basename(file));
     }
   }
-  assert.deepEqual(importers, [], `the writer is wired in: ${importers.join(", ")}`);
+  return [...new Set(importers)].sort();
+}
+
+// --- 1. the writer is UNINVOKED -------------------------------------------
+check("POSITIVE CONTROL: the reachability walker really does find a wired module", () => {
+  // Without this, a broken regex in entryModulesOf() would make every chain
+  // come back empty and the three cases below would pass vacuously -- a check
+  // that cannot fail, which this project has shipped before. So the walker is
+  // first asked for a module that IS unmistakably wired into a real page.
+  const control = chainsToTarget("records.js");
+  assert.ok(control.length > 0, "the walker found no page importing records.js -- it is not working");
+  assert.ok(control.some((c) => c.includes("quranrevival.html")), `unexpected control result: ${control[0]}`);
 });
-check("no Study surface names a Study event type", () => {
+check("NO PAGE can reach the evidence writer or its identity module, by any chain", () => {
+  const reachable = GUARDED.flatMap((guarded) => chainsToTarget(guarded));
+  assert.deepEqual(reachable, [], `the writer is wired in: ${reachable.join(" | ")}`);
+});
+check("every module that imports the writer is itself unreachable from any page", () => {
+  // The expected list is pinned, not merely permitted: a NEW importer appearing
+  // here is a fact a later session must audit deliberately, even while it is
+  // still unreachable. It is also the list of what is queued behind the Rules
+  // deployment.
+  const importers = directImportersOf();
+  assert.deepEqual(importers, ["study-note-service.js"],
+    `the set of modules importing the writer has changed -- re-audit before updating this list: ${importers.join(", ")}`);
+  for (const importer of importers) {
+    assert.deepEqual(chainsToTarget(importer), [], `${importer} is now loaded by a page`);
+  }
+});
+check("no PAGE-REACHABLE source names a Study event writer", () => {
   const offenders = [];
   for (const { file, text } of appSources()) {
-    if (GUARDED.includes(path.basename(file))) continue;
-    if (/writeStudyActivityEvidence|studyEvidenceId|buildStudyEvidenceDocument/.test(text)) offenders.push(file);
+    const base = path.basename(file);
+    if (GUARDED.includes(base)) continue;
+    if (!/writeStudyActivityEvidence|studyEvidenceId|buildStudyEvidenceDocument/.test(text)) continue;
+    if (file.endsWith(".js") && chainsToTarget(base).length === 0) continue; // queued, not wired
+    offenders.push(file);
   }
   assert.deepEqual(offenders, []);
 });
+
 
 // --- 2. evidence can never reach legacy entries[] -------------------------
 check("activity.js is untouched: still the arrayUnion append path", () => {

@@ -69,6 +69,42 @@ revision CHAIN, not a caller's flag.** `isPermanentNoteId("ayah:2:255")` is
 `false`, and a commit carrying a unitKey as its noteId returns `null`: the bodge
 the Master Architect forbade cannot pass silently.
 
+**P5-C (15 Sep 2026) is ADR-009 — the Study↔Note source binding, and the quick
+note reconciled.** Two more uninvoked modules, `app/js/study-note-binding.js`
+(pure) and `app/js/study-note-service.js`. **Read this before building any Note
+surface.**
+
+**`noteSources`' four descriptive fields had never been decided**, and the
+repository already carried the drift: `note-foundation-data-layer.mjs` writes
+`quran`/`created-in-study`, `note-foundation-v1.rules.test.mjs` writes
+`quran-ayah`/`reader-created`. ADR-009's fix is that **`sourceKind` is DERIVED
+from the unit key and cannot be supplied at all** — a field nobody types is a
+field nobody can spell two ways — with `relationshipKind` and `provenanceKind`
+closed sets of exactly two. All nine Quran unit types share one `quran-unit`
+kind: the unit type is already the key's leading segment.
+
+**The quick note is PROMOTED, never migrated — and that was ALREADY ACCEPTED.**
+`tools/i18n-verify/note-foundation-contract.json` fixes
+`ayahNotesUnchanged: true`, `dualWrite: false`, `automaticMigration: false`,
+`userControlledCopyWithProvenance: true`. A boundary check reads those four out
+of the contract, so ADR-009 §5 stops being an implementation of an accepted term
+**in a failing check** if they ever move. **The service holds no reference to
+`ayah-notes.js` of any kind** — the HTML is an argument — so "promotion cannot
+damage the quick note" is provable by reading imports.
+
+**Saving a Note never records Activity as a side effect.** Every function
+returns the evidence ARGUMENTS and stops; recording is a separate call, so a
+failed evidence write reaches the reader (I15) instead of being buried in a save
+that already succeeded. Same split as P4-D. **Binding breadth is wider than
+evidence breadth on purpose**: a Note may be anchored to any permanent unit key,
+`juz` and `topic` included, while ADR-008 records Journaling for
+`ayah`/`range`/`surah` only.
+
+**P5-D — the Note editor surface — is deliberately NOT built.** It is a real
+behaviour change (version bump, full layout measurement) and every write it made
+would be denied until the Note Foundation Rules are deployed. Held behind the
+same gate as the Phase 4 wiring.
+
 **`noteFolders` and `notePlacements` are Phase 6 and stay UNRULED** — an unruled
 collection is denied by default, and the suite asserts it. Do not add rules for
 them inside Phase 5.
@@ -949,6 +985,29 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   `.html` under `app/` looking for an import — not a suite that calls the
   modules' functions, which would pass just as happily once they were wired into
   a live write path.
+- **"Nothing imports this" is the wrong SHAPE of that check, and it breaks on
+  the second uninvoked module.** P5-C's service imports the P4 evidence writer
+  while being unreachable itself, so v08.24's direct-import scan went red on a
+  claim that was still true. **The fix is never an exception for that filename**
+  — the tenth one would be a live wiring nobody noticed. Walk the import graph
+  from every `app/*.html` page and assert the target is unreachable **by any
+  chain of any length**: strictly stronger, and it catches a wiring wherever in
+  the chain it happens. Pin the direct-importer set too, so a new importer must
+  be audited deliberately even while it is still unreachable.
+- **A reachability check needs a POSITIVE CONTROL or it passes vacuously.** One
+  broken regex in the page-entry scan makes every chain come back empty and
+  every case green. Ask the walker first for something unmistakably wired
+  (`records.js`) and assert a chain really comes back. Same family as the
+  `layout.mjs` shim: set the comparison up so it CAN fail.
+- **Bind a closed vocabulary to the document that records it, both ways.** A
+  vocabulary that drifts from its own ADR is just a second spelling with extra
+  steps. P5-C's boundary suite reads the words out of ADR-009 and the accepted
+  `note-foundation-contract.json` rather than retyping them — so an accepted
+  term changing under a decision fails a check instead of going quiet.
+- **Strip BOTH comment forms before grepping source for a forbidden name.** A
+  module's own doc comment usually names the thing it must never reach, in order
+  to say so. A whole-line `//` filter leaves every `/** … */` body in scope and
+  the check fails against correct code.
 - **The coverage number is never evidence, but it IS a to-do list worth
   reading.** v07.132's own extra "missing" was real: an `aria-label="Show"`
   hardcoded in English on a new picker. A screen reader's only name for a

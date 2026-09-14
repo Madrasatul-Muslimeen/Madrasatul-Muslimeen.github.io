@@ -12616,7 +12616,7 @@ in UPPERCASE while the body carried lowercase, so the key-binding rule denied it
 and the whole baseline went red. Caught because the mutation run's baseline is
 itself a measurement.
 
-**Tests: Phase 5 Rules emulator 50 assertions, 0 failures, 0 expression-budget
+**Tests: Phase 5 Rules emulator 53 assertions, 0 failures, 0 expression-budget
 denials, 31 of 37 matrix cases**, every denial asserted to end in a decisive
 clean `false`; `note-journal-evidence.mjs` 18 passed; the five existing Note
 Foundation suites unchanged. The 6 unexercised matrix cases are exactly the two
@@ -12625,3 +12625,96 @@ placements.
 
 **No Rules deployed, no index, no migration, no backfill, no production write.
 `firestore.rules` byte-for-byte untouched. DDR-001–004 untouched.**
+
+---
+
+**15 Sep 2026 — MAP Phase 5 P5-C: the Study↔Note source binding (ADR-009), and
+the quick note reconciled by PROMOTION rather than migration.** No application
+behaviour changed, so **no version increment** — `main` stays v08.25. Two new
+modules, **imported by nothing**, and no tracked file under `app/` modified at
+all.
+
+**The task found real drift before it built anything.** `note-foundation.js` has
+always written a `noteSources` document with four descriptive fields —
+`sourceKind`, `sourceKey`, `relationshipKind`, `provenanceKind` — and **nothing
+ever decided what they may contain.** The P5-A Rules candidate constrains them
+only to "a non-empty string", and the repository already carried the
+consequence: `note-foundation-data-layer.mjs` writes `quran` /
+`created-in-study` while `note-foundation-v1.rules.test.mjs` writes `quran-ayah`
+/ `reader-created`. Neither was wrong, because there was nothing to be wrong
+against — and the first real Note surface would have minted a third spelling,
+leaving a Note's provenance unqueryable across the very set it exists to
+describe.
+
+**ADR-009's fix is to make the field underivable by a caller.** `sourceKey` is
+the permanent unit key stored verbatim (I5), and `sourceKind` is **DERIVED from
+it and cannot be supplied at all** — a field nobody types is a field nobody can
+spell two ways. All nine Quran unit types share one `quran-unit` kind on
+purpose: the unit type is already the key's own leading segment, and storing it
+again would make two places for one truth. `relationshipKind` and
+`provenanceKind` are closed sets of exactly two each, and **the repository's own
+two drifting spellings are now tested against by name**.
+
+**The reconciliation turned out to be an ALREADY-ACCEPTED term, not a new
+decision.** `note-foundation-contract.json` already fixes
+`ayahNotesUnchanged: true`, `dualWrite: false`, `automaticMigration: false`,
+`userControlledCopyWithProvenance: true` — that last one *is* the promotion, and
+the three beside it are the three alternatives ADR-009 rejects (migrate:
+destructive and irreversible once edited; dual-write: two writers for one piece
+of text with no defined winner; unrelated: two note fields on one screen with
+nothing to say which is which). A boundary check reads those four values out of
+the contract rather than restating them, so if the accepted terms ever change,
+ADR-009 §5 stops being an implementation of them **in a failing check**.
+
+**Three things the service deliberately CANNOT do, each provable by reading
+imports rather than trusting code.** It holds **no reference to `ayah-notes.js`
+of any kind** — the promotion takes the HTML as an argument, so it cannot read,
+rewrite or clear the quick note. It names no `records`, `claimStatus`,
+`achieved` or `mastered` (ADR-003). And **saving a Note never records Activity
+as a side effect**: every function returns the evidence *arguments* and stops,
+so a failed evidence write is surfaced by the caller (I15) rather than buried
+inside a save that already succeeded — the same split P4-D uses. Which
+Journaling event is recorded comes from the **revision chain**, never a caller's
+flag.
+
+**Binding breadth is deliberately WIDER than evidence breadth.** A Note may be
+anchored to any permanent unit key, `juz` and `topic` included; ADR-008's
+evidence contract records Journaling for `ayah`/`range`/`surah` only. Two
+different questions, answered separately, and neither module may quietly widen
+the other.
+
+**Phase 4's own boundary suite went red, and was made STRICTER rather than
+excepted.** Two of its cases asserted that *nothing* under `app/` imports the
+evidence writer; the new service imports it while being unreachable. The claim
+was still true and the mechanism could no longer express it. An exception for
+one filename is exactly the "worked around" this project forbids — the tenth
+would be a live wiring nobody noticed — so the check now **walks the import
+graph from every page in `app/`** and asserts the writer is unreachable by any
+chain of any length, with the direct-importer set pinned so a new importer must
+be audited deliberately. **The walker carries a positive control**, because a
+broken regex would otherwise make every chain come back empty and all three
+cases pass vacuously — a check that cannot fail, which this project has shipped
+before. Proven both ways: one added import makes it print the chain from **16
+pages**.
+
+**Tests: 16 + 19 + 16 new checks, and 8 of 8 mutations proven to fail them** —
+vocabulary re-opened, a supplied `sourceKind` honoured, unit-key validation
+relaxed, saving recording evidence, promotion overridable, a swallowed write
+(I15), an app file importing the service in both `.js` and `.html` form, and
+`ayah-notes.js` edited. Full regression sweep green across 13 suites, including
+`study-activity-evidence-boundary` at **15 passed, 0 failed**.
+
+**Preservation verified, not asserted:** `ayah-notes.js`, `note-foundation.js`,
+`activity.js`, `records.js` and `firestore.rules` all **byte-identical to
+`origin/main`**. `layout.mjs` was deliberately not re-run and the reason is
+stated: no page, nor any module any page can reach, differs from `origin/main`
+by a byte, which is the stronger proof of the same claim.
+
+**No Note editor was built, on purpose** — that is a real behaviour change
+needing a version bump and a full layout measurement, and every write it made
+would be denied until the Note Foundation Rules are deployed. It is P5-D, held
+behind the same dependency as the Phase 4 wiring.
+
+**No Rules deployed, no index, no migration, no backfill, no production write.
+Phase 4 state preserved exactly: `main` v08.25, `claude/phase4-wiring` at
+`c4fca4a` unmerged, the 208-line Rules amendment undeployed.**
