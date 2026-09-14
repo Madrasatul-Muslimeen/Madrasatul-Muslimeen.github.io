@@ -59,8 +59,17 @@ function appSources() {
   return out;
 }
 
-// --- 1. the writer is UNINVOKED -------------------------------------------
-check("no app source imports the evidence writer or its identity module", () => {
+// --- 1. the writer has exactly ONE entry point ----------------------------
+//
+// UPDATED at P4-D1, with the reason, rather than deleted. Through P4-C these
+// two checks asserted that NOTHING imported the writer, because the tranche's
+// whole safety case was that it was uninvoked. P4-D wires Study surfaces to it
+// on purpose, so "uninvoked" is no longer the invariant -- but "reachable from
+// exactly one audited place" is, and it is the stronger of the two. A second
+// module quietly learning to write evidence is precisely what these now catch.
+const WIRING = "study-event-wiring.js";
+
+check("only the approved wiring module imports the evidence writer", () => {
   const importers = [];
   for (const { file, text } of appSources()) {
     if (GUARDED.includes(path.basename(file))) continue;
@@ -69,15 +78,84 @@ check("no app source imports the evidence writer or its identity module", () => 
       if (new RegExp(`["'\`][./]*(?:js/)?${base}\\.js["'\`]`).test(text)) importers.push(`${file} -> ${guarded}`);
     }
   }
-  assert.deepEqual(importers, [], `the writer is wired in: ${importers.join(", ")}`);
+  const unexpected = importers.filter((entry) => !entry.startsWith(`app/js/${WIRING} ->`));
+  assert.deepEqual(unexpected, [], `only ${WIRING} may import the writer, saw: ${unexpected.join(", ")}`);
 });
-check("no Study surface names a Study event type", () => {
+
+check("the wiring module is the only thing that calls the writer", () => {
   const offenders = [];
   for (const { file, text } of appSources()) {
-    if (GUARDED.includes(path.basename(file))) continue;
+    if (GUARDED.includes(path.basename(file)) || path.basename(file) === WIRING) continue;
     if (/writeStudyActivityEvidence|studyEvidenceId|buildStudyEvidenceDocument/.test(text)) offenders.push(file);
   }
-  assert.deepEqual(offenders, []);
+  assert.deepEqual(offenders, [], `these call the writer directly instead of going through ${WIRING}: ${offenders.join(", ")}`);
+});
+
+check("the wiring module cannot reach Mastery either", () => {
+  const text = codeOf(WIRING);
+  for (const forbidden of ["./records.js", "claimStatus", "confirmEntry", "returnEntry",
+                           "achieved", "mastered", "confirmState", "claimedStatus", "confirmedStatus"]) {
+    assert.ok(!text.includes(forbidden), `${WIRING} references ${forbidden}`);
+  }
+});
+
+check("the wiring module never writes the legacy entries[] array", () => {
+  const text = codeOf(WIRING);
+  for (const forbidden of ["arrayUnion", "logActivity"]) {
+    assert.ok(!text.includes(forbidden), `${WIRING} references ${forbidden}`);
+  }
+  const firestoreEntries = text.match(/(?<!Object\.)\bentries\b/g) ?? [];
+  assert.deepEqual(firestoreEntries, [], `${WIRING} touches the legacy entries[] array`);
+});
+
+check("Listening settles on the REAL end-of-playback signals", () => {
+  const page = fs.readFileSync(path.join(root, "app", "quranrevival.html"), "utf8");
+  if (!page.includes("settleListeningSession")) return; // P4-D2 not on this branch
+  // audio-player.js invokes onPlaybackState() with NO arguments. A first
+  // version of the D2 wiring branched on `state === "ended"` inside
+  // setPlaybackStateHandler, which would have been false for ever -- Listening
+  // evidence would never have been recorded, and every pure-session test would
+  // still have passed. This asserts the wiring uses the signals that exist.
+  // Take the call's ACTUAL argument list by balancing parentheses. The first
+  // version of this guard sliced to the next `");"` -- which in JavaScript is
+  // the two characters `)` and `;`, so it stopped at `renderReadTransport();`
+  // and never saw the rest of the handler. It passed against the very defect it
+  // was written to catch, until a mutation run proved otherwise.
+  const callAt = page.indexOf("setPlaybackStateHandler(");
+  assert.ok(callAt >= 0, "setPlaybackStateHandler is not called at all");
+  let depth = 0, end = callAt;
+  for (let i = page.indexOf("(", callAt); i < page.length; i++) {
+    if (page[i] === "(") depth++;
+    else if (page[i] === ")") { depth--; if (depth === 0) { end = i; break; } }
+  }
+  const handlerBody = page.slice(callAt, end + 1);
+  assert.ok(!/settleListeningSession/.test(handlerBody),
+    "Listening is settled from setPlaybackStateHandler, which is called with no arguments");
+  assert.ok(/await settleListeningSession\("ended"\)/.test(page),
+    "nothing settles the listen when playback finishes naturally");
+  assert.ok(/settleListeningSession\("failed"\)/.test(page),
+    "nothing fails the listen when playback fails");
+  assert.ok(/settleListeningSession\("stopped"\)/.test(page),
+    "nothing settles the listen when the reader presses Stop");
+});
+
+check("only a real Play press can start a listening session", () => {
+  const page = fs.readFileSync(path.join(root, "app", "quranrevival.html"), "utf8");
+  if (!page.includes("beginListeningSession")) return;
+  const starts = [...page.matchAll(/beginListeningSession\(\)/g)].length;
+  assert.equal(starts, 2, `beginListeningSession must be defined once and called once, saw ${starts} occurrences`);
+  // It must not be reachable from a preload or warm path.
+  assert.ok(!/warmSegmentedTimestamps\(\);\s*beginListeningSession/.test(page),
+    "a preload path starts a listening session");
+});
+
+check("a Study surface reaches evidence only through the wiring module", () => {
+  const page = fs.readFileSync(path.join(root, "app", "quranrevival.html"), "utf8");
+  if (!page.includes("study-event-wiring.js")) return; // not yet wired on this branch
+  assert.ok(!/study-activity-evidence-store\.js/.test(page),
+    "the page imports the writer directly instead of the wiring module");
+  assert.ok(!/logActivity\([^)]*reading\.completed/.test(page),
+    "a Study event is being written into the legacy activity log");
 });
 
 // --- 2. evidence can never reach legacy entries[] -------------------------

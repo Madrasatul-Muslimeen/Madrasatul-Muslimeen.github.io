@@ -13,7 +13,7 @@ import fs from "node:fs";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { initializeTestEnvironment, assertFails, assertSucceeds } from "@firebase/rules-unit-testing";
+import { initializeTestEnvironment, assertSucceeds } from "@firebase/rules-unit-testing";
 import { doc, getDoc, setDoc, updateDoc, deleteDoc } from "firebase/firestore";
 
 const PROJECT = "demo-quranrevival-activity-evidence-v1";
@@ -75,7 +75,48 @@ test("candidate Activity-evidence Rules: isolated allow/deny cases", async () =>
     const anon = env.unauthenticatedContext().firestore();
     let n = 0;
     const ok = async (name, p) => { await assertSucceeds(p); n++; console.log(`  PASS  ${name}`); };
-    const no = async (name, p) => { await assertFails(p); n++; console.log(`  PASS  ${name}`); };
+
+    // A denial must be a DECISION, not an exception the rules tripped over.
+    //
+    // Firestore Rules evaluates a condition in more than one pass: the first
+    // runs BEFORE get()/exists() lookups are resolved, so a field access on an
+    // unresolved lookup is recorded as "evaluation error" and the engine then
+    // re-evaluates with the lookups available. The verbose denial string
+    // concatenates every pass, so a perfectly sound rule that authorises via
+    // document lookups -- which is every authorisation rule in this codebase --
+    // shows an evaluation error followed by the decisive result.
+    //
+    // PROVEN, not assumed: the UNMODIFIED deployed firestore.rules produces the
+    // same shape for an ordinary unauthorised write to the EXISTING activity
+    // collection, at its own L867/L868, which this amendment does not touch --
+    // and it emits TWO such errors per denial where this rule emits one. See
+    // baseline-diagnostic.test.mjs, which is that proof as an executable test.
+    //
+    // So the thing worth asserting is not "no evaluation error appears" -- that
+    // would be asserting the platform behaves differently than it does -- but
+    // "the LAST entry, the one that decides, is a clean false". That is what
+    // distinguishes this rule from the rejected Activity candidate, whose
+    // denials were refusals by expression budget with no decisive false at all.
+    const no = async (name, p) => {
+      let err = null;
+      try { await p; } catch (e) { err = e; }
+      assert.ok(err, `${name}: expected the write to be denied, but it succeeded`);
+      const msg = String(err.message ?? err);
+      assert.ok(!/maximum of 1000 expressions/.test(msg),
+        `${name}: denied by EXPRESSION BUDGET, not by the security logic -- ${msg}`);
+      // Pull out the evaluation entries themselves rather than splitting the
+      // message on commas: the emulator's message is multi-line and its first
+      // line is the bare "PERMISSION_DENIED", which a comma split would hand
+      // back as the "last entry". The first version of this check did exactly
+      // that and failed a denial that was perfectly clean.
+      const entries = msg.match(/evaluation error at L\d+:\d+|false for '\w+'/g) ?? [];
+      const decisive = entries.at(-1) ?? "(no verbose trace)";
+      // No trace at all is fine: `allow update, delete: if false` has no
+      // expression to report, so Firestore denies with a bare message.
+      assert.ok(entries.length === 0 || /^false for '\w+'/.test(decisive),
+        `${name}: the deciding evaluation was not a clean false -- ${decisive} | ${msg.replace(/\s+/g, " ").slice(0, 200)}`);
+      n++; console.log(`  PASS  ${name}`);
+    };
 
     // --- the baseline ALLOW every denial below is measured against --------
     const base = evidence();

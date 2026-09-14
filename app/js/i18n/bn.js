@@ -608,6 +608,11 @@ export const BN = {
   "Previous āyah": "পূর্ববর্তী আয়াত",
   "Next āyah": "পরবর্তী আয়াত",
   "Bookmark this āyah": "এই আয়াতটি বুকমার্ক করুন",
+  // MAP Phase 4 (P4-D1) -- the explicit Reading completion.
+  "Mark this reading complete": "এই তিলাওয়াত সম্পন্ন হিসেবে চিহ্নিত করুন",
+  "Reading recorded.": "তিলাওয়াত রেকর্ড করা হয়েছে।",
+  "Already recorded for today.": "আজকের জন্য ইতিমধ্যে রেকর্ড করা হয়েছে।",
+  "Reading is recorded for an āyah, a range or a whole surah.": "তিলাওয়াত রেকর্ড হয় একটি আয়াত, একটি পরিসর বা একটি পূর্ণ সূরার জন্য।",
   "Remove bookmark": "বুকমার্ক সরান",
   // Bookmark creation/update round -- the ⋯ menu's own action, only shown
   // once a bookmark opened this session is the one still open here.

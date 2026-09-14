@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 4 — PRODUCTION PACKAGE</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 4 — PRODUCTION PACKAGE</h1>
+<p><strong>Date:</strong> 14 September 2026 <strong>Purpose:</strong> everything needed to put Phase 4 into production, in one place, so the only remaining step is an action requiring Firebase credentials this execution environment does not have.</p>
+<p><strong>Nothing in this package has been deployed.</strong> Production <code>firestore.rules</code> is byte-for-byte unchanged.</p>
+<hr>
+<h2>1. The exact tested Rules amendment</h2>
+<p><strong>File:</strong> <code>docs/governance/phase4-activity-evidence-rules-candidate-2026-09-14.rules</code> (the isolated extract that the emulator suite loads)</p>
+<p><strong>Merged form, ready to publish:</strong> <code>docs/governance/phase4-activity-evidence-DEPLOYMENT-candidate-2026-09-14.rules</code> = the repository <code>firestore.rules</code> <strong>plus</strong> the evidence block and nothing else.</p>
+<div class='tw'><table><thead><tr><th>Proof</th><th>Result</th></tr></thead><tbody>
+<tr><td>lines <strong>removed</strong> from the baseline</td><td><strong>0</strong></td></tr>
+<tr><td>lines added</td><td>208</td></tr>
+<tr><td>deleting the inserted region reproduces the baseline <strong>exactly</strong></td><td><strong>TRUE</strong></td></tr>
+<tr><td>evidence block byte-identical to the emulator-tested candidate</td><td><strong>TRUE</strong></td></tr>
+<tr><td>existing <code>match /activity/{activityKey}</code> rule</td><td><strong>unchanged</strong></td></tr>
+<tr><td>every other rule in the file</td><td><strong>unchanged</strong></td></tr>
+</tbody></table></div>
+<h2>2. Exact production insertion location</h2>
+<p>Immediately <strong>after</strong> the closing brace of the existing block:</p>
+<p>``<code> match /activity/{activityKey} {   allow read: if isPlatformAdmin();   allow read: if signedIn() &amp;&amp; !exists(/databases/$(database)/documents/activity/$(activityKey));   allow read: if canRecordFor(resource.data.tenantId, resource.data.personId);   allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);   allow update: if canRecordFor(resource.data.tenantId, resource.data.personId);   // No delete (I4/D6). } ⟵ THE NEW BLOCK GOES HERE, before </code>match /bookmarks/...<code> </code>``</p>
+<p>It is a <strong>sibling</strong> match block, not a nested one, and it reuses the deployed <code>canRecordFor</code> helper unchanged.</p>
+<h2>3. Rules baseline / parity verification procedure</h2>
+<p><strong>Do this first, every time. The repository copy is not proof of what is live.</strong></p>
+<ol><li>Open the Firebase Console → Firestore → <strong>Rules</strong> for <code>study-monitoring</code>.</li><li>Copy the live text out.</li><li>Diff it against this repository&#x27;s <code>firestore.rules</code>. The expected difference is <strong>one trailing newline</strong> in the repository copy and nothing else (<code>CLAUDE.md</code>, 2026-09-10).</li><li><strong>If anything else differs, STOP.</strong> Something was changed in the Console since; publishing from the repository copy would silently revert it. Bring the live text into the repository first, re-derive the candidate from it, and re-run §6.</li><li>Only when the diff is that single newline is the prepared candidate valid.</li></ol>
+<h2>4. Final D1–D4 wiring commits</h2>
+<div class='tw'><table><thead><tr><th>Tranche</th><th>Where</th></tr></thead><tbody>
+<tr><td>P4-A contract</td><td><code>main</code>, merge <code>7728c02</code> (v08.24)</td></tr>
+<tr><td>P4-C writer</td><td><code>main</code>, merge <code>05ba016</code> (v08.25)</td></tr>
+<tr><td>Rules candidate + blocker report</td><td><code>main</code>, <code>65d3f99</code></td></tr>
+<tr><td><strong>P4-D1/D2/D4 wiring</strong></td><td><code>claude/phase4-wiring</code> — <strong>NOT merged</strong></td></tr>
+<tr><td><strong>P4-D3 Journaling</strong></td><td><strong>NOT BUILT</strong> — blocked, §11</td></tr>
+</tbody></table></div>
+<h2>5. Resulting application version</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>main</code> today</td><td><strong>08.25</strong></td></tr>
+<tr><td>after merging the wiring branch</td><td><strong>08.26</strong></td></tr>
+</tbody></table></div>
+<p>One increment for the integrated wiring candidate, not four: D1, D2 and D4 are internal checkpoints behind the deployment gate and are recorded by commit SHA, not by production version churn.</p>
+<h2>6. Full regression evidence</h2>
+<p>See <code>docs/reports/2026-09-14-map-phase4d-study-event-wiring.md</code> for the per-suite table. Headline: emulator <strong>53 assertions, 0 failures, 0 expression-budget denials</strong>, every denial asserted to end in a decisive clean <code>false</code>, all four important Rules checks proven active by mutation; pure suites 39 + 29 + 19 + 18; P4-A and Phase 2/3 baselines unchanged.</p>
+<h2>7. Rollback procedure</h2>
+<p><strong>Rules</strong> — republish the previous ruleset. The Console keeps every published version and can roll back in one click. Because the amendment is <strong>addition-only</strong>, rolling back removes the evidence rule and touches nothing else; the subcollection simply becomes unwritable again. <strong>No data is lost</strong> — existing evidence documents remain, readable by an admin.</p>
+<p><strong>Application</strong> — revert the wiring merge. Because the writer is additive and create-only, there is no state to unwind: no existing document was altered, no field repurposed, no array rewritten. Rollback is &quot;stop writing&quot;, never &quot;put it back&quot; (I4/D6 — nothing is ever deleted).</p>
+<p><strong>Order matters:</strong> roll back the application first, then the Rules. The reverse leaves a live app writing to a collection that has just stopped accepting it, which surfaces permission errors to readers.</p>
+<h2>8. Exact deployment actions</h2>
+<p><strong>Route A — Firebase Console</strong> (the route this project has used before, and the one available without granting anything to this environment):</p>
+<ol><li>Run §3&#x27;s parity check. Stop if it fails.</li><li>Open the deployment candidate, copy the block between <code>// MAP Phase 4 (P4-B/P4-C) -- ADR-008 Study Activity evidence.</code> and the closing <code>}</code> of <code>match /activity/{activityKey}/evidence/{eventId}</code>.</li><li>Paste it into the live Rules at §2&#x27;s location.</li><li><strong>Publish.</strong></li><li>Merge <code>claude/phase4-wiring</code> into <code>main</code> (v08.26) so the app can use it.</li></ol>
+<p><strong>Route B — CLI</strong>, if credentials are ever available here:</p>
+<p>```</p>
+<h1>after §3&#x27;s parity check passes</h1>
+<p>cp docs/governance/phase4-activity-evidence-DEPLOYMENT-candidate-2026-09-14.rules firestore.rules npx firebase --project study-monitoring deploy --only firestore:rules ```</p>
+<h2>9. Post-deployment verification</h2>
+<ol><li><strong>Re-read the live Rules</strong> and confirm the evidence block is present and the rest is unchanged.</li><li>Open the app as the Owner, Study → Read, and press the <strong>✓</strong> button on a single āyah. Expected: the tick turns on, and <strong>no red failure banner</strong> appears at the bottom of the screen. A banner means the write was denied and the Rules did not take.</li><li>Press <strong>✓</strong> again on the same āyah. Expected: it reads <strong>&quot;Already recorded for today.&quot;</strong> — proof that deduplication is working at the database.</li><li>Press <strong>▶</strong> and let a whole short surah play to the end. Nothing visible happens; that is correct. Listening records silently.</li><li>Open the Word Card on any word and set a word state. Expected: no failure banner.</li><li><strong>Check that nothing reached Mastery:</strong> open the Note view&#x27;s Track card for that āyah. It must still read exactly as before — no claim, no confirmation. That is the invariant the whole design exists to protect.</li></ol>
+<h2>10. Phase 4 closure checklist</h2>
+<div class='tw'><table><thead><tr><th>Item</th><th>State</th></tr></thead><tbody>
+<tr><td>ADR-008 accepted, and amended 14 Sep</td><td><strong>DONE</strong></td></tr>
+<tr><td>P4-A Study→Approach contract on <code>main</code></td><td><strong>DONE</strong> (v08.24)</td></tr>
+<tr><td>P4-B persistence architecture accepted</td><td><strong>DONE</strong></td></tr>
+<tr><td>P4-C evidence writer on <code>main</code></td><td><strong>DONE</strong> (v08.25)</td></tr>
+<tr><td>Rules candidate, emulator-verified</td><td><strong>DONE</strong> — 53 assertions, 0 budget denials</td></tr>
+<tr><td>Rules evaluation-diagnostic root-caused and proven</td><td><strong>DONE</strong> — §11 of the D-report</td></tr>
+<tr><td>P4-D1 Reading wired</td><td><strong>DONE</strong>, unmerged</td></tr>
+<tr><td>P4-D2 Listening wired</td><td><strong>DONE</strong>, unmerged</td></tr>
+<tr><td>P4-D4 WbW wired</td><td><strong>DONE</strong>, unmerged</td></tr>
+<tr><td><strong>P4-D3 Journaling wired</strong></td><td><strong>BLOCKED</strong> — §11</td></tr>
+<tr><td>Rules deployed</td><td><strong>BLOCKED</strong> — no credentials</td></tr>
+<tr><td>Wiring merged to <code>main</code></td><td><strong>HELD</strong> until Rules are deployed</td></tr>
+<tr><td>Monitor / backup read path for evidence</td><td><strong>NOT STARTED</strong> — deliberately; a separate task after closure</td></tr>
+</tbody></table></div>
+<h2>11. The two things that remain, and what each needs</h2>
+<p><strong>(a) Rules deployment — an access dependency, not a design question.</strong> Everything is prepared and verified; §8 is the action. It needs Console access or credentials, neither of which this environment has.</p>
+<p><strong>(b) P4-D3 Journaling — a genuine architecture decision.</strong> The live note surface <code>ayah-notes.js</code> stores <strong>one note per (person, unitKey), keyed by unitKey, with no id of any kind</strong>. ADR-008 as amended requires a permanent <code>noteId</code> in the event identity and requires two Notes on the same unit to remain independent — <strong>that model cannot hold two notes on one unit at all.</strong> <code>note-foundation.js</code>, which has permanent note ids and revisions, is the Phase 5 Note Foundation and is imported by nothing; activating it is out of scope.</p>
+<p>Three routes, none safe to choose without authority:</p>
+<div class='tw'><table><thead><tr><th>Route</th><th>Consequence</th></tr></thead><tbody>
+<tr><td><strong>Activate Phase 5 Notes for Journaling</strong></td><td>ADR-008 is satisfied as written, but this is Phase 5 work inside Phase 4</td></tr>
+<tr><td><strong>Amend ADR-008&#x27;s Journaling identity</strong> to the live one-note-per-unit reality</td><td>D3 ships now; &quot;different Notes on the same unit&quot; becomes moot because the product has no such concept</td></tr>
+<tr><td><strong>Defer D3 to Phase 5</strong></td><td>Phase 4 closes with Reading, Listening and WbW; Journaling follows the Note Foundation</td></tr>
+</tbody></table></div>
+<p><strong>Synthesising a <code>noteId</code> from the unitKey is NOT among them.</strong> It would leave the amendment&#x27;s words in place while emptying them of meaning, and nothing on any screen would show it.</p>
+</main></body></html>

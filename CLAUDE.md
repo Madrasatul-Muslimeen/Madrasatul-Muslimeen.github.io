@@ -25,11 +25,49 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: v08.25** (on `claude/dreamy-tesla-0clj36`, 14 Sep 2026 — `main` is still v08.24; P4-C is deliberately NOT merged, pending Master Architect audit). `app/js/version.js` is
+**Current milestone: v08.26** (on `claude/phase4-wiring`, 14 Sep 2026 — `main` is v08.25; the Phase 4 Study-event WIRING is deliberately NOT merged until the Activity evidence Rules are deployed). `app/js/version.js` is
 the single source of truth and the badge beside the app name says so on screen.
 **This line has drifted twice already — it read `v08.02` while `main` was on
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
+
+**v08.26 (14 Sep 2026) is MAP Phase 4 P4-D — Reading, Listening and WbW wired
+to the evidence writer. Journaling is BLOCKED.** On `claude/phase4-wiring`, NOT
+merged: until the Activity evidence Rules are deployed the subcollection has no
+rule, so in production every one of these writes is denied.
+
+**Why D3 Journaling is blocked — read this before attempting it.** The live note
+surface `ayah-notes.js` stores **one note per (person, unitKey), keyed by
+unitKey, with no id of any kind**. ADR-008 as amended requires a permanent
+`noteId` in the event identity and requires two Notes on the same unit to remain
+independent — **and that data model cannot hold two notes on one unit at all.**
+`note-foundation.js`, which does have permanent note ids and revisions, is the
+Phase 5 Note Foundation and is imported by nothing. So D3 needs a decision:
+activate Phase 5 for Notes, or amend ADR-008's Journaling identity to the live
+one-note-per-unit reality. **Do not synthesise a noteId from the unitKey** —
+that would leave the amendment's words in place while emptying them of meaning.
+
+**The Rules "evaluation error" diagnostic is CLOSED, and the answer is that it
+is platform behaviour.** Firestore Rules evaluates a condition in more than one
+pass; the first runs BEFORE `get()`/`exists()` lookups resolve, so a field
+access on an unresolved lookup is logged as an evaluation error and the engine
+re-evaluates. **The unmodified DEPLOYED `firestore.rules` shows the same shape
+for an unauthorised write to the existing `activity` collection, and emits TWO
+per denial where the P4 rule emits one** — checked in as
+`baseline-diagnostic.test.mjs`. The suite asserts the right thing now: every
+denial's LAST entry is a clean `false`. **Do not "fix" this by removing
+get()-based authorisation.**
+
+**The defect worth remembering from D2:** the first Listening wiring branched on
+`state === "ended"` inside `setPlaybackStateHandler`, and
+**`audio-player.js` calls that callback with NO arguments** — so the feature
+would have silently never run while every test of its logic passed. The end of a
+listen comes from `playCurrentSelection()`'s own completion and `catch`.
+
+**D1 added a real control** — a `✓` on `#readBar`, ADR-008's required explicit
+completion — with a **zero-layout** `role="status"` live region for
+announcements, because that bar is the app's densest row. **D4 is āyah + day by
+construction:** `wbwEngagementArgs()` has no parameter for an occurrence.
 
 **v08.25 (14 Sep 2026) is MAP Phase 4 P4-C — the Study Activity evidence
 WRITER, still uninvoked.** Read this and the v08.24 entry together before any
@@ -865,6 +903,17 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   outright. ~40px is the target for anything a finger presses; a square,
   fixed, `flex-shrink: 0` tile is what keeps a row of them looking like one
   group instead of several sizes.
+- **Read a callback's own call site before branching on its arguments.**
+  v08.26's Listening wiring branched on `state === "ended"` inside
+  `setPlaybackStateHandler`, which `audio-player.js` invokes BARE. The branch
+  would have been false for ever: the feature would silently never have run, and
+  every test of the pure logic behind it still passed. A handler whose arguments
+  you assumed is a feature that does nothing and reports nothing.
+- **A guard can pass against the very defect it was written to catch.**
+  v08.26's first Listening guard sliced the handler to the next `");"` — which
+  in JavaScript is the two characters `)` and `;`, so it stopped at the first
+  `foo();` and never saw the rest. It went green on the mutation. **Always run
+  the mutation**; a guard is not evidence until it has failed once on purpose.
 - **Mutation-test a security rule CHECK BY CHECK, and pair every denial with an
   allow differing in ONE fact.** v08.25's `personInTenant()` could be deleted
   with all 51 emulator assertions still green: the cross-tenant case had `p1`

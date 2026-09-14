@@ -12548,3 +12548,92 @@ migration, no backfill, no production write, no Study event wired, no Monitor or
 backup read path. **Until the candidate Rules are deployed the subcollection has
 no rule and is closed to every client**, so the feature cannot function for
 anyone yet — deployment remains an Owner Control Gate. DDR-001–004 untouched.
+
+**v08.26 (14 Sep 2026) is MAP Phase 4 P4-D — the Study event wiring: Reading
+(D1), Listening (D2) and WbW (D4) wired to the accepted evidence writer.
+Journaling (D3) is BLOCKED on an architecture decision, below.** Built on
+`claude/phase4-wiring` and **deliberately not merged**: until the Activity
+evidence Rules are deployed the subcollection has no rule, so in production
+every one of these writes is denied.
+
+**The Rules diagnostic was closed first, with proof rather than acceptance.**
+Seven of the 53 emulator denials carried an `evaluation error` alongside their
+decision. Root cause, found by instrumenting the ruleset with `debug()` markers
+and reading the marker trail: **Firestore Rules evaluates a condition in more
+than one pass — the first runs BEFORE `get()`/`exists()` lookups resolve, so a
+field access on an unresolved lookup is recorded as an evaluation error and the
+engine re-evaluates with the lookups available.** Any rule that authorises via
+document lookups shows it. **Proven, not asserted: the UNMODIFIED deployed
+`firestore.rules` produces the same shape for an ordinary unauthorised write to
+the EXISTING `activity` collection at its own L867/L868 — and emits TWO such
+errors per denial where the P4 rule emits one.** That proof is checked in as
+`baseline-diagnostic.test.mjs`. The suite now asserts the right thing: **every
+denial's LAST evaluation entry is a clean `false`** — which is what separates
+this rule from the rejected candidate, whose denials were budget exhaustion with
+no decisive `false` at all. No rule change was needed or made.
+
+**D1 Reading.** ADR-008 requires explicit completion, and the app had no such
+control, so one was added: a `✓` button on `#readBar`. The Approach is read off
+what is actually on screen — a translation showing means Reading (with Meaning),
+`approach_03`; none means Reading (with Tajweed), `approach_01` — rather than
+from a mode a reader would have to remember to set. Feedback is the button's own
+persistent state plus a **zero-layout** `role="status"` live region, because
+`#readBar` is this app's densest row and a message that took width could wrap
+it. The tick clears on every unit change: "recorded" belongs to a unit and a
+day, not to the screen.
+
+**D2 Listening, and the defect that would have made it silently do nothing.**
+The first wiring branched on `state === "ended"` inside
+`setPlaybackStateHandler` — but **`audio-player.js` invokes that callback with
+NO arguments**, so the branch would have been false for ever, Listening evidence
+would never once have been recorded, and **every test of the pure session logic
+would still have passed.** Caught by reading the player rather than assuming its
+shape. The end of a listen now comes from `playCurrentSelection()`'s own
+completion and `catch`, which are the real signals, and a boundary check asserts
+the wiring never settles from that argument-less handler. ADR-008's exclusions
+are properties of the session shape, not special cases: preload cannot create a
+session; buffering does not advance the āyah; heard āyahs are a SET so looping
+adds nothing; an āyah is credited only on FORWARD motion so a seek credits only
+what was really left behind; and a failure ends the session permanently.
+
+**D4 WbW is āyah + day by construction** — `wbwEngagementArgs()` takes a surah
+and an āyah and **has no parameter for an occurrence**, so a hundred taps in one
+āyah on one day produce one identical event id and the database refuses the rest
+as duplicates. It fires on the LEARNER's own state action only; a supervisor
+approving a word records no Activity, because a teacher approving has not
+themselves studied.
+
+**D3 Journaling is BLOCKED, and it is a real architecture decision, not a
+defect.** The live note surface (`ayah-notes.js`) stores **one note per
+(person, unitKey), keyed by unitKey, with no id of any kind** — "a person's
+current note on that āyah, not an append-only log". ADR-008 as amended requires
+a permanent `noteId` in the event identity and requires two Notes on the same
+unit to stay independent; **that data model cannot hold two notes on one unit at
+all.** The module that does have permanent note ids and revisions,
+`note-foundation.js`, is the Phase 5 Note Foundation and is **imported by
+nothing** — activating it is explicitly out of scope. Neither synthesising an id
+from the unitKey (which would silently empty the amendment of meaning) nor
+activating Phase 5 is safe to choose unilaterally.
+
+**Three of my own checks were wrong, all caught by measuring.** (1) The
+Listening boundary guard sliced the handler to the next `");"` — which in
+JavaScript is the two characters `)` and `;`, so it stopped at
+`renderReadTransport();` and **passed against the very defect it was written to
+catch**, until a mutation run proved otherwise; it balances parentheses now.
+(2) A pure test re-imported the same `data:` URL expecting a fresh module and
+got the cached one, whose store reference was bound at first evaluation.
+(3) Nothing else: the earlier `Object.entries` and async-`check()` traps stayed
+fixed.
+
+**Standing lesson, new: read the callback's own call site before branching on
+its arguments.** A handler invoked bare while you branch on a parameter is a
+feature that silently never runs, and no test of the logic behind it will
+notice.
+
+**Tests:** 39 pure wiring checks; evidence identity/store/boundary 29 / 19 / 18;
+emulator 53 assertions, 0 failures, 0 expression-budget denials, every denial
+asserted decisive, all four important Rules checks proven active by mutation;
+P4-A suites and the Phase 2/3 baseline unchanged. Four new strings, all
+translated. **`firestore.rules`, `records.js` and `activity.js` byte-for-byte
+untouched.** No Rules deployed, no index, no migration, no backfill, no
+production write. DDR-001–004 untouched.
