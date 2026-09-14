@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 5 — P5-A Note Foundation Rules · P5-B Journaling identity bridge</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 5 — P5-A Note Foundation Rules · P5-B Journaling identity bridge</h1>
+<p><strong>Date:</strong> 15 September 2026 <strong>Baseline:</strong> <code>main</code> = <code>1dfed1836b9a32970d49332a5ff978efb436e877</code>, app version <strong>08.25</strong> <strong>Type:</strong> Rules candidate + one pure module. <strong>No application behaviour changed</strong>, so <strong>no version increment</strong> — per the version rule, documentation/test/candidate work that leaves app behaviour untouched does not churn the version. <strong>Status:</strong> built and verified. No Rules deployed.</p>
+<p><strong>Phase 4 preserved untouched:</strong> wiring candidate <code>c4fca4a</code> (v08.26) unmerged, the 208-line Rules amendment intact, production activation still a <strong>pending external-access dependency</strong> — recorded, not blocking.</p>
+<hr>
+<h2>1. Reconciliation before changing anything (PRESERVE → RECONCILE → EXTEND)</h2>
+<p>What is really on <code>main</code> today, read rather than assumed:</p>
+<div class='tw'><table><thead><tr><th>Item</th><th>State</th></tr></thead><tbody>
+<tr><td><code>app/js/note-foundation.js</code></td><td><strong>present, and imported by nothing</strong> — the accepted uninvoked data layer</td></tr>
+<tr><td>Collections declared</td><td><code>notes</code>, <code>noteRevisions</code>, <code>noteSources</code>, <code>noteFolders</code>, <code>notePlacements</code></td></tr>
+<tr><td><strong>Firestore Rules for any of them</strong></td><td><strong>NONE</strong> — all five denied by default</td></tr>
+<tr><td><code>tests/firestore/note-foundation.security-matrix.json</code></td><td>the accepted design: <strong>37 cases</strong></td></tr>
+<tr><td>Existing Phase 5 suites</td><td><code>boundary</code> 30 · <code>data-layer</code> 15 · <code>transaction</code> 16 · <code>size-preflight</code> 5 fixtures · <code>emulator-scaffold</code> 31 — <strong>all green on <code>main</code></strong></td></tr>
+<tr><td>Live note surface <code>app/js/ayah-notes.js</code></td><td><strong>unchanged, and untouched by this round</strong></td></tr>
+</tbody></table></div>
+<p><strong>Nothing was activated merely because it exists.</strong> The data layer stays uninvoked; this round gives it the Rules it has never had and the pure bridge Phase 4 was waiting for.</p>
+<p><strong>Existing user notes are untouched.</strong> <code>ayahNotes</code> keeps its own collection, its own rule and its own behaviour. There is no dual-write, no fallback, and <strong>no migration of any kind</strong> — destructive or otherwise.</p>
+<h2>2. P5-A — the Note Foundation Rules candidate</h2>
+<p><code>docs/governance/phase5-note-foundation-rules-candidate-2026-09-15.rules</code> <strong>CANDIDATE ONLY. NOT DEPLOYED.</strong> Production <code>firestore.rules</code> untouched.</p>
+<p><strong>Governs exactly three collections: <code>notes</code>, <code>noteRevisions</code>, <code>noteSources</code>.</strong> <code>noteFolders</code> and <code>notePlacements</code> are <strong>deliberately absent</strong> — they are MAP Phase 6 (Mapping My Journey), the code that writes them is uninvoked, and an unruled collection is denied by default. Leaving them out is the safe answer, and the suite asserts they stay denied.</p>
+<h3>The security design</h3>
+<p>Everything follows from the matrix&#x27;s own <code>canonicalOwner: ownerPersonId</code>, with <code>ownerUid</code> nullable because a managed child may have no login at all:</p>
+<ul><li><strong>Only the owner writes.</strong> Not a guardian, not a teacher, not a tenant administrator, not a platform administrator. Every other role that can see a Note can only ever <strong>read</strong> it. That is deliberately stricter than <code>canRecordFor()</code>, which the rest of the app uses for progress data — <strong>a Note is a person&#x27;s own private writing, not a record kept about them.</strong></li><li>A guardian is a <strong>custodian, not an owner</strong>: scoped read of a linked child.</li><li>A teacher reads only an <strong>actively</strong> linked student.</li><li>An administrator reads only <strong>inside their own tenant</strong>; a platform administrator gets no cross-tenant reach here (ADMIN-04).</li><li>Revisions are <strong>create-only for ever</strong>. Identity is frozen. Nothing is ever deleted (I4/D6) — retiring writes a status.</li></ul>
+<h3><code>getAfter()</code> makes the revision pointer real, not a promise</h3>
+<p>A Note&#x27;s <code>currentRevisionId</code> must name a revision that <strong>exists once this commit lands</strong>, belongs to the same Note, tenant and owner, and — on an update — <strong>chains from the revision the Note is moving away from</strong>. Rules evaluate each document independently, so without <code>getAfter()</code> a client could point a Note at a revision it never wrote and the pointer would be fiction. This is what makes matrix cases TXN-01, TXN-02 and TXN-03 enforceable rather than aspirational.</p>
+<h3>Cost is a security property, applied from the start</h3>
+<p>The P4-B finding is designed in rather than discovered: no rule walks a map, counts entries or inspects a dynamic key, so every rule costs a fixed handful of <code>get()</code>/<code>exists()</code> calls <strong>regardless of how many Notes a person has written.</strong> Measured: <strong>0 expression-budget denials.</strong></p>
+<h3>What it deliberately does NOT do, stated not hidden</h3>
+<p>Matrix cases <strong>GUARD-05/06/07</strong> describe a 30-minute, server-expiring, Note-specific approval that would let a guardian revise a managed child&#x27;s content. <strong>No such mechanism exists</strong> — the accepted data layer has no approval document and no expiry concept. Rather than invent one inside a Rules candidate, this ruleset <strong>denies every guardian content edit outright</strong>. That satisfies GUARD-04, GUARD-06, GUARD-07 and GUARD-08 in full and is <strong>strictly safer</strong> than the accepted design; only the single <em>allow</em> case GUARD-05 is unreachable, and it stays a recorded dependency.</p>
+<h2>3. P5-B — the Journaling identity bridge (resolves the deferred P4-D3)</h2>
+<p><code>app/js/note-journal-evidence.js</code> — pure, uninvoked.</p>
+<p><strong>This is the thing Phase 4 could not have.</strong> ADR-008 as amended requires <code>noteId</code> in the Journaling event identity and requires two Notes on the same unit to stay independent. The live <code>ayah-notes.js</code> keys one note per (person, unitKey) with <strong>no id at all</strong>, so there was nothing to key on — which is why P4-D3 was deferred rather than bodged. The Note Foundation supplies the real thing: a permanent <code>noteId</code> minted once, and a <code>revisionId</code> chain.</p>
+<ul><li><code>journal.note-created</code> — one event for the life of that Note, <code>dedupeScope</code> <code>&#x27;once&#x27;</code>.</li><li><code>journal.note-revised</code> — at most one per Note per UTC day.</li></ul>
+<p><strong>Which event it is comes from the revision CHAIN, not a caller&#x27;s flag.</strong> A Note&#x27;s first revision has <code>previousRevisionId: null</code>; every later one names what it chains from. So a caller cannot claim a creation twice, or mislabel a revision, because the data the write produced decides.</p>
+<p><strong>Committed changes only, by construction.</strong> The function requires a <code>noteId</code> <em>and</em> the <code>revisionId</code> that commit produced. A draft, an open editor, a cancelled edit and a failed autosave never produce a <code>revisionId</code>, so none of them can reach it — ADR-008&#x27;s exclusion enforced by what the signature demands rather than by a flag. A retirement records nothing: retiring is not journaling.</p>
+<p><strong>The bodge is tested against.</strong> <code>isPermanentNoteId(&quot;ayah:2:255&quot;)</code> is <code>false</code>, and a commit carrying a unitKey as its <code>noteId</code> returns <code>null</code>. The thing the Master Architect forbade cannot pass silently.</p>
+<h2>4. Tests</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><strong>Phase 5 Rules, emulator</strong> (isolated, demo project)</td><td><strong>53 assertions, 0 failures, 0 expression-budget denials</strong></td></tr>
+<tr><td>Matrix coverage</td><td><strong>31 of 37 cases exercised</strong></td></tr>
+<tr><td>Every denial</td><td>asserted to end in a <strong>decisive clean <code>false</code></strong></td></tr>
+<tr><td><code>note-journal-evidence.mjs</code> (P5-B, pure)</td><td><strong>18 passed, 0 failed</strong></td></tr>
+<tr><td><code>note-foundation-boundary.mjs</code></td><td>30 passed, 0 failed</td></tr>
+<tr><td><code>note-foundation-data-layer.mjs</code></td><td>15 assertions passed</td></tr>
+<tr><td><code>note-foundation-transaction.mjs</code></td><td>16 assertions passed</td></tr>
+<tr><td><code>note-foundation-emulator-scaffold.mjs</code></td><td>31 passed, 0 failed</td></tr>
+<tr><td><code>note-foundation-size-preflight.mjs</code></td><td>5 fixtures measured</td></tr>
+</tbody></table></div>
+<h3>The 6 matrix cases NOT exercised, and why</h3>
+<div class='tw'><table><thead><tr><th>Cases</th><th>Reason</th></tr></thead><tbody>
+<tr><td>GUARD-05, GUARD-06, GUARD-07</td><td>the guardian approval mechanism does not exist; all guardian edits are denied outright instead (§2)</td></tr>
+<tr><td>REL-02, REL-03, REL-04</td><td><code>noteFolders</code> / <code>notePlacements</code> are <strong>MAP Phase 6</strong>, out of this candidate&#x27;s scope and denied by default</td></tr>
+</tbody></table></div>
+<h3>Mutation testing — every important check proven active</h3>
+<div class='tw'><table><thead><tr><th>Neutralised</th><th>Assertions reached</th><th>Suite</th></tr></thead><tbody>
+<tr><td>baseline</td><td>53</td><td>passes</td></tr>
+<tr><td><code>isNoteOwner()</code> on <strong>create</strong> (3 occurrences)</td><td><strong>19</strong></td><td><strong>fails</strong></td></tr>
+<tr><td><code>isNoteOwner()</code> on <strong>update</strong> (2 occurrences)</td><td><strong>22</strong></td><td><strong>fails</strong></td></tr>
+<tr><td><code>noteIdentityUnchanged()</code></td><td><strong>21</strong></td><td><strong>fails</strong></td></tr>
+<tr><td><code>personInTenant()</code> in <code>canReadNoteOf</code> (2 occurrences)</td><td><strong>20</strong></td><td><strong>fails</strong></td></tr>
+<tr><td><code>committedRevisionMatches()</code></td><td><strong>8</strong></td><td><strong>fails</strong></td></tr>
+</tbody></table></div>
+<h3>Two harness flaws and one REAL design flaw, all found by mutation</h3>
+<p><strong>(1) A partial mutation proves nothing.</strong> The first run reported three checks untested. Two were the harness&#x27;s own fault: it replaced only the <strong>first</strong> occurrence of a pattern, and <code>isNoteOwner</code> appears three times, <code>personInTenant</code> twice — the rest kept enforcing. The harness now replaces <strong>every</strong> occurrence and prints how many it changed.</p>
+<p><strong>(2) A denial some OTHER rule produced is not evidence.</strong> IMM-01 denied an owner repoint — but through <code>committedRevisionMatches</code>, not the identity check. Five isolating cases (ISO-00…ISO-04) were added, then two more (ISO-05…ISO-07) that <strong>seed a structurally perfect next revision past the rules</strong>, so the only thing left to refuse the write is the single rule under test. ISO-07 is the paired allow differing from ISO-06 in exactly one fact: who is doing it.</p>
+<p><strong>(3) A REAL design flaw in my own rule.</strong> The update path required <code>createdBy == myUid()</code>, which <strong>conflates authorship with authorisation</strong>. It happened to deny a teacher&#x27;s update — for the wrong reason — and it meant the <strong>owner check on the update path was never exercised at all</strong>: neutralising <code>isNoteOwner</code> there left the suite green. <code>createdBy</code> is an origin fact, so it is now <strong>stamped on create and frozen on update</strong>, and authorisation is <code>isNoteOwner()</code>&#x27;s job alone. The mutation that previously passed now fails at 22 assertions.</p>
+<h3>Superseded note on the earlier harness flaw</h3>
+<p>The first mutation run reported three checks as untested — <code>isNoteOwner</code>, <code>noteIdentityUnchanged</code>, <code>personInTenant</code>. <strong>Two of those were the harness&#x27;s fault, not the suite&#x27;s:</strong> the script replaced only the <strong>first</strong> occurrence of a pattern, and <code>isNoteOwner</code> appears three times and <code>personInTenant</code> twice, so the remaining copies kept enforcing. A partial mutation proves nothing. The harness now replaces <strong>every</strong> occurrence and reports how many it changed.</p>
+<p><code>noteIdentityUnchanged</code> was a <strong>real</strong> gap: IMM-01 denied an owner repoint, but via <code>committedRevisionMatches</code>, not the identity check — a denial some other rule would have produced anyway. Five <strong>isolating</strong> cases were added (ISO-00…ISO-04), each a write that passes every rule except the one named, and ISO-00 is the paired allow that differs from ISO-01 in exactly one fact.</p>
+<h2>5. Phase 4 — preserved, not disturbed</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>main</code></td><td><code>1dfed18</code>, <strong>v08.25</strong> — unchanged by this round</td></tr>
+<tr><td>Wiring candidate</td><td><code>claude/phase4-wiring</code> = <code>c4fca4a</code>, <strong>v08.26</strong>, unmerged, merges clean</td></tr>
+<tr><td>Rules amendment</td><td>preserved, re-verified 53/0/0 at the gate</td></tr>
+<tr><td>Production deployment</td><td><strong>PENDING EXTERNAL ACCESS</strong> — recorded dependency</td></tr>
+<tr><td>P4-D3 Journaling</td><td><strong>DEFERRED TO PHASE 5 — REQUIRED DEPENDENCY ON PERMANENT NOTE IDENTITY.</strong> P5-B is that identity; the wiring itself remains Phase 5 work</td></tr>
+</tbody></table></div>
+<h2>6. Position and next</h2>
+<p><strong>Done:</strong> Phase 5 reconciliation; the Note Foundation Rules candidate with its 37-case matrix executed to 31; the Journaling identity bridge.</p>
+<p><strong>Next, and unblocked:</strong> P5-C — the Note editor and Study integration, wiring <code>note-foundation.js</code> and the P5-B bridge to a real surface. Like the Phase 4 wiring it will be built and tested but <strong>not merged</strong> while the Note Foundation collections have no deployed rule, for the same reason: the writer surfaces genuine denials (I15) and every write would be denied in production.</p>
+<p><strong>Two deployment dependencies now stand, both the same kind and neither blocking construction:</strong> the Phase 4 Activity-evidence Rules, and the Phase 5 Note Foundation Rules. Both candidates are emulator-verified and ready.</p>
+<p><strong>STATUS: CONTINUING. No Owner-only decision is outstanding in Phase 5 so far.</strong></p>
+</main></body></html>

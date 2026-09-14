@@ -25,11 +25,60 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: v08.25** (on `claude/dreamy-tesla-0clj36`, 14 Sep 2026 — `main` is still v08.24; P4-C is deliberately NOT merged, pending Master Architect audit). `app/js/version.js` is
+**Current milestone: v08.25 on `main`** (15 Sep 2026). Two candidates are held unmerged behind the same gate — the Phase 4 Study-event WIRING (`claude/phase4-wiring`, `c4fca4a`, v08.26) and the Phase 5 Note Foundation Rules — because **both need Firestore Rules deployed first, and a sandbox has no `study-monitoring` credentials.** `app/js/version.js` is
 the single source of truth and the badge beside the app name says so on screen.
 **This line has drifted twice already — it read `v08.02` while `main` was on
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
+
+**15 Sep 2026 — MAP PHASE 5 IS UNDER WAY. Read this before touching Notes.**
+
+**Two Firestore Rules candidates now wait on the SAME external dependency, and
+neither blocks building:** Phase 4's Activity-evidence amendment (208 lines,
+`diff` = one pure-append hunk, 53/0/0 at the gate) and Phase 5's Note Foundation
+Rules (53/0/0, 31 of 37 accepted matrix cases). `firestore.rules` is
+byte-for-byte untouched. **A sandbox cannot deploy either** — `firebase` reports
+"Failed to authenticate" and the Rules API returns 403 — so deployment goes
+through the Firebase Console using
+`docs/governance/phase4-production-package-2026-09-14.md`.
+
+**Phase 5's security design, in one line: ONLY THE OWNER WRITES A NOTE.** Not a
+guardian, not a teacher, not a tenant administrator, not a platform
+administrator — every other role that may see a Note may only READ it. That is
+deliberately stricter than `canRecordFor()`, which the rest of the app uses for
+progress data, because **a Note is a person's own private writing, not a record
+kept about them.** Do not "align" it with `canRecordFor()` later.
+
+**`getAfter()` is what makes a Note's revision pointer real.**
+`currentRevisionId` must name a revision that exists once the commit lands,
+belongs to the same Note/tenant/owner, and on an update chains from the revision
+being left behind. Rules evaluate documents independently, so without it the
+pointer is fiction.
+
+**The guardian approval window is NOT implemented, deliberately.** Matrix cases
+GUARD-05/06/07 describe a 30-minute server-expiring, Note-specific approval, and
+no such mechanism exists in the data layer. Every guardian content edit is denied
+outright instead — safer than the accepted design, and recorded rather than
+faked.
+
+**P5-B resolved the deferred P4-D3.** `app/js/note-journal-evidence.js` keys
+Journaling on the Note Foundation's permanent `noteId`, so **two Notes on the
+same āyah are independently representable** — which `ayah-notes.js` (one note
+per unitKey, no id) can never express. **Which event it is comes from the
+revision CHAIN, not a caller's flag.** `isPermanentNoteId("ayah:2:255")` is
+`false`, and a commit carrying a unitKey as its noteId returns `null`: the bodge
+the Master Architect forbade cannot pass silently.
+
+**`noteFolders` and `notePlacements` are Phase 6 and stay UNRULED** — an unruled
+collection is denied by default, and the suite asserts it. Do not add rules for
+them inside Phase 5.
+
+**A real design flaw found by mutation testing, worth remembering:** the Note
+rules first required `createdBy == myUid()` on BOTH create and update, which
+conflates authorship with authorisation. It happened to deny a teacher's update,
+but for the wrong reason — and it meant the OWNER check on the update path was
+never exercised at all. `createdBy` is an origin fact: **stamped on create,
+frozen on update.** Authorisation is `isNoteOwner()`'s job and only its job.
 
 **v08.25 (14 Sep 2026) is MAP Phase 4 P4-C — the Study Activity evidence
 WRITER, still uninvoked.** Read this and the v08.24 entry together before any
@@ -865,6 +914,14 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   outright. ~40px is the target for anything a finger presses; a square,
   fixed, `flex-shrink: 0` tile is what keeps a row of them looking like one
   group instead of several sizes.
+- **A PARTIAL mutation proves nothing, and neither does a denial some other
+  rule produced.** Phase 5's first mutation run called three checks untested:
+  two were the harness replacing only the FIRST occurrence of a helper that
+  appears three times, and the third was real — the case that was supposed to
+  isolate it was actually being denied by a different rule entirely. Replace
+  EVERY occurrence, print how many, and when a check still will not fail, seed a
+  structurally perfect write past the rules so that only the rule under test can
+  refuse it.
 - **Mutation-test a security rule CHECK BY CHECK, and pair every denial with an
   allow differing in ONE fact.** v08.25's `personInTenant()` could be deleted
   with all 51 emulator assertions still green: the cross-tenant case had `p1`

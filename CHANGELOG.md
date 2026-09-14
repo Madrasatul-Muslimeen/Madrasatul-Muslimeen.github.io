@@ -12548,3 +12548,80 @@ migration, no backfill, no production write, no Study event wired, no Monitor or
 backup read path. **Until the candidate Rules are deployed the subcollection has
 no rule and is closed to every client**, so the feature cannot function for
 anyone yet — deployment remains an Owner Control Gate. DDR-001–004 untouched.
+
+**15 Sep 2026 — MAP Phase 5 resumes: P5-A the Note Foundation Rules candidate,
+P5-B the Journaling identity bridge that resolves the deferred P4-D3.** No
+application behaviour changed, so **no version increment** — `main` stays
+v08.25. Phase 4's wiring candidate (`c4fca4a`, v08.26) and its 208-line Rules
+amendment are preserved untouched; production activation stays a **pending
+external-access dependency**, recorded rather than blocking.
+
+**Reconciled before touching anything.** `app/js/note-foundation.js` is on
+`main` and **imported by nothing**; its five collections have **no Firestore
+Rules at all**, so every one is denied by default; the accepted security matrix
+holds **37 cases**; and the five existing Phase 5 suites are green. The live
+`ayah-notes.js` surface, and every user note in it, is **untouched** — no
+dual-write, no fallback, no migration.
+
+**P5-A governs exactly three collections** — `notes`, `noteRevisions`,
+`noteSources`. `noteFolders` and `notePlacements` are **deliberately absent**:
+they are MAP Phase 6, the code that writes them is uninvoked, and an unruled
+collection is denied by default, so leaving them out is the safe answer. The
+suite asserts they stay denied.
+
+**The security design in one line: only the owner writes.** Not a guardian, not
+a teacher, not a tenant administrator, not a platform administrator — every
+other role that can see a Note can only ever READ it. That is deliberately
+stricter than `canRecordFor()`, which the rest of the app uses for progress
+data, because **a Note is a person's own private writing, not a record kept
+about them.**
+
+**`getAfter()` is what makes the revision pointer real rather than a promise.**
+A Note's `currentRevisionId` must name a revision that exists once the commit
+lands, belongs to the same Note/tenant/owner, and on an update chains from the
+revision being left behind. Rules evaluate each document independently, so
+without it a client could point a Note at a revision it never wrote.
+
+**Stated, not hidden: the guardian approval window is NOT implemented.** Matrix
+cases GUARD-05/06/07 describe a 30-minute server-expiring, Note-specific
+approval, and **no such mechanism exists** in the accepted data layer. Rather
+than invent one inside a Rules candidate, every guardian content edit is denied
+outright — strictly safer than the accepted design, satisfying GUARD-04/06/07/08
+in full, leaving only the single ALLOW case unreachable and recorded.
+
+**P5-B resolves the deferred P4-D3 with genuine permanent identity.**
+`note-journal-evidence.js` keys Journaling on the Note Foundation's own
+permanent `noteId`, so **two Notes on the same āyah are independently
+representable** — the thing `ayah-notes.js` could never express, and the reason
+D3 was deferred rather than bodged. **Which event it is comes from the revision
+CHAIN, not a caller's flag**: a first revision has `previousRevisionId: null`,
+so a caller cannot claim a creation twice. **Committed changes only, by
+construction** — the function requires the `revisionId` a commit produced, and a
+draft, an open editor, a cancelled edit or a failed autosave never produce one.
+**The forbidden bodge is tested against**: `isPermanentNoteId("ayah:2:255")` is
+false, and a commit carrying a unitKey as its noteId returns null.
+
+**A mutation-harness flaw found and fixed, and one real gap behind it.** The
+first mutation run reported three checks as untested. **Two were the harness's
+fault**: it replaced only the FIRST occurrence of a pattern, and `isNoteOwner`
+appears three times, `personInTenant` twice — so the rest kept enforcing. **A
+partial mutation proves nothing.** The harness replaces every occurrence now and
+reports how many it changed. The third, `noteIdentityUnchanged`, was **real**:
+IMM-01 denied an owner repoint, but through `committedRevisionMatches`, not the
+identity check. Five isolating cases (ISO-00…ISO-04) now each pass every rule
+except the one named, with ISO-00 as the paired allow differing in one fact.
+
+**And one of my own new cases was wrong**: ISO-00 built its revision document id
+in UPPERCASE while the body carried lowercase, so the key-binding rule denied it
+and the whole baseline went red. Caught because the mutation run's baseline is
+itself a measurement.
+
+**Tests: Phase 5 Rules emulator 50 assertions, 0 failures, 0 expression-budget
+denials, 31 of 37 matrix cases**, every denial asserted to end in a decisive
+clean `false`; `note-journal-evidence.mjs` 18 passed; the five existing Note
+Foundation suites unchanged. The 6 unexercised matrix cases are exactly the two
+documented deferrals — the guardian approval mechanism, and Phase 6 folders and
+placements.
+
+**No Rules deployed, no index, no migration, no backfill, no production write.
+`firestore.rules` byte-for-byte untouched. DDR-001–004 untouched.**
