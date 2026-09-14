@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 4 — P4-B Activity Evidence Persistence Architecture Resolution</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 4 — P4-B Activity Evidence Persistence Architecture Resolution</h1>
+<p><strong>Date:</strong> 14 September 2026 <strong>Authority:</strong> Master Architect instruction of 2026-09-14. <strong>Baseline read:</strong> <code>main</code> = <code>925a9c2ca94fdffcfc0563d498681dfe902ab700</code>, app version <code>08.24</code>, working tree clean, verified against <code>origin/main</code> before anything was read. <strong>Type:</strong> ARCHITECTURE / RECONCILIATION. <strong>No implementation is authorised by this report.</strong></p>
+<p><strong>Nothing was changed that could change behaviour.</strong> <code>git diff HEAD -- app firestore.rules</code> is <strong>empty</strong>. <code>app/js/version.js</code> still reads <code>08.24</code> and was deliberately not bumped. No Rules or index deployed, no migration, no backfill, no production write, no Study event wired, no historical Phase 4 branch merged, no P4-C begun.</p>
+<p><strong>Recommendation (stated in full at §12): P4-B ARCHITECTURE READY FOR MASTER ARCHITECT AUDIT — with two decisions reserved to the Master Architect, named in §11.</strong></p>
+<hr>
+<p>&gt; ## ⬥ MASTER ARCHITECT DECISION, 14 September 2026 — recorded after the audit &gt; &gt; <strong>P4-B ARCHITECTURE ACCEPTED WITH REQUIRED IDENTITY AMENDMENT.</strong> &gt; &gt; Everything below this box is <strong>the report as submitted for audit</strong>, left &gt; unaltered so the audit trail stays readable. Two corrections were required and &gt; have been applied; where the original text below differs from them, <strong>the &gt; corrections win.</strong> &gt; &gt; <strong>Required Correction 1 — Journal event identity.</strong> The submitted identity was &gt; <strong>insufficient for Journaling</strong>: built from event type, Approach, unit and &gt; day alone, two different Notes on the same āyah on the same day collapse to &gt; one identity and the second is silently lost as a duplicate — which &gt; contradicts ADR-008&#x27;s own rule of one event per committed new Note. <code>noteId</code> &gt; <strong>must</strong> participate in the deterministic identity: &gt; <code>journal.note-created__approach_10__&lt;unitKey&gt;__&lt;noteId&gt;__once</code> and &gt; <code>journal.note-revised__approach_10__&lt;unitKey&gt;__&lt;noteId&gt;__&lt;dateIso&gt;</code>. Rules &gt; must re-derive and verify it. <strong>Applied</strong>, using one five-slot form for all &gt; five events with the literal <code>none</code> in the Note slot for the three non-Note &gt; events, so the Rules identity check stays a single concatenation rather than a &gt; branch — which is what this report&#x27;s own expression-budget finding requires. &gt; &gt; <strong>Required Correction 2 — WbW grain.</strong> §11-A&#x27;s recommendation is <strong>approved</strong>: &gt; <code>wbw.engaged</code> deduplicates by <strong>āyah + person + UTC day</strong>, not occurrence. &gt; ADR-008 is amended accordingly. The Master Architect further directed that &gt; <code>occurrenceId</code> be retained <strong>only</strong> against a concrete downstream requirement, &gt; since the first occurrence to create the document would win the field &gt; arbitrarily. <strong>Reviewed against every reader of Activity — Monitor, backup, &gt; and <code>bulkConfirmWeek()</code> — none requires it, so <code>occurrenceId</code> is OMITTED.</strong> &gt; The authoritative occurrence-level state remains <code>quranWordProgress</code>. This &gt; supersedes §4.2 and §5 of the report below, which still describe it as &gt; optionally stored. &gt; &gt; <strong>§11-B (Rules deployment) remains an open Owner Control Gate.</strong> Not granted. &gt; &gt; <strong>P4-C was authorised</strong> on that basis and is delivered separately in &gt; <code>2026-09-14-map-phase4c-evidence-writer.md</code>. The amended candidate Rules were &gt; re-executed: <strong>53 assertions, 0 failures, 0 expression-budget denials.</strong></p>
+<hr>
+<h2>1. Current-state findings</h2>
+<h3>1.1 How Activity is stored and written today</h3>
+<p><code>activity/{tenantId}__{personId}__{weekKey}</code> — one document per person per week. <code>weekKey</code> is the ISO date of the week&#x27;s start under the tenant&#x27;s own <code>weekStartsOn</code> (D7).</p>
+<p><code>logActivity()</code> (<code>app/js/activity.js</code>) reads the week document, then either <code>createDocument(...)</code> with <code>entries: [entry]</code> or <code>updateDocument(...)</code> with <code>entries: arrayUnion(entry)</code>. Each entry is exactly:</p>
+<p>``<code> { date, subjectId, unitKey, unitType, trackableId, action, viaProgramId, viaSessionId } </code>``</p>
+<p>There is <strong>no event identity of any kind</strong> in the current model, and therefore no deduplication: <code>arrayUnion</code> deduplicates only <em>byte-identical</em> values. Two presses of a Log button on the same day for the same unit produce one entry by accident of value equality, not by design — and any differing field (a <code>viaProgramId</code> that resolved on the second attempt, say) makes them two.</p>
+<p><strong>Eleven call sites</strong>, all client-side: <code>asma-study.js</code>, <code>routine-study.js</code> (×2), <code>topic-study.js</code>, <code>self-check.js</code>, <code>records.html</code>, and <code>quranrevival.html</code> (×3). Observed <code>action</code> values: <code>claimed</code>, <code>practised</code>, <code>selfCheck</code>, <code>logRoutine</code>.</p>
+<h3>1.2 Who reads Activity, and what each reader would do with new evidence</h3>
+<div class='tw'><table><thead><tr><th>Reader</th><th>What it does</th><th>What ADR-008 evidence would do to it</th></tr></thead><tbody>
+<tr><td><code>records.js</code> <code>bulkConfirmWeek()</code></td><td><strong>§1.3 — the critical finding</strong></td><td><strong>Would silently confirm Mastery</strong></td></tr>
+<tr><td><code>monitor.js</code></td><td>counts entries per student / per subject / per unit, weekly and monthly</td><td>Counts would rise sharply; &quot;entries&quot; stops meaning &quot;things done&quot;</td></tr>
+<tr><td><code>backup.js</code> + <code>backup-file.js</code></td><td>flattens every week&#x27;s <code>entries[]</code> into the export and prints a count</td><td>Export grows; a new shape must be readable</td></tr>
+<tr><td><code>activity.js</code> <code>hasLoggedOn()</code> / <code>computeStreak()</code></td><td>routine streaks, filtered by <code>action === &quot;practised&quot;</code> <strong>and</strong> <code>subjectId</code></td><td>Only affected if a routine is ever added for <code>subjectId: &quot;quran&quot;</code>; today none is</td></tr>
+</tbody></table></div>
+<h3>1.3 The finding that dominates this architecture</h3>
+<p><code>records.js</code> <code>bulkConfirmWeek()</code> — reachable from <code>records.html</code> as <strong>&quot;Bulk confirm all pending this week&quot;</strong> — builds its confirm set <strong>entirely from <code>activity.entries[]</code></strong>:</p>
+<p>``<code>js for (const e of activitySnap.data().entries ?? []) {   const chunkKey = chunkKeyFor(e.unitKey, e.subjectId);   const entryKey = </code>${e.unitKey}::${e.trackableId}<code>;   ...                       // then bulk-confirms every matching PENDING records entry } </code>``</p>
+<p>So a <code>(unitKey, trackableId)</code> pair appearing in Activity causes the matching <strong>pending Mastery claim to be confirmed</strong>. It confirms only entries already <code>pending</code>, so evidence alone cannot create a claim — but it does mean that <strong>if ADR-008 <code>practised</code> evidence were written into <code>entries[]</code>, merely reading an āyah would enlarge the set of claims a supervisor&#x27;s one click confirms.</strong></p>
+<p>That is Activity granting Mastery. It is the exact thing ADR-003 and ADR-008 forbid, it lives in <strong>client code where no Firestore Rule can prevent it</strong>, and it exists on <code>main</code> today. <strong>This single fact disqualifies any design that files ADR-008 evidence into the existing <code>entries[]</code> array</strong>, however well-secured that array might otherwise be.</p>
+<h3>1.4 Where Mastery actually lives — the good news</h3>
+<p>Mastery is <code>records/{tenantId}__{personId}__{chunkKey}</code>, written only by <code>claimStatus()</code>, <code>confirmEntry()</code>, <code>returnEntry()</code> and the bulk-confirm helpers. <strong>Activity and Mastery are already separate collections.</strong> So a persistence model that writes evidence anywhere other than <code>records/</code> cannot escalate to Mastery <em>through the database</em> — the only escalation path is a client reader like §1.3, which is closed by construction in §4.</p>
+<h3>1.5 The deployed Activity Rules, and their real gaps</h3>
+<p>``<code> match /activity/{activityKey} {   allow read:   if isPlatformAdmin();   allow read:   if signedIn() &amp;&amp; !exists(.../activity/$(activityKey));   allow read:   if canRecordFor(resource.data.tenantId, resource.data.personId);   allow create: if canRecordFor(request.resource.data.tenantId, request.resource.data.personId);   allow update: if canRecordFor(resource.data.tenantId, resource.data.personId);   // No delete (I4/D6). } </code>``</p>
+<p>Verified gaps, none of which this report proposes to change:</p>
+<ol><li><code>activityKey</code> is <strong>never bound</strong> to the <code>tenantId</code>/<code>personId</code>/<code>weekKey</code> fields, so an authorised writer can file <code>activity/A__B__week</code> carrying <code>tenantId: C</code>.</li><li><code>tenantId</code>/<code>personId</code>/<code>weekKey</code> are <strong>not frozen on update</strong>.</li><li><code>entries[]</code> is <strong>not append-only at the database</strong> — <code>allow update</code> permits replacing the whole array. Append-only is a property of <code>logActivity()</code>, i.e. of the client.</li><li>No entry-shape validation, no size bound, no event-identity concept.</li><li><code>isSelfPerson(personId)</code> proves &quot;this login owns that person&quot; but <strong>not</strong> &quot;that person belongs to this tenant&quot; — a cross-tenant binding gap.</li></ol>
+<h3>1.6 Identity and key contracts the design must honour</h3>
+<ul><li><strong>Permanent unit keys (I5)</strong> — <code>buildUnitKey</code> yields <code>ayah:S:A</code>, <code>range:S:F-T</code>, <code>surah:S</code>, <code>juz:N</code>, <code>ruku:S:N</code>, <code>page:E:N</code>, <code>hizb</code>, <code>rub</code>, <code>manzil</code>, <code>hadith:C:N</code>, <code>topic:ID</code>, <code>name:N</code>. <strong>None contains <code>_</code>.</strong> Verified by reading <code>unit-keys.js</code>.</li><li><strong>Occurrence identity (ADR-007)</strong> — <code>quran-word-occurrence:v1:S:A:P</code>. No <code>_</code>.</li><li><strong>Note identity</strong> — <code>crypto.randomUUID().replaceAll(&quot;-&quot;,&quot;&quot;)</code>, 32 hex chars. No <code>_</code>.</li><li><strong>Tenant/person</strong> — <code>tenantPeople/{personId}</code> carries <code>tenantId</code> and <code>authUid</code>; <code>tenantMemberUids/{tenantId}__{uid}</code> carries <code>roles</code> and <code>personId</code>.</li><li><strong>Approach ids</strong> — <code>approach_01</code>…<code>approach_30</code>; <strong>these DO contain <code>_</code></strong>, which matters in §5 and is handled there.</li><li><strong>ADR-008 (accepted, on <code>main</code> since v08.24)</strong> maps five automatic events to six Approaches, each <code>practised</code>, each with <strong>no mastery effect</strong>, plus <code>status.claimed</code> / <code>status.confirmed</code>, which belong to the explicit Mastery workflow.</li></ul>
+<h3>1.7 Study surfaces that would eventually emit the events</h3>
+<p><code>quranrevival.html</code> (reading, recitation playback, the Word Card and its WbW toggles), <code>note-foundation.js</code> + the Note view (journaling), and <code>quran-word-progress.js</code> (WbW). <strong>None of them is wired to anything in P4-B, and none is touched by this report.</strong></p>
+<hr>
+<h2>2. Assessment of the isolated historical implementation</h2>
+<p>Read <strong>read-only</strong> from <code>claude/pensive-knuth-2pu3jj</code>. Not merged, not reconstructed.</p>
+<h3>2.1 What its own record says about why it was rejected</h3>
+<p>The accepted Phase 3 Rules candidate on <code>main</code> (<code>tests/firestore/word-progress-v1.proposed.rules</code>) states it in writing:</p>
+<p>&gt; &quot;…the failure that rejected the Phase 4 Activity candidate, where <strong>9 of 13 logged &gt; denials were refused by Firestore&#x27;s 1000-expression evaluation limit rather than by the &gt; security logic</strong> — a denial by budget exhaustion that would later refuse legitimate &gt; writes as the document grew.&quot;</p>
+<p><strong>This is the authoritative reason, and it is more precise than the SHA-256 story.</strong> The SHA-256 objection (Rules cannot recompute a client hash) applies to the <em>offline prototype</em> described in the Task 50 caveat. The branch&#x27;s actual <code>planKeyedStudyActivityAppend()</code> uses the <strong>raw</strong> <code>eventKey</code> as the map field name, not a hash — so that specific objection does not describe the code that exists. The <strong>budget-exhaustion</strong> finding does, and it is fatal on its own: a rule whose cost grows with stored data eventually denies legitimate writes.</p>
+<h3>2.2 Concepts worth keeping</h3>
+<div class='tw'><table><thead><tr><th>Concept</th><th>Verdict</th></tr></thead><tbody>
+<tr><td>A <strong>deterministic event key</strong> derived from the contract, not invented by the caller</td><td><strong>KEEP</strong> — it is the whole idea</td></tr>
+<tr><td>Re-deriving the canonical evidence and refusing a caller-supplied key that disagrees</td><td><strong>KEEP</strong>, and promote it from client-side to a <strong>Rules-enforced</strong> check (§5)</td></tr>
+<tr><td>Refusing anything that is not <code>action: &quot;practised&quot;</code> / <code>masteryEffect: &quot;none&quot;</code></td><td><strong>KEEP</strong></td></tr>
+<tr><td>Refusing unit keys outside <code>ayah</code> / <code>range</code> / <code>surah</code></td><td><strong>KEEP</strong></td></tr>
+<tr><td>Freezing historical <code>entries[]</code> and never rewriting it</td><td><strong>KEEP</strong> as an absolute</td></tr>
+<tr><td>A dual-read projection so old and new evidence read as one list</td><td><strong>KEEP the idea</strong>, reshape it (§7)</td></tr>
+</tbody></table></div>
+<h3>2.3 Concepts to discard</h3>
+<div class='tw'><table><thead><tr><th>Concept</th><th>Verdict and reason</th></tr></thead><tbody>
+<tr><td><code>v1Events</code> map inside the weekly document</td><td><strong>DISCARD.</strong> §3 Option C — the rejection reason</td></tr>
+<tr><td><code>JSON.stringify([...])</code> as the event key</td><td><strong>DISCARD.</strong> Rules cannot reproduce JSON quoting/escaping, so identity could only be taken on trust</td></tr>
+<tr><td>SHA-256 of the key as a map field name (the prototype)</td><td><strong>DISCARD.</strong> Rules cannot compute it</td></tr>
+<tr><td>Rewriting <code>logActivity()</code>&#x27;s general path onto the keyed map</td><td><strong>DISCARD.</strong> A BR-3 change to a live collection that buys nothing P4-B needs</td></tr>
+<tr><td><code>MAX_STUDY_WEEK_ENTRIES</code> / byte preflight in the client</td><td><strong>DISCARD as a security measure</strong> — client preflight is not a bound. Keep only as a UX guard if wanted</td></tr>
+<tr><td><code>projectMixedWeekEntries()</code> merging the map into <code>entries[]</code></td><td><strong>DISCARD in that form</strong> — merging evidence into the array the §1.3 confirm path reads is precisely the hazard</td></tr>
+</tbody></table></div>
+<hr>
+<h2>3. Alternative comparison</h2>
+<p>Judged on correctness, security, compatibility, rollback and cost — <strong>not diff size</strong>.</p>
+<h3>Option A — one document per event</h3>
+<p><code>activity/{tenantId}__{personId}__{weekKey}/evidence/{eventId}</code>, <code>eventId</code> carrying the deterministic identity.</p>
+<div class='tw'><table><thead><tr><th>Property</th><th>Assessment</th></tr></thead><tbody>
+<tr><td>Deterministic identity</td><td><strong>Yes</strong> — the id <em>is</em> the identity</td></tr>
+<tr><td>Rules-validatable</td><td><strong>Yes</strong> — the id is re-derived by string concatenation and compared to the <code>{eventId}</code> wildcard</td></tr>
+<tr><td>Retry safety</td><td><strong>Enforced by the database.</strong> <code>create</code> on an existing document fails unconditionally. Not a rule, not a transaction, not a client check</td></tr>
+<tr><td>Immutability</td><td><code>allow update, delete: if false</code> — one line, absolute</td></tr>
+<tr><td>Rule cost</td><td><strong>Constant.</strong> No map is walked; document size never enters a rule</td></tr>
+<tr><td>Tenant/person binding</td><td>From the <strong>path</strong>, at zero read cost</td></tr>
+<tr><td>Activity ≠ Mastery</td><td>Separate collection; a <code>hasOnly()</code> field list makes a status field unstorable</td></tr>
+<tr><td>Legacy <code>entries[]</code></td><td><strong>Untouched by construction</strong> — a subcollection is independent of its parent, which need not even exist</td></tr>
+<tr><td>Rollback</td><td>Stop writing; optionally stop reading. Nothing to undo</td></tr>
+<tr><td>Migration needed</td><td><strong>None</strong></td></tr>
+<tr><td>Cost</td><td>One document write per event; reads are a bounded subcollection query per week</td></tr>
+</tbody></table></div>
+<h3>Option B — server-verifiable composite key</h3>
+<p>Not a competing storage shape but the <strong>identity discipline</strong>: build identity only from components Rules can inspect and compare, joined by a separator no component can contain. <strong>Adopted, and applied inside Option A.</strong> Standalone (a composite key as a field inside a shared document) it inherits whichever container it sits in, so it does not resolve the storage question by itself.</p>
+<h3>Option C — keyed map in the existing weekly document (<code>v1Events</code>)</h3>
+<div class='tw'><table><thead><tr><th>Property</th><th>Assessment</th></tr></thead><tbody>
+<tr><td>Rules-validatable identity</td><td>Partly — Rules <em>can</em> index a map by a computed key and use <code>diff().affectedKeys()</code>; the raw-key form is not unverifiable in principle</td></tr>
+<tr><td><strong>Rule cost</strong></td><td><strong>REJECTED HERE.</strong> Cost grows with the map, and the measured outcome is already on record: 9 of 13 denials were budget exhaustion, which later refuses legitimate writes</td></tr>
+<tr><td>Document ceiling</td><td>The week document trends toward Firestore&#x27;s 1 MiB limit and every write rewrites all of it</td></tr>
+<tr><td>Legacy <code>entries[]</code></td><td>Shares a document with the array <code>bulkConfirmWeek()</code> reads — §1.3</td></tr>
+<tr><td>Retry safety</td><td>A rule, not a database guarantee</td></tr>
+</tbody></table></div>
+<p><strong>Option C is explicitly rejected</strong>, on recorded evidence, not preference.</p>
+<h3>Option D — considered and not chosen</h3>
+<ul><li><strong>A top-level <code>activityEvidence/{tenantId}__{personId}__{eventId}</code> collection.</strong> Works, but reading &quot;this person&#x27;s evidence this week&quot; needs a filtered query and therefore composite-index management, where Option A&#x27;s path gives the same scope for free. Rejected for <strong>avoidable index surface</strong>, which is itself a gated change.</li><li><strong>A per-day rollup document.</strong> Smaller read counts, but the dedupe unit stops being the document, so retry safety returns to being a rule. Rejected: it trades the single strongest property away for read cost that §6 shows is already acceptable.</li></ul>
+<p><strong>Chosen: Option A, with Option B&#x27;s identity discipline.</strong></p>
+<hr>
+<h2>4. Recommended P4-B persistence architecture</h2>
+<h3>4.1 Shape</h3>
+<p>``<code> activity/{tenantId}__{personId}__{weekKey}          ← EXISTING weekly doc. UNTOUCHED. └── evidence/{eventId}                              ← NEW subcollection. Create-only.         eventId = eventType__trackableId__unitKey__dedupeScope </code>``</p>
+<p>The parent weekly document is <strong>not read, not written, and need not exist</strong>. Legacy <code>entries[]</code> is untouched <em>by construction</em>.</p>
+<h3>4.2 The document</h3>
+<p>``<code> contractVersion : &quot;study-approach-contract:v1&quot; eventType       : one of the five ADR-008 automatic events tenantId        : must equal the path&#x27;s tenant personId        : must equal the path&#x27;s person weekKey         : must equal the path&#x27;s week dateIso         : &quot;YYYY-MM-DD&quot; (UTC) subjectId       : &quot;quran&quot; unitKey         : ayah:S:A | range:S:F-T | surah:S      (I5) unitType        : &quot;ayah&quot; | &quot;range&quot; | &quot;surah&quot;, paired with the key trackableId     : the Approach ADR-008 gives this event action          : &quot;practised&quot;        — the only permitted value dedupeScope     : &quot;once&quot; for journal.note-created, else dateIso masteryEffect   : &quot;none&quot;             — the only permitted value occurrenceId?   : optional, wbw.engaged only noteId?         : optional, journal events only schemaVersion, createdAt, updatedAt, createdBy        (I17) </code>``</p>
+<p><code>hasOnly()</code> pins the field list, so <strong>no <code>status</code>, <code>claimedStatus</code>, <code>confirmedStatus</code> or <code>confirmState</code> field can exist on one of these documents.</strong> Nothing stored here is readable as a claim even by a confused future reader.</p>
+<h3>4.3 Why the identity is a delimiter-joined string</h3>
+<p>Rules can concatenate strings and compare the result to the <code>{eventId}</code> wildcard, so the rule <strong>re-derives the identity from the document&#x27;s own fields</strong> and rejects any id that disagrees. That is a server-side guarantee. Rules cannot compute SHA-256 and cannot reproduce <code>JSON.stringify</code>&#x27;s quoting — an identity in either form is only ever taken on trust from the client, which is not identity enforcement.</p>
+<p><strong>Separator safety, verified rather than assumed:</strong> the separator is <code>__</code>. <code>unitKey</code> is constrained by regex to digits and colons; <code>dedupeScope</code> is <code>once</code> or an ISO day; <code>eventType</code> and <code>trackableId</code> are compared against exact literals. None can contain <code>_</code> except <code>trackableId</code> — which is why <code>trackableId</code> is matched against the <strong>literal set</strong> <code>approach_01|03|04|07|08|10</code> rather than a pattern, so its single <code>_</code> is never ambiguous. No separate hygiene check is needed, and none is spent.</p>
+<h3>4.4 The §1.3 hazard, closed by construction</h3>
+<p>Evidence is <strong>not</strong> in <code>entries[]</code>. <code>bulkConfirmWeek()</code> reads <code>entries[]</code> and nothing else, so it cannot see evidence and its behaviour does not change by one document. The implementation task must add a <strong>check that asserts this stays true</strong> (§10), because the protection is structural and a future refactor could undo it silently.</p>
+<hr>
+<h2>5. Event identity matrix</h2>
+<p>For all five automatic events. <code>status.claimed</code> and <code>status.confirmed</code> are <strong>deliberately excluded from this collection entirely</strong> — they are the explicit Mastery workflow, they already write <code>records/</code> plus a legacy Activity entry, and they are not expressible here: the rule&#x27;s <code>eventType</code> check does not admit them, and <code>action</code> may only be <code>practised</code>.</p>
+<div class='tw'><table><thead><tr><th></th><th><code>reading.completed</code></th><th><code>listening.completed</code></th><th><code>journal.note-created</code></th><th><code>journal.note-revised</code></th><th><code>wbw.engaged</code></th></tr></thead><tbody>
+<tr><td><strong>Actor / person</strong></td><td><code>personId</code>, from the path</td><td>same</td><td>same</td><td>same</td><td>same</td></tr>
+<tr><td><strong>Tenant</strong></td><td><code>tenantId</code>, from the path</td><td>same</td><td>same</td><td>same</td><td>same</td></tr>
+<tr><td><strong>Approach</strong></td><td><code>approach_01</code> plain / <code>approach_03</code> with meaning</td><td><code>approach_07</code> Arabic-only / <code>approach_08</code> with meaning</td><td><code>approach_10</code></td><td><code>approach_10</code></td><td><code>approach_04</code></td></tr>
+<tr><td><strong>Unit identity</strong></td><td><code>ayah</code> / <code>range</code> / <code>surah</code> key (I5)</td><td>same</td><td>the āyah or range the Note is anchored to</td><td>same</td><td>the āyah containing the occurrence</td></tr>
+<tr><td><strong>Event type</strong></td><td>literal</td><td>literal</td><td>literal</td><td>literal</td><td>literal</td></tr>
+<tr><td><strong>Dedupe boundary</strong></td><td>unit + day</td><td>unit + day</td><td><strong>note, once</strong></td><td>note + day</td><td><strong>see §11-A</strong></td></tr>
+<tr><td><strong>Time component</strong></td><td><code>dateIso</code>, UTC day</td><td><code>dateIso</code></td><td><strong>none</strong> — <code>dedupeScope</code> is <code>once</code></td><td><code>dateIso</code></td><td><code>dateIso</code></td></tr>
+<tr><td><strong>Source identity</strong></td><td>—</td><td>—</td><td><code>noteId</code> (stored, not in the id)</td><td><code>noteId</code></td><td><code>occurrenceId</code> (stored, not in the id)</td></tr>
+<tr><td><strong>Stable event identity</strong></td><td><code>reading.completed__approach_01__ayah:2:255__2026-09-14</code></td><td><code>listening.completed__approach_08__surah:2__2026-09-14</code></td><td><code>journal.note-created__approach_10__ayah:2:255__once</code></td><td><code>journal.note-revised__approach_10__ayah:2:255__2026-09-14</code></td><td><code>wbw.engaged__approach_04__ayah:2:255__2026-09-14</code></td></tr>
+<tr><td><strong>Client supplies</strong></td><td>the whole document and the id</td><td>same</td><td>same</td><td>same</td><td>same</td></tr>
+<tr><td><strong>Rules validate</strong></td><td>id ⇔ fields; event ⇔ Approach; unit shape ⇔ unitType; scope ⇔ path; <code>practised</code>/<code>none</code>; field list; <code>createdBy</code> == caller; authority</td><td>same</td><td>same, plus <code>dedupeScope == &#x27;once&#x27;</code></td><td>same</td><td>same</td></tr>
+<tr><td><strong>Retry behaviour</strong></td><td>same id → <code>create</code> on an existing doc → <strong>denied by the database</strong></td><td>same</td><td>same</td><td>same</td><td>same</td></tr>
+<tr><td><strong>Mutation behaviour</strong></td><td><code>update</code>/<code>delete</code> denied unconditionally</td><td>same</td><td>same</td><td>same</td><td>same</td></tr>
+</tbody></table></div>
+<h3>One structural subtlety, resolved</h3>
+<p><code>journal.note-created</code> must dedupe <strong>for the life of the note</strong>, not per day — but the document lives under a <em>week</em>. A retry a week later would land in a different week and create a second document. <strong>Resolution: the evidence&#x27;s <code>dateIso</code> is the note&#x27;s own creation date, never &quot;now&quot;.</strong> The week is then a function of the note, so every retry resolves to the same path and the same id. This must be an explicit requirement on the writer, and a test (§10).</p>
+<hr>
+<h2>6. Firestore Rules enforceability matrix</h2>
+<p>The candidate is <code>docs/governance/phase4-activity-evidence-rules-candidate-2026-09-14.rules</code>. <strong>CANDIDATE ONLY. NOT DEPLOYED. <code>firestore.rules</code> is byte-for-byte unchanged.</strong></p>
+<p><strong>It was executed</strong>, against the Firestore emulator, project <code>demo-quranrevival-activity-evidence-v1</code>, port 8087, isolated — <strong>36 assertions, 0 failures, and 0 denials caused by expression budget.</strong> Every denial is a decision the rules made. See §6.2 for why that last clause is the important one.</p>
+<div class='tw'><table><thead><tr><th>Invariant</th><th>Enforced by Rules?</th><th>How</th></tr></thead><tbody>
+<tr><td>Tenant isolation</td><td><strong>YES</strong></td><td><code>activityKey == tenantId + &#x27;__&#x27; + personId + &#x27;__&#x27; + weekKey</code>, then <code>canRecordFor(tenantId, personId)</code></td></tr>
+<tr><td>Actor / person ownership</td><td><strong>YES</strong></td><td><code>canRecordFor</code> — reproduced unchanged from the deployed rules</td></tr>
+<tr><td><strong>Cross-tenant person binding</strong></td><td><strong>YES — closes a gap the deployed rules have</strong></td><td><code>personInTenant()</code> proves the person&#x27;s <code>tenantPeople</code> doc names this tenant; <code>isSelfPerson()</code> alone does not</td></tr>
+<tr><td>Allowed create fields</td><td><strong>YES</strong></td><td><code>keys().hasOnly([...])</code> + <code>hasAll([envelope])</code></td></tr>
+<tr><td>Immutable fields</td><td><strong>YES, absolutely</strong></td><td><code>allow update, delete: if false</code> — nothing is mutable, so nothing needs freezing</td></tr>
+<tr><td>Event identity enforcement</td><td><strong>YES</strong></td><td><code>eventId == eventType + &#x27;__&#x27; + trackableId + &#x27;__&#x27; + unitKey + &#x27;__&#x27; + dedupeScope</code></td></tr>
+<tr><td>Event ⇔ Approach mapping</td><td><strong>YES</strong></td><td>one disjunction pinning each event to its ADR-008 Approach(es)</td></tr>
+<tr><td>Unit identity (I5)</td><td><strong>YES</strong></td><td>regex per accepted unit type, <strong>paired with <code>unitType</code></strong></td></tr>
+<tr><td>Dedupe boundary correctness</td><td><strong>YES</strong></td><td><code>&#x27;once&#x27;</code> for note-created, <code>== dateIso</code> otherwise</td></tr>
+<tr><td>Update / delete policy</td><td><strong>YES</strong></td><td>denied unconditionally, for everyone, including admins</td></tr>
+<tr><td>Activity → Mastery escalation</td><td><strong>YES, at the database</strong></td><td><code>action == &#x27;practised&#x27;</code>, <code>masteryEffect == &#x27;none&#x27;</code>, and <code>hasOnly()</code> makes a status field unstorable</td></tr>
+<tr><td>Invalid unit / event rejection</td><td><strong>YES</strong></td><td><code>juz</code>, <code>page</code>, <code>topic</code>, <code>hadith</code>, unknown events, unmapped Approaches all denied</td></tr>
+<tr><td>Cross-user / cross-tenant denial</td><td><strong>YES</strong></td><td>verified by allow/deny pairs in the emulator</td></tr>
+<tr><td>Duplicate / replay</td><td><strong>YES — by the database, not by a rule</strong></td><td><code>create</code> on an existing document always fails</td></tr>
+<tr><td><code>createdBy</code> authenticity</td><td><strong>YES</strong></td><td><code>createdBy == request.auth.uid</code></td></tr>
+</tbody></table></div>
+<h3>6.1 What Rules CANNOT enforce — stated, not hidden</h3>
+<ol><li><strong>That the interaction really happened.</strong> Rules cannot know whether a person truly read an āyah or truly played 80% of a recitation. A client entitled to write for that person can assert a well-formed event that never occurred. This is the <strong>same trust boundary the deployed rules already accept</strong> for <code>records.entries</code> and <code>quranWordProgress</code> — not a new gap — but it must never be described as server-enforced proof of study.</li><li><strong>Completeness or ordering.</strong> Nothing proves a person did not simply omit events.</li><li><strong>That <code>dateIso</code> is really today.</strong> A writer may backdate within the week the path names. The <strong>week</strong> binding is enforced; the day inside it is not, because <code>request.time</code> is server time and not the learner&#x27;s calendar day.</li><li><strong>A cap on how much evidence a person accumulates.</strong> Rules cannot count documents. §11-A is the architectural answer to volume; it is not a Rules problem.</li><li><strong>The §1.3 client coupling.</strong> No rule can stop <code>bulkConfirmWeek()</code> from reading whatever array it likes. The protection is structural (evidence is not in that array) and must be held by a test (§10).</li></ol>
+<h3>6.2 The measurement that changed this design — my own first draft failed it</h3>
+<p>The first draft of the candidate was written, executed, and <strong>11 of its 36 assertions were denied by the 1000-expression budget rather than by the security logic</strong> — the identical defect that rejected the earlier Activity candidate, reproduced by accident while trying to avoid it. The suite reported 36 passing and proved nothing for those 11.</p>
+<p>Three changes removed it completely, and they are now part of the design rather than a tuning afterthought:</p>
+<ol><li><strong>No <code>split()</code>.</strong> The path/body binding became one string comparison instead of splitting the key and indexing it three times.</li><li><strong>No separator-hygiene regexes.</strong> The format constraints already forbid <code>_</code> in every id component (§4.3), so four <code>.matches()</code> calls were removed as redundant, not relaxed.</li><li><strong>One combined event/Approach check</strong> replacing three overlapping ones, and <code>hasAll()</code> reduced to the four envelope fields not otherwise checked by value.</li></ol>
+<p>Result: <strong>0 budget denials, 36/36.</strong></p>
+<p><strong>The cost-reduction pass introduced a real defect, which the suite caught.</strong> Dropping <code>split()</code> silently removed <code>unitType == unitKey.split(&#x27;:&#x27;)[0]</code>, so a document could store <code>unitKey: &quot;surah:2&quot;</code> while declaring <code>unitType: &quot;ayah&quot;</code> — and every report that filters by <code>unitType</code> would mis-file it. It is restored by <strong>pairing</strong> <code>unitType</code> with its key inside the regex check, which is cheaper than the original and cannot be lost the same way.</p>
+<p><strong>Proven able to fail:</strong> with <code>idIsDerivedIdentity()</code> neutralised, the suite collapses from 36 assertions to 6 and fails at &quot;an id that does not derive from the fields is refused&quot;. It is not a suite that passes because it cannot fail.</p>
+<hr>
+<h2>7. Existing <code>entries[]</code> compatibility plan</h2>
+<p><strong>Legacy reads preserved; new writes use the new model. No migration.</strong></p>
+<div class='tw'><table><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody>
+<tr><td><strong>Old reader behaviour</strong></td><td><strong>Unchanged, byte for byte.</strong> <code>getWeekActivity()</code> returns the same document with the same <code>entries[]</code>. <code>logActivity()</code> is not modified</td></tr>
+<tr><td><strong>New reader behaviour</strong></td><td>A reader that wants evidence reads the <code>evidence</code> subcollection <strong>explicitly and additionally</strong>. No existing reader is altered to do so</td></tr>
+<tr><td><strong>Aggregation across legacy and new</strong></td><td><strong>Deliberately separate, and this is a design decision, not an omission.</strong> Merging evidence into <code>entries[]</code> is what would feed §1.3. Monitor should report Activity and Study evidence as <strong>two figures</strong>, because they mean different things: a logged action versus a mapped interaction</td></tr>
+<tr><td><strong>Backup / export</strong></td><td>Additive. <code>backup.js</code> gains one bounded subcollection read per week alongside the existing per-week <code>getDoc</code>; <code>backup-file.js</code> prints it as its own section with its own count. The existing <code>activity</code> count keeps its current meaning, so old exports stay comparable</td></tr>
+<tr><td><strong>Duplicate-count risk</strong></td><td><strong>Structurally zero</strong> while the two are not merged. If a future round <em>does</em> merge them, the id is deterministic and the array entries carry no id, so de-duplication would have to be defined then — a reason not to merge casually</td></tr>
+<tr><td><strong>Rollback behaviour</strong></td><td>§8</td></tr>
+<tr><td><strong>Do existing production documents need transformation?</strong></td><td><strong>NO. None. Not one.</strong> The new collection is empty until the first write; every existing weekly document remains valid and unchanged</td></tr>
+</tbody></table></div>
+<p><strong>No transformation was performed, and none is proposed.</strong></p>
+<hr>
+<h2>8. Rollback plan</h2>
+<p>Four levels, each independently reversible, none destructive (I4).</p>
+<div class='tw'><table><thead><tr><th>Level</th><th>Action</th><th>Effect</th><th>Data</th></tr></thead><tbody>
+<tr><td>1 — disable emission</td><td>Stop calling the writer (a flag, or unwire the adapter)</td><td>No new evidence. App behaves exactly as v08.24</td><td>Existing evidence kept, readable</td></tr>
+<tr><td>2 — revert the client</td><td>Revert the implementation commit</td><td>The writer no longer exists</td><td>Kept</td></tr>
+<tr><td>3 — revert the Rules</td><td>Redeploy the previous <code>firestore.rules</code></td><td>The subcollection returns to having no rule, so it is closed to clients</td><td>Kept, readable by an admin</td></tr>
+<tr><td>4 — abandon</td><td>Leave the collection unread</td><td>Dormant data, no reader, no cost</td><td><strong>Never deleted</strong> (I4/D6)</td></tr>
+</tbody></table></div>
+<p>Because the model is <strong>create-only and additive</strong>, there is no state to unwind at any level: no existing document was altered, no field repurposed, no array rewritten. A rollback is &quot;stop writing&quot;, never &quot;put it back&quot;.</p>
+<hr>
+<h2>9. Exact proposed implementation / change budget for the NEXT task</h2>
+<p><strong>P4-C — the persisting writer. NOT AUTHORISED BY THIS REPORT.</strong> Proposed for the Master Architect to accept, amend or refuse.</p>
+<p><strong>Create</strong></p>
+<div class='tw'><table><thead><tr><th>File</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>app/js/study-activity-evidence-id.js</code></td><td>Pure: builds <code>eventId</code> and the evidence document from a <code>projectStudyActivityEvidence()</code> row. No Firebase</td></tr>
+<tr><td><code>app/js/study-activity-evidence-store.js</code></td><td>The only writer. One <code>createDocument()</code> into the subcollection. Treats an already-exists denial as <strong>success, not an error</strong></td></tr>
+<tr><td><code>tools/i18n-verify/study-activity-evidence-id.mjs</code></td><td>Pure id/shape checks</td></tr>
+<tr><td><code>tools/i18n-verify/study-activity-evidence-store.mjs</code></td><td>Writer behaviour against the stub, incl. retry-is-a-no-op</td></tr>
+<tr><td><code>tools/i18n-verify/study-activity-evidence-boundary.mjs</code></td><td>The structural guards of §10</td></tr>
+</tbody></table></div>
+<p><strong>Modify</strong></p>
+<div class='tw'><table><thead><tr><th>File</th><th>Change</th></tr></thead><tbody>
+<tr><td><code>app/js/version.js</code></td><td><code>08.24</code> → <code>08.25</code></td></tr>
+<tr><td><code>CHANGELOG.md</code>, <code>CLAUDE.md</code></td><td>the round entry</td></tr>
+<tr><td><code>tools/i18n-verify/firebase-stub.mjs</code></td><td>subcollection support, <strong>only if</strong> the stub lacks it (to be measured first)</td></tr>
+</tbody></table></div>
+<p><strong>Explicitly NOT to touch:</strong> <code>app/js/activity.js</code> · <code>app/js/records.js</code> · <code>firestore.rules</code> · <code>app/quranrevival.html</code> and every other <code>app/*.html</code> · <code>app/js/monitor.js</code> · <code>app/js/backup.js</code> · <code>app/js/backup-file.js</code> · every Word Card and Phase 3 file.</p>
+<p><strong>Data structures:</strong> one new subcollection. No existing structure changed. <strong>Dependencies:</strong> none. <strong>Blast radius: BR-0</strong> — the writer stays uninvoked until a separate task wires a Study surface to it. <strong>Rollback:</strong> §8 level 2.</p>
+<p><strong>Deliberately deferred beyond P4-C</strong>, each its own bounded task: wiring Reading; wiring Listening; wiring Journaling; wiring WbW; the Monitor/backup <strong>read</strong> path.</p>
+<hr>
+<h2>10. Tests required before implementation can be accepted</h2>
+<ol><li><strong>Emulator allow/deny suite</strong> — the 36 executed assertions, <strong>plus</strong> the §11-A volume decision once made. Acceptance requires <strong>zero budget-exhaustion denials</strong>; a green run containing even one is a failed run. Every denial paired with an allow differing in one fact.</li><li><strong>Mutation proof</strong> — neutralise <code>idIsDerivedIdentity()</code>, <code>scopeMatchesPath()</code>, <code>personInTenant()</code> and the <code>hasOnly()</code> list in turn; each must break the suite.</li><li><strong>Pure id/shape suite</strong> — every ADR-008 event&#x27;s id built and round-tripped; <code>status.claimed</code>/<code>status.confirmed</code> produce no evidence.</li><li><strong>Note-creation week stability</strong> — a <code>journal.note-created</code> retry on a later date resolves to the <strong>same</strong> path and id (§5).</li><li><strong>Retry-is-a-no-op</strong> — the writer treats an already-exists denial as success and surfaces no error to the user (I15 applies to <em>real</em> failures only).</li><li><strong>Structural guard: evidence must never reach <code>entries[]</code></strong> — assert <code>activity.js</code> is unmodified, that the writer never writes <code>TENANT.ACTIVITY</code> at document level, and that <code>bulkConfirmWeek()</code> still reads only <code>entries[]</code>. <strong>This is the §1.3 protection; it is structural and must be held by a test.</strong></li><li><strong>Activity ≠ Mastery guard</strong> — the writer names no <code>records</code>, <code>claimStatus</code>, <code>confirmEntry</code>, <code>achieved</code> or <code>mastered</code> (the shape the Phase 3 suites already use).</li><li><strong>Cost measurement</strong> — write N evidence documents, then write one more, and assert the rule&#x27;s cost did not change.</li><li><strong>Regression baseline unchanged</strong> — <code>behaviour.mjs</code> 803 total at the documented stop; <code>layout.mjs</code> byte-identical; <code>navcheck</code>, <code>reading</code>, <code>panel</code> unchanged; coverage 1,803/47; every Phase 2/3 suite at its recorded count.</li><li><strong>Read-path cost</strong> — measure a real week&#x27;s evidence read before any Monitor/backup wiring is proposed.</li></ol>
+<hr>
+<h2>11. Owner Control Gates — two genuine ones</h2>
+<h3>11-A. <code>wbw.engaged</code> deduplicates per OCCURRENCE per day, and that is an unbounded stream</h3>
+<p><strong>This is the one substantive tension inside ADR-008 itself</strong>, and it is not mine to resolve.</p>
+<p>ADR-008 says <code>wbw.engaged</code> deduplicates by <strong>occurrence + person + UTC date</strong>, and in the same document says: <em>&quot;Store the minimum event evidence needed… Do not create an unbounded interaction stream.&quot;</em> At occurrence grain those two sentences disagree. A learner tapping 100 words a day produces ~700 evidence documents a week — 36,000 a year, per person — and per-occurrence detail <strong>already exists</strong> in <code>quranWordProgress</code> (Phase 3), which is the dedicated WbW state ADR-008 itself says stays separate.</p>
+<div class='tw'><table><thead><tr><th>Option</th><th>Volume per person per week</th><th>Consequence</th></tr></thead><tbody>
+<tr><td><strong>As written</strong> — occurrence + day</td><td>~700</td><td>Faithful to the text; a real interaction stream; read cost and storage grow fast</td></tr>
+<tr><td><strong>Amend to āyah + day</strong> — <em>recommended</em></td><td>~10</td><td>Activity records &quot;did word-by-word work on this āyah today&quot;, which is Activity&#x27;s own grain. <code>occurrenceId</code> is still stored on the document for provenance. No information is lost — the occurrence detail lives in <code>quranWordProgress</code></td></tr>
+</tbody></table></div>
+<p><strong>Recommended: amend the <code>wbw.engaged</code> Activity dedupe boundary to āyah + day</strong>, keeping <code>occurrenceId</code> as a stored field. That is an amendment to an accepted ADR and therefore <strong>requires Master Architect authority. It has not been applied.</strong> The candidate Rules as executed accept either, because the boundary lives in <code>dedupeScope</code>; only the writer&#x27;s id derivation changes.</p>
+<h3>11-B. Deploying the candidate Rules</h3>
+<p>Until <code>firestore.rules</code> is amended and deployed, the <code>evidence</code> subcollection <strong>has no rule and is therefore closed to all clients.</strong> So P4-C can be built, tested and merged safely, but <strong>the feature cannot function for anyone</strong> — not even the Owner — until deployment. Deployment is an Owner Control Gate and is <strong>not requested here.</strong> The exact decision needed: <em>&quot;Deploy the amendment adding <code>match /activity/{activityKey}/evidence/{eventId}</code> to production <code>firestore.rules</code>.&quot;</em></p>
+<p><strong>Not a gate, but named:</strong> the five deployed-Rules gaps in §1.5 are pre-existing, are <strong>not</strong> introduced or worsened by this design, and are <strong>not</strong> proposed for change here. Gap 5 (cross-tenant person binding) is closed <em>within</em> the new subcollection by <code>personInTenant()</code>; it remains open on the parent <code>activity</code> collection.</p>
+<p><strong>DDR-001, DDR-002, DDR-003 and DDR-004 are untouched</strong> and remain INACTIVE / DEFERRED. Nothing in this report activates a deferred decision.</p>
+<hr>
+<h2>12. Recommendation</h2>
+<p>The architecture is resolved: a <strong>create-only document per event</strong>, in a subcollection of the existing weekly Activity document, with a <strong>delimiter-joined identity that Firestore Rules re-derive and verify</strong>, deduplication enforced by the database rather than by a rule, unconditional immutability, no migration, and a rollback that is only ever &quot;stop writing&quot;.</p>
+<p>It has been <strong>executed, not merely reasoned about</strong>: 36 emulator assertions, 0 failures, <strong>0 budget-exhaustion denials</strong>, and proven able to fail. The one defect the cost pass introduced was caught by that suite and fixed.</p>
+<p>Two decisions are reserved to the Master Architect and are stated exactly in §11: the <code>wbw.engaged</code> dedupe grain (11-A), and Rules deployment (11-B). Neither blocks the architecture — 11-A changes one line of the writer&#x27;s id derivation and nothing structural; 11-B gates function, not construction.</p>
+<h1>P4-B ARCHITECTURE READY FOR MASTER ARCHITECT AUDIT</h1>
+<p><strong>STATUS: AWAITING HUMAN SIGN-OFF. No implementation authorised. P4-C not begun.</strong></p>
+</main></body></html>

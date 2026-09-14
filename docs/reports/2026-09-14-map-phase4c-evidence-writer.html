@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 4 — P4-C: the Study Activity evidence writer</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 4 — P4-C: the Study Activity evidence writer</h1>
+<p><strong>Date:</strong> 14 September 2026 <strong>Version:</strong> <code>08.24</code> → <strong><code>08.25</code></strong> <strong>Branch:</strong> <code>claude/dreamy-tesla-0clj36</code> — <strong>NOT merged into <code>main</code></strong>, per the instruction. <strong>Authority:</strong> Master Architect decision of 2026-09-14 — P4-B accepted with two required corrections; P4-C authorised, writer only. <strong>Baseline:</strong> branched from <code>main</code> = <code>925a9c2ca94fdffcfc0563d498681dfe902ab700</code> (v08.24). <strong>Blast radius:</strong> <strong>BR-0</strong> — two new modules, imported by nothing. <strong>Status:</strong> built and verified. <strong>P4-C READY FOR MASTER ARCHITECT AUDIT.</strong></p>
+<p><strong>Not in this round:</strong> no Rules deployed, no index, no migration, no backfill, no production write, no Study event wired, no Monitor or backup read path, no P4-D.</p>
+<hr>
+<h2>1. The two required corrections, applied</h2>
+<h3>Correction 1 — the Note&#x27;s identity participates in event identity</h3>
+<p>``<code> journal.note-created__approach_10__&lt;unitKey&gt;__&lt;noteId&gt;__once journal.note-revised__approach_10__&lt;unitKey&gt;__&lt;noteId&gt;__&lt;dateIso&gt; </code>``</p>
+<p><strong>Encoding, and why it was adjusted.</strong> All five automatic events use <strong>one five-slot form</strong>, with the literal <code>none</code> filling the Note slot for the three non-Note events, rather than a four-slot form for some and a five-slot form for others. The decision permitted adjustment &quot;only if necessary for safe Rules validation&quot;, and it is: a single arity keeps the Rules identity check a <strong>single string concatenation</strong> instead of a branch, which is exactly what P4-B&#x27;s expression-budget finding requires. The semantic identity contains the Note identity, as directed. <code>none</code> cannot be mistaken for a real <code>noteId</code>, which is always 32 hexadecimal characters — and both halves of that are enforced.</p>
+<p><strong>Rules re-derive and verify it</strong>, and enforce the two-sided rule that makes the <code>none</code> slot safe: a Journal event <strong>must</strong> carry a well-formed <code>noteId</code>; a non-Journal event <strong>must not</strong> carry one at all. Without the first, a Journal event could take the <code>none</code> slot and collide with every other Note on that āyah; without the second, a reading event could smuggle in a <code>noteId</code> and mint an unbounded family of ids for one real event.</p>
+<h3>Correction 2 — WbW Activity grain, and the <code>occurrenceId</code> decision</h3>
+<p><code>wbw.engaged</code> deduplicates by <strong>āyah + person + UTC day</strong>. ADR-008 is amended: its status line, the <code>wbw.engaged</code> row, and a new &quot;Master Architect amendments&quot; section recording both corrections, why each was required, and what is unchanged.</p>
+<p><strong><code>occurrenceId</code> is OMITTED.</strong> Reviewed against every reader of Activity as directed — Monitor counts per student, subject and unit; backup prints entries; <code>bulkConfirmWeek()</code> cannot see this collection at all — and <strong>none has a concrete downstream requirement for it.</strong> Storing one would also mislead: whichever word was tapped first that day would arbitrarily win the field while the other ninety-nine went unrepresented, giving the appearance of occurrence-level precision the āyah/day grain does not have. The authoritative occurrence-level state remains <code>quranWordProgress</code>, unchanged. The field is not in the Rules&#x27; accepted key list, so it cannot be stored even by a client that tries.</p>
+<hr>
+<h2>2. What was built</h2>
+<div class='tw'><table><thead><tr><th>File</th><th>Purpose</th></tr></thead><tbody>
+<tr><td><code>app/js/study-activity-evidence-id.js</code></td><td><strong>Pure.</strong> Deterministic <code>eventId</code>, the evidence document, ADR-008&#x27;s mapping and dedupe boundaries. No Firebase, no DOM</td></tr>
+<tr><td><code>app/js/study-activity-evidence-store.js</code></td><td><strong>The only writer.</strong> One <code>createDocument()</code> into the subcollection, with the read-first/re-read retry discipline of §3</td></tr>
+<tr><td><code>tools/i18n-verify/study-activity-evidence-id.mjs</code></td><td>29 pure identity and shape checks</td></tr>
+<tr><td><code>tools/i18n-verify/study-activity-evidence-store.mjs</code></td><td>19 writer-behaviour checks against an in-memory Firestore</td></tr>
+<tr><td><code>tools/i18n-verify/study-activity-evidence-boundary.mjs</code></td><td>13 structural guards</td></tr>
+<tr><td><code>tools/firestore-emulator/activity-evidence-v1.rules.test.mjs</code></td><td><strong>53</strong> emulator assertions (was 36)</td></tr>
+<tr><td><code>docs/governance/phase4-activity-evidence-rules-candidate-2026-09-14.rules</code></td><td>amended candidate. <strong>NOT DEPLOYED</strong></td></tr>
+</tbody></table></div>
+<p><strong>Modified:</strong> <code>app/js/version.js</code> (<code>08.24</code>→<code>08.25</code>), ADR-008, the P4-B report (amendment box, original text left intact), <code>CHANGELOG.md</code>, <code>CLAUDE.md</code>.</p>
+<p><strong>Not touched:</strong> <code>app/js/activity.js</code> · <code>app/js/records.js</code> · <code>firestore.rules</code> · every <code>app/*.html</code> · <code>app/js/monitor.js</code> · <code>app/js/backup.js</code> · <code>app/js/backup-file.js</code> · every Word Card and Phase 3 file. Proven in §5.</p>
+<h3>A simplification worth recording</h3>
+<p><code>doc(db, path, id)</code> accepts a <strong>multi-segment</strong> collection path, so <code>activity/&lt;weekKey&gt;/evidence</code> + <code>eventId</code> is a valid document reference in three arguments. <strong><code>envelope.js</code> therefore needs no change</strong> to stamp the I17 envelope here, and <strong>the test harness&#x27;s own <code>doc()</code> needs no change either</strong> — the subcollection costs this codebase nothing new. The P4-B change budget had flagged a possible stub change; measured, it was not needed.</p>
+<hr>
+<h2>3. Retry is a successful no-op — and that is not the same as swallowing errors</h2>
+<p>The identity is the document id, so a retry addresses a document that already exists. The candidate Rules permit <code>create</code> only, so such a write returns <code>permission-denied</code> — <strong>and so does a genuine authorisation failure.</strong> Treating every <code>permission-denied</code> as &quot;already recorded&quot; would hide real failures, which I15 forbids outright.</p>
+<p>So the writer reads first, and on a denial reads <strong>again</strong> before deciding:</p>
+<div class='tw'><table><thead><tr><th>Situation</th><th>Outcome</th></tr></thead><tbody>
+<tr><td>document already present</td><td>no write attempted → <code>written: false</code></td></tr>
+<tr><td>write denied, document now present</td><td>two writers raced; the event <strong>is</strong> recorded → <code>written: false</code></td></tr>
+<tr><td>write denied, still absent</td><td>a <strong>real</strong> failure → rethrown, so it reaches the user (I15)</td></tr>
+</tbody></table></div>
+<p>Cost: one read per event, and that read is the only thing that distinguishes &quot;already done&quot; from &quot;not allowed&quot;. Measured: <strong>a first write costs 1 read + 1 create; a retry costs 1 read and 0 creates.</strong></p>
+<hr>
+<h2>4. Tests executed</h2>
+<h3>The Master Architect&#x27;s six required Note cases, plus the WbW cases</h3>
+<div class='tw'><table><thead><tr><th>Required case</th><th>Emulator</th><th>Pure</th><th>Store</th></tr></thead><tbody>
+<tr><td>1. two different Notes on the same unit may each create evidence</td><td><strong>MA-1 PASS</strong></td><td>PASS</td><td>PASS</td></tr>
+<tr><td>2. retrying creation evidence for the same Note is a duplicate</td><td><strong>MA-2 PASS</strong></td><td>PASS</td><td>PASS</td></tr>
+<tr><td>3. two different Notes revised on the same unit/day may each create evidence</td><td><strong>MA-3a/3b PASS</strong></td><td>PASS</td><td>PASS</td></tr>
+<tr><td>4. repeated revision evidence for the same Note/day deduplicates</td><td><strong>MA-4 PASS</strong></td><td>PASS</td><td>PASS</td></tr>
+<tr><td>5. changing <code>noteId</code> without the corresponding <code>eventId</code> is denied</td><td><strong>MA-5 PASS</strong></td><td>—</td><td>—</td></tr>
+<tr><td>6. changing <code>eventId</code> without the corresponding <code>noteId</code> is denied</td><td><strong>MA-6 PASS</strong></td><td>—</td><td>—</td></tr>
+<tr><td>WbW occurrence duplication cannot create multiple documents for one āyah/day</td><td><strong>MA-W1/W2/W3 PASS</strong></td><td>PASS</td><td><strong>PASS — 100 writes → 1 document</strong></td></tr>
+</tbody></table></div>
+<p>Plus three hygiene cases that make the <code>none</code> slot safe: a Note event with no <code>noteId</code> cannot take it; a non-Note event may not smuggle one in; a malformed <code>noteId</code> is refused.</p>
+<h3>Candidate Rules — emulator, isolated, demo project only</h3>
+<div class='tw'><table><thead><tr><th></th><th>Result</th></tr></thead><tbody>
+<tr><td>Assertions</td><td><strong>53 passed, 0 failed</strong> (was 36 before the amendments)</td></tr>
+<tr><td>Expression-budget denials</td><td><strong>0</strong></td></tr>
+<tr><td>Denial reasons</td><td>every one a decision the rules made</td></tr>
+</tbody></table></div>
+<p><strong>Mutation testing — each important check neutralised in turn:</strong></p>
+<div class='tw'><table><thead><tr><th>Neutralised</th><th>Assertions reached</th><th>Suite</th></tr></thead><tbody>
+<tr><td>baseline</td><td>53</td><td>passes</td></tr>
+<tr><td><code>idIsDerivedIdentity()</code></td><td><strong>6</strong></td><td><strong>fails</strong></td></tr>
+<tr><td><code>scopeMatchesPath()</code></td><td><strong>38</strong></td><td><strong>fails</strong></td></tr>
+<tr><td><code>personInTenant()</code></td><td><strong>41</strong></td><td><strong>fails</strong></td></tr>
+<tr><td><code>noteIdentityOk()</code></td><td><strong>25</strong></td><td><strong>fails</strong></td></tr>
+<tr><td>restored</td><td>53</td><td>passes</td></tr>
+</tbody></table></div>
+<h4>A suite defect found by that mutation run, and fixed</h4>
+<p>On the first pass, <strong><code>personInTenant()</code> was neutralised and the suite still passed</strong> — so that check was untested. The reason was a wrong case: the cross-tenant test had <code>p1</code> writing for <code>pX</code>, which <code>canRecordFor</code> already denies because p1&#x27;s login is not pX&#x27;s, so it proved nothing about the tenant binding. The isolating case has <code>pX</code> writing <strong>for themselves</strong> under tenant <code>t1</code>&#x27;s path: <code>isSelfPerson()</code> is true and <code>canRecordFor</code> <strong>allows</strong> it, so <code>personInTenant()</code> is the only thing standing between pX (tenant <code>t2</code>) and tenant <code>t1</code>&#x27;s data. It is paired with an allow differing in one fact — the same writer filing under their <strong>own</strong> tenant succeeds. The mutation now fails the suite, as shown above.</p>
+<h3>P4-C suites</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>study-activity-evidence-id.mjs</code></td><td><strong>29 passed, 0 failed</strong></td></tr>
+<tr><td><code>study-activity-evidence-store.mjs</code></td><td><strong>19 passed, 0 failed</strong></td></tr>
+<tr><td><code>study-activity-evidence-boundary.mjs</code></td><td><strong>13 passed, 0 failed</strong></td></tr>
+</tbody></table></div>
+<p><strong>Boundary suite proven able to fail</strong>, four mutations:</p>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Result</th></tr></thead><tbody>
+<tr><td>import the writer into <code>records.js</code></td><td><strong>FAIL</strong> ×2 (uninvoked, and no surface names it)</td></tr>
+<tr><td>make <code>bulkConfirmWeek()</code> read the evidence subcollection</td><td><strong>FAIL</strong> — the Mastery-coupling guard</td></tr>
+<tr><td>let the writer express <code>action: &quot;claimed&quot;</code></td><td><strong>FAIL</strong></td></tr>
+<tr><td>renumber a mapped Approach</td><td><strong>FAIL</strong></td></tr>
+</tbody></table></div>
+<h4>A second self-inflicted defect, found by that same exercise</h4>
+<p>The Approach-binding mutation <strong>did not fail at first</strong>. The cause was mine: <code>check()</code> is synchronous and I had given it an <code>async</code> body, so the assertion threw inside an uncaught promise and the case was counted green. A passing check carrying exactly the blind spot it was written to close. <code>APPROACH_TEMPLATES</code> is imported statically now, the body is synchronous — and <strong><code>check()</code> itself now refuses any function that returns a promise</strong>, so this cannot recur anywhere in the suite.</p>
+<h4>A third failing check that was a wrong assertion, not a defect</h4>
+<p>&quot;the writer never writes an <code>entries[]</code> array&quot; failed on <code>Object.entries(UNIT_KEY_SHAPES)</code> — a JavaScript builtin, not the Firestore array. Investigated before changing the module; the module was right. The check now matches <code>entries</code> with a negative lookbehind for <code>Object.</code>.</p>
+<h3>Regression — nothing moved</h3>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th><th>Baseline</th></tr></thead><tbody>
+<tr><td><code>study-approach-contract.mjs</code> / <code>-evidence</code> / <code>-boundary</code> (P4-A)</td><td>13 / 11 / 16, 0 failed</td><td>13 / 11 / 16</td></tr>
+<tr><td><code>quran-word-card.mjs</code> / <code>-integration</code></td><td>36 / 10, 0 failed</td><td>36 / 10</td></tr>
+<tr><td><code>quran-word-progress-model</code> / <code>-data</code></td><td>57 / 37, 0 failed</td><td>57 / 37</td></tr>
+<tr><td><code>quran-word-coverage-arabic</code> / <code>quran-boundary</code> / <code>quran-word-indexes</code></td><td>29 / 30 / 9, 0 failed</td><td>same</td></tr>
+<tr><td><code>stub-parity.mjs</code></td><td>3 passed, 0 failed</td><td>3</td></tr>
+<tr><td><code>layout.mjs</code></td><td><strong>every metric byte-for-byte identical</strong> at all 16 configurations; <code>CHANGED:</code> printed <strong>0</strong> times; 0 page errors, 0 overflows, 0 lost rows; <code>getElementById</code> <strong>250 → 250</strong></td><td>same</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>unchanged — only the pre-existing 320 px English truncation</td><td>same</td></tr>
+<tr><td><code>reading.mjs</code></td><td><strong><code>READING SCREEN OK</code></strong></td><td>OK</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 / 47 — both unchanged</strong></td><td>1,803 / 47</td></tr>
+<tr><td><code>behaviour.mjs</code></td><td><strong>803 passed, 0 failed</strong> — the documented total, at the documented stop</td><td>803 total</td></tr>
+</tbody></table></div>
+<p>The <code>layout.mjs</code> comparison used <code>HEAD</code>&#x27;s own <code>quranrevival.html</code> <strong>and</strong> <code>HEAD</code>&#x27;s <code>version.js</code> as <code>_prev-</code> shims with the import repointed, so &quot;before&quot; really rendered <strong>v08.24</strong> against &quot;after&quot; <strong>v08.25</strong>. <code>app/quranrevival.html</code> is byte-for-byte identical to <code>HEAD</code>. Both shims were deleted before the coverage total was read.</p>
+<hr>
+<h2>5. Structural safety — every item the decision required</h2>
+<div class='tw'><table><thead><tr><th>Required proof</th><th>How it is held</th><th>Result</th></tr></thead><tbody>
+<tr><td>evidence never enters legacy <code>entries[]</code></td><td>the writer&#x27;s source may not contain <code>arrayUnion</code>, <code>logActivity</code>, or Firestore <code>entries</code>; it addresses only <code>.../evidence</code></td><td><strong>PASS</strong></td></tr>
+<tr><td><code>bulkConfirmWeek()</code> remains unable to see Study evidence</td><td>its body must still read <code>activitySnap.data().entries</code>, and must not mention <code>evidence</code> or run a query</td><td><strong>PASS</strong>, and proven able to fail</td></tr>
+<tr><td>no writer dependency on <code>records</code>, <code>claimStatus</code>, <code>confirmEntry</code>, <code>achieved</code>, <code>mastered</code></td><td>forbidden-token scan over code with comments stripped</td><td><strong>PASS</strong></td></tr>
+<tr><td><code>status.claimed</code> / <code>status.confirmed</code> cannot be persisted as evidence</td><td>absent from the event table; refused by the pure module, the store and the Rules</td><td><strong>PASS</strong> ×3</td></tr>
+<tr><td>retrying the same event is a successful no-op at the application layer</td><td>§3, measured</td><td><strong>PASS</strong></td></tr>
+<tr><td>genuine persistence failures remain visible</td><td>a real denial and a network error are both rethrown</td><td><strong>PASS</strong></td></tr>
+<tr><td>existing Activity behaviour unchanged</td><td><code>activity.js</code> byte-identical to <code>HEAD</code>; still <code>arrayUnion</code>; no <code>v1Events</code>; no evidence reference</td><td><strong>PASS</strong></td></tr>
+<tr><td>Rules cost does not grow with accumulated evidence</td><td>160 documents written, then one more — same rule, same cost, no map walked</td><td><strong>PASS</strong></td></tr>
+</tbody></table></div>
+<hr>
+<h2>6. Rules, index, migration and deployment status</h2>
+<div class='tw'><table><thead><tr><th></th><th>Status</th></tr></thead><tbody>
+<tr><td>Production <code>firestore.rules</code></td><td><strong>UNTOUCHED</strong>, byte-for-byte identical to <code>HEAD</code></td></tr>
+<tr><td>Candidate Rules</td><td><strong>CANDIDATE ONLY — NOT DEPLOYED.</strong> Amended for both corrections</td></tr>
+<tr><td>Firestore indexes</td><td>none changed, none deployed; no tracked index file exists</td></tr>
+<tr><td>Migration / backfill</td><td><strong>none</strong></td></tr>
+<tr><td>Production data writes</td><td><strong>none</strong> — the emulator runs against <code>demo-quranrevival-activity-evidence-v1</code>, and the tooling refuses any project id without a <code>demo-</code> prefix</td></tr>
+<tr><td>The writer</td><td><strong>UNINVOKED.</strong> Nothing in <code>app/</code> imports it</td></tr>
+<tr><td><strong>Consequence, stated plainly</strong></td><td>until the Rules are deployed, the <code>evidence</code> subcollection has <strong>no rule and is closed to every client</strong>. P4-C is built, tested and safe to review, but <strong>cannot function for anyone — including the Owner — until deployment</strong>, which remains an Owner Control Gate and is <strong>not requested here</strong></td></tr>
+</tbody></table></div>
+<hr>
+<h2>7. <code>behaviour.mjs</code> — completed</h2>
+<p><strong>803 passed, 0 failed</strong> — the documented total, stopping at the pre-existing section-42 <code>[data-note-master-toggle]</code> crash carried since v07.69 (<code>behaviour.mjs:4123</code>). <strong>No check the suite reaches needed updating</strong>, which is the expected result for a round that adds modules nothing calls.</p>
+<p>Two notes for the record, because an earlier draft of this report was written while the run was still in progress and said so:</p>
+<ol><li>It grinds almost to a halt in the sections that fetch from hosts this sandbox cannot reach — section 40 pulls Mushaf page images, section 41 recitation audio — where every request must time out before the suite advances. The partial figure quoted mid-run (776 through section 40) was labelled as incomplete at the time and is superseded by the 803 above. Nothing was ever claimed as passing that had not run.</li><li><strong>Section 22g&#x27;s three <code>archive.org</code> screensaver failures did not occur in this run</strong>, giving 803/0 rather than the 800/3 some recent runs record. That difference is environmental — this sandbox&#x27;s proxy — and not a code difference; the modules under test are byte-identical to <code>HEAD</code>.</li></ol>
+<hr>
+<h2>8. What the Owner would see</h2>
+<p><strong>Nothing.</strong> The writer is uninvoked and no screen changed. The only visible difference is the version badge reading <strong>v08.25</strong> — and only once this branch is merged, which the instruction defers. <code>main</code> still serves <strong>v08.24</strong>.</p>
+<hr>
+<h2>9. Position</h2>
+<p><strong>P4-D not begun.</strong> No Study surface is wired; Monitor and backup have no read path; no Rules are deployed.</p>
+<p><strong>Open Owner Control Gate, unchanged:</strong> deploying the candidate Rules. The exact decision: <em>&quot;Deploy the amendment adding <code>match /activity/{activityKey}/evidence/{eventId}</code> to production <code>firestore.rules</code>.&quot;</em></p>
+<p>DDR-001 through DDR-004 untouched and still INACTIVE / DEFERRED.</p>
+<h1>P4-C READY FOR MASTER ARCHITECT AUDIT</h1>
+<p><strong>STATUS: AWAITING HUMAN SIGN-OFF.</strong></p>
+</main></body></html>

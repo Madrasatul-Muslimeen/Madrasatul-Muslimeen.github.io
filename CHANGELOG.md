@@ -12470,3 +12470,81 @@ the live app was an unmerged candidate.
 `firestore.rules` byte-for-byte unchanged; no index, no migration, no backfill,
 no production write, no data-structure change, no new string. DDR-001–004 all
 untouched.
+
+**v08.25 (14 Sep 2026) is MAP Phase 4 P4-C — the Study Activity evidence
+WRITER, still uninvoked**, built on the P4-B architecture the Master Architect
+accepted the same day with two required corrections.
+
+**The architecture, settled in P4-B and now implemented.** One create-only
+document per ADR-008 event, in a subcollection of the existing weekly Activity
+document: `activity/{tenantId}__{personId}__{weekKey}/evidence/{eventId}`.
+Deduplication is enforced by the DATABASE, not by a rule — the identity IS the
+document id, so a retry is a `create` on an existing document and always fails.
+Immutability is `allow update, delete: if false`. Legacy `entries[]` is
+untouched by construction, so there is no migration.
+
+**Why not a map inside the weekly document, which is what the earlier rejected
+candidate did:** `records.js` `bulkConfirmWeek()` builds its confirm set
+ENTIRELY from `activity.entries[]`, so a `(unitKey, trackableId)` pair appearing
+there causes the matching PENDING Mastery claim to be confirmed. Evidence in
+that array would let merely reading an āyah enlarge what one supervisor click
+confirms — Activity granting Mastery, in client code where no rule can
+intervene. A structural check now holds that open.
+
+**Correction 1, applied: the Note's identity participates in event identity.**
+Built from event type, Approach, unit and day alone, two different Notes on the
+same āyah on the same day collapse to one identity and the second is silently
+lost — contradicting ADR-008's own "one event per committed new Note". All five
+events now use ONE five-slot form, `none` filling the Note slot for the three
+non-Note events, because a single arity keeps the Rules identity check a single
+concatenation rather than a branch — which is what the expression-budget finding
+requires.
+
+**Correction 2, applied: `wbw.engaged` is āyah + day, not occurrence + day**,
+and **`occurrenceId` is OMITTED**. Reviewed against every reader of Activity —
+Monitor, backup, `bulkConfirmWeek()` — and none needs it; storing one would
+mislead, since whichever word was tapped first would arbitrarily win the field
+while the rest went unrepresented. `quranWordProgress` remains the authoritative
+occurrence-level state. ADR-008 amended to record both.
+
+**Retry is a successful no-op, and that is NOT the same as swallowing errors.**
+A retry and a genuine authorisation failure both arrive as `permission-denied`.
+The writer reads first, and on a denial reads AGAIN: document present → no-op;
+still absent → a real failure, rethrown so it reaches the user (I15).
+
+**A simplification worth keeping: `doc(db, path, id)` takes a multi-segment
+collection path**, so `activity/<week>/evidence` + eventId is a document
+reference in three arguments — `envelope.js` needs no change to stamp the I17
+envelope, and the harness's own `doc()` needs no change either. The P4-B budget
+had flagged a possible stub change; measured, none was needed.
+
+**Three of my own checks were wrong, all found by measuring rather than by
+reading.** (1) Rules **mutation testing** showed `personInTenant()` could be
+neutralised with the suite still green — the cross-tenant case had `p1` writing
+for `pX`, which `canRecordFor` already denies, so it proved nothing. The
+isolating case has `pX` writing for THEMSELVES under another tenant's path,
+where `isSelfPerson()` is true and only `personInTenant()` stands in the way.
+(2) A boundary check counted an **`async` body as a pass**, because `check()` is
+synchronous and the assertion threw inside an uncaught promise — so a deliberate
+Approach renumber sailed through the check written to catch it. `check()` now
+refuses any function returning a promise. (3) "never writes an `entries[]`
+array" failed on `Object.entries`, a JavaScript builtin; the module was right
+and the check was too blunt.
+
+**Standing lesson, new: mutation-test a security rule check by check, and pair
+every denial with an allow differing in ONE fact.** A denial that some other
+rule would have produced anyway proves nothing about the check you think you are
+testing.
+
+**Emulator: 53 assertions, 0 failures, 0 expression-budget denials**, isolated,
+demo project only. All four important Rules checks proven active by mutation.
+Pure suites 29 + 19 + 13, all passing, the boundary suite proven able to fail on
+four mutations. `layout.mjs` byte-for-byte identical at all 16 configurations
+with a real v08.24 shim, `getElementById` 250 → 250; `navcheck` unchanged;
+`reading` OK; coverage 1,803 / 47 both unchanged.
+
+**Production `firestore.rules` is byte-for-byte UNTOUCHED**, no index, no
+migration, no backfill, no production write, no Study event wired, no Monitor or
+backup read path. **Until the candidate Rules are deployed the subcollection has
+no rule and is closed to every client**, so the feature cannot function for
+anyone yet — deployment remains an Owner Control Gate. DDR-001–004 untouched.
