@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 4, Task P4-A — the Study-to-Approach event contract, landed as a pure tranche</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 4, Task P4-A — the Study-to-Approach event contract, landed as a pure tranche</h1>
+<p><strong>Date:</strong> 14 September 2026 <strong>Version:</strong> <code>08.23</code> → <strong><code>08.24</code></strong> <strong>Branch:</strong> <code>claude/dreamy-tesla-0clj36</code> <strong>Authority:</strong> Owner instruction of 14 Sep 2026 — resume MAP execution from the first unfinished Phase 4 task after live acceptance of v08.23. <strong>MAP requirements:</strong> Phase 4 (Study → Approach Connection Framework); ADR-003 (Activity ≠ Mastery); ADR-008 (this contract); MAP §§9, 10, 11, 21, 22. <strong>Blast radius:</strong> <strong>BR-0</strong> — two new pure modules, imported by nothing. <strong>Status:</strong> built and fully verified. <strong>PENDING OWNER LIVE VERIFICATION.</strong></p>
+<p><strong>Not in this round:</strong> no Firestore Rules change, no index, no migration, no backfill, no production write, no event wiring, no UI change, no data-model change, no change to the live Activity writer.</p>
+<hr>
+<h2>1. Reconciliation first — the 12 September records against today&#x27;s <code>main</code></h2>
+<p>The two 12 September documents are historical checkpoints. Reconciled against the repository as it actually stands:</p>
+<div class='tw'><table><thead><tr><th>Claim in the 12 Sep records</th><th>Reality on <code>main</code> today</th><th>Disposition</th></tr></thead><tbody>
+<tr><td>GitHub <code>main</code> = <code>4833b19c</code></td><td><code>main</code> = <strong><code>10961f3462aac73e63f678155483b5dbd9c5146c</code></strong>, app version <strong>08.23</strong></td><td><strong>Superseded.</strong> The Phase 2–3 verification merge (<code>07ebbde</code>, v08.19) plus v08.20–v08.23 landed after that snapshot</td></tr>
+<tr><td>&quot;Next bounded task: Task 68 — extract and independently validate a pure P2/P4 contract/index tranche onto current <code>main</code>&quot;</td><td>The <strong>P2 half is done</strong> — word identity, the generated indexes and the Word Card are all on <code>main</code></td><td><strong>Half-complete</strong></td></tr>
+<tr><td>—</td><td>The <strong>P4 half was never extracted.</strong> ADR-008, <code>study-approach-contract.js</code>, <code>study-activity-evidence.js</code> and their two pure suites exist <strong>only</strong> on <code>claude/pensive-knuth-2pu3jj</code></td><td><strong>This is the gap this task closes</strong></td></tr>
+<tr><td>Ledger row: &quot;4 Study event mapping contract — IMPLEMENTED + VERIFIED + ACCEPTED&quot;</td><td>True of the <em>scope that was accepted</em>, <strong>but not of the baseline</strong>: <code>docs/governance/adr/</code> on <code>main</code> holds ADR-001…<strong>007</strong> only. ADR-008 is absent</td><td><strong>Conflict, reported and now closed.</strong> An accepted decision that is not in the repository is not part of the accepted baseline</td></tr>
+<tr><td>Phase 4 generic keyed Activity writer — &quot;IMPLEMENTED + VERIFICATION PENDING&quot;</td><td>Absent from <code>main</code>. <code>app/js/activity.js</code> on <code>main</code> is still the original <code>arrayUnion</code> append path — proven, not assumed</td><td><strong>Correctly excluded.</strong> See §6</td></tr>
+</tbody></table></div>
+<p><strong>No Git bundle was needed.</strong> Current <code>main</code> was read directly from <code>origin</code>. The still-isolated Phase 4 branch was fetched read-only and inspected to answer the separate question the Owner asked — whether any of it is needed. Part of it is (this tranche); the rest is gated (§6).</p>
+<h3>Working-tree reconciliation</h3>
+<p><code>claude/dreamy-tesla-0clj36</code> was at <code>origin/main</code> exactly — <strong>0 ahead, 0 behind</strong> — before any file was touched. One inconsistency worth naming: the <strong>local <code>main</code> ref was stale</strong> at <code>6e9bee5</code>, 28 commits behind <code>origin/main</code>. Two early presence checks run against it gave wrong answers and were re-run against <code>origin/main</code>; every finding in this report is from <code>origin/main</code>.</p>
+<h3>One documentation defect found, not caused by this round</h3>
+<p><code>CLAUDE.md</code> on <code>main</code> still opens with a header block stating <em>&quot;THIS BRANCH IS THE PHASE 2-3 VERIFICATION MERGE CANDIDATE … Nothing here is deployed.&quot;</em> That was true of the candidate branch and is <strong>false of <code>main</code></strong>: the merge completed on 13 Sep and GitHub Pages serves <code>main</code>. A session reading it would believe the live app is an unmerged candidate. Corrected in this round.</p>
+<hr>
+<h2>2. What was chosen as the first eligible Phase 4 task, and why</h2>
+<p>MAP Phase 4 decomposes (MAP §21) into, in dependency order:</p>
+<ol><li><strong>the event-mapping contract</strong> — pure policy, no storage, no wiring;</li><li>the Activity writer that persists evidence — needs Rules;</li><li>the UI event wiring for Reading, Listening, Journaling and WbW — needs (2).</li></ol>
+<p>Only <strong>(1)</strong> is eligible today. It is pure, additive, reversible, touches no protected zone, and needs no Rules, no index and no data change. (2) and (3) are blocked — §6.</p>
+<p>So <strong>Task P4-A</strong> is: put the accepted contract into the accepted baseline, as pure uninvoked policy, with the checks that keep it honest.</p>
+<hr>
+<h2>3. Change budget, as declared before coding</h2>
+<p><strong>Created</strong></p>
+<div class='tw'><table><thead><tr><th>File</th><th>What</th></tr></thead><tbody>
+<tr><td><code>docs/governance/adr/ADR-008-study-approach-event-contract-v1.md</code></td><td>The accepted decision record, now in the register on <code>main</code></td></tr>
+<tr><td><code>app/js/study-approach-contract.js</code></td><td>Pure policy: the event → Approach map, the 80% Listening threshold, deterministic retry keys</td></tr>
+<tr><td><code>app/js/study-activity-evidence.js</code></td><td>Pure projection: an event → one candidate Activity row. Persists nothing</td></tr>
+<tr><td><code>tools/i18n-verify/study-approach-contract.mjs</code></td><td>13 pure contract checks</td></tr>
+<tr><td><code>tools/i18n-verify/study-activity-evidence.mjs</code></td><td>11 pure projection checks</td></tr>
+<tr><td><code>tools/i18n-verify/study-approach-contract-boundary.mjs</code></td><td><strong>New this round</strong> — 16 checks, §5</td></tr>
+<tr><td><code>docs/reports/2026-09-14-map-phase4a-study-approach-contract.{md,html}</code></td><td>This report</td></tr>
+</tbody></table></div>
+<p><strong>Modified:</strong> <code>app/js/version.js</code> (<code>08.23</code> → <code>08.24</code>), <code>CHANGELOG.md</code>, <code>CLAUDE.md</code>.</p>
+<p><strong>Explicitly not touched:</strong> <code>firestore.rules</code> · <code>app/js/activity.js</code> · <code>app/js/records.js</code> · <code>app/quranrevival.html</code> · <code>app/js/quran-word-card.js</code> and every other Word Card file · <code>tests/firestore/</code> · any <code>app/*.html</code>.</p>
+<p><strong>Data structures added or changed:</strong> none. <strong>External dependencies:</strong> none. <strong>Rollback:</strong> delete the six new files and restore <code>version.js</code>. Because the modules are imported by nothing, removing them cannot break a running page.</p>
+<hr>
+<h2>4. What the contract actually says</h2>
+<p>ADR-008 v1, <code>study-approach-contract:v1</code>. Every mapped event appends <strong>Activity evidence only</strong>; none of them grants <code>achieved</code> or <code>mastered</code>. Mastery still moves only through the existing explicit claim and, where required, the existing confirmation workflow — ADR-003 unchanged.</p>
+<div class='tw'><table><thead><tr><th>Event</th><th>Approach</th><th>Activity</th><th>Mastery</th></tr></thead><tbody>
+<tr><td><code>reading.completed</code></td><td><code>approach_01</code> Reading (with Tajweed) / <code>approach_03</code> Reading (with Meaning), by Study mode</td><td>one <code>practised</code>, deduplicated per unit per UTC day</td><td><strong>none</strong></td></tr>
+<tr><td><code>listening.completed</code></td><td><code>approach_07</code> Listening (Arabic only) / <code>approach_08</code> Listening (Arabic with meaning)</td><td>one <code>practised</code>, only past <strong>80%</strong> of the selected unit</td><td><strong>none</strong></td></tr>
+<tr><td><code>journal.note-created</code></td><td><code>approach_10</code> Journaling</td><td>one <code>practised</code> per committed new Note</td><td><strong>none</strong></td></tr>
+<tr><td><code>journal.note-revised</code></td><td><code>approach_10</code> Journaling</td><td>at most one per Note per UTC day</td><td><strong>none</strong></td></tr>
+<tr><td><code>wbw.engaged</code></td><td><code>approach_04</code> Reading — Word-by-Word Meaning</td><td>one <code>practised</code> per occurrence per UTC day</td><td><strong>none</strong> — the dedicated WbW approval state stays separate</td></tr>
+<tr><td><code>status.claimed</code> / <code>status.confirmed</code></td><td>—</td><td>the existing entries</td><td>the <strong>only</strong> two that move mastery</td></tr>
+</tbody></table></div>
+<p>Deliberately <em>not</em> counted: opening or scrolling a passage; seeking, looping, buffering, failed playback, background preload; opening, typing in or cancelling a draft Note.</p>
+<hr>
+<h2>5. The checks this round added, and why they are the ones that matter</h2>
+<p>The two extracted suites (24 checks) exercise the modules&#x27; functions. Passing them would not have caught the two ways this tranche could really go wrong, so a third suite was written for exactly those.</p>
+<p><strong>A. The modules must stay uninvoked.</strong> The whole safety claim of this tranche is &quot;landing it changes nothing&quot;, and that claim is about <em>wiring</em>, which no function-level test can see. The suite reads every <code>.js</code> and <code>.html</code> under <code>app/</code> and asserts that nothing imports either module; that the evidence module imports only the contract and word identity; that the contract module imports nothing at all; and that neither can reach <code>firebasejs</code>, <code>runTransaction</code>, <code>arrayUnion</code>, <code>activity.js</code>, <code>records.js</code>, <code>envelope.js</code>, <code>claimStatus</code>, <code>achieved</code> or <code>mastered</code>. It also asserts <code>activity.js</code> still uses its existing <code>arrayUnion</code> path and carries no <code>v1Events</code>.</p>
+<p><strong>B. A hardcoded Approach id can silently come to mean the wrong Approach.</strong> The contract names <code>approach_07</code> as a literal. If a later round renumbers the catalogue, every one of the 24 function checks keeps passing while real study is credited to the wrong Approach — a defect invisible on any screen. So the suite reads <code>APPROACH_TEMPLATES</code> and asserts each id still carries the exact English name the contract means, that the policy references no Approach outside that set, and that all 30 are still present. <strong>All six ids verified against the live catalogue: <code>approach_01/03/04/07/08/10</code> are exactly the six Approaches ADR-008 names.</strong></p>
+<p><strong>C. Permanent keys (I5) must be the app&#x27;s own.</strong> The evidence module accepts unit keys by regexp. The suite builds them with <code>buildUnitKey.ayah/range/surah</code> and the occurrence id with <code>quranWordOccurrenceId</code>, and asserts those exact values are accepted verbatim — and that <code>juz</code>, <code>ruku</code>, <code>page</code>, <code>hizb</code>, <code>topic</code> and <code>name</code> keys, also built by <code>buildUnitKey</code>, all <strong>fail closed</strong>.</p>
+<h3>One of my own checks was wrong, and was corrected rather than believed</h3>
+<p>The forbidden-token check failed on <code>study-activity-evidence.js</code> for <code>claimStatus</code>. Investigated before changing anything: the only occurrence is the module&#x27;s <strong>own header comment</strong>, <em>&quot;never persists evidence and never calls Records/claimStatus&quot;</em> — the check failed on the sentence promising the very thing it was checking for. It now scans code with block comments and whole-line comments removed. Trailing <code>//</code> comments are still scanned deliberately: that errs towards a false alarm, never a missed wiring.</p>
+<h3>Proven able to fail — four deliberate mutations, each caught</h3>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>import { studyEventPolicy }</code> added to <code>app/js/records.js</code></td><td><strong>FAIL</strong> — &quot;no app source imports the guarded modules&quot;</td></tr>
+<tr><td><code>approach_07</code> swapped for <code>approach_09</code> in the policy</td><td><strong>FAIL</strong> — &quot;the policy references no Approach outside that set&quot;</td></tr>
+<tr><td>The gated keyed <code>activity.js</code> copied in from the isolated branch</td><td><strong>FAIL</strong> — &quot;activity.js still uses its existing arrayUnion append path&quot;</td></tr>
+<tr><td><code>tests/firestore/activity-v1.proposed.rules</code> copied in</td><td><strong>FAIL</strong> — &quot;no Firestore Rules or index file is touched by this tranche&quot;</td></tr>
+</tbody></table></div>
+<p>The working tree was restored after each, and the suite returns 16/16.</p>
+<hr>
+<h2>6. What is NOT in this round, and the exact gate on each</h2>
+<p><strong>The keyed Activity writer</strong> — <code>app/js/study-activity-week.js</code>, the rewritten <code>app/js/activity.js</code>, <code>tests/firestore/activity-v1.proposed.rules</code> and its security matrix — is deliberately left on <code>claude/pensive-knuth-2pu3jj</code>.</p>
+<p>It is not merely unverified; it is <strong>blocked on a real, named, unresolved security question</strong>. Its own Task 50 audit caveat records it: the prototype hashes the raw <code>eventKey</code> with SHA-256 to get a safe map field name, and <strong>Firestore Rules cannot recompute that hash from the event payload</strong>. Rules can enforce create-only map keys and preserve old values, but cannot establish that two different supplied hash keys do not carry the same raw event key. So the honest-client retry property must not be described as server-enforced uniqueness.</p>
+<p>On top of that, the branch&#x27;s <code>activity.js</code> stops appending to <code>entries[]</code> for general activity and moves new writes to a <code>v1Events</code> map, compensating on read with a dual-read projection. That is a <strong>BR-3 change to the write shape of a live collection that holds real Owner data</strong>, and the deployed Rules would not enforce the new invariants.</p>
+<p>&gt; <strong>OWNER CONTROL GATE — no decision is being asked for in this delivery.</strong> &gt; Integrating the keyed Activity writer requires, together: (a) approval of the &gt; <code>v1Events</code> storage design including how event-key integrity is established &gt; <em>or</em> an accepted statement that it is not server-enforceable; (b) a Rules &gt; candidate that compiles and passes a full allow/deny emulator suite; (c) an &gt; explicit decision to deploy those Rules; (d) accepted compatibility and &gt; rollback analysis for existing <code>entries[]</code> data. Until all four exist, Phase 4 &gt; tasks (2) and (3) stay blocked, and nothing in this round moves them.</p>
+<p><strong>Also not touched:</strong> DDR-001, DDR-002, DDR-003 and DDR-004 are all untouched and remain INACTIVE/DEFERRED. The Phase 5 Note Foundation material on that branch is out of scope. Phase 2–3 behaviour and the accepted Word Card behaviour are unchanged — proven in §7.</p>
+<hr>
+<h2>7. Tests executed</h2>
+<p>Every line below was run on this tranche. Nothing is reported as passing that was not run.</p>
+<h3>This round&#x27;s own suites</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>study-approach-contract.mjs</code></td><td><strong>13 passed, 0 failed</strong></td></tr>
+<tr><td><code>study-activity-evidence.mjs</code></td><td><strong>11 passed, 0 failed</strong></td></tr>
+<tr><td><code>study-approach-contract-boundary.mjs</code></td><td><strong>16 passed, 0 failed</strong> (new)</td></tr>
+</tbody></table></div>
+<h3>Phase 2 / Phase 3 — the accepted baseline, unchanged</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th><th>v08.23 baseline</th></tr></thead><tbody>
+<tr><td><code>quran-word-card.mjs</code></td><td>36 passed, 0 failed</td><td>36</td></tr>
+<tr><td><code>quran-word-card-integration.mjs</code></td><td>10 passed, 0 failed</td><td>10</td></tr>
+<tr><td><code>quran-word-card-rendered.mjs</code></td><td><strong>122 passed, 0 failed</strong></td><td>122</td></tr>
+<tr><td><code>quran-word-identity-contract.mjs</code></td><td>6 passed, 0 failed</td><td>6</td></tr>
+<tr><td><code>quran-word-indexes.mjs</code></td><td>9 passed, 0 failed</td><td>9</td></tr>
+<tr><td><code>quran-word-index-loader.mjs</code></td><td>8 passed, 0 failed</td><td>8</td></tr>
+<tr><td><code>quran-word-progress-model.mjs</code></td><td>57 passed, 0 failed</td><td>57</td></tr>
+<tr><td><code>quran-word-progress-data.mjs</code></td><td>37 passed, 0 failed</td><td>37</td></tr>
+<tr><td><code>quran-word-progress-rendered.mjs</code></td><td><strong>81 passed, 0 failed</strong></td><td>81</td></tr>
+<tr><td><code>quran-word-explore-rendered.mjs</code></td><td><strong>35 passed, 0 failed</strong></td><td>35</td></tr>
+<tr><td><code>quran-word-coverage.mjs</code></td><td>10 passed, 0 failed</td><td>10</td></tr>
+<tr><td><code>quran-word-coverage-arabic.mjs</code></td><td>29 passed, 0 failed</td><td>29</td></tr>
+<tr><td><code>quran-boundary.mjs</code></td><td>30 passed, 0 failed</td><td>30</td></tr>
+<tr><td><code>stub-parity.mjs</code></td><td>3 passed, 0 failed</td><td>3</td></tr>
+</tbody></table></div>
+<h3>Regression</h3>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>behaviour.mjs</code></td><td><strong>800 passed, 3 failed</strong> — the documented baseline, identical to the v08.23 run</td></tr>
+<tr><td><code>layout.mjs</code></td><td><strong>Every landing-page metric byte-for-byte identical</strong> at all 16 configurations</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td><strong>Unchanged</strong> — the single pre-existing problem only</td></tr>
+<tr><td><code>reading.mjs</code></td><td><strong><code>READING SCREEN OK</code></strong> in both <code>en</code> and <code>bn</code></td></tr>
+<tr><td><code>panel.mjs</code></td><td><strong>48 configurations per language, 0 truncated labels, 0 wrapped bars</strong></td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 scanned / 47 missing — both unchanged</strong></td></tr>
+</tbody></table></div>
+<h4><code>behaviour.mjs</code> — 800 / 3</h4>
+<p>The three are section 22g, the <code>archive.org</code> poster block this sandbox&#x27;s proxy enforces. The run then stops at the documented section-42 <code>[data-note-master-toggle]</code> visibility crash carried since v07.69 — the same 803 total, the same three, the same stopping point as v08.22 and v08.23. <strong>No check the suite reaches needed updating</strong>, which is the expected result for a round that adds modules nothing calls.</p>
+<h4><code>layout.mjs</code> — nothing moved, and the comparison could really fail</h4>
+<p>16 measurements (8 viewports × 2 banner states). Wheel-heading top, wheel width, Approach row count, dock gap, dock visibility and page overflow are <strong>identical before → after at every one</strong>; the suite printed <code>CHANGED:</code> <strong>zero</strong> times, and there were <strong>zero page errors, zero overflows, zero lost Approach rows</strong>. <code>getElementById</code> targets <strong>250 → 250</strong>, with the same 22-entry pre-existing missing list (the <code>asmaX<em></code> / <code>qcr</em></code> ids recorded across many rounds).</p>
+<p>Its non-zero exit is that pre-existing missing list, which the suite counts once per configuration — 16. It is <strong>structurally proven pre-existing</strong>, not asserted: <code>app/quranrevival.html</code> is <strong>byte-for-byte identical to <code>HEAD</code></strong> (<code>diff</code> empty), so the list the suite reads from the &quot;after&quot; page <em>is</em> <code>HEAD</code>&#x27;s own list.</p>
+<p>The before/after shim was set up so it could actually fail. <code>HEAD</code>&#x27;s <code>quranrevival.html</code> became <code>app/_prev-quranrevival.html</code>, and because the only app-code change this round is the version string, <code>HEAD</code>&#x27;s <code>version.js</code> was dropped in as <code>app/js/_prev-version.js</code> with the shim&#x27;s import repointed at it — so &quot;before&quot; really rendered <strong>v08.23</strong> against &quot;after&quot; <strong>v08.24</strong>. Without that both sides would have read v08.24 and the run would have proven nothing. Both shims were deleted before the coverage total was read.</p>
+<h4><code>navcheck.mjs</code> — the one problem is the pre-existing one</h4>
+<p>The 320 px <strong>English</strong> truncation of &quot;Operation&quot; and &quot;Bookmark&quot; (73 px needed, 65 px available), exactly as <code>CLAUDE.md</code> has recorded it for many rounds. Bangla is clean at every width; both languages keep 4 nav buttons on one line, with no overflow, at 320/360/390/412/768 px. <code>app/js/nav.js</code> and the <code>&lt;nav&gt;</code> block are untouched by this round, so it cannot have been introduced here.</p>
+<h4><code>panel.mjs</code> — both languages</h4>
+<p>48 configurations each, <strong>0 truncated labels and 0 wrapped bars</strong> in both. The suite does report pre-existing <code>&lt;select&gt;</code> truncations (<code>tenantSelect</code>, <code>surahSelect</code>, <code>rangeFromSelect</code>, <code>rangeToSelect</code>, <code>unitNumSelect</code>); those are not label or bar problems, they are unchanged, and they cannot be this round&#x27;s — the page is byte-identical to <code>HEAD</code>.</p>
+<hr>
+<h2>8. Deployment and data status</h2>
+<div class='tw'><table><thead><tr><th></th><th>Status</th></tr></thead><tbody>
+<tr><td><code>firestore.rules</code></td><td><strong>UNCHANGED</strong>, byte-for-byte</td></tr>
+<tr><td>Firestore indexes</td><td><strong>none changed, none deployed</strong></td></tr>
+<tr><td>Migration / backfill</td><td><strong>none</strong></td></tr>
+<tr><td>Production data writes</td><td><strong>none</strong></td></tr>
+<tr><td><code>tests/firestore/word-progress-v1.proposed.rules</code></td><td>still <strong>CANDIDATE ONLY, NOT DEPLOYED</strong> — unchanged Owner Control Gate</td></tr>
+<tr><td><code>quranWordProgress</code> / <code>quranWordApprovals</code></td><td>still have <strong>no server-side rule</strong>, so word progress still works only for the Owner&#x27;s own account. Unchanged by this round, repeated because it affects what you see</td></tr>
+<tr><td>GitHub Pages</td><td>serves <code>main</code>, so pushing <code>main</code> is the deployment</td></tr>
+</tbody></table></div>
+<hr>
+<h2>9. Live test — ninety seconds</h2>
+<p>This tranche deliberately changes <strong>nothing you can see except the version number</strong>, so the test is mostly a test that nothing broke.</p>
+<ol><li>Open the app. The badge beside the name should read <strong>v08.24</strong>.</li><li>Study → Read, word-by-word on, tap any Arabic word. The Word Card should open exactly as it did in v08.23 — one tidy group per row (<code>Noun  سَلَٰم  42 occurrences</code>), no long empty gap mid-row, and <code>Proper Noun +1</code> on one line.</li><li>Open <strong>Arabic in Depth</strong>, expand a form; the occurrence rows should still be grouped the same way.</li><li>Go back to the landing page. All your Approach rows, the Mastery Wheel and the dock should look exactly as before.</li><li>Switch to Bangla and glance at the same two screens.</li></ol>
+<p><strong>Expected result: no visible change anywhere except <code>v08.24</code>.</strong> If anything looks different, that is a finding — say so and it will be treated as one.</p>
+<p><strong>v08.24 is NOT Owner-verified until you confirm it.</strong></p>
+<hr>
+<h2>10. What is pending, and the next eligible task</h2>
+<p><strong>Pending Owner action:</strong> live verification of v08.24 (§9).</p>
+<p><strong>Next eligible task, needing no new authority:</strong> there is none inside Phase 4. Tasks (2) and (3) both sit behind the Owner Control Gate in §6. The honest next bounded task under MAP §21 is therefore either the Owner&#x27;s decision on that gate, or a Phase 4 task that needs neither storage nor Rules — of which the contract was the last.</p>
+<p><strong>STATUS: AWAITING HUMAN SIGN-OFF.</strong></p>
+</main></body></html>

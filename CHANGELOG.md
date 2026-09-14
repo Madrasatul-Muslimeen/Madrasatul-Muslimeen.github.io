@@ -12379,3 +12379,94 @@ regress — and **proven able to fail**: with the v08.22 auto margin restored th
 suite drops to 116/6 and prints the real gaps. `behaviour.mjs` 800/3, same
 stopping point. `layout.mjs` byte-for-byte identical, `getElementById`
 250 → 250. Coverage 1,803 / 47, both unchanged.
+
+**v08.24 (14 Sep 2026, on Claude Code on the web) is MAP Phase 4 task P4-A —
+the Study-to-Approach event contract put into the accepted baseline as PURE,
+UNINVOKED policy.** The owner's instruction was to resume MAP execution from
+the first unfinished Phase 4 task after live-accepting v08.23.
+
+**The reconciliation came first, and it changed what the task was.** The two
+12 September governance records are historical checkpoints: their `main` is
+`4833b19c`, and `main` is now `10961f3` at v08.23 — the Phase 2–3 verification
+merge plus v08.20–v08.23 all landed after that snapshot. Reconciled against the
+repository as it really stands, their "next bounded task" (extract a pure P2/P4
+tranche onto current `main`) turned out **half-done**: the P2 half — word
+identity, the generated indexes, the Word Card — is on `main`, and **the P4 half
+was never extracted at all.** `docs/governance/adr/` on `main` holds
+ADR-001…**007**; ADR-008, the accepted Study-event contract, was only ever on
+the isolated branch `claude/pensive-knuth-2pu3jj`. **An accepted decision that
+is not in the repository is not part of the accepted baseline** — that was the
+conflict, and closing it is this round.
+
+**So Phase 4 had literally nothing on `main`, proven rather than assumed:**
+`app/js/activity.js` on `main` is still the original `arrayUnion` append path,
+carrying no `v1Events` and importing no contract.
+
+**Landed: two pure modules and the decision record.**
+`app/js/study-approach-contract.js` is the event → Approach map (Reading →
+`approach_01`/`approach_03` by Study mode, Listening → `approach_07`/
+`approach_08` past **80%** of the selected unit, Journaling → `approach_10`,
+WbW → `approach_04`), the deterministic retry keys, and the rule that only
+`status.claimed` and `status.confirmed` may ever move mastery — **ADR-003
+untouched, Activity ≠ Mastery**. `app/js/study-activity-evidence.js` projects
+one candidate Activity row from an event and persists nothing.
+**Both are imported by nothing**, so the round changes no behaviour: BR-0,
+additive, and removable by deleting the files.
+
+**A third suite was written, because the two extracted ones could not see the
+things that actually matter here.** 24 function checks would pass just as
+happily if someone wired these modules into a live write path, and would pass
+for ever if the catalogue were renumbered under them. So
+`study-approach-contract-boundary.mjs` (16 checks) asserts what those cannot:
+that **no `.js` or `.html` under `app/` imports either module**; that neither
+can reach `firebasejs`, `runTransaction`, `arrayUnion`, `activity.js`,
+`records.js`, `claimStatus`, `achieved` or `mastered`; that `activity.js` still
+uses its own `arrayUnion` path; that **every Approach id the contract hardcodes
+still carries the exact English name it means, read out of
+`APPROACH_TEMPLATES`** rather than trusted as a literal; and that the unit keys
+it accepts are the ones `buildUnitKey` really produces, with `juz`, `ruku`,
+`page`, `hizb`, `topic` and `name` all failing closed (I5).
+
+**Standing lesson, new: a hardcoded id is a silent-drift hazard, so bind it
+back to its own source of truth in a check.** `approach_07` written as a
+literal in a contract will keep every function test green while crediting real
+study to the wrong Approach after a renumber — and nothing on any screen would
+show it.
+
+**One of my own checks was wrong and was investigated before being believed.**
+The forbidden-token check failed on `study-activity-evidence.js` for
+`claimStatus` — whose only occurrence is that module's **own header comment**,
+"never persists evidence and never calls Records/claimStatus". The check failed
+on the sentence promising the thing it was checking for. It reads code with
+comments stripped now; trailing `//` comments are still scanned deliberately,
+because that errs towards a false alarm rather than a missed wiring.
+
+**Proven able to fail — four deliberate mutations, each caught and reverted:**
+importing the contract into `records.js`; swapping `approach_07` for
+`approach_09`; copying in the gated keyed `activity.js`; copying in
+`activity-v1.proposed.rules`.
+
+**Deliberately NOT in this round, and it is a real gate, not tidiness.** The
+keyed Activity writer (`study-activity-week.js`, the rewritten `activity.js`,
+`activity-v1.proposed.rules`) stays on the isolated branch. Its own Task 50
+audit caveat is the reason: the prototype hashes the raw `eventKey` with
+SHA-256 for a safe map field name, and **Firestore Rules cannot recompute that
+hash from the payload**, so it can enforce create-only keys but cannot prove two
+supplied hash keys do not carry the same raw event key. On top of that the
+branch's `activity.js` moves new general-activity writes off `entries[]` into a
+`v1Events` map — a **BR-3 change to the write shape of a live collection holding
+real owner data**, with deployed Rules that would not enforce the new
+invariants. Integrating it is an Owner Control Gate needing the storage design
+approved, a Rules candidate passing a full emulator allow/deny suite, an
+explicit deploy decision, and accepted compatibility/rollback analysis for
+existing `entries[]`.
+
+**Also found and corrected: `CLAUDE.md` on `main` still opened with "THIS
+BRANCH IS THE PHASE 2-3 VERIFICATION MERGE CANDIDATE … Nothing here is
+deployed."** True of the candidate branch, false of `main` since the 13 Sep
+merge — GitHub Pages serves `main`. A session reading it would have believed
+the live app was an unmerged candidate.
+
+`firestore.rules` byte-for-byte unchanged; no index, no migration, no backfill,
+no production write, no data-structure change, no new string. DDR-001–004 all
+untouched.
