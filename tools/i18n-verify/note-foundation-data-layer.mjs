@@ -6,16 +6,23 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
+import { pathToFileURL } from "node:url";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 let source = fs.readFileSync(path.join(root, "app/js/note-foundation.js"), "utf8");
 source = source
   .replace(/import\s*\{[\s\S]*?\}\s*from\s*"https:\/\/www\.gstatic\.com\/firebasejs\/10\.12\.2\/firebase-firestore\.js";/,
-    "const { collection, getDocs, limit, orderBy, query, where } = globalThis.__nfFirestore;")
+    "const { collection, doc, getDoc, getDocs, limit, orderBy, query, where } = globalThis.__nfFirestore;")
   .replace(/import \{ TENANT \} from "\.\/collections\.js";/,
     "const { TENANT } = globalThis.__nfCollections;")
   .replace(/import \{ createDocument, runEnvelopeTransaction \} from "\.\/envelope\.js";/,
-    "const { createDocument, runEnvelopeTransaction } = globalThis.__nfEnvelope;");
+    "const { createDocument, runEnvelopeTransaction } = globalThis.__nfEnvelope;")
+  // P6-B: the data layer now validates a folder's parent against ADR-010. That
+  // module is PURE, so it is resolved to its real file rather than stubbed --
+  // a data: URL cannot resolve a relative specifier, which is what broke this
+  // suite the moment the import was added.
+  .replace(/from "\.\/journey-map-contract\.js"/,
+    `from "${pathToFileURL(path.join(root, "app/js/journey-map-contract.js")).href}"`);
 
 const TENANT = Object.freeze({
   NOTES: "notes", NOTE_SOURCES: "noteSources", NOTE_FOLDERS: "noteFolders",
@@ -23,6 +30,7 @@ const TENANT = Object.freeze({
 });
 const writes = [];
 const documents = new Map();
+let queryRows = [];
 const snapshot = (value) => ({ exists: () => value !== undefined, data: () => value });
 
 globalThis.__nfCollections = { TENANT };
@@ -30,7 +38,11 @@ globalThis.__nfFirestore = {
   collection: (_db, name) => ({ name }),
   where: (...args) => ({ where: args }), orderBy: (...args) => ({ orderBy: args }),
   limit: (value) => ({ limit: value }), query: (...parts) => ({ parts }),
-  getDocs: async () => ({ docs: [] }),
+  // P6-B: the folder tree check reads the person's own folders, so this stub
+  // must be able to RETURN some. It stays empty for every pre-existing case.
+  getDocs: async () => ({ docs: queryRows.map((row) => ({ id: row.id ?? row.folderId, data: () => row })) }),
+  doc: (_db, name, id) => ({ name, id }),
+  getDoc: async (ref) => snapshot(documents.get(`${ref.name}/${ref.id}`)),
 };
 globalThis.__nfEnvelope = {
   createDocument: async (_db, collectionName, docId, data, uid) => writes.push({ kind: "create", collectionName, docId, data, uid }),
@@ -78,7 +90,57 @@ await assert.rejects(() => foundation.updatePermanentNoteContent({}, {
   title: "No", bodyHtml: "No", actorUid: "owner-uid",
 }), /Stale Note revision/);
 
+// --- P6-B: createNoteFolder() validates its parent (ADR-010) ---------------
+// This function used to validate parentFolderId not at all. Each case below is
+// a thing it would previously have written to the database without a murmur.
+const folderRow = (o = {}) => ({ folderId: "f-parent", tenantId: "tenant",
+  ownerPersonId: "person", status: "active", semanticRole: "user", parentFolderId: null, ...o });
+
+writes.length = 0; queryRows = [];
+await foundation.createNoteFolder({}, { tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", name: "Top level", folderId: "f-1", actorUid: "owner-uid" });
+assert.equal(writes.length, 1, "a top-level folder needs no read and is written");
+assert.equal(writes[0].collectionName, "noteFolders");
+
+writes.length = 0; queryRows = [folderRow()];
+await foundation.createNoteFolder({}, { tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", name: "Child", folderId: "f-2", parentFolderId: "f-parent", actorUid: "owner-uid" });
+assert.equal(writes.length, 1, "a child of my own active folder is written");
+
+writes.length = 0; queryRows = [];
+await assert.rejects(() => foundation.createNoteFolder({}, { tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", name: "Orphan", folderId: "f-3", parentFolderId: "gone", actorUid: "owner-uid" }),
+  /Folder parent refused: parent-missing/);
+assert.equal(writes.length, 0, "nothing was written for a refused parent");
+
+queryRows = [folderRow({ folderId: "a", parentFolderId: "b" }), folderRow({ folderId: "b", parentFolderId: "a" })];
+await assert.rejects(() => foundation.createNoteFolder({}, { tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", name: "Cyclic", folderId: "c", parentFolderId: "a", actorUid: "owner-uid" }),
+  /Folder parent refused: cycle/);
+
+queryRows = [folderRow({ status: "retired" })];
+await assert.rejects(() => foundation.createNoteFolder({}, { tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", name: "Undead", folderId: "f-4", parentFolderId: "f-parent", actorUid: "owner-uid" }),
+  /Folder parent refused: parent-not-active/);
+
+queryRows = [folderRow({ semanticRole: "journey-map" })];
+await assert.rejects(() => foundation.createNoteFolder({}, { tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", name: "Under the Map", folderId: "f-5", parentFolderId: "f-parent", actorUid: "owner-uid" }),
+  /Folder parent refused: parent-is-system/);
+
+// ADR-010's field rules are checked BEFORE any read, so a malformed folder
+// never costs a query.
+writes.length = 0; queryRows = [folderRow()];
+await assert.rejects(() => foundation.createNoteFolder({}, { tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", name: "Bad role", semanticRole: "archive", folderId: "f-6", actorUid: "owner-uid" }),
+  /semanticRole must be one of/);
+await assert.rejects(() => foundation.createNoteFolder({}, { tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", name: "Nested system", semanticRole: "journey-map",
+  parentFolderId: "f-parent", folderId: "f-7", actorUid: "owner-uid" }),
+  /a system folder cannot have a parent/);
+assert.equal(writes.length, 0);
+
 delete globalThis.__nfCollections;
 delete globalThis.__nfFirestore;
 delete globalThis.__nfEnvelope;
-console.log("==== Note Foundation data layer: 15 assertions passed ====");
+console.log("==== Note Foundation data layer: 27 assertions passed ====");

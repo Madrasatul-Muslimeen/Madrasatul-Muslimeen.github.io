@@ -72,7 +72,13 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
 check("NO PAGE can reach the journey contract, by any chain of any length", () => {
   assert.deepEqual(chainsToTarget(GUARDED), []);
 });
-check("no app source imports the journey contract", () => {
+check("the only importer of the journey contract is the data layer, itself unreachable", () => {
+  // UPDATED 2026-09-15 (P6-B), with the reason recorded rather than the check
+  // deleted. P6-B closes createNoteFolder()'s missing parent validation against
+  // ADR-010, so note-foundation.js now imports the contract. The claim that
+  // matters -- nothing a reader can reach touches this -- is unchanged, and the
+  // reachability case above is what actually holds it. The importer set is
+  // PINNED so a new one must be audited deliberately.
   const importers = [];
   (function walk(dir) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -84,7 +90,11 @@ check("no app source imports the journey contract", () => {
       }
     }
   })(appDir);
-  assert.deepEqual(importers, []);
+  assert.deepEqual(importers.sort(), ["app/js/note-foundation.js"],
+    `the set of modules importing the journey contract has changed: ${importers.join(", ")}`);
+  for (const importer of importers) {
+    assert.deepEqual(chainsToTarget(path.basename(importer)), [], `${importer} is now loaded by a page`);
+  }
 });
 
 function unchangedSinceMain(relPath) {
@@ -109,9 +119,17 @@ check("the Phase 5 Rules candidate QUEUED FOR DEPLOYMENT is byte-identical", () 
       `the Phase 5 candidate now governs ${collection} -- Phase 6 has leaked into a queued deployment`);
   }
 });
-check("existing user notes and the Note Foundation data layer are untouched by P6-A", () => {
+check("existing user notes untouched; the data layer changed by INSERTION ONLY", () => {
+  // UPDATED 2026-09-15 (P6-B): the data layer now validates a folder's parent,
+  // so byte-identity is no longer the right claim -- "nothing removed or
+  // reshaped" still is, and an addition-only diff proves it mechanically.
   unchangedSinceMain("app/js/ayah-notes.js");
-  unchangedSinceMain("app/js/note-foundation.js");
+  const diff = execFileSync("git", ["diff", "--numstat", "origin/main", "--", "app/js/note-foundation.js"],
+    { cwd: root, encoding: "utf8" }).trim();
+  if (diff === "") return;
+  const [added, removed] = diff.split(/\s+/);
+  assert.equal(removed, "0", `note-foundation.js has ${removed} REMOVED lines -- an existing behaviour may have been reshaped`);
+  assert.ok(Number(added) > 0);
 });
 check("the Mapping My Journey pillar is still explicitly unavailable", () => {
   const shell = fs.readFileSync(path.join(appDir, "quranrevival.html"), "utf8");

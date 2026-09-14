@@ -31,12 +31,14 @@ the single source of truth and the badge beside the app name says so on screen.
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
 
-**THREE items sit in the pending-dependency ledger, all on the same external
-Firebase Console access, and item 3 is easy to miss:** (1) the Phase 4
-Activity-evidence Rules amendment + merging `claude/phase4-wiring` (`c4fca4a`,
-v08.26); (2) the Phase 5 Note Foundation Rules candidate; (3) the Phase 5 Note
-Foundation **INDEX** candidate — **deploy 2 without 3 and the Note Foundation
-can authorise queries it cannot execute.**
+**SEVEN items sit in the pending-dependency ledger; the first six are all on the
+same external Firebase Console access.** (1) Phase 4 Rules + merging
+`claude/phase4-wiring`; (2) Phase 5 Note Foundation Rules; (3) Phase 5 Note
+Foundation **INDEXES** — deploy 2 without 3 and the collections authorise queries
+they cannot execute; (4) P5-D the Note editor, behind 2 and 3; (5) the guardian
+approval window, an Owner storage decision; (6) Phase 6 folders/placements Rules;
+(7) server-side cycle prevention, an Owner decision costing the ability to move a
+folder.
 
 **15 Sep 2026 — MAP PHASE 5 IS UNDER WAY. Read this before touching Notes.**
 
@@ -178,9 +180,28 @@ for, or contains is product and an Owner Control Gate; a fourth semantic role
 likewise.
 
 **A Phase 6 decision must never change what a Phase 5 deployment would apply.**
-The folders/placements Rules candidate belongs in its OWN file — a check holds
+The folders/placements Rules candidate is in its OWN file
+(`phase6-journey-map-rules-candidate-2026-09-15.rules`) — a check holds
 `phase5-note-foundation-rules-candidate-2026-09-15.rules` byte-identical and
-asserts it governs neither collection.
+asserts it governs neither collection, and **the shared helper block is held
+IDENTICAL by a check** so the security model cannot fork.
+
+**P6-B (15 Sep 2026) is that candidate — 50 emulator assertions — plus the
+recorded defect closed.** `createNoteFolder()` now validates ADR-010's field
+rules **before any read**, then reads the person's own folders
+(`listNoteFoldersForOwner()`, equality-only and bounded, **no new index**) and
+judges the parent with `folderTreeRefusal()`.
+
+**THE ONE THING FIRESTORE RULES CANNOT DO HERE, and it binds every consumer:
+they cannot prevent a cycle of length two or more.** `A → B → A` satisfies every
+one-hop check, and Rules cannot walk an ancestor chain of unknown length. Cycle
+and depth enforcement is **client-side only**; a determined client can corrupt
+**its own owner's** tree (never anyone else's — every rule is owner-scoped). **So
+ANY WALK OF THE FOLDER TREE MUST BE BOUNDED regardless of what the rules
+guarantee.** The server-side fix (`ancestorIds[]` + `depth`, the shape I12 uses)
+is **recorded, not adopted**: its cost is that re-parenting becomes forbidden or
+a multi-document rewrite Rules cannot verify — forbidding folder moves is a
+product decision and an Owner Control Gate.
 
 **A real design flaw found by mutation testing, worth remembering:** the Note
 rules first required `createdBy == myUid()` on BOTH create and update, which

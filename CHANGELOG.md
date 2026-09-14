@@ -12891,3 +12891,67 @@ deliberately — closing it means reading the person's folders, which is
 activation, and doing that inside a reconciliation task would have activated the
 collection by the back door. That, plus the folders/placements Rules candidate,
 is P6-B.
+
+---
+
+**15 Sep 2026 — MAP Phase 6 P6-B: the Mapping My Journey Rules candidate, and
+the defect P6-A recorded, closed.** No application behaviour changed, so **no
+version increment** — `main` stays v08.25. One app file changed, by **40
+insertions and 0 deletions**, reachable from no page.
+
+**The Rules candidate is its OWN FILE, and that is the point.** The Phase 5
+candidate is queued for deployment — it is the text that gets pasted into the
+Firebase Console — so a Phase 6 decision must never change what a Phase 5
+deployment would apply. A check holds the Phase 5 file byte-identical and
+asserts it governs neither collection, and **the shared helper block is held
+IDENTICAL by a check**: two copies of a security model that drift apart is how
+one collection quietly gets a weaker rule than its sibling.
+
+**ADR-010 §2 is enforced STRUCTURALLY, not by inspection.** A placement's
+`keys().hasOnly()` list contains none of `sourceKey`, `sourceKind`,
+`relationshipKind` or `provenanceKind`, so an Origin field on a Destination
+document is refused **by the server**. **§5 is enforced by freezing `folderId`
+and `noteId` on update** — a placement can never be repointed, which is what
+would destroy the record that the Note was ever filed where it was (I4). A move
+is retire-and-create, and the suite proves both halves.
+
+**THE ONE THING RULES CANNOT DO, stated rather than papered over: they cannot
+prevent a cycle of length two or more.** `A → B → A` satisfies every one-hop
+check, and Firestore Rules cannot walk an ancestor chain of unknown length. So
+cycle and depth enforcement is **client-side**, a determined client can corrupt
+**its own owner's** tree (never anyone else's — every rule is owner-scoped), and
+**every consumer must bound its own walk regardless.** The design that would
+close it at the server is **recorded rather than adopted**: a materialised
+`ancestorIds[]` + `depth` verified against the parent's (the shape I12 already
+uses), whose cost is that re-parenting becomes either forbidden or a
+multi-document rewrite Rules cannot verify atomically. **Forbidding folder moves
+is a product decision and an Owner Control Gate**, so v1 does not take it
+unilaterally.
+
+**`createNoteFolder()`'s missing validation is closed.** It now runs ADR-010's
+field rules **before any read** (so a malformed folder never costs a query),
+then reads the person's own folders through a new `listNoteFoldersForOwner()` —
+equality-only and bounded, so **no new composite index**, verified by P5-E's
+index suite — and judges the parent with `folderTreeRefusal()`. **Why a read and
+not a transaction** is written into the code: judging a tree needs the person's
+other folders and a Firestore transaction cannot run a query; the narrow race
+that leaves is exactly why consumers must bound their walks.
+
+**Tests: a new Phase 6 emulator suite at 50 assertions, 0 failures, 0
+expression-budget denials**, plus the data-layer suite 15 → 27. Phase 5's
+emulator suite unchanged at 60/0, 31 of 37 matrix cases. **10 of 10 mutations
+proven to fail** — 7 on the Rules, 3 on the wiring.
+
+**A suite broke the moment the import was added, and the fix is this project's
+own trap in a new costume:** `note-foundation-data-layer.mjs` loads the module
+from a **`data:` URL**, which cannot resolve a RELATIVE specifier. The pure
+contract is now rewritten to its real `file://` URL — resolved rather than
+stubbed, because it is pure — the same technique the Phase 4 store suite uses.
+Two boundary checks were also updated in place with reasons: the importer set is
+now **pinned** to `note-foundation.js` with each importer asserted unreachable,
+and `note-foundation.js` byte-identity became an **addition-only** assertion.
+
+**Nothing deployed, nothing activated.** `firestore.rules`, `firebase.json`,
+`ayah-notes.js` and the Phase 5 Rules candidate all byte-identical to
+`origin/main`; the MMJ pillar still `disabled`; both collections still unruled
+in production.

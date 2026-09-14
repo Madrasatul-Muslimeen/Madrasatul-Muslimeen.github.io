@@ -14,6 +14,7 @@ import {
   where,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
+import { folderTreeRefusal, journeyFolder } from "./journey-map-contract.js";
 import { createDocument, runEnvelopeTransaction } from "./envelope.js";
 
 export const NOTE_STATUS = Object.freeze({ ACTIVE: "active", RETIRED: "retired" });
@@ -168,12 +169,51 @@ export async function retirePermanentNote(db, { tenantId, noteId, expectedRevisi
   });
 }
 
+/** One person's folders, for judging a tree. Equality-only and bounded, so it needs no composite index (P5-E). */
+export async function listNoteFoldersForOwner(db, { tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, maximum = 500 }) {
+  const q = query(collection(db, TENANT.NOTE_FOLDERS),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("status", "==", status), limit(maximum));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+/**
+ * MAP Phase 6 (P6-B). This function used to validate `parentFolderId` NOT AT
+ * ALL — no existence check, no tenant or owner check, no cycle check — where
+ * its sibling `createNotePlacement()` did all three in a transaction. A folder
+ * could name a parent that did not exist, belonged to another person or
+ * tenant, or was itself; two folders could name each other. Harmless while the
+ * collection was unruled and uninvoked; it is the core structure of Mapping My
+ * Journey, so ADR-010 gave it a contract and this closes it against that.
+ *
+ * WHY A READ AND NOT A TRANSACTION. Judging a tree needs the person's other
+ * folders, and a Firestore transaction cannot run a query. So the folders are
+ * read, judged, and then the document is created. The race that leaves is
+ * narrow and bounded: two CONCURRENT creates by the same person could close a
+ * cycle, and the candidate Rules cannot catch it either (they can enforce one
+ * hop, never an ancestor chain — see the Phase 6 Rules candidate's own header).
+ * Stated rather than hidden, and the reason every consumer of this tree must
+ * bound its own walk regardless.
+ */
 export async function createNoteFolder(db, {
   tenantId, ownerPersonId, ownerUid, name, parentFolderId = null,
   semanticRole = "user", order = 0, folderId = newNoteEntityId(), actorUid,
 }) {
   const owner = ownership({ tenantId, ownerPersonId, ownerUid });
   requireText("name", name);
+  // ADR-010's field rules first: role vocabulary, name, and "a system folder
+  // has no parent". These need no read, so a malformed folder never costs one.
+  journeyFolder({ tenantId, ownerPersonId, name, parentFolderId, semanticRole, order });
+
+  if (parentFolderId !== null) {
+    const folders = new Map((await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }))
+      .map((f) => [f.folderId, f]));
+    const refusal = folderTreeRefusal({ folders, tenantId, ownerPersonId, folderId, parentFolderId });
+    if (refusal) throw new Error(`Folder parent refused: ${refusal}`);
+  }
+
   await createDocument(db, TENANT.NOTE_FOLDERS, noteFoundationDocId(tenantId, folderId), {
     folderId, ...owner, name, parentFolderId, semanticRole, order, status: NOTE_STATUS.ACTIVE,
   }, actorUid);
