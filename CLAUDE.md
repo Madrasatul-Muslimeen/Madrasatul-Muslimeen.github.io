@@ -144,6 +144,44 @@ Held behind the same gate as the Phase 4 wiring.
 collection is denied by default, and the suite asserts it. Do not add rules for
 them inside Phase 5.
 
+**MAP PHASE 6 IS OPEN. P6-A (15 Sep 2026) is ADR-010 — Mapping My Journey
+reconciled with the Note Foundation.** `app/js/journey-map-contract.js`, pure
+and uninvoked. **Read this before touching folders, placements or MMJ.**
+
+**Two real findings, both in the Phase 5 data layer.** `createNoteFolder()`
+**validates `parentFolderId` not at all** — no existence check, no tenant/owner
+check, no cycle check, where its sibling `createNotePlacement()` does all three
+in a transaction. So a folder may name a parent that does not exist, belongs to
+another person or tenant, or is itself; two folders may name each other. And
+`semanticRole` was free text — **the same drift ADR-009 closed for
+`noteSources`, found a second time in the same file.** The missing validation is
+**recorded, not fixed**: closing it means reading the person's folders, which is
+activation, and that belongs to P6-B.
+
+**ADR-010 makes four ACCEPTED statements enforceable; it adds no new intent.**
+MMJ reads the Note Foundation and defines no Note of its own; **Origin and
+Destination may never be derived from each other**; `semanticRole` is closed at
+`journey-map` / `reflection-archive` / `user`; a folder tree is acyclic,
+own-owner and depth-bounded at 8; a move retires one placement and creates
+another, never rewriting `folderId` (I4).
+
+**The enforcement of Origin ≠ Destination is INABILITY, NOT RESTRAINT.**
+`journey-map-contract.js` imports **nothing at all** — no `study-note-binding.js`,
+no `unit-keys.js`, no `buildUnitKey` — and a check asserts that absence. The
+temptation it forbids is real and named in the ADR: auto-filing a Note into a
+folder named for its `sourceKey` looks helpful and would make Destination a
+function of Origin. **The two system roles are neither nested nor nestable**, or
+the locked distinction could be undone by a drag.
+
+**ADR-010 decides the MINIMUM and says so.** What a Journey Map looks like, is
+for, or contains is product and an Owner Control Gate; a fourth semantic role
+likewise.
+
+**A Phase 6 decision must never change what a Phase 5 deployment would apply.**
+The folders/placements Rules candidate belongs in its OWN file — a check holds
+`phase5-note-foundation-rules-candidate-2026-09-15.rules` byte-identical and
+asserts it governs neither collection.
+
 **A real design flaw found by mutation testing, worth remembering:** the Note
 rules first required `createdBy == myUid()` on BOTH create and update, which
 conflates authorship with authorisation. It happened to deny a teacher's update,
@@ -1042,6 +1080,18 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   production with `failed-precondition`. Equality-only queries do not — which is
   why this app ran for its whole life with no index file and nothing broke.
   Read the queries; no test environment here will tell you.
+- **A locked distinction that cannot fail a check is not locked.** ADR-010's
+  alternative reading ("Reflection Archive ≠ Personal Journey Map names two
+  concepts, not two containers") was rejected on exactly this ground: two
+  concepts sharing one container are indistinguishable in the data, so the
+  distinction could only ever be described. When an accepted document locks a
+  distinction, find the field that makes it a fact, or say plainly that it
+  cannot be enforced.
+- **Enforce a forbidden derivation by INABILITY, not restraint.** ADR-010 forbids
+  deriving a Note's Destination from its Origin. The guard is that
+  `journey-map-contract.js` imports nothing at all and so cannot see a Study Unit
+  key — a check asserts the absence. A rule a module is merely trusted to follow
+  is a rule the next round breaks by accident.
 - **Bind a closed vocabulary to the document that records it, both ways.** A
   vocabulary that drifts from its own ADR is just a second spelling with extra
   steps. P5-C's boundary suite reads the words out of ADR-009 and the accepted

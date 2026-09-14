@@ -12810,3 +12810,84 @@ deploying the Note Foundation Rules **alone** would leave the collections able
 to authorise queries they cannot execute. Rules and indexes must go together.
 `firestore.rules`, `firebase.json`, `ayah-notes.js`, `activity.js` and
 `records.js` are all byte-identical to `origin/main`.
+
+---
+
+**15 Sep 2026 — MAP PHASE 6 OPENS: P6-A, Mapping My Journey reconciled with the
+Note Foundation (ADR-010).** No application behaviour changed, so **no version
+increment** — `main` stays v08.25. `git diff origin/main -- app/` reports **no
+tracked change at all** beyond one new file nothing imports. **Nothing
+activated:** `noteFolders` and `notePlacements` are still unruled, and the
+Phase 5 Rules candidate queued for deployment is byte-identical.
+
+**A reconciliation, not an implementation — which is what the directive
+required, and it found two things.** MMJ has been in the accepted architecture
+since 10 Sep and has a **disabled placeholder pillar in the live app**;
+`createNoteFolder()` and `createNotePlacement()` have sat in the data layer
+since Phase 5, unruled and uninvoked, with **nothing ever deciding what they
+mean**.
+
+**(1) `createNoteFolder()` validates `parentFolderId` NOT AT ALL.** It calls
+`createDocument()` directly with no lookup of any kind — where its sibling
+`createNotePlacement()` opens a transaction and checks both documents exist,
+share the tenant and owner, and are active. So a folder may today name a parent
+that does not exist, one belonging to **another person or another tenant**, or
+**itself**; and two folders may name each other, making a cycle any tree walk
+follows for ever. Harmless while unruled and uninvoked; it is the CORE STRUCTURE
+of MMJ.
+
+**(2) `semanticRole` is free text defaulting to `"user"`** — the only field that
+can carry "Reflection Archive ≠ Personal Journey Map", constrained by nothing.
+**The identical shape of drift ADR-009 closed for `noteSources`, found a second
+time in the same data layer.**
+
+**ADR-010 adds no new intent: it makes four accepted statements ENFORCEABLE.**
+MMJ reads the Note Foundation and defines no Note of its own; Origin and
+Destination may never be derived from each other; `semanticRole` is a closed set
+of three; a folder tree is acyclic, own-owner and depth-bounded at 8; a move is
+two facts, never a rewrite.
+
+**The temptation §2 forbids is a real one, and is named.** Auto-filing a Note
+into a folder named for its `sourceKey` looks helpful and would quietly make
+**Destination a function of Origin**. So the enforcement is **INABILITY, NOT
+RESTRAINT**: `journey-map-contract.js` imports *nothing at all* — no
+`study-note-binding.js`, no `unit-keys.js`, no `buildUnitKey` — and a check
+asserts that absence. A module that cannot see an Origin cannot derive a
+Destination from one.
+
+**The two system roles are neither nested nor nestable.** Nesting the Archive
+inside a user folder would let a person hide it; nesting it under the Map would
+make one a part of the other — **the locked distinction undone by a drag.**
+
+**§3 decides the minimum and says so.** It fixes only that the Archive and the
+Map must not be the same container and must be distinguishable without reading a
+name a person can change. What a Journey Map looks like, is for, or contains is
+product and an Owner Control Gate. **The alternative reading was weighed and
+recorded** — that the distinction names two concepts, not two containers —
+and rejected because two concepts sharing one container are indistinguishable in
+the data, so the distinction could only be described: **a locked distinction
+that cannot fail a check is not locked.**
+
+**`folderTreeRefusal()` returns a REASON, never a boolean** — eight of them —
+because every refusal has to reach a person as a sentence and `false` cannot be
+translated into one. The depth bound of 8 has a reason rather than being a round
+number: every consumer walks the tree, and unbounded depth turns one
+pathological chain into an unbounded read on a screen that must open fast.
+
+**A move keeps I4 true through a drag**: retire one placement, create another.
+There is **no in-place `folderId` rewrite shape anywhere in the module**, because
+that destroys the record that the Note was ever filed where it was.
+
+**Tests: 20 + 13 checks, and 9 of 9 mutations proven to fail them.** The pure
+suite is organised by LOCKED DISTINCTION rather than by function, because what is
+being proven is that each distinction can fail a check. **The mutation worth
+naming is P8**: a `noteFolders` block leaked into the Phase 5 deployment
+candidate is caught, because a Phase 6 decision must never change what a Phase 5
+deployment would apply — and that file is the one that gets pasted into the
+Firebase Console.
+
+**Recorded, not fixed:** `createNoteFolder()`'s missing validation stays open
+deliberately — closing it means reading the person's folders, which is
+activation, and doing that inside a reconciliation task would have activated the
+collection by the back door. That, plus the folders/placements Rules candidate,
+is P6-B.

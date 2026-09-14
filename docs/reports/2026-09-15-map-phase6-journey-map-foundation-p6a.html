@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 6 — P6-A: Mapping My Journey reconciled with the Note Foundation (ADR-010)</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 6 — P6-A: Mapping My Journey reconciled with the Note Foundation (ADR-010)</h1>
+<ul><li><strong>Date:</strong> 2026-09-15</li><li><strong>Task:</strong> MAP Phase 6, task P6-A — the reconciliation the directive requires before any Phase 6 foundation is built</li><li><strong>Method:</strong> PRESERVE → RECONCILE → EXTEND; IMPLEMENT → TEST → AUDIT → CORRECT</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> One pure module, imported by nothing. <code>git diff origin/main -- app/</code> shows <strong>no tracked change at all</strong> beyond the new file. Nothing activated.</li><li><strong>Application version:</strong> <strong>08.25, deliberately unchanged.</strong></li><li><strong>Result:</strong> ACCEPT — 9 of 9 mutations proven to fail the suites; 0 failures across 13 suites.</li></ul>
+<hr>
+<h2>1. Why a reconciliation, and not an implementation</h2>
+<p>The directive is explicit: <em>&quot;Do not activate <code>noteFolders</code> / <code>notePlacements</code> prematurely merely because Phase 6 has begun. First reconcile Phase 6 requirements with the accepted Note Foundation and ADR-009.&quot;</em></p>
+<p>That is the whole of this task. Mapping My Journey has been named in the accepted architecture since 2026-09-10 and has a <strong>disabled placeholder pillar in the live app</strong>; <code>createNoteFolder()</code> and <code>createNotePlacement()</code> have sat in the data layer since Phase 5, unruled and uninvoked. <strong>Nothing had ever decided what they mean.</strong></p>
+<h3>What the reconciliation found</h3>
+<p><strong><code>createNoteFolder()</code> validates <code>parentFolderId</code> not at all.</strong> It calls <code>createDocument()</code> directly, with no lookup of any kind — where its sibling <code>createNotePlacement()</code> opens a transaction and checks that both documents exist, share the tenant and owner, and are active. So today a folder may name a parent that does not exist, one belonging to <strong>another person or another tenant</strong>, or <strong>itself</strong>; and two folders may name each other, producing a cycle that any tree walk follows for ever.</p>
+<p>Harmless while the collection was unruled and uninvoked. It is the <em>core structure</em> of MMJ, so it stops being harmless the moment Phase 6 starts.</p>
+<p><strong><code>semanticRole</code> is free text defaulting to <code>&quot;user&quot;</code>.</strong> It is the only field that can carry the locked distinction &quot;Reflection Archive ≠ Personal Journey Map&quot;, and nothing constrains it — the identical shape of drift ADR-009 closed for <code>noteSources</code>, found a second time in the same data layer.</p>
+<hr>
+<h2>2. ADR-010, and what it deliberately does not decide</h2>
+<p><code>docs/governance/adr/ADR-010-mapping-my-journey-foundation-v1.md</code>, contract identifier <code>journey-map-contract:v1</code>. It adds no new intent: it makes four already-accepted statements <strong>enforceable</strong>.</p>
+<div class='tw'><table><thead><tr><th>§</th><th>Decision</th></tr></thead><tbody>
+<tr><td>1</td><td>MMJ reads the Note Foundation and defines no Note of its own</td></tr>
+<tr><td>2</td><td>Origin and Destination are different relations and may never be derived from each other</td></tr>
+<tr><td>3</td><td><code>semanticRole</code> is a closed set of exactly three: <code>journey-map</code>, <code>reflection-archive</code>, <code>user</code></td></tr>
+<tr><td>4</td><td>A folder tree is a tree: acyclic, own-owner, depth-bounded at 8</td></tr>
+<tr><td>5</td><td>Placement is many-to-many; a move is two facts, never a rewrite</td></tr>
+</tbody></table></div>
+<h3>§2 names a temptation, because it is a real one</h3>
+<p>Auto-filing a Note into a folder named for its <code>sourceKey</code> looks helpful, and would quietly make <strong>Destination a function of Origin</strong> — collapsing a distinction the architecture locks. So a <code>noteSources</code> document may never carry <code>folderId</code>, a <code>notePlacements</code> document may never carry any of the four Origin field names, and no code may compute one from the other.</p>
+<p><strong>The enforcement is inability, not restraint.</strong> <code>journey-map-contract.js</code> imports <em>nothing at all</em> — no <code>study-note-binding.js</code>, no <code>unit-keys.js</code>, no <code>buildUnitKey</code>, no way to parse a Study Unit key. A check asserts that absence. A module that cannot see an Origin cannot derive a Destination from one.</p>
+<h3>§3 decides the minimum, and says so</h3>
+<p><code>journey-map</code> and <code>reflection-archive</code> are <strong>system roles</strong>: at most one of each per (tenant, person), never renameable into each other or into <code>user</code>, and <strong>neither nested nor nestable</strong> — nesting the Archive inside a user folder would let a person hide it, and nesting it under the Map would make one a part of the other. That is the locked distinction undone by a drag.</p>
+<p>It decides <strong>nothing</strong> about what a Journey Map looks like, what it is for, how it is drawn, or what belongs in it. That is product, and an Owner Control Gate. A fourth semantic role is likewise an Owner decision.</p>
+<p><em>The alternative reading was weighed and recorded:</em> that &quot;Reflection Archive ≠ Personal Journey Map&quot; names two concepts rather than two containers. Rejected, because two concepts sharing one container are not distinguishable in the data — the distinction could then only be described, never enforced, and <strong>a locked distinction that cannot fail a check is not locked.</strong></p>
+<h3>§4&#x27;s depth bound has a reason, not a round number</h3>
+<p>Every consumer of a tree walks it, and an unbounded depth turns one pathological chain into an unbounded read on a screen that must open fast (Architecture Part 8). Eight is deep enough that no real filing scheme meets it and shallow enough that a full walk is cheap.</p>
+<p><code>folderTreeRefusal()</code> returns a <strong>reason string</strong>, not a boolean: every one of these refusals has to reach a person as a sentence, and <code>false</code> cannot be translated into one. Seven distinct reasons — <code>self-parent</code>, <code>parent-missing</code>, <code>parent-not-mine</code>, <code>parent-not-active</code>, <code>parent-is-system</code>, <code>cycle</code>, <code>ancestor-missing</code>, <code>too-deep</code>.</p>
+<h3>§5 keeps I4 true through a drag</h3>
+<p>&quot;Moving&quot; a Note is <strong>retiring one placement and creating another</strong>. There is no &quot;update the placement&#x27;s <code>folderId</code>&quot; shape anywhere in the module, because that operation destroys the record that the Note was ever filed where it was. A check asserts the retirement does not carry the new folder and that no in-place update shape exists.</p>
+<hr>
+<h2>3. Tests</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>tools/i18n-verify/journey-map-contract.mjs</code></td><td><strong>20 passed</strong></td></tr>
+<tr><td><code>tools/i18n-verify/journey-map-boundary.mjs</code></td><td><strong>13 passed, 0 failed</strong></td></tr>
+<tr><td>11 other pure suites</td><td>all green, unchanged</td></tr>
+</tbody></table></div>
+<p>The pure suite is organised by <strong>locked distinction</strong> rather than by function, because what is being proven is that each distinction can fail a check.</p>
+<h3>Mutation testing — 9 of 9 proven able to fail</h3>
+<div class='tw'><table><thead><tr><th>#</th><th>Mutation</th><th>Caught by</th></tr></thead><tbody>
+<tr><td>P1</td><td><code>semanticRole</code> vocabulary re-opened</td><td>J1</td></tr>
+<tr><td>P2</td><td>A system folder may have a parent</td><td>J3</td></tr>
+<tr><td>P3</td><td>Origin fields silently dropped instead of refused</td><td>J4/J5</td></tr>
+<tr><td>P4</td><td>Cycle detection removed</td><td>J8</td></tr>
+<tr><td>P5</td><td>Depth bound removed</td><td>J11 — &quot;one deeper is refused&quot;</td></tr>
+<tr><td>P6</td><td>A move becomes an in-place <code>folderId</code> rewrite</td><td>J15/J16</td></tr>
+<tr><td>P7</td><td>The contract imports the Origin binding</td><td>boundary — &quot;must import nothing at all&quot;</td></tr>
+<tr><td>P8</td><td>A <code>noteFolders</code> block leaks into the Phase 5 deployment candidate</td><td>boundary — the queued candidate is byte-identical</td></tr>
+<tr><td>P9</td><td>An app module imports the journey contract</td><td>boundary reachability</td></tr>
+</tbody></table></div>
+<p><strong>P8 is the one worth naming.</strong> A Phase 6 decision must never change what a Phase 5 deployment would apply, and the queued candidate file is the thing that would be pasted into the Firebase Console. The check holds it byte-identical to <code>origin/main</code> <em>and</em> asserts it governs neither folders nor placements.</p>
+<hr>
+<h2>4. Nothing activated — verified</h2>
+<div class='tw'><table><thead><tr><th>Claim</th><th>Evidence</th></tr></thead><tbody>
+<tr><td><code>noteFolders</code> / <code>notePlacements</code> unruled</td><td><code>firestore.rules</code> byte-identical; governs none of the five Note collections</td></tr>
+<tr><td>The queued Phase 5 candidate unchanged</td><td>byte-identical to <code>origin/main</code>, and carries no folder/placement block</td></tr>
+<tr><td>Existing user notes preserved</td><td><code>ayah-notes.js</code> byte-identical</td></tr>
+<tr><td>Note Foundation untouched by P6-A</td><td><code>note-foundation.js</code> byte-identical to <code>origin/main</code></td></tr>
+<tr><td>MMJ still unavailable to a reader</td><td>the <code>tabJourneyBtn</code> pillar is still <code>disabled</code></td></tr>
+<tr><td>MMJ is not a second Notebook</td><td>the Note collection set in <code>collections.js</code> is unchanged, asserted by name</td></tr>
+<tr><td>No behaviour or layout change</td><td><code>git diff origin/main -- app/</code> reports <strong>no tracked change</strong>; <code>version.js</code> byte-identical</td></tr>
+</tbody></table></div>
+<hr>
+<h2>5. Recorded, not fixed</h2>
+<ul><li><strong><code>createNoteFolder()</code>&#x27;s missing parent validation.</strong> It is now a <em>recorded</em> defect with an accepted contract to validate against. Fixing it means making the data layer call <code>folderTreeRefusal()</code> — which requires reading the person&#x27;s folders, which is the activation P6-B covers. Fixing it inside a reconciliation task would have activated the collection by the back door.</li><li><strong>The Rules candidate for <code>noteFolders</code> / <code>notePlacements</code></strong> is P6-B, and belongs in its <strong>own file</strong> for exactly the reason P8 tests.</li><li><strong>The guardian approval window</strong> (Phase 5, matrix GUARD-05/06/07) still awaits an Owner storage decision.</li></ul>
+<hr>
+<h2>6. Pending-dependency ledger</h2>
+<div class='tw'><table><thead><tr><th>#</th><th>Item</th><th>Blocked on</th></tr></thead><tbody>
+<tr><td>1</td><td>Phase 4 production activation</td><td>Firebase Console access — <code>claude/phase4-wiring</code> <code>c4fca4a</code> unmerged, 208-line Rules amendment undeployed</td></tr>
+<tr><td>2</td><td>Phase 5 Note Foundation Rules</td><td>Firebase Console access — candidate at 60 emulator assertions</td></tr>
+<tr><td>3</td><td>Phase 5 Note Foundation <strong>indexes</strong></td><td>Firebase Console access — <strong>must deploy with item 2</strong>, or the collections authorise queries they cannot execute</td></tr>
+<tr><td>4</td><td>P5-D — the Note editor surface</td><td>Items 2 and 3</td></tr>
+<tr><td>5</td><td>Phase 5 guardian approval window</td><td>Owner storage decision</td></tr>
+<tr><td>6</td><td>Phase 6 activation of folders/placements</td><td>Its own Rules candidate (P6-B), then a deployment</td></tr>
+</tbody></table></div>
+<hr>
+<h2>7. Next</h2>
+<p><strong>P6-B — the <code>noteFolders</code> / <code>notePlacements</code> Rules candidate and its emulator suite</strong>, in its own file, plus wiring <code>folderTreeRefusal()</code> into <code>createNoteFolder()</code> so the recorded defect is closed against a tested rule rather than against a hope. Neither needs a deployment to build or to prove.</p>
+</main></body></html>
