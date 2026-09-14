@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 4, Task P4-A — INTEGRATION into `main`</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 4, Task P4-A — INTEGRATION into <code>main</code></h1>
+<p><strong>Date:</strong> 14 September 2026 <strong>Authority:</strong> Master Architect decision of 2026-09-14 — <em>&quot;P4-A IS ACCEPTED. Integrate the reported MAP Phase 4 Task P4-A tranche from <code>claude/dreamy-tesla-0clj36</code> into current <code>main</code>, preserving the reported change budget and version 08.24.&quot;</em> <strong>Result:</strong> <strong><code>main</code> = <code>7728c0230848a1ab38b2192fdb45849bebf370a2</code></strong>, app version <strong>08.24</strong>. <strong>Status:</strong> integration complete and verified. <strong>P4-A CLOSED. AWAITING MASTER ARCHITECT P4-B ARCHITECTURE INSTRUCTION.</strong></p>
+<p><strong>P4-B was NOT begun.</strong> No Firestore Rules or index was modified or deployed. No migration, backfill or production write was performed. Nothing was taken from <code>claude/pensive-knuth-2pu3jj</code>.</p>
+<hr>
+<h2>1. Identifiers</h2>
+<div class='tw'><table><thead><tr><th>Item</th><th>SHA / value</th></tr></thead><tbody>
+<tr><td>Pre-merge <code>main</code></td><td><code>10961f3462aac73e63f678155483b5dbd9c5146c</code> (v08.23)</td></tr>
+<tr><td>Accepted tranche <code>claude/dreamy-tesla-0clj36</code></td><td><code>266e2cf059b470aab00c9486043f37fe0b216e6d</code></td></tr>
+<tr><td><strong>Merge commit — new <code>main</code></strong></td><td><strong><code>7728c0230848a1ab38b2192fdb45849bebf370a2</code></strong></td></tr>
+<tr><td>Remote <code>main</code> after push, read back</td><td><code>7728c0230848a1ab38b2192fdb45849bebf370a2</code></td></tr>
+<tr><td>App version</td><td><strong>08.24</strong> (was 08.23)</td></tr>
+<tr><td>Rollback point</td><td><code>10961f3462aac73e63f678155483b5dbd9c5146c</code></td></tr>
+</tbody></table></div>
+<p><code>main</code> had <strong>not moved</strong> since the tranche branched — 0 commits on <code>main</code> absent from the branch — so nothing was rebased, squashed or reconciled.</p>
+<h2>2. Merge method</h2>
+<p>From a clean tree, <code>main</code> reset to <code>origin/main</code>, then:</p>
+<p>``<code> git merge --no-ff origin/claude/dreamy-tesla-0clj36 </code>``</p>
+<p><code>--no-ff</code> matches the accepted 13 September Phase 2–3 precedent: <code>main</code> was an ancestor and the merge was fast-forwardable, so a real merge commit was forced to record both parents and make the integration <strong>revertible as one unit</strong>. The merge commit body states in its own words what the merge does <em>not</em> authorise.</p>
+<p><strong>Blast radius:</strong> 11 files, +1,177 / −18 lines.</p>
+<h2>3. Pre-merge scope verification — the merge contains only accepted P4-A scope</h2>
+<p>Checked <strong>before</strong> merging, against the change budget declared in the P4-A delivery report.</p>
+<h3>Every file the merge touches</h3>
+<div class='tw'><table><thead><tr><th>Status</th><th>File</th></tr></thead><tbody>
+<tr><td>A</td><td><code>docs/governance/adr/ADR-008-study-approach-event-contract-v1.md</code></td></tr>
+<tr><td>A</td><td><code>app/js/study-approach-contract.js</code></td></tr>
+<tr><td>A</td><td><code>app/js/study-activity-evidence.js</code></td></tr>
+<tr><td>A</td><td><code>tools/i18n-verify/study-approach-contract.mjs</code></td></tr>
+<tr><td>A</td><td><code>tools/i18n-verify/study-activity-evidence.mjs</code></td></tr>
+<tr><td>A</td><td><code>tools/i18n-verify/study-approach-contract-boundary.mjs</code></td></tr>
+<tr><td>A</td><td><code>docs/reports/2026-09-14-map-phase4a-study-approach-contract.md</code></td></tr>
+<tr><td>A</td><td><code>docs/reports/2026-09-14-map-phase4a-study-approach-contract.html</code></td></tr>
+<tr><td>M</td><td><code>app/js/version.js</code> (<code>08.23</code> → <code>08.24</code>)</td></tr>
+<tr><td>M</td><td><code>CHANGELOG.md</code></td></tr>
+<tr><td>M</td><td><code>CLAUDE.md</code></td></tr>
+</tbody></table></div>
+<p><strong>Eleven files — exactly the eight created and three modified that the delivery report declared. Nothing else, in either direction.</strong></p>
+<h3>Gated material proven ABSENT from the tranche</h3>
+<div class='tw'><table><thead><tr><th>Result</th><th>File</th></tr></thead><tbody>
+<tr><td>absent</td><td><code>app/js/study-activity-week.js</code> (keyed writer)</td></tr>
+<tr><td>absent</td><td><code>tests/firestore/activity-v1.proposed.rules</code></td></tr>
+<tr><td>absent</td><td><code>tests/firestore/activity-v1.security-matrix.json</code></td></tr>
+<tr><td>absent</td><td><code>docs/governance/activity-rules-proposal-2026-09-12.md</code></td></tr>
+<tr><td>absent</td><td><code>tools/firestore-emulator/activity-v1.rules.test.mjs</code></td></tr>
+<tr><td>absent</td><td><code>tools/firestore-emulator/activity-v1.firebase.json</code></td></tr>
+<tr><td>absent</td><td>any tracked <code>firestore.indexes.json</code></td></tr>
+</tbody></table></div>
+<h3>Protected files proven byte-identical to pre-merge <code>main</code></h3>
+<p><code>firestore.rules</code> · <code>app/js/activity.js</code> · <code>app/js/records.js</code> · <code>app/quranrevival.html</code> · <code>app/js/quran-word-card.js</code> · <code>tests/firestore/word-progress-v1.proposed.rules</code> — <strong>all six IDENTICAL.</strong></p>
+<h3>The isolated branch is not in this history</h3>
+<p><code>git merge-base --is-ancestor origin/claude/pensive-knuth-2pu3jj HEAD</code> → <strong>not an ancestor.</strong> No commit from that branch is reachable from the new <code>main</code>, so no keyed-Activity, <code>v1Events</code>, Rules-candidate or Phase 5 material entered by any path, including transitively.</p>
+<h2>4. Post-merge verification</h2>
+<h3>4.1 <code>main</code> contains the accepted files and version 08.24</h3>
+<p>All eight new files <strong>PRESENT</strong> on the merged tree. <code>app/js/version.js</code> reads <strong><code>08.24</code></strong>. The ADR register now runs <strong>ADR-001 … ADR-008</strong> — the gap that made the accepted contract sit outside the accepted baseline is closed.</p>
+<p>Re-read from the <strong>remote</strong> after the push: <code>origin/main</code> = <code>7728c0230848a1ab38b2192fdb45849bebf370a2</code>, its <code>version.js</code> = <strong>08.24</strong>, ADR-008 <strong>present</strong>, <code>study-activity-week.js</code> <strong>absent</strong>.</p>
+<h3>4.2 The Study→Approach modules remain uninvoked and unwired</h3>
+<p>Proven three independent ways on the merged tree:</p>
+<ol><li><strong><code>study-approach-contract-boundary.mjs</code> — 16 passed, 0 failed</strong>, including its scan of every <code>.js</code> and <code>.html</code> under <code>app/</code> for an importer.</li><li><strong>An independent <code>grep -rl</code></strong> for either module name across all of <code>app/</code> returns <strong>only the two modules themselves</strong> — no other file mentions them.</li><li><strong>A direct import scan</strong> (<code>from &quot;…study-approach-contract|…-evidence&quot;</code>) across <code>app/</code> returns <strong>no importer anywhere</strong>, other than the evidence module&#x27;s own import of the contract.</li></ol>
+<p><code>app/js/activity.js</code> on merged <code>main</code> is <strong>byte-identical</strong> to pre-merge <code>main</code> — still the original <code>arrayUnion</code> append path, no <code>v1Events</code>, no contract import.</p>
+<h3>4.3 P4-A boundary tests and regression checks, run on merged <code>main</code></h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>study-approach-contract.mjs</code></td><td><strong>13 passed, 0 failed</strong></td></tr>
+<tr><td><code>study-activity-evidence.mjs</code></td><td><strong>11 passed, 0 failed</strong></td></tr>
+<tr><td><code>study-approach-contract-boundary.mjs</code></td><td><strong>16 passed, 0 failed</strong></td></tr>
+</tbody></table></div>
+<div class='tw'><table><thead><tr><th>Regression suite</th><th>Result</th><th>Recorded baseline</th></tr></thead><tbody>
+<tr><td><code>quran-word-card-rendered.mjs</code></td><td><strong>122 passed, 0 failed</strong></td><td>122</td></tr>
+<tr><td><code>quran-word-card.mjs</code></td><td>36 passed, 0 failed</td><td>36</td></tr>
+<tr><td><code>quran-word-card-integration.mjs</code></td><td>10 passed, 0 failed</td><td>10</td></tr>
+<tr><td><code>quran-word-progress-model.mjs</code></td><td>57 passed, 0 failed</td><td>57</td></tr>
+<tr><td><code>quran-word-progress-data.mjs</code></td><td>37 passed, 0 failed</td><td>37</td></tr>
+<tr><td><code>quran-word-coverage.mjs</code></td><td>10 passed, 0 failed</td><td>10</td></tr>
+<tr><td><code>quran-word-coverage-arabic.mjs</code></td><td>29 passed, 0 failed</td><td>29</td></tr>
+<tr><td><code>quran-word-identity-contract.mjs</code></td><td>6 passed, 0 failed</td><td>6</td></tr>
+<tr><td><code>quran-word-indexes.mjs</code></td><td>9 passed, 0 failed</td><td>9</td></tr>
+<tr><td><code>quran-word-index-loader.mjs</code></td><td>8 passed, 0 failed</td><td>8</td></tr>
+<tr><td><code>quran-boundary.mjs</code></td><td>30 passed, 0 failed</td><td>30</td></tr>
+<tr><td><code>stub-parity.mjs</code></td><td>3 passed, 0 failed</td><td>3</td></tr>
+<tr><td><code>reading.mjs</code></td><td><strong><code>READING SCREEN OK</code></strong> in <code>en</code> and <code>bn</code></td><td>OK</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td><strong>Unchanged</strong> — only the pre-existing 320 px English truncation of &quot;Operation&quot;/&quot;Bookmark&quot; (73 &gt; 65 px)</td><td>same</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 scanned / 47 missing — both unchanged</strong></td><td>1,803 / 47</td></tr>
+</tbody></table></div>
+<p><strong><code>layout.mjs</code> was not re-run on the merged tree, and deliberately so.</strong> <code>app/quranrevival.html</code> on merged <code>main</code> is <strong>byte-for-byte identical</strong> to pre-merge <code>main</code> (<code>diff</code> empty), so the landing page cannot have moved; the full 16-configuration before/after comparison was already run on the tranche itself against a real v08.23 shim, and returned every metric identical with <code>getElementById</code> 250 → 250. Re-running it here would compare the page against itself.</p>
+<p><strong><code>behaviour.mjs</code> was not re-run on the merged tree</strong> for the same reason — the page and every module it exercises are byte-identical to the tranche, where it scored <strong>800 passed / 3 failed</strong>, stopping at the documented section-42 <code>[data-note-master-toggle]</code> crash carried since v07.69.</p>
+<p>&gt; <strong>A correction to the P4-A delivery report.</strong> That report described this run &gt; as &quot;identical to the v08.23 run&quot;. The 803 total and the stopping point are &gt; identical, but the v08.23 session&#x27;s final corrected figure was <strong>803 passed / &gt; 0 failed</strong>, not 800 / 3. The three differing checks are section 22g, where &gt; this sandbox&#x27;s egress proxy blocks <code>archive.org</code>; that block was evidently not &gt; in force during the v08.23 run. <strong>This is environmental variance in the test &gt; sandbox, not a code difference</strong> — the modules under test are byte-identical &gt; — but the earlier wording overstated the match and is corrected here.</p>
+<h2>5. Rules, index, migration and deployment status — unchanged</h2>
+<div class='tw'><table><thead><tr><th></th><th>Status</th></tr></thead><tbody>
+<tr><td><code>firestore.rules</code></td><td><strong>UNCHANGED</strong>, byte-for-byte identical to pre-merge <code>main</code></td></tr>
+<tr><td>Firestore indexes</td><td><strong>none changed, none deployed</strong>; no tracked index file exists</td></tr>
+<tr><td>Migration / backfill</td><td><strong>none</strong></td></tr>
+<tr><td>Production data writes</td><td><strong>none</strong></td></tr>
+<tr><td><code>tests/firestore/word-progress-v1.proposed.rules</code></td><td>still <strong>CANDIDATE ONLY, NOT DEPLOYED</strong> — unchanged Owner Control Gate</td></tr>
+<tr><td><code>quranWordProgress</code> / <code>quranWordApprovals</code></td><td>still have <strong>no server-side rule</strong>; word progress remains exercisable only by the Owner&#x27;s own account</td></tr>
+<tr><td>Keyed Activity writer / <code>v1Events</code> / Activity Rules candidate</td><td><strong>NOT integrated, NOT cherry-picked, NOT reconstructed, NOT activated, NOT deployed</strong></td></tr>
+</tbody></table></div>
+<h2>6. GitHub Pages</h2>
+<p>The push updated the default branch, so GitHub Pages rebuilds automatically. At the time of writing, the <code>pages build and deployment</code> run for <code>7728c0230848a1ab38b2192fdb45849bebf370a2</code> (run #292) was <strong>in progress</strong> — see §7 for its final state.</p>
+<p><strong>This sandbox cannot reach <code>madrasatul-muslimeen.github.io</code></strong>: the egress proxy refuses the connection (<code>connect_rejected</code>, organization policy), so all four attempts to fetch the live <code>version.js</code> returned status <code>000</code>. <strong>The live badge therefore could not be read from here, and is not claimed as verified by direct fetch.</strong> What <em>is</em> verified is the deployment&#x27;s input and its pipeline: remote <code>main</code> really carries v08.24, and Pages really started a build for that exact SHA.</p>
+<h2>7. Pages build outcome — SUCCESS</h2>
+<p>Read from the GitHub Actions API after completion:</p>
+<div class='tw'><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
+<tr><td>Workflow</td><td><code>pages build and deployment</code>, run <strong>#292</strong></td></tr>
+<tr><td>Head SHA</td><td><strong><code>7728c0230848a1ab38b2192fdb45849bebf370a2</code></strong> — the merge commit</td></tr>
+<tr><td>Status</td><td><strong>completed</strong></td></tr>
+<tr><td>Conclusion</td><td><strong>success</strong></td></tr>
+<tr><td>Started / finished</td><td>2026-09-14 05:54:40Z → 05:55:30Z</td></tr>
+<tr><td>Run</td><td><code>https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/actions/runs/34811340834</code></td></tr>
+</tbody></table></div>
+<p><strong>So: GitHub Pages has built and deployed the merge commit successfully, and the content it deployed is <code>main</code> at v08.24 — verified by reading <code>version.js</code> back from <code>origin/main</code>.</strong></p>
+<p><strong>The one thing still not directly verified:</strong> this sandbox cannot fetch the live URL (§6), so the rendered badge was not read from the deployed site. The chain — remote <code>main</code> at v08.24 → Pages build for that exact SHA → conclusion <code>success</code> — is complete and each link is evidenced, but the final &quot;I loaded the page and saw v08.24&quot; step is the Owner&#x27;s (§8, step 1). A hard refresh may be needed once, since browsers cache <code>version.js</code>.</p>
+<h2>8. What the Owner should check — ninety seconds</h2>
+<ol><li>Open the app. The badge beside the name should read <strong>v08.24</strong>. If it still reads v08.23, hard-refresh once (the browser caches <code>version.js</code>).</li><li>Study → Read, word-by-word on, tap any Arabic word, open <strong>Basic Arabic</strong>. Each derived-form row should read as one group — <code>Noun  سَلَٰم  42 occurrences</code> — with <strong>no long empty gap in the middle of the row</strong>, and <code>Proper Noun +1</code> on <strong>one line</strong>.</li><li>Open <strong>Arabic in Depth</strong>, expand a form; the occurrence rows beneath should be grouped the same way.</li><li>Return to the landing page: Approach rows, Mastery Wheel and dock exactly as before.</li><li>Switch to Bangla and glance at the same two screens.</li></ol>
+<p><strong>Expected result: nothing visibly different anywhere except the badge reading v08.24.</strong> Anything else is a finding — report it and it will be treated as one.</p>
+<h2>9. Position</h2>
+<p><strong>P4-A CLOSED.</strong></p>
+<p><strong>P4-B is NOT begun and will not be begun</strong> until the Master Architect issues the architecture resolution covering Activity evidence persistence, event identity, server-verifiable uniqueness, Rules enforcement, existing <code>entries[]</code> compatibility and rollback.</p>
+<p><strong>STATUS: AWAITING MASTER ARCHITECT P4-B ARCHITECTURE INSTRUCTION.</strong></p>
+</main></body></html>
