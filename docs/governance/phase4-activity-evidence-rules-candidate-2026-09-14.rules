@@ -197,9 +197,40 @@ service cloud.firestore {
       // digest or a JSON.stringify form, neither of which Rules can
       // reproduce, and either of which would reduce "identity" to something
       // taken on trust from the client.
+      //
+      // MASTER ARCHITECT AMENDMENT, 2026-09-14 (P4-B Required Correction 1):
+      // the Note's identity MUST participate. ADR-008 gives
+      // journal.note-created one event per committed Note and
+      // journal.note-revised at most one per Note per day, so without noteId
+      // in the identity two different Notes on the same ayah collapse into a
+      // single event and the second is silently lost as a "duplicate". The
+      // slot is filled with the literal 'none' for the three non-Note events.
+      //
+      // ONE arity for every event, rather than a four-slot form for some and
+      // a five-slot form for others: that keeps this a single concatenation
+      // instead of a branch, which is what P4-B's expression-budget finding
+      // requires. 'none' cannot be mistaken for a real noteId, which is
+      // always 32 hex characters.
+      function noteSlot() { return d().get('noteId', 'none'); }
       function idIsDerivedIdentity() {
         return eventId == d().eventType + '__' + d().trackableId + '__'
-                        + d().unitKey   + '__' + d().dedupeScope;
+                        + d().unitKey   + '__' + noteSlot() + '__'
+                        + d().dedupeScope;
+      }
+
+      // A Note event must carry a real noteId; a non-Note event must not
+      // carry one at all. Both halves matter: without the first, a journal
+      // event could take the 'none' slot and collide with every other Note
+      // on that ayah; without the second, a reading event could smuggle in a
+      // noteId and mint an unbounded family of ids for the same real event.
+      function isJournalEvent() {
+        return d().eventType == 'journal.note-created'
+            || d().eventType == 'journal.note-revised';
+      }
+      function noteIdentityOk() {
+        return isJournalEvent()
+             ? (d().get('noteId', '') is string && d().get('noteId', '').matches('[0-9a-f]{32}'))
+             : !d().keys().hasAny(['noteId']);
       }
 
       // ADR-008 v1: the five automatic events, each pinned to exactly the
@@ -239,6 +270,26 @@ service cloud.firestore {
       // ADR-008's own deduplication boundaries: 'once' for a Note's creation
       // (which must dedupe for the life of that note, not per day), the UTC
       // day for everything else. Neither form can contain '_'.
+      //
+      // MASTER ARCHITECT AMENDMENT, 2026-09-14 (P4-B Required Correction 2):
+      // wbw.engaged deduplicates by AYAH + person + day, no longer by
+      // occurrence + person + day. Nothing in this rule had to change for
+      // that -- the grain lives entirely in what the writer puts in unitKey
+      // and dedupeScope -- but the consequence is enforced here all the same:
+      // because occurrenceId is not an accepted field (see the key list
+      // below) and the unitKey is the ayah, a hundred word taps in one ayah
+      // on one day all derive the SAME id, so the first creates the document
+      // and every later one is refused as a duplicate by the database.
+      //
+      // occurrenceId is OMITTED DELIBERATELY, not overlooked. It was reviewed
+      // against every reader of Activity -- Monitor counts per student,
+      // subject and unit; backup prints entries; bulkConfirmWeek cannot see
+      // this collection at all -- and none of them needs it. Storing one
+      // would also actively mislead: whichever word happened to be tapped
+      // first that day would win the slot, and the other ninety-nine would be
+      // unrepresented, giving the appearance of occurrence-level precision
+      // that the ayah/day grain does not have. The authoritative
+      // occurrence-level state is quranWordProgress, which is unchanged.
       function dedupeScopeOk() {
         return d().eventType == 'journal.note-created'
              ? d().dedupeScope == 'once'
@@ -263,7 +314,7 @@ service cloud.firestore {
         return d().keys().hasOnly([
                  'contractVersion', 'eventType', 'tenantId', 'personId', 'weekKey',
                  'dateIso', 'subjectId', 'unitKey', 'unitType', 'trackableId',
-                 'action', 'dedupeScope', 'masteryEffect', 'occurrenceId', 'noteId',
+                 'action', 'dedupeScope', 'masteryEffect', 'noteId',
                  'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
                ])
             && d().keys().hasAll(['schemaVersion', 'createdAt', 'updatedAt', 'createdBy'])
@@ -276,6 +327,7 @@ service cloud.firestore {
             && d().dateIso.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
             && d().weekKey.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
             && dedupeScopeOk()
+            && noteIdentityOk()
             && idIsDerivedIdentity()
             && scopeMatchesPath()
             && d().createdBy == request.auth.uid;

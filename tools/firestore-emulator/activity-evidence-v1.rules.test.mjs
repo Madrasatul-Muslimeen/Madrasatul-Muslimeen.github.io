@@ -48,7 +48,9 @@ const evidence = (over = {}) => ({
   schemaVersion: 1, createdBy: "uid-p1", createdAt: new Date(), updatedAt: new Date(),
   ...over,
 });
-const idOf = (e) => `${e.eventType}__${e.trackableId}__${e.unitKey}__${e.dedupeScope}`;
+const idOf = (e) => `${e.eventType}__${e.trackableId}__${e.unitKey}__${e.noteId ?? "none"}__${e.dedupeScope}`;
+const NOTE_A = "a1b2c3d4e5f60718293a4b5c6d7e8f90";
+const NOTE_B = "0f9e8d7c6b5a49382716f5e4d3c2b1a0";
 const ref = (db, e, key = wk()) => doc(db, "activity", key, "evidence", idOf(e));
 
 test("candidate Activity-evidence Rules: isolated allow/deny cases", async () => {
@@ -142,12 +144,92 @@ test("candidate Activity-evidence Rules: isolated allow/deny cases", async () =>
     })());
     await ok("a new Note dedupes once, not per day", (() => {
       const e = evidence({ eventType: "journal.note-created", trackableId: "approach_10",
-                           unitKey: "ayah:2:17", dedupeScope: "once" });
+                           unitKey: "ayah:2:17", noteId: NOTE_A, dedupeScope: "once" });
       return setDoc(ref(p1, e), e);
     })());
     await no("a new-Note event dedupded by day instead of once is refused", (() => {
       const e = evidence({ eventType: "journal.note-created", trackableId: "approach_10",
-                           unitKey: "ayah:2:18", dedupeScope: "2026-09-14" });
+                           unitKey: "ayah:2:18", noteId: NOTE_A, dedupeScope: "2026-09-14" });
+      return setDoc(ref(p1, e), e);
+    })());
+
+    // --- MASTER ARCHITECT REQUIRED CORRECTION 1: Note identity ------------
+    // Six cases the amendment names, plus the two hygiene cases that make the
+    // 'none' slot safe. Without noteId in the identity, cases 1 and 3 below
+    // would collapse into the events already written above and be silently
+    // lost as duplicates -- which is exactly the defect the amendment fixes.
+    await ok("MA-1 a SECOND Note on the SAME unit may create its own evidence", (() => {
+      const e = evidence({ eventType: "journal.note-created", trackableId: "approach_10",
+                           unitKey: "ayah:2:17", noteId: NOTE_B, dedupeScope: "once" });
+      return setDoc(ref(p1, e), e);
+    })());
+    await no("MA-2 retrying creation evidence for the SAME Note is a duplicate", (() => {
+      const e = evidence({ eventType: "journal.note-created", trackableId: "approach_10",
+                           unitKey: "ayah:2:17", noteId: NOTE_A, dedupeScope: "once" });
+      return setDoc(ref(p1, e), e);
+    })());
+    await ok("MA-3a a revision of Note A on a unit/day is allowed", (() => {
+      const e = evidence({ eventType: "journal.note-revised", trackableId: "approach_10",
+                           unitKey: "ayah:2:19", noteId: NOTE_A, dedupeScope: "2026-09-14" });
+      return setDoc(ref(p1, e), e);
+    })());
+    await ok("MA-3b a DIFFERENT Note revised on the SAME unit/day is also allowed", (() => {
+      const e = evidence({ eventType: "journal.note-revised", trackableId: "approach_10",
+                           unitKey: "ayah:2:19", noteId: NOTE_B, dedupeScope: "2026-09-14" });
+      return setDoc(ref(p1, e), e);
+    })());
+    await no("MA-4 repeated revision evidence for the same Note/day is deduplicated", (() => {
+      const e = evidence({ eventType: "journal.note-revised", trackableId: "approach_10",
+                           unitKey: "ayah:2:19", noteId: NOTE_A, dedupeScope: "2026-09-14" });
+      return setDoc(ref(p1, e), e);
+    })());
+    await no("MA-5 changing noteId without changing the eventId is denied", (() => {
+      const stored = evidence({ eventType: "journal.note-revised", trackableId: "approach_10",
+                                unitKey: "ayah:2:30", noteId: NOTE_A, dedupeScope: "2026-09-14" });
+      const tampered = { ...stored, noteId: NOTE_B };
+      return setDoc(doc(p1, "activity", wk(), "evidence", idOf(stored)), tampered);
+    })());
+    await no("MA-6 changing the eventId without changing noteId is denied", (() => {
+      const e = evidence({ eventType: "journal.note-revised", trackableId: "approach_10",
+                          unitKey: "ayah:2:31", noteId: NOTE_A, dedupeScope: "2026-09-14" });
+      return setDoc(doc(p1, "activity", wk(), "evidence", idOf({ ...e, noteId: NOTE_B })), e);
+    })());
+    await no("a Note event carrying no noteId cannot take the 'none' slot", (() => {
+      const e = evidence({ eventType: "journal.note-created", trackableId: "approach_10",
+                           unitKey: "ayah:2:32", dedupeScope: "once" });
+      return setDoc(ref(p1, e), e);
+    })());
+    await no("a non-Note event may not smuggle in a noteId", (() => {
+      const e = evidence({ unitKey: "ayah:2:33", noteId: NOTE_A });
+      return setDoc(ref(p1, e), e);
+    })());
+    await no("a malformed noteId is refused", (() => {
+      const e = evidence({ eventType: "journal.note-created", trackableId: "approach_10",
+                           unitKey: "ayah:2:34", noteId: "not-a-uuid", dedupeScope: "once" });
+      return setDoc(ref(p1, e), e);
+    })());
+
+    // --- MASTER ARCHITECT REQUIRED CORRECTION 2: WbW is ayah/day ----------
+    await ok("MA-W1 WbW study of an ayah on a day creates one evidence document", (() => {
+      const e = evidence({ eventType: "wbw.engaged", trackableId: "approach_04", unitKey: "ayah:2:40" });
+      return setDoc(ref(p1, e), e);
+    })());
+    await no("MA-W2 a SECOND word in the same ayah/day cannot create a second document", (() => {
+      const e = evidence({ eventType: "wbw.engaged", trackableId: "approach_04", unitKey: "ayah:2:40" });
+      return setDoc(ref(p1, e), e);
+    })());
+    await no("MA-W3 occurrenceId is not an accepted field and cannot re-split the grain", (() => {
+      const e = { ...evidence({ eventType: "wbw.engaged", trackableId: "approach_04", unitKey: "ayah:2:40" }),
+                  occurrenceId: "quran-word-occurrence:v1:2:40:7" };
+      return setDoc(doc(p1, "activity", wk(), "evidence", idOf(e)), e);
+    })());
+    await ok("MA-W4 a DIFFERENT ayah on the same day is its own evidence", (() => {
+      const e = evidence({ eventType: "wbw.engaged", trackableId: "approach_04", unitKey: "ayah:2:41" });
+      return setDoc(ref(p1, e), e);
+    })());
+    await ok("MA-W5 the SAME ayah on a different day is its own evidence", (() => {
+      const e = evidence({ eventType: "wbw.engaged", trackableId: "approach_04",
+                           unitKey: "ayah:2:40", dateIso: "2026-09-15", dedupeScope: "2026-09-15" });
       return setDoc(ref(p1, e), e);
     })());
 
@@ -185,6 +267,25 @@ test("candidate Activity-evidence Rules: isolated allow/deny cases", async () =>
     await no("a person from another tenant cannot be written under this tenant", (() => {
       const e = evidence({ personId: "pX", unitKey: "ayah:2:23" });
       return setDoc(doc(p1, "activity", wk(T, "pX"), "evidence", idOf(e)), e);
+    })());
+    // THE CASE THAT ISOLATES personInTenant(). The case above is already denied
+    // by canRecordFor -- p1's login is not pX's -- so it proves nothing about
+    // the tenant binding; mutation testing caught that, with personInTenant
+    // neutralised and the suite still green. Here pX writes for THEMSELVES, so
+    // isSelfPerson() is true and canRecordFor() ALLOWS it; the only thing
+    // standing between pX (tenant t2) and tenant t1's data is personInTenant().
+    await no("a self-person of ANOTHER tenant cannot file under this tenant", (() => {
+      const pX = env.authenticatedContext("uid-pX").firestore();
+      const e = evidence({ tenantId: T, personId: "pX", createdBy: "uid-pX", unitKey: "ayah:2:35" });
+      return setDoc(doc(pX, "activity", wk(T, "pX"), "evidence", idOf(e)), e);
+    })());
+    // Paired allow, differing in one fact: the SAME writer, filing under their
+    // OWN tenant, succeeds -- so the denial above is about the tenant binding
+    // and not about pX being unable to write anything at all.
+    await ok("...but that same person may file under their own tenant", (() => {
+      const pX = env.authenticatedContext("uid-pX").firestore();
+      const e = evidence({ tenantId: "t2", personId: "pX", createdBy: "uid-pX", unitKey: "ayah:2:35" });
+      return setDoc(doc(pX, "activity", wk("t2", "pX"), "evidence", idOf(e)), e);
     })());
     await no("a malformed parent week key is refused", (() => {
       const e = evidence({ unitKey: "ayah:2:24" });

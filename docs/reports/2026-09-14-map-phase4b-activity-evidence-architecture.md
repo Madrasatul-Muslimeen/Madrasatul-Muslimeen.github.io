@@ -16,6 +16,47 @@ AUDIT — with two decisions reserved to the Master Architect, named in §11.**
 
 ---
 
+> ## ⬥ MASTER ARCHITECT DECISION, 14 September 2026 — recorded after the audit
+>
+> **P4-B ARCHITECTURE ACCEPTED WITH REQUIRED IDENTITY AMENDMENT.**
+>
+> Everything below this box is **the report as submitted for audit**, left
+> unaltered so the audit trail stays readable. Two corrections were required and
+> have been applied; where the original text below differs from them, **the
+> corrections win.**
+>
+> **Required Correction 1 — Journal event identity.** The submitted identity was
+> **insufficient for Journaling**: built from event type, Approach, unit and
+> day alone, two different Notes on the same āyah on the same day collapse to
+> one identity and the second is silently lost as a duplicate — which
+> contradicts ADR-008's own rule of one event per committed new Note. `noteId`
+> **must** participate in the deterministic identity:
+> `journal.note-created__approach_10__<unitKey>__<noteId>__once` and
+> `journal.note-revised__approach_10__<unitKey>__<noteId>__<dateIso>`. Rules
+> must re-derive and verify it. **Applied**, using one five-slot form for all
+> five events with the literal `none` in the Note slot for the three non-Note
+> events, so the Rules identity check stays a single concatenation rather than a
+> branch — which is what this report's own expression-budget finding requires.
+>
+> **Required Correction 2 — WbW grain.** §11-A's recommendation is **approved**:
+> `wbw.engaged` deduplicates by **āyah + person + UTC day**, not occurrence.
+> ADR-008 is amended accordingly. The Master Architect further directed that
+> `occurrenceId` be retained **only** against a concrete downstream requirement,
+> since the first occurrence to create the document would win the field
+> arbitrarily. **Reviewed against every reader of Activity — Monitor, backup,
+> and `bulkConfirmWeek()` — none requires it, so `occurrenceId` is OMITTED.**
+> The authoritative occurrence-level state remains `quranWordProgress`. This
+> supersedes §4.2 and §5 of the report below, which still describe it as
+> optionally stored.
+>
+> **§11-B (Rules deployment) remains an open Owner Control Gate.** Not granted.
+>
+> **P4-C was authorised** on that basis and is delivered separately in
+> `2026-09-14-map-phase4c-evidence-writer.md`. The amended candidate Rules were
+> re-executed: **53 assertions, 0 failures, 0 expression-budget denials.**
+
+---
+
 ## 1. Current-state findings
 
 ### 1.1 How Activity is stored and written today

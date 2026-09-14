@@ -25,11 +25,62 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: v08.24** (on `main`, 14 Sep 2026). `app/js/version.js` is
+**Current milestone: v08.25** (on `claude/dreamy-tesla-0clj36`, 14 Sep 2026 — `main` is still v08.24; P4-C is deliberately NOT merged, pending Master Architect audit). `app/js/version.js` is
 the single source of truth and the badge beside the app name says so on screen.
 **This line has drifted twice already — it read `v08.02` while `main` was on
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
+
+**v08.25 (14 Sep 2026) is MAP Phase 4 P4-C — the Study Activity evidence
+WRITER, still uninvoked.** Read this and the v08.24 entry together before any
+Phase 4 work.
+
+**The accepted architecture (P4-B):** one create-only document per ADR-008
+event, at `activity/{tenantId}__{personId}__{weekKey}/evidence/{eventId}`,
+`eventId = eventType__trackableId__unitKey__noteSlot__dedupeScope`.
+**Deduplication is enforced by the DATABASE** — the identity IS the document
+id, so a retry is a `create` on an existing document and always fails. Legacy
+`entries[]` is untouched by construction; no migration.
+
+**THE FINDING THE WHOLE SHAPE RESTS ON, and the one to remember:**
+`records.js` `bulkConfirmWeek()` builds its confirm set **entirely from
+`activity.entries[]`**, so a `(unitKey, trackableId)` pair appearing there
+causes the matching PENDING Mastery claim to be confirmed. Evidence in that
+array would let merely reading an āyah enlarge what one supervisor click
+confirms — **Activity granting Mastery, in client code where no Firestore Rule
+can intervene.** That is why evidence lives in a subcollection, and why
+`study-activity-evidence-boundary.mjs` asserts `bulkConfirmWeek()` still reads
+only `entries[]`. **Do not "tidy" evidence into the weekly array.**
+
+**ADR-008 was AMENDED (14 Sep 2026), twice.** (1) The Note's identity
+participates in event identity — without it, two Notes on the same āyah on the
+same day collapse into one event and the second is silently lost. All five
+events use ONE five-slot form with `none` in the Note slot for the three
+non-Note events, because a single arity keeps the Rules identity check a single
+concatenation rather than a branch. (2) `wbw.engaged` is **āyah + day**, not
+occurrence + day, and **`occurrenceId` is deliberately NOT stored** — no reader
+of Activity needs it, and whichever word was tapped first would arbitrarily win
+the field while the rest went unrepresented. `quranWordProgress` stays the
+authoritative occurrence-level state.
+
+**Retry is a successful no-op, and that is NOT swallowing errors.** A retry and
+a genuine authorisation failure both arrive as `permission-denied`. The writer
+reads first and, on a denial, reads AGAIN: present → no-op; still absent → a
+real failure, rethrown so it reaches the user (I15).
+
+**`doc(db, path, id)` takes a MULTI-SEGMENT collection path**, so
+`activity/<week>/evidence` + eventId is a document reference in three
+arguments. `envelope.js` stamps the I17 envelope unchanged, and the test
+harness's own `doc()` needed no change — a subcollection costs this codebase
+nothing new.
+
+**Emulator 53 assertions, 0 failures, 0 expression-budget denials**; all four
+important Rules checks proven active by mutation. Pure suites 29 + 19 + 13.
+`layout.mjs` byte-identical at all 16 configurations, `getElementById`
+250 → 250; coverage 1,803 / 47 unchanged. **Production `firestore.rules` is
+byte-for-byte untouched, and until the candidate is deployed the subcollection
+has no rule and is closed to every client** — so the feature cannot function
+for anyone yet. Deployment is an Owner Control Gate.
 
 **v08.24 (14 Sep 2026) is MAP Phase 4 task P4-A — the Study-to-Approach event
 contract, landed as PURE, UNINVOKED policy.** Read this before picking up any
@@ -814,6 +865,20 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   outright. ~40px is the target for anything a finger presses; a square,
   fixed, `flex-shrink: 0` tile is what keeps a row of them looking like one
   group instead of several sizes.
+- **Mutation-test a security rule CHECK BY CHECK, and pair every denial with an
+  allow differing in ONE fact.** v08.25's `personInTenant()` could be deleted
+  with all 51 emulator assertions still green: the cross-tenant case had `p1`
+  writing for `pX`, which `canRecordFor` already denies, so it proved nothing
+  about the tenant binding. The isolating case has `pX` writing for THEMSELVES
+  under another tenant's path, where `isSelfPerson()` is true and only
+  `personInTenant()` stands in the way. A denial some other rule would have
+  produced anyway is not evidence about the rule you think you are testing.
+- **A synchronous check runner counts an `async` body as a PASS.** v08.25's
+  Approach-binding guard was `check("...", async () => {...})`; the assertion
+  threw inside an uncaught promise, the case printed PASS, and a deliberate
+  renumber of `approach_07` sailed straight through the check written to catch
+  it. Make the runner refuse any function that returns a promise — a guard that
+  cannot fail is worse than no guard, because it is believed.
 - **A hardcoded id is a silent-drift hazard — bind it back to its own source of
   truth in a check.** v08.24's contract names `approach_07` as a literal. Every
   one of its 24 function checks would stay green after a catalogue renumber
