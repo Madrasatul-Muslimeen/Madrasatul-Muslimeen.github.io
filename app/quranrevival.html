@@ -1854,21 +1854,37 @@
   .word-card-form-list { list-style: none; margin: 0; padding: 0; }
   .word-card-form { border-top: 1px solid #ece3c9; }
   .word-card-form:first-child { border-top: 0; }
-  .word-card-form-toggle,
-  .word-card-form > .word-card-form-n {
+  /* v08.22 -- only the toggle is a row container. v08.21 also gave this rule
+     to the row's own LABEL span (`width: 100%` on `.word-card-form-n`), which
+     in the Basic tab -- where the row has no toggle and the <li> itself is the
+     flex row -- made the label claim the whole width and pushed the Arabic and
+     the count out to the far edge. That is the layout defect, in CSS. */
+  .word-card-form-toggle {
     display: flex; align-items: center; gap: 0.5rem; width: 100%;
     min-height: 44px; padding: 0.35rem 0.2rem; background: none; border: 0;
     text-align: left; cursor: pointer; color: inherit; font: inherit;
   }
-  .word-card-form > .word-card-form-n { cursor: default; }
   li.word-card-form { display: block; }
   li.word-card-form:not(:has(.word-card-form-toggle)) {
     display: flex; align-items: center; gap: 0.5rem; min-height: 44px; padding: 0.35rem 0.2rem;
   }
   .word-card-form-toggle:hover { background: #faf6e8; }
-  .word-card-form-n { flex: 0 0 auto; font-size: 0.8rem; color: #7a6a3c; white-space: nowrap; }
-  .word-card-form-arabic { flex: 1 1 auto; min-width: 0; font-size: 1.5rem; line-height: 1.7; }
-  .word-card-form-count { flex: 0 0 auto; font-size: 0.78rem; color: #5a4a2a; white-space: nowrap; }
+  /* v08.22 -- [CATEGORY] [ARABIC] .......... [N occurrences].
+     The category and the written form are ONE left-hand group sitting beside
+     each other; the count alone goes to the far side, pushed there by its own
+     auto margin. The Arabic is `flex: 0 0 auto` on purpose: v08.21 gave it
+     `flex: 1 1 auto`, which is what stretched a two-letter word across the
+     whole card and put it nowhere near its own label. */
+  .word-card-form-pos {
+    flex: 0 1 auto; min-width: 0; display: flex; flex-direction: column;
+    font-size: 0.8rem; line-height: 1.25; color: #5a4a2a; overflow-wrap: anywhere;
+  }
+  .word-card-form-pos-en { font-size: 0.68rem; color: #8a7a4c; }
+  .word-card-form-pos-unknown { color: #8a7a4c; font-style: italic; }
+  .word-card-form-pos-more { font-size: 0.66rem; color: #8a7a4c; }
+  .word-card-form-arabic { flex: 0 0 auto; min-width: 0; font-size: 1.5rem; line-height: 1.7; }
+  .word-card-form-count { flex: 0 0 auto; margin-inline-start: auto; padding-inline-start: 0.4rem; font-size: 0.78rem; color: #5a4a2a; white-space: nowrap; }
+  .word-card-pos-en { display: block; font-size: 0.7rem; color: #8a7a4c; }
   .word-card-form-caret { flex: 0 0 auto; color: #7a6a3c; }
   .word-card-form-occurrences { padding: 0 0 0.4rem 0.2rem; }
   .word-card-form-occurrences .word-card-occurrences { flex-direction: column; }
@@ -1880,6 +1896,18 @@
     .word-card-form-arabic { font-size: 1.3rem; }
     .word-card-occurrence-arabic { font-size: 1.2rem; }
   }
+
+  /* v08.22 -- the standalone way back, on the study screen above the āyah. */
+  #wordCardReturnBar { margin: 0 0 0.4rem; }
+  #wordCardReturnBar[hidden] { display: none !important; }
+  .word-card-return-btn {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    min-height: 40px; padding: 0.3rem 0.75rem;
+    background: #fdf8ea; border: 1px solid #d8c890; border-radius: 999px;
+    color: #1F3A6E; font: inherit; font-size: 0.85rem; cursor: pointer;
+  }
+  .word-card-return-btn:hover { background: #f3ecd8; }
+  .word-card-return-ref { font-size: 0.76rem; color: #7a6a3c; }
 
   .word-card-origin { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; margin: 0.35rem 0 0; }
   .word-card-origin span { font-size: 0.78rem; color: #7a6a3c; }
@@ -3093,6 +3121,15 @@
         </div>
         <div id="readScroll">
           <div id="studyScreen">
+            <!-- v08.22 -- the way back from an occurrence. It lives HERE, in
+                 the study screen above the āyah, and NOT inside the Word Card:
+                 the defect it fixes is the card staying on screen over the
+                 āyah the reader asked to see. The card is closed on the way
+                 out and its whole state is held in `quranWordCardOrigin`, so
+                 nothing is destroyed -- this bar is what puts it all back.
+                 It is hidden unless that origin exists, so ordinary Study or
+                 Note navigation never shows it. -->
+            <div id="wordCardReturnBar" hidden></div>
             <div class="row" id="singleAyahNavRow">
               <div id="ayahPosition" style="align-self:center; font-size:0.85rem; color:#666; margin:0 auto;"></div>
             </div>
@@ -3975,7 +4012,7 @@
     import { searchQuran } from "./js/quran-search.js";
     import { renderLayoutA, renderArabicPanel, renderWordByWordPanel, renderRootPanel, renderDerivativesPanel, renderTranslationPanel, tajweedRawToSafeHtml, digitsForLang, stripLeadingBismillah } from "./js/ayah-renderer.js";
     import { parseQuranWordOccurrenceId } from "./js/quran-word-identity.js";
-    import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard } from "./js/quran-word-card.js";
+    import { createWordCardState, openWordCard, closeWordCard, selectWordCardLevel, moveWordCard, renderQuranWordCard, WORD_CARD_POS_SEGMENTS } from "./js/quran-word-card.js";
     import { occurrenceRefsFor, rootFormsFor, unpackWordIndexRef } from "./js/quran-word-index.js";
     import { wordProgressAuthority, WBW_WORD_STATES } from "./js/quran-word-progress.js";
     import { primeAyahProgress, getSurahProgress, wordProgressFor, setWordState, decideWordApproval, clearWordProgressCache } from "./js/quran-word-progress-data.js";
@@ -9531,10 +9568,17 @@
         lemmaOccurrences: t("{count} lemma-linked occurrences"),
         derivedForms: t("Derived forms of this root"),
         rootFormsSummary: t("{total} occurrences in {forms} derived forms"),
-        formOrdinal: t("Form {n}"),
         formOccurrences: t("{count} occurrences"),
-        formNumberNote: t("The number is this form's position in the list below, not the traditional Arabic verb form (I, II, III…)."),
-        formCategoryNote: t("A grammatical category is not shown per form: the packaged data classifies each written word together with its attached particles, not the dictionary form."),
+        // v08.22 -- the grammatical categories the packaged data itself uses,
+        // each put through this app's own catalogue. A category the catalogue
+        // does not carry comes back unchanged and is printed as the source
+        // records it; nothing here invents a grammatical term.
+        posNames: Object.fromEntries(WORD_CARD_POS_SEGMENTS.map((c) => [c, t(c)])),
+        formCategoryUnknown: t("Category not recorded"),
+        formCategoryNote: t("Each form's category is the one the packaged grammatical analysis records for that written form."),
+        formCategoryMixed: t("{count} of these forms are recorded with more than one category; the most frequent is shown."),
+        formCategoryOther: "+{count}",
+        formCategoryOtherTitle: t("Also recorded as: {list}"),
         formsUnclassified: t("{count} occurrences of this root are not assigned to a form in the packaged data."),
         noDerivedForms: t("No derived forms are listed for this root in the packaged data."),
         loadingForms: t("Loading derived forms…"),
@@ -9545,6 +9589,7 @@
         showingFirst: t("Showing the first {shown} of {total} occurrences."),
         goToOccurrence: t("Go to {ref}"),
         backToWord: t("Back to {ref}"),
+        backToWordCard: t("Back to Word Card"),
         backToWordTitle: t("Back to the word you came from"),
         visitingFrom: t("Visiting from {ref}"),
         rootUnavailable: t("Root unavailable in the approved dataset"),
@@ -9718,7 +9763,7 @@
       wordCardMountEls().forEach((m) => { if (m !== mount) { m.hidden = true; const c = m.querySelector("[data-word-card-content]"); if (c) c.innerHTML = ""; } });
       mount.hidden = false;
       const content = mount.querySelector("[data-word-card-content]") ?? mount;
-      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordProgressContext(ref), origin: quranWordCardOrigin, hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
+      content.innerHTML = renderQuranWordCard({ state: quranWordCardState, chapter: currentSurahData, ayah, word, context: { ...quranWordCardContext, ...wordProgressContext(ref), hasPrevious: at > 0, hasNext: at >= 0 && at < ids.length - 1, rootOccurrenceCount: quranWordCardContext.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0 }, labels: { ...wordCardLabels(), ...wordProgressLabels() }, formatNumber: num });
       if (focusSelector) (mount.querySelector(focusSelector)?.disabled ? mount.querySelector("[data-word-card-close]") : mount.querySelector(focusSelector))?.focus({ preventScroll: true });
     }
 
@@ -9812,27 +9857,49 @@
       const originRef = quranWordCardState.occurrenceId ? (() => {
         try { const o = parseQuranWordOccurrenceId(quranWordCardState.occurrenceId); return `${o.surah}:${o.ayah}:${o.position}`; } catch { return null; }
       })() : null;
+      if (!originRef) return;
       // Only the FIRST hop records an origin, so a chain of jumps always
       // offers the way back to the word the reader actually started from
       // rather than to the previous hop.
-      if (originRef && !quranWordCardOrigin) {
-        quranWordCardOrigin = { occurrenceId: quranWordCardState.occurrenceId, ref: originRef, surah: currentSurahNum, ayah: currentAyahNum, stageView, unitType: currentUnitType, level: quranWordCardState.level, expandedForm: quranWordCardExpandedForm };
+      if (!quranWordCardOrigin) {
+        quranWordCardOrigin = {
+          occurrenceId: quranWordCardState.occurrenceId, ref: originRef,
+          surah: currentSurahNum, ayah: currentAyahNum, stageView,
+          unitType: currentUnitType, level: quranWordCardState.level,
+          expandedForm: quranWordCardExpandedForm,
+          scrollY: window.scrollY,
+        };
       }
-      await openWordOccurrenceAt(surah, ayah, position, "read");
-    }
-    /** The shared half of "go there and open that word" -- used by both the
-     *  occurrence link above and the way back below. */
-    async function openWordOccurrenceAt(surah, ayah, position, view, restore = null) {
+      // v08.22 -- CLOSE the card before navigating. The reader asked to see
+      // that āyah; leaving the card open over it is the defect. `closeWordCard`
+      // keeps the state object (level and occurrence survive), and the origin
+      // record above holds everything else, so nothing is destroyed -- the
+      // return bar rebuilds the whole screen the reader left.
       quranWordCardRequest++;
+      quranWordCardFormRequest++;
+      quranWordCardState = closeWordCard(quranWordCardState);
+      clearWordCardMounts();
+      await navigateToAyah(surah, ayah, "read");
+      renderWordCardReturnBar();
+    }
+
+    /** The navigation half on its own: go to a place, show it, touch no card. */
+    async function navigateToAyah(surah, ayah, view) {
       setStageView(view);
       if (surah !== currentSurahNum) {
         currentSurahNum = surah;
         surahSelect.value = String(surah);
-        await loadSurah(); // closes the card and clears both mounts -- reopened below, on the destination
+        await loadSurah();
       }
       currentAyahNum = ayah;
       if (ayahSelect.querySelector(`option[value="${ayah}"]`)) ayahSelect.value = String(ayah);
       renderStudyScreen();
+    }
+
+    /** The shared half of "go there and open that word" -- the way back uses it. */
+    async function openWordOccurrenceAt(surah, ayah, position, view, restore = null) {
+      quranWordCardRequest++;
+      await navigateToAyah(surah, ayah, view);
       quranWordCardState = openWordCard(quranWordCardState, `quran-word-occurrence:v1:${surah}:${ayah}:${position}`);
       // v08.21 -- "Back to Word Card" restores the SCREEN the reader left, not
       // just the word: the tab they were on and the form they had expanded.
@@ -9844,11 +9911,34 @@
       hydrateWordCardOccurrences();
       hydrateWordProgress();
     }
+
+    /**
+     * v08.22 -- the deliberate "Back to Word Card" control.
+     *
+     * Rendered ONLY while an origin exists, and an origin is only ever
+     * recorded by goToWordOccurrence() -- so a reader who reached this āyah
+     * through the Study or Note controls never sees it.
+     */
+    function renderWordCardReturnBar() {
+      const bar = document.getElementById("wordCardReturnBar");
+      if (!bar) return;
+      const origin = quranWordCardOrigin;
+      if (!origin) { bar.hidden = true; bar.innerHTML = ""; return; }
+      const text = wordCardLabels();
+      bar.innerHTML = `<button type="button" class="word-card-return-btn" data-word-card-origin-back ` +
+        `title="${escapeHtml(text.backToWordTitle)}" ` +
+        `aria-label="${escapeHtml(String(text.backToWord).replace("{ref}", origin.ref))}">` +
+        `<span aria-hidden="true">←</span> ${escapeHtml(text.backToWordCard)}` +
+        `<span class="word-card-return-ref">${escapeHtml(origin.ref)}</span></button>`;
+      bar.hidden = false;
+    }
+
     /** The way back: the original word AND the study context it was read in. */
     async function returnToWordCardOrigin() {
       const origin = quranWordCardOrigin;
       if (!origin) return;
       quranWordCardOrigin = null;
+      renderWordCardReturnBar();
       if (origin.unitType && origin.unitType !== currentUnitType) {
         currentUnitType = origin.unitType;
         unitTypeSelect.value = origin.unitType;
@@ -9857,6 +9947,7 @@
       let ref;
       try { ref = parseQuranWordOccurrenceId(origin.occurrenceId); } catch { return; }
       await openWordOccurrenceAt(ref.surah, ref.ayah, ref.position, origin.stageView === "note" ? "note" : "read", origin);
+      if (Number.isFinite(origin.scrollY)) window.scrollTo({ top: origin.scrollY, behavior: "auto" });
       // The expanded form is restored by hydrateWordCardOccurrences() once the
       // forms index lands -- see its own comment for why it belongs there.
     }
@@ -9870,7 +9961,7 @@
       const occurrence = event.target.closest("[data-word-occurrence]");
       // Opening a word directly is a fresh start: any "visiting from" trail
       // from an earlier occurrence hop is over.
-      if (occurrence) { quranWordCardTrigger = occurrence; quranWordCardOrigin = null; quranWordCardExpandedForm = null; quranWordCardState = openWordCard(quranWordCardState, occurrence.dataset.wordOccurrence); quranWordCardContext = {}; renderPersistentWordCard(); activeWordCardMount()?.querySelector("[data-word-card-close]")?.focus({ preventScroll: true }); hydrateWordCardOccurrences(); hydrateWordProgress(); return; }
+      if (occurrence) { quranWordCardTrigger = occurrence; quranWordCardOrigin = null; renderWordCardReturnBar(); quranWordCardExpandedForm = null; quranWordCardState = openWordCard(quranWordCardState, occurrence.dataset.wordOccurrence); quranWordCardContext = {}; renderPersistentWordCard(); activeWordCardMount()?.querySelector("[data-word-card-close]")?.focus({ preventScroll: true }); hydrateWordCardOccurrences(); hydrateWordProgress(); return; }
       const formToggle = event.target.closest("[data-word-form-toggle]");
       if (formToggle) {
         const lemma = formToggle.dataset.wordFormToggle;
@@ -9888,7 +9979,7 @@
       if (progressDecide) { runWordProgressAction({ kind: "decide", review: progressDecide.dataset.wordProgressDecide }); return; }
       const level = event.target.closest("[data-word-card-level]");
       if (level) { quranWordCardState = selectWordCardLevel(quranWordCardState, level.dataset.wordCardLevel); renderPersistentWordCard(); return; }
-      if (event.target.closest("[data-word-card-close]")) { quranWordCardRequest++; quranWordCardOrigin = null; quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected) quranWordCardTrigger.focus({ preventScroll: true }); return; }
+      if (event.target.closest("[data-word-card-close]")) { quranWordCardRequest++; quranWordCardOrigin = null; renderWordCardReturnBar(); quranWordCardState = closeWordCard(quranWordCardState); renderPersistentWordCard(); if (quranWordCardTrigger?.isConnected) quranWordCardTrigger.focus({ preventScroll: true }); return; }
       const move = event.target.closest("[data-word-card-move]");
       if (move) { quranWordCardState = moveWordCard(quranWordCardState, wordCardOccurrenceIds(), move.dataset.wordCardMove); quranWordCardContext = {}; renderPersistentWordCard(); hydrateWordCardOccurrences(); hydrateWordProgress(); }
     });

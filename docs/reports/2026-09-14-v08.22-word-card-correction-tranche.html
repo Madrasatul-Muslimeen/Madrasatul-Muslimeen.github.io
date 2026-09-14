@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuranRevival v08.22 — Word Card Correction Tranche</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>QuranRevival v08.22 — Word Card Correction Tranche</h1>
+<p><strong>Date:</strong> 14 September 2026 <strong>Scope:</strong> bounded correction tranche. PRESERVE → RECONCILE → EXTEND. <strong>Status:</strong> built and machine-verified. <strong>PENDING OWNER LIVE VERIFICATION.</strong> <strong>Not in this tranche:</strong> no Word Card redesign, no Dictionary work, no new Tracking work, no Firestore Rules or index change, no migration or backfill, no production write, no Phase 4.</p>
+<hr>
+<h2>1. Version before and after</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Before</td><td><code>08.21</code></td></tr>
+<tr><td>After</td><td><strong><code>08.22</code></strong></td></tr>
+<tr><td>Source of truth</td><td><code>app/js/version.js</code> — one line, every surface imports <code>APP_VERSION</code></td></tr>
+</tbody></table></div>
+<p>Checked before bumping, as instructed: <code>origin/main</code> and local <code>HEAD</code> were both at <code>2fe2e034ec9250c33f9f0f9b541502a9122bce3f</code>, whose <code>app/js/version.js</code> reads <code>08.21</code>. <strong>No newer version exists anywhere in the repository</strong>, so <code>08.21 → 08.22</code> is correct and nothing was overwritten.</p>
+<hr>
+<h2>2. Exact files changed</h2>
+<div class='tw'><table><thead><tr><th>File</th><th>What changed</th></tr></thead><tbody>
+<tr><td><code>app/js/version.js</code></td><td><code>08.21</code> → <code>08.22</code> (one line)</td></tr>
+<tr><td><code>tools/quran-data-pull/build-word-identity-indexes.mjs</code></td><td>Emits a third artefact, <code>lemma-pos-index.json</code>, built from <code>morphology.pos</code></td></tr>
+<tr><td><code>tools/quran-data-pull/output/lemma-pos-index.json</code></td><td><strong>NEW</strong> — 158,887 bytes, 4,832 entries</td></tr>
+<tr><td><code>tools/quran-data-pull/output/word-identity-index-manifest.json</code></td><td>+1 entry for the new file (bytes + sha256)</td></tr>
+<tr><td><code>app/js/quran-word-index.js</code></td><td>Loads the new index on demand; <code>rootFormsFor()</code> now returns <code>pos</code>, <code>posCounts</code>, <code>posAmbiguous</code> per form</td></tr>
+<tr><td><code>app/js/quran-word-card.js</code></td><td><code>Form {n}</code> removed; real category rendered; row regrouped; POS chain named segment by segment; <code>WORD_CARD_POS_SEGMENTS</code> exported</td></tr>
+<tr><td><code>app/quranrevival.html</code></td><td>Row-layout CSS corrected; <code>#wordCardReturnBar</code> added; occurrence navigation rewritten to close the card; <code>posNames</code> wired into labels</td></tr>
+<tr><td><code>app/js/i18n/bn.js</code></td><td>34 grammatical categories + 5 new card strings; 3 obsolete keys removed</td></tr>
+<tr><td><code>tools/i18n-verify/quran-word-card.mjs</code></td><td>2 assertions updated in place with reasons; 7 added</td></tr>
+</tbody></table></div>
+<p><strong><code>roots-index.json</code> and <code>lemmas-index.json</code> are byte-for-byte unchanged</strong> — proven by their sha256 in the regenerated manifest being identical to the committed values, and by <code>git status</code> reporting neither as modified.</p>
+<p><strong><code>firestore.rules</code> untouched. No schema change. No Firestore data written.</strong></p>
+<hr>
+<h2>3. Data semantics — the A–E report</h2>
+<p>Everything below is <strong>measured across the whole packaged corpus</strong> (114 surah files, 77,429 words), not inferred. A checked-in test (<code>the segment list matches the packaged corpus exactly</code>) re-derives the segment set from the corpus on every run, so these numbers cannot drift silently.</p>
+<h3>A. What uniquely identifies each written form</h3>
+<p><strong><code>morphology.lemma</code></strong> — the dictionary/citation form. 4,832 distinct values across 74,122 lemma-bearing occurrences (3,307 words carry no lemma).</p>
+<p>This is the source&#x27;s own identity key, not a convenience: where two different words share a spelling the corpus disambiguates them <em>in the lemma string itself</em> with a numeric suffix — <code>مَٰلِك</code> (Noun) and <code>مَٰلِك2</code> (Proper Noun) are two entries under root <code>ملك</code>. Forms are therefore grouped by lemma and stay grouped by lemma.</p>
+<h3>B. What field supplies the grammatical / POS category</h3>
+<p><strong><code>morphology.pos</code></strong>, and nothing else. Every word has one (0 missing).</p>
+<p>It is not a single label. It is a <code>&quot; + &quot;</code>-joined chain describing the <strong>whole written token</strong>: attached proclitics, then the head word, then any attached pronoun — e.g. <code>Determiner + Noun</code>, <code>Conjunction + Verb + Pronoun</code>.</p>
+<ul><li><strong>359</strong> distinct <code>pos</code> strings</li><li>built from exactly <strong>46</strong> distinct segments</li></ul>
+<p>The category <strong>of the word itself</strong> is the <strong>head</strong>: the last segment that is not <code>Pronoun</code>. That rule is implemented once, in the index builder, and is stated in the packaged file itself (<code>&quot;headRule&quot;</code>).</p>
+<h3>C. Can one written form have multiple POS classifications?</h3>
+<p><strong>Yes, but rarely — and v08.21 got the size of this wrong.</strong></p>
+<div class='tw'><table><thead><tr><th>Measure</th><th>Count</th><th>Share</th></tr></thead><tbody>
+<tr><td>Lemmas with more than one <strong>raw <code>pos</code> string</strong></td><td>2,067 of 4,832</td><td>42.8%</td></tr>
+<tr><td>Lemmas with more than one <strong>head category</strong></td><td><strong>416 of 4,832</strong></td><td><strong>8.6%</strong></td></tr>
+<tr><td>Lemmas with <strong>exactly one</strong> head category</td><td><strong>4,416</strong></td><td><strong>91.4%</strong></td></tr>
+</tbody></table></div>
+<p>Categories per form: <code>1 → 4,416 · 2 → 391 · 3 → 18 · 4 → 3 · 5 → 3 · 7 → 1</code>. Of the 416 ambiguous forms, 227 have a category holding ≥80% of their occurrences.</p>
+<p><strong>This is why v08.21&#x27;s conclusion was wrong.</strong> v08.21 read the 2,067 figure — the raw-string count — and concluded that <code>pos</code> classifies a written token rather than a dictionary form, so no category could be shown. The 2,067 is almost entirely <em>attached particles varying</em>, not the word&#x27;s own class changing. Once the clitics are accounted for, nine forms in ten have exactly one category. Genuine ambiguity does exist and is real linguistic ambiguity, e.g. <code>رَّحِيم</code> {Adjective 112, Noun 4}, <code>يَوْم</code> {Noun 324, Time Adverb 81}, <code>ٱلَّذِى</code> {Relative Pronoun 1442, Conditional 22}.</p>
+<p><strong>How the UI handles it:</strong> the dominant category is shown, a <code>+n</code> marker is placed beside it, and its <code>title</code> lists the others. A note under the list says how many forms in <em>that list</em> carry more than one. Nothing is flattened and nothing is hidden.</p>
+<h3>D. Can multiple distinct written forms share the same POS?</h3>
+<p><strong>Yes, and it is the normal case.</strong> 2,881 distinct lemmas are Nouns; 1,461 are Verbs. Within a single root it is routine — root <code>حمد</code> has five forms:</p>
+<div class='tw'><table><thead><tr><th>Form</th><th>Category</th></tr></thead><tbody>
+<tr><td><code>حَمْد</code></td><td>Noun</td></tr>
+<tr><td><code>حَٰمِدُون</code></td><td>Noun</td></tr>
+<tr><td><code>مَّحْمُود</code></td><td>Noun</td></tr>
+<tr><td><code>حَمِيد</code></td><td>Adjective</td></tr>
+<tr><td><code>يُحْمَدُ</code></td><td>Verb</td></tr>
+</tbody></table></div>
+<p>Three Nouns, and they must remain <strong>three separate rows</strong>. A checked-in test (<code>two distinct written forms sharing a category stay two rows</code>) guards exactly this, using a fixture whose two forms are both Nouns on purpose.</p>
+<h3>E. How attached particles affect the classification</h3>
+<p>They are what makes the raw <code>pos</code> misleading, and they are the whole reason v08.21 concluded no category was available.</p>
+<p><code>ٱلْحَمْدُ</code> is recorded as <code>Determiner + Noun</code> — the <code>ٱل</code> is a separate segment. The same lemma elsewhere appears as <code>Noun</code>, <code>Preposition + Noun</code>, <code>Conjunction + Noun</code>, and so on. Reading the raw string, the form looks like it belongs to four different categories; it is one Noun wearing four different sets of clitics.</p>
+<p>Stripping to the head resolves this, and the size of the effect is the 2,067 → 416 drop in section C.</p>
+<h3>The limitation, reported rather than papered over</h3>
+<p>Of the 46 segments, <strong>11 are opaque corpus abbreviations the packaged data never expands</strong>, plus one single-occurrence tagging glitch:</p>
+<div class='tw'><table><thead><tr><th>Tag</th><th>Occurrences</th><th>Tag</th><th>Occurrences</th></tr></thead><tbody>
+<tr><td><code>RES</code></td><td>551</td><td><code>EXH</code></td><td>40</td></tr>
+<tr><td><code>PRO</code></td><td>333</td><td><code>SUR</code></td><td>35</td></tr>
+<tr><td><code>PREV</code></td><td>161</td><td><code>AVR</code></td><td>33</td></tr>
+<tr><td><code>IMPV</code></td><td>78</td><td><code>EQ</code></td><td>6</td></tr>
+<tr><td><code>EXL</code></td><td>66</td><td><code>COM</code></td><td>3</td></tr>
+<tr><td><code>INT</code></td><td>51</td><td><code>yaAsiyna</code></td><td>1</td></tr>
+</tbody></table></div>
+<p>Together ~1,358 of 77,429 occurrences (<strong>~1.8%</strong>).</p>
+<p>Their meanings are <em>not</em> in the packaged data. Guessing a grammatical name from three letters would be exactly the fabrication the instruction forbids, so <strong>they are printed verbatim, in both languages, and given no Bangla.</strong> A checked-in test asserts that no Bangla exists for any of them — the absence is enforced, not merely left undone.</p>
+<hr>
+<h2>4. Correction 1 — Parts of Speech, Bangla added</h2>
+<p>The complete mapping was established from the data first: 46 segments, of which <strong>34 are spelled-out grammatical names</strong> (~98.2% of occurrences) and 12 are the opaque tags above.</p>
+<p>All 34 now have Bangla. The four illustrative examples the instruction gave are present and are <strong>not</strong> the whole of it:</p>
+<div class='tw'><table><thead><tr><th>English</th><th>বাংলা</th><th></th><th>English</th><th>বাংলা</th></tr></thead><tbody>
+<tr><td>Noun</td><td>বিশেষ্য</td><td></td><td>Adjective</td><td>বিশেষণ</td></tr>
+<tr><td>Verb</td><td>ক্রিয়া</td><td></td><td>Pronoun</td><td>সর্বনাম</td></tr>
+<tr><td>Time Adverb</td><td>কালবাচক ক্রিয়াবিশেষণ</td><td></td><td>Preposition</td><td>পূর্বসর্গ অব্যয়</td></tr>
+<tr><td>Location Adverb</td><td>স্থানবাচক ক্রিয়াবিশেষণ</td><td></td><td>Conjunction</td><td>সংযোজক অব্যয়</td></tr>
+<tr><td>Proper Noun</td><td>নামবাচক বিশেষ্য</td><td></td><td>Determiner</td><td>নির্দেশক</td></tr>
+<tr><td>Relative Pronoun</td><td>সম্বন্ধবাচক সর্বনাম</td><td></td><td>Demonstrative Pronoun</td><td>নির্দেশক সর্বনাম</td></tr>
+<tr><td>Negative Particle</td><td>নেতিবাচক অব্যয়</td><td></td><td>Accusative Particle</td><td>কর্মকারকবাচক অব্যয়</td></tr>
+<tr><td>Emphatic Particle</td><td>জোরবাচক অব্যয়</td><td></td><td>Conditional</td><td>শর্তবাচক অব্যয়</td></tr>
+<tr><td>Interrogative Particle</td><td>প্রশ্নবাচক অব্যয়</td><td></td><td>Subordinating Conj.</td><td>অধীন সংযোজক অব্যয়</td></tr>
+<tr><td>Particle of Certainty</td><td>নিশ্চয়তাবাচক অব্যয়</td><td></td><td>Vocative Particle</td><td>সম্বোধনবাচক অব্যয়</td></tr>
+<tr><td>Result Particle</td><td>ফলবাচক অব্যয়</td><td></td><td>Purpose/Jussive Particle</td><td>উদ্দেশ্যবাচক অব্যয়</td></tr>
+<tr><td>Circumstantial</td><td>অবস্থাবাচক অব্যয়</td><td></td><td>Supplemental</td><td>সম্পূরক অব্যয়</td></tr>
+<tr><td>Future Particle</td><td>ভবিষ্যৎবাচক অব্যয়</td><td></td><td>Retraction Particle</td><td>প্রত্যাহারবাচক অব্যয়</td></tr>
+<tr><td>Exceptive Particle</td><td>ব্যতিক্রমবাচক অব্যয়</td><td></td><td>Inceptive Particle</td><td>সূচনাবাচক অব্যয়</td></tr>
+<tr><td>Causative Particle</td><td>কারণবাচক অব্যয়</td><td></td><td>Amendment Particle</td><td>সংশোধনবাচক অব্যয়</td></tr>
+<tr><td>Answer Particle</td><td>উত্তরবাচক অব্যয়</td><td></td><td>Resumption Particle</td><td>পুনরারম্ভবাচক অব্যয়</td></tr>
+<tr><td>Quranic Initials</td><td>হুরূফে মুকাত্তাআত</td><td></td><td>Imperative Verb</td><td>আদেশসূচক ক্রিয়া</td></tr>
+</tbody></table></div>
+<p><strong>The English name is preserved.</strong> A Bangla reader sees the Bangla term with the source&#x27;s own English underneath it in smaller type; an English reader sees English only. The Basic card&#x27;s own &quot;Part of speech&quot; line names the <strong>whole chain</strong> segment by segment, so <code>Determiner + Noun</code> reads <code>নির্দেশক + বিশেষ্য</code> with <code>Determiner + Noun</code> kept beneath it.</p>
+<p>Nothing is hard-coded to the four examples: the category list is exported from one place (<code>WORD_CARD_POS_SEGMENTS</code>), each entry goes through the app&#x27;s own <code>t()</code>, and a test re-derives that list from the corpus.</p>
+<hr>
+<h2>5. Correction 2 — the meaning of &quot;Form&quot; corrected</h2>
+<p><strong><code>Form 1</code>, <code>Form 2</code>, <code>Form 3</code> are gone from the user interface entirely</strong>, in both Basic and Depth, in both languages. The translation key <code>&quot;Form {n}&quot;</code> is removed from <code>bn.js</code>, and the label is removed from the renderer&#x27;s defaults, so there is no path by which such a string can reach the screen.</p>
+<p>Each row now names the <strong>actual grammatical category</strong> the data supplies for that written form — <code>Noun</code>, <code>Verb</code>, <code>Adjective</code>, <code>Time Adverb</code>, and so on.</p>
+<p><strong>Distinct forms sharing a category are not collapsed.</strong> Rows are keyed by lemma, not by category; three Nouns under one root render as three rows, each with its own Arabic and its own count.</p>
+<p>The two v08.21 explanatory notes were <strong>verified against the data before being touched</strong>, not deleted on sight:</p>
+<div class='tw'><table><thead><tr><th>Note</th><th>Verdict</th><th>Action</th></tr></thead><tbody>
+<tr><td>&quot;The number is this form&#x27;s position in the list below, not the traditional Arabic verb form (I, II, III…).&quot;</td><td>Explains a number that no longer exists</td><td>Removed</td></tr>
+<tr><td>&quot;A grammatical category is not shown per form: …&quot;</td><td><strong>Factually wrong</strong> — the category <em>is</em> derivable (section C)</td><td>Replaced with &quot;Each form&#x27;s category is the one the packaged grammatical analysis records for that written form.&quot;</td></tr>
+</tbody></table></div>
+<p>A third note is new and appears only when it applies: &quot;<em>n</em> of these forms are recorded with more than one category; the most frequent is shown.&quot;</p>
+<hr>
+<h2>6. Correction 3 — Basic card row layout</h2>
+<p>Required: <code>[FORM/POS NAME] [ARABIC WORD] ........ [N OCCURRENCES]</code></p>
+<p><strong>A real CSS defect was found and is the root cause.</strong> v08.21 gave this rule to the row&#x27;s own label span as well as to the toggle:</p>
+<p>``<code>css .word-card-form-toggle, .word-card-form &gt; .word-card-form-n { … width: 100%; … } </code>``</p>
+<p>In the Basic tab the row has no toggle and the <code>&lt;li&gt;</code> itself is the flex row — so the <em>label</em> claimed the full width, and the Arabic and the count were pushed out to the far edge. That is the stretching, in CSS. The label is no longer a row container, and the Arabic went from <code>flex: 1 1 auto</code> (which made it absorb all spare width) to <code>flex: 0 0 auto</code>. Only the count is pushed right, by its own <code>margin-inline-start: auto</code>.</p>
+<p><strong>Measured on the rendered page at 1280px</strong> (English, root <code>سمو</code>):</p>
+<div class='tw'><table><thead><tr><th>Element</th><th>Left</th><th>Right</th></tr></thead><tbody>
+<tr><td>Category</td><td>203</td><td>236</td></tr>
+<tr><td>Arabic</td><td>244</td><td>306</td></tr>
+<tr><td>Count</td><td>986</td><td>1079</td></tr>
+<tr><td>Expand caret</td><td>1087</td><td>1095</td></tr>
+</tbody></table></div>
+<p>The category and the Arabic are <strong>8px apart</strong>. The count is hard right. The Arabic is intrinsically sized.</p>
+<p>Also asserted, at 1280px and 390px, in both languages: Arabic font size is at least 1.4× the label beside it; no row overflows the card; no sideways page scroll on a phone; the category wraps rather than pushing anything off-screen at narrow widths.</p>
+<hr>
+<h2>7. Correction 4 — Depth card, same correction</h2>
+<p>Depth carries the identical row shape, and the acceptance run asserts it does so by comparing the two tabs against each other on the live page: same forms, same order, same categories, same geometry.</p>
+<p>Preserved unchanged: select a form → its clickable occurrence list → the exact Arabic word <strong>as written at that location</strong> (read from that surah&#x27;s own data, never reconstructed from the lemma) → its <code>surah:ayah:position</code> reference → selecting one navigates to that āyah. The dictionary and semantic-range block still follows the occurrence section.</p>
+<hr>
+<h2>8. Correction 5 — the Word Card no longer overlays the āyah</h2>
+<p><strong>The defect:</strong> v08.20 kept the card open at the destination and carried the way back inside the card&#x27;s own header. So the card sat over the āyah the reader had asked to see.</p>
+<p><strong>The fix, and what it deliberately does not do:</strong> the card is now <em>closed</em> on the way out — but <strong>its state is not destroyed</strong>. Before navigating, a full origin record is taken:</p>
+<p>``<code> { occurrenceId, ref, surah, ayah, stageView, unitType, level, expandedForm, scrollY } </code>``</p>
+<p><code>closeWordCard()</code> also preserves the state object itself (level and occurrence survive a close, by design since Phase 2). The card is hidden, the āyah is displayed, and nothing overlays it.</p>
+<p><strong>Verified by geometry, not by an element&#x27;s absence:</strong> the acceptance run computes the card&#x27;s bounding box against <code>#ayahPanels</code> and asserts the two rectangles do not intersect, <em>and</em> that computed <code>display</code> is <code>none</code> for both mounts — the standing rule about <code>[hidden]</code> being overruled by a class rule.</p>
+<hr>
+<h2>9. Correction 6 — the deliberate &quot;← Back to Word Card&quot; control</h2>
+<p>A new control, <code>#wordCardReturnBar</code>, sits on the study screen <strong>above the āyah and outside the card</strong>. It carries the same <code>data-word-card-origin-back</code> identity the v08.20 control had, so the existing handler and every existing assertion keep working — this is a relocation, not a replacement.</p>
+<p>Pressing it restores, in one action:</p>
+<ul><li>the original word (its permanent occurrence id)</li><li>the study view it was read in (Read or Note)</li><li>the Study Unit type in force at the time</li><li>the Word Card level (WbW / Basic / <strong>Depth</strong>)</li><li>the expanded form <strong>with its occurrence list populated</strong></li><li>the scroll position</li></ul>
+<p>The expanded form is re-opened inside <code>hydrateWordCardOccurrences()</code>, where the forms index actually lands — asking earlier leaves a row reading <code>aria-expanded=&quot;true&quot;</code> with nothing under it, which is a real defect this project has already shipped once.</p>
+<hr>
+<h2>10. Correction 7 — navigation safety</h2>
+<p><strong>The control appears only when the āyah was reached from the Word Card.</strong> An origin record is written in exactly one place, <code>goToWordOccurrence()</code>. Ordinary Study or Note navigation never writes one, and the bar renders nothing without one.</p>
+<p>Asserted on the live page before any word is ever opened: the bar exists, is <code>hidden</code>, and computes to <code>display: none</code>.</p>
+<p>The origin is cleared — and the bar re-rendered away — when the reader opens any word directly, or closes the card. Only the <strong>first</strong> hop records an origin, so a chain of jumps always returns to the word the reader actually started from.</p>
+<p><strong>Card → Āyah A → Back → Āyah B → Back</strong> was run end to end at three viewport/language combinations. The second hop closes the card and offers Back again; the second Back returns to the <em>same</em> original word.</p>
+<hr>
+<h2>11. Tests executed, and their real results</h2>
+<p>Every figure below is from a run performed in this session. Nothing is projected.</p>
+<h3>Checked-in suites</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>quran-word-card.mjs</code></td><td><strong>36 passed, 0 failed</strong> (was 29; 2 updated in place, 7 added)</td></tr>
+<tr><td><code>quran-word-card-rendered.mjs</code></td><td>92 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-card-integration.mjs</code></td><td>10 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-progress-rendered.mjs</code></td><td>81 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-explore-rendered.mjs</code></td><td>35 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-index-loader.mjs</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-indexes.mjs</code></td><td>9 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-identity-contract.mjs</code></td><td>6 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-progress-model.mjs</code></td><td>57 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-progress-data.mjs</code></td><td>37 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-coverage.mjs</code></td><td>10 passed, 0 failed</td></tr>
+<tr><td><code>quran-word-coverage-arabic.mjs</code></td><td>29 passed, 0 failed</td></tr>
+<tr><td><code>quran-boundary.mjs</code></td><td>30 passed, 0 failed</td></tr>
+<tr><td><code>note-foundation-boundary.mjs</code></td><td>30 passed, 0 failed</td></tr>
+<tr><td><code>note-foundation-data-layer.mjs</code></td><td>15 passed, 0 failed</td></tr>
+<tr><td><code>stub-parity.mjs</code></td><td>3 passed, 0 failed</td></tr>
+<tr><td><code>behaviour.mjs</code></td><td><strong>800 passed, 3 failed</strong> — identical to every recent run</td></tr>
+</tbody></table></div>
+<p><code>behaviour.mjs</code>&#x27;s 3 failures are section 22g, the archive.org poster block this sandbox&#x27;s proxy enforces (environmental, not this round&#x27;s). The run then stops at the documented pre-existing section-42 crash — <code>[data-note-master-toggle]</code> resolves but is not visible — carried since v07.69. <strong>Same 803 total, same three failures, same stopping point as the v08.21 baseline.</strong> No check anywhere the suite reaches needed updating.</p>
+<h3>The two assertions updated in place, with their reasons</h3>
+<ol><li><strong>&quot;no grammatical category is invented for a form&quot;</strong> → <strong>&quot;each form carries the category the source actually records&quot;</strong>. The premise was re-measured against the whole corpus and found wrong (section C). Inverted, not deleted — and paired with a new check that two forms sharing a category stay two rows, which is what inverting it put at risk.</li><li><strong>&quot;the form number is not passed off as an Arabic verb form&quot;</strong> → <strong>&quot;no form is presented as a numbered Arabic verb form&quot;</strong>. There is no number left to explain, so the check proves its <em>absence</em> rather than proving a note about it is present.</li></ol>
+<h3>The seven added</h3>
+<ul><li>two distinct written forms sharing a category stay two rows</li><li>a category the source does not record is said so, never guessed</li><li>a form with more than one recorded category is marked, not flattened</li><li>the Basic part-of-speech chain keeps every segment the source supplies</li><li>every spelled-out grammatical category has Bangla (34 of them)</li><li>no Bangla is invented for an abbreviation the source never expands</li><li>the segment list matches the packaged corpus exactly (re-derived from all 114 surah files on every run)</li></ul>
+<h3>v08.22 acceptance script — <strong>95 checks, 95 passed, 0 failed</strong></h3>
+<p>Un-checked-in, this project&#x27;s established practice for work past <code>behaviour.mjs</code>&#x27;s stopping point. Run at <strong>1280px English, 1280px Bangla and 390px English</strong>, screenshotted in each.</p>
+<p>Covers: representative roots with Noun / Verb / Adjective / Adverb categories, forms sharing a POS, attached particles, high counts and single occurrences; row geometry; Basic and Depth flows explicitly and compared against each other; occurrence → āyah navigation; the overlay fix; the Back control; repeated Card → A → Back → B → Back; Bangla rendering read off the rendered page.</p>
+<p><strong>Two failures were investigated before anything was changed, and both were wrong assertions, not defects:</strong></p>
+<ol><li><em>&quot;Depth keeps the corrected layout&quot;</em> failed at all three configurations. The check measured the count&#x27;s right edge against the row&#x27;s right edge and allowed 8px — but in Depth an 8px expand caret legitimately sits <em>after</em> the count. Measuring the real geometry (table in section 6) showed the layout was correct. The check now measures against the caret.</li><li><em>&quot;no LOCAL request failed&quot; / &quot;no page errors&quot;</em> — a <code>raw.githubusercontent.com</code> fetch returning <code>ERR_CONNECTION_RESET</code>. This sandbox&#x27;s proxy blocks it; it is the documented environmental class, not this round&#x27;s. The filter now names it.</li></ol>
+<h3>Layout and regression</h3>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>layout.mjs</code></td><td><strong>Every measured landing-page metric byte-for-byte identical</strong> at all eight viewports in both banner states — heading top, wheel width, Approach row count, dock gap, dock visibility, overflow, all <code>X → X</code></td></tr>
+<tr><td><code>getElementById</code> targets</td><td>249 → <strong>250</strong> — exactly this round&#x27;s one new element (<code>wordCardReturnBar</code>), correctly <strong>not</strong> in the missing list</td></tr>
+<tr><td>Missing-ID list</td><td><strong>22 entries, unchanged</strong> — the documented pre-existing Asma/QCR list</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td><strong>Unchanged</strong> — still only the pre-existing 320px <strong>English</strong> truncation of &quot;Operation&quot;/&quot;Bookmark&quot;</td></tr>
+<tr><td><code>reading.mjs</code></td><td><strong>READING SCREEN OK</strong> at every viewport</td></tr>
+<tr><td><code>panel.mjs</code></td><td>48 configurations, <strong>no truncated label anywhere</strong>, no wrapped bar</td></tr>
+<tr><td>Translation coverage</td><td>1,801 → <strong>1,803 scanned</strong>, <strong>47 missing — UNCHANGED</strong>. All five <code>quran</code>-area misses are pre-existing (&quot;Also noted at:&quot;, &quot;Close poster&quot;, &quot;Collection&quot;, &quot;Open in Read&quot;, &quot;read it on the Read screen&quot;); none is this round&#x27;s</td></tr>
+</tbody></table></div>
+<p>The before/after comparison was <strong>set up so it could actually fail</strong>: <code>HEAD</code>&#x27;s <code>quranrevival.html</code>, <code>version.js</code>, <code>quran-word-card.js</code> and <code>quran-word-index.js</code> were all dropped in as <code>_prev-</code> shims and the shim page repointed at them, so &quot;before&quot; really rendered the v08.21 build. All shims were deleted before the coverage total was read (this project&#x27;s own recorded trap).</p>
+<hr>
+<h2>12. Regressions explicitly checked, and preserved</h2>
+<div class='tw'><table><thead><tr><th>Behaviour</th><th>Status</th></tr></thead><tbody>
+<tr><td>Word Card opens from a Qur&#x27;an word</td><td>Preserved — asserted</td></tr>
+<tr><td>WbW level</td><td>Preserved — 81 rendered checks</td></tr>
+<tr><td>Basic Arabic level</td><td>Preserved</td></tr>
+<tr><td>Arabic in Depth level</td><td>Preserved</td></tr>
+<tr><td>Root and lemma information</td><td>Preserved</td></tr>
+<tr><td>Root / form / occurrence counts kept distinct</td><td>Preserved</td></tr>
+<tr><td>Clickable occurrence list</td><td>Preserved</td></tr>
+<tr><td>Exact occurrence word as written</td><td>Preserved — asserted</td></tr>
+<tr><td>Occurrence → āyah navigation</td><td><strong>Corrected</strong> (card no longer overlays)</td></tr>
+<tr><td>Word progress / tracking behaviour</td><td>Preserved — 37 + 57 + 81 checks</td></tr>
+<tr><td>READ view behaviour</td><td>Preserved</td></tr>
+<tr><td>NOTE view behaviour (v08.20)</td><td>Preserved</td></tr>
+<tr><td>Desktop move / resize (v08.20)</td><td>Preserved — CSS untouched</td></tr>
+<tr><td>Landing page, nav, reading screen, Study panel</td><td>Preserved — measured identical</td></tr>
+</tbody></table></div>
+<hr>
+<h2>13. Flagged, not changed</h2>
+<p><strong>A pre-existing data-notation issue in the packaged lemma text.</strong> 262 of the 4,832 lemmas (<strong>5.4%</strong>) carry a <code>^</code>, a <code>#</code> or a digit inside the Arabic — e.g. <code>ا^بَاء</code>, <code>سَمَا^ء</code>, <code>ـ#َٰن</code>, <code>مَٰلِك2</code>. Verified against the written text: <code>ا^</code> corresponds to <code>ءَا</code> (the madda-alef sequence) at every occurrence checked, and the digit is a homograph disambiguator.</p>
+<p>On screen this reads as corrupted Arabic. <strong>It is not this tranche&#x27;s doing</strong> — it has been visible in the Basic card&#x27;s Lemma line since Phase 2 and in the form list since v08.21 — and it is <strong>deliberately not changed here</strong>, because correcting it means transforming the packaged corpus&#x27;s own text, which is a data decision for the Owner, not a layout correction. Raised for a decision; the fix, if wanted, is a normalisation step in the data-pull tool with its own verification.</p>
+<p><strong>The eleven opaque POS abbreviations</strong> (section 3) are shown verbatim. If their expansion can be supplied from an authoritative source, they become ordinary translatable categories with no code change beyond the catalogue.</p>
+<p><strong>One new on-demand fetch.</strong> <code>lemma-pos-index.json</code> (159KB) is fetched the first time a root&#x27;s derived forms are shown, alongside the two indexes that path already loads, and cached thereafter. <strong>Nothing joined the startup path (I9);</strong> the load-speed contract is untouched.</p>
+<hr>
+<h2>14. Deployment status</h2>
+<p><strong>Committed and pushed to <code>main</code>. Not deployed by any separate action</strong> — GitHub Pages serves <code>main</code>&#x27;s <code>app/</code> directly, so the push is the deployment for the web app.</p>
+<p><strong>No Firestore Rules were changed or deployed.</strong> The Phase 3 Rules candidate at <code>tests/firestore/word-progress-v1.proposed.rules</code> remains undeployed and remains an Owner Control Gate. <strong>This still means <code>quranWordProgress</code> and <code>quranWordApprovals</code> have no server-side rule, so word-progress reads and writes fail against production for anyone other than the Owner</strong> — unchanged by this tranche, and stated again because it will affect what you see if you test the progress controls.</p>
+<p>Commit: <code>COMMIT_SHA</code></p>
+<hr>
+<h2>15. What the Owner should check, in the live app</h2>
+<p>Five minutes. Open the app, confirm the badge beside the name reads <strong>v08.22</strong>.</p>
+<ol><li><strong>Open a word.</strong> Study → Read, turn word-by-word on, tap any Arabic word.</li><li><strong>Basic Arabic tab.</strong> Under the derived forms you should see rows reading <em>category · Arabic word · … · N occurrences</em> — e.g. <strong>Noun  ٱسْم … 381 occurrences</strong>. <strong>No row should say &quot;Form 1&quot;.</strong> The category and the Arabic should sit next to each other on the left; the count alone on the right.</li><li><strong>Switch the app to Bangla</strong> and look again: the category should read <strong>বিশেষ্য</strong>, with the English underneath. A few rare particles will still show short English codes like <code>RES</code> — that is deliberate and explained above.</li><li><strong>Arabic in Depth tab.</strong> Same rows. Tap one to expand it, then tap an occurrence. <strong>The card should disappear and you should be looking at that āyah with nothing on top of it</strong>, with a <strong>← Back to Word Card</strong> button above it.</li><li><strong>Press Back.</strong> You should land on the word you started from, on the Depth tab, with the same form still expanded and its occurrences listed. Do it a second time with a different occurrence — it should behave identically.</li><li><strong>Check the opposite:</strong> move around with the ordinary Study controls. The &quot;Back to Word Card&quot; button should never appear.</li></ol>
+<p><strong>Known issue that may affect your test:</strong> some lemmas display a <code>^</code> or a digit inside the Arabic (e.g. <code>سَمَا^ء</code>). That is the packaged data&#x27;s own notation, is not new in this version, and is flagged in section 13 for your decision.</p>
+<p><strong>v08.22 is NOT Owner-verified until you confirm it.</strong></p>
+</main></body></html>

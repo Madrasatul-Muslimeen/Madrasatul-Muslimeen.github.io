@@ -14,6 +14,10 @@
     "lemmas-index.json": {
       "bytes": 735562,
       "sha256": "abd6ea7b3aff1a9b4dc0677b719862c53f9aae35fb975a3bfcdf612157e2cb91"
+    },
+    "lemma-pos-index.json": {
+      "bytes": 158887,
+      "sha256": "5136452d2e0625cca3a316a9bd30e781e56bb22a8efe88c9c7922521392f3c34"
     }
   }
 }

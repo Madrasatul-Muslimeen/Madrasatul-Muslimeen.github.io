@@ -12198,3 +12198,138 @@ only meaning); cross-surah coverage; a pre-existing breakage that stops
 `npm run activity-proposal` starting at all in this environment, left alone
 because it is a rejected candidate's evidence base at an Owner gate.
 
+
+---
+
+## v08.20 — Word Card refinement: Note view, clickable occurrences, desktop window (13 Sep 2026)
+
+The owner's own ask after live-verifying v08.19. Three things, one bounded
+round. Full evidence:
+`docs/reports/2026-09-13-v08.20-word-card-refinement.md`.
+
+**The card works in the NOTE view as well as READ**, and note text is
+preserved **structurally, not by save-and-restore**: the second mount
+(`#quranWordCardMountNote`) sits OUTSIDE `#noteViewMount`, so the
+contenteditable is never rebuilt. Proven by asserting the editor is the SAME
+DOM node before and after the card opens and closes — a save/restore would
+pass a text comparison and fail that.
+
+**Every Basic Arabic occurrence is clickable**, opening that location with a
+way back to the original word and study context.
+
+**Desktop drag-by-header and resize from all eight edges/corners**, viewport
+clamped, usable minimum (320×240). Built by REUSING `initPopupWindow()` with
+two additive options that default to the existing values, so all four existing
+call sites are byte-identically unaffected (I2).
+
+**Two real defects found by measuring.** The occurrence buttons were 32px
+against this project's own ≥36px rule (12 failures across viewport/language) —
+raised to 40px. And **the south edge could not be resized at all**: the mount
+inherited `overflow-y: auto`, which clipped resize handles sitting 3px outside
+the box. `overflow: visible` on the window, scrolling moved to
+`.word-card-content`.
+
+**One test assertion proved wrong**: "resizing from s" grew the card past the
+viewport clamp, which is correct behaviour being refused — changed to
+shrink-inward drags.
+
+---
+
+## v08.21 — Word Card derived forms (13 Sep 2026)
+
+Every derived word form of the selected root, in a stable order, with real
+counts. Full evidence:
+`docs/reports/2026-09-13-v08.21-word-card-derived-forms.md`.
+
+`rootFormsFor()` groups a root's occurrences by LEMMA, out of the two packaged
+indexes already loaded — **no new fetch**. Basic shows the summary only;
+Arabic in Depth expands a form into its individual occurrences, each showing
+the exact Arabic **as written at that location** (read from that surah's own
+data, never reconstructed from the lemma) with its `surah:ayah:position`
+reference, each opening that āyah with a way back.
+
+**A real defect found by probing the live browser console, not by re-reading
+code:** `expandWordForm` was defined inside the `["readView","noteView"]
+.forEach(...)` callback, so the click handler in the same closure could see it
+but `hydrateWordCardOccurrences()` could not — Back to Word Card restored a row
+reading `aria-expanded="true"` with **0 occurrences** under it. Both functions
+moved to module scope, and the re-expansion moved INSIDE the hydrate, where the
+data actually lands.
+
+**Flagged at the time and corrected in v08.22:** this round concluded that no
+grammatical category could be shown per form, and labelled rows `Form 1`,
+`Form 2`, … That conclusion was wrong; see below.
+
+---
+
+## v08.22 — Word Card CORRECTION TRANCHE (14 Sep 2026)
+
+Five corrections the owner identified after live-verifying v08.21. Bounded:
+no redesign, no Dictionary, no new Tracking. Full evidence:
+`docs/reports/2026-09-14-v08.22-word-card-correction-tranche.md`.
+
+**The headline lesson: v08.21 read a real measurement and drew the wrong
+conclusion from it.** It counted 2,067 of 4,832 lemmas carrying more than one
+`morphology.pos` value and concluded `pos` classifies a written token, not a
+dictionary form, so no category could be shown. **The 2,067 is almost entirely
+attached clitics varying, not the word's class changing.** `pos` is a `" + "`
+chain of proclitics + HEAD + pronoun suffix — 359 distinct strings built from
+exactly **46 segments**. Take the HEAD (the last segment that is not
+`Pronoun`) and the figure drops to **416 of 4,832**; **4,416 (91.4%) have
+exactly one category.** So the category is real and is now shown. Re-measure
+the thing the conclusion rests on, not just the number.
+
+**`Form 1` / `Form 2` are GONE from the UI**, in both tabs and both languages
+— the label, its default and its Bangla key are all removed, so no path
+reaches the screen. Each row names the actual category. **Rows stay keyed by
+lemma**, so two distinct written forms sharing a category remain two rows; a
+check with a two-Noun fixture guards exactly that.
+
+**A new packaged index, `lemma-pos-index.json`** (159KB, 4,832 entries), built
+by the same tool as the other two and fetched on the same on-demand boundary —
+**nothing joined the startup path (I9)**. The two existing indexes regenerated
+**byte-for-byte identical**, proven by their sha256 in the manifest.
+
+**The row-layout complaint was a real CSS defect, not taste.** v08.21 gave
+`width: 100%` to the row's own LABEL span as well as to the toggle — and in
+Basic, where the row has no toggle and the `<li>` is the flex row, the label
+claimed the whole width and pushed the Arabic and the count to the far edge.
+The Arabic also carried `flex: 1 1 auto`, absorbing all spare width. Now only
+the count is pushed right, by its own margin. Measured at 1280px: category
+203–236, Arabic 244–306 (**8px apart**), count 986–1079.
+
+**The card no longer overlays the āyah.** v08.20 kept it open at the
+destination with the way back in its own header. It is now CLOSED on the way
+out — but nothing is destroyed: a full origin record (word, ref, surah, āyah,
+stage view, unit type, level, expanded form, scroll) is taken first, and
+`closeWordCard()` preserves the state object. Proven by computing the card's
+box against `#ayahPanels` and asserting the rectangles do not intersect, AND
+that computed `display` is `none` — never `element.hidden` alone.
+
+**`← Back to Word Card` is a control on the study screen, outside the card**,
+carrying the same `data-word-card-origin-back` identity so the existing
+handler and assertions keep working. Shown ONLY when an origin exists, and an
+origin is written in exactly one place, so ordinary Study/Note navigation
+never acquires it — asserted before any word is opened.
+
+**34 grammatical categories translated to Bangla; 11 opaque corpus
+abbreviations (RES, PRO, PREV, IMPV, EXL, INT, EXH, SUR, AVR, EQ, COM,
+~1.8% of occurrences) deliberately left verbatim with NO Bangla**, because
+their expansion is not in the packaged data and naming them would be
+fabricating a classification. **A check asserts the absence** — it is
+enforced, not merely undone.
+
+**Two failing acceptance checks investigated, both WRONG ASSERTIONS** (an 8px
+expand caret legitimately sitting right of the count; an environmental
+`raw.githubusercontent.com` reset). `quran-word-card.mjs` 29 → **36**, with
+the two v08.21 checks that describe what this round changed **updated in place
+with the reason**. `behaviour.mjs` 800/3, same stopping point. `layout.mjs`
+byte-for-byte identical, `getElementById` 249 → 250 (this round's one new
+element). `navcheck.mjs`, `reading.mjs`, `panel.mjs` unchanged. Coverage
+1,801 → 1,803 scanned, **47 missing UNCHANGED**.
+
+**Flagged, not changed:** 262 of 4,832 lemmas (5.4%) carry `^`, `#` or a digit
+inside the Arabic (`سَمَا^ء`, `مَٰلِك2`) — the corpus's own notation, verified
+to correspond to `ءَا` and to homograph disambiguation. It reads as corrupted
+Arabic on screen, predates this tranche, and correcting it means transforming
+the packaged text — an Owner decision, not a layout correction.

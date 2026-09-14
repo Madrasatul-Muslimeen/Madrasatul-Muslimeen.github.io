@@ -6,6 +6,35 @@ import { quranWordOccurrenceId, wordIdentityLayers } from "./quran-word-identity
 export const WORD_CARD_LEVELS = Object.freeze(["wbw", "basic", "depth"]);
 
 /**
+ * v08.22 -- every grammatical-category segment the packaged corpus actually
+ * uses. Measured, not assumed: `morphology.pos` across all 77,429 words
+ * resolves to 359 distinct strings built from exactly these 46 segments.
+ *
+ * The page turns this into `labels.posNames` by putting each through its own
+ * catalogue, which is why the list lives here rather than being hard-coded in
+ * a translation file: one place says what the data contains.
+ *
+ * ELEVEN of them are opaque corpus abbreviations the packaged data never
+ * expands (RES, PRO, PREV, IMPV, EXL, INT, EXH, SUR, AVR, EQ, COM), and
+ * `yaAsiyna` is a single-occurrence tagging glitch. Those are deliberately
+ * left untranslated and printed exactly as recorded: naming them would mean
+ * inventing a grammatical classification the source does not make.
+ */
+export const WORD_CARD_POS_SEGMENTS = Object.freeze([
+  "Noun", "Pronoun", "Verb", "Preposition", "Conjunction", "Determiner",
+  "Proper Noun", "Relative Pronoun", "Resumption Particle", "Negative Particle",
+  "Accusative Particle", "Adjective", "Emphatic Particle", "Time Adverb",
+  "Conditional", "Demonstrative Pronoun", "Interrogative Particle",
+  "Subordinating Conj.", "Location Adverb", "RES", "Particle of Certainty",
+  "Vocative Particle", "Result Particle", "PRO", "Purpose/Jussive Particle",
+  "Circumstantial", "Supplemental", "PREV", "Future Particle",
+  "Retraction Particle", "Exceptive Particle", "Inceptive Particle",
+  "Causative Particle", "IMPV", "Amendment Particle", "EXL", "INT", "EXH",
+  "Answer Particle", "SUR", "AVR", "Quranic Initials", "EQ", "COM",
+  "Imperative Verb", "yaAsiyna",
+]);
+
+/**
  * Every user-visible string the card can print (I11). A caller passes its
  * reader's own language for each; these English values are only the fallback.
  * {count} and {error} are substituted, so a translation may place them
@@ -30,10 +59,19 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   lemmaOccurrences: "{count} lemma-linked occurrences",
   derivedForms: "Derived forms of this root",
   rootFormsSummary: "{total} occurrences in {forms} derived forms",
-  formOrdinal: "Form {n}",
   formOccurrences: "{count} occurrences",
-  formNumberNote: "The number is this form's position in the list below, not the traditional Arabic verb form (I, II, III…).",
-  formCategoryNote: "A grammatical category is not shown per form: the packaged data classifies each written word together with its attached particles, not the dictionary form.",
+  // v08.22 -- "Form {n}" and the note explaining that number are GONE. The
+  // number was a list position and read on screen as the traditional Arabic
+  // verb form (I, II, III...), which it never was. Each row now names the
+  // grammatical category the packaged data actually records for that written
+  // form, so there is no number left to explain. The old note about no
+  // category being available was verified against the corpus before being
+  // replaced -- see rootFormsFor() for the measurement.
+  formCategoryUnknown: "Category not recorded",
+  formCategoryNote: "Each form's category is the one the packaged grammatical analysis records for that written form.",
+  formCategoryMixed: "{count} of these forms are recorded with more than one category; the most frequent is shown.",
+  formCategoryOther: "+{count}",
+  formCategoryOtherTitle: "Also recorded as: {list}",
   formsUnclassified: "{count} occurrences of this root are not assigned to a form in the packaged data.",
   noDerivedForms: "No derived forms are listed for this root in the packaged data.",
   loadingForms: "Loading derived forms…",
@@ -44,6 +82,7 @@ export const WORD_CARD_DEFAULT_LABELS = Object.freeze({
   showingFirst: "Showing the first {shown} of {total} occurrences.",
   goToOccurrence: "Go to {ref}",
   backToWord: "Back to {ref}",
+  backToWordCard: "Back to Word Card",
   backToWordTitle: "Back to the word you came from",
   visitingFrom: "Visiting from {ref}",
   rootUnavailable: "Root unavailable in the approved dataset",
@@ -185,6 +224,47 @@ export function moveWordCard(state, orderedOccurrenceIds, direction) {
  *     it were whole: `unclassified` occurrences are named, and a truncated
  *     occurrence list says how many of how many it is showing.
  */
+/**
+ * v08.22 -- name one grammatical category in the reader's language.
+ *
+ * `text.posNames` is supplied by the page from its own catalogue, so nothing
+ * is translated here. A category the catalogue does not carry is printed
+ * EXACTLY as the source records it -- the packaged corpus uses a handful of
+ * opaque tags (RES, PRO, PREV, EXL, INT, EXH, SUR, AVR, IMPV, EQ, COM) whose
+ * expansion it never states, and inventing a grammatical name from those
+ * letters would be fabricating a classification the data does not make.
+ */
+function posName(category, text) {
+  const name = text.posNames?.[category];
+  return name && name !== category ? { name, en: category } : { name: category, en: "" };
+}
+
+/** The packaged `pos` of one WRITTEN TOKEN, named segment by segment. It is a
+ *  " + "-joined chain of attached particles, the head word and any attached
+ *  pronoun, so every segment is looked up on its own and the chain is kept. */
+function posChain(pos, text) {
+  const segs = String(pos).split(" + ").map((x) => x.trim()).filter(Boolean);
+  if (!segs.length) return { name: "", en: "" };
+  const parts = segs.map((seg) => posName(seg, text));
+  return {
+    name: parts.map((p) => p.name).join(" + "),
+    en: parts.some((p) => p.en) ? segs.join(" + ") : "",
+  };
+}
+
+function posCell(category, form, text, formatNumber) {
+  if (!category) return `<span class="word-card-form-pos"><span class="word-card-form-pos-name word-card-form-pos-unknown">${escapeHtml(text.formCategoryUnknown)}</span></span>`;
+  const { name, en } = posName(category, text);
+  const others = (form.posCounts ?? []).slice(1).map((c) => c?.[0]).filter(Boolean);
+  const more = others.length
+    ? `<span class="word-card-form-pos-more" title="${escapeHtml(String(text.formCategoryOtherTitle).replace("{list}", others.map((o) => posName(o, text).name).join(", ")))}">${escapeHtml(String(text.formCategoryOther).replace("{count}", formatNumber(others.length)))}</span>`
+    : "";
+  return `<span class="word-card-form-pos">` +
+    `<span class="word-card-form-pos-name">${escapeHtml(name)}</span>` +
+    (en ? `<span class="word-card-form-pos-en" lang="en">${escapeHtml(en)}</span>` : "") +
+    more + `</span>`;
+}
+
 function formsSection(layers, context, text, formatNumber, { expandable }) {
   if (!layers.root) return "";
   const data = context.rootForms;
@@ -206,11 +286,14 @@ function formsSection(layers, context, text, formatNumber, { expandable }) {
   const unclassified = data.unclassified
     ? `<p class="word-card-forms-note">${escapeHtml(String(text.formsUnclassified).replace("{count}", formatNumber(data.unclassified)))}</p>`
     : "";
-  const rows = data.forms.map((form, i) => {
-    const n = i + 1;
-    const label = String(text.formOrdinal).replace("{n}", formatNumber(n));
+  // v08.22 -- [CATEGORY] [ARABIC] .......... [N occurrences]. The category and
+  // the written form sit together in one left-hand group; only the count is
+  // pushed to the far side (the CSS does that with margin, never by letting
+  // the Arabic stretch). Rows stay keyed by LEMMA, so two distinct written
+  // forms that share a category remain two rows.
+  const rows = data.forms.map((form) => {
     const occurrences = escapeHtml(String(text.formOccurrences).replace("{count}", formatNumber(form.count)));
-    const head = `<span class="word-card-form-n">${escapeHtml(label)}</span>` +
+    const head = posCell(form.pos, form, text, formatNumber) +
       `<span class="word-card-form-arabic" dir="rtl" lang="ar">${escapeHtml(form.lemma)}</span>` +
       `<span class="word-card-form-count">${occurrences}</span>`;
     if (!expandable) return `<li class="word-card-form">${head}</li>`;
@@ -221,13 +304,14 @@ function formsSection(layers, context, text, formatNumber, { expandable }) {
       (open ? formOccurrenceList(form, context, text, formatNumber) : "") +
       `</li>`;
   }).join("");
+  const mixed = data.forms.filter((f) => f.posAmbiguous).length;
   return `<section class="word-card-forms">
     <h4>${escapeHtml(text.derivedForms)}</h4>
     <p class="word-card-forms-summary">${escapeHtml(summary)}</p>
     <ol class="word-card-form-list">${rows}</ol>
     ${unclassified}
-    <p class="word-card-forms-note">${escapeHtml(text.formNumberNote)}</p>
     <p class="word-card-forms-note">${escapeHtml(text.formCategoryNote)}</p>
+    ${mixed ? `<p class="word-card-forms-note">${escapeHtml(String(text.formCategoryMixed).replace("{count}", formatNumber(mixed)))}</p>` : ""}
   </section>`;
 }
 
@@ -270,8 +354,14 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
   }
   if (level === "basic") {
     const count = (template, n) => escapeHtml(String(template).replace("{count}", formatNumber(n)));
+    // v08.22 -- the raw `pos` chain, named in the reader's own language a
+    // segment at a time, with the source's own English kept beside it.
+    const chain = word.morphology?.pos ? posChain(word.morphology.pos, text) : { name: "", en: "" };
+    const posCellHtml = chain.name
+      ? `${escapeHtml(chain.name)}${chain.en ? `<span class="word-card-pos-en" lang="en">${escapeHtml(chain.en)}</span>` : ""}`
+      : escapeHtml(text.unknown);
     return `<div role="tabpanel" data-word-card-panel="basic">
-      <dl><dt>${escapeHtml(text.lemma)}</dt><dd>${escapeHtml(layers.lemma || text.unknown)}</dd><dt>${escapeHtml(text.root)}</dt><dd>${escapeHtml(layers.root || text.unknown)}</dd><dt>${escapeHtml(text.partOfSpeech)}</dt><dd>${escapeHtml(word.morphology?.pos || text.unknown)}</dd></dl>
+      <dl><dt>${escapeHtml(text.lemma)}</dt><dd>${escapeHtml(layers.lemma || text.unknown)}</dd><dt>${escapeHtml(text.root)}</dt><dd>${escapeHtml(layers.root || text.unknown)}</dd><dt>${escapeHtml(text.partOfSpeech)}</dt><dd>${posCellHtml}</dd></dl>
       <p>${layers.root ? count(text.rootOccurrences, Number(context.rootOccurrenceCount ?? word.morphology?.rootCount ?? 0)) : escapeHtml(text.rootUnavailable)}</p>
       <p>${layers.lemma ? count(text.lemmaOccurrences, Number(context.lemmaOccurrenceCount ?? context.lemmaOccurrences?.length ?? 0)) : escapeHtml(text.lemmaUnavailable)}</p>
       ${formsSection(layers, context, text, formatNumber, { expandable: false })}
@@ -309,6 +399,17 @@ function levelPanel(level, word, layers, context, text, formatNumber) {
  * same shape here: the origin word is not the destination word, and the card
  * never conflates them). Absent, this renders nothing at all, so a word
  * opened directly is byte-for-byte the card it always was.
+ */
+/**
+ * v08.22 -- the "visiting from" bar is no longer rendered INSIDE the card.
+ *
+ * v08.20 kept the card open at the destination and carried the way back in
+ * its own header, which is exactly the defect the owner reported: the card
+ * sat over the āyah they had asked to see. The card is now closed on the way
+ * out and the way back is a control on the study screen itself, outside the
+ * card, carrying the same `data-word-card-origin-back` identity. This is kept
+ * because a caller may still pass `context.origin`; with none passed it
+ * renders nothing, so the card never overlays a destination āyah again.
  */
 function originBar(origin, text) {
   if (!origin?.occurrenceId) return "";

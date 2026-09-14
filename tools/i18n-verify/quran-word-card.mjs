@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import { BN } from "../../app/js/i18n/bn.js";
 import { quranWordOccurrenceId } from "../../app/js/quran-word-identity.js";
-import { closeWordCard, createWordCardState, moveWordCard, openWordCard, renderQuranWordCard, selectWordCardLevel } from "../../app/js/quran-word-card.js";
+import { closeWordCard, createWordCardState, moveWordCard, openWordCard, renderQuranWordCard, selectWordCardLevel, WORD_CARD_POS_SEGMENTS } from "../../app/js/quran-word-card.js";
 
 const chapter = { surahNumber: 1 };
 const ayah = { ayah: 1 };
@@ -26,7 +26,13 @@ check("Basic Arabic keeps root and lemma separate", () => { const html = renderQ
 check("Basic Arabic lists no individual occurrences", () => { const refs = Array.from({ length: 25 }, (_, i) => ({ surah: 2, ayah: i + 1, position: 1 })); const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: { rootOccurrences: refs, lemmaOccurrences: refs.slice(0, 2) } }); assert.equal((html.match(/data-word-occurrence-goto/g) || []).length, 0); assert.doesNotMatch(html, /2:19:1/); });
 
 // v08.21 -- the derived-forms summary, and the three honesty rules it carries.
-const formsContext = { rootForms: { root: "سمو", totalOccurrences: 12, formCount: 2, unclassified: 1, forms: [ { lemma: "ٱسْم", count: 8, refs: [] }, { lemma: "سَمَآء", count: 3, refs: [] } ] } };
+// UPDATED v08.22: the fixture now carries what rootFormsFor() really returns.
+// Both forms are Nouns ON PURPOSE -- two distinct written forms sharing one
+// grammatical category must stay two rows, which is the owner's own rule.
+const formsContext = { rootForms: { root: "سمو", totalOccurrences: 12, formCount: 2, unclassified: 1, forms: [
+  { lemma: "ٱسْم", count: 8, refs: [], pos: "Noun", posCounts: [["Noun", 8]], posAmbiguous: false },
+  { lemma: "سَمَآء", count: 3, refs: [], pos: "Noun", posCounts: [["Noun", 3]], posAmbiguous: false },
+] } };
 check("Basic Arabic lists every derived form, in order, with real counts", () => {
   const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
   assert.equal((html.match(/word-card-form-arabic/g) || []).length, 2);
@@ -38,16 +44,49 @@ check("an unclassified remainder is reported, never hidden", () => {
   const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
   assert.match(html, /1 occurrences of this root are not assigned to a form/);
 });
-check("no grammatical category is invented for a form", () => {
+// UPDATED v08.22, with the reason. v08.21 asserted that NO category is shown,
+// on the reading that `morphology.pos` classifies a written token rather than
+// a dictionary form. That was measured again against the whole packaged
+// corpus: the raw string is a " + " chain of clitics + HEAD + pronoun, and its
+// HEAD is the word's own category -- 4,416 of 4,832 lemmas then carry exactly
+// one. So the category IS available and the card must show it. The check is
+// inverted rather than deleted, and now also guards the thing that inverting
+// it puts at risk: two forms sharing a category must not be merged.
+check("each form carries the category the source actually records", () => {
   const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
-  assert.match(html, /A grammatical category is not shown per form/);
-  // The form rows themselves must not carry a Noun/Verb label.
-  const rows = html.split("word-card-form-arabic").slice(1).join("");
-  assert.doesNotMatch(rows.split("word-card-forms-note")[0], /\bNoun\b|\bVerb\b/);
+  assert.equal((html.match(/word-card-form-pos-name/g) || []).length, 2);
+  assert.equal((html.match(/>Noun</g) || []).length, 2);
+  assert.match(html, /Each form's category is the one the packaged grammatical analysis records/);
 });
-check("the form number is not passed off as an Arabic verb form", () => {
+check("two distinct written forms sharing a category stay two rows", () => {
   const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
-  assert.match(html, /not the traditional Arabic verb form/);
+  assert.equal((html.match(/word-card-form-arabic/g) || []).length, 2);
+  assert.match(html, /ٱسْم/); assert.match(html, /سَمَآء/);
+});
+// UPDATED v08.22, with the reason. There is no longer a number to explain:
+// "Form 1", "Form 2" are gone from the UI entirely, because the owner read
+// them as the traditional Arabic verb forms, which they never were. So the
+// check now proves the number is ABSENT rather than proving the note about it
+// is present.
+check("no form is presented as a numbered Arabic verb form", () => {
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
+  assert.doesNotMatch(html, /Form 1|Form 2|রূপ 1|not the traditional Arabic verb form/);
+});
+check("a category the source does not record is said so, never guessed", () => {
+  const ctx = { rootForms: { root: "سمو", totalOccurrences: 2, formCount: 1, unclassified: 0, forms: [{ lemma: "ٱسْم", count: 2, refs: [], pos: "", posCounts: [], posAmbiguous: false }] } };
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: ctx });
+  assert.match(html, /Category not recorded/);
+});
+check("a form with more than one recorded category is marked, not flattened", () => {
+  const ctx = { rootForms: { root: "رحم", totalOccurrences: 5, formCount: 1, unclassified: 0, forms: [{ lemma: "رَّحِيم", count: 5, refs: [], pos: "Adjective", posCounts: [["Adjective", 4], ["Noun", 1]], posAmbiguous: true }] } };
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: ctx });
+  assert.match(html, /Adjective/);
+  assert.match(html, /Also recorded as: Noun/);
+  assert.match(html, /1 of these forms are recorded with more than one category/);
+});
+check("the Basic part-of-speech chain keeps every segment the source supplies", () => {
+  const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "basic"), chapter, ayah, word, context: formsContext });
+  assert.match(html, /Preposition \+ Noun/);
 });
 check("Depth lists the same forms and expands one of them", () => {
   const html = renderQuranWordCard({ state: selectWordCardLevel(openWordCard(createWordCardState(), id), "depth"), chapter, ayah, word, context: { ...formsContext, expandedForm: "ٱسْم", formOccurrences: [{ surah: 1, ayah: 1, position: 1, arabic: "بِسْمِ" }], formOccurrencesTotal: 8 } });
@@ -147,6 +186,32 @@ for (const fn of ["wordCardLabels", "wordProgressLabels"]) {
     assert.deepEqual(missing, [], `untranslated: ${missing.join(" | ")}`);
   });
 }
+
+// v08.22 -- the grammatical categories themselves are user-visible names (I11).
+// Every one the packaged data SPELLS OUT must have Bangla; the eleven opaque
+// corpus abbreviations, and the one tagging glitch, deliberately must NOT --
+// naming them would mean inventing a classification the source never makes.
+const OPAQUE_POS = ["RES", "PRO", "PREV", "IMPV", "EXL", "INT", "EXH", "SUR", "AVR", "EQ", "COM", "yaAsiyna"];
+check("every spelled-out grammatical category has Bangla", () => {
+  const named = WORD_CARD_POS_SEGMENTS.filter((c) => !OPAQUE_POS.includes(c));
+  const missing = named.filter((c) => !BN[c]);
+  assert.deepEqual(missing, [], `untranslated categories: ${missing.join(" | ")}`);
+  assert.equal(named.length, 34);
+});
+check("no Bangla is invented for an abbreviation the source never expands", () => {
+  const invented = OPAQUE_POS.filter((c) => BN[c]);
+  assert.deepEqual(invented, [], `fabricated: ${invented.join(" | ")}`);
+});
+check("the segment list matches the packaged corpus exactly", () => {
+  const seen = new Set();
+  for (let n = 1; n <= 114; n++) {
+    const file = new URL(`../../tools/quran-data-pull/output/surahs/surah_${String(n).padStart(3, "0")}.json`, import.meta.url);
+    for (const a of JSON.parse(fs.readFileSync(file, "utf8")).ayahs ?? []) {
+      for (const w of a.words ?? []) for (const seg of String(w.morphology?.pos ?? "").split(" + ")) if (seg.trim()) seen.add(seg.trim());
+    }
+  }
+  assert.deepEqual([...seen].sort(), [...WORD_CARD_POS_SEGMENTS].sort());
+});
 
 // A COUNT follows the reader's digits; an IDENTIFIER never does. The card
 // showed "381" on a Bangla page, against this app's own existing rule.

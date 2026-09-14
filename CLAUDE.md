@@ -23,11 +23,24 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: v08.19** (on branch `claude/pensive-knuth-2pu3jj`, not yet
-merged to `main`, which reads 08.04). `app/js/version.js` is the single source
-of truth and the badge beside the app name says so on screen. **This line said
-`v08.02` while `main` was already on 08.04 — the drift this file warns about,
-found on 12 Sep 2026. Check it against `app/js/version.js` every session.**
+**Current milestone: v08.22** (on `main`, 14 Sep 2026). `app/js/version.js` is
+the single source of truth and the badge beside the app name says so on screen.
+**This line has drifted twice already — it read `v08.02` while `main` was on
+08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
+Check it against `app/js/version.js` every session.**
+
+**v08.20 → v08.22 are the Word Card rounds, all three now in `CHANGELOG.md`**
+(v08.20 and v08.21 had been left out of it, found and appended 14 Sep 2026).
+The one a later session most needs: **v08.22 corrected v08.21's own reading of
+`morphology.pos`.** v08.21 measured that 2,067 of 4,832 lemmas carry more than
+one `pos` value and concluded no grammatical category could be shown per form,
+labelling rows `Form 1`, `Form 2` instead. The measurement was right and the
+conclusion was wrong — `pos` is a `" + "` chain of proclitics + HEAD + pronoun
+suffix, and taking the HEAD drops that figure to 416; **4,416 of 4,832 (91.4%)
+have exactly one category.** The categories are shown now, `Form n` is gone
+from the UI entirely, and a new on-demand packaged index
+(`lemma-pos-index.json`) carries them. **Re-measure what a conclusion rests on,
+not just the number it quotes.**
 
 **MAP Phase 3 (Arabic Progress & Coverage) is BUILT, v08.14–v08.19, 13 Sep
 2026** — six bounded tranches, full evidence in
