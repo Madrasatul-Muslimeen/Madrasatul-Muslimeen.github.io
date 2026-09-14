@@ -123,7 +123,7 @@
 <tr><td><code>navcheck.mjs</code></td><td>unchanged — only the pre-existing 320 px English truncation</td><td>same</td></tr>
 <tr><td><code>reading.mjs</code></td><td><strong><code>READING SCREEN OK</code></strong></td><td>OK</td></tr>
 <tr><td>Translation coverage</td><td><strong>1,803 / 47 — both unchanged</strong></td><td>1,803 / 47</td></tr>
-<tr><td><code>behaviour.mjs</code></td><td><strong>776 passed, 0 failed</strong> through section 40, still running at the time of writing — see §7</td><td>803 total</td></tr>
+<tr><td><code>behaviour.mjs</code></td><td><strong>803 passed, 0 failed</strong> — the documented total, at the documented stop</td><td>803 total</td></tr>
 </tbody></table></div>
 <p>The <code>layout.mjs</code> comparison used <code>HEAD</code>&#x27;s own <code>quranrevival.html</code> <strong>and</strong> <code>HEAD</code>&#x27;s <code>version.js</code> as <code>_prev-</code> shims with the import repointed, so &quot;before&quot; really rendered <strong>v08.24</strong> against &quot;after&quot; <strong>v08.25</strong>. <code>app/quranrevival.html</code> is byte-for-byte identical to <code>HEAD</code>. Both shims were deleted before the coverage total was read.</p>
 <hr>
@@ -150,12 +150,10 @@
 <tr><td><strong>Consequence, stated plainly</strong></td><td>until the Rules are deployed, the <code>evidence</code> subcollection has <strong>no rule and is closed to every client</strong>. P4-C is built, tested and safe to review, but <strong>cannot function for anyone — including the Owner — until deployment</strong>, which remains an Owner Control Gate and is <strong>not requested here</strong></td></tr>
 </tbody></table></div>
 <hr>
-<h2>7. <code>behaviour.mjs</code> — reported as it actually stands</h2>
-<p><strong>776 passed, 0 failed, through section 40 of 42.</strong> The run had <strong>not completed</strong> when this report was written, and the remaining checks are therefore <strong>not claimed as passing.</strong></p>
-<p>It is not stuck on anything this round caused. It grinds almost to a halt in the sections that fetch from hosts this sandbox cannot reach — section 40 pulls Mushaf page images, section 41 recitation audio — where every request must time out before the suite moves on. Section 22g&#x27;s three <code>archive.org</code> screensaver failures, which some recent runs record and others do not, did <strong>not</strong> occur in this run; that difference is environmental, as the P4-A integration report already noted.</p>
-<p>Beyond section 41 lies the documented pre-existing section-42 <code>[data-note-master-toggle]</code> crash carried since v07.69.</p>
-<p><strong>Why the partial run is nevertheless conclusive for this round:</strong> <code>app/quranrevival.html</code> is <strong>byte-for-byte identical to <code>HEAD</code></strong>, <code>activity.js</code> and <code>records.js</code> likewise, and the two new modules are imported by nothing — so there is no code path this suite exercises that this round changed. <code>layout.mjs</code> (16 configurations, every metric identical, against a real v08.24 shim) and the zero-delta coverage total are the measurements that actually bear on it.</p>
-<p><strong>If the Master Architect requires a completed run as an acceptance condition, say so and it will be run to completion and reported before audit.</strong></p>
+<h2>7. <code>behaviour.mjs</code> — completed</h2>
+<p><strong>803 passed, 0 failed</strong> — the documented total, stopping at the pre-existing section-42 <code>[data-note-master-toggle]</code> crash carried since v07.69 (<code>behaviour.mjs:4123</code>). <strong>No check the suite reaches needed updating</strong>, which is the expected result for a round that adds modules nothing calls.</p>
+<p>Two notes for the record, because an earlier draft of this report was written while the run was still in progress and said so:</p>
+<ol><li>It grinds almost to a halt in the sections that fetch from hosts this sandbox cannot reach — section 40 pulls Mushaf page images, section 41 recitation audio — where every request must time out before the suite advances. The partial figure quoted mid-run (776 through section 40) was labelled as incomplete at the time and is superseded by the 803 above. Nothing was ever claimed as passing that had not run.</li><li><strong>Section 22g&#x27;s three <code>archive.org</code> screensaver failures did not occur in this run</strong>, giving 803/0 rather than the 800/3 some recent runs record. That difference is environmental — this sandbox&#x27;s proxy — and not a code difference; the modules under test are byte-identical to <code>HEAD</code>.</li></ol>
 <hr>
 <h2>8. What the Owner would see</h2>
 <p><strong>Nothing.</strong> The writer is uninvoked and no screen changed. The only visible difference is the version badge reading <strong>v08.25</strong> — and only once this branch is merged, which the instruction defers. <code>main</code> still serves <strong>v08.24</strong>.</p>

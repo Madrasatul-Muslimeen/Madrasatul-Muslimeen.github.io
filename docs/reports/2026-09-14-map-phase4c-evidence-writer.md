@@ -206,7 +206,7 @@ now matches `entries` with a negative lookbehind for `Object.`.
 | `navcheck.mjs` | unchanged — only the pre-existing 320 px English truncation | same |
 | `reading.mjs` | **`READING SCREEN OK`** | OK |
 | Translation coverage | **1,803 / 47 — both unchanged** | 1,803 / 47 |
-| `behaviour.mjs` | **776 passed, 0 failed** through section 40, still running at the time of writing — see §7 | 803 total |
+| `behaviour.mjs` | **803 passed, 0 failed** — the documented total, at the documented stop | 803 total |
 
 The `layout.mjs` comparison used `HEAD`'s own `quranrevival.html` **and**
 `HEAD`'s `version.js` as `_prev-` shims with the import repointed, so "before"
@@ -245,32 +245,26 @@ total was read.
 
 ---
 
-## 7. `behaviour.mjs` — reported as it actually stands
+## 7. `behaviour.mjs` — completed
 
-**776 passed, 0 failed, through section 40 of 42.** The run had **not
-completed** when this report was written, and the remaining checks are
-therefore **not claimed as passing.**
+**803 passed, 0 failed** — the documented total, stopping at the pre-existing
+section-42 `[data-note-master-toggle]` crash carried since v07.69
+(`behaviour.mjs:4123`). **No check the suite reaches needed updating**, which is
+the expected result for a round that adds modules nothing calls.
 
-It is not stuck on anything this round caused. It grinds almost to a halt in the
-sections that fetch from hosts this sandbox cannot reach — section 40 pulls
-Mushaf page images, section 41 recitation audio — where every request must time
-out before the suite moves on. Section 22g's three `archive.org` screensaver
-failures, which some recent runs record and others do not, did **not** occur in
-this run; that difference is environmental, as the P4-A integration report
-already noted.
+Two notes for the record, because an earlier draft of this report was written
+while the run was still in progress and said so:
 
-Beyond section 41 lies the documented pre-existing section-42
-`[data-note-master-toggle]` crash carried since v07.69.
-
-**Why the partial run is nevertheless conclusive for this round:**
-`app/quranrevival.html` is **byte-for-byte identical to `HEAD`**, `activity.js`
-and `records.js` likewise, and the two new modules are imported by nothing — so
-there is no code path this suite exercises that this round changed. `layout.mjs`
-(16 configurations, every metric identical, against a real v08.24 shim) and the
-zero-delta coverage total are the measurements that actually bear on it.
-
-**If the Master Architect requires a completed run as an acceptance condition,
-say so and it will be run to completion and reported before audit.**
+1. It grinds almost to a halt in the sections that fetch from hosts this sandbox
+   cannot reach — section 40 pulls Mushaf page images, section 41 recitation
+   audio — where every request must time out before the suite advances. The
+   partial figure quoted mid-run (776 through section 40) was labelled as
+   incomplete at the time and is superseded by the 803 above. Nothing was ever
+   claimed as passing that had not run.
+2. **Section 22g's three `archive.org` screensaver failures did not occur in
+   this run**, giving 803/0 rather than the 800/3 some recent runs record. That
+   difference is environmental — this sandbox's proxy — and not a code
+   difference; the modules under test are byte-identical to `HEAD`.
 
 ---
 
