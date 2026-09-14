@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 4 — Rules deployment: BLOCKED at a genuine access gate</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 4 — Rules deployment: BLOCKED at a genuine access gate</h1>
+<p><strong>Date:</strong> 14 September 2026 <strong>Authority:</strong> Master Architect continuation directive of 2026-09-14, §2 — Rules deployment authorised, subject to a deterministic parity/change check. <strong>Result:</strong> <strong>P4-C INTEGRATED.</strong> <strong>RULES DEPLOYMENT BLOCKED — NOT PERFORMED.</strong> <strong><code>main</code>:</strong> <code>05ba016b1eb66d42ed39a4ed6fb09ca0e11978c8</code>, app version <strong>08.25</strong>. <strong>Production <code>firestore.rules</code>: byte-for-byte UNCHANGED. Nothing was deployed.</strong></p>
+<p>The directive said: <em>&quot;If parity differs or the exact tested amendment cannot be safely isolated, STOP at that genuine security gate and report the exact difference. Do not improvise around a Rules mismatch.&quot;</em> The blocker is adjacent to but not identical to that: <strong>parity cannot be established at all</strong>, because the production baseline cannot be read from this environment.</p>
+<hr>
+<h2>1. P4-C integration — COMPLETE</h2>
+<div class='tw'><table><thead><tr><th>Item</th><th>Value</th></tr></thead><tbody>
+<tr><td>Pre-merge <code>main</code></td><td><code>925a9c2ca94fdffcfc0563d498681dfe902ab700</code> (v08.24)</td></tr>
+<tr><td>Accepted tranche</td><td><code>f8be1142f53686fc70287482f0b43c74203e630f</code></td></tr>
+<tr><td><strong>Merge commit — new <code>main</code></strong></td><td><strong><code>05ba016b1eb66d42ed39a4ed6fb09ca0e11978c8</code></strong></td></tr>
+<tr><td>App version</td><td><strong>08.25</strong></td></tr>
+<tr><td>Rollback point</td><td><code>925a9c2ca94fdffcfc0563d498681dfe902ab700</code></td></tr>
+</tbody></table></div>
+<p><code>main</code> had not moved; <code>--no-ff</code>, matching the accepted precedent, so the integration reverts as one unit. <strong>16 files, the accepted scope exactly.</strong></p>
+<h3>All six required verifications</h3>
+<div class='tw'><table><thead><tr><th>#</th><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><td>1</td><td>expected P4-C files on <code>main</code></td><td><strong>PASS</strong> — all six present; <code>version.js</code> = <code>08.25</code></td></tr>
+<tr><td>2</td><td>ADR-008 contains the accepted amendments</td><td><strong>PASS</strong> — status line, amended <code>wbw.engaged</code> row, and the &quot;Master Architect amendments&quot; section</td></tr>
+<tr><td>3</td><td>production <code>firestore.rules</code> not altered as a merge side-effect</td><td><strong>PASS</strong> — byte-for-byte identical to pre-merge <code>main</code></td></tr>
+<tr><td>4</td><td>writer uninvoked at the integration point</td><td><strong>PASS</strong> — boundary suite, plus an independent <code>grep -rl</code> over <code>app/</code> returning only the module itself</td></tr>
+<tr><td>5</td><td><code>activity.js</code> / <code>records.js</code> behaviour unchanged</td><td><strong>PASS</strong> — both byte-for-byte identical to pre-merge <code>main</code></td></tr>
+<tr><td>6</td><td>P4-A / P4-C and Phase 2/3 suites green</td><td><strong>PASS</strong> — see §4</td></tr>
+</tbody></table></div>
+<p>Pushed: <code>925a9c2..05ba016</code>. Read back from the remote: <code>origin/main</code> = <code>05ba016</code>, <code>version.js</code> = <code>08.25</code>, writer present.</p>
+<hr>
+<h2>2. THE BLOCKER — no credentials for <code>study-monitoring</code></h2>
+<p><strong>This environment cannot authenticate to the production Firebase project, so it can neither read the deployed Rules baseline nor deploy.</strong> Established, not assumed:</p>
+<div class='tw'><table><thead><tr><th>Probe</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>GOOGLE_APPLICATION_CREDENTIALS</code> / <code>FIREBASE_TOKEN</code> / any <code>FIREBASE_*</code> env var</td><td><strong>none set</strong></td></tr>
+<tr><td><code>~/.config/configstore/firebase-tools.json</code></td><td>present but <strong>empty</strong> — <code>keys: []</code>, no tokens, no user</td></tr>
+<tr><td>service-account or admin-SDK key files on disk</td><td><strong>none found</strong></td></tr>
+<tr><td><code>firebase projects:list</code></td><td><strong>FAILS</strong> at <code>requireAuth</code> → <code>GoogleAuth.getAccessToken</code></td></tr>
+<tr><td><code>firebase --project study-monitoring firestore:databases:list</code></td><td><strong>FAILS</strong> at <code>requireAuth</code> → <code>requirePermissions</code></td></tr>
+</tbody></table></div>
+<p><code>.firebaserc</code> names <code>study-monitoring</code> and <code>firebase.json</code> points at <code>firestore.rules</code>, so the <em>configuration</em> is right — what is missing is <strong>authorisation</strong>, and that is not something to work around.</p>
+<h3>Why this is a hard stop rather than a judgement call</h3>
+<p>The directive requires beginning from <strong>&quot;the actual current production/deployment Rules baseline&quot;</strong> and forbids overwriting, removing, weakening or silently modifying unrelated Rules. From here I can see only the <strong>repository copy</strong>. <code>CLAUDE.md</code> records an Owner-performed parity verification of 2026-09-10 (content-identical; the repository copy carries one extra terminal newline), but that is <strong>four days stale and was not performed by me</strong>.</p>
+<p>Deploying a file derived from a possibly-stale baseline would silently revert any unrelated Rules change made in the Firebase Console since 10 September — exactly the prohibited outcome, and irreversible in effect for whatever it reverted. <strong>Stop conditions 3 (security/production-risk conflict) and 5 (inability to continue safely) both apply.</strong></p>
+<hr>
+<h2>3. Everything up to the gate has been done</h2>
+<p>Deployment is one command away the moment access exists. Prepared and verified:</p>
+<h3>3.1 The deployment candidate is ADDITION-ONLY, proven mechanically</h3>
+<p><code>docs/governance/phase4-activity-evidence-DEPLOYMENT-candidate-2026-09-14.rules</code> = the repository <code>firestore.rules</code> <strong>plus</strong> the accepted evidence block, inserted immediately after the existing <code>activity</code> block.</p>
+<div class='tw'><table><thead><tr><th>Proof</th><th>Result</th></tr></thead><tbody>
+<tr><td>lines <strong>removed</strong> vs. the baseline</td><td><strong>0</strong></td></tr>
+<tr><td>lines added</td><td>208</td></tr>
+<tr><td>deleting the inserted region reproduces the baseline <strong>exactly</strong></td><td><strong>TRUE</strong></td></tr>
+<tr><td>the evidence block is byte-identical to the emulator-tested candidate</td><td><strong>TRUE</strong></td></tr>
+<tr><td>the existing <code>activity/{activityKey}</code> rule</td><td><strong>unchanged</strong></td></tr>
+<tr><td>any other rule in the file</td><td><strong>unchanged</strong></td></tr>
+</tbody></table></div>
+<p>The insertion carries its own header recording that it is an addition made under explicit Master Architect authority and alters nothing above or below it.</p>
+<h3>3.2 The full suite was re-run against the <strong>exact deployment candidate</strong></h3>
+<p>Not against the isolated extract — against the merged file that would be deployed, in an isolated emulator on project <code>demo-quranrevival-activity-deploy-v1</code>:</p>
+<div class='tw'><table><thead><tr><th></th><th>Isolated candidate</th><th><strong>Deployment candidate</strong></th></tr></thead><tbody>
+<tr><td>Assertions</td><td>53 passed, 0 failed</td><td><strong>53 passed, 0 failed</strong></td></tr>
+<tr><td>Expression-budget denials</td><td>0</td><td><strong>0</strong></td></tr>
+</tbody></table></div>
+<p><strong>Semantic parity between the two is therefore demonstrated behaviourally</strong>, not merely by diff. What remains unverified is parity between the repository baseline and <em>production</em>, which is the blocker.</p>
+<h3>3.3 An evidentiary finding in evidence that was already accepted</h3>
+<p>Re-reading the emulator logs closely, <strong>7 of the 53 denials are reported as <code>evaluation error</code> rather than as a clean <code>false</code>.</strong> This is present in <strong>both</strong> runs, including the isolated 53-assertion run the Master Architect has already accepted — so it is a pre-existing caveat in accepted evidence, surfaced here rather than carried silently. It is the shape the accepted Phase 3 candidate explicitly warns about: a denial the rules <em>tripped over</em> rather than <em>decided</em>.</p>
+<p>What I did establish:</p>
+<ul><li><strong>Every one of the 7 also carries a clean decision in the same log line.</strong> The four deduplication cases (exact retry, MA-2, MA-4, MA-W2) show <code>false for &#x27;update&#x27;</code> — and that is the <strong>operative</strong> clause, because the document already exists, so the write is an update and <code>allow update: if false</code> is what denies it. The three authorisation cases additionally show <code>false for &#x27;create&#x27;</code>.</li><li><strong>No denial in the suite rests solely on an exception</strong>, which is the distinction that sank the earlier Activity candidate (whose denials were <em>only</em> budget exhaustion).</li><li>Bisecting the three <code>allow create</code> conjuncts removed only one or two errors each, so no single conjunct is the sole cause; the four dedup errors are consistent with the <code>create</code> clause being evaluated against an already-existing document.</li></ul>
+<p><strong>I could not fully root-cause it within this task, and I am not claiming to have.</strong> It is fail-closed and does not weaken the rule, but it makes part of the denial log less trustworthy than it should be. <strong>Recommendation: close this before deploying</strong>, so that every denial is demonstrably a decision. It is a small, contained piece of work and I will take it as the next bounded task if the Master Architect agrees.</p>
+<hr>
+<h2>4. Regression on merged <code>main</code></h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>study-activity-evidence-id</code> / <code>-store</code> / <code>-boundary</code></td><td><strong>29 / 19 / 13</strong>, 0 failed</td></tr>
+<tr><td><code>study-approach-contract</code> / <code>-evidence</code> / <code>-boundary</code> (P4-A)</td><td><strong>13 / 11 / 16</strong>, 0 failed</td></tr>
+<tr><td><code>quran-word-card</code> / <code>-integration</code></td><td>36 / 10, 0 failed</td></tr>
+<tr><td><code>quran-word-progress-model</code> / <code>-data</code></td><td>57 / 37, 0 failed</td></tr>
+<tr><td><code>quran-word-coverage</code> / <code>-arabic</code></td><td>10 / 29, 0 failed</td></tr>
+<tr><td><code>quran-word-identity-contract</code> / <code>-indexes</code> / <code>-index-loader</code></td><td>6 / 9 / 8, 0 failed</td></tr>
+<tr><td><code>quran-boundary</code> / <code>stub-parity</code></td><td>30 / 3, 0 failed</td></tr>
+</tbody></table></div>
+<p>Every figure matches its recorded baseline. <code>app/quranrevival.html</code> is byte-for-byte identical to pre-merge <code>main</code>, so the rendered-layout measurements carried over from the P4-C report still hold without re-running.</p>
+<hr>
+<h2>5. Why Phase 4 wiring has NOT continued</h2>
+<p>The directive sequences P4-D1…D4 <em>after</em> &quot;successful P4-C integration <strong>and Rules deployment verification</strong>&quot;. Integration succeeded; deployment verification cannot happen. Beyond that ordering, there is a substantive reason not to proceed, and it is a product-risk judgement the Master Architect should make rather than me:</p>
+<p><strong>With no rule for the subcollection, production denies every evidence write.</strong> Confirmed: <code>firestore.rules</code> contains no <code>evidence</code> match block and no catch-all, so the path is denied by default. The P4-C writer <strong>rethrows genuine denials</strong> — deliberately, so real failures reach the user (I15). Wiring <code>reading.completed</code> into the live app in that state would therefore surface a permission error to the Owner <strong>on every āyah they complete</strong>, in an app they use daily (D13 puts the Owner&#x27;s own real use first).</p>
+<p>That raises a design question ADR-008 does not settle: <strong>should ADR-008 evidence writes be user-visible failures (I15) or silent best-effort?</strong> The codebase has both patterns — <code>safeWrite()</code> for user-facing writes, and explicitly best-effort calls such as <code>touchResume()</code>. Choosing between them for evidence is a <strong>material architecture decision not already governed by MAP or an ADR</strong> — stop condition 2.</p>
+<p><strong>I have not decided it, and I have not wired anything.</strong> Three routes, for the Master Architect to pick:</p>
+<div class='tw'><table><thead><tr><th>Route</th><th>What happens</th></tr></thead><tbody>
+<tr><td><strong>A — deploy first</strong> (recommended)</td><td>An Owner with Console access deploys the prepared candidate, or grants this session credentials; then P4-D1…D4 proceed with no user-visible breakage</td></tr>
+<tr><td><strong>B — build P4-D on the branch, do not merge</strong></td><td>Tranches are implemented and fully tested but never reach <code>main</code> until Rules are deployed. Progress continues; nothing reaches the live app</td></tr>
+<tr><td><strong>C — best-effort evidence writes</strong></td><td>Evidence failures are swallowed rather than surfaced. <strong>Needs an explicit ADR-008 amendment</strong>, because it trades away I15 for this write path</td></tr>
+</tbody></table></div>
+<hr>
+<h2>6. Exactly what is needed to unblock</h2>
+<p><strong>One of:</strong></p>
+<ol><li><strong>Deploy the prepared candidate from a credentialed environment.</strong> The file is <code>docs/governance/phase4-activity-evidence-DEPLOYMENT-candidate-2026-09-14.rules</code> on <code>main</code> — but it must first be re-derived from the <strong>live</strong> baseline, not from the repository copy, unless production parity is re-verified at that moment. Via the Firebase Console (the route this project has used before), the step is: open Firestore → Rules, confirm the live text still matches the repository copy, paste the evidence block in immediately after the existing <code>match /activity/{activityKey}</code> block, publish.</li><li><strong>Or grant this session credentials</strong> (a <code>FIREBASE_TOKEN</code>, or a service account with <code>firebaserules.admin</code>), and I will re-derive the candidate from the live baseline, re-run the full suite against that exact file, deploy, and verify.</li></ol>
+<p><strong>And, before either:</strong> a decision on the 7 evaluation-error denials (§3.3) — whether to close them first, which I recommend.</p>
+<hr>
+<h2>7. Position</h2>
+<p><strong>Done:</strong> P4-C integrated into <code>main</code> at <code>05ba016</code>, v08.25, all six verifications passing, regression green, pushed.</p>
+<p><strong>Blocked:</strong> Rules deployment — no credentials; production baseline unreadable.</p>
+<p><strong>Not started, deliberately:</strong> P4-D1 Reading, P4-D2 Listening, P4-D3 Journaling, P4-D4 WbW. Nothing wired, nothing merged toward them.</p>
+<p><strong>Untouched:</strong> production <code>firestore.rules</code>, <code>activity.js</code>, <code>records.js</code>, every <code>app/*.html</code>, <code>monitor.js</code>, <code>backup.js</code>, <code>backup-file.js</code>. No index, no migration, no backfill, no production write. DDR-001–004 untouched. No scope expanded — no Phase 5, MMJ, Dawah, Share/Media or historical branch material.</p>
+<p><strong>STATUS: AWAITING MASTER ARCHITECT DECISION ON THE DEPLOYMENT GATE AND ON ROUTE A / B / C.</strong></p>
+</main></body></html>
