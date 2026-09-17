@@ -12549,6 +12549,567 @@ backup read path. **Until the candidate Rules are deployed the subcollection has
 no rule and is closed to every client**, so the feature cannot function for
 anyone yet — deployment remains an Owner Control Gate. DDR-001–004 untouched.
 
+**15 Sep 2026 — MAP Phase 5 resumes: P5-A the Note Foundation Rules candidate,
+P5-B the Journaling identity bridge that resolves the deferred P4-D3.** No
+application behaviour changed, so **no version increment** — `main` stays
+v08.25. Phase 4's wiring candidate (`c4fca4a`, v08.26) and its 208-line Rules
+amendment are preserved untouched; production activation stays a **pending
+external-access dependency**, recorded rather than blocking.
+
+**Reconciled before touching anything.** `app/js/note-foundation.js` is on
+`main` and **imported by nothing**; its five collections have **no Firestore
+Rules at all**, so every one is denied by default; the accepted security matrix
+holds **37 cases**; and the five existing Phase 5 suites are green. The live
+`ayah-notes.js` surface, and every user note in it, is **untouched** — no
+dual-write, no fallback, no migration.
+
+**P5-A governs exactly three collections** — `notes`, `noteRevisions`,
+`noteSources`. `noteFolders` and `notePlacements` are **deliberately absent**:
+they are MAP Phase 6, the code that writes them is uninvoked, and an unruled
+collection is denied by default, so leaving them out is the safe answer. The
+suite asserts they stay denied.
+
+**The security design in one line: only the owner writes.** Not a guardian, not
+a teacher, not a tenant administrator, not a platform administrator — every
+other role that can see a Note can only ever READ it. That is deliberately
+stricter than `canRecordFor()`, which the rest of the app uses for progress
+data, because **a Note is a person's own private writing, not a record kept
+about them.**
+
+**`getAfter()` is what makes the revision pointer real rather than a promise.**
+A Note's `currentRevisionId` must name a revision that exists once the commit
+lands, belongs to the same Note/tenant/owner, and on an update chains from the
+revision being left behind. Rules evaluate each document independently, so
+without it a client could point a Note at a revision it never wrote.
+
+**Stated, not hidden: the guardian approval window is NOT implemented.** Matrix
+cases GUARD-05/06/07 describe a 30-minute server-expiring, Note-specific
+approval, and **no such mechanism exists** in the accepted data layer. Rather
+than invent one inside a Rules candidate, every guardian content edit is denied
+outright — strictly safer than the accepted design, satisfying GUARD-04/06/07/08
+in full, leaving only the single ALLOW case unreachable and recorded.
+
+**P5-B resolves the deferred P4-D3 with genuine permanent identity.**
+`note-journal-evidence.js` keys Journaling on the Note Foundation's own
+permanent `noteId`, so **two Notes on the same āyah are independently
+representable** — the thing `ayah-notes.js` could never express, and the reason
+D3 was deferred rather than bodged. **Which event it is comes from the revision
+CHAIN, not a caller's flag**: a first revision has `previousRevisionId: null`,
+so a caller cannot claim a creation twice. **Committed changes only, by
+construction** — the function requires the `revisionId` a commit produced, and a
+draft, an open editor, a cancelled edit or a failed autosave never produce one.
+**The forbidden bodge is tested against**: `isPermanentNoteId("ayah:2:255")` is
+false, and a commit carrying a unitKey as its noteId returns null.
+
+**A mutation-harness flaw found and fixed, and one real gap behind it.** The
+first mutation run reported three checks as untested. **Two were the harness's
+fault**: it replaced only the FIRST occurrence of a pattern, and `isNoteOwner`
+appears three times, `personInTenant` twice — so the rest kept enforcing. **A
+partial mutation proves nothing.** The harness replaces every occurrence now and
+reports how many it changed. The third, `noteIdentityUnchanged`, was **real**:
+IMM-01 denied an owner repoint, but through `committedRevisionMatches`, not the
+identity check. Five isolating cases (ISO-00…ISO-04) now each pass every rule
+except the one named, with ISO-00 as the paired allow differing in one fact.
+
+**And one of my own new cases was wrong**: ISO-00 built its revision document id
+in UPPERCASE while the body carried lowercase, so the key-binding rule denied it
+and the whole baseline went red. Caught because the mutation run's baseline is
+itself a measurement.
+
+**Tests: Phase 5 Rules emulator 53 assertions, 0 failures, 0 expression-budget
+denials, 31 of 37 matrix cases**, every denial asserted to end in a decisive
+clean `false`; `note-journal-evidence.mjs` 18 passed; the five existing Note
+Foundation suites unchanged. The 6 unexercised matrix cases are exactly the two
+documented deferrals — the guardian approval mechanism, and Phase 6 folders and
+placements.
+
+**No Rules deployed, no index, no migration, no backfill, no production write.
+`firestore.rules` byte-for-byte untouched. DDR-001–004 untouched.**
+
+---
+
+**15 Sep 2026 — MAP Phase 5 P5-C: the Study↔Note source binding (ADR-009), and
+the quick note reconciled by PROMOTION rather than migration.** No application
+behaviour changed, so **no version increment** — `main` stays v08.25. Two new
+modules, **imported by nothing**, and no tracked file under `app/` modified at
+all.
+
+**The task found real drift before it built anything.** `note-foundation.js` has
+always written a `noteSources` document with four descriptive fields —
+`sourceKind`, `sourceKey`, `relationshipKind`, `provenanceKind` — and **nothing
+ever decided what they may contain.** The P5-A Rules candidate constrains them
+only to "a non-empty string", and the repository already carried the
+consequence: `note-foundation-data-layer.mjs` writes `quran` /
+`created-in-study` while `note-foundation-v1.rules.test.mjs` writes `quran-ayah`
+/ `reader-created`. Neither was wrong, because there was nothing to be wrong
+against — and the first real Note surface would have minted a third spelling,
+leaving a Note's provenance unqueryable across the very set it exists to
+describe.
+
+**ADR-009's fix is to make the field underivable by a caller.** `sourceKey` is
+the permanent unit key stored verbatim (I5), and `sourceKind` is **DERIVED from
+it and cannot be supplied at all** — a field nobody types is a field nobody can
+spell two ways. All nine Quran unit types share one `quran-unit` kind on
+purpose: the unit type is already the key's own leading segment, and storing it
+again would make two places for one truth. `relationshipKind` and
+`provenanceKind` are closed sets of exactly two each, and **the repository's own
+two drifting spellings are now tested against by name**.
+
+**The reconciliation turned out to be an ALREADY-ACCEPTED term, not a new
+decision.** `note-foundation-contract.json` already fixes
+`ayahNotesUnchanged: true`, `dualWrite: false`, `automaticMigration: false`,
+`userControlledCopyWithProvenance: true` — that last one *is* the promotion, and
+the three beside it are the three alternatives ADR-009 rejects (migrate:
+destructive and irreversible once edited; dual-write: two writers for one piece
+of text with no defined winner; unrelated: two note fields on one screen with
+nothing to say which is which). A boundary check reads those four values out of
+the contract rather than restating them, so if the accepted terms ever change,
+ADR-009 §5 stops being an implementation of them **in a failing check**.
+
+**Three things the service deliberately CANNOT do, each provable by reading
+imports rather than trusting code.** It holds **no reference to `ayah-notes.js`
+of any kind** — the promotion takes the HTML as an argument, so it cannot read,
+rewrite or clear the quick note. It names no `records`, `claimStatus`,
+`achieved` or `mastered` (ADR-003). And **saving a Note never records Activity
+as a side effect**: every function returns the evidence *arguments* and stops,
+so a failed evidence write is surfaced by the caller (I15) rather than buried
+inside a save that already succeeded — the same split P4-D uses. Which
+Journaling event is recorded comes from the **revision chain**, never a caller's
+flag.
+
+**Binding breadth is deliberately WIDER than evidence breadth.** A Note may be
+anchored to any permanent unit key, `juz` and `topic` included; ADR-008's
+evidence contract records Journaling for `ayah`/`range`/`surah` only. Two
+different questions, answered separately, and neither module may quietly widen
+the other.
+
+**Phase 4's own boundary suite went red, and was made STRICTER rather than
+excepted.** Two of its cases asserted that *nothing* under `app/` imports the
+evidence writer; the new service imports it while being unreachable. The claim
+was still true and the mechanism could no longer express it. An exception for
+one filename is exactly the "worked around" this project forbids — the tenth
+would be a live wiring nobody noticed — so the check now **walks the import
+graph from every page in `app/`** and asserts the writer is unreachable by any
+chain of any length, with the direct-importer set pinned so a new importer must
+be audited deliberately. **The walker carries a positive control**, because a
+broken regex would otherwise make every chain come back empty and all three
+cases pass vacuously — a check that cannot fail, which this project has shipped
+before. Proven both ways: one added import makes it print the chain from **16
+pages**.
+
+**Tests: 16 + 19 + 16 new checks, and 8 of 8 mutations proven to fail them** —
+vocabulary re-opened, a supplied `sourceKind` honoured, unit-key validation
+relaxed, saving recording evidence, promotion overridable, a swallowed write
+(I15), an app file importing the service in both `.js` and `.html` form, and
+`ayah-notes.js` edited. Full regression sweep green across 13 suites, including
+`study-activity-evidence-boundary` at **15 passed, 0 failed**.
+
+**Preservation verified, not asserted:** `ayah-notes.js`, `note-foundation.js`,
+`activity.js`, `records.js` and `firestore.rules` all **byte-identical to
+`origin/main`**. `layout.mjs` was deliberately not re-run and the reason is
+stated: no page, nor any module any page can reach, differs from `origin/main`
+by a byte, which is the stronger proof of the same claim.
+
+**No Note editor was built, on purpose** — that is a real behaviour change
+needing a version bump and a full layout measurement, and every write it made
+would be denied until the Note Foundation Rules are deployed. It is P5-D, held
+behind the same dependency as the Phase 4 wiring.
+
+**No Rules deployed, no index, no migration, no backfill, no production write.
+Phase 4 state preserved exactly: `main` v08.25, `claude/phase4-wiring` at
+`c4fca4a` unmerged, the 208-line Rules amendment undeployed.**
+
+---
+
+**15 Sep 2026 — MAP Phase 5 P5-E: the Note read model, and the Firestore index
+requirement nobody had recorded.** No application behaviour changed, so **no
+version increment** — `main` stays v08.25. Both changed files are still
+unreachable from every page.
+
+**The finding came first, and it would have broken P5-D AFTER the Rules were
+deployed.** `firebase.json` has no `indexes` key and no `firestore.indexes.json`
+exists: **this project has never declared a single Firestore composite index.**
+Harmless for the whole life of the app, because — measured, not assumed — every
+query outside the Note Foundation is equality-only and Firestore serves those
+from single-field indexes. There are **zero** range or inequality filters in
+`app/js`, and the complete list of `orderBy` call sites in the entire
+application is two, both in `note-foundation.js`. Those two are the first
+queries combining equality filters with an `orderBy` on a different field, and
+each needs a composite index or fails in production with
+`failed-precondition: The query requires an index`. **So the Note Foundation,
+even with its Rules deployed, could not have listed a single Note.**
+
+**No emulator run could ever have caught it, and that is proven rather than
+argued.** `tools/firestore-emulator/index-probe.test.mjs` starts the emulator
+with an index file declaring ZERO indexes and the query is served anyway.
+Every Phase 5 emulator assertion is silent about index requirements.
+
+**And `noteSources` was write-only.** ADR-009 defined how a Note binds to a
+Study Unit and nothing ever read one back — there was no way to ask "which
+Notes are about this āyah", which is the only question a Study surface or
+Phase 6's Mapping My Journey actually asks.
+
+**The read side is now there, as additions only** — `note-foundation.js` is
+**57 insertions, 0 deletions**, so no existing behaviour could have been
+reshaped. `listNoteSourcesForUnit()` is scoped, **ordered newest-first** and
+bounded: the order is not decoration, because without it hitting the bound
+returns an ARBITRARY subset and the reader silently loses Notes they wrote.
+`notesForStudyUnit()` validates the unit key through ADR-009's binding — still
+the only place a unit key is judged — and **two Notes on the same āyah both
+come back as two Notes**, the read-side half of ADR-008's amendment.
+
+**Three behaviours the tests pin, none of them obvious.** A **retired Note is
+excluded by the NOTE's status, not the link's**: `retirePermanentNote()` never
+touches source links (I4), so an active link pointing at a retired Note is the
+NORMAL post-retirement state and filtering on the link would show retired Notes
+for ever. A link naming a Note that no longer exists is **dropped, not thrown**
+— one dangling link must not deny every other Note on the unit. And truncation
+is **reported**: the query asks for one more than the cap, so "there is more" is
+read off the data rather than guessed when a page comes back exactly full.
+
+**The durable fix is a new suite, not three corrected queries.**
+`firestore-index-requirements.mjs` extracts every balanced `query(...)`
+expression in `app/js`, resolves its collection through `collections.js` rather
+than a retyped name, decides from the operators whether single-field indexes
+suffice, and asserts every requiring query has a declared candidate index and
+that the candidate declares nothing unused. It carries a **positive control**
+and asserts index-requiring queries appear ONLY in `note-foundation.js`, so the
+first one written elsewhere fails by name. The candidate stays a candidate: a
+check asserts `firebase.json` still declares no indexes and nothing sits at the
+deploy path.
+
+**Three checks corrected in place, none deleted or excepted.** (1) The P5-C
+importer scan's delimiter class included a **backtick**, so a prose
+`` `study-note-binding.js` `` in a doc comment counted as an import and reported
+a wiring that did not exist; requiring a `from`/`import` keyword makes it an
+import scan. Same flaw fixed in the Phase 4 suite. (2) `note-foundation.js`
+byte-identity became an **addition-only** assertion — stricter than "lines
+changed and they looked fine". (3) **Both drifting fixtures are corrected AND
+bound**: a new check reads every `.mjs`/`.js`/`.json` under `tools/` and fails
+on any source-binding word outside ADR-009, skipping lines that CALL
+`studyNoteSource()` — proving a bad word is refused means writing it down —
+so it stays a check about fixtures rather than a filename exception.
+
+**Tests: 29 + 17 + 7 pure, and the Phase 5 emulator suite at 60 assertions**
+(was 53), 0 failures, 0 expression-budget denials, 31 of 37 matrix cases. The
+seven new emulator cases run the EXACT query shapes the app executes, `orderBy`
+and all, with fresh ACTIVE source links seeded first — a list over a set that
+matches nothing succeeds trivially and proves nothing. **8 code mutations and 2
+Rules mutations all proven to fail the suites.**
+
+**The guardian approval window is still NOT built, and the reason is recorded:**
+the accepted contract describes a 30-minute server-expiring, Note-specific
+approval but names no collection to hold it, and neither its
+`foundationCollections` nor its `deferredCollections` list includes one.
+Choosing that storage is a new architecture choice — an Owner Control Gate.
+Guardian content edits stay denied outright, strictly safer than the accepted
+design.
+
+**A third pending-dependency item now exists**, and it matters to the second:
+deploying the Note Foundation Rules **alone** would leave the collections able
+to authorise queries they cannot execute. Rules and indexes must go together.
+`firestore.rules`, `firebase.json`, `ayah-notes.js`, `activity.js` and
+`records.js` are all byte-identical to `origin/main`.
+
+---
+
+**15 Sep 2026 — MAP PHASE 6 OPENS: P6-A, Mapping My Journey reconciled with the
+Note Foundation (ADR-010).** No application behaviour changed, so **no version
+increment** — `main` stays v08.25. `git diff origin/main -- app/` reports **no
+tracked change at all** beyond one new file nothing imports. **Nothing
+activated:** `noteFolders` and `notePlacements` are still unruled, and the
+Phase 5 Rules candidate queued for deployment is byte-identical.
+
+**A reconciliation, not an implementation — which is what the directive
+required, and it found two things.** MMJ has been in the accepted architecture
+since 10 Sep and has a **disabled placeholder pillar in the live app**;
+`createNoteFolder()` and `createNotePlacement()` have sat in the data layer
+since Phase 5, unruled and uninvoked, with **nothing ever deciding what they
+mean**.
+
+**(1) `createNoteFolder()` validates `parentFolderId` NOT AT ALL.** It calls
+`createDocument()` directly with no lookup of any kind — where its sibling
+`createNotePlacement()` opens a transaction and checks both documents exist,
+share the tenant and owner, and are active. So a folder may today name a parent
+that does not exist, one belonging to **another person or another tenant**, or
+**itself**; and two folders may name each other, making a cycle any tree walk
+follows for ever. Harmless while unruled and uninvoked; it is the CORE STRUCTURE
+of MMJ.
+
+**(2) `semanticRole` is free text defaulting to `"user"`** — the only field that
+can carry "Reflection Archive ≠ Personal Journey Map", constrained by nothing.
+**The identical shape of drift ADR-009 closed for `noteSources`, found a second
+time in the same data layer.**
+
+**ADR-010 adds no new intent: it makes four accepted statements ENFORCEABLE.**
+MMJ reads the Note Foundation and defines no Note of its own; Origin and
+Destination may never be derived from each other; `semanticRole` is a closed set
+of three; a folder tree is acyclic, own-owner and depth-bounded at 8; a move is
+two facts, never a rewrite.
+
+**The temptation §2 forbids is a real one, and is named.** Auto-filing a Note
+into a folder named for its `sourceKey` looks helpful and would quietly make
+**Destination a function of Origin**. So the enforcement is **INABILITY, NOT
+RESTRAINT**: `journey-map-contract.js` imports *nothing at all* — no
+`study-note-binding.js`, no `unit-keys.js`, no `buildUnitKey` — and a check
+asserts that absence. A module that cannot see an Origin cannot derive a
+Destination from one.
+
+**The two system roles are neither nested nor nestable.** Nesting the Archive
+inside a user folder would let a person hide it; nesting it under the Map would
+make one a part of the other — **the locked distinction undone by a drag.**
+
+**§3 decides the minimum and says so.** It fixes only that the Archive and the
+Map must not be the same container and must be distinguishable without reading a
+name a person can change. What a Journey Map looks like, is for, or contains is
+product and an Owner Control Gate. **The alternative reading was weighed and
+recorded** — that the distinction names two concepts, not two containers —
+and rejected because two concepts sharing one container are indistinguishable in
+the data, so the distinction could only be described: **a locked distinction
+that cannot fail a check is not locked.**
+
+**`folderTreeRefusal()` returns a REASON, never a boolean** — eight of them —
+because every refusal has to reach a person as a sentence and `false` cannot be
+translated into one. The depth bound of 8 has a reason rather than being a round
+number: every consumer walks the tree, and unbounded depth turns one
+pathological chain into an unbounded read on a screen that must open fast.
+
+**A move keeps I4 true through a drag**: retire one placement, create another.
+There is **no in-place `folderId` rewrite shape anywhere in the module**, because
+that destroys the record that the Note was ever filed where it was.
+
+**Tests: 20 + 13 checks, and 9 of 9 mutations proven to fail them.** The pure
+suite is organised by LOCKED DISTINCTION rather than by function, because what is
+being proven is that each distinction can fail a check. **The mutation worth
+naming is P8**: a `noteFolders` block leaked into the Phase 5 deployment
+candidate is caught, because a Phase 6 decision must never change what a Phase 5
+deployment would apply — and that file is the one that gets pasted into the
+Firebase Console.
+
+**Recorded, not fixed:** `createNoteFolder()`'s missing validation stays open
+deliberately — closing it means reading the person's folders, which is
+activation, and doing that inside a reconciliation task would have activated the
+collection by the back door. That, plus the folders/placements Rules candidate,
+is P6-B.
+
+---
+
+**15 Sep 2026 — MAP Phase 6 P6-B: the Mapping My Journey Rules candidate, and
+the defect P6-A recorded, closed.** No application behaviour changed, so **no
+version increment** — `main` stays v08.25. One app file changed, by **40
+insertions and 0 deletions**, reachable from no page.
+
+**The Rules candidate is its OWN FILE, and that is the point.** The Phase 5
+candidate is queued for deployment — it is the text that gets pasted into the
+Firebase Console — so a Phase 6 decision must never change what a Phase 5
+deployment would apply. A check holds the Phase 5 file byte-identical and
+asserts it governs neither collection, and **the shared helper block is held
+IDENTICAL by a check**: two copies of a security model that drift apart is how
+one collection quietly gets a weaker rule than its sibling.
+
+**ADR-010 §2 is enforced STRUCTURALLY, not by inspection.** A placement's
+`keys().hasOnly()` list contains none of `sourceKey`, `sourceKind`,
+`relationshipKind` or `provenanceKind`, so an Origin field on a Destination
+document is refused **by the server**. **§5 is enforced by freezing `folderId`
+and `noteId` on update** — a placement can never be repointed, which is what
+would destroy the record that the Note was ever filed where it was (I4). A move
+is retire-and-create, and the suite proves both halves.
+
+**THE ONE THING RULES CANNOT DO, stated rather than papered over: they cannot
+prevent a cycle of length two or more.** `A → B → A` satisfies every one-hop
+check, and Firestore Rules cannot walk an ancestor chain of unknown length. So
+cycle and depth enforcement is **client-side**, a determined client can corrupt
+**its own owner's** tree (never anyone else's — every rule is owner-scoped), and
+**every consumer must bound its own walk regardless.** The design that would
+close it at the server is **recorded rather than adopted**: a materialised
+`ancestorIds[]` + `depth` verified against the parent's (the shape I12 already
+uses), whose cost is that re-parenting becomes either forbidden or a
+multi-document rewrite Rules cannot verify atomically. **Forbidding folder moves
+is a product decision and an Owner Control Gate**, so v1 does not take it
+unilaterally.
+
+**`createNoteFolder()`'s missing validation is closed.** It now runs ADR-010's
+field rules **before any read** (so a malformed folder never costs a query),
+then reads the person's own folders through a new `listNoteFoldersForOwner()` —
+equality-only and bounded, so **no new composite index**, verified by P5-E's
+index suite — and judges the parent with `folderTreeRefusal()`. **Why a read and
+not a transaction** is written into the code: judging a tree needs the person's
+other folders and a Firestore transaction cannot run a query; the narrow race
+that leaves is exactly why consumers must bound their walks.
+
+**Tests: a new Phase 6 emulator suite at 50 assertions, 0 failures, 0
+expression-budget denials**, plus the data-layer suite 15 → 27. Phase 5's
+emulator suite unchanged at 60/0, 31 of 37 matrix cases. **10 of 10 mutations
+proven to fail** — 7 on the Rules, 3 on the wiring.
+
+**A suite broke the moment the import was added, and the fix is this project's
+own trap in a new costume:** `note-foundation-data-layer.mjs` loads the module
+from a **`data:` URL**, which cannot resolve a RELATIVE specifier. The pure
+contract is now rewritten to its real `file://` URL — resolved rather than
+stubbed, because it is pure — the same technique the Phase 4 store suite uses.
+Two boundary checks were also updated in place with reasons: the importer set is
+now **pinned** to `note-foundation.js` with each importer asserted unreachable,
+and `note-foundation.js` byte-identity became an **addition-only** assertion.
+
+**Nothing deployed, nothing activated.** `firestore.rules`, `firebase.json`,
+`ayah-notes.js` and the Phase 5 Rules candidate all byte-identical to
+`origin/main`; the MMJ pillar still `disabled`; both collections still unruled
+in production.
+
+---
+
+**17 Sep 2026 — the deployment package, and the divergence it uncovered.** No
+application change at all — `git diff origin/main -- app/` is **empty** — so **no
+version increment**; `main` stays v08.25. Nothing deployed.
+
+**Three findings, in increasing severity.** (1) `CLAUDE.md` told the Owner that
+deployment goes through `docs/governance/phase4-production-package-2026-09-14.md`
+— **a file that was never written**. (2) **Phase 5 and Phase 6 had no deployable
+text at all.** Both candidates are self-contained EXTRACTS carrying their own
+copy of the shared helper block so the emulator can run them in isolation, so
+**pasting either into the Console would have replaced the entire live ruleset**
+with a file governing three collections and nothing else — the obvious action for
+a non-coder Owner told "deploy the Phase 5 rules" — and **110 emulator assertions
+were proving things about text with no route to production.** (3) Four helpers
+the extracts describe as "reproduced unchanged from the deployed rules" are **NOT
+unchanged**: `hasRoleIn`, `myPersonIdIn`, `isSelfPerson` and
+`isCoEnrolledTeacherOf` use defensive `.get(field, default)` reads where
+production reads the field directly.
+
+**What (3) means, precisely rather than alarmingly:** all four are defensive-read
+variants with the **same allow/deny outcome whenever the field is present**,
+differing only when a field is ABSENT — production errors (and so denies), the
+extract denies cleanly. **No case flips.** But "same outcome by a different
+route" is not "unchanged", and a suite whose `no()` helper asserts *the deciding
+evaluation was a clean false* is asserting something true of the extract and not
+of production. **Why nobody caught it:** every existing check about
+`firestore.rules` asserts what it does NOT contain, and P6-B's own check compares
+the two extracts to **each other** — precisely the check that cannot see this.
+
+**One assembled file now exists:** `phase4-6-DEPLOYMENT-candidate-2026-09-17.rules`
+— production plus all three phases, **625 lines added, 0 removed**. It is an
+assembly rather than a concatenation for two reasons: the extracts both declare
+the same helpers at top level (duplicate definitions do not compile, so the block
+is taken **once**), and **it uses PRODUCTION's helpers — the extract copies are
+dropped, not merged** — so what would be deployed is the deployed security model,
+not a second one wearing its names.
+
+**The proof that mattered: all three suites re-run against the deployable text**,
+via a `RULES_FILE` override. Phase 4 **53**, Phase 5 **60**, Phase 6 **50** — same
+numbers, zero failures, against the assembled file as against the extracts. That
+identical result is what establishes that the four divergences change no outcome,
+by running them rather than reasoning about them.
+
+**One case had to be INVERTED, and the inversion is the point.** `REG-01` proves
+the legacy `ayahNotes` surface is untouched. Against the extract `ayahNotes` is
+unruled, so the write must be **denied**; against the deployment candidate
+production's own rule is present, so the Owner's write must **succeed exactly as
+today**. It failed on the first run against the assembled file — which is what
+the run was for. Asserting the denial there would have been asserting that
+deployment **breaks the quick note**.
+
+**The Owner-facing package** (`phase4-6-production-deployment-package-2026-09-17.md`)
+is written for someone who does not read code: which file to paste and which two
+must NEVER be, the three indexes field by field, **indexes before rules** and
+why, copy-your-current-rules-out-first as the undo button, and a six-line
+click-through whose most important line is *open a note, type, save*.
+`CLAUDE.md`'s dead pointer now points at it.
+
+**The durable guard is `rules-deployment-candidate.mjs`, 9 checks with a positive
+control**: the candidate drops no production line, defines no helper twice,
+**never carries a different implementation of a production helper**, governs all
+five note collections plus the evidence subcollection, each extract still
+declares itself undeployable, the divergence set is **exactly the audited four**,
+nothing is deployed, and **every `docs/governance/` path the brief names exists**
+— so a dead pointer fails a check instead of wasting the Owner's time.
+
+**8 of 8 mutations caught**, including the naive assembly (production + the
+extract's helper block) and a rewritten production helper, which trips **two**
+checks with the REDEFINES one naming `hasRoleIn`. **A methodology note worth
+keeping:** the first attempt at that mutation silently did nothing — the
+replacement was written on one line and `isSelfPerson` is multi-line in
+production, so it matched nothing and the check "passed". **A mutation that does
+not apply proves nothing**; every mutation now asserts its own occurrence count
+first.
+
+**Two checks updated in place with reasons, none deleted.** The Phase 5 extract's
+byte-identity check became a **RULE CONTENT** check (comments may change, rule
+lines may not) — and when the correction comment left a stray blank line, the
+file was fixed rather than the check loosened.
+
+---
+
+**17 Sep 2026 — MAP Phase 6 P6-C: the Mapping My Journey read model, the
+placement lifecycle, and the bounded walk.** No application behaviour changed, so
+**no version increment** — `main` stays v08.25. Two files extended by **180
+insertions, 0 deletions**, one new module, none of them reachable from any page.
+
+**The gap.** `notePlacements` was **write-only** — created and never read, the
+exact shape `noteSources` was in before P5-E: a folder's contents could not be
+listed and there was no way to ask where a Note had been filed. **ADR-010 §5's
+"a move is retire-and-create" was unexecutable**, because `placementMove()`
+existed as pure policy and no retire function existed at all. And P6-B had
+concluded that **any walk of the folder tree must be bounded**, then left every
+future consumer to remember it.
+
+**The move is ONE transaction, deliberately**: done as two writes, a failure
+between them leaves the Note filed in both folders or in neither and the reader
+cannot tell which. Both ids are known up front so no query is needed — unlike
+`createNoteFolder()`, which must read a whole folder set to judge a tree and
+therefore cannot use a transaction. **Every refusal leaves nothing written**,
+asserted case by case: a half-done move is worse than a refused one.
+
+**A reasoned asymmetry between the two new queries saves an index.** A folder's
+contents are **ordered** (a folder may hold hundreds of Notes, so arbitrary
+truncation would really lose things); the folders one Note sits in are read
+**equality-only**, because that set is inherently tiny and ordering it would cost
+a second composite index for nothing. Stated in the code rather than left to look
+like an oversight.
+
+**`buildFolderTree()` returns `{ roots, orphaned, cyclic }` and drops NOTHING
+silently** — a folder the walk refuses is named, because a Note filed in a folder
+that vanished from the screen is indistinguishable, to its author, from a Note
+that was lost. Past depth 8 a folder is kept and marked `depthCapped` rather than
+pruned away.
+
+**A check caught the service being WEAKER than its own contract.**
+`moveNoteToFolder()` built its payload from named fields, so an Origin field
+passed by a caller was **silently ignored** rather than refused (ADR-010 §2) —
+and a caller who passed `sourceKey` would have believed it did something. One
+line: forward `...rest` to the contract, so the service's guarantee is exactly
+the contract's.
+
+**And a mutation correctly did NOT fail, which was worth establishing rather than
+patching.** M6 removed the `reached` guard from the walk — the line a reader
+would assume gives cycle safety — and nothing failed. **`parentFolderId` is
+single-valued, so a cycle can only be entered from inside itself**; walking DOWN
+from the null-parent roots never reaches one. Verified empirically with the guard
+removed against cycles-with-tails, a bare cycle, duplicate ids and a three-node
+cycle — **none looped**. So the real protection is the **direction of the walk**;
+the guard is unreachable-by-construction defence, and its comment now says so,
+because a reader who credits the wrong line will eventually simplify away the one
+that matters.
+
+**The atomic move is proven at the SERVER, not assumed.** Rules evaluate every
+write in a batch independently, so "both halves are individually allowed" had to
+be shown — the retire is an update whose identity fields are frozen.
+`P-ATOMIC-01` commits retire-and-create as one batch, `P-ATOMIC-02` proves a
+batch that REPOINTS is still refused, `P-ATOMIC-03` that it cannot place into
+someone else's folder.
+
+**Tests: contract 20 → 28, data layer 27 → 47, a new 13-check service suite,
+Phase 6 emulator 50 → 53**, and 7 of 8 mutations caught with the eighth explained
+above. **Phase 5 60 and Phase 6 53 re-verified against the assembled deployment
+candidate.**
+
+**The deployment package was kept in step rather than left quietly wrong.** The
+new ordered query needs a FOURTH index, so: a Phase 6 index candidate in its own
+file, the package updated field by field, and **a new check binding the package's
+hand-written tables to the machine-readable candidates** — a drift no other test
+could see, because it happens between a document and a human.
+
+---
+
 **v08.26 (14 Sep 2026) is MAP Phase 4 P4-D — the Study event wiring: Reading
 (D1), Listening (D2) and WbW (D4) wired to the accepted evidence writer.
 Journaling (D3) is BLOCKED on an architecture decision, below.** Built on

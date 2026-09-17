@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 5 — P5-E: the Note read model, and the Firestore index requirement nobody had recorded</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 5 — P5-E: the Note read model, and the Firestore index requirement nobody had recorded</h1>
+<ul><li><strong>Date:</strong> 2026-09-15</li><li><strong>Task:</strong> MAP Phase 5, task P5-E, executed under the Continuous MAP Execution Directive</li><li><strong>Method:</strong> PRESERVE → RECONCILE → EXTEND; IMPLEMENT → TEST → AUDIT → CORRECT</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> Both changed application files remain unreachable from every page. No behaviour changed.</li><li><strong>Application version:</strong> <strong>08.25, deliberately unchanged</strong> — nothing a reader can reach behaves differently.</li><li><strong>Result:</strong> ACCEPT — 8 of 8 code mutations and 2 of 2 Rules mutations proven to fail the suites; 0 failures across 16 pure suites and the emulator.</li></ul>
+<hr>
+<h2>1. Why this task, and the finding that made it urgent</h2>
+<p>P5-D (the Note editor) is held behind the Note Foundation Rules deployment. The directive&#x27;s own rule applies: a blocked production path is bypassed temporarily, not treated as a stop. So this task took the remaining Phase 5 work that needs no deployment — and immediately found something that would have broken P5-D <em>after</em> those Rules were deployed.</p>
+<h3>F1 — the repository declares no Firestore composite index, anywhere</h3>
+<p><code>firebase.json</code> has no <code>indexes</code> key. No <code>firestore.indexes.json</code> exists. Not one composite index has ever been declared in this project.</p>
+<h3>F2 — that was harmless until Phase 5, and is not harmless now</h3>
+<p>Every <code>orderBy</code> in the entire application — measured, not assumed:</p>
+<p>``<code> app/js/note-foundation.js:207   where ×3 + orderBy(&quot;updatedAt&quot;, &quot;desc&quot;) app/js/note-foundation.js:217   where ×3 + orderBy(&quot;createdAt&quot;, &quot;desc&quot;) </code>``</p>
+<p>That is the complete list. There are <strong>zero</strong> range or inequality filters anywhere in <code>app/js</code>. Every other query in the app is equality-only, and Firestore serves those from single-field indexes — which is precisely why a live, working application has survived with no index file at all.</p>
+<p>The Note Foundation introduced the first two queries that combine equality filters with an <code>orderBy</code> on a <em>different</em> field. Each of those requires a composite index or fails in production with <code>failed-precondition: The query requires an index</code>. <strong>So the Note Foundation, even with its Rules deployed, could not have listed a single Note.</strong></p>
+<h3>F3 — no emulator run could ever have caught this</h3>
+<p>Proven rather than assumed. <code>tools/firestore-emulator/index-probe.test.mjs</code> starts the emulator with an index file declaring <strong>zero</strong> indexes and runs exactly such a query:</p>
+<p>``<code> RESULT: SERVED 3 documents -- the emulator does NOT enforce composite indexes </code>``</p>
+<p>Every one of Phase 5&#x27;s emulator assertions is therefore silent about index requirements. This gap was only ever findable by reading the queries.</p>
+<h3>F4 — <code>noteSources</code> was write-only</h3>
+<p>ADR-009 defined how a Note binds to a Study Unit, and <strong>nothing ever read one back.</strong> <code>note-foundation.js</code> could list a person&#x27;s Notes and one Note&#x27;s revisions; there was no way to ask &quot;which Notes are about this āyah&quot; — which is the only question a Study surface, or Phase 6&#x27;s Mapping My Journey, actually asks.</p>
+<hr>
+<h2>2. What was built</h2>
+<h3>The read side of ADR-009 (BR-0, still unreachable)</h3>
+<p><code>note-foundation.js</code> gains two additive exports; the diff is <strong>57 insertions, 0 deletions</strong>, so no existing behaviour could have been reshaped:</p>
+<ul><li><code>listNoteSourcesForUnit()</code> — the source links binding one permanent unit key to this person&#x27;s Notes, scoped to tenant + owner + <code>sourceKey</code> + status, <strong>ordered newest-first and bounded</strong>.</li><li><code>getNotesByIds()</code> — Notes by permanent id, as one parallel batch.</li></ul>
+<p><code>study-note-service.js</code> gains <code>notesForStudyUnit()</code>, which validates the unit key through ADR-009&#x27;s binding (the only place a unit key is judged), then composes the two.</p>
+<p><strong>The ordering is not decoration.</strong> The bound exists to stop an unbounded read; without an order, hitting it would return an <em>arbitrary</em> subset and the reader would silently lose Notes they wrote. Ordered newest-first, a truncation means &quot;the most recent N&quot;, which a surface can state honestly. That order is what costs the third composite index, and it is worth it.</p>
+<p><strong>One read per Note, deliberately, rather than <code>documentId() in [...]</code>.</strong> <code>activity.js</code> already resolves a set of documents with <code>Promise.all</code> over the keys it needs, so this is a shape this codebase has rather than a new one, and it needs no new Firebase SDK name in the test stub. The cap of 30 is a cap, not an expected cost: the usual number of Notes a person has written on one āyah is one or two.</p>
+<h3>Three design points the tests pin</h3>
+<div class='tw'><table><thead><tr><th>Behaviour</th><th>Why it is not obvious</th></tr></thead><tbody>
+<tr><td><strong>A retired Note is excluded, filtered on the NOTE&#x27;s status, not the link&#x27;s</strong></td><td><code>retirePermanentNote()</code> updates the Note and never touches its source links (I4 — the link is not destroyed either). An active link pointing at a retired Note is the <strong>normal</strong> post-retirement state. Filtering on the link would show retired Notes to the reader for ever.</td></tr>
+<tr><td><strong>A link naming a Note that no longer exists is dropped, not thrown</strong></td><td>One dangling link must not deny a reader every other Note on the unit.</td></tr>
+<tr><td><strong>Truncation is reported, never swallowed</strong></td><td>The query asks for one more than the cap, so &quot;there is more&quot; is read off the data rather than guessed when a page happens to come back exactly full.</td></tr>
+</tbody></table></div>
+<p>And the requirement this whole line of work exists for: <strong>two Notes on the same āyah both come back, as two Notes.</strong> That is the read-side half of ADR-008&#x27;s own amendment, and it is what the quick-note surface — keyed by unit alone — can never express.</p>
+<h3>The index candidate</h3>
+<p><code>docs/governance/phase5-note-foundation-indexes-candidate-2026-09-15.json</code>, three composite indexes, one per requiring query. <strong>Candidate only</strong>: <code>firebase.json</code> is byte-identical and still has no <code>indexes</code> key, and nothing sits at the deploy path <code>firestore.indexes.json</code>. Deploying indexes is an Owner Control Gate, like Rules. A check asserts both facts, so the candidate cannot quietly become a deployment.</p>
+<h3>The durable fix — <code>tools/i18n-verify/firestore-index-requirements.mjs</code></h3>
+<p>Correcting three queries is not the fix; the fix is that the fourth cannot go unnoticed. This suite extracts every balanced <code>query(...)</code> expression in <code>app/js</code>, resolves its collection through <code>collections.js</code> rather than a retyped name, decides from the operators whether Firestore can serve it from single-field indexes, and asserts that everything that cannot has a declared candidate index — and that the candidate declares nothing no query needs.</p>
+<p>It carries a <strong>positive control</strong>: without one, a broken regex would find no queries and every case would pass vacuously. It also asserts that index-requiring queries appear <strong>only</strong> in <code>note-foundation.js</code>, so the first one written anywhere else fails the suite by name.</p>
+<hr>
+<h2>3. Tests</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>study-note-service.mjs</code></td><td><strong>29 passed</strong> (19 + 10 new read-model cases)</td></tr>
+<tr><td><code>study-note-boundary.mjs</code></td><td><strong>17 passed, 0 failed</strong></td></tr>
+<tr><td><code>firestore-index-requirements.mjs</code></td><td><strong>7 passed, 0 failed</strong> (new)</td></tr>
+<tr><td>Phase 5 emulator Rules suite</td><td><strong>60 assertions, 0 failures, 0 expression-budget denials, 31 of 37 matrix cases</strong> (was 53)</td></tr>
+<tr><td>13 other pure suites</td><td>all green, unchanged</td></tr>
+</tbody></table></div>
+<p>The seven new emulator cases (<code>QUERY-04</code>…<code>QUERY-10</code>) run the <strong>exact</strong> query shapes <code>note-foundation.js</code> executes, <code>orderBy</code> and all, so what is proven is the real read path rather than a simplified stand-in. Fresh <strong>active</strong> source links are seeded first, deliberately: a list over a set that matches nothing succeeds trivially and would prove nothing — <code>REL-05</code> had retired the only link <code>p1</code> owned.</p>
+<h3>Mutation testing</h3>
+<div class='tw'><table><thead><tr><th>#</th><th>Mutation</th><th>Caught by</th></tr></thead><tbody>
+<tr><td>N1</td><td>Filter on the LINK&#x27;s status instead of the Note&#x27;s</td><td>R3 — retired Note reappears</td></tr>
+<tr><td>N2</td><td>No one-over probe for truncation</td><td>R1 / R5</td></tr>
+<tr><td>N3</td><td>Unit-key validation removed</td><td>R8 — &quot;Missing expected rejection&quot;</td></tr>
+<tr><td>N4</td><td>Duplicate note ids no longer collapsed</td><td>R7</td></tr>
+<tr><td>N5</td><td>The <code>noteSources</code> index removed from the candidate</td><td>index suite, by name</td></tr>
+<tr><td>N6</td><td><code>orderBy</code> dropped from the query (silently unordered)</td><td>index suite positive control</td></tr>
+<tr><td>N7</td><td>A real import of the binding added to <code>records.js</code></td><td>boundary reachability</td></tr>
+<tr><td>N8</td><td>A line removed from <code>note-foundation.js</code></td><td>boundary addition-only</td></tr>
+<tr><td>R-A</td><td><code>noteSources</code> list rule drops <code>canReadNoteOf</code></td><td>emulator QUERY-08/09</td></tr>
+<tr><td>R-B</td><td><code>noteSources</code> list rule drops <code>listIsBounded</code></td><td>emulator QUERY-06</td></tr>
+</tbody></table></div>
+<p>All restored; every suite returned to its baseline and the Rules candidate is byte-identical.</p>
+<hr>
+<h2>4. Three checks corrected in place, with the reasons</h2>
+<p><strong>None was deleted or excepted.</strong> Each was made to express its own claim better.</p>
+<ol><li><strong><code>study-note-boundary.mjs</code> — the importer scan reported a wiring that did not exist.</strong> Its delimiter class included a <strong>backtick</strong>, so a prose `<code> </code>study-note-binding.js<code> </code><code> inside a doc comment counted as an import. Requiring a </code>from<code>/</code>import` keyword in front makes it an import scan rather than a text search. The same flaw was fixed in the Phase 4 suite. Proven still able to catch a real import.</li><li><strong><code>note-foundation.js</code> byte-identity → addition-only.</strong> P5-E extends that file, so byte-identity is no longer the right claim — but &quot;not reshaped&quot; still is, and it is the one that matters. An <strong>addition-only diff</strong> (0 removed lines) proves it mechanically, and is a stricter thing to assert than &quot;some lines changed and they looked fine on reading&quot;.</li><li><strong>The two drifting fixtures are corrected, and bound.</strong> P5-C&#x27;s report said they were test data it did not own; P5-E owns them. <code>quran</code>/ <code>created-in-study</code> and <code>quran-ayah</code>/<code>reader-created</code> are now the accepted vocabulary, and a new boundary check reads <strong>every</strong> <code>.mjs</code>/<code>.js</code>/<code>.json</code> under <code>tools/</code> and fails on any source-binding word outside ADR-009. Correcting them once was not the fix; binding them is, because the next fixture would otherwise invent a fifth spelling. The check skips lines that <em>call</em> <code>studyNoteSource()</code> — proving a bad word is refused necessarily means writing that bad word down — which keeps it a check about fixtures rather than a filename exception.</li></ol>
+<hr>
+<h2>5. Preservation — verified, not asserted</h2>
+<div class='tw'><table><thead><tr><th>Claim</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Existing user notes preserved</td><td><code>app/js/ayah-notes.js</code> <strong>byte-identical</strong> to <code>origin/main</code></td></tr>
+<tr><td>Note Foundation not reshaped</td><td><code>note-foundation.js</code> diff is <strong>57 insertions, 0 deletions</strong></td></tr>
+<tr><td>Activity and Records untouched</td><td><code>activity.js</code>, <code>records.js</code> <strong>byte-identical</strong></td></tr>
+<tr><td>Nothing deployed</td><td><code>firestore.rules</code> and <code>firebase.json</code> <strong>byte-identical</strong>; no <code>firestore.indexes.json</code> exists</td></tr>
+<tr><td>Still unreachable</td><td>No page reaches either P5-C/P5-E module by any chain of any length</td></tr>
+<tr><td>No destructive migration</td><td>No <code>migrat</code>, <code>backfill</code>, <code>deleteDoc</code>, <code>writeBatch</code>, <code>delete</code>, <code>clear(</code> or <code>remove(</code> in either module</td></tr>
+<tr><td>No layout or behaviour change</td><td>The only tracked <code>app/</code> changes are two files no page can load; <code>app/js/version.js</code> byte-identical</td></tr>
+</tbody></table></div>
+<p><code>layout.mjs</code> was not re-run, for the same stated reason as P5-C: no page, nor any module any page can reach, differs from <code>origin/main</code>.</p>
+<hr>
+<h2>6. What was deliberately NOT done</h2>
+<ul><li><strong><code>noteFolders</code> / <code>notePlacements</code> remain unruled and untouched.</strong> They are Phase 6, an unruled collection is denied by default, and the directive is explicit that beginning Phase 6 does not license activating them.</li><li><strong>No index was deployed, and <code>firebase.json</code> was not pointed at the candidate.</strong> Adding that key is a deployment-shaped change and an Owner Control Gate; a check now asserts it has not happened.</li><li><strong>The guardian approval window (matrix GUARD-05/06/07) is still not built.</strong> The accepted contract describes a 30-minute server-expiring, Note-specific approval, but names no collection to hold it, and its own <code>foundationCollections</code> / <code>deferredCollections</code> lists do not include one. Choosing that storage is a new architecture choice — an Owner Control Gate — so it is recorded here rather than invented. Every guardian content edit stays denied outright, which is strictly safer than the accepted design.</li></ul>
+<hr>
+<h2>7. Pending-dependency ledger</h2>
+<div class='tw'><table><thead><tr><th>#</th><th>Item</th><th>Blocked on</th><th>State preserved</th></tr></thead><tbody>
+<tr><td>1</td><td>Phase 4 production activation</td><td>Firebase Console access</td><td><code>claude/phase4-wiring</code> <code>c4fca4a</code> unmerged; 208-line Rules amendment undeployed</td></tr>
+<tr><td>2</td><td>Phase 5 Note Foundation Rules</td><td>Firebase Console access</td><td>Candidate at 60 assertions; <code>firestore.rules</code> untouched</td></tr>
+<tr><td>3</td><td>Phase 5 Note Foundation <strong>indexes</strong></td><td>Firebase Console access</td><td><strong>New this task.</strong> Candidate under <code>docs/governance/</code>; must be deployed <em>with</em> item 2 or the Note Foundation&#x27;s three list queries fail</td></tr>
+<tr><td>4</td><td>P5-D — the Note editor surface</td><td>Items 2 <strong>and</strong> 3</td><td>Not started; a real behaviour change requiring a version bump and full layout measurement</td></tr>
+<tr><td>5</td><td>Guardian approval window</td><td>Owner storage decision</td><td>Denied-outright stands</td></tr>
+</tbody></table></div>
+<p><strong>Item 3 is new and matters to item 2:</strong> deploying the Rules alone would leave the Note Foundation able to authorise queries it cannot execute.</p>
+<hr>
+<h2>8. Next</h2>
+<p>Independent Phase 5 work that requires no deployment is now <strong>exhausted</strong>: the architecture, the contracts, the pure foundations, the read model, the Rules candidate, the index candidate and the compatibility position are all in the repository. The next task is <strong>Phase 6 — Mapping My Journey foundation</strong>, beginning with reconciling its requirements against the accepted Note Foundation and ADR-009 before any collection is activated.</p>
+</main></body></html>

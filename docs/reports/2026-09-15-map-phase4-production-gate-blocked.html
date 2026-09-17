@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 4 — Production Gate: HALTED AT STEP 1</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 4 — Production Gate: HALTED AT STEP 1</h1>
+<p><strong>Date:</strong> 15 September 2026 <strong>Authority:</strong> Owner authorisation of 2026-09-15 to deploy the tested Phase 4 Firestore Rules amendment; Master Architect Phase 4 Production Gate instruction. <strong>Result:</strong> <strong>DEPLOYMENT NOT PERFORMED. NOTHING WAS DEPLOYED, NOTHING WAS MERGED.</strong> <strong><code>main</code>:</strong> <code>65d3f997888480aedad58b6ed82fc4ec7d76bd74</code>, app version <strong>08.25</strong> — unchanged. <strong>Wiring candidate:</strong> <code>claude/phase4-wiring</code> = <code>c4fca4aa477a3f0429779b711544e48386bd2a3b</code>, v08.26 — unmerged, as instructed. <strong>Production <code>firestore.rules</code>: byte-for-byte unchanged.</strong></p>
+<p><strong>Phase 4 is NOT closed, and no closure report is produced.</strong> The gate&#x27;s own step 10 makes the closure report conditional on all production verification passing; none of it could run.</p>
+<hr>
+<h2>1. Where it stopped, and why</h2>
+<p>The Owner&#x27;s authorisation removes the <em>permission</em> barrier. It does not supply the <em>access</em>, and those are different things.</p>
+<p><strong>Step 1 — &quot;Perform the production Firestore Rules parity procedure&quot; — cannot be executed from this environment.</strong> The procedure&#x27;s first action is to read the live ruleset for <code>study-monitoring</code>. Re-tested today, after the authorisation:</p>
+<div class='tw'><table><thead><tr><th>Probe</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>GOOGLE_APPLICATION_CREDENTIALS</code> / <code>FIREBASE_TOKEN</code> / any <code>FIREBASE_<em></code> or <code>GOOGLE_</em></code> env var</td><td><strong>none set</strong></td></tr>
+<tr><td><code>~/.config/configstore/firebase-tools.json</code></td><td>present but <strong>empty</strong> — no tokens, no user</td></tr>
+<tr><td>service-account / admin-SDK / ADC key files on disk</td><td><strong>none found</strong></td></tr>
+<tr><td><code>firebase --project study-monitoring firestore:databases:list</code></td><td><strong><code>Error: Failed to authenticate, have you run firebase login?</code></strong></td></tr>
+<tr><td><code>GET https://firebaserules.googleapis.com/v1/projects/study-monitoring/releases</code></td><td><strong>HTTP 403</strong></td></tr>
+</tbody></table></div>
+<p>So the live text cannot be read, and therefore cannot be compared.</p>
+<p><strong>This is stricter than the stop condition the gate anticipated.</strong> Step 2 says to stop if parity <em>differs</em> by more than the documented trailing newline. Here <strong>parity cannot be established at all</strong> — which is a superset of that condition, not a lesser one. Publishing the prepared candidate without it would risk silently reverting any change made in the Console since 10 September, which the accepted package&#x27;s own procedure exists to prevent.</p>
+<p><strong>I did not improvise around it, and I am not requesting credentials</strong> — the standing instruction forbids asking for tokens or service-account secrets in chat, and §5 below needs none.</p>
+<h2>2. Steps 3–9 were therefore not attempted</h2>
+<div class='tw'><table><thead><tr><th>Step</th><th>State</th></tr></thead><tbody>
+<tr><td>3. Deploy the amendment</td><td><strong>NOT DONE</strong> — blocked by step 1</td></tr>
+<tr><td>4. Re-read production Rules and prove the block present / remainder unchanged</td><td><strong>NOT DONE</strong> — cannot read them</td></tr>
+<tr><td>5. Merge <code>claude/phase4-wiring</code> into <code>main</code></td><td><strong>DELIBERATELY NOT DONE</strong> — see §3</td></tr>
+<tr><td>6. Preserve version 08.26</td><td>held on the branch</td></tr>
+<tr><td>7. Deploy via GitHub Pages, verify commit correspondence</td><td><strong>NOT DONE</strong> — depends on 5</td></tr>
+<tr><td>8. Six post-deployment verification checks</td><td><strong>NOT DONE</strong> — depends on 3 and 5</td></tr>
+<tr><td>9. Rollback on failure</td><td>not applicable; nothing was changed to roll back</td></tr>
+<tr><td>10. Closure report</td><td><strong>NOT PRODUCED</strong> — conditional on 8</td></tr>
+</tbody></table></div>
+<h2>3. Why the merge was held even though step 5 reads as a separate action</h2>
+<p>The gate orders the steps deploy → verify → merge, and its own step 9 gives the rollback order as <strong>application first, Rules second</strong>. Both encode the same dependency: the app goes live <em>after</em> the Rules.</p>
+<p>Merging now would invert it. With no rule for the subcollection, production denies every evidence write; the accepted P4-C writer <strong>rethrows genuine denials by design</strong> (I15, and ADR-008&#x27;s amendment forbids making them silent). The Owner would get a failure banner on <strong>every āyah they marked read</strong>, in the app they use daily — a live regression, caused by shipping the client half of a feature whose server half is not there.</p>
+<p>Holding the merge is the instruction&#x27;s own intent, not a deviation from it.</p>
+<h2>4. What WAS verified today, at the gate</h2>
+<p>Everything that does not require production access was re-checked against today&#x27;s <code>main</code>, not assumed from the earlier run.</p>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><td>Deployment candidate still valid against today&#x27;s <code>firestore.rules</code></td><td><strong>YES</strong></td></tr>
+<tr><td><code>diff</code> baseline → candidate</td><td><strong>one hunk, <code>871a872,1079</code></strong></td></tr>
+<tr><td>lines <strong>removed</strong></td><td><strong>0</strong></td></tr>
+<tr><td>lines added</td><td>208</td></tr>
+<tr><td>Removing lines 872–1079 reproduces today&#x27;s <code>firestore.rules</code></td><td><strong>BYTE-FOR-BYTE EXACT</strong></td></tr>
+<tr><td>Evidence block byte-identical to the emulator-tested candidate</td><td><strong>YES</strong></td></tr>
+<tr><td>Insertion point</td><td>immediately after the existing <code>match /activity/{activityKey}</code> block&#x27;s closing brace, before <code>match /domains/…</code> — exactly §2 of the accepted package</td></tr>
+<tr><td><strong>Full emulator suite against the EXACT deployment file</strong></td><td><strong>53 assertions, 0 failures, 0 expression-budget denials</strong></td></tr>
+<tr><td><code>claude/phase4-wiring</code> merges into <code>main</code></td><td><strong>CLEAN — no conflicts</strong></td></tr>
+<tr><td>Production <code>firestore.rules</code></td><td><strong>unchanged</strong></td></tr>
+</tbody></table></div>
+<h3>A correction to my own check, recorded rather than buried</h3>
+<p>My first reconstruction check reported the candidate as <strong>not</strong> addition-only. That was the check being wrong, not the file: it located the inserted region by matching a header-comment string and sliced at the wrong index. <code>diff</code> is authoritative and says one pure-append hunk with <strong>zero</strong> lines removed, and deleting exactly lines 872–1079 reproduces <code>firestore.rules</code> byte-for-byte. The candidate is sound; the check was not, and has been replaced by the line-range reconstruction above.</p>
+<h2>5. Exactly what unblocks this — no secret needs to be shared</h2>
+<p>The accepted package&#x27;s <strong>Route A</strong> needs no credentials given to this session. Whoever holds Firebase Console access for <code>study-monitoring</code> performs steps 1–4:</p>
+<ol><li>Firebase Console → Firestore → <strong>Rules</strong>. Copy the live text.</li><li>Diff it against this repository&#x27;s <code>firestore.rules</code> on <code>main</code> (<code>65d3f99</code>). The <strong>only</strong> expected difference is one trailing newline in the repository copy. <strong>If anything else differs, stop and send that difference back</strong> — that is the gate&#x27;s step 2, and it still applies.</li><li>If parity holds: open <code>docs/governance/phase4-activity-evidence-DEPLOYMENT-candidate-2026-09-14.rules</code> and copy <strong>lines 872–1079</strong> — the block beginning <code>// MAP Phase 4 (P4-B/P4-C) -- ADR-008 Study Activity evidence.</code> and ending with the closing brace of <code>match /activity/{activityKey}/evidence/{eventId}</code>. Paste it immediately <strong>after</strong> the existing <code>match /activity/{activityKey}</code> block&#x27;s closing <code>}</code> and before <code>match /domains/…</code>. <strong>Publish.</strong></li><li>Confirm the published Rules show the evidence block and that nothing else moved.</li></ol>
+<p>Then tell me it is published, and I will do steps 5–9 without further pause: merge <code>claude/phase4-wiring</code> into <code>main</code> at v08.26, confirm the Pages deployment corresponds to the merged commit, run all six post-deployment checks, and either produce the closure report or roll back in the documented order and report the exact failure.</p>
+<p><strong>Alternatively</strong>, if authenticated access is ever present in this execution environment, I will perform steps 1–9 end to end under the authorisation already given, with no further approval needed.</p>
+<h2>6. P4-D3 Journaling — status preserved</h2>
+<p><strong>DEFERRED TO PHASE 5 — REQUIRED DEPENDENCY ON PERMANENT NOTE IDENTITY.</strong></p>
+<p>Not deleted, not cancelled, not completed. Per the Master Architect&#x27;s D3 decision of 2026-09-15: ADR-008 is <strong>not</strong> amended to accommodate the temporary one-note-per-unit <code>ayah-notes.js</code> model; no <code>noteId</code> is synthesised from <code>unitKey</code>; Phase 5 Note Foundation is <strong>not</strong> activated inside Phase 4. Journaling Activity must later use the permanent Note identity supplied by the accepted Phase 5 Note Foundation. Nothing in this task touched any of it.</p>
+<h2>7. Position</h2>
+<p><strong>Accepted and integrated on <code>main</code>:</strong> P4-A (v08.24), P4-C (v08.25). <strong>Accepted and held on the branch:</strong> P4-D1, P4-D2, P4-D4 (v08.26), merging cleanly, fully tested. <strong>Accepted as deployment candidate:</strong> the Rules amendment — re-verified today, 53/0/0 against the exact file that would be published. <strong>Deferred:</strong> P4-D3, to Phase 5. <strong>Blocked:</strong> the deployment itself, on production Firebase access.</p>
+<p><strong>Phase 4 remains NOT CLOSED.</strong> No Phase 5 implementation was begun.</p>
+<hr>
+<p><strong>PHASE 4 PRODUCTION GATE HALTED — BLOCKER: NO AUTHENTICATED FIREBASE ACCESS TO <code>study-monitoring</code> IN THIS EXECUTION ENVIRONMENT, SO THE MANDATORY RULES PARITY PROCEDURE (STEP 1) CANNOT BE PERFORMED AND NOTHING WAS DEPLOYED OR MERGED.</strong></p>
+</main></body></html>

@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 6 — P6-B: the Mapping My Journey Rules candidate, and the defect P6-A recorded</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 6 — P6-B: the Mapping My Journey Rules candidate, and the defect P6-A recorded</h1>
+<ul><li><strong>Date:</strong> 2026-09-15</li><li><strong>Task:</strong> MAP Phase 6, task P6-B</li><li><strong>Method:</strong> PRESERVE → RECONCILE → EXTEND; IMPLEMENT → TEST → AUDIT → CORRECT</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> One application file changed, by <strong>40 insertions and 0 deletions</strong>, and it is reachable from no page. Nothing deployed, nothing activated in production.</li><li><strong>Application version:</strong> <strong>08.25, deliberately unchanged.</strong></li><li><strong>Result:</strong> ACCEPT — 7 of 7 Rules mutations and 3 of 3 wiring mutations proven to fail the suites; 0 failures across 16 pure suites and both emulator suites.</li></ul>
+<hr>
+<h2>1. The Rules candidate</h2>
+<p><code>docs/governance/phase6-journey-map-rules-candidate-2026-09-15.rules</code>, governing exactly <code>noteFolders</code> and <code>notePlacements</code>.</p>
+<p><strong>It is its own file, and that is the point.</strong> The Phase 5 candidate is <em>queued for deployment</em> — it is the text that gets pasted into the Firebase Console — so a Phase 6 decision must never change what a Phase 5 deployment would apply. A check holds the Phase 5 file byte-identical to <code>origin/main</code> and asserts it governs neither collection; P6-A&#x27;s mutation P8 proved that check can fail.</p>
+<p><strong>The shared helper block is reproduced unchanged and held identical by a check.</strong> Two copies of a security model that drift apart is how one collection quietly acquires a weaker rule than its sibling.</p>
+<h3>What the rules enforce</h3>
+<div class='tw'><table><thead><tr><th>ADR-010</th><th>Enforced as</th></tr></thead><tbody>
+<tr><td>§2 Origin ≠ Destination</td><td><strong>Structurally.</strong> A placement&#x27;s <code>keys().hasOnly()</code> list contains none of <code>sourceKey</code>, <code>sourceKind</code>, <code>relationshipKind</code>, <code>provenanceKind</code>, so an Origin field on a Destination document is refused <em>by the server</em>, not merely by the client</td></tr>
+<tr><td>§3 Closed semantic role</td><td>The three-way <code>semanticRole</code> test, plus <code>semanticRole</code> frozen on update — a folder may be renamed, reordered, re-parented or retired, but may never become a different <em>kind</em> of folder</td></tr>
+<tr><td>§3 System folders neither nested nor nestable</td><td>A system role forces <code>parentFolderId == null</code>, and nothing may name a system folder as its parent</td></tr>
+<tr><td>§4 One hop of the tree</td><td>Parent must exist, share tenant and owner, be active, not be a system folder, and not be the folder itself</td></tr>
+<tr><td>§5 A move is retire-and-create</td><td><strong><code>folderId</code> and <code>noteId</code> frozen on update.</strong> A placement can never be repointed, which is what would destroy the record that the Note was ever filed where it was (I4)</td></tr>
+<tr><td>I4/D6</td><td><code>allow delete: if false</code> on both collections</td></tr>
+</tbody></table></div>
+<p>Both ends of a placement must be real, mine and active — the same three facts <code>createNotePlacement()</code> already checked in its transaction, now enforced where a client cannot skip them.</p>
+<h3>The one thing the rules CANNOT do, stated rather than papered over</h3>
+<p><strong>Firestore Rules cannot prevent a cycle of length two or more.</strong> <code>A → B → A</code> satisfies every one-hop check, and Rules cannot walk an ancestor chain of unknown length.</p>
+<ul><li>Cycle and depth enforcement therefore live <strong>client-side</strong>, in <code>folderTreeRefusal()</code>.</li><li>A determined client can corrupt <strong>its own owner&#x27;s</strong> folder tree — never anyone else&#x27;s, because every rule is owner-scoped.</li><li><strong>Consequence for every consumer, and it is not optional: any walk of this tree must be bounded regardless of what the rules guarantee.</strong></li></ul>
+<p>The design that <em>would</em> close it at the server is <strong>recorded rather than adopted</strong>: a materialised <code>ancestorIds[]</code> + <code>depth</code>, verified against the parent&#x27;s own — the shape I12 already uses for roll-ups — which makes a cycle impossible because a folder would have to appear in its own ancestor list. Its cost is that re-parenting becomes either forbidden or a multi-document rewrite of every descendant that Rules cannot verify atomically. <strong>Forbidding folder moves is a product decision and an Owner Control Gate</strong>, so v1 does not take it unilaterally.</p>
+<hr>
+<h2>2. The defect P6-A recorded is now closed</h2>
+<p><code>createNoteFolder()</code> validated <code>parentFolderId</code> <strong>not at all</strong>. It now:</p>
+<ol><li>Runs ADR-010&#x27;s field rules through <code>journeyFolder()</code> <strong>before any read</strong>, so a malformed folder never costs a query;</li><li>Reads the person&#x27;s own folders (a new <code>listNoteFoldersForOwner()</code>, equality-only and bounded — <strong>no new composite index</strong>, verified by the P5-E index suite);</li><li>Judges the proposed parent with <code>folderTreeRefusal()</code> and throws the reason.</li></ol>
+<p><strong>Why a read and not a transaction, stated in the code:</strong> judging a tree needs the person&#x27;s other folders, and a Firestore transaction cannot run a query. The race that leaves is narrow and bounded — two <em>concurrent</em> creates by the same person could close a cycle, and the Rules cannot catch that either — which is exactly why every consumer must bound its own walk.</p>
+<hr>
+<h2>3. Tests</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td>Phase 6 emulator Rules suite (new)</td><td><strong>50 assertions, 0 failures, 0 expression-budget denials</strong></td></tr>
+<tr><td><code>note-foundation-data-layer.mjs</code></td><td><strong>27 assertions</strong> (15 + 12 new folder-validation cases)</td></tr>
+<tr><td>Phase 5 emulator Rules suite</td><td>60 assertions, 0 failures, 31 of 37 matrix cases — unchanged</td></tr>
+<tr><td>15 other pure suites</td><td>all green</td></tr>
+</tbody></table></div>
+<h3>Mutation testing — 10 of 10 proven able to fail</h3>
+<div class='tw'><table><thead><tr><th>#</th><th>Mutation</th><th>Caught by</th></tr></thead><tbody>
+<tr><td>R1</td><td>Folder create drops <code>isNoteOwner</code></td><td>F-OWN-03 — a guardian could create a folder for their child</td></tr>
+<tr><td>R2</td><td><code>parentOneHopOk</code> always true</td><td>F-ROLE-03</td></tr>
+<tr><td>R3</td><td><code>semanticRole</code> vocabulary opened</td><td>F-ROLE-02</td></tr>
+<tr><td>R4</td><td>Placement <code>folderId</code> no longer frozen</td><td>P-MOVE-01</td></tr>
+<tr><td>R5</td><td><code>bothEndsOk</code> dropped</td><td>P-END-01</td></tr>
+<tr><td>R6</td><td><code>sourceKey</code> allowed on a placement</td><td>P-ORIGIN-sourceKey</td></tr>
+<tr><td>R7</td><td>Folder delete allowed</td><td>F-LIFE-02</td></tr>
+<tr><td>W1</td><td><code>folderTreeRefusal()</code> no longer consulted</td><td>data-layer suite</td></tr>
+<tr><td>W2</td><td><code>journeyFolder()</code> field validation skipped</td><td>data-layer suite</td></tr>
+<tr><td>W3</td><td>The folder read skipped entirely</td><td>data-layer suite</td></tr>
+</tbody></table></div>
+<p>Every denial in the emulator suite asserts its <strong>deciding evaluation was a clean <code>false</code></strong> — never an expression-budget refusal, which is what sank the Phase 4 Activity candidate.</p>
+<hr>
+<h2>4. Two checks and one suite corrected in place, with reasons</h2>
+<ol><li><strong><code>journey-map-boundary.mjs</code> — &quot;no app source imports the journey contract&quot;</strong> became &quot;the only importer is the data layer, itself unreachable&quot;, with the importer set <strong>pinned</strong> to <code>[&quot;app/js/note-foundation.js&quot;]</code> and each importer asserted unreachable from every page. The claim that matters — nothing a reader can reach touches this — is unchanged.</li><li><strong><code>note-foundation.js</code> byte-identity → addition-only</strong> in the same suite, for the same reason as P5-E: the file is now extended, and &quot;nothing removed or reshaped&quot; is the claim that matters and is mechanically provable.</li><li><strong><code>note-foundation-data-layer.mjs</code> broke the moment the import was added</strong>, and the fix is worth recording because it is this project&#x27;s own trap in a new costume: the suite loads the module from a <strong><code>data:</code> URL</strong>, which cannot resolve a <em>relative</em> specifier. The pure contract is now rewritten to its real <code>file://</code> URL — resolved, not stubbed, because it is pure — the same technique the Phase 4 store suite already uses.</li></ol>
+<hr>
+<h2>5. Nothing activated — verified</h2>
+<div class='tw'><table><thead><tr><th>Claim</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Nothing deployed</td><td><code>firestore.rules</code> and <code>firebase.json</code> byte-identical to <code>origin/main</code></td></tr>
+<tr><td>The Phase 5 deployment candidate unchanged</td><td>byte-identical, and governs neither folders nor placements</td></tr>
+<tr><td>Still unreachable</td><td>No page reaches <code>journey-map-contract.js</code> or <code>note-foundation.js</code> by any chain</td></tr>
+<tr><td>Existing user notes preserved</td><td><code>ayah-notes.js</code> byte-identical</td></tr>
+<tr><td>Data layer extended, not reshaped</td><td><code>note-foundation.js</code> diff is <strong>40 insertions, 0 deletions</strong></td></tr>
+<tr><td>MMJ still unavailable to a reader</td><td>the <code>tabJourneyBtn</code> pillar is still <code>disabled</code></td></tr>
+<tr><td>No new index needed</td><td>the P5-E index suite still reports index-requiring queries only where declared</td></tr>
+<tr><td>No behaviour or layout change</td><td>the only tracked <code>app/</code> change is a file no page can load; <code>version.js</code> byte-identical</td></tr>
+</tbody></table></div>
+<hr>
+<h2>6. Pending-dependency ledger</h2>
+<div class='tw'><table><thead><tr><th>#</th><th>Item</th><th>Blocked on</th></tr></thead><tbody>
+<tr><td>1</td><td>Phase 4 production activation</td><td>Firebase Console access — <code>claude/phase4-wiring</code> <code>c4fca4a</code> unmerged, 208-line Rules amendment undeployed</td></tr>
+<tr><td>2</td><td>Phase 5 Note Foundation Rules</td><td>Firebase Console access — 60 emulator assertions</td></tr>
+<tr><td>3</td><td>Phase 5 Note Foundation <strong>indexes</strong></td><td>Firebase Console access — <strong>must deploy with item 2</strong></td></tr>
+<tr><td>4</td><td>P5-D — the Note editor surface</td><td>Items 2 and 3</td></tr>
+<tr><td>5</td><td>Phase 5 guardian approval window</td><td>Owner storage decision</td></tr>
+<tr><td>6</td><td><strong>Phase 6 folders/placements Rules</strong></td><td>Firebase Console access — 50 emulator assertions, <strong>new this task</strong></td></tr>
+<tr><td>7</td><td>Server-side cycle prevention (<code>ancestorIds[]</code> + <code>depth</code>)</td><td>Owner decision: it costs the ability to move a folder</td></tr>
+</tbody></table></div>
+<hr>
+<h2>7. Next</h2>
+<p>The Phase 6 <em>foundation</em> is now as complete as it can be without a deployment: the contract is decided, the data layer validates against it, and both collections have a tested Rules candidate. What remains in Phase 6 is the <strong>surface</strong> — and it sits behind the same dependency as P5-D, for the same reason: every write it made would be denied until the Rules are deployed, and I15 requires that denial to reach the reader.</p>
+</main></body></html>

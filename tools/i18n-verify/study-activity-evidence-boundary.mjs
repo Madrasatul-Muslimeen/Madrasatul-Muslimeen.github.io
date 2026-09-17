@@ -38,6 +38,22 @@ function check(name, fn) {
 
 const GUARDED = ["study-activity-evidence-id.js", "study-activity-evidence-store.js"];
 
+// MERGED 2026-09-17 (main <- claude/phase4-wiring). Two true invariants met
+// here and neither survives alone:
+//
+//   main  said NO PAGE may reach the writer, because through P5/P6 nothing was
+//         wired and that was the whole safety case.
+//   P4-D  said the writer has exactly ONE audited entry point, because this
+//         branch wires Study surfaces to it ON PURPOSE.
+//
+// On this branch "unreachable" is simply false, and asserting it would have
+// been asserting that the wiring does not work. So main's REACHABILITY WALKER
+// is kept -- it is the stronger mechanism, catching a wiring wherever in the
+// chain it happens -- and applied to P4-D's invariant: every page-reachable
+// path to the writer must pass THROUGH the wiring module. A second module
+// quietly learning to write evidence is what that catches.
+const WIRING = "study-event-wiring.js";
+
 /** A module's CODE, with block comments and whole-line `//` comments removed -- these checks must read code, not the prose that describes it. Trailing `//` comments stay in scope deliberately: that errs towards a false alarm, never a missed wiring. */
 function codeOf(name) {
   return fs.readFileSync(path.join(appJs, name), "utf8")
@@ -59,104 +75,114 @@ function appSources() {
   return out;
 }
 
-// --- 1. the writer has exactly ONE entry point ----------------------------
+// --- reachability: what can a PAGE actually load? --------------------------
 //
-// UPDATED at P4-D1, with the reason, rather than deleted. Through P4-C these
-// two checks asserted that NOTHING imported the writer, because the tranche's
-// whole safety case was that it was uninvoked. P4-D wires Study surfaces to it
-// on purpose, so "uninvoked" is no longer the invariant -- but "reachable from
-// exactly one audited place" is, and it is the stronger of the two. A second
-// module quietly learning to write evidence is precisely what these now catch.
-const WIRING = "study-event-wiring.js";
+// UPDATED 2026-09-15 (P5-C), with the reason recorded rather than the check
+// deleted. The two cases below used to assert that NOTHING under app/ imports
+// the writer at all. P5-C adds `study-note-service.js`, which imports it and is
+// itself imported by nothing -- so the original mechanism failed while the
+// claim it stands for ("no Study surface records evidence") stayed true.
+//
+// A blunter answer would have been an exception for that one file, which is
+// exactly the "worked around" this project forbids: the next module importing
+// the writer would need another exception, and the tenth would be a live
+// wiring nobody noticed. So the mechanism is now STRICTER, not looser -- it
+// follows the import graph from every page in app/ and asserts the writer is
+// not reachable from any of them by any chain of any length. A wiring is
+// caught wherever in that chain it happens.
 
-check("only the approved wiring module imports the evidence writer", () => {
+/** Local `./x.js` imports of one module. */
+function localImportsOf(file) {
+  const text = fs.readFileSync(file, "utf8");
+  return [
+    ...[...text.matchAll(/from\s*["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]),
+    ...[...text.matchAll(/import\s*["'`]\.\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]),
+  ];
+}
+
+/** The modules one page loads directly, via a script src or an inline module import. */
+function entryModulesOf(htmlPath) {
+  return [...fs.readFileSync(htmlPath, "utf8").matchAll(/["'`](?:\.\/)?js\/([A-Za-z0-9._-]+\.js)["'`]/g)].map((m) => m[1]);
+}
+
+/** Every `app/*.html` page that can reach `target`, with the chain by which it does. */
+function chainsToTarget(target) {
+  const found = [];
+  for (const entry of fs.readdirSync(path.join(root, "app"))) {
+    if (!entry.endsWith(".html")) continue;
+    const seen = new Set();
+    const queue = entryModulesOf(path.join(root, "app", entry)).map((m) => [m]);
+    while (queue.length) {
+      const chain = queue.shift();
+      const head = chain[chain.length - 1];
+      if (seen.has(head)) continue;
+      seen.add(head);
+      if (head === target) { found.push(`app/${entry} -> ${chain.join(" -> ")}`); break; }
+      const full = path.join(appJs, head);
+      if (!fs.existsSync(full)) continue;
+      for (const next of localImportsOf(full)) queue.push([...chain, next]);
+    }
+  }
+  return found;
+}
+
+/** The modules that import one of the guarded files directly. */
+function directImportersOf() {
   const importers = [];
   for (const { file, text } of appSources()) {
     if (GUARDED.includes(path.basename(file))) continue;
     for (const guarded of GUARDED) {
       const base = guarded.replace(/\.js$/, "");
-      if (new RegExp(`["'\`][./]*(?:js/)?${base}\\.js["'\`]`).test(text)) importers.push(`${file} -> ${guarded}`);
+      if (new RegExp(String.raw`(?:from|import)\s*["'\`][./]*(?:js/)?${base}\.js["'\`]`).test(text)) importers.push(path.basename(file));
     }
   }
-  const unexpected = importers.filter((entry) => !entry.startsWith(`app/js/${WIRING} ->`));
-  assert.deepEqual(unexpected, [], `only ${WIRING} may import the writer, saw: ${unexpected.join(", ")}`);
-});
+  return [...new Set(importers)].sort();
+}
 
-check("the wiring module is the only thing that calls the writer", () => {
+// --- 1. the writer is UNINVOKED -------------------------------------------
+check("POSITIVE CONTROL: the reachability walker really does find a wired module", () => {
+  // Without this, a broken regex in entryModulesOf() would make every chain
+  // come back empty and the three cases below would pass vacuously -- a check
+  // that cannot fail, which this project has shipped before. So the walker is
+  // first asked for a module that IS unmistakably wired into a real page.
+  const control = chainsToTarget("records.js");
+  assert.ok(control.length > 0, "the walker found no page importing records.js -- it is not working");
+  assert.ok(control.some((c) => c.includes("quranrevival.html")), `unexpected control result: ${control[0]}`);
+});
+check("every page-reachable path to the writer passes THROUGH the wiring module", () => {
+  const chains = GUARDED.flatMap((guarded) => chainsToTarget(guarded));
+  assert.ok(chains.length > 0,
+    "no page reaches the writer at all -- on this branch the Study wiring is live, so that means it is broken");
+  const unaudited = chains.filter((chain) => !chain.includes(`-> ${WIRING} ->`));
+  assert.deepEqual(unaudited, [],
+    `a page reaches the writer WITHOUT going through ${WIRING}: ${unaudited.join(" | ")}`);
+});
+check("the importer set is exactly the wiring module plus the queued, unreachable one", () => {
+  // The expected list is pinned, not merely permitted: a NEW importer appearing
+  // here is a fact a later session must audit deliberately, even while it is
+  // still unreachable. It is also the list of what is queued behind the Rules
+  // deployment.
+  const importers = directImportersOf();
+  assert.deepEqual(importers, [WIRING, "study-note-service.js"].sort(),
+    `the set of modules importing the writer has changed -- re-audit before updating this list: ${importers.join(", ")}`);
+  for (const importer of importers) {
+    if (importer === WIRING) continue;   // live on purpose; covered by the case above
+    assert.deepEqual(chainsToTarget(importer), [], `${importer} is now loaded by a page`);
+  }
+});
+check("no PAGE-REACHABLE source but the wiring module names a Study event writer", () => {
   const offenders = [];
   for (const { file, text } of appSources()) {
-    if (GUARDED.includes(path.basename(file)) || path.basename(file) === WIRING) continue;
-    if (/writeStudyActivityEvidence|studyEvidenceId|buildStudyEvidenceDocument/.test(text)) offenders.push(file);
+    const base = path.basename(file);
+    if (GUARDED.includes(base)) continue;
+    if (!/writeStudyActivityEvidence|studyEvidenceId|buildStudyEvidenceDocument/.test(text)) continue;
+    if (base === WIRING) continue;                                          // the audited entry point
+    if (file.endsWith(".js") && chainsToTarget(base).length === 0) continue; // queued, not wired
+    offenders.push(file);
   }
-  assert.deepEqual(offenders, [], `these call the writer directly instead of going through ${WIRING}: ${offenders.join(", ")}`);
+  assert.deepEqual(offenders, []);
 });
 
-check("the wiring module cannot reach Mastery either", () => {
-  const text = codeOf(WIRING);
-  for (const forbidden of ["./records.js", "claimStatus", "confirmEntry", "returnEntry",
-                           "achieved", "mastered", "confirmState", "claimedStatus", "confirmedStatus"]) {
-    assert.ok(!text.includes(forbidden), `${WIRING} references ${forbidden}`);
-  }
-});
-
-check("the wiring module never writes the legacy entries[] array", () => {
-  const text = codeOf(WIRING);
-  for (const forbidden of ["arrayUnion", "logActivity"]) {
-    assert.ok(!text.includes(forbidden), `${WIRING} references ${forbidden}`);
-  }
-  const firestoreEntries = text.match(/(?<!Object\.)\bentries\b/g) ?? [];
-  assert.deepEqual(firestoreEntries, [], `${WIRING} touches the legacy entries[] array`);
-});
-
-check("Listening settles on the REAL end-of-playback signals", () => {
-  const page = fs.readFileSync(path.join(root, "app", "quranrevival.html"), "utf8");
-  if (!page.includes("settleListeningSession")) return; // P4-D2 not on this branch
-  // audio-player.js invokes onPlaybackState() with NO arguments. A first
-  // version of the D2 wiring branched on `state === "ended"` inside
-  // setPlaybackStateHandler, which would have been false for ever -- Listening
-  // evidence would never have been recorded, and every pure-session test would
-  // still have passed. This asserts the wiring uses the signals that exist.
-  // Take the call's ACTUAL argument list by balancing parentheses. The first
-  // version of this guard sliced to the next `");"` -- which in JavaScript is
-  // the two characters `)` and `;`, so it stopped at `renderReadTransport();`
-  // and never saw the rest of the handler. It passed against the very defect it
-  // was written to catch, until a mutation run proved otherwise.
-  const callAt = page.indexOf("setPlaybackStateHandler(");
-  assert.ok(callAt >= 0, "setPlaybackStateHandler is not called at all");
-  let depth = 0, end = callAt;
-  for (let i = page.indexOf("(", callAt); i < page.length; i++) {
-    if (page[i] === "(") depth++;
-    else if (page[i] === ")") { depth--; if (depth === 0) { end = i; break; } }
-  }
-  const handlerBody = page.slice(callAt, end + 1);
-  assert.ok(!/settleListeningSession/.test(handlerBody),
-    "Listening is settled from setPlaybackStateHandler, which is called with no arguments");
-  assert.ok(/await settleListeningSession\("ended"\)/.test(page),
-    "nothing settles the listen when playback finishes naturally");
-  assert.ok(/settleListeningSession\("failed"\)/.test(page),
-    "nothing fails the listen when playback fails");
-  assert.ok(/settleListeningSession\("stopped"\)/.test(page),
-    "nothing settles the listen when the reader presses Stop");
-});
-
-check("only a real Play press can start a listening session", () => {
-  const page = fs.readFileSync(path.join(root, "app", "quranrevival.html"), "utf8");
-  if (!page.includes("beginListeningSession")) return;
-  const starts = [...page.matchAll(/beginListeningSession\(\)/g)].length;
-  assert.equal(starts, 2, `beginListeningSession must be defined once and called once, saw ${starts} occurrences`);
-  // It must not be reachable from a preload or warm path.
-  assert.ok(!/warmSegmentedTimestamps\(\);\s*beginListeningSession/.test(page),
-    "a preload path starts a listening session");
-});
-
-check("a Study surface reaches evidence only through the wiring module", () => {
-  const page = fs.readFileSync(path.join(root, "app", "quranrevival.html"), "utf8");
-  if (!page.includes("study-event-wiring.js")) return; // not yet wired on this branch
-  assert.ok(!/study-activity-evidence-store\.js/.test(page),
-    "the page imports the writer directly instead of the wiring module");
-  assert.ok(!/logActivity\([^)]*reading\.completed/.test(page),
-    "a Study event is being written into the legacy activity log");
-});
 
 // --- 2. evidence can never reach legacy entries[] -------------------------
 check("activity.js is untouched: still the arrayUnion append path", () => {

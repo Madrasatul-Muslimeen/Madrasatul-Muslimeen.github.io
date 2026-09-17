@@ -1,0 +1,336 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // =====================================================================
+    // MAP Phase 6 — CANDIDATE Rules for the Mapping My Journey foundation.
+    //
+    // STATUS: CANDIDATE. NOT DEPLOYED. NOT MERGED INTO firestore.rules.
+    // Deploying Rules is an Owner Control Gate.
+    //
+    // ITS OWN FILE, ON PURPOSE. The Phase 5 candidate is QUEUED FOR
+    // DEPLOYMENT — it is the text that gets pasted into the Firebase Console.
+    // A Phase 6 decision must never change what a Phase 5 deployment would
+    // apply, so folders and placements are governed here instead, and a check
+    // holds the Phase 5 file byte-identical.
+    //
+    // GOVERNS EXACTLY TWO COLLECTIONS: noteFolders, notePlacements.
+    //
+    // SELF-CONTAINED EXTRACT: the helper block below is reproduced UNCHANGED
+    // from the Phase 5 candidate so the emulator can run this file in
+    // isolation. It must never be deployed as a whole file. A check asserts
+
+    //
+    // CORRECTION 2026-09-17: four of these helpers are NOT reproduced
+    // unchanged. hasRoleIn, myPersonIdIn, isSelfPerson and
+    // isCoEnrolledTeacherOf are written here with defensive
+    // `.get(field, default)` reads where production reads the field directly.
+    // Same allow/deny outcome whenever the field is present; they differ only
+    // when it is ABSENT, where production errors (and so denies) and these deny
+    // cleanly. No case flips. The assembled deployment candidate
+    // (phase4-6-DEPLOYMENT-candidate-2026-09-17.rules) therefore uses
+    // PRODUCTION's helpers and drops these copies, and all three emulator
+    // suites are re-run against it to prove the outcomes are unchanged.    // the two copies stay identical, so the security model cannot fork.
+    //
+    // ---------------------------------------------------------------------
+    // WHAT THESE RULES ENFORCE — and the ONE THING THEY CANNOT
+    // ---------------------------------------------------------------------
+    //
+    // ADR-010 requires a folder tree to be acyclic, own-owner and bounded at
+    // depth 8. Rules enforce every part of that which can be decided from ONE
+    // HOP: the parent must exist, belong to the same tenant and owner, be
+    // active, not be a system folder, and not be the folder itself.
+    //
+    // **RULES CANNOT PREVENT A CYCLE OF LENGTH TWO OR MORE.** A -> B -> A
+    // satisfies every one-hop check above, and Firestore Rules cannot walk an
+    // ancestor chain of unknown length. This is stated rather than papered
+    // over: cycle and depth enforcement lives in `journey-map-contract.js`
+    // `folderTreeRefusal()`, which is CLIENT-SIDE, and a determined client can
+    // therefore corrupt ITS OWN OWNER'S folder tree — never anyone else's,
+    // because every rule below is owner-scoped.
+    //
+    // The design that WOULD close it at the server is recorded rather than
+    // adopted: a materialised `ancestorIds[]` + `depth`, verified against the
+    // parent's own (the shape I12 already uses for roll-ups), which makes a
+    // cycle impossible because a folder would have to appear in its own
+    // ancestor list. Its cost is that re-parenting becomes either forbidden or
+    // a multi-document rewrite of every descendant that Rules cannot verify
+    // atomically. Forbidding folder moves is a PRODUCT decision and an Owner
+    // Control Gate, so v1 does not take it unilaterally.
+    //
+    // Consequence for every consumer, and it is not optional: ANY WALK OF THIS
+    // TREE MUST BE BOUNDED regardless of what the rules guarantee.
+    //
+    // ---------------------------------------------------------------------
+    // ADR-010 §2 IS ENFORCED STRUCTURALLY, not by inspection: a placement's
+    // keys().hasOnly() list contains none of sourceKey, sourceKind,
+    // relationshipKind or provenanceKind, so an Origin field on a Destination
+    // document is refused by the server and not merely by the client.
+    //
+    // ADR-010 §5 IS ENFORCED BY FREEZING folderId ON UPDATE: a move is retire
+    // one placement and create another. A placement that could be repointed
+    // would destroy the record that the Note was ever filed where it was (I4).
+    //
+    // COST IS A SECURITY PROPERTY: no rule below walks a map, counts entries
+    // or inspects a dynamic key. Every rule costs a fixed handful of
+    // get()/exists() calls however many folders or placements a person has.
+    // =====================================================================
+
+    function signedIn() { return request.auth != null; }
+    function myUid() { return request.auth.uid; }
+
+    function tenantPersonRef(personId) { return /databases/$(database)/documents/tenantPeople/$(personId); }
+    function memberUidRef(tenantId)    { return /databases/$(database)/documents/tenantMemberUids/$(tenantId + '__' + myUid()); }
+    function teacherStudentLinkRef(tenantId, teacherPersonId, studentPersonId) {
+      return /databases/$(database)/documents/teacherStudentLinks/$(tenantId + '__' + teacherPersonId + '__' + studentPersonId);
+    }
+
+    function hasRoleIn(tenantId, role) {
+      return signedIn() && exists(memberUidRef(tenantId))
+          && role in get(memberUidRef(tenantId)).data.get('roles', []);
+    }
+    function myPersonIdIn(tenantId) {
+      return signedIn() && exists(memberUidRef(tenantId))
+           ? get(memberUidRef(tenantId)).data.get('personId', null) : null;
+    }
+    function isPlatformAdmin() {
+      return signedIn()
+          && exists(/databases/$(database)/documents/userIndex/$(myUid()))
+          && get(/databases/$(database)/documents/userIndex/$(myUid())).data.get('platformAdmin', false) == true;
+    }
+    function isOwnerIn(tenantId)    { return hasRoleIn(tenantId, 'owner'); }
+    function isPrimeIn(tenantId)    { return hasRoleIn(tenantId, 'prime'); }
+    function isTeacherIn(tenantId)  { return hasRoleIn(tenantId, 'teacher'); }
+    function isGuardianIn(tenantId) { return hasRoleIn(tenantId, 'guardian'); }
+
+    function isSelfPerson(personId) {
+      return signedIn() && exists(tenantPersonRef(personId))
+          && get(tenantPersonRef(personId)).data.get('authUid', null) == myUid();
+    }
+    function isGuardianOf(tenantId, childPersonId) {
+      return isGuardianIn(tenantId)
+          && exists(tenantPersonRef(childPersonId))
+          && get(tenantPersonRef(childPersonId)).data.get('managedByPersonId', null) == myPersonIdIn(tenantId);
+    }
+    function isCoEnrolledTeacherOf(tenantId, studentPersonId) {
+      return signedIn() && myPersonIdIn(tenantId) != null
+          && exists(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId))
+          && get(teacherStudentLinkRef(tenantId, myPersonIdIn(tenantId), studentPersonId)).data.get('active', false) == true;
+    }
+
+    // The person must really belong to the tenant the document names.
+    // isSelfPerson() proves "this login owns that person" but NOT "that person
+    // is in this tenant" — the same cross-tenant gap the Phase 4 candidate
+    // closed, closed here too (matrix SELF-05, ADMIN-02).
+    function personInTenant(tenantId, personId) {
+      return exists(tenantPersonRef(personId))
+          && get(tenantPersonRef(personId)).data.get('tenantId', null) == tenantId;
+    }
+
+    // WHO MAY READ a Note that belongs to `ownerPersonId` in `tenantId`.
+    // Administrators are tenant-scoped on purpose: a platform administrator
+    // gets no unbounded cross-tenant reach here (ADMIN-04).
+    function canReadNoteOf(tenantId, ownerPersonId) {
+      return signedIn()
+          && personInTenant(tenantId, ownerPersonId)
+          && (isSelfPerson(ownerPersonId)
+              || isGuardianOf(tenantId, ownerPersonId)
+              || (isTeacherIn(tenantId) && isCoEnrolledTeacherOf(tenantId, ownerPersonId))
+              || isOwnerIn(tenantId) || isPrimeIn(tenantId));
+    }
+
+    // WHO MAY WRITE. Only the owner, and only their own. Deliberately NOT
+    // canRecordFor(): a guardian, teacher or administrator may read a Note
+    // and may never author or alter one (GUARD-04, TEACH-04, ADMIN-03).
+    function isNoteOwner(tenantId, ownerPersonId) {
+      return signedIn()
+          && personInTenant(tenantId, ownerPersonId)
+          && isSelfPerson(ownerPersonId);
+    }
+
+    // LIST vs GET (matrix QUERY-01/QUERY-02). Firestore Rules cannot inspect a
+    // query's `where` clauses, so "the query must be scoped" is enforced the
+    // only way it can be: the per-document rule below must hold for EVERY
+    // document the query would return, so an unscoped list over the collection
+    // fails as soon as it touches a Note the caller may not read. What Rules
+    // CAN see is the limit, and an unbounded list is refused outright — the
+    // accepted data layer always passes one (`maximum = 100`), so this costs
+    // the real client nothing and stops a scan of the whole collection.
+    function listIsBounded() {
+      return request.query.limit <= 100;
+    }
+
+    function d() { return request.resource.data; }
+
+    // Ownership block, written identically on every Foundation document.
+    function ownershipWellFormed() {
+      return d().tenantId is string && d().tenantId.size() > 0
+          && d().ownerPersonId is string && d().ownerPersonId.size() > 0
+          && (d().get('ownerUid', null) == null || d().ownerUid is string);
+    }
+
+    // -------------------------------------------------------------------
+    // noteFolders/{folderKey}   folderKey = tenantId__folderId
+    // -------------------------------------------------------------------
+    match /noteFolders/{folderKey} {
+
+      function folderRef(folderId) {
+        return /databases/$(database)/documents/noteFolders/$(d().tenantId + '__' + folderId);
+      }
+
+      function folderShapeOk() {
+        return d().keys().hasOnly([
+                 'folderId', 'tenantId', 'ownerPersonId', 'ownerUid', 'name',
+                 'parentFolderId', 'semanticRole', 'order', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'folderId', 'tenantId', 'ownerPersonId', 'name',
+                 'parentFolderId', 'semanticRole', 'order', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && ownershipWellFormed()
+            && d().folderId is string && d().folderId.size() > 0
+            && folderKey == d().tenantId + '__' + d().folderId
+            && d().name is string && d().name.size() > 0
+            && d().order is int
+            && (d().status == 'active' || d().status == 'retired')
+            && (d().semanticRole == 'journey-map'
+                || d().semanticRole == 'reflection-archive'
+                || d().semanticRole == 'user');
+      }
+
+      function isSystemRole(role) { return role == 'journey-map' || role == 'reflection-archive'; }
+
+      // ADR-010 §3: a system folder IS the root of its own meaning. It is
+      // neither nested nor nestable, or the Archive could be hidden inside a
+      // user folder, or filed under the Map and made a part of it — the locked
+      // distinction undone by a drag.
+      function parentOneHopOk() {
+        return d().parentFolderId == null
+            ? true
+            : (d().parentFolderId is string
+               && d().parentFolderId != d().folderId
+               && !isSystemRole(d().semanticRole)
+               && exists(folderRef(d().parentFolderId))
+               && get(folderRef(d().parentFolderId)).data.tenantId == d().tenantId
+               && get(folderRef(d().parentFolderId)).data.ownerPersonId == d().ownerPersonId
+               && get(folderRef(d().parentFolderId)).data.status == 'active'
+               && !isSystemRole(get(folderRef(d().parentFolderId)).data.semanticRole));
+      }
+
+      // Identity and ROLE are write-once. A folder may be renamed, reordered,
+      // re-parented or retired; it may never become a different folder, change
+      // owner, or change what KIND of folder it is (ADR-010 §3).
+      function folderIdentityUnchanged() {
+        return resource != null
+            && d().tenantId      == resource.data.tenantId
+            && d().ownerPersonId == resource.data.ownerPersonId
+            && d().get('ownerUid', null) == resource.data.get('ownerUid', null)
+            && d().folderId      == resource.data.folderId
+            && d().semanticRole  == resource.data.semanticRole;
+      }
+
+      function createdByStampedOnCreate() { return d().createdBy == myUid(); }
+      function createdByFrozen() { return resource != null && d().createdBy == resource.data.createdBy; }
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+
+      allow create: if folderShapeOk()
+                    && createdByStampedOnCreate()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && d().status == 'active'
+                    && parentOneHopOk();
+
+      allow update: if folderShapeOk()
+                    && folderIdentityUnchanged()
+                    && createdByFrozen()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && parentOneHopOk();
+
+      allow delete: if false;   // I4/D6 — retire, never destroy
+    }
+
+    // -------------------------------------------------------------------
+    // notePlacements/{placementKey}   placementKey = tenantId__placementId
+    // -------------------------------------------------------------------
+    match /notePlacements/{placementKey} {
+
+      function noteRef(noteId) {
+        return /databases/$(database)/documents/notes/$(d().tenantId + '__' + noteId);
+      }
+      function targetFolderRef(folderId) {
+        return /databases/$(database)/documents/noteFolders/$(d().tenantId + '__' + folderId);
+      }
+
+      // ADR-010 §2 lives in this list. sourceKey, sourceKind, relationshipKind
+      // and provenanceKind are ABSENT from it, so an Origin field on a
+      // Destination document is refused by the server.
+      function placementShapeOk() {
+        return d().keys().hasOnly([
+                 'placementId', 'tenantId', 'ownerPersonId', 'ownerUid',
+                 'noteId', 'folderId', 'order', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && d().keys().hasAll([
+                 'placementId', 'tenantId', 'ownerPersonId',
+                 'noteId', 'folderId', 'order', 'status',
+                 'schemaVersion', 'createdAt', 'updatedAt', 'createdBy'
+               ])
+            && ownershipWellFormed()
+            && d().placementId is string && d().placementId.size() > 0
+            && placementKey == d().tenantId + '__' + d().placementId
+            && d().noteId is string && d().noteId.size() > 0
+            && d().folderId is string && d().folderId.size() > 0
+            && d().order is int
+            && (d().status == 'active' || d().status == 'retired');
+      }
+
+      // Both ends must be real, mine, and active — the same three facts
+      // createNotePlacement() already checks in its transaction, now enforced
+      // where a client cannot skip them.
+      function bothEndsOk() {
+        return exists(noteRef(d().noteId))
+            && get(noteRef(d().noteId)).data.tenantId == d().tenantId
+            && get(noteRef(d().noteId)).data.ownerPersonId == d().ownerPersonId
+            && get(noteRef(d().noteId)).data.status == 'active'
+            && exists(targetFolderRef(d().folderId))
+            && get(targetFolderRef(d().folderId)).data.tenantId == d().tenantId
+            && get(targetFolderRef(d().folderId)).data.ownerPersonId == d().ownerPersonId
+            && get(targetFolderRef(d().folderId)).data.status == 'active';
+      }
+
+      // ADR-010 §5: a move is retire-and-create. folderId and noteId are both
+      // frozen, so a placement can never be repointed — which is what would
+      // destroy the record that the Note was ever filed where it was (I4).
+      function placementIdentityUnchanged() {
+        return resource != null
+            && d().tenantId      == resource.data.tenantId
+            && d().ownerPersonId == resource.data.ownerPersonId
+            && d().get('ownerUid', null) == resource.data.get('ownerUid', null)
+            && d().placementId   == resource.data.placementId
+            && d().noteId        == resource.data.noteId
+            && d().folderId      == resource.data.folderId;
+      }
+
+      function createdByStampedOnCreate() { return d().createdBy == myUid(); }
+      function createdByFrozen() { return resource != null && d().createdBy == resource.data.createdBy; }
+
+      allow get: if canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+      allow list: if listIsBounded() && canReadNoteOf(resource.data.tenantId, resource.data.ownerPersonId);
+
+      allow create: if placementShapeOk()
+                    && createdByStampedOnCreate()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId)
+                    && d().status == 'active'
+                    && bothEndsOk();
+
+      allow update: if placementShapeOk()
+                    && placementIdentityUnchanged()
+                    && createdByFrozen()
+                    && isNoteOwner(d().tenantId, d().ownerPersonId);
+
+      allow delete: if false;   // I4/D6 — retire, never destroy
+    }
+  }
+}

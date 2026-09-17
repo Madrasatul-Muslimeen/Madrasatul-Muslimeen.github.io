@@ -20,8 +20,12 @@ const PROJECT = "demo-quranrevival-activity-deploy-v1";
 const HOST = "127.0.0.1";
 const PORT = 8088;
 const here = path.dirname(fileURLToPath(import.meta.url));
-const candidate = fs.readFileSync(
-  path.resolve(here, "../../docs/governance/phase4-activity-evidence-DEPLOYMENT-candidate-2026-09-14.rules"), "utf8");
+// RULES_FILE lets this suite also run against the CUMULATIVE Phase 4-6
+// deployment candidate, proving the Phase 4 evidence rules still behave once
+// the Phase 5 and Phase 6 blocks sit beside them in one file.
+const RULES_FILE = process.env.RULES_FILE
+  || "docs/governance/phase4-activity-evidence-DEPLOYMENT-candidate-2026-09-14.rules";
+const candidate = fs.readFileSync(path.resolve(here, "../..", RULES_FILE), "utf8");
 assert.match(PROJECT, /^demo-/);
 assert.notEqual(PROJECT, "study-monitoring");
 
