@@ -21,7 +21,7 @@ const root = path.resolve(process.argv[2] || process.cwd());
 let source = fs.readFileSync(path.join(root, "app/js/study-activity-evidence-store.js"), "utf8");
 source = source
   .replace(/import\s*\{[\s\S]*?\}\s*from\s*"https:\/\/www\.gstatic\.com\/firebasejs\/10\.12\.2\/firebase-firestore\.js";/,
-    "const { doc, getDoc } = globalThis.__seFirestore;")
+    "const { collection, doc, getDoc, getDocs, limit, query } = globalThis.__seFirestore;")
   .replace(/import \{ TENANT \} from "\.\/collections\.js";/, "const { TENANT } = globalThis.__seCollections;")
   .replace(/import \{ createDocument \} from "\.\/envelope\.js";/, "const { createDocument } = globalThis.__seEnvelope;")
   .replace(/from "\.\/study-activity-evidence-id\.js"/,
@@ -29,7 +29,8 @@ source = source
 
 // --- an in-memory Firestore that really stores, and really counts ----------
 const store = new Map();               // "collectionPath/docId" -> data
-const counters = { gets: 0, creates: 0 };
+const counters = { gets: 0, creates: 0, queries: 0 };
+let lastQuery = null;
 let denyCreate = null;                 // set to an Error to simulate a Rules denial
 let createSideEffect = null;           // simulate a racing writer landing first
 
@@ -42,6 +43,25 @@ globalThis.__seFirestore = {
     return { id: ref.docId, exists: () => row !== undefined, data: () => row };
   },
 };
+// P4-E -- the read side. `collection`/`query`/`limit` are recorded so the
+// suite can assert the SHAPE of the query as well as its result: no filter and
+// no orderBy is what keeps this the one MAP read needing no composite index.
+globalThis.__seFirestore.collection = (_db, collectionPath) => ({ collectionPath });
+globalThis.__seFirestore.limit = (n) => ({ limit: n });
+globalThis.__seFirestore.query = (...parts) => {
+  counters.queries++;
+  lastQuery = parts;
+  return { parts };
+};
+globalThis.__seFirestore.getDocs = async (q) => {
+  const { collectionPath } = q.parts[0];
+  const cap = q.parts.find((part) => part && part.limit !== undefined)?.limit ?? Infinity;
+  const rows = [...store.entries()]
+    .filter(([key]) => key.startsWith(`${collectionPath}/`))
+    .slice(0, cap)
+    .map(([key, data]) => ({ id: key.slice(collectionPath.length + 1), data: () => data }));
+  return { docs: rows };
+};
 globalThis.__seEnvelope = {
   createDocument: async (_db, collectionPath, docId, data, uid) => {
     counters.creates++;
@@ -50,10 +70,14 @@ globalThis.__seEnvelope = {
     store.set(`${collectionPath}/${docId}`, { ...data, schemaVersion: 1, createdBy: uid });
   },
 };
-function reset() { store.clear(); counters.gets = 0; counters.creates = 0; denyCreate = null; createSideEffect = null; }
+function reset() {
+  store.clear();
+  for (const key of Object.keys(counters)) counters[key] = 0;
+  lastQuery = null; denyCreate = null; createSideEffect = null;
+}
 
 const mod = await import(`data:text/javascript,${encodeURIComponent(source)}`);
-const { writeStudyActivityEvidence, evidenceCollectionPath } = mod;
+const { writeStudyActivityEvidence, evidenceCollectionPath, listStudyActivityEvidence, MAX_EVIDENCE_PER_READ } = mod;
 
 let passed = 0;
 async function check(name, fn) { await fn(); passed++; console.log(`  PASS  ${name}`); }
@@ -211,9 +235,82 @@ await check("a mismatched event/Approach pair never reaches the database", async
 await check("a first write costs one read and one create; a retry costs one read", async () => {
   reset();
   await writeStudyActivityEvidence(db, ev());
-  assert.deepEqual(counters, { gets: 1, creates: 1 });
+  assert.deepEqual(counters, { gets: 1, creates: 1, queries: 0 });
   await writeStudyActivityEvidence(db, ev());
-  assert.deepEqual(counters, { gets: 2, creates: 1 });
+  assert.deepEqual(counters, { gets: 2, creates: 1, queries: 0 },
+    "writing must never query the subcollection -- the identity IS the id");
+});
+
+// --- P4-E: the read side ----------------------------------------------------
+// The candidate Rules have authorised a read since P4-C, mirroring the parent
+// weekly document's own deployed rule, and the emulator suite proves it. No
+// code in app/js ever read a row -- the write-only asymmetry P5-E closed for
+// noteSources and P6-C for notePlacements, found in the Phase 4 collection.
+await check("P4-E reads back exactly the events that were written, with their ids", async () => {
+  reset();
+  const a = await writeStudyActivityEvidence(db, ev());
+  const b = await writeStudyActivityEvidence(db, ev({ unitKey: "ayah:2:256" }));
+  const { rows, truncated } = await listStudyActivityEvidence(db, { tenantId: "t1", personId: "p1", weekKey: "2026-09-13" });
+  assert.equal(truncated, false);
+  assert.deepEqual(rows.map((r) => r.eventId).sort(), [a.eventId, b.eventId].sort());
+  assert.deepEqual(rows.map((r) => r.unitKey).sort(), ["ayah:2:255", "ayah:2:256"]);
+});
+
+await check("P4-E reads ONE week, never another person's or another week's", async () => {
+  reset();
+  await writeStudyActivityEvidence(db, ev());
+  await writeStudyActivityEvidence(db, ev({ personId: "p2", uid: "uid-p2" }));
+  await writeStudyActivityEvidence(db, ev({ weekKey: "2026-09-06" }));
+  const mine = await listStudyActivityEvidence(db, { tenantId: "t1", personId: "p1", weekKey: "2026-09-13" });
+  assert.equal(mine.rows.length, 1, "the PATH is the whole scope -- one tenant, one person, one week");
+  assert.equal(mine.rows[0].personId, "p1");
+});
+
+await check("P4-E's query has NO filter and NO orderBy -- the one MAP read needing no index", async () => {
+  reset();
+  await writeStudyActivityEvidence(db, ev());
+  await listStudyActivityEvidence(db, { tenantId: "t1", personId: "p1", weekKey: "2026-09-13" });
+  assert.equal(counters.queries, 1);
+  assert.equal(lastQuery[0].collectionPath, "activity/t1__p1__2026-09-13/evidence");
+  // Anything beyond the collection and the bound would be a where() or an
+  // orderBy(), and an orderBy here would need a composite index that no
+  // candidate declares. See firestore-index-requirements.mjs.
+  assert.equal(lastQuery.length, 2, `the query carries ${lastQuery.length} parts; only the collection and a limit are allowed`);
+  assert.equal(lastQuery[1].limit, MAX_EVIDENCE_PER_READ + 1,
+    "the cap is asked for PLUS ONE, which is how truncation is detected rather than guessed");
+});
+
+await check("P4-E reports truncation instead of silently losing events", async () => {
+  reset();
+  for (let i = 1; i <= 4; i++) await writeStudyActivityEvidence(db, ev({ unitKey: `ayah:2:${i}` }));
+  const capped = await listStudyActivityEvidence(db, { tenantId: "t1", personId: "p1", weekKey: "2026-09-13", maximum: 2 });
+  assert.equal(capped.rows.length, 2);
+  assert.equal(capped.truncated, true, "a bound hit silently would lose events the person really recorded");
+  const whole = await listStudyActivityEvidence(db, { tenantId: "t1", personId: "p1", weekKey: "2026-09-13", maximum: 4 });
+  assert.equal(whole.truncated, false, "exactly at the cap is NOT truncated");
+});
+
+await check("P4-E returns evidence and nothing shaped like a claim (ADR-003)", async () => {
+  reset();
+  await writeStudyActivityEvidence(db, ev());
+  const out = JSON.stringify(await listStudyActivityEvidence(db, { tenantId: "t1", personId: "p1", weekKey: "2026-09-13" }));
+  for (const forbidden of ["claimStatus", "achieved", "mastered", "confirmed", "entries", "chunkKey"]) {
+    assert.ok(!out.includes(forbidden), `the reader returned something named ${forbidden} -- Activity is not Mastery`);
+  }
+});
+
+await check("P4-E never addresses the weekly document itself", async () => {
+  reset();
+  await writeStudyActivityEvidence(db, ev());
+  await listStudyActivityEvidence(db, { tenantId: "t1", personId: "p1", weekKey: "2026-09-13" });
+  assert.ok(lastQuery[0].collectionPath.endsWith("/evidence"),
+    "a query against activity/ itself would put evidence back in reach of bulkConfirmWeek()");
+});
+
+await check("P4-E on an empty week is an empty read, not a crash", async () => {
+  reset();
+  const out = await listStudyActivityEvidence(db, { tenantId: "t1", personId: "p9", weekKey: "2026-01-01" });
+  assert.deepEqual(out, { rows: [], truncated: false });
 });
 
 console.log(`\n==== Study Activity evidence store: ${passed} passed, 0 failed ====`);

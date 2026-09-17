@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 4 (P4-E) — the evidence rows were authorised to be read, and nothing read them</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 4 (P4-E) — the evidence rows were authorised to be read, and nothing read them</h1>
+<ul><li><strong>Date:</strong> 2026-09-17</li><li><strong>Task:</strong> give ADR-008&#x27;s Activity evidence subcollection the read side its accepted Rules already authorise</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> One <code>app/js</code> module changed, still unreachable from any page. No <code>.html</code> changed. <code>firestore.rules</code>, <code>firebase.json</code>, all four index candidates and all three Rules candidates <strong>byte-identical</strong>. <strong>No new index</strong> — this is the one MAP read that needs nothing added.</li><li><strong>Application version:</strong> <strong>08.25, unchanged.</strong></li><li><strong>Result:</strong> ACCEPT. Store suite 19 → <strong>26</strong>, evidence boundary 15 → <strong>17</strong>, 4 of 4 reader mutations caught. Phase 4 emulator <strong>53</strong>, coverage <strong>1,803 / 47</strong>, all other suites unchanged.</li></ul>
+<hr>
+<h2>1. The gap</h2>
+<p><code>activity/{tenantId}__{personId}__{weekKey}/evidence</code> had one writer and <strong>no reader anywhere in <code>app/js</code>.</strong> The accepted candidate has authorised a read since P4-C, mirroring the parent weekly document&#x27;s own <strong>deployed</strong> rule exactly — <code>isPlatformAdmin()</code> or <code>canRecordFor(tenantId, personId)</code> — and its emulator suite proves all three sides of it: the person themselves may read their evidence, another learner may not, an anonymous caller may not.</p>
+<p>So this is the same write-only asymmetry P5-E closed for <code>noteSources</code> and P6-C for <code>notePlacements</code>, found in the Phase 4 collection — and here the read was not merely permitted but already <strong>tested</strong>.</p>
+<h2>2. The shape, and why it needs no index</h2>
+<p><code>listStudyActivityEvidence(db, { tenantId, personId, weekKey, maximum })</code> returns <code>{ rows, truncated }</code>.</p>
+<p><strong>No filter and no order, both deliberate.</strong> The path is the whole scope — it already names the tenant, the person and the week — so re-filtering on the fields inside would re-ask a question the path has answered. And no <code>orderBy</code> means <strong>no composite index</strong>: this is the only MAP read that adds nothing to the index candidates, which matters because the Owner-facing package&#x27;s index tables are bound by a check to the machine-readable candidates.</p>
+<p><strong>Truncation is reported by asking for one more than the cap</strong> (the P5-E pattern). A bound hit silently would lose events the person really recorded.</p>
+<p><strong>It returns evidence rows and nothing else</strong> — no totals, no Approach credit, no claim state. A check asserts the returned JSON contains none of <code>claimStatus</code>, <code>achieved</code>, <code>mastered</code>, <code>confirmed</code>, <code>entries</code>, <code>chunkKey</code>. Activity is not Mastery (ADR-003), and the moment this returned something claim-shaped it would be a second, unauthorised route into what <code>bulkConfirmWeek()</code> confirms.</p>
+<h2>3. The boundary guards were extended to the reader, and mutation-proven</h2>
+<p>The evidence boundary suite existed to protect one thing: that evidence can never reach <code>activity.entries[]</code>, because <code>bulkConfirmWeek()</code> builds its confirm set entirely from that array. A reader does not threaten the array — but a reader whose <strong>result</strong> travelled into the Mastery workflow would be the same defect by another route. Two new guards:</p>
+<ul><li>the reader queries the path <code>evidenceCollectionPath()</code> builds, with a <code>limit</code>, and with <strong>no <code>orderBy</code> and no <code>where</code></strong>;</li><li><code>records.js</code> names neither the reader nor its module nor its cap.</li></ul>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Caught by</th></tr></thead><tbody>
+<tr><td>add <code>orderBy(&quot;dateIso&quot;)</code></td><td>the reader guard <strong>and</strong> <code>firestore-index-requirements.mjs</code> (which throws: <em>could not read the collection of a query</em>)</td></tr>
+<tr><td>add <code>where(&quot;personId&quot;, &quot;==&quot;, personId)</code></td><td>the reader guard</td></tr>
+<tr><td>drop the <code>limit</code></td><td>the reader guard</td></tr>
+<tr><td>query <code>TENANT.ACTIVITY</code> instead of the subcollection</td><td><strong>two</strong> guards — the writer&#x27;s own subcollection-only check and the reader guard</td></tr>
+</tbody></table></div>
+<p>Each mutation asserted its own occurrence count before running.</p>
+<h2>4. Two of my own near-misses, both the same trap</h2>
+<p><strong>I nearly recorded that the candidate authorises no read at all.</strong> My grep was <code>allow (get|list|create|update|delete)</code> — it <strong>omitted <code>read</code></strong>, which is the keyword this file actually uses. The block has <code>allow read</code> twice. Had I not checked the emulator suite and found it already testing reads, I would have written up a non-existent defect in an accepted artefact, and one that would have looked alarming: the writer&#x27;s own first operation is a read, so &quot;no read authorisation&quot; would have implied Phase 4 could not function at all.</p>
+<p><strong>I then nearly recorded that <code>firestore-index-requirements.mjs</code> has a blind spot</strong>, because I tested the <code>orderBy</code> mutation and grepped the output for <code>^  FAIL|failed</code> and saw nothing. The guard had in fact thrown an <strong>uncaught assertion</strong> and exited 1 — it fails loudly and correctly on a query whose collection it cannot read. My grep could not see an uncaught throw.</p>
+<p><strong>Both are the same lesson, twice in one day: read the failure text and the exit code, not a grep of them.</strong> The first version of that lesson went into the brief this morning after four boundary suites&#x27; <code>ENOENT</code> nearly became a finding about four rotting guards. It has now earned two more instances, and the brief entry says so.</p>
+<h2>5. Verification</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>study-activity-evidence-store.mjs</code></td><td>19 → <strong>26</strong></td></tr>
+<tr><td><code>study-activity-evidence-boundary.mjs</code></td><td>15 → <strong>17</strong>, 4 / 4 mutations caught</td></tr>
+<tr><td><code>firestore-index-requirements.mjs</code></td><td><strong>8 / 0</strong>, and proven to throw on an added <code>orderBy</code></td></tr>
+<tr><td>Phase 4 emulator</td><td><strong>53</strong>, unchanged — including the three read cases</td></tr>
+<tr><td><code>study-activity-evidence-id</code> / <code>-evidence</code> / <code>study-approach-contract-boundary</code></td><td>29 / 11 / 16, unchanged</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td><strong>17 / 0</strong> — evidence is still create-only in both the Rules and the writer</td></tr>
+<tr><td><code>stub-parity</code></td><td><strong>3 / 0</strong> — <code>collection</code>, <code>getDocs</code>, <code>limit</code>, <code>query</code> were all already exported by the stub</td></tr>
+<tr><td>Every Note Foundation and Journey Map suite</td><td>unchanged</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 / 47</strong> — no user-visible string</td></tr>
+<tr><td><code>firestore.rules</code>, <code>firebase.json</code>, 3 Rules candidates, 4 index candidates, every <code>app/*.html</code></td><td><strong>byte-identical</strong></td></tr>
+</tbody></table></div>
+<h2>6. Flagged, not changed</h2>
+<ul><li><strong>Nothing reads it yet in a surface, and that is still the gate.</strong> The reader is uninvoked; a Monitor or Activity screen that showed evidence would be a real behaviour change behind the Phase 4 Rules deployment.</li><li><strong>The candidate&#x27;s read rule has no <code>request.query.limit</code> bound</strong>, unlike Phase 5/6&#x27;s <code>listIsBounded()</code>. It is safe — the scope is one person&#x27;s one week, and this reader caps itself — but a different caller could list the subcollection unbounded. Recorded rather than changed: tightening it is a Rules amendment to a candidate already in the Owner&#x27;s deployment package.</li><li><strong>No aggregation was built.</strong> &quot;How many āyāt did this person read this week&quot; is a product question about a screen that does not exist.</li></ul>
+<hr>
+<p><em>Master Architect audit: BR-0, additive, no accepted decision changed, no Owner Control Gate crossed. The read this implements was authorised and already server-tested; only the client side was missing.</em></p>
+</main></body></html>

@@ -52,6 +52,19 @@ be redesigned. BR-0, no version bump, `git diff -- app/` empty. See
 `docs/reports/2026-09-17-behaviour-suite-excavation.md` and the three new
 standing lessons below.
 
+**17 Sep 2026 — MAP PHASE 4 P4-E: the evidence rows were authorised to be read,
+and nothing read them.** `activity/{tenant}__{person}__{week}/evidence` had one
+writer and no reader in `app/js`, while the accepted candidate has authorised a
+read since P4-C — mirroring the parent weekly document's own DEPLOYED rule — and
+its emulator suite **already proved all three sides of it.**
+`listStudyActivityEvidence()` has **no filter and no order, both deliberate**:
+the path is the whole scope, and no `orderBy` means **NO COMPOSITE INDEX**, the
+only MAP read that adds nothing to the index candidates. It returns evidence
+rows and nothing claim-shaped (ADR-003, asserted on the returned JSON). The
+evidence boundary guards were extended to the reader and mutation-proven 4/4.
+BR-0, no version bump. See
+`docs/reports/2026-09-17-map-phase4-evidence-read-side-p4e.md`.
+
 **17 Sep 2026 — MAP P5-F / P6-E: the two relation collections could be written
 and never taken back.** The same comparison as P6-D, a third time — read what
 the accepted Rules AUTHORISE, then ask what the data layer can PERFORM. **A Note
@@ -1377,14 +1390,21 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   code under test. Clear every key (`for (const k of Object.keys(calls))`). This
   one failed loudly, which is the good case; the bad case is a leaked call that
   makes a later assertion PASS.
-- **READ A SUITE'S FAILURE TEXT, NOT ITS COUNTS.** Four boundary suites reported
-  `0 passed, 13 failed` — identically on a clean `git stash`, which read like
-  four guards rotting on `main`. The text said
+- **READ A SUITE'S FAILURE TEXT AND ITS EXIT CODE, NEVER A GREP OF THEM. Three
+  near-misses in one day, each about to become a false finding in a report.**
+  (1) Four boundary suites reported `0 passed, 13 failed`, identically on a clean
+  `git stash`, which read like four guards rotting on `main`. The text said
   `ENOENT … scandir '…/tools/i18n-verify/app'`: **they resolve paths from
-  `process.cwd()` and must be run from the REPOSITORY ROOT.** A suite that fails
-  loudly when run from the wrong place is behaving correctly; what was nearly
-  wrong was the finding about to be recorded. Same discipline as "a failing
-  check is a wrong assertion surprisingly often", applied to invocation.
+  `process.cwd()` and must be run from the REPOSITORY ROOT.** (2) A grep for
+  `allow (get|list|create|update|delete)` **omitted `read`**, the keyword the
+  Phase 4 candidate actually uses, and nearly produced a written-up claim that
+  ADR-008 evidence is unreadable — which, since its writer's first operation is a
+  read, would have meant Phase 4 could not function at all. (3) A mutation test
+  grepped for `^  FAIL|failed` and saw nothing, so the guard looked blind; it had
+  **thrown an uncaught assertion and exited 1**. A grep cannot see an uncaught
+  throw. **Check the exit code, read the real text, and prefer the emulator or
+  the source as the tie-breaker.** A suite that fails loudly when run wrong is
+  behaving correctly; what is nearly wrong is the finding.
 - **`layout.mjs` EXITS NON-ZERO ON `main` ITSELF.** Line 87 counts the 22-entry
   pre-existing missing-ID list as a regression once per viewport, so it prints
   "16 REGRESSION(S)" and exits 1 on unmodified `main`. **The signal is the

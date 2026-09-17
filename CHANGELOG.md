@@ -13535,3 +13535,77 @@ against a candidate — extending it there is its own task); only `allow update`
 place for server decisions); and it cannot tell whether a field change is
 REACHABLE FROM A SURFACE — that is the boundary suites' reachability walkers,
 and the answer for all of this code is deliberately still "no".
+
+---
+
+## MAP Phase 4 P4-E — the evidence rows were authorised to be read, and nothing read them (17 Sep 2026, v08.25, no version bump)
+
+**BR-0.** One `app/js` module changed (`study-activity-evidence-store.js`),
+still unreachable from any page. No `.html` changed. `firestore.rules`,
+`firebase.json`, all four index candidates and all three Rules candidates
+**byte-identical**. **No new index.** Evidence:
+`docs/reports/2026-09-17-map-phase4-evidence-read-side-p4e.md` / `.html`.
+
+**`activity/{tenantId}__{personId}__{weekKey}/evidence` had one writer and NO
+READER anywhere in `app/js`** — while the accepted candidate has authorised a
+read since P4-C, mirroring the parent weekly document's own **deployed** rule
+exactly (`isPlatformAdmin()` or `canRecordFor(tenantId, personId)`), and its
+emulator suite already proved all three sides: the person themselves may read
+their evidence, another learner may not, an anonymous caller may not. The same
+write-only asymmetry P5-E closed for `noteSources` and P6-C for
+`notePlacements` — and here the read was not merely permitted but **already
+tested**.
+
+**`listStudyActivityEvidence()` has NO filter and NO order, both deliberate.**
+The path is the whole scope — it already names the tenant, the person and the
+week — so re-filtering on the fields inside would re-ask a question the path has
+answered. And no `orderBy` means **NO COMPOSITE INDEX**: this is the only MAP
+read that adds nothing to the index candidates, which matters because a check
+binds the Owner-facing package's index tables to those candidates. Truncation is
+reported by asking for one more than the cap (the P5-E pattern), because a bound
+hit silently would lose events the person really recorded. **It returns evidence
+rows and nothing else** — a check asserts the returned JSON contains none of
+`claimStatus`, `achieved`, `mastered`, `confirmed`, `entries`, `chunkKey`
+(ADR-003).
+
+**The boundary guards were extended to the reader and mutation-proven 4/4.** A
+reader does not threaten `activity.entries[]`, but a reader whose RESULT
+travelled into the Mastery workflow would be the same defect by another route.
+So: the reader must query the path `evidenceCollectionPath()` builds, with a
+`limit` and with **no `orderBy` and no `where`**; and `records.js` must name
+neither the reader nor its module nor its cap. Adding an `orderBy` is caught by
+that guard AND by `firestore-index-requirements.mjs`; adding a `where`, dropping
+the `limit`, or querying `TENANT.ACTIVITY` instead of the subcollection are each
+caught (the last by two guards).
+
+**TWO OF MY OWN NEAR-MISSES, BOTH THE SAME TRAP, and both worth recording.**
+(1) I nearly wrote up that the candidate authorises no read at all — my grep was
+`allow (get|list|create|update|delete)` and **omitted `read`**, the keyword this
+file actually uses. That would have been a non-existent defect in an accepted
+artefact, and an alarming one: the writer's own first operation is a read, so
+"no read authorisation" would have implied Phase 4 could not function at all.
+(2) I then nearly wrote up a blind spot in
+`firestore-index-requirements.mjs`, because I grepped its output for
+`^  FAIL|failed` and saw nothing — it had in fact thrown an **uncaught
+assertion** and exited 1, failing loudly and correctly on a query whose
+collection it cannot read. **A grep cannot see an uncaught throw.** Both are the
+same lesson as this morning's `ENOENT` near-miss: read the failure text and the
+EXIT CODE, not a grep of them. That brief entry now records all three instances.
+
+**Verified:** store suite 19 → **26**, evidence boundary 15 → **17** (4/4
+mutations), `firestore-index-requirements` **8/0** and proven to throw on an
+added `orderBy`, Phase 4 emulator **53** unchanged including the three read
+cases, `study-activity-evidence-id` 29, `-evidence` 11,
+`study-approach-contract-boundary` 16, `rules-authorisation-executable` **17/0**
+(evidence still create-only in both the Rules and the writer), `stub-parity`
+**3/0** (`collection`/`getDocs`/`limit`/`query` were already exported), every
+Note Foundation and Journey Map suite unchanged, coverage **1,803 / 47**.
+
+**Flagged, not changed.** Nothing reads it in a surface, and that is still the
+gate — a Monitor or Activity screen showing evidence is a real behaviour change
+behind the Phase 4 Rules deployment. **The candidate's read rule has no
+`request.query.limit` bound**, unlike Phase 5/6's `listIsBounded()`: safe here
+(one person, one week, and this reader caps itself) but a different caller could
+list unbounded, and tightening it is a Rules amendment to a candidate already in
+the Owner's deployment package. And no aggregation was built — "how many āyāt
+this week" is a product question about a screen that does not exist.

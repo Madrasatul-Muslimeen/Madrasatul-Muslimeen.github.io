@@ -192,6 +192,30 @@ check("the writer only ever addresses the evidence SUBcollection", () => {
     assert.ok(line.includes("/evidence"), `TENANT.ACTIVITY used at document level: ${line.trim()}`);
   }
 });
+// P4-E added a READER to that module, so the guards above must hold for it as
+// well as for the writer. The dangerous shape is not the read itself -- the
+// candidate Rules have authorised it since P4-C -- it is a read whose RESULT
+// could travel into the Mastery workflow.
+check("P4-E's reader queries the SUBcollection only, and only with a bound", () => {
+  const text = codeOf("study-activity-evidence-store.js");
+  const fn = text.slice(text.indexOf("export async function listStudyActivityEvidence"));
+  assert.ok(fn.length > 100, "listStudyActivityEvidence() not found -- re-check this guard");
+  assert.ok(/collection\(db, collectionPath\)/.test(fn),
+    "the reader must query the path evidenceCollectionPath() builds, never activity/ itself");
+  assert.ok(/\blimit\(/.test(fn), "an unbounded read of a person's week is a cost defect and an I9 risk");
+  // An orderBy here would need a composite index that NO candidate declares,
+  // so the query would die in production with failed-precondition -- and no
+  // emulator run would warn, which P5-E proved.
+  assert.ok(!/\borderBy\(/.test(fn), "the reader gained an orderBy; it now needs a composite index");
+  assert.ok(!/\bwhere\(/.test(fn), "the reader gained a where(); the PATH is already the whole scope");
+});
+check("P4-E's reader cannot be reached from records.js or the Mastery workflow", () => {
+  const records = fs.readFileSync(path.join(appJs, "records.js"), "utf8");
+  for (const name of ["listStudyActivityEvidence", "study-activity-evidence-store", "MAX_EVIDENCE_PER_READ"]) {
+    assert.ok(!records.includes(name),
+      `records.js now names ${name} -- evidence is one step from the set bulkConfirmWeek() confirms`);
+  }
+});
 check("bulkConfirmWeek() still reads only entries[], so it cannot see evidence", () => {
   const records = fs.readFileSync(path.join(appJs, "records.js"), "utf8");
   const fn = records.slice(records.indexOf("export async function bulkConfirmWeek"));

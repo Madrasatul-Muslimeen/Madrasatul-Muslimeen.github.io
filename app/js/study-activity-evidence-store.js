@@ -1,4 +1,5 @@
-// MAP Phase 4 (P4-C) — the ONLY writer of ADR-008 Study Activity evidence.
+// MAP Phase 4 (P4-C/P4-E) — the ONLY writer, and now the reader, of ADR-008
+// Study Activity evidence.
 //
 //   activity/{tenantId}__{personId}__{weekKey}/evidence/{eventId}
 //
@@ -26,7 +27,7 @@
 // harness's own `doc()` needs no change either — a subcollection costs this
 // codebase nothing new.
 
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { collection, doc, getDoc, getDocs, limit, query } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { TENANT } from "./collections.js";
 import { createDocument } from "./envelope.js";
 import { studyEvidenceId, evidenceParentKey, buildStudyEvidenceDocument } from "./study-activity-evidence-id.js";
@@ -82,4 +83,45 @@ export async function writeStudyActivityEvidence(db, {
     if (raced.exists()) return { eventId, written: false };
     throw err;
   }
+}
+
+/** The most evidence rows one read will return. A cap, not an expected cost. */
+export const MAX_EVIDENCE_PER_READ = 200;
+
+/**
+ * MAP Phase 4 (P4-E) — one person's ADR-008 evidence for one week, as
+ * `{ rows, truncated }`.
+ *
+ * WHY THIS EXISTS. The candidate Rules have authorised a read since P4-C,
+ * exactly mirroring the parent weekly document's own deployed rule
+ * (`isPlatformAdmin()` or `canRecordFor(tenantId, personId)`), and the
+ * emulator suite proves it: "the person themselves may read their evidence",
+ * and neither another learner nor an anonymous caller may. Nothing in `app/js`
+ * ever read a row. The same write-only asymmetry P5-E closed for `noteSources`
+ * and P6-C for `notePlacements`, found in the Phase 4 collection.
+ *
+ * NO FILTER AND NO ORDER, AND BOTH ARE DELIBERATE. The PATH is the whole scope
+ * — `activity/{tenantId}__{personId}__{weekKey}/evidence` already names the
+ * tenant, the person and the week — so re-filtering on the fields inside would
+ * re-ask a question the path has answered. And no `orderBy` means **no
+ * composite index**: this is the one MAP read that needs nothing added to the
+ * index candidates, and `tools/i18n-verify/firestore-index-requirements.mjs`
+ * is what holds that true.
+ *
+ * Truncation is reported by asking for one more than the cap — the P5-E
+ * pattern — because a bound hit silently would lose events the person really
+ * recorded, and a reader must be able to say so.
+ *
+ * IT RETURNS EVIDENCE ROWS AND NOTHING ELSE. It computes no totals, credits no
+ * Approach and names no claim state. Activity is not Mastery (ADR-003), and the
+ * moment this returned anything shaped like a claim it would be a second,
+ * unauthorised route into the thing `bulkConfirmWeek()` decides.
+ */
+export async function listStudyActivityEvidence(db, {
+  tenantId, personId, weekKey, maximum = MAX_EVIDENCE_PER_READ,
+} = {}) {
+  const collectionPath = evidenceCollectionPath(tenantId, personId, weekKey);
+  const snapshot = await getDocs(query(collection(db, collectionPath), limit(maximum + 1)));
+  const all = snapshot.docs.map((item) => ({ eventId: item.id, ...item.data() }));
+  return { rows: all.slice(0, maximum), truncated: all.length > maximum };
 }
