@@ -16,11 +16,17 @@ between the Owner and acting on them was that the instructions did not exist.
 
 Checking that assumption produced three findings, in increasing severity.
 
-### F1 — the standing brief pointed at a file that was never written
+### F1 — the standing brief pointed at a file that is not on `main`
 
 `CLAUDE.md` said deployment "goes through the Firebase Console using
-`docs/governance/phase4-production-package-2026-09-14.md`". **That file does not
-exist.** The Owner following the brief would have found nothing.
+`docs/governance/phase4-production-package-2026-09-14.md`". **That file is not on
+`main`.** The Owner following the brief would have found nothing.
+
+> **Correction, 2026-09-17.** This report first said the file "was never
+> written". That is wrong: it *was* written, and lives on the unmerged
+> `claude/phase4-wiring` branch, where it was never merged across. The dead
+> pointer on `main` was real and the fix is unchanged — the consolidated package
+> supersedes it — but the characterisation was not.
 
 ### F2 — Phase 5 and Phase 6 had no deployable text at all, and pasting what exists would have destroyed the ruleset
 

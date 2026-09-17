@@ -12964,7 +12964,9 @@ version increment**; `main` stays v08.25. Nothing deployed.
 
 **Three findings, in increasing severity.** (1) `CLAUDE.md` told the Owner that
 deployment goes through `docs/governance/phase4-production-package-2026-09-14.md`
-— **a file that was never written**. (2) **Phase 5 and Phase 6 had no deployable
+— **a file that is not on `main`** (*corrected 17 Sep: it WAS written, on the
+unmerged `claude/phase4-wiring` branch, and never merged across. The dead
+pointer was real; "never written" was not*). (2) **Phase 5 and Phase 6 had no deployable
 text at all.** Both candidates are self-contained EXTRACTS carrying their own
 copy of the shared helper block so the emulator can run them in isolation, so
 **pasting either into the Console would have replaced the entire live ruleset**
@@ -13107,3 +13109,46 @@ new ordered query needs a FOURTH index, so: a Phase 6 index candidate in its own
 file, the package updated field by field, and **a new check binding the package's
 hand-written tables to the machine-readable candidates** — a drift no other test
 could see, because it happens between a document and a human.
+
+---
+
+**17 Sep 2026 — the preserved Phase 4 wiring branch brought current with
+`main`.** No change to `main`'s application code at all; two documentation
+corrections only. The branch moves `c4fca4a` → **`7e2931f`** and stays unmerged.
+
+**Preservation is not leaving it alone.** The branch was cut at `65d3f99` and
+`main` has moved **eight commits** since (P5-C, P5-E, P6-A, P6-B, the deployment
+package, P6-C). Left untouched it rots, and the integration then happens **at
+exactly the moment production Rules go live** — the worst possible time to find a
+defect. It merged with **three conflicts**, so this was not a formality.
+
+**The substantive one was two TRUE invariants, neither of which survives alone.**
+`study-activity-evidence-boundary.mjs` was rewritten on both sides for good
+reasons: `main` says **no page may reach** the evidence writer (nothing is wired
+there, and that is the whole safety case); the branch says the writer has
+**exactly one audited entry point** (it wires Study surfaces on purpose). **On
+the branch "unreachable" is simply false**, and asserting it would assert that
+the wiring does not work. Resolved by keeping `main`'s **reachability walker** —
+stronger, because it catches a wiring wherever in the chain it happens — and
+applying it to the branch's invariant: **every page-reachable path to the writer
+must pass THROUGH `study-event-wiring.js`**. The merged check also refuses to
+pass vacuously: if no page reaches the writer it FAILS, because on that branch
+that means the wiring is broken.
+
+`CHANGELOG.md` took `main`'s history with the branch's own P4-D entry
+re-appended; `CLAUDE.md` took `main`'s brief plus a **branch-only banner** saying
+where you are and that two checks read differently there on purpose.
+
+**Verified after the merge: 17 pure suites green** (including `study-event-wiring`,
+39, which exists only there) and **Phase 4 emulator 53/0**. Every rules and index
+artefact is **byte-identical to `main`**, so `main`'s deployment-candidate runs
+(53 / 60 / 53) hold without re-running. `app/` now differs from `main` by exactly
+the wiring.
+
+**A CORRECTION to this log's own entry above.** It said
+`phase4-production-package-2026-09-14.md` was **"a file that was never written"**.
+**It was written** — it lives on the wiring branch and was never merged across.
+The dead pointer on `main` was real and the fix is unchanged; the
+characterisation was not. Corrected in the entry, in the report, and by the
+branch banner, which records the older package as **superseded** rather than
+leaving two documents competing to be the deployment instructions.

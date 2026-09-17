@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP — keeping the preserved Phase 4 wiring branch current</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP — keeping the preserved Phase 4 wiring branch current</h1>
+<ul><li><strong>Date:</strong> 2026-09-17</li><li><strong>Task:</strong> refresh <code>claude/phase4-wiring</code> against <code>main</code>, so the held work merges as a non-event when deployment access arrives</li><li><strong>Blast radius:</strong> <strong>BR-0 on <code>main</code></strong> — two documentation corrections only. The branch itself is unmerged and unchanged in substance.</li><li><strong>Branch:</strong> <code>c4fca4a</code> → <strong><code>7e2931f</code></strong></li><li><strong>Result:</strong> ACCEPT — 17 pure suites green on the branch, Phase 4 emulator 53/0, three conflicts resolved deliberately.</li></ul>
+<hr>
+<h2>1. Why this, and why now</h2>
+<p>The Master Architect&#x27;s instruction is to <em>preserve</em> the prepared Phase 4 wiring. Preservation is not the same as leaving it alone: the branch was cut at <code>65d3f99</code> and <code>main</code> has moved <strong>eight commits</strong> since — P5-C, P5-E, P6-A, P6-B, the deployment package, P6-C.</p>
+<p>Left untouched, the branch rots quietly and the integration happens <strong>at exactly the moment production Rules go live</strong> — the worst possible time to discover a defect. Refreshing it now costs nothing and needs neither deployment nor an Owner decision.</p>
+<p>It merged with <strong>three conflicts</strong>, so this was not a formality.</p>
+<hr>
+<h2>2. The substantive conflict — two true invariants, neither of which survives alone</h2>
+<p><code>tools/i18n-verify/study-activity-evidence-boundary.mjs</code> had been rewritten on <strong>both</strong> sides, for good reasons on both:</p>
+<div class='tw'><table><thead><tr><th>Side</th><th>Says</th><th>Because</th></tr></thead><tbody>
+<tr><td><code>main</code> (P5-C)</td><td><strong>No page may reach</strong> the evidence writer, by any chain</td><td>Through P5/P6 nothing is wired, and that is the whole safety case</td></tr>
+<tr><td>branch (P4-D)</td><td>The writer has <strong>exactly one audited entry point</strong></td><td>This branch wires Study surfaces to it <strong>on purpose</strong></td></tr>
+</tbody></table></div>
+<p><strong>On this branch &quot;unreachable&quot; is simply false</strong>, and asserting it would have been asserting that the wiring does not work. Picking either side would have thrown away a real guarantee.</p>
+<p><strong>Resolved by combining them:</strong> <code>main</code>&#x27;s <strong>reachability walker</strong> is kept — the stronger mechanism, because it catches a wiring wherever in the chain it happens rather than only at the first hop — and applied to P4-D&#x27;s invariant:</p>
+<p>&gt; every page-reachable path to the writer must pass <strong>through</strong> &gt; <code>study-event-wiring.js</code></p>
+<p>with the pinned importer set becoming <code>[study-event-wiring.js, study-note-service.js]</code>, and <code>study-note-service.js</code> still asserted unreachable because on this branch it genuinely is. The merged check also refuses to pass vacuously: if <strong>no</strong> page reaches the writer it fails, because on this branch that would mean the wiring is broken.</p>
+<p>The other two conflicts were documents: <code>CHANGELOG.md</code> took <code>main</code>&#x27;s history with the branch&#x27;s own 88-line P4-D entry re-appended, and <code>CLAUDE.md</code> took <code>main</code>&#x27;s brief with a <strong>branch-only banner</strong> saying where you are, what this checkout carries that <code>main</code> does not, and that two checks read differently here on purpose.</p>
+<hr>
+<h2>3. Verified after the merge</h2>
+<div class='tw'><table><thead><tr><th>Claim</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Nothing regressed</td><td><strong>17 pure suites green</strong>, including <code>study-event-wiring</code> (39) which exists only here</td></tr>
+<tr><td>The Rules still behave</td><td>Phase 4 emulator <strong>53 assertions, 0 failures</strong></td></tr>
+<tr><td>The deployment candidate is unaffected</td><td>Every rules and index artefact <strong>byte-identical to <code>main</code></strong>, so <code>main</code>&#x27;s runs (Phase 4 <strong>53</strong>, Phase 5 <strong>60</strong>, Phase 6 <strong>53</strong>) hold here without re-running them</td></tr>
+<tr><td>The branch is still only the wiring</td><td><code>app/</code> differs from <code>main</code> by exactly <code>study-event-wiring.js</code>, the shell wiring, five Bangla strings, and <code>version.js</code> at <strong>08.26</strong></td></tr>
+<tr><td>Nothing activated</td><td><code>firestore.rules</code> and <code>firebase.json</code> untouched on both sides</td></tr>
+</tbody></table></div>
+<hr>
+<h2>4. A correction to my own earlier finding</h2>
+<p>Yesterday&#x27;s report said <code>docs/governance/phase4-production-package-2026-09-14.md</code> <strong>&quot;was never written&quot;</strong>.</p>
+<p><strong>That is wrong.</strong> It <em>was</em> written — it lives on this branch and was simply never merged across. The dead pointer on <code>main</code> was real, and the fix is unchanged (the consolidated package supersedes it), but the characterisation was not. Corrected in the report, the changelog, and by the branch banner, which now records that the older package is superseded rather than leaving two documents competing to be the deployment instructions.</p>
+<hr>
+<h2>5. Pending-dependency ledger</h2>
+<div class='tw'><table><thead><tr><th>#</th><th>Item</th><th>State</th></tr></thead><tbody>
+<tr><td>1–4</td><td>Phase 4/5/6 Rules + four indexes</td><td><strong>READY — VERIFIED — PENDING EXECUTION ACCESS</strong></td></tr>
+<tr><td>5</td><td>Merging <code>claude/phase4-wiring</code></td><td><strong>De-risked: now <code>7e2931f</code>, current with <code>main</code>, 3 conflicts already resolved</strong></td></tr>
+<tr><td>6</td><td>P5-D, the Note editor</td><td>ADR-004&#x27;s deferral — Owner</td></tr>
+<tr><td>7</td><td>Server-side folder-cycle prevention</td><td>Owner: costs the ability to move a folder</td></tr>
+</tbody></table></div>
+<p>Item 5 was the one that would have gone wrong silently. It is now a fast-forward of a branch whose only difference from <code>main</code> is the wiring itself.</p>
+</main></body></html>
