@@ -4534,15 +4534,23 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
       present: !!field,
       hasWords: field ? field.querySelectorAll(".wbw-word").length > 0 : false,
       pressed: document.querySelector("[data-note-wbw-toggle]").getAttribute("aria-pressed"),
-      active: document.querySelector("[data-note-wbw-toggle]").classList.contains("active"),
+      // The bar-2 button carried `.active`; the ⋮ MENU ITEM that replaced it
+      // carries `.is-on` -- `class="qm-item${isOn ? " is-on" : ""}"` in the
+      // renderer. This control has never had `.active` since it moved, so the
+      // old assertion could only ever fail. `aria-pressed` was right all along.
+      active: document.querySelector("[data-note-wbw-toggle]").classList.contains("is-on"),
     };
   });
   check("42r ticking it renders real word-by-word content, not a placeholder",
         on.present && on.hasWords, JSON.stringify(on));
-  check("42r ...and the toggle itself reads pressed", on.pressed === "true" && on.active);
+  check("42r ...and the toggle itself reads pressed", on.pressed === "true" && on.active, JSON.stringify(on));
 
   // Persists across Next -- a reading preference, not per-āyah state.
-  await page.click("[data-note-next]");
+  // `[data-note-next]` never existed in app/. The nav cluster is two PAIRS --
+  // next/prev-UNIT and next/prev-AYAH, the owner's own "one for moving the
+  // whole unit of choice, another for moving only a single Ayah". This check
+  // is about state surviving a move to the next ĀYAH, so it is the ayah mover.
+  await page.click("[data-note-next-ayah]");
   await page.waitForTimeout(200);
   const afterNext = await page.evaluate(() => !!document.querySelector('[data-note-field="wbw"]'));
   check("42r stays on after Next -- a session preference, not reset per āyah", afterNext);
@@ -4655,7 +4663,11 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
       present: !!rootsField,
       hasContent: rootsField ? rootsField.textContent.trim().length > 0 : false,
       pressed: document.querySelector("[data-note-roots-toggle]").getAttribute("aria-pressed"),
-      active: document.querySelector("[data-note-roots-toggle]").classList.contains("active"),
+      // The bar-2 button carried `.active`; the ⋮ MENU ITEM that replaced it
+      // carries `.is-on` -- `class="qm-item${isOn ? " is-on" : ""}"` in the
+      // renderer. This control has never had `.active` since it moved, so the
+      // old assertion could only ever fail. `aria-pressed` was right all along.
+      active: document.querySelector("[data-note-roots-toggle]").classList.contains("is-on"),
       belowWbw: wbwField && rootsField ? children.indexOf(rootsField) === children.indexOf(wbwField) + 1 : null,
       derivStillOff: !derivField,
     };
