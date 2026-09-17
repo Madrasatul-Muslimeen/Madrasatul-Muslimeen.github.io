@@ -1361,7 +1361,12 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   that region is UNVERIFIED, not passing.** When a suite stops early, the debt
   is everything downstream, not the one failing line — fix it that day.
 - **`rules-authorisation-executable.mjs` NOW CHECKS THE LESSON BELOW, so stop
-  doing it by hand.** 17 checks, both directions: every field an accepted
+  doing it by hand.** 38 checks, both directions on `allow update` and both on
+  `allow create` (an emulator suite proves the RULES are right using its own
+  fixtures; it never proves the DATA LAYER'S PAYLOAD matches them, and a create
+  missing a `hasAll` field is denied in production with no pure suite noticing).
+  Spreads like `...owner` are resolved out of the helpers' own source, and the
+  check throws by name if a helper stops looking like itself. On `allow update`: every field an accepted
   `allow update` may change must be written by some data-layer update (or an
   accepted decision is unexecutable), and every field the data layer writes must
   be one the Rules may change (or **the write is denied in production and no

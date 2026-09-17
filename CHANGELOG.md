@@ -13609,3 +13609,50 @@ behind the Phase 4 Rules deployment. **The candidate's read rule has no
 list unbounded, and tightening it is a Rules amendment to a candidate already in
 the Owner's deployment package. And no aggregation was built — "how many āyāt
 this week" is a product question about a screen that does not exist.
+
+---
+
+## The authorisation guard extended to CREATE payloads — 17 → 38 checks (17 Sep 2026, v08.25, no version bump)
+
+**BR-0, tools only.** `git diff -- app/` is empty. Same file as the entry above,
+same report (§8–§10 appended):
+`docs/reports/2026-09-17-rules-authorisation-executable-guard.md` / `.html`.
+
+**THE EMULATOR SUITES PROVE THE RULES ARE RIGHT, USING THEIR OWN FIXTURES. THEY
+DO NOT PROVE THE DATA LAYER'S PAYLOAD MATCHES THEM.** A create missing a
+`hasAll` field, or carrying one outside `hasOnly`, is **denied in production and
+no pure suite notices** — the harness stub has no rules at all. Exactly the
+BACKWARD direction's class, applied to create.
+
+The guard now reads each collection's `hasOnly`/`hasAll` and compares it against
+every `createDocument(…, TENANT.X, …)` and `transaction.create(TENANT.X, …)`
+payload in the data layer, plus the Phase 4 evidence payload built in
+`study-activity-evidence-id.js`. **Spreads are resolved, not skipped**:
+`...owner` and `...relationBase(owner, noteId)` expand into field sets read out
+of those helpers' own source, and the check asserts the helpers still look like
+themselves — `ownership()` returning two fields instead of three makes the
+parser **throw by name** rather than quietly compare a short list.
+
+**11 of 11 mutations now caught.** The four new ones: dropping `parentFolderId`
+from the folder create fails REQUIRES; adding `colour` fails FORBIDS; making
+`ownership()` return two fields throws at the helper assertion; and adding
+`occurrenceId` to the evidence payload fails the Phase 4 check — **a real
+invariant, since ADR-008's own amendment says `occurrenceId` is deliberately not
+stored.**
+
+**A THIRD NEAR-MISS IN ONE DAY, and the positive control earned its keep again.**
+The create parser's regex was built in a Python heredoc, where `\b` inside a
+normal string is a **backspace escape** — so the file was written containing a
+literal 0x08 byte and the pattern required an actual backspace after
+`TENANT.NOTE_FOLDERS`. It matched nothing. **Without the positive control this
+would have shipped as 12 green checks examining zero create payloads.** With it,
+the run said `expected one noteFolders create, found 0` immediately.
+
+**Still deliberately NOT covered:** only the six MAP collections (the legacy
+production collections' data layers predate this pattern); only the `allow
+update` and `allow create` FIELD SETS — read scope and the value-level
+conditions (`status == 'active'` on create, `getAfter()` revision chaining,
+`canRecordFor()`) are the emulator suites' job, which is the right place for
+server decisions; and it cannot tell whether a field change is REACHABLE FROM A
+SURFACE, which is the boundary suites' reachability walkers, whose answer for all
+of this code is deliberately still "no".

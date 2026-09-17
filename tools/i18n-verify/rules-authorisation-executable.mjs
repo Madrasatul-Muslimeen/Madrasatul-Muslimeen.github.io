@@ -125,6 +125,84 @@ function authorisedUpdate(source, collectionPath, identityFn) {
   };
 }
 
+/**
+ * What an `allow create` on this collection permits and requires.
+ *
+ * `keys().hasOnly([...])` is the permitted set, `keys().hasAll([...])` the
+ * required one. Both are inside the shape function, in that order.
+ */
+function authorisedCreate(source, collectionPath) {
+  const block = matchBlock(source, collectionPath);
+  const only = block.match(/keys\(\)\.hasOnly\(\[([\s\S]*?)\]\)/);
+  const all = block.match(/keys\(\)\.hasAll\(\[([\s\S]*?)\]\)/);
+  assert.ok(only, `${collectionPath}: no hasOnly list found`);
+  assert.ok(all, `${collectionPath}: no hasAll list found`);
+  const permitted = new Set(idsIn(only[1]));
+  const required = new Set(idsIn(all[1]));
+  assert.ok(permitted.size > 3, `${collectionPath}: hasOnly parsed as ${permitted.size} fields -- the parser is broken`);
+  assert.ok(required.size > 3, `${collectionPath}: hasAll parsed as ${required.size} fields -- the parser is broken`);
+  return { permitted, required };
+}
+
+// Small local helpers in the data layer expand into a fixed field set. They
+// are resolved here rather than guessed, and asserted to still look like
+// themselves -- a change to either would otherwise silently shrink the field
+// sets this check compares.
+function spreadHelpers(source) {
+  const ownership = source.match(/function ownership\([\s\S]*?return \{([^}]*)\};/);
+  const relation = source.match(/function relationBase\([\s\S]*?return \{([^}]*)\};/);
+  assert.ok(ownership, "note-foundation.js: ownership() not found");
+  assert.ok(relation, "note-foundation.js: relationBase() not found");
+  const ownerFields = ownership[1].split(",").map((f) => f.trim().split(":")[0].trim()).filter(Boolean);
+  assert.deepEqual(ownerFields.slice().sort(), ["ownerPersonId", "ownerUid", "tenantId"],
+    "ownership() no longer returns the three fields this check resolves it to");
+  assert.ok(relation[1].includes("ownership") && relation[1].includes("noteId"),
+    "relationBase() no longer spreads ownership() plus noteId");
+  return { owner: ownerFields, relationBase: [...ownerFields, "noteId"] };
+}
+
+/** Every field name any create of `tenantKey` in `source` writes, spreads resolved. */
+function dataLayerCreates(source, tenantKey, helpers) {
+  const results = [];
+  const re = new RegExp(
+    String.raw`(?:createDocument\(\s*\w+\s*,\s*TENANT\.` + tenantKey +
+    String.raw`|transaction\.create\(\s*TENANT\.` + tenantKey + String.raw`)`, "g");
+  for (const m of source.matchAll(re)) {
+    // The payload is the balanced { … } that follows.
+    const openBrace = source.indexOf("{", m.index + m[0].length);
+    assert.notEqual(openBrace, -1, `${tenantKey}: no payload object after a create`);
+    let depth = 0, i = openBrace;
+    for (; i < source.length; i++) {
+      if (source[i] === "{") depth++;
+      else if (source[i] === "}" && --depth === 0) break;
+    }
+    const payload = source.slice(openBrace + 1, i);
+    const fields = new Set();
+    // `...ownership(...)` / `...owner` / `...relationBase(owner, noteId)`
+    if (/\.\.\.\s*relationBase/.test(payload)) for (const f of helpers.relationBase) fields.add(f);
+    if (/\.\.\.\s*(owner\b|ownership)/.test(payload)) for (const f of helpers.owner) fields.add(f);
+    // `name: value` and bare `name` shorthand, at the payload's top level only.
+    let d = 0, token = "";
+    const flush = () => {
+      const bare = token.trim();
+      if (/^[A-Za-z][A-Za-z0-9]*$/.test(bare)) fields.add(bare);
+      else {
+        const kv = bare.match(/^([A-Za-z][A-Za-z0-9]*)\s*:/);
+        if (kv) fields.add(kv[1]);
+      }
+      token = "";
+    };
+    for (const ch of payload) {
+      if ("{[(".includes(ch)) d++;
+      else if ("}])".includes(ch)) d--;
+      if (ch === "," && d === 0) flush(); else token += ch;
+    }
+    flush();
+    results.push(fields);
+  }
+  return results;
+}
+
 /** Every field name any `transaction.update(TENANT.X, …, { … })` in `source` writes. */
 function dataLayerUpdates(source, tenantKey) {
   const fields = new Set();
@@ -194,6 +272,81 @@ for (const { name, rules, matchPath, identity, tenantKey } of COLLECTIONS) {
     assert.deepEqual(unauthorised, [],
       `the data layer writes ${unauthorised.join(", ")} to ${name}, which the accepted Rules freeze -- that write is denied in production and no pure suite would notice`);
   });
+}
+
+// --- CREATE: every payload the data layer writes must fit its own shape ----
+//
+// The emulator suites prove the RULES are right, using their own fixtures. They
+// do not prove the DATA LAYER's payload matches them. A create missing a
+// `hasAll` field, or carrying one outside `hasOnly`, is denied in production
+// and no pure suite notices -- the harness stub has no rules at all. Same class
+// as the BACKWARD direction above, applied to create.
+{
+  const helpers = spreadHelpers(dataLayer);
+  const evidenceStore = read("app/js/study-activity-evidence-store.js");
+
+  check("POSITIVE CONTROL: the parser really reads a create payload", () => {
+    const payloads = dataLayerCreates(dataLayer, "NOTE_FOLDERS", helpers);
+    assert.equal(payloads.length, 1, `expected one noteFolders create, found ${payloads.length}`);
+    assert.deepEqual([...payloads[0]].sort(),
+      ["folderId", "name", "order", "ownerPersonId", "ownerUid", "parentFolderId", "semanticRole", "status", "tenantId"],
+      "the spread of ownership() must be resolved, not skipped");
+  });
+
+  for (const { name, rules, matchPath, tenantKey } of COLLECTIONS) {
+    const { permitted, required } = authorisedCreate(rules, matchPath);
+    const payloads = dataLayerCreates(dataLayer, tenantKey, helpers);
+
+    check(`${name}: the data layer really has a create for it`, () => {
+      assert.ok(payloads.length > 0,
+        `no create found for ${name} -- either the collection is written by nothing, or this parser stopped seeing it`);
+    });
+
+    payloads.forEach((fields, i) => {
+      const withEnvelope = new Set([...fields, ...ENVELOPE]);
+      check(`CREATE ${name}[${i}]: carries every field the accepted shape REQUIRES`, () => {
+        const missing = [...required].filter((f) => !withEnvelope.has(f));
+        assert.deepEqual(missing, [],
+          `the accepted shape requires ${missing.join(", ")} on ${name}, and this create does not send it -- the write is denied in production`);
+      });
+      check(`CREATE ${name}[${i}]: carries nothing the accepted shape FORBIDS`, () => {
+        const extra = [...fields].filter((f) => !permitted.has(f));
+        assert.deepEqual(extra, [],
+          `this create sends ${extra.join(", ")} to ${name}, which the accepted shape forbids -- the write is denied in production`);
+      });
+    });
+  }
+
+  // Phase 4 evidence is written by its own module, not the Note Foundation.
+  {
+    const { permitted, required } = authorisedCreate(p4, "activity/{activityKey}/evidence/");
+    const built = evidenceStore.includes("buildStudyEvidenceDocument");
+    check("CREATE Phase 4 evidence: its payload is built by the identity module, and that is where its shape is pinned", () => {
+      assert.ok(built,
+        "the evidence writer no longer builds its document through buildStudyEvidenceDocument() -- this check can no longer find the payload");
+      const idModule = read("app/js/study-activity-evidence-id.js");
+      const fn = idModule.slice(idModule.indexOf("export function buildStudyEvidenceDocument"));
+      assert.ok(fn.length > 100, "buildStudyEvidenceDocument() not found");
+      // It builds `const doc = { … }` and returns that, rather than returning
+      // an object literal directly.
+      const declared = fn.indexOf("const doc = {");
+      assert.notEqual(declared, -1, "buildStudyEvidenceDocument() no longer builds `const doc = { … }`");
+      const openBrace = fn.indexOf("{", declared);
+      let depth = 0, i = openBrace;
+      for (; i < fn.length; i++) {
+        if (fn[i] === "{") depth++;
+        else if (fn[i] === "}" && --depth === 0) break;
+      }
+      const fields = new Set([...fn.slice(openBrace + 1, i)
+        .matchAll(/(?:^|,)\s*([A-Za-z][A-Za-z0-9]*)\s*(?::|,|$)/g)].map((m) => m[1]));
+      assert.ok(fields.size > 3, `evidence payload parsed as ${fields.size} fields -- the parser is broken`);
+      const withEnvelope = new Set([...fields, ...ENVELOPE]);
+      assert.deepEqual([...required].filter((f) => !withEnvelope.has(f)), [],
+        "the evidence writer omits a field its own accepted shape requires");
+      assert.deepEqual([...fields].filter((f) => !permitted.has(f)), [],
+        "the evidence writer sends a field its own accepted shape forbids");
+    });
+  }
 }
 
 // --- the ASSEMBLED deployment file must authorise the SAME things -----------

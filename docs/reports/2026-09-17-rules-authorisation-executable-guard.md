@@ -4,7 +4,7 @@
 - **Task:** turn the comparison that produced P6-C, P6-D, P5-F and P6-E into a mechanical guard
 - **Blast radius:** **BR-0.** One new file under `tools/i18n-verify/`. **No `app/` file changed at all** — `git diff -- app/` is empty. Every Rules and index candidate byte-identical. Nothing deployed.
 - **Application version:** **08.25, unchanged.**
-- **Result:** ACCEPT. `tools/i18n-verify/rules-authorisation-executable.mjs`, **17 checks**, and **7 of 7 mutations caught** — including three that reproduce the historical gaps exactly.
+- **Result:** ACCEPT. `tools/i18n-verify/rules-authorisation-executable.mjs`, **38 checks**, and **11 of 11 mutations caught** — including three that reproduce the historical gaps exactly.
 
 ---
 
@@ -78,11 +78,27 @@ M5 was first attempted with a `sed` whose escaping did not match, so it replaced
 | Every other pure suite | unchanged (re-run: contract 34, data layer 95, services 32 / 18, boundaries 13 / 17 / 30 / 15 / 16, index requirements 8, deployment candidate 10, stub parity 3) |
 | Translation coverage | **1,803 / 47** — unchanged, no user-visible string |
 
-## 8. What it does NOT cover, stated
+## 8. Extended the same day to `allow create`
+
+The emulator suites prove the **Rules** are right, using their own fixtures. They do not prove the **data layer's payload** matches them. A create missing a `hasAll` field, or carrying one outside `hasOnly`, is **denied in production and no pure suite notices** — the harness stub has no rules at all. Same class as the BACKWARD direction, applied to create.
+
+So the guard now also reads each collection's `hasOnly`/`hasAll` and compares it against every `createDocument(…, TENANT.X, …)` and `transaction.create(TENANT.X, …)` payload in the data layer, plus the Phase 4 evidence payload built in `study-activity-evidence-id.js`.
+
+**Spreads are resolved, not skipped.** `...owner` and `...relationBase(owner, noteId)` expand into field sets read out of those helpers' own source, and the check asserts the helpers still look like themselves — `ownership()` returning two fields instead of three makes the parser throw by name rather than quietly compare a short list.
+
+Four more mutations, all caught: dropping `parentFolderId` from the folder create fails REQUIRES; adding `colour` fails FORBIDS; making `ownership()` return two fields throws at the helper assertion; adding `occurrenceId` to the evidence payload fails the Phase 4 check — which is a real invariant, since ADR-008's amendment says `occurrenceId` is **deliberately not stored**.
+
+## 9. What it does NOT cover, stated
 
 - **Only the six MAP collections.** The legacy production collections in the full ruleset are not parsed; their data layers predate this pattern and were not written against a candidate. Extending it there is a separate task with its own reading.
-- **Only `allow update`.** Create shape and read scope are covered by the emulator suites, which is the right place for them — those are server decisions, not executability ones.
+- **Only `allow update` and `allow create` field sets.** Read scope and the value-level conditions (`status == 'active'` on create, `getAfter()` revision chaining, `canRecordFor()`) are the emulator suites' job, which is the right place — those are server decisions, not executability ones.
 - **It cannot tell whether a field change is *reachable from a surface*.** That is what the boundary suites' reachability walkers do, and right now the answer is deliberately "no" for all of this code.
+
+## 10. A third near-miss, and the positive control earning its keep again
+
+The create parser's regex was built in a Python heredoc, and `\b` inside a normal Python string is a **backspace escape** — so the file was written containing a literal 0x08 byte, and the pattern required an actual backspace after `TENANT.NOTE_FOLDERS`. It matched nothing.
+
+**Without the positive control this would have shipped as 12 green checks that examined zero create payloads.** With it, the run said `expected one noteFolders create, found 0` immediately. That is the third time in one day that reading a real failure rather than a count or a grep was the thing that mattered.
 
 ---
 
