@@ -4191,7 +4191,12 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   // Notes -- rich-text, saved on blur, through the new ayahNotes collection.
   await page.click("[data-note-editor]");
   await page.keyboard.type("Reflect on this daily.");
-  await page.click(".note-ref"); // blur the editor by focusing elsewhere
+  // Was `page.click(".note-ref")` -- "blur the editor by focusing elsewhere".
+  // `.note-ref` no longer exists anywhere in app/: bar 1 became the reading-unit
+  // picker and its reference label went with the old bar. The CHECK's intent is
+  // the blur, not the clicking of any particular element, so the blur is now
+  // expressed directly -- which is also immune to the next markup change.
+  await page.evaluate(() => document.querySelector("[data-note-editor]")?.blur());
   await page.waitForTimeout(400);
   const noteWrites = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
   const nw = noteWrites.find((w) => w.col === "ayahNotes" && w.data.some((k) => k.startsWith("notes.")));
