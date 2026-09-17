@@ -13377,3 +13377,78 @@ fix (`ancestorIds[]` + `depth`) stays **recorded, not adopted** — ledger item 
 an Owner decision costing the ability to move a folder at all. And nothing was
 wired to a page: a Journey Map surface is a product decision ADR-010 names as
 such, behind the same gate as P5-D.
+
+---
+
+## MAP P5-F / P6-E — the two relation collections could be written and never taken back (17 Sep 2026, v08.25, no version bump)
+
+**BR-0.** Three `app/js` modules changed, all still unreachable from any page.
+No `.html` changed. `firestore.rules`, `firebase.json`, all four index
+candidates and all three Rules candidates **byte-identical**. Nothing deployed.
+Evidence: `docs/reports/2026-09-17-map-p5f-p6e-relation-lifecycle.md` / `.html`.
+
+**THE SAME COMPARISON, A THIRD TIME: read what the accepted Rules AUTHORISE,
+then ask what the data layer can PERFORM.** P6-C found ADR-010 §5's
+retire-and-create had no retire function. P6-D found `noteFolders` create-only
+against a Rules comment that said otherwise. Asking it of the last two relation
+collections found two more, and **both have a consequence a person would
+actually hit.**
+
+**(1) A Note could be anchored to a Study Unit and NEVER un-anchored.** The
+accepted Phase 5 Rules say *"A link may be retired, never repointed and never
+deleted"*, permit an update touching only `status`/`updatedAt`, and the Phase 5
+emulator suite **already proved the server allows it (REL-05)**.
+`listNoteSourcesForUnit()` already defaults to active-only. **So the read side
+was built for a writer that did not exist** — ADR-009 gave `noteSources` a
+writer, P5-E a reader, and nothing a way to take a link back. An origin
+recorded by mistake was permanent.
+
+**(2) A Note's position WITHIN a folder could never be set.**
+`placementIdentityUnchanged()` freezes `placementId`, `noteId` and `folderId`,
+so `order` and `status` are all an update may touch; `retireNotePlacement()`
+covered `status` and nothing covered `order` — **while the Phase 6 composite
+index candidate exists FOR it** ("a folder's contents, in the author's own
+order") and `folderContents()` promises exactly that in its own comment. An
+index specified and a promise made for a field no code could change.
+
+**Added:** `retireNoteSource` (sends `status` only — a repoint is what ADR-009's
+closed vocabulary exists to prevent, and REL-06 refuses it server-side) and
+`reorderNotePlacement` (sends `order` only — a `folderId` change would be a move
+that rewrote its own record instead of retiring and creating, ADR-010 §5 / I4),
+plus `unbindStudyNoteSource` on the ADR-009 service and `reorderFiling` on the
+MMJ service.
+
+**TWO DELIBERATE NON-CASCADES.** Retiring a link does NOT touch the Note:
+retiring the last link leaves the Note active, because a Note is not defined by
+what it is about (ADR-004) and cascading would give **Origin the power to remove
+a Note** — the mirror of the derivation ADR-010 §2 forbids the other way. Proven
+by a check that puts a real Note document in the stub and counts writes to
+`notes`: zero. And **no restore function was added, as a stated omission**: the
+Rules permit `status` to move either way, so a restore would be authorised, but
+no accepted document asks for one and "may a person un-retire" is a product
+question, not a derivation. Flagged rather than invented.
+
+**A TEST-HARNESS DEFECT FOUND ON THE WAY, and the general shape is worth
+keeping.** `study-note-service.mjs`'s `reset()` cleared its call log by a
+HAND-WRITTEN LIST of keys, and silently forgot `unbind` the moment P5-F added
+it — so calls accumulated across cases and a count assertion failed for a
+reason with nothing to do with the code under test. It clears every key now.
+**A fixture that enumerates what to reset will be wrong the next time something
+is added to it.** This one failed loudly, which is the good case; the bad case
+is a leaked call that makes a later assertion pass.
+
+**Verified:** data layer 77 → **95**, study-note service 29 → **32**,
+journey-map service 17 → **18**, Phase 6 emulator 58 → **60** (`P-ORDER-01`
+allow, `P-ORDER-02` the smuggled `folderId` denied), boundary suites **13/0**
+and **17/0** (still unreachable, insertion-only intact), `note-foundation-
+boundary` 30, `emulator-scaffold` 31, `note-journal-evidence` 18,
+`study-note-binding` 16, `study-activity-evidence-boundary` 15,
+`study-approach-contract-boundary` 16, `stub-parity` 3,
+`firestore-index-requirements` **8/0 — NO NEW INDEX** (both additions are
+document updates; no query was added), coverage **1,803 / 47** unchanged.
+
+**Flagged, not changed.** No restore path (above). The refusal messages still
+need translating when a surface exists (I11) — `unbindStudyNoteSource` adds no
+new reason string, it forwards the data layer's. And nothing was wired to a
+page: all three modules stay unreachable, behind the same Rules-and-indexes gate
+as the Note editor and the Journey Map surface.

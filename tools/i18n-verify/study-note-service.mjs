@@ -26,7 +26,7 @@ let source = fs.readFileSync(path.join(root, "app/js/study-note-service.js"), "u
 source = source
   .replace(/import \{ weekKeyFor \} from "\.\/activity\.js";/, "const { weekKeyFor } = globalThis.__snsActivity;")
   .replace(/import \{[\s\S]*?\} from "\.\/note-foundation\.js";/,
-    "const { NOTE_STATUS, createPermanentNote, getNotesByIds, listNoteSourcesForUnit, retirePermanentNote, updatePermanentNoteContent } = globalThis.__snsNoteFoundation;")
+    "const { NOTE_STATUS, createPermanentNote, getNotesByIds, listNoteSourcesForUnit, retireNoteSource, retirePermanentNote, updatePermanentNoteContent } = globalThis.__snsNoteFoundation;")
   .replace(/import \{ writeStudyActivityEvidence \} from "\.\/study-activity-evidence-store\.js";/,
     "const { writeStudyActivityEvidence } = globalThis.__snsStore;")
   .replace(/from "\.\/note-journal-evidence\.js"/, `from "${appUrl("note-journal-evidence.js")}"`)
@@ -37,7 +37,7 @@ for (const leftover of [/from "\.\//, /gstatic\.com/]) {
 }
 
 // --- stand-ins that really record what was asked of them --------------------
-const calls = { create: [], update: [], retire: [], evidence: [], sourceQuery: [], noteFetch: [] };
+const calls = { create: [], update: [], retire: [], evidence: [], sourceQuery: [], noteFetch: [], unbind: [] };
 let sourceRows = [];
 let noteRows = [];
 let nextIds = [];
@@ -63,6 +63,13 @@ globalThis.__snsNoteFoundation = {
     return nextIds.shift()[1];
   },
   retirePermanentNote: async (_db, args) => { calls.retire.push(args); },
+  // P5-F -- the source-link retire. The sentinel is how a REJECTION is
+  // exercised: the source rewrite destructures this object at module load, so
+  // swapping a member afterwards would not reach the module under test.
+  retireNoteSource: async (_db, args) => {
+    calls.unbind.push(args);
+    if (args.sourceLinkId === "refuse-me") throw new Error("Cross-owner or cross-tenant source link refused.");
+  },
   NOTE_STATUS: Object.freeze({ ACTIVE: "active", RETIRED: "retired" }),
   listNoteSourcesForUnit: async (_db, args) => { calls.sourceQuery.push(args); return sourceRows.slice(0, args.maximum); },
   getNotesByIds: async (_db, tenantId, ids) => { calls.noteFetch.push({ tenantId, ids }); return noteRows.filter((n) => ids.includes(n.noteId)); },
@@ -74,8 +81,11 @@ globalThis.__snsStore = {
   },
 };
 function reset(ids = []) {
-  calls.create.length = 0; calls.update.length = 0; calls.retire.length = 0; calls.evidence.length = 0;
-  calls.sourceQuery.length = 0; calls.noteFetch.length = 0;
+  // Clears EVERY key rather than a hand-written list. The list silently forgot
+  // `unbind` the moment P5-F added it, so calls accumulated across cases and a
+  // count assertion failed for a reason that had nothing to do with the code
+  // under test. `journey-map-service.mjs` already resets this way.
+  for (const key of Object.keys(calls)) calls[key].length = 0;
   sourceRows = []; noteRows = [];
   nextIds = ids; failNext = null;
 }
@@ -333,6 +343,37 @@ await check("R10 reading a unit records no Activity and names no status", async 
   assert.equal(calls.evidence.length, 0, "reading is not journaling");
   const blob = JSON.stringify(out);
   for (const forbidden of ["claimStatus", "achieved", "mastered", "chunkKey"]) assert.ok(!blob.includes(forbidden), forbidden);
+});
+
+// --- P5-F: un-anchoring a Note from its Study Unit -------------------------
+await check("R11 a source link can be un-anchored, and ONLY its status moves", async () => {
+  reset();
+  const out = await mod.unbindStudyNoteSource(db, { tenantId: "t1", ownerPersonId: "p1",
+    sourceLinkId: "src-1", actorUid: "u1" });
+  assert.deepEqual(calls.unbind[0], { tenantId: "t1", ownerPersonId: "p1", sourceLinkId: "src-1", actorUid: "u1" });
+  assert.deepEqual(out, { unbound: "src-1" });
+  // Nothing about the Note, and nothing about what it was about, may travel
+  // with the call -- a repoint is what ADR-009's vocabulary exists to prevent.
+  const keys = Object.keys(calls.unbind[0]);
+  for (const forbidden of ["sourceKey", "sourceKind", "relationshipKind", "provenanceKind", "noteId"]) {
+    assert.ok(!keys.includes(forbidden), `un-anchoring carried ${forbidden}`);
+  }
+});
+
+await check("R12 un-anchoring never retires the NOTE, and records no Activity", async () => {
+  reset();
+  await mod.unbindStudyNoteSource(db, { tenantId: "t1", ownerPersonId: "p1", sourceLinkId: "src-1", actorUid: "u1" });
+  assert.equal(calls.retire.length, 0, "a Note is not defined by what it is about (ADR-004)");
+  assert.equal(calls.create.length, 0);
+  assert.equal(calls.update.length, 0);
+  assert.equal(calls.evidence.length, 0, "un-anchoring is not study");
+});
+
+await check("R13 a refusal underneath reaches the caller -- I15, never swallowed", async () => {
+  reset();
+  await assert.rejects(() => mod.unbindStudyNoteSource(db, { tenantId: "t1", ownerPersonId: "p1",
+    sourceLinkId: "refuse-me", actorUid: "u1" }), /Cross-owner or cross-tenant source link refused/);
+  assert.equal(calls.unbind.length, 1, "the call really was made -- the rejection is not a short-circuit");
 });
 
 console.log(`\n${passed} passed`);

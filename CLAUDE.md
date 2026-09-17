@@ -52,6 +52,22 @@ be redesigned. BR-0, no version bump, `git diff -- app/` empty. See
 `docs/reports/2026-09-17-behaviour-suite-excavation.md` and the three new
 standing lessons below.
 
+**17 Sep 2026 — MAP P5-F / P6-E: the two relation collections could be written
+and never taken back.** The same comparison as P6-D, a third time — read what
+the accepted Rules AUTHORISE, then ask what the data layer can PERFORM. **A Note
+could be anchored to a Study Unit and never un-anchored** (the Phase 5 Rules say
+*"a link may be retired, never repointed and never deleted"*, the emulator suite
+already proved the server allows it at REL-05, and `listNoteSourcesForUnit()`
+already defaulted to active-only — **the read side was built for a writer that
+did not exist**). And **a Note's position WITHIN a folder could never be set**,
+though the Phase 6 composite index candidate exists FOR that field. Added
+`retireNoteSource` and `reorderNotePlacement`, each sending only its one field.
+**Retiring a link never touches the Note** — cascading would give Origin the
+power to remove a Note, the mirror of what ADR-010 §2 forbids the other way.
+**No restore path was added, deliberately**: the Rules permit it, nothing asks
+for it. BR-0, no version bump. See
+`docs/reports/2026-09-17-map-p5f-p6e-relation-lifecycle.md`.
+
 **17 Sep 2026 — MAP PHASE 6 P6-D: the folder EDITING side, and two real defects
 in accepted Phase 6 code.** `noteFolders` was create-only in the data layer
 while the accepted Rules candidate already said *"a folder may be renamed,
@@ -1331,6 +1347,23 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   reach has no first run to fail in, so it never earns the right to be believed:
   that region is UNVERIFIED, not passing.** When a suite stops early, the debt
   is everything downstream, not the one failing line — fix it that day.
+- **ASK WHAT THE ACCEPTED RULES AUTHORISE, THEN WHAT THE CODE CAN PERFORM.** That
+  one comparison has produced three rounds of real work with no new authority
+  (P6-C, P6-D, P5-F/P6-E): ADR-010 §5's retire-and-create had no retire
+  function; `noteFolders` was create-only against a Rules comment saying "a
+  folder may be renamed, reordered, re-parented or retired"; a `noteSources`
+  link could be created and never retired, and a `notePlacements` `order` never
+  changed — **with a composite index already specified to serve it.** An
+  accepted decision that no code can perform is a real gap, and closing it
+  crosses no gate. **A read side written for a writer that does not exist is the
+  tell** — `listNoteSourcesForUnit()` had defaulted to active-only all along.
+- **A FIXTURE THAT ENUMERATES WHAT TO RESET WILL BE WRONG THE NEXT TIME
+  SOMETHING IS ADDED.** `study-note-service.mjs`'s `reset()` cleared its call log
+  by a hand-written list of keys and silently forgot the new one, so calls
+  accumulated across cases and an assertion failed for a reason unrelated to the
+  code under test. Clear every key (`for (const k of Object.keys(calls))`). This
+  one failed loudly, which is the good case; the bad case is a leaked call that
+  makes a later assertion PASS.
 - **READ A SUITE'S FAILURE TEXT, NOT ITS COUNTS.** Four boundary suites reported
   `0 passed, 13 failed` — identically on a clean `git stash`, which read like
   four guards rotting on `main`. The text said

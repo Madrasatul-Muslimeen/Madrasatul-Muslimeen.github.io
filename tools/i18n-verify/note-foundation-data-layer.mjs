@@ -343,10 +343,83 @@ await assert.rejects(() => foundation.retireNoteFolder({}, { tenantId: "tenant",
   ownerPersonId: "person", folderId: "f-me", actorUid: "owner-uid" }), /already retired/);
 assert.equal(writes.length, 0);
 
+// --- P5-F: retireNoteSource(), which nothing could do --------------------
+// The accepted Phase 5 Rules already said "A link may be retired, never
+// repointed and never deleted" and its emulator suite proved the server allows
+// it (REL-05). listNoteSourcesForUnit() already defaults to active-only, so
+// the READ side was built for a writer that did not exist.
+const SRC = (o = {}) => ({ sourceLinkId: "src-1", tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", noteId: "note-1", sourceKey: "ayah:2:255", sourceKind: "quran-unit",
+  relationshipKind: "origin", provenanceKind: "study-note", status: "active", ...o });
+const putSource = (row) => documents.set(`noteSources/tenant__${row.sourceLinkId}`, row);
+
+writes.length = 0; documents.clear(); putSource(SRC());
+await foundation.retireNoteSource({}, { tenantId: "tenant", ownerPersonId: "person",
+  sourceLinkId: "src-1", actorUid: "owner-uid" });
+assert.deepEqual(writes.map(({ kind }) => kind), ["update"]);
+assert.deepEqual(writes[0].data, { status: "retired" },
+  "a retire sends ONLY the status -- a repoint of sourceKey is what ADR-009's vocabulary exists to prevent");
+assert.equal(writes[0].collectionName, "noteSources");
+
+writes.length = 0; documents.clear(); putSource(SRC({ ownerPersonId: "someone-else" }));
+await assert.rejects(() => foundation.retireNoteSource({}, { tenantId: "tenant",
+  ownerPersonId: "person", sourceLinkId: "src-1", actorUid: "owner-uid" }),
+  /Cross-owner or cross-tenant source link refused/);
+assert.equal(writes.length, 0);
+
+documents.clear(); putSource(SRC({ status: "retired" }));
+await assert.rejects(() => foundation.retireNoteSource({}, { tenantId: "tenant",
+  ownerPersonId: "person", sourceLinkId: "src-1", actorUid: "owner-uid" }), /already retired/);
+
+documents.clear();
+await assert.rejects(() => foundation.retireNoteSource({}, { tenantId: "tenant",
+  ownerPersonId: "person", sourceLinkId: "ghost", actorUid: "owner-uid" }), /does not exist/);
+
+// It never touches the NOTE: a Note is not defined by what it is about
+// (ADR-004), and cascading would give Origin the power to remove a Note.
+writes.length = 0; documents.clear(); putSource(SRC());
+documents.set("notes/tenant__note-1", { noteId: "note-1", tenantId: "tenant",
+  ownerPersonId: "person", status: "active" });
+await foundation.retireNoteSource({}, { tenantId: "tenant", ownerPersonId: "person",
+  sourceLinkId: "src-1", actorUid: "owner-uid" });
+assert.equal(writes.filter((w) => w.collectionName === "notes").length, 0,
+  "retiring a link must not cascade into the Note");
+
+// --- P6-E: reorderNotePlacement(), the only field left unreachable --------
+// placementIdentityUnchanged() freezes placementId, noteId and folderId, so
+// `order` and `status` are all an update may touch. retireNotePlacement()
+// covered status; the Phase 6 composite index exists for `order` and nothing
+// could set it.
+const PLC = (o = {}) => ({ placementId: "pl-r", tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", noteId: "note-1", folderId: "f-1", order: 0, status: "active", ...o });
+const putPlacement = (row) => documents.set(`notePlacements/tenant__${row.placementId}`, row);
+
+writes.length = 0; documents.clear(); putPlacement(PLC());
+await foundation.reorderNotePlacement({}, { tenantId: "tenant", ownerPersonId: "person",
+  placementId: "pl-r", order: 4, actorUid: "owner-uid" });
+assert.deepEqual(writes.map(({ kind }) => kind), ["update"]);
+assert.deepEqual(writes[0].data, { order: 4 },
+  "a reorder sends ONLY the order -- never folderId, which would be a move that destroyed its own record (I4)");
+
+writes.length = 0;
+await assert.rejects(() => foundation.reorderNotePlacement({}, { tenantId: "tenant",
+  ownerPersonId: "person", placementId: "pl-r", order: 1.5, actorUid: "owner-uid" }), /integer/);
+assert.equal(writes.length, 0);
+
+documents.clear(); putPlacement(PLC({ ownerPersonId: "someone-else" }));
+await assert.rejects(() => foundation.reorderNotePlacement({}, { tenantId: "tenant",
+  ownerPersonId: "person", placementId: "pl-r", order: 1, actorUid: "owner-uid" }),
+  /Cross-owner or cross-tenant placement refused/);
+
+documents.clear(); putPlacement(PLC({ status: "retired" }));
+await assert.rejects(() => foundation.reorderNotePlacement({}, { tenantId: "tenant",
+  ownerPersonId: "person", placementId: "pl-r", order: 1, actorUid: "owner-uid" }),
+  /retired placement cannot be reordered/);
+
 // NOTHING here is a delete, on any path (I4/D6).
 assert.equal(writes.filter((w) => w.kind === "delete").length, 0);
 
 delete globalThis.__nfCollections;
 delete globalThis.__nfFirestore;
 delete globalThis.__nfEnvelope;
-console.log("==== Note Foundation data layer: 47 + 30 P6-D assertions passed ====");
+console.log("==== Note Foundation data layer: 47 + 30 P6-D + 18 P5-F/P6-E assertions passed ====");

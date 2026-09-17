@@ -382,6 +382,76 @@ export async function createNotePlacement(db, {
   return placementId;
 }
 
+/**
+ * MAP Phase 5 (P5-F) — retire a source link, which nothing could do.
+ *
+ * The accepted Phase 5 Rules candidate says it in one line — "A link may be
+ * retired, never repointed and never deleted" — permits an update affecting
+ * only `status` and `updatedAt`, and its emulator suite proves the server
+ * allows it (REL-05). `listNoteSourcesForUnit()` already defaults to
+ * active-only, so the READ side was built for a writer that did not exist.
+ * The consequence was user-facing: a person could anchor a Note to a Study
+ * Unit and never un-anchor it, so an origin recorded by mistake was permanent.
+ *
+ * NOT A REPOINT AND NOT A DELETE. `sourceKey`, `sourceKind`,
+ * `relationshipKind`, `provenanceKind`, `noteId` and the ownership fields are
+ * never sent; the Rules refuse them as well (REL-06), so neither side is the
+ * only guard. What this changes is which links a unit's read returns — the
+ * link itself is kept (I4), and ADR-009's record of where a Note came from is
+ * still in the database.
+ *
+ * IT DOES NOT TOUCH THE NOTE. Retiring the last link on a Note leaves the Note
+ * active and reachable through `listNotesForOwner()`; a Note is not defined by
+ * what it is about (ADR-004), and cascading would make Origin able to delete a
+ * Note, which is precisely the derivation ADR-010 §2 forbids in the other
+ * direction.
+ */
+export async function retireNoteSource(db, { tenantId, ownerPersonId, sourceLinkId, actorUid }) {
+  const docId = noteFoundationDocId(tenantId, requireToken("sourceLinkId", sourceLinkId));
+  requireToken("ownerPersonId", ownerPersonId);
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const snapshot = await transaction.get(TENANT.NOTE_SOURCES, docId);
+    if (!snapshot.exists()) throw new Error("Source link does not exist.");
+    const link = snapshot.data();
+    if (link.tenantId !== tenantId || link.ownerPersonId !== ownerPersonId) {
+      throw new Error("Cross-owner or cross-tenant source link refused.");
+    }
+    if (link.status !== NOTE_STATUS.ACTIVE) throw new Error("Source link is already retired.");
+    transaction.update(TENANT.NOTE_SOURCES, docId, { status: NOTE_STATUS.RETIRED });
+  });
+}
+
+/**
+ * MAP Phase 6 (P6-E) — reorder a Note within its folder, which nothing could do.
+ *
+ * `placementIdentityUnchanged()` freezes `placementId`, `noteId` and
+ * `folderId`, so `order` and `status` are the only fields an update may touch.
+ * `retireNotePlacement()` covered `status`. Nothing covered `order` — and the
+ * Phase 6 composite index candidate exists FOR IT, ordering a folder's
+ * contents by `order`, while `folderContents()`'s own comment promises "in the
+ * author's own order". The author had no way to set that order after creation.
+ *
+ * A MOVE BETWEEN FOLDERS IS STILL `moveNotePlacement()` and still
+ * retire-and-create (ADR-010 §5, I4). This changes position WITHIN one folder,
+ * where there is no record to preserve: `order` is display only and nothing is
+ * keyed by it (I5).
+ */
+export async function reorderNotePlacement(db, { tenantId, ownerPersonId, placementId, order, actorUid }) {
+  const docId = noteFoundationDocId(tenantId, requireToken("placementId", placementId));
+  requireToken("ownerPersonId", ownerPersonId);
+  if (!Number.isInteger(order)) throw new TypeError("note-foundation: order must be an integer.");
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const snapshot = await transaction.get(TENANT.NOTE_PLACEMENTS, docId);
+    if (!snapshot.exists()) throw new Error("Placement does not exist.");
+    const placement = snapshot.data();
+    if (placement.tenantId !== tenantId || placement.ownerPersonId !== ownerPersonId) {
+      throw new Error("Cross-owner or cross-tenant placement refused.");
+    }
+    if (placement.status !== NOTE_STATUS.ACTIVE) throw new Error("A retired placement cannot be reordered.");
+    transaction.update(TENANT.NOTE_PLACEMENTS, docId, { order });
+  });
+}
+
 export async function listNotesForOwner(db, { tenantId, ownerPersonId, status = NOTE_STATUS.ACTIVE, maximum = 100 }) {
   const q = query(collection(db, TENANT.NOTES),
     where("tenantId", "==", requireToken("tenantId", tenantId)),

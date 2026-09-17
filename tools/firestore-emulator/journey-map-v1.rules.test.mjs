@@ -246,6 +246,14 @@ test("candidate Mapping My Journey Rules: ADR-010 enforced at the server", async
       updateDoc(PL, { folderId: "child000000000000000000000000001", updatedAt: new Date() }));
     await no("P-MOVE-02", "a placement may NOT be repointed at another Note",
       updateDoc(PL, { noteId: "p2note00000000000000000000000001", updatedAt: new Date() }));
+    // P6-E: `order` is the one field an update may change that was not covered.
+    // The Phase 6 composite index candidate exists to serve it, and until P6-E
+    // no client code could set it -- so a folder's "author's own order" could
+    // only ever be whatever each placement was created with.
+    await ok("P-ORDER-01", "a placement may be REORDERED within its folder",
+      updateDoc(PL, { order: 4, updatedAt: new Date() }));
+    await no("P-ORDER-02", "a reorder may not smuggle a folder change with it",
+      updateDoc(PL, { order: 5, folderId: "child000000000000000000000000001", updatedAt: new Date() }));
     await ok("P-MOVE-03", "a placement may be RETIRED, which is half of a move",
       updateDoc(PL, { status: "retired", updatedAt: new Date() }));
     await ok("P-MOVE-04", "and the other half is a NEW placement in the new folder",

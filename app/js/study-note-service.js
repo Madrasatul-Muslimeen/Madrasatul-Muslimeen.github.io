@@ -31,6 +31,7 @@ import {
   createPermanentNote,
   getNotesByIds,
   listNoteSourcesForUnit,
+  retireNoteSource,
   retirePermanentNote,
   updatePermanentNoteContent,
 } from "./note-foundation.js";
@@ -194,4 +195,32 @@ export async function notesForStudyUnit(db, {
     .filter((row) => row.note !== null && row.note.status === NOTE_STATUS.ACTIVE);
 
   return { rows, truncated };
+}
+
+/**
+ * MAP Phase 5 (P5-F) — un-anchor a Note from the Study Unit it was written on.
+ *
+ * ADR-009 gave `noteSources` a writer and P5-E gave it a reader; neither gave
+ * it a way to take a link back, though the accepted Rules say "A link may be
+ * retired, never repointed and never deleted". So an origin recorded by
+ * mistake was permanent.
+ *
+ * NOTHING HERE CAN REPOINT A LINK, and that is the point: the only field this
+ * path can change is `status`. Repointing would let a Note's Origin be
+ * rewritten after the fact, which is the one thing ADR-009 fixed a vocabulary
+ * to prevent — and it would also make the evidence already recorded for that
+ * Note refer to a unit the Note no longer claims.
+ *
+ * THE NOTE IS UNTOUCHED. Retiring the last link leaves the Note active: a Note
+ * is not defined by what it is about (ADR-004), and cascading would give
+ * Origin the power to remove a Note.
+ *
+ * It records NO Activity, for the same reason every other function here
+ * returns its evidence arguments and stops (I15): un-anchoring is not study.
+ */
+export async function unbindStudyNoteSource(db, {
+  tenantId, ownerPersonId, sourceLinkId, actorUid,
+} = {}) {
+  await retireNoteSource(db, { tenantId, ownerPersonId, sourceLinkId, actorUid });
+  return { unbound: sourceLinkId };
 }

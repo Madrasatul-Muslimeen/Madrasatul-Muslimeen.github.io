@@ -17,6 +17,7 @@ import {
   listNotePlacementsForNote,
   moveNotePlacement,
   renameNoteFolder,
+  reorderNotePlacement,
   reorderNoteFolder,
   reparentNoteFolder,
   retireNoteFolder,
@@ -146,4 +147,17 @@ export async function moveFolder(db, { tenantId, ownerPersonId, folderId, parent
 
 export async function retireFolder(db, { tenantId, ownerPersonId, folderId, actorUid } = {}) {
   return retireNoteFolder(db, { tenantId, ownerPersonId, folderId, actorUid });
+}
+
+/**
+ * P6-E — a Note's position WITHIN a folder, which nothing could set.
+ *
+ * `folderContents()` promises "in the author's own order" and the Phase 6
+ * composite index candidate exists to serve it; the author had no way to
+ * change that order once a placement was created. A move BETWEEN folders is
+ * still `moveNoteToFolder()` and still retire-and-create (ADR-010 §5, I4) --
+ * this is position inside one folder, where there is no record to preserve.
+ */
+export async function reorderFiling(db, { tenantId, ownerPersonId, placementId, order, actorUid } = {}) {
+  return reorderNotePlacement(db, { tenantId, ownerPersonId, placementId, order, actorUid });
 }

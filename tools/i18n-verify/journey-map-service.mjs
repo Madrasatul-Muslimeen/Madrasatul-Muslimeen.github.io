@@ -15,13 +15,13 @@ const root = path.resolve(process.argv[2] || process.cwd());
 let source = fs.readFileSync(path.join(root, "app/js/journey-map-service.js"), "utf8");
 source = source
   .replace(/import \{[\s\S]*?\} from "\.\/note-foundation\.js";/,
-    "const { NOTE_STATUS, getNotesByIds, listNoteFoldersForOwner, listNotePlacementsForFolder, listNotePlacementsForNote, moveNotePlacement, renameNoteFolder, reorderNoteFolder, reparentNoteFolder, retireNoteFolder } = globalThis.__jmFoundation;")
+    "const { NOTE_STATUS, getNotesByIds, listNoteFoldersForOwner, listNotePlacementsForFolder, listNotePlacementsForNote, moveNotePlacement, renameNoteFolder, reorderNoteFolder, reparentNoteFolder, retireNoteFolder, reorderNotePlacement } = globalThis.__jmFoundation;")
   .replace(/from "\.\/journey-map-contract\.js"/,
     `from "${pathToFileURL(path.join(root, "app/js/journey-map-contract.js")).href}"`);
 assert.ok(!/from "\.\//.test(source), "an import was not rewritten");
 
 const calls = { folderQuery: [], noteQuery: [], folders: [], notes: [], move: [],
-                rename: [], reorder: [], reparent: [], retire: [] };
+                rename: [], reorder: [], reparent: [], retire: [], reorderFiling: [] };
 let placementRows = [], folderRows = [], noteRows = [];
 
 globalThis.__jmFoundation = {
@@ -45,6 +45,7 @@ globalThis.__jmFoundation = {
     if (a.folderId === "refuse-me") throw new Error("Folder parent refused: cycle");
   },
   retireNoteFolder:            async (_db, a) => { calls.retire.push(a); },
+  reorderNotePlacement:        async (_db, a) => { calls.reorderFiling.push(a); },
 };
 function reset() {
   for (const k of Object.keys(calls)) calls[k].length = 0;
@@ -53,7 +54,7 @@ function reset() {
 
 const mod = await import(`data:text/javascript,${encodeURIComponent(source)}`);
 const { MAX_PLACEMENTS_PER_READ, folderContents, moveNoteToFolder, noteFilings, ownerFolderTree,
-        moveFolder, renameFolder, reorderFolder, retireFolder } = mod;
+        moveFolder, renameFolder, reorderFolder, retireFolder, reorderFiling } = mod;
 
 let passed = 0;
 async function check(name, fn) { await fn(); passed++; console.log(`  PASS  ${name}`); }
@@ -197,6 +198,18 @@ await check("K17 this module still cannot name a Study Unit, on the WRITE side e
   for (const forbidden of ["study-note-binding", "study-note-service", "unit-keys", "buildUnitKey", "sourceKey"]) {
     assert.ok(!code.includes(forbidden), `ADR-010 §2: the service reached for ${forbidden}`);
   }
+});
+
+// --- P6-E: a Note's position WITHIN a folder ------------------------------
+await check("K18 a filing can be reordered inside its folder, carrying no folderId", async () => {
+  reset();
+  await reorderFiling(db, { ...own, placementId: "pl-1", order: 4, actorUid: "u" });
+  assert.deepEqual(calls.reorderFiling[0], { ...own, placementId: "pl-1", order: 4, actorUid: "u" });
+  // A folderId here would be a MOVE that rewrote its own record instead of
+  // retiring and creating -- exactly what ADR-010 §5 and I4 forbid, and what
+  // moveNoteToFolder() exists to do properly.
+  assert.ok(!Object.keys(calls.reorderFiling[0]).includes("folderId"));
+  assert.equal(calls.move.length, 0, "a reorder is not a move");
 });
 
 console.log(`\n${passed} passed`);
