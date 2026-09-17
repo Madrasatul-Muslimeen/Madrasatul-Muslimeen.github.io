@@ -52,6 +52,32 @@ async function cancelBookmarkPopover(page) {
 }
 
 
+// --- the ⋮ tools menu ------------------------------------------------------
+// This project's own standing lesson, finally applied to this suite: "when a
+// control moves inside a menu, every direct page.click on it starts timing out,
+// and the element still RESOLVES." Four Note-view controls -- the master
+// toggle, Word by Word, Root and Derivatives -- moved into the ⋮ quick menu,
+// which starts closed. The clicks below found their targets, measured 0x0 and
+// hung, which is the section-42 crash this suite has carried since v07.69.
+//
+// The menu CLOSES ITSELF the moment something inside it is picked (the
+// renderer's own round-31 rule), so it must be reopened before EVERY such
+// click, not once per section.
+//
+// It asserts a real rendered box rather than trusting that the click worked --
+// the same lesson's second half, and the thing that would have caught this in
+// the first place.
+async function clickInNoteTools(page, selector) {
+  await page.click('[data-note-menu-toggle="tools"]');
+  await page.waitForSelector('[data-note-menu="tools"].open', { timeout: 5000 });
+  const box = await page.locator(selector).boundingBox();
+  if (!box || box.width === 0 || box.height === 0) {
+    throw new Error(`clickInNoteTools: ${selector} has no rendered box (${JSON.stringify(box)}) -- it is in the DOM but not on screen`);
+  }
+  await page.click(selector);
+  await page.waitForTimeout(100);
+}
+
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 async function ctxFor(o) {
   const ctx = await newContext(browser, { viewport: { width: 390, height: 844 }, ...o });
@@ -4120,7 +4146,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(100);
 
   // Master toggle collapses Arabic/English/Bangla together -- never Notes.
-  await page.click("[data-note-master-toggle]");
+  await clickInNoteTools(page, "[data-note-master-toggle]");
   await page.waitForTimeout(100);
   const collapsed = await page.evaluate(() => ({
     fieldsHidden: getComputedStyle(document.querySelector("[data-note-collapsible]")).display === "none",
@@ -4128,7 +4154,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   }));
   check("42e the master toggle collapses Arabic/English/Bangla together", collapsed.fieldsHidden);
   check("42e ...and Notes is untouched by it", collapsed.notesStillThere);
-  await page.click("[data-note-master-toggle]");
+  await clickInNoteTools(page, "[data-note-master-toggle]");
   await page.waitForTimeout(100);
 
   // Round 32 -- Bookmark and Play moved up to bar 2, beside Copy/Share/Word
@@ -4443,7 +4469,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   }));
   check("42r Word by word is off by default", !before.fieldPresent && before.pressed === "false", JSON.stringify(before));
 
-  await page.click("[data-note-wbw-toggle]");
+  await clickInNoteTools(page, "[data-note-wbw-toggle]");
   await page.waitForTimeout(200);
   const on = await page.evaluate(() => {
     const field = document.querySelector('[data-note-field="wbw"]');
@@ -4558,9 +4584,9 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 
   // Turn Word by word on too, so "below Word by word" is a real ordering
   // check rather than a no-op against a field that isn't even rendered.
-  await page.click("[data-note-wbw-toggle]");
+  await clickInNoteTools(page, "[data-note-wbw-toggle]");
   await page.waitForTimeout(150);
-  await page.click("[data-note-roots-toggle]");
+  await clickInNoteTools(page, "[data-note-roots-toggle]");
   await page.waitForTimeout(200);
   const on = await page.evaluate(() => {
     const wbwField = document.querySelector('[data-note-field="wbw"]');
@@ -4584,9 +4610,9 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   // Derivatives, on its own, independent of Root -- the point of splitting
   // them apart. Root is still on from above; turning it off first proves
   // Derivatives doesn't depend on Root being on.
-  await page.click("[data-note-roots-toggle]");
+  await clickInNoteTools(page, "[data-note-roots-toggle]");
   await page.waitForTimeout(150);
-  await page.click("[data-note-derivatives-toggle]");
+  await clickInNoteTools(page, "[data-note-derivatives-toggle]");
   await page.waitForTimeout(200);
   const derivOn = await page.evaluate(() => {
     const derivField = document.querySelector('[data-note-field="derivatives"]');
@@ -4601,7 +4627,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
         derivOn.present && derivOn.hasContent && derivOn.rootStillOff && derivOn.pressed === "true",
         JSON.stringify(derivOn));
 
-  await page.click("[data-note-derivatives-toggle]");
+  await clickInNoteTools(page, "[data-note-derivatives-toggle]");
   await page.waitForTimeout(200);
   const off = await page.evaluate(() => ({
     fieldPresent: !!document.querySelector('[data-note-field="derivatives"]'),
