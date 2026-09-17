@@ -220,6 +220,146 @@ export async function createNoteFolder(db, {
   return folderId;
 }
 
+/**
+ * MAP Phase 6 (P6-D) — the folder UPDATE side, which did not exist.
+ *
+ * `noteFolders` was create-only in this data layer while the accepted Phase 6
+ * Rules candidate already authorises the opposite, in its own words: "A folder
+ * may be renamed, reordered, re-parented or retired; it may never become a
+ * different folder, change owner, or change what KIND of folder it is
+ * (ADR-010 §3)." So the accepted decision was unexecutable — the same shape as
+ * P6-C's finding that ADR-010 §5's retire-and-create had no retire function.
+ * Nothing new is decided here; what the Rules already permit is made reachable.
+ *
+ * WHAT IS FROZEN, and where it is enforced: `tenantId`, `ownerPersonId`,
+ * `ownerUid`, `folderId`, `semanticRole` and `createdBy` are write-once. These
+ * functions never send them, and the candidate Rules refuse them as well, so
+ * neither side is the only guard.
+ *
+ * WHY A READ, NOT A TRANSACTION, for a re-parent: exactly as
+ * `createNoteFolder()` says above — judging a tree needs a query and a
+ * transaction cannot run one. The rename, reorder and retire paths need no
+ * tree, so those ARE transactions.
+ */
+async function loadOwnFolder(transaction, tenantId, ownerPersonId, folderId) {
+  const docId = noteFoundationDocId(tenantId, requireToken("folderId", folderId));
+  const snapshot = await transaction.get(TENANT.NOTE_FOLDERS, docId);
+  if (!snapshot.exists()) throw new Error("Folder does not exist.");
+  const folder = snapshot.data();
+  if (folder.tenantId !== tenantId || folder.ownerPersonId !== ownerPersonId) {
+    throw new Error("Cross-owner or cross-tenant folder refused.");
+  }
+  return { docId, folder };
+}
+
+/** Rename a folder. I11 — a folder name is user-visible, so it is validated, never blank. */
+export async function renameNoteFolder(db, { tenantId, ownerPersonId, folderId, name, actorUid }) {
+  requireText("name", name);
+  // Validated through the contract so a rename cannot accept a name a create
+  // would refuse. `parentFolderId: null` and the default role are placeholders
+  // for the field rules this call is actually exercising -- the stored parent
+  // and role are untouched below.
+  journeyFolder({ tenantId, ownerPersonId, name });
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const { docId, folder } = await loadOwnFolder(transaction, tenantId, ownerPersonId, folderId);
+    if (folder.status !== NOTE_STATUS.ACTIVE) throw new Error("A retired folder cannot be renamed.");
+    transaction.update(TENANT.NOTE_FOLDERS, docId, { name });
+  });
+}
+
+/** Reorder a folder among its siblings. `order` is display only -- nothing is keyed by it (I5). */
+export async function reorderNoteFolder(db, { tenantId, ownerPersonId, folderId, order, actorUid }) {
+  if (!Number.isInteger(order)) throw new TypeError("note-foundation: order must be an integer.");
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const { docId, folder } = await loadOwnFolder(transaction, tenantId, ownerPersonId, folderId);
+    if (folder.status !== NOTE_STATUS.ACTIVE) throw new Error("A retired folder cannot be reordered.");
+    transaction.update(TENANT.NOTE_FOLDERS, docId, { order });
+  });
+}
+
+/**
+ * Re-parent a folder, judged against ADR-010's tree rules first.
+ *
+ * THE OPERATION FIRESTORE RULES CANNOT SECURE. They enforce one hop and can
+ * never walk an ancestor chain, so cycle and depth enforcement for a move is
+ * client-side only — stated in the Phase 6 Rules candidate's own header and
+ * the reason every consumer of this tree bounds its own walk. This is also the
+ * path that exposed `folderTreeRefusal()`'s depth arithmetic: a create places
+ * a LEAF, a move carries a whole subtree, and the height of what is carried is
+ * counted now (see that function's own P6-D note).
+ *
+ * A system folder cannot be re-parented at all: `journeyFolder()` refuses a
+ * parent on one, and moving one to a new place under the tree is exactly the
+ * "locked distinction undone by a drag" ADR-010 §3 forbids. `parentFolderId:
+ * null` is accepted and is how a folder is lifted back to the top.
+ */
+export async function reparentNoteFolder(db, {
+  tenantId, ownerPersonId, folderId, parentFolderId, actorUid,
+}) {
+  requireToken("folderId", folderId);
+  if (parentFolderId !== null && (typeof parentFolderId !== "string" || !parentFolderId.trim())) {
+    throw new TypeError("note-foundation: parentFolderId must be a folder id or null.");
+  }
+  if (parentFolderId === folderId) throw new Error("Folder parent refused: self-parent");
+
+  const folders = await listNoteFoldersForOwner(db, { tenantId, ownerPersonId });
+  const byId = new Map(folders.map((f) => [f.folderId, f]));
+  const own = byId.get(folderId);
+  if (!own) throw new Error("Folder does not exist.");
+  // The whole proposed folder goes back through the contract, exactly as a
+  // create does -- which is what refuses a system folder gaining a parent
+  // ("a system folder IS the root of its own meaning") without this file
+  // holding a second copy of that rule. Reusing `journeyFolder()` rather than
+  // re-testing `semanticRole` here is also why this module needs no new
+  // import, and so why the insertion-only guard still holds.
+  journeyFolder({
+    tenantId, ownerPersonId, name: own.name, parentFolderId,
+    semanticRole: own.semanticRole, order: own.order ?? 0,
+  });
+  if (parentFolderId !== null) {
+    const refusal = folderTreeRefusal({ folders: byId, tenantId, ownerPersonId, folderId, parentFolderId });
+    if (refusal) throw new Error(`Folder parent refused: ${refusal}`);
+  }
+
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const { docId, folder } = await loadOwnFolder(transaction, tenantId, ownerPersonId, folderId);
+    if (folder.status !== NOTE_STATUS.ACTIVE) throw new Error("A retired folder cannot be re-parented.");
+    if ((folder.parentFolderId ?? null) === parentFolderId) throw new Error("A move must change parent.");
+    transaction.update(TENANT.NOTE_FOLDERS, docId, { parentFolderId });
+  });
+}
+
+/**
+ * Retire a folder (I4 — never deleted).
+ *
+ * REFUSED WHILE IT STILL HAS ACTIVE CHILDREN, and that is DERIVED from the
+ * accepted Rules rather than chosen here: `parentOneHopOk()` requires a
+ * parent to be `status == 'active'`, so the moment a parent is retired every
+ * update to a child is denied — including the re-parent that would rescue it.
+ * Retiring first and tidying after would therefore strand a whole subtree
+ * beyond reach of its own author. The children are moved or retired first.
+ *
+ * ITS PLACEMENTS ARE DELIBERATELY UNTOUCHED. Same asymmetry as P5-E and P6-C:
+ * retiring never rewrites the relations that point at the thing retired (I4
+ * keeps them), and the read side already excludes a retired folder by reading
+ * `listNoteFoldersForOwner()`'s active-only default. Cascading the retirement
+ * into placements would destroy the record of where a Note had been filed.
+ */
+export async function retireNoteFolder(db, { tenantId, ownerPersonId, folderId, actorUid }) {
+  requireToken("folderId", folderId);
+  const children = (await listNoteFoldersForOwner(db, { tenantId, ownerPersonId }))
+    .filter((f) => (f.parentFolderId ?? null) === folderId);
+  if (children.length > 0) {
+    // Named, not counted: a refusal a person cannot act on is a dead end.
+    throw new Error(`Folder still holds active folders: ${children.map((f) => f.folderId).join(", ")}`);
+  }
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const { docId, folder } = await loadOwnFolder(transaction, tenantId, ownerPersonId, folderId);
+    if (folder.status !== NOTE_STATUS.ACTIVE) throw new Error("Folder is already retired.");
+    transaction.update(TENANT.NOTE_FOLDERS, docId, { status: NOTE_STATUS.RETIRED });
+  });
+}
+
 export async function createNotePlacement(db, {
   tenantId, ownerPersonId, ownerUid, noteId, folderId,
   order = 0, placementId = newNoteEntityId(), actorUid,

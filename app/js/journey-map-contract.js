@@ -99,10 +99,22 @@ export function folderTreeRefusal({ folders, tenantId, ownerPersonId, folderId, 
   // Walk up from the proposed parent. The walk is bounded by the number of
   // folders as well as by depth, so a cycle that predates this contract cannot
   // spin here either.
+  //
+  // P6-D CORRECTION. This started at `depth = 2` — "the new folder, plus its
+  // proposed parent" — which is right for a CREATE, where the folder being
+  // placed is a leaf, and wrong for a RE-PARENT, where it carries its whole
+  // subtree with it. Moving a folder three levels tall under a parent already
+  // six deep put its deepest descendant at nine and this function returned
+  // `null`. Proven by probe before the fix, and the resulting tree was then
+  // reported by `buildFolderTree()` as CYCLIC, which is the wrong sentence to
+  // put in front of a person. The height of the moved subtree is therefore
+  // counted too. For a create it is 1 and the arithmetic is unchanged.
+  const height = subtreeHeight(folders, folderId);
   const seen = new Set([folderId]);
-  let depth = 2; // the new folder, plus its proposed parent
+  let depth = 1 + height; // the proposed parent, plus the moved folder and all it carries
   let cursor = parent;
   let cursorId = parentFolderId;
+  if (depth > MAX_FOLDER_DEPTH) return "too-deep";
   while (cursor) {
     if (seen.has(cursorId)) return "cycle";
     seen.add(cursorId);
@@ -114,6 +126,41 @@ export function folderTreeRefusal({ folders, tenantId, ownerPersonId, folderId, 
     if (!cursor) return "ancestor-missing";
   }
   return null;
+}
+
+/**
+ * How many levels `folderId` occupies, counting itself — 1 for a leaf, and 1
+ * for a folder that is not in the set at all (a create).
+ *
+ * Walks DOWN, which is what makes it cycle-safe for the same reason
+ * `buildFolderTree()` is (see its own comment): `parentFolderId` is
+ * single-valued, so a cycle can only be entered from inside itself. The
+ * `seen` set and the depth cap are belt and braces, and the cap is what keeps
+ * this bounded even on a tree that is already corrupt.
+ */
+function subtreeHeight(folders, folderId) {
+  const all = folders instanceof Map ? [...folders.values()] : Object.values(folders ?? {});
+  const childrenOf = new Map();
+  for (const f of all) {
+    const pid = f?.parentFolderId ?? null;
+    if (pid === null) continue;
+    if (!childrenOf.has(pid)) childrenOf.set(pid, []);
+    childrenOf.get(pid).push(f.folderId);
+  }
+  let height = 0;
+  const seen = new Set();
+  let level = [folderId];
+  while (level.length > 0 && height < MAX_FOLDER_DEPTH) {
+    height += 1;
+    const next = [];
+    for (const id of level) {
+      if (seen.has(id)) continue;
+      seen.add(id);
+      for (const childId of childrenOf.get(id) ?? []) next.push(childId);
+    }
+    level = next;
+  }
+  return Math.max(height, 1);
 }
 
 /**
@@ -173,14 +220,24 @@ export function placementMove({ from, to } = {}) {
  * corrupt tree, so the safe walk is provided once, here, and refuses rather
  * than loops.
  *
- * Returns `{ roots, orphaned, cyclic }`:
+ * Returns `{ roots, orphaned, cyclic, tooDeep }`:
  *   roots    — top-level folders, each with `children`, depth-capped
  *   orphaned — folders naming a parent that is not in the set
- *   cyclic   — folders that could not be reached from any root
+ *   tooDeep  — folders below the depth cap, reachable but deliberately unwalked
+ *   cyclic   — folders that cannot be reached from any root at all
  *
  * NOTHING IS SILENTLY DROPPED. A folder the walk refuses is NAMED in one of
- * the two lists, because a Note filed in a folder that vanished from the screen
- * is indistinguishable, to its author, from a Note that was lost.
+ * the three lists, because a Note filed in a folder that vanished from the
+ * screen is indistinguishable, to its author, from a Note that was lost.
+ *
+ * P6-D CORRECTION. `cyclic` was computed as "not reached and not orphaned",
+ * which swept in every folder sitting BELOW the depth cap — so a legitimately
+ * deep tree was reported to its own author as a cycle. The two are different
+ * facts with different remedies (a cycle is corruption; too deep is a tree
+ * that needs flattening), and `cyclic` is a word that will be shown to a
+ * person. `tooDeep` is now its own list, and `cyclic` means only what its name
+ * says. The old sweep was reachable through a re-parent that
+ * `folderTreeRefusal()` allowed — see its own P6-D note.
  */
 export function buildFolderTree(folders = []) {
   const byId = new Map(folders.map((f) => [f.folderId, { ...f, children: [] }]));
@@ -205,6 +262,7 @@ export function buildFolderTree(folders = []) {
   // kept as defence if this shape ever changes (a folder gaining two parents
   // would make it live), but a reader should not credit it with the protection.
   const reached = new Set();
+  const beyondCap = new Set();
   const queue = roots.map((folder) => [folder, 1]);
   while (queue.length) {
     const [folder, depth] = queue.shift();
@@ -214,8 +272,11 @@ export function buildFolderTree(folders = []) {
     if (depth >= MAX_FOLDER_DEPTH) {
       // Past the accepted bound the subtree is not walked at all. The folder is
       // kept and marked, so a reader sees that there is more rather than a
-      // silently pruned branch.
+      // silently pruned branch. Everything below it is collected separately and
+      // reported as `tooDeep` -- it was REACHED, it is simply not walked, and
+      // calling that a cycle would be a false sentence on a screen.
       folder.depthCapped = folder.children.length > 0;
+      for (const child of folder.children) collectSubtree(child, beyondCap);
       folder.children = [];
       continue;
     }
@@ -223,9 +284,26 @@ export function buildFolderTree(folders = []) {
   }
 
   const orphanIds = new Set(orphaned.map((f) => f.folderId));
+  const tooDeep = [...byId.values()].filter((f) => beyondCap.has(f.folderId));
   const cyclic = [...byId.values()].filter(
-    (f) => !reached.has(f.folderId) && !orphanIds.has(f.folderId));
+    (f) => !reached.has(f.folderId) && !orphanIds.has(f.folderId) && !beyondCap.has(f.folderId));
 
-  return { roots, orphaned, cyclic };
+  return { roots, orphaned, cyclic, tooDeep };
+}
+
+/**
+ * Every folder at or below `node`, added to `into` by id.
+ *
+ * Bounded by `into` itself: a node already collected is never expanded again,
+ * so a cycle hanging below the depth cap terminates here rather than spinning.
+ */
+function collectSubtree(node, into) {
+  const stack = [node];
+  while (stack.length) {
+    const folder = stack.pop();
+    if (!folder || into.has(folder.folderId)) continue;
+    into.add(folder.folderId);
+    for (const child of folder.children ?? []) stack.push(child);
+  }
 }
 

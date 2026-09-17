@@ -52,6 +52,23 @@ be redesigned. BR-0, no version bump, `git diff -- app/` empty. See
 `docs/reports/2026-09-17-behaviour-suite-excavation.md` and the three new
 standing lessons below.
 
+**17 Sep 2026 — MAP PHASE 6 P6-D: the folder EDITING side, and two real defects
+in accepted Phase 6 code.** `noteFolders` was create-only in the data layer
+while the accepted Rules candidate already said *"a folder may be renamed,
+reordered, re-parented or retired"* — **an accepted decision that no code could
+perform.** Closing it exposed two compounding defects, both proven by probe:
+**`folderTreeRefusal()` opened at `depth = 2`, which is right for a CREATE (a
+leaf) and wrong for a MOVE (a whole subtree)** — a three-tall folder moved under
+a parent six deep landed at nine and was allowed; and **`cyclic` was computed as
+"not reached and not orphaned", so a merely TOO DEEP folder was reported to its
+own author as being in a cycle.** `buildFolderTree()` returns
+`{ roots, orphaned, cyclic, tooDeep }` now. Both fixes mutation-proven. BR-0, no
+version bump, no Rules/index/`firestore.rules` change. **Retiring a folder is
+refused while it has active children — DERIVED from the accepted Rules, not
+decided**: `parentOneHopOk()` needs an ACTIVE parent, so retiring one denies
+every update to its children, including the re-parent that would rescue them.
+See `docs/reports/2026-09-17-map-phase6-folder-editing-p6d.md`.
+
 **17 Sep 2026 — THE DEPLOYMENT IS NOW ONE PASTE AND THREE INDEX FORMS.**
 `docs/governance/phase4-6-production-deployment-package-2026-09-17.md` is the
 Owner-facing instructions; `phase4-6-DEPLOYMENT-candidate-2026-09-17.rules` is the
@@ -1314,6 +1331,27 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   reach has no first run to fail in, so it never earns the right to be believed:
   that region is UNVERIFIED, not passing.** When a suite stops early, the debt
   is everything downstream, not the one failing line — fix it that day.
+- **READ A SUITE'S FAILURE TEXT, NOT ITS COUNTS.** Four boundary suites reported
+  `0 passed, 13 failed` — identically on a clean `git stash`, which read like
+  four guards rotting on `main`. The text said
+  `ENOENT … scandir '…/tools/i18n-verify/app'`: **they resolve paths from
+  `process.cwd()` and must be run from the REPOSITORY ROOT.** A suite that fails
+  loudly when run from the wrong place is behaving correctly; what was nearly
+  wrong was the finding about to be recorded. Same discipline as "a failing
+  check is a wrong assertion surprisingly often", applied to invocation.
+- **`layout.mjs` EXITS NON-ZERO ON `main` ITSELF.** Line 87 counts the 22-entry
+  pre-existing missing-ID list as a regression once per viewport, so it prints
+  "16 REGRESSION(S)" and exits 1 on unmodified `main`. **The signal is the
+  `CHANGED:` lines, not the exit code.** And with no
+  `app/_prev-quranrevival.html` shim the whole before side scores `null`, every
+  metric reads as CHANGED, and it looks like a catastrophic regression — build
+  the shim from the comparison commit, then DELETE it before reading coverage.
+- **The sandbox's TLS interception trips every "no page errors" check on a page
+  that fetches over HTTPS** — `net::ERR_CERT_AUTHORITY_INVALID`, currently 6
+  checks across `behaviour.mjs`, `quran-word-card-rendered` and
+  `quran-word-progress-rendered`. Environmental; it will not happen for the
+  owner. **Never reach for `--ignore-certificate-errors`** — it would also hide
+  a real certificate problem.
 - **The archive.org failures (22g × 3) are INTERMITTENT, not permanent.** Inside
   one tranche on identical code they passed in runs 1/3/5/9/10 and failed in
   2/4/6/7/8/11. So a green 22g is not evidence either way, and "the baseline

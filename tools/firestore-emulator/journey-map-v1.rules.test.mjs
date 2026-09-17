@@ -192,6 +192,27 @@ test("candidate Mapping My Journey Rules: ADR-010 enforced at the server", async
     await no("F-LIFE-02", "a folder may never be deleted", deleteDoc(F("fold0000000000000000000000000001")));
     await no("F-LIFE-03", "a folder may not change owner", updateDoc(F("fold0000000000000000000000000001"), { ownerPersonId: "p2", updatedAt: new Date() }));
 
+    // --- P6-D: the update paths the candidate's own comment authorises -------
+    //
+    // The Rules candidate says "A folder may be renamed, reordered,
+    // re-parented or retired; it may never become a different folder, change
+    // owner, or change what KIND of folder it is (ADR-010 §3)." Rename,
+    // retire, owner and delete were covered above; the other three named
+    // facts were not, and P6-D is what made a client able to exercise them.
+    await no("F-LIFE-04", "a folder may NOT change what KIND of folder it is -- the locked distinction",
+      updateDoc(F("fold0000000000000000000000000001"), { semanticRole: "journey-map", updatedAt: new Date() }));
+    await no("F-LIFE-05", "a folder may not become a different folder",
+      updateDoc(F("fold0000000000000000000000000001"), { folderId: "other000000000000000000000000001", updatedAt: new Date() }));
+    await ok("F-LIFE-06", "a folder may be REORDERED among its siblings",
+      updateDoc(F("fold0000000000000000000000000001"), { order: 7, updatedAt: new Date() }));
+    await ok("F-LIFE-07", "a folder may be RE-PARENTED under another of my own active folders",
+      updateDoc(F("child000000000000000000000000001"), { parentFolderId: null, updatedAt: new Date() }));
+    // The one hop the server CAN check. Cycles of length two or more it cannot
+    // (see this candidate's own header), which is why P6-D's refusals are
+    // client-side and why every walk of this tree is bounded.
+    await no("F-LIFE-08", "a re-parent under a SYSTEM folder is refused by the server too",
+      updateDoc(F("child000000000000000000000000001"), { parentFolderId: "sysmap00000000000000000000000001", updatedAt: new Date() }));
+
     // --- reads --------------------------------------------------------------
     await ok("F-READ-01", "owner reads their own folder", getDoc(F("fold0000000000000000000000000001")));
     await ok("F-READ-02", "a guardian reads a managed child's folder", getDoc(doc(g1, "noteFolders", nk(T, "kidfolder000000000000000000001"))));

@@ -13258,3 +13258,122 @@ evidence either.
 **Nothing else moved.** No Rules, no indexes, no migration, no production data.
 All seven pending-dependency items are unchanged, and `claude/phase4-wiring`
 stays unmerged at `7e2931f`.
+
+---
+
+## MAP Phase 6 P6-D — the folder editing side, and two real defects it exposed (17 Sep 2026, v08.25, no version bump)
+
+**BR-0.** Three `app/js` modules changed, all still unreachable from any page
+(two boundary suites with positive controls say so). No `.html` changed.
+`firestore.rules`, `firebase.json`, all four index candidates and all three
+Rules candidates **byte-identical**. Nothing deployed. Full evidence in
+`docs/reports/2026-09-17-map-phase6-folder-editing-p6d.md` / `.html`.
+
+**WHY THIS NEEDED NO NEW AUTHORITY: `noteFolders` was create-only in the data
+layer while the accepted Phase 6 Rules candidate already said the opposite, in
+its own comment** — *"Identity and ROLE are write-once. **A folder may be
+renamed, reordered, re-parented or retired**; it may never become a different
+folder, change owner, or change what KIND of folder it is (ADR-010 §3)."* The
+accepted decision was **unexecutable**. Exactly P6-C's own finding (ADR-010 §5's
+retire-and-create had no retire function), one collection over.
+
+**TWO REAL DEFECTS in accepted P6-A/P6-B code, both found by probing the
+re-parent path this task made reachable, and they COMPOUND.**
+
+**(1) `folderTreeRefusal()` let a re-parent breach the depth bound.** It opened
+`let depth = 2; // the new folder, plus its proposed parent` — **right for a
+create, wrong for a move.** A create places a LEAF; a re-parent carries the
+folder's whole subtree, so the real depth is `parentDepth + 1 +
+subtreeHeight`. Probed: a folder three levels tall moved under a parent already
+six deep put its deepest descendant at **nine**, and the function returned
+`null`. `subtreeHeight()` measures what is carried, walks DOWN (cycle-safe for
+the same reason `buildFolderTree()` is — `parentFolderId` is single-valued) and
+is capped as well, so it terminates on a tree that is already corrupt. For a
+create the height is 1 and the arithmetic is unchanged.
+
+**(2) A folder that was merely TOO DEEP was reported to its own author as
+CYCLIC.** `cyclic` was computed as "not reached and not orphaned", and the walk
+deliberately stops at the depth cap — so everything below the cap fell into
+`cyclic`. The doc comment was honest about the mechanism and **the NAME was the
+lie**, and `cyclic` is a word that reaches a screen. A cycle is corruption; too
+deep is a tree that needs flattening — different facts, different remedies.
+`buildFolderTree()` returns `{ roots, orphaned, cyclic, tooDeep }` now, and
+`cyclic` means only what it says. **Defect 1 produced the over-deep tree and
+defect 2 mislabelled it; neither was visible from the create path, which was
+the only path that existed.**
+
+**Both fixes are mutation-proven, each mutation printing its own occurrence
+count first:** reverting `1 + height` to `2` kills J32; dropping
+`!beyondCap.has(...)` from `cyclic` kills J29; dropping the `semanticRole`
+clause from the Rules candidate kills the new F-LIFE-04. The Rules file was
+restored and re-diffed to byte-identical afterwards.
+
+**What was added:** `renameNoteFolder`, `reorderNoteFolder`,
+`reparentNoteFolder`, `retireNoteFolder` in `note-foundation.js`, plus thin
+`renameFolder` / `reorderFolder` / `moveFolder` / `retireFolder` wrappers in
+`journey-map-service.js`. Rename, reorder and retire are transactions; the
+re-parent is a read then a transaction, for `createNoteFolder()`'s own stated
+reason — **judging a tree needs a query and a transaction cannot run one.**
+Each function sends ONLY its own field; the six frozen fields are never sent
+and the Rules refuse them too, so neither side is the only guard.
+
+**TWO THINGS DERIVED, NOT DECIDED.** Retiring a folder is refused while it has
+active children, and that is read out of the accepted Rules rather than chosen:
+`parentOneHopOk()` requires an ACTIVE parent, so **the moment a parent is
+retired every update to a child is denied — including the re-parent that would
+rescue it.** Retiring first and tidying after would strand a whole subtree
+beyond reach of its author; the refusal NAMES the children. And a retired
+folder's placements are deliberately untouched — same asymmetry as P5-E and
+P6-C, same reason (I4 keeps them, and the read side already excludes a retired
+folder through `listNoteFoldersForOwner()`'s active-only default).
+
+**A GUARD CAUGHT ME AND THE CODE CHANGED, NOT THE GUARD.** The insertion-only
+check went red because my edit REMOVED one line — the import statement,
+rewritten to add `isSystemFolderRole`. Legitimate, and the guard was still
+right. The fix was to stop needing the import: `reparentNoteFolder()` sends the
+whole proposed folder back through `journeyFolder()`, exactly as a create does,
+which is what refuses a system folder gaining a parent. Better design as well
+as a green guard — the file now holds no second copy of ADR-010 §3.
+
+**ONE NEAR-MISS WORTH REMEMBERING.** Four boundary suites reported `0 passed,
+13 failed`, identically on a clean `git stash` — which read like four guards
+rotting on `main`, the same shape as the `behaviour.mjs` excavation earlier the
+same day. **Reading the failure TEXT rather than the counts settled it in one
+line:** `ENOENT … scandir '…/tools/i18n-verify/app'`. They resolve paths from
+`process.cwd()` and had been run from the wrong directory. A suite that fails
+loudly when run from the wrong place is behaving correctly; what was nearly
+wrong was the finding.
+
+**`layout.mjs` EXITS NON-ZERO ON `main` ITSELF** — it counts the 22-entry
+pre-existing missing-ID list as a regression once per viewport, so it reports
+"16 REGRESSION(S)" and exits 1 on unmodified `main`. **The signal is the
+`CHANGED:` lines, not the exit code.** This round: `CHANGED: 0` at all 16
+configurations, `getElementById` 250 → 250, same 22 missing, wheel widths, rows,
+dock gap, dock visible and no overflow all byte-identical — and set up so it
+COULD fail (the first run had no shim, scored `null` everywhere, and read as a
+catastrophic regression).
+
+**Verified:** contract 28 → **34**, data layer 47 → **77**, service 13 → **17**,
+Phase 6 emulator 53 → **58** (and **58/58 against the assembled deployment
+file**, so the new cases hold against the text that would actually be pasted),
+Phase 5 emulator **60**, Phase 4 **53**, boundary suites **13/0** and **17/0**,
+`firestore-index-requirements` **8/0** (**no new index** — every query added is
+equality-only and bounded), coverage **1,803 / 47** unchanged, `behaviour.mjs`
+**976 / 1**.
+
+**Six failures remain across the whole harness and all six are ONE
+environmental cause**, established by reading the text: `net::
+ERR_CERT_AUTHORITY_INVALID`, the sandbox's own proxy CA, tripping every "no
+page errors" check on a page that fetches over HTTPS — 1 in `behaviour.mjs`,
+2 in `quran-word-card-rendered`, 3 in `quran-word-progress-rendered`. Recorded,
+not worked around: `--ignore-certificate-errors` would also hide a real one.
+
+**Flagged, not changed.** The refusal reasons are not yet translated —
+`folderTreeRefusal()` returns reason STRINGS precisely so a surface can make
+sentences of them, and `too-deep` is a new one, so a Phase 6 surface owes every
+reason a translated sentence (I11). A re-parent is still two reads and a write,
+not atomic, with the same stated race as `createNoteFolder()`; the server-side
+fix (`ancestorIds[]` + `depth`) stays **recorded, not adopted** — ledger item 7,
+an Owner decision costing the ability to move a folder at all. And nothing was
+wired to a page: a Journey Map surface is a product decision ADR-010 names as
+such, behind the same gate as P5-D.

@@ -231,8 +231,14 @@ check(`J26 the walk stops at depth ${MAX_FOLDER_DEPTH} and SAYS it stopped`, () 
 });
 
 check("J27 an empty set is a valid tree, not a crash", () => {
-  assert.deepEqual(buildFolderTree([]), { roots: [], orphaned: [], cyclic: [] });
-  assert.deepEqual(buildFolderTree(), { roots: [], orphaned: [], cyclic: [] });
+  // UPDATED for P6-D: `tooDeep` is a fourth, deliberate key. `cyclic` used to
+  // be "not reached and not orphaned", which swept in every folder below the
+  // depth cap -- so a legitimately deep tree was reported to its own author as
+  // a CYCLE. The shape is pinned rather than loosened, so a fifth key still
+  // has to be added on purpose.
+  const empty = { roots: [], orphaned: [], cyclic: [], tooDeep: [] };
+  assert.deepEqual(buildFolderTree([]), empty);
+  assert.deepEqual(buildFolderTree(), empty);
 });
 
 check("J28 the walk does not mutate the folders it was given", () => {
@@ -240,6 +246,86 @@ check("J28 the walk does not mutate the folders it was given", () => {
   const before = JSON.stringify(input);
   buildFolderTree(input);
   assert.equal(JSON.stringify(input), before, "the caller's own objects were modified");
+});
+
+// --- P6-D: too deep is not a cycle, and a move carries its own subtree ------
+//
+// Both of these were REAL DEFECTS in the accepted P6-A/P6-B code, found by
+// probing the re-parent path that P6-D made reachable, and both are asserted
+// here so neither can come back.
+
+check("J29 a folder below the depth cap is reported as TOO DEEP, never as cyclic", () => {
+  const chain = [node("f1")];
+  for (let i = 2; i <= MAX_FOLDER_DEPTH + 2; i++) chain.push(node(`f${i}`, `f${i - 1}`));
+  const { cyclic, tooDeep, orphaned } = buildFolderTree(chain);
+  assert.deepEqual(cyclic, [], "a deep tree is not a corrupt one -- 'cyclic' is a word a person will read");
+  assert.deepEqual(orphaned, [], "every folder's parent is in the set");
+  assert.deepEqual(tooDeep.map((f) => f.folderId).sort(),
+    [`f${MAX_FOLDER_DEPTH + 1}`, `f${MAX_FOLDER_DEPTH + 2}`].sort(),
+    "the folders past the cap must be NAMED, and named as what they are");
+});
+
+check("J30 a real cycle is still reported as cyclic, and is not in tooDeep", () => {
+  const { cyclic, tooDeep, orphaned } = buildFolderTree([
+    node("r"), node("a", "b"), node("b", "a"), node("tail", "a"),
+  ]);
+  assert.deepEqual(cyclic.map((f) => f.folderId).sort(), ["a", "b", "tail"]);
+  assert.deepEqual(tooDeep, [], "a cycle is unreachable, not too deep -- the two must not blur");
+  assert.deepEqual(orphaned, []);
+});
+
+check("J31 NOTHING is silently dropped across all FOUR lists", () => {
+  const chain = [node("f1")];
+  for (let i = 2; i <= MAX_FOLDER_DEPTH + 2; i++) chain.push(node(`f${i}`, `f${i - 1}`));
+  const folders = [...chain, node("orph", "ghost"), node("c1", "c2"), node("c2", "c1")];
+  const { roots, orphaned, cyclic, tooDeep } = buildFolderTree(folders);
+  const seen = [];
+  const walk = (n) => { seen.push(n.folderId); (n.children ?? []).forEach(walk); };
+  roots.forEach(walk);
+  for (const list of [orphaned, cyclic, tooDeep]) seen.push(...list.map((f) => f.folderId));
+  assert.deepEqual(seen.slice().sort(), folders.map((f) => f.folderId).sort(),
+    "a folder that appears in no list has vanished from the screen with no explanation");
+  assert.equal(new Set(seen).size, seen.length, "a folder must appear exactly once, not in two lists");
+});
+
+check("J32 a RE-PARENT counts the height of the subtree it carries, a create does not", () => {
+  // A chain six deep, and a separate three-tall subtree to move under it.
+  const folders = {};
+  for (let i = 1; i <= 6; i++) folders[`r${i}`] = folder({ folderId: `r${i}`, parentFolderId: i === 1 ? null : `r${i - 1}` });
+  folders.p = folder({ folderId: "p" });
+  folders.pc = folder({ folderId: "pc", parentFolderId: "p" });
+  folders.pcc = folder({ folderId: "pcc", parentFolderId: "pc" });
+  folders.leaf = folder({ folderId: "leaf" });
+
+  // A LEAF under r6 lands at depth 7 -- fine, and the arithmetic a create uses.
+  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "leaf", parentFolderId: "r6" }), null);
+  // `p` is three tall, so its deepest descendant would land at depth 9. This
+  // returned null before P6-D, and buildFolderTree() then called the result
+  // CYCLIC -- the wrong sentence for the wrong reason.
+  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "p", parentFolderId: "r6" }), "too-deep");
+  // A folder not in the set at all is a create: height 1, unchanged behaviour.
+  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "brandNew", parentFolderId: "r6" }), null);
+});
+
+check("J33 measuring a subtree's height cannot spin on an already-corrupt tree", () => {
+  // `m` and `n` name each other. Moving `m` under `x` is the RESCUE, so it
+  // must be allowed -- and the height walk must terminate to allow it.
+  const folders = {
+    x: folder({ folderId: "x" }),
+    m: folder({ folderId: "m", parentFolderId: "n" }),
+    n: folder({ folderId: "n", parentFolderId: "m" }),
+  };
+  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "m", parentFolderId: "x" }), null,
+    "breaking a cycle by re-parenting out of it must stay possible");
+});
+
+check("J34 the depth cap is inclusive on both paths -- exactly 8 is allowed, 9 is not", () => {
+  const folders = {};
+  for (let i = 1; i <= 7; i++) folders[`c${i}`] = folder({ folderId: `c${i}`, parentFolderId: i === 1 ? null : `c${i - 1}` });
+  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "new", parentFolderId: "c7" }), null,
+    `a leaf at exactly depth ${MAX_FOLDER_DEPTH} is inside the bound`);
+  folders.c8 = folder({ folderId: "c8", parentFolderId: "c7" });
+  assert.equal(folderTreeRefusal({ ...own, folders, folderId: "new", parentFolderId: "c8" }), "too-deep");
 });
 
 console.log(`\n${passed} passed`);

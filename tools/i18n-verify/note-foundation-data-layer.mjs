@@ -204,7 +204,149 @@ assert.equal(writes[0].data.status, "retired");
 await assert.rejects(() => foundation.retireNotePlacement({}, { tenantId: "tenant",
   placementId: "pl-retired", actorUid: "owner-uid" }), /already retired/);
 
+// --- P6-D: the folder UPDATE side, which did not exist --------------------
+//
+// `noteFolders` was create-only here while the accepted Phase 6 Rules
+// candidate already said in its own comment: "A folder may be renamed,
+// reordered, re-parented or retired." Each case below is a thing the accepted
+// decision permitted and no code could perform.
+const FOLDER = (o = {}) => ({ folderId: "f-me", tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", name: "Mine", parentFolderId: null, semanticRole: "user",
+  order: 0, status: "active", ...o });
+const putFolder = (row) => documents.set(`noteFolders/tenant__${row.folderId}`, row);
+
+// rename ------------------------------------------------------------------
+writes.length = 0; queryRows = []; documents.clear(); putFolder(FOLDER());
+await foundation.renameNoteFolder({}, { tenantId: "tenant", ownerPersonId: "person",
+  folderId: "f-me", name: "Renamed", actorUid: "owner-uid" });
+assert.deepEqual(writes.map(({ kind }) => kind), ["update"]);
+assert.deepEqual(writes[0].data, { name: "Renamed" },
+  "a rename must send the NAME and nothing else -- tenant, owner, id and role are write-once");
+
+// I11 -- a folder name is user-visible, so a blank one is refused, not stored.
+writes.length = 0;
+await assert.rejects(() => foundation.renameNoteFolder({}, { tenantId: "tenant",
+  ownerPersonId: "person", folderId: "f-me", name: "   ", actorUid: "owner-uid" }), /name/);
+assert.equal(writes.length, 0);
+
+// Cross-owner and cross-tenant are refused by reading the document, not by
+// trusting the caller's own arguments.
+writes.length = 0; documents.clear(); putFolder(FOLDER({ ownerPersonId: "someone-else" }));
+await assert.rejects(() => foundation.renameNoteFolder({}, { tenantId: "tenant",
+  ownerPersonId: "person", folderId: "f-me", name: "Theirs", actorUid: "owner-uid" }),
+  /Cross-owner or cross-tenant/);
+assert.equal(writes.length, 0);
+
+documents.clear(); putFolder(FOLDER({ status: "retired" }));
+await assert.rejects(() => foundation.renameNoteFolder({}, { tenantId: "tenant",
+  ownerPersonId: "person", folderId: "f-me", name: "Zombie", actorUid: "owner-uid" }),
+  /retired folder cannot be renamed/);
+
+// reorder -----------------------------------------------------------------
+writes.length = 0; documents.clear(); putFolder(FOLDER());
+await foundation.reorderNoteFolder({}, { tenantId: "tenant", ownerPersonId: "person",
+  folderId: "f-me", order: 7, actorUid: "owner-uid" });
+assert.deepEqual(writes[0].data, { order: 7 }, "a reorder sends only the order");
+await assert.rejects(() => foundation.reorderNoteFolder({}, { tenantId: "tenant",
+  ownerPersonId: "person", folderId: "f-me", order: 1.5, actorUid: "owner-uid" }), /integer/);
+
+// re-parent ---------------------------------------------------------------
+// The operation Firestore Rules CANNOT secure: they enforce one hop and can
+// never walk an ancestor chain, so these refusals are the only thing standing
+// between a person and a corrupt tree of their own.
+writes.length = 0; documents.clear();
+queryRows = [FOLDER(), FOLDER({ folderId: "f-new-parent" })];
+for (const row of queryRows) putFolder(row);
+await foundation.reparentNoteFolder({}, { tenantId: "tenant", ownerPersonId: "person",
+  folderId: "f-me", parentFolderId: "f-new-parent", actorUid: "owner-uid" });
+assert.deepEqual(writes.map(({ kind }) => kind), ["update"]);
+assert.deepEqual(writes[0].data, { parentFolderId: "f-new-parent" },
+  "a re-parent sends only the parent -- never folderId, owner or semanticRole");
+
+// ...and null is how a folder is lifted back to the top.
+writes.length = 0; documents.clear();
+queryRows = [FOLDER({ parentFolderId: "f-new-parent" }), FOLDER({ folderId: "f-new-parent" })];
+for (const row of queryRows) putFolder(row);
+await foundation.reparentNoteFolder({}, { tenantId: "tenant", ownerPersonId: "person",
+  folderId: "f-me", parentFolderId: null, actorUid: "owner-uid" });
+assert.deepEqual(writes[0].data, { parentFolderId: null });
+
+writes.length = 0; documents.clear();
+queryRows = [FOLDER()]; putFolder(queryRows[0]);
+await assert.rejects(() => foundation.reparentNoteFolder({}, { tenantId: "tenant",
+  ownerPersonId: "person", folderId: "f-me", parentFolderId: "f-me", actorUid: "owner-uid" }),
+  /self-parent/);
+await assert.rejects(() => foundation.reparentNoteFolder({}, { tenantId: "tenant",
+  ownerPersonId: "person", folderId: "f-me", parentFolderId: "ghost", actorUid: "owner-uid" }),
+  /parent-missing/);
+await assert.rejects(() => foundation.reparentNoteFolder({}, { tenantId: "tenant",
+  ownerPersonId: "person", folderId: "f-me", parentFolderId: null, actorUid: "owner-uid" }),
+  /must change parent/);
+assert.equal(writes.length, 0, "nothing was written for any refused re-parent");
+
+// A cycle of length two: `a` and `b`, and moving `a` under `b`.
+writes.length = 0; documents.clear();
+queryRows = [FOLDER({ folderId: "a" }), FOLDER({ folderId: "b", parentFolderId: "a" })];
+for (const row of queryRows) putFolder(row);
+await assert.rejects(() => foundation.reparentNoteFolder({}, { tenantId: "tenant",
+  ownerPersonId: "person", folderId: "a", parentFolderId: "b", actorUid: "owner-uid" }),
+  /Folder parent refused: cycle/);
+assert.equal(writes.length, 0);
+
+// A system folder is neither nested nor nestable -- and the refusal comes from
+// the CONTRACT, so this file holds no second copy of ADR-010 §3.
+writes.length = 0; documents.clear();
+queryRows = [FOLDER({ folderId: "sys", semanticRole: "reflection-archive" }), FOLDER({ folderId: "host" })];
+for (const row of queryRows) putFolder(row);
+await assert.rejects(() => foundation.reparentNoteFolder({}, { tenantId: "tenant",
+  ownerPersonId: "person", folderId: "sys", parentFolderId: "host", actorUid: "owner-uid" }),
+  /a system folder cannot have a parent/);
+assert.equal(writes.length, 0);
+
+// A re-parent carries its whole subtree, so the depth bound counts what it
+// carries -- the defect P6-D found in folderTreeRefusal().
+writes.length = 0; documents.clear();
+queryRows = [];
+for (let i = 1; i <= 6; i++) queryRows.push(FOLDER({ folderId: `r${i}`, parentFolderId: i === 1 ? null : `r${i - 1}` }));
+queryRows.push(FOLDER({ folderId: "p" }), FOLDER({ folderId: "pc", parentFolderId: "p" }),
+               FOLDER({ folderId: "pcc", parentFolderId: "pc" }));
+for (const row of queryRows) putFolder(row);
+await assert.rejects(() => foundation.reparentNoteFolder({}, { tenantId: "tenant",
+  ownerPersonId: "person", folderId: "p", parentFolderId: "r6", actorUid: "owner-uid" }),
+  /Folder parent refused: too-deep/);
+assert.equal(writes.length, 0);
+
+// retire ------------------------------------------------------------------
+// REFUSED while it still has active children, and that is DERIVED from the
+// accepted Rules: parentOneHopOk() requires an ACTIVE parent, so retiring one
+// denies every update to its children -- including the re-parent that would
+// rescue them.
+writes.length = 0; documents.clear();
+queryRows = [FOLDER(), FOLDER({ folderId: "kid", parentFolderId: "f-me" })];
+for (const row of queryRows) putFolder(row);
+await assert.rejects(() => foundation.retireNoteFolder({}, { tenantId: "tenant",
+  ownerPersonId: "person", folderId: "f-me", actorUid: "owner-uid" }),
+  /still holds active folders: kid/);
+assert.equal(writes.length, 0, "a folder with children is not retired, and its subtree is not stranded");
+
+writes.length = 0; documents.clear();
+queryRows = [FOLDER()]; putFolder(queryRows[0]);
+await foundation.retireNoteFolder({}, { tenantId: "tenant", ownerPersonId: "person",
+  folderId: "f-me", actorUid: "owner-uid" });
+assert.deepEqual(writes.map(({ kind }) => kind), ["update"]);
+assert.deepEqual(writes[0].data, { status: "retired" },
+  "retire sets the status and NOTHING else -- I4, and its placements are deliberately untouched");
+
+writes.length = 0; documents.clear();
+queryRows = [FOLDER({ status: "retired" })]; putFolder(queryRows[0]);
+await assert.rejects(() => foundation.retireNoteFolder({}, { tenantId: "tenant",
+  ownerPersonId: "person", folderId: "f-me", actorUid: "owner-uid" }), /already retired/);
+assert.equal(writes.length, 0);
+
+// NOTHING here is a delete, on any path (I4/D6).
+assert.equal(writes.filter((w) => w.kind === "delete").length, 0);
+
 delete globalThis.__nfCollections;
 delete globalThis.__nfFirestore;
 delete globalThis.__nfEnvelope;
-console.log("==== Note Foundation data layer: 47 assertions passed ====");
+console.log("==== Note Foundation data layer: 47 + 30 P6-D assertions passed ====");

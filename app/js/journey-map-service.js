@@ -16,6 +16,10 @@ import {
   listNotePlacementsForFolder,
   listNotePlacementsForNote,
   moveNotePlacement,
+  renameNoteFolder,
+  reorderNoteFolder,
+  reparentNoteFolder,
+  retireNoteFolder,
 } from "./note-foundation.js";
 import { buildFolderTree, notePlacement } from "./journey-map-contract.js";
 
@@ -112,4 +116,34 @@ export async function moveNoteToFolder(db, {
   return moveNotePlacement(db, {
     tenantId, ownerPersonId, ownerUid, noteId, fromPlacementId, toFolderId, order, actorUid,
   });
+}
+
+/**
+ * MAP Phase 6 (P6-D) — the folder-editing side of the same surface.
+ *
+ * Thin on purpose. Every rule lives in the contract and the data layer, so
+ * these exist to give a surface ONE place to call and to keep the read and
+ * write halves of Mapping My Journey in one module — not to add policy. A
+ * wrapper that validated anything of its own would be a second, divergent
+ * copy of ADR-010, which is the drift ADR-009 closed for `noteSources`.
+ *
+ * `moveFolder` is the one worth naming: it is the operation Firestore Rules
+ * cannot secure (they enforce one hop, never an ancestor chain), so its cycle
+ * and depth refusals are client-side and REACH THE CALLER as an error — I15,
+ * not a console line.
+ */
+export async function renameFolder(db, { tenantId, ownerPersonId, folderId, name, actorUid } = {}) {
+  return renameNoteFolder(db, { tenantId, ownerPersonId, folderId, name, actorUid });
+}
+
+export async function reorderFolder(db, { tenantId, ownerPersonId, folderId, order, actorUid } = {}) {
+  return reorderNoteFolder(db, { tenantId, ownerPersonId, folderId, order, actorUid });
+}
+
+export async function moveFolder(db, { tenantId, ownerPersonId, folderId, parentFolderId, actorUid } = {}) {
+  return reparentNoteFolder(db, { tenantId, ownerPersonId, folderId, parentFolderId, actorUid });
+}
+
+export async function retireFolder(db, { tenantId, ownerPersonId, folderId, actorUid } = {}) {
+  return retireNoteFolder(db, { tenantId, ownerPersonId, folderId, actorUid });
 }

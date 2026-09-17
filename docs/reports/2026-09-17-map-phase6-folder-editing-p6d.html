@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP Phase 6 (P6-D) — the folder editing side, and two real defects it exposed</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP Phase 6 (P6-D) — the folder editing side, and two real defects it exposed</h1>
+<ul><li><strong>Date:</strong> 2026-09-17</li><li><strong>Task:</strong> make the folder operations the accepted Phase 6 Rules already authorise actually performable, and correct what doing so exposed</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> Three <code>app/js</code> modules changed, all still unreachable from any page (proven by two boundary suites with positive controls). No <code>.html</code> changed. <code>firestore.rules</code>, <code>firebase.json</code>, all four index candidates and all three Rules candidates <strong>byte-identical</strong>. Nothing deployed.</li><li><strong>Application version:</strong> <strong>08.25, unchanged.</strong> No behaviour on any screen moved.</li><li><strong>Result:</strong> ACCEPT. Two real defects in accepted P6-A/P6-B code found, fixed and mutation-proven. Suites: contract 28 → <strong>34</strong>, data layer 47 → <strong>77</strong>, service 13 → <strong>17</strong>, Phase 6 emulator 53 → <strong>58</strong>. Phase 4 emulator 53, Phase 5 60, coverage 1,803 / 47 — all unchanged.</li></ul>
+<hr>
+<h2>1. Why this task, and why it needed no new authority</h2>
+<p>Six of the seven pending-dependency items are behind the same external Firebase Console access; the seventh is an Owner decision. Looking for work that is behind neither turned up this:</p>
+<p><strong><code>noteFolders</code> was create-only in the data layer, while the accepted Phase 6 Rules candidate already says the opposite — in its own comment:</strong></p>
+<p>&gt; <em>Identity and ROLE are write-once. <strong>A folder may be renamed, reordered, re-parented or retired</strong>; it may never become a different folder, change owner, or change what KIND of folder it is (ADR-010 §3).</em></p>
+<p>So the accepted decision was <strong>unexecutable</strong>. That is exactly the shape of P6-C&#x27;s own finding — ADR-010 §5&#x27;s retire-and-create had no retire function — found one collection over. Nothing here decides anything new; it makes reachable what the accepted ruleset already permits.</p>
+<h2>2. The two defects, both in accepted code, both proven by probe</h2>
+<h3>D1 — <code>folderTreeRefusal()</code> let a re-parent breach the depth bound</h3>
+<p>The function opened with:</p>
+<p>``<code>js let depth = 2; // the new folder, plus its proposed parent </code>``</p>
+<p><strong>Right for a create, wrong for a move.</strong> A create places a <em>leaf</em>. A re-parent carries the folder&#x27;s whole subtree with it, so the real resulting depth is <code>parentDepth + 1 + subtreeHeight</code>. Probed before touching anything: a folder three levels tall moved under a parent already six deep put its deepest descendant at <strong>nine</strong>, and the function returned <code>null</code> — allowed.</p>
+<p><code>subtreeHeight()</code> now measures what is being carried. It walks <strong>down</strong>, which is what makes it cycle-safe for the same reason <code>buildFolderTree()</code> is — <code>parentFolderId</code> is single-valued, so a cycle can only be entered from inside itself — and it is capped as well, so it terminates on a tree that is <em>already</em> corrupt. For a create the height is 1 and the arithmetic is unchanged.</p>
+<h3>D2 — a folder that was merely too deep was reported to its author as <strong>cyclic</strong></h3>
+<p><code>cyclic</code> was computed as <em>&quot;not reached and not orphaned&quot;</em>. The walk deliberately stops at the depth cap, so <strong>everything below the cap fell into <code>cyclic</code>.</strong> A person with a legitimately deep tree would have been told their folders were in a cycle.</p>
+<p>The doc comment was honest about the mechanism (<em>&quot;folders that could not be reached from any root&quot;</em>) and the <strong>name was the lie</strong> — and <code>cyclic</code> is a word that reaches a screen. The two are different facts with different remedies: a cycle is corruption, too deep is a tree that needs flattening. <code>buildFolderTree()</code> now returns <code>{ roots, orphaned, cyclic, tooDeep }</code>, and <code>cyclic</code> means only what it says.</p>
+<p><strong>These two compound.</strong> D1 produced the over-deep tree; D2 then mislabelled it. Neither was visible from the create path, which is the only path that existed.</p>
+<h2>3. Both fixes are mutation-proven</h2>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Check killed</th></tr></thead><tbody>
+<tr><td><code>let depth = 1 + height</code> → <code>let depth = 2</code></td><td><strong>J32</strong> — a re-parent counts the height of the subtree it carries</td></tr>
+<tr><td>drop <code>&amp;&amp; !beyondCap.has(...)</code> from <code>cyclic</code></td><td><strong>J29</strong> — a folder below the cap is reported as TOO DEEP, never as cyclic</td></tr>
+<tr><td>drop <code>&amp;&amp; d().semanticRole == resource.data.semanticRole</code> from the Rules candidate</td><td><strong>F-LIFE-04</strong> — a folder may not change what KIND of folder it is</td></tr>
+</tbody></table></div>
+<p>Every mutation printed its own occurrence count first — <em>a mutation that does not apply proves nothing</em> — and the Rules file was restored and re-diffed to byte-identical afterwards.</p>
+<h2>4. What was added</h2>
+<p><strong><code>journey-map-contract.js</code></strong> — <code>subtreeHeight()</code>, <code>collectSubtree()</code>, <code>tooDeep</code>.</p>
+<p><strong><code>note-foundation.js</code></strong>, four functions, all addition-only:</p>
+<div class='tw'><table><thead><tr><th>Function</th><th>Shape</th><th>Why</th></tr></thead><tbody>
+<tr><td><code>renameNoteFolder</code></td><td>transaction</td><td>no tree needed; I11 — a blank name is refused, not stored</td></tr>
+<tr><td><code>reorderNoteFolder</code></td><td>transaction</td><td><code>order</code> is display only; nothing is keyed by it (I5)</td></tr>
+<tr><td><code>reparentNoteFolder</code></td><td>read, then transaction</td><td>judging a tree needs a query, and a transaction cannot run one</td></tr>
+<tr><td><code>retireNoteFolder</code></td><td>read, then transaction</td><td>I4 — retire, never destroy</td></tr>
+</tbody></table></div>
+<p>Each sends <strong>only</strong> its own field. <code>tenantId</code>, <code>ownerPersonId</code>, <code>ownerUid</code>, <code>folderId</code>, <code>semanticRole</code> and <code>createdBy</code> are never sent, and the candidate Rules refuse them as well, so neither side is the only guard.</p>
+<p><strong><code>journey-map-service.js</code></strong> — <code>renameFolder</code>, <code>reorderFolder</code>, <code>moveFolder</code>, <code>retireFolder</code>. Deliberately thin: a wrapper that validated anything of its own would be a second, divergent copy of ADR-010, which is the drift ADR-009 closed for <code>noteSources</code>.</p>
+<h2>5. Two things derived, not decided</h2>
+<p><strong>Retiring a folder is refused while it still has active children.</strong> This is read out of the accepted Rules, not chosen: <code>parentOneHopOk()</code> requires a parent to be <code>status == &#x27;active&#x27;</code>, so <strong>the moment a parent is retired every update to a child is denied — including the re-parent that would rescue it.</strong> Retiring first and tidying after would strand a whole subtree beyond reach of its own author. The refusal <strong>names</strong> the children, because a refusal a person cannot act on is a dead end.</p>
+<p><strong>A retired folder&#x27;s placements are deliberately untouched.</strong> Same asymmetry as P5-E and P6-C, same reason: retiring never rewrites the relations pointing at the thing retired (I4 keeps them), and the read side already excludes a retired folder through <code>listNoteFoldersForOwner()</code>&#x27;s active-only default. Cascading would destroy the record of where a Note had been filed.</p>
+<h2>6. A guard caught me, and the code was changed rather than the guard</h2>
+<p>The insertion-only guard in two boundary suites went red: my edit <strong>removed one line</strong> from <code>note-foundation.js</code> — the import statement, rewritten to add <code>isSystemFolderRole</code>.</p>
+<p>A legitimate change, and the guard was still right to object. The fix was to stop needing the import: <code>reparentNoteFolder()</code> now sends the whole proposed folder back through <code>journeyFolder()</code>, exactly as a create does, which is what refuses a system folder gaining a parent. <strong>Better design as well as a green guard</strong> — this file now holds no second copy of ADR-010 §3, and the diff is pure insertion again.</p>
+<h2>7. One near-miss worth recording</h2>
+<p>Four boundary suites reported <code>0 passed, 13 failed</code> and identical counts on a clean <code>git stash</code> — which read like four guards rotting on <code>main</code>. <strong>Reading the failure text rather than the counts settled it in one line:</strong> <code>ENOENT … scandir &#x27;…/tools/i18n-verify/app&#x27;</code>. They resolve paths from <code>process.cwd()</code> and I had run them from the wrong directory. From the repo root, all four are green.</p>
+<p><strong>A suite that fails loudly when run from the wrong place is behaving correctly.</strong> What was nearly wrong was the finding I almost recorded — the same discipline as <em>&quot;a failing check is a wrong assertion surprisingly often&quot;</em>, applied to the harness&#x27;s own invocation.</p>
+<h2>8. <code>layout.mjs</code> exits non-zero on <code>main</code> itself</h2>
+<p>Worth recording because it will mislead the next round. <code>layout.mjs</code> counts the <strong>22-entry pre-existing missing-ID list as a regression once per viewport</strong> (line 87), so it reports &quot;16 REGRESSION(S)&quot; and exits 1 on unmodified <code>main</code>. <strong>The signal is the <code>CHANGED:</code> lines, not the exit code.</strong></p>
+<p>This round: <code>CHANGED: 0</code> at all 16 configurations, <code>getElementById</code> <strong>250 → 250</strong>, the same 22 missing, wheel widths, row counts, dock gap, dock visible and no overflow all byte-for-byte identical. And the comparison was set up so it <strong>could</strong> fail — the first run had no <code>app/_prev-quranrevival.html</code>, so the before side scored <code>null</code> everywhere and every metric read as CHANGED; the shim was built from <code>HEAD</code> and then deleted before coverage was re-read.</p>
+<h2>9. Verification</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>journey-map-contract.mjs</code></td><td>28 → <strong>34</strong></td></tr>
+<tr><td><code>note-foundation-data-layer.mjs</code></td><td>47 → <strong>77</strong></td></tr>
+<tr><td><code>journey-map-service.mjs</code></td><td>13 → <strong>17</strong></td></tr>
+<tr><td><code>journey-map-boundary.mjs</code></td><td><strong>13 / 0</strong> — still unreachable, positive control fires</td></tr>
+<tr><td><code>study-note-boundary.mjs</code></td><td><strong>17 / 0</strong> — insertion-only restored</td></tr>
+<tr><td>Phase 6 emulator</td><td>53 → <strong>58</strong>, and <strong>58 / 58 against the assembled deployment file</strong></td></tr>
+<tr><td>Phase 5 emulator</td><td><strong>60</strong>, unchanged</td></tr>
+<tr><td>Phase 4 emulator</td><td><strong>53</strong>, unchanged</td></tr>
+<tr><td><code>note-foundation-boundary</code>, <code>emulator-scaffold</code>, <code>firestore-index-requirements</code>, <code>rules-deployment-candidate</code></td><td>30 / 31 / 8 / 10, all unchanged</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 scanned / 47 missing</strong> — unchanged, no new user-visible string</td></tr>
+<tr><td><code>layout.mjs</code></td><td><strong>CHANGED: 0</strong> at 16 configurations</td></tr>
+<tr><td><code>behaviour.mjs</code></td><td><strong>976 / 1</strong> — the whole file, the 1 being the TLS artefact below</td></tr>
+</tbody></table></div>
+<p><strong>No new index.</strong> Every query added reads through <code>listNoteFoldersForOwner()</code>, which is equality-only and bounded — <code>firestore-index-requirements.mjs</code> confirms it at 8 / 0.</p>
+<p><strong>Six failures remain across the whole harness and all six are ONE environmental cause</strong>, established by reading the text rather than the counts: <code>net::ERR_CERT_AUTHORITY_INVALID</code>, the sandbox&#x27;s own proxy CA, tripping every <code>no page errors</code> check on a page that fetches over HTTPS — 1 in <code>behaviour.mjs</code> (31e), 2 in <code>quran-word-card-rendered</code>, 3 in <code>quran-word-progress-rendered</code>. They will not occur on the Owner&#x27;s machine. Recorded, not worked around: no retry, no skip, no <code>--ignore-certificate-errors</code>, because that flag would also hide a real certificate problem.</p>
+<h2>10. Flagged, not changed</h2>
+<ul><li><strong>The refusal reasons are not yet translated.</strong> <code>folderTreeRefusal()</code> returns reason <em>strings</em> precisely so a surface can turn them into sentences; the data layer wraps them in <code>Error</code> messages that are developer-facing today. <strong>When a Phase 6 surface is built, every one of those reasons needs a translated sentence</strong> — I11 — and <code>too-deep</code> is a new one.</li><li><strong>A re-parent is still two reads and a write, not atomic.</strong> Same stated race as <code>createNoteFolder()</code>: two concurrent moves by the same person could close a cycle, and the Rules cannot catch it either. This is why every walk of this tree is bounded. The server-side fix (<code>ancestorIds[]</code> + <code>depth</code>) remains <strong>recorded, not adopted</strong> — item 7 in the pending ledger, an Owner decision costing the ability to move a folder at all.</li><li><strong>Nothing was wired to a page.</strong> P6-D is data layer and policy. A Journey Map surface is a product decision (ADR-010 says so explicitly) and sits behind the same Rules-and-indexes gate as P5-D.</li></ul>
+<hr>
+<p><em>Master Architect audit: BR-0, additive, no accepted decision changed, no Owner Control Gate crossed. The task was chosen precisely because the accepted Rules candidate had already decided what it implements.</em></p>
+</main></body></html>

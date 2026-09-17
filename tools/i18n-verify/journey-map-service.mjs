@@ -15,12 +15,13 @@ const root = path.resolve(process.argv[2] || process.cwd());
 let source = fs.readFileSync(path.join(root, "app/js/journey-map-service.js"), "utf8");
 source = source
   .replace(/import \{[\s\S]*?\} from "\.\/note-foundation\.js";/,
-    "const { NOTE_STATUS, getNotesByIds, listNoteFoldersForOwner, listNotePlacementsForFolder, listNotePlacementsForNote, moveNotePlacement } = globalThis.__jmFoundation;")
+    "const { NOTE_STATUS, getNotesByIds, listNoteFoldersForOwner, listNotePlacementsForFolder, listNotePlacementsForNote, moveNotePlacement, renameNoteFolder, reorderNoteFolder, reparentNoteFolder, retireNoteFolder } = globalThis.__jmFoundation;")
   .replace(/from "\.\/journey-map-contract\.js"/,
     `from "${pathToFileURL(path.join(root, "app/js/journey-map-contract.js")).href}"`);
 assert.ok(!/from "\.\//.test(source), "an import was not rewritten");
 
-const calls = { folderQuery: [], noteQuery: [], folders: [], notes: [], move: [] };
+const calls = { folderQuery: [], noteQuery: [], folders: [], notes: [], move: [],
+                rename: [], reorder: [], reparent: [], retire: [] };
 let placementRows = [], folderRows = [], noteRows = [];
 
 globalThis.__jmFoundation = {
@@ -30,6 +31,20 @@ globalThis.__jmFoundation = {
   listNoteFoldersForOwner:     async (_db, a) => { calls.folders.push(a);     return folderRows; },
   getNotesByIds:               async (_db, t, ids) => { calls.notes.push({ t, ids }); return noteRows.filter((n) => ids.includes(n.noteId)); },
   moveNotePlacement:           async (_db, a) => { calls.move.push(a); return "new-placement"; },
+  // P6-D -- the folder editing side. Recorded, not simulated: these wrappers
+  // are meant to be thin, and what is asserted is that they FORWARD faithfully
+  // and add no policy of their own.
+  renameNoteFolder:            async (_db, a) => { calls.rename.push(a); },
+  reorderNoteFolder:           async (_db, a) => { calls.reorder.push(a); },
+  // The sentinel is how a REJECTION is exercised: the source rewrite
+  // destructures this object at module load, so swapping a member afterwards
+  // would not reach the module under test -- the stub has to be able to throw
+  // on its own.
+  reparentNoteFolder:          async (_db, a) => {
+    calls.reparent.push(a);
+    if (a.folderId === "refuse-me") throw new Error("Folder parent refused: cycle");
+  },
+  retireNoteFolder:            async (_db, a) => { calls.retire.push(a); },
 };
 function reset() {
   for (const k of Object.keys(calls)) calls[k].length = 0;
@@ -37,7 +52,8 @@ function reset() {
 }
 
 const mod = await import(`data:text/javascript,${encodeURIComponent(source)}`);
-const { MAX_PLACEMENTS_PER_READ, folderContents, moveNoteToFolder, noteFilings, ownerFolderTree } = mod;
+const { MAX_PLACEMENTS_PER_READ, folderContents, moveNoteToFolder, noteFilings, ownerFolderTree,
+        moveFolder, renameFolder, reorderFolder, retireFolder } = mod;
 
 let passed = 0;
 async function check(name, fn) { await fn(); passed++; console.log(`  PASS  ${name}`); }
@@ -138,6 +154,48 @@ await check("K13 nothing this module returns can name a Study Unit or a status c
   const out = JSON.stringify(await folderContents(db, { ...own, folderId: "f1" }));
   for (const forbidden of ["sourceKey", "unitKey", "claimStatus", "achieved", "mastered", "trackableId"]) {
     assert.ok(!out.includes(forbidden), forbidden);
+  }
+});
+
+// --- P6-D: the folder editing side ----------------------------------------
+await check("K14 the four folder editors exist and forward faithfully, adding no policy", async () => {
+  reset();
+  await renameFolder(db, { ...own, folderId: "f1", name: "New name", actorUid: "u" });
+  await reorderFolder(db, { ...own, folderId: "f1", order: 3, actorUid: "u" });
+  await moveFolder(db, { ...own, folderId: "f1", parentFolderId: "f2", actorUid: "u" });
+  await retireFolder(db, { ...own, folderId: "f1", actorUid: "u" });
+  assert.deepEqual(calls.rename[0], { ...own, folderId: "f1", name: "New name", actorUid: "u" });
+  assert.deepEqual(calls.reorder[0], { ...own, folderId: "f1", order: 3, actorUid: "u" });
+  assert.deepEqual(calls.reparent[0], { ...own, folderId: "f1", parentFolderId: "f2", actorUid: "u" });
+  assert.deepEqual(calls.retire[0], { ...own, folderId: "f1", actorUid: "u" });
+});
+
+await check("K15 a wrapper NEVER swallows the refusal underneath it -- I15", async () => {
+  reset();
+  await assert.rejects(() => moveFolder(db, { ...own, folderId: "refuse-me", parentFolderId: "b", actorUid: "u" }),
+    /Folder parent refused: cycle/,
+    "a cycle refusal must reach the caller as an error, not a console line");
+  assert.equal(calls.reparent.length, 1, "the call really was made -- the rejection is not a short-circuit");
+});
+
+await check("K16 the editors cannot be used to set a frozen field, because they do not carry one", async () => {
+  reset();
+  // A caller passing semanticRole/tenant-moving arguments must not see them
+  // reach the data layer: the wrappers name their parameters, so an extra one
+  // is dropped at the boundary rather than forwarded into a write.
+  await renameFolder(db, { ...own, folderId: "f1", name: "N", actorUid: "u",
+    semanticRole: "journey-map", ownerPersonId2: "someone", folderId2: "other" });
+  const keys = Object.keys(calls.rename[0]).sort();
+  assert.deepEqual(keys, ["actorUid", "folderId", "name", "ownerPersonId", "tenantId"],
+    "a wrapper forwarded a field the accepted Rules freeze");
+});
+
+await check("K17 this module still cannot name a Study Unit, on the WRITE side either", async () => {
+  const src = fs.readFileSync(path.join(root, "app/js/journey-map-service.js"), "utf8");
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, "").split("\n")
+    .filter((line) => !line.trim().startsWith("//")).join("\n");
+  for (const forbidden of ["study-note-binding", "study-note-service", "unit-keys", "buildUnitKey", "sourceKey"]) {
+    assert.ok(!code.includes(forbidden), `ADR-010 §2: the service reached for ${forbidden}`);
   }
 });
 
