@@ -4121,7 +4121,6 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     // "read" -- see setStageView()'s own three-way split).
     readPressed: document.getElementById("tabReadBtn").getAttribute("aria-pressed"),
     notePressed: document.getElementById("tabNoteBtn").getAttribute("aria-pressed"),
-    ref: document.querySelector(".note-ref")?.textContent.trim(),
     arabic: document.querySelector(".note-arabic")?.textContent.trim().length > 0,
     english: document.querySelector(".note-english")?.textContent.trim().length > 0,
     bangla: document.querySelector(".note-bangla")?.textContent.trim().length > 0,
@@ -4302,33 +4301,61 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(150);
   await page.click("#readQuickMenuSlot [data-qm-note]");
   await page.waitForTimeout(300);
+  // RECONCILED 2026-09-17, with the evidence, rather than deleted.
+  //
+  // This section described bar 1 as "JUST the reference, Prev/Next, Collapse
+  // and Full screen" -- round 31's shape. v07.70 ("fix Note view bar
+  // regressions from v07.69") replaced it: bar 1 is the reading-unit PICKER
+  // row, and `.note-ayahbar`, `.note-ref` and `.note-journey-btn` are absent
+  // from app/ AND from legacy-v07/, the frozen v07.139 snapshot.
+  //
+  // The reason this went unnoticed is the point: the suite had ALREADY been
+  // crashing since v07.69, so when v07.70 restructured the bar one commit
+  // later, nothing was running to notice. The crash hid the rot it created.
+  //
+  // Every concern the original checks carried is kept and re-pointed at where
+  // the control actually lives now -- bar 1 carries no actions, the always-
+  // visible cluster is on bar 2, and Copy/Collapse fold into the ⋮ menu. That
+  // is the same contract, asserted where it is true.
   const bar = await page.evaluate(() => {
     const view = document.querySelector(".note-view");
-    const bar1 = view.querySelector(".note-ayahbar");
-    const ref = bar1.querySelector(".note-ref");
-    const refCs = getComputedStyle(ref);
+    const bar1 = view.querySelector(".note-pickerbar");
+    const bar2 = view.querySelector(".note-bar2");
+    const tools = view.querySelector('[data-note-menu="tools"]');
+    const collapse = tools?.querySelector("[data-note-master-toggle]");
     return {
-      bar1HasCopy: !!bar1.querySelector("[data-note-copy], [data-note-sub-toggle]"),
-      bar1HasJourney: !!bar1.querySelector(".note-journey-btn"),
-      hasPrev: !!bar1.querySelector("[data-note-prev]"),
-      hasNext: !!bar1.querySelector("[data-note-next]"),
-      hasCollapse: !!bar1.querySelector("[data-note-master-toggle]"),
-      hasFullscreen: !!bar1.querySelector("[data-note-fullscreen]"),
-      collapseIsIconOnly: bar1.querySelector("[data-note-master-toggle]").textContent.trim() === "▾",
-      refWhiteSpace: refCs.whiteSpace,
-      refTextOverflow: refCs.textOverflow,
-      refText: ref.textContent.trim(),
+      bar1Exists: !!bar1,
+      bar2Exists: !!bar2,
+      // bar 1 is the picker row and carries no action buttons at all.
+      bar1HasAnyButton: !!bar1?.querySelector("button"),
+      bar1HasPickers: (bar1?.querySelectorAll("select").length ?? 0) > 0,
+      // the always-visible cluster moved to bar 2.
+      bar2HasPrev: !!bar2?.querySelector("[data-note-prev]"),
+      bar2HasNext: !!bar2?.querySelector("[data-note-next]"),
+      bar2HasPlay: !!bar2?.querySelector("[data-note-play]"),
+      bar2HasBookmark: !!bar2?.querySelector("[data-note-bookmark]"),
+      bar2HasFullscreen: !!bar2?.querySelector("[data-note-fullscreen]"),
+      // Copy and Collapse fold into ⋮ -- not on any bar.
+      copyInTools: !!tools?.querySelector("[data-note-copy-go]"),
+      copyOnBar2: !!bar2?.querySelector("[data-note-copy-go]"),
+      collapseInTools: !!collapse,
+      collapseOnBar2: !!bar2?.querySelector("[data-note-master-toggle]"),
+      // it is a labelled menu item now, not the old icon-only ▾ button.
+      collapseLabel: collapse?.textContent.trim(),
     };
   });
-  check("42m bar 1 no longer carries Copy/Share/Journey -- moved to bar 2",
-        !bar.bar1HasCopy && !bar.bar1HasJourney, JSON.stringify(bar));
-  check("42m ...just Prev, Next, Collapse and Full screen alongside the reference",
-        bar.hasPrev && bar.hasNext && bar.hasCollapse && bar.hasFullscreen, JSON.stringify(bar));
-  check("42m the Collapse button is icon-only, no label text", bar.collapseIsIconOnly, JSON.stringify(bar));
-  check("42m the reference CAN wrap (no nowrap+ellipsis)",
-        bar.refWhiteSpace !== "nowrap" && bar.refTextOverflow !== "ellipsis", JSON.stringify(bar));
-  check("42m ...and the real text actually renders in full, surah name included",
-        bar.refText === "Quran 1:1 — Surah Al-Faatiha", bar.refText);
+  check("42m bar 1 is the reading-unit picker row, and carries no action buttons",
+        bar.bar1Exists && bar.bar1HasPickers && !bar.bar1HasAnyButton, JSON.stringify(bar));
+  check("42m the always-visible cluster lives on bar 2 -- Prev, Next, Play, Bookmark, Full screen",
+        bar.bar2Exists && bar.bar2HasPrev && bar.bar2HasNext && bar.bar2HasPlay
+        && bar.bar2HasBookmark && bar.bar2HasFullscreen, JSON.stringify(bar));
+  check("42m Copy folds into the ⋮ menu and is not on a bar",
+        bar.copyInTools && !bar.copyOnBar2, JSON.stringify(bar));
+  check("42m Collapse folds into the ⋮ menu too (it was an icon-only bar button in round 31)",
+        bar.collapseInTools && !bar.collapseOnBar2, JSON.stringify(bar));
+  check("42m ...and it is a LABELLED menu item now, not a bare ▾ glyph",
+        typeof bar.collapseLabel === "string" && bar.collapseLabel.length > 1 && bar.collapseLabel !== "▾",
+        JSON.stringify(bar));
   check("42m no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
   await ctx.close();
@@ -4357,7 +4384,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     const info = await page.evaluate(() => {
       const visible = (el) => !!el && getComputedStyle(el).display !== "none";
       const view = document.querySelector(".note-view");
-      const bar1 = view.querySelector(".note-ayahbar").getBoundingClientRect();
+      const bar1 = view.querySelector(".note-pickerbar").getBoundingClientRect();
       const bar2El = view.querySelector(".note-bar2");
       const bar2 = bar2El.getBoundingClientRect();
       const mobileBarEl = view.querySelector(".note-approach-bar-mobile");
@@ -4662,7 +4689,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     banner: getComputedStyle(document.querySelector("h1")).display,
     topNav: getComputedStyle(document.getElementById("topNav")).display,
     dock: getComputedStyle(document.getElementById("dock")).display,
-    ayahbar: getComputedStyle(document.querySelector(".note-ayahbar")).display,
+    ayahbar: getComputedStyle(document.querySelector(".note-pickerbar")).display,
     bar2: getComputedStyle(document.querySelector(".note-bar2")).display,
   }));
   check("42o state one (default): banner, main menu, dock and both bars are all visible",
@@ -4675,7 +4702,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
     banner: getComputedStyle(document.querySelector("h1")).display,
     topNav: getComputedStyle(document.getElementById("topNav")).display,
     dock: getComputedStyle(document.getElementById("dock")).display,
-    ayahbar: getComputedStyle(document.querySelector(".note-ayahbar")).display,
+    ayahbar: getComputedStyle(document.querySelector(".note-pickerbar")).display,
     bar2: getComputedStyle(document.querySelector(".note-bar2")).display,
     pressed: document.querySelector("[data-note-fullscreen]").getAttribute("aria-pressed"),
   }));
@@ -4748,8 +4775,12 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   const noteBn = await page.evaluate(() => {
     const view = document.querySelector(".note-view");
     return {
-      ayahbarRef: view.querySelector(".note-ref").textContent,
-      journeyBtn: view.querySelector(".note-journey-btn").textContent,
+      // v07.70 removed the bar-1 reference label and folded Journey into the
+      // ⋯ menu, where the wording lives in the toggle's TITLE and in its own
+      // disabled item. Same claim -- this surface reads in Bangla -- asserted
+      // where the words actually are.
+      journeyTitle: view.querySelector('[data-note-menu-toggle="more"]').title,
+      journeyItem: view.querySelector('[data-note-menu="more"] .qm-item').textContent.trim(),
       fieldLabels: [...view.querySelectorAll(".note-field-label")].map((s) => s.textContent.trim()),
       // Icon-only now (the owner's ask) -- the Bangla lives in the title,
       // not the button's own (single-glyph) text.
@@ -4772,8 +4803,8 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
       rootsToggleTitle: view.querySelector("[data-note-roots-toggle]").title,
     };
   });
-  check("42k Note & more's own ref and Journey placeholder are in Bangla",
-        BANGLA.test(noteBn.ayahbarRef) && BANGLA.test(noteBn.journeyBtn), JSON.stringify(noteBn));
+  check("42k Note & more's Journey placeholder reads in Bangla, in the ⋯ menu it moved to",
+        BANGLA.test(noteBn.journeyTitle) && BANGLA.test(noteBn.journeyItem), JSON.stringify(noteBn));
   check("42k ...every field label too (Arabic/English/Bangla/Notes)", noteBn.fieldLabels.every((t) => BANGLA.test(t)), JSON.stringify(noteBn.fieldLabels));
   check("42k ...and the icon-only buttons' own titles (Collapse, Full screen)",
         BANGLA.test(noteBn.masterToggleTitle) && BANGLA.test(noteBn.fullscreenTitle), JSON.stringify(noteBn));
@@ -5135,10 +5166,9 @@ console.log("\n=== 46. Quran's own ?bookmark= deep link restores the full study 
     ayah: document.getElementById("ayahSelect")?.value,
     trackable: document.getElementById("trackableSelect")?.value,
     tajweed: document.getElementById("tajweedToggle")?.checked,
-    noteRef: document.querySelector(".note-ref")?.textContent,
   }));
   check("46a a Quran bookmark's own surah/ayah are restored, landing on the Note view",
-        restored.noteVisible && restored.surah === "2" && restored.ayah === "255" && restored.noteRef?.includes("2:255"),
+        restored.noteVisible && restored.surah === "2" && restored.ayah === "255",
         JSON.stringify(restored));
   check("46b ...the Approach it was claimed under is restored too", restored.trackable === "tafsir", restored.trackable);
   check("46c ...and a reading tick (Tajweed) that would otherwise reset comes back on", restored.tajweed === true, restored.tajweed);
