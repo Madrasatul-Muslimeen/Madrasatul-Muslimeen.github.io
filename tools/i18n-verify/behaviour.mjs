@@ -4462,7 +4462,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.click("#readQuickMenuSlot [data-qm-note]");
   await page.waitForTimeout(300);
 
-  await page.click('.note-bar2 [data-note-sub-toggle="copy"]');
+  await clickInNoteTools(page, '[data-note-sub-toggle="copy"]');
   await page.waitForTimeout(150);
   const copyPop = await page.evaluate(() => {
     const wrap = document.querySelector('[data-note-sub-wrap="copy"]');
@@ -4492,7 +4492,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 
   // Share opens its OWN, separate popover -- ticking inside Copy's must
   // never leak into Share's.
-  await page.click('.note-bar2 [data-note-sub-toggle="share"]');
+  await clickInNoteTools(page, '[data-note-sub-toggle="share"]');
   await page.waitForTimeout(150);
   const sharePop = await page.evaluate(() => {
     const wrap = document.querySelector('[data-note-sub-wrap="share"]');
@@ -4845,7 +4845,7 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42k the Root toggle reads a real Bangla word (not left as \"Root\"), title in Bangla too",
         BANGLA.test(noteBn.rootsToggleText) && BANGLA.test(noteBn.rootsToggleTitle), JSON.stringify(noteBn));
 
-  await page.click('.note-bar2 [data-note-sub-toggle="copy"]');
+  await clickInNoteTools(page, '[data-note-sub-toggle="copy"]');
   await page.waitForTimeout(120);
   const copyPopBn = await page.evaluate(() => {
     const pop = document.querySelector('[data-note-sub-wrap="copy"] .note-sub-popover');
