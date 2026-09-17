@@ -25,7 +25,16 @@
 Read this first, every session. It is the standing brief.
 
 
-**Current milestone: v08.25 on `main`** (15 Sep 2026). Two candidates are held unmerged behind the same gate — the Phase 4 Study-event WIRING (`claude/phase4-wiring` (**`7e2931f`** — refreshed against `main` 17 Sep, 3 conflicts already resolved; do NOT re-cut it), `c4fca4a`, v08.26) and the Phase 5 Note Foundation Rules — because **both need Firestore Rules deployed first, and a sandbox has no `study-monitoring` credentials.** `app/js/version.js` is
+**Current milestone: v08.25 on `main`** (17 Sep 2026 — the version has not moved
+since 15 Sep because every round since has been BR-0: contracts, Rules and index
+candidates, data layers and tests, none of it reachable from a page).
+
+**One thing is held unmerged: the Phase 4 Study-event WIRING**, on
+`claude/phase4-wiring` at **`7e2931f`** (v08.26) — **refreshed against `main` on
+17 Sep, three conflicts already resolved, so do NOT re-cut it from an older
+base.** It waits on the Firestore Rules deployment, and a sandbox has no
+`study-monitoring` credentials. The Rules and index candidates themselves are on
+`main` and need no branch. `app/js/version.js` is
 the single source of truth and the badge beside the app name says so on screen.
 **This line has drifted twice already — it read `v08.02` while `main` was on
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
