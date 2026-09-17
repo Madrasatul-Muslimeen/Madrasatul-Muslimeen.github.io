@@ -31,6 +31,26 @@ the single source of truth and the badge beside the app name says so on screen.
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
 
+**17 Sep 2026 — THE DEPLOYMENT IS NOW ONE PASTE AND THREE INDEX FORMS.**
+`docs/governance/phase4-6-production-deployment-package-2026-09-17.md` is the
+Owner-facing instructions; `phase4-6-DEPLOYMENT-candidate-2026-09-17.rules` is the
+only file to paste (production + all three phases, 625 added, **0 removed**).
+**NEVER paste a `candidate-2026-09-15` file** — those two are self-contained test
+EXTRACTS, and pasting one would replace the entire live ruleset with a file
+governing three collections. **Indexes go BEFORE rules**: rules first would let
+the new screens ask questions the database then refuses.
+
+**A real divergence was found doing this, and it is why the assembled file uses
+PRODUCTION's helpers and drops the extracts' copies.** Four helpers the extracts
+call "reproduced unchanged" are not: `hasRoleIn`, `myPersonIdIn`, `isSelfPerson`
+and `isCoEnrolledTeacherOf` use defensive `.get(field, default)` reads where
+production reads the field directly. Same outcome when the field is present;
+different route when absent. **No case flips** — established by re-running all
+three suites against the assembled file (53 + 60 + 50, zero failures), not by
+reasoning about it. `tools/i18n-verify/rules-deployment-candidate.mjs` guards the
+whole class, including that every `docs/governance/` path this brief names
+actually exists — the brief had been pointing at a file that was never written.
+
 **SEVEN items sit in the pending-dependency ledger; the first six are all on the
 same external Firebase Console access.** (1) Phase 4 Rules + merging
 `claude/phase4-wiring`; (2) Phase 5 Note Foundation Rules; (3) Phase 5 Note
@@ -49,7 +69,8 @@ Rules (53/0/0, 31 of 37 accepted matrix cases). `firestore.rules` is
 byte-for-byte untouched. **A sandbox cannot deploy either** — `firebase` reports
 "Failed to authenticate" and the Rules API returns 403 — so deployment goes
 through the Firebase Console using
-`docs/governance/phase4-production-package-2026-09-14.md`.
+`docs/governance/phase4-6-production-deployment-package-2026-09-17.md`,
+which covers Phases 4, 5 and 6 together.
 
 **Phase 5's security design, in one line: ONLY THE OWNER WRITES A NOTE.** Not a
 guardian, not a teacher, not a tenant administrator, not a platform

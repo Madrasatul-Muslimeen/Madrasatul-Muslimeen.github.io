@@ -109,9 +109,20 @@ check("noteFolders and notePlacements are still UNRULED in production", () => {
   }
   unchangedSinceMain("firestore.rules");
 });
-check("the Phase 5 Rules candidate QUEUED FOR DEPLOYMENT is byte-identical", () => {
-  // A Phase 6 decision must never change what a Phase 5 deployment would apply.
-  unchangedSinceMain("docs/governance/phase5-note-foundation-rules-candidate-2026-09-15.rules");
+check("the Phase 5 Rules candidate's RULE CONTENT is unchanged", () => {
+  // UPDATED 2026-09-17, with the reason recorded rather than the check deleted.
+  // Byte-identity was the right claim while the extract was assumed to be the
+  // deployable text. It is not: the deployable text is now the assembled
+  // phase4-6-DEPLOYMENT-candidate, and the extract carries a CORRECTION comment
+  // recording that four of its helpers differ from production's.
+  //
+  // So the claim is narrowed to the one that still matters and is strictly
+  // about safety: no RULE line may change. Comments may.
+  const rel = "docs/governance/phase5-note-foundation-rules-candidate-2026-09-15.rules";
+  const strip = (t) => t.split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
+  const head = execFileSync("git", ["show", `origin/main:${rel}`], { cwd: root, encoding: "utf8" });
+  assert.equal(strip(fs.readFileSync(path.join(root, rel), "utf8")), strip(head),
+    `${rel} has changed a RULE line -- a Phase 6 decision must not alter what Phase 5 deploys`);
   const candidate = fs.readFileSync(path.join(root,
     "docs/governance/phase5-note-foundation-rules-candidate-2026-09-15.rules"), "utf8");
   for (const collection of ["noteFolders", "notePlacements"]) {

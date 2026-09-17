@@ -12955,3 +12955,84 @@ and `note-foundation.js` byte-identity became an **addition-only** assertion.
 `ayah-notes.js` and the Phase 5 Rules candidate all byte-identical to
 `origin/main`; the MMJ pillar still `disabled`; both collections still unruled
 in production.
+
+---
+
+**17 Sep 2026 — the deployment package, and the divergence it uncovered.** No
+application change at all — `git diff origin/main -- app/` is **empty** — so **no
+version increment**; `main` stays v08.25. Nothing deployed.
+
+**Three findings, in increasing severity.** (1) `CLAUDE.md` told the Owner that
+deployment goes through `docs/governance/phase4-production-package-2026-09-14.md`
+— **a file that was never written**. (2) **Phase 5 and Phase 6 had no deployable
+text at all.** Both candidates are self-contained EXTRACTS carrying their own
+copy of the shared helper block so the emulator can run them in isolation, so
+**pasting either into the Console would have replaced the entire live ruleset**
+with a file governing three collections and nothing else — the obvious action for
+a non-coder Owner told "deploy the Phase 5 rules" — and **110 emulator assertions
+were proving things about text with no route to production.** (3) Four helpers
+the extracts describe as "reproduced unchanged from the deployed rules" are **NOT
+unchanged**: `hasRoleIn`, `myPersonIdIn`, `isSelfPerson` and
+`isCoEnrolledTeacherOf` use defensive `.get(field, default)` reads where
+production reads the field directly.
+
+**What (3) means, precisely rather than alarmingly:** all four are defensive-read
+variants with the **same allow/deny outcome whenever the field is present**,
+differing only when a field is ABSENT — production errors (and so denies), the
+extract denies cleanly. **No case flips.** But "same outcome by a different
+route" is not "unchanged", and a suite whose `no()` helper asserts *the deciding
+evaluation was a clean false* is asserting something true of the extract and not
+of production. **Why nobody caught it:** every existing check about
+`firestore.rules` asserts what it does NOT contain, and P6-B's own check compares
+the two extracts to **each other** — precisely the check that cannot see this.
+
+**One assembled file now exists:** `phase4-6-DEPLOYMENT-candidate-2026-09-17.rules`
+— production plus all three phases, **625 lines added, 0 removed**. It is an
+assembly rather than a concatenation for two reasons: the extracts both declare
+the same helpers at top level (duplicate definitions do not compile, so the block
+is taken **once**), and **it uses PRODUCTION's helpers — the extract copies are
+dropped, not merged** — so what would be deployed is the deployed security model,
+not a second one wearing its names.
+
+**The proof that mattered: all three suites re-run against the deployable text**,
+via a `RULES_FILE` override. Phase 4 **53**, Phase 5 **60**, Phase 6 **50** — same
+numbers, zero failures, against the assembled file as against the extracts. That
+identical result is what establishes that the four divergences change no outcome,
+by running them rather than reasoning about them.
+
+**One case had to be INVERTED, and the inversion is the point.** `REG-01` proves
+the legacy `ayahNotes` surface is untouched. Against the extract `ayahNotes` is
+unruled, so the write must be **denied**; against the deployment candidate
+production's own rule is present, so the Owner's write must **succeed exactly as
+today**. It failed on the first run against the assembled file — which is what
+the run was for. Asserting the denial there would have been asserting that
+deployment **breaks the quick note**.
+
+**The Owner-facing package** (`phase4-6-production-deployment-package-2026-09-17.md`)
+is written for someone who does not read code: which file to paste and which two
+must NEVER be, the three indexes field by field, **indexes before rules** and
+why, copy-your-current-rules-out-first as the undo button, and a six-line
+click-through whose most important line is *open a note, type, save*.
+`CLAUDE.md`'s dead pointer now points at it.
+
+**The durable guard is `rules-deployment-candidate.mjs`, 9 checks with a positive
+control**: the candidate drops no production line, defines no helper twice,
+**never carries a different implementation of a production helper**, governs all
+five note collections plus the evidence subcollection, each extract still
+declares itself undeployable, the divergence set is **exactly the audited four**,
+nothing is deployed, and **every `docs/governance/` path the brief names exists**
+— so a dead pointer fails a check instead of wasting the Owner's time.
+
+**8 of 8 mutations caught**, including the naive assembly (production + the
+extract's helper block) and a rewritten production helper, which trips **two**
+checks with the REDEFINES one naming `hasRoleIn`. **A methodology note worth
+keeping:** the first attempt at that mutation silently did nothing — the
+replacement was written on one line and `isSelfPerson` is multi-line in
+production, so it matched nothing and the check "passed". **A mutation that does
+not apply proves nothing**; every mutation now asserts its own occurrence count
+first.
+
+**Two checks updated in place with reasons, none deleted.** The Phase 5 extract's
+byte-identity check became a **RULE CONTENT** check (comments may change, rule
+lines may not) — and when the correction comment left a stray blank line, the
+file was fixed rather than the check loosened.

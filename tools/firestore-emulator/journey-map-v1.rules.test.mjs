@@ -22,8 +22,13 @@ const HOST = "127.0.0.1";
 const PORT = 8093;
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../..");
-const candidate = fs.readFileSync(
-  path.join(root, "docs/governance/phase6-journey-map-rules-candidate-2026-09-15.rules"), "utf8");
+// RULES_FILE lets this suite run against the ASSEMBLED DEPLOYMENT CANDIDATE
+// -- the text that would actually be pasted into the Console -- rather than the
+// isolated extract. See the Phase 5 suite for why that distinction matters.
+const EXTRACT = "docs/governance/phase6-journey-map-rules-candidate-2026-09-15.rules";
+const RULES_FILE = process.env.RULES_FILE || EXTRACT;
+const againstDeployment = RULES_FILE !== EXTRACT;
+const candidate = fs.readFileSync(path.join(root, RULES_FILE), "utf8");
 const phase5 = fs.readFileSync(
   path.join(root, "docs/governance/phase5-note-foundation-rules-candidate-2026-09-15.rules"), "utf8");
 
@@ -34,8 +39,14 @@ assert.equal(HOST, "127.0.0.1");
 // This candidate governs exactly the Phase 6 domain. notes/noteRevisions/
 // noteSources stay with Phase 5, whose file is queued for deployment.
 const blocks = [...new Set([...candidate.matchAll(/match \/(\w+)\//g)].map((m) => m[1]))].filter((n) => n !== "databases");
-assert.deepEqual(blocks.sort(), ["noteFolders", "notePlacements"],
-  `the candidate must govern exactly the Phase 6 domain, saw: ${blocks}`);
+if (againstDeployment) {
+  for (const required of ["noteFolders", "notePlacements", "notes", "tenantInvites"]) {
+    assert.ok(blocks.includes(required), `the deployment candidate is missing match /${required}/`);
+  }
+} else {
+  assert.deepEqual(blocks.sort(), ["noteFolders", "notePlacements"],
+    `the candidate must govern exactly the Phase 6 domain, saw: ${blocks}`);
+}
 
 // The shared helper block must not FORK. Two copies of a security model that
 // drift apart is how one collection quietly gets a weaker rule than its sibling.
@@ -44,8 +55,10 @@ function helperBlock(text) {
   const to = text.indexOf("}", text.indexOf("d().ownerUid is string")) + 1;
   return text.slice(from, to);
 }
-assert.equal(helperBlock(candidate), helperBlock(phase5),
-  "the Phase 6 helper block has drifted from the Phase 5 one");
+if (!againstDeployment) {
+  assert.equal(helperBlock(candidate), helperBlock(phase5),
+    "the Phase 6 helper block has drifted from the Phase 5 one");
+}
 
 const T = "t1", T2 = "t2";
 const NOTE = "note0000000000000000000000000001";

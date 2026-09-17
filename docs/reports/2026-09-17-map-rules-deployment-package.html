@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP — the deployment package, and the divergence it uncovered</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP — the deployment package, and the divergence it uncovered</h1>
+<ul><li><strong>Date:</strong> 2026-09-17</li><li><strong>Task:</strong> assemble a deployable Firestore ruleset for MAP Phases 4, 5 and 6, and the Owner-facing instructions for it</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> No application file changed at all — <code>git diff origin/main -- app/</code> is empty. <code>firestore.rules</code>, <code>firebase.json</code> and <code>version.js</code> byte-identical. Nothing deployed.</li><li><strong>Application version:</strong> <strong>08.25, unchanged.</strong></li><li><strong>Result:</strong> ACCEPT — 8 of 8 mutations caught; 163 emulator assertions pass against the assembled file; 13 pure suites green.</li></ul>
+<hr>
+<h2>1. Why this task, while the surfaces are blocked</h2>
+<p>Every remaining surface task is behind an accepted deferral or an Owner decision. The deployment items are not: they are behind <em>access</em>, and what was standing between the Owner and acting on them was that the instructions did not exist.</p>
+<p>Checking that assumption produced three findings, in increasing severity.</p>
+<h3>F1 — the standing brief pointed at a file that was never written</h3>
+<p><code>CLAUDE.md</code> said deployment &quot;goes through the Firebase Console using <code>docs/governance/phase4-production-package-2026-09-14.md</code>&quot;. <strong>That file does not exist.</strong> The Owner following the brief would have found nothing.</p>
+<h3>F2 — Phase 5 and Phase 6 had no deployable text at all, and pasting what exists would have destroyed the ruleset</h3>
+<p>Both Phase 5 and Phase 6 candidates are <strong>extracts</strong>: self-contained files carrying their own copy of the shared helper block so the emulator can run them in isolation. Each says so in its own header. But nothing had ever assembled a deployable version, which means:</p>
+<ul><li><strong>Pasting either extract into the Console would have replaced the entire live ruleset</strong> with a file governing three collections and nothing else. For a non-coder Owner told &quot;deploy the Phase 5 rules&quot;, that is the obvious action.</li><li><strong>Every emulator assertion was proving something about a file nobody would ever deploy</strong> — 110 assertions across the two phases, all about text with no route to production.</li></ul>
+<p>Phase 4 had avoided this by building a separate <code>DEPLOYMENT-candidate</code> and a suite for it. Phases 5 and 6 had not.</p>
+<h3>F3 — four helpers the extracts call &quot;unchanged from the deployed rules&quot; are not unchanged</h3>
+<p>Both extracts state that their duplicated helpers are &quot;reproduced unchanged from the deployed rules so the emulator can run it in isolation&quot;. Comparing every shared helper against <code>firestore.rules</code>, ten match exactly and <strong>four do not</strong>:</p>
+<div class='tw'><table><thead><tr><th>Helper</th><th>Production</th><th>Extract</th></tr></thead><tbody>
+<tr><td><code>hasRoleIn</code></td><td><code>role in myRolesIn(tenantId)</code></td><td>inlines its own <code>memberUidRef</code> read with <code>.get(&#x27;roles&#x27;, [])</code></td></tr>
+<tr><td><code>myPersonIdIn</code></td><td><code>tenantMemberDoc(tenantId).personId</code></td><td><code>.get(&#x27;personId&#x27;, null)</code></td></tr>
+<tr><td><code>isSelfPerson</code></td><td><code>.data.authUid</code></td><td><code>.data.get(&#x27;authUid&#x27;, null)</code></td></tr>
+<tr><td><code>isCoEnrolledTeacherOf</code></td><td><code>.data.active</code></td><td><code>.data.get(&#x27;active&#x27;, false)</code></td></tr>
+</tbody></table></div>
+<p><strong>What it means, stated precisely rather than alarmingly:</strong> all four are defensive-read variants. They produce the <strong>same allow/deny outcome whenever the field is present</strong>, and differ only when a field is <strong>absent</strong> — where production errors (and therefore denies) and the extract denies cleanly. No case flips from deny to allow. But &quot;same outcome by a different route&quot; is not &quot;unchanged&quot;, and a suite whose <code>no()</code> helper asserts <em>&quot;the deciding evaluation was a clean false&quot;</em> is asserting something about the extract that is not true of production.</p>
+<p><strong>Why nobody caught it:</strong> every existing check about <code>firestore.rules</code> asserts what it does <strong>not</strong> contain — no evidence block, no note collections, unchanged since main. Nothing compared the extracts&#x27; duplicated helpers against the real ones. P6-B added a check that the two extracts&#x27; helper blocks match <strong>each other</strong>, which is exactly the check that cannot see this.</p>
+<hr>
+<h2>2. What was built</h2>
+<h3>The assembled deployment candidate</h3>
+<p><code>docs/governance/phase4-6-DEPLOYMENT-candidate-2026-09-17.rules</code> — production plus all three phases: <strong>625 lines added, 0 removed.</strong></p>
+<p>Two things had to be resolved, and they are why this is an assembly rather than a concatenation:</p>
+<ol><li><strong>The extracts both declare the same shared helpers at top level.</strong> Together they would be duplicate definitions at one scope, which does not compile. The block is taken <strong>once</strong>.</li><li><strong>The candidate uses production&#x27;s own helpers.</strong> The extract copies are <em>dropped</em>, not merged — so what would be deployed is the deployed security model, not a second one wearing its names. <code>memberUidRef()</code> is absent for the same reason: it existed only to serve the extracts&#x27; own two helpers, and production&#x27;s <code>tenantMemberRef()</code> already addresses the identical document.</li></ol>
+<p>Phase 4&#x27;s block-scoped <code>d()</code> and <code>personInTenant()</code> sit inside its <code>match</code> block at six spaces; Phase 5&#x27;s are top-level at four. No collision, and the emulator compiling the file is what proves it rather than my reading of the scoping rules.</p>
+<h3>The proof that mattered — the suites re-run against the deployable text</h3>
+<p>All three suites now take a <code>RULES_FILE</code> override, so the same assertions can run against either the extract or the assembled file:</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>vs its extract</th><th><strong>vs the assembled deployment candidate</strong></th></tr></thead><tbody>
+<tr><td>Phase 4 evidence</td><td>53 assertions, 0 failures</td><td><strong>53 assertions, 0 failures</strong></td></tr>
+<tr><td>Phase 5 Note Foundation</td><td>60 assertions, 0 failures</td><td><strong>60 assertions, 0 failures</strong></td></tr>
+<tr><td>Phase 6 Journey Map</td><td>50 assertions, 0 failures</td><td><strong>50 assertions, 0 failures</strong></td></tr>
+</tbody></table></div>
+<p>That identical result is the evidence that F3&#x27;s four divergences change no outcome — established by running them, not by reasoning about them.</p>
+<h3>One case had to be inverted, and the inversion is the point</h3>
+<p><code>REG-01</code> asserts the legacy <code>ayahNotes</code> surface is untouched. Against the <strong>extract</strong>, <code>ayahNotes</code> is unruled, so the write must be <strong>denied</strong> — that is what proves the extract has not grown a rule for the legacy surface. Against the <strong>deployment candidate</strong>, production&#x27;s own <code>ayahNotes</code> rule is present, so the Owner&#x27;s write must <strong>succeed</strong> exactly as it does today — that is what proves the Note Foundation has not disturbed the live surface holding real Owner data.</p>
+<p>It failed on the first run against the assembled file, which is exactly what the run was for. Asserting the denial there would have been asserting that deployment <strong>breaks the quick note</strong>.</p>
+<h3>The Owner-facing package</h3>
+<p><code>docs/governance/phase4-6-production-deployment-package-2026-09-17.md</code> — written for someone who does not read code: which file to paste and which two files must <strong>never</strong> be pasted, the three indexes field by field, <strong>indexes before rules</strong> and why, a copy-your-current-rules-out-first step as the undo button, and a six-line click-through check whose most important line is <em>open a note, type, save</em> — because that is what proves the existing data is unaffected.</p>
+<p><code>CLAUDE.md</code>&#x27;s dead pointer now points here.</p>
+<hr>
+<h2>3. The durable guard</h2>
+<p><code>tools/i18n-verify/rules-deployment-candidate.mjs</code> — 9 checks, including a <strong>positive control</strong> so a broken function-body parser cannot make every comparison pass vacuously.</p>
+<p>It asserts the candidate drops no production line, defines no top-level helper twice, <strong>never carries a different implementation of a production helper</strong>, governs all five note collections plus the evidence subcollection, that each extract still declares itself undeployable, that the divergence set is <strong>exactly the audited four</strong> (a new one must be looked at deliberately), that nothing is deployed — and that <strong>every <code>docs/governance/</code> path the brief names exists</strong>, so a dead pointer fails a check instead of wasting the Owner&#x27;s time.</p>
+<h3>Mutation testing — 8 of 8 caught</h3>
+<div class='tw'><table><thead><tr><th>#</th><th>Mutation</th><th>Caught by</th></tr></thead><tbody>
+<tr><td>D1</td><td>A production line dropped from the candidate</td><td>drops-no-production-line</td></tr>
+<tr><td>D2</td><td>A top-level helper defined twice</td><td>no-duplicate-definition</td></tr>
+<tr><td>D3</td><td>A production helper quietly reimplemented</td><td><strong>both</strong> drops-a-line <strong>and</strong> REDEFINES, the latter naming <code>hasRoleIn</code></td></tr>
+<tr><td>D3′</td><td>The candidate assembled the naive way, from the extract&#x27;s helper block</td><td>no-duplicate-definition</td></tr>
+<tr><td>D4</td><td>An extract loses its do-not-deploy warning</td><td>extracts-declare-themselves-undeployable</td></tr>
+<tr><td>D5</td><td>A new divergence introduced in an extract</td><td>divergence-set-is-exactly-four</td></tr>
+<tr><td>D6</td><td>The brief points at a non-existent file</td><td>brief-points-at-a-file-that-exists</td></tr>
+<tr><td>D7</td><td>A match block missing from the candidate</td><td>governs-every-collection</td></tr>
+</tbody></table></div>
+<p><strong>One methodology note worth keeping.</strong> D3&#x27;s first attempt silently did nothing: the replacement string was written on one line and <code>isSelfPerson</code> is multi-line in production, so it matched nothing and the check &quot;passed&quot;. A mutation that does not apply proves nothing — the same trap Phase 5&#x27;s harness hit. Every mutation above now asserts its own occurrence count before running.</p>
+<hr>
+<h2>4. Verified, not asserted</h2>
+<div class='tw'><table><thead><tr><th>Claim</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>No application change</td><td><code>git diff origin/main -- app/</code> is <strong>empty</strong></td></tr>
+<tr><td>Nothing deployed</td><td><code>firestore.rules</code>, <code>firebase.json</code>, <code>version.js</code> byte-identical</td></tr>
+<tr><td>The candidate is additive</td><td>625 added, <strong>0 removed</strong>, asserted automatically</td></tr>
+<tr><td>The candidate compiles and behaves</td><td>163 emulator assertions against it</td></tr>
+<tr><td>Existing quick notes survive deployment</td><td>asserted against the candidate: the owner&#x27;s <code>ayahNotes</code> write succeeds</td></tr>
+<tr><td>Nothing else regressed</td><td>13 pure suites green</td></tr>
+</tbody></table></div>
+<hr>
+<h2>5. What this does not do</h2>
+<ul><li><strong>It does not deploy anything.</strong> Deployment remains an Owner Control Gate and needs Console access this sandbox does not have.</li><li><strong>It does not change the extracts&#x27; helpers.</strong> They stay as they are — the deployment candidate uses production&#x27;s, which is the half that matters. The extracts&#x27; headers now carry the correction rather than the false claim.</li><li><strong>It does not unblock the surfaces.</strong> P5-D (the Note editor) is still held by ADR-004&#x27;s deferral, and Mapping My Journey&#x27;s shape by ADR-010 §3.</li></ul>
+<hr>
+<h2>6. Pending-dependency ledger</h2>
+<div class='tw'><table><thead><tr><th>#</th><th>Item</th><th>Blocked on</th><th>Now ready?</th></tr></thead><tbody>
+<tr><td>1</td><td>Phase 4 Rules</td><td>Console access</td><td><strong>Yes — in the one assembled file</strong></td></tr>
+<tr><td>2</td><td>Phase 5 Rules</td><td>Console access</td><td><strong>Yes — same file</strong></td></tr>
+<tr><td>3</td><td>Phase 5 indexes</td><td>Console access</td><td><strong>Yes — three indexes, field by field</strong></td></tr>
+<tr><td>4</td><td>Phase 6 Rules</td><td>Console access</td><td><strong>Yes — same file</strong></td></tr>
+<tr><td>5</td><td>Merging <code>claude/phase4-wiring</code> (<code>c4fca4a</code>)</td><td>items 1–3 deployed</td><td>after deployment</td></tr>
+<tr><td>6</td><td>P5-D, the Note editor</td><td>ADR-004&#x27;s deferral</td><td>Owner decision</td></tr>
+<tr><td>7</td><td>Server-side folder-cycle prevention</td><td>costs the ability to move a folder</td><td>Owner decision</td></tr>
+</tbody></table></div>
+<p>Items 1–4 were four separate unanswered questions this morning. They are now one paste and three index forms.</p>
+</main></body></html>

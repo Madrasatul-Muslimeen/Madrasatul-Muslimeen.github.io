@@ -1,7 +1,6 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
     // =====================================================================
     // MAP Phase 5 — CANDIDATE Rules for the Note Foundation.
     //
@@ -11,7 +10,18 @@ service cloud.firestore {
     // SELF-CONTAINED EXTRACT: only the helpers these three collections need,
     // reproduced unchanged from the deployed rules so the emulator can run it
     // in isolation. It must never be deployed as a whole file.
+
     //
+    // CORRECTION 2026-09-17: four of these helpers are NOT reproduced
+    // unchanged. hasRoleIn, myPersonIdIn, isSelfPerson and
+    // isCoEnrolledTeacherOf are written here with defensive
+    // `.get(field, default)` reads where production reads the field directly.
+    // Same allow/deny outcome whenever the field is present; they differ only
+    // when it is ABSENT, where production errors (and so denies) and these deny
+    // cleanly. No case flips. The assembled deployment candidate
+    // (phase4-6-DEPLOYMENT-candidate-2026-09-17.rules) therefore uses
+    // PRODUCTION's helpers and drops these copies, and all three emulator
+    // suites are re-run against it to prove the outcomes are unchanged.    //
     // GOVERNS EXACTLY THREE COLLECTIONS: notes, noteRevisions, noteSources.
     //
     // noteFolders and notePlacements are DELIBERATELY ABSENT. They belong to

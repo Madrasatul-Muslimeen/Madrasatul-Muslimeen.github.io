@@ -22,8 +22,14 @@ const PROJECT = "demo-quranrevival-note-foundation-v1";
 const HOST = "127.0.0.1";
 const PORT = 8091;
 const here = path.dirname(fileURLToPath(import.meta.url));
-const candidate = fs.readFileSync(
-  path.resolve(here, "../../docs/governance/phase5-note-foundation-rules-candidate-2026-09-15.rules"), "utf8");
+// RULES_FILE lets this same suite run against the ASSEMBLED DEPLOYMENT
+// CANDIDATE -- the text that would actually be pasted into the Console --
+// instead of the isolated extract. Without that, every assertion here proves
+// something about a file nobody will ever deploy.
+const EXTRACT = "docs/governance/phase5-note-foundation-rules-candidate-2026-09-15.rules";
+const RULES_FILE = process.env.RULES_FILE || EXTRACT;
+const againstDeployment = RULES_FILE !== EXTRACT;
+const candidate = fs.readFileSync(path.resolve(here, "../..", RULES_FILE), "utf8");
 const matrix = JSON.parse(fs.readFileSync(path.resolve(here, "../../tests/firestore/note-foundation.security-matrix.json"), "utf8"));
 
 // SAFE-01: never a production project or a non-emulator host.
@@ -34,10 +40,22 @@ assert.equal(HOST, "127.0.0.1");
 // The candidate must be an ISOLATED extract governing exactly the Phase 5
 // domain -- noteFolders/notePlacements are Phase 6 and must stay unruled.
 const blocks = [...new Set([...candidate.matchAll(/match \/(\w+)\//g)].map((m) => m[1]))].filter((n) => n !== "databases");
-assert.deepEqual(blocks.sort(), ["noteRevisions", "noteSources", "notes"],
-  `the candidate must govern exactly the Phase 5 domain, saw: ${blocks}`);
-assert.ok(!/S8-class fix|match \/tenantInvites\//.test(candidate),
-  "the candidate must not be a copy of the deployed production rules");
+if (againstDeployment) {
+  // The deployment candidate is production PLUS the phases, so the integrity
+  // guards are the opposite ones: it must carry the whole live ruleset, and it
+  // must add to firestore.rules rather than replace it.
+  for (const required of ["notes", "noteRevisions", "noteSources", "tenantInvites"]) {
+    assert.ok(blocks.includes(required), `the deployment candidate is missing match /${required}/`);
+  }
+  const production = fs.readFileSync(path.resolve(here, "../../firestore.rules"), "utf8").split("\n");
+  const missing = production.filter((line) => line.trim() && !candidate.includes(line));
+  assert.deepEqual(missing, [], `the deployment candidate DROPS ${missing.length} production line(s) -- it would remove live rules`);
+} else {
+  assert.deepEqual(blocks.sort(), ["noteRevisions", "noteSources", "notes"],
+    `the candidate must govern exactly the Phase 5 domain, saw: ${blocks}`);
+  assert.ok(!/S8-class fix|match \/tenantInvites\//.test(candidate),
+    "the candidate must not be a copy of the deployed production rules");
+}
 
 const T = "t1", T2 = "t2";
 const NOTE = "note0000000000000000000000000001";
@@ -339,8 +357,25 @@ test("candidate Note Foundation Rules: the accepted security matrix", async () =
       where("tenantId", "==", T), where("ownerPersonId", "==", "p1"), where("noteId", "==", NOTE),
       orderBy("createdAt", "desc"), limit(100))));
 
-    // --- REG-01: the legacy note surface is untouched by this candidate -----
-    await no("REG-01", "this candidate governs no legacy ayahNotes rule", setDoc(doc(p1, "ayahNotes", `${T}__p1`), { tenantId: T, personId: "p1", notes: {} }));
+    // --- REG-01: the legacy note surface is untouched ----------------------
+    // The SAME claim, asserted from opposite directions, and the difference is
+    // the whole reason the deployment candidate had to be built and run.
+    //
+    // Against the EXTRACT, ayahNotes is unruled, so a write to it must be
+    // DENIED -- that is what proves the extract has not accidentally grown a
+    // rule for the legacy surface.
+    //
+    // Against the DEPLOYMENT CANDIDATE, production's own ayahNotes rule is
+    // present, so the owner's write must SUCCEED exactly as it does today --
+    // that is what proves the Note Foundation has not disturbed the live
+    // surface holding real Owner data. Asserting the denial here would have
+    // been asserting that deployment BREAKS the quick note.
+    const legacyWrite = () => setDoc(doc(p1, "ayahNotes", `${T}__p1`), { tenantId: T, personId: "p1", notes: {} });
+    if (againstDeployment) {
+      await ok("REG-01", "the legacy ayahNotes surface still works exactly as production does", legacyWrite());
+    } else {
+      await no("REG-01", "this candidate governs no legacy ayahNotes rule", legacyWrite());
+    }
 
     console.log(`\n  matrix cases exercised: ${[...seen].filter((id) => matrix.cases.some((c) => c.id === id)).length} of ${matrix.cases.length}`);
     console.log(`\n==== Phase 5 Note Foundation candidate Rules: ${n} assertions, all as specified ====`);
