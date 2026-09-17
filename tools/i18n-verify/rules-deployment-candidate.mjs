@@ -149,5 +149,31 @@ check("the standing brief points at a deployment document that exists", () => {
   }
 });
 
+// --- the Owner-facing package must match the machine-readable candidates ----
+check("the deployment package's index tables match the index candidates exactly", () => {
+  // The package is what the Owner types into the Console by hand. If it drifts
+  // from the candidates, they create the wrong index and the queries fail in a
+  // way no test here would ever see.
+  const pkg = read("docs/governance/phase4-6-production-deployment-package-2026-09-17.md");
+  const declared = [
+    "docs/governance/phase5-note-foundation-indexes-candidate-2026-09-15.json",
+    "docs/governance/phase6-journey-map-indexes-candidate-2026-09-17.json",
+  ].flatMap((rel) => JSON.parse(read(rel)).indexes)
+   .map((idx) => `${idx.collectionGroup}: ${idx.fields.map((f) => `${f.fieldPath} ${f.order}`).join(", ")}`)
+   .sort();
+
+  const written = [];
+  for (const chunk of pkg.split(/^### Index \d+$/m).slice(1)) {
+    const collection = /\| Collection ID \| `([^`]+)` \|/.exec(chunk);
+    if (!collection) continue;
+    const fields = [...chunk.matchAll(/\| Field \d+ \| `([^`]+)` — \*{0,2}(Ascending|Descending)\*{0,2} \|/g)]
+      .map((m) => `${m[1]} ${m[2].toUpperCase()}`);
+    written.push(`${collection[1]}: ${fields.join(", ")}`);
+  }
+  assert.ok(written.length > 0, "no index tables were parsed from the package -- the format changed");
+  assert.deepEqual(written.sort(), declared,
+    "the package's hand-written index tables have drifted from the index candidates");
+});
+
 console.log(`\n==== Rules deployment candidate: ${passed} passed, ${failed} failed ====`);
 if (failed) process.exitCode = 1;

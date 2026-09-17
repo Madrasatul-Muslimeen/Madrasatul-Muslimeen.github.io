@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "CANDIDATE ONLY — NOT DEPLOYED, AND NOT REFERENCED BY firebase.json.",
+    "MAP Phase 6 (P6-C). Its own file for the same reason the Phase 6 Rules are:",
+    "the Phase 5 index candidate is part of a deployment package already handed",
+    "to the Owner, and a Phase 6 decision must not silently change what a Phase 5",
+    "deployment would apply. The Owner-facing package lists BOTH files, and a",
+    "check binds the package's hand-written index tables to these machine-readable",
+    "candidates so the two cannot drift.",
+    "Only ONE index is needed: listNotePlacementsForNote() is deliberately",
+    "equality-only (see its own comment), which is what keeps this to one."
+  ],
+  "indexes": [
+    {
+      "_query": "note-foundation.js listNotePlacementsForFolder() — a folder's contents, in the author's own order",
+      "collectionGroup": "notePlacements",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "tenantId", "order": "ASCENDING" },
+        { "fieldPath": "ownerPersonId", "order": "ASCENDING" },
+        { "fieldPath": "folderId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "order", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

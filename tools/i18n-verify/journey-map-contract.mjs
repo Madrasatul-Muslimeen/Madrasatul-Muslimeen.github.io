@@ -8,7 +8,7 @@
 import assert from "node:assert/strict";
 import {
   FOLDER_SEMANTIC_ROLES, MAX_FOLDER_DEPTH, SYSTEM_FOLDER_ROLES,
-  folderTreeRefusal, isSystemFolderRole, journeyFolder, notePlacement, placementMove,
+  buildFolderTree, folderTreeRefusal, isSystemFolderRole, journeyFolder, notePlacement, placementMove,
 } from "../../app/js/journey-map-contract.js";
 
 let passed = 0;
@@ -171,6 +171,75 @@ check("J20 a folder needs a name, and both payloads are frozen", () => {
   assert.throws(() => { "use strict"; f.semanticRole = "journey-map"; }, TypeError);
   const p = notePlacement({ ...own, noteId: "n1", folderId: "f1" });
   assert.throws(() => { "use strict"; p.folderId = "other"; }, TypeError);
+});
+
+// --- the bounded walk (ADR-010 §4, discharged) ------------------------------
+const node = (folderId, parentFolderId = null, o = {}) => ({ folderId, parentFolderId,
+  tenantId: "t1", ownerPersonId: "p1", status: "active", semanticRole: "user", ...o });
+
+check("J21 a plain tree comes back as roots with children and depths", () => {
+  const { roots, orphaned, cyclic } = buildFolderTree([node("a"), node("b", "a"), node("c", "b"), node("d")]);
+  assert.deepEqual(roots.map((r) => r.folderId).sort(), ["a", "d"]);
+  assert.deepEqual(orphaned, []); assert.deepEqual(cyclic, []);
+  const a = roots.find((r) => r.folderId === "a");
+  assert.equal(a.depth, 1);
+  assert.equal(a.children[0].folderId, "b");
+  assert.equal(a.children[0].depth, 2);
+  assert.equal(a.children[0].children[0].depth, 3);
+});
+
+check("J22 A CYCLE DOES NOT HANG THE WALK -- it is reported, not looped", () => {
+  // The whole reason this function exists: P6-B established that Firestore
+  // Rules cannot prevent A -> B -> A, so the walk has to survive one.
+  const { roots, cyclic } = buildFolderTree([node("a", "b"), node("b", "a"), node("ok")]);
+  assert.deepEqual(roots.map((r) => r.folderId), ["ok"]);
+  assert.deepEqual(cyclic.map((r) => r.folderId).sort(), ["a", "b"]);
+});
+
+check("J23 a self-parenting folder is reported as cyclic, not lost", () => {
+  const { cyclic } = buildFolderTree([node("me", "me")]);
+  assert.deepEqual(cyclic.map((r) => r.folderId), ["me"]);
+});
+
+check("J24 a folder naming a parent that is not in the set is ORPHANED, not dropped", () => {
+  const { roots, orphaned, cyclic } = buildFolderTree([node("a"), node("lost", "nowhere")]);
+  assert.deepEqual(roots.map((r) => r.folderId), ["a"]);
+  assert.deepEqual(orphaned.map((r) => r.folderId), ["lost"]);
+  assert.deepEqual(cyclic, []);
+});
+
+check("J25 NOTHING is silently dropped: every folder appears exactly once somewhere", () => {
+  // A folder missing from the screen is indistinguishable, to its author, from
+  // a folder that was lost.
+  const input = [node("a"), node("b", "a"), node("x", "gone"), node("c", "d"), node("d", "c"), node("solo")];
+  const { roots, orphaned, cyclic } = buildFolderTree(input);
+  const seen = [];
+  (function walk(list) { for (const f of list) { seen.push(f.folderId); walk(f.children ?? []); } })(roots);
+  const all = [...seen, ...orphaned.map((f) => f.folderId), ...cyclic.map((f) => f.folderId)];
+  assert.deepEqual(all.sort(), input.map((f) => f.folderId).sort());
+  assert.equal(new Set(all).size, all.length, "a folder was counted twice");
+});
+
+check(`J26 the walk stops at depth ${MAX_FOLDER_DEPTH} and SAYS it stopped`, () => {
+  const chain = [node("f1")];
+  for (let i = 2; i <= MAX_FOLDER_DEPTH + 3; i++) chain.push(node(`f${i}`, `f${i - 1}`));
+  const { roots } = buildFolderTree(chain);
+  let cursor = roots[0], depth = 1;
+  while (cursor.children.length) { cursor = cursor.children[0]; depth++; }
+  assert.equal(depth, MAX_FOLDER_DEPTH, "the walk went past the accepted bound");
+  assert.equal(cursor.depthCapped, true, "a pruned branch must announce itself, not vanish");
+});
+
+check("J27 an empty set is a valid tree, not a crash", () => {
+  assert.deepEqual(buildFolderTree([]), { roots: [], orphaned: [], cyclic: [] });
+  assert.deepEqual(buildFolderTree(), { roots: [], orphaned: [], cyclic: [] });
+});
+
+check("J28 the walk does not mutate the folders it was given", () => {
+  const input = [node("a"), node("b", "a")];
+  const before = JSON.stringify(input);
+  buildFolderTree(input);
+  assert.equal(JSON.stringify(input), before, "the caller's own objects were modified");
 });
 
 console.log(`\n${passed} passed`);

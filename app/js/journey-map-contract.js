@@ -162,3 +162,70 @@ export function placementMove({ from, to } = {}) {
     create: created,
   });
 }
+
+/**
+ * ADR-010 §4, discharged — the ONE bounded walk of a folder tree.
+ *
+ * P6-B established that Firestore Rules can enforce a single hop and can never
+ * prevent a cycle of length two or more, and concluded that any walk of this
+ * tree must be bounded regardless of what the rules guarantee. Leaving each
+ * consumer to remember that is how one of them eventually hangs the app on a
+ * corrupt tree, so the safe walk is provided once, here, and refuses rather
+ * than loops.
+ *
+ * Returns `{ roots, orphaned, cyclic }`:
+ *   roots    — top-level folders, each with `children`, depth-capped
+ *   orphaned — folders naming a parent that is not in the set
+ *   cyclic   — folders that could not be reached from any root
+ *
+ * NOTHING IS SILENTLY DROPPED. A folder the walk refuses is NAMED in one of
+ * the two lists, because a Note filed in a folder that vanished from the screen
+ * is indistinguishable, to its author, from a Note that was lost.
+ */
+export function buildFolderTree(folders = []) {
+  const byId = new Map(folders.map((f) => [f.folderId, { ...f, children: [] }]));
+  const roots = [], orphaned = [];
+
+  for (const folder of byId.values()) {
+    const parentId = folder.parentFolderId ?? null;
+    if (parentId === null) { roots.push(folder); continue; }
+    const parent = byId.get(parentId);
+    if (!parent) { orphaned.push(folder); continue; }
+    parent.children.push(folder);
+  }
+
+  // WHAT ACTUALLY MAKES THIS CYCLE-SAFE IS THE DIRECTION OF THE WALK, not the
+  // `reached` set below. `parentFolderId` is single-valued, so a cycle can only
+  // be ENTERED from inside itself — every member's parent is another member.
+  // Walking DOWN from the null-parent roots therefore never reaches one, and
+  // cycles are reported by difference afterwards rather than detected mid-walk.
+  //
+  // Established by removing the guard and running cycles-with-tails, bare
+  // cycles, duplicate ids and a three-node cycle: none looped. The guard is
+  // kept as defence if this shape ever changes (a folder gaining two parents
+  // would make it live), but a reader should not credit it with the protection.
+  const reached = new Set();
+  const queue = roots.map((folder) => [folder, 1]);
+  while (queue.length) {
+    const [folder, depth] = queue.shift();
+    if (reached.has(folder.folderId)) continue;
+    reached.add(folder.folderId);
+    folder.depth = depth;
+    if (depth >= MAX_FOLDER_DEPTH) {
+      // Past the accepted bound the subtree is not walked at all. The folder is
+      // kept and marked, so a reader sees that there is more rather than a
+      // silently pruned branch.
+      folder.depthCapped = folder.children.length > 0;
+      folder.children = [];
+      continue;
+    }
+    for (const child of folder.children) queue.push([child, depth + 1]);
+  }
+
+  const orphanIds = new Set(orphaned.map((f) => f.folderId));
+  const cyclic = [...byId.values()].filter(
+    (f) => !reached.has(f.folderId) && !orphanIds.has(f.folderId));
+
+  return { roots, orphaned, cyclic };
+}
+

@@ -34,11 +34,11 @@ until the rules are published.
 
 ---
 
-## 2. Step one — create three indexes
+## 2. Step one — create four indexes
 
 **Firebase Console → Firestore Database → Indexes tab → Composite → Create index.**
 
-Do this three times. For each one: type the Collection ID, add the fields **in
+Do this four times. For each one: type the Collection ID, add the fields **in
 the order listed**, set Query scope to **Collection**, then Create.
 
 ### Index 1
@@ -71,6 +71,17 @@ the order listed**, set Query scope to **Collection**, then Create.
 | Field 3 | `sourceKey` — Ascending |
 | Field 4 | `status` — Ascending |
 | Field 5 | `createdAt` — **Descending** |
+
+### Index 4
+
+| | |
+|---|---|
+| Collection ID | `notePlacements` |
+| Field 1 | `tenantId` — Ascending |
+| Field 2 | `ownerPersonId` — Ascending |
+| Field 3 | `folderId` — Ascending |
+| Field 4 | `status` — Ascending |
+| Field 5 | `order` — Ascending |
 
 Each index says **Building** for a few minutes and then **Enabled**. Wait for all
 three to read Enabled before step two. (The same three are recorded in machine
@@ -106,7 +117,7 @@ These are all things you can see without opening any code.
 | 2 | Open the **Note & more** view on any āyah, type something, save | It saves, exactly as before. **This is the important one** — it proves your existing notes are unaffected |
 | 3 | Reload the page and reopen that note | Your text is still there |
 | 4 | Open **Records** and **Monitor** | Both load and show data as before |
-| 5 | Firestore Console → Indexes | All three new indexes read **Enabled** |
+| 5 | Firestore Console → Indexes | All four new indexes read **Enabled** |
 | 6 | Firestore Console → Rules | Shows a new version, published today |
 
 **Nothing new appears on screen, and that is correct.** This deployment opens the

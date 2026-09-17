@@ -207,7 +207,29 @@ The folders/placements Rules candidate is in its OWN file
 asserts it governs neither collection, and **the shared helper block is held
 IDENTICAL by a check** so the security model cannot fork.
 
-**P6-B (15 Sep 2026) is that candidate — 50 emulator assertions — plus the
+**P6-C (17 Sep 2026) gave Phase 6 its read side.** `notePlacements` was
+WRITE-ONLY and ADR-010 §5's retire-and-create was **unexecutable** — no retire
+function existed. Now: `listNotePlacementsForFolder/ForNote`,
+`retireNotePlacement`, `moveNotePlacement` (ONE transaction — two writes would
+leave a Note in both folders or neither), plus `app/js/journey-map-service.js`
+(`folderContents`, `noteFilings`, `ownerFolderTree`, `moveNoteToFolder`). **A
+retired Note is excluded by the NOTE's status, not the placement's** — same
+asymmetry as P5-E, same reason (I4 keeps placements).
+
+**`buildFolderTree()` is the ONE bounded walk P6-B said every consumer needs**,
+returning `{ roots, orphaned, cyclic }` and **naming** whatever it refuses.
+**What makes it cycle-safe is the DIRECTION of the walk, not its `reached`
+guard**: `parentFolderId` is single-valued, so a cycle can only be entered from
+inside itself and walking down from roots never reaches one. Proven by removing
+the guard and running four cycle shapes — none looped. Do not "simplify" the
+downward walk.
+
+**A fourth composite index exists now** (`notePlacements` by tenant/owner/folder/
+status ordered by `order`), in its own Phase 6 candidate file, and **a check
+binds the Owner-facing package's hand-written index tables to the machine-readable
+candidates** so they cannot drift.
+
+**P6-B (15 Sep 2026) is that candidate — 53 emulator assertions — plus the
 recorded defect closed.** `createNoteFolder()` now validates ADR-010's field
 rules **before any read**, then reads the person's own folders
 (`listNoteFoldersForOwner()`, equality-only and bounded, **no new index**) and

@@ -140,7 +140,71 @@ await assert.rejects(() => foundation.createNoteFolder({}, { tenantId: "tenant",
   /a system folder cannot have a parent/);
 assert.equal(writes.length, 0);
 
+// --- P6-C: moveNotePlacement() is ONE atomic retire-and-create -------------
+const placementRow = (o = {}) => ({ placementId: "pl-1", tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", noteId: "note-1", folderId: "f-from", order: 0, status: "active", ...o });
+const folderRow2 = (o = {}) => ({ folderId: "f-to", tenantId: "tenant", ownerPersonId: "person",
+  status: "active", semanticRole: "user", parentFolderId: null, ...o });
+
+writes.length = 0;
+documents.set("notePlacements/tenant__pl-1", placementRow());
+documents.set("noteFolders/tenant__f-to", folderRow2());
+const movedId = await foundation.moveNotePlacement({}, { tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", noteId: "note-1", fromPlacementId: "pl-1", toFolderId: "f-to",
+  placementId: "pl-2", actorUid: "owner-uid" });
+assert.equal(movedId, "pl-2");
+assert.deepEqual(writes.map(({ kind, collectionName }) => `${kind}:${collectionName}`),
+  ["update:notePlacements", "create:notePlacements"], "a move is retire THEN create, in one transaction");
+assert.equal(writes[0].data.status, "retired");
+assert.ok(!("folderId" in writes[0].data), "the retirement must not carry the new folder (I4)");
+assert.equal(writes[1].data.folderId, "f-to");
+assert.equal(writes[1].data.noteId, "note-1");
+
+// Every refusal below must leave NOTHING written -- a half-done move is worse
+// than a refused one, because the Note ends up in two folders or in neither.
+for (const [label, args, pattern] of [
+  ["a missing placement", { fromPlacementId: "gone" }, /Placement to move does not exist/],
+  ["a placement holding a different Note", { noteId: "other" }, /does not hold that Note/],
+  ["a move that does not change folder", { toFolderId: "f-from" }, /must change folder/],
+  ["a missing target folder", { toFolderId: "nowhere" }, /Target folder does not exist/],
+]) {
+  writes.length = 0;
+  await assert.rejects(() => foundation.moveNotePlacement({}, { tenantId: "tenant", ownerPersonId: "person",
+    ownerUid: "owner-uid", noteId: "note-1", fromPlacementId: "pl-1", toFolderId: "f-to",
+    placementId: "pl-x", actorUid: "owner-uid", ...args }), pattern, label);
+  assert.equal(writes.length, 0, `${label}: nothing may be written`);
+}
+
+documents.set("noteFolders/tenant__f-retired", folderRow2({ folderId: "f-retired", status: "retired" }));
+writes.length = 0;
+await assert.rejects(() => foundation.moveNotePlacement({}, { tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", noteId: "note-1", fromPlacementId: "pl-1", toFolderId: "f-retired",
+  placementId: "pl-y", actorUid: "owner-uid" }), /must be active/);
+assert.equal(writes.length, 0);
+
+documents.set("noteFolders/tenant__f-theirs", folderRow2({ folderId: "f-theirs", ownerPersonId: "someone-else" }));
+writes.length = 0;
+await assert.rejects(() => foundation.moveNotePlacement({}, { tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", noteId: "note-1", fromPlacementId: "pl-1", toFolderId: "f-theirs",
+  placementId: "pl-z", actorUid: "owner-uid" }), /Cross-owner or cross-tenant/);
+assert.equal(writes.length, 0);
+
+documents.set("notePlacements/tenant__pl-retired", placementRow({ placementId: "pl-retired", status: "retired" }));
+writes.length = 0;
+await assert.rejects(() => foundation.moveNotePlacement({}, { tenantId: "tenant", ownerPersonId: "person",
+  ownerUid: "owner-uid", noteId: "note-1", fromPlacementId: "pl-retired", toFolderId: "f-to",
+  placementId: "pl-w", actorUid: "owner-uid" }), /retired placement cannot be moved/);
+assert.equal(writes.length, 0);
+
+// retireNotePlacement() is the other half, on its own
+writes.length = 0;
+await foundation.retireNotePlacement({}, { tenantId: "tenant", placementId: "pl-1", actorUid: "owner-uid" });
+assert.deepEqual(writes.map(({ kind }) => kind), ["update"]);
+assert.equal(writes[0].data.status, "retired");
+await assert.rejects(() => foundation.retireNotePlacement({}, { tenantId: "tenant",
+  placementId: "pl-retired", actorUid: "owner-uid" }), /already retired/);
+
 delete globalThis.__nfCollections;
 delete globalThis.__nfFirestore;
 delete globalThis.__nfEnvelope;
-console.log("==== Note Foundation data layer: 27 assertions passed ====");
+console.log("==== Note Foundation data layer: 47 assertions passed ====");

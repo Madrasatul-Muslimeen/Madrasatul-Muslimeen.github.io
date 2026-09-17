@@ -20,7 +20,7 @@ import { FOLDER_SEMANTIC_ROLES, MAX_FOLDER_DEPTH } from "../../app/js/journey-ma
 const root = path.resolve(process.argv[2] || process.cwd());
 const appDir = path.join(root, "app");
 const appJs = path.join(appDir, "js");
-const GUARDED = "journey-map-contract.js";
+const GUARDED = ["journey-map-contract.js", "journey-map-service.js"];
 let passed = 0, failed = 0;
 function check(name, fn) {
   try {
@@ -69,10 +69,10 @@ function chainsToTarget(target) {
 check("POSITIVE CONTROL: the reachability walker really does find a wired module", () => {
   assert.ok(chainsToTarget("records.js").length > 0, "the walker is not working");
 });
-check("NO PAGE can reach the journey contract, by any chain of any length", () => {
-  assert.deepEqual(chainsToTarget(GUARDED), []);
+check("NO PAGE can reach the journey contract or its service, by any chain", () => {
+  assert.deepEqual(GUARDED.flatMap((g) => chainsToTarget(g)), []);
 });
-check("the only importer of the journey contract is the data layer, itself unreachable", () => {
+check("every importer of the journey modules is itself unreachable from any page", () => {
   // UPDATED 2026-09-15 (P6-B), with the reason recorded rather than the check
   // deleted. P6-B closes createNoteFolder()'s missing parent validation against
   // ADR-010, so note-foundation.js now imports the contract. The claim that
@@ -84,13 +84,22 @@ check("the only importer of the journey contract is the data layer, itself unrea
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) { walk(full); continue; }
-      if (!/\.(js|html)$/.test(entry.name) || entry.name === GUARDED) continue;
-      if (/(?:from|import)\s*["'`][./]*(?:js\/)?journey-map-contract\.js["'`]/.test(fs.readFileSync(full, "utf8"))) {
-        importers.push(path.relative(root, full));
+      if (!/\.(js|html)$/.test(entry.name)) continue;
+      const text = fs.readFileSync(full, "utf8");
+      for (const guarded of GUARDED) {
+        // Skip only a SELF-import. The service importing the contract is a real
+        // and expected edge, and worth listing: both are guarded, and the case
+        // below proves each importer is itself unreachable from any page.
+        if (entry.name === guarded) continue;
+        const base = guarded.replace(/\.js$/, "");
+        if (new RegExp(String.raw`(?:from|import)\s*["'\`][./]*(?:js/)?${base}\.js["'\`]`).test(text)) {
+          importers.push(path.relative(root, full));
+        }
       }
     }
   })(appDir);
-  assert.deepEqual(importers.sort(), ["app/js/note-foundation.js"],
+  assert.deepEqual([...new Set(importers)].sort(),
+    ["app/js/journey-map-service.js", "app/js/note-foundation.js"],
     `the set of modules importing the journey contract has changed: ${importers.join(", ")}`);
   for (const importer of importers) {
     assert.deepEqual(chainsToTarget(path.basename(importer)), [], `${importer} is now loaded by a page`);
@@ -149,26 +158,30 @@ check("the Mapping My Journey pillar is still explicitly unavailable", () => {
 
 // --- 2. ORIGIN != DESTINATION, enforced by inability ------------------------
 check("the contract is PURE: it imports nothing at all", () => {
-  const text = codeOf(GUARDED);
+  const text = codeOf("journey-map-contract.js");
   assert.ok(!/\bimport\b/.test(text), "the journey contract must import nothing");
   for (const forbidden of ["firebasejs", "envelope.js", "collections.js", "TENANT.", "getDoc", "setDoc"]) {
     assert.ok(!text.includes(forbidden), `the contract must stay pure: ${forbidden}`);
   }
 });
-check("the contract CANNOT derive a Destination from an Origin", () => {
+check("NEITHER module can derive a Destination from an Origin", () => {
   // ADR-010 §2. The enforcement is the ABSENCE of any route to a Study Unit
   // key: no import of the binding, no unit-key helper, no way to parse one.
-  const text = codeOf(GUARDED);
-  for (const forbidden of ["study-note-binding", "unit-keys", "buildUnitKey", "parseUnitKey",
-                           "bindableUnitType", "study-note-service", "noteSources"]) {
-    assert.ok(!text.includes(forbidden), `the journey contract can reach Origin material: ${forbidden}`);
+  for (const name of GUARDED) {
+    const text = codeOf(name);
+    for (const forbidden of ["study-note-binding", "unit-keys", "buildUnitKey", "parseUnitKey",
+                             "bindableUnitType", "study-note-service", "noteSources"]) {
+      assert.ok(!text.includes(forbidden), `${name} can reach Origin material: ${forbidden}`);
+    }
   }
 });
-check("the contract can reach neither Mastery nor Activity", () => {
-  const text = codeOf(GUARDED);
-  for (const forbidden of ["records.js", "claimStatus", "achieved", "mastered", "activity", "arrayUnion",
-                           "approach_", "trackableId"]) {
-    assert.ok(!text.includes(forbidden), `the journey contract names ${forbidden}`);
+check("neither module can reach Mastery or Activity", () => {
+  for (const name of GUARDED) {
+    const text = codeOf(name);
+    for (const forbidden of ["records.js", "claimStatus", "achieved", "mastered", "activity.js", "arrayUnion",
+                             "approach_", "trackableId"]) {
+      assert.ok(!text.includes(forbidden), `${name} names ${forbidden}`);
+    }
   }
 });
 

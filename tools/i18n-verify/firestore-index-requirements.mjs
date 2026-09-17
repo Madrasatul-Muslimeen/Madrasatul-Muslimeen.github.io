@@ -23,7 +23,13 @@ import process from "node:process";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 const appJs = path.join(root, "app", "js");
-const CANDIDATE = "docs/governance/phase5-note-foundation-indexes-candidate-2026-09-15.json";
+// Phase 5 and Phase 6 keep separate candidate files, for the same reason their
+// Rules candidates are separate: the Phase 5 file is part of a deployment
+// package already in the Owner's hands. Both are read here as one declared set.
+const CANDIDATES = [
+  "docs/governance/phase5-note-foundation-indexes-candidate-2026-09-15.json",
+  "docs/governance/phase6-journey-map-indexes-candidate-2026-09-17.json",
+];
 let passed = 0, failed = 0;
 function check(name, fn) {
   try {
@@ -91,7 +97,8 @@ function compositeIndexQueries() {
 }
 
 const queries = compositeIndexQueries();
-const candidate = JSON.parse(fs.readFileSync(path.join(root, CANDIDATE), "utf8"));
+const candidate = { indexes: CANDIDATES.flatMap((rel) =>
+  JSON.parse(fs.readFileSync(path.join(root, rel), "utf8")).indexes) };
 
 // --- POSITIVE CONTROL -------------------------------------------------------
 check("POSITIVE CONTROL: the scanner really finds queries", () => {
@@ -99,6 +106,8 @@ check("POSITIVE CONTROL: the scanner really finds queries", () => {
   // pass vacuously -- a check that cannot fail.
   assert.ok(queries.length >= 3,
     `the scanner found ${queries.length} index-requiring queries; it has stopped working`);
+  assert.ok(queries.length >= 4,
+    `the scanner found ${queries.length} index-requiring queries; expected at least 4`);
   const files = [...new Set(queries.map((q) => q.file))];
   assert.deepEqual(files, ["note-foundation.js"],
     `index-requiring queries appeared outside the Note Foundation: ${files.join(", ")} -- each needs a declared index`);

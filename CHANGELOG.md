@@ -13036,3 +13036,74 @@ first.
 byte-identity check became a **RULE CONTENT** check (comments may change, rule
 lines may not) — and when the correction comment left a stray blank line, the
 file was fixed rather than the check loosened.
+
+---
+
+**17 Sep 2026 — MAP Phase 6 P6-C: the Mapping My Journey read model, the
+placement lifecycle, and the bounded walk.** No application behaviour changed, so
+**no version increment** — `main` stays v08.25. Two files extended by **180
+insertions, 0 deletions**, one new module, none of them reachable from any page.
+
+**The gap.** `notePlacements` was **write-only** — created and never read, the
+exact shape `noteSources` was in before P5-E: a folder's contents could not be
+listed and there was no way to ask where a Note had been filed. **ADR-010 §5's
+"a move is retire-and-create" was unexecutable**, because `placementMove()`
+existed as pure policy and no retire function existed at all. And P6-B had
+concluded that **any walk of the folder tree must be bounded**, then left every
+future consumer to remember it.
+
+**The move is ONE transaction, deliberately**: done as two writes, a failure
+between them leaves the Note filed in both folders or in neither and the reader
+cannot tell which. Both ids are known up front so no query is needed — unlike
+`createNoteFolder()`, which must read a whole folder set to judge a tree and
+therefore cannot use a transaction. **Every refusal leaves nothing written**,
+asserted case by case: a half-done move is worse than a refused one.
+
+**A reasoned asymmetry between the two new queries saves an index.** A folder's
+contents are **ordered** (a folder may hold hundreds of Notes, so arbitrary
+truncation would really lose things); the folders one Note sits in are read
+**equality-only**, because that set is inherently tiny and ordering it would cost
+a second composite index for nothing. Stated in the code rather than left to look
+like an oversight.
+
+**`buildFolderTree()` returns `{ roots, orphaned, cyclic }` and drops NOTHING
+silently** — a folder the walk refuses is named, because a Note filed in a folder
+that vanished from the screen is indistinguishable, to its author, from a Note
+that was lost. Past depth 8 a folder is kept and marked `depthCapped` rather than
+pruned away.
+
+**A check caught the service being WEAKER than its own contract.**
+`moveNoteToFolder()` built its payload from named fields, so an Origin field
+passed by a caller was **silently ignored** rather than refused (ADR-010 §2) —
+and a caller who passed `sourceKey` would have believed it did something. One
+line: forward `...rest` to the contract, so the service's guarantee is exactly
+the contract's.
+
+**And a mutation correctly did NOT fail, which was worth establishing rather than
+patching.** M6 removed the `reached` guard from the walk — the line a reader
+would assume gives cycle safety — and nothing failed. **`parentFolderId` is
+single-valued, so a cycle can only be entered from inside itself**; walking DOWN
+from the null-parent roots never reaches one. Verified empirically with the guard
+removed against cycles-with-tails, a bare cycle, duplicate ids and a three-node
+cycle — **none looped**. So the real protection is the **direction of the walk**;
+the guard is unreachable-by-construction defence, and its comment now says so,
+because a reader who credits the wrong line will eventually simplify away the one
+that matters.
+
+**The atomic move is proven at the SERVER, not assumed.** Rules evaluate every
+write in a batch independently, so "both halves are individually allowed" had to
+be shown — the retire is an update whose identity fields are frozen.
+`P-ATOMIC-01` commits retire-and-create as one batch, `P-ATOMIC-02` proves a
+batch that REPOINTS is still refused, `P-ATOMIC-03` that it cannot place into
+someone else's folder.
+
+**Tests: contract 20 → 28, data layer 27 → 47, a new 13-check service suite,
+Phase 6 emulator 50 → 53**, and 7 of 8 mutations caught with the eighth explained
+above. **Phase 5 60 and Phase 6 53 re-verified against the assembled deployment
+candidate.**
+
+**The deployment package was kept in step rather than left quietly wrong.** The
+new ordered query needs a FOURTH index, so: a Phase 6 index candidate in its own
+file, the package updated field by field, and **a new check binding the package's
+hand-written tables to the machine-readable candidates** — a drift no other test
+could see, because it happens between a document and a human.

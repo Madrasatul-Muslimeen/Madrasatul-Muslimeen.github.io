@@ -315,3 +315,116 @@ export async function getNotesByIds(db, tenantId, noteIds) {
     (noteId) => getDoc(doc(db, TENANT.NOTES, noteFoundationDocId(tenantId, noteId)))));
   return snapshots.filter((snap) => snap.exists()).map((snap) => ({ id: snap.id, ...snap.data() }));
 }
+
+// ---------------------------------------------------------------------------
+// MAP Phase 6 (P6-C) — reading and moving placements
+// ---------------------------------------------------------------------------
+// `notePlacements` was WRITE-ONLY: created and never read, which is precisely
+// the shape `noteSources` was in before P5-E. A folder's contents could not be
+// listed and there was no way to ask where a Note had been filed. And ADR-010
+// §5's "a move is retire-and-create" was unexecutable, because no retire
+// existed at all.
+
+/**
+ * What is filed in one folder, in the author's own order.
+ *
+ * ORDERED, for the reason P5-E gave: the bound exists to stop an unbounded
+ * read, and without an order, hitting it would return an ARBITRARY subset and
+ * the reader would silently lose Notes they filed. Ordered, a truncation means
+ * "the first N as you arranged them". That order costs a composite index — see
+ * `docs/governance/phase6-journey-map-indexes-candidate-2026-09-17.json`.
+ */
+export async function listNotePlacementsForFolder(db, {
+  tenantId, ownerPersonId, folderId, status = NOTE_STATUS.ACTIVE, maximum = 100,
+}) {
+  const q = query(collection(db, TENANT.NOTE_PLACEMENTS),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("folderId", "==", requireToken("folderId", folderId)),
+    where("status", "==", status),
+    orderBy("order", "asc"), limit(maximum));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+/**
+ * Where one Note has been filed — every folder holding it (ADR-010 §5:
+ * placement is many-to-many).
+ *
+ * DELIBERATELY UNORDERED, and the asymmetry with the function above is
+ * reasoned rather than accidental: a folder may hold hundreds of Notes, so
+ * truncating it arbitrarily would really lose things; the set of folders ONE
+ * Note sits in is inherently tiny, so an equality-only query is bounded in
+ * practice by the data itself. That saves a second composite index, and the
+ * caller sorts the handful it gets. Hitting this bound means a Note filed in
+ * more than `maximum` folders, which is pathological rather than expected.
+ */
+export async function listNotePlacementsForNote(db, {
+  tenantId, ownerPersonId, noteId, status = NOTE_STATUS.ACTIVE, maximum = 100,
+}) {
+  const q = query(collection(db, TENANT.NOTE_PLACEMENTS),
+    where("tenantId", "==", requireToken("tenantId", tenantId)),
+    where("ownerPersonId", "==", requireToken("ownerPersonId", ownerPersonId)),
+    where("noteId", "==", requireToken("noteId", noteId)),
+    where("status", "==", status), limit(maximum));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+}
+
+/** Retires one placement. Never deletes it (I4): the record that the Note was filed here is history. */
+export async function retireNotePlacement(db, { tenantId, placementId, actorUid }) {
+  const docId = noteFoundationDocId(tenantId, requireToken("placementId", placementId));
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const snapshot = await transaction.get(TENANT.NOTE_PLACEMENTS, docId);
+    if (!snapshot.exists()) throw new Error("Placement does not exist.");
+    if (snapshot.data().status !== NOTE_STATUS.ACTIVE) throw new Error("Placement is already retired.");
+    transaction.update(TENANT.NOTE_PLACEMENTS, docId, { status: NOTE_STATUS.RETIRED });
+  });
+}
+
+/**
+ * ADR-010 §5 — moves a Note from one folder to another as ONE transaction:
+ * retire the placement that exists, create the one that should.
+ *
+ * ATOMIC ON PURPOSE. Done as two separate writes, a failure between them leaves
+ * the Note filed in both folders or in neither, and the reader has no way to
+ * tell which happened. Both ids are known up front, so no query is needed and a
+ * transaction is available — unlike `createNoteFolder()`, which must read a
+ * whole folder set to judge a tree and therefore cannot use one.
+ *
+ * There is deliberately no path here that rewrites a placement's `folderId`:
+ * that would destroy the record that the Note was ever filed where it was (I4),
+ * and the candidate Rules freeze the field so the server refuses it too.
+ */
+export async function moveNotePlacement(db, {
+  tenantId, ownerPersonId, ownerUid = null, noteId, fromPlacementId, toFolderId,
+  order = 0, placementId = newNoteEntityId(), actorUid,
+}) {
+  const owner = ownership({ tenantId, ownerPersonId, ownerUid });
+  requireToken("fromPlacementId", fromPlacementId);
+  requireToken("toFolderId", toFolderId);
+  const fromDocId = noteFoundationDocId(tenantId, fromPlacementId);
+
+  await runEnvelopeTransaction(db, actorUid, async (transaction) => {
+    const existing = await transaction.get(TENANT.NOTE_PLACEMENTS, fromDocId);
+    if (!existing.exists()) throw new Error("Placement to move does not exist.");
+    const from = existing.data();
+    if (from.status !== NOTE_STATUS.ACTIVE) throw new Error("A retired placement cannot be moved.");
+    if (from.noteId !== noteId) throw new Error("Placement does not hold that Note.");
+    if (from.folderId === toFolderId) throw new Error("A move must change folder.");
+
+    const target = await transaction.get(TENANT.NOTE_FOLDERS, noteFoundationDocId(tenantId, toFolderId));
+    if (!target.exists()) throw new Error("Target folder does not exist.");
+    const folder = target.data();
+    if (folder.tenantId !== tenantId || folder.ownerPersonId !== ownerPersonId) {
+      throw new Error("Cross-owner or cross-tenant placement refused.");
+    }
+    if (folder.status !== NOTE_STATUS.ACTIVE) throw new Error("Placement target must be active.");
+
+    transaction.update(TENANT.NOTE_PLACEMENTS, fromDocId, { status: NOTE_STATUS.RETIRED });
+    transaction.create(TENANT.NOTE_PLACEMENTS, noteFoundationDocId(tenantId, placementId), {
+      placementId, ...relationBase(owner, noteId), folderId: toFolderId, order, status: NOTE_STATUS.ACTIVE,
+    });
+  });
+  return placementId;
+}

@@ -14,7 +14,7 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { initializeTestEnvironment, assertSucceeds } from "@firebase/rules-unit-testing";
-import { doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
+import { doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, writeBatch,
          collection, query, where, orderBy, limit } from "firebase/firestore";
 
 const PROJECT = "demo-quranrevival-journey-map-v1";
@@ -230,6 +230,38 @@ test("candidate Mapping My Journey Rules: ADR-010 enforced at the server", async
     await ok("P-MOVE-04", "and the other half is a NEW placement in the new folder",
       newPlacement("plac0000000000000000000000000002", { folderId: "child000000000000000000000000001" }));
     await no("P-LIFE-01", "a placement may never be deleted", deleteDoc(PL));
+
+    // --- P6-C: the move as ONE atomic write -------------------------------
+    // moveNotePlacement() retires and creates inside a single transaction.
+    // Rules evaluate every write in a batch INDEPENDENTLY, so "both halves are
+    // individually allowed" is what has to be true -- and it is not obvious,
+    // because the retire is an update whose identity fields are frozen.
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), "notePlacements", nk(T, "atomic00000000000000000000000001")),
+        placementDoc({ placementId: "atomic00000000000000000000000001" }));
+    });
+    const atomicMove = (fromId, toFolderId, newId) => {
+      const b = writeBatch(p1);
+      b.update(doc(p1, "notePlacements", nk(T, fromId)), { status: "retired", updatedAt: new Date() });
+      b.set(doc(p1, "notePlacements", nk(T, newId)),
+        placementDoc({ placementId: newId, folderId: toFolderId }));
+      return b.commit();
+    };
+    await ok("P-ATOMIC-01", "retire-and-create commits as ONE batch",
+      atomicMove("atomic00000000000000000000000001", "child000000000000000000000000001", "atomic00000000000000000000000002"));
+    await no("P-ATOMIC-02", "a batch that REPOINTS instead of retiring is still refused", (() => {
+      const b = writeBatch(p1);
+      b.update(doc(p1, "notePlacements", nk(T, "atomic00000000000000000000000002")),
+        { folderId: "fold0000000000000000000000000001", updatedAt: new Date() });
+      return b.commit();
+    })());
+    await no("P-ATOMIC-03", "a batch cannot place into a folder that is not mine", (() => {
+      const b = writeBatch(p1);
+      b.update(doc(p1, "notePlacements", nk(T, "atomic00000000000000000000000002")), { status: "retired", updatedAt: new Date() });
+      b.set(doc(p1, "notePlacements", nk(T, "atomic00000000000000000000000003")),
+        placementDoc({ placementId: "atomic00000000000000000000000003", folderId: "p2folder0000000000000000000001" }));
+      return b.commit();
+    })());
 
     // --- placement reads ----------------------------------------------------
     await ok("P-READ-01", "a teacher reads an actively linked student's placement", getDoc(doc(tch, "notePlacements", nk(T, "plac0000000000000000000000000001"))));
