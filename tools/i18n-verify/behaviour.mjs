@@ -4329,17 +4329,25 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
       // bar 1 is the picker row and carries no action buttons at all.
       bar1HasAnyButton: !!bar1?.querySelector("button"),
       bar1HasPickers: (bar1?.querySelectorAll("select").length ?? 0) > 0,
-      // the always-visible cluster moved to bar 2.
-      bar2HasPrev: !!bar2?.querySelector("[data-note-prev]"),
-      bar2HasNext: !!bar2?.querySelector("[data-note-next]"),
+      // The always-visible cluster moved to bar 2. The nav pair is
+      // prev/next-UNIT and prev/next-AYAH -- the owner's own "one for moving
+      // the whole unit of choice, another for moving only a single Ayah" --
+      // not a single [data-note-prev]/[data-note-next], which never existed.
+      bar2HasPrev: !!bar2?.querySelector("[data-note-prev-unit], [data-note-prev-ayah]"),
+      bar2HasNext: !!bar2?.querySelector("[data-note-next-unit], [data-note-next-ayah]"),
       bar2HasPlay: !!bar2?.querySelector("[data-note-play]"),
       bar2HasBookmark: !!bar2?.querySelector("[data-note-bookmark]"),
       bar2HasFullscreen: !!bar2?.querySelector("[data-note-fullscreen]"),
-      // Copy and Collapse fold into ⋮ -- not on any bar.
+      // Copy and Collapse fold into ⋮ -- which is itself a CHILD of bar 2, so
+      // "not on the bar" cannot be `bar2.querySelector(...)`: that finds the
+      // menu's own items and would be true however well the folding worked.
+      // What it has to mean is "not a bar button OUTSIDE the menu".
       copyInTools: !!tools?.querySelector("[data-note-copy-go]"),
-      copyOnBar2: !!bar2?.querySelector("[data-note-copy-go]"),
+      copyOnBar2: !!bar2 && [...bar2.querySelectorAll("[data-note-copy-go]")]
+                    .some((el) => !el.closest(".quick-menu")),
       collapseInTools: !!collapse,
-      collapseOnBar2: !!bar2?.querySelector("[data-note-master-toggle]"),
+      collapseOnBar2: !!bar2 && [...bar2.querySelectorAll("[data-note-master-toggle]")]
+                        .some((el) => !el.closest(".quick-menu")),
       // it is a labelled menu item now, not the old icon-only ▾ button.
       collapseLabel: collapse?.textContent.trim(),
     };
@@ -4395,11 +4403,15 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
         hasBookmark: !!bar2El.querySelector("[data-note-bookmark]"),
         hasPlay: !!bar2El.querySelector("[data-note-play]"),
         hasWbwToggle: !!bar2El.querySelector("[data-note-wbw-toggle]"),
-        approachVisibleInBar2: visible(bar2El.querySelector(".note-approach-desktop")),
-        journeyVisibleInBar2: visible(bar2El.querySelector(".note-journey-desktop")),
-        mobileBarVisible: visible(mobileBarEl),
-        mobileBarHasApproach: !!mobileBarEl?.querySelector(".note-approach-mobile [data-note-approach-select]"),
-        mobileBarHasJourney: !!mobileBarEl?.querySelector(".note-journey-mobile"),
+        // Approach and Journey fold into the ⋯ menu at EVERY viewport now, so
+        // the desktop/mobile split these fields described is gone with the
+        // bar that carried it.
+        moreTogglePresent: !!bar2El.querySelector('[data-note-menu-toggle="more"]'),
+        approachInMore: !!view.querySelector('[data-note-menu="more"] [data-note-approach-select]')
+                        || !!view.querySelector("[data-note-approach-select]"),
+        journeyInMore: !!view.querySelector('[data-note-menu="more"] .qm-item'),
+        mobileBarExists: !!mobileBarEl,
+        approachDesktopExists: !!bar2El.querySelector(".note-approach-desktop"),
         overflowX: document.documentElement.scrollWidth > window.innerWidth,
       };
     });
@@ -4415,11 +4427,24 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
           info.hasCopyToggle && info.hasShareToggle && info.hasBookmark && info.hasPlay && info.hasWbwToggle, JSON.stringify(info));
     check(`42p ...and nothing overflows the ${label} viewport`, !info.overflowX);
   }
-  check("42p on a desktop/tablet, Approach and Mapping My Journey sit IN bar 2, and the mobile-only bar stays hidden",
-        desktop.approachVisibleInBar2 && desktop.journeyVisibleInBar2 && !desktop.mobileBarVisible, JSON.stringify(desktop));
-  check("42p on a phone, bar 2's own Approach/Journey are hidden and a separate bar below carries both instead",
-        !mobile.approachVisibleInBar2 && !mobile.journeyVisibleInBar2 && mobile.mobileBarVisible
-        && mobile.mobileBarHasApproach && mobile.mobileBarHasJourney, JSON.stringify(mobile));
+  // RECONCILED 2026-09-17. These two checks described round 31/32's shape:
+  // Approach and Journey visible IN bar 2 on a desktop, hidden on a phone with
+  // a separate `.note-approach-bar-mobile` carrying them instead. That design
+  // is gone, and the renderer's own header states the decision that replaced
+  // it: "Approach / Mapping My Journey fold into ⋯ at the far right -- so
+  // nothing here ever needs a second bar."
+  //
+  // `.note-approach-desktop`, `.note-journey-desktop` and
+  // `.note-approach-bar-mobile` are absent from app/. The contract worth
+  // asserting is the one that replaced them, and it is STRONGER, because it
+  // holds at every viewport instead of branching on width: one ⋯ menu, both
+  // controls inside it, and NO second bar anywhere.
+  for (const [label, info] of [["phone", mobile], ["desktop", desktop]]) {
+    check(`42p Approach and Journey fold into the ⋯ menu on a ${label}`,
+          info.moreTogglePresent && info.approachInMore && info.journeyInMore, JSON.stringify(info));
+    check(`42p ...and there is no separate Approach bar on a ${label} -- the design that needed one is gone`,
+          !info.mobileBarExists && !info.approachDesktopExists, JSON.stringify(info));
+  }
 }
 
 // --- 42q round 31: Copy and Share on bar 2 open the SAME language-checkbox
