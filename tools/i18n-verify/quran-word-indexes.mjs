@@ -8,7 +8,14 @@ import { parseQuranWordOccurrenceId, quranWordOccurrenceId } from "../../app/js/
 const output = join(dirname(fileURLToPath(import.meta.url)), "../quran-data-pull/output");
 const manifest = JSON.parse(readFileSync(join(output, "word-identity-index-manifest.json"), "utf8"));
 let passed = 0;
-function check(name, fn) { fn(); passed++; console.log(`  PASS  ${name}`); }
+// A SYNCHRONOUS RUNNER COUNTS AN `async` BODY AS A PASS: the assertion
+// throws inside an uncaught promise, and the case prints PASS. It has
+// happened for real in this repository. Refuse a promise loudly.
+function check(name, fn) {
+  const r = fn();
+  if (r && typeof r.then === "function") throw new TypeError("check() is synchronous; an async body would hide its own failures.");
+  passed++; console.log(`  PASS  ${name}`);
+}
 const unpack = (ref) => ({ surah: Math.floor(ref / 1_000_000), ayah: Math.floor((ref % 1_000_000) / 1_000), position: ref % 1_000 });
 
 check("manifest binds indexes to identity v1", () => assert.equal(manifest.identityContract, "quran-word-occurrence:v1"));

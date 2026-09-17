@@ -12,7 +12,13 @@ import { resolveWordProgress } from "../../app/js/quran-word-progress.js";
 
 let passed = 0, failed = 0;
 function check(label, fn) {
-  try { fn(); passed++; console.log(`  PASS  ${label}`); }
+  // A SYNCHRONOUS RUNNER COUNTS AN `async` BODY AS A PASS -- the assertion
+  // throws inside an uncaught promise and the case prints PASS. Refuse it.
+  try {
+    const r = fn();
+    if (r && typeof r.then === "function") throw new TypeError("check() is synchronous; an async body would hide its own failures.");
+    passed++; console.log(`  PASS  ${label}`);
+  }
   catch (error) { failed++; console.log(`  FAIL  ${label}\n        ${error.message}`); }
 }
 

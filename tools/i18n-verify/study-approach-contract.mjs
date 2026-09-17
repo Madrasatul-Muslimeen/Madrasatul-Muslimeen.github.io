@@ -8,7 +8,14 @@ import {
 } from "../../app/js/study-approach-contract.js";
 
 let passed = 0;
-function check(name, fn) { fn(); passed++; console.log(`  PASS  ${name}`); }
+// A SYNCHRONOUS RUNNER COUNTS AN `async` BODY AS A PASS: the assertion
+// throws inside an uncaught promise, and the case prints PASS. It has
+// happened for real in this repository. Refuse a promise loudly.
+function check(name, fn) {
+  const r = fn();
+  if (r && typeof r.then === "function") throw new TypeError("check() is synchronous; an async body would hide its own failures.");
+  passed++; console.log(`  PASS  ${name}`);
+}
 
 check("Reading maps to Activity only", () => { assert.equal(studyEventPolicy("reading.completed").action, "practised"); assert.equal(eventMayGrantMastery("reading.completed"), false); });
 check("Reading resolves plain and with-meaning catalogue variants", () => { assert.equal(studyEventApproachId("reading.completed", "plain"), "approach_01"); assert.equal(studyEventApproachId("reading.completed", "with-meaning"), "approach_03"); });

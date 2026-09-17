@@ -16,6 +16,11 @@ function read(relativePath) {
 }
 
 function check(name, condition, detail = "") {
+  // A PROMISE IS ALWAYS TRUTHY, so passing an async call as the CONDITION
+  // would make this case unconditionally green. Refuse it loudly.
+  if (condition && typeof condition.then === "function") {
+    throw new TypeError(`check("${name}") was given a promise as its condition; a promise is always truthy.`);
+  }
   if (condition) {
     passed += 1;
     console.log(`  PASS  ${name}`);

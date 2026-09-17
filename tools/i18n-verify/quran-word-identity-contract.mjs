@@ -10,7 +10,14 @@ import {
 } from "../../app/js/quran-word-identity.js";
 
 let passed = 0;
-function check(name, fn) { fn(); passed++; console.log(`  PASS  ${name}`); }
+// A SYNCHRONOUS RUNNER COUNTS AN `async` BODY AS A PASS: the assertion
+// throws inside an uncaught promise, and the case prints PASS. It has
+// happened for real in this repository. Refuse a promise loudly.
+function check(name, fn) {
+  const r = fn();
+  if (r && typeof r.then === "function") throw new TypeError("check() is synchronous; an async body would hide its own failures.");
+  passed++; console.log(`  PASS  ${name}`);
+}
 
 check("v1 occurrence id round-trips", () => {
   const id = quranWordOccurrenceId(2, 255, 7);

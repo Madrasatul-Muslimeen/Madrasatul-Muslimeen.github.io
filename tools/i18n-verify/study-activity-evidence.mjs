@@ -2,7 +2,14 @@ import assert from "node:assert/strict";
 import { projectStudyActivityEvidence } from "../../app/js/study-activity-evidence.js";
 
 let passed = 0;
-function check(name, fn) { fn(); passed++; console.log(`  PASS  ${name}`); }
+// A SYNCHRONOUS RUNNER COUNTS AN `async` BODY AS A PASS: the assertion
+// throws inside an uncaught promise, and the case prints PASS. It has
+// happened for real in this repository. Refuse a promise loudly.
+function check(name, fn) {
+  const r = fn();
+  if (r && typeof r.then === "function") throw new TypeError("check() is synchronous; an async body would hide its own failures.");
+  passed++; console.log(`  PASS  ${name}`);
+}
 const common = { tenantId: "t1", personId: "p1", unitKey: "ayah:2:255", dateIso: "2026-09-12" };
 check("explicit Reading projects Activity only", () => {
   const row = projectStudyActivityEvidence({ ...common, eventType: "reading.completed", mode: "plain" });

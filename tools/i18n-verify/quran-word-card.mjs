@@ -9,7 +9,14 @@ const ayah = { ayah: 1 };
 const word = { position: 1, arabic: "بِسْمِ", transliteration: "bis'mi", translation: { en: "In the name", bn: "নামে" }, morphology: { root: "سمو", lemma: "ٱسْم", pos: "Preposition + Noun" } };
 const id = quranWordOccurrenceId(1, 1, 1);
 let passed = 0;
-function check(name, fn) { fn(); passed++; console.log(`  PASS  ${name}`); }
+// A SYNCHRONOUS RUNNER COUNTS AN `async` BODY AS A PASS: the assertion
+// throws inside an uncaught promise, and the case prints PASS. It has
+// happened for real in this repository. Refuse a promise loudly.
+function check(name, fn) {
+  const r = fn();
+  if (r && typeof r.then === "function") throw new TypeError("check() is synchronous; an async body would hide its own failures.");
+  passed++; console.log(`  PASS  ${name}`);
+}
 
 check("card starts closed", () => assert.equal(renderQuranWordCard({ state: createWordCardState(), chapter, ayah, word }), ""));
 check("opening preserves permanent identity", () => assert.equal(openWordCard(createWordCardState(), id).occurrenceId, id));

@@ -16,7 +16,13 @@ import {
 
 let passed = 0, failed = 0;
 function check(label, fn) {
-  try { fn(); passed++; console.log(`  PASS  ${label}`); }
+  // A SYNCHRONOUS RUNNER COUNTS AN `async` BODY AS A PASS -- the assertion
+  // throws inside an uncaught promise and the case prints PASS. Refuse it.
+  try {
+    const r = fn();
+    if (r && typeof r.then === "function") throw new TypeError("check() is synchronous; an async body would hide its own failures.");
+    passed++; console.log(`  PASS  ${label}`);
+  }
   catch (error) { failed++; console.log(`  FAIL  ${label}\n        ${error.message}`); }
 }
 
@@ -46,7 +52,11 @@ check("a lane id carries its level, so a later level cannot collide with v1", ()
   assert.equal(wordProgressLaneId(LANE), "t1__p1__wbw__2_282"));
 
 // --- 3. LOCK: Activity != Mastery -----------------------------------------
-check("the module exposes NO event-to-state projection", async () => {
+// The `async` here was the exact defect the runner's own guard now refuses:
+// this body's assertion threw into an uncaught promise and the case printed
+// PASS. It has never actually run until now (17 Sep 2026). It passes on its
+// merits -- verified by mutation -- but it was believed for nothing.
+check("the module exposes NO event-to-state projection", () => {
   const source = readFileSync(new URL("../../app/js/quran-word-progress.js", import.meta.url), "utf8");
   assert.ok(!/export function project|eventType|wbw\.engaged/.test(source),
     "a state must never be derivable from a study event in this module");

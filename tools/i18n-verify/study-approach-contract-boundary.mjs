@@ -37,7 +37,13 @@ const appJs = path.join(root, "app", "js");
 let passed = 0;
 let failed = 0;
 function check(name, fn) {
-  try { fn(); passed++; console.log(`  PASS  ${name}`); }
+  // A SYNCHRONOUS RUNNER COUNTS AN `async` BODY AS A PASS -- the assertion
+  // throws inside an uncaught promise and the case prints PASS. Refuse it.
+  try {
+    const r = fn();
+    if (r && typeof r.then === "function") throw new TypeError("check() is synchronous; an async body would hide its own failures.");
+    passed++; console.log(`  PASS  ${name}`);
+  }
   catch (err) { failed++; console.log(`  FAIL  ${name}\n        ${err.message}`); }
 }
 

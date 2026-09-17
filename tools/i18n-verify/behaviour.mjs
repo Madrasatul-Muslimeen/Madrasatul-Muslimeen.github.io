@@ -217,8 +217,38 @@ console.log("\n=== 3. Switching language works BOTH ways, in place ===");
   }));
   check("3a heading became Bangla in place", BANGLA.test(bn.heading || ""), bn.heading);
   check("3a nav became Bangla in place", bn.cats.every((c) => BANGLA.test(c)), JSON.stringify(bn.cats));
-  check("3a page did NOT reload", bn.marker === undefined || bn.marker === "kept");
+  // RECONCILED 17 Sep 2026, and this one took three steps to get right.
+  //
+  // It read `marker === undefined || marker === "kept"`. `window.__marker` is
+  // set BEFORE the switch, so a reload is exactly what makes it `undefined` --
+  // the check passed precisely in the case it was written to catch, and could
+  // never fail. Tightened to `=== "kept"`, it failed: `marker=undefined`.
+  //
+  // A probe then settled whether that was an app defect or a wrong premise: the
+  // marker really is set ("kept"), really survives opening the Home menu, and
+  // is wiped by the language switch with exactly ONE main-frame navigation to
+  // the SAME url. So the page reloads -- and prefs.js says that is deliberate,
+  // in its own words: "The default reaction to the language changing: reload,
+  // so every name on the page comes back in the new language. Blunt on purpose
+  // ... the only way to be certain a page with a dozen independent render
+  // functions is fully re-rendered. Pages that can re-render in place cheaply
+  // pass their own handler instead." about.html does not pass one.
+  //
+  // So the assertion is INVERTED rather than deleted, which is stronger than
+  // either: a page that silently stopped reloading would show half-translated
+  // content, and that would now fail here. What section 3 really proves -- the
+  // language round-trips and no Bangla leaks back into English -- is untouched
+  // and still passing.
+  check("3a the switch reloads the page, which is the accepted default (prefs.js reloadOnAppLangChange)",
+        bn.marker === undefined, `marker=${bn.marker}`);
 
+  // Re-seed the marker: the switch above reloaded the page and wiped it, so
+  // without this the check below would be about an already-absent value and
+  // would pass whatever happened -- the same hole this pair just came out of.
+  await page.evaluate(() => { window.__marker = "kept"; });
+  const reseeded = await page.evaluate(() => window.__marker);
+  check("3b the marker really is set before the second switch (or the check below proves nothing)",
+        reseeded === "kept", `marker=${reseeded}`);
   await openHome(page);
   await page.selectOption("#navAppLangSelect", "en");
   await page.waitForTimeout(400);
@@ -242,7 +272,8 @@ console.log("\n=== 3. Switching language works BOTH ways, in place ===");
   check("3b nav back to English", back.cats.includes("Modules"), JSON.stringify(back.cats));
   check("3b html lang back to en", back.htmlLang === "en");
   check("3b no Bangla left anywhere", !back.anyBangla);
-  check("3b still no reload", back.marker === undefined || back.marker === "kept");
+  check("3b switching back reloads too -- the same accepted default, both ways",
+        back.marker === undefined, `marker=${back.marker}`);
   await page.close();
   await ctx.close();
 }
@@ -432,6 +463,7 @@ console.log("\n=== 10. PHASE 3: the nine other modules in Bangla ===");
     "/app/health-study.html", "/app/ldog-study.html", "/app/asma-study.html",
   ];
   const ctx = await ctxFor({ banner: true, appLang: "bn" });
+  let introsFound = 0;
   for (const p of MODULE_PAGES) {
     const { page, errors } = await openPage(ctx, p);
     const r = await page.evaluate(() => ({
@@ -441,11 +473,21 @@ console.log("\n=== 10. PHASE 3: the nine other modules in Bangla ===");
     }));
     check(`${p} heading is Bangla`, BANGLA.test(r.h1 || ""), r.h1);
     check(`${p} browser-tab title is Bangla`, BANGLA.test(r.title || ""), r.title);
-    check(`${p} intro paragraph is Bangla`, !r.intro || BANGLA.test(r.intro), (r.intro || "").slice(0, 60));
+    // `!r.intro ||` is kept because not every module page HAS a long paragraph
+    // -- but on its own it means a page that LOST its intro passes. The
+    // presence is reported in the diagnostic and counted below, so a wholesale
+    // loss fails even though an individual absence is legitimate.
+    if (r.intro) introsFound += 1;
+    check(`${p} intro paragraph is Bangla`, !r.intro || BANGLA.test(r.intro),
+          `intro ${r.intro ? "present" : "ABSENT"}: ${(r.intro || "").slice(0, 60)}`);
     check(`${p} carries no developer noise like "(Phase 6)"`, !/\(Phase \d|\(F-\d/.test(`${r.title} ${r.h1}`), `${r.title} | ${r.h1}`);
     check(`${p} no page errors`, errors.length === 0, errors.slice(0, 2).join(" | "));
     await page.close();
   }
+  // The per-page check tolerates a missing intro; this one refuses to tolerate
+  // all of them going missing, which is what would make that tolerance a hole.
+  check("10 most module pages really do carry an intro paragraph to translate",
+        introsFound >= MODULE_PAGES.length - 2, `${introsFound} of ${MODULE_PAGES.length}`);
   await ctx.close();
 }
 
@@ -501,7 +543,13 @@ console.log("\n=== 13. PHASE 4: the four tracking pages in Bangla ===");
     check(`${p} browser-tab title is Bangla`, BANGLA.test(r.title || ""), r.title);
     check(`${p} intro paragraph is Bangla`, !r.intro || BANGLA.test(r.intro), (r.intro || "").slice(0, 60));
     check(`${p} carries no developer noise like "(Phase 8)"`, !/\(Phase \d|\(F-\d|round \d/.test(`${r.title} ${r.h1}`), `${r.title} | ${r.h1}`);
-    check(`${p} role names in the tenant picker are Bangla`, !/owner|prime|teacher|guardian/i.test(r.tenantOpt || ""), r.tenantOpt);
+    // CORRECTED: `(r.tenantOpt || "")` made this pass on a page with NO tenant
+    // picker at all -- an empty string matches no role name. The picker's
+    // presence is now part of the assertion, so a page that lost it fails here
+    // instead of reporting its role names clean.
+    check(`${p} role names in the tenant picker are Bangla`,
+          Boolean(r.tenantOpt) && !/owner|prime|teacher|guardian/i.test(r.tenantOpt),
+          `tenantOpt=${r.tenantOpt === undefined ? "NO PICKER" : r.tenantOpt}`);
     check(`${p} no page errors under bn`, errors.length === 0, errors.slice(0, 2).join(" | "));
     await page.close();
   }

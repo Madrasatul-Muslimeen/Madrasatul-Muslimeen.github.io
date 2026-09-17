@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sweeping the harness for checks that could not fail</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Sweeping the harness for checks that could not fail</h1>
+<ul><li><strong>Date:</strong> 2026-09-17</li><li><strong>Task:</strong> find and close every check in <code>tools/i18n-verify</code> that passes regardless of what the code does</li><li><strong>Blast radius:</strong> <strong>BR-0, tools only.</strong> <code>git diff -- app/</code> is empty. No Rules, index or config file touched.</li><li><strong>Application version:</strong> <strong>08.25, unchanged.</strong></li><li><strong>Result:</strong> ACCEPT. 14 runners hardened, <strong>3 checks that had never once run</strong> exposed and fixed, and <strong>one real application behaviour discovered</strong> that a broken check had been hiding since it was written. <code>behaviour.mjs</code> <strong>978 / 1</strong>.</li></ul>
+<hr>
+<h2>1. Why sweep now</h2>
+<p>Three separate &quot;this check cannot fail&quot; defects turned up in a single day&#x27;s work — my own <code>approachInMore || anyApproachSelect</code>, my own hardcoded <code>&quot;folder,person&quot;</code>, and a create-payload regex that matched nothing. The brief already carried the lesson from v08.25&#x27;s <code>async</code>-body runner. <strong>A lesson that keeps recurring is a missing sweep.</strong></p>
+<h2>2. What a &quot;cannot fail&quot; check looks like here</h2>
+<div class='tw'><table><thead><tr><th>Shape</th><th>Why it always passes</th></tr></thead><tbody>
+<tr><td><code>check(name, async () =&gt; …)</code> in a <strong>synchronous</strong> runner</td><td>the assertion throws into an uncaught promise; the case prints PASS</td></tr>
+<tr><td>a <strong>promise</strong> passed as a <code>condition</code> to a value-style runner</td><td>a promise is always truthy</td></tr>
+<tr><td>`A \</td><td>\</td><td>B` where B is &quot;the thing is absent&quot;</td><td>absence satisfies the check the absence should fail</td></tr>
+<tr><td>`(x \</td><td>\</td><td>&quot;&quot;)` fed to a <em>negative</em> regex test</td><td>an empty string matches no forbidden pattern</td></tr>
+</tbody></table></div>
+<p>The first two are structural and can be closed once, for good. The last two have to be read case by case, because <code>(x || &quot;&quot;)</code> is <em>correct</em> defensive style in a <strong>positive</strong> test — <code>BANGLA.test(r.h1 || &quot;&quot;)</code> fails properly when <code>h1</code> is missing. It is only a hole when the test is negative, or when the alternative branch is the failure condition.</p>
+<h2>3. The runners: 14 hardened</h2>
+<p>Of 27 files with a <code>check()</code> runner: 8 already guarded (all written after the lesson), 4 <code>async</code> runners which are safe by construction, and <strong>15 unguarded</strong> — 12 synchronous function-style and 3 value-style. All 14 that needed it now refuse loudly:</p>
+<ul><li>function-style: <code>const r = fn();</code> then throw a <code>TypeError</code> if <code>r</code> is thenable;</li><li>value-style: throw if the condition itself is a promise, naming the check.</li></ul>
+<p>All three shapes are mutation-proven: an <code>async</code> body added to a one-liner runner exits 1, to a try/catch runner prints <code>FAIL … check() is synchronous</code>, and a promise condition throws by name.</p>
+<h2>4. The defect the sweep existed to find</h2>
+<p><code>quran-word-progress-model.mjs</code>:</p>
+<p>``<code>js check(&quot;the module exposes NO event-to-state projection&quot;, async () =&gt; { … }); </code>``</p>
+<p><strong>This check had never run.</strong> Its body asserts that <code>quran-word-progress.js</code> exposes no way to derive a word state from a study event — one of MAP Phase 3&#x27;s locked distinctions, <em>&quot;It is not an Approach claim and must never become one.&quot;</em> The assertion threw into an uncaught promise and the case printed PASS every time.</p>
+<p>Fixed by removing the <code>async</code>. It then passed on its merits, and — because a check that has never run has earned nothing — that was verified by mutation: adding <code>export function projectFromEventType(eventType)</code> to the module makes it fail with <em>&quot;a state must never be derivable from a study event in this module.&quot;</em></p>
+<h2>5. The application behaviour a broken check was hiding</h2>
+<p><code>behaviour.mjs</code> had:</p>
+<p>``<code>js check(&quot;3a page did NOT reload&quot;, bn.marker === undefined || bn.marker === &quot;kept&quot;); </code>``</p>
+<p><code>window.__marker = &quot;kept&quot;</code> is set <strong>before</strong> the language switch, so a reload is exactly what makes it <code>undefined</code>. <strong>The check passed precisely in the case it was written to catch.</strong></p>
+<p>Tightened to <code>=== &quot;kept&quot;</code>, it failed: <code>marker=undefined</code>. That is a finding, not a conclusion, so a probe settled which kind it was. The marker really is set, really survives opening the Home menu, and is wiped by the switch with <strong>exactly one main-frame navigation to the same URL</strong>.</p>
+<p>So the page reloads — and <code>prefs.js</code> says that is deliberate, in its own words:</p>
+<p>&gt; <em>The default reaction to the language changing: reload, so every name on the page comes back in the new language. <strong>Blunt on purpose</strong> … the only way to be certain a page with a dozen independent render functions is fully re-rendered. Pages that can re-render in place cheaply pass their own handler instead.</em></p>
+<p><code>about.html</code> does not pass one. So this is a <strong>stale assertion, not an application defect</strong> — and the check&#x27;s own name had been describing a design that was never the default for that page.</p>
+<p><strong>The assertion is inverted rather than deleted, which is stronger than either.</strong> A page that silently stopped reloading would show half-translated content, and that now fails here. What section 3 really proves — the language round-trips and no Bangla leaks back into English — was never affected and still passes.</p>
+<p><strong>And the second half needed a positive control.</strong> After the first switch reloads, the marker is gone; without re-seeding it, the matching check on the way back would have been about an already-absent value and would have passed whatever happened — the same hole, one line later. The marker is re-seeded and its presence asserted before the second switch.</p>
+<h2>6. Two more absences that satisfied their own checks</h2>
+<ul><li><strong><code>!r.intro || BANGLA.test(r.intro)</code></strong> across nine module pages. Not every page has a long paragraph, so the tolerance is legitimate — but on its own, a page that <em>lost</em> its intro passed. Presence is now reported in the diagnostic and <strong>counted</strong>: a new check requires at least 7 of the 9 pages to carry one, so a wholesale loss fails while an individual absence stays allowed.</li><li><strong><code>!/owner|prime|teacher|guardian/i.test(r.tenantOpt || &quot;&quot;)</code>.</strong> An empty string matches no role name, so a page with <strong>no tenant picker at all</strong> passed &quot;role names in the tenant picker are Bangla&quot;. The picker&#x27;s presence is part of the assertion now, and the diagnostic says <code>NO PICKER</code> rather than nothing.</li></ul>
+<h2>7. Verification</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>behaviour.mjs</code></td><td><strong>978 / 1</strong> — the 1 is the sandbox TLS artefact; 979 checks total</td></tr>
+<tr><td><code>quran-word-progress-model.mjs</code></td><td>56 / 1 → <strong>57 / 0</strong>, and mutation-proven</td></tr>
+<tr><td>The other 13 hardened suites</td><td>unchanged counts, all green</td></tr>
+<tr><td>Every MAP suite</td><td>unchanged (contract 34, data layer 95, services 32 / 18, boundaries 13 / 17 / 30 / 17 / 16, authorisation 38, index requirements 8, deployment candidate 10)</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 / 47</strong> — unchanged</td></tr>
+<tr><td><code>git diff -- app/</code></td><td><strong>empty</strong></td></tr>
+</tbody></table></div>
+<p>The two rendered suites still report 2 and 3 failures; all five are the same <code>ERR_CERT_AUTHORITY_INVALID</code> proxy artefact, unchanged and environmental.</p>
+<h2>8. What this sweep did NOT do</h2>
+<ul><li><strong>It did not read every assertion.</strong> It closed the two <em>structural</em> shapes completely and the two <em>readable</em> ones where a grep could find them (<code>||</code> inside a check condition). A check that is wrong about its subject rather than unable to fail is still only found by reading it — which is how the section-42 excavation found twelve earlier today.</li><li><strong><code>layout.mjs</code>, <code>reading.mjs</code>, <code>panel.mjs</code> and <code>navcheck.mjs</code> were not swept.</strong> They report through their own mechanisms rather than a <code>check()</code> runner; they deserve the same pass and did not get one.</li></ul>
+<hr>
+<p><em>Master Architect audit: BR-0, tools only, no accepted decision changed, no Owner Control Gate crossed. One locked MAP Phase 3 distinction is now actually enforced rather than believed to be.</em></p>
+</main></body></html>

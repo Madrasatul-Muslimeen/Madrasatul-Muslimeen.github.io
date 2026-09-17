@@ -1170,6 +1170,31 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   under another tenant's path, where `isSelfPerson()` is true and only
   `personInTenant()` stands in the way. A denial some other rule would have
   produced anyway is not evidence about the rule you think you are testing.
+- **EVERY `check()` RUNNER IN `tools/i18n-verify` NOW REFUSES A PROMISE** (17 Sep
+  2026) — a thenable returned by a function-style body, or a promise passed as a
+  value-style `condition`, throws by name. 14 runners were unguarded and the
+  sweep found the defect it existed for: `quran-word-progress-model.mjs`'s "the
+  module exposes NO event-to-state projection" had an `async` body and **had
+  never once run**, while asserting one of MAP Phase 3's locked distinctions.
+  **A check that has never run has earned nothing** — it was mutation-proven
+  before being believed. **The two other cannot-fail shapes have to be READ, not
+  grepped:** `A || B` where B is "the thing is absent", and `(x || "")` fed to a
+  NEGATIVE regex test (an empty string matches no forbidden pattern, so a page
+  with no tenant picker passed "the role names are translated"). `(x || "")` in
+  a POSITIVE test is correct defensive style — this is a judgement, not a ban.
+- **A BROKEN CHECK CAN HIDE A REAL BEHAVIOUR FOR AS LONG AS IT EXISTS.**
+  `behaviour.mjs`'s "3a page did NOT reload" read
+  `marker === undefined || marker === "kept"`, and the marker is set BEFORE the
+  switch — so a reload is exactly what makes it `undefined` and the check passed
+  precisely in the case it was written to catch. Tightened, it failed; a probe
+  proved the page really does reload (one main-frame navigation, same URL), and
+  `prefs.js` says that is **deliberate** — *"Blunt on purpose … the only way to
+  be certain a page with a dozen independent render functions is fully
+  re-rendered."* So: stale assertion, not a defect, and the check was
+  **INVERTED rather than deleted** — a page that silently stopped reloading
+  would show half-translated content and now fails. **A negative assertion needs
+  its own positive control**: prove the marker is there before asserting what
+  removed it.
 - **A synchronous check runner counts an `async` body as a PASS.** v08.25's
   Approach-binding guard was `check("...", async () => {...})`; the assertion
   threw inside an uncaught promise, the case printed PASS, and a deliberate

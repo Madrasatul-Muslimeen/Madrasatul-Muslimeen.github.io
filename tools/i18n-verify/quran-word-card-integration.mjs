@@ -7,7 +7,14 @@ import { renderWordByWordPanel } from "../../app/js/ayah-renderer.js";
 const root = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const page = readFileSync(join(root, "app/quranrevival.html"), "utf8");
 let passed = 0;
-function check(name, fn) { fn(); passed++; console.log(`  PASS  ${name}`); }
+// A SYNCHRONOUS RUNNER COUNTS AN `async` BODY AS A PASS: the assertion
+// throws inside an uncaught promise, and the case prints PASS. It has
+// happened for real in this repository. Refuse a promise loudly.
+function check(name, fn) {
+  const r = fn();
+  if (r && typeof r.then === "function") throw new TypeError("check() is synchronous; an async body would hide its own failures.");
+  passed++; console.log(`  PASS  ${name}`);
+}
 
 const ayah = { ayah: 2, words: [{ position: 3, arabic: "رَبِّ", transliteration: "rabbi", translation: { en: "Rabb", bn: "রব" } }] };
 check("interactive WbW emits a real button and permanent identity", () => {

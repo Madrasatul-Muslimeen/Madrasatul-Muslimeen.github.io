@@ -4,7 +4,14 @@ import { computeWbwCoverage, occurrenceIdsForAyahRange } from "../../app/js/qura
 import { readFileSync } from "node:fs";
 
 let passed = 0;
-function check(label, fn) { fn(); passed++; console.log(`  PASS  ${label}`); }
+// A SYNCHRONOUS RUNNER COUNTS AN `async` BODY AS A PASS: the assertion
+// throws inside an uncaught promise, and the case prints PASS. It has
+// happened for real in this repository. Refuse a promise loudly.
+function check(label, fn) {
+  const r = fn();
+  if (r && typeof r.then === "function") throw new TypeError("check() is synchronous; an async body would hide its own failures.");
+  passed++; console.log(`  PASS  ${label}`);
+}
 const a = id(1, 1, 1), b = id(1, 1, 2), c = id(1, 1, 3), outside = id(2, 1, 1);
 check("zero scope has explicit zero denominator", () => assert.deepEqual(computeWbwCoverage([], []), { identityContract: "quran-word-occurrence:v1", total: 0, approved: 0, remaining: 0, percent: 0 }));
 check("partial coverage is bounded and precise", () => assert.deepEqual(computeWbwCoverage([a, b, c], [a]), { identityContract: "quran-word-occurrence:v1", total: 3, approved: 1, remaining: 2, percent: 33.33 }));

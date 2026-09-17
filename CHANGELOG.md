@@ -13656,3 +13656,85 @@ conditions (`status == 'active'` on create, `getAfter()` revision chaining,
 server decisions; and it cannot tell whether a field change is REACHABLE FROM A
 SURFACE, which is the boundary suites' reachability walkers, whose answer for all
 of this code is deliberately still "no".
+
+---
+
+## Sweeping the harness for checks that could not fail (17 Sep 2026, v08.25, no version bump)
+
+**BR-0, tools only.** `git diff -- app/` is empty; no Rules, index or config
+file touched. Evidence:
+`docs/reports/2026-09-17-checks-that-could-not-fail.md` / `.html`.
+
+**A LESSON THAT KEEPS RECURRING IS A MISSING SWEEP.** Three separate "this check
+cannot fail" defects turned up in one day's work — two of them mine — on top of
+v08.25's own `async`-body runner. So every `check()` runner in
+`tools/i18n-verify` was audited.
+
+**Two of the four shapes are structural and are now closed for good:** an
+`async` body handed to a SYNCHRONOUS runner (the assertion throws into an
+uncaught promise and the case prints PASS) and a PROMISE passed as a
+`condition` to a value-style runner (a promise is always truthy). Of 27 runner
+files, 8 were already guarded, 4 are `async` runners and safe by construction,
+and **14 needed the guard and now have it** — all three shapes mutation-proven
+(a one-liner runner exits 1, a try/catch runner prints
+`FAIL … check() is synchronous`, a promise condition throws by name).
+
+**The other two shapes have to be READ, not grepped:** `A || B` where B is "the
+thing is absent", and `(x || "")` fed to a NEGATIVE regex test. `(x || "")` is
+correct defensive style in a POSITIVE test — `BANGLA.test(r.h1 || "")` fails
+properly when `h1` is missing — so this is a judgement, not a pattern ban.
+
+**THE DEFECT THE SWEEP EXISTED TO FIND.**
+`quran-word-progress-model.mjs`'s *"the module exposes NO event-to-state
+projection"* had an `async` body and **had never once run.** It asserts one of
+MAP Phase 3's locked distinctions — *"it is not an Approach claim and must never
+become one"*. Removing the `async` made it pass on its merits, and because a
+check that has never run has earned nothing, that was verified by mutation:
+adding an `export function projectFromEventType(eventType)` to the module makes
+it fail.
+
+**AND A REAL APPLICATION BEHAVIOUR A BROKEN CHECK HAD BEEN HIDING.**
+`behaviour.mjs`'s *"3a page did NOT reload"* read
+`marker === undefined || marker === "kept"` — and `window.__marker = "kept"` is
+set BEFORE the switch, so a reload is exactly what makes it `undefined`. **It
+passed precisely in the case it was written to catch.** Tightened, it failed
+`marker=undefined`; a probe then settled which kind of finding that was. The
+marker really is set, really survives opening the Home menu, and is wiped by the
+switch with **exactly one main-frame navigation to the SAME url**. So the page
+reloads — and `prefs.js` says so deliberately: *"The default reaction to the
+language changing: reload … **Blunt on purpose** … the only way to be certain a
+page with a dozen independent render functions is fully re-rendered. Pages that
+can re-render in place cheaply pass their own handler instead."* `about.html`
+does not pass one. **Stale assertion, not an app defect** — and the check's own
+NAME had been describing a design that was never that page's default.
+
+**The assertion is INVERTED rather than deleted, which is stronger than either:**
+a page that silently stopped reloading would show half-translated content, and
+that now fails here. What section 3 really proves — the language round-trips,
+and no Bangla leaks back into English — was never affected and still passes.
+**The second half needed its own positive control**: after the first switch
+reloads, the marker is gone, so without re-seeding it the check on the way back
+would have been about an already-absent value and would have passed whatever
+happened — the same hole, one line later.
+
+**Two more absences that satisfied their own checks.** `!r.intro ||
+BANGLA.test(r.intro)` across nine module pages let a page that LOST its intro
+pass; presence is reported in the diagnostic and now COUNTED, so a wholesale
+loss fails while an individual absence stays legitimately allowed. And
+`!/owner|prime|teacher|guardian/i.test(r.tenantOpt || "")` passed on a page with
+**no tenant picker at all**, since an empty string matches no role name; the
+picker's presence is part of the assertion now and the diagnostic says
+`NO PICKER`.
+
+**Verified:** `behaviour.mjs` **978 / 1** (979 checks; the 1 is the TLS
+artefact), `quran-word-progress-model` 56/1 → **57/0** and mutation-proven, the
+other 13 hardened suites unchanged and green, every MAP suite unchanged,
+coverage **1,803 / 47**, `git diff -- app/` empty.
+
+**What this sweep did NOT do, stated.** It did not read every assertion: it
+closed the two STRUCTURAL shapes completely and the two readable ones where a
+grep could find them. A check that is wrong about its SUBJECT rather than unable
+to fail is still only found by reading it — which is how the section-42
+excavation found twelve earlier the same day. And `layout.mjs`, `reading.mjs`,
+`panel.mjs` and `navcheck.mjs` were not swept: they report through their own
+mechanisms rather than a `check()` runner, and deserve the same pass.
