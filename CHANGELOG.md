@@ -13152,3 +13152,109 @@ The dead pointer on `main` was real and the fix is unchanged; the
 characterisation was not. Corrected in the entry, in the report, and by the
 branch banner, which records the older package as **superseded** rather than
 leaving two documents competing to be the deployment instructions.
+
+---
+
+## behaviour.mjs excavation — ten sections that had not run since v07.69 (17 Sep 2026, v08.25, no version bump)
+
+**BR-0 and deliberately no version bump.** `git diff -- app/` is empty;
+`firestore.rules`, `firebase.json` and `app/js/version.js` are byte-identical.
+Only `tools/i18n-verify/behaviour.mjs` changed. Nothing about how the app works
+moved, so the badge must not move either. Full evidence in
+`docs/reports/2026-09-17-behaviour-suite-excavation.md` / `.html`.
+
+**The suite runs to completion for the first time since v07.69: 802 → 973
+passing, 56 sections, and the only 4 remaining failures are environmental.**
+That is **+171 checks now executing that had not run for 70 rounds.**
+
+**This brief's own standing lesson had hardened a defect into an accepted
+limit.** It said `behaviour.mjs` "has a pre-existing crash in section 42 …
+~800 checks pass before it. Anything past that point needs a focused,
+un-checked-in script." All true, and it made the debt invisible: the cost was
+never the one crash, it was that **1,465 lines and ten whole sections — 26% of
+the file — had stopped running.** Section 42's tail, 43, 43i-o, 44, 45, 46, 47,
+48, 49, 50 and 50h-k.
+
+**THE FINDING TO REMEMBER: the crash hid the rot it created.** `git log -S`
+pins `.note-ayahbar`, `.note-ref` and `.note-journey-btn` to **v07.70**, whose
+own commit subject is *"fix Note view bar regressions from v07.69"*. So v07.69
+introduced the crash and **the very next commit** restructured the Note view's
+bars — by which time nothing downstream was running to object. None of the
+three selectors exists in `app/` **or** in `legacy-v07/` (frozen at v07.139),
+so they have not described a shipped build since.
+
+**A worse class than "went stale": two selectors were NEVER true.**
+`data-bm-nav-expanded` and `.note-approach-desktop` / `-mobile` appear in **no
+commit that ever touched `app/`** — `git log -S … -- app/` returns nothing while
+the same search over `tools/` returns the commit that added the check. They were
+written against a design that changed inside the same round, and because the
+crash sat upstream they were never once executed against real markup. **A check
+written in a region the suite cannot reach has no first run to fail in, so it
+never earns the right to be believed. That region is UNVERIFIED, not passing.**
+
+**Zero application defects.** Every one of the twelve findings was a test
+describing a UI that had since been redesigned — and almost all of the
+redesigns were the owner's own asks, quoted verbatim in the code:
+
+- **v07.70** moved Collapse, Copy, Share, Word by Word, Root and Derivatives
+  into the `⋮` menu, renamed `.note-ayahbar` → `.note-pickerbar`, and replaced
+  bar-2 icon buttons with menu items — so `.active` became `.is-on`
+  (`class="qm-item${isOn ? " is-on" : ""}"`) and `aria-pressed` was correct all
+  along.
+- **v07.120** replaced the bookmark dropdown's `<select>` with a one-tap toggle
+  button: *"we don't need double tap to change from collapse to expand and vice
+  versa … one tap should enable it to expand and vice versa."*
+- The **Approach picker left the `⋯` menu for the Track card's own header**:
+  *"change the approach from inside the card straight away, without moving back
+  to the wheel."* The card's title went with it — `.way-embed-title` became
+  `.way-embed-ref`, holding the plain āyah reference, because the picker beside
+  it is what names the Approach now.
+- The **Bookmark-issues round** made retired bookmarks **hidden by default**
+  behind a "Show retired" tick — *"retiring just takes unnecessary focus"* —
+  and added a third group-by mode, `module`.
+- The **Multi-student round** put a direct, always-visible Bookmark button on
+  `#readBar` and dropped the `⋮` menu's copy: *"one mechanism, not two ways to
+  do the same thing on the same screen."*
+
+**Coverage was preserved and in six places INCREASED.** The instruction was
+explicit — do not rewrite tests merely to obtain green results — so each
+reconciliation asserts the contract that *replaced* the old one:
+
+- **42p** now holds at every viewport instead of branching on width: one `⋯`
+  menu, Mapping My Journey inside it, the Approach picker in the card header,
+  **exactly one** of it.
+- **42r** asserts the move it depends on really happened (the āyah number
+  advances by one) **before** asserting what survived it — a nav button that
+  silently did nothing used to read as a pass.
+- **44e** now distinguishes **hidden from destroyed**: retiring takes the row
+  out of the default view, and ticking "Show retired" finds it again, greyed,
+  still named, offering Restore. **That is I4, and the old check could not tell
+  the two apart.**
+- **45a** asserts both sides of "one mechanism": the bar has the button **and**
+  the menu does not duplicate it.
+- **50c** adds the contract v07.120's `e.stopPropagation()` exists for — **the
+  dropdown must not close on its own tap**, which was the owner's real defect
+  report and had nothing guarding it.
+- **50j** taps the toggle so **both** of its Bangla labels are read (a control
+  whose label changes carries two strings and shows one at a time), and strips
+  the `▸`/`▾` glyph first — otherwise a leading arrow satisfies the Bangla
+  regex while untranslated English hides behind it.
+
+**Two checks of MY OWN failed the project's own standing lessons, and both are
+recorded rather than quietly fixed.** The first pass at 42p wrote
+`approachInMore || anyApproachSelect` — **a clause that cannot fail**, green
+while asserting the opposite of the truth. The first pass at 50j hardcoded
+`"folder,person"` when a third mode already existed; it now reads
+`BOOKMARK_GROUP_BYS` **out of `app/js/prefs.js`** and throws if it cannot parse
+it. Same family as the `async`-body runner and the `slice(0, 30)` row count:
+**a guard that cannot fail is worse than no guard, because it is believed.**
+
+**The two environmental failures are recorded, not worked around** — no retry
+loop, no skip, no proxy fix. And the 22g trio proves its own intermittency
+inside this tranche alone: it **passed** in runs 1, 3, 5, 9 and 10 and
+**failed** in 2, 4, 6, 7, 8 and 11, on identical code. A green 22g is not
+evidence either.
+
+**Nothing else moved.** No Rules, no indexes, no migration, no production data.
+All seven pending-dependency items are unchanged, and `claude/phase4-wiring`
+stays unmerged at `7e2931f`.

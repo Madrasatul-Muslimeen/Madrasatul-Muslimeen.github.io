@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP — excavating `behaviour.mjs`: ten sections that had not run since v07.69</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP — excavating <code>behaviour.mjs</code>: ten sections that had not run since v07.69</h1>
+<ul><li><strong>Date:</strong> 2026-09-17</li><li><strong>Task:</strong> reach, classify and reconcile the part of <code>tools/i18n-verify/behaviour.mjs</code> that a crash carried since v07.69 had made unreachable</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> No application file changed. <code>git diff -- app/</code> is empty; <code>firestore.rules</code>, <code>firebase.json</code> and <code>app/js/version.js</code> byte-identical. Nothing deployed.</li><li><strong>Application version:</strong> <strong>08.25, unchanged</strong> — no behaviour changed, so the badge must not move.</li><li><strong>Result:</strong> ACCEPT. <strong>802 → 973 checks, and the suite runs to completion for the first time since v07.69.</strong> Zero application defects found. The only 4 remaining failures are environmental, recorded and not worked around.</li></ul>
+<hr>
+<h2>1. What was actually broken</h2>
+<p><code>CLAUDE.md</code>&#x27;s own standing lessons said this:</p>
+<p>&gt; <code>behaviour.mjs</code> has a pre-existing crash in section 42 (a stale &gt; <code>[data-note-master-toggle]</code> visibility assumption), carried since v07.69, &gt; and 3 environmental failures … <strong>~800 checks pass before it.</strong> Anything &gt; past that point needs a focused, un-checked-in script.</p>
+<p>That was true, and it had been treated as a known limit rather than as a debt. The cost was not the one crash. It was that <strong>everything after it had stopped running</strong>: 1,465 lines and <strong>ten whole sections</strong>, 26% of the file.</p>
+<div class='tw'><table><thead><tr><th>Section</th><th>Subject</th></tr></thead><tbody>
+<tr><td>42 (tail)</td><td>the Note view&#x27;s two bars, Approach, Root, Derivatives, full screen</td></tr>
+<tr><td>43</td><td>the wheel&#x27;s intro, the in-hub Surah/Ayah pickers</td></tr>
+<tr><td>43i-o</td><td>the hub&#x27;s own content</td></tr>
+<tr><td>44</td><td>the Bookmark Manager</td></tr>
+<tr><td>45</td><td>Quran bookmarks — naming, settings capture/restore, the Read screen&#x27;s star</td></tr>
+<tr><td>46</td><td>the <code>?bookmark=</code> deep link</td></tr>
+<tr><td>47</td><td>every other module&#x27;s Bookmark star</td></tr>
+<tr><td>48</td><td>the bookmark popover&#x27;s folder picker</td></tr>
+<tr><td>49</td><td>the nav bar&#x27;s live Bookmark dropdown</td></tr>
+<tr><td>50 / 50h-k</td><td>the expanded/collapsed option, the person tag, and both in Bangla</td></tr>
+</tbody></table></div>
+<h2>2. The finding that matters most: the crash hid the rot it created</h2>
+<p><code>git log -S</code> pins <code>.note-ayahbar</code>, <code>.note-ref</code> and <code>.note-journey-btn</code> — three selectors the unreachable checks depend on — to <strong>v07.70</strong>, whose own commit subject is <em>&quot;fix Note view bar regressions from v07.69&quot;</em>.</p>
+<p>So the sequence is: v07.69 introduced the crash; v07.70, <strong>the very next commit</strong>, restructured the Note view&#x27;s bars. By then nothing downstream was running, so no check objected. Every later round inherited a suite that looked healthy at ~800 and was quietly accumulating assertions about a screen that no longer existed.</p>
+<p>None of the three selectors is present in <code>app/</code> <strong>or</strong> in <code>legacy-v07/</code>, which is frozen at v07.139 — so they have not described any shipped build since v07.70.</p>
+<h2>3. A worse class than &quot;went stale&quot;: assertions that were never true</h2>
+<p>Two of the selectors reached this round appear in <strong>no commit that ever touched <code>app/</code></strong>:</p>
+<ul><li><code>data-bm-nav-expanded</code> — the bookmark dropdown&#x27;s expand control</li><li><code>.note-approach-desktop</code> / <code>.note-approach-mobile</code> — the Approach picker&#x27;s phone/desktop split</li></ul>
+<p><code>git log -S&#x27;data-bm-nav-expanded&#x27; -- app/</code> returns <strong>nothing</strong>, while the same search over <code>tools/</code> returns the merge that added the check. These were written against a design that changed inside the same round, and because the crash sat upstream of them they were never once executed against real markup.</p>
+<p><strong>The lesson is not &quot;check your selectors&quot;.</strong> It is that a check written in the same round as the feature, in a region the suite does not reach, has no first run to fail in — so it never earns the right to be believed. A region the suite cannot reach must be treated as <em>unverified</em>, not as <em>passing silently</em>.</p>
+<h2>4. Every issue, classified</h2>
+<p>The mandated taxonomy is: application defect / stale-superseded test / test-harness defect / environmental / genuine Owner decision.</p>
+<div class='tw'><table><thead><tr><th>#</th><th>Issue</th><th>Class</th><th>Resolution</th></tr></thead><tbody>
+<tr><td>1</td><td><code>[data-note-master-toggle]</code> not visible (the original crash)</td><td>stale</td><td>Collapse moved into the <code>⋮</code> menu. New <code>clickInNoteTools()</code> helper opens the menu, <strong>asserts a rendered box</strong>, then clicks</td></tr>
+<tr><td>2</td><td><code>.note-ref</code> used to blur the editor</td><td>stale</td><td>blur <code>[data-note-editor]</code> directly via <code>page.evaluate</code></td></tr>
+<tr><td>3</td><td><code>.note-ayahbar</code> null</td><td>stale</td><td>renamed <code>.note-pickerbar</code> in v07.70 — 3 sites</td></tr>
+<tr><td>4</td><td>42m&#x27;s bar-1 assertions</td><td>stale</td><td>rewritten to the current contract: bar 1 is the picker bar, bar 2 carries the nav cluster, Copy and Collapse are in <code>⋮</code></td></tr>
+<tr><td>5</td><td><code>[data-note-next]</code></td><td><strong>test-harness defect of my own</strong></td><td>my first correction guessed a selector. <code>renderNoteNavHtml()</code> omits the inner āyah pair <strong>deliberately</strong> for Single Ayah (&quot;the two would be identical&quot;), so the unit mover <em>is</em> the āyah mover there</td></tr>
+<tr><td>6</td><td>Copy / Share sub-toggles not visible</td><td>stale</td><td>routed through <code>clickInNoteTools()</code></td></tr>
+<tr><td>7</td><td><code>.active</code> on the Word-by-word / Root toggles</td><td>stale</td><td>the renderer writes <code>class=&quot;qm-item${isOn ? &quot; is-on&quot; : &quot;&quot;}&quot;</code>. <code>aria-pressed</code> was correct all along; the check also carried no diagnostic, so it &quot;failed telling us nothing&quot;</td></tr>
+<tr><td>8</td><td><code>data-bm-nav-expanded</code> (a <code>&lt;select&gt;</code>)</td><td>stale — <strong>accepted Owner decision</strong></td><td>v07.120 replaced it with a one-tap toggle button on the owner&#x27;s own words: <em>&quot;we don&#x27;t need double tap to change from collapse to expand and vice versa&quot;</em></td></tr>
+<tr><td>9</td><td><code>.note-approach-desktop</code> / <code>-mobile</code></td><td>stale</td><td>the Approach picker left <code>⋯</code> for the Track card&#x27;s own header (&quot;change the approach from inside the card straight away&quot;)</td></tr>
+<tr><td>10</td><td>42t&#x27;s ordering indices</td><td>stale</td><td>the three toggles are no longer direct children of <code>.note-bar2</code>; the order now lives inside the <code>⋮</code> menu, so that is where it is read</td></tr>
+<tr><td>11</td><td>22g × 3 — the Asma poster</td><td><strong>environmental</strong></td><td>this sandbox&#x27;s proxy blocks <code>archive.org</code>. <strong>Intermittent</strong>, not permanent — passed in runs 1/3/5, failed in 2/4/6/7</td></tr>
+<tr><td>12</td><td>31e — <code>ERR_CERT_AUTHORITY_INVALID</code></td><td><strong>environmental</strong></td><td>sandbox TLS artefact. Recorded, not fixed</td></tr>
+</tbody></table></div>
+<p><strong>Zero application defects.</strong> Ten sections of never-executed tests, and every single finding was a test describing a UI that had since been redesigned — twice over, in v07.70 and v07.120, both owner-driven.</p>
+<h2>5. Coverage was preserved, and in four places increased</h2>
+<p>The instruction was explicit: <em>do not rewrite tests merely to obtain green results.</em> Each reconciliation asserts the contract that <strong>replaced</strong> the old one, and four are strictly stronger than what they replaced:</p>
+<ul><li><strong>42p</strong> now holds at <em>every</em> viewport instead of branching on width: one <code>⋯</code> menu, Mapping My Journey inside it as the disabled placeholder, the Approach picker in the Track card&#x27;s header, <strong>exactly one</strong> of it.</li><li><strong>42r</strong> asserts the move it depends on actually happened — the āyah number really advances by one — before asserting what survived it. A nav button that silently did nothing would previously have read as a pass.</li><li><strong>50c</strong> adds the contract v07.120&#x27;s <code>e.stopPropagation()</code> exists for: the dropdown <strong>must not close on its own tap</strong>. That was the owner&#x27;s real defect report, and nothing was guarding it.</li><li><strong>50j</strong> taps the toggle so that <strong>both</strong> of its Bangla labels are read. A control whose label changes carries two strings and shows one at a time; strip the <code>▸</code>/<code>▾</code> glyph first, or a leading arrow satisfies the regex while untranslated English hides behind it.</li></ul>
+<h2>6. A check of mine that could not fail</h2>
+<p>My own first pass at 42p wrote:</p>
+<p>``<code>js approachInMore: !!view.querySelector(&#x27;[data-note-menu=&quot;more&quot;] [data-note-approach-select]&#x27;)                 || !!view.querySelector(&quot;[data-note-approach-select]&quot;), </code>``</p>
+<p>The fallback is true whenever the picker exists anywhere, so the clause could never fail — and it was green while asserting the opposite of the truth. Reading the renderer settled it: the picker is <strong>not</strong> in <code>⋯</code>; it is in the card. Corrected to three separable facts (not in <code>⋯</code>, in the card, exactly one copy).</p>
+<p>This is the same family as the <code>async</code>-body runner and the <code>slice(0, 30)</code> row count already in the standing lessons: <strong>a guard that cannot fail is worse than no guard, because it is believed.</strong></p>
+<h2>7. Measured progression</h2>
+<div class='tw'><table><thead><tr><th>Run</th><th>What changed</th><th>Pass</th><th>Fail</th><th>Stopped at</th></tr></thead><tbody>
+<tr><td>1</td><td>baseline</td><td>802</td><td>1</td><td>4123 — master toggle not visible</td></tr>
+<tr><td>2</td><td>menu-click helper</td><td>804</td><td>4</td><td>4194 — <code>.note-ref</code></td></tr>
+<tr><td>3</td><td>+ editor blur</td><td>820</td><td>1</td><td>4305 — <code>.note-ayahbar</code> null</td></tr>
+<tr><td>4</td><td>+ first reconciliation</td><td>826</td><td>9</td><td>4440</td></tr>
+<tr><td>5</td><td>+ corrections to my own checks</td><td>836</td><td>1</td><td>4465 — Copy sub-toggle</td></tr>
+<tr><td>6</td><td>+ Copy/Share via the menu</td><td>841</td><td>5</td><td>4545</td></tr>
+<tr><td>7</td><td>+ <code>is-on</code>, <code>-next-ayah</code></td><td>842</td><td>4</td><td>4553 — <code>[data-note-next-ayah]</code> absent in Single Ayah scope</td></tr>
+<tr><td>8</td><td>+ sections 42s/42t/50 reconciled</td><td>899</td><td>10</td><td>5170 — the retired bookmark&#x27;s own row</td></tr>
+<tr><td>9</td><td>+ 42s/42k/43f/44 reconciled</td><td>918</td><td>2</td><td>5312 — <code>[data-qm-bookmark]</code> gone from the Read menu</td></tr>
+<tr><td>10</td><td>+ section 45&#x27;s Bookmark control</td><td>971</td><td>3</td><td>5312 → 5848 — <code>#tabReadBtn</code> outside its menu</td></tr>
+<tr><td><strong>11</strong></td><td><strong>+ 50j bound to <code>prefs.js</code>, <code>clickStudyPillarItem</code></strong></td><td><strong>973</strong></td><td><strong>4</strong></td><td><strong>nothing — the file ran to the end</strong></td></tr>
+</tbody></table></div>
+<p>Every failure in every run is accounted for in §4. <strong>Run 11 reached the end of the file</strong>: 56 sections, 977 checks, and the only 4 failures are the environmental pair (22g × 3, 31e). The baseline was 802 passing and a hard stop in section 42; <strong>+171 checks are now executing that had not run for 70 rounds.</strong></p>
+<p>The 22g trio is the proof of its own intermittency inside this tranche alone: it <strong>passed</strong> in runs 1, 3, 5, 9 and 10 and <strong>failed</strong> in 2, 4, 6, 7, 8 and 11, on identical code. Anything that treats it as a permanent property of the sandbox is wrong; anything that treats a green 22g as evidence is also wrong.</p>
+<h2>8. What was deliberately NOT done</h2>
+<ul><li><strong>No application file was touched.</strong> Not one finding justified it.</li><li><strong>The bookmark&#x27;s own <code>.active</code> at line 4183 was left alone</strong> — that control really does use <code>.active</code>. Only the <code>⋮</code> menu items were changed.</li><li><strong>The two environmental failures are recorded, not worked around.</strong> No retry loop, no skip, no proxy fix. <code>archive.org</code> and the sandbox&#x27;s TLS interception are not this project&#x27;s to fix, and hiding them would remove the one signal that says the run was made in a sandbox.</li><li><strong>No Rules, indexes, migration or production data were touched.</strong> All seven pending-dependency items are unchanged.</li></ul>
+<h2>9. Verification</h2>
+<p><strong>Run 11 is the run of record.</strong> 973 pass / 4 fail, no crash, 56 sections, ending on <code>50j-k no page errors</code> — the last check in the file. <code>node --check</code> clean before every run. <code>git diff -- app/</code> empty throughout, so nothing here can have changed what the owner sees.</p>
+<p>Two further issues were found and fixed in runs 9–11, both of the same class as the rest:</p>
+<ul><li><strong>Section 45&#x27;s Bookmark control.</strong> The Read screen&#x27;s ⋮ menu carried a Bookmark item; a later <em>Multi-student round</em> put a direct, always-visible button on <code>#readBar</code> and dropped the menu copy — <code>showBookmark: false</code>, with the reason in the call site&#x27;s own comment: <em>&quot;one mechanism, not two ways to do the same thing on the same screen.&quot;</em> Eight call sites moved to <code>#readBookmarkBtn</code>, and 45a now asserts <strong>both</strong> sides: the bar has the button, and the menu deliberately does not duplicate it.</li><li><strong><code>50j</code> had drifted in my own reconciliation.</strong> I wrote <code>grpValues.join(&quot;,&quot;) === &quot;folder,person&quot;</code>; the Bookmark-issues round had added a third mode, <code>module</code>. The check now reads <code>BOOKMARK_GROUP_BYS</code> <strong>out of <code>app/js/prefs.js</code></strong> and throws if it cannot parse it, so the next mode added is covered the day it lands. This is the standing lesson about hardcoded ids, caught applying to a check I had just written.</li><li><strong><code>#tabReadBtn</code> clicked bare</strong> in the Bangla half of section 50 — Read moved inside <code>#studyPillarMenu</code>, so the click resolves and then times out on a 0×0 box. Every other site already used <code>clickStudyPillarItem()</code>; this one had never been reached.</li></ul>
+<hr>
+<p><em>Master Architect audit: the tranche is BR-0, additive to the harness only, and changes no accepted decision. It closes a standing lesson that had hardened into an accepted limit, and it replaces that lesson with a sharper one: a region a suite cannot reach is unverified, not passing.</em></p>
+</main></body></html>

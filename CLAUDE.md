@@ -40,6 +40,18 @@ the single source of truth and the badge beside the app name says so on screen.
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
 
+**17 Sep 2026 — `behaviour.mjs` RUNS TO THE END AGAIN, and the old "~800 checks
+pass before the section-42 crash" line in this file is GONE because it was
+wrong to keep.** 802 → **973 pass / 4 fail, 56 sections**; the 4 are
+environmental (archive.org × 3, a sandbox TLS artefact). **Ten sections, 26% of
+the file, had not run since v07.69** — and the crash's real cost was that
+v07.70, *the very next commit*, restructured the screen those sections describe
+with nothing running to object. **Zero application defects were found:** every
+one of twelve findings was a test describing a UI the owner had since asked to
+be redesigned. BR-0, no version bump, `git diff -- app/` empty. See
+`docs/reports/2026-09-17-behaviour-suite-excavation.md` and the three new
+standing lessons below.
+
 **17 Sep 2026 — THE DEPLOYMENT IS NOW ONE PASTE AND THREE INDEX FORMS.**
 `docs/governance/phase4-6-production-deployment-package-2026-09-17.md` is the
 Owner-facing instructions; `phase4-6-DEPLOYMENT-candidate-2026-09-17.rules` is the
@@ -1279,11 +1291,33 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
 - **Wait for a STATE, never a guessed number of milliseconds.** Browsers
   throttle `timeupdate`; a re-render may leave the previous render's options in
   the DOM, so "wait until options exist" resolves instantly against stale ones.
-- **`behaviour.mjs` has a pre-existing crash in section 42** (a stale
-  `[data-note-master-toggle]` visibility assumption), carried since v07.69, and
-  **3 environmental failures** where this sandbox's proxy blocks archive.org.
-  ~800 checks pass before it. Anything past that point needs a focused,
-  un-checked-in script — this project's established practice.
+- **`behaviour.mjs` RUNS TO COMPLETION as of 17 Sep 2026 — 973 pass, 4 fail,
+  56 sections.** It had crashed in section 42 since v07.69 (a stale
+  `[data-note-master-toggle]` visibility assumption), and this file itself
+  recorded that as a limit to work around — "~800 checks pass before it,
+  anything past that point needs a focused un-checked-in script." **That
+  wording hardened a defect into an accepted limit and hid the real cost: ten
+  whole sections, 1,465 lines, 26% of the file, had stopped running for 70
+  rounds.** Excavating it added **+171 executing checks** and found **zero
+  application defects** — every finding was a test describing a UI the owner
+  had since asked to be redesigned. The 4 remaining failures are environmental
+  (see the next two lessons). Full account in
+  `docs/reports/2026-09-17-behaviour-suite-excavation.md`.
+- **A CRASH HIDES THE ROT IT CREATES — this is the lesson that cost the most.**
+  `git log -S` pins three of the selectors the unreachable checks depended on to
+  **v07.70**, whose own subject is *"fix Note view bar regressions from
+  v07.69"*: the crash landed, and **the very next commit** restructured the
+  screen those checks describe, with nothing running to object. Two other
+  selectors (`data-bm-nav-expanded`, `.note-approach-desktop`) appear in **no
+  commit that ever touched `app/`** — written in the same round as a design that
+  then changed, and never once executed. **A check in a region the suite cannot
+  reach has no first run to fail in, so it never earns the right to be believed:
+  that region is UNVERIFIED, not passing.** When a suite stops early, the debt
+  is everything downstream, not the one failing line — fix it that day.
+- **The archive.org failures (22g × 3) are INTERMITTENT, not permanent.** Inside
+  one tranche on identical code they passed in runs 1/3/5/9/10 and failed in
+  2/4/6/7/8/11. So a green 22g is not evidence either way, and "the baseline
+  changed" is the wrong conclusion to draw from one run.
 - **This sandbox cannot reach `archive.org` or `api.quran.com`.** Recitation
   audio and Asma posters will fail here and work for the owner.
 - **A check that describes what a round deliberately changed gets UPDATED in

@@ -3653,6 +3653,16 @@ console.log("\n=== 39. Shell round 27: the four fixes ===");
 // ---------------------------------------------------------------------------
 const MUSHAF_PAGES = fs.readFileSync(new URL("./fixtures/mushaf-pages.json", import.meta.url));
 const STAND_IN_FONT = fs.readFileSync(new URL("../../app/fonts/notonaskh.woff2", import.meta.url));
+// The Bookmark dropdown's group-by modes, read out of their own source of
+// truth so a new mode cannot pass unnoticed (see 50j).
+const GROUP_BY_IDS = (() => {
+  const src = fs.readFileSync(new URL("../../app/js/prefs.js", import.meta.url), "utf8");
+  const block = src.match(/export const BOOKMARK_GROUP_BYS = \[([\s\S]*?)\];/);
+  if (!block) throw new Error("behaviour.mjs: BOOKMARK_GROUP_BYS not found in app/js/prefs.js");
+  const ids = [...block[1].matchAll(/id:\s*"([^"]+)"/g)].map((m) => m[1]);
+  if (ids.length === 0) throw new Error("behaviour.mjs: BOOKMARK_GROUP_BYS parsed empty");
+  return ids;
+})();
 
 async function mushafCtx(opts = {}) {
   const ctx = await ctxFor(opts);
@@ -4407,9 +4417,23 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
         // the desktop/mobile split these fields described is gone with the
         // bar that carried it.
         moreTogglePresent: !!bar2El.querySelector('[data-note-menu-toggle="more"]'),
-        approachInMore: !!view.querySelector('[data-note-menu="more"] [data-note-approach-select]')
-                        || !!view.querySelector("[data-note-approach-select]"),
-        journeyInMore: !!view.querySelector('[data-note-menu="more"] .qm-item'),
+        // CORRECTED. An earlier pass this session wrote
+        // `approachInMore || anyApproachSelect`, which cannot fail: the
+        // fallback is true whenever the picker exists anywhere. Reading the
+        // renderer settles it -- the Approach picker LEFT the ⋯ menu for the
+        // Track card's own header ("change the approach from inside the card
+        // straight away, without moving back to the wheel"), and the ⋯
+        // comment says the old row "is gone rather than kept as a second,
+        // now-pointless copy". So the facts are: not in ⋯, in the card, and
+        // exactly one of it.
+        approachInMore: !!view.querySelector('[data-note-menu="more"] [data-note-approach-select]'),
+        approachInCard: !!view.querySelector('[data-note-field="approach"] .way-embed-header [data-note-approach-select]'),
+        approachCopies: view.querySelectorAll("[data-note-approach-select]").length,
+        // ⋯ still carries Mapping My Journey, as the disabled placeholder it
+        // has always been. Asserted against the ⋯ button's own title rather
+        // than an English literal, so it holds in either language.
+        moreToggleTitle: bar2El.querySelector('[data-note-menu-toggle="more"]')?.getAttribute("title") || "",
+        journeyItemText: view.querySelector('[data-note-menu="more"] .qm-item[disabled]')?.textContent.trim() || "",
         mobileBarExists: !!mobileBarEl,
         approachDesktopExists: !!bar2El.querySelector(".note-approach-desktop"),
         overflowX: document.documentElement.scrollWidth > window.innerWidth,
@@ -4440,8 +4464,11 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   // holds at every viewport instead of branching on width: one ⋯ menu, both
   // controls inside it, and NO second bar anywhere.
   for (const [label, info] of [["phone", mobile], ["desktop", desktop]]) {
-    check(`42p Approach and Journey fold into the ⋯ menu on a ${label}`,
-          info.moreTogglePresent && info.approachInMore && info.journeyInMore, JSON.stringify(info));
+    check(`42p Mapping My Journey is in the ⋯ menu on a ${label}, still the placeholder`,
+          info.moreTogglePresent && info.moreToggleTitle.length > 0
+            && info.journeyItemText.startsWith(info.moreToggleTitle), JSON.stringify(info));
+    check(`42p ...the Approach picker is in the Track card's header on a ${label}, NOT in ⋯, and there is only one of it`,
+          info.approachInCard && !info.approachInMore && info.approachCopies === 1, JSON.stringify(info));
     check(`42p ...and there is no separate Approach bar on a ${label} -- the design that needed one is gone`,
           !info.mobileBarExists && !info.approachDesktopExists, JSON.stringify(info));
   }
@@ -4547,13 +4574,28 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 
   // Persists across Next -- a reading preference, not per-āyah state.
   // `[data-note-next]` never existed in app/. The nav cluster is two PAIRS --
-  // next/prev-UNIT and next/prev-AYAH, the owner's own "one for moving the
-  // whole unit of choice, another for moving only a single Ayah". This check
-  // is about state surviving a move to the next ĀYAH, so it is the ayah mover.
-  await page.click("[data-note-next-ayah]");
+  // next/prev-UNIT and next/prev-AYAH -- and `renderNoteNavHtml()` leaves the
+  // INNER (āyah) pair out ENTIRELY for Single Ayah, deliberately: "the two
+  // would be identical", and `stepNoteUnit()` forwards straight to
+  // `stepNoteAyah()` for that unit type. This check opens the Note view from
+  // the Read screen, which is Single Ayah scope, so the āyah mover genuinely
+  // does not exist here and the unit mover IS the āyah mover.
+  const ayahBefore = await page.evaluate(() =>
+    document.querySelector('select[data-note-picker="ayah"]')?.value ?? null);
+  await page.click("[data-note-next-unit]");
   await page.waitForTimeout(200);
-  const afterNext = await page.evaluate(() => !!document.querySelector('[data-note-field="wbw"]'));
-  check("42r stays on after Next -- a session preference, not reset per āyah", afterNext);
+  const afterNext = await page.evaluate(() => ({
+    wbw: !!document.querySelector('[data-note-field="wbw"]'),
+    ayah: document.querySelector('select[data-note-picker="ayah"]')?.value ?? null,
+  }));
+  // Assert the MOVE really happened before asserting what survived it --
+  // otherwise a nav button that silently did nothing would read as a pass.
+  check("42r Next really moved one āyah on",
+        ayahBefore !== null && afterNext.ayah !== null
+          && Number(afterNext.ayah) === Number(ayahBefore) + 1,
+        JSON.stringify({ ayahBefore, after: afterNext.ayah }));
+  check("42r stays on after Next -- a session preference, not reset per āyah",
+        afterNext.wbw, JSON.stringify(afterNext));
 
   check("42r no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
@@ -4564,9 +4606,14 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
 // the Ayah Note screen changes currentTrackableId app-wide, so the canonical
 // Study-options picker (#trackableSelect) agrees, the wheel re-renders, and
 // -- the owner's own ask -- the Track/Guide/Breakdown/Coverage card further
-// down this same screen updates to name the newly-picked Approach. Default
-// viewport here is the phone size (390x844, ctxFor's own default), so this
-// exercises the MOBILE copy of the toggle, in its own bar below bar 2. -----
+// down this same screen updates to name the newly-picked Approach.
+//
+// RECONCILED 2026-09-17. `.note-approach-mobile` / `.note-approach-desktop`
+// appear in NO commit that ever touched app/: round 32's phone/desktop split
+// is gone, and so is the ⋯ menu copy. There is now exactly ONE Approach
+// picker, in the Track card's own header -- and that card's body starts
+// COLLAPSED, so the field has to be opened before the select can be used.
+// Same behavioural contract, one control instead of two. ------------------
 {
   const ctx = await ctxFor({ banner: false });
   const { page, errors } = await openPage(ctx, "/app/quranrevival.html");
@@ -4577,27 +4624,69 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.click("#readQuickMenuSlot [data-qm-note]");
   await page.waitForTimeout(300);
 
-  const before = await page.evaluate(() => ({
-    approachValue: document.querySelector(".note-approach-mobile [data-note-approach-select]")?.value,
-    cardTitle: document.querySelector(".note-approach .way-embed-title")?.textContent.trim(),
-    canonicalValue: document.getElementById("trackableSelect").value,
-  }));
-  check("42s starts on the same Approach the canonical picker already has, card named to match",
-        before.approachValue === before.canonicalValue && before.cardTitle?.includes("Memorise"), JSON.stringify(before));
-
-  await page.selectOption(".note-approach-mobile [data-note-approach-select]", "tafsir");
+  // Open the Track card -- its body is `display:none` until the field toggle
+  // is tapped, so the select inside it has no rendered box until then. Assert
+  // the box rather than trusting the click, this file's own standing rule.
+  await page.click('[data-note-field="approach"] [data-note-field-toggle]');
   await page.waitForTimeout(250);
-  const after = await page.evaluate(() => ({
+  const opened = await page.evaluate(() => {
+    const sel = document.querySelector("[data-note-approach-select]");
+    const r = sel?.getBoundingClientRect();
+    return { present: !!sel, w: r?.width ?? 0, h: r?.height ?? 0 };
+  });
+  check("42s the Approach picker is really on screen once the Track card is opened",
+        opened.present && opened.w > 0 && opened.h > 0, JSON.stringify(opened));
+
+  // `.way-embed-title` is gone. `renderWayEmbed()`'s own header comment says
+  // why: the card used to be headed "{Approach name} — {Ayah ref}", and when
+  // the Approach picker moved INTO that header the title became just the
+  // plain ref (`.way-embed-ref`) -- the picker beside it is what names the
+  // Approach now, and the field label above says "Track this āyah". So the
+  // Approach name is read off the picker's own selected option, which is
+  // also what makes this language-agnostic instead of matching "Memorise".
+  const before = await page.evaluate(() => ({
+    approachValue: document.querySelector("[data-note-approach-select]")?.value,
+    approachLabel: document.querySelector("[data-note-approach-select]")?.selectedOptions?.[0]?.textContent.trim(),
+    cardRef: document.querySelector(".note-approach .way-embed-ref")?.textContent.trim(),
+    fieldLabel: document.querySelector('[data-note-field="approach"] .note-field-label')?.textContent.trim(),
     canonicalValue: document.getElementById("trackableSelect").value,
-    cardTitle: document.querySelector(".note-approach .way-embed-title")?.textContent.trim(),
-    desktopMirrorValue: document.querySelector(".note-approach-desktop [data-note-approach-select]")?.value,
   }));
+  check("42s starts on the same Approach the canonical picker already has",
+        before.approachValue === before.canonicalValue && before.approachValue === "memorise", JSON.stringify(before));
+  check("42s ...and the card's header carries the plain āyah ref, the picker beside it carrying the Approach name",
+        Boolean(before.cardRef) && Boolean(before.approachLabel)
+          && !before.cardRef.includes(before.approachLabel)
+          && Boolean(before.fieldLabel), JSON.stringify(before));
+
+  await page.selectOption("[data-note-approach-select]", "tafsir");
+  await page.waitForTimeout(250);
+  const after = await page.evaluate(() => {
+    const sel = document.querySelector("[data-note-approach-select]");
+    return {
+      canonicalValue: document.getElementById("trackableSelect").value,
+      canonicalLabel: document.getElementById("trackableSelect").selectedOptions?.[0]?.textContent.trim(),
+      // The card re-renders on an Approach change, so this reads the picker
+      // that came back, not the one that was clicked -- which is the part the
+      // old "desktop mirror stays in step" check was really protecting.
+      copies: document.querySelectorAll("[data-note-approach-select]").length,
+      pickerValue: sel?.value,
+      pickerLabel: sel?.selectedOptions?.[0]?.textContent.trim(),
+      cardRef: document.querySelector(".note-approach .way-embed-ref")?.textContent.trim(),
+    };
+  });
   check("42s picking a different Approach here updates the canonical Study-options picker too",
         after.canonicalValue === "tafsir", JSON.stringify(after));
-  check("42s ...and the Track/Guide/Breakdown/Coverage card below renames itself to the new Approach",
-        after.cardTitle?.includes("Study tafsir"), JSON.stringify(after));
-  check("42s ...and the OTHER (desktop) copy of the toggle stays in step with it",
-        after.desktopMirrorValue === "tafsir", JSON.stringify(after));
+  // "The card names the newly-picked Approach" is still the contract -- it is
+  // the picker in the card's own header that names it now, and the two pickers
+  // must agree on the NAME as well as the id (I11: a bare id on screen would
+  // satisfy the value check and still be a defect).
+  check("42s ...and the card names the newly-picked Approach, in step with the canonical picker",
+        Boolean(after.pickerLabel) && after.pickerLabel === after.canonicalLabel
+          && after.pickerLabel !== before.approachLabel, JSON.stringify([before.approachLabel, after]));
+  check("42s ...while the card's ref stays the āyah, not the Approach -- the two never swap jobs",
+        Boolean(after.cardRef) && after.cardRef === before.cardRef, JSON.stringify(after));
+  check("42s ...and the picker survives its own card's re-render still holding the new value, with no second copy to drift",
+        after.copies === 1 && after.pickerValue === "tafsir", JSON.stringify(after));
 
   check("42s no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
@@ -4622,14 +4711,24 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   await page.waitForTimeout(300);
 
   const before = await page.evaluate(() => {
-    const bar2 = document.querySelector(".note-bar2");
-    const children = [...bar2.children];
+    // RECONCILED 2026-09-17. These three toggles were direct children of
+    // `.note-bar2` when this check was written; they are now items inside
+    // the ⋮ (tools) menu, which is itself a grandchild of bar 2. Indexing
+    // bar 2's own children therefore returned -1 for all three and the
+    // ordering clause could only ever be false. The ORDERING is still a real
+    // contract -- "Root always right after Word by word" -- so it is read off
+    // the menu's own item order instead, which is where the order now lives.
+    const menu = document.querySelector('[data-note-menu="tools"]');
+    const children = [...menu.children];
     const wbwIdx = children.findIndex((c) => c.matches("[data-note-wbw-toggle]"));
     const rootsIdx = children.findIndex((c) => c.matches("[data-note-roots-toggle]"));
     const derivIdx = children.findIndex((c) => c.matches("[data-note-derivatives-toggle]"));
     const rootsBtn = document.querySelector("[data-note-roots-toggle]");
     const derivBtn = document.querySelector("[data-note-derivatives-toggle]");
     return {
+      // Kept in the payload so a future move shows up as a named fact rather
+      // than as a bare false.
+      idx: { wbwIdx, rootsIdx, derivIdx },
       rootFieldPresent: !!document.querySelector('[data-note-field="root"]'),
       derivFieldPresent: !!document.querySelector('[data-note-field="derivatives"]'),
       rootPressed: rootsBtn.getAttribute("aria-pressed"),
@@ -4848,14 +4947,24 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42k the heading-style dropdown reads in Bangla with plain option values",
         noteBn.headingOptions.every((o) => BANGLA.test(o.text)) && noteBn.headingOptions.map((o) => o.value).join() === "p,h1,h2,h3",
         JSON.stringify(noteBn.headingOptions));
-  check("42k bar 2's Word by word toggle stays the Latin abbreviation \"WbW\" (like \"Aa\"), title in Bangla",
-        noteBn.wbwToggleText === "WbW" && BANGLA.test(noteBn.wbwToggleTitle), JSON.stringify(noteBn));
+  // RECONCILED 2026-09-17. "WbW" was a bar-2 ICON button, abbreviated like
+  // "Aa" because an icon row has no space for a word, with the real wording
+  // carried in its `title`. It is a ⋮ MENU ITEM now, where the item's own
+  // text IS its name -- so the Latin abbreviation is gone and the full
+  // translated words are on screen instead. That is strictly better for a
+  // Bangla reader than an abbreviation plus a tooltip, and the contract
+  // asserted is the one that matters either way: never untranslated English,
+  // in the label OR in a title if one is ever added back.
+  const labelAndTitleOk = (text, title) =>
+    BANGLA.test(text) && !/^[A-Za-z]/.test(text) && (!title || BANGLA.test(title));
+  check("42k the ⋮ menu's Word by word item reads a real Bangla label, no Latin abbreviation left",
+        labelAndTitleOk(noteBn.wbwToggleText, noteBn.wbwToggleTitle), JSON.stringify(noteBn));
   check("42k Bookmark and Play's own titles are in Bangla now that they sit in bar 2 (round 32)",
         BANGLA.test(noteBn.bookmarkTitle) && BANGLA.test(noteBn.playTitle), JSON.stringify(noteBn));
   check("42k the Approach toggle's own title (\"Choose an Approach\") is in Bangla",
         BANGLA.test(noteBn.approachTitle), JSON.stringify(noteBn));
-  check("42k the Root toggle reads a real Bangla word (not left as \"Root\"), title in Bangla too",
-        BANGLA.test(noteBn.rootsToggleText) && BANGLA.test(noteBn.rootsToggleTitle), JSON.stringify(noteBn));
+  check("42k the Root item reads a real Bangla word (not left as \"Root\"), and no English title behind it",
+        labelAndTitleOk(noteBn.rootsToggleText, noteBn.rootsToggleTitle), JSON.stringify(noteBn));
 
   await clickInNoteTools(page, '[data-note-sub-toggle="copy"]');
   await page.waitForTimeout(120);
@@ -4938,7 +5047,13 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
     const body = document.querySelector(".note-body");
     const children = [...body.children];
     const notesIdx = children.findIndex((c) => c.dataset?.noteField === "notes");
-    const approachIdx = children.findIndex((c) => c.classList?.contains("note-approach"));
+    // RECONCILED 2026-09-17. `.note-approach` is no longer a direct child of
+    // `.note-body`: the card became a COLLAPSIBLE FIELD like Notes above it
+    // (`.note-field[data-note-field="approach"] > .note-field-body >
+    // .note-approach`), so indexing `.note-body`'s own children for the class
+    // returned -1. The two fields are still siblings, so "study above,
+    // assessment below" is read off the FIELDS, which is what it always meant.
+    const approachIdx = children.findIndex((c) => c.dataset?.noteField === "approach");
     return {
       noteShown: !document.getElementById("noteView").hidden,
       modalOpen: document.getElementById("wayModalOverlay").classList.contains("open"),
@@ -5099,23 +5214,63 @@ console.log("\n=== 44. The Bookmark Manager (bookmarks.html) -- items 2/3/5 ==="
   check("44d renaming a bookmark really changes its name", afterRename === "Tafsir notes", afterRename);
 
   // Retire, then restore (I4 -- nothing destroyed).
+  //
+  // RECONCILED 2026-09-17. This check asserted that a retired row stays in
+  // the list, dimmed. A later "Bookmark-issues round" changed the DEFAULT
+  // VIEW on the owner's own complaint -- retired items "just take unnecessary
+  // focus" -- so they are hidden unless "Show retired" is ticked, exactly the
+  // pattern people.html already uses for its archived roster. bookmarks.html
+  // says so in its own comment: "Nothing about retire/restore itself changed
+  // (still I4-shaped, still fully reversible) -- only the DEFAULT VIEW hides
+  // them." So the reconciled check asserts BOTH halves: the new default, and
+  // the I4 soft-remove underneath it. That is stronger than what it replaces,
+  // which could not tell a hidden row from a destroyed one.
   await page.click('.bm-row[data-bm-id="bm1"] [data-bm-toggle]');
   await page.waitForTimeout(200);
-  const retired = await page.evaluate(() => document.querySelector('.bm-row[data-bm-id="bm1"]')?.classList.contains("retired"));
-  check("44e retiring a bookmark greys it out rather than removing it from the list", retired === true);
+  const retiredDefault = await page.evaluate(() => ({
+    rowInDefaultView: !!document.querySelector('.bm-row[data-bm-id="bm1"]'),
+    showRetiredUnticked: document.getElementById("showRetiredCk")?.checked === false,
+  }));
+  check("44e retiring a bookmark takes it out of the DEFAULT view (the owner's own \"unnecessary focus\")",
+        retiredDefault.showRetiredUnticked && !retiredDefault.rowInDefaultView, JSON.stringify(retiredDefault));
+
+  // ...and it is hidden, not destroyed -- I4. Ticking "Show retired" is the
+  // only thing that should be needed to find it again.
+  await page.check("#showRetiredCk");
+  await page.waitForTimeout(250);
+  const retired = await page.evaluate(() => {
+    const row = document.querySelector('.bm-row[data-bm-id="bm1"]');
+    return {
+      present: !!row,
+      dimmed: row?.classList.contains("retired"),
+      buttonText: row?.querySelector("[data-bm-toggle]")?.textContent.trim(),
+      name: row?.querySelector(".bm-row-name")?.textContent.trim(),
+    };
+  });
+  check("44e ...and Show retired finds it again, greyed, still named, offering Restore -- I4, hidden not destroyed",
+        retired.present && retired.dimmed === true && retired.name === "Tafsir notes"
+          && /Restore/i.test(retired.buttonText || ""), JSON.stringify(retired));
+
   await page.click('.bm-row[data-bm-id="bm1"] [data-bm-toggle]');
-  await page.waitForTimeout(200);
-  const restored = await page.evaluate(() => document.querySelector('.bm-row[data-bm-id="bm1"]')?.classList.contains("retired"));
-  check("44f ...and restoring it brings it back", restored === false);
+  await page.waitForTimeout(250);
+  const restored = await page.evaluate(() => {
+    const row = document.querySelector('.bm-row[data-bm-id="bm1"]');
+    return { present: !!row, dimmed: row?.classList.contains("retired"), buttonText: row?.querySelector("[data-bm-toggle]")?.textContent.trim() };
+  });
+  check("44f ...and restoring it brings it back", restored.present && restored.dimmed === false && /Retire/i.test(restored.buttonText || ""), JSON.stringify(restored));
 
   // A folder can be retired without losing what's inside it (I4) -- its
   // bookmarks fall back to Unfiled, grouped by module, rather than vanishing.
+  // "Show retired" stays ticked from above so the retired FOLDER is still
+  // rendered to be asserted on -- the same default-view change applies to
+  // folders (`.bm-folder.retired`).
   const folderToggleSel = await page.evaluate(() => {
     const folderEl = [...document.querySelectorAll(".bm-folder")].find((f) => f.querySelector(".bm-folder-name")?.textContent.trim() === "Tafsir notes");
     return folderEl ? folderEl.dataset.folderId : null;
   });
+  check("44g the folder to retire was found", Boolean(folderToggleSel), String(folderToggleSel));
   await page.click(`.bm-folder[data-folder-id="${folderToggleSel}"] [data-folder-toggle]`);
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(250);
   const afterFolderRetire = await page.evaluate((fid) => ({
     folderRetired: document.querySelector(`.bm-folder[data-folder-id="${fid}"]`)?.classList.contains("retired"),
     bookmarkFellBackToUnfiled: !!document.getElementById("unfiledContainer").querySelector('.bm-row[data-bm-id="bm1"]'),
@@ -5157,14 +5312,37 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
 
-  // The Read screen's own ⋮ menu now offers Bookmark too, not just the Note view.
+  // RECONCILED 2026-09-17. The Read screen's ⋮ menu carried a Bookmark item
+  // when this section was written. A later "Multi-student round" put a
+  // direct, always-visible Bookmark button on #readBar itself and dropped
+  // the menu's copy -- `showBookmark: false` at that call site, with the
+  // reason in quranrevival.html's own comment: "the ⋮ menu's OWN Bookmark
+  // item is redundant here ... one mechanism, not two ways to do the same
+  // thing on the same screen." The flow view's per-āyah ⋮ keeps its item,
+  // because it has no bar-level button that could say which āyah is meant.
+  //
+  // So the contract is now the stronger, two-sided one: the bar has the
+  // button, and the menu deliberately does NOT duplicate it.
   await page.click("#readQuickMenuSlot [data-qm-toggle]");
   await page.waitForTimeout(150);
   const readMenuItems = await page.evaluate(() => [...document.querySelectorAll("#readQuickMenuSlot .qm-item")].map((b) => b.textContent.trim()));
-  check("45a the plain Read screen's own quick menu offers a Bookmark item", readMenuItems.some((t) => t.includes("Bookmark")), JSON.stringify(readMenuItems));
+  check("45a the Read screen's ⋮ menu does NOT duplicate Bookmark -- one mechanism, not two",
+        !readMenuItems.some((t) => /Bookmark/i.test(t)) && readMenuItems.length > 0, JSON.stringify(readMenuItems));
+  // Close the menu again before touching the bar behind it -- an open popover
+  // intercepting the click is this file's own most-repeated trap.
+  await page.click("#readQuickMenuSlot [data-qm-toggle]");
+  await page.waitForTimeout(150);
+  const readBmBtn = await page.evaluate(() => {
+    const b = document.getElementById("readBookmarkBtn");
+    const r = b?.getBoundingClientRect();
+    return { present: !!b, hidden: b?.hidden, w: r?.width ?? 0, h: r?.height ?? 0, label: b?.getAttribute("aria-label"), text: b?.textContent.trim() };
+  });
+  check("45a ...the Read bar carries a direct Bookmark button instead, really on screen",
+        readBmBtn.present && readBmBtn.hidden === false && readBmBtn.w > 0 && readBmBtn.h > 0
+          && /Bookmark/i.test(readBmBtn.label || ""), JSON.stringify(readBmBtn));
 
   // Cancelling the naming popover (item 1/2) makes no write and no bookmark.
-  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  await page.click("#readBookmarkBtn");
   await cancelBookmarkPopover(page);
   await page.waitForTimeout(200);
   const afterCancel = await page.evaluate(() => document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.classList.contains("has-note"));
@@ -5178,9 +5356,9 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   await page.waitForTimeout(100);
   await clickStudyOptions(page); // close the panel again -- it overlaps #readQuickMenuSlot while open
   await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-toggle]");
-  await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
+  // Bookmark item, which moved to #readBar as a direct button (see 45a).
+  await page.click("#readBookmarkBtn");
   await fillBookmarkPopover(page, { name: "My Fatiha bookmark" });
   await page.waitForTimeout(300);
   const writes = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
@@ -5284,9 +5462,9 @@ console.log("\n=== 48. Fixes round item 1 -- the bookmark popover's own folder p
   await page.waitForTimeout(400);
 
   // Bookmark #1: name it and create a brand-new folder in the same step.
-  await page.click("#readQuickMenuSlot [data-qm-toggle]");
-  await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
+  // Bookmark item, which moved to #readBar as a direct button (see 45a).
+  await page.click("#readBookmarkBtn");
   await fillBookmarkPopover(page, { name: "Ayah One", newFolderName: "Favourites" });
   await page.waitForTimeout(300);
   const writesAfterFirst = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
@@ -5298,9 +5476,9 @@ console.log("\n=== 48. Fixes round item 1 -- the bookmark popover's own folder p
   // Move to a different āyah so bookmark #2 is genuinely new, not a toggle-off of #1.
   await page.selectOption("#readAyahSelect", "2");
   await page.waitForTimeout(200);
-  await page.click("#readQuickMenuSlot [data-qm-toggle]");
-  await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
+  // Bookmark item, which moved to #readBar as a direct button (see 45a).
+  await page.click("#readBookmarkBtn");
   await page.waitForSelector(".bm-popover-overlay");
   const folderOptions = await page.evaluate(() =>
     [...document.querySelectorAll("[data-bm-pop-folder] option")].map((o) => o.textContent.trim())
@@ -5320,9 +5498,9 @@ console.log("\n=== 48. Fixes round item 1 -- the bookmark popover's own folder p
   await page.selectOption("#readAyahSelect", "3");
   await page.waitForTimeout(200);
   const writesBeforeCancel = (await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"))).filter((w) => w.col === "bookmarks").length;
-  await page.click("#readQuickMenuSlot [data-qm-toggle]");
-  await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
+  // Bookmark item, which moved to #readBar as a direct button (see 45a).
+  await page.click("#readBookmarkBtn");
   await cancelBookmarkPopover(page);
   await page.waitForTimeout(200);
   const writesAfterCancel = (await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"))).filter((w) => w.col === "bookmarks").length;
@@ -5369,9 +5547,9 @@ console.log("\n=== 49. Fixes round items 2/3 -- the nav bar's own live Bookmark 
   // default (item 3), with its own bookmark reachable only once expanded.
   await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
-  await page.click("#readQuickMenuSlot [data-qm-toggle]");
-  await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
+  // Bookmark item, which moved to #readBar as a direct button (see 45a).
+  await page.click("#readBookmarkBtn");
   await fillBookmarkPopover(page, { name: "Fatiha in a folder", newFolderName: "Favourites" });
   await page.waitForTimeout(300);
 
@@ -5444,9 +5622,9 @@ console.log("\n=== 50. Fixes round 2 -- the expanded/collapsed OPTION, and the p
   // one whose list it lives in -- the guardian/child shape this is for.
   await clickStudyPillarItem(page, "tabReadBtn");
   await page.waitForTimeout(400);
-  await page.click("#readQuickMenuSlot [data-qm-toggle]");
-  await page.waitForTimeout(150);
-  await page.click("#readQuickMenuSlot [data-qm-bookmark]");
+  // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
+  // Bookmark item, which moved to #readBar as a direct button (see 45a).
+  await page.click("#readBookmarkBtn");
   await page.waitForSelector(".bm-popover-overlay");
   const popoverHasPerson = await page.evaluate(() => {
     const sel = document.querySelector("[data-bm-pop-person]");
@@ -5465,31 +5643,65 @@ console.log("\n=== 50. Fixes round 2 -- the expanded/collapsed OPTION, and the p
   await page.waitForTimeout(300);
 
   // --- the OPTION itself (the thing v07.67 got wrong) ---
+  //
+  // RECONCILED: the expand control was a `<select data-bm-nav-expanded>` with
+  // Collapsed/Expanded options until v07.120, which replaced it with a single
+  // `<button data-bm-nav-expand-toggle aria-pressed>` on the owner's own
+  // explicit ask -- "we don't need double tap to change from collapse to
+  // expand and vice versa ... one tap should enable it to expand and vice
+  // versa" (quoted verbatim in bookmark-nav.js's own controlsHtml() comment).
+  // `data-bm-nav-expanded` appears in NO commit that ever touched app/, so
+  // these assertions have been describing a control the app does not have.
+  // The MECHANISM is unchanged -- the same
+  // getBookmarkMenuExpanded()/setBookmarkMenuExpanded() preference -- so the
+  // behavioural contract below is the same one, read off the toggle's
+  // aria-pressed instead of a select's value, and the group-by half is
+  // untouched because that control really is still a <select>.
   await openMenu();
   const controls = await page.evaluate(() => ({
-    expandedSel: !!document.querySelector("[data-bm-nav-expanded]"),
+    expandToggle: !!document.querySelector("[data-bm-nav-expand-toggle]"),
     groupBySel: !!document.querySelector("[data-bm-nav-groupby]"),
-    expandedValue: document.querySelector("[data-bm-nav-expanded]")?.value,
+    expandPressed: document.querySelector("[data-bm-nav-expand-toggle]")?.getAttribute("aria-pressed"),
+    expandLabel: document.querySelector("[data-bm-nav-expand-toggle]")?.textContent.trim(),
     groupByValue: document.querySelector("[data-bm-nav-groupby]")?.value,
     anyGroupOpen: [...document.querySelectorAll("#navBookmarkList .nav-bm-folder")].some((d) => d.open),
     groupCount: document.querySelectorAll("#navBookmarkList .nav-bm-folder").length,
   }));
   check("50b the dropdown carries both options -- how it opens, and what it groups by",
-        controls.expandedSel && controls.groupBySel, JSON.stringify(controls));
+        controls.expandToggle && controls.groupBySel, JSON.stringify(controls));
   check("50b ...defaulting to Collapsed / Folder, i.e. exactly today's behaviour",
-        controls.expandedValue === "0" && controls.groupByValue === "folder", JSON.stringify(controls));
+        controls.expandPressed === "false" && controls.groupByValue === "folder", JSON.stringify(controls));
+  // The toggle's own label is what tells the reader which way one tap goes --
+  // v07.120's whole point. Collapsed means the label offers Expand.
+  check("50b ...and the toggle offers the OTHER state in its own label",
+        /Expand/.test(controls.expandLabel || ""), JSON.stringify(controls.expandLabel));
   check("50b ...so every group starts shut", controls.groupCount > 0 && !controls.anyGroupOpen, JSON.stringify(controls));
 
-  // Choosing Expanded opens every group WITHOUT touching any of them -- the
-  // owner's own "only another click away when there are only a few".
-  await page.selectOption("[data-bm-nav-expanded]", "1");
+  // ONE tap opens every group WITHOUT touching any of them -- the owner's own
+  // "only another click away when there are only a few".
+  await page.click("[data-bm-nav-expand-toggle]");
   await page.waitForTimeout(200);
   const afterExpand = await page.evaluate(() => {
     const groups = [...document.querySelectorAll("#navBookmarkList .nav-bm-folder")];
-    return { count: groups.length, allOpen: groups.length > 0 && groups.every((d) => d.open) };
+    return {
+      count: groups.length,
+      allOpen: groups.length > 0 && groups.every((d) => d.open),
+      pressed: document.querySelector("[data-bm-nav-expand-toggle]")?.getAttribute("aria-pressed"),
+      label: document.querySelector("[data-bm-nav-expand-toggle]")?.textContent.trim(),
+      // v07.120's real defect: render() replaces listEl.innerHTML inside the
+      // click still being dispatched, the click then bubbles to nav.js's
+      // outside-click handler with a DETACHED e.target, and the whole
+      // dropdown shut on its own first tap. e.stopPropagation() is the fix,
+      // so the category staying open is part of the contract now.
+      menuStillOpen: !!document.querySelector(".nav-cat-bookmark")?.open,
+    };
   });
-  check("50c choosing Expanded opens every group in place, no group tapped",
+  check("50c one tap opens every group in place, no group tapped",
         afterExpand.allOpen, JSON.stringify(afterExpand));
+  check("50c ...the toggle now reads pressed and offers Collapse",
+        afterExpand.pressed === "true" && /Collapse/.test(afterExpand.label || ""), JSON.stringify(afterExpand));
+  check("50c ...and the dropdown did NOT close on its own tap (v07.120's defect)",
+        afterExpand.menuStillOpen, JSON.stringify(afterExpand));
 
   // A FRESH render of the menu reads the stored option -- this is the real
   // claim ("the bookmark menu OPENS as expanded"), and it is proved by
@@ -5504,11 +5716,11 @@ console.log("\n=== 50. Fixes round 2 -- the expanded/collapsed OPTION, and the p
     return {
       count: groups.length,
       allOpen: groups.length > 0 && groups.every((d) => d.open),
-      value: document.querySelector("[data-bm-nav-expanded]")?.value,
+      pressed: document.querySelector("[data-bm-nav-expand-toggle]")?.getAttribute("aria-pressed"),
     };
   });
   check("50d re-opening the menu renders every group already open, from the stored option",
-        freshOpen.allOpen && freshOpen.value === "1", JSON.stringify(freshOpen));
+        freshOpen.allOpen && freshOpen.pressed === "true", JSON.stringify(freshOpen));
 
   // A group can still be shut by hand afterwards: the option sets the
   // STARTING state, it does not take per-folder control away.
@@ -5546,11 +5758,11 @@ console.log("\n=== 50. Fixes round 2 -- the expanded/collapsed OPTION, and the p
   await page.waitForTimeout(600);
   await openMenu();
   const afterReload = await page.evaluate(() => ({
-    expanded: document.querySelector("[data-bm-nav-expanded]")?.value,
+    expanded: document.querySelector("[data-bm-nav-expand-toggle]")?.getAttribute("aria-pressed"),
     groupBy: document.querySelector("[data-bm-nav-groupby]")?.value,
   }));
   check("50g both choices survive a reload -- real preferences, not per-open state",
-        afterReload.expanded === "1" && afterReload.groupBy === "person", JSON.stringify(afterReload));
+        afterReload.expanded === "true" && afterReload.groupBy === "person", JSON.stringify(afterReload));
 
   check("50 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
@@ -5594,26 +5806,54 @@ console.log("\n=== 50h-k. The person tag on the Manager page, and both in Bangla
   await pageBn.evaluate(() => { document.getElementById("navBookmarkList").textContent = "x"; });
   await pageBn.click(".nav-cat-bookmark summary");
   await pageBn.waitForFunction(() => document.getElementById("navBookmarkList")?.textContent.trim() !== "x");
+  // RECONCILED alongside 50b: the expand control is a BUTTON now, so there is
+  // one `.nav-bm-control` label (Group by) rather than two, and the expand
+  // side is translated in the button's own text instead of in <option>s.
+  // Both halves are still asserted, and the toggle is exercised so that BOTH
+  // of its Bangla labels are read -- a control whose label changes has two
+  // strings to translate and only one of them is on screen at a time.
   const bn = await pageBn.evaluate(() => {
-    const labels = [...document.querySelectorAll("#navBookmarkList .nav-bm-control span")].map((s) => s.textContent.trim());
-    const expOpts = [...document.querySelectorAll("[data-bm-nav-expanded] option")];
     const grpOpts = [...document.querySelectorAll("[data-bm-nav-groupby] option")];
     return {
-      labels,
-      expText: expOpts.map((o) => o.textContent.trim()),
-      expValues: expOpts.map((o) => o.value),
+      labels: [...document.querySelectorAll("#navBookmarkList .nav-bm-control span")].map((s) => s.textContent.trim()),
+      expLabel: document.querySelector("[data-bm-nav-expand-toggle]")?.textContent.trim(),
       grpText: grpOpts.map((o) => o.textContent.trim()),
       grpValues: grpOpts.map((o) => o.value),
     };
   });
   const BN = /[ঀ-৿]/;
-  check("50j both option labels read in Bangla", bn.labels.length === 2 && bn.labels.every((l) => BN.test(l)), JSON.stringify(bn.labels));
-  check("50j ...their choices too (Collapsed/Expanded, Folder/Person)",
-        bn.expText.every((s) => BN.test(s)) && bn.grpText.every((s) => BN.test(s)),
-        JSON.stringify([bn.expText, bn.grpText]));
+  // The arrow glyph (▸/▾) is markup, not a word -- strip it before asking
+  // whether the LABEL is Bangla, or a leading "▸ " would satisfy nothing and
+  // an untranslated "Expand all" behind it would sail through.
+  const stripGlyph = (s) => (s || "").replace(/[\u25B8\u25BE]/g, "").trim();
+  check("50j the group-by label reads in Bangla",
+        bn.labels.length === 1 && bn.labels.every((l) => BN.test(l)), JSON.stringify(bn.labels));
+  check("50j ...and so does the expand toggle's own label",
+        BN.test(stripGlyph(bn.expLabel)) && !/Expand|Collapse/.test(bn.expLabel || ""),
+        JSON.stringify(bn.expLabel));
+  await pageBn.click("[data-bm-nav-expand-toggle]");
+  await pageBn.waitForTimeout(200);
+  const bnFlipped = await pageBn.evaluate(() => ({
+    expLabel: document.querySelector("[data-bm-nav-expand-toggle]")?.textContent.trim(),
+    pressed: document.querySelector("[data-bm-nav-expand-toggle]")?.getAttribute("aria-pressed"),
+  }));
+  check("50j ...its OTHER state is translated too, and really is the other state",
+        BN.test(stripGlyph(bnFlipped.expLabel))
+          && !/Expand|Collapse/.test(bnFlipped.expLabel || "")
+          && stripGlyph(bnFlipped.expLabel) !== stripGlyph(bn.expLabel)
+          && bnFlipped.pressed === "true",
+        JSON.stringify([bn.expLabel, bnFlipped]));
+  // The group-by modes are read out of `prefs.js`'s own `BOOKMARK_GROUP_BYS`
+  // rather than retyped here. A hardcoded "folder,person" is exactly the
+  // drift this file's own standing lesson warns about, and it drifted: the
+  // Bookmark-issues round added a third mode ("module") and nothing failed,
+  // because nothing was running. Binding the check to the source means the
+  // next mode added is covered the day it lands.
+  check("50j ...their choices too, every mode prefs.js declares",
+        bn.grpText.length === GROUP_BY_IDS.length && bn.grpText.every((s) => BN.test(s)),
+        JSON.stringify([bn.grpText, GROUP_BY_IDS]));
   check("50j ...while the stored VALUES stay plain ids",
-        bn.expValues.join(",") === "0,1" && bn.grpValues.join(",") === "folder,person",
-        JSON.stringify([bn.expValues, bn.grpValues]));
+        bn.grpValues.join(",") === GROUP_BY_IDS.join(","), JSON.stringify([bn.grpValues, GROUP_BY_IDS]));
   // The group-by "Folder" choice and the popover's "Folder" field label are
   // the same English word wanting different Bangla -- the |groupby context
   // suffix is what keeps them apart (i18n.js's own mechanism, first used in
@@ -5622,11 +5862,14 @@ console.log("\n=== 50h-k. The person tag on the Manager page, and both in Bangla
   // would otherwise intercept the read-screen clicks below (same trap as 49).
   await pageBn.click(".nav-cat-bookmark summary");
   await pageBn.waitForTimeout(150);
-  await pageBn.click("#tabReadBtn");
+  // Read lives inside #studyPillarMenu, so a bare click on it resolves and
+  // then times out on a 0x0 box -- this file's own recorded trap. Every
+  // other site already goes through the helper; this one was never reached.
+  await clickStudyPillarItem(pageBn, "tabReadBtn");
   await pageBn.waitForTimeout(400);
-  await pageBn.click("#readQuickMenuSlot [data-qm-toggle]");
-  await pageBn.waitForTimeout(150);
-  await pageBn.click("#readQuickMenuSlot [data-qm-bookmark]");
+  // RECONCILED 2026-09-17: the ⋮ menu was opened here only to reach its
+  // Bookmark item, which moved to #readBar as a direct button (see 45a).
+  await pageBn.click("#readBookmarkBtn");
   await pageBn.waitForSelector(".bm-popover-overlay");
   const bnPop = await pageBn.evaluate(() => {
     const fields = [...document.querySelectorAll(".bm-popover-field")].map((l) => l.childNodes[0]?.textContent.trim());
