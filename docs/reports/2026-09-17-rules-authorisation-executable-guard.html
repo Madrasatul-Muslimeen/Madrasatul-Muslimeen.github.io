@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAP — making &quot;no authorisation may sit unexecutable&quot; a check instead of a habit</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MAP — making &quot;no authorisation may sit unexecutable&quot; a check instead of a habit</h1>
+<ul><li><strong>Date:</strong> 2026-09-17</li><li><strong>Task:</strong> turn the comparison that produced P6-C, P6-D, P5-F and P6-E into a mechanical guard</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> One new file under <code>tools/i18n-verify/</code>. <strong>No <code>app/</code> file changed at all</strong> — <code>git diff -- app/</code> is empty. Every Rules and index candidate byte-identical. Nothing deployed.</li><li><strong>Application version:</strong> <strong>08.25, unchanged.</strong></li><li><strong>Result:</strong> ACCEPT. <code>tools/i18n-verify/rules-authorisation-executable.mjs</code>, <strong>17 checks</strong>, and <strong>7 of 7 mutations caught</strong> — including three that reproduce the historical gaps exactly.</li></ul>
+<hr>
+<h2>1. Why a check and not another round of reading</h2>
+<p>Four rounds in a row found the same defect by hand, in four different collections:</p>
+<div class='tw'><table><thead><tr><th></th><th>Gap</th></tr></thead><tbody>
+<tr><td>P6-C</td><td>ADR-010 §5&#x27;s retire-and-create had <strong>no retire function at all</strong></td></tr>
+<tr><td>P6-D</td><td><code>noteFolders</code> was create-only, against the candidate&#x27;s own comment <em>&quot;a folder may be renamed, reordered, re-parented or retired&quot;</em></td></tr>
+<tr><td>P5-F</td><td>a <code>noteSources</code> link could be created and never retired, though the candidate says <em>&quot;a link may be retired&quot;</em> and its emulator suite had <strong>already proven the server allows it</strong></td></tr>
+<tr><td>P6-E</td><td>a <code>notePlacements</code> <code>order</code> could never be changed — <strong>with a composite index already specified to serve that exact ordering</strong></td></tr>
+</tbody></table></div>
+<p>Every one was invisible to every existing suite, and for a structural reason: <strong>every suite tests what the code does.</strong> Nothing compared what the Rules <em>permit</em> against what the data layer can <em>perform</em>. Four for four is not a run of bad luck; it is a missing guard.</p>
+<h2>2. Both directions, and the second one matters too</h2>
+<p><strong>FORWARD</strong> — every field an accepted <code>allow update</code> may change must be written by some data-layer update. Otherwise an accepted decision is unexecutable.</p>
+<p><strong>BACKWARD</strong> — every field a data-layer update writes must be one that <code>allow update</code> may change. Otherwise <strong>the write is denied in production and no pure suite would ever notice</strong>, because the harness stub has no rules at all. This direction has found nothing yet; it is the cheaper half to get wrong in future.</p>
+<p>The mutable set is <strong>derived from the Rules text</strong>, never listed in the check. Two forms appear in these candidates and both are handled:</p>
+<ul><li>an explicit <code>d().diff(resource.data).affectedKeys().hasOnly([…])</code>, which says it outright (<code>noteSources</code>);</li><li>a shape <code>keys().hasOnly([…])</code> minus whatever an <code>…IdentityUnchanged()</code> helper and <code>createdByFrozen()</code> freeze, minus the I17 envelope fields nobody sends (<code>notes</code>, <code>noteFolders</code>, <code>notePlacements</code>).</li></ul>
+<p><code>allow update…: if false</code> means create-only, and then the check asserts the data layer has <strong>no</strong> update for that collection — which is how <code>noteRevisions</code> and the Phase 4 evidence subcollection are held frozen.</p>
+<p>The derivation is checkable against prose: for <code>notes</code> it yields <code>bodyHtml, currentRevisionId, status, title</code>, and the rule&#x27;s own comment says <em>&quot;An update may change the title, the body, the status and the revision pointer — and nothing else.&quot;</em></p>
+<h2>3. A third thing the parser made cheap</h2>
+<p>Since the check can already read a mutable set out of any of these files, it reads it out of the <strong>assembled deployment candidate</strong> too and asserts it matches the extract, per collection.</p>
+<p>That guards a class this project has already been bitten by once: the extracts and the assembled file diverged in four helpers (defensive <code>.get(field, default)</code> reads where production reads the field directly). <strong>If the file that would actually be pasted authorises a different set of mutable fields, then the data layer is correct against the extract every suite runs on, and wrong against the thing deployed.</strong></p>
+<h2>4. Mutation-proven, 7 for 7</h2>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Check killed</th></tr></thead><tbody>
+<tr><td>remove <code>reorderNotePlacement</code>&#x27;s update (<strong>reproduces P6-E</strong>)</td><td>FORWARD on <code>notePlacements</code>, naming <code>order</code></td></tr>
+<tr><td>remove <code>retireNoteSource</code>&#x27;s update (<strong>reproduces P5-F</strong>)</td><td>FORWARD on <code>noteSources</code>, naming <code>status</code></td></tr>
+<tr><td>remove all four folder updates (<strong>reproduces P6-D</strong>)</td><td>FORWARD on <code>noteFolders</code>, naming <code>name, order, parentFolderId, status</code></td></tr>
+<tr><td>make <code>renameNoteFolder</code> also write <code>semanticRole</code></td><td>BACKWARD on <code>noteFolders</code></td></tr>
+<tr><td>break the shape regex</td><td>POSITIVE CONTROL</td></tr>
+<tr><td>revert <code>matchBlock</code> to the greedy brace scan</td><td>POSITIVE CONTROL</td></tr>
+<tr><td>add <code>sourceKey</code> to the assembled file&#x27;s <code>affectedKeys</code></td><td>the deployment cross-check on <code>noteSources</code></td></tr>
+</tbody></table></div>
+<p><strong>Three of the seven reproduce the historical gaps exactly</strong>, so the claim &quot;this would have caught them&quot; is demonstrated rather than asserted. Every mutation printed its own occurrence count first, and the Rules file was restored and re-diffed to byte-identical.</p>
+<h2>5. Two guards of its own, because a parser is the thing most likely to be silently wrong</h2>
+<p><strong>A positive control</strong>, asserting the parser really reads a mutable set out of the Rules — without it, one broken regex makes every mutable set empty, every FORWARD assertion trivially true and every BACKWARD assertion true as well, and the whole file passes while checking nothing.</p>
+<p><strong>Assertions inside the parser</strong>: a block under 200 characters, a shape list of three fields or fewer, or a frozen list of two or fewer all throw rather than return. That is not decoration — <strong>it is how this file&#x27;s own first run was caught.</strong> <code>matchBlock</code> scanned forward for the first <code>{</code> after <code>match</code>, which is the wildcard&#x27;s own brace in <code>match /notes/{noteKey} {</code>; it closed on the matching <code>}</code> and returned a two-token block. Five collections were reported as create-only and the positive control failed. <strong>The parser now takes the last brace on the match line.</strong></p>
+<h2>6. Also recorded: one of my own mutations did not apply</h2>
+<p>M5 was first attempted with a <code>sed</code> whose escaping did not match, so it replaced nothing and the suite passed — which would have read as &quot;this check cannot fail.&quot; It was re-done with an explicit occurrence assertion that aborts when the count is not 1.</p>
+<p><strong>This is the project&#x27;s own standing lesson happening in real time</strong>: a mutation that does not apply proves nothing, and it looks exactly like a mutation the suite survived. Every mutation in this round prints its count before it runs.</p>
+<h2>7. Verification</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>rules-authorisation-executable.mjs</code></td><td><strong>17 / 0</strong>, 7 of 7 mutations caught</td></tr>
+<tr><td><code>git diff -- app/</code></td><td><strong>empty</strong> — no application file touched</td></tr>
+<tr><td><code>firestore.rules</code>, <code>firebase.json</code>, 3 Rules candidates, 4 index candidates</td><td><strong>byte-identical</strong></td></tr>
+<tr><td>Every other pure suite</td><td>unchanged (re-run: contract 34, data layer 95, services 32 / 18, boundaries 13 / 17 / 30 / 15 / 16, index requirements 8, deployment candidate 10, stub parity 3)</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 / 47</strong> — unchanged, no user-visible string</td></tr>
+</tbody></table></div>
+<h2>8. What it does NOT cover, stated</h2>
+<ul><li><strong>Only the six MAP collections.</strong> The legacy production collections in the full ruleset are not parsed; their data layers predate this pattern and were not written against a candidate. Extending it there is a separate task with its own reading.</li><li><strong>Only <code>allow update</code>.</strong> Create shape and read scope are covered by the emulator suites, which is the right place for them — those are server decisions, not executability ones.</li><li>**It cannot tell whether a field change is <em>reachable from a surface</em>.** That is what the boundary suites&#x27; reachability walkers do, and right now the answer is deliberately &quot;no&quot; for all of this code.</li></ul>
+<hr>
+<p><em>Master Architect audit: BR-0, tools-only, no accepted decision changed, no Owner Control Gate crossed. The guard encodes an existing accepted comparison; it introduces no new rule and cannot authorise anything.</em></p>
+</main></body></html>

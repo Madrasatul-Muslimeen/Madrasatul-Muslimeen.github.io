@@ -1347,6 +1347,19 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   reach has no first run to fail in, so it never earns the right to be believed:
   that region is UNVERIFIED, not passing.** When a suite stops early, the debt
   is everything downstream, not the one failing line — fix it that day.
+- **`rules-authorisation-executable.mjs` NOW CHECKS THE LESSON BELOW, so stop
+  doing it by hand.** 17 checks, both directions: every field an accepted
+  `allow update` may change must be written by some data-layer update (or an
+  accepted decision is unexecutable), and every field the data layer writes must
+  be one the Rules may change (or **the write is denied in production and no
+  pure suite notices — the stub has no rules**). The mutable set is DERIVED from
+  the Rules text, so a newly authorised field fails the check the day it is
+  authorised, and the assembled deployment file is cross-checked against each
+  extract. Proven by 7 mutations, three of which reproduce P6-D, P5-F and P6-E
+  exactly. **A parser is the thing most likely to be silently wrong: it carries a
+  positive control and throws on an implausibly small parse, and both earned
+  their keep on its own first run** (the brace scan latched onto the wildcard's
+  `{noteKey}` and reported five collections as create-only).
 - **ASK WHAT THE ACCEPTED RULES AUTHORISE, THEN WHAT THE CODE CAN PERFORM.** That
   one comparison has produced three rounds of real work with no new authority
   (P6-C, P6-D, P5-F/P6-E): ADR-010 §5's retire-and-create had no retire

@@ -13452,3 +13452,86 @@ need translating when a surface exists (I11) — `unbindStudyNoteSource` adds no
 new reason string, it forwards the data layer's. And nothing was wired to a
 page: all three modules stay unreachable, behind the same Rules-and-indexes gate
 as the Note editor and the Journey Map surface.
+
+---
+
+## "No authorisation may sit unexecutable" is a CHECK now, not a habit (17 Sep 2026, v08.25, no version bump)
+
+**BR-0, tools only.** One new file, `tools/i18n-verify/rules-authorisation-executable.mjs`.
+**`git diff -- app/` is empty** — no application file touched. Every Rules and
+index candidate byte-identical. Evidence:
+`docs/reports/2026-09-17-rules-authorisation-executable-guard.md` / `.html`.
+
+**FOUR ROUNDS IN A ROW FOUND THE SAME DEFECT BY HAND, in four different
+collections** — P6-C (ADR-010 §5's retire-and-create had no retire function),
+P6-D (`noteFolders` create-only against its own Rules comment), P5-F (a
+`noteSources` link creatable and never retirable, with the server side already
+proven), P6-E (a `notePlacements` `order` unchangeable, with a composite index
+already specified to serve it). **Every one was invisible to every existing
+suite, for a structural reason: every suite tests what the code DOES.** Nothing
+compared what the Rules PERMIT against what the data layer can PERFORM. Four for
+four is a missing guard, not a run of bad luck.
+
+**BOTH DIRECTIONS, and the second matters too.** FORWARD: every field an accepted
+`allow update` may change must be written by some data-layer update, or an
+accepted decision is unexecutable. BACKWARD: every field the data layer writes
+must be one the Rules may change, or **the write is denied in production and no
+pure suite would notice** — the harness stub has no rules at all. The backward
+half has found nothing yet; it is the cheaper one to get wrong next.
+
+**The mutable set is DERIVED from the Rules text, never listed in the check** —
+so a newly authorised field fails this check the day it is authorised. Two forms
+are handled: an explicit `affectedKeys().hasOnly([...])`, and a shape
+`keys().hasOnly([...])` minus what an `...IdentityUnchanged()` helper and
+`createdByFrozen()` freeze, minus the I17 envelope fields nobody sends.
+`allow update: if false` means create-only, and the check then asserts the data
+layer has NO update for it — which is how `noteRevisions` and the Phase 4
+evidence subcollection are held frozen. The derivation is checkable against
+prose: for `notes` it yields `bodyHtml, currentRevisionId, status, title`, and
+that rule's own comment says *"an update may change the title, the body, the
+status and the revision pointer — and nothing else."*
+
+**A THIRD THING THE PARSER MADE CHEAP: the assembled DEPLOYMENT file is
+cross-checked against each extract, per collection.** This project has already
+been bitten once by those two diverging (four helpers using defensive
+`.get(field, default)` reads where production reads the field directly). **If
+the file that would actually be PASTED authorises a different mutable set, the
+data layer is right against the extract every suite runs on and wrong against
+the thing deployed.**
+
+**7 of 7 mutations caught, and THREE of them reproduce the historical gaps
+exactly** — so "this would have caught them" is demonstrated, not asserted:
+removing `reorderNotePlacement`'s update kills FORWARD on `notePlacements`
+naming `order`; removing `retireNoteSource`'s kills FORWARD on `noteSources`;
+removing all four folder updates kills FORWARD on `noteFolders` naming all
+four fields; making `renameNoteFolder` also write `semanticRole` kills BACKWARD;
+breaking the shape regex and reverting `matchBlock` each kill the POSITIVE
+CONTROL; adding `sourceKey` to the assembled file's `affectedKeys` kills the
+deployment cross-check.
+
+**A PARSER IS THE THING MOST LIKELY TO BE SILENTLY WRONG, so it has two guards
+of its own — and they earned their keep on the FIRST RUN.** `matchBlock()`
+scanned forward for the first `{` after `match`, which is **the wildcard's own
+brace** in `match /notes/{noteKey} {`; it closed on the matching `}` and
+returned a two-token block. Five collections were reported as create-only and
+the positive control failed. It takes the LAST brace on the match line now, and
+the parser throws on a block under 200 characters, a shape list of three fields
+or fewer, or a frozen list of two or fewer. **Without the positive control, one
+broken regex makes every mutable set empty, every FORWARD assertion trivially
+true and every BACKWARD one true as well — the whole file passing while checking
+nothing.**
+
+**Also recorded: one of my own mutations did not apply.** M5 was first attempted
+with a `sed` whose escaping did not match, so it replaced nothing and the suite
+passed — which reads exactly like "this check cannot fail". Re-done with an
+explicit occurrence assertion that aborts unless the count is 1. **The project's
+own standing lesson happening in real time**; every mutation in this round
+prints its count before it runs.
+
+**What it does NOT cover, stated:** only the six MAP collections (the legacy
+production collections' data layers predate this pattern and were not written
+against a candidate — extending it there is its own task); only `allow update`
+(create shape and read scope belong to the emulator suites, which is the right
+place for server decisions); and it cannot tell whether a field change is
+REACHABLE FROM A SURFACE — that is the boundary suites' reachability walkers,
+and the answer for all of this code is deliberately still "no".
