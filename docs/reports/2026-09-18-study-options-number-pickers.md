@@ -177,6 +177,16 @@ The `layout.mjs` shim was built from `HEAD` and **deleted before the coverage to
 - **`surahSelect` / `unitTypeSelect` untouched** — now Owner decisions alongside it, with the measurement that makes them decidable (§3).
 - All seven pending-dependency ledger items unchanged. The blocker is still **E1 — authenticated Firebase access** — and it is access, not design.
 
-## 7. The lesson
+## 7. Follow-on sweep: was the old heuristic hiding anything else?
+
+`panel.mjs`'s `need > w - 22` hid a live defect, and it only ever measured **one bar on one page**. With the corrected method proven, it was cheap to ask what else it might have hidden: every `<select>` across **12 pages × 2 languages × 2 viewports (320px and 390px)**, judged on measured arrow + real padding and border.
+
+**Result: nothing.** Three hits came back at **0.7px, 0.6px and 0.0px** — sub-pixel float noise from canvas text measurement, not truncation. Re-run with a 1px floor: **zero**.
+
+**Scope, stated rather than implied:** this sweep sees selects that are **visible on page load**. It does not open the Study-options panel, whose controls measure 0 until it is opened — those are `panel.mjs`'s job, and there `tenantSelect`, `surahSelect` and `unitTypeSelect` remain cut as §3 describes. One incidental fact worth keeping: `tenantSelect` on `people.html` and `bookmarks.html` gets **272.3px** of usable width and fits comfortably. **Its truncation is specific to the Study-options panel's 145px cell**, not to the control or its content — which is useful to the Owner when they come to decide O3.
+
+**So the number-picker class was the only thing the heuristic was hiding**, and it is closed.
+
+## 8. The lesson
 
 **Measure the control, not the assumption inside the tool that measures it.** The task was sent about `surahSelect` and `unitTypeSelect`. Measuring properly — a real arrow width instead of a guessed 22px, real padding, and the longest option instead of whichever the fixture had selected — showed those two were *not* fixable and that five other controls were quietly broken at every width in both languages, with the Owner's own earlier bug report already written into the CSS next door. **The suite's own heuristic was the reason nobody had seen it.**

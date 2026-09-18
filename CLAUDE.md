@@ -120,6 +120,15 @@ shows "1". It measures the real usable width (padding, border and a **measured**
 arrow) and the **longest** option now. Mutation-proven: revert the CSS and it
 exits 1 naming `unitNumSelect` and `drillRepeatSelect`.
 
+**A follow-on sweep asked what else that heuristic had hidden: every `<select>`
+across 12 pages × 2 languages × 2 viewports. NOTHING** — three hits at 0.7px,
+0.6px and 0.0px, sub-pixel float noise; zero with a 1px floor. The sweep sees
+selects **visible on load**, not those behind the Study-options panel (that is
+`panel.mjs`'s job). One fact worth keeping for O3: **`tenantSelect` fits
+comfortably on `people.html` and `bookmarks.html` with 272.3px of usable
+width** — its truncation is specific to the panel's 145px cell, not to the
+control or its content.
+
 **`surahSelect` and `unitTypeSelect` were NOT fixed, and that is the finding.**
 Their row is **genuinely short of space** — the opposite of v08.26's nav, where
 the space was present and misallocated. Measured, `.opt-bar-units` needs

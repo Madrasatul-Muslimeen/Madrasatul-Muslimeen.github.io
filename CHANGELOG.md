@@ -14268,3 +14268,16 @@ zero files touched under `firestore.rules`, `firebase.json`, `docs/governance/`,
 76.3 / 76.8 instead of four equal 67.2). **GitHub Pages itself could not be
 reached from the sandbox** (proxy 403) — that one is the Owner's own one-click
 check.
+
+**Follow-on sweep (18 Sep 2026, BR-0, no version move).** `panel.mjs`'s
+`need > w - 22` had hidden a live defect and only ever measured one bar on one
+page, so the corrected method was pointed at **every `<select>` across 12 pages
+× 2 languages × 2 viewports**. **Nothing** — three hits at 0.7px, 0.6px and
+0.0px, sub-pixel float noise from canvas text measurement; **zero with a 1px
+floor**. The sweep sees selects **visible on load**, not those behind the
+Study-options panel, which is `panel.mjs`'s job and where the three
+Owner-decision selects remain cut. One incidental fact for O3: **`tenantSelect`
+fits comfortably on `people.html` and `bookmarks.html` with 272.3px usable** —
+its truncation is specific to the Study-options panel's 145px cell, not to the
+control or its content. **The number-picker class was the only thing the
+heuristic was hiding, and it is closed.**
