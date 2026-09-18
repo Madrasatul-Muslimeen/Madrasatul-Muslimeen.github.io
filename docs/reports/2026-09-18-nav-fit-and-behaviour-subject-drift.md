@@ -5,7 +5,7 @@
 - **Base `main`:** `1cac2b8` (one commit past the handover's `d8f0492` — see §1)
 - **Task:** the two items the 18 Sep handover left as available with no new authority — **T3** (read the newly-reachable `behaviour.mjs` sections for checks *wrong about their subject*) and **T2** (pay down a recorded baseline), taken in that order
 - **Blast radius:** **BR-1.** One CSS declaration behind one media query, on the shared nav. No JS, no markup, no schema, no Rules, no indexes, no data.
-- **Application version:** **08.25 → 08.26** — the CSS change is reachable from every page, so the badge moves in the same tranche
+- **Application version:** **08.25 → 08.26 on the branch.** The CSS change is reachable from every page, so the badge moves in the same tranche. **`main` remains 08.25 — nothing here is merged** (see §5).
 - **Result:** ACCEPT. Both `behaviour.mjs` findings probed before being believed and mutation-proven after being fixed; the nav baseline is gone at every width in both languages, with nothing shrunk to pay for it.
 
 ---
@@ -169,11 +169,29 @@ Unchanged everywhere, both languages: **one line**, **no page overflow**, nav he
 
 ## 5. Version numbering — a collision the next session must not be surprised by
 
-The held wiring branch `7e2931f` stamps its own `version.js` **08.26**, chosen when `main` was on 08.25. `main` has now taken that number.
+> **CORRECTED 18 Sep 2026, on the Owner's own catch.** This section first said *"`main` has now taken that number"*. **It had not, and nothing here is merged.** `main` is at `1cac2b8` with `app/js/version.js` reading **08.25**, which is what the live site serves; v08.26 exists only on `claude/charming-rubin-xzxbk1`. Describing a branch commit as a change to `main` asserts a merge that did not happen — a worse form of the drift `CLAUDE.md`'s own milestone paragraph had already recorded twice. The guard has been strengthened so it cannot recur silently (§5.1).
 
-- **`7e2931f` was NOT re-cut, re-stamped or touched in any way.** The standing instruction is to hold it exactly as it is, and it is held.
-- **At merge, `version.js` conflicts and resolves to 08.27.** One line, a normal merge resolution, and **not** a reason to rebuild the candidate.
-- `CLAUDE.md` records this explicitly, and no longer describes the branch as "(v08.26)" — that number now means the nav round on `main`, and leaving both would have made the brief ambiguous and `brief-integrity.mjs`'s CHANGELOG cross-check wrong about which round it was looking for.
+**The accurate position: `main` is on 08.25, and TWO unmerged branches each stamp 08.26.**
+
+| Ref | `app/js/version.js` | State |
+|---|---|---|
+| `main` (`1cac2b8`) | **08.25** | what the live site serves |
+| `claude/charming-rubin-xzxbk1` | **08.26** | this session's work, **not merged** |
+| `claude/phase4-wiring` (`7e2931f`) | **08.26** | held, **not merged**, not re-cut |
+
+- **Whichever merges first takes 08.26; the second's `version.js` conflicts and resolves to 08.27.** One line, a normal merge resolution, and **not** a reason to rebuild either.
+- **`7e2931f` was NOT re-cut, re-stamped or touched in any way.** The standing instruction is to hold it exactly as it is, and it is held. Neither branch was re-stamped to pre-empt the collision — that would be churn for a one-line resolution.
+- This is a **merge-ordering fact, not a defect.**
+
+### 5.1 The guard now checks both halves of the milestone line
+
+`brief-integrity.mjs`'s version check hard-coded the phrase ``on `main` `` in its own regex, so it could only ever compare the milestone version against the **working tree** — it had no way to notice that the working tree was a branch and `main` said something else. It now:
+
+1. parses the ref the milestone line actually names, rather than assuming `main`;
+2. compares the claimed version against the working tree, as before;
+3. **when the named ref is not `main`, requires the line to state `main`'s own version too, and verifies it against `origin/main:app/js/version.js`.**
+
+Mutation-proven in both directions (§6.5). The drift that has now happened three times cannot happen a fourth without a check failing.
 
 ---
 
@@ -233,6 +251,19 @@ Four mutations, each proving a guard in both directions:
 | 4 | fix in place | — | `navcheck.mjs` **EXIT 0**, no truncation |
 
 Mutations 1 and 2 were applied at fetch time (Playwright route interception), so **no file on disk was modified** to run them.
+
+### 6.5 The milestone guard, mutation-proven after the Owner's catch
+
+Full account in `docs/reports/2026-09-18-milestone-correction-and-timezone-decision.md`. Four cases, run against `brief-integrity.mjs`:
+
+| Milestone line | Before | After |
+|---|---|---|
+| `v08.26 on \`main\`` (**the error actually made**) | **passes** | **FAILS** — *"a version bump on a BRANCH is not a version on main"* |
+| branch named, `main` claimed as v08.26 (wrong) | n/a | **FAILS** |
+| branch named, `main`'s version omitted | n/a | **FAILS** |
+| branch named, `main is still v08.25` (true) | n/a | passes |
+
+**The first strengthening attempt did not catch case 1** — it returned early whenever the line said `main` and compared only the working tree, which is exactly the blind spot that let the error through. Caught by running the mutation rather than by reading the new code.
 
 ### 6.4 One environmental failure, recorded rather than hidden
 

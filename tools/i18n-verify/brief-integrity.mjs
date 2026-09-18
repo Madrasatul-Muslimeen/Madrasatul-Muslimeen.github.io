@@ -86,12 +86,60 @@ check("...and the ones the brief says are held on a branch really are on it", ()
 });
 
 check("the brief's own version claim matches app/js/version.js", () => {
+  // STRENGTHENED 18 Sep 2026, on the Owner's own catch, after the drift this
+  // check exists for happened a THIRD time in a new shape.
+  //
+  // The regex used to hard-code the phrase "on `main`", so the check could only
+  // ever compare the milestone version against the WORKING TREE. That is fine
+  // while the working tree IS main, and silently wrong the moment it is a
+  // branch: a session that bumped version.js on a branch wrote "v08.26 on
+  // `main`" and this check passed, because the working tree really did say
+  // 08.26. It had no way to notice that `main` said 08.25 and that the line was
+  // asserting a merge which had not happened.
+  //
+  // A version bump on a branch is not a version on `main`. So: parse whichever
+  // ref the line actually names, and when that ref is not `main`, REQUIRE the
+  // line to state main's own version as well and check it against `main`
+  // itself. Both halves are verified against something real.
   const actual = read("app/js/version.js").match(/APP_VERSION\s*=\s*"([\d.]+)"/);
   assert.ok(actual, "APP_VERSION not found in app/js/version.js");
-  const claimed = brief.match(/\*\*Current milestone:\s*v([\d.]+)\s+on\s+`main`\*\*/);
-  assert.ok(claimed, "CLAUDE.md has no 'Current milestone: vNN.NN on `main`' line to check");
-  assert.equal(claimed[1], actual[1],
-    `the brief says v${claimed[1]} and app/js/version.js says ${actual[1]} -- this exact drift has happened twice before`);
+  const claimed = brief.match(/\*\*Current milestone:\s*v(\d+\.\d+)\s+on\s+`([^`]+)`/);
+  assert.ok(claimed, "CLAUDE.md has no 'Current milestone: vNN.NN on `<ref>`' line to check");
+  const [, claimedVersion, claimedRef] = claimed;
+  assert.equal(claimedVersion, actual[1],
+    `the brief says v${claimedVersion} and app/js/version.js says ${actual[1]} -- this exact drift has happened twice before`);
+
+  // Resolve what `main` ACTUALLY says, every time -- this is the fact the old
+  // check never consulted.
+  const onMainRaw = git("show", "origin/main:app/js/version.js").match(/APP_VERSION\s*=\s*"([\d.]+)"/);
+  assert.ok(onMainRaw, "APP_VERSION not found in origin/main:app/js/version.js");
+  const onMain = onMainRaw[1];
+
+  if (claimedRef === "main") {
+    // A claim ABOUT main is checked AGAINST main. The first attempt at this
+    // strengthening returned early here and compared only the working tree,
+    // which still let the original defect through: on a branch whose tree
+    // reads 08.26, "v08.26 on `main`" passed while main said 08.25. Proven by
+    // mutation -- that exact wording was reinstated and the check stayed green.
+    //
+    // The one legitimate exception is a session working ON main whose bump is
+    // committed locally or not yet pushed: there the working tree IS the
+    // future main, and the comparison above already covers it.
+    const head = git("rev-parse", "--abbrev-ref", "HEAD");
+    assert.ok(head === "main" || onMain === claimedVersion,
+      `the brief says v${claimedVersion} is on \`main\`, but origin/main:app/js/version.js says ${onMain} ` +
+      `and this tree is on \`${head}\`, not main -- a version bump on a BRANCH is not a version on main`);
+    return;
+  }
+  // The milestone names a BRANCH. Its own claim about main must be stated and
+  // must be true -- this is the half that was missing.
+  const mainClaim = brief.match(/\*\*Current milestone:[\s\S]{0,240}?`main`\s+is\s+still\s+v(\d+\.\d+)/);
+  assert.ok(mainClaim,
+    `the milestone line names the branch \`${claimedRef}\` rather than main, so it MUST also state main's own version ` +
+    '("`main` is still vNN.NN") -- otherwise a reader cannot tell what is actually shipped');
+  assert.equal(mainClaim[1], onMain,
+    `the brief says main is still v${mainClaim[1]}; origin/main:app/js/version.js says ${onMain} -- ` +
+    "the milestone line is claiming a merge state that is not real");
 });
 
 check("the three reachable lines the brief names are all present", () => {

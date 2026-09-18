@@ -44,19 +44,31 @@ Read this first, every session. It is the standing brief.
 > timezone item is **one question, not a UI decision** (§11.B).
 
 
-**Current milestone: v08.26 on `main`** (18 Sep 2026 — the first version move
-since 15 Sep. Every round between was BR-0: contracts, Rules and index
-candidates, data layers and tests, none of it reachable from a page. v08.26 is
-the 320px nav fit correction below, which is reachable, so it bumps.)
+**Current milestone: v08.26 on `claude/charming-rubin-xzxbk1` — `main` is still
+v08.25.** (18 Sep 2026. Nothing is merged: `main` is at `1cac2b8` and its
+`app/js/version.js` reads **08.25**, which is what the live site serves. The
+v08.26 nav fit correction below is **on the branch, awaiting merge.**)
 
-**VERSION NUMBERING NOTE, and the next session needs it.** The held Phase 4
-wiring branch stamps its own `version.js` **08.26**, chosen when `main` was on
-08.25. `main` has now taken that number for the nav correction, so **the two
-mean different things and the branch's stamp is stale.** The branch is
-deliberately NOT re-cut or re-stamped to fix this (the standing instruction is
-to hold `7e2931f` exactly as it is): **at merge, `version.js` conflicts and
-resolves to 08.27.** That is a one-line merge resolution, not a reason to
-rebuild the candidate.
+> **CORRECTED 18 Sep 2026, on the Owner's own catch.** This line read
+> "**v08.26 on `main`**" the moment the nav round was committed to a BRANCH —
+> the identical drift the same paragraph has recorded twice before, made a
+> third time, and made *worse* because the earlier two were a stale number
+> while this one asserted a merge that had not happened. **A version bump on a
+> branch is not a version on `main`.** `brief-integrity.mjs` now reads
+> `origin/main:app/js/version.js` and checks BOTH halves of this line — the
+> branch's version against the working tree, and the claim about `main`
+> against `main` itself — so a milestone line can no longer claim a merge that
+> did not occur.
+
+**VERSION NUMBERING NOTE — TWO BRANCHES NOW STAMP 08.26, and the next session
+needs this.** `main` is on 08.25 and **two unmerged branches each stamp their
+own `version.js` 08.26**: `claude/charming-rubin-xzxbk1` (the nav correction)
+and the held Phase 4 wiring at `7e2931f`. **Whichever merges first takes 08.26;
+the second's `version.js` then conflicts and resolves to 08.27.** Neither branch
+is re-cut or re-stamped to pre-empt this — the standing instruction is to hold
+`7e2931f` exactly as it is, and re-stamping either would be churn for a
+one-line merge resolution. **It is a merge-ordering fact, not a defect, and not
+a reason to rebuild a candidate.**
 
 **One thing is held unmerged: the Phase 4 Study-event WIRING**, on
 `claude/phase4-wiring` at **`7e2931f`** — **refreshed against `main` on
@@ -69,8 +81,9 @@ the single source of truth and the badge beside the app name says so on screen.
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
 
-**v08.26 (18 Sep 2026) — THE 320px NAV TRUNCATION WAS NEVER A SHORTAGE OF
-SPACE, and that is the finding, not the fix.** English "Operation"/"Bookmark"
+**v08.26 (18 Sep 2026, ON `claude/charming-rubin-xzxbk1`, NOT YET MERGED) —
+THE 320px NAV TRUNCATION WAS NEVER A SHORTAGE OF SPACE, and that is the
+finding, not the fix.** English "Operation"/"Bookmark"
 cut at 320px had been a tolerated named baseline for the life of
 `navcheck.mjs`. **Measured, the four labels need 282.3px of a 288px row and fit
 with 5.7px to spare.** `.nav-cat { flex: 1 1 0 }` — flex-basis **zero** — was
@@ -1479,9 +1492,15 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
 - **The DEPLOYED rules have an "authorised but unexecutable" gap too, and it is
   the only one** (audited 18 Sep 2026, and otherwise clean): `tenantPeople`'s
   third `allow update` lets a signed-in person change **their own `timezone`**
-  and nothing else, and **no client code offers it.** Flagged, not built — where
-  that control lives is a product decision, and `weekStartsOn` (D7) sits in the
-  same area. Two other things from that audit worth not rediscovering:
+  and nothing else, and **no client code offers it.** **The product question is
+  now ANSWERED — D14, 18 Sep 2026** (auto-capture by default; a chosen location
+  determines the zone until changed or returned to auto) — **and it is still not
+  built, for a reason the answer itself exposed: the accepted decision cannot be
+  represented by the field the Rules authorise.** "Return to automatic
+  detection" is a MODE, and `hasOnly(['timezone', 'updatedAt'])` permits no
+  second field, so the mode write is denied in production. Building it needs a
+  Rules change — an Owner Control Gate on the same E1 deployment dependency.
+  `weekStartsOn` (D7) sits in the same area. Two other things from that audit worth not rediscovering:
   `self-check.js` writing `{ platformAdmin: true }` to `userIndex` is the **I10
   NEGATIVE PROBE**, designed to be refused (a success is reported as URGENT), so
   a field-set comparison that does not read the surrounding code will call it a
@@ -1575,8 +1594,9 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   anything truncated**, and report "not on screen" separately so the absence is
   not dropped either.
 - **The baselines are honest but they are DEBT:** 22 missing `getElementById`
-  targets, ~~2 nav truncations~~ (**paid off in v08.26**), 3 select
-  truncations. The most user-visible remaining one is **`tenantSelect` — a real
+  targets, 2 nav truncations (**fixed in v08.26, which is on
+  `claude/charming-rubin-xzxbk1` and NOT yet merged — still live on `main`**),
+  3 select truncations. The most user-visible remaining one is **`tenantSelect` — a real
   tenant's name is CUT in the picker** ("Madrasatul Muslimeen (Owner, Prime)",
   224px of text in a 145px cell). Recorded, not fixed: **that one really is an
   Owner UI decision** — widen the cell, shorten the option text, or reveal the
@@ -1750,6 +1770,7 @@ Ethics (social) and Akhlaq (personal) are **distinct** nodes. Confirmed.
 | D11 | **`QuranRevival_Subject_Catalogue_v3.md` approved as-is**, at the start of Phase 2 (2026-07-31): 6 top-level subject-tree nodes (Quran, Hadith, Arabic Language, Deen Study, General Study, Nature-Life), 31 studiable subjects, 30 Approaches in 7 sections, Hadith kept top-level and mandatory in its own right, Ethics/Akhlaq distinct. One resolved ambiguity: the doc tags Hadith `[QuranRevival / Deen]`, but Part 5 also states no node uses `moduleIds[]` for more than one module, and the Architecture doc's Phase 12 list names Hadith as its own fifth remaining module (alongside Arabic, General Study, Health, Nature-Life). Built as: **Hadith is its own module** (`moduleIds: ["hadith"]`), its bracket tag read as descriptive text about its role, not a literal dual-module assignment. Flagged for the owner to correct if the intent was actually a shared/dual-module node. |
 | D12 | **New Phase 3 collection `domains`** (`domains/{tenantId}__{domainId}`), not in the original Architecture doc, added to back the `records.entries.domainIds[]` field the doc names but never defines a collection for. Same shape as D9 (a small supporting collection the doc's own named fields required). Tenant-authored, no platform seed, mirrors `ladders`/`levels` — matches the legacy app's free-text, user-defined "Domains" tag on subjects, promoted to a permanent-ID registry (I5) since `domainIds` is now a plural array on each record entry. *Approved-by-precedent deviation, flagged for the owner to correct if a different shape was intended.* Also Phase 3: **records chunking** ("one doc per surah/subject") is implemented as *surah* for unit types that carry their own surah number (`ayah`/`range`/`surah`/`ruku`) and *subject* for everything else (`juz`/`hizb`/`rub`/`manzil`/`page`/`hadith`/`topic`/`name` — Quran-wide divisions or non-Quran, with no single surah to group by). Re-chunking later is a data migration, not an architecture change (I5 only pins the unit key itself). And **`subjects.confirmationRequired`** (`true`/`false`/`null`) was added as a new, additive field so "confirmation can be switched on or off per subject" (Architecture s6) has somewhere to live — editable from `catalogue.html`'s existing subject edit form. |
 | D13 | **Post-cutover rollout order** (confirmed 9 Aug 2026, QuranRevival v07.00): make it work for the **owner's own real use first** — before family, before external students, before the rest of the role/tenant model the Architecture doc already plans for. Then family. Then external students. Then everyone/everything else, as originally planned. **This reorders priority, not scope** — nothing here changes what gets built, only what gets fixed/polished first when something's wrong. Concretely: if the owner hits real friction using the app themselves, that outranks a family- or student-facing gap, which outranks a general multi-tenant/other-role gap, regardless of build-phase numbering. Don't re-derive this from the Architecture doc's own phase order — this is a use-rollout sequence layered on top of it, not a replacement for Phase 6–15's own scope. |
+| D14 | **Timezone: automatic capture is the DEFAULT, and a person may choose a LOCATION which determines their timezone until they change it or return to automatic detection.** (Owner decision, 18 Sep 2026.) This closes handover item **O4** — `timezone` is **authoritative, not captured-only**, because a value the person can override is a value something is meant to honour. **NOTHING WAS IMPLEMENTED, deliberately**, and three findings from inspecting the existing data and Rules contract say why. **(1) The decision cannot be represented by the field that exists.** `timezone` is a single string; "return to automatic detection" is a MODE, and with only the value stored, auto-detected `Asia/Dhaka` and hand-chosen `Asia/Dhaka` are indistinguishable — so re-detecting at each login silently overwrites a deliberate choice, and never re-detecting silently freezes an auto value when the person travels. **No mode field exists anywhere in the repository** (grepped: no `timezoneMode`, `tzMode`, `autoDetect`, `timezoneAuto` in `app/`, `firestore.rules` or `docs/governance/`). **(2) The deployed Rules authorise `timezone` and `updatedAt` and NOTHING ELSE** — `tenantPeople`'s third `allow update` is `hasOnly(['timezone', 'updatedAt'])`, so a mode field, or a stored location, is **denied in production** the moment it is written. Implementing this therefore needs a Rules change, which is an **Owner Control Gate** and rides the same deployment dependency (E1) as Phases 4–6. **(3) A location is not a timezone.** The Owner's wording is exact — a location *determines* a timezone — so the authoritative stored value is the resolved IANA zone; whether the chosen location LABEL is also stored is a separate product question and **no location field was added.** Also recorded: **`timezone` is still read by nothing** (written at creation in `identity.js:102`, `invites.js:174`, `people.js:82`, and `null` in `migrate.html:326`), and **`weekKeyFor()` buckets by the DEVICE's local calendar day**, not by the stored field — so honouring this decision would change which Activity week a study event lands in, a behaviour change to live records and a gate of its own. |
 
 ---
 

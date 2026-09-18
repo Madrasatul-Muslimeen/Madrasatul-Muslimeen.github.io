@@ -14001,7 +14001,9 @@ decision** (widen / shorten / reveal), and no design choice was implemented.
 
 **v08.26 (18 Sep 2026, on Claude Code on the web) is the 320px navigation
 truncation paid off, plus two `behaviour.mjs` assertions that had been passing
-while describing the wrong thing.** Two independent pieces of the pending
+while describing the wrong thing.** **Held on
+`claude/charming-rubin-xzxbk1`, NOT merged — `main` remains v08.25 and is what
+the live site serves.** Two independent pieces of the pending
 technical list (T2 and T3 in the 18 Sep handover), neither needing new
 authority and neither touching Rules, indexes or the held Phase 4 wiring.
 
@@ -14107,9 +14109,17 @@ none.
 
 **No `firestore.rules`, `firebase.json`, Rules candidate, index candidate or
 schema change. All seven pending-dependency items unchanged. `7e2931f` still
-held, unmerged and not re-cut.** Its own `version.js` stamp of 08.26 is now
-stale — `main` has taken that number — so **at merge it resolves to 08.27**,
-which is a one-line merge resolution and not a reason to rebuild the candidate.
+held, unmerged and not re-cut.** Its own `version.js` stamp is 08.26 and so is
+this round's, while `main` stays 08.25: **two unmerged branches now stamp the
+same number, and whichever merges first takes it — the second resolves to 08.27
+at merge.** A one-line merge resolution, not a reason to rebuild either.
+
+> **CORRECTED 18 Sep 2026, on the Owner's own catch.** This paragraph first
+> read *"`main` has taken that number"*. It had not: the nav round was
+> committed to a branch, and describing a branch commit as a change to `main`
+> asserts a merge that never happened. `brief-integrity.mjs` now reads
+> `origin/main:app/js/version.js` and checks the milestone line's claim about
+> `main` against `main` itself.
 
 **v08.26, second tranche (18 Sep 2026) — BR-0, no version move.** The T3 sweep
 was continued over the rest of the newly-reachable region (sections 42-tail, 43,
