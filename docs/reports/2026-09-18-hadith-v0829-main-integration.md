@@ -212,7 +212,7 @@ BASE_MAIN_SHA=cfee898be15abff09882996cf22410e499130acb
 
 CANDIDATE_SHA=fd8a8a240cfff1875c3f7696652daa18c47ced1e
 
-FINAL_MAIN_SHA=43dd96f58eeee5ad33dc82bb4e260660e3c290c9
+FINAL_MAIN_SHA=43dd96f58eeee5ad33dc82bb4e260660e3c290c9 -- the INTEGRATION commit (the --no-ff merge). Two BR-0 governance commits follow it on main: 2c42b3e stamps the ledger and this report, and one further commit carries this report's final wording. Read main's tip for the current SHA; the integration point is 43dd96f
 
 FINAL_MAIN_VERSION=v08.29
 
@@ -250,6 +250,6 @@ DEPLOYED=NO
 
 NEXT_UNALLOCATED=v08.30+
 
-ORIGIN_MAIN_VERIFIED=YES -- origin/main == local main == 43dd96f58eeee5ad33dc82bb4e260660e3c290c9, fetched and compared after the push
+ORIGIN_MAIN_VERIFIED=YES -- fetched and compared after every push. After the merge: origin/main == local main == 43dd96f. After the stamping commit: == 2c42b3e. app/js/version.js on main reads 08.29
 
 NEXT_ACTION=RETURN_TO_MASTER_ARCHITECT
