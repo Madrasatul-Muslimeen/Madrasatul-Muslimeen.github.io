@@ -52,6 +52,8 @@ FAIL [E] stream hadith modifies shared/platform file CHANGELOG.md on
 
 **Recorded, not authorised.** The touch is now `DECLARED` alongside the other four, so it is visible every run and awaits the Master Architect's decision. `fd8a8a2` itself was **not modified** — the inventory was taken by reading the branch.
 
+**Two mutations then went UNPROVEN, and that was fixture drift rather than a guard defect.** `fd8a8a2` merged `main` into itself, so the Hadith baseline became equal to `origin/main` — and guard F short-circuits on `baselineSha === mainSha`. Both mutations that target the stale-baseline path silently stopped reaching the code they test, and reported themselves unproven rather than passing vacuously, which is the behaviour they were built for. They construct their own precondition now (a main that has moved past a baseline which is still a legitimate ancestor) instead of depending on a stream happening to be in that state. **Same family as this repository's own lesson about a fixture that enumerates what it needs**: 25/25 again, and the two no longer depend on anyone else's branch.
+
 Measured shared-file footprint of the candidate, against merge base `5ea0d92`:
 
 | File | Lines | Status |

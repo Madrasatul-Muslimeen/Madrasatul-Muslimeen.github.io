@@ -170,8 +170,22 @@ mutation("a stream touches the deployed Rules", "E", (l, f) => {
 }, /modifies shared\/platform file firestore\.rules/);
 
 // ---- F: a stale integration baseline --------------------------------------
-mutation("a moved baseline stops being acknowledged", "F", (l) => {
-  l.streams.find((x) => x.id === "hadith").baselineStatus = "CURRENT";
+// These two need a stream whose baseline has ACTUALLY moved, and they must not
+// depend on one happening to be in that state: guard F short-circuits on
+// `baselineSha === mainSha`, so when the Hadith candidate merged main into
+// itself both mutations silently stopped reaching the code they target and went
+// UNPROVEN. A mutation builds its own precondition -- here, a main that has
+// moved on past a baseline that is still a legitimate ancestor.
+const moveMainPast = (l, f, streamId) => {
+  const s = l.streams.find((x) => x.id === streamId);
+  f.mainSha = "f".repeat(40);
+  f.ancestorOfMain[s.baselineSha] = true;
+  f.ancestorOfMain[l.main.baselineSha] = true;
+  return s;
+};
+
+mutation("a moved baseline stops being acknowledged", "F", (l, f) => {
+  moveMainPast(l, f, "hadith").baselineStatus = "CURRENT";
 }, /STALE BASELINE/);
 
 mutation("a stream's baseline is not on main at all", "F", (l, f) => {
@@ -188,8 +202,8 @@ mutation("the ledger's record of main's version drifts from version.js", "F", (l
   l.main.version = "08.11";
 }, /the ledger records main at 08\.11/);
 
-mutation("the acknowledgement points at a file that does not exist", "F", (l) => {
-  l.streams.find((x) => x.id === "hadith").baselineAcknowledgement = "docs/reports/not-a-real-file.md";
+mutation("the acknowledgement points at a file that does not exist", "F", (l, f) => {
+  moveMainPast(l, f, "hadith").baselineAcknowledgement = "docs/reports/not-a-real-file.md";
 }, /which does not exist/);
 
 // ---- the internal positive controls must themselves be able to fail -------
