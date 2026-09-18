@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>v08.27 — every number picker on the Study-options units bar cut a three-digit value</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>v08.27 — every number picker on the Study-options units bar cut a three-digit value</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Repository:</strong> <code>Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io</code></li><li><strong>Base:</strong> <code>main</code> at <code>e2e2af5</code> (v08.26, merged earlier the same day)</li><li><strong>Task:</strong> investigate the remaining <code>surahSelect</code> and <code>unitTypeSelect</code> truncations by measuring the actual controls and their layout; correct a proven defect <strong>if the existing design determines the remedy</strong>; leave <code>tenantSelect</code> alone as Owner decision <strong>O3</strong></li><li><strong>Blast radius:</strong> <strong>BR-1.</strong> One CSS declaration in <code>app/quranrevival.html</code>, plus the version bump. No JS, no markup, no schema, no Rules, no indexes, no data.</li><li><strong>Application version:</strong> <strong>08.26 → 08.27</strong>, same tranche — the change is reachable.</li><li><strong>Result:</strong> ACCEPT. The investigation found a <strong>different and larger defect than the one it was sent for</strong>: all five number pickers cut a three-digit value at every viewport in both languages. Fixed, with the remedy the app itself had already established. <code>surahSelect</code> and <code>unitTypeSelect</code> are <strong>not</strong> fixed and that is the finding — their row is genuinely short of space, so they join <code>tenantSelect</code> as Owner UI decisions.</li></ul>
+<hr>
+<h2>1. Part one: the merge</h2>
+<p><code>claude/charming-rubin-xzxbk1</code> at <code>49f37c9</code> was verified and merged to <code>main</code> before any new work.</p>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><td>ahead / behind <code>main</code></td><td><strong>4 / 0</strong></td></tr>
+<tr><td><code>main</code> an ancestor of the branch</td><td><strong>yes</strong> — clean fast-forward, no divergence</td></tr>
+<tr><td>files under <code>app/</code></td><td>exactly <strong>two</strong>: <code>app/css/shell.css</code>, <code>app/js/version.js</code></td></tr>
+<tr><td>the whole reachable change</td><td><code>@media (max-width: 340px) { .nav-cat { flex-basis: auto; } }</code> + <code>08.25 → 08.26</code></td></tr>
+<tr><td><code>firestore.rules</code>, <code>firebase.json</code>, <code>docs/governance/</code>, <code>tests/</code>, <code>firestore.indexes.json</code></td><td><strong>0 files touched</strong></td></tr>
+<tr><td><code>legacy/</code>, <code>legacy-v07/</code></td><td>untouched</td></tr>
+<tr><td><code>7e2931f</code> an ancestor of the merge</td><td><strong>NO</strong> — the held Phase 4 wiring is neither included nor activated</td></tr>
+</tbody></table></div>
+<p><strong>Merge SHA: <code>e2e2af5454a738bc07189cb992488e696af43fb4</code></strong> (fast-forward to <code>49f37c9</code>, then one commit recording the merge in the brief and the log).</p>
+<h3>1.1 Live-version verification</h3>
+<div class='tw'><table><thead><tr><th>Level</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>origin/main:app/js/version.js</code></td><td><strong>08.26</strong></td></tr>
+<tr><td>rendered badge, merged <code>main</code></td><td><strong><code>v08.26</code></strong>, really on screen, <code>#appTitleText</code> = &quot;QuranRevival v08.26&quot;, <strong>no <code>08.25</code> anywhere on the page</strong></td></tr>
+<tr><td>the nav fix actually live</td><td>at 320px English, <strong>zero truncations</strong>; cells content-sized <strong>49.6 / 66.2 / 76.3 / 76.8</strong> instead of four equal 67.2</td></tr>
+<tr><td>GitHub Pages itself</td><td><strong>not verifiable from here</strong> — the sandbox proxy refuses the connection (<code>curl: (56) CONNECT tunnel failed, response 403</code>). Environmental, the same class as <code>archive.org</code>. <strong>This is the Owner&#x27;s one-click check: open the app and read the badge.</strong></td></tr>
+</tbody></table></div>
+<h3>1.2 One thing the merge made stale, and the guard caught it</h3>
+<p><code>brief-integrity.mjs</code> passed immediately after the merge <strong>only because it reads <code>origin/main</code></strong>, which was still 08.25 until the push. That is the right thing for it to measure — but it means the milestone line had to be corrected as part of the merge, not after it. It was: the line now reads &quot;v08.26 on <code>main</code>&quot;, the round entry is marked merged, and the nav baseline is marked paid off and live. The correction note from earlier in the day is <strong>kept</strong>, because the episode is the lesson.</p>
+<hr>
+<h2>2. Part two: what the measurement found</h2>
+<h3>2.1 The row is genuinely short — the opposite of v08.26&#x27;s nav</h3>
+<p>v08.26&#x27;s nav truncation turned out to be space that was present and misallocated. The first question here was whether this row is the same shape. <strong>It is not.</strong> Letting the cells shrink-wrap and measuring the row&#x27;s natural width against what it has:</p>
+<div class='tw'><table><thead><tr><th></th><th>available</th><th>needed</th><th>slack</th></tr></thead><tbody>
+<tr><td>320px, Single Ayah</td><td>257</td><td>253.6</td><td><strong>+3.4</strong></td></tr>
+<tr><td>320px, <strong>Range</strong></td><td>257</td><td>320.9</td><td><strong>−63.9</strong></td></tr>
+<tr><td>360px, Single Ayah</td><td>297</td><td>253.6</td><td>+43.4</td></tr>
+<tr><td>360px, <strong>Range</strong></td><td>297</td><td>320.9</td><td><strong>−23.9</strong></td></tr>
+<tr><td>390px, Range</td><td>327</td><td>320.9</td><td>+6.1</td></tr>
+<tr><td>412px, Range</td><td>349</td><td>320.9</td><td>+28.1</td></tr>
+</tbody></table></div>
+<p>At 320px and 360px in Range the row needs <strong>64px and 24px more than exists</strong>. No redistribution reaches that.</p>
+<p><strong>And the nav&#x27;s own remedy would make it worse here, which is worth stating because the pattern looked identical.</strong> <code>.opt-bar-units &gt; .opt-cell</code> uses the same <code>flex: 1 1 0</code> the nav did — but a <code>&lt;select&gt;</code>&#x27;s intrinsic width is its <strong>longest option</strong>, and <code>surahSelect</code> holds 114 surahs whose longest renders at <strong>113px</strong> against the 97.4px it currently gets. Content-sizing this row makes it need <em>more</em>, not less.</p>
+<h3>2.2 The defect the task was not sent for</h3>
+<p>Measuring the controls properly meant measuring the <strong>dropdown arrow</strong> rather than assuming it. A <code>&lt;select&gt;</code> sized to <code>max-content</code> is text + padding + border + arrow, so subtracting a span of the same text in the same computed font leaves the arrow: <strong>20.3px</strong>.</p>
+<p>That, plus 10px of padding and border, leaves a 49.6px number cell with <strong>19.3px of usable text width</strong> — against a three-digit value needing <strong>21.9px</strong>.</p>
+<div class='tw'><table><thead><tr><th>picker</th><th>longest real value</th><th>baseline slack (en)</th><th>baseline slack (bn)</th></tr></thead><tbody>
+<tr><td><code>ayahSelect</code></td><td>286 (Al-Baqara)</td><td><strong>−2.6</strong></td><td><strong>−2.2</strong></td></tr>
+<tr><td><code>unitNumSelect</code></td><td>604 (page)</td><td><strong>−2.6</strong></td><td><strong>−2.2</strong></td></tr>
+<tr><td><code>rangeFromSelect</code></td><td>286</td><td><strong>−2.6</strong></td><td><strong>−2.2</strong></td></tr>
+<tr><td><code>rangeToSelect</code></td><td>286</td><td><strong>−2.6</strong></td><td><strong>−2.2</strong></td></tr>
+<tr><td><code>drillRepeatSelect</code></td><td>10×</td><td>cut</td><td>cut</td></tr>
+</tbody></table></div>
+<p><strong>At every viewport measured — 320, 360, 390, 412 — and in both languages.</strong> Not one width escapes. Any surah with 100 or more ayahs shows it, which is most of the long ones the Owner reads.</p>
+<h3>2.3 The app had already diagnosed this, once, and fixed only half of it</h3>
+<p><code>#readPickers</code>&#x27; own CSS comment, verbatim:</p>
+<p>&gt; <em>&quot;A number picker never needs a share of the line — <strong>same rule as the Study options bar&#x27;s own <code>.opt-cell-num</code></strong>. Round 27 widened it 3.1rem → 3.9rem: <strong>the owner reported a three-digit ayah reading as cut off, and it was — &#x27;286&#x27; plus the dropdown arrow does not fit 50px.</strong>&quot;</em></p>
+<p>Round 27 fixed the Read screen&#x27;s pickers and <strong>left the twin its own comment names</strong> at <code>3.1rem</code> = <strong>49.6px</strong> — the exact 50px that sentence says does not fit. This is the project&#x27;s recorded shape: an accepted decision that reached one surface and not its sibling.</p>
+<p>So the remedy is determined <strong>in kind</strong> — a number picker must fit three digits — and the Owner has already reported this very symptom once.</p>
+<h3>2.4 The sibling&#x27;s number is not affordable here, and that was measured too</h3>
+<p>Copying <code>3.9rem</code> costs 12.8px per number cell, taken from the flexible cells on the same row. Measured across every viewport and both unit modes:</p>
+<div class='tw'><table><thead><tr><th>candidate</th><th>number cell</th><th><code>unitTypeSelect</code></th><th><code>surahSelect</code></th></tr></thead><tbody>
+<tr><td>baseline</td><td><strong>−2.6</strong></td><td>−1.9 … −53.2</td><td>−5 … +13</td></tr>
+<tr><td><strong>C1 — padding 0.25rem → 0.1rem</strong></td><td><strong>+2.2</strong></td><td><strong>unchanged, every row</strong></td><td><strong>unchanged, every row</strong></td></tr>
+<tr><td>C2 — the sibling&#x27;s 3.9rem</td><td>+10.2</td><td>−8.3 … −66</td><td><strong>+2 → −10.8 at 390/Range, a NEW cut</strong></td></tr>
+<tr><td>C3 — padding + 3.4rem</td><td>+7</td><td>−4.3 … −58</td><td><strong>+2 → −2.8 at 390/Range, a NEW cut</strong></td></tr>
+</tbody></table></div>
+<p><strong>C2 and C3 trade one defect for another.</strong> C1 buys the same room from inside the cell and <strong>moves no other control by a single pixel</strong>.</p>
+<p>C1 is also the move <code>.opt-cell-num</code> already makes for itself: it already carries its own smaller label type (<code>0.66rem</code> against <code>0.72rem</code>) precisely because a narrow number cell needs tightening the others do not.</p>
+<h3>2.5 The fix</h3>
+<p>``<code>css .opt-cell-num &gt; select { padding-left: 0.1rem; padding-right: 0.1rem; } </code>``</p>
+<p><strong>It must sit AFTER <code>.opt-cell &gt; select</code>.</strong> The two are equal specificity (0,2,1), so source order is the only thing that makes this one win — this page&#x27;s own most-repeated CSS trap, checked rather than assumed (the rule lands at line 340, the one it overrides at line 311).</p>
+<p>Verified on the real page, not through an injected stylesheet:</p>
+<div class='tw'><table><thead><tr><th></th><th>en</th><th>bn</th></tr></thead><tbody>
+<tr><td><code>ayahSelect</code> / <code>unitNumSelect</code> / <code>rangeFromSelect</code> / <code>rangeToSelect</code></td><td><strong>+2.2</strong></td><td><strong>+2.6</strong></td></tr>
+<tr><td>at 320 / 360 / 390 / 412, unit = ayah / page / hizb / juz / range</td><td><strong>all ok</strong></td><td><strong>all ok</strong></td></tr>
+</tbody></table></div>
+<p><strong>Stated honestly: +2.2px is thin.</strong> More headroom is available and was deliberately not taken, because every way of buying it costs <code>surahSelect</code> a new truncation (§2.4).</p>
+<hr>
+<h2>3. What was NOT fixed, and why it is an Owner decision</h2>
+<p><code>surahSelect</code> and <code>unitTypeSelect</code> are still cut — at 320px in both modes, and in Range up to 412px for <code>unitTypeSelect</code>. <strong>This is not an oversight.</strong></p>
+<p>Their row is short by <strong>63.9px at 320px in Range</strong> and 23.9px at 360px. Nothing redistributive closes that. The available remedies are <strong>materially different products</strong>:</p>
+<ul><li><strong>wrap the row</strong> onto two lines at narrow widths — costs vertical space on a screen already measured to the pixel;</li><li><strong>shrink the type</strong> — v08.02 already established that Bengali matras make small type cramped in a way English does not;</li><li><strong>shorten the option text</strong> (&quot;Range of Ayahs&quot; → &quot;Range&quot;) — a wording change, user-visible, and I11 means both languages.</li></ul>
+<p>Each is a different answer to &quot;what should this screen show when it cannot show everything&quot;. <strong>That is the Owner&#x27;s call, exactly as <code>tenantSelect</code> is.</strong> <code>tenantSelect</code> was not touched.</p>
+<p><strong>All three now sit together as Owner UI decisions</strong>, which is a cleaner statement of the backlog than &quot;3 select truncations&quot; was.</p>
+<hr>
+<h2>4. The guard could not see this, and now can</h2>
+<p><code>panel.mjs</code> tested <code>need &gt; w - 22</code>:</p>
+<ul><li>the <strong>22px arrow was assumed</strong>, not measured (it is 20.3px here);</li><li>it <strong>ignored the control&#x27;s own 10px of padding and border</strong>, so the test was optimistic by exactly that much and returned &quot;not cut&quot; for text genuinely clipped;</li><li>it measured only the <strong>selected</strong> option, and its fixture sits on surah 1 where the ayah picker reads &quot;1&quot;.</li></ul>
+<p>Three reasons the live defect was invisible to it. It now measures the arrow, subtracts padding and border, and judges against the <strong>longest</strong> option as well as the selected one.</p>
+<p><strong>Mutation-proven:</strong> revert the CSS and <code>panel.mjs</code> exits <strong>1</strong> with <code>48 PROBLEM(S)</code>, naming <code>unitNumSelect</code> and <code>drillRepeatSelect</code> as newly truncated; restore, and it exits <strong>0</strong> with <code>app/quranrevival.html</code> byte-identical.</p>
+<p><code>drillRepeatSelect</code> was <strong>not predicted</strong> — it is an <code>.opt-cell-num</code> on the listen bar, and the fix reaches it too. Found by the mutation, not by reading the code.</p>
+<hr>
+<h2>5. Verification</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>behaviour.mjs</code></td><td><strong>978 pass / 4 fail</strong>, 982 checks — the 4 environmental (22g × 3 archive.org, intermittent; 31e TLS). Same 982 total as v08.26&#x27;s clean run</td></tr>
+<tr><td><code>layout.mjs</code></td><td><strong>EXIT 0</strong>, <code>NO LAYOUT REGRESSIONS</code>, <strong><code>CHANGED: 0</code></strong>, 16 configurations; targets 250 → 250, deferred 22, <strong>dangling 0</strong></td></tr>
+<tr><td><code>panel.mjs</code></td><td><strong>EXIT 0</strong>, <code>PANEL OK</code>; number pickers gone from the truncation list; 64 tolerated baseline hits across the three Owner-decision ids</td></tr>
+<tr><td><code>panel.mjs</code>, mutated</td><td><strong>EXIT 1</strong>, 48 problems, names the regression</td></tr>
+<tr><td><code>navcheck</code> / <code>reading</code></td><td>EXIT 0 each</td></tr>
+<tr><td><code>brief-integrity</code></td><td>8 / 0</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 / 0</td></tr>
+<tr><td><code>firestore-index-requirements</code> / <code>rules-deployment-candidate</code> / <code>stub-parity</code></td><td>8 / 10 / 3, all 0 fail</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 / 47</strong>, unchanged — no new string</td></tr>
+<tr><td><code>git diff -- app/</code></td><td>exactly <code>app/js/version.js</code> and <code>app/quranrevival.html</code></td></tr>
+</tbody></table></div>
+<p>The <code>layout.mjs</code> shim was built from <code>HEAD</code> and <strong>deleted before the coverage total was read</strong> — this project&#x27;s own recorded trap.</p>
+<h2>6. What this tranche did NOT do</h2>
+<ul><li><strong>No Rules or indexes deployed</strong>, and none changed. <code>firestore.rules</code> and <code>firebase.json</code> byte-identical.</li><li><strong><code>7e2931f</code> untouched</strong> — not merged, not activated, not re-cut, not re-stamped. Its own 08.26 stamp is now two versions behind <code>main</code>; at merge it resolves to the next free number.</li><li><strong><code>tenantSelect</code> untouched</strong> — Owner decision <strong>O3</strong>.</li><li><strong><code>surahSelect</code> / <code>unitTypeSelect</code> untouched</strong> — now Owner decisions alongside it, with the measurement that makes them decidable (§3).</li><li>All seven pending-dependency ledger items unchanged. The blocker is still <strong>E1 — authenticated Firebase access</strong> — and it is access, not design.</li></ul>
+<h2>7. Follow-on sweep: was the old heuristic hiding anything else?</h2>
+<p><code>panel.mjs</code>&#x27;s <code>need &gt; w - 22</code> hid a live defect, and it only ever measured <strong>one bar on one page</strong>. With the corrected method proven, it was cheap to ask what else it might have hidden: every <code>&lt;select&gt;</code> across <strong>12 pages × 2 languages × 2 viewports (320px and 390px)</strong>, judged on measured arrow + real padding and border.</p>
+<p><strong>Result: nothing.</strong> Three hits came back at <strong>0.7px, 0.6px and 0.0px</strong> — sub-pixel float noise from canvas text measurement, not truncation. Re-run with a 1px floor: <strong>zero</strong>.</p>
+<p><strong>Scope, stated rather than implied:</strong> this sweep sees selects that are <strong>visible on page load</strong>. It does not open the Study-options panel, whose controls measure 0 until it is opened — those are <code>panel.mjs</code>&#x27;s job, and there <code>tenantSelect</code>, <code>surahSelect</code> and <code>unitTypeSelect</code> remain cut as §3 describes. One incidental fact worth keeping: <code>tenantSelect</code> on <code>people.html</code> and <code>bookmarks.html</code> gets <strong>272.3px</strong> of usable width and fits comfortably. <strong>Its truncation is specific to the Study-options panel&#x27;s 145px cell</strong>, not to the control or its content — which is useful to the Owner when they come to decide O3.</p>
+<p><strong>So the number-picker class was the only thing the heuristic was hiding</strong>, and it is closed.</p>
+<h2>8. The lesson</h2>
+<p><strong>Measure the control, not the assumption inside the tool that measures it.</strong> The task was sent about <code>surahSelect</code> and <code>unitTypeSelect</code>. Measuring properly — a real arrow width instead of a guessed 22px, real padding, and the longest option instead of whichever the fixture had selected — showed those two were <em>not</em> fixable and that five other controls were quietly broken at every width in both languages, with the Owner&#x27;s own earlier bug report already written into the CSS next door. <strong>The suite&#x27;s own heuristic was the reason nobody had seen it.</strong></p>
+</main></body></html>

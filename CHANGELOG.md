@@ -13996,3 +13996,288 @@ recorded so they are not re-litigated:**
 
 **Also recorded: the tenant-picker truncation IS a genuine bounded Owner UI
 decision** (widen / shorten / reveal), and no design choice was implemented.
+
+---
+
+**v08.26 (18 Sep 2026, on Claude Code on the web) is the 320px navigation
+truncation paid off, plus two `behaviour.mjs` assertions that had been passing
+while describing the wrong thing.** **MERGED to `main` on 18 Sep 2026 at
+`49f37c9`, fast-forward — `main`'s `version.js` reads 08.26 and the fix is
+live.** (It was held on `claude/charming-rubin-xzxbk1` while the milestone
+correction below was made.) Two independent pieces of the pending
+technical list (T2 and T3 in the 18 Sep handover), neither needing new
+authority and neither touching Rules, indexes or the held Phase 4 wiring.
+
+**The nav finding reversed its own diagnosis, and that is the part worth
+remembering.** English "Operation" and "Bookmark" cut at 320px — 73px of label
+in a 65px cell — had been a named, tolerated baseline for as long as
+`navcheck.mjs` has run, read the whole time as "the labels do not fit at
+320px". **Measured, they do fit: the four need 282.3px of a 288px row, with
+5.7px to spare.** What cut them is `.nav-cat { flex: 1 1 0 }` — a flex-basis of
+**zero** makes the four cells an equal quarter each, so Home took 65px to print
+a word needing 48.1 while Bookmark was cut at 65 needing 75.4. **The space the
+long labels wanted was already on the row, sitting under the short ones.**
+
+**`scrollWidth`/`clientWidth` is what hid it.** That pair bottoms out the
+moment a label fits — it can say "cut by 8px" but never "fits with 30px to
+spare" — so the row's real slack was invisible to the suite that had been
+reporting the defect for months. It was measured instead by letting the cells
+shrink-wrap (`flex: 0 0 auto`) and reading the row's natural width against what
+it has.
+
+**The fix is one property at one breakpoint: `@media (max-width: 340px) {
+.nav-cat { flex-basis: auto } }`.** `grow` and `shrink` are untouched, so the
+cells still fill the row and can still shrink, and `min-width: 0` still lets
+the ellipsis do its job as a last resort — only the STARTING size changes, from
+"an equal quarter" to "what this label needs". **Nothing shrank to pay for
+it**: font-size, padding, the caret glyph and the 26px/28px button height are
+all unchanged in both languages. Four other remedies were costed first and each
+one cost something — padding to zero bought 3px, a tighter row gap 3px,
+dropping the caret's leading space 3px (the three together bought exactly the
+8px needed, with nothing to spare), and a font step to 0.62rem bought it alone
+at the cost of 9.92px type, which the v08.02 lesson about Bengali matras makes
+a bad trade.
+
+**Scoped to ≤340px deliberately, not applied everywhere.** Equal-width tabs are
+the design at every width where they hold their label, and they are
+byte-identical from 360px up — measured 77.2/77.2/77.2/77.2 at 360px and the
+same proportions at 390/412/768 in both languages, one line, no overflow, the
+last category's dropdown still fully on screen.
+
+**340px was truncating too (73>70), and nothing had ever looked**, because
+`navcheck.mjs`'s width list jumped 320 → 360 straight over the widest width the
+defect still reached. 340 is in the list now. **A width list with a hole in it
+hides the defect living in the hole.**
+
+`KNOWN_TRUNCATIONS` is now `{}` rather than deleted — the mechanism stays so the
+next pre-existing finding is tolerated by name rather than by making the exit
+code meaningless again. **Proven in both directions:** with the CSS reverted
+`navcheck.mjs` exits 1 and names 2 problems; with it, exit 0 and no truncation
+at any of the six widths in either language.
+
+**The tenant-picker truncation was deliberately NOT touched** — it is a genuine
+bounded Owner UI decision (widen the cell, shorten the option text, or reveal
+the full value without widening are materially different choices), and it stays
+on the Owner list.
+
+**Two `behaviour.mjs` assertions were found passing while describing the wrong
+thing** — the class the 17 Sep excavation left open as T3 ("checks *wrong about
+their subject*, as opposed to unable to fail"). The bounded set read was
+sections **44–50h-k**, the whole bookmark tranche of the newly-reachable
+region. Both findings were probed before being believed and mutation-proven
+after being fixed.
+
+**45b, "cancelling the name prompt makes no bookmark", read the NOTE
+indicator.** It asserted `!.ayah-quick-btn.has-note` inside
+`#readQuickMenuSlot`. That class comes from `renderQuickMenu`'s `hasNote:
+ayahHasNote(...)` — whether the āyah has a **Note** — and this call site passes
+`showBookmark: false`, so the Read screen's ⋮ carries no bookmark state of any
+kind. **Probed: `has-note` read `false` after cancelling AND `false` after a
+real save, while the write log went 0 → 1.** The assertion evaluated identically
+in the case it was written to catch and in its exact opposite. It was also a
+bare `!== true` with no diagnostic, which passes just as happily when the
+element is absent. It reads `#readBookmarkBtn` now (🔖 → ★, aria-label
+"Bookmark this āyah" → "Remove bookmark") plus the write count, against a
+stated positive control — **and 45c asserts the same two facts moving the OTHER
+way after a real save**, a denial paired with an allow differing in one fact.
+**Mutation-proven:** make the popover's Cancel save instead, and the original
+still passes while the correction fails.
+
+**50k, "the popover's 'Folder' label is NOT the group-by 'Folder' wording",
+never looked at the Folder field.** It was `fields.some((f) => BN.test(f) && f
+!== groupByFolder)` over EVERY popover field, so "নাম" (Name) satisfied it. It
+also compared against a `groupByFolder` that is `undefined` whenever the nav
+select is gone, making `f !== undefined` true for every field. **Mutation-proven
+by routing `prefs.js` through a rewrite that drops the `|groupby` suffix** — so
+the popover's Folder label and the group-by's become byte-identical "ফোল্ডার" —
+at which point the original still passes and the correction fails. Both labels
+are now read by identity (the field holding `[data-bm-pop-folder]`; the option
+with value `folder`) and both asserted present and Bangla before being
+compared. The first clause was bound to `[data-bm-pop-person-row]` in the same
+way rather than to "some field somewhere".
+
+**Coverage was preserved and increased**: 979 → 981 executing checks, the two
+extra being 45b's positive control and 45c's paired flip. `behaviour.mjs` 977
+pass / 4 fail, the 4 being the known environmental pair (22g × 3 archive.org,
+31e TLS). **`layout.mjs` EXIT 0, `NO LAYOUT REGRESSIONS`, `CHANGED: 0`** against
+a shim built to actually see this change — `HEAD`'s own `shell.css` dropped
+beside the page as `_prev-shell.css` and the shim pointed at it, because
+`quranrevival.html` itself is byte-for-byte untouched and without that both
+sides would have loaded the NEW stylesheet and the run would have proven
+nothing. `reading.mjs`, `panel.mjs` EXIT 0. Translation coverage **1,803
+scanned / 47 missing, unchanged** — no new string; a CSS breakpoint carries
+none.
+
+**No `firestore.rules`, `firebase.json`, Rules candidate, index candidate or
+schema change. All seven pending-dependency items unchanged. `7e2931f` still
+held, unmerged and not re-cut.** Its own `version.js` stamp is 08.26 and so is
+this round's, while `main` stays 08.25: **two unmerged branches now stamp the
+same number, and whichever merges first takes it — the second resolves to 08.27
+at merge.** A one-line merge resolution, not a reason to rebuild either.
+
+> **CORRECTED 18 Sep 2026, on the Owner's own catch.** This paragraph first
+> read *"`main` has taken that number"*. It had not: the nav round was
+> committed to a branch, and describing a branch commit as a change to `main`
+> asserts a merge that never happened. `brief-integrity.mjs` now reads
+> `origin/main:app/js/version.js` and checks the milestone line's claim about
+> `main` against `main` itself.
+
+**v08.26, second tranche (18 Sep 2026) — BR-0, no version move.** The T3 sweep
+was continued over the rest of the newly-reachable region (sections 42-tail, 43,
+43i-o) and **found no further subject drift.** Two candidates were investigated
+and **cleared rather than "fixed"**: `43k`'s empty-centre assertion is correct
+(its own `.filter(Boolean)` drops the present-but-empty `<text>`, and its 10
+`.wheel-seg-num` siblings are its positive control — my first probe was wrong,
+not the check), and `42h`'s `.note-view` container is current and really on
+screen at 358×666 with 41 buttons inside.
+
+**Two assertions were strengthened anyway, both already true.** `42h` was a bare
+negative with no proof its container existed — mutation-proven by renaming
+`.note-view`, the v07.70 failure mode, where the original returns `true` while
+asserting nothing at all. `43h` claimed "the real claim state" and tested only
+`Boolean(...)` — bound now to the two shapes `way-modal.js` can render, and
+mutation-proven by rewriting both `way-track-state` sites to a bare `—`.
+
+**And the run found a real harness defect, `38f`.** It failed printing `⏸ Pause`
+— **a value satisfying the regex it had just rejected** — because `check()` was
+calling `playLabel(page)` twice, once for the condition and once for the
+diagnostic. Underneath, three assertions slept a guessed 600/300/400ms **six
+lines below `waitFor`'s own comment saying not to.** Measured latency in 6
+isolated trials: 67–84ms. **The failure was self-induced** — that run shared the
+machine with a mutation probe I had started — but the fix was kept, because a
+sleep racing a state change demonstrably lost and the double read made the
+diagnostic actively misleading. Each assertion waits for the state and reads the
+label once; `waitFor` gained an optional 4th argument, default `null`, so every
+existing caller is unaffected.
+
+**Clean run of record: `behaviour.mjs` 981 pass / 1 fail, 982 checks**, the one
+failure being 31e's TLS artefact — **the 22g trio passed this run**, confirming
+again that neither a red nor a green 22g is evidence. Session progression
+979 → 981 → 982 executing checks, **no check deleted at any point.**
+
+**18 Sep 2026 — the 22 "missing" `getElementById` targets, investigated. BR-0,
+no version move (no application code changed, so the badge must not).** Handover
+**T2**'s second item, taken as instructed: establish which are **stale
+references** and which are **missing live controls** *before* changing code.
+
+**Neither. All 22 are DEFERRED RENDERS — 0 stale, 0 missing.** Each is authored
+inside a JS template literal in `quranrevival.html` and injected when its own
+surface opens, across six render functions: Asma's Names level (3), its Refs
+level (5), the edit overlay (7), the file-into row (3) and QCR's collection view
+(4). `layout.mjs` measures only the **landing page**, where all 22 are
+legitimately absent.
+
+**Proven twice, by methods that agree.** A browser walk drove each surface and
+**all 22 appeared**; a static rule — **absent AND authored = deferred, absent
+AND never authored = dangling** — returns the same 22 and **0 dangling**.
+
+**Two probe failures, both mine, both worth recording.** The file-into row is
+`mode === "create" && fileInto`, and only one of four `openAsmaXEditOverlay`
+call sites passes `fileInto` (`+ Create a new Dual Name`); opening the overlay
+in *edit* mode correctly renders no row, and reading that as "the ids do not
+exist" would have been a false finding. And QCR reported "collections offered:
+0" because the probe looked for row buttons where the app uses a `<select>` —
+the fixture holds **18**. **A probe that finds nothing is a claim about the
+probe until proven otherwise.**
+
+**`layout.mjs` only was changed.** It classifies absent ids as `deferred` or
+`dangling`, prints both, **fails on a dangling one** (a real assertion it never
+carried — previously any newly-absent id failed whether real or not, and 22
+false ones were permanently tolerated to keep the exit code usable), and
+`KNOWN_MISSING_IDS` is **empty rather than deleted**, keeping the mechanism the
+way `navcheck.mjs` does. Mutation-proven: a reference to
+`idNobodyEverAuthors` makes it **EXIT 1** naming the id; restored, **EXIT 0**.
+
+**Verification:** `layout.mjs` EXIT 0, `NO LAYOUT REGRESSIONS`, `CHANGED: 0`,
+targets 250 → 250, deferred 22 / dangling 0 at all 16 configurations;
+`navcheck`/`panel`/`reading` EXIT 0; `brief-integrity` 8/0;
+`rules-authorisation-executable` 38/0; coverage **1,803 / 47** unchanged;
+`git diff -- app/` empty. `behaviour.mjs` deliberately not re-run — this tranche
+changes one harness file it does not load. See
+`docs/reports/2026-09-18-getelementbyid-baseline-investigation.md` and `.html`.
+
+---
+
+**v08.27 (18 Sep 2026) — EVERY NUMBER PICKER ON THE STUDY-OPTIONS UNITS BAR CUT
+A THREE-DIGIT VALUE, at every viewport, in both languages — and the app had
+already diagnosed it once and fixed only half of it.**
+
+The round was sent to investigate `surahSelect` and `unitTypeSelect`. Measuring
+the controls properly found something else, and larger.
+
+**Measuring the dropdown arrow instead of assuming it is what exposed it.** A
+`<select>` sized to `max-content` is text + padding + border + arrow, so
+subtracting a span of the same text in the same computed font leaves the arrow:
+**20.3px**. That, plus 10px of padding and border, leaves a 49.6px number cell
+with **19.3px of usable text** against a three-digit value needing **21.9px** —
+**−2.6px in English, −2.2px in Bangla**, on `ayahSelect`, `unitNumSelect` (page
+reaches 604), `rangeFromSelect`, `rangeToSelect` and `drillRepeatSelect`. At
+320, 360, 390 and 412px alike. Any surah with 100+ ayahs shows it.
+
+**`#readPickers`' own comment names the unfixed twin**: *"A number picker never
+needs a share of the line — same rule as the Study options bar's own
+`.opt-cell-num`. Round 27 widened it 3.1rem → 3.9rem: the owner reported a
+three-digit ayah reading as cut off, and it was — '286' plus the dropdown arrow
+does not fit 50px."* Round 27 fixed the Read screen and left `.opt-cell-num` at
+3.1rem = **49.6px**, the exact 50px that sentence says does not fit.
+
+**The sibling's own 3.9rem is NOT affordable here, measured rather than
+assumed**: it costs 12.8px per number cell off the same row and pushes
+`surahSelect` from +2px to **−10.8px at 390px in Range — a NEW truncation**.
+Trading one defect for another is not a fix. **Tightening the number cell's own
+horizontal padding (0.25rem → 0.1rem) buys the same room for nothing**: −2.6 →
+**+2.2** (en) and −2.2 → **+2.6** (bn) at every viewport and unit type, with
+**every other cell keeping its width to the pixel**. The same move
+`.opt-cell-num` already makes for its label (0.66rem against 0.72rem). **The
+rule had to go AFTER `.opt-cell > select`** — equal specificity, source order
+decides, this page's most-repeated trap.
+
+**`surahSelect` and `unitTypeSelect` were deliberately NOT fixed, and that is
+the finding.** Unlike v08.26's nav — where the space was present and
+misallocated — **this row is genuinely short**: `.opt-bar-units` needs 320.9px
+against **257 available at 320px in Range (−63.9)**, and −23.9 at 360px. And the
+nav's own remedy would make it worse, because a `<select>`'s intrinsic width is
+its **longest option** and `surahSelect` holds 114 surahs whose longest renders
+at 113px. Wrapping the row, shrinking the type, or shortening the wording are
+**materially different products**, so all three selects — with `tenantSelect` —
+are now **Owner UI decisions**.
+
+**`panel.mjs` could not see any of this.** Its test was `need > w - 22`: the
+arrow **assumed**, the control's own 10px of padding and border **ignored**, and
+only the **selected** option measured — with a fixture sitting on surah 1, where
+the ayah picker reads "1". Three reasons the defect was invisible. It measures
+the real arrow, subtracts padding and border, and judges the **longest** option
+too. **Mutation-proven**: revert the CSS and it exits 1 with 48 problems naming
+`unitNumSelect` and `drillRepeatSelect`; restore and it exits 0.
+**`drillRepeatSelect` was not predicted** — a listen-bar `.opt-cell-num` the fix
+also reaches, found by the mutation rather than by reading the code.
+
+**Verification:** `behaviour.mjs` **978/4** (982 checks, the 4 environmental);
+`layout.mjs` EXIT 0, `CHANGED: 0`, targets 250 → 250, deferred 22 / dangling 0;
+`panel.mjs` EXIT 0; `navcheck`/`reading` EXIT 0; `brief-integrity` 8/0;
+`rules-authorisation-executable` 38/0; coverage **1,803 / 47** unchanged.
+**No Rules, indexes, schema or data change; `7e2931f` untouched.** See
+`docs/reports/2026-09-18-study-options-number-pickers.md` and `.html`.
+
+**Also this day: v08.26 was MERGED to `main`** at `49f37c9` (fast-forward,
+4 commits), recorded at `e2e2af5`. Pre-merge audit: 4 ahead / 0 behind, no
+divergence; the whole reachable change one media query plus the version bump;
+zero files touched under `firestore.rules`, `firebase.json`, `docs/governance/`,
+`tests/`; `7e2931f` proven **not** an ancestor. The rendered badge reads
+**v08.26** with no `08.25` anywhere, and the nav fix is live (cells 49.6 / 66.2 /
+76.3 / 76.8 instead of four equal 67.2). **GitHub Pages itself could not be
+reached from the sandbox** (proxy 403) — that one is the Owner's own one-click
+check.
+
+**Follow-on sweep (18 Sep 2026, BR-0, no version move).** `panel.mjs`'s
+`need > w - 22` had hidden a live defect and only ever measured one bar on one
+page, so the corrected method was pointed at **every `<select>` across 12 pages
+× 2 languages × 2 viewports**. **Nothing** — three hits at 0.7px, 0.6px and
+0.0px, sub-pixel float noise from canvas text measurement; **zero with a 1px
+floor**. The sweep sees selects **visible on load**, not those behind the
+Study-options panel, which is `panel.mjs`'s job and where the three
+Owner-decision selects remain cut. One incidental fact for O3: **`tenantSelect`
+fits comfortably on `people.html` and `bookmarks.html` with 272.3px usable** —
+its truncation is specific to the Study-options panel's 145px cell, not to the
+control or its content. **The number-picker class was the only thing the
+heuristic was hiding, and it is closed.**

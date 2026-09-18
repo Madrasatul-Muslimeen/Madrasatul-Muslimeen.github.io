@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The 22 &quot;missing&quot; `getElementById` targets — investigated, and none of them was missing</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>The 22 &quot;missing&quot; <code>getElementById</code> targets — investigated, and none of them was missing</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Repository:</strong> <code>Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io</code></li><li><strong>Branch:</strong> <code>claude/charming-rubin-xzxbk1</code></li><li><strong>Task:</strong> handover <strong>T2</strong>, second item — establish which of <code>layout.mjs</code>&#x27;s 22 baselined missing <code>getElementById</code> targets are <strong>stale references</strong> and which are <strong>missing live controls</strong>, <em>before</em> changing any code</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> <code>git diff -- app/</code> is empty. The only change is <code>tools/i18n-verify/layout.mjs</code>.</li><li><strong>Application version:</strong> <strong>unchanged at 08.26 on this branch</strong> — no reachable application code or behaviour changed, so the badge must not move. (<code>main</code> remains 08.25.)</li><li><strong>Result:</strong> <strong>22 deferred renders, 0 stale references, 0 missing controls. No application code should change, and none did.</strong> The baseline was never debt; the measurement was conflating two different things. It is now able to tell them apart, and fails on the one that is real.</li></ul>
+<hr>
+<h2>1. The question, and why it had to be answered before touching anything</h2>
+<p><code>CLAUDE.md</code> has carried this as debt:</p>
+<p>&gt; <strong>The baselines are honest but they are DEBT:</strong> 22 missing <code>getElementById</code> targets …</p>
+<p>&quot;Missing&quot; invites exactly one reading — <em>the app references controls that are not there</em> — which would mean either dead code or absent UI. The instruction was to establish which, before changing code. <strong>Both readings turn out to be wrong.</strong></p>
+<h2>2. What the measurement actually claims</h2>
+<p><code>layout.mjs</code> reads the <strong>inline <code>&lt;script&gt;</code> text</strong> of <code>app/quranrevival.html</code>, extracts every <code>getElementById(&quot;x&quot;)</code>, and reports the ids <strong>not in the DOM at that moment</strong>:</p>
+<p>``<code>js const src = [...document.querySelectorAll(&quot;script&quot;)].map((s) =&gt; s.textContent).join(&quot;\n&quot;); const ids = [...src.matchAll(/getElementById\(&quot;([^&quot;]+)&quot;\)/g)].map((m) =&gt; m[1]); return { total: uniq.length, missing: uniq.filter((id) =&gt; !document.getElementById(id)) }; </code>``</p>
+<p><strong>The moment is the landing page</strong> — the only state this suite measures. Nothing in the scan distinguishes &quot;this element does not exist&quot; from &quot;this element has not been rendered yet.&quot;</p>
+<h2>3. First finding: all 22 are authored in the page&#x27;s own source</h2>
+<p>A grep for <code>id=&quot;&lt;the id&gt;&quot;</code> in <code>app/quranrevival.html</code> returns <strong>at least one hit for every one of the 22</strong>. They are not names the code invented; the page writes them. They sit inside <strong>JavaScript template literals</strong>, which is why they are in <code>&lt;script&gt;</code> text rather than in static markup:</p>
+<p>``<code>js &lt;button type=&quot;button&quot; class=&quot;qcr-icon-btn&quot; id=&quot;asmaXBackToGroupsBtn&quot; …&gt;◂&lt;/button&gt; </code>``</p>
+<p>Mapping each id back to its enclosing function accounts for all 22 across <strong>six render functions</strong>:</p>
+<div class='tw'><table><thead><tr><th>Render function</th><th>ids</th><th>Surface</th></tr></thead><tbody>
+<tr><td><code>renderAsmaXNamesLevel()</code></td><td>3</td><td>Asma → a group&#x27;s Names level</td></tr>
+<tr><td><code>renderAsmaXRefsLevel()</code></td><td>5</td><td>Asma → one Name&#x27;s Refs level</td></tr>
+<tr><td><code>openAsmaXEditOverlay({…})</code></td><td>7</td><td>the Asma edit overlay</td></tr>
+<tr><td><code>asmaXFileIntoRowHtml(kind)</code></td><td>3</td><td>the &quot;file under&quot; row <em>inside</em> that overlay</td></tr>
+<tr><td><code>renderQcrCollectionView()</code></td><td>4</td><td>QCR → a collection view</td></tr>
+<tr><td></td><td><strong>22</strong></td><td></td></tr>
+</tbody></table></div>
+<h2>4. Second finding: every one of them really renders — proven by walking the surfaces</h2>
+<p>A probe drove the app to each surface and recorded where each id first appeared.</p>
+<div class='tw'><table><thead><tr><th>Step</th><th>Newly present</th></tr></thead><tbody>
+<tr><td>landing page</td><td>0</td></tr>
+<tr><td>Asma → Groups level</td><td>0</td></tr>
+<tr><td><strong>Asma → Names level</strong></td><td><code>asmaXBackToGroupsBtn</code>, <code>asmaXAddExistingBtn</code>, <code>asmaXAddExistingSelect</code></td></tr>
+<tr><td><strong>Asma → Refs level</strong></td><td><code>asmaXBackFromRefsBtn</code>, <code>asmaXEditThisNameBtn</code>, <code>asmaXAttachRefThisNameBtn</code>, <code>asmaXGroupsThisNameBtn</code>, <code>asmaXRefPosterBtn</code></td></tr>
+<tr><td><strong>Asma → edit overlay</strong></td><td><code>asmaXEditTranslit</code>, <code>asmaXEditMeaningEn</code>, <code>asmaXEditBnName</code>, <code>asmaXEditBn</code>, <code>asmaXEditRef</code>, <code>asmaXEditWeak</code>, <code>asmaXEditIsPhrase</code></td></tr>
+<tr><td><strong>&quot;+ Create a new Dual Name&quot;</strong></td><td><code>asmaXEditFileSelect</code>, <code>asmaXEditNewCollLabel</code>, <code>asmaXEditNewColl</code> — <strong>3/3</strong></td></tr>
+<tr><td><strong>QCR panel</strong></td><td><code>qcrAddSurahSelect</code>, <code>qcrAddAyahInput</code>, <code>qcrAddItemBtn</code>, <code>qcrAddMsg</code> — <strong>4/4</strong></td></tr>
+</tbody></table></div>
+<p><strong>All 22 appear.</strong></p>
+<p>Two of them needed a state the first pass did not reach, and each taught something worth keeping:</p>
+<ul><li><strong>The file-into row is conditional on both mode and argument</strong>: <code>${mode === &quot;create&quot; &amp;&amp; fileInto ? asmaXFileIntoRowHtml(fileInto.kind) : &quot;&quot;}</code>. Of the four <code>openAsmaXEditOverlay</code> call sites, exactly one passes <code>fileInto</code> — <code>#asmaXAttachNewDualBtn</code>, &quot;+ Create a new Dual Name&quot;. Opening the overlay in <em>edit</em> mode, as the first pass did, correctly renders no file-into row. Driven through the real button, <strong>3/3 appear</strong>, the select carrying its <code>+ New Dual Names list…</code> option.</li><li><strong>The QCR ids were a defect in my own probe, not in the app.</strong> The first pass reported &quot;collections offered: 0&quot; because it looked for <code>[data-qcr-open-coll]</code> row buttons; QCR uses a <code>&lt;select&gt;</code> (<code>#qcrLevelSelect</code>), and the fixture holds <strong>18</strong> collections. Reached directly, <strong>4/4 appear</strong>. <em>A probe that finds nothing is a claim about the probe until proven otherwise.</em></li></ul>
+<h2>5. Third finding: a static rule that agrees, and separates the two cases for good</h2>
+<p>The walk is evidence but not a guard. The distinction it proves can be made mechanically:</p>
+<ul><li>an id the page <strong>authors</strong> (<code>id=&quot;x&quot;</code> appears somewhere in its own script) and that is absent at landing is a <strong>DEFERRED render</strong> — injected when its surface opens;</li><li>an id the page <strong>references but never authors anywhere</strong> is <strong>DANGLING</strong> — <code>getElementById</code> returns null there and always will.</li></ul>
+<p>Run over the landing page:</p>
+<p>``<code> getElementById targets : 250 present in the DOM     : 228 absent                 :  22   of those, DEFERRED   :  22   of those, DANGLING   :   0 </code>``</p>
+<p><strong>The static rule returns exactly the same 22, reached a different way</strong>, and agrees with the browser walk. Two independent methods, one answer.</p>
+<h2>6. The classification asked for</h2>
+<div class='tw'><table><thead><tr><th>Class</th><th>Count</th><th>Which</th></tr></thead><tbody>
+<tr><td><strong>Stale references</strong> (code names an element that no longer exists)</td><td><strong>0</strong></td><td>—</td></tr>
+<tr><td><strong>Missing live controls</strong> (a control that should be on screen and is not)</td><td><strong>0</strong></td><td>—</td></tr>
+<tr><td><strong>Deferred renders</strong> (authored, injected when their surface opens)</td><td><strong>22</strong></td><td>all of them</td></tr>
+</tbody></table></div>
+<p><strong>So no application code should change, and none did.</strong> What was wrong was the measurement&#x27;s vocabulary: it called a deferred render &quot;missing&quot;, and <code>CLAUDE.md</code> recorded 22 of them as debt for as long as the suite has run.</p>
+<h2>7. What changed instead — <code>layout.mjs</code> only</h2>
+<ol><li>The scan classifies absent ids as <strong><code>deferred</code></strong> or <strong><code>dangling</code></strong> instead of lumping them as <code>missing</code>.</li><li>The per-viewport line now reads <code>deferred (authored, rendered on demand): 22, dangling: 0</code>.</li><li><strong>A dangling target fails the suite</strong> — a real assertion this suite has never carried. Previously a newly-absent id failed whether or not it was real, and 22 false ones were permanently tolerated to keep the exit code usable.</li><li><code>KNOWN_MISSING_IDS</code> is <strong>empty rather than deleted</strong>, keeping the mechanism for a finding that really is pre-existing — the same shape <code>navcheck.mjs</code> uses, and for the same reason.</li></ol>
+<p><strong>This is strictly stronger.</strong> The old check could only ask &quot;is this id absent?&quot;, and had to forgive 22 absences to stay usable. The new one asks &quot;is this id absent <em>and</em> unauthored?&quot;, forgives nothing, and gains a defect class it could not previously express.</p>
+<h3>7.1 Mutation-proven</h3>
+<p>A reference to an id nothing authors was injected beside a real one in <code>app/quranrevival.html</code>:</p>
+<p>``<code>js const __mut = document.getElementById(&quot;idNobodyEverAuthors&quot;); </code>``</p>
+<div class='tw'><table><thead><tr><th></th><th>Result</th></tr></thead><tbody>
+<tr><td>with the mutation</td><td><strong>EXIT 1</strong> — <code>!! DANGLING ID TARGETS (referenced, never authored anywhere): [&quot;idNobodyEverAuthors&quot;]</code></td></tr>
+<tr><td>restored</td><td><strong>EXIT 0</strong>, <code>NO LAYOUT REGRESSIONS</code>, <code>app/quranrevival.html</code> byte-identical</td></tr>
+</tbody></table></div>
+<h2>8. Verification</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>layout.mjs</code></td><td><strong>EXIT 0</strong>, <code>NO LAYOUT REGRESSIONS</code>, <code>CHANGED: 0</code>, all 16 configurations; targets <strong>250 → 250</strong>, <strong>deferred 22, dangling 0</strong></td></tr>
+<tr><td><code>layout.mjs</code>, mutated</td><td><strong>EXIT 1</strong>, names the dangling id (§7.1)</td></tr>
+<tr><td><code>navcheck</code> / <code>panel</code> / <code>reading</code></td><td>EXIT 0 each</td></tr>
+<tr><td><code>brief-integrity</code></td><td>8 / 0</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 / 0</td></tr>
+<tr><td><code>firestore-index-requirements</code> / <code>rules-deployment-candidate</code> / <code>stub-parity</code></td><td>8 / 10 / 3, all 0 fail</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 / 47</strong>, unchanged</td></tr>
+<tr><td><code>git diff -- app/</code></td><td><strong>empty</strong></td></tr>
+</tbody></table></div>
+<p><code>behaviour.mjs</code> was <strong>not re-run</strong>, deliberately: this tranche changes only <code>tools/i18n-verify/layout.mjs</code>, which <code>behaviour.mjs</code> does not load, and <code>app/</code> is byte-identical. The <code>layout.mjs</code> shim (<code>app/_prev-quranrevival.html</code> plus <code>app/css/_prev-shell.css</code>, repointed) was built for the run and <strong>deleted before the coverage total was read</strong> — this project&#x27;s own recorded trap.</p>
+<h2>9. What this tranche did NOT do</h2>
+<ul><li><strong>No application code change</strong>, and therefore <strong>no version bump</strong> — the rule is that a version moves when reachable code or behaviour does.</li><li><strong>No merge</strong>, of either branch. <code>7e2931f</code> held, unmerged, not re-cut.</li><li><strong>No Rules, index, schema or data change.</strong></li><li><strong>The tenant-picker truncation is untouched</strong> — still <strong>O3</strong>, an Owner UI decision.</li><li>All seven pending-dependency items unchanged; the blocker is still <strong>E1</strong>, access.</li></ul>
+<h2>10. The lesson worth keeping</h2>
+<p><strong>A baseline records what a measurement said, not what is true — re-derive it before paying it down.</strong> These 22 sat in the brief as debt for the life of the suite. The word &quot;missing&quot; was doing the damage: it named a defect class the evidence never supported, and the honest-looking act of tolerating them by name made them look investigated. The fix was not to repair 22 controls; it was to notice that the measurement could not distinguish a control that had not rendered yet from one that does not exist — and to make it able to.</p>
+</main></body></html>

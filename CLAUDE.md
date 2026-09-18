@@ -68,12 +68,38 @@ Read this first, every session. It is the standing brief.
 > timezone item is **one question, not a UI decision** (§11.B).
 
 
-**Current milestone: v08.25 on `main`** (17 Sep 2026 — the version has not moved
-since 15 Sep because every round since has been BR-0: contracts, Rules and index
-candidates, data layers and tests, none of it reachable from a page).
+**Current milestone: v08.27 on `main`** (18 Sep 2026 — the number-picker fix
+below. v08.26, the 320px nav fit correction, merged earlier the same day at
+`49f37c9`, fast-forward. `main`'s own `app/js/version.js` is the single source
+of truth and is what GitHub Pages serves.)
+
+> **This line was WRONG for part of 18 Sep, and the episode is the lesson.** It
+> read "**v08.26 on `main`**" the moment the nav round was committed to a
+> BRANCH — the identical drift this paragraph has recorded twice before, made a
+> third time and made *worse*, because the earlier two were a stale number while
+> that one asserted a merge that had not happened. The Owner caught it. It was
+> corrected to name the branch, and the merge above is what finally makes the
+> original wording true. **A version bump on a branch is not a version on
+> `main`** — and the reason it can no longer be claimed by accident is that
+> `brief-integrity.mjs` now reads `origin/main:app/js/version.js` and checks
+> this line against **`main` itself**, not against the working tree. On a
+> branch it demands the line name that branch AND state main's own version, and
+> verifies both.
+
+**VERSION NUMBERING NOTE — `main` HAS PASSED THE HELD WIRING'S STAMP.** The
+Phase 4 wiring at `7e2931f` stamps its own `version.js` **08.26**, chosen when
+`main` was on 08.25. `main` has since taken **08.26** (the nav fit) and then
+**08.27** (the number pickers), so that stamp now names a version that means
+something else entirely. **At merge its `version.js` conflicts and resolves to
+the next free number — 08.28 as of this line.** The branch is deliberately NOT
+re-cut or re-stamped — the standing instruction is to hold `7e2931f` exactly as
+it is, and re-stamping would be churn for a one-line merge resolution. **A
+merge-ordering fact, not a defect, and not a reason to rebuild the candidate.
+Read the number off `main` at the time of the merge rather than trusting this
+sentence's own arithmetic.**
 
 **One thing is held unmerged: the Phase 4 Study-event WIRING**, on
-`claude/phase4-wiring` at **`7e2931f`** (v08.26) — **refreshed against `main` on
+`claude/phase4-wiring` at **`7e2931f`** — **refreshed against `main` on
 17 Sep, three conflicts already resolved, so do NOT re-cut it from an older
 base.** It waits on the Firestore Rules deployment, and a sandbox has no
 `study-monitoring` credentials. The Rules and index candidates themselves are on
@@ -82,6 +108,117 @@ the single source of truth and the badge beside the app name says so on screen.
 **This line has drifted twice already — it read `v08.02` while `main` was on
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
+
+**v08.27 (18 Sep 2026) — EVERY NUMBER PICKER IN THE STUDY-OPTIONS UNITS BAR
+CUT A THREE-DIGIT VALUE, at every viewport, in both languages — and the app had
+already diagnosed it once.** `#readPickers`' own CSS comment says it outright:
+*"A number picker never needs a share of the line — **same rule as the Study
+options bar's own `.opt-cell-num`**. Round 27 widened it 3.1rem → 3.9rem: the
+owner reported a three-digit ayah reading as cut off, and it was — '286' plus
+the dropdown arrow does not fit 50px."* **Round 27 fixed the Read screen and
+left its named twin at 3.1rem = 49.6px — the exact 50px that sentence says does
+not fit.** Measured: of those 49.6px, 10px is padding+border and **20.3px is the
+native dropdown arrow (MEASURED, not assumed)**, leaving 19.3px for a value
+needing 21.9px — **short by 2.6px in English, 2.2px in Bangla, on FIVE controls**
+(`ayahSelect`, `unitNumSelect` — page reaches 604 — `rangeFromSelect`,
+`rangeToSelect`, and `drillRepeatSelect` on the listen bar).
+
+**The sibling's own 3.9rem is NOT affordable here, and that was measured rather
+than assumed** — this bar carries the unit-type and surah pickers on the same
+row, and taking 12.8px per number cell pushes `surahSelect` from +2px to
+**−10.8px at 390px in Range, a NEW truncation.** Trading one defect for another
+is not a fix. **Tightening the number cell's own horizontal padding
+(0.25rem → 0.1rem) buys the same room for nothing**: −2.6 → **+2.2** (English)
+and −2.2 → **+2.6** (Bangla) at every viewport and every unit type, with **every
+other cell keeping its width to the pixel** and the row untouched. It is the
+same move `.opt-cell-num` already makes for its label (0.66rem against 0.72rem).
+**The rule had to be placed AFTER `.opt-cell > select`** — equal specificity
+(0,2,1), so source order is the only thing that makes it win.
+
+**`panel.mjs` could not see any of this, and now can.** Its test was
+`need > w - 22` — an **assumed** 22px arrow reserve that also ignored the
+control's own 10px of padding and border, so it was optimistic by exactly that
+much and reported "not cut" for text really being clipped. It also measured only
+the SELECTED option, and its fixture sits on surah 1, where the ayah picker
+shows "1". It measures the real usable width (padding, border and a **measured**
+arrow) and the **longest** option now. Mutation-proven: revert the CSS and it
+exits 1 naming `unitNumSelect` and `drillRepeatSelect`.
+
+**A follow-on sweep asked what else that heuristic had hidden: every `<select>`
+across 12 pages × 2 languages × 2 viewports. NOTHING** — three hits at 0.7px,
+0.6px and 0.0px, sub-pixel float noise; zero with a 1px floor. The sweep sees
+selects **visible on load**, not those behind the Study-options panel (that is
+`panel.mjs`'s job). One fact worth keeping for O3: **`tenantSelect` fits
+comfortably on `people.html` and `bookmarks.html` with 272.3px of usable
+width** — its truncation is specific to the panel's 145px cell, not to the
+control or its content.
+
+**`surahSelect` and `unitTypeSelect` were NOT fixed, and that is the finding.**
+Their row is **genuinely short of space** — the opposite of v08.26's nav, where
+the space was present and misallocated. Measured, `.opt-bar-units` needs
+**320.9px against 257 available at 320px in Range (−63.9)** and **−23.9 at
+360px**: no redistribution reaches that, and the remedies (wrap the row, shrink
+the type, shorten the wording) are **materially different choices** on the most
+tightly measured screen in the app. **They join `tenantSelect` as Owner UI
+decisions.** See
+`docs/reports/2026-09-18-study-options-number-pickers.md`.
+
+**v08.26 (18 Sep 2026, MERGED TO `main` at `49f37c9` — LIVE) —
+THE 320px NAV TRUNCATION WAS NEVER A SHORTAGE OF SPACE, and that is the
+finding, not the fix.** English "Operation"/"Bookmark"
+cut at 320px had been a tolerated named baseline for the life of
+`navcheck.mjs`. **Measured, the four labels need 282.3px of a 288px row and fit
+with 5.7px to spare.** `.nav-cat { flex: 1 1 0 }` — flex-basis **zero** — was
+splitting the row into four EQUAL cells, so Home held 65px to print a word
+needing 48 while Bookmark was cut at 65 needing 75. **The space was already on
+the row, under the short labels.** `scrollWidth`/`clientWidth` could never have
+shown this: it bottoms out the instant a label fits. The fix is one property at
+one breakpoint (`@media (max-width: 340px) { .nav-cat { flex-basis: auto } }`)
+with **font, padding, caret and the 26px button height all untouched**, and
+every width from 360px up byte-identical. **340px was cut too (73>70) and
+`navcheck.mjs`'s width list jumped straight over it**; 340 is measured now and
+`KNOWN_TRUNCATIONS` is `{}`. Proven both ways: revert the CSS and the suite
+exits 1 naming 2 problems. **The tenant-picker truncation was left alone — that
+one IS an Owner UI decision.**
+
+**v08.26 also closed the first two of T3 — `behaviour.mjs` checks WRONG ABOUT
+THEIR SUBJECT**, the class the 17 Sep excavation left open (as distinct from
+"unable to fail", which it closed). Bounded set: sections **44–50h-k**, the
+bookmark tranche of the newly-reachable region. **45b, "cancelling the name
+prompt makes no bookmark", was reading the NOTE indicator** —
+`.ayah-quick-btn.has-note` comes from `renderQuickMenu`'s `hasNote`, and that
+call site passes `showBookmark: false` so the Read screen's ⋮ holds no bookmark
+state at all. Probed: it read `false` after a cancel AND `false` after a real
+save while the write log went 0 → 1 — **identical in the case it was written to
+catch and in its exact opposite.** **50k, "the popover's 'Folder' label is NOT
+the group-by 'Folder' wording", never looked at the Folder field** — a `.some()`
+over every field that "নাম" satisfied. Both now read their subject by identity,
+both mutation-proven (cancel-that-saves; `prefs.js` rewritten to drop the
+`|groupby` suffix), and 45c asserts the same facts moving the OTHER way after a
+real save. 979 → **981 executing checks**. See
+`docs/reports/2026-09-18-nav-fit-and-behaviour-subject-drift.md`.
+
+**The T3 sweep was then finished over sections 42-tail/43/43i-o and found NO
+further subject drift** — two candidates investigated and **cleared rather than
+"fixed"** (`43k` is correct: its own `.filter(Boolean)` drops a present-but-empty
+centre `<text>`, and 10 `.wheel-seg-num` siblings are its positive control — **my
+probe was wrong, not the check**). Two assertions were strengthened anyway, both
+already true and both mutation-proven: `42h` gained the positive control a bare
+negative needs (rename `.note-view` — the v07.70 failure mode — and the original
+returns `true` while asserting nothing at all), and `43h` is bound to the two
+shapes `way-modal.js` can render instead of `Boolean(...)`.
+
+**THE DIAGNOSTIC THAT CONTRADICTS ITS OWN VERDICT IS THE TELL.** `38f` failed
+printing `⏸ Pause`, a value SATISFYING the regex it had just rejected — because
+`check()` called `playLabel(page)` **twice**, once for the condition and once for
+the diagnostic. Underneath, three assertions slept a guessed 600/300/400ms **six
+lines below `waitFor`'s own comment saying not to**; measured latency is 67–84ms
+over 6 trials. **I induced that failure myself** by sharing the machine with a
+probe I had started, and it is written down rather than quietly re-run: a session
+reporting only its clean runs teaches the next one nothing about what makes a run
+dirty. The same goes for the Phase 6 emulator's `port taken` on 8093, held by an
+earlier run of my own. **Clean run of record: 981 pass / 1 fail, 982 checks**,
+the one failure 31e's TLS artefact — **and the 22g trio PASSED it.**
 
 **17 Sep 2026 — `behaviour.mjs` RUNS TO THE END AGAIN, and the old "~800 checks
 pass before the section-42 crash" line in this file is GONE because it was
@@ -1437,9 +1574,15 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
 - **The DEPLOYED rules have an "authorised but unexecutable" gap too, and it is
   the only one** (audited 18 Sep 2026, and otherwise clean): `tenantPeople`'s
   third `allow update` lets a signed-in person change **their own `timezone`**
-  and nothing else, and **no client code offers it.** Flagged, not built — where
-  that control lives is a product decision, and `weekStartsOn` (D7) sits in the
-  same area. Two other things from that audit worth not rediscovering:
+  and nothing else, and **no client code offers it.** **The product question is
+  now ANSWERED — D14, 18 Sep 2026** (auto-capture by default; a chosen location
+  determines the zone until changed or returned to auto) — **and it is still not
+  built, for a reason the answer itself exposed: the accepted decision cannot be
+  represented by the field the Rules authorise.** "Return to automatic
+  detection" is a MODE, and `hasOnly(['timezone', 'updatedAt'])` permits no
+  second field, so the mode write is denied in production. Building it needs a
+  Rules change — an Owner Control Gate on the same E1 deployment dependency.
+  `weekStartsOn` (D7) sits in the same area. Two other things from that audit worth not rediscovering:
   `self-check.js` writing `{ platformAdmin: true }` to `userIndex` is the **I10
   NEGATIVE PROBE**, designed to be refused (a success is reported as URGENT), so
   a field-set comparison that does not read the surrounding code will call it a
@@ -1532,11 +1675,60 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   false failure the moment it was counted. **Require `w > 0` before calling
   anything truncated**, and report "not on screen" separately so the absence is
   not dropped either.
-- **The baselines are honest but they are DEBT:** 22 missing `getElementById`
-  targets, 2 nav truncations, 3 select truncations. The most user-visible is
-  **`tenantSelect` — a real tenant's name is CUT in the picker** ("Madrasatul
-  Muslimeen (Owner, Prime)", 224px of text in a 145px cell). Recorded, not
-  fixed: it is a layout decision on the most tightly measured screen in the app.
+- **The baselines are honest but they are DEBT — except the biggest one was not
+  debt at all.** ~~22 missing `getElementById` targets~~ **investigated 18 Sep
+  2026: 22 DEFERRED renders, 0 stale references, 0 missing controls, and no
+  application code changed.** ~~2 nav truncations~~ **paid off in v08.26, now
+  merged to `main` and live.** Of the 3 select truncations, **the number pickers
+  were a fifth finding nobody had counted and are fixed in v08.27**; what
+  remains is `tenantSelect`, `surahSelect` and `unitTypeSelect`, and all three
+  are now **Owner UI decisions** — their row is genuinely short of space
+  (−63.9px at 320px in Range), so no redistribution reaches them. The most user-visible remaining one is **`tenantSelect` — a real
+  tenant's name is CUT in the picker** ("Madrasatul Muslimeen (Owner, Prime)",
+  224px of text in a 145px cell). Recorded, not fixed: **that one really is an
+  Owner UI decision** — widen the cell, shorten the option text, or reveal the
+  full value without widening are materially different choices on the most
+  tightly measured screen in the app.
+- **A BASELINE RECORDS WHAT A MEASUREMENT SAID, NOT WHAT IS TRUE — re-derive it
+  before paying it down.** `layout.mjs`'s "22 missing `getElementById` targets"
+  sat in this file as debt for the life of the suite. **None of them was
+  missing.** All 22 are authored inside JS template literals in
+  `quranrevival.html` and injected when their own surface opens — Asma's Names
+  level, its Refs level, the edit overlay, the file-into row, and QCR's
+  collection view — while `layout.mjs` only ever measures the LANDING PAGE.
+  Proven twice by methods that agree: a browser walk opening each surface (all
+  22 appear) and a static rule (**absent AND authored = deferred; absent AND
+  never authored = dangling** → 22 deferred, 0 dangling). **The word "missing"
+  was doing the damage** — it named a defect class the evidence never supported,
+  and tolerating them by name made them look investigated. `layout.mjs` tells
+  the two apart now and **fails on a dangling id**, which it never could before;
+  the baseline is empty. See
+  `docs/reports/2026-09-18-getelementbyid-baseline-investigation.md`.
+- **TWO PROBE FAILURES IN ONE INVESTIGATION, BOTH MINE.** Hunting those 22: the
+  file-into row is `mode === "create" && fileInto`, and only ONE of four call
+  sites passes `fileInto` — opening the overlay in *edit* mode correctly renders
+  no row, and reading that as "the ids do not exist" would have been a false
+  finding. Then QCR reported "collections offered: 0" because the probe looked
+  for row buttons where the app uses a `<select>`; the fixture holds **18**.
+  **A probe that finds nothing is a claim about the probe until proven
+  otherwise.**
+- **MEASURE A TRUNCATION BEFORE BELIEVING IT IS A SHORTAGE OF SPACE — v08.26's
+  whole lesson.** The 320px nav truncation had been carried as a named baseline
+  for the life of this suite, read as "the labels do not fit at 320px". They do:
+  the four need **282.3px of a 288px row**, with 5.7px to spare. `.nav-cat`'s
+  `flex: 1 1 0` was splitting the row into four EQUAL cells, so Home held 65px
+  to print a word needing 48 while Bookmark was cut at 65 needing 75 — **the
+  space was already on the row, under the short labels.** A content-based
+  `flex-basis` below 340px fixed it with the font, the padding, the caret and
+  the 26px button height all untouched, and every width from 360px up
+  byte-identical. **`scrollWidth`/`clientWidth` cannot show this** — it bottoms
+  out at zero slack the moment a label fits, so it reports "fits" and never
+  "fits with 30px to spare". Let the cells shrink-wrap (`flex: 0 0 auto`) and
+  measure the row's natural width against what it has.
+- **A width list with a hole in it hides the defect living in the hole.**
+  `navcheck.mjs` measured 320 then 360. **340px was truncating too** (73>70) and
+  nothing had ever looked. 340 is in the list now. When a suite enumerates
+  viewports, ask what sits between two of them.
 - **The sandbox's TLS interception trips every "no page errors" check on a page
   that fetches over HTTPS** — `net::ERR_CERT_AUTHORITY_INVALID`, currently 6
   checks across `behaviour.mjs`, `quran-word-card-rendered` and
@@ -1688,6 +1880,7 @@ Ethics (social) and Akhlaq (personal) are **distinct** nodes. Confirmed.
 | D11 | **`QuranRevival_Subject_Catalogue_v3.md` approved as-is**, at the start of Phase 2 (2026-07-31): 6 top-level subject-tree nodes (Quran, Hadith, Arabic Language, Deen Study, General Study, Nature-Life), 31 studiable subjects, 30 Approaches in 7 sections, Hadith kept top-level and mandatory in its own right, Ethics/Akhlaq distinct. One resolved ambiguity: the doc tags Hadith `[QuranRevival / Deen]`, but Part 5 also states no node uses `moduleIds[]` for more than one module, and the Architecture doc's Phase 12 list names Hadith as its own fifth remaining module (alongside Arabic, General Study, Health, Nature-Life). Built as: **Hadith is its own module** (`moduleIds: ["hadith"]`), its bracket tag read as descriptive text about its role, not a literal dual-module assignment. Flagged for the owner to correct if the intent was actually a shared/dual-module node. |
 | D12 | **New Phase 3 collection `domains`** (`domains/{tenantId}__{domainId}`), not in the original Architecture doc, added to back the `records.entries.domainIds[]` field the doc names but never defines a collection for. Same shape as D9 (a small supporting collection the doc's own named fields required). Tenant-authored, no platform seed, mirrors `ladders`/`levels` — matches the legacy app's free-text, user-defined "Domains" tag on subjects, promoted to a permanent-ID registry (I5) since `domainIds` is now a plural array on each record entry. *Approved-by-precedent deviation, flagged for the owner to correct if a different shape was intended.* Also Phase 3: **records chunking** ("one doc per surah/subject") is implemented as *surah* for unit types that carry their own surah number (`ayah`/`range`/`surah`/`ruku`) and *subject* for everything else (`juz`/`hizb`/`rub`/`manzil`/`page`/`hadith`/`topic`/`name` — Quran-wide divisions or non-Quran, with no single surah to group by). Re-chunking later is a data migration, not an architecture change (I5 only pins the unit key itself). And **`subjects.confirmationRequired`** (`true`/`false`/`null`) was added as a new, additive field so "confirmation can be switched on or off per subject" (Architecture s6) has somewhere to live — editable from `catalogue.html`'s existing subject edit form. |
 | D13 | **Post-cutover rollout order** (confirmed 9 Aug 2026, QuranRevival v07.00): make it work for the **owner's own real use first** — before family, before external students, before the rest of the role/tenant model the Architecture doc already plans for. Then family. Then external students. Then everyone/everything else, as originally planned. **This reorders priority, not scope** — nothing here changes what gets built, only what gets fixed/polished first when something's wrong. Concretely: if the owner hits real friction using the app themselves, that outranks a family- or student-facing gap, which outranks a general multi-tenant/other-role gap, regardless of build-phase numbering. Don't re-derive this from the Architecture doc's own phase order — this is a use-rollout sequence layered on top of it, not a replacement for Phase 6–15's own scope. |
+| D14 | **Timezone: automatic capture is the DEFAULT, and a person may choose a LOCATION which determines their timezone until they change it or return to automatic detection.** (Owner decision, 18 Sep 2026.) This closes handover item **O4** — `timezone` is **authoritative, not captured-only**, because a value the person can override is a value something is meant to honour. **NOTHING WAS IMPLEMENTED, deliberately**, and three findings from inspecting the existing data and Rules contract say why. **(1) The decision cannot be represented by the field that exists.** `timezone` is a single string; "return to automatic detection" is a MODE, and with only the value stored, auto-detected `Asia/Dhaka` and hand-chosen `Asia/Dhaka` are indistinguishable — so re-detecting at each login silently overwrites a deliberate choice, and never re-detecting silently freezes an auto value when the person travels. **No mode field exists anywhere in the repository** (grepped: no `timezoneMode`, `tzMode`, `autoDetect`, `timezoneAuto` in `app/`, `firestore.rules` or `docs/governance/`). **(2) The deployed Rules authorise `timezone` and `updatedAt` and NOTHING ELSE** — `tenantPeople`'s third `allow update` is `hasOnly(['timezone', 'updatedAt'])`, so a mode field, or a stored location, is **denied in production** the moment it is written. Implementing this therefore needs a Rules change, which is an **Owner Control Gate** and rides the same deployment dependency (E1) as Phases 4–6. **(3) A location is not a timezone.** The Owner's wording is exact — a location *determines* a timezone — so the authoritative stored value is the resolved IANA zone; whether the chosen location LABEL is also stored is a separate product question and **no location field was added.** Also recorded: **`timezone` is still read by nothing** (written at creation in `identity.js:102`, `invites.js:174`, `people.js:82`, and `null` in `migrate.html:326`), and **`weekKeyFor()` buckets by the DEVICE's local calendar day**, not by the stored field — so honouring this decision would change which Activity week a study event lands in, a behaviour change to live records and a gate of its own. |
 
 ---
 

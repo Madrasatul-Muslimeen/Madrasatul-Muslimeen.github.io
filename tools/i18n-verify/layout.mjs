@@ -52,10 +52,23 @@ async function measure(ctx, path) {
       approachRows: rows,
       horizontalOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
       idTargets: (() => {
+        // An absent getElementById target is TWO different things, and this
+        // scan used to report them as one. An id the page AUTHORS -- `id="x"`
+        // appears somewhere in its own script, inside a render template -- is
+        // a DEFERRED render: the element is injected when its surface opens,
+        // and its absence on the landing page is a render-state fact, not a
+        // defect. An id the page references but never authors anywhere is
+        // DANGLING: getElementById returns null and the call site is dead.
+        // Only the second is a defect, and this suite had never checked for it.
         const src = [...document.querySelectorAll("script")].map((s) => s.textContent).join("\n");
-        const ids = [...src.matchAll(/getElementById\("([^"]+)"\)/g)].map((m) => m[1]);
-        const uniq = [...new Set(ids)];
-        return { total: uniq.length, missing: uniq.filter((id) => !document.getElementById(id)) };
+        const ids = [...new Set([...src.matchAll(/getElementById\("([^"]+)"\)/g)].map((m) => m[1]))];
+        const authored = new Set([...src.matchAll(/id="([^"]+)"/g)].map((m) => m[1]));
+        const absent = ids.filter((id) => !document.getElementById(id));
+        return {
+          total: ids.length,
+          deferred: absent.filter((id) => authored.has(id)),
+          dangling: absent.filter((id) => !authored.has(id)),
+        };
       })(),
     };
   });
@@ -67,22 +80,27 @@ const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 let regressions = 0;
 let shimChecked = false;
 
-// The 22 `getElementById` targets this app has been missing for as long as
-// this suite has recorded them (Asma's edit form and QCR's add row, both
-// rendered on demand). Counting them made `regressions` at least 16 -- one
-// per viewport -- so this suite exited 1 on unmodified `main` and its exit
-// code carried no signal at all. Baselined by NAME: a new missing id fails,
-// and a baselined one that comes back is reported rather than discovered by
-// accident.
-const KNOWN_MISSING_IDS = new Set([
-  "asmaXBackToGroupsBtn", "asmaXAddExistingBtn", "asmaXBackFromRefsBtn",
-  "asmaXEditThisNameBtn", "asmaXAttachRefThisNameBtn", "asmaXGroupsThisNameBtn",
-  "asmaXRefPosterBtn", "asmaXAddExistingSelect", "asmaXEditFileSelect",
-  "asmaXEditNewCollLabel", "asmaXEditTranslit", "asmaXEditMeaningEn",
-  "asmaXEditBnName", "asmaXEditBn", "asmaXEditRef", "asmaXEditWeak",
-  "asmaXEditIsPhrase", "asmaXEditNewColl", "qcrAddItemBtn", "qcrAddSurahSelect",
-  "qcrAddAyahInput", "qcrAddMsg",
-]);
+// INVESTIGATED AND EMPTIED, 18 Sep 2026. This held 22 ids "this app has been
+// missing for as long as this suite has recorded them" -- Asma's edit form and
+// QCR's add row. **None of them was missing.** All 22 are authored inside JS
+// template literals in `quranrevival.html` and injected when their own surface
+// opens; they are absent from the LANDING PAGE, which is the only state this
+// suite measures. Proven twice over, by two independent methods that agree:
+//
+//   * a browser walk that opened each surface -- Asma Names level (3 ids),
+//     Refs level (5), the edit overlay (7), the file-into row reached through
+//     "+ Create a new Dual Name" (3), and the QCR collection view (4). All 22
+//     appeared, each at its own surface.
+//   * the static rule now used above: `absent AND authored` = deferred,
+//     `absent AND never authored` = dangling. It returns 22 deferred, 0
+//     dangling -- the same 22, reached a different way.
+//
+// So the baseline was never debt; the measurement was conflating a deferred
+// render with a broken reference. It is empty rather than deleted, keeping the
+// mechanism for a finding that really is pre-existing -- the same shape
+// navcheck.mjs uses. **A DANGLING id now fails outright**, which is a real
+// assertion this suite has never carried.
+const KNOWN_MISSING_IDS = new Set([]);
 const baselineSeen = new Set();
 
 for (const banner of [true, false]) {
@@ -116,15 +134,17 @@ for (const banner of [true, false]) {
       if (!same(k)) flags.push(`${k}: ${before[k]} -> ${after[k]}`);
     }
     console.log(`${name}  heading ${before.headingTop}->${after.headingTop}px | wheel ${before.wheelWidth}->${after.wheelWidth}px | rows ${before.approachRows}->${after.approachRows} | gap ${before.gapAboveDock}->${after.gapAboveDock}px | dock visible ${after.dockFullyVisible} | overflow ${after.horizontalOverflow}`);
-    console.log(`        getElementById targets: ${before.idTargets.total} -> ${after.idTargets.total}, missing after: ${JSON.stringify(after.idTargets.missing)}`);
+    console.log(`        getElementById targets: ${before.idTargets.total} -> ${after.idTargets.total}, deferred (authored, rendered on demand): ${after.idTargets.deferred.length}, dangling: ${after.idTargets.dangling.length}`);
     if (after.errors.length) console.log(`        PAGE ERRORS: ${after.errors.slice(0, 3).join(" | ")}`);
     // A CHANGED geometry metric is what this suite EXISTS to detect, and it was
     // printed without being counted -- so the exit code said "no regressions"
     // while the heading, the wheel width or the dock gap had moved. Counted now.
     if (flags.length) { regressions++; console.log(`        !! CHANGED: ${flags.join("; ")}`); }
-    const newlyMissing = after.idTargets.missing.filter((id) => !KNOWN_MISSING_IDS.has(id));
-    for (const id of after.idTargets.missing) if (KNOWN_MISSING_IDS.has(id)) baselineSeen.add(id);
-    if (newlyMissing.length) { regressions++; console.log(`        !! NEWLY MISSING ID TARGETS: ${JSON.stringify(newlyMissing)}`); }
+    // A dangling target -- referenced, never authored anywhere -- is a real
+    // defect: getElementById returns null there and always will.
+    const dangling = after.idTargets.dangling.filter((id) => !KNOWN_MISSING_IDS.has(id));
+    for (const id of after.idTargets.dangling) if (KNOWN_MISSING_IDS.has(id)) baselineSeen.add(id);
+    if (dangling.length) { regressions++; console.log(`        !! DANGLING ID TARGETS (referenced, never authored anywhere): ${JSON.stringify(dangling)}`); }
     if (after.horizontalOverflow) { regressions++; console.log("        !! HORIZONTAL OVERFLOW"); }
     if (!after.dockFullyVisible) { regressions++; console.log("        !! DOCK NOT FULLY VISIBLE"); }
     if (after.errors.length) regressions++;
@@ -134,7 +154,9 @@ for (const banner of [true, false]) {
 
 await browser.close();
 const fixed = [...KNOWN_MISSING_IDS].filter((id) => !baselineSeen.has(id));
-console.log(`\n  (${baselineSeen.size} of ${KNOWN_MISSING_IDS.size} known-missing id targets seen, tolerated as pre-existing)`);
-if (fixed.length) console.log(`  !! a BASELINED missing id is now present: ${fixed.join(", ")} -- if that is a fix, drop it from KNOWN_MISSING_IDS`);
+if (KNOWN_MISSING_IDS.size) {
+  console.log(`\n  (${baselineSeen.size} of ${KNOWN_MISSING_IDS.size} known-dangling id targets seen, tolerated as pre-existing)`);
+  if (fixed.length) console.log(`  !! a BASELINED dangling id is now authored: ${fixed.join(", ")} -- if that is a fix, drop it from KNOWN_MISSING_IDS`);
+}
 console.log(`\n==== ${regressions === 0 ? "NO LAYOUT REGRESSIONS" : regressions + " REGRESSION(S)"} ====`);
 process.exit(regressions === 0 ? 0 : 1);

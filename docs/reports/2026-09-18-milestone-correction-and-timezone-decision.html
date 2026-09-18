@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Milestone correction, and the Owner&#x27;s timezone decision recorded</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Milestone correction, and the Owner&#x27;s timezone decision recorded</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Repository:</strong> <code>Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io</code></li><li><strong>Branch:</strong> <code>claude/charming-rubin-xzxbk1</code></li><li><strong>Blast radius:</strong> <strong>BR-0 — documentation and one harness guard.</strong> <code>git diff -- app/</code> is empty. No <code>firestore.rules</code>, no <code>firebase.json</code>, no Rules or index candidate, no schema, no data. <strong>Nothing merged; no branch merged or activated.</strong></li><li><strong>Application version:</strong> unchanged at <strong>08.26 on this branch</strong>; <strong><code>main</code> remains 08.25.</strong></li></ul>
+<hr>
+<h2>1. The correction: a version bump on a branch is not a version on <code>main</code></h2>
+<h3>1.1 What was wrong</h3>
+<p>The previous tranche committed the v08.26 nav fix <strong>to this branch</strong> and then wrote, in three places, that v08.26 was on <code>main</code>:</p>
+<div class='tw'><table><thead><tr><th>File</th><th>Wording</th></tr></thead><tbody>
+<tr><td><code>CLAUDE.md</code></td><td><code><strong>Current milestone: v08.26 on </code>main<code></strong></code></td></tr>
+<tr><td><code>CLAUDE.md</code></td><td>&quot;<code>main</code> has now taken that number for the nav correction&quot;</td></tr>
+<tr><td><code>CHANGELOG.md</code></td><td>&quot;Its own <code>version.js</code> stamp of 08.26 is now stale — <code>main</code> has taken that number&quot;</td></tr>
+<tr><td>the nav report, §5</td><td>&quot;<code>main</code> has now taken that number.&quot;</td></tr>
+</tbody></table></div>
+<p><strong>None of it was true.</strong> Nothing was merged, and nothing had been asked to be.</p>
+<h3>1.2 The actual state, verified</h3>
+<p>``<code> origin/main                        1cac2b8   app/js/version.js = 08.25 origin/claude/charming-rubin-xzxbk1 82078b1  app/js/version.js = 08.26 origin/claude/phase4-wiring        7e2931f   app/js/version.js = 08.26  (held) </code>``</p>
+<p><code>main</code> at <strong>08.25</strong> is what GitHub Pages serves, so <strong>the live app does not have the nav fix.</strong> Saying otherwise would have told the next session that a shipped fix was live when it was not.</p>
+<h3>1.3 Why this was worse than the drift it repeated</h3>
+<p><code>CLAUDE.md</code>&#x27;s own milestone paragraph already records this drift twice — <code>v08.02</code> while main was on 08.04, and <code>v08.19</code> while main was on 08.21. Both were a <strong>stale number</strong>: the brief lagged reality. This third one <strong>asserted a merge that had not happened</strong> — a claim about repository state, not a number left behind. It is the more expensive kind, because a stale number is corrected by looking at one file while a false merge claim changes what a session believes is deployed.</p>
+<h3>1.4 The corrected wording</h3>
+<p><code>CLAUDE.md</code>&#x27;s milestone line now names the branch <strong>and</strong> states main&#x27;s own version:</p>
+<p>&gt; <strong>Current milestone: v08.26 on <code>claude/charming-rubin-xzxbk1</code> — <code>main</code> is still v08.25.</strong></p>
+<p>Each of the four sites above carries a dated correction note rather than a silent rewrite. The round entry is marked <strong>&quot;ON <code>claude/charming-rubin-xzxbk1</code>, NOT YET MERGED&quot;</strong>, and the nav-truncation baseline now reads &quot;fixed in v08.26, <strong>not yet merged — still live on <code>main</code></strong>&quot; rather than &quot;paid off&quot;.</p>
+<h3>1.5 The version-collision note is kept, and is now accurate</h3>
+<p><strong>Two unmerged branches each stamp <code>version.js</code> 08.26</strong> while <code>main</code> is 08.25: this one and the held wiring at <code>7e2931f</code>. <strong>Whichever merges first takes 08.26; the second&#x27;s <code>version.js</code> conflicts and resolves to 08.27.</strong> Neither branch is re-cut or re-stamped — that would be churn for a one-line merge resolution, and the standing instruction is to hold <code>7e2931f</code> exactly as it is. <strong>A merge-ordering fact, not a defect.</strong></p>
+<hr>
+<h2>2. The guard was blind to this, and now is not</h2>
+<h3>2.1 Why it could not have caught it</h3>
+<p><code>brief-integrity.mjs</code>&#x27;s version check hard-coded the phrase `<code>on </code>main<code> </code>` <strong>in its own regex</strong>:</p>
+<p>``<code>js const claimed = brief.match(/\<em>\</em>Current milestone:\s<em>v([\d.]+)\s+on\s+</code>main<code>\</em>\*/); assert.equal(claimed[1], actual[1]);   // </code>actual<code> = the WORKING TREE </code>``</p>
+<p>So it compared the claimed version against the <strong>working tree</strong>, which on this branch really did read 08.26. <strong>It had no way to ask whether the working tree was <code>main</code>.</strong> The check passed while the sentence it was guarding was false.</p>
+<p>This is the project&#x27;s own recorded shape: a guard that cannot fail on the thing it names is worse than no guard, because it is believed.</p>
+<h3>2.2 What it does now</h3>
+<ol><li>Parses <strong>whichever ref the milestone line actually names</strong>, instead of assuming <code>main</code>.</li><li>Compares the claimed version against the working tree, as before.</li><li><strong>Resolves <code>main</code>&#x27;s real version from <code>origin/main:app/js/version.js</code> every run.</strong></li><li>If the line claims <strong><code>main</code></strong>, that claim is checked <strong>against <code>main</code></strong> — with one deliberate exception: a session whose <code>HEAD</code> really is <code>main</code> is allowed to be ahead of <code>origin/main</code>, because there the working tree <em>is</em> the future main and step 2 already covers it.</li><li>If the line names a <strong>branch</strong>, the line <strong>must also state <code>main</code>&#x27;s version</strong>, and that statement is verified.</li></ol>
+<h3>2.3 Mutation-proven — including against the first attempt at the fix</h3>
+<div class='tw'><table><thead><tr><th>#</th><th>Milestone line</th><th>Original guard</th><th>First fix attempt</th><th>Final guard</th></tr></thead><tbody>
+<tr><td>A</td><td><code>v08.26 on \</code>main\`` — <strong>the error actually made</strong></td><td>passes</td><td><strong>still passes</strong></td><td><strong>FAILS</strong></td></tr>
+<tr><td>B</td><td>branch named, <code>main</code> claimed as v08.26 (false)</td><td>n/a</td><td>FAILS</td><td><strong>FAILS</strong></td></tr>
+<tr><td>C</td><td>branch named, <code>main</code>&#x27;s version omitted</td><td>n/a</td><td>FAILS</td><td><strong>FAILS</strong></td></tr>
+<tr><td>D</td><td>branch named, <code>main is still v08.25</code> (true)</td><td>n/a</td><td>passes</td><td><strong>passes</strong></td></tr>
+</tbody></table></div>
+<p><strong>Case A is the finding.</strong> The first strengthening still returned early whenever the line said <code>main</code> and compared only the working tree — reproducing the exact blind spot. It was caught by <em>running</em> the mutation, not by re-reading the new code. The message now names the cause:</p>
+<p>&gt; the brief says v08.26 is on <code>main</code>, but origin/main:app/js/version.js says 08.25 and this tree is on <code>claude/charming-rubin-xzxbk1</code>, not main — a version bump on a BRANCH is not a version on main</p>
+<p><strong>A second false positive on the guard&#x27;s own first run:</strong> <code>v([\d.]+)</code> greedily swallowed the sentence&#x27;s full stop, so <code>v08.25.</code> compared as <code>&quot;08.25.&quot;</code> against <code>&quot;08.25&quot;</code>. Pinned to <code>v(\d+\.\d+)</code>. A guard&#x27;s first run is where its own false-positive rate is measured — that is twice now, in two consecutive sessions, that the first run earned its keep.</p>
+<hr>
+<h2>3. The Owner&#x27;s timezone decision — recorded as D14, implemented not at all</h2>
+<h3>3.1 The decision</h3>
+<p>&gt; <strong>Automatic capture is the default. A person may choose a location, which determines their timezone until they change it or return to automatic detection.</strong></p>
+<p>This closes handover item <strong>O4</strong>. <code>timezone</code> is <strong>authoritative, not captured-only</strong> — a value the person can deliberately override is a value something is meant to honour.</p>
+<h3>3.2 What the data and Rules contract actually say, inspected before anything was written</h3>
+<div class='tw'><table><thead><tr><th>Question</th><th>Finding</th></tr></thead><tbody>
+<tr><td>Where is <code>timezone</code> written?</td><td>Three creation sites, from <code>Intl.DateTimeFormat().resolvedOptions().timeZone</code>: <code>identity.js:102</code>, <code>invites.js:174</code>, <code>people.js:82</code> (via parameter). <code>migrate.html:326</code> writes <code>null</code>.</td></tr>
+<tr><td>What reads it?</td><td><strong>Nothing.</strong> Zero consumers in <code>app/</code>.</td></tr>
+<tr><td>What do the <strong>deployed</strong> Rules allow?</td><td><code>tenantPeople</code>&#x27;s third <code>allow update</code>: <code>signedIn() &amp;&amp; resource.data.authUid == myUid() &amp;&amp; …affectedKeys().hasOnly([&#x27;timezone&#x27;, &#x27;updatedAt&#x27;])</code>.</td></tr>
+<tr><td>Is there a mode / auto flag?</td><td><strong>No.</strong> No <code>timezoneMode</code>, <code>tzMode</code>, <code>autoDetect</code> or <code>timezoneAuto</code> anywhere in <code>app/</code>, <code>firestore.rules</code> or <code>docs/governance/</code>.</td></tr>
+<tr><td>Is there a location field?</td><td><strong>No.</strong> The only <code>location</code> matches in <code>app/js</code> are <code>window.location</code> and a doc comment.</td></tr>
+<tr><td>Does week bucketing use it?</td><td><strong>No.</strong> <code>weekKeyFor()</code> (<code>activity.js:27</code>) buckets by <code>getFullYear()/getMonth()/getDate()</code> — the <strong>device&#x27;s</strong> local calendar day — then normalises into UTC.</td></tr>
+</tbody></table></div>
+<h3>3.3 Three findings, and why nothing was built</h3>
+<p><strong>(1) The accepted decision cannot be represented by the field that exists.</strong> <code>timezone</code> is a single string. <em>&quot;Return to automatic detection&quot;</em> is a <strong>mode</strong>, and with only the value stored, an auto-detected <code>Asia/Dhaka</code> and a hand-chosen <code>Asia/Dhaka</code> are <strong>indistinguishable</strong>. That is not cosmetic — it decides behaviour in both directions:</p>
+<ul><li>re-detect at each login → <strong>silently overwrites a deliberate choice</strong>;</li><li>never re-detect → <strong>silently freezes an auto value</strong> when the person travels, which is the case auto-capture exists for.</li></ul>
+<p>There is no third option without a stored mode, and no mode field exists.</p>
+<p><strong>(2) The deployed Rules authorise <code>timezone</code> and <code>updatedAt</code> and nothing else.</strong> <code>hasOnly([&#x27;timezone&#x27;, &#x27;updatedAt&#x27;])</code> means a mode field — or a stored location — is <strong>denied in production the moment it is written</strong>. This is precisely the class <code>rules-authorisation-executable.mjs</code> exists to catch, in its &quot;the data layer writes a field the Rules may not change&quot; direction. Implementing D14 therefore <strong>requires a Rules change</strong>, which is an <strong>Owner Control Gate</strong> and rides the same <strong>E1</strong> deployment dependency as Phases 4–6.</p>
+<p><strong>(3) A location is not a timezone.</strong> The Owner&#x27;s wording is exact — a location <em>determines</em> a timezone. The authoritative stored value is the resolved IANA zone; whether the chosen location <strong>label</strong> is also stored is a separate product question with its own cost (a location→zone mapping needs a data source, and multiple locations collapse to one zone). <strong>No location field was added</strong>, per the instruction not to add one silently.</p>
+<h3>3.4 One consequence worth stating before it is built</h3>
+<p>Because <code>weekKeyFor()</code> buckets by the <strong>device&#x27;s</strong> calendar day, honouring an authoritative timezone would change <strong>which Activity week a study event lands in</strong>. That is a behaviour change affecting <strong>live records</strong>, and a gate of its own — separate from the Rules change in (2).</p>
+<h3>3.5 What was done</h3>
+<p><strong>D14 recorded in <code>CLAUDE.md</code>&#x27;s decisions table</strong>, carrying the decision and all three findings, and the standing lesson that framed this as an open product question updated to say the question is answered while the build remains gated. <strong>No field added, no Rules touched, no UI invented.</strong></p>
+<hr>
+<h2>4. Verification</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>brief-integrity</code></td><td><strong>8 / 0</strong>, EXIT 0 — and 4 mutations (§2.3)</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 / 0</td></tr>
+<tr><td><code>firestore-index-requirements</code></td><td>8 / 0</td></tr>
+<tr><td><code>rules-deployment-candidate</code></td><td>10 / 0</td></tr>
+<tr><td><code>stub-parity</code></td><td>3 / 0</td></tr>
+<tr><td><code>navcheck</code></td><td>EXIT 0</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 / 47</strong>, unchanged</td></tr>
+<tr><td><code>git diff -- app/</code></td><td><strong>empty</strong></td></tr>
+</tbody></table></div>
+<p><code>behaviour.mjs</code> and <code>layout.mjs</code> were <strong>not re-run</strong>, and deliberately: this tranche changes no file either suite reads. <code>app/</code> is byte-identical to the previous commit, and the only non-documentation change is <code>tools/i18n-verify/brief-integrity.mjs</code>, which neither suite loads.</p>
+<h2>5. What this tranche did NOT do</h2>
+<ul><li><strong>No merge, of either branch.</strong> <code>7e2931f</code> remains held, unmerged, not re-cut, not re-stamped.</li><li><strong>No Rules, index, schema or data change.</strong> <code>firestore.rules</code> and <code>firebase.json</code> byte-identical.</li><li><strong>No timezone or location field, and no timezone UI.</strong></li><li><strong>No change to the Phase 4 evidence <code>request.query.limit</code></strong> — the verified deployment candidate is unamended.</li><li>All seven pending-dependency ledger items unchanged. The blocker is still <strong>E1 — authenticated Firebase access</strong> — and it is access, not design.</li></ul>
+</main></body></html>

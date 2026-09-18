@@ -3301,8 +3301,8 @@ const playLabel = (page) => page.evaluate(() =>
     a boundary check rides on `timeupdate`, which browsers throttle to about a
     quarter of a second, so a short ayah takes noticeably longer than its own
     length and a fixed sleep would make these tests flaky rather than wrong. */
-const waitFor = (page, fn, timeout = 8000) =>
-  page.waitForFunction(fn, null, { timeout }).then(() => true).catch(() => false);
+const waitFor = (page, fn, timeout = 8000, arg = null) =>
+  page.waitForFunction(fn, arg, { timeout }).then(() => true).catch(() => false);
 const ayahNow = (page) => page.evaluate(() => document.getElementById("ayahSelect").value);
 
 console.log("\n=== 38. Shell round 26: listening ===");
@@ -3467,19 +3467,39 @@ console.log("\n=== 38. Shell round 26: listening ===");
   page.on("dialog", (d) => d.dismiss().catch(() => {}));
   await setUnit(page, "surah");
   await openRead(page);
+  // FIXED 2026-09-18, and it was this file's own rule being broken 6 lines
+  // below where the rule is written down. These three assertions slept a
+  // guessed 600/300/400ms and then called `playLabel(page)` TWICE -- once for
+  // the condition and once for the diagnostic -- so the two read the label at
+  // two different moments. Caught on a run where 38f failed printing
+  // `⏸ Pause`, a value that SATISFIES the regex the check had just rejected:
+  // the label flipped in between. Not an application defect and not a flake
+  // to be re-run away -- a fixed sleep racing a state change, exactly what
+  // `waitFor`'s own comment above says it exists to prevent. Each assertion
+  // now waits for the STATE and reads the label ONCE, so the condition and
+  // the diagnostic can never disagree again.
+  // `waitFor` already swallows its own timeout and returns false, so a label
+  // that never flips falls through to the read below and the assertion fails
+  // on the real value it found -- which is the diagnostic worth having.
+  const labelBecomes = async (re) => {
+    await waitFor(page, (src) => {
+      const l = document.getElementById("readPlayBtn").getAttribute("aria-label") || "";
+      return new RegExp(src).test(l);
+    }, 8000, re.source);
+    return playLabel(page);
+  };
   await page.click("#readPlayBtn");
-  await page.waitForTimeout(600);
-  check("38f Play starts, and the button becomes Pause",
-        /Pause|থামান/.test(await playLabel(page)), await playLabel(page));
+  const started = await labelBecomes(/Pause|থামান/);
+  check("38f Play starts, and the button becomes Pause", /Pause|থামান/.test(started), started);
   await page.click("#readPlayBtn");
-  await page.waitForTimeout(300);
-  check("38f pressing it again pauses", /Play|চালান/.test(await playLabel(page)), await playLabel(page));
+  const paused = await labelBecomes(/Play|চালান/);
+  check("38f pressing it again pauses", /Play|চালান/.test(paused), paused);
   const before = urls.length;
   await page.click("#readPlayBtn");
-  await page.waitForTimeout(400);
+  const resumed = await labelBecomes(/Pause|থামান/);
   check("38f and pressing it once more resumes rather than restarting",
-        /Pause|থামান/.test(await playLabel(page)) && urls.length === before,
-        `${await playLabel(page)}, ${urls.length - before} extra request(s)`);
+        /Pause|থামান/.test(resumed) && urls.length === before,
+        `${resumed}, ${urls.length - before} extra request(s)`);
   await page.close();
   await ctx.close();
 }
@@ -4262,8 +4282,29 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42g ...with no failure notice shown", status === true);
 
   // Leaving: no × button anywhere in the view -- the dock is the only way out.
-  const hasCloseBtn = await page.evaluate(() => !!document.querySelector(".note-view [data-note-close], .note-view .modal-close, .note-view .close-btn"));
-  check("42h there is no × / close button in the view", !hasCloseBtn);
+  //
+  // STRENGTHENED 2026-09-18. This was a bare negative over three selectors
+  // all scoped to `.note-view`, with no diagnostic and nothing proving that
+  // container was on screen -- so a rename of `.note-view` (the exact thing
+  // that happened to `.note-ayahbar` in v07.70, and which the excavation
+  // found had gone unnoticed for 70 rounds) would turn it green while it
+  // asserted nothing at all. **A negative assertion needs its own positive
+  // control.** The container is now measured first; probed at the time of
+  // writing it renders 358x666 with 41 buttons inside and no close control,
+  // so the negative is being made about a populated, on-screen view.
+  const closeState = await page.evaluate(() => {
+    const v = document.querySelector(".note-view");
+    const r = v?.getBoundingClientRect();
+    return {
+      onScreen: !!r && r.width > 0 && r.height > 0,
+      buttonsInside: v?.querySelectorAll("button").length ?? 0,
+      hasCloseBtn: !!document.querySelector(".note-view [data-note-close], .note-view .modal-close, .note-view .close-btn"),
+    };
+  });
+  check("42h the Note view is really on screen and populated -- the control for the negative below",
+        closeState.onScreen && closeState.buttonsInside > 0, JSON.stringify(closeState));
+  check("42h ...and there is no × / close button anywhere in it -- the dock is the only way out",
+        !closeState.hasCloseBtn, JSON.stringify(closeState));
   await clickStudyPillarItem(page, "tabReadBtn"); // tapping the SAME tab is how you leave -- same idiom as every other dock tab
   await page.waitForTimeout(300);
   const closed = await page.evaluate(() => ({
@@ -5109,6 +5150,8 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
       embedAfterNotes: notesIdx !== -1 && approachIdx !== -1 && approachIdx > notesIdx,
       notesClosed: getComputedStyle(document.querySelector('[data-note-field="notes"] .note-field-body')).display === "none",
       trackState: document.querySelector(".way-embed .way-track-state")?.textContent.trim(),
+      // the Confirmed shape always carries a status pill; the not-claimed one never does
+      trackPill: !!document.querySelector(".way-embed .way-track-state .pill"),
     };
   });
   check("43e clicking a wheel slice opens the Ayah Note screen, not the old floating pop-up",
@@ -5116,7 +5159,18 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
   check("43f the Approach card (Track/Guide/Breakdown/Coverage) is embedded right after Notes -- study above, assessment below",
         clicked.embedPresent && clicked.embedAfterNotes, JSON.stringify(clicked));
   check("43g Notes still starts closed even when the screen is reached from a wheel slice", clicked.notesClosed);
-  check("43h the embedded card shows the real claim state for this āyah/Approach", Boolean(clicked.trackState), clicked.trackState);
+  // STRENGTHENED 2026-09-18. This asserted only `Boolean(trackState)` while
+  // its name claims it reads "the REAL claim state" -- any string at all
+  // passed, a placeholder or a stray dash included. `way-modal.js` can render
+  // exactly two shapes for this line: "Not claimed yet." when there is no
+  // entry, or "Confirmed: <status> · <pill>" when there is. The check is bound
+  // to those two now, so a card that renders neither fails instead of passing
+  // on the mere presence of text.
+  check("43h the embedded card shows the real claim state for this āyah/Approach -- one of the two shapes way-modal.js renders",
+        Boolean(clicked.trackState)
+          && (/Not claimed yet/.test(clicked.trackState)
+              || (/Confirmed:/.test(clicked.trackState) && clicked.trackPill === true)),
+        JSON.stringify({ trackState: clicked.trackState, trackPill: clicked.trackPill }));
 
   check("43 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
@@ -5390,11 +5444,44 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
           && /Bookmark/i.test(readBmBtn.label || ""), JSON.stringify(readBmBtn));
 
   // Cancelling the naming popover (item 1/2) makes no write and no bookmark.
+  //
+  // RECONCILED 2026-09-18. This read `.ayah-quick-btn.has-note` inside
+  // #readQuickMenuSlot and asserted `!== true`. That class is the NOTE
+  // indicator -- renderQuickMenu() sets it from `hasNote: ayahHasNote(...)`
+  // -- and this call site passes `showBookmark: false`, so the Read screen's
+  // ⋮ carries no bookmark state of any kind. Probed: has-note read `false`
+  // after cancelling AND `false` after a real save, while the write log went
+  // 0 -> 1, so the assertion evaluated identically in the case it was written
+  // to catch and in its own opposite. It was also a bare `!== true` with no
+  // diagnostic, which passes just as happily when the element is absent.
+  //
+  // The real indicator on this screen is #readBookmarkBtn itself (🔖 -> ★,
+  // aria-label "Bookmark this āyah" -> "Remove bookmark"), plus the write
+  // log. Both are read now, against a stated positive control, and 45c
+  // asserts the same two facts moving the OTHER way after a real save -- a
+  // denial paired with an allow differing in one fact, which is what this
+  // project's own mutation-testing lesson requires.
+  const readBmState = () => page.evaluate(() => {
+    const b = document.getElementById("readBookmarkBtn");
+    return { text: b?.textContent.trim(), label: b?.getAttribute("aria-label") };
+  });
+  const bookmarkWriteCount = () => page.evaluate(() =>
+    JSON.parse(sessionStorage.getItem("__stubWrites") || "[]").filter((w) => w.col === "bookmarks").length);
+
+  const beforeCancel = await readBmState();
+  const writesBeforeCancel = await bookmarkWriteCount();
+  check("45b the bar's Bookmark button starts unbookmarked -- the positive control the cancel below is measured against",
+        beforeCancel.text === "🔖" && /^Bookmark/i.test(beforeCancel.label || ""), JSON.stringify(beforeCancel));
+
   await page.click("#readBookmarkBtn");
   await cancelBookmarkPopover(page);
   await page.waitForTimeout(200);
-  const afterCancel = await page.evaluate(() => document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.classList.contains("has-note"));
-  check("45b cancelling the name prompt makes no bookmark", afterCancel !== true);
+  const afterCancel = await readBmState();
+  const writesAfterCancel = await bookmarkWriteCount();
+  check("45b ...and cancelling the name prompt makes no bookmark -- no write issued, and the button has not flipped",
+        writesAfterCancel === writesBeforeCancel
+          && afterCancel.text === "🔖" && /^Bookmark/i.test(afterCancel.label || ""),
+        JSON.stringify({ afterCancel, writesBeforeCancel, writesAfterCancel }));
 
   // Now really bookmark it, naming it, with Tajweed and a non-default Approach on.
   await openStudyOptions(page);
@@ -5412,6 +5499,11 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   const writes = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
   const saveWrite = writes.find((w) => w.col === "bookmarks" && w.data.includes("saved"));
   check("45c saving really writes to the bookmarks collection", Boolean(saveWrite), JSON.stringify(writes));
+  // The other half of 45b's pair: the two facts that stayed still through a
+  // cancel must really move on a save, or "it did not flip" proves nothing.
+  const afterSave = await readBmState();
+  check("45c ...and the bar's own Bookmark button flips to ★ / Remove bookmark -- what 45b proved stays still",
+        afterSave.text === "★" && /Remove/i.test(afterSave.label || ""), JSON.stringify(afterSave));
 
   check("45 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
@@ -5919,15 +6011,43 @@ console.log("\n=== 50h-k. The person tag on the Manager page, and both in Bangla
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
   await pageBn.click("#readBookmarkBtn");
   await pageBn.waitForSelector(".bm-popover-overlay");
+  //
+  // RECONCILED 2026-09-18, the second clause. It read
+  // `fields.some((f) => BN.test(f) && f !== groupByFolder)` over EVERY
+  // popover field, so the Name field ("নাম") satisfied it and the Folder
+  // field it names was never looked at. Probed: with the |groupby suffix
+  // mutated away -- the popover's Folder label made byte-identical to the
+  // group-by's -- the clause as written STILL evaluated true, while a
+  // clause bound to the Folder field correctly went false. It also compared
+  // against a `groupByFolder` that is `undefined` whenever the nav select is
+  // gone, which makes `f !== undefined` true for every field.
+  //
+  // Both labels are now read by identity -- the popover field that actually
+  // holds [data-bm-pop-folder], and the group-by option with value "folder"
+  // -- and both are asserted PRESENT and Bangla before they are compared, so
+  // neither side can be missing and still pass.
+  //
+  // The first clause is likewise bound to the person row rather than to
+  // "some field somewhere": [data-bm-pop-person-row] is what 50k names.
   const bnPop = await pageBn.evaluate(() => {
-    const fields = [...document.querySelectorAll(".bm-popover-field")].map((l) => l.childNodes[0]?.textContent.trim());
-    const groupByFolder = [...document.querySelectorAll("[data-bm-nav-groupby] option")].find((o) => o.value === "folder")?.textContent.trim();
-    return { fields, groupByFolder };
+    const labelOf = (el) => el?.childNodes[0]?.textContent.trim();
+    const fields = [...document.querySelectorAll(".bm-popover-field")].map(labelOf);
+    const folderField = [...document.querySelectorAll(".bm-popover-field")]
+      .find((l) => l.querySelector("[data-bm-pop-folder]"));
+    return {
+      fields,
+      personRowLabel: labelOf(document.querySelector("[data-bm-pop-person-row]")),
+      folderFieldLabel: labelOf(folderField),
+      groupByFolder: [...document.querySelectorAll("[data-bm-nav-groupby] option")].find((o) => o.value === "folder")?.textContent.trim(),
+    };
   });
   check("50k the popover's own person row reads in Bangla too",
-        bnPop.fields.some((f) => f && BN.test(f)), JSON.stringify(bnPop.fields));
-  check("50k ...and the popover's 'Folder' label is NOT the group-by 'Folder' wording (context suffix works)",
-        bnPop.fields.some((f) => f && BN.test(f) && f !== bnPop.groupByFolder), JSON.stringify(bnPop));
+        Boolean(bnPop.personRowLabel) && BN.test(bnPop.personRowLabel), JSON.stringify(bnPop));
+  check("50k ...and the popover's OWN 'Folder' label is NOT the group-by 'Folder' wording (the |groupby context suffix works)",
+        Boolean(bnPop.folderFieldLabel) && BN.test(bnPop.folderFieldLabel)
+          && Boolean(bnPop.groupByFolder) && BN.test(bnPop.groupByFolder)
+          && bnPop.folderFieldLabel !== bnPop.groupByFolder,
+        JSON.stringify(bnPop));
   check("50j-k no page errors", errorsBn.length === 0, errorsBn.slice(0, 3).join(" | "));
   await pageBn.close();
   await ctxBn.close();

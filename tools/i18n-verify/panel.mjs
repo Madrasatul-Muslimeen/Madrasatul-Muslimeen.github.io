@@ -113,23 +113,62 @@ export async function measurePanel(ctx, path, unitType = "ayah") {
 
     // A <select>'s chosen option can also be visually cut; measure the text
     // width against the control by cloning into a span.
-    const selects = [...document.querySelectorAll(".study-options-body .opt-cell > select")].map((s) => {
+    //
+    // v08.27 -- this used `need > w - 22`, an ASSUMED 22px reserve for the
+    // native dropdown arrow that also ignored the control's own padding and
+    // border. Those are 10px here, so the heuristic was optimistic by exactly
+    // that much and reported "not cut" for a control whose text really was
+    // being clipped. It hid a live defect: every number picker on the units
+    // bar cut a three-digit value, at every viewport, in both languages.
+    //
+    // The arrow is MEASURED now, not assumed -- a select sized to max-content
+    // is text + padding + border + arrow, so subtracting a span of the same
+    // text in the same computed font leaves the arrow. And a number picker's
+    // worst case is its LONGEST option ("286", "604"), not whichever the
+    // fixture happens to have selected, so both are measured and the cut is
+    // judged on the worse of the two.
+    const measureText = (txt, cs) => {
       const span = document.createElement("span");
-      const cs = getComputedStyle(s);
       span.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${cs.font}`;
-      span.textContent = s.options[s.selectedIndex]?.text || "";
+      span.textContent = txt;
       document.body.appendChild(span);
-      const need = Math.ceil(span.getBoundingClientRect().width);
+      const w = span.getBoundingClientRect().width;
       span.remove();
+      return w;
+    };
+    const arrowReserve = (() => {
+      const model = document.querySelector(".study-options-body .opt-cell > select");
+      if (!model) return 22;
+      const cs = getComputedStyle(model);
+      const probe = document.createElement("select");
+      probe.style.cssText = `position:absolute;visibility:hidden;width:max-content;box-sizing:${cs.boxSizing};font:${cs.font};padding:${cs.padding};border:${cs.border};`;
+      const opt = document.createElement("option");
+      opt.textContent = "MMMM";
+      probe.appendChild(opt);
+      document.body.appendChild(probe);
+      const probeW = probe.getBoundingClientRect().width;
+      probe.remove();
+      const pb = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
+               + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+      return Math.max(0, probeW - measureText("MMMM", cs) - pb);
+    })();
+    const selects = [...document.querySelectorAll(".study-options-body .opt-cell > select")].map((s) => {
+      const cs = getComputedStyle(s);
+      const text = s.options[s.selectedIndex]?.text || "";
+      const need = Math.ceil(measureText(text, cs));
+      let longest = 0;
+      for (const op of s.options) { const t = measureText(op.text, cs); if (t > longest) longest = t; }
+      longest = Math.ceil(longest);
       const w = Math.round(s.getBoundingClientRect().width);
-      // `need > w - 22` is true for ANY hidden select, because a hidden element
-      // measures 0 and `need > -22` always holds. This suite has therefore been
-      // printing "selects truncated: unitNumSelect \"1\" 0px needs 8px" for
-      // controls that are simply not on screen -- harmless as a printed line,
-      // and a false failure the moment it was counted. A hidden control is not
-      // a truncated one; `hidden` is reported separately so it is not silently
-      // dropped either.
-      return { id: s.id, text: span.textContent, w, need, hidden: w === 0, cut: w > 0 && need > w - 22 };
+      const pb = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
+               + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+      const usable = Math.round(w - pb - arrowReserve);
+      // A hidden select measures 0, and "need > -22" was always true for one --
+      // this suite printed "unitNumSelect \"1\" 0px needs 8px" for controls
+      // simply not on screen. A hidden control is not a truncated one;
+      // `hidden` is reported separately so the absence is not dropped either.
+      return { id: s.id, text, w, need, longest, usable, hidden: w === 0,
+               cut: w > 0 && (need > usable || longest > usable) };
     });
 
     const summary = q("#optionsSummary");
@@ -197,7 +236,7 @@ function report(name, m) {
   console.log(`  labels ${m.labels.length}, truncated: ${cutL.length ? cutL.map((l) => `"${l.text}" ${l.w}px needs ${l.need}px`).join("; ") : "none"}`);
   const cutS = m.selects.filter((s) => s.cut);
   const hiddenS = m.selects.filter((s) => s.hidden);
-  console.log(`  selects truncated: ${cutS.length ? cutS.map((s) => `${s.id} "${s.text}" ${s.w}px needs ${s.need}px`).join("; ") : "none"}`
+  console.log(`  selects truncated: ${cutS.length ? cutS.map((s) => `${s.id} "${s.text}" ${s.usable}px usable, needs ${s.need}px (longest option ${s.longest}px)`).join("; ") : "none"}`
     + (hiddenS.length ? ` (${hiddenS.length} not on screen: ${hiddenS.map((s) => s.id).join(", ")})` : ""));
   console.log(`  summary strip ${m.summaryPresent ? m.summaryH + "px" : "absent"} | Study screen in panel: ${m.studyHeadingOffset === null ? "no (round 17: it owns the stage)" : "YES at +" + m.studyHeadingOffset + "px -- REGRESSION"}`);
   if (m.horizontalOverflow) { problems++; console.log("  !! HORIZONTAL OVERFLOW (page)"); }
