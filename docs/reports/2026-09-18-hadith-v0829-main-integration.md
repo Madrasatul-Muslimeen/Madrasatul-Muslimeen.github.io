@@ -96,7 +96,7 @@ among the five authorised shared files and **was not touched**.
 | 11 | `stub-parity` | **PASS — 3 / 0** |
 | 12 | i18n integrity / coverage | **PASS — 1,873 scanned / 1,812 translated / 61 missing (97%)**, 1,642 catalogue entries, exit 0 |
 | 13 | Rendered Hadith | **PASS — 96 / 0**, three widths × two languages × both routes |
-| 14 | `behaviour.mjs` | **BEHAVIOUR_GATE** |
+| 14 | `behaviour.mjs` | ****PASS -- 981 passed, 1 failed, 56 sections.** The single failure is the sandbox TLS artefact (`ERR_CERT_AUTHORITY_INVALID`). **Zero application regressions**; it matches `main`'s own clean run of record** |
 | 15 | D14 unreachable | **PASS — no importer** of `timezone-contract.js` / `timezone-service.js` anywhere in `app/` |
 | 16 | Phase 4 HELD | **PASS — `7e2931f` not merged into the candidate** |
 | 17 | `firestore.rules`, `firebase.json` | **PASS — byte-identical to `main`** |
@@ -119,11 +119,50 @@ merge** — verified in §5.
 
 ## 5. Merge to `main`
 
-MERGE_SECTION
+Merged with `--no-ff` so the integration is an explicit, labelled point in history.
+
+| | |
+|---|---|
+| Merge commit | **`43dd96f58eeee5ad33dc82bb4e260660e3c290c9`** |
+| `main` before to after | `cfee898...` to **`43dd96f...`** |
+| `main` version | **v08.27 to v08.29** |
+| Pushed | **Yes** |
+| `origin/main` == local `main` | **YES**, fetched and compared after the push |
+
+**Post-merge verification on `main` itself:** `app/js/version.js` reads **`08.29`**, and
+**`brief-integrity` now passes 8 / 0** -- the brief's *"v08.29 on `main`"* has become true.
+
+**A stamping commit follows the merge**, as the ledger's own design requires: main's
+version and final SHA cannot be recorded in the commit that creates them. It sets
+`main.baselineSha` and `main.version = 08.29`, moves **08.29 to RELEASED** and **08.28 to
+HISTORICAL**, and marks the Hadith stream **MERGED_TO_MAIN**.
 
 ---
 
 ## 6. Flagged — not changed, and outside the authorised five
+
+**`programme-ledger-mutations.mjs` cannot fully model a post-merge world.** At the gate it
+was **25 / 0**. After the merge it reads **23 / 2**, and the ledger guard itself is
+**7 / 0** — so nothing regressed. The two are preconditions the suite draws from the live
+ledger:
+
+- **MUTATION [A]** injects a duplicate allocation for `main.version` owned by `hadith` and
+  expects *"claimed by 2 streams at once"*. `main.version` is now **08.29, already owned by
+  `hadith`**, so the injection names the *same* stream and no conflict can be built.
+- **MUTATION [C]** expects *"claimed by stream hadith"*, which only appears while 08.28 is a
+  **claiming** status. Post-merge it is correctly `HISTORICAL`.
+
+A third failure was real and **was** fixed truthfully: nulling the Hadith stream's
+`activeBranch` on merge lost a fact that is still true — the branch exists and still carries
+the 08.29 stamp — and left the ledger unable to cross-check declared version against a real
+ref. Restored.
+
+**One contradiction is left for the ledger's owner rather than edited from here:** allocation
+`08.27 / quran` still carries `status: LIVE` with the meaning *"shipped and served from
+main"*, which stopped being true the moment main moved to 08.29. Its note now records the
+supersession, but the **status field is the Quran stream's allocation to set**. Related: the
+ledger has no vocabulary for *"on `main`, deployment unverified"* — `RELEASED` is the closest
+and is what 08.29 carries.
 
 **`tools/i18n-verify/programme-ledger.mjs` has no `AUTHORIZED` vocabulary.** It models
 only *declared vs undeclared*, so every declared touch prints *"DECLARED, awaiting Master
@@ -173,7 +212,7 @@ BASE_MAIN_SHA=cfee898be15abff09882996cf22410e499130acb
 
 CANDIDATE_SHA=fd8a8a240cfff1875c3f7696652daa18c47ced1e
 
-FINAL_MAIN_SHA=FINAL_SHA_PLACEHOLDER
+FINAL_MAIN_SHA=43dd96f58eeee5ad33dc82bb4e260660e3c290c9
 
 FINAL_MAIN_VERSION=v08.29
 
@@ -189,7 +228,7 @@ STAGE_B_V0829=22526b20da1e1fe950992957aa2862e65b3cf925 -- not rewritten; the fin
 
 PROGRAMME_GUARDS=PASS -- A, B, C, D, E, F and the prose-scanner CONTROL all green
 
-MUTATIONS=PASS -- 25/0. Two earlier failures were mutation PRECONDITIONS drawn from the live ledger, not guard regressions; resolved by making the ledger truer, with programme-ledger-mutations.mjs untouched
+MUTATIONS=PASS AT THE GATE -- 25/0 pre-merge, which is what the merge authorisation required. POST-MERGE the suite reads 23/2 and BOTH remaining failures are its own preconditions, not guard regressions (the ledger guard is 7/0 on main): mutation A assumes main's current version belongs to a stream OTHER than hadith, and mutation C assumes 08.28 is still a CLAIMING status -- neither holds once a Hadith version is the one on main. programme-ledger-mutations.mjs was NOT touched; it is not among the five authorised shared files. Flagged for its owner Two earlier failures were mutation PRECONDITIONS drawn from the live ledger, not guard regressions; resolved by making the ledger truer, with programme-ledger-mutations.mjs untouched
 
 HADITH_TESTS=PASS -- 61/0 (hadith-source-rights 14, hadith-corpus 33, hadith-commentary-binding 14)
 
@@ -197,7 +236,7 @@ QURAN_REGRESSIONS=PASS -- 20 suites, 410 checks, all exit 0, including d14-timez
 
 RENDERED_TESTS=PASS -- 96/0 across the integrated and standalone routes, three widths, both languages; appearance asserted by computed style
 
-BEHAVIOUR_RESULT=BEHAVIOUR_KEY
+BEHAVIOUR_RESULT=PASS -- 981 passed, 1 failed across 56 sections (982 checks), matching main's own clean run of record. The single failure is ENVIRONMENTAL (sandbox TLS interception); zero application regressions
 
 D14_STATUS=PRESENT and UNREACHABLE -- no importer of timezone-contract.js or timezone-service.js anywhere in app/*.html or app/js/*.js; both D14 suites pass
 
@@ -211,6 +250,6 @@ DEPLOYED=NO
 
 NEXT_UNALLOCATED=v08.30+
 
-ORIGIN_MAIN_VERIFIED=ORIGIN_VERIFIED_PLACEHOLDER
+ORIGIN_MAIN_VERIFIED=YES -- origin/main == local main == 43dd96f58eeee5ad33dc82bb4e260660e3c290c9, fetched and compared after the push
 
 NEXT_ACTION=RETURN_TO_MASTER_ARCHITECT

@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
+    "baselineSha": "43dd96f58eeee5ad33dc82bb4e260660e3c290c9",
     "baselineRecordedOn": "2026-09-18",
-    "version": "08.27",
+    "version": "08.29",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -46,7 +46,7 @@
       "version": "08.27",
       "owner": "quran",
       "status": "LIVE",
-      "note": "Study-options number pickers. Shipped and served from main."
+      "note": "Study-options number pickers. Was the version on main until the Hadith v08.29 integration merged at 43dd96f; superseded on main by 08.29."
     },
     {
       "version": "08.26",
@@ -73,16 +73,17 @@
     {
       "version": "08.28",
       "owner": "hadith",
-      "status": "RESERVED",
+      "status": "HISTORICAL",
       "stampedAt": "7f61328",
-      "note": "Hadith Stage A -- accepted development milestone, stamped at 7f61328 on feature/hadith-study. The branch tip carries 08.29; this number is superseded INSIDE accepted history and is not a claim on any future merge number. Never independently merged, never deployed. Becomes HISTORICAL once v08.29 lands on main."
+      "note": "Hadith Stage A -- accepted development milestone, stamped at 7f61328. Carried into main as HISTORY by the v08.29 integration; never independently merged and never deployed. main went 08.27 -> 08.29. Not a claim on any number.",
+      "forwardAllocation": false
     },
     {
       "version": "08.29",
       "owner": "hadith",
-      "status": "RESERVED",
+      "status": "RELEASED",
       "stampedAt": "22526b20da1e1fe950992957aa2862e65b3cf925",
-      "note": "Hadith Stage B and the final integration candidate; the branch tip's stamp. AUTHORISED for merge to main by the Master Architect, 18 Sep 2026. Still RESERVED until that merge lands; this record is updated to RELEASED by the post-merge stamping commit."
+      "note": "Hadith Stage B and the final integration candidate. MERGED TO MAIN at 43dd96f under explicit Master Architect authorisation, 18 Sep 2026. RELEASED means PRESENT ON MAIN, not deployment-verified: no deployment was performed or proven, and deployed Firestore Rules remain UNVERIFIED."
     }
   ],
   "nextUnallocated": "08.30",
@@ -184,8 +185,8 @@
       "id": "hadith",
       "name": "Hadith Study module stream",
       "activeBranch": "feature/hadith-study",
-      "branchTip": "fd8a8a240cfff1875c3f7696652daa18c47ced1e",
-      "integrationState": "CANDIDATE_AUTHORISED_FOR_MAIN_MERGE",
+      "branchTip": "c1a4f19a70ec824372fa1fda49e4e7dbc38bc40c",
+      "integrationState": "MERGED_TO_MAIN",
       "declaredVersion": "08.29",
       "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
@@ -230,8 +231,9 @@
           "authorisedBy": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
         }
       ],
-      "baselineNote": "Rebaselined onto cfee898 -- the Programme Ledger foundation -- by merge, so the candidate is CURRENT again. Stage A 7f61328 and Stage B 22526b2 were not rewritten. Merge to main is authorised by the Master Architect, 18 Sep 2026.",
-      "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md"
+      "baselineNote": "Merged to main at 43dd96f. Stage A 7f61328 and Stage B 22526b2 were not rewritten. The recorded baseline is the pre-merge tip because main moved forward by this very merge.",
+      "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
+      "branchNote": "Merged to main at 43dd96f. The branch is retained, still stamped 08.29, so the ledger can keep cross-checking the declared version against a real ref."
     }
   ],
   "platformSharedPaths": [
