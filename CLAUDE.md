@@ -26,11 +26,12 @@ Read this first, every session. It is the standing brief.
 
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
-> **This branch's final application version is `v08.29`; `main` is `v08.27`.** The
-> `Current milestone: v08.27 on \`main\`` line below is about `main` and is
-> **correct** — do not "fix" it to v08.29, which would claim an unmerged version
-> is live. **Neither v08.28 nor v08.29 has ever been deployed or served to
-> anyone**; both are development milestones on this unmerged branch.
+> **This branch's final application version is `v08.29`, and it is now MERGED TO `main`.** The
+> `Current milestone` line below names **v08.29 on `main`**, which is true from
+> the moment this integration landed. **Neither v08.28 nor v08.29 has been
+> DEPLOYED or proven served to anyone** — merging to `main` is not deployment,
+> and no deployment was performed or verified. v08.28 is Hadith Stage A, carried
+> into `main` as history by this integration rather than merged on its own.
 >
 > **The two milestones, and the history is kept rather than flattened:**
 > **v08.28 = Stage A** (`7f61328`), the synthetic-namespace correction.
@@ -109,9 +110,12 @@ Read this first, every session. It is the standing brief.
 > timezone item is **one question, not a UI decision** (§11.B).
 
 
-**Current milestone: v08.27 on `main`** (18 Sep 2026 — the number-picker fix
-below. v08.26, the 320px nav fit correction, merged earlier the same day at
-`49f37c9`, fast-forward. `main`'s own `app/js/version.js` is the single source
+**Current milestone: v08.29 on `main`** (18 Sep 2026 — the Hadith Stage A/B
+integration, merged under explicit Master Architect authorisation. v08.27, the
+Study-options number pickers, was the previous version on `main`; v08.28 is
+Hadith Stage A, carried into `main` as history by this integration and never
+independently merged. **Merged is not deployed** — no deployment was performed
+or proven by that round. `main`'s own `app/js/version.js` is the single source
 of truth and is what GitHub Pages serves.)
 
 > **This line was WRONG for part of 18 Sep, and the episode is the lesson.** It
