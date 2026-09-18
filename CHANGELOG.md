@@ -14281,3 +14281,95 @@ fits comfortably on `people.html` and `bookmarks.html` with 272.3px usable** —
 its truncation is specific to the Study-options panel's 145px cell, not to the
 control or its content. **The number-picker class was the only thing the
 heuristic was hiding, and it is closed.**
+
+---
+
+## D14 timezone foundation, and measured layout options for three selects (18 Sep 2026, v08.27, no version bump)
+
+**BR-0.** Two NEW `app/js` modules, unreachable from any page; one NEW Rules
+candidate in its own file; four new tools files. **No existing application file
+was modified.** Phase 4 wiring `7e2931f` untouched, nothing deployed,
+`firestore.rules` / `firebase.json` / the assembled Phase 4–6 candidate all
+byte-identical — each asserted by a check. Evidence:
+`docs/reports/2026-09-18-d14-timezone-foundation.md` / `.html`.
+
+**THE REPRESENTATION.** Three fields on `tenantPeople`: `timezone` keeps its
+existing name and meaning as **the authoritative resolved IANA zone in BOTH
+modes**, `timezoneMode` is closed at `auto`/`manual`, `timezoneLocation` holds
+the chosen location or an **explicit null**. The point of that shape: anything
+reading a person's timezone reads one field and never needs the mode — **the
+mode governs who may change it, not what it means.**
+
+**AN ABSENT MODE READS AS `auto`, AND THAT IS DERIVED RATHER THAN CHOSEN.**
+Every pre-D14 record carries a zone captured automatically at creation and no
+mode, and D14 says automatic capture is the default — so the existing corpus
+already IS auto and **nothing needs backfilling.** `timezoneLocation` is written
+null, never omitted: omitting it leaves a previous choice's label beside a mode
+that says auto, which is the stale-label state that makes "return to automatic"
+a lie.
+
+**The two behaviours the Owner named are one function seen from two sides.** A
+manual choice returns `keep` whatever the device reports (tested against five
+device zones including nonsense and null); auto returns a write when the
+detected zone differs. Three more states fall out and are tested: a pre-D14
+record gains its mode **without its zone moving**, a `migrate.html` record
+(`timezone: null`) adopts the detected zone, and an **unreadable device zone
+writes nothing rather than guessing.**
+
+**THE RULES CANDIDATE IS TESTED AGAINST THE RULESET ACTIVATION WOULD PRODUCE,
+NOT AGAINST THE EXTRACT.** It calls eight helpers that live in the deployed
+file, so an extract tested alone proves only that a file parses. The suite
+substitutes the block into `firestore.rules` in memory, asserts the
+substitution happened, and asserts the assembled ruleset differs from the
+deployed one **nowhere except that block**. 22 assertions, 0 failures, 3
+mutations caught. Every read clause, both create clauses and the two non-self
+update clauses are reproduced **byte-for-byte** and a check diffs them.
+
+**The validator is applied to all three update clauses but CONDITIONALLY.** The
+admin and guardian clauses have never validated any field here, and giving
+`tenantPeople` a full shape contract would risk denying existing legitimate
+writes this tranche cannot enumerate — so `timezoneWellFormed()` returns true
+when the write does not touch the timezone fields. Mutation-proven: removing it
+from the admin clause alone fails exactly one case.
+
+**TWO OF MY OWN TEST ERRORS, recorded rather than quietly fixed.** TZ-12 wrote
+`roles: ["owner"]` — the value the fixture ALREADY had, and
+`diff().affectedKeys()` lists only keys whose value CHANGED, so `hasOnly` never
+saw it. **A smuggled field has to actually differ to be smuggled.** And TZ-20
+asserted "manual with no zone is refused" against a record TZ-19 had just given
+a zone — **a case whose premise an earlier case destroyed tests nothing.** I
+also suspected a live `isGuardianOf` defect and **reading it disproved that**;
+recorded because the next person to see that shape will suspect the same thing.
+
+**WEEK BUCKETING IS UNTOUCHED BY CONSTRUCTION, NOT BY INTENTION.** The boundary
+walks the import graph FORWARD from both modules and asserts `activity.js` is
+not in it at any depth, and that neither names `weekKeyFor`, `chunkKey`,
+`claimStatus` or `bulkConfirmWeek` outside a comment. The contract **imports
+nothing at all**, which is what makes that structural. 10 checks with a positive
+control; mutation-proven both ways.
+
+**MEASURED LAYOUT OPTIONS — AND NOTHING CHOSEN.** v08.27 named three remedies
+for `surahSelect`/`unitTypeSelect`/`tenantSelect` and costed none.
+`select-layout-options.mjs` applies each to a live copy of the page, measures
+and reverts. At **English 320px, the governing case**: as-is is 46/26/129 short;
+type −2px reaches 29/12/95; wrapping the units row reaches 18/−2/129 at +52px;
+giving the tenant picker its own row reaches 46/26/**−3** at +52px; shortening
+the option text reaches 25/9/37 at no vertical cost. **No single remedy fits all
+three — only A+D+C does (−3/−19/−95), at +103px of panel height and a
+user-visible wording change in both languages.** The panel does not scroll in
+any candidate. **Three questions are put to the Owner and none is answered.**
+
+**THREE DEFECTS IN MY OWN MEASUREMENT SCRIPT, found before any number was
+presented**, each of which would have produced a confident wrong table:
+`font-size: calc(1em - 1px)` made the type **bigger** (`1em` resolves against
+the PARENT, and these render at 13.1px inside a 16px parent) — the tell was a
+remedy making things worse; the tenant candidate used `flex-wrap` while
+`.opt-bar` is a **grid**, so it did nothing and reported identical numbers to
+as-is; and the content remedy was measured **on top of** the previous
+stylesheet, because it was never removed before the content loop. **A candidate
+measured on top of another candidate is not a measurement of either.**
+
+**Verified:** contract 21/0, boundary 10/0, emulator 22/0, every other pure
+suite unchanged and green, coverage **1,803 / 47** unchanged, `git status --
+app/` two untracked additions and no modifications. The only non-zero exits in
+the sweep are the two rendered suites' five TLS-artefact failures.

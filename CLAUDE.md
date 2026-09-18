@@ -196,6 +196,37 @@ dirty. The same goes for the Phase 6 emulator's `port taken` on 8093, held by an
 earlier run of my own. **Clean run of record: 981 pass / 1 fail, 982 checks**,
 the one failure 31e's TLS artefact — **and the 22g trio PASSED it.**
 
+**18 Sep 2026 — D14's TIMEZONE FOUNDATION IS BUILT AS AN UNREACHABLE
+CANDIDATE, and three selects now have MEASURED options instead of adjectives.**
+Two new `app/js` modules imported by nothing, plus
+`docs/governance/d14-timezone-tenantpeople-rules-candidate-2026-09-18.rules` in
+its OWN file so nothing here changes what a Phase 4-6 deployment would apply.
+**The representation:** `timezone` keeps its name and meaning as the
+authoritative resolved IANA zone **in both modes**, `timezoneMode` is closed at
+`auto`/`manual`, `timezoneLocation` is the chosen location or an **explicit
+null**. **An absent mode reads as `auto`** — derived, not chosen, because every
+pre-D14 record is already exactly that, so **nothing needs backfilling.** A
+manual choice returns `keep` at every sign-in whatever the device says; auto
+writes when the device zone changes; an unreadable device zone writes nothing
+rather than guessing. **The Rules candidate is tested against the ruleset
+ACTIVATION WOULD PRODUCE** — the block substituted into `firestore.rules` in
+memory — because an extract calling eight helpers it does not contain proves
+only that a file parses. 21 + 10 + 22 assertions, 5 mutations caught. **Week
+bucketing is untouched BY CONSTRUCTION**: the contract imports nothing at all
+and a check walks forward from both modules asserting `activity.js` is
+unreachable at any depth. BR-0, no version bump, nothing deployed, `7e2931f`
+still held. See `docs/reports/2026-09-18-d14-timezone-foundation.md`.
+
+**Three layout questions are now the Owner's, with numbers.** At **English
+320px, the governing case**, `surahSelect`/`unitTypeSelect`/`tenantSelect` are
+46/26/129px short. Shrinking the type two pixels reaches 29/12/95 — **it cannot
+fix the tenant picker**, which is a CONTAINER problem (its own row fixes it
+outright, and it already fits on `people.html` at 272px). `surahSelect` is the
+stubborn one: only the content remedy moves it at 320px. **No single remedy fits
+all three; only wrap + own-row + shorter text does (-3/-19/-95), at +103px of
+panel height and a wording change in BOTH languages.** Nothing was implemented
+and nothing chosen.
+
 **17 Sep 2026 — `behaviour.mjs` RUNS TO THE END AGAIN, and the old "~800 checks
 pass before the section-42 crash" line in this file is GONE because it was
 wrong to keep.** 802 → **973 pass / 4 fail, 56 sections**; the 4 are

@@ -1,0 +1,2626 @@
+[
+  {
+    "lang": "en",
+    "width": 320,
+    "candidate": "as-is",
+    "m": {
+      "surahSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 46,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": 26,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 129,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 974,
+      "__panelVisibleH": 974,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 320,
+    "candidate": "B-type-1px",
+    "m": {
+      "surahSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 105,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 38,
+        "fontPx": 12.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 86,
+        "longestText": "Range of Ayahs",
+        "shortfall": 19,
+        "fontPx": 12.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 207,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 112,
+        "fontPx": 12.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 974,
+      "__panelVisibleH": 974,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 320,
+    "candidate": "B-type-2px",
+    "m": {
+      "surahSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 96,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 29,
+        "fontPx": 11.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 79,
+        "longestText": "Range of Ayahs",
+        "shortfall": 12,
+        "fontPx": 11.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 190,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 95,
+        "fontPx": 11.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 974,
+      "__panelVisibleH": 974,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 320,
+    "candidate": "A-wrap-row",
+    "m": {
+      "surahSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 18,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": -2,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 129,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 1026,
+      "__panelVisibleH": 1026,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 320,
+    "candidate": "D-tenant-own-row",
+    "m": {
+      "surahSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 46,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": 26,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 257,
+        "usable": 227,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": -3,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 1026,
+      "__panelVisibleH": 1026,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 320,
+    "candidate": "A+D",
+    "m": {
+      "surahSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 18,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": -2,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 257,
+        "usable": 227,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": -3,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 1077,
+      "__panelVisibleH": 1077,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 320,
+    "candidate": "C-shorter-text",
+    "m": {
+      "surahSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 92,
+        "longestText": "Al-Munaafiqoon",
+        "shortfall": 25,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 76,
+        "longestText": "Whole Surah",
+        "shortfall": 9,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 132,
+        "longestText": "Madrasatul Muslimeen",
+        "shortfall": 37,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 974,
+      "__panelVisibleH": 974,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 320,
+    "candidate": "A+D+C",
+    "m": {
+      "surahSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 92,
+        "longestText": "Al-Munaafiqoon",
+        "shortfall": -3,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 76,
+        "longestText": "Whole Surah",
+        "shortfall": -19,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 257,
+        "usable": 227,
+        "longest": 132,
+        "longestText": "Madrasatul Muslimeen",
+        "shortfall": -95,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 1077,
+      "__panelVisibleH": 1077,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 360,
+    "candidate": "as-is",
+    "m": {
+      "surahSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 26,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": 6,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 109,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 882,
+      "__panelVisibleH": 882,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 360,
+    "candidate": "B-type-1px",
+    "m": {
+      "surahSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 105,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 18,
+        "fontPx": 12.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 86,
+        "longestText": "Range of Ayahs",
+        "shortfall": -1,
+        "fontPx": 12.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 207,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 92,
+        "fontPx": 12.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 882,
+      "__panelVisibleH": 882,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 360,
+    "candidate": "B-type-2px",
+    "m": {
+      "surahSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 96,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 9,
+        "fontPx": 11.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 79,
+        "longestText": "Range of Ayahs",
+        "shortfall": -8,
+        "fontPx": 11.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 190,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 75,
+        "fontPx": 11.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 882,
+      "__panelVisibleH": 882,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 360,
+    "candidate": "A-wrap-row",
+    "m": {
+      "surahSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": -2,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": -22,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 109,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 934,
+      "__panelVisibleH": 934,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 360,
+    "candidate": "D-tenant-own-row",
+    "m": {
+      "surahSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 26,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": 6,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 297,
+        "usable": 267,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": -43,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 934,
+      "__panelVisibleH": 934,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 360,
+    "candidate": "A+D",
+    "m": {
+      "surahSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": -2,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": -22,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 297,
+        "usable": 267,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": -43,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 985,
+      "__panelVisibleH": 985,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 360,
+    "candidate": "C-shorter-text",
+    "m": {
+      "surahSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 92,
+        "longestText": "Al-Munaafiqoon",
+        "shortfall": 5,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 76,
+        "longestText": "Whole Surah",
+        "shortfall": -11,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 132,
+        "longestText": "Madrasatul Muslimeen",
+        "shortfall": 17,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 882,
+      "__panelVisibleH": 882,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 360,
+    "candidate": "A+D+C",
+    "m": {
+      "surahSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 92,
+        "longestText": "Al-Munaafiqoon",
+        "shortfall": -23,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 76,
+        "longestText": "Whole Surah",
+        "shortfall": -39,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 297,
+        "usable": 267,
+        "longest": 132,
+        "longestText": "Madrasatul Muslimeen",
+        "shortfall": -135,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 985,
+      "__panelVisibleH": 985,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 390,
+    "candidate": "as-is",
+    "m": {
+      "surahSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 11,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": -9,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 94,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 859,
+      "__panelVisibleH": 859,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 390,
+    "candidate": "B-type-1px",
+    "m": {
+      "surahSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 105,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 3,
+        "fontPx": 12.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 86,
+        "longestText": "Range of Ayahs",
+        "shortfall": -16,
+        "fontPx": 12.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 207,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 77,
+        "fontPx": 12.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 859,
+      "__panelVisibleH": 859,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 390,
+    "candidate": "B-type-2px",
+    "m": {
+      "surahSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 96,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": -6,
+        "fontPx": 11.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 79,
+        "longestText": "Range of Ayahs",
+        "shortfall": -23,
+        "fontPx": 11.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 190,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 60,
+        "fontPx": 11.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 859,
+      "__panelVisibleH": 859,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 390,
+    "candidate": "A-wrap-row",
+    "m": {
+      "surahSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": -17,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": -37,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 94,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 911,
+      "__panelVisibleH": 911,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 390,
+    "candidate": "D-tenant-own-row",
+    "m": {
+      "surahSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 11,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": -9,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 327,
+        "usable": 297,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": -73,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 911,
+      "__panelVisibleH": 911,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 390,
+    "candidate": "A+D",
+    "m": {
+      "surahSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": -17,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": -37,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 327,
+        "usable": 297,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": -73,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 962,
+      "__panelVisibleH": 962,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 390,
+    "candidate": "C-shorter-text",
+    "m": {
+      "surahSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 92,
+        "longestText": "Al-Munaafiqoon",
+        "shortfall": -10,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 76,
+        "longestText": "Whole Surah",
+        "shortfall": -26,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 132,
+        "longestText": "Madrasatul Muslimeen",
+        "shortfall": 2,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 859,
+      "__panelVisibleH": 859,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 390,
+    "candidate": "A+D+C",
+    "m": {
+      "surahSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 92,
+        "longestText": "Al-Munaafiqoon",
+        "shortfall": -38,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 76,
+        "longestText": "Whole Surah",
+        "shortfall": -54,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 327,
+        "usable": 297,
+        "longest": 132,
+        "longestText": "Madrasatul Muslimeen",
+        "shortfall": -165,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 962,
+      "__panelVisibleH": 962,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 412,
+    "candidate": "as-is",
+    "m": {
+      "surahSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 0,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": -20,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 83,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 859,
+      "__panelVisibleH": 859,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 412,
+    "candidate": "B-type-1px",
+    "m": {
+      "surahSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 105,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": -8,
+        "fontPx": 12.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 86,
+        "longestText": "Range of Ayahs",
+        "shortfall": -27,
+        "fontPx": 12.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 207,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 66,
+        "fontPx": 12.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 859,
+      "__panelVisibleH": 859,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 412,
+    "candidate": "B-type-2px",
+    "m": {
+      "surahSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 96,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": -17,
+        "fontPx": 11.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 79,
+        "longestText": "Range of Ayahs",
+        "shortfall": -34,
+        "fontPx": 11.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 190,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 49,
+        "fontPx": 11.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 859,
+      "__panelVisibleH": 859,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 412,
+    "candidate": "A-wrap-row",
+    "m": {
+      "surahSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": -28,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": -48,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": 83,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 911,
+      "__panelVisibleH": 911,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 412,
+    "candidate": "D-tenant-own-row",
+    "m": {
+      "surahSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": 0,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": -20,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 349,
+        "usable": 319,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": -95,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 911,
+      "__panelVisibleH": 911,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 412,
+    "candidate": "A+D",
+    "m": {
+      "surahSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 113,
+        "longestText": "63. Al-Munaafiqoon",
+        "shortfall": -28,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 93,
+        "longestText": "Range of Ayahs",
+        "shortfall": -48,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 349,
+        "usable": 319,
+        "longest": 224,
+        "longestText": "Madrasatul Muslimeen (Owner, Prime)",
+        "shortfall": -95,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 962,
+      "__panelVisibleH": 962,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 412,
+    "candidate": "C-shorter-text",
+    "m": {
+      "surahSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 92,
+        "longestText": "Al-Munaafiqoon",
+        "shortfall": -21,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 76,
+        "longestText": "Whole Surah",
+        "shortfall": -37,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 132,
+        "longestText": "Madrasatul Muslimeen",
+        "shortfall": -9,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 859,
+      "__panelVisibleH": 859,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "en",
+    "width": 412,
+    "candidate": "A+D+C",
+    "m": {
+      "surahSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 92,
+        "longestText": "Al-Munaafiqoon",
+        "shortfall": -49,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 76,
+        "longestText": "Whole Surah",
+        "shortfall": -65,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 349,
+        "usable": 319,
+        "longest": 132,
+        "longestText": "Madrasatul Muslimeen",
+        "shortfall": -187,
+        "fontPx": 13.1,
+        "rowH": 46,
+        "options": 1
+      },
+      "__panelContentH": 962,
+      "__panelVisibleH": 962,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 320,
+    "candidate": "as-is",
+    "m": {
+      "surahSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": 28,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -2,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 61,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 906,
+      "__panelVisibleH": 906,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 320,
+    "candidate": "B-type-1px",
+    "m": {
+      "surahSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 87,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": 20,
+        "fontPx": 12.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 61,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -6,
+        "fontPx": 12.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 142,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 47,
+        "fontPx": 12.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 906,
+      "__panelVisibleH": 906,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 320,
+    "candidate": "B-type-2px",
+    "m": {
+      "surahSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 82,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": 15,
+        "fontPx": 11.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 54,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -13,
+        "fontPx": 11.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 131,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 36,
+        "fontPx": 11.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 906,
+      "__panelVisibleH": 906,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 320,
+    "candidate": "A-wrap-row",
+    "m": {
+      "surahSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": 0,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -30,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 61,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 958,
+      "__panelVisibleH": 958,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 320,
+    "candidate": "D-tenant-own-row",
+    "m": {
+      "surahSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": 28,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -2,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 257,
+        "usable": 226,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": -70,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 958,
+      "__panelVisibleH": 958,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 320,
+    "candidate": "A+D",
+    "m": {
+      "surahSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": 0,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -30,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 257,
+        "usable": 226,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": -70,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 1011,
+      "__panelVisibleH": 1011,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 320,
+    "candidate": "C-shorter-text",
+    "m": {
+      "surahSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 72,
+        "longestText": "আল-মুতাফফিফীন",
+        "shortfall": 5,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 97,
+        "usable": 67,
+        "longest": 52,
+        "longestText": "একটি আয়াত",
+        "shortfall": -15,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 87,
+        "longestText": "মাদরাসাতুল মুসলিমীন",
+        "shortfall": -8,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 906,
+      "__panelVisibleH": 906,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 320,
+    "candidate": "A+D+C",
+    "m": {
+      "surahSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 72,
+        "longestText": "আল-মুতাফফিফীন",
+        "shortfall": -23,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 125,
+        "usable": 95,
+        "longest": 52,
+        "longestText": "একটি আয়াত",
+        "shortfall": -43,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 257,
+        "usable": 226,
+        "longest": 87,
+        "longestText": "মাদরাসাতুল মুসলিমীন",
+        "shortfall": -139,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 1011,
+      "__panelVisibleH": 1011,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 360,
+    "candidate": "as-is",
+    "m": {
+      "surahSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": 8,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -22,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 41,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 842,
+      "__panelVisibleH": 842,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 360,
+    "candidate": "B-type-1px",
+    "m": {
+      "surahSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 87,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": 0,
+        "fontPx": 12.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 61,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -26,
+        "fontPx": 12.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 142,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 27,
+        "fontPx": 12.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 842,
+      "__panelVisibleH": 842,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 360,
+    "candidate": "B-type-2px",
+    "m": {
+      "surahSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 82,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -5,
+        "fontPx": 11.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 54,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -33,
+        "fontPx": 11.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 131,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 16,
+        "fontPx": 11.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 842,
+      "__panelVisibleH": 842,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 360,
+    "candidate": "A-wrap-row",
+    "m": {
+      "surahSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -20,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -50,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 41,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 895,
+      "__panelVisibleH": 895,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 360,
+    "candidate": "D-tenant-own-row",
+    "m": {
+      "surahSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": 8,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -22,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 297,
+        "usable": 266,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": -110,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 895,
+      "__panelVisibleH": 895,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 360,
+    "candidate": "A+D",
+    "m": {
+      "surahSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -20,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -50,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 297,
+        "usable": 266,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": -110,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 947,
+      "__panelVisibleH": 947,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 360,
+    "candidate": "C-shorter-text",
+    "m": {
+      "surahSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 72,
+        "longestText": "আল-মুতাফফিফীন",
+        "shortfall": -15,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 117,
+        "usable": 87,
+        "longest": 52,
+        "longestText": "একটি আয়াত",
+        "shortfall": -35,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 87,
+        "longestText": "মাদরাসাতুল মুসলিমীন",
+        "shortfall": -28,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 842,
+      "__panelVisibleH": 842,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 360,
+    "candidate": "A+D+C",
+    "m": {
+      "surahSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 72,
+        "longestText": "আল-মুতাফফিফীন",
+        "shortfall": -43,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 145,
+        "usable": 115,
+        "longest": 52,
+        "longestText": "একটি আয়াত",
+        "shortfall": -63,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 297,
+        "usable": 266,
+        "longest": 87,
+        "longestText": "মাদরাসাতুল মুসলিমীন",
+        "shortfall": -179,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 947,
+      "__panelVisibleH": 947,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 390,
+    "candidate": "as-is",
+    "m": {
+      "surahSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -7,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -37,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 26,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 842,
+      "__panelVisibleH": 842,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 390,
+    "candidate": "B-type-1px",
+    "m": {
+      "surahSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 87,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -15,
+        "fontPx": 12.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 61,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -41,
+        "fontPx": 12.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 142,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 12,
+        "fontPx": 12.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 842,
+      "__panelVisibleH": 842,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 390,
+    "candidate": "B-type-2px",
+    "m": {
+      "surahSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 82,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -20,
+        "fontPx": 11.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 54,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -48,
+        "fontPx": 11.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 131,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 1,
+        "fontPx": 11.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 842,
+      "__panelVisibleH": 842,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 390,
+    "candidate": "A-wrap-row",
+    "m": {
+      "surahSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -35,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -65,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 26,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 895,
+      "__panelVisibleH": 895,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 390,
+    "candidate": "D-tenant-own-row",
+    "m": {
+      "surahSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -7,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -37,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 327,
+        "usable": 296,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": -140,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 895,
+      "__panelVisibleH": 895,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 390,
+    "candidate": "A+D",
+    "m": {
+      "surahSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -35,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -65,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 327,
+        "usable": 296,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": -140,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 947,
+      "__panelVisibleH": 947,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 390,
+    "candidate": "C-shorter-text",
+    "m": {
+      "surahSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 72,
+        "longestText": "আল-মুতাফফিফীন",
+        "shortfall": -30,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 132,
+        "usable": 102,
+        "longest": 52,
+        "longestText": "একটি আয়াত",
+        "shortfall": -50,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 87,
+        "longestText": "মাদরাসাতুল মুসলিমীন",
+        "shortfall": -43,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 842,
+      "__panelVisibleH": 842,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 390,
+    "candidate": "A+D+C",
+    "m": {
+      "surahSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 72,
+        "longestText": "আল-মুতাফফিফীন",
+        "shortfall": -58,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 160,
+        "usable": 130,
+        "longest": 52,
+        "longestText": "একটি আয়াত",
+        "shortfall": -78,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 327,
+        "usable": 296,
+        "longest": 87,
+        "longestText": "মাদরাসাতুল মুসলিমীন",
+        "shortfall": -209,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 947,
+      "__panelVisibleH": 947,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 412,
+    "candidate": "as-is",
+    "m": {
+      "surahSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -18,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -48,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 15,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 827,
+      "__panelVisibleH": 827,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 412,
+    "candidate": "B-type-1px",
+    "m": {
+      "surahSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 87,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -26,
+        "fontPx": 12.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 61,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -52,
+        "fontPx": 12.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 142,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 1,
+        "fontPx": 12.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 827,
+      "__panelVisibleH": 827,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 412,
+    "candidate": "B-type-2px",
+    "m": {
+      "surahSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 82,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -31,
+        "fontPx": 11.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 54,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -59,
+        "fontPx": 11.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 131,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": -10,
+        "fontPx": 11.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 827,
+      "__panelVisibleH": 827,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 412,
+    "candidate": "A-wrap-row",
+    "m": {
+      "surahSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -46,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -76,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": 15,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 879,
+      "__panelVisibleH": 879,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 412,
+    "candidate": "D-tenant-own-row",
+    "m": {
+      "surahSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -18,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -48,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 349,
+        "usable": 318,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": -162,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 879,
+      "__panelVisibleH": 879,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 412,
+    "candidate": "A+D",
+    "m": {
+      "surahSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 95,
+        "longestText": "৮৩. আল-মুতাফফিফীন",
+        "shortfall": -46,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 65,
+        "longestText": "আয়াতের পরিসর",
+        "shortfall": -76,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 349,
+        "usable": 318,
+        "longest": 156,
+        "longestText": "মাদরাসাতুল মুসলিমীন (মালিক, প্রাইম)",
+        "shortfall": -162,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 932,
+      "__panelVisibleH": 932,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 412,
+    "candidate": "C-shorter-text",
+    "m": {
+      "surahSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 72,
+        "longestText": "আল-মুতাফফিফীন",
+        "shortfall": -41,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 143,
+        "usable": 113,
+        "longest": 52,
+        "longestText": "একটি আয়াত",
+        "shortfall": -61,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 87,
+        "longestText": "মাদরাসাতুল মুসলিমীন",
+        "shortfall": -54,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 827,
+      "__panelVisibleH": 827,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  },
+  {
+    "lang": "bn",
+    "width": 412,
+    "candidate": "A+D+C",
+    "m": {
+      "surahSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 72,
+        "longestText": "আল-মুতাফফিফীন",
+        "shortfall": -69,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 114
+      },
+      "unitTypeSelect": {
+        "w": 171,
+        "usable": 141,
+        "longest": 52,
+        "longestText": "একটি আয়াত",
+        "shortfall": -89,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 7
+      },
+      "tenantSelect": {
+        "w": 349,
+        "usable": 318,
+        "longest": 87,
+        "longestText": "মাদরাসাতুল মুসলিমীন",
+        "shortfall": -231,
+        "fontPx": 13.1,
+        "rowH": 47,
+        "options": 1
+      },
+      "__panelContentH": 932,
+      "__panelVisibleH": 932,
+      "__panelScrolls": false,
+      "__panelH": 640
+    }
+  }
+]
