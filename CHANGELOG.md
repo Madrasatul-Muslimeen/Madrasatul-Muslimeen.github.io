@@ -12037,6 +12037,42 @@ inherit; no horizontal overflow at 390px; and the whole thing booting clean
 
 ---
 
+**v08.03 and v08.04 (11 Sep 2026) — the Note Foundation's transaction gateway
+and its uninvoked data layer. RECORDED LATE, on 18 Sep 2026.**
+
+These two rounds shipped, bumped `app/js/version.js`, and **never got an entry
+here.** They were found by `tools/i18n-verify/brief-integrity.mjs` on its first
+run — the guard written that day precisely because this had happened before:
+v07.124–128 were found missing from this file on 5 Sep 2026, having only ever
+lived in `CLAUDE.md`, so the next round to trim the brief would have destroyed
+them. The rule written down then — *a round leaving the brief is APPENDED here
+first* — did not hold, and nothing was checking that it did. **It is checked
+now.** The entries below are reconstructed from the two commits themselves,
+not from memory.
+
+**v08.03 — the Note Foundation transaction gateway** (`f5c15a9`,
+STAGE-5-TASK-19). Five collection constants in `app/js/collections.js`, an
+envelope transaction facade in `app/js/envelope.js`, and
+`tools/i18n-verify/note-foundation-transaction.mjs`. **No UI, no live
+invocation, no Rules, no production data, no deployment** — the same BR-0 shape
+every Note Foundation tranche since has taken.
+
+**v08.04 — the uninvoked Note Foundation data layer** (`4833b19`,
+STAGE-5-TASK-20). `app/js/note-foundation.js` (220 lines) carrying the
+permanent-Note data contracts, plus `note-foundation-data-layer.mjs` and eight
+more assertions in `note-foundation-boundary.mjs`. **No UI import, no live
+access, no Rules, no migration, no deployment.** This is the file that every
+later Phase 5 and Phase 6 round has extended, addition-only, and the boundary
+suite that insists on that started here.
+
+**What the gap cost, stated plainly:** nothing was lost — both commits are in
+the history and their files are on `main` — but for a week this log implied the
+Note Foundation's own two founding rounds did not happen, and the brief's
+"**so the next feature round is v08.03**" sentence sat stale from v08.02
+onwards while the version went to 08.25. Both are corrected.
+
+---
+
 **v08.05–v08.13 (12 Sep 2026, on Claude Code on the web) — reconciliation of
 the three isolated MAP branches, recovery of the test harness, and MAP Phase 2
 closed.** Full evidence in `docs/reports/2026-09-12-reconciliation-and-phase2.md`
@@ -13813,3 +13849,66 @@ user-visible. And **the baselines are honest but they are DEBT** — 22 missing
 ids, 2 nav truncations, 3 select truncations, each tolerated BY NAME, each list
 reporting when an entry stops occurring so none can quietly grow, but all of
 them a record of things nobody has fixed.
+
+---
+
+## A guard for the standing brief, and the two rounds it found missing (18 Sep 2026, v08.25, no version bump)
+
+**BR-0.** One new tools file plus two documentation corrections.
+`git diff -- app/` is empty. Evidence:
+`docs/reports/2026-09-18-brief-integrity-guard.md` / `.html`.
+
+**`CLAUDE.md` is read in full at the start of every session and treated as
+authority, and its own text records that it has been wrong about itself three
+times** — the version line drifted twice, it pointed at a deployment document
+that is not on `main`, and v07.124–128 were found missing from this log having
+only ever lived in the brief. Each produced an instruction to a reader who has
+to remember it. **A guard does not have to remember.**
+`tools/i18n-verify/brief-integrity.mjs`, 8 checks: every repository path the
+brief names exists; the ones it says are held on a BRANCH really are on it
+(stronger than skipping them, and it fails if such a file lands on `main`
+without the brief being updated); the `Current milestone: vNN.NN` line matches
+`APP_VERSION`; the three reachable lines exist; the unmerged wiring candidate is
+still at the commit the brief names; **every shipped version the brief names is
+in `CHANGELOG.md`**; and the brief still points at `PHASE-5-STATUS.md`. Plus a
+positive control, because one broken regex would make the rest vacuous.
+
+**IT FOUND TWO REAL ROUNDS WITH NO ENTRY IN THIS FILE.** v08.03
+(`f5c15a9`, the Note Foundation **transaction gateway**) and v08.04
+(`4833b19`, the **uninvoked Note Foundation data layer**, `app/js/note-
+foundation.js`, 220 lines) both shipped on 11 Sep 2026 and both bumped
+`version.js`. **Every Phase 5 and Phase 6 round since has extended that file**,
+addition-only, and the boundary suite that insists on it started there. Nothing
+was lost — both commits are in the history — but for a week this log implied
+the Note Foundation's own two founding rounds did not happen. **The rule written
+after v07.124–128 did not hold, and nothing was checking that it did.** Both are
+recorded now, reconstructed from the commits themselves and labelled as recorded
+late.
+
+**AND A STALE INSTRUCTION IN A PARAGRAPH THAT TELLS YOU TO KEEP IT CURRENT.**
+The brief read *"so the next feature round is v08.03 … Bump it and this line
+together, every round"* — written at v08.02, untouched while the version reached
+**08.25**. Corrected, with the correction recorded rather than silently
+overwritten.
+
+**TWO FALSE POSITIVES ON THAT SAME FIRST RUN, both worth recording.** The
+check's first version reported NINE missing versions and one dead path; seven of
+the ten were wrong. `tests/firestore/activity-v1.proposed.rules` is genuinely
+absent from `main` **and the brief's own header says so**, placing it on
+`claude/pensive-knuth-2pu3jj` — confirmed with `git cat-file` that it really is
+there, so the check now VERIFIES the branch claim instead of skipping it. And
+v08.06–v08.12 are covered by a RANGE heading, `v08.05–v08.13`; the check expands
+range notation now. **A guard's first run is where its own false-positive rate
+is measured, and a guard that cries wolf about seven things is one whose two
+real findings get dismissed.**
+
+**Mutation-proven 3/3**, each asserting its occurrence count first: setting the
+milestone line to `v08.19` fails the version check by name; renaming a path to
+`app/js/versions.js` fails the path check; removing `v08.24` from this file
+fails the log check.
+
+**Does NOT check** whether a brief statement is TRUE, only that the things it
+names exist ("SEVEN items sit in the pending-dependency ledger" is prose and
+stays prose); which rounds belong in the five-most-recent section (editorial —
+that they are all in this log is checked, which is the load-bearing part); or
+whether `PHASE-5-STATUS.md` is current, only that it is there.

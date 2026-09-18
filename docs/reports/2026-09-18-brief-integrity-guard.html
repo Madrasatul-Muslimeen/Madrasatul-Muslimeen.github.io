@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A guard for the standing brief — and the two rounds it found missing</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>A guard for the standing brief — and the two rounds it found missing</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Task:</strong> make the brief&#x27;s own &quot;check this every session&quot; instructions mechanical</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> One new tools file; two documentation corrections. <code>git diff -- app/</code> is empty.</li><li><strong>Application version:</strong> <strong>08.25, unchanged.</strong></li><li><strong>Result:</strong> ACCEPT. <code>tools/i18n-verify/brief-integrity.mjs</code>, <strong>8 checks</strong>, 3 of 3 mutations caught — and on its first run it found <strong>two real rounds that had no CHANGELOG entry</strong> and <strong>a stale instruction the brief had been carrying since v08.02</strong>.</li></ul>
+<hr>
+<h2>1. Why</h2>
+<p><code>CLAUDE.md</code> is read in full at the start of every session and treated as authority. Its own text records that it has been wrong about itself three times:</p>
+<ul><li><em>&quot;This line has drifted twice already — it read <code>v08.02</code> while <code>main</code> was on 08.04, and <code>v08.19</code> while <code>main</code> was on 08.21. <strong>Check it against <code>app/js/version.js</code> every session.</strong>&quot;</em></li><li>It pointed at a deployment document that is not on <code>main</code> — a dead pointer the Owner would have followed to nothing.</li><li>v07.124–128 were found missing from <code>CHANGELOG.md</code> on 5 Sep 2026, <em>&quot;having only ever lived here, so the next round to trim the list would have destroyed one.&quot;</em> The rule written down then: <strong>a round leaving the brief is appended to the log first.</strong></li></ul>
+<p>Three instructions to a reader who has to remember them. <strong>A guard does not have to remember.</strong></p>
+<h2>2. What it checks</h2>
+<ol><li>Every repository path the brief names in backticks <strong>exists</strong>.</li><li>The ones the brief says are <strong>held on a branch</strong> really are on that branch — stronger than skipping them, and it fails if such a file quietly lands on <code>main</code> without the brief being updated.</li><li>The <strong><code>Current milestone: vNN.NN</code></strong> line matches <code>APP_VERSION</code> in <code>app/js/version.js</code> — the drift that has happened twice.</li><li>The three reachable lines the brief&#x27;s own table names (<code>/legacy</code>, <code>/legacy-v07</code>, <code>/app</code>) are all present.</li><li>The <strong>unmerged wiring candidate</strong> the brief names is still at the commit it names, read from <code>origin/claude/phase4-wiring</code>.</li><li><strong>Every shipped version the brief names appears in <code>CHANGELOG.md</code></strong> — the v07.124–128 rule, enforced.</li><li>The brief still points at <code>PHASE-5-STATUS.md</code>, the pointer a new session follows first.</li></ol>
+<p>Plus a <strong>positive control</strong>: the path scanner must find at least 20 paths across <code>app/js</code>, <code>tools</code> and <code>docs</code>, or one broken regex makes every assertion below it vacuous.</p>
+<h2>3. What it found on its first run</h2>
+<h3>F1 — v08.03 and v08.04 have no CHANGELOG entry</h3>
+<p>Both shipped on 11 Sep 2026 and both bumped <code>app/js/version.js</code>:</p>
+<ul><li><strong>v08.03</strong> (<code>f5c15a9</code>, STAGE-5-TASK-19) — the Note Foundation <strong>transaction gateway</strong>: five collection constants, the envelope transaction facade, and its own suite.</li><li><strong>v08.04</strong> (<code>4833b19</code>, STAGE-5-TASK-20) — the <strong>uninvoked Note Foundation data layer</strong>, <code>app/js/note-foundation.js</code>, 220 lines. <strong>Every Phase 5 and Phase 6 round since has extended that file</strong>, addition-only, and the boundary suite that insists on that started there.</li></ul>
+<p><strong>Nothing was lost</strong> — both commits are in the history and their files are on <code>main</code> — but for a week the log implied the Note Foundation&#x27;s two founding rounds did not happen. Recorded now, reconstructed <strong>from the commits themselves</strong>, not from memory, and labelled as recorded late with the reason.</p>
+<h3>F2 — a stale instruction, in a paragraph that tells you to keep it current</h3>
+<p>&gt; <em>&quot;Version numbering from here … <strong>so the next feature round is v08.03</strong>. <code>app/js/version.js</code> is the single source of truth … <strong>Bump it and this line together, every round.</strong>&quot;</em></p>
+<p>Written at v08.02. The version reached <strong>08.25</strong> with that sentence untouched — in a paragraph whose own last sentence says to update it. Corrected, with the correction recorded rather than silently overwritten.</p>
+<h2>4. Two false positives on that same first run, both worth recording</h2>
+<p>The check&#x27;s first version reported <strong>nine</strong> missing versions and one dead path. Seven of the ten were wrong, and reading them rather than acting on them was the whole difference:</p>
+<ul><li><strong><code>tests/firestore/activity-v1.proposed.rules</code></strong> is genuinely absent from <code>main</code> — and the brief&#x27;s own header <em>says so</em>, placing it on <code>claude/pensive-knuth-2pu3jj</code>. Confirmed with <code>git cat-file</code> that it really is there. Not a dead pointer; the check now verifies the branch claim instead of skipping it.</li><li><strong>v08.06 … v08.12</strong> are covered by a <strong>range heading</strong>, <code>v08.05–v08.13</code>. The check now expands range notation before looking for gaps. Without that, seven false positives buried the two real ones.</li></ul>
+<p><strong>A guard&#x27;s first run is where its own false-positive rate is measured</strong>, and a guard that cries wolf about seven things is one whose two real findings get dismissed.</p>
+<h2>5. Mutation-proven</h2>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Caught by</th></tr></thead><tbody>
+<tr><td>set the milestone line to <code>v08.19</code></td><td><em>the brief&#x27;s own version claim matches app/js/version.js</em> — &quot;this exact drift has happened twice before&quot;</td></tr>
+<tr><td>rename a path to <code>app/js/versions.js</code></td><td><em>every repository path the brief names exists on main</em></td></tr>
+<tr><td>remove <code>v08.24</code> from <code>CHANGELOG.md</code></td><td><em>every version the brief names is also in CHANGELOG.md</em></td></tr>
+</tbody></table></div>
+<p>Each asserted its own occurrence count first.</p>
+<h2>6. Verification</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>brief-integrity.mjs</code></td><td><strong>8 / 0</strong>, 3 / 3 mutations caught</td></tr>
+<tr><td><code>git diff -- app/</code></td><td><strong>empty</strong></td></tr>
+<tr><td><code>rules-deployment-candidate.mjs</code></td><td><strong>10 / 0</strong> — its own <code>docs/governance/</code> path check still green and not duplicated</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 / 47</strong> — unchanged</td></tr>
+</tbody></table></div>
+<h2>7. What it does NOT check</h2>
+<ul><li><strong>Whether a brief statement is TRUE</strong>, only whether the things it names exist. &quot;SEVEN items sit in the pending-dependency ledger&quot; is prose and stays prose.</li><li><strong>The five-most-recent-rounds section.</strong> Which rounds belong there is editorial; that they are all in the log is now checked, which is the part that was ever load-bearing.</li><li>**<code>PHASE-*-STATUS.md</code> contents.** The brief says to read <code>PHASE-5-STATUS.md</code> first; this confirms the file is there, not that it is current.</li></ul>
+<hr>
+<p><em>Master Architect audit: BR-0, tools plus two documentation corrections, no accepted decision changed, no Owner Control Gate crossed. Three instructions that told a reader to check something every session are now checked by a program.</em></p>
+</main></body></html>

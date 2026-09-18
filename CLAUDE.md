@@ -493,9 +493,15 @@ or the opening one — no feature, no schema, no rule; see the "v07 closed and
 archived" entry below and the v08.00 entry in `CHANGELOG.md`.
 
 **Version numbering from here: `08` is this overhaul, and the last two digits
-bump on every new feature within it** — so the next feature round is v08.03.
-`app/js/version.js` is the single source of truth; nothing else hardcodes the
-string. Bump it and this line together, every round.
+bump on every new feature within it.** `app/js/version.js` is the single source
+of truth; nothing else hardcodes the string. Bump it and the milestone line at
+the top of this file together, every round.
+
+> **Corrected 18 Sep 2026.** This paragraph read "so the next feature round is
+> v08.03" — written at v08.02 and never updated while the version went to
+> **08.25**, in a paragraph whose own last sentence says to keep it current.
+> `tools/i18n-verify/brief-integrity.mjs` checks the milestone line against
+> `app/js/version.js` now, so this particular drift cannot recur silently.
 
 **The app has been live and real, not a beta, since the 9 August 2026 cutover
 (v07.00)** — we are in real-use iteration, driven by what the owner hits using
@@ -1385,6 +1391,21 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   reach has no first run to fail in, so it never earns the right to be believed:
   that region is UNVERIFIED, not passing.** When a suite stops early, the debt
   is everything downstream, not the one failing line — fix it that day.
+- **`brief-integrity.mjs` NOW CHECKS THIS FILE AGAINST REALITY, so the three
+  "check it every session" instructions are no longer a thing to remember.** 8
+  checks: every repository path this brief names exists; ones it says are held
+  on a branch really are on that branch; **the `Current milestone` line matches
+  `app/js/version.js`** (the drift that had happened twice); the unmerged wiring
+  candidate is still at the commit named; and **every shipped version named here
+  is in `CHANGELOG.md`** — the rule written after v07.124–128 were found missing.
+  **On its first run it found v08.03 and v08.04 had no log entry at all** (the
+  Note Foundation's transaction gateway and its data layer — the file every
+  Phase 5/6 round since has extended), and a "the next feature round is v08.03"
+  sentence left stale from v08.02 while the version reached 08.25. **It also
+  produced 7 false positives, and reading them rather than acting on them was
+  the whole difference** — a branch-held file the brief itself names as such,
+  and a range heading (`v08.05–v08.13`) covering seven versions. **A guard's
+  first run is where its own false-positive rate is measured.**
 - **`rules-authorisation-executable.mjs` NOW CHECKS THE LESSON BELOW, so stop
   doing it by hand.** 38 checks, both directions on `allow update` and both on
   `allow create` (an emulator suite proves the RULES are right using its own
