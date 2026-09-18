@@ -14001,9 +14001,10 @@ decision** (widen / shorten / reveal), and no design choice was implemented.
 
 **v08.26 (18 Sep 2026, on Claude Code on the web) is the 320px navigation
 truncation paid off, plus two `behaviour.mjs` assertions that had been passing
-while describing the wrong thing.** **Held on
-`claude/charming-rubin-xzxbk1`, NOT merged — `main` remains v08.25 and is what
-the live site serves.** Two independent pieces of the pending
+while describing the wrong thing.** **MERGED to `main` on 18 Sep 2026 at
+`49f37c9`, fast-forward — `main`'s `version.js` reads 08.26 and the fix is
+live.** (It was held on `claude/charming-rubin-xzxbk1` while the milestone
+correction below was made.) Two independent pieces of the pending
 technical list (T2 and T3 in the 18 Sep handover), neither needing new
 authority and neither touching Rules, indexes or the held Phase 4 wiring.
 

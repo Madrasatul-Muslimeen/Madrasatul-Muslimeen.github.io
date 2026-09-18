@@ -44,31 +44,32 @@ Read this first, every session. It is the standing brief.
 > timezone item is **one question, not a UI decision** (§11.B).
 
 
-**Current milestone: v08.26 on `claude/charming-rubin-xzxbk1` — `main` is still
-v08.25.** (18 Sep 2026. Nothing is merged: `main` is at `1cac2b8` and its
-`app/js/version.js` reads **08.25**, which is what the live site serves. The
-v08.26 nav fit correction below is **on the branch, awaiting merge.**)
+**Current milestone: v08.26 on `main`** (18 Sep 2026 — **merged and pushed**,
+fast-forward, `49f37c9`. `main`'s own `app/js/version.js` reads **08.26**, and
+that is what GitHub Pages serves. The 320px nav fit correction below is **live.**)
 
-> **CORRECTED 18 Sep 2026, on the Owner's own catch.** This line read
-> "**v08.26 on `main`**" the moment the nav round was committed to a BRANCH —
-> the identical drift the same paragraph has recorded twice before, made a
-> third time, and made *worse* because the earlier two were a stale number
-> while this one asserted a merge that had not happened. **A version bump on a
-> branch is not a version on `main`.** `brief-integrity.mjs` now reads
-> `origin/main:app/js/version.js` and checks BOTH halves of this line — the
-> branch's version against the working tree, and the claim about `main`
-> against `main` itself — so a milestone line can no longer claim a merge that
-> did not occur.
+> **This line was WRONG for part of 18 Sep, and the episode is the lesson.** It
+> read "**v08.26 on `main`**" the moment the nav round was committed to a
+> BRANCH — the identical drift this paragraph has recorded twice before, made a
+> third time and made *worse*, because the earlier two were a stale number while
+> that one asserted a merge that had not happened. The Owner caught it. It was
+> corrected to name the branch, and the merge above is what finally makes the
+> original wording true. **A version bump on a branch is not a version on
+> `main`** — and the reason it can no longer be claimed by accident is that
+> `brief-integrity.mjs` now reads `origin/main:app/js/version.js` and checks
+> this line against **`main` itself**, not against the working tree. On a
+> branch it demands the line name that branch AND state main's own version, and
+> verifies both.
 
-**VERSION NUMBERING NOTE — TWO BRANCHES NOW STAMP 08.26, and the next session
-needs this.** `main` is on 08.25 and **two unmerged branches each stamp their
-own `version.js` 08.26**: `claude/charming-rubin-xzxbk1` (the nav correction)
-and the held Phase 4 wiring at `7e2931f`. **Whichever merges first takes 08.26;
-the second's `version.js` then conflicts and resolves to 08.27.** Neither branch
-is re-cut or re-stamped to pre-empt this — the standing instruction is to hold
-`7e2931f` exactly as it is, and re-stamping either would be churn for a
-one-line merge resolution. **It is a merge-ordering fact, not a defect, and not
-a reason to rebuild a candidate.**
+**VERSION NUMBERING NOTE — `main` HAS NOW TAKEN 08.26, and the held wiring's own
+stamp is stale.** Until this merge, two unmerged branches each stamped
+`version.js` **08.26**: the nav correction (now merged) and the held Phase 4
+wiring at `7e2931f`. **`main` took it**, so `7e2931f`'s stamp now names a
+version that means something else. **At merge its `version.js` conflicts and
+resolves to 08.27.** The branch is deliberately NOT re-cut or re-stamped — the
+standing instruction is to hold `7e2931f` exactly as it is, and re-stamping
+would be churn for a one-line merge resolution. **A merge-ordering fact, not a
+defect, and not a reason to rebuild the candidate.**
 
 **One thing is held unmerged: the Phase 4 Study-event WIRING**, on
 `claude/phase4-wiring` at **`7e2931f`** — **refreshed against `main` on
@@ -81,7 +82,7 @@ the single source of truth and the badge beside the app name says so on screen.
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
 
-**v08.26 (18 Sep 2026, ON `claude/charming-rubin-xzxbk1`, NOT YET MERGED) —
+**v08.26 (18 Sep 2026, MERGED TO `main` at `49f37c9` — LIVE) —
 THE 320px NAV TRUNCATION WAS NEVER A SHORTAGE OF SPACE, and that is the
 finding, not the fix.** English "Operation"/"Bookmark"
 cut at 320px had been a tolerated named baseline for the life of
@@ -1596,9 +1597,8 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
 - **The baselines are honest but they are DEBT — except the biggest one was not
   debt at all.** ~~22 missing `getElementById` targets~~ **investigated 18 Sep
   2026: 22 DEFERRED renders, 0 stale references, 0 missing controls, and no
-  application code changed.** 2 nav truncations (**fixed in v08.26, which is on
-  `claude/charming-rubin-xzxbk1` and NOT yet merged — still live on `main`**),
-  3 select truncations. The most user-visible remaining one is **`tenantSelect` — a real
+  application code changed.** ~~2 nav truncations~~ **paid off in v08.26, now
+  merged to `main` and live.** 3 select truncations remain. The most user-visible remaining one is **`tenantSelect` — a real
   tenant's name is CUT in the picker** ("Madrasatul Muslimeen (Owner, Prime)",
   224px of text in a 145px cell). Recorded, not fixed: **that one really is an
   Owner UI decision** — widen the cell, shorten the option text, or reveal the
