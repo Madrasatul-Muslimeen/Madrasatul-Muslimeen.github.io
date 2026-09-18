@@ -59,13 +59,21 @@ Two decisions worth stating:
 
 The candidate calls `canAdminIdentity`, `isGuardianOf`, `myUid` and five other helpers that live in the deployed file. **An extract tested alone proves only that a file parses.** So the suite substitutes the candidate's block into `firestore.rules` in memory and runs *that* — asserting the substitution happened, and asserting the assembled ruleset differs from the deployed one **nowhere except that block**.
 
-**22 assertions, 0 failures.** Three mutations, each printing its occurrence count first:
+**26 assertions, 0 failures.** Three mutations, each printing its occurrence count first:
 
 | Mutation | Killed |
 |---|---|
 | drop the `auto ⇒ no location` clause | TZ-04, TZ-16 |
 | drop the `manual ⇒ location + zone` clause | TZ-05, TZ-06, TZ-20 |
 | drop `timezoneWellFormed()` from the **admin** clause only | TZ-16 |
+
+### The two halves audited against each other, not merely side by side
+
+Everything above writes payloads the **suite** composed, which proves the Rules are right about payloads the suite imagined. It does not prove the **data layer's** payloads are ones the Rules accept — the exact defect `rules-authorisation-executable.mjs` exists for one collection over: *an emulator suite proves the Rules using its own fixtures and never proves the code's payload matches them.*
+
+So four further cases (**TZ-23…26**) write the **contract's own output, unmodified** — its automatic payload, its manual payload, its return-to-automatic payload, and the reconciler's decision for a travelled record — through the candidate Rules. All accepted. A fifth assertion binds the payload's keys to `TIMEZONE_FIELDS`.
+
+**Mutation-proven:** adding one field to the contract's automatic payload that the Rules do not permit fails **three** emulator cases with a real `permission-denied`, *and* the field-set assertion. That is precisely the "denied in production, and no pure suite would notice" failure — noticed.
 
 ### Two of my own test errors, found and corrected
 
@@ -153,7 +161,7 @@ Worth recording, because each would have produced a confident wrong table:
 |---|---|
 | `d14-timezone-contract.mjs` | **21 / 0** |
 | `d14-timezone-boundary.mjs` | **10 / 0**, 2 / 2 mutations caught |
-| `d14-timezone.rules.test.mjs` (emulator) | **22 / 0**, 3 / 3 mutations caught |
+| `d14-timezone.rules.test.mjs` (emulator) | **26 / 0**, 4 / 4 mutations caught |
 | Every other pure suite | unchanged and green |
 | Translation coverage | **1,803 / 47** — unchanged, no new user-visible string |
 | `firestore.rules`, `firebase.json`, assembled Phase 4–6 candidate | **byte-identical**, each asserted |

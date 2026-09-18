@@ -57,12 +57,16 @@
 <p><strong>The validator is applied to all three update clauses, but conditionally.</strong> The admin and guardian clauses have never validated any field of this document, and giving <code>tenantPeople</code> a full shape contract would risk denying existing legitimate writes this tranche cannot enumerate. So <code>timezoneWellFormed()</code> returns true when the write does not touch the timezone fields: those two clauses behave exactly as deployed, and a write that <em>does</em> touch them must be well-formed whoever makes it. <strong>Mutation-proven:</strong> removing it from the admin clause alone fails <code>TZ-16</code> and nothing else.</p>
 <h3>Tested against the ruleset activation would produce, not against the extract</h3>
 <p>The candidate calls <code>canAdminIdentity</code>, <code>isGuardianOf</code>, <code>myUid</code> and five other helpers that live in the deployed file. <strong>An extract tested alone proves only that a file parses.</strong> So the suite substitutes the candidate&#x27;s block into <code>firestore.rules</code> in memory and runs <em>that</em> — asserting the substitution happened, and asserting the assembled ruleset differs from the deployed one <strong>nowhere except that block</strong>.</p>
-<p><strong>22 assertions, 0 failures.</strong> Three mutations, each printing its occurrence count first:</p>
+<p><strong>26 assertions, 0 failures.</strong> Three mutations, each printing its occurrence count first:</p>
 <div class='tw'><table><thead><tr><th>Mutation</th><th>Killed</th></tr></thead><tbody>
 <tr><td>drop the <code>auto ⇒ no location</code> clause</td><td>TZ-04, TZ-16</td></tr>
 <tr><td>drop the <code>manual ⇒ location + zone</code> clause</td><td>TZ-05, TZ-06, TZ-20</td></tr>
 <tr><td>drop <code>timezoneWellFormed()</code> from the <strong>admin</strong> clause only</td><td>TZ-16</td></tr>
 </tbody></table></div>
+<h3>The two halves audited against each other, not merely side by side</h3>
+<p>Everything above writes payloads the <strong>suite</strong> composed, which proves the Rules are right about payloads the suite imagined. It does not prove the <strong>data layer&#x27;s</strong> payloads are ones the Rules accept — the exact defect <code>rules-authorisation-executable.mjs</code> exists for one collection over: <em>an emulator suite proves the Rules using its own fixtures and never proves the code&#x27;s payload matches them.</em></p>
+<p>So four further cases (<strong>TZ-23…26</strong>) write the <strong>contract&#x27;s own output, unmodified</strong> — its automatic payload, its manual payload, its return-to-automatic payload, and the reconciler&#x27;s decision for a travelled record — through the candidate Rules. All accepted. A fifth assertion binds the payload&#x27;s keys to <code>TIMEZONE_FIELDS</code>.</p>
+<p><strong>Mutation-proven:</strong> adding one field to the contract&#x27;s automatic payload that the Rules do not permit fails <strong>three</strong> emulator cases with a real <code>permission-denied</code>, <em>and</em> the field-set assertion. That is precisely the &quot;denied in production, and no pure suite would notice&quot; failure — noticed.</p>
 <h3>Two of my own test errors, found and corrected</h3>
 <ul><li><strong>TZ-12</strong> wrote <code>roles: [&quot;owner&quot;]</code> — the value the fixture already had. <code>diff().affectedKeys()</code> lists only keys whose value <strong>changed</strong>, so <code>hasOnly</code> never saw it and the case proved nothing. <strong>A smuggled field has to actually differ to be smuggled.</strong></li><li><strong>TZ-20</strong> asserted &quot;manual with no zone is refused&quot; against a record <strong>TZ-19 had just given a zone</strong>. A case whose premise an earlier case destroyed tests nothing. It has its own record now.</li></ul>
 <p>I also suspected a live defect in <code>isGuardianOf</code> — that <code>myPersonIdIn</code> returning <code>null</code> would match any person whose <code>managedByPersonId</code> is null. <strong>Reading it disproved that</strong>: it requires <code>isGuardianIn()</code>, which needs a membership document the fixture lacked. Recorded because the next person to see that shape will suspect the same thing.</p>
@@ -109,7 +113,7 @@
 <div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
 <tr><td><code>d14-timezone-contract.mjs</code></td><td><strong>21 / 0</strong></td></tr>
 <tr><td><code>d14-timezone-boundary.mjs</code></td><td><strong>10 / 0</strong>, 2 / 2 mutations caught</td></tr>
-<tr><td><code>d14-timezone.rules.test.mjs</code> (emulator)</td><td><strong>22 / 0</strong>, 3 / 3 mutations caught</td></tr>
+<tr><td><code>d14-timezone.rules.test.mjs</code> (emulator)</td><td><strong>26 / 0</strong>, 4 / 4 mutations caught</td></tr>
 <tr><td>Every other pure suite</td><td>unchanged and green</td></tr>
 <tr><td>Translation coverage</td><td><strong>1,803 / 47</strong> — unchanged, no new user-visible string</td></tr>
 <tr><td><code>firestore.rules</code>, <code>firebase.json</code>, assembled Phase 4–6 candidate</td><td><strong>byte-identical</strong>, each asserted</td></tr>

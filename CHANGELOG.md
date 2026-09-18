@@ -14373,3 +14373,15 @@ measured on top of another candidate is not a measurement of either.**
 suite unchanged and green, coverage **1,803 / 47** unchanged, `git status --
 app/` two untracked additions and no modifications. The only non-zero exits in
 the sweep are the two rendered suites' five TLS-artefact failures.
+
+**Extended the same day:** the emulator suite now also writes **the contract's
+own payloads, unmodified** (TZ-23…26) — automatic, manual, return-to-automatic,
+and the reconciler's decision for a travelled record — because everything before
+them wrote payloads the SUITE composed. That proves the Rules are right about
+payloads the suite imagined; it does not prove the DATA LAYER's payloads are
+ones the Rules accept, which is the defect `rules-authorisation-executable.mjs`
+exists for one collection over. **26 assertions, 0 failures.** Mutation-proven:
+adding one field to the contract's automatic payload that the Rules do not
+permit fails **three** emulator cases with a real `permission-denied` and the
+field-set assertion — the "denied in production, and no pure suite would notice"
+failure, noticed.

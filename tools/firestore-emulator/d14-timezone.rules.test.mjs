@@ -16,6 +16,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 import { initializeTestEnvironment } from "@firebase/rules-unit-testing";
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { pathToFileURL } from "node:url";
 
 const PROJECT = "demo-quranrevival-d14-timezone";
 const HOST = "127.0.0.1";
@@ -178,6 +179,40 @@ test("D14 tenantPeople candidate: the mode and the location agree, at the server
     await ok("TZ-19 ...but it stays writable, and adopts a detected zone into auto",
       updateDoc(doc(nulltz, "tenantPeople", "pNullTz"),
         { timezone: "Asia/Dhaka", timezoneMode: "auto", timezoneLocation: null, updatedAt: now() }));
+
+    // --- THE TWO HALVES, AUDITED AGAINST EACH OTHER ------------------------
+    //
+    // Everything above writes payloads this SUITE composed. That proves the
+    // Rules are right about payloads the suite imagined -- it does not prove
+    // the DATA LAYER's payloads are ones the Rules accept, which is the defect
+    // `rules-authorisation-executable.mjs` exists for one collection over: an
+    // emulator suite proves the Rules using its own fixtures and never proves
+    // the code's payload matches them.
+    //
+    // So these cases write the CONTRACT'S OWN OUTPUT, unmodified.
+    const contract = await import(pathToFileURL(path.join(root, "app/js/timezone-contract.js")).href);
+
+    await ok("TZ-23 the contract's automatic payload is accepted verbatim",
+      updateDoc(S, { ...contract.automaticTimezone("Asia/Dhaka"), updatedAt: now() }));
+    await ok("TZ-24 the contract's manual payload is accepted verbatim",
+      updateDoc(S, { ...contract.manualTimezone({ locationLabel: "Cairo, Egypt", resolvedZone: "Africa/Cairo" }), updatedAt: now() }));
+    await ok("TZ-25 the contract's return-to-automatic payload is accepted verbatim",
+      updateDoc(S, { ...contract.returnToAutomatic("Europe/London"), updatedAt: now() }));
+
+    // And the reconciler's own decision, end to end: a pre-D14 record read by
+    // the contract, its payload written through the Rules.
+    const legacyStored = { timezone: "Asia/Dhaka" };
+    const decision = contract.reconcileOnSignIn({ stored: legacyStored, detectedZone: "Europe/London" });
+    assert.equal(decision.action, "write", "the reconciler should want to write for a travelled auto record");
+    await ok("TZ-26 the reconciler's decision for a travelled record is accepted verbatim",
+      updateDoc(S, { ...decision.payload, updatedAt: now() }));
+
+    // The contract's field set must be exactly what the clause permits -- a
+    // field the contract adds later and the Rules do not is denied in
+    // production, and no pure suite would notice.
+    const fields = new Set(Object.keys(contract.automaticTimezone("UTC")));
+    assert.deepEqual([...fields].sort(), [...contract.TIMEZONE_FIELDS].sort(),
+      "the contract's payload keys and TIMEZONE_FIELDS have drifted apart");
 
     // --- reads are untouched by this candidate -----------------------------
     await ok("TZ-21 a person still reads their own record", getDoc(S));
