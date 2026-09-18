@@ -3301,8 +3301,8 @@ const playLabel = (page) => page.evaluate(() =>
     a boundary check rides on `timeupdate`, which browsers throttle to about a
     quarter of a second, so a short ayah takes noticeably longer than its own
     length and a fixed sleep would make these tests flaky rather than wrong. */
-const waitFor = (page, fn, timeout = 8000) =>
-  page.waitForFunction(fn, null, { timeout }).then(() => true).catch(() => false);
+const waitFor = (page, fn, timeout = 8000, arg = null) =>
+  page.waitForFunction(fn, arg, { timeout }).then(() => true).catch(() => false);
 const ayahNow = (page) => page.evaluate(() => document.getElementById("ayahSelect").value);
 
 console.log("\n=== 38. Shell round 26: listening ===");
@@ -3467,19 +3467,39 @@ console.log("\n=== 38. Shell round 26: listening ===");
   page.on("dialog", (d) => d.dismiss().catch(() => {}));
   await setUnit(page, "surah");
   await openRead(page);
+  // FIXED 2026-09-18, and it was this file's own rule being broken 6 lines
+  // below where the rule is written down. These three assertions slept a
+  // guessed 600/300/400ms and then called `playLabel(page)` TWICE -- once for
+  // the condition and once for the diagnostic -- so the two read the label at
+  // two different moments. Caught on a run where 38f failed printing
+  // `⏸ Pause`, a value that SATISFIES the regex the check had just rejected:
+  // the label flipped in between. Not an application defect and not a flake
+  // to be re-run away -- a fixed sleep racing a state change, exactly what
+  // `waitFor`'s own comment above says it exists to prevent. Each assertion
+  // now waits for the STATE and reads the label ONCE, so the condition and
+  // the diagnostic can never disagree again.
+  // `waitFor` already swallows its own timeout and returns false, so a label
+  // that never flips falls through to the read below and the assertion fails
+  // on the real value it found -- which is the diagnostic worth having.
+  const labelBecomes = async (re) => {
+    await waitFor(page, (src) => {
+      const l = document.getElementById("readPlayBtn").getAttribute("aria-label") || "";
+      return new RegExp(src).test(l);
+    }, 8000, re.source);
+    return playLabel(page);
+  };
   await page.click("#readPlayBtn");
-  await page.waitForTimeout(600);
-  check("38f Play starts, and the button becomes Pause",
-        /Pause|থামান/.test(await playLabel(page)), await playLabel(page));
+  const started = await labelBecomes(/Pause|থামান/);
+  check("38f Play starts, and the button becomes Pause", /Pause|থামান/.test(started), started);
   await page.click("#readPlayBtn");
-  await page.waitForTimeout(300);
-  check("38f pressing it again pauses", /Play|চালান/.test(await playLabel(page)), await playLabel(page));
+  const paused = await labelBecomes(/Play|চালান/);
+  check("38f pressing it again pauses", /Play|চালান/.test(paused), paused);
   const before = urls.length;
   await page.click("#readPlayBtn");
-  await page.waitForTimeout(400);
+  const resumed = await labelBecomes(/Pause|থামান/);
   check("38f and pressing it once more resumes rather than restarting",
-        /Pause|থামান/.test(await playLabel(page)) && urls.length === before,
-        `${await playLabel(page)}, ${urls.length - before} extra request(s)`);
+        /Pause|থামান/.test(resumed) && urls.length === before,
+        `${resumed}, ${urls.length - before} extra request(s)`);
   await page.close();
   await ctx.close();
 }
@@ -4262,8 +4282,29 @@ console.log("\n=== 42. The Ayah Note panel: ⋮ quick menu + Note & more ===");
   check("42g ...with no failure notice shown", status === true);
 
   // Leaving: no × button anywhere in the view -- the dock is the only way out.
-  const hasCloseBtn = await page.evaluate(() => !!document.querySelector(".note-view [data-note-close], .note-view .modal-close, .note-view .close-btn"));
-  check("42h there is no × / close button in the view", !hasCloseBtn);
+  //
+  // STRENGTHENED 2026-09-18. This was a bare negative over three selectors
+  // all scoped to `.note-view`, with no diagnostic and nothing proving that
+  // container was on screen -- so a rename of `.note-view` (the exact thing
+  // that happened to `.note-ayahbar` in v07.70, and which the excavation
+  // found had gone unnoticed for 70 rounds) would turn it green while it
+  // asserted nothing at all. **A negative assertion needs its own positive
+  // control.** The container is now measured first; probed at the time of
+  // writing it renders 358x666 with 41 buttons inside and no close control,
+  // so the negative is being made about a populated, on-screen view.
+  const closeState = await page.evaluate(() => {
+    const v = document.querySelector(".note-view");
+    const r = v?.getBoundingClientRect();
+    return {
+      onScreen: !!r && r.width > 0 && r.height > 0,
+      buttonsInside: v?.querySelectorAll("button").length ?? 0,
+      hasCloseBtn: !!document.querySelector(".note-view [data-note-close], .note-view .modal-close, .note-view .close-btn"),
+    };
+  });
+  check("42h the Note view is really on screen and populated -- the control for the negative below",
+        closeState.onScreen && closeState.buttonsInside > 0, JSON.stringify(closeState));
+  check("42h ...and there is no × / close button anywhere in it -- the dock is the only way out",
+        !closeState.hasCloseBtn, JSON.stringify(closeState));
   await clickStudyPillarItem(page, "tabReadBtn"); // tapping the SAME tab is how you leave -- same idiom as every other dock tab
   await page.waitForTimeout(300);
   const closed = await page.evaluate(() => ({
@@ -5109,6 +5150,8 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
       embedAfterNotes: notesIdx !== -1 && approachIdx !== -1 && approachIdx > notesIdx,
       notesClosed: getComputedStyle(document.querySelector('[data-note-field="notes"] .note-field-body')).display === "none",
       trackState: document.querySelector(".way-embed .way-track-state")?.textContent.trim(),
+      // the Confirmed shape always carries a status pill; the not-claimed one never does
+      trackPill: !!document.querySelector(".way-embed .way-track-state .pill"),
     };
   });
   check("43e clicking a wheel slice opens the Ayah Note screen, not the old floating pop-up",
@@ -5116,7 +5159,18 @@ console.log("\n=== 43. The wheel's one-time intro + in-hub Surah/Ayah pickers, a
   check("43f the Approach card (Track/Guide/Breakdown/Coverage) is embedded right after Notes -- study above, assessment below",
         clicked.embedPresent && clicked.embedAfterNotes, JSON.stringify(clicked));
   check("43g Notes still starts closed even when the screen is reached from a wheel slice", clicked.notesClosed);
-  check("43h the embedded card shows the real claim state for this āyah/Approach", Boolean(clicked.trackState), clicked.trackState);
+  // STRENGTHENED 2026-09-18. This asserted only `Boolean(trackState)` while
+  // its name claims it reads "the REAL claim state" -- any string at all
+  // passed, a placeholder or a stray dash included. `way-modal.js` can render
+  // exactly two shapes for this line: "Not claimed yet." when there is no
+  // entry, or "Confirmed: <status> · <pill>" when there is. The check is bound
+  // to those two now, so a card that renders neither fails instead of passing
+  // on the mere presence of text.
+  check("43h the embedded card shows the real claim state for this āyah/Approach -- one of the two shapes way-modal.js renders",
+        Boolean(clicked.trackState)
+          && (/Not claimed yet/.test(clicked.trackState)
+              || (/Confirmed:/.test(clicked.trackState) && clicked.trackPill === true)),
+        JSON.stringify({ trackState: clicked.trackState, trackPill: clicked.trackPill }));
 
   check("43 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();

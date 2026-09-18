@@ -103,6 +103,28 @@ both mutation-proven (cancel-that-saves; `prefs.js` rewritten to drop the
 real save. 979 → **981 executing checks**. See
 `docs/reports/2026-09-18-nav-fit-and-behaviour-subject-drift.md`.
 
+**The T3 sweep was then finished over sections 42-tail/43/43i-o and found NO
+further subject drift** — two candidates investigated and **cleared rather than
+"fixed"** (`43k` is correct: its own `.filter(Boolean)` drops a present-but-empty
+centre `<text>`, and 10 `.wheel-seg-num` siblings are its positive control — **my
+probe was wrong, not the check**). Two assertions were strengthened anyway, both
+already true and both mutation-proven: `42h` gained the positive control a bare
+negative needs (rename `.note-view` — the v07.70 failure mode — and the original
+returns `true` while asserting nothing at all), and `43h` is bound to the two
+shapes `way-modal.js` can render instead of `Boolean(...)`.
+
+**THE DIAGNOSTIC THAT CONTRADICTS ITS OWN VERDICT IS THE TELL.** `38f` failed
+printing `⏸ Pause`, a value SATISFYING the regex it had just rejected — because
+`check()` called `playLabel(page)` **twice**, once for the condition and once for
+the diagnostic. Underneath, three assertions slept a guessed 600/300/400ms **six
+lines below `waitFor`'s own comment saying not to**; measured latency is 67–84ms
+over 6 trials. **I induced that failure myself** by sharing the machine with a
+probe I had started, and it is written down rather than quietly re-run: a session
+reporting only its clean runs teaches the next one nothing about what makes a run
+dirty. The same goes for the Phase 6 emulator's `port taken` on 8093, held by an
+earlier run of my own. **Clean run of record: 981 pass / 1 fail, 982 checks**,
+the one failure 31e's TLS artefact — **and the 22g trio PASSED it.**
+
 **17 Sep 2026 — `behaviour.mjs` RUNS TO THE END AGAIN, and the old "~800 checks
 pass before the section-42 crash" line in this file is GONE because it was
 wrong to keep.** 802 → **973 pass / 4 fail, 56 sections**; the 4 are

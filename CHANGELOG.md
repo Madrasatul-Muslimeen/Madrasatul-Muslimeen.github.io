@@ -14110,3 +14110,36 @@ schema change. All seven pending-dependency items unchanged. `7e2931f` still
 held, unmerged and not re-cut.** Its own `version.js` stamp of 08.26 is now
 stale — `main` has taken that number — so **at merge it resolves to 08.27**,
 which is a one-line merge resolution and not a reason to rebuild the candidate.
+
+**v08.26, second tranche (18 Sep 2026) — BR-0, no version move.** The T3 sweep
+was continued over the rest of the newly-reachable region (sections 42-tail, 43,
+43i-o) and **found no further subject drift.** Two candidates were investigated
+and **cleared rather than "fixed"**: `43k`'s empty-centre assertion is correct
+(its own `.filter(Boolean)` drops the present-but-empty `<text>`, and its 10
+`.wheel-seg-num` siblings are its positive control — my first probe was wrong,
+not the check), and `42h`'s `.note-view` container is current and really on
+screen at 358×666 with 41 buttons inside.
+
+**Two assertions were strengthened anyway, both already true.** `42h` was a bare
+negative with no proof its container existed — mutation-proven by renaming
+`.note-view`, the v07.70 failure mode, where the original returns `true` while
+asserting nothing at all. `43h` claimed "the real claim state" and tested only
+`Boolean(...)` — bound now to the two shapes `way-modal.js` can render, and
+mutation-proven by rewriting both `way-track-state` sites to a bare `—`.
+
+**And the run found a real harness defect, `38f`.** It failed printing `⏸ Pause`
+— **a value satisfying the regex it had just rejected** — because `check()` was
+calling `playLabel(page)` twice, once for the condition and once for the
+diagnostic. Underneath, three assertions slept a guessed 600/300/400ms **six
+lines below `waitFor`'s own comment saying not to.** Measured latency in 6
+isolated trials: 67–84ms. **The failure was self-induced** — that run shared the
+machine with a mutation probe I had started — but the fix was kept, because a
+sleep racing a state change demonstrably lost and the double read made the
+diagnostic actively misleading. Each assertion waits for the state and reads the
+label once; `waitFor` gained an optional 4th argument, default `null`, so every
+existing caller is unaffected.
+
+**Clean run of record: `behaviour.mjs` 981 pass / 1 fail, 982 checks**, the one
+failure being 31e's TLS artefact — **the 22g trio passed this run**, confirming
+again that neither a red nor a green 22g is evidence. Session progression
+979 → 981 → 982 executing checks, **no check deleted at any point.**

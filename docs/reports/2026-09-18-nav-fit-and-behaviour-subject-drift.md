@@ -246,3 +246,52 @@ The Phase 6 emulator suite failed its first invocation with `Could not start Fir
 - **`7e2931f`** — held, unmerged, not re-cut, not activated.
 - **The Phase 4 evidence `request.query.limit`** — the verified deployment candidate is unamended, per handover §11.C.
 - **All seven pending-dependency ledger items** — unchanged. The blocking dependency is still **E1, authenticated Firebase access to `study-monitoring`**, and it is access, not design.
+
+---
+
+## 8. Second tranche — the rest of the newly-reachable region, and a race it exposed
+
+**BR-0. `git diff -- app/` empty; version stays 08.26.** Harness only.
+
+### 8.1 The sweep, extended to sections 42-tail, 43 and 43i-o
+
+The T3 sweep was continued over the remaining newly-reachable sections. **No further subject drift of the 45b/50k class was found**, and two candidates were investigated and cleared rather than "fixed":
+
+- **`43k`** — *"the wheel's own centre draws no ayah text of its own any more"* reads `svg text:not(.wheel-seg-num)` and asserts the list is empty. My first probe said it should be **failing** (one unclassed `<text>` element is present). **My probe was wrong, not the check**: the element is present but *empty*, and 43k's own `.filter(Boolean)` after `.trim()` drops it — which is exactly the contract, since the centre element still exists and simply carries nothing. It also has an effective positive control: **10 `.wheel-seg-num` elements** prove the selector can see text. Left alone.
+- **`42h`** — its three close-button selectors are all scoped to `.note-view`, and `.note-view` is current (`ayah-note-renderer.js:394`). Probed on screen at 358×666 with 41 buttons inside and no close control. **Substantively correct.**
+
+### 8.2 Two assertions strengthened (not corrections — both were already true)
+
+- **`42h` had no positive control.** A bare negative over a container it never proved was there. **Mutation:** rename `.note-view` to `.note-panel` at fetch time — the v07.70 failure mode exactly. The original returns `true` **while asserting nothing whatsoever**; the added control (`onScreen && buttonsInside > 0`) correctly fails.
+- **`43h` claimed "the real claim state" and tested only `Boolean(trackState)`.** `way-modal.js` renders exactly two shapes for that line — `"Not claimed yet."`, or `"Confirmed: … "` with a status pill. The check is bound to those two now. **Mutation:** rewrite both `way-track-state` sites (2 of 2, counted) to render a bare `—`. Original passes on the placeholder; strengthened correctly fails.
+
+### 8.3 A real harness defect found by the run itself: `38f`
+
+The run reported `FAIL 38f Play starts, and the button becomes Pause` with the diagnostic **`⏸ Pause`** — **a value that satisfies the regex the check had just rejected.** That contradiction is the whole diagnosis: `check(name, cond, detail)` was calling `await playLabel(page)` **twice**, once for the condition and once for the diagnostic, so the two sampled the label at different moments.
+
+Underneath it, three assertions slept a guessed **600/300/400ms** — six lines below `waitFor`'s own comment saying *"Waiting for a state rather than sleeping a guessed number of milliseconds … a fixed sleep would make these tests flaky rather than wrong."* Section 38 is network-independent (`audioCtx` serves a synthetic WAV), so this is not the archive.org block.
+
+**Measured latency, 6 isolated trials: 77 / 81 / 80 / 84 / 73 / 67 ms — all far inside 600ms.** So the check is not flaky on its own.
+
+**Honest attribution: I induced that failure myself.** The run that failed was started in the background and then shared the machine with a two-context mutation probe I launched while it was still going. Under that contention the flip missed its 600ms window. **Not an application defect, not caused by the v08.26 CSS change, and not a property of the suite when run alone.**
+
+The fix was kept anyway, because two things were genuinely wrong independent of the trigger: a sleep 7× the observed latency is still a sleep racing a state change and it demonstrably lost, and **the double read made the diagnostic actively misleading** — it reported a value that contradicted the verdict, which is what cost the investigation. Each assertion now waits for the **state** and reads the label **once**, so condition and diagnostic can never disagree again. `waitFor` gained an optional 4th argument (default `null`) so its predicate can be parameterised; every existing caller is unaffected.
+
+### 8.4 Verification — the clean run of record
+
+**`behaviour.mjs`: 981 passed / 1 failed, 982 checks**, run with nothing else on the machine. The single failure is **31e** (`net::ERR_CERT_AUTHORITY_INVALID`, the sandbox TLS artefact). **The 22g trio passed this run** — further confirmation of handover §3b: neither a red nor a green 22g is evidence.
+
+Check-count progression across the session: **979 (baseline) → 981 (tranche 1) → 982 (tranche 2)**. No check was deleted at any point.
+
+| Run | Pass | Fail | Failures |
+|---|---|---|---|
+| baseline `1cac2b8` | 975 | 4 | 22g × 3, 31e |
+| tranche 1 | 977 | 4 | 22g × 3, 31e |
+| tranche 2, **contended** | 977 | 5 | 22g × 3, 31e, **38f (self-induced, §8.3)** |
+| tranche 2, **clean — run of record** | **981** | **1** | 31e only |
+
+### 8.5 A second self-inflicted environmental failure, recorded for the same reason
+
+The Phase 6 emulator suite's first invocation failed `port taken` (8093) — held open by an earlier run of my own that I had interrupted. Re-run clean: **60 assertions, `# fail 0`**.
+
+Both of this session's non-baseline failures were caused by how I ran things, not by the code. They are written down rather than quietly re-run, because a session that reports only its clean runs teaches the next session nothing about what makes a run dirty.
