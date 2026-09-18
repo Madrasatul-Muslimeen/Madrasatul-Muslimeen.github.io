@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-18 · **Branch:** `feature/hadith-study`
 **Stage A commit:** `7f6132888bc02728e07e2214b5a8d6323708e00a` (app version **08.28**)
-**Stage B commit:** `STAGEB_SHA` (app version **08.29**)
+**Stage B commit:** `22526b20da1e1fe950992957aa2862e65b3cf925` (app version **08.29**)
 **Gate status:** H2-A corrected; H2-B delivered in the limited scope authorised. **No merge, no deploy, no Rules change, no durable write, no permanent Approach ID.**
 
 ---
