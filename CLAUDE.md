@@ -127,17 +127,41 @@ of truth and is what GitHub Pages serves.)
 > branch it demands the line name that branch AND state main's own version, and
 > verifies both.
 
-**VERSION NUMBERING NOTE — `main` HAS PASSED THE HELD WIRING'S STAMP.** The
-Phase 4 wiring at `7e2931f` stamps its own `version.js` **08.26**, chosen when
-`main` was on 08.25. `main` has since taken **08.26** (the nav fit) and then
-**08.27** (the number pickers), so that stamp now names a version that means
-something else entirely. **At merge its `version.js` conflicts and resolves to
-the next free number — 08.28 as of this line.** The branch is deliberately NOT
-re-cut or re-stamped — the standing instruction is to hold `7e2931f` exactly as
-it is, and re-stamping would be churn for a one-line merge resolution. **A
-merge-ordering fact, not a defect, and not a reason to rebuild the candidate.
-Read the number off `main` at the time of the merge rather than trusting this
-sentence's own arithmetic.**
+**VERSION NUMBERING NOTE — THE HELD PHASE 4 WIRING DOES NOT PREDICT ITS OWN
+VERSION.** Four durable statements, and they do not expire:
+
+1. **Phase 4 remains HELD** at `7e2931f` on `claude/phase4-wiring`, waiting on
+   the Firestore Rules and index deployment (E1). The standing instruction is to
+   hold it exactly as it is — not re-cut, not re-stamped.
+2. **Its `version.js` stamp of `v08.26` is HISTORICAL and is NOT a future
+   integration allocation.** The number was chosen when `main` was on `v08.25`;
+   `main` has since taken `v08.26` (the nav fit) and `v08.27` (the number
+   pickers), so the stamp now names a version that means something else
+   entirely. The Programme Integration Ledger records it as
+   `status: HISTORICAL`, `forwardAllocation: false`, and guard C fails if that
+   ever stops being declared.
+3. **Its eventual integration version will be allocated by the Master Architect
+   at authorisation time**, and only then. At merge the `version.js` line
+   conflicts; the resolution takes the number the Master Architect allocates.
+4. **Do not state or predict a numeric "next free version" here, or anywhere
+   else, for a held branch.** Read the allocation off the ledger and the Master
+   Architect's instruction at the time, never off arithmetic written earlier.
+
+**A merge-ordering fact, not a defect, and not a reason to rebuild the
+candidate.**
+
+> **Corrected 18 Sep 2026, and the episode is why points 2–4 are written as
+> rules rather than as a number.** This paragraph used to close by predicting
+> the merge number the held branch would take, naming the version immediately
+> above `main`'s own. It was wrong twice over. The Hadith stream had already
+> stamped **v08.28** (Stage A) and reserved **v08.29** (Stage B) on
+> `feature/hadith-study`, so the number named was not free; and it was written
+> **without its `v`**, so every v-prefixed scanner in this repository was blind
+> to it — `brief-integrity.mjs` included. A held branch does not get to predict
+> its own merge number, and a version written in a form no guard can see is a
+> version nobody is checking. Both classes are mechanically guarded now
+> (`programme-ledger.mjs`, guards C and D), and this correction is what their
+> first run produced.
 
 **One thing is held unmerged: the Phase 4 Study-event WIRING**, on
 `claude/phase4-wiring` at **`7e2931f`** — **refreshed against `main` on
@@ -149,6 +173,76 @@ the single source of truth and the badge beside the app name says so on screen.
 **This line has drifted twice already — it read `v08.02` while `main` was on
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
+
+**18 Sep 2026 — THE PROGRAMME INTEGRATION LEDGER, and the reason it exists is
+that THIS FILE got the same class of fact wrong twice in one day, in opposite
+directions.** `docs/governance/programme-integration-ledger.json` is now the
+machine-readable record of the `main` baseline, every stream and its branch,
+every allocated and reserved application version, the module-owned and
+platform/shared path families, the deployment/security shared paths, the
+deferred shared-change requests and the closed integration gates.
+**`tools/i18n-verify/programme-ledger.mjs`** reads it against the repository
+with six guards; **`programme-ledger-mutations.mjs`** proves each one can fail
+(**25 mutations, 25 caught**, plus two positive controls). **BR-0, no version
+bump — `app/js/version.js` stays 08.27 and `git diff origin/main -- app/ tests/
+firestore.rules firebase.json` is empty.** Nothing under `app/` imports either
+new file.
+
+**THE COLLISION ALREADY HAPPENED, and nothing in the repository noticed.** For
+part of 18 Sep **two independent builds both carried 08.27** — `main` (the
+number pickers) and `feature/hadith-study` — which is exactly the thing a
+version number exists to prevent. The Hadith stream found it themselves and
+resolved it by reading every branch before stamping **v08.28** (Stage A) and
+**v08.29** (Stage B). **08.30 and above are NOT ALLOCATED**, and allocation is
+the Master Architect's, not a session's.
+
+**This file's own VERSION NUMBERING NOTE was the other half of it, and both
+guards caught it independently on their first run.** It closed by predicting the
+merge number the held Phase 4 branch would take — the version immediately above
+`main`'s own — which is a held branch predicting its own allocation, in a number
+another stream had already taken. **And it was written BARE, without the `v`, so
+every v-prefixed scanner in this repository was blind to it**,
+`brief-integrity.mjs` included: a `grep` for the v-prefixed form returned **0**
+while the number was sitting in the paragraph. Guard C flags a forward number
+named beside a held commit; guard D flags a declared version the brief mentions
+only in bare form. **The prediction is gone rather than restated** — the
+paragraph now carries four durable rules and points at the ledger, so there is
+no arithmetic left in it to go stale.
+
+**Guard E is the SHARED CHANGE RULE made mechanical.** Eleven shared-file
+modifications are declared across the two unmerged branches — `CLAUDE.md`,
+`CHANGELOG.md`, `bn.js`, `behaviour.mjs`, `version.js` and three emulator files
+— and they are reported every run as **DECLARED, awaiting Master Architect
+decision**, which is honest rather than green. **An UNdeclared one fails.** The
+distinction is deliberate: the guard's job is that nothing reaches a shared file
+undisclosed, not that it approves what is disclosed. Guard F does the same for
+baselines: a stream whose recorded `main` SHA has moved fails unless the ledger
+says `MOVED_ACKNOWLEDGED` and points at a real acknowledgement — the Hadith
+stream has one, and **halted on exactly that gate itself.**
+
+**Its own first run produced four findings and three of them were the guard's
+fault, which is the point of running it.** Guard C flagged three correct
+sentences (a held paragraph properly recounts history) and was narrowed to
+forward numbers only; guard F reported a real acknowledgement as missing
+because it looked on `main` for a file that lives on the stream's own branch.
+**And one mutation went UNPROVEN and found a genuine defect**: the trailing
+guard `(?![\d.])` refuses a version that ends a sentence, because the full stop
+matches the class — so *"the branch is stamped 08.29."* was invisible to the
+guard written to find invisible references. It is `(?!\.?\d)` now, with its own
+mutation pinning it. See
+`docs/reports/2026-09-18-quranrevival-programme-integration-ledger-foundation.md`.
+
+**Two things are RECORDED AND DELIBERATELY NOT BUILT.** **SCR-01**
+(`ACCEPTED_ARCHITECTURAL_DEBT_DEFERRED`): `behaviour.mjs` accumulates
+module-specific exclusions for intentionally multilingual or multiscript
+elements, and the replacement is a **semantic declarative contract** — an
+element declaring what it *is* (source scripture, transliteration, proper name)
+so the suite derives whether it should be translated — which is distinct from
+`data-i18n-skip`, that declares only that a check should not look. **DR-01**
+(design record only): `behaviour.mjs` is one monolithic file at 56 sections and
+982 checks that every new module grows, and the candidate direction is
+module-specific suites plus a thin aggregate runner. **Neither is authorised for
+implementation.**
 
 **v08.27 (18 Sep 2026) — EVERY NUMBER PICKER IN THE STUDY-OPTIONS UNITS BAR
 CUT A THREE-DIGIT VALUE, at every viewport, in both languages — and the app had
@@ -1661,6 +1755,35 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   defect; and `users`'s `hasOnly(['studentIds'])` **omits `updatedAt`**, which
   `updateDocument()` always stamps (I17) — moot while nothing writes that
   collection, and a lost day for whoever first does.
+- **A GLOBAL VERSION NUMBER IS A SHARED RESOURCE, AND TWO STREAMS WILL TAKE IT
+  AT ONCE.** Not hypothetically: on 18 Sep 2026 `main` and `feature/hadith-study`
+  both carried **08.27** simultaneously. Every safeguard this repository had was
+  prose a session had to read and remember, and it failed in both directions on
+  the same day — a branch version reported as being on `main`, and a held
+  branch's paragraph predicting a merge number another stream had taken. **The
+  ledger (`docs/governance/programme-integration-ledger.json`) is the record and
+  `programme-ledger.mjs` is the check.** Before stamping a version, read what is
+  allocated; before touching `CLAUDE.md`, `CHANGELOG.md`, `bn.js`,
+  `behaviour.mjs` or `version.js` from a module branch, declare it. **A held
+  branch's version stamp is HISTORICAL, never a reservation** — read the number
+  off `main` at merge time.
+- **A REGEX THAT REFUSES A NUMBER AT A FULL STOP IS BLIND TO HALF THE PROSE IT
+  SCANS.** `(?![\d.])` after a version rejects `08.29.` at the end of a
+  sentence, because the full stop matches the class. It is the same
+  trailing-full-stop trap that produced a wrong reading in
+  `brief-integrity.mjs`'s own first run, found a second time in
+  `programme-ledger.mjs` — and found by a mutation going **UNPROVEN**, not by
+  re-reading the expression. Use `(?!\.?\d)`: it still rejects `08.295` and
+  `08.29.3`, and it sees a version that ends a sentence. **An unproven mutation
+  is a finding about the guard, and it must be chased rather than deleted.**
+- **A VERSION WRITTEN WITHOUT ITS `v` IS INVISIBLE TO EVERY SCANNER HERE.**
+  `brief-integrity.mjs` and the milestone check both scan `\bv(\d\d\.\d\d)\b`.
+  `CLAUDE.md` carried a forward allocation of `08.28` in bare form for days;
+  `grep -c 'v08\.28' CLAUDE.md` returned 0 while the number sat in the
+  paragraph. Bare references in prose are legitimate and common ("`main` was on
+  08.25"), so the rule is not "always prefix" — it is that **a version the
+  ledger declares must appear in `vNN.NN` form at least once**, which is what
+  guard D enforces.
 - **`brief-integrity.mjs` NOW CHECKS THIS FILE AGAINST REALITY, so the three
   "check it every session" instructions are no longer a thing to remember.** 8
   checks: every repository path this brief names exists; ones it says are held

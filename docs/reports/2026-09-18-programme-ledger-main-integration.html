@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Programme Integration Ledger — integration into `main`</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Programme Integration Ledger — integration into <code>main</code></h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Instruction:</strong> Integrate ONLY the accepted Programme Integration Ledger foundation into <code>main</code>, with the stale Phase-4 version-numbering note corrected first.</li><li><strong>Blast radius:</strong> <strong>BR-0, governance and verification only.</strong> No reachable application behaviour changed.</li><li><strong>Application version:</strong> <strong>v08.27 before, v08.27 after.</strong></li></ul>
+<hr>
+<h2>1. Pre-flight — baseline matched exactly</h2>
+<p>Fetched first, before anything else.</p>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>origin/main</code> expected</td><td><code>5ea0d928b8f326e0164c988ef79e4d1d1c168eeb</code></td></tr>
+<tr><td><code>origin/main</code> actual</td><td><strong><code>5ea0d928b8f326e0164c988ef79e4d1d1c168eeb</code> — identical</strong></td></tr>
+<tr><td>Application version</td><td><strong><code>08.27</code> — confirmed</strong></td></tr>
+<tr><td>Branch</td><td><code>claude/charming-rubin-xzxbk1</code> at <code>e89d27b</code>, clean tree, remote identical</td></tr>
+</tbody></table></div>
+<p>No movement, so neither reconciliation path A nor the <code>BASELINE_MOVED_MATERIAL</code> stop applied.</p>
+<hr>
+<h2>2. The governance correction</h2>
+<p>The Phase-4 VERSION NUMBERING NOTE no longer predicts a number. It now carries four durable statements, written as rules rather than as arithmetic that expires:</p>
+<ol><li><strong>Phase 4 remains HELD</strong> at <code>7e2931f</code>, waiting on the Rules and index deployment (E1). Not re-cut, not re-stamped.</li><li><strong>Its <code>v08.26</code> stamp is HISTORICAL and is NOT a future integration allocation</strong> — the ledger records <code>status: HISTORICAL</code>, <code>forwardAllocation: false</code>, and guard C fails if that ever stops being declared.</li><li><strong>Its eventual integration version will be allocated by the Master Architect at authorisation time</strong>, and only then.</li><li><strong>Do not state or predict a numeric &quot;next free version&quot;</strong> for a held branch, here or anywhere else.</li></ol>
+<p>All historical version references in that paragraph are canonical <code>v08.xx</code>; a bare-form scan of it returns nothing.</p>
+<p><strong>The round entry that quoted the stale sentence verbatim was paraphrased too</strong>, so the erroneous wording is described rather than reproduced. The correction note survives — what was wrong, and why the rules replaced the number — because deleting the episode would remove the reason the rules exist.</p>
+<p><strong>Two dated reports were deliberately NOT retro-edited.</strong> <code>2026-09-18-study-options-number-pickers.md</code> §175 still says the held branch &quot;resolves to the next free number&quot; at merge. It is an accepted, dated report: history, not live governance. Editing it would falsify the record of what was said at the time. <strong>It is superseded by this report and by the four rules above.</strong> The other hits in <code>2026-09-18-quran-stream-integration-reconciliation.*</code> already say the number must be allocated by the Master Architect, which is correct.</p>
+<hr>
+<h2>3. Guard E earned its keep before the merge, on its second real run</h2>
+<p>The Hadith candidate had advanced from <code>808539c</code> to <strong><code>fd8a8a2</code></strong>, and <strong>guard E failed</strong>:</p>
+<p>``<code> FAIL [E] stream hadith modifies shared/platform file CHANGELOG.md on          feature/hadith-study with no declaration and no authorisation </code>``</p>
+<p><strong>A true finding, caught mechanically.</strong> <code>fd8a8a2</code> adds <strong>+127/−0</strong> to <code>CHANGELOG.md</code>, a declared platform/shared file, and the ledger did not know. The mutation suite&#x27;s own positive control failed in sympathy — correctly, since it requires the unmutated ledger to be clean before any mutation proves anything.</p>
+<p><strong>Recorded, not authorised.</strong> The touch is now <code>DECLARED</code> alongside the other four, so it is visible every run and awaits the Master Architect&#x27;s decision. <code>fd8a8a2</code> itself was <strong>not modified</strong> — the inventory was taken by reading the branch.</p>
+<p><strong>Two mutations then went UNPROVEN, and that was fixture drift rather than a guard defect.</strong> <code>fd8a8a2</code> merged <code>main</code> into itself, so the Hadith baseline became equal to <code>origin/main</code> — and guard F short-circuits on <code>baselineSha === mainSha</code>. Both mutations that target the stale-baseline path silently stopped reaching the code they test, and reported themselves unproven rather than passing vacuously, which is the behaviour they were built for. They construct their own precondition now (a main that has moved past a baseline which is still a legitimate ancestor) instead of depending on a stream happening to be in that state. <strong>Same family as this repository&#x27;s own lesson about a fixture that enumerates what it needs</strong>: 25/25 again, and the two no longer depend on anyone else&#x27;s branch.</p>
+<p>Measured shared-file footprint of the candidate, against merge base <code>5ea0d92</code>:</p>
+<div class='tw'><table><thead><tr><th>File</th><th>Lines</th><th>Status</th></tr></thead><tbody>
+<tr><td><code>CHANGELOG.md</code></td><td>+127 / −0</td><td>DECLARED (new at <code>fd8a8a2</code>)</td></tr>
+<tr><td><code>CLAUDE.md</code></td><td>+65 / −0</td><td>DECLARED</td></tr>
+<tr><td><code>app/js/i18n/bn.js</code></td><td>+68 / −0</td><td>DECLARED</td></tr>
+<tr><td><code>tools/i18n-verify/behaviour.mjs</code></td><td>+27 / −5</td><td>DECLARED</td></tr>
+<tr><td><code>app/js/version.js</code></td><td>+16 / −1</td><td>DECLARED — the <code>v08.29</code> stamp</td></tr>
+</tbody></table></div>
+<p><strong>The candidate&#x27;s own baseline is current, and this integration is what makes it stale.</strong> <code>fd8a8a2</code> merged <code>origin/main</code> <code>5ea0d92</code> into itself at <code>e863c62</code>, so it was built on the accepted baseline. Landing this ledger moves <code>main</code> past <code>5ea0d92</code> — <strong>by this commit and nothing else</strong> — so the candidate&#x27;s baseline is recorded as <code>MOVED_ACKNOWLEDGED</code>, pointing at this report, with a note that the move is governance-only and the rebaseline is expected. Guard F therefore reports it as a known open item rather than a surprise or a failure.</p>
+<hr>
+<h2>4. Verification</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>programme-ledger.mjs</code></td><td><strong>7 passed, 12 noted, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>programme-ledger-mutations.mjs</code></td><td><strong>25 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>brief-integrity.mjs</code></td><td><strong>8 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>stub-parity.mjs</code></td><td><strong>3 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>rules-authorisation-executable.mjs</code></td><td><strong>38 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>rules-deployment-candidate.mjs</code></td><td><strong>10 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>firestore-index-requirements.mjs</code></td><td><strong>8 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>study-approach-contract-boundary.mjs</code></td><td><strong>16 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>note-foundation-boundary.mjs</code></td><td><strong>30 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>journey-map-boundary.mjs</code></td><td><strong>13 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>study-note-boundary.mjs</code></td><td><strong>17 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>d14-timezone-boundary.mjs</code></td><td><strong>10 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>d14-timezone-contract.mjs</code></td><td><strong>21 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>navcheck.mjs</code> (live boot)</td><td><strong>EXIT 0</strong> — nav fits at every width in both languages</td></tr>
+</tbody></table></div>
+<p>The 12 NOTEs are the declared shared-file touches (11) and the acknowledged Hadith baseline move (1). They print every run on purpose: an open coordination item should be visible, not silent.</p>
+<h3>What was proven, not asserted</h3>
+<div class='tw'><table><thead><tr><th>Claim</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Reachable <code>app/</code> behaviour unchanged</td><td><code>git diff &lt;base&gt; &lt;final&gt; -- app/</code> is <strong>empty</strong></td></tr>
+<tr><td><code>version.js</code> remains v08.27</td><td><code>APP_VERSION = &quot;08.27&quot;</code> on <code>main</code>, and the file is not in the diff</td></tr>
+<tr><td>No Rules or Firebase configuration changed</td><td><code>git diff &lt;base&gt; &lt;final&gt; -- firestore.rules firebase.json tests/ docs/governance/<em>.rules docs/governance/</em>indexes*.json</code> is <strong>empty</strong></td></tr>
+<tr><td>Hadith remains unmerged</td><td><code>git merge-base --is-ancestor fd8a8a2 main</code> → <strong>false</strong></td></tr>
+<tr><td>Phase 4 remains held</td><td><code>7e2931f</code> is not an ancestor of <code>main</code>; <code>claude/phase4-wiring</code> untouched</td></tr>
+<tr><td>D14 remains unreachable</td><td><code>d14-timezone-boundary.mjs</code> 10/0, including the check that no page or module imports either module at any depth</td></tr>
+<tr><td>Nothing deployed</td><td>No Firebase credentials in this sandbox; no deployment attempted</td></tr>
+</tbody></table></div>
+<hr>
+<h2>PROGRAMME_LEDGER_INTEGRATION</h2>
+<p>``<code> BASE_MAIN_SHA=5ea0d928b8f326e0164c988ef79e4d1d1c168eeb FINAL_MAIN_SHA=44e2304c00a4beae100161b5d5a9625cdd3ac68f APP_VERSION=v08.27 LEDGER_COMMIT=e89d27b07152e1a05e09932ce10b8056f2de2639 LEDGER_ON_MAIN=YES STALE_PHASE4_VERSION_NOTE_FIXED=YES_REPLACED_WITH_FOUR_DURABLE_RULES_CANONICAL_v08xx PROGRAMME_GUARDS=7_PASS_12_NOTE_0_FAIL_EXIT_0 MUTATIONS=25_PASS_0_FAIL_EXIT_0 APP_BEHAVIOUR_CHANGE=NO HADITH_MERGED=NO D14_REACHABLE=NO PHASE4_STATUS=HELD RULES_CHANGED=NO DEPLOYED=NO READY_FOR_HADITH_REBASELINE=YES </code>``</p>
+<p><strong>A note on <code>FINAL_MAIN_SHA</code>, so it is not read as an error.</strong> It names <code>44e2304</code>, the commit that carries the whole integration — the ledger, the guards, the corrected Phase-4 note and this report. The commit that <em>stamps this value into the block</em> necessarily sits one commit ahead of the SHA it records; a commit cannot contain its own hash. That stamping commit changes this report and nothing else, and <code>git diff 44e2304 &lt;tip&gt;</code> shows exactly that. Both are verified against <code>git</code>, not asserted.</p>
+<p><strong>READY_FOR_HADITH_REBASELINE = YES</strong>, with one thing for the Master Architect to decide rather than assume: the candidate&#x27;s five shared-file touches are DECLARED, not AUTHORISED — <code>CHANGELOG.md</code> among them, newly appearing at <code>fd8a8a2</code>. <code>app/js/version.js</code> carrying <code>08.29</code> is the one that merges silently: <code>git merge-tree</code> predicts no conflict there, so a merge takes the branch&#x27;s number with no human decision. That is the mechanism that produced the real duplicate at 08.27.</p>
+<hr>
+<p>Stopping here. No further tranche started.</p>
+</main></body></html>

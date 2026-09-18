@@ -34,3 +34,19 @@ Normative intent flows downward; evidence of reality flows upward. A lower sourc
 - `ACTIVE-ARCHITECTURE.md` — current concise architecture boundary.
 - `adr/` — accepted decisions needed for safe sequencing and early MAP prerequisites.
 - `DDR.md` — inactive deferred decisions; no item is activated by being recorded.
+- `programme-integration-ledger.json` — **the machine-readable programme coordination record** (established 2026-09-18): the current `main` baseline and version, every stream and its active branch, every allocated and reserved application version with its status, module-owned and platform/shared path families, deployment/security shared paths, deferred shared-change requests, and closed integration gates. It is **data, not authority** — it records decisions the Master Architect has made and does not make them. `tools/i18n-verify/programme-ledger.mjs` reads it and fails when the repository and the record disagree; `programme-ledger-mutations.mjs` proves each of its six guards can fail.
+
+## Programme coordination — ownership at a glance
+
+Recorded in the ledger and reproduced here because it is read more often than it is edited.
+
+| File | Owner | Note |
+|---|---|---|
+| `app/js/version.js` | **Master Architect — global authority** | No stream allocates a number for itself. |
+| `CLAUDE.md` | Platform — governance, shared | Append in your own region; never rewrite another stream's. |
+| `CHANGELOG.md` | Platform — release history, shared | A round leaving the brief is appended here first. |
+| `app/js/i18n/bn.js` | Platform — shared translation catalogue | Every module adds keys to the same file. |
+| `tools/i18n-verify/behaviour.mjs` | Platform — shared verification infrastructure | See SCR-01 in the ledger. |
+| `app/hadith-study.html` | Hadith — module content surface | The common navigation and page shell inside it remain **platform-owned**. |
+
+**The SHARED CHANGE RULE.** If a module's work requires modifying a declared shared or platform file and no shared-change authorisation exists, STOP that portion and raise a SHARED CHANGE REQUEST — file, current owner-use, required change, reason, expected blast radius, other modules potentially affected. Do not silently take ownership. Guard E fails on any undeclared shared-file modification by a declared stream.
