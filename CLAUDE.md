@@ -1391,6 +1391,18 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   reach has no first run to fail in, so it never earns the right to be believed:
   that region is UNVERIFIED, not passing.** When a suite stops early, the debt
   is everything downstream, not the one failing line — fix it that day.
+- **The DEPLOYED rules have an "authorised but unexecutable" gap too, and it is
+  the only one** (audited 18 Sep 2026, and otherwise clean): `tenantPeople`'s
+  third `allow update` lets a signed-in person change **their own `timezone`**
+  and nothing else, and **no client code offers it.** Flagged, not built — where
+  that control lives is a product decision, and `weekStartsOn` (D7) sits in the
+  same area. Two other things from that audit worth not rediscovering:
+  `self-check.js` writing `{ platformAdmin: true }` to `userIndex` is the **I10
+  NEGATIVE PROBE**, designed to be refused (a success is reported as URGENT), so
+  a field-set comparison that does not read the surrounding code will call it a
+  defect; and `users`'s `hasOnly(['studentIds'])` **omits `updatedAt`**, which
+  `updateDocument()` always stamps (I17) — moot while nothing writes that
+  collection, and a lost day for whoever first does.
 - **`brief-integrity.mjs` NOW CHECKS THIS FILE AGAINST REALITY, so the three
   "check it every session" instructions are no longer a thing to remember.** 8
   checks: every repository path this brief names exists; ones it says are held

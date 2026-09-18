@@ -13912,3 +13912,45 @@ names exist ("SEVEN items sit in the pending-dependency ledger" is prose and
 stays prose); which rounds belong in the five-most-recent section (editorial —
 that they are all in this log is checked, which is the load-bearing part); or
 whether `PHASE-5-STATUS.md` is current, only that it is there.
+
+---
+
+## The same comparison against the DEPLOYED rules — a clean result, and one gap (18 Sep 2026, v08.25, no version bump)
+
+**BR-0, an audit. No file changed except this log and the brief.** The
+authorisation guard covers the six MAP collections against their *candidate*
+Rules. The deployed `firestore.rules` governs 43 match blocks of long-live
+production code, where a mismatch would be a **live** defect the owner hits
+rather than a candidate one — so the four narrowly-restricted update paths it
+declares were checked by hand.
+
+| Deployed restriction | Client writes | Result |
+|---|---|---|
+| `users` — `hasOnly(['studentIds'])` | **none in `app/js`** | the legacy v06 collection; the rebuilt app does not touch it |
+| `tenantPeople` — `hasOnly(['timezone','updatedAt'])` | **none** | **authorised, no caller** — see below |
+| `userIndex` — `hasOnly(['tenantIds','defaultTenantId','appLang','updatedAt'])` | 3 | all correct |
+| `tenantInvites` — `hasOnly(['status','consumedAt','consumedByUid','updatedAt'])` | 1 | exactly the four fields |
+
+**No live defect.** Worth two notes.
+
+**`self-check.js` writes `{ platformAdmin: true }` to `userIndex`, which the
+rules deny — and that is the point.** It is the I10 negative probe, with the
+screen treating a SUCCESS as "URGENT: this succeeded. Your account may now
+incorrectly have platform-admin access." A field-set comparison that did not
+read the surrounding code would have reported it as a defect; it is the single
+most convincing proof-of-safety on that screen.
+
+**THE ONE GAP: a person cannot set their own timezone, though the deployed rules
+have always allowed it.** `tenantPeople`'s third `allow update` lets a signed-in
+person change `timezone` on their own record and nothing else — and no client
+code offers it. The same "authorised but unexecutable" shape as P6-C, P6-D, P5-F
+and P6-E, found in PRODUCTION rules rather than a candidate. **Flagged, not
+built:** where a timezone control lives, and whether it should exist before the
+scheduling features that would use it, is a product decision. `weekStartsOn`
+(D7) sits in the same area and is recorded as "added in Phase 0, used from
+Phase 8".
+
+**Also recorded: `users`'s `hasOnly(['studentIds'])` omits `updatedAt`.** Any
+write made through `updateDocument()` stamps `updatedAt` (I17) and would
+therefore be denied. Moot today because nothing writes that collection, and
+noted so that a future round adding one does not lose a day to it.
