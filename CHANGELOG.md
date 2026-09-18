@@ -13996,3 +13996,117 @@ recorded so they are not re-litigated:**
 
 **Also recorded: the tenant-picker truncation IS a genuine bounded Owner UI
 decision** (widen / shorten / reveal), and no design choice was implemented.
+
+---
+
+**v08.26 (18 Sep 2026, on Claude Code on the web) is the 320px navigation
+truncation paid off, plus two `behaviour.mjs` assertions that had been passing
+while describing the wrong thing.** Two independent pieces of the pending
+technical list (T2 and T3 in the 18 Sep handover), neither needing new
+authority and neither touching Rules, indexes or the held Phase 4 wiring.
+
+**The nav finding reversed its own diagnosis, and that is the part worth
+remembering.** English "Operation" and "Bookmark" cut at 320px — 73px of label
+in a 65px cell — had been a named, tolerated baseline for as long as
+`navcheck.mjs` has run, read the whole time as "the labels do not fit at
+320px". **Measured, they do fit: the four need 282.3px of a 288px row, with
+5.7px to spare.** What cut them is `.nav-cat { flex: 1 1 0 }` — a flex-basis of
+**zero** makes the four cells an equal quarter each, so Home took 65px to print
+a word needing 48.1 while Bookmark was cut at 65 needing 75.4. **The space the
+long labels wanted was already on the row, sitting under the short ones.**
+
+**`scrollWidth`/`clientWidth` is what hid it.** That pair bottoms out the
+moment a label fits — it can say "cut by 8px" but never "fits with 30px to
+spare" — so the row's real slack was invisible to the suite that had been
+reporting the defect for months. It was measured instead by letting the cells
+shrink-wrap (`flex: 0 0 auto`) and reading the row's natural width against what
+it has.
+
+**The fix is one property at one breakpoint: `@media (max-width: 340px) {
+.nav-cat { flex-basis: auto } }`.** `grow` and `shrink` are untouched, so the
+cells still fill the row and can still shrink, and `min-width: 0` still lets
+the ellipsis do its job as a last resort — only the STARTING size changes, from
+"an equal quarter" to "what this label needs". **Nothing shrank to pay for
+it**: font-size, padding, the caret glyph and the 26px/28px button height are
+all unchanged in both languages. Four other remedies were costed first and each
+one cost something — padding to zero bought 3px, a tighter row gap 3px,
+dropping the caret's leading space 3px (the three together bought exactly the
+8px needed, with nothing to spare), and a font step to 0.62rem bought it alone
+at the cost of 9.92px type, which the v08.02 lesson about Bengali matras makes
+a bad trade.
+
+**Scoped to ≤340px deliberately, not applied everywhere.** Equal-width tabs are
+the design at every width where they hold their label, and they are
+byte-identical from 360px up — measured 77.2/77.2/77.2/77.2 at 360px and the
+same proportions at 390/412/768 in both languages, one line, no overflow, the
+last category's dropdown still fully on screen.
+
+**340px was truncating too (73>70), and nothing had ever looked**, because
+`navcheck.mjs`'s width list jumped 320 → 360 straight over the widest width the
+defect still reached. 340 is in the list now. **A width list with a hole in it
+hides the defect living in the hole.**
+
+`KNOWN_TRUNCATIONS` is now `{}` rather than deleted — the mechanism stays so the
+next pre-existing finding is tolerated by name rather than by making the exit
+code meaningless again. **Proven in both directions:** with the CSS reverted
+`navcheck.mjs` exits 1 and names 2 problems; with it, exit 0 and no truncation
+at any of the six widths in either language.
+
+**The tenant-picker truncation was deliberately NOT touched** — it is a genuine
+bounded Owner UI decision (widen the cell, shorten the option text, or reveal
+the full value without widening are materially different choices), and it stays
+on the Owner list.
+
+**Two `behaviour.mjs` assertions were found passing while describing the wrong
+thing** — the class the 17 Sep excavation left open as T3 ("checks *wrong about
+their subject*, as opposed to unable to fail"). The bounded set read was
+sections **44–50h-k**, the whole bookmark tranche of the newly-reachable
+region. Both findings were probed before being believed and mutation-proven
+after being fixed.
+
+**45b, "cancelling the name prompt makes no bookmark", read the NOTE
+indicator.** It asserted `!.ayah-quick-btn.has-note` inside
+`#readQuickMenuSlot`. That class comes from `renderQuickMenu`'s `hasNote:
+ayahHasNote(...)` — whether the āyah has a **Note** — and this call site passes
+`showBookmark: false`, so the Read screen's ⋮ carries no bookmark state of any
+kind. **Probed: `has-note` read `false` after cancelling AND `false` after a
+real save, while the write log went 0 → 1.** The assertion evaluated identically
+in the case it was written to catch and in its exact opposite. It was also a
+bare `!== true` with no diagnostic, which passes just as happily when the
+element is absent. It reads `#readBookmarkBtn` now (🔖 → ★, aria-label
+"Bookmark this āyah" → "Remove bookmark") plus the write count, against a
+stated positive control — **and 45c asserts the same two facts moving the OTHER
+way after a real save**, a denial paired with an allow differing in one fact.
+**Mutation-proven:** make the popover's Cancel save instead, and the original
+still passes while the correction fails.
+
+**50k, "the popover's 'Folder' label is NOT the group-by 'Folder' wording",
+never looked at the Folder field.** It was `fields.some((f) => BN.test(f) && f
+!== groupByFolder)` over EVERY popover field, so "নাম" (Name) satisfied it. It
+also compared against a `groupByFolder` that is `undefined` whenever the nav
+select is gone, making `f !== undefined` true for every field. **Mutation-proven
+by routing `prefs.js` through a rewrite that drops the `|groupby` suffix** — so
+the popover's Folder label and the group-by's become byte-identical "ফোল্ডার" —
+at which point the original still passes and the correction fails. Both labels
+are now read by identity (the field holding `[data-bm-pop-folder]`; the option
+with value `folder`) and both asserted present and Bangla before being
+compared. The first clause was bound to `[data-bm-pop-person-row]` in the same
+way rather than to "some field somewhere".
+
+**Coverage was preserved and increased**: 979 → 981 executing checks, the two
+extra being 45b's positive control and 45c's paired flip. `behaviour.mjs` 977
+pass / 4 fail, the 4 being the known environmental pair (22g × 3 archive.org,
+31e TLS). **`layout.mjs` EXIT 0, `NO LAYOUT REGRESSIONS`, `CHANGED: 0`** against
+a shim built to actually see this change — `HEAD`'s own `shell.css` dropped
+beside the page as `_prev-shell.css` and the shim pointed at it, because
+`quranrevival.html` itself is byte-for-byte untouched and without that both
+sides would have loaded the NEW stylesheet and the run would have proven
+nothing. `reading.mjs`, `panel.mjs` EXIT 0. Translation coverage **1,803
+scanned / 47 missing, unchanged** — no new string; a CSS breakpoint carries
+none.
+
+**No `firestore.rules`, `firebase.json`, Rules candidate, index candidate or
+schema change. All seven pending-dependency items unchanged. `7e2931f` still
+held, unmerged and not re-cut.** Its own `version.js` stamp of 08.26 is now
+stale — `main` has taken that number — so **at merge it resolves to 08.27**,
+which is a one-line merge resolution and not a reason to rebuild the candidate.

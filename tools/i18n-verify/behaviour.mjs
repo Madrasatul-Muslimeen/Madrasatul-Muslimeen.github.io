@@ -5390,11 +5390,44 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
           && /Bookmark/i.test(readBmBtn.label || ""), JSON.stringify(readBmBtn));
 
   // Cancelling the naming popover (item 1/2) makes no write and no bookmark.
+  //
+  // RECONCILED 2026-09-18. This read `.ayah-quick-btn.has-note` inside
+  // #readQuickMenuSlot and asserted `!== true`. That class is the NOTE
+  // indicator -- renderQuickMenu() sets it from `hasNote: ayahHasNote(...)`
+  // -- and this call site passes `showBookmark: false`, so the Read screen's
+  // ⋮ carries no bookmark state of any kind. Probed: has-note read `false`
+  // after cancelling AND `false` after a real save, while the write log went
+  // 0 -> 1, so the assertion evaluated identically in the case it was written
+  // to catch and in its own opposite. It was also a bare `!== true` with no
+  // diagnostic, which passes just as happily when the element is absent.
+  //
+  // The real indicator on this screen is #readBookmarkBtn itself (🔖 -> ★,
+  // aria-label "Bookmark this āyah" -> "Remove bookmark"), plus the write
+  // log. Both are read now, against a stated positive control, and 45c
+  // asserts the same two facts moving the OTHER way after a real save -- a
+  // denial paired with an allow differing in one fact, which is what this
+  // project's own mutation-testing lesson requires.
+  const readBmState = () => page.evaluate(() => {
+    const b = document.getElementById("readBookmarkBtn");
+    return { text: b?.textContent.trim(), label: b?.getAttribute("aria-label") };
+  });
+  const bookmarkWriteCount = () => page.evaluate(() =>
+    JSON.parse(sessionStorage.getItem("__stubWrites") || "[]").filter((w) => w.col === "bookmarks").length);
+
+  const beforeCancel = await readBmState();
+  const writesBeforeCancel = await bookmarkWriteCount();
+  check("45b the bar's Bookmark button starts unbookmarked -- the positive control the cancel below is measured against",
+        beforeCancel.text === "🔖" && /^Bookmark/i.test(beforeCancel.label || ""), JSON.stringify(beforeCancel));
+
   await page.click("#readBookmarkBtn");
   await cancelBookmarkPopover(page);
   await page.waitForTimeout(200);
-  const afterCancel = await page.evaluate(() => document.querySelector("#readQuickMenuSlot .ayah-quick-btn")?.classList.contains("has-note"));
-  check("45b cancelling the name prompt makes no bookmark", afterCancel !== true);
+  const afterCancel = await readBmState();
+  const writesAfterCancel = await bookmarkWriteCount();
+  check("45b ...and cancelling the name prompt makes no bookmark -- no write issued, and the button has not flipped",
+        writesAfterCancel === writesBeforeCancel
+          && afterCancel.text === "🔖" && /^Bookmark/i.test(afterCancel.label || ""),
+        JSON.stringify({ afterCancel, writesBeforeCancel, writesAfterCancel }));
 
   // Now really bookmark it, naming it, with Tajweed and a non-default Approach on.
   await openStudyOptions(page);
@@ -5412,6 +5445,11 @@ console.log("\n=== 45. Quran bookmarks -- naming prompt, full settings capture/r
   const writes = await page.evaluate(() => JSON.parse(sessionStorage.getItem("__stubWrites") || "[]"));
   const saveWrite = writes.find((w) => w.col === "bookmarks" && w.data.includes("saved"));
   check("45c saving really writes to the bookmarks collection", Boolean(saveWrite), JSON.stringify(writes));
+  // The other half of 45b's pair: the two facts that stayed still through a
+  // cancel must really move on a save, or "it did not flip" proves nothing.
+  const afterSave = await readBmState();
+  check("45c ...and the bar's own Bookmark button flips to ★ / Remove bookmark -- what 45b proved stays still",
+        afterSave.text === "★" && /Remove/i.test(afterSave.label || ""), JSON.stringify(afterSave));
 
   check("45 no page errors", errors.length === 0, errors.slice(0, 3).join(" | "));
   await page.close();
@@ -5919,15 +5957,43 @@ console.log("\n=== 50h-k. The person tag on the Manager page, and both in Bangla
   // Bookmark item, which moved to #readBar as a direct button (see 45a).
   await pageBn.click("#readBookmarkBtn");
   await pageBn.waitForSelector(".bm-popover-overlay");
+  //
+  // RECONCILED 2026-09-18, the second clause. It read
+  // `fields.some((f) => BN.test(f) && f !== groupByFolder)` over EVERY
+  // popover field, so the Name field ("নাম") satisfied it and the Folder
+  // field it names was never looked at. Probed: with the |groupby suffix
+  // mutated away -- the popover's Folder label made byte-identical to the
+  // group-by's -- the clause as written STILL evaluated true, while a
+  // clause bound to the Folder field correctly went false. It also compared
+  // against a `groupByFolder` that is `undefined` whenever the nav select is
+  // gone, which makes `f !== undefined` true for every field.
+  //
+  // Both labels are now read by identity -- the popover field that actually
+  // holds [data-bm-pop-folder], and the group-by option with value "folder"
+  // -- and both are asserted PRESENT and Bangla before they are compared, so
+  // neither side can be missing and still pass.
+  //
+  // The first clause is likewise bound to the person row rather than to
+  // "some field somewhere": [data-bm-pop-person-row] is what 50k names.
   const bnPop = await pageBn.evaluate(() => {
-    const fields = [...document.querySelectorAll(".bm-popover-field")].map((l) => l.childNodes[0]?.textContent.trim());
-    const groupByFolder = [...document.querySelectorAll("[data-bm-nav-groupby] option")].find((o) => o.value === "folder")?.textContent.trim();
-    return { fields, groupByFolder };
+    const labelOf = (el) => el?.childNodes[0]?.textContent.trim();
+    const fields = [...document.querySelectorAll(".bm-popover-field")].map(labelOf);
+    const folderField = [...document.querySelectorAll(".bm-popover-field")]
+      .find((l) => l.querySelector("[data-bm-pop-folder]"));
+    return {
+      fields,
+      personRowLabel: labelOf(document.querySelector("[data-bm-pop-person-row]")),
+      folderFieldLabel: labelOf(folderField),
+      groupByFolder: [...document.querySelectorAll("[data-bm-nav-groupby] option")].find((o) => o.value === "folder")?.textContent.trim(),
+    };
   });
   check("50k the popover's own person row reads in Bangla too",
-        bnPop.fields.some((f) => f && BN.test(f)), JSON.stringify(bnPop.fields));
-  check("50k ...and the popover's 'Folder' label is NOT the group-by 'Folder' wording (context suffix works)",
-        bnPop.fields.some((f) => f && BN.test(f) && f !== bnPop.groupByFolder), JSON.stringify(bnPop));
+        Boolean(bnPop.personRowLabel) && BN.test(bnPop.personRowLabel), JSON.stringify(bnPop));
+  check("50k ...and the popover's OWN 'Folder' label is NOT the group-by 'Folder' wording (the |groupby context suffix works)",
+        Boolean(bnPop.folderFieldLabel) && BN.test(bnPop.folderFieldLabel)
+          && Boolean(bnPop.groupByFolder) && BN.test(bnPop.groupByFolder)
+          && bnPop.folderFieldLabel !== bnPop.groupByFolder,
+        JSON.stringify(bnPop));
   check("50j-k no page errors", errorsBn.length === 0, errorsBn.slice(0, 3).join(" | "));
   await pageBn.close();
   await ctxBn.close();

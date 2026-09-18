@@ -3,18 +3,27 @@ const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePa
 let bad = 0;
 let baselined = 0;
 
-// The ONE truncation this app has carried for as long as this suite has run:
-// English "Operation" and "Bookmark" at 320px, recorded in CLAUDE.md as
-// pre-existing. Counting it made `bad` permanently 1 and the exit code
-// permanently 1, so the suite could never report that something NEW had
-// broken. It is baselined by name here instead -- and a baseline entry that
-// stops appearing is reported too, because that is a fix nobody should
-// discover by accident.
-const KNOWN_TRUNCATIONS = { "en:320": ["Operation", "Bookmark"] };
+// FIXED in v08.26, so this baseline is now EMPTY rather than deleted -- the
+// mechanism stays, because the next pre-existing finding should be tolerated
+// by name here rather than by making the exit code meaningless again.
+//
+// What it held: English "Operation" and "Bookmark" cut at 320px (73px of
+// label in a 65px cell), carried for as long as this suite has run. Counting
+// it made `bad` permanently 1, so the suite could never report that
+// something NEW had broken; baselining it by name is what gave the exit code
+// meaning back (18 Sep 2026). v08.26 then measured it properly and found the
+// row was never short of space -- `.nav-cat`'s `flex: 1 1 0` was splitting it
+// into four EQUAL cells, so Home held 17px it did not need while Bookmark was
+// cut by 10. A content-based flex-basis below 340px fixes it with nothing
+// shrunk. See app/css/shell.css.
+const KNOWN_TRUNCATIONS = {};
 const seenBaseline = new Set();
 for (const lang of ["en", "bn"]) {
   console.log(`\n#### app language: ${lang} ####`);
-  for (const w of [320, 360, 390, 412, 768]) {
+  // 340 is in this list because v08.26 found it truncating too (73>70) and
+  // nothing had ever measured it: the list jumped 320 -> 360 straight over
+  // the widest width the defect still reached.
+  for (const w of [320, 340, 360, 390, 412, 768]) {
     const ctx = await newContext(browser, { banner: true, appLang: lang === "bn" ? "bn" : null, viewport: { width: w, height: 844 } });
     await ctx.route("**/gtaf_bangla_timestamps.json", (r) => r.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
     const { page } = await openPage(ctx, "/app/quranrevival.html");

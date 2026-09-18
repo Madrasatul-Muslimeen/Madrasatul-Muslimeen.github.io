@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>v08.26 — the 320px nav truncation, and two `behaviour.mjs` checks wrong about their subject</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>v08.26 — the 320px nav truncation, and two <code>behaviour.mjs</code> checks wrong about their subject</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Repository:</strong> <code>Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io</code></li><li><strong>Base <code>main</code>:</strong> <code>1cac2b8</code> (one commit past the handover&#x27;s <code>d8f0492</code> — see §1)</li><li><strong>Task:</strong> the two items the 18 Sep handover left as available with no new authority — <strong>T3</strong> (read the newly-reachable <code>behaviour.mjs</code> sections for checks <em>wrong about their subject</em>) and <strong>T2</strong> (pay down a recorded baseline), taken in that order</li><li><strong>Blast radius:</strong> <strong>BR-1.</strong> One CSS declaration behind one media query, on the shared nav. No JS, no markup, no schema, no Rules, no indexes, no data.</li><li><strong>Application version:</strong> <strong>08.25 → 08.26</strong> — the CSS change is reachable from every page, so the badge moves in the same tranche</li><li><strong>Result:</strong> ACCEPT. Both <code>behaviour.mjs</code> findings probed before being believed and mutation-proven after being fixed; the nav baseline is gone at every width in both languages, with nothing shrunk to pay for it.</li></ul>
+<hr>
+<h2>1. State reconciliation, done before anything was touched</h2>
+<p>The handover gives <code>main</code> as <strong><code>d8f049207d80fdd58f31931d82a080ef7d4f6fe7</code></strong>. On opening, this clone&#x27;s <code>origin/main</code> ref read <code>4b6bd60</code> — <em>behind</em> that. A fetch resolved it: <code>origin/main</code> is <strong><code>1cac2b8</code></strong>, one commit past <code>d8f0492</code>, and that commit is the handover document itself. <code>d8f0492</code> is an ancestor. Nothing was lost and nothing had diverged; the stale local ref was the only discrepancy.</p>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>main</code> / <code>origin/main</code> / working branch</td><td><strong><code>1cac2b8</code></strong> — identical</td></tr>
+<tr><td><code>d8f0492</code> ancestor of HEAD</td><td>yes</td></tr>
+<tr><td>Working tree at start</td><td><strong>clean</strong></td></tr>
+<tr><td><code>origin/claude/phase4-wiring</code></td><td><strong><code>7e2931f</code></strong> — confirmed present and untouched</td></tr>
+<tr><td><code>firestore.rules</code></td><td>untouched (last commit <code>9c9b08c</code>)</td></tr>
+</tbody></table></div>
+<p><strong>Environment</strong>, per handover §12c E4: <code>npm i playwright@1.56.0</code> (Chromium build 1194 already at <code>/opt/pw-browsers</code>; <code>playwright install</code> <strong>not</strong> run), <code>node serve.js</code> on :8080.</p>
+<h2>2. Baseline, measured before any change</h2>
+<p><code>behaviour.mjs</code> on unmodified <code>1cac2b8</code>: <strong>975 passed / 4 failed</strong>, 979 checks, suite runs to the end. The 4 are exactly the recorded environmental pair — 22g × 3 (archive.org, intermittent) and 31e (sandbox TLS). This matches the handover&#x27;s 979-check total; its 978/1 run is the same file on a tick where the 22g trio happened to pass, which §3b of the handover already says is not evidence either way.</p>
+<p><code>navcheck.mjs</code>: EXIT 0, with the baseline tolerated by name — <code>en:320:Operation</code>, <code>en:320:Bookmark</code>, each <code>73&gt;65</code>.</p>
+<hr>
+<h2>3. T3 — two checks passing while describing the wrong thing</h2>
+<p><strong>Bounded set: sections 44 through 50h-k</strong> — the whole bookmark tranche of the region the section-42 crash had made unreachable (<code>44</code> Manager, <code>45</code> Quran bookmarks, <code>46</code> deep link, <code>47</code> other modules&#x27; star, <code>48</code> folder picker, <code>49</code> nav dropdown, <code>50</code>/<code>50h-k</code> the expand option and person tag). Sections 42-tail, 43 and 43i-o were the heavily reconciled part of the 17 Sep tranche and are <strong>not</strong> in this set; they remain available.</p>
+<p>The class being hunted is the one the excavation explicitly left open: not <em>unable to fail</em> (closed on 17 Sep) but <strong>wrong about its subject</strong> — a check that runs, passes, and is not measuring the thing its own name claims.</p>
+<h3>3.1 — <code>45b</code>: &quot;cancelling the name prompt makes no bookmark&quot; read the <strong>Note</strong> indicator</h3>
+<p>As written:</p>
+<p>``<code>js const afterCancel = await page.evaluate(() =&gt;   document.querySelector(&quot;#readQuickMenuSlot .ayah-quick-btn&quot;)?.classList.contains(&quot;has-note&quot;)); check(&quot;45b cancelling the name prompt makes no bookmark&quot;, afterCancel !== true); </code>``</p>
+<p><code>has-note</code> is not bookmark state. <code>app/js/ayah-note-renderer.js:138</code> writes it from <code>hasNote</code>, and <code>quranrevival.html</code>&#x27;s call site passes <code>hasNote: ayahHasNote(ayahNotesDoc, singleUnitKey)</code> — whether the āyah has a <strong>Note</strong>. The same call site passes <strong><code>showBookmark: false</code></strong>, so the Read screen&#x27;s ⋮ menu carries no bookmark item and no bookmark state of any kind; that was the 17 Sep reconciliation&#x27;s own finding at 45a, one screenful above.</p>
+<p><strong>Probe</strong> (<code>#readBookmarkBtn</code> clicked, then cancelled, then the same button clicked and really saved):</p>
+<div class='tw'><table><thead><tr><th></th><th><code>has-note</code></th><th><code>#readBookmarkBtn</code></th><th><code>aria-label</code></th><th><code>bookmarks</code> writes</th></tr></thead><tbody>
+<tr><td>before</td><td><code>false</code></td><td>🔖</td><td>Bookmark this āyah</td><td>0</td></tr>
+<tr><td>after <strong>cancel</strong></td><td><code>false</code></td><td>🔖</td><td>Bookmark this āyah</td><td>0</td></tr>
+<tr><td>after <strong>save</strong></td><td><code>false</code></td><td>★</td><td>Remove bookmark</td><td>1</td></tr>
+</tbody></table></div>
+<p>The indicator the check reads is <strong>identical in the case it was written to catch and in that case&#x27;s exact opposite.</strong> It was additionally a bare <code>!== true</code> with no diagnostic argument, so it passes just as happily when the element is absent.</p>
+<p><strong>Correction.</strong> Read the control that actually carries the state, against a stated positive control, and pair the denial with an allow differing in one fact:</p>
+<ul><li><code>45b</code> (new first clause) — the button starts 🔖 / &quot;Bookmark this āyah&quot;. <em>This is the positive control the cancel is measured against.</em></li><li><code>45b</code> — after cancelling: <strong>no <code>bookmarks</code> write was issued</strong> and the button has <strong>not</strong> flipped.</li><li><code>45c</code> (new second clause) — after a real save the same two facts <strong>do</strong> move: ★ / &quot;Remove bookmark&quot;.</li></ul>
+<p><strong>Mutation:</strong> make the popover&#x27;s Cancel behave as Save — the defect 45b exists to catch.</p>
+<div class='tw'><table><thead><tr><th></th><th>result</th></tr></thead><tbody>
+<tr><td>original <code>45b</code> (<code>has-note !== true</code>)</td><td><strong><code>true</code> — passes on a real defect</strong></td></tr>
+<tr><td>corrected <code>45b</code></td><td><code>false</code> — <strong>correctly fails</strong></td></tr>
+</tbody></table></div>
+<h3>3.2 — <code>50k</code>: &quot;the popover&#x27;s &#x27;Folder&#x27; label is NOT the group-by &#x27;Folder&#x27; wording&quot; never looked at the Folder field</h3>
+<p>As written:</p>
+<p>``<code>js check(&quot;50k ...and the popover&#x27;s &#x27;Folder&#x27; label is NOT the group-by &#x27;Folder&#x27; wording (context suffix works)&quot;,       bnPop.fields.some((f) =&gt; f &amp;&amp; BN.test(f) &amp;&amp; f !== bnPop.groupByFolder), JSON.stringify(bnPop)); </code>``</p>
+<p><code>bnPop.fields</code> is <strong>every</strong> <code>.bm-popover-field</code> label. In Bangla they are <code>[&quot;নাম&quot;, &quot;যাদের জন্য&quot;, &quot;যার জন্য&quot;, &quot;ফোল্ডার&quot;, &quot;নতুন ফোল্ডারের নাম&quot;]</code>, and the predicate is satisfied by the first of them — <strong>&quot;নাম&quot; (Name)</strong>. The Folder field the check names is never reached. Two further vacuities ride along: <code>groupByFolder</code> is <code>undefined</code> whenever the nav select is gone (making <code>f !== undefined</code> true for every field), and the clause would pass with the Folder field removed entirely.</p>
+<p>The contract it means is real: <code>prefs.js:490</code> labels the mode <code>&quot;Folder|groupby&quot;</code> → <code>&quot;ফোল্ডার অনুযায়ী&quot;</code>, while <code>bookmark-popover.js:132</code> uses plain <code>t(&quot;Folder&quot;)</code> → <code>&quot;ফোল্ডার&quot;</code>. The <code>|groupby</code> suffix is <code>i18n.js</code>&#x27;s context mechanism and it is what keeps one English word as two Bangla phrases.</p>
+<p><strong>Mutation:</strong> route <code>app/js/prefs.js</code> through a rewrite that strips the context suffix (<code>&quot;Folder|groupby&quot;</code> → <code>&quot;Folder&quot;</code>, and the same for Person/Module), so both labels render the identical string <code>&quot;ফোল্ডার&quot;</code> — precisely the regression the check exists to catch. Nothing on disk changed; the mutation is applied at fetch time.</p>
+<div class='tw'><table><thead><tr><th></th><th>popover Folder</th><th>group-by Folder</th><th>result</th></tr></thead><tbody>
+<tr><td>unmutated</td><td><code>ফোল্ডার</code></td><td><code>ফোল্ডার অনুযায়ী</code></td><td>both pass</td></tr>
+<tr><td><strong>mutated</strong></td><td><code>ফোল্ডার</code></td><td><code>ফোল্ডার</code></td><td>original <strong><code>true</code> — passes on a real defect</strong>; corrected <code>false</code> — <strong>correctly fails</strong></td></tr>
+</tbody></table></div>
+<p><strong>Correction.</strong> Both labels are read <strong>by identity</strong> — the popover field that actually holds <code>[data-bm-pop-folder]</code>, and the group-by option with value <code>folder</code> — and both are asserted <strong>present and Bangla</strong> before being compared, so neither side can be missing and still pass. The sibling clause (&quot;the popover&#x27;s own person row reads in Bangla too&quot;) was bound to <code>[data-bm-pop-person-row]</code> in the same way rather than to &quot;some field somewhere&quot;.</p>
+<h3>3.3 — coverage</h3>
+<p>Preserved and increased: <strong>979 → 981</strong> executing checks, the two extra being 45b&#x27;s positive control and 45c&#x27;s paired flip. No check was deleted; each reconciliation asserts the contract that replaced the one it describes, with the reason recorded at the call site.</p>
+<hr>
+<h2>4. T2 — the 320px nav truncation, and why the diagnosis reversed</h2>
+<h3>4.1 The measurement that changed the question</h3>
+<p>The baseline says <code>Operation (73&gt;65)</code> and <code>Bookmark (73&gt;65)</code> — 8px short, twice. Read for the life of this suite as &quot;the labels do not fit at 320px&quot;.</p>
+<p><strong>They fit.</strong> Letting the four cells shrink-wrap (<code>flex: 0 0 auto</code>) and measuring the row&#x27;s natural width against what it has:</p>
+<div class='tw'><table><thead><tr><th></th><th>avail</th><th>need</th><th>slack</th><th>cells</th></tr></thead><tbody>
+<tr><td>en @320</td><td>288px</td><td><strong>282.3px</strong></td><td><strong>+5.7px</strong></td><td>48.1 / 64.7 / 74.9 / 75.4</td></tr>
+<tr><td>bn @320</td><td>288px</td><td>159.6px</td><td>+128.4px</td><td>26.8 / 36.8 / 41.8 / 34.8</td></tr>
+</tbody></table></div>
+<p><code>.nav-cat { flex: 1 1 0 }</code> — a flex-<strong>basis of zero</strong> — divides the row into four equal quarters of 67.2px regardless of label length. Home takes 65px of usable cell to print a word needing 48.1; Bookmark is cut at 65 needing 75.4. <strong>The space the long labels want is already on the row, sitting under the short ones.</strong></p>
+<p><strong><code>scrollWidth</code>/<code>clientWidth</code> is what hid this for so long.</strong> It bottoms out the instant a label fits — it can say &quot;cut by 8px&quot; but never &quot;fits with 30px to spare&quot; — so the row&#x27;s real slack was invisible to the very suite that had been reporting the defect.</p>
+<h3>4.2 Every candidate remedy costed, then rejected</h3>
+<div class='tw'><table><thead><tr><th>lever</th><th>buys</th><th>cost</th></tr></thead><tbody>
+<tr><td>A — summary padding <code>0.1rem → 0</code></td><td>3px</td><td>still cut by 5</td></tr>
+<tr><td>B — row gap <code>0.4rem → 0.2rem</code></td><td>3px</td><td>still cut by 5</td></tr>
+<tr><td>C — drop the caret&#x27;s leading space</td><td>3px</td><td>still cut by 5–6</td></tr>
+<tr><td>D — font <code>0.7rem → 0.66rem</code></td><td>4px</td><td>still cut by 4, and type shrinks</td></tr>
+<tr><td>E — font <code>0.7rem → 0.62rem</code></td><td>fits</td><td><strong>9.92px type</strong> — against v08.02&#x27;s Bengali-matra lesson</td></tr>
+<tr><td>A+B+C</td><td>fits</td><td>exactly 8px, <strong>nothing to spare</strong>, and three properties changed</td></tr>
+<tr><td><strong>flex-basis: auto</strong></td><td><strong>fits with room</strong></td><td><strong>nothing shrinks</strong></td></tr>
+</tbody></table></div>
+<h3>4.3 The change</h3>
+<p>``<code>css @media (max-width: 340px) {   .nav-cat { flex-basis: auto; } } </code>``</p>
+<p><code>grow</code> and <code>shrink</code> are untouched, so the cells still fill the row and can still shrink; <code>min-width: 0</code> still lets the ellipsis do its job as a last resort. <strong>Only the starting size changes</strong> — from &quot;an equal quarter&quot; to &quot;what this label needs&quot;.</p>
+<p><strong>Scoped to ≤340px deliberately.</strong> Equal-width tabs are the design at every width where they hold their label, and this leaves them so. <strong>340px is inside the query because it was truncating too (<code>73&gt;70</code>)</strong> and <code>navcheck.mjs</code>&#x27;s width list jumped 320 → 360, straight over the widest width the defect still reached.</p>
+<h3>4.4 Measured, all six widths, both languages</h3>
+<div class='tw'><table><thead><tr><th></th><th>before</th><th>after</th></tr></thead><tbody>
+<tr><td>en 320</td><td>cells 67.2 ×4, <strong>CUT</strong> Operation, Bookmark</td><td>49.6 / 66.2 / 76.3 / 76.8, <strong>fits</strong></td></tr>
+<tr><td>en 340</td><td>cells 72.2 ×4, <strong>CUT</strong> Operation, Bookmark</td><td>54.6 / 71.2 / 81.3 / 81.8, <strong>fits</strong></td></tr>
+<tr><td>en 360 / 390 / 412 / 768</td><td>77.2 / 84.7 / 90.2 / 179.2 ×4</td><td><strong>byte-identical</strong></td></tr>
+<tr><td>bn 320</td><td>67.2 ×4, fits</td><td>59 / 69 / 74 / 67, fits</td></tr>
+<tr><td>bn 340</td><td>72.2 ×4, fits</td><td>64 / 74 / 79 / 72, fits</td></tr>
+<tr><td>bn 360 / 390 / 412 / 768</td><td>77.2 / 84.7 / 90.2 / 179.2 ×4</td><td><strong>byte-identical</strong></td></tr>
+</tbody></table></div>
+<p>Unchanged everywhere, both languages: <strong>one line</strong>, <strong>no page overflow</strong>, nav height (37px en / 38px bn), button height (<strong>26px en / 28px bn</strong>), font-size 11.2px, and the last category&#x27;s dropdown still fully on screen.</p>
+<h3>4.5 <code>navcheck.mjs</code></h3>
+<p>340 added to the width list. <code>KNOWN_TRUNCATIONS</code> is <strong><code>{}</code></strong> rather than deleted — the mechanism stays so the next pre-existing finding is tolerated by name rather than by making the exit code meaningless again, and the &quot;a BASELINED truncation no longer occurs&quot; reporter stays live.</p>
+<p><strong>Proven in both directions:</strong> with the CSS reverted the suite exits <strong>1</strong> and prints <code>2 PROBLEM(S)</code>; with it, exit <strong>0</strong> and no truncation at any of the six widths in either language.</p>
+<h3>4.6 Deliberately NOT done</h3>
+<p><strong>The tenant-picker truncation was left alone.</strong> <code>tenantSelect</code> cuts &quot;Madrasatul Muslimeen (Owner, Prime)&quot; — 224px of text in a 145px cell. Unlike the nav, widening the cell, shortening the option text and revealing the full value without widening are <strong>materially different outcomes</strong>, on the most tightly measured screen in the app. It stays <strong>O3</strong> on the Owner list. The two <code>surahSelect</code>/<code>unitTypeSelect</code> truncations ride with it, unchanged.</p>
+<hr>
+<h2>5. Version numbering — a collision the next session must not be surprised by</h2>
+<p>The held wiring branch <code>7e2931f</code> stamps its own <code>version.js</code> <strong>08.26</strong>, chosen when <code>main</code> was on 08.25. <code>main</code> has now taken that number.</p>
+<ul><li><strong><code>7e2931f</code> was NOT re-cut, re-stamped or touched in any way.</strong> The standing instruction is to hold it exactly as it is, and it is held.</li><li><strong>At merge, <code>version.js</code> conflicts and resolves to 08.27.</strong> One line, a normal merge resolution, and <strong>not</strong> a reason to rebuild the candidate.</li><li><code>CLAUDE.md</code> records this explicitly, and no longer describes the branch as &quot;(v08.26)&quot; — that number now means the nav round on <code>main</code>, and leaving both would have made the brief ambiguous and <code>brief-integrity.mjs</code>&#x27;s CHANGELOG cross-check wrong about which round it was looking for.</li></ul>
+<hr>
+<h2>6. Verification</h2>
+<h3>6.1 Runs of record</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Before (<code>1cac2b8</code>)</th><th>After</th><th>Note</th></tr></thead><tbody>
+<tr><td><code>behaviour.mjs</code></td><td><strong>975 pass / 4 fail</strong>, 979 checks</td><td><strong>977 pass / 4 fail</strong>, 981 checks</td><td>+2 executing; same 4 environmental</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>EXIT 0, 2 tolerated by name</td><td><strong>EXIT 0, baseline <code>{}</code></strong>, 6 widths × 2 languages, no truncation</td><td>mutation: revert CSS → EXIT 1, <code>2 PROBLEM(S)</code></td></tr>
+<tr><td><code>layout.mjs</code></td><td>—</td><td><strong>EXIT 0, <code>NO LAYOUT REGRESSIONS</code>, <code>CHANGED: 0</code></strong></td><td>16 configurations; ids <strong>250 → 250</strong>; same 22-entry baseline</td></tr>
+<tr><td><code>reading.mjs</code></td><td>—</td><td>EXIT 0, <code>READING SCREEN OK</code></td><td>16 viewports also report the sandbox TLS artefact</td></tr>
+<tr><td><code>panel.mjs</code></td><td>—</td><td>EXIT 0, <code>PANEL OK</code></td><td>34 tolerated select truncations, unchanged</td></tr>
+<tr><td>Translation coverage</td><td>1,803 / 47</td><td><strong>1,803 / 47</strong></td><td>unchanged — a CSS breakpoint carries no string</td></tr>
+<tr><td><code>brief-integrity</code></td><td>7/1 mid-round</td><td><strong>8 / 0</strong></td><td>it caught the missing report path while this report was still unwritten</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 / 0</td><td><strong>38 / 0</strong></td><td></td></tr>
+<tr><td><code>note-foundation-data-layer</code></td><td>95</td><td><strong>95</strong> (47 + 30 + 18)</td><td></td></tr>
+<tr><td><code>journey-map-contract</code> / <code>-service</code> / <code>-boundary</code></td><td>34 / 18 / 13</td><td><strong>34 / 18 / 13</strong></td><td></td></tr>
+<tr><td><code>study-note-service</code> / <code>-boundary</code></td><td>32 / 17</td><td><strong>32 / 17</strong></td><td></td></tr>
+<tr><td><code>study-activity-evidence-store</code> / <code>-boundary</code></td><td>26 / 17</td><td><strong>26 / 17</strong></td><td></td></tr>
+<tr><td><code>note-foundation-boundary</code></td><td>30</td><td><strong>30</strong></td><td></td></tr>
+<tr><td><code>study-approach-contract-boundary</code></td><td>16</td><td><strong>16</strong></td><td></td></tr>
+<tr><td><code>quran-word-progress-model</code></td><td>—</td><td><strong>57 / 0</strong></td><td></td></tr>
+<tr><td><code>firestore-index-requirements</code></td><td>8 / 0</td><td><strong>8 / 0</strong></td><td>no new index</td></tr>
+<tr><td><code>rules-deployment-candidate</code></td><td>10 / 0</td><td><strong>10 / 0</strong></td><td></td></tr>
+<tr><td><code>stub-parity</code></td><td>3 / 0</td><td><strong>3 / 0</strong></td><td></td></tr>
+<tr><td><strong>Phase 4 / 5 / 6 emulator</strong></td><td>53 / 60 / 60</td><td><strong>53 / 60 / 60</strong>, <code># fail 0</code> each</td><td></td></tr>
+<tr><td><strong>…against the ASSEMBLED deployment file</strong></td><td>53 / 60 / 60</td><td><strong>53 / 60 / 60</strong>, <code># fail 0</code> each</td><td><code>RULES_FILE=docs/governance/phase4-6-DEPLOYMENT-candidate-2026-09-17.rules</code></td></tr>
+</tbody></table></div>
+<p>The 4 <code>behaviour.mjs</code> failures are the recorded environmental pair, unchanged from the baseline: <strong>22g × 3</strong> (archive.org; this run is one of the ticks where it fails — per handover §3b, neither a red nor a green 22g is evidence) and <strong>31e</strong> (<code>net::ERR_CERT_AUTHORITY_INVALID</code>, the sandbox&#x27;s TLS interception). Neither was worked around.</p>
+<h3>6.2 The <code>layout.mjs</code> shim, and what it does and does not prove</h3>
+<p><code>quranrevival.html</code> is <strong>byte-for-byte untouched</strong> this round — the change is in <code>app/css/shell.css</code>, which the page loads by relative link. The standard <code>app/_prev-quranrevival.html</code> shim would therefore have loaded the <strong>new</strong> stylesheet on both sides and proven nothing. This project&#x27;s documented technique was applied one level down: <code>HEAD</code>&#x27;s own <code>shell.css</code> was dropped beside it as <code>app/css/_prev-shell.css</code> and the shim&#x27;s single <code>&lt;link&gt;</code> repointed at it.</p>
+<p><strong>Positive control, run before trusting the comparison</strong> — the &quot;before&quot; page must still show the defect:</p>
+<div class='tw'><table><thead><tr><th></th><th>cells</th><th></th></tr></thead><tbody>
+<tr><td>BEFORE (shim) @320px</td><td>67.2 / 67.2 / 67.2 / 67.2</td><td><strong>CUT</strong> <code>Operation(73&gt;65)</code>, <code>Bookmark(73&gt;65)</code></td></tr>
+<tr><td>AFTER (live) @320px</td><td>49.6 / 66.2 / 76.3 / 76.8</td><td><strong>fits</strong></td></tr>
+</tbody></table></div>
+<p><strong>Stated plainly: <code>layout.mjs</code>&#x27;s narrowest configuration is 360×640, which is above the 340px breakpoint</strong>, so its <code>CHANGED: 0</code> result means &quot;this change is invisible at every width <code>layout.mjs</code> measures&quot; — which is exactly the claim being made for 360px and up. <strong>The 320px and 340px evidence comes from <code>navcheck.mjs</code> and the probes in §4.4, not from <code>layout.mjs</code>.</strong></p>
+<p>Both shim files were <strong>deleted before the coverage total was read</strong> — this file&#x27;s own recorded trap, since a stray <code>.html</code> in <code>app/</code> is counted twice.</p>
+<h3>6.3 Mutation testing</h3>
+<p>Four mutations, each proving a guard in both directions:</p>
+<div class='tw'><table><thead><tr><th>#</th><th>Mutation</th><th>Original</th><th>Corrected</th></tr></thead><tbody>
+<tr><td>1</td><td>popover Cancel behaves as Save</td><td><code>45b</code> <strong>passes</strong></td><td><strong>fails</strong></td></tr>
+<tr><td>2</td><td><code>prefs.js</code> rewritten to drop `\</td><td>groupby`</td><td><code>50k</code> <strong>passes</strong></td><td><strong>fails</strong></td></tr>
+<tr><td>3</td><td><code>flex-basis: auto</code> reverted</td><td>—</td><td><code>navcheck.mjs</code> <strong>EXIT 1</strong>, <code>2 PROBLEM(S)</code></td></tr>
+<tr><td>4</td><td>fix in place</td><td>—</td><td><code>navcheck.mjs</code> <strong>EXIT 0</strong>, no truncation</td></tr>
+</tbody></table></div>
+<p>Mutations 1 and 2 were applied at fetch time (Playwright route interception), so <strong>no file on disk was modified</strong> to run them.</p>
+<h3>6.4 One environmental failure, recorded rather than hidden</h3>
+<p>The Phase 6 emulator suite failed its first invocation with <code>Could not start Firestore Emulator, port taken</code> — port 8093 held open by an earlier run of my own that I had interrupted while grepping its output. Cleared and re-run: <strong>60 assertions, <code># fail 0</code>.</strong> Not a suite defect and not an application defect; recorded because the failure text said so and a grep of it would not have.</p>
+<h2>7. What this tranche did NOT touch</h2>
+<ul><li><strong><code>firestore.rules</code></strong> — byte-identical. Nothing deployed.</li><li><strong><code>firebase.json</code></strong> — byte-identical, still declares no indexes.</li><li><strong>All three Rules candidates and all four index candidates</strong> — byte-identical.</li><li><strong><code>7e2931f</code></strong> — held, unmerged, not re-cut, not activated.</li><li><strong>The Phase 4 evidence <code>request.query.limit</code></strong> — the verified deployment candidate is unamended, per handover §11.C.</li><li><strong>All seven pending-dependency ledger items</strong> — unchanged. The blocking dependency is still <strong>E1, authenticated Firebase access to <code>study-monitoring</code></strong>, and it is access, not design.</li></ul>
+</main></body></html>

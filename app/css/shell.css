@@ -73,6 +73,35 @@ html[lang="bn"] body { line-height: 1.3; }
   border: 1px solid #ddd; border-radius: 0.5rem; background: white;
   flex: 1 1 0; min-width: 0; position: relative;
 }
+/* v08.26 -- the 320px English nav truncation this project has carried as a
+   named baseline ("Operation"/"Bookmark", 73px of label in a 65px cell).
+   MEASURED before choosing a remedy, and the measurement changed the
+   diagnosis: the ROW is not short of space. At 320px the four labels need
+   282.3px of a 288px row and fit with 5.7px to spare. What cuts them is
+   `flex: 1 1 0` above -- a flex-basis of ZERO makes the four cells an EQUAL
+   quarter each, so Home takes 65px to say a word that needs 48 while
+   Bookmark is cut at 65 needing 75. The space Operation and Bookmark want is
+   already on the row, sitting under Home and Modules.
+
+   So the fix is to let the basis be the CONTENT rather than zero. `grow` and
+   `shrink` are untouched, so the cells still fill the row and can still
+   shrink (and `min-width: 0` above still lets the ellipsis do its job as a
+   last resort) -- only the starting size changes, from "an equal quarter" to
+   "what this label actually needs".
+
+   Scoped to <=340px deliberately, NOT applied everywhere. Equal-width tabs
+   are the design at every width where they hold the label, and they are
+   byte-identical from 360px up (measured: 77.2/77.2/77.2/77.2 at 360, and
+   the same at 390/412/768 in both languages). 340px is in the query because
+   it was cut too (73>70) -- navcheck.mjs does not measure 340 and so had
+   never seen it; it does now.
+
+   Nothing shrinks to pay for this: font-size, padding, the caret and the
+   26px/28px button height are all unchanged, in both languages. Bangla was
+   never truncated and still is not; its cells simply re-proportion. */
+@media (max-width: 340px) {
+  .nav-cat { flex-basis: auto; }
+}
 .nav-cat > summary {
   cursor: pointer; padding: 0.42rem 0.1rem; font-weight: 700; font-size: 0.7rem;
   color: #1F3A6E; list-style: none; user-select: none; text-align: center;

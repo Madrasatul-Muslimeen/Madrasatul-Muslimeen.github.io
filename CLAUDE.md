@@ -44,12 +44,22 @@ Read this first, every session. It is the standing brief.
 > timezone item is **one question, not a UI decision** (§11.B).
 
 
-**Current milestone: v08.25 on `main`** (17 Sep 2026 — the version has not moved
-since 15 Sep because every round since has been BR-0: contracts, Rules and index
-candidates, data layers and tests, none of it reachable from a page).
+**Current milestone: v08.26 on `main`** (18 Sep 2026 — the first version move
+since 15 Sep. Every round between was BR-0: contracts, Rules and index
+candidates, data layers and tests, none of it reachable from a page. v08.26 is
+the 320px nav fit correction below, which is reachable, so it bumps.)
+
+**VERSION NUMBERING NOTE, and the next session needs it.** The held Phase 4
+wiring branch stamps its own `version.js` **08.26**, chosen when `main` was on
+08.25. `main` has now taken that number for the nav correction, so **the two
+mean different things and the branch's stamp is stale.** The branch is
+deliberately NOT re-cut or re-stamped to fix this (the standing instruction is
+to hold `7e2931f` exactly as it is): **at merge, `version.js` conflicts and
+resolves to 08.27.** That is a one-line merge resolution, not a reason to
+rebuild the candidate.
 
 **One thing is held unmerged: the Phase 4 Study-event WIRING**, on
-`claude/phase4-wiring` at **`7e2931f`** (v08.26) — **refreshed against `main` on
+`claude/phase4-wiring` at **`7e2931f`** — **refreshed against `main` on
 17 Sep, three conflicts already resolved, so do NOT re-cut it from an older
 base.** It waits on the Firestore Rules deployment, and a sandbox has no
 `study-monitoring` credentials. The Rules and index candidates themselves are on
@@ -58,6 +68,40 @@ the single source of truth and the badge beside the app name says so on screen.
 **This line has drifted twice already — it read `v08.02` while `main` was on
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
+
+**v08.26 (18 Sep 2026) — THE 320px NAV TRUNCATION WAS NEVER A SHORTAGE OF
+SPACE, and that is the finding, not the fix.** English "Operation"/"Bookmark"
+cut at 320px had been a tolerated named baseline for the life of
+`navcheck.mjs`. **Measured, the four labels need 282.3px of a 288px row and fit
+with 5.7px to spare.** `.nav-cat { flex: 1 1 0 }` — flex-basis **zero** — was
+splitting the row into four EQUAL cells, so Home held 65px to print a word
+needing 48 while Bookmark was cut at 65 needing 75. **The space was already on
+the row, under the short labels.** `scrollWidth`/`clientWidth` could never have
+shown this: it bottoms out the instant a label fits. The fix is one property at
+one breakpoint (`@media (max-width: 340px) { .nav-cat { flex-basis: auto } }`)
+with **font, padding, caret and the 26px button height all untouched**, and
+every width from 360px up byte-identical. **340px was cut too (73>70) and
+`navcheck.mjs`'s width list jumped straight over it**; 340 is measured now and
+`KNOWN_TRUNCATIONS` is `{}`. Proven both ways: revert the CSS and the suite
+exits 1 naming 2 problems. **The tenant-picker truncation was left alone — that
+one IS an Owner UI decision.**
+
+**v08.26 also closed the first two of T3 — `behaviour.mjs` checks WRONG ABOUT
+THEIR SUBJECT**, the class the 17 Sep excavation left open (as distinct from
+"unable to fail", which it closed). Bounded set: sections **44–50h-k**, the
+bookmark tranche of the newly-reachable region. **45b, "cancelling the name
+prompt makes no bookmark", was reading the NOTE indicator** —
+`.ayah-quick-btn.has-note` comes from `renderQuickMenu`'s `hasNote`, and that
+call site passes `showBookmark: false` so the Read screen's ⋮ holds no bookmark
+state at all. Probed: it read `false` after a cancel AND `false` after a real
+save while the write log went 0 → 1 — **identical in the case it was written to
+catch and in its exact opposite.** **50k, "the popover's 'Folder' label is NOT
+the group-by 'Folder' wording", never looked at the Folder field** — a `.some()`
+over every field that "নাম" satisfied. Both now read their subject by identity,
+both mutation-proven (cancel-that-saves; `prefs.js` rewritten to drop the
+`|groupby` suffix), and 45c asserts the same facts moving the OTHER way after a
+real save. 979 → **981 executing checks**. See
+`docs/reports/2026-09-18-nav-fit-and-behaviour-subject-drift.md`.
 
 **17 Sep 2026 — `behaviour.mjs` RUNS TO THE END AGAIN, and the old "~800 checks
 pass before the section-42 crash" line in this file is GONE because it was
@@ -1509,10 +1553,30 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   anything truncated**, and report "not on screen" separately so the absence is
   not dropped either.
 - **The baselines are honest but they are DEBT:** 22 missing `getElementById`
-  targets, 2 nav truncations, 3 select truncations. The most user-visible is
-  **`tenantSelect` — a real tenant's name is CUT in the picker** ("Madrasatul
-  Muslimeen (Owner, Prime)", 224px of text in a 145px cell). Recorded, not
-  fixed: it is a layout decision on the most tightly measured screen in the app.
+  targets, ~~2 nav truncations~~ (**paid off in v08.26**), 3 select
+  truncations. The most user-visible remaining one is **`tenantSelect` — a real
+  tenant's name is CUT in the picker** ("Madrasatul Muslimeen (Owner, Prime)",
+  224px of text in a 145px cell). Recorded, not fixed: **that one really is an
+  Owner UI decision** — widen the cell, shorten the option text, or reveal the
+  full value without widening are materially different choices on the most
+  tightly measured screen in the app.
+- **MEASURE A TRUNCATION BEFORE BELIEVING IT IS A SHORTAGE OF SPACE — v08.26's
+  whole lesson.** The 320px nav truncation had been carried as a named baseline
+  for the life of this suite, read as "the labels do not fit at 320px". They do:
+  the four need **282.3px of a 288px row**, with 5.7px to spare. `.nav-cat`'s
+  `flex: 1 1 0` was splitting the row into four EQUAL cells, so Home held 65px
+  to print a word needing 48 while Bookmark was cut at 65 needing 75 — **the
+  space was already on the row, under the short labels.** A content-based
+  `flex-basis` below 340px fixed it with the font, the padding, the caret and
+  the 26px button height all untouched, and every width from 360px up
+  byte-identical. **`scrollWidth`/`clientWidth` cannot show this** — it bottoms
+  out at zero slack the moment a label fits, so it reports "fits" and never
+  "fits with 30px to spare". Let the cells shrink-wrap (`flex: 0 0 auto`) and
+  measure the row's natural width against what it has.
+- **A width list with a hole in it hides the defect living in the hole.**
+  `navcheck.mjs` measured 320 then 360. **340px was truncating too** (73>70) and
+  nothing had ever looked. 340 is in the list now. When a suite enumerates
+  viewports, ask what sits between two of them.
 - **The sandbox's TLS interception trips every "no page errors" check on a page
   that fetches over HTTPS** — `net::ERR_CERT_AUTHORITY_INVALID`, currently 6
   checks across `behaviour.mjs`, `quran-word-card-rendered` and
