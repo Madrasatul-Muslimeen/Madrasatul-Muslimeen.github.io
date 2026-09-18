@@ -21,6 +21,7 @@ Every value here was read from Git and the working tree in this session. Nothing
 | HEAD subject | *Audit the deployed rules for the same gap: clean, with one finding* |
 | Application version | **`08.25`** — `app/js/version.js`, `APP_VERSION = "08.25"` |
 | Version on `main` | **`08.25`** — identical |
+| `origin/main` tip | **`d8f0492`** (18 Sep 2026, 00:30 UTC) — see the correction in §1.1 |
 | Worktrees | **Exactly one:** `/home/user/Madrasatul-Muslimeen.github.io` |
 | Working tree | Clean (`git status --short` empty) |
 | Served from | GitHub Pages. Root `index.html` is a **redirect stub** to `/app/index.html`; the application itself lives in `app/` |
@@ -32,13 +33,29 @@ Every value here was read from Git and the working tree in this session. Nothing
 
 **Correction to the Start Prompt:** it states *"the application is served from the repository root."* It is not. The repository root serves a 20-line redirect stub; the application is served from `/app/`. Two frozen archives also serve from this repository and **write real data to the same Firestore**: `/legacy-v07/` (v07.139) and `/legacy/index.html` (v06.30). Both are marked **REFERENCE ONLY — NEVER EDIT**. Any Hadith standalone entry point must not be confused with these.
 
-### 1.1 The branch is not a clean base — and this is the first isolation problem
+### 1.1 CORRECTED — the branch *is* a clean base, and my first measurement was wrong
 
-`claude/beautiful-darwin-faeim7` is **21 commits ahead of `main` and zero behind.** Those 21 commits are the current Quran-side builder's unmerged work: **67 files, 8,737 insertions**, spanning MAP Phase 4 (P4-E evidence read side), Phase 5 (P5-F relation lifecycle), Phase 6 (P6-C read model, P6-D folder editing) and a large test-harness excavation.
+**This section originally reported that the checked-out branch carried 21 unmerged Quran commits and was therefore not a verified base. That was wrong, and the error was mine.**
 
-Five files under `app/js/` are changed relative to `main`, including `note-foundation.js` (+323 lines) and `journey-map-service.js` (+163 lines) — **precisely the Note and Mapping My Journey modules a Hadith adapter must build on.**
+I compared `HEAD` against the **local** `main` ref without fetching first. That ref was stale — it sat at `4b6bd60` (14 Sep 2026), four days behind. Fetching `origin/main` moved it `4b6bd60..d8f0492`, a **fast-forward with no merge commit**.
 
-Consequence: this branch is a *moving Quran-work branch*, not a verified base. Building Hadith on it merges the two lines of work into one inseparable branch, which is exactly what the Master Plan's isolation rules forbid.
+The verified position:
+
+| Ref | Commit |
+|---|---|
+| `origin/main` | `d8f0492` (18 Sep 2026, 00:30 UTC) |
+| `claude/beautiful-darwin-faeim7` before this report | `d8f0492` — **identical to `origin/main`** |
+| `claude/beautiful-darwin-faeim7` after this report | `d8f0492` + one documentation commit |
+
+So all 21 commits — MAP Phase 4 P4-E, Phase 5 P5-F, Phase 6 P6-C and P6-D, and the test-harness excavation — **are already on `main`.** Nothing is unmerged. The branch was never entangled with in-flight Quran work.
+
+**What this changes, and it is all in Hadith's favour:**
+
+- `note-foundation.js` and `journey-map-service.js` are **on `main` and stable**, not moving underneath a Hadith adapter. They are a solid base to mount on, not a hazard to work around.
+- Cutting `feature/hadith-study` from `origin/main` gives a base that already contains the full Note Foundation and Mapping My Journey implementation.
+- C3 remains a real decision — the branch this session was pinned to is still the Quran line's branch, and Hadith should have its own — but its *justification* is ordinary hygiene, not the entanglement I first reported.
+
+**The lesson, recorded because it is the exact class of error this project's own brief warns about:** a local `main` ref is a cached value, not a measurement. `git fetch origin main` before comparing anything against it. I reported a divergence that a fetch would have shown did not exist.
 
 ---
 
@@ -145,7 +162,7 @@ This is not a Hadith problem and Hadith cannot fix it. It is reported so the tra
 |---|---|---|---|
 | C1 | Hadith is to be built | **A Hadith module already exists and is live** (topic-based, 5 subjects, one "Studied" trackable) | **Owner Control Gate** — decide before H1 |
 | C2 | Narration identity is an opaque internal ID with separate `ExternalReference`; never infer cross-edition equivalence from a number | `buildUnitKey.hadith(collectionName, number)` → `hadith:bukhari:1` — keys by **name** and by an **edition-specific number** | **Owner Control Gate** — permanent Study Unit key |
-| C3 | Create a separate worktree and `feature/hadith-study` branch from a verified current base; do not use the Quran builder's checkout | **One worktree exists**, and the branch this session is pinned to carries **21 unmerged Quran commits touching `note-foundation.js` and `journey-map-service.js`** | **Blocks isolation** — decide before H1 |
+| C3 | Create a separate worktree and `feature/hadith-study` branch from a verified current base; do not use the Quran builder's checkout | **One worktree exists**, and this session is pinned to the Quran line's own branch. *(Corrected: that branch is identical to `origin/main`, not 21 commits ahead of it — see §1.1)* | **Blocks isolation** — decide before H1 |
 | C4 | H2 delivers a Study/Track/Explore/**MMJ** adapter | Note Foundation and MMJ collections have **no deployed Rules** and **no declared indexes**; every write is denied by default | **Blocks half of H2** |
 | C5 | "the application is served from the repository root" | Root is a redirect stub; the app is at `/app/`. Two frozen archives also serve from this repository and write to the same live Firestore | Factual correction |
 | C6 | Record & Track states `Learning → Practicing → Achieved → Mastered` | Six statuses, spelled `practising`, plus `not_applicable` (I7) and `not_started` | Use stored ids verbatim |
@@ -211,12 +228,40 @@ The branch exists, at **exactly the commit `7e2931f` the brief names.** This san
 
 ## 9. Blocking decisions
 
-**C3 — branch and isolation.** This session is pinned by its harness to `claude/beautiful-darwin-faeim7` and instructed never to push to another branch without explicit permission. The Start Prompt requires `feature/hadith-study` from a verified base. These cannot both be satisfied. Additionally, the pinned branch is not a clean base: it carries 21 unmerged Quran commits, five of them in `app/js/`, two in the very modules a Hadith adapter mounts on.
+**C3 — branch and isolation.** This session is pinned by its harness to `claude/beautiful-darwin-faeim7` and instructed never to push to another branch without explicit permission. The Start Prompt requires `feature/hadith-study` from a verified base. These cannot both be satisfied. *(My first reading of this section claimed the pinned branch also carried 21 unmerged Quran commits. It does not — see the correction in §1.1. The branch is identical to `origin/main`. The isolation case stands on its own without that claim.)*
 
-Recommended: cut `feature/hadith-study` from **`main`** (the verified base, v08.25) in its own worktree, and authorise pushing to it. Building Hadith on the current branch would entangle it with unmerged Quran work.
+Recommended: cut `feature/hadith-study` from **`origin/main`** (`d8f0492`, v08.25 — the verified current base) in its own worktree, and authorise pushing to it. This keeps the two lines of work reviewable and mergeable independently, which is what the Master Plan's isolation rules are for.
 
 **C1 — the existing Hadith module.** Extend, run alongside, or supersede (§6). This changes the data model, the catalogue seed and the navigation, so it must be settled before H1 begins.
 
 **C2 — the Hadith unit key.** Whether `buildUnitKey.hadith` is amended, superseded by a new narration-occurrence key type, or left alone with the corpus keyed some other way. A permanent Study Unit key is an Owner Control Gate; no change is proposed here.
 
 Everything else in H1 — the source, edition, permission and commentary manifests, the reference and import schema, the synthetic fixtures — can proceed once C3 is answered, and does not depend on C1 or C2 being settled first.
+
+---
+
+## 10. Owner decisions — recorded 18 September 2026
+
+Both blocking decisions in §9 were put to the owner with their costs attached, and both were answered.
+
+| # | Decision | Owner's choice |
+|---|---|---|
+| **C1** | The existing Hadith module | **EXTEND IT.** One module, one module id (`hadith`), one navigation entry — holding both the existing five topics and the new narration corpus |
+| **C3** | Branch and isolation | **Cut `feature/hadith-study` from `main`.** Pushing to that branch is explicitly authorised |
+
+**C2** (the Hadith unit key) and **C4** (the undeployed Note Foundation and MMJ Rules) were *reported*, not decided. Both remain open. C2 is a permanent Study Unit key and stays an Owner Control Gate; C4 is the existing Firebase Console deployment gate, which Hadith cannot clear.
+
+### 10.1 What "extend it" binds the next tranche to
+
+The owner chose the option whose cost §6 named plainly, so that cost is now a **constraint on H2, not a surprise to be discovered in it**:
+
+> The topic renderer is **shared with four other modules** — Deen Study, Arabic, General Study and Nature-Life. `app/hadith-study.html` calls `initTopicStudyPage({ moduleId: "hadith", … })`, the same entry point those four use.
+
+So the corpus view **must not be added to `topic-study.js` or `topic-renderer.js`.** Anything put there reaches Deen Study, Arabic, General Study and Nature-Life as well, whether or not it is meant to. The binding shape:
+
+1. **The corpus gets its own renderer**, in Hadith-owned files, mounted behind the same `moduleId: "hadith"`.
+2. **`topic-study.js` and `topic-renderer.js` stay frozen to Hadith** — they are shared files under §7's ownership map and change only by agreed contract amendment.
+3. **The existing five topics keep their `topic:` unit keys and their `studied_hadith` trackable, untouched.** Extending is additive (I4); no claim already recorded is re-keyed, moved or rewritten.
+4. **One module id, two views.** A reader entering Hadith chooses between the topics they already have and the collections being built. How that choice is presented is a layout question for H2, and this project measures layout changes before and after.
+
+Because the five existing topics are untouched, "extend" costs no migration. The distinction between it and the "build alongside" option is presentational — one menu entry rather than two — and it is reversible.
