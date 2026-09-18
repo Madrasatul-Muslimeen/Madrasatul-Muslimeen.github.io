@@ -332,7 +332,7 @@ function renderCardCommentary(occurrence) {
 
 function renderTopic(body, state, render) {
   const uiLang = getAppLang();
-  const idx = topicIndex("topic-salah");
+  const idx = topicIndex("synthetic-topic-salah");
   if (!idx) { body.appendChild(el("p", "hadith-note", t("Nothing here yet."))); return; }
 
   body.appendChild(el("h2", null, langText(idx.topic.label, uiLang)));

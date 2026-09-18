@@ -10,7 +10,10 @@ import {
   occurrenceById, sourcePathOf, externalReferencesFor, resolveText, availableLanguages,
   searchCorpus, topicIndex, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
 } from "../../app/js/hadith-corpus.js";
-import { OCCURRENCES, SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "../../app/js/hadith-fixture-data.js";
+import {
+  OCCURRENCES, SYNTHETIC_NOTICE, TAXONOMY_REVISION,
+  COLLECTIONS, EDITIONS, BOOK_CHAPTERS, TOPICS, TOPIC_MAPPINGS,
+} from "../../app/js/hadith-fixture-data.js";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 const appJs = path.join(root, "app", "js");
@@ -71,6 +74,94 @@ check("GATE -- every fixture record is marked synthetic, and every id is prefixe
     assert.ok(o.editionId.startsWith("synthetic-"), `${o.editionId} is not prefixed`);
   }
   for (const c of listCollections()) assert.ok(c.collectionId.startsWith("synthetic-"), c.collectionId);
+});
+
+// The synthetic namespace, stated ONCE and read by the three checks below.
+// Two prefixes are in use, not one: the hierarchy and taxonomy ids carry
+// `synthetic-`, while the two row-level id families carry their documented
+// `syn-` forms. This table IS the rule -- a fixture id family that is not
+// named here fails the sweep rather than passing unnoticed.
+const SYNTHETIC_ID_PREFIXES = Object.freeze({
+  collectionId: "synthetic-",
+  editionId: "synthetic-",
+  bookId: "synthetic-",
+  chapterId: "synthetic-",
+  topicId: "synthetic-",
+  occurrenceId: "syn-occ-",
+  topicMappingId: "syn-map-",
+});
+
+// Every id the fixture actually carries, gathered by walking the exports
+// rather than by listing values -- so a new row or a new collection joins
+// the sweep automatically instead of being silently exempt.
+function everyFixtureId() {
+  const found = [];
+  const walk = (node) => {
+    if (Array.isArray(node)) { for (const n of node) walk(n); return; }
+    if (!node || typeof node !== "object") return;
+    for (const [k, v] of Object.entries(node)) {
+      if (typeof v === "string" && Object.hasOwn(SYNTHETIC_ID_PREFIXES, k)) found.push([k, v]);
+      else if (v && typeof v === "object") walk(v);
+    }
+  };
+  walk([COLLECTIONS, EDITIONS, BOOK_CHAPTERS, OCCURRENCES, TOPICS, TOPIC_MAPPINGS]);
+  return found;
+}
+
+check("GATE -- EVERY fixture id carries a permitted synthetic prefix, id family by id family", () => {
+  const ids = everyFixtureId();
+  // Positive control: a sweep that gathered nothing would pass every case
+  // below vacuously, which is exactly how this class of guard rots.
+  assert.ok(ids.length >= 20, `the id sweep found only ${ids.length} ids -- it is not reading the fixture`);
+  const families = new Set(ids.map(([k]) => k));
+  for (const f of ["topicId", "topicMappingId", "occurrenceId", "editionId", "collectionId"]) {
+    assert.ok(families.has(f), `the sweep never saw a ${f} -- it cannot be asserting anything about it`);
+  }
+  const offenders = ids
+    .filter(([k, v]) => !v.startsWith(SYNTHETIC_ID_PREFIXES[k]))
+    .map(([k, v]) => `${k}="${v}" (needs "${SYNTHETIC_ID_PREFIXES[k]}")`);
+  assert.deepEqual(offenders, [], `fixture ids outside the synthetic namespace: ${offenders.join(" | ")}`);
+});
+
+check("GATE -- the synthetic namespace cannot collide with a future REAL id", () => {
+  // The whole point of a prefix is that a real import can never mint an id
+  // this fixture already holds. These are ids a real reviewed taxonomy or a
+  // real edition import would plausibly produce -- none may exist here.
+  // `topic-salah` is in this list because the fixture really did hold it.
+  const PLAUSIBLE_REAL_IDS = [
+    "topic-salah", "topic-zakah", "topic-sawm", "salah",
+    "bukhari", "muslim", "bukhari-1422h", "muslim-1955h",
+    "map-0001", "occ-0001", "b1", "b1-c2",
+  ];
+  const held = new Set(everyFixtureId().map(([, v]) => v));
+  const collisions = PLAUSIBLE_REAL_IDS.filter((r) => held.has(r));
+  assert.deepEqual(collisions, [], `a fixture id is also a plausible real id: ${collisions.join(", ")}`);
+
+  // And the rule that makes that true in general: strip the synthetic prefix
+  // off any fixture id and the bare form must NOT itself be a fixture id, or
+  // the two namespaces overlap.
+  const bare = everyFixtureId()
+    .map(([k, v]) => v.slice(SYNTHETIC_ID_PREFIXES[k].length))
+    .filter((b) => held.has(b));
+  assert.deepEqual(bare, [], `synthetic and bare namespaces overlap: ${bare.join(", ")}`);
+});
+
+check("GATE -- every topic mapping points at a topic that exists, by id", () => {
+  // A half-finished rename leaves a mapping naming a topic nothing defines.
+  // The index would then be empty and still look structurally fine.
+  const topicIds = new Set(TOPICS.map((t) => t.topicId));
+  assert.ok(topicIds.size > 0, "no topics at all -- nothing to point at");
+  assert.ok(TOPIC_MAPPINGS.length > 0, "no mappings at all -- this check would pass vacuously");
+  const dangling = TOPIC_MAPPINGS
+    .filter((m) => !topicIds.has(m.topicId))
+    .map((m) => `${m.topicMappingId} -> ${m.topicId}`);
+  assert.deepEqual(dangling, [], `mapping names a topic that does not exist: ${dangling.join(" | ")}`);
+  // ...and the index really resolves for every topic, not just structurally.
+  for (const t of TOPICS) {
+    const idx = topicIndex(t.topicId);
+    assert.ok(idx, `topicIndex("${t.topicId}") returned null -- the id does not resolve`);
+    assert.ok(idx.distinctOccurrences > 0, `topicIndex("${t.topicId}") resolved to nothing`);
+  }
 });
 
 check("GATE -- the Arabic source text itself denies being a hadith", () => {
@@ -222,7 +313,7 @@ check("truncation is reported by asking for one more than the cap", () => {
 // ---------------------------------------------------------------------------
 
 check("the topic index spans collections and keeps the source heading", () => {
-  const idx = topicIndex("topic-salah");
+  const idx = topicIndex("synthetic-topic-salah");
   assert.equal(idx.collections.length, 2, "Salah must reach BOTH collections");
   for (const g of idx.collections) for (const e of g.entries) {
     assert.ok(e.sourceHeading, "the source heading must stay visible beside the mapped topic");
@@ -230,7 +321,7 @@ check("the topic index spans collections and keeps the source heading", () => {
 });
 
 check("distinct occurrences and mapping count are reported SEPARATELY", () => {
-  const idx = topicIndex("topic-salah");
+  const idx = topicIndex("synthetic-topic-salah");
   assert.equal(idx.mappingCount, 3);
   assert.equal(idx.distinctOccurrences, 5);
   const seen = idx.collections.flatMap((g) => g.entries.map((e) => e.occurrence.occurrenceId));
@@ -238,11 +329,11 @@ check("distinct occurrences and mapping count are reported SEPARATELY", () => {
 });
 
 check("the taxonomy revision travels with the result", () => {
-  assert.equal(topicIndex("topic-salah").taxonomyRevision, TAXONOMY_REVISION);
+  assert.equal(topicIndex("synthetic-topic-salah").taxonomyRevision, TAXONOMY_REVISION);
 });
 
 check("unreviewed mappings are reported as unreviewed", () => {
-  const idx = topicIndex("topic-salah");
+  const idx = topicIndex("synthetic-topic-salah");
   assert.equal(idx.allMappingsReviewed, false);
   for (const g of idx.collections) for (const e of g.entries) {
     assert.equal(e.reviewStatus, "unreviewed", "a synthetic mapping must never present as reviewed");
@@ -252,7 +343,7 @@ check("unreviewed mappings are reported as unreviewed", () => {
 check("the topic index does not rewrite any book", () => {
   // Reading the topic view must leave the source view byte-identical.
   const before = occurrencesIn("synthetic-alpha-b2-c1").map((o) => o.occurrenceId);
-  topicIndex("topic-salah");
+  topicIndex("synthetic-topic-salah");
   assert.deepEqual(occurrencesIn("synthetic-alpha-b2-c1").map((o) => o.occurrenceId), before);
 });
 

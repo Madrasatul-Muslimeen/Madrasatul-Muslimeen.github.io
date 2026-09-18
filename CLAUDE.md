@@ -26,27 +26,45 @@ Read this first, every session. It is the standing brief.
 
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
-> **This branch carries app version `08.27`; `main` is `08.25`.** The
-> `Current milestone: v08.25 on \`main\`` line below is about `main` and is
-> **correct** — do not "fix" it to 08.27, which would claim an unmerged
+> **This branch carries app version `08.28`; `main` is `08.27`.** The
+> `Current milestone: v08.27 on \`main\`` line below is about `main` and is
+> **correct** — do not "fix" it to 08.28, which would claim an unmerged
 > version is live.
 >
-> **`tools/i18n-verify/brief-integrity.mjs` therefore fails one check on this
-> branch, by design**: it compares the brief's `main` milestone against the
-> local `app/js/version.js`, which is right on `main` and wrong on any feature
-> branch carrying a version bump. **Proposed one-line fix, NOT applied here
-> because that guard belongs to the Quran side:** compare against
-> `git show origin/main:app/js/version.js` when `HEAD` is not `main`.
+> **08.27 was a REAL COLLISION, not a reservation.** This branch took 08.27
+> while `main` was on 08.25; `main` then merged 08.26 and shipped its own
+> 08.27, so for a while two different builds carried one number. Resolved
+> 18 Sep 2026 by moving this branch to **08.28**, read off `main` and all 59
+> branches rather than assumed. **Read the next free number off `main` at the
+> time of a bump; do not trust this sentence's arithmetic.**
 >
-> **08.26 is deliberately skipped** — it is already claimed by the unmerged
-> Phase 4 wiring branch (`claude/phase4-wiring` at `7e2931f`), verified by
-> reading that branch.
+> **`tools/i18n-verify/brief-integrity.mjs` fails one check on this branch, by
+> design**: it compares the milestone line's version against the working tree's
+> `version.js`, which is right on `main` and wrong on any feature branch
+> carrying a bump. The guard offers a legitimate route out — a milestone line
+> naming the BRANCH and also stating `` `main` is still vNN.NN `` passes — but
+> **that line is the Quran/`main` side's to write, and rewriting it from here
+> is exactly the silent shared-file edit the Hadith instruction forbids.** So
+> the failure is RECORDED, not patched. Nothing else in the suite fails.
 >
-> Gates H0 and H1 are accepted; H2 is authorised on **synthetic fixtures only**.
+> Gates H0 and H1 are accepted; **H2-A is accepted as corrected** (18 Sep 2026).
+> H2 is authorised on **synthetic fixtures only**.
 > See `docs/reports/2026-09-18-hadith-h0-contract-and-file-ownership.md`,
-> `...-h1-source-rights-and-reference-schema.md` and the H2 report.
+> `...-h1-source-rights-and-reference-schema.md`, the H2-A report, the
+> reconciliation and the Stage A correction report.
 > **Zero editions are rights-cleared**, so every Hadith narration in the
 > repository is invented for development and says so in its own Arabic.
+>
+> **THE SYNTHETIC NAMESPACE IS TWO PREFIXES, AND IT IS ENFORCED.** Collection,
+> edition, book, chapter and **topic** ids carry `synthetic-`; occurrence ids
+> carry `syn-occ-` and topic-mapping ids `syn-map-`. The topic id was
+> `topic-salah` — no synthetic marker at all, and a future reviewed Salah topic
+> would plausibly be minted under exactly that id. It is
+> **`synthetic-topic-salah`** now, and three GATE checks in
+> `tools/i18n-verify/hadith-corpus.mjs` sweep every id family, refuse a
+> plausible real id and refuse a half-done rename. **Do not add a fixture id
+> outside that namespace** — the sweep is derived from the data, so a new row
+> joins it automatically.
 
 > ## ⇢ SESSION HANDOVER, 18 Sep 2026 — READ THIS SECOND
 >

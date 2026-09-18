@@ -15,10 +15,25 @@
 //      scraped by something else still carries its own denial in the language
 //      a reader of the source text would read. A `synthetic: true` flag a
 //      renderer might forget to show would not survive that journey.
-//   2. EVERY ID IS PREFIXED `synthetic-`. A fixture id cannot collide with a
-//      real collection or edition id, so a fixture can never be mistaken for
-//      an approved edition by any lookup, and a real import can never
-//      silently overwrite one.
+//   2. EVERY ID SITS IN THE SYNTHETIC NAMESPACE, which is TWO prefixes and
+//      not one. The hierarchy and the taxonomy -- collection, edition, book,
+//      chapter and TOPIC ids -- carry `synthetic-`; the two row-level id
+//      families carry their documented short forms, `syn-occ-` for an
+//      occurrence and `syn-map-` for a topic mapping. So a fixture id cannot
+//      collide with a real collection, edition or topic id: a fixture can
+//      never be mistaken for an approved edition by any lookup, and a real
+//      import can never silently overwrite one.
+//
+//      This comment previously claimed every id was prefixed `synthetic-`,
+//      which was not true of the data it describes -- occurrences and
+//      mappings never were, and the TOPIC id was `topic-salah`, carrying no
+//      synthetic marker at all. That one mattered: a future reviewed Salah
+//      topic would plausibly be minted under exactly that id, and three
+//      `reviewStatus: "unreviewed"` synthetic mappings would then share a
+//      topic id with real ones. Renamed to `synthetic-topic-salah`.
+//      The namespace is ENFORCED now rather than described -- see the three
+//      GATE checks in tools/i18n-verify/hadith-corpus.mjs, which sweep every
+//      id family, refuse a plausible real id, and refuse a half-done rename.
 //
 // The shape follows docs/governance/hadith-reference-and-import-schema-v1.md.
 // Deliberate properties of the data, each demonstrating something the Master
@@ -184,7 +199,7 @@ export const EXTERNAL_REFERENCES = Object.freeze(
 
 export const TOPICS = Object.freeze([
   {
-    topicId: "topic-salah", synthetic: true,
+    topicId: "synthetic-topic-salah", synthetic: true,
     label: { ar: "الصلاة", en: "Ṣalāh", bn: "নামাজ" },
     synonyms: { en: ["prayer", "salat", "salah"], bn: ["নামাজ", "সালাত"], ar: ["صلاة", "الصلاة"] },
     taxonomyRevision: TAXONOMY_REVISION,
@@ -202,10 +217,10 @@ export const TOPICS = Object.freeze([
  * scholarly review, and saying so is the point.
  */
 export const TOPIC_MAPPINGS = Object.freeze([
-  { topicMappingId: "syn-map-0001", topicId: "topic-salah", targetType: "bookChapter", targetId: "synthetic-alpha-b1-c2",
+  { topicMappingId: "syn-map-0001", topicId: "synthetic-topic-salah", targetType: "bookChapter", targetId: "synthetic-alpha-b1-c2",
     rationale: "Chapter heading names the times of prayer.", reviewStatus: "unreviewed", reviewer: null, taxonomyRevision: TAXONOMY_REVISION, synthetic: true },
-  { topicMappingId: "syn-map-0002", topicId: "topic-salah", targetType: "bookChapter", targetId: "synthetic-alpha-b2",
+  { topicMappingId: "syn-map-0002", topicId: "synthetic-topic-salah", targetType: "bookChapter", targetId: "synthetic-alpha-b2",
     rationale: "Whole book is about prayer.", reviewStatus: "unreviewed", reviewer: null, taxonomyRevision: TAXONOMY_REVISION, synthetic: true },
-  { topicMappingId: "syn-map-0003", topicId: "topic-salah", targetType: "occurrence", targetId: "syn-occ-0007",
+  { topicMappingId: "syn-map-0003", topicId: "synthetic-topic-salah", targetType: "occurrence", targetId: "syn-occ-0007",
     rationale: "Single occurrence in a collection with no chapter level.", reviewStatus: "unreviewed", reviewer: null, taxonomyRevision: TAXONOMY_REVISION, synthetic: true },
 ]);
