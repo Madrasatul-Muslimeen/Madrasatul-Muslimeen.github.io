@@ -14195,3 +14195,76 @@ targets 250 → 250, deferred 22 / dangling 0 at all 16 configurations;
 `git diff -- app/` empty. `behaviour.mjs` deliberately not re-run — this tranche
 changes one harness file it does not load. See
 `docs/reports/2026-09-18-getelementbyid-baseline-investigation.md` and `.html`.
+
+---
+
+**v08.27 (18 Sep 2026) — EVERY NUMBER PICKER ON THE STUDY-OPTIONS UNITS BAR CUT
+A THREE-DIGIT VALUE, at every viewport, in both languages — and the app had
+already diagnosed it once and fixed only half of it.**
+
+The round was sent to investigate `surahSelect` and `unitTypeSelect`. Measuring
+the controls properly found something else, and larger.
+
+**Measuring the dropdown arrow instead of assuming it is what exposed it.** A
+`<select>` sized to `max-content` is text + padding + border + arrow, so
+subtracting a span of the same text in the same computed font leaves the arrow:
+**20.3px**. That, plus 10px of padding and border, leaves a 49.6px number cell
+with **19.3px of usable text** against a three-digit value needing **21.9px** —
+**−2.6px in English, −2.2px in Bangla**, on `ayahSelect`, `unitNumSelect` (page
+reaches 604), `rangeFromSelect`, `rangeToSelect` and `drillRepeatSelect`. At
+320, 360, 390 and 412px alike. Any surah with 100+ ayahs shows it.
+
+**`#readPickers`' own comment names the unfixed twin**: *"A number picker never
+needs a share of the line — same rule as the Study options bar's own
+`.opt-cell-num`. Round 27 widened it 3.1rem → 3.9rem: the owner reported a
+three-digit ayah reading as cut off, and it was — '286' plus the dropdown arrow
+does not fit 50px."* Round 27 fixed the Read screen and left `.opt-cell-num` at
+3.1rem = **49.6px**, the exact 50px that sentence says does not fit.
+
+**The sibling's own 3.9rem is NOT affordable here, measured rather than
+assumed**: it costs 12.8px per number cell off the same row and pushes
+`surahSelect` from +2px to **−10.8px at 390px in Range — a NEW truncation**.
+Trading one defect for another is not a fix. **Tightening the number cell's own
+horizontal padding (0.25rem → 0.1rem) buys the same room for nothing**: −2.6 →
+**+2.2** (en) and −2.2 → **+2.6** (bn) at every viewport and unit type, with
+**every other cell keeping its width to the pixel**. The same move
+`.opt-cell-num` already makes for its label (0.66rem against 0.72rem). **The
+rule had to go AFTER `.opt-cell > select`** — equal specificity, source order
+decides, this page's most-repeated trap.
+
+**`surahSelect` and `unitTypeSelect` were deliberately NOT fixed, and that is
+the finding.** Unlike v08.26's nav — where the space was present and
+misallocated — **this row is genuinely short**: `.opt-bar-units` needs 320.9px
+against **257 available at 320px in Range (−63.9)**, and −23.9 at 360px. And the
+nav's own remedy would make it worse, because a `<select>`'s intrinsic width is
+its **longest option** and `surahSelect` holds 114 surahs whose longest renders
+at 113px. Wrapping the row, shrinking the type, or shortening the wording are
+**materially different products**, so all three selects — with `tenantSelect` —
+are now **Owner UI decisions**.
+
+**`panel.mjs` could not see any of this.** Its test was `need > w - 22`: the
+arrow **assumed**, the control's own 10px of padding and border **ignored**, and
+only the **selected** option measured — with a fixture sitting on surah 1, where
+the ayah picker reads "1". Three reasons the defect was invisible. It measures
+the real arrow, subtracts padding and border, and judges the **longest** option
+too. **Mutation-proven**: revert the CSS and it exits 1 with 48 problems naming
+`unitNumSelect` and `drillRepeatSelect`; restore and it exits 0.
+**`drillRepeatSelect` was not predicted** — a listen-bar `.opt-cell-num` the fix
+also reaches, found by the mutation rather than by reading the code.
+
+**Verification:** `behaviour.mjs` **978/4** (982 checks, the 4 environmental);
+`layout.mjs` EXIT 0, `CHANGED: 0`, targets 250 → 250, deferred 22 / dangling 0;
+`panel.mjs` EXIT 0; `navcheck`/`reading` EXIT 0; `brief-integrity` 8/0;
+`rules-authorisation-executable` 38/0; coverage **1,803 / 47** unchanged.
+**No Rules, indexes, schema or data change; `7e2931f` untouched.** See
+`docs/reports/2026-09-18-study-options-number-pickers.md` and `.html`.
+
+**Also this day: v08.26 was MERGED to `main`** at `49f37c9` (fast-forward,
+4 commits), recorded at `e2e2af5`. Pre-merge audit: 4 ahead / 0 behind, no
+divergence; the whole reachable change one media query plus the version bump;
+zero files touched under `firestore.rules`, `firebase.json`, `docs/governance/`,
+`tests/`; `7e2931f` proven **not** an ancestor. The rendered badge reads
+**v08.26** with no `08.25` anywhere, and the nav fix is live (cells 49.6 / 66.2 /
+76.3 / 76.8 instead of four equal 67.2). **GitHub Pages itself could not be
+reached from the sandbox** (proxy 403) — that one is the Owner's own one-click
+check.

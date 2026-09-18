@@ -309,6 +309,35 @@
   .opt-btn-inline { height: 1.85rem; padding: 0.2rem 0.3rem; }
   .opt-cell > label { margin: 0 0 0.15rem; font-size: 0.72rem; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .opt-cell > select, .opt-cell input[type="text"] { width: 100%; box-sizing: border-box; font-size: 0.82rem; padding: 0.3rem 0.25rem; }
+  /* v08.27 -- a three-digit number was cut in EVERY number picker on this
+     bar, at every viewport, in both languages. #readPickers' own rule above
+     already says why, and already names this one: "A number picker never
+     needs a share of the line -- same rule as the Study options bar's own
+     .opt-cell-num. Round 27 widened it 3.1rem -> 3.9rem: the owner reported a
+     three-digit ayah reading as cut off, and it was -- '286' plus the dropdown
+     arrow does not fit 50px." Round 27 fixed the Read screen and left its twin
+     at 3.1rem = 49.6px, which is the 50px that sentence says does not fit.
+
+     MEASURED: of that 49.6px, 10px is padding+border and 20.3px is the native
+     dropdown arrow (measured, not assumed), leaving 19.3px of text for a value
+     needing 21.9px -- short by 2.6px in English and 2.2px in Bangla, on
+     ayahSelect, unitNumSelect (page, which reaches 604), rangeFromSelect and
+     rangeToSelect alike.
+
+     The sibling's 3.9rem is NOT affordable here and that was measured too, not
+     assumed: this bar carries the unit-type and surah pickers on the same row,
+     and taking 12.8px per number cell pushes surahSelect from +2px to -10.8px
+     at 390px in Range -- a NEW truncation, trading one defect for another.
+     Tightening the number cell's OWN horizontal padding buys the same room for
+     nothing: the row is untouched, every other cell keeps its width to the
+     pixel, and the worst case goes -2.6 -> +2.2 (English) and -2.2 -> +2.6
+     (Bangla) at every viewport and every unit type. It is the same move
+     .opt-cell-num already makes for its label (0.66rem against 0.72rem).
+
+     This rule MUST stay AFTER `.opt-cell > select` above: the two are EQUAL
+     specificity (0,2,1), so source order is the only thing that makes this one
+     win -- this page's own most-repeated CSS trap. */
+  .opt-cell-num > select { padding-left: 0.1rem; padding-right: 0.1rem; }
   /* One shared control height, so a text input and a <select> sitting in
      neighbouring columns line up instead of missing each other by 2px. */
   .opt-cell > select, .opt-cell input[type="text"], .opt-jump button { height: 1.85rem; }

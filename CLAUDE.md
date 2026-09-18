@@ -44,9 +44,10 @@ Read this first, every session. It is the standing brief.
 > timezone item is **one question, not a UI decision** (§11.B).
 
 
-**Current milestone: v08.26 on `main`** (18 Sep 2026 — **merged and pushed**,
-fast-forward, `49f37c9`. `main`'s own `app/js/version.js` reads **08.26**, and
-that is what GitHub Pages serves. The 320px nav fit correction below is **live.**)
+**Current milestone: v08.27 on `main`** (18 Sep 2026 — the number-picker fix
+below. v08.26, the 320px nav fit correction, merged earlier the same day at
+`49f37c9`, fast-forward. `main`'s own `app/js/version.js` is the single source
+of truth and is what GitHub Pages serves.)
 
 > **This line was WRONG for part of 18 Sep, and the episode is the lesson.** It
 > read "**v08.26 on `main`**" the moment the nav round was committed to a
@@ -61,15 +62,17 @@ that is what GitHub Pages serves. The 320px nav fit correction below is **live.*
 > branch it demands the line name that branch AND state main's own version, and
 > verifies both.
 
-**VERSION NUMBERING NOTE — `main` HAS NOW TAKEN 08.26, and the held wiring's own
-stamp is stale.** Until this merge, two unmerged branches each stamped
-`version.js` **08.26**: the nav correction (now merged) and the held Phase 4
-wiring at `7e2931f`. **`main` took it**, so `7e2931f`'s stamp now names a
-version that means something else. **At merge its `version.js` conflicts and
-resolves to 08.27.** The branch is deliberately NOT re-cut or re-stamped — the
-standing instruction is to hold `7e2931f` exactly as it is, and re-stamping
-would be churn for a one-line merge resolution. **A merge-ordering fact, not a
-defect, and not a reason to rebuild the candidate.**
+**VERSION NUMBERING NOTE — `main` HAS PASSED THE HELD WIRING'S STAMP.** The
+Phase 4 wiring at `7e2931f` stamps its own `version.js` **08.26**, chosen when
+`main` was on 08.25. `main` has since taken **08.26** (the nav fit) and then
+**08.27** (the number pickers), so that stamp now names a version that means
+something else entirely. **At merge its `version.js` conflicts and resolves to
+the next free number — 08.28 as of this line.** The branch is deliberately NOT
+re-cut or re-stamped — the standing instruction is to hold `7e2931f` exactly as
+it is, and re-stamping would be churn for a one-line merge resolution. **A
+merge-ordering fact, not a defect, and not a reason to rebuild the candidate.
+Read the number off `main` at the time of the merge rather than trusting this
+sentence's own arithmetic.**
 
 **One thing is held unmerged: the Phase 4 Study-event WIRING**, on
 `claude/phase4-wiring` at **`7e2931f`** — **refreshed against `main` on
@@ -81,6 +84,51 @@ the single source of truth and the badge beside the app name says so on screen.
 **This line has drifted twice already — it read `v08.02` while `main` was on
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
+
+**v08.27 (18 Sep 2026) — EVERY NUMBER PICKER IN THE STUDY-OPTIONS UNITS BAR
+CUT A THREE-DIGIT VALUE, at every viewport, in both languages — and the app had
+already diagnosed it once.** `#readPickers`' own CSS comment says it outright:
+*"A number picker never needs a share of the line — **same rule as the Study
+options bar's own `.opt-cell-num`**. Round 27 widened it 3.1rem → 3.9rem: the
+owner reported a three-digit ayah reading as cut off, and it was — '286' plus
+the dropdown arrow does not fit 50px."* **Round 27 fixed the Read screen and
+left its named twin at 3.1rem = 49.6px — the exact 50px that sentence says does
+not fit.** Measured: of those 49.6px, 10px is padding+border and **20.3px is the
+native dropdown arrow (MEASURED, not assumed)**, leaving 19.3px for a value
+needing 21.9px — **short by 2.6px in English, 2.2px in Bangla, on FIVE controls**
+(`ayahSelect`, `unitNumSelect` — page reaches 604 — `rangeFromSelect`,
+`rangeToSelect`, and `drillRepeatSelect` on the listen bar).
+
+**The sibling's own 3.9rem is NOT affordable here, and that was measured rather
+than assumed** — this bar carries the unit-type and surah pickers on the same
+row, and taking 12.8px per number cell pushes `surahSelect` from +2px to
+**−10.8px at 390px in Range, a NEW truncation.** Trading one defect for another
+is not a fix. **Tightening the number cell's own horizontal padding
+(0.25rem → 0.1rem) buys the same room for nothing**: −2.6 → **+2.2** (English)
+and −2.2 → **+2.6** (Bangla) at every viewport and every unit type, with **every
+other cell keeping its width to the pixel** and the row untouched. It is the
+same move `.opt-cell-num` already makes for its label (0.66rem against 0.72rem).
+**The rule had to be placed AFTER `.opt-cell > select`** — equal specificity
+(0,2,1), so source order is the only thing that makes it win.
+
+**`panel.mjs` could not see any of this, and now can.** Its test was
+`need > w - 22` — an **assumed** 22px arrow reserve that also ignored the
+control's own 10px of padding and border, so it was optimistic by exactly that
+much and reported "not cut" for text really being clipped. It also measured only
+the SELECTED option, and its fixture sits on surah 1, where the ayah picker
+shows "1". It measures the real usable width (padding, border and a **measured**
+arrow) and the **longest** option now. Mutation-proven: revert the CSS and it
+exits 1 naming `unitNumSelect` and `drillRepeatSelect`.
+
+**`surahSelect` and `unitTypeSelect` were NOT fixed, and that is the finding.**
+Their row is **genuinely short of space** — the opposite of v08.26's nav, where
+the space was present and misallocated. Measured, `.opt-bar-units` needs
+**320.9px against 257 available at 320px in Range (−63.9)** and **−23.9 at
+360px**: no redistribution reaches that, and the remedies (wrap the row, shrink
+the type, shorten the wording) are **materially different choices** on the most
+tightly measured screen in the app. **They join `tenantSelect` as Owner UI
+decisions.** See
+`docs/reports/2026-09-18-study-options-number-pickers.md`.
 
 **v08.26 (18 Sep 2026, MERGED TO `main` at `49f37c9` — LIVE) —
 THE 320px NAV TRUNCATION WAS NEVER A SHORTAGE OF SPACE, and that is the
@@ -1598,7 +1646,11 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   debt at all.** ~~22 missing `getElementById` targets~~ **investigated 18 Sep
   2026: 22 DEFERRED renders, 0 stale references, 0 missing controls, and no
   application code changed.** ~~2 nav truncations~~ **paid off in v08.26, now
-  merged to `main` and live.** 3 select truncations remain. The most user-visible remaining one is **`tenantSelect` — a real
+  merged to `main` and live.** Of the 3 select truncations, **the number pickers
+  were a fifth finding nobody had counted and are fixed in v08.27**; what
+  remains is `tenantSelect`, `surahSelect` and `unitTypeSelect`, and all three
+  are now **Owner UI decisions** — their row is genuinely short of space
+  (−63.9px at 320px in Range), so no redistribution reaches them. The most user-visible remaining one is **`tenantSelect` — a real
   tenant's name is CUT in the picker** ("Madrasatul Muslimeen (Owner, Prime)",
   224px of text in a 145px cell). Recorded, not fixed: **that one really is an
   Owner UI decision** — widen the cell, shorten the option text, or reveal the
