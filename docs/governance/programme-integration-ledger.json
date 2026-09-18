@@ -82,7 +82,7 @@
       "owner": "hadith",
       "status": "RESERVED",
       "stampedAt": "cd344f4",
-      "note": "Stage B -- reserved integration version, stamped on feature/hadith-study and carried at the branch tip. Unmerged."
+      "note": "Stage B -- reserved integration version. Carried at the integration candidate tip fd8a8a2 (first stamped at cd344f4). Unmerged; Master Architect reports it has passed technical review and is held pending rebaseline onto the main that carries this ledger."
     }
   ],
   "nextUnallocated": "08.30",
@@ -182,12 +182,12 @@
       "id": "hadith",
       "name": "Hadith Study module stream",
       "activeBranch": "feature/hadith-study",
-      "branchTip": "808539c83d418d77afed96600fb3ab50249f8b0d",
-      "integrationState": "HALTED_AWAITING_REAUTHORISATION",
+      "branchTip": "fd8a8a240cfff1875c3f7696652daa18c47ced1e",
+      "integrationState": "CANDIDATE_REVIEWED_HELD_PENDING_REBASELINE",
       "declaredVersion": "08.29",
-      "baselineSha": "7111e3c975d3cf3fd0bf0c0d7814691edcd5299e",
+      "baselineSha": "5ea0d928b8f326e0164c988ef79e4d1d1c168eeb",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
-      "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-baseline-moved-halt.md",
+      "baselineAcknowledgement": "docs/reports/2026-09-18-programme-ledger-main-integration.md",
       "ownedPaths": [
         "app/hadith-*.html",
         "app/css/hadith.css",
@@ -199,26 +199,32 @@
       ],
       "declaredSharedTouches": [
         {
+          "path": "CHANGELOG.md",
+          "status": "DECLARED",
+          "note": "+127/-0 from the merge base -- its own round entries, appended. NEW at fd8a8a2; guard E caught it as undeclared on the run that preceded this record."
+        },
+        {
           "path": "CLAUDE.md",
           "status": "DECLARED",
-          "note": "Hadith appended its own region; +42/-0 from the merge base. No Quran region rewritten."
+          "note": "+65/-0 -- Hadith appended its own region. No Quran region rewritten."
         },
         {
           "path": "app/js/i18n/bn.js",
           "status": "DECLARED",
-          "note": "+68/-0 from the merge base -- additive keys only. Shared catalogue: an append, but into a file both streams write."
+          "note": "+68/-0 -- additive keys only, into a catalogue both streams write."
         },
         {
           "path": "tools/i18n-verify/behaviour.mjs",
           "status": "DECLARED",
-          "note": "+27/-5 from the merge base. Measured three ways; the Quran stream's earlier figure of +32/-6 was wrong and is corrected here."
+          "note": "+27/-5. Measured three ways; the Quran stream's earlier figure of +32/-6 was wrong and is corrected here."
         },
         {
           "path": "app/js/version.js",
           "status": "DECLARED",
-          "note": "+7/-1 -- the 08.28/08.29 stamps and their collision-resolution comment. version.js is Master Architect authority; the touch is disclosed, the allocation is not this stream's to make."
+          "note": "+16/-1 -- the 08.29 stamp and its collision-resolution comment. version.js is Master Architect authority; the touch is disclosed, the allocation is not this stream's to make."
         }
-      ]
+      ],
+      "baselineNote": "The candidate merged origin/main 5ea0d92 into itself at e863c62, so it was CURRENT when built. Integrating this ledger moves main past 5ea0d92, which makes the candidate stale BY THIS COMMIT and by nothing else. The move is governance/verification only -- no application code, no version, no Rules, no Firebase configuration -- and the rebaseline is expected rather than a defect. Recorded here so guard F reports it as a known open item instead of a surprise."
     }
   ],
   "platformSharedPaths": [

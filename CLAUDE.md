@@ -62,27 +62,39 @@ of truth and is what GitHub Pages serves.)
 > branch it demands the line name that branch AND state main's own version, and
 > verifies both.
 
-**VERSION NUMBERING NOTE — `main` HAS PASSED THE HELD WIRING'S STAMP.** The
-Phase 4 wiring at `7e2931f` stamps its own `version.js` **08.26**, chosen when
-`main` was on 08.25. `main` has since taken **08.26** (the nav fit) and then
-**08.27** (the number pickers), so that stamp now names a version that means
-something else entirely. **That stamp is HISTORICAL — it is not a claim on any
-future merge number**, and the Programme Integration Ledger records it as
-exactly that (`forwardAllocation: false`). At merge its `version.js` conflicts
-and resolves to whatever the Master Architect allocates **at that time**. The
-branch is deliberately NOT re-cut or re-stamped — the standing instruction is to
-hold `7e2931f` exactly as it is, and re-stamping would be churn for a one-line
-merge resolution. **A merge-ordering fact, not a defect, and not a reason to
-rebuild the candidate.**
+**VERSION NUMBERING NOTE — THE HELD PHASE 4 WIRING DOES NOT PREDICT ITS OWN
+VERSION.** Four durable statements, and they do not expire:
 
-> **This paragraph used to end "resolves to the next free number — 08.28 as of
-> this line", and that sentence was wrong twice over by 18 Sep 2026.** The
-> Hadith stream has stamped **v08.28** (Stage A) and **v08.29** (Stage B) on
-> `feature/hadith-study`, so 08.28 was not free; and the prediction was written
-> **bare**, without the `v`, so **every v-prefixed scanner in this repository
-> was blind to it** — `brief-integrity.mjs` included. A held branch does not get
-> to predict its own merge number, and a number written in a form no guard can
-> see is a number nobody is checking. Both classes are guarded now
+1. **Phase 4 remains HELD** at `7e2931f` on `claude/phase4-wiring`, waiting on
+   the Firestore Rules and index deployment (E1). The standing instruction is to
+   hold it exactly as it is — not re-cut, not re-stamped.
+2. **Its `version.js` stamp of `v08.26` is HISTORICAL and is NOT a future
+   integration allocation.** The number was chosen when `main` was on `v08.25`;
+   `main` has since taken `v08.26` (the nav fit) and `v08.27` (the number
+   pickers), so the stamp now names a version that means something else
+   entirely. The Programme Integration Ledger records it as
+   `status: HISTORICAL`, `forwardAllocation: false`, and guard C fails if that
+   ever stops being declared.
+3. **Its eventual integration version will be allocated by the Master Architect
+   at authorisation time**, and only then. At merge the `version.js` line
+   conflicts; the resolution takes the number the Master Architect allocates.
+4. **Do not state or predict a numeric "next free version" here, or anywhere
+   else, for a held branch.** Read the allocation off the ledger and the Master
+   Architect's instruction at the time, never off arithmetic written earlier.
+
+**A merge-ordering fact, not a defect, and not a reason to rebuild the
+candidate.**
+
+> **Corrected 18 Sep 2026, and the episode is why points 2–4 are written as
+> rules rather than as a number.** This paragraph used to close by predicting
+> the merge number the held branch would take, naming the version immediately
+> above `main`'s own. It was wrong twice over. The Hadith stream had already
+> stamped **v08.28** (Stage A) and reserved **v08.29** (Stage B) on
+> `feature/hadith-study`, so the number named was not free; and it was written
+> **without its `v`**, so every v-prefixed scanner in this repository was blind
+> to it — `brief-integrity.mjs` included. A held branch does not get to predict
+> its own merge number, and a version written in a form no guard can see is a
+> version nobody is checking. Both classes are mechanically guarded now
 > (`programme-ledger.mjs`, guards C and D), and this correction is what their
 > first run produced.
 
@@ -119,16 +131,18 @@ resolved it by reading every branch before stamping **v08.28** (Stage A) and
 **v08.29** (Stage B). **08.30 and above are NOT ALLOCATED**, and allocation is
 the Master Architect's, not a session's.
 
-**This file's own line 70 was the other half of it, and both guards caught it
-independently on their first run.** It read *"At merge its `version.js`
-conflicts and resolves to the next free number — **08.28** as of this line"* —
-a held branch predicting its own merge number, in a number that another stream
-had already taken. **And it was written BARE, without the `v`, so every
-v-prefixed scanner in this repository was blind to it**, `brief-integrity.mjs`
-included: `grep -c 'v08\.28' CLAUDE.md` returned **0** while the number was
-sitting in the paragraph. Guard C flags a forward number named beside a held
-commit; guard D flags a declared version the brief mentions only in bare form.
-The paragraph is corrected and points at the ledger instead of at arithmetic.
+**This file's own VERSION NUMBERING NOTE was the other half of it, and both
+guards caught it independently on their first run.** It closed by predicting the
+merge number the held Phase 4 branch would take — the version immediately above
+`main`'s own — which is a held branch predicting its own allocation, in a number
+another stream had already taken. **And it was written BARE, without the `v`, so
+every v-prefixed scanner in this repository was blind to it**,
+`brief-integrity.mjs` included: a `grep` for the v-prefixed form returned **0**
+while the number was sitting in the paragraph. Guard C flags a forward number
+named beside a held commit; guard D flags a declared version the brief mentions
+only in bare form. **The prediction is gone rather than restated** — the
+paragraph now carries four durable rules and points at the ledger, so there is
+no arithmetic left in it to go stale.
 
 **Guard E is the SHARED CHANGE RULE made mechanical.** Eleven shared-file
 modifications are declared across the two unmerged branches — `CLAUDE.md`,
