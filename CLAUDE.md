@@ -1593,8 +1593,10 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   false failure the moment it was counted. **Require `w > 0` before calling
   anything truncated**, and report "not on screen" separately so the absence is
   not dropped either.
-- **The baselines are honest but they are DEBT:** 22 missing `getElementById`
-  targets, 2 nav truncations (**fixed in v08.26, which is on
+- **The baselines are honest but they are DEBT — except the biggest one was not
+  debt at all.** ~~22 missing `getElementById` targets~~ **investigated 18 Sep
+  2026: 22 DEFERRED renders, 0 stale references, 0 missing controls, and no
+  application code changed.** 2 nav truncations (**fixed in v08.26, which is on
   `claude/charming-rubin-xzxbk1` and NOT yet merged — still live on `main`**),
   3 select truncations. The most user-visible remaining one is **`tenantSelect` — a real
   tenant's name is CUT in the picker** ("Madrasatul Muslimeen (Owner, Prime)",
@@ -1602,6 +1604,29 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   Owner UI decision** — widen the cell, shorten the option text, or reveal the
   full value without widening are materially different choices on the most
   tightly measured screen in the app.
+- **A BASELINE RECORDS WHAT A MEASUREMENT SAID, NOT WHAT IS TRUE — re-derive it
+  before paying it down.** `layout.mjs`'s "22 missing `getElementById` targets"
+  sat in this file as debt for the life of the suite. **None of them was
+  missing.** All 22 are authored inside JS template literals in
+  `quranrevival.html` and injected when their own surface opens — Asma's Names
+  level, its Refs level, the edit overlay, the file-into row, and QCR's
+  collection view — while `layout.mjs` only ever measures the LANDING PAGE.
+  Proven twice by methods that agree: a browser walk opening each surface (all
+  22 appear) and a static rule (**absent AND authored = deferred; absent AND
+  never authored = dangling** → 22 deferred, 0 dangling). **The word "missing"
+  was doing the damage** — it named a defect class the evidence never supported,
+  and tolerating them by name made them look investigated. `layout.mjs` tells
+  the two apart now and **fails on a dangling id**, which it never could before;
+  the baseline is empty. See
+  `docs/reports/2026-09-18-getelementbyid-baseline-investigation.md`.
+- **TWO PROBE FAILURES IN ONE INVESTIGATION, BOTH MINE.** Hunting those 22: the
+  file-into row is `mode === "create" && fileInto`, and only ONE of four call
+  sites passes `fileInto` — opening the overlay in *edit* mode correctly renders
+  no row, and reading that as "the ids do not exist" would have been a false
+  finding. Then QCR reported "collections offered: 0" because the probe looked
+  for row buttons where the app uses a `<select>`; the fixture holds **18**.
+  **A probe that finds nothing is a claim about the probe until proven
+  otherwise.**
 - **MEASURE A TRUNCATION BEFORE BELIEVING IT IS A SHORTAGE OF SPACE — v08.26's
   whole lesson.** The 320px nav truncation had been carried as a named baseline
   for the life of this suite, read as "the labels do not fit at 320px". They do:

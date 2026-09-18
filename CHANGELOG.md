@@ -14153,3 +14153,44 @@ existing caller is unaffected.
 failure being 31e's TLS artefact — **the 22g trio passed this run**, confirming
 again that neither a red nor a green 22g is evidence. Session progression
 979 → 981 → 982 executing checks, **no check deleted at any point.**
+
+**18 Sep 2026 — the 22 "missing" `getElementById` targets, investigated. BR-0,
+no version move (no application code changed, so the badge must not).** Handover
+**T2**'s second item, taken as instructed: establish which are **stale
+references** and which are **missing live controls** *before* changing code.
+
+**Neither. All 22 are DEFERRED RENDERS — 0 stale, 0 missing.** Each is authored
+inside a JS template literal in `quranrevival.html` and injected when its own
+surface opens, across six render functions: Asma's Names level (3), its Refs
+level (5), the edit overlay (7), the file-into row (3) and QCR's collection view
+(4). `layout.mjs` measures only the **landing page**, where all 22 are
+legitimately absent.
+
+**Proven twice, by methods that agree.** A browser walk drove each surface and
+**all 22 appeared**; a static rule — **absent AND authored = deferred, absent
+AND never authored = dangling** — returns the same 22 and **0 dangling**.
+
+**Two probe failures, both mine, both worth recording.** The file-into row is
+`mode === "create" && fileInto`, and only one of four `openAsmaXEditOverlay`
+call sites passes `fileInto` (`+ Create a new Dual Name`); opening the overlay
+in *edit* mode correctly renders no row, and reading that as "the ids do not
+exist" would have been a false finding. And QCR reported "collections offered:
+0" because the probe looked for row buttons where the app uses a `<select>` —
+the fixture holds **18**. **A probe that finds nothing is a claim about the
+probe until proven otherwise.**
+
+**`layout.mjs` only was changed.** It classifies absent ids as `deferred` or
+`dangling`, prints both, **fails on a dangling one** (a real assertion it never
+carried — previously any newly-absent id failed whether real or not, and 22
+false ones were permanently tolerated to keep the exit code usable), and
+`KNOWN_MISSING_IDS` is **empty rather than deleted**, keeping the mechanism the
+way `navcheck.mjs` does. Mutation-proven: a reference to
+`idNobodyEverAuthors` makes it **EXIT 1** naming the id; restored, **EXIT 0**.
+
+**Verification:** `layout.mjs` EXIT 0, `NO LAYOUT REGRESSIONS`, `CHANGED: 0`,
+targets 250 → 250, deferred 22 / dangling 0 at all 16 configurations;
+`navcheck`/`panel`/`reading` EXIT 0; `brief-integrity` 8/0;
+`rules-authorisation-executable` 38/0; coverage **1,803 / 47** unchanged;
+`git diff -- app/` empty. `behaviour.mjs` deliberately not re-run — this tranche
+changes one harness file it does not load. See
+`docs/reports/2026-09-18-getelementbyid-baseline-investigation.md` and `.html`.
