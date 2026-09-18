@@ -24,6 +24,30 @@
 
 Read this first, every session. It is the standing brief.
 
+> ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
+>
+> **This branch carries app version `08.27`; `main` is `08.25`.** The
+> `Current milestone: v08.25 on \`main\`` line below is about `main` and is
+> **correct** — do not "fix" it to 08.27, which would claim an unmerged
+> version is live.
+>
+> **`tools/i18n-verify/brief-integrity.mjs` therefore fails one check on this
+> branch, by design**: it compares the brief's `main` milestone against the
+> local `app/js/version.js`, which is right on `main` and wrong on any feature
+> branch carrying a version bump. **Proposed one-line fix, NOT applied here
+> because that guard belongs to the Quran side:** compare against
+> `git show origin/main:app/js/version.js` when `HEAD` is not `main`.
+>
+> **08.26 is deliberately skipped** — it is already claimed by the unmerged
+> Phase 4 wiring branch (`claude/phase4-wiring` at `7e2931f`), verified by
+> reading that branch.
+>
+> Gates H0 and H1 are accepted; H2 is authorised on **synthetic fixtures only**.
+> See `docs/reports/2026-09-18-hadith-h0-contract-and-file-ownership.md`,
+> `...-h1-source-rights-and-reference-schema.md` and the H2 report.
+> **Zero editions are rights-cleared**, so every Hadith narration in the
+> repository is invented for development and says so in its own Arabic.
+
 > ## ⇢ SESSION HANDOVER, 18 Sep 2026 — READ THIS SECOND
 >
 > **`docs/reports/2026-09-18-SESSION-HANDOVER.md`** (and `.html`) is the
