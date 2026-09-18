@@ -1,4 +1,17 @@
-# QuranRevival — Project Memory
+# MMSA — Madrasatul Muslimeen's Study App — Project Memory
+
+> **TERMINOLOGY, adopted 18 Sep 2026 and binding on all CURRENT governance.**
+> **MMSA** is the umbrella integrated Study App and platform, and this
+> repository is the MMSA platform repository. **QuranRevival is the QURAN STUDY
+> MODULE ONLY** — not the platform and not the umbrella, which is what it was
+> loosely used to mean before today. **Hadith Study** is the Hadith module,
+> **Health Study** the Health module, and future subjects are separate modules
+> integrated into MMSA. This is **governance vocabulary**: no application file,
+> route or product branding was renamed, and **historical reports are
+> deliberately NOT rewritten** to apply it — they record what was said when it
+> was said. Older text in this file that uses "QuranRevival" for the whole
+> platform is read that way.
+
 
 > **`main` CARRIES THE ACCEPTED PHASE 2–3 VERIFICATION MERGE.**
 > The merge completed 13 Sep 2026 (`07ebbde`, v08.19) and GitHub Pages serves
@@ -177,6 +190,70 @@ the single source of truth and the badge beside the app name says so on screen.
 **This line has drifted twice already — it read `v08.02` while `main` was on
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
+
+**18 Sep 2026 — POST-HADITH PROGRAMME-CONTROL REPAIR, and all three defects
+were the ledger describing a programme that had moved on.** The Hadith v08.29
+integration landed at `43dd96f` and `main` carries **v08.29**; three things in
+the coordination layer were then false, and the guards' own output is what
+named them. BR-0: `git diff a4b9be3 -- app/ tests/ firestore.rules
+firebase.json` is empty and `version.js` stays **08.29**.
+
+**(1) `AUTHORIZED` and `AUTHORISED` are one letter apart, and the guard tested
+for the wrong one.** The ledger recorded five Master Architect authorisations
+of the Hadith stream's shared-file touches; guard E compared against the S
+spelling, matched none, and fell through to its default — reporting all five,
+every run, as *"DECLARED, awaiting Master Architect decision"*. **A decision
+that had already been made, shown as still outstanding.** The vocabulary is a
+CLOSED set now: `DECLARED` | `AUTHORIZED`, and **an unrecognised token fails by
+name** rather than silently downgrading. `AUTHORIZED` must carry
+`authorization: { by, on, reference }` — `by` from a closed authority set (so a
+module cannot authorise itself), `on` a real date, `reference` a record that
+**exists**. Seven negative mutations, including the exact S-spelling that caused
+it, plus a positive control asserting a DECLARED touch is never described as
+authorized.
+
+**The positive control then found a second gap the same hour.** Guard E reported
+from the BRANCH DIFF, and a merged stream's branch shows no changed paths — so
+**every authorisation would vanish from the output the moment it landed**,
+precisely when the record matters most. Validation and reporting both run over
+the touch RECORDS now; the branch diff is only what proves a touch is disclosed.
+12 records: 5 AUTHORIZED, 7 DECLARED.
+
+**(2) Quran v08.27 was still marked `LIVE` while `main` carried v08.29.** `LIVE`
+in this vocabulary means the version `main`'s `version.js` carries — so it was
+simply untrue. v08.27 is **`RELEASED`**: a prior main milestone, shipped and
+superseded, kept as fact rather than withdrawn. **Guard A now enforces the
+vocabulary instead of merely documenting it**: exactly one allocation may be
+LIVE, and it must equal `main.version`. A `versionVocabulary` block defines all
+five statuses, and a `deployment` block records Firestore Rules and indexes as
+**NOT_DONE** — *"recorded as NOT DONE because it has not been proven done"* —
+so no status can be read as a deployment claim.
+
+**(3) Two mutations had gone stale on preconditions the merge invalidated**, and
+both reported themselves UNPROVEN rather than passing. Mutation A pushed a
+second *hadith*-owned claim onto a version hadith already owned — one owner, no
+collision. Mutation C predicted 08.28 as a number "ahead of main", which stopped
+being ahead when main reached 08.29. **Neither was weakened**: both DERIVE their
+target from the ledger now (the rival is whichever stream does not hold the
+version; the predicted number is a rival's claim with main's recorded version
+moved below it), so they model the general programme state rather than one
+day's arithmetic. **25 → 37 mutations, 0 failed.**
+
+**Guard C was refined by a true finding too.** It checked a historical stamp
+against the stream's BRANCH TIP, which is right for a single stamp that never
+moved — the held Phase 4 wiring — and wrong the moment a stream stamps twice on
+its way in, as Hadith did (v08.28 at `7f61328`, then v08.29). It reads the
+version at **the commit the stamp names**, which is strictly stronger.
+
+**The ledger can now represent the whole programme**: `mmsa-platform` (the
+umbrella, no branch — it IS `main`, so it carries no baseline SHA to go stale),
+`quran` (QuranRevival, the Quran Study module), `quran-phase4-wiring` (HELD),
+`hadith` (Hadith Study, integrated), and **`health` as
+`EXTERNAL_PENDING_ACQUISITION`** — a separate development account, with
+repository, commit and version recorded as **UNKNOWN because they are unknown**.
+No Health implementation exists here and none was invented. **08.30+ remains
+unallocated.** See
+`docs/reports/2026-09-18-mmsa-programme-control-post-hadith-repair.md`.
 
 **18 Sep 2026 — THE PROGRAMME INTEGRATION LEDGER, and the reason it exists is
 that THIS FILE got the same class of fact wrong twice in one day, in opposite

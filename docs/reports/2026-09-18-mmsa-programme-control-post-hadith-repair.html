@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA — post-Hadith programme-control repair</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA — post-Hadith programme-control repair</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Instruction:</strong> BR-0 governance/test repair of the three post-Hadith programme-control defects, plus MMSA terminology and module-stream registration.</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> <code>git diff a4b9be3 HEAD -- app/ tests/ firestore.rules firebase.json</code> is <strong>empty</strong>.</li><li><strong>Application version:</strong> <strong>v08.29 before, v08.29 after.</strong></li><li><strong>Result:</strong> All three repaired. <strong>Mutations 25 → 37, 0 failed.</strong> Two further true findings surfaced by the new coverage and fixed.</li></ul>
+<hr>
+<h2>1. Baseline</h2>
+<p>Fetched first. <code>origin/main</code> = <strong><code>a4b9be3b65dce57a3fd44c3ab6cb2aa94699d99e</code></strong>, application <strong>08.29</strong> — matching the authoritative baseline exactly. Hadith integrated at <code>43dd96f</code>. Deployment NOT DONE.</p>
+<hr>
+<h2>2. Defect 1 — the authorization vocabulary</h2>
+<p><strong>One letter, and five real decisions were reported as still outstanding.</strong> The ledger recorded <code>AUTHORIZED</code>; guard E tested <code>t.status === &quot;AUTHORISED&quot;</code>. No match, so all five Hadith touches fell to the default branch and printed, every run:</p>
+<p>``<code> NOTE [E] stream hadith modifies shared file CLAUDE.md          -- DECLARED, awaiting Master Architect decision </code>``</p>
+<p>A decision the Master Architect had already made, shown as pending. Worse than a typo: the guard&#x27;s output was actively misleading about governance state.</p>
+<p><strong>The repair is a closed vocabulary rather than a second spelling.</strong></p>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Statuses</td><td><code>DECLARED</code> \</td><td><code>AUTHORIZED</code> — <strong>closed</strong>. Any other token <strong>fails by name</strong></td></tr>
+<tr><td><code>DECLARED</code></td><td>Disclosed, awaiting the Master Architect&#x27;s decision. Reported as such and never described as authorized</td></tr>
+<tr><td><code>AUTHORIZED</code></td><td>Requires <code>authorization: { by, on, reference }</code></td></tr>
+<tr><td><code>by</code></td><td>From a closed authority set (<code>master-architect</code>) — <strong>a module cannot authorise itself</strong></td></tr>
+<tr><td><code>on</code></td><td><code>YYYY-MM-DD</code>, validated</td></tr>
+<tr><td><code>reference</code></td><td>A record that <strong>exists</strong>, checked on disk or on the stream&#x27;s branch — an authorization must be traceable</td></tr>
+</tbody></table></div>
+<p>Failing by name is the point: a near-miss like <code>AUTHORISED</code> is now loud, where before it silently downgraded. The five existing free-text <code>authorisedBy</code> strings were migrated to the structured form, with the original text preserved as <code>authorizationRecordedAs</code>.</p>
+<h3>2.1 The positive control then found a second gap</h3>
+<p>Asked to show an AUTHORIZED touch, the guard returned only DECLARED ones. <strong>Guard E reported from the branch diff, and a merged stream&#x27;s branch shows no changed paths</strong> — so every authorisation would vanish from the output the moment it landed, exactly when the record matters most. Validation and reporting now run over the touch <strong>records</strong>; the branch diff is only what proves a touch is disclosed rather than hidden.</p>
+<p>``<code> PASS [E] 12 shared-file touch record(s): 5 AUTHORIZED, 7 DECLARED (awaiting decision).          7 live modification(s) seen across declared branches, 0 undeclared </code>``</p>
+<p><strong>Coverage added:</strong> 2 positive controls (an AUTHORIZED touch is reported as authorized; <strong>no DECLARED touch is ever described as authorized</strong>, and each says it is awaiting a decision) and <strong>7 negative mutations</strong> — the exact <code>AUTHORISED</code> spelling, an undefined token, a DECLARED touch promoted with no metadata, a missing <code>reference</code>, a module authorising itself, a non-date date, and a citation to a record that does not exist. Plus a control for the records disappearing entirely.</p>
+<hr>
+<h2>3. Defect 2 — Quran v08.27 still marked LIVE</h2>
+<p><code>LIVE</code> means the version <code>main</code>&#x27;s <code>version.js</code> carries. <code>main</code> carries <strong>08.29</strong>, so the mark was simply untrue.</p>
+<ul><li><strong>v08.27 (quran) → <code>RELEASED</code></strong> — a prior main milestone, what main carried and served from 18 Sep until <code>43dd96f</code>. <strong>Shipped; superseded, not withdrawn.</strong> The fact is preserved in the note, not erased.</li><li><strong>v08.29 (hadith) → <code>LIVE</code>.</strong></li><li><strong>v08.28 (hadith) → <code>HISTORICAL</code>, <code>forwardAllocation: false</code></strong> — stamped at <code>7f61328</code> and consumed en route; main never carried it alone, and it is not available for re-allocation.</li></ul>
+<p><strong>The vocabulary is now enforced, not merely described.</strong> Guard A: <strong>exactly one allocation may be LIVE, and it must equal <code>main.version</code>.</strong> That check is what would have caught this, and two mutations prove it fails (a superseded milestone left LIVE; two LIVE at once).</p>
+<p><strong>No deployment is claimed.</strong> A new <code>deployment</code> block records <code>firestoreRules: NOT_DONE</code>, <code>firestoreIndexes: NOT_DONE</code>, blocked on E1 — <em>&quot;recorded as NOT DONE because it has not been proven done&quot;</em> — and <code>versionVocabulary</code> states explicitly that <strong>none</strong> of the five statuses says anything about Firestore deployment. GitHub Pages serving <code>main</code> is a separate matter and is not asserted beyond what was measured.</p>
+<hr>
+<h2>4. Defect 3 — two stale mutation preconditions</h2>
+<p>Both reported themselves <strong>UNPROVEN</strong> rather than passing vacuously, which is the behaviour they were built for.</p>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Why it stopped working</th><th>Repair — <strong>not</strong> a weakening</th></tr></thead><tbody>
+<tr><td><strong>A</strong> &quot;a second stream claims the LIVE version&quot;</td><td>Hard-coded <code>owner: &quot;hadith&quot;</code> onto <code>main.version</code>, which Hadith now owns. One owner, no collision</td><td>Derives the rival: whichever stream does <strong>not</strong> hold that version. Asserts a rival exists, so fixture drift fails loudly</td></tr>
+<tr><td><strong>C</strong> &quot;the brief predicts a merge number for the held branch&quot;</td><td>Hard-coded 08.28 as &quot;ahead of main&quot;; main reached 08.29, so it was history, not a prediction</td><td>Takes a version another stream claims and moves <code>main.version</code> <strong>below</strong> it, modelling the situation the guard is for. The regex no longer names a specific stream or number</td></tr>
+</tbody></table></div>
+<p>Both now exercise their intended guard paths against the <strong>general</strong> programme state rather than one day&#x27;s arithmetic.</p>
+<h3>4.1 Guard C was refined by a true finding</h3>
+<p>Registering the corrected allocations made guard C fail: <em>&quot;the ledger records hadith&#x27;s historical stamp as 08.28; feature/hadith-study actually carries 08.29.&quot;</em> The guard compared a historical stamp against the <strong>branch tip</strong> — right for a single stamp that never moved (the held Phase 4 wiring), wrong the moment a stream stamps twice on its way in, as Hadith did. It now reads the version at <strong>the commit the stamp names</strong> (<code>stampedAt</code> / <code>commit</code>), falling back to the tip only for a stamp that names none. <strong>Strictly stronger:</strong> it verifies each stamp where it actually lives.</p>
+<hr>
+<h2>5. Terminology — MMSA</h2>
+<p>Applied to <strong>current</strong> governance only: <code>CLAUDE.md</code>&#x27;s header, <code>docs/governance/README.md</code>, and the ledger&#x27;s new <code>programme</code> block.</p>
+<div class='tw'><table><thead><tr><th>Term</th><th>Means</th></tr></thead><tbody>
+<tr><td><strong>MMSA</strong></td><td>The umbrella integrated Study App / platform. This repository is the MMSA platform repository</td></tr>
+<tr><td><strong>QuranRevival</strong></td><td>The <strong>Quran Study module only</strong> — not the platform, not the umbrella</td></tr>
+<tr><td><strong>Hadith Study</strong></td><td>The Hadith module</td></tr>
+<tr><td><strong>Health Study</strong></td><td>The Health module</td></tr>
+<tr><td><em>future subjects</em></td><td>Separate subject modules integrated into MMSA</td></tr>
+</tbody></table></div>
+<p><strong>Historical reports were not rewritten</strong>, and <strong>no application file, route or product branding was renamed.</strong> <code>CLAUDE.md</code> records that older text using &quot;QuranRevival&quot; for the whole platform is to be read that way, rather than being mass-edited.</p>
+<hr>
+<h2>6. Active module streams registered</h2>
+<div class='tw'><table><thead><tr><th>Stream</th><th>State</th></tr></thead><tbody>
+<tr><td><code>mmsa-platform</code></td><td><strong>ON_MAIN.</strong> The umbrella: shared runtime, shared verification, governance, version allocation, integration. <strong>No branch — it IS main</strong>, so it carries no baseline SHA of its own to go stale; <code>main.baselineSha</code> is recorded once and checked as an <em>ancestor</em></td></tr>
+<tr><td><code>quran</code></td><td>QuranRevival — Quran Study module. MERGED_TO_MAIN</td></tr>
+<tr><td><code>quran-phase4-wiring</code></td><td><strong>HELD</strong> at <code>7e2931f</code>. Historical <code>v08.26</code> stamp, <code>forwardAllocation: false</code></td></tr>
+<tr><td><code>hadith</code></td><td>Hadith Study module. Integrated at <code>43dd96f</code>, v08.29</td></tr>
+<tr><td><code>health</code></td><td><strong><code>EXTERNAL_PENDING_ACQUISITION</code></strong></td></tr>
+</tbody></table></div>
+<p><strong>Health holds no invented detail.</strong> Repository, branch tip and version are recorded as <strong><code>UNKNOWN</code></strong> because they are unknown; <code>declaredVersion</code> and <code>baselineSha</code> are <code>null</code>; <code>ownedPaths</code> is empty. Its note says plainly that it exists in a separate development account, that no Health implementation exists in this repository and none was created, and that acquiring it is a Master Architect action. The guards have nothing to check it against and correctly check nothing.</p>
+<hr>
+<h2>7. Verification</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>programme-ledger.mjs</code></td><td><strong>7 passed, 14 noted, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>programme-ledger-mutations.mjs</code></td><td><strong>37 passed, 0 failed — EXIT 0</strong> (was 23/2)</td></tr>
+<tr><td><code>brief-integrity.mjs</code></td><td><strong>8 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>stub-parity.mjs</code></td><td><strong>3 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>rules-authorisation-executable.mjs</code></td><td><strong>38 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>rules-deployment-candidate.mjs</code></td><td><strong>10 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>firestore-index-requirements.mjs</code></td><td><strong>8 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>study-approach-contract-boundary.mjs</code></td><td><strong>16 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>note-foundation-boundary.mjs</code></td><td><strong>30 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>journey-map-boundary.mjs</code></td><td><strong>13 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>study-note-boundary.mjs</code></td><td><strong>17 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>d14-timezone-boundary.mjs</code></td><td><strong>10 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>d14-timezone-contract.mjs</code></td><td><strong>21 passed, 0 failed — EXIT 0</strong></td></tr>
+<tr><td><code>navcheck.mjs</code> (live boot)</td><td><strong>EXIT 0</strong></td></tr>
+</tbody></table></div>
+<p><strong>Mutation breakdown (37):</strong> A×4, B×2, C×4, D×4, <strong>E×7 authorization negatives</strong>, F×5, CONTROL×3, plus 2 suite-level positive controls and 2 authorization positive controls, and 4 pre-existing E/D cases. The unmutated baseline check remains — without it, a guard failing on everything would pass every mutation.</p>
+<h3>Proven, not asserted</h3>
+<div class='tw'><table><thead><tr><th>Claim</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>No reachable <code>app/</code> change</td><td><code>git diff a4b9be3 HEAD -- app/</code> <strong>empty</strong></td></tr>
+<tr><td>Version remains v08.29</td><td><code>APP_VERSION = &quot;08.29&quot;</code>; <code>version.js</code> not in the diff</td></tr>
+<tr><td>Rules / Firebase config unchanged</td><td><code>git diff a4b9be3 HEAD -- firestore.rules firebase.json tests/ docs/governance/<em>.rules docs/governance/</em>indexes*.json</code> <strong>empty</strong></td></tr>
+<tr><td>08.30 not allocated</td><td>Only <code>nextUnallocated</code> names it; guard B fails anything claiming it</td></tr>
+<tr><td>D14 unreachable</td><td><code>d14-timezone-boundary</code> 10/0</td></tr>
+<tr><td>Phase 4 not resumed</td><td><code>7e2931f</code> not an ancestor of <code>main</code>; branch untouched</td></tr>
+<tr><td>No Health implementation</td><td>No <code>health</code> file created anywhere; stream is metadata only</td></tr>
+<tr><td>Nothing deployed</td><td>No credentials in this sandbox; no deployment attempted</td></tr>
+</tbody></table></div>
+<hr>
+<h2>MMSA_PROGRAMME_CONTROL</h2>
+<p>``<code> BASE_MAIN_SHA=a4b9be3b65dce57a3fd44c3ab6cb2aa94699d99e FINAL_MAIN_SHA=__FINAL__ APP_VERSION=v08.29 MUTATIONS=37_PASSED_0_FAILED_WAS_23_PASS_2_FAIL AUTHORIZED_VOCABULARY=CLOSED_SET_DECLARED_XOR_AUTHORIZED;AUTHORIZED_REQUIRES_by_on_reference;UNKNOWN_TOKEN_FAILS_BY_NAME AUTHORIZATION_NEGATIVE_CONTROL=7_MUTATIONS_ALL_CAUGHT(AUTHORISED_MISSPELLING,UNDEFINED_TOKEN,PROMOTED_WITHOUT_METADATA,MISSING_REFERENCE,SELF_AUTHORISING_MODULE,INVALID_DATE,NONEXISTENT_REFERENCE) QURAN_V0827_STATUS=RELEASED_PRIOR_MAIN_MILESTONE_NOT_LIVE_NOT_WITHDRAWN MMSA_TERMINOLOGY=UMBRELLA_PLATFORM_APPLIED_TO_CURRENT_GOVERNANCE_ONLY QURANREVIVAL_TERMINOLOGY=QURAN_STUDY_MODULE_ONLY HADITH_STATUS=INTEGRATED_43dd96f_v08.29_LIVE_ON_MAIN HEALTH_STATUS=EXTERNAL_PENDING_ACQUISITION_REPO_SHA_VERSION_ALL_UNKNOWN_NOT_INVENTED APP_BEHAVIOUR_CHANGE=NO RULES_CHANGED=NO DEPLOYED=NO NEXT_UNALLOCATED=v08.30+ READY_FOR_PARALLEL_MODULE_WORK=YES </code>``</p>
+<p><strong>A note on <code>FINAL_MAIN_SHA</code>:</strong> it names the commit carrying the whole repair. The commit that stamps the value necessarily sits one ahead of the SHA it records — a commit cannot contain its own hash — and changes this report and nothing else.</p>
+<p><strong>READY_FOR_PARALLEL_MODULE_WORK = YES.</strong> The ledger represents all five streams, the vocabulary distinguishes a disclosed touch from an authorised one with metadata that must check out, <code>LIVE</code> is bound to <code>main</code>, and every guard path is mutation-proven. Two things stay the Master Architect&#x27;s: the seven <strong>DECLARED</strong> Phase 4 touches still awaiting a decision, and Health&#x27;s acquisition.</p>
+<hr>
+<p>Stopping after delivery. No further tranche started.</p>
+</main></body></html>

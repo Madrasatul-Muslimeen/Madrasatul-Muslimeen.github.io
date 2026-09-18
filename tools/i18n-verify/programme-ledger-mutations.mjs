@@ -17,7 +17,10 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import process from "node:process";
-import { measure, runGuards } from "./programme-ledger.mjs";
+import { measure, runGuards, TOUCH_DECLARED, TOUCH_AUTHORIZED } from "./programme-ledger.mjs";
+
+/** Mirrors the guard's own claiming set; the mutations derive targets from it. */
+const CLAIMING_STATUSES = new Set(["LIVE", "RESERVED", "RELEASED"]);
 
 const root = path.resolve(process.argv[2] || process.cwd());
 const { ledger: realLedger, facts: realFacts } = measure(root);
@@ -75,9 +78,33 @@ check("POSITIVE CONTROL: the guards really ran and really read the repository", 
 });
 
 // ---- A: two streams claiming the same global version ----------------------
+// The second claimant has to be a stream that does NOT already own main's
+// version, or there is no collision to find. Hard-coding "hadith" was correct
+// while main belonged to Quran and became a no-op the moment Hadith's 08.29
+// landed: the mutation pushed a second hadith-owned claim onto a hadith-owned
+// version, one owner, no collision, UNPROVEN. Derive the rival from the ledger.
+const rivalOf = (l, version) => {
+  const holder = l.versionAllocations.find((a) => a.version === version && CLAIMING_STATUSES.has(a.status));
+  const other = l.streams.map((s) => s.id).find((id) => id !== holder?.owner);
+  assert.ok(other, "fixture drift: the ledger declares no second stream to collide with");
+  return other;
+};
+
 mutation("a second stream claims the LIVE version", "A", (l) => {
-  l.versionAllocations.push({ version: l.main.version, owner: "hadith", status: "RESERVED" });
+  l.versionAllocations.push({ version: l.main.version, owner: rivalOf(l, l.main.version), status: "RESERVED" });
 }, /claimed by 2 streams at once/);
+
+mutation("a superseded milestone is left marked LIVE", "A", (l) => {
+  const live = l.versionAllocations.find((a) => a.status === "LIVE");
+  live.status = "RELEASED";
+  const prior = l.versionAllocations.find((a) => a.status === "RELEASED" && a !== live);
+  prior.status = "LIVE";                                  // the real 08.27 defect
+}, /is marked LIVE, but main carries/);
+
+mutation("two allocations are LIVE at once", "A", (l) => {
+  const live = l.versionAllocations.find((a) => a.status === "LIVE");
+  l.versionAllocations.find((a) => a.status === "RELEASED" && a !== live).status = "LIVE";
+}, /allocations are LIVE; exactly one may be/);
 
 mutation("the ledger and the branch disagree about what the branch is stamped", "A", (l) => {
   const s = l.streams.find((x) => x.id === "hadith");
@@ -115,10 +142,20 @@ mutation("the recorded historical stamp is not what the held branch carries", "C
 
 // THE ONE THAT REALLY HAPPENED, reproduced exactly: the brief predicts a merge
 // number for a held branch, bare, and another stream has taken it.
+// The predicted number must genuinely be AHEAD of main AND owned by someone
+// else, or guard C correctly reads it as history rather than a prediction.
+// Hard-coding 08.28 was right when main was 08.27 and stopped being a
+// prediction at all once main reached 08.29. Derive it: take a version another
+// stream claims, and move main's recorded version BELOW it so the ledger models
+// the situation the guard is for -- a held branch naming a number still ahead.
 mutation("the brief predicts a merge number for the held branch", "C", (l, f) => {
-  const s = l.streams.find((x) => x.integrationState === "HELD");
-  f.briefText += `\n\nThe wiring at \`${s.branchTip.slice(0, 7)}\` conflicts at merge and resolves to the next free number -- 08.28 as of this line.\n`;
-}, /names 08\.28, which is ahead of main .* claimed by stream "hadith"/);
+  const held = l.streams.find((x) => x.integrationState === "HELD");
+  const rival = l.versionAllocations.find((a) => CLAIMING_STATUSES.has(a.status) && a.owner !== held.id);
+  assert.ok(rival, "fixture drift: no other stream holds a claiming allocation");
+  const [maj, min] = rival.version.split(".").map(Number);
+  l.main.version = `${String(maj).padStart(2, "0")}.${String(min - 1).padStart(2, "0")}`;
+  f.briefText += `\n\nThe wiring at \`${held.branchTip.slice(0, 7)}\` conflicts at merge and resolves to the next free number -- ${rival.version} as of this line.\n`;
+}, /is ahead of main .* claimed by stream/);
 
 mutation("...and it is caught even when the number belongs to nobody yet", "C", (l, f) => {
   const s = l.streams.find((x) => x.integrationState === "HELD");
@@ -168,6 +205,73 @@ mutation("a stream touches the deployed Rules", "E", (l, f) => {
   const s = l.streams.find((x) => x.activeBranch && f.branches[x.activeBranch]);
   f.branches[s.activeBranch].changedPaths.push("firestore.rules");
 }, /modifies shared\/platform file firestore\.rules/);
+
+// ---- E: the AUTHORIZED vocabulary -----------------------------------------
+// DECLARED and AUTHORIZED must be semantically distinct, and AUTHORIZED must be
+// a checkable claim rather than a word that turns the guard off.
+
+const anyAuthorized = (l) => {
+  for (const s of l.streams) for (const t of s.declaredSharedTouches || []) {
+    if (t.status === TOUCH_AUTHORIZED) return t;
+  }
+  return null;
+};
+
+check("POSITIVE CONTROL: the ledger really carries AUTHORIZED touches, and the guard reports them as such", () => {
+  const t = anyAuthorized(realLedger);
+  assert.ok(t, "no AUTHORIZED touch in the ledger; every negative case below would prove nothing");
+  const notes = runGuards(realLedger, realFacts).filter((f) => f.guard === "E" && f.level === "NOTE");
+  assert.ok(notes.some((n) => n.message.includes(TOUCH_AUTHORIZED) && n.message.includes("by master-architect")),
+    `no AUTHORIZED touch was reported as authorized. Guard E reported:\n        - ` + notes.map((n) => n.message).join("\n        - "));
+});
+
+check("A DECLARED touch is never presented as authorized", () => {
+  // The distinction is the whole point: a touch still awaiting a decision must
+  // not read as one that has had it.
+  const notes = runGuards(realLedger, realFacts).filter((f) => f.guard === "E" && f.level === "NOTE");
+  const declaredNotes = notes.filter((n) => n.message.includes(TOUCH_DECLARED));
+  assert.ok(declaredNotes.length, "no DECLARED touch reported; this assertion would be vacuous");
+  for (const n of declaredNotes) {
+    assert.ok(!n.message.includes(TOUCH_AUTHORIZED), `a DECLARED touch is described as authorized: ${n.message}`);
+    assert.ok(/awaiting Master Architect decision/.test(n.message), `a DECLARED touch does not say it is awaiting a decision: ${n.message}`);
+  }
+});
+
+// THE DEFECT THIS VOCABULARY EXISTS FOR: one letter, silently downgrading five
+// real authorisations to "awaiting decision".
+mutation("a touch is spelled AUTHORISED instead of AUTHORIZED", "E", (l) => {
+  anyAuthorized(l).status = "AUTHORISED";
+}, /carries status "AUTHORISED" -- not one of/);
+
+mutation("a touch carries a status nobody defined", "E", (l) => {
+  anyAuthorized(l).status = "APPROVED_PROBABLY";
+}, /carries status "APPROVED_PROBABLY" -- not one of/);
+
+mutation("a DECLARED touch is promoted to AUTHORIZED with no metadata", "E", (l) => {
+  const t = l.streams.flatMap((x) => x.declaredSharedTouches || []).find((x) => x.status === TOUCH_DECLARED);
+  assert.ok(t, "fixture drift: no DECLARED touch to promote");
+  t.status = TOUCH_AUTHORIZED;
+}, /claims AUTHORIZED with no authorization metadata/);
+
+mutation("an AUTHORIZED touch loses its reference", "E", (l) => {
+  delete anyAuthorized(l).authorization.reference;
+}, /missing authorization reference/);
+
+mutation("a module authorises itself", "E", (l) => {
+  anyAuthorized(l).authorization.by = "hadith";
+}, /not a recognised authority .* a module cannot authorise itself/);
+
+mutation("an authorization date is not a date", "E", (l) => {
+  anyAuthorized(l).authorization.on = "last Tuesday";
+}, /is not YYYY-MM-DD/);
+
+mutation("an authorization cites a record that does not exist", "E", (l) => {
+  anyAuthorized(l).authorization.reference = "docs/reports/no-such-authorization.md";
+}, /which does not exist -- an authorization must be traceable/);
+
+mutation("every touch record disappears", "CONTROL", (l) => {
+  for (const s of l.streams) delete s.declaredSharedTouches;
+}, /no shared-file touch records were read/);
 
 // ---- F: a stale integration baseline --------------------------------------
 // These two need a stream whose baseline has ACTUALLY moved, and they must not

@@ -29,7 +29,7 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "43dd96f58eeee5ad33dc82bb4e260660e3c290c9",
+    "baselineSha": "a4b9be3b65dce57a3fd44c3ab6cb2aa94699d99e",
     "baselineRecordedOn": "2026-09-18",
     "version": "08.29",
     "$comment": [
@@ -45,8 +45,8 @@
     {
       "version": "08.27",
       "owner": "quran",
-      "status": "LIVE",
-      "note": "Study-options number pickers. Was the version on main until the Hadith v08.29 integration merged at 43dd96f; superseded on main by 08.29."
+      "status": "RELEASED",
+      "note": "Study-options number pickers. A PRIOR main milestone -- it was what main carried and served from 18 Sep 2026 until the Hadith v08.29 integration at 43dd96f. Shipped; superseded, not withdrawn."
     },
     {
       "version": "08.26",
@@ -75,15 +75,16 @@
       "owner": "hadith",
       "status": "HISTORICAL",
       "stampedAt": "7f61328",
-      "note": "Hadith Stage A -- accepted development milestone, stamped at 7f61328. Carried into main as HISTORY by the v08.29 integration; never independently merged and never deployed. main went 08.27 -> 08.29. Not a claim on any number.",
-      "forwardAllocation": false
+      "note": "Stage A. Stamped at 7f61328 and consumed on the way to 08.29; main never carried it on its own. HISTORICAL, and not available for re-allocation.",
+      "forwardAllocation": false,
+      "historicalStamp": true
     },
     {
       "version": "08.29",
       "owner": "hadith",
-      "status": "RELEASED",
+      "status": "LIVE",
       "stampedAt": "22526b20da1e1fe950992957aa2862e65b3cf925",
-      "note": "Hadith Stage B and the final integration candidate. MERGED TO MAIN at 43dd96f under explicit Master Architect authorisation, 18 Sep 2026. RELEASED means PRESENT ON MAIN, not deployment-verified: no deployment was performed or proven, and deployed Firestore Rules remain UNVERIFIED."
+      "note": "Hadith Stage A/B. Merged to main at 43dd96f and is what main carries now. LIVE means exactly that: the version in main's app/js/version.js. It is NOT a claim about Firestore deployment, which is separate and NOT DONE."
     }
   ],
   "nextUnallocated": "08.30",
@@ -94,8 +95,33 @@
   ],
   "streams": [
     {
+      "id": "mmsa-platform",
+      "name": "MMSA platform and integration",
+      "role": "The umbrella: shared runtime, shared verification, governance, version allocation and module integration. It owns the platform/shared paths below; it is not a subject module.",
+      "activeBranch": null,
+      "integrationState": "ON_MAIN",
+      "declaredVersion": "08.29",
+      "baselineSha": null,
+      "baselineStatus": "NOT_APPLICABLE_IS_MAIN",
+      "ownedPaths": [
+        "app/js/version.js",
+        "app/js/nav.js",
+        "app/js/unit-keys.js",
+        "app/js/records.js",
+        "app/js/activity.js",
+        "app/js/catalogue-data.js",
+        "app/css/shell.css",
+        "tools/i18n-verify/harness.mjs",
+        "tools/i18n-verify/firebase-stub.mjs",
+        "tools/i18n-verify/brief-integrity.mjs",
+        "tools/i18n-verify/programme-ledger*.mjs",
+        "docs/governance/*"
+      ],
+      "baselineNote": "MMSA has no branch of its own -- it IS main. A stream with no branch cannot be stale relative to main, and pinning a SHA here would go stale on the next commit for no gain. main's own tip is recorded once, in `main.baselineSha`, and guard F checks it as an ANCESTOR of origin/main rather than as an equal."
+    },
+    {
       "id": "quran",
-      "name": "Quran / QuranRevival application stream",
+      "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
       "declaredVersion": "08.27",
@@ -120,11 +146,12 @@
         "tools/i18n-verify/d14-*.mjs"
       ],
       "baselineNote": "Its recorded baseline went stale when the ledger's own commits moved main past 5ea0d92; re-pointed at cfee898, which is main. Forward movement, not drift.",
-      "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md"
+      "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
+      "role": "Subject module (Quran). NOT the umbrella; the umbrella is MMSA."
     },
     {
       "id": "quran-phase4-wiring",
-      "name": "Quran MAP Phase 4 Study-event wiring (held)",
+      "name": "QuranRevival MAP Phase 4 Study-event wiring (held)",
       "activeBranch": "claude/phase4-wiring",
       "branchTip": "7e2931f795af1cd97efc1167660cea93aa22b9ab",
       "integrationState": "HELD",
@@ -183,7 +210,7 @@
     },
     {
       "id": "hadith",
-      "name": "Hadith Study module stream",
+      "name": "Hadith Study module",
       "activeBranch": "feature/hadith-study",
       "branchTip": "c1a4f19a70ec824372fa1fda49e4e7dbc38bc40c",
       "integrationState": "MERGED_TO_MAIN",
@@ -204,36 +231,81 @@
           "path": "CHANGELOG.md",
           "status": "AUTHORIZED",
           "note": "+127/-0 from the merge base -- its own round entries, appended. NEW at fd8a8a2; guard E caught it as undeclared on the run that preceded this record.",
-          "authorisedBy": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
+          "authorization": {
+            "by": "master-architect",
+            "on": "2026-09-18",
+            "reference": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
+            "title": "Hadith v08.29 Final Integration"
+          },
+          "authorizationRecordedAs": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
         },
         {
           "path": "CLAUDE.md",
           "status": "AUTHORIZED",
           "note": "+65/-0 -- Hadith appended its own region. No Quran region rewritten.",
-          "authorisedBy": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
+          "authorization": {
+            "by": "master-architect",
+            "on": "2026-09-18",
+            "reference": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
+            "title": "Hadith v08.29 Final Integration"
+          },
+          "authorizationRecordedAs": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
         },
         {
           "path": "app/js/i18n/bn.js",
           "status": "AUTHORIZED",
           "note": "+68/-0 -- additive keys only, into a catalogue both streams write.",
-          "authorisedBy": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
+          "authorization": {
+            "by": "master-architect",
+            "on": "2026-09-18",
+            "reference": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
+            "title": "Hadith v08.29 Final Integration"
+          },
+          "authorizationRecordedAs": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
         },
         {
           "path": "tools/i18n-verify/behaviour.mjs",
           "status": "AUTHORIZED",
           "note": "+27/-5. Measured three ways; the Quran stream's earlier figure of +32/-6 was wrong and is corrected here.",
-          "authorisedBy": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
+          "authorization": {
+            "by": "master-architect",
+            "on": "2026-09-18",
+            "reference": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
+            "title": "Hadith v08.29 Final Integration"
+          },
+          "authorizationRecordedAs": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
         },
         {
           "path": "app/js/version.js",
           "status": "AUTHORIZED",
           "note": "+16/-1 -- the 08.29 stamp and its collision-resolution comment. version.js is Master Architect authority; the touch is disclosed, the allocation is not this stream's to make.",
-          "authorisedBy": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
+          "authorization": {
+            "by": "master-architect",
+            "on": "2026-09-18",
+            "reference": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
+            "title": "Hadith v08.29 Final Integration"
+          },
+          "authorizationRecordedAs": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
         }
       ],
       "baselineNote": "Merged to main at 43dd96f. Stage A 7f61328 and Stage B 22526b2 were not rewritten. The recorded baseline is the pre-merge tip because main moved forward by this very merge.",
       "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
-      "branchNote": "Merged to main at 43dd96f. The branch is retained, still stamped 08.29, so the ledger can keep cross-checking the declared version against a real ref."
+      "branchNote": "Merged to main at 43dd96f. The branch is retained, still stamped 08.29, so the ledger can keep cross-checking the declared version against a real ref.",
+      "role": "Subject module (Hadith). Integrated into MMSA at 43dd96f."
+    },
+    {
+      "id": "health",
+      "name": "Health Study module",
+      "role": "Subject module. Exists in a SEPARATE development account/repository context and is NOT integrated into MMSA.",
+      "integrationState": "EXTERNAL_PENDING_ACQUISITION",
+      "repository": "UNKNOWN",
+      "activeBranch": null,
+      "branchTip": "UNKNOWN",
+      "declaredVersion": null,
+      "baselineSha": null,
+      "baselineStatus": "NOT_APPLICABLE_EXTERNAL",
+      "ownedPaths": [],
+      "note": "Registered so the programme can REPRESENT it, not because anything is known about it. Repository, commit, version and technical details are UNKNOWN and were not invented. No Health implementation exists in this repository and none was created. Acquiring it is a Master Architect action: until then it holds no version allocation and the guards have nothing to check it against."
     }
   ],
   "platformSharedPaths": [
@@ -444,5 +516,31 @@
       "app/js/timezone-service.js"
     ],
     "note": "Built as an unreachable candidate. No page or module imports either file. No version bump, nothing deployed."
+  },
+  "versionVocabulary": {
+    "LIVE": "The version main's app/js/version.js carries right now. EXACTLY ONE allocation may hold it, and guard A fails if it is not main's own version -- the check written because 08.27 sat LIVE for a while after main had moved to 08.29.",
+    "RELEASED": "Reached main and was superseded. A prior milestone, kept as fact.",
+    "RESERVED": "Allocated to a stream and not yet on main.",
+    "HISTORICAL": "A stamp a branch carries or carried. NEVER a forward allocation, and never available for re-allocation.",
+    "HELD": "A stream's stamp while the stream itself is held.",
+    "$deploymentNote": "NONE of these say anything about Firestore deployment. Deployment is tracked in `deployment` below and is NOT DONE."
+  },
+  "deployment": {
+    "firestoreRules": "NOT_DONE",
+    "firestoreIndexes": "NOT_DONE",
+    "blockedOn": "E1 -- authenticated Firebase Console access to study-monitoring. A sandbox has no credentials.",
+    "note": "Recorded as NOT DONE because it has not been proven done. GitHub Pages serving main is a separate thing from deploying Rules, and nothing here claims either beyond what was measured."
+  },
+  "programme": {
+    "name": "MMSA -- Madrasatul Muslimeen's Study App",
+    "role": "The umbrella integrated Study App and platform. This repository IS the MMSA platform repository.",
+    "terminology": {
+      "MMSA": "The umbrella integrated Study App / platform.",
+      "QuranRevival": "The QURAN STUDY MODULE ONLY -- not the platform, not the umbrella.",
+      "Hadith Study": "The Hadith module.",
+      "Health Study": "The Health module.",
+      "future subjects": "Separate subject modules integrated into MMSA."
+    },
+    "terminologyScope": "Governance and coordination terminology, adopted 18 Sep 2026. Historical reports are NOT rewritten to apply it -- they record what was said when it was said. No application file, route or product branding was renamed; this is vocabulary, not a rename."
   }
 }

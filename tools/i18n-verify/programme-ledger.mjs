@@ -53,6 +53,23 @@ export const prosePattern = (v) => new RegExp(`\\bv${v.replace(".", "\\.")}\\b`)
  */
 export const barePattern = (v) => new RegExp(`(?<![v\\d.])${v.replace(".", "\\.")}(?!\\.?\\d)`);
 
+/**
+ * The shared-file touch vocabulary. It is CLOSED, and an unrecognised token
+ * fails by name rather than falling through to a default.
+ *
+ * That is not pedantry. The ledger said `AUTHORIZED` and this guard tested for
+ * `AUTHORISED`; one letter, and all five of the Hadith stream's Master
+ * Architect authorisations were reported every run as "DECLARED, awaiting
+ * Master Architect decision" -- a decision that had already been made, shown as
+ * still outstanding. A closed set turns that class of near-miss into a loud
+ * failure naming the offending token.
+ */
+export const TOUCH_DECLARED = "DECLARED";
+export const TOUCH_AUTHORIZED = "AUTHORIZED";
+const TOUCH_STATUSES = new Set([TOUCH_DECLARED, TOUCH_AUTHORIZED]);
+/** Who may authorise a shared-file change. Closed: a module cannot authorise itself. */
+const AUTHORITIES = new Set(["master-architect"]);
+
 /** Statuses that CLAIM a version. A claimed version is not available to anyone else. */
 const CLAIMING = new Set(["LIVE", "RESERVED", "RELEASED"]);
 /** Statuses that do NOT claim: a record of what a branch happens to be stamped. */
@@ -146,7 +163,19 @@ export function runGuards(ledger, facts) {
         fail("A", `stream ${s.id} declares ${s.declaredVersion} but ${s.activeBranch} is stamped ${b.version} -- the ledger and the branch disagree`);
       }
     }
-    if (!collisions) pass("A", `no global version is claimed by two streams (${byVersion.size} claiming allocations checked)`);
+    // LIVE means "the version main carries". That is a fact about the
+    // repository, so it is checked against the repository -- Quran's 08.27 sat
+    // LIVE while main had moved to 08.29, and nothing objected, because the
+    // vocabulary was only ever described in prose.
+    const live = allocations.filter((a) => a.status === "LIVE");
+    if (live.length !== 1) {
+      fail("A", `${live.length} allocations are LIVE; exactly one may be (LIVE is the version main carries)`);
+    } else if (ledger.main?.version && live[0].version !== ledger.main.version) {
+      fail("A", `${live[0].version} (${live[0].owner}) is marked LIVE, but main carries ${ledger.main.version} -- a superseded milestone is RELEASED, not LIVE`);
+    }
+    if (!collisions && !findings.some((f) => f.guard === "A" && f.level === "FAIL")) {
+      pass("A", `no global version is claimed by two streams (${byVersion.size} claiming allocations checked); ${live.length ? live[0].version : "none"} is LIVE and matches main`);
+    }
   }
 
   // ---- GUARD B: a branch inventing an unreserved version -----------------
@@ -191,11 +220,29 @@ export function runGuards(ledger, facts) {
       if (!NON_CLAIMING.has(a.status)) {
         fail("C", `allocation ${a.version} (${a.owner}) is a historical stamp with status ${a.status}, which is neither HISTORICAL nor HELD`);
       }
-      // The record must not be fiction: the held commit really carries that stamp.
+      // The record must not be fiction: the commit really carries that stamp.
+      //
+      // Checked against the COMMIT THE STAMP NAMES, not the branch tip. The tip
+      // is only the right comparison for a stream with a single stamp that has
+      // never moved -- true of the held Phase 4 wiring, false the moment a
+      // stream stamps twice on its way to integration, as Hadith did
+      // (08.28 at 7f61328, then 08.29). Comparing an intermediate stamp against
+      // the tip reported a correct record as fiction. Naming the commit is also
+      // strictly stronger: it verifies each stamp where it actually lives.
+      const at = a.stampedAt || a.commit;
+      if (at) {
+        const real = facts.versionAt?.[at];
+        if (real === undefined) {
+          note("C", `${a.owner}'s historical stamp ${a.version} names commit ${at}, which is not readable here; the stamp was not cross-checked`);
+        } else if (real !== a.version) {
+          fail("C", `the ledger records ${a.owner}'s historical stamp at ${at} as ${a.version}; that commit actually carries ${real}`);
+        }
+        continue;
+      }
       const s = streams.find((x) => x.id === a.owner);
       const b = s?.activeBranch ? facts.branches?.[s.activeBranch] : null;
       if (b && b.version !== a.version) {
-        fail("C", `the ledger records ${a.owner}'s historical stamp as ${a.version}; ${s.activeBranch} actually carries ${b.version}`);
+        fail("C", `the ledger records ${a.owner}'s historical stamp as ${a.version}; ${s.activeBranch} actually carries ${b.version} and the stamp names no commit of its own`);
       }
     }
     // THE ONE THAT ACTUALLY HAPPENED. The brief predicts a merge number for a
@@ -271,7 +318,55 @@ export function runGuards(ledger, facts) {
       ...(ledger.deploymentSecuritySharedPaths || []).map((r) => r.path),
     ];
     const surfaces = new Map((ledger.moduleContentSurfaces || []).map((m) => [m.path, m.owner]));
-    let checked = 0, declared = 0;
+    let checked = 0, declared = 0, authorized = 0;
+
+    /**
+     * Validate a touch RECORD, independently of whether its branch is still
+     * diffable. A merged stream's branch shows no changed paths, so without
+     * this every authorization it recorded would stop being checked the moment
+     * it landed -- the vocabulary would be validated only while it least
+     * mattered. Returns the reason it is invalid, or null.
+     */
+    const touchRecordFault = (t) => {
+      if (!TOUCH_STATUSES.has(t.status)) {
+        return `carries status "${t.status}" -- not one of ${[...TOUCH_STATUSES].join(" / ")}. A status this guard does not recognise is a touch nobody is tracking.`;
+      }
+      if (t.status !== TOUCH_AUTHORIZED) return null;
+      const a = t.authorization;
+      if (!a || typeof a !== "object") return `claims ${TOUCH_AUTHORIZED} with no authorization metadata -- it must carry { by, on, reference }`;
+      const missing = ["by", "on", "reference"].filter((k) => !a[k]);
+      if (missing.length) return `is ${TOUCH_AUTHORIZED} but is missing authorization ${missing.join(", ")}`;
+      if (!AUTHORITIES.has(a.by)) return `claims authorization by "${a.by}", which is not a recognised authority (${[...AUTHORITIES].join(", ")}) -- a module cannot authorise itself`;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(a.on)) return `dates its authorization "${a.on}", which is not YYYY-MM-DD`;
+      return null;
+    };
+
+    // Validate AND REPORT from the records, not from the branch diffs. A merged
+    // stream's branch shows no changed paths, so reporting from the diff alone
+    // made every authorisation vanish from the output the moment it landed --
+    // found by this suite's own positive control, which asked the guard to show
+    // an AUTHORIZED touch and got only DECLARED ones back.
+    let records = 0;
+    for (const s of streams) {
+      for (const t of s.declaredSharedTouches || []) {
+        records++;
+        const fault = touchRecordFault(t);
+        if (fault) { fail("E", `stream ${s.id}'s touch of ${t.path} ${fault}`); continue; }
+        if (t.status === TOUCH_AUTHORIZED) {
+          const a = t.authorization;
+          if (facts.fileExists && !facts.fileExists(a.reference, s.activeBranch)) {
+            fail("E", `stream ${s.id}'s ${TOUCH_AUTHORIZED} touch of ${t.path} cites ${a.reference}, which does not exist -- an authorization must be traceable to a record`);
+            continue;
+          }
+          authorized++;
+          note("E", `stream ${s.id} modifies shared file ${t.path} -- ${TOUCH_AUTHORIZED} by ${a.by} on ${a.on} (${a.reference})`);
+        } else {
+          declared++;
+          note("E", `stream ${s.id} modifies shared file ${t.path} -- ${TOUCH_DECLARED}, awaiting Master Architect decision. ${t.note || ""}`.trim());
+        }
+      }
+    }
+    if (!records) fail("CONTROL", "no shared-file touch records were read; guard E's vocabulary checks would pass vacuously");
     for (const s of streams) {
       if (!s.activeBranch) continue;
       const b = facts.branches?.[s.activeBranch];
@@ -285,17 +380,15 @@ export function runGuards(ledger, facts) {
         checked++;
         const t = disclosed.get(p);
         if (!t) {
-          fail("E", `stream ${s.id} modifies shared/platform file ${p} on ${s.activeBranch} with no declaration and no authorisation -- raise a SHARED CHANGE REQUEST`);
-        } else if (t.status === "AUTHORISED") {
-          declared++;
-        } else {
-          declared++;
-          note("E", `stream ${s.id} modifies shared file ${p} -- DECLARED, awaiting Master Architect decision. ${t.note || ""}`.trim());
+          fail("E", `stream ${s.id} modifies shared/platform file ${p} on ${s.activeBranch} with no declaration and no authorization -- raise a SHARED CHANGE REQUEST`);
+          continue;
         }
+        // Disclosed. Its vocabulary, metadata and reporting are handled above,
+        // where they stay visible after the branch merges.
       }
     }
     if (!findings.some((f) => f.guard === "E" && f.level === "FAIL")) {
-      pass("E", `${checked} shared-file modification(s) seen across declared branches; ${declared} declared, 0 undeclared`);
+      pass("E", `${records} shared-file touch record(s): ${authorized} ${TOUCH_AUTHORIZED}, ${declared} ${TOUCH_DECLARED} (awaiting decision). ${checked} live modification(s) seen across declared branches, 0 undeclared`);
     }
   }
 
@@ -364,6 +457,16 @@ export function measure(root) {
     branches[s.activeBranch] = { tip, version: versionOf(ref), changedPaths: changed };
   }
 
+  // Every commit a historical stamp names, so guard C can check the stamp where
+  // it actually lives rather than against a branch tip that has moved on.
+  const versionAt = {};
+  for (const a of ledger.versionAllocations || []) {
+    const at = a.stampedAt || a.commit;
+    if (!at || versionAt[at] !== undefined) continue;
+    const v = versionOf(at);
+    if (v !== null) versionAt[at] = v;
+  }
+
   const ancestorOfMain = {};
   const shas = [ledger.main?.baselineSha, ...(ledger.streams || []).map((s) => s.baselineSha)].filter(Boolean);
   for (const sha of shas) {
@@ -378,6 +481,7 @@ export function measure(root) {
       mainVersion: versionOf(ledger.main?.ref || "origin/main"),
       briefText: fs.readFileSync(path.join(root, "CLAUDE.md"), "utf8"),
       branches,
+      versionAt,
       ancestorOfMain,
       // An acknowledgement legitimately lives on the stream's OWN branch, not
       // on main -- which is where the guard's first run went looking and

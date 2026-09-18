@@ -1,4 +1,17 @@
-# QuranRevival Active Governance
+# MMSA Active Governance
+
+**MMSA — Madrasatul Muslimeen's Study App** is the umbrella integrated Study App and platform, and this repository is the MMSA platform repository. **Terminology adopted 18 Sep 2026, governance-wide:**
+
+| Term | Means |
+|---|---|
+| **MMSA** | The umbrella integrated Study App / platform |
+| **QuranRevival** | The **Quran Study module only** — not the platform, not the umbrella |
+| **Hadith Study** | The Hadith module |
+| **Health Study** | The Health module |
+| *future subjects* | Separate subject modules integrated into MMSA |
+
+This is **governance terminology only**. No application file, route or product branding was renamed, and **historical reports are not rewritten** to apply it — they record what was said when it was said.
+
 
 **Status:** ACTIVE  
 **Established:** 2026-09-10
@@ -47,6 +60,8 @@ Recorded in the ledger and reproduced here because it is read more often than it
 | `CHANGELOG.md` | Platform — release history, shared | A round leaving the brief is appended here first. |
 | `app/js/i18n/bn.js` | Platform — shared translation catalogue | Every module adds keys to the same file. |
 | `tools/i18n-verify/behaviour.mjs` | Platform — shared verification infrastructure | See SCR-01 in the ledger. |
-| `app/hadith-study.html` | Hadith — module content surface | The common navigation and page shell inside it remain **platform-owned**. |
+| `app/hadith-study.html` | Hadith Study — module content surface | The common navigation and page shell inside it remain **MMSA platform-owned**. |
+
+**A shared-file touch is `DECLARED` or `AUTHORIZED`, and the two are not the same.** `DECLARED` means disclosed and awaiting the Master Architect's decision; `AUTHORIZED` means the decision was made and must carry `authorization: { by, on, reference }`, where `by` is a recognised authority, `on` is a date and `reference` is a record that exists. Guard E fails on any other status token, on an `AUTHORIZED` touch with no or invalid metadata, and on a module purporting to authorise itself.
 
 **The SHARED CHANGE RULE.** If a module's work requires modifying a declared shared or platform file and no shared-change authorisation exists, STOP that portion and raise a SHARED CHANGE REQUEST — file, current owner-use, required change, reason, expected blast radius, other modules potentially affected. Do not silently take ownership. Guard E fails on any undeclared shared-file modification by a declared stream.
