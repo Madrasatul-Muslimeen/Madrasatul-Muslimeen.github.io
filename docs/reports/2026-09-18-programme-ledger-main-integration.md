@@ -107,7 +107,7 @@ The 12 NOTEs are the declared shared-file touches (11) and the acknowledged Hadi
 
 ```
 BASE_MAIN_SHA=5ea0d928b8f326e0164c988ef79e4d1d1c168eeb
-FINAL_MAIN_SHA=__FINAL__
+FINAL_MAIN_SHA=44e2304c00a4beae100161b5d5a9625cdd3ac68f
 APP_VERSION=v08.27
 LEDGER_COMMIT=e89d27b07152e1a05e09932ce10b8056f2de2639
 LEDGER_ON_MAIN=YES
@@ -122,6 +122,14 @@ RULES_CHANGED=NO
 DEPLOYED=NO
 READY_FOR_HADITH_REBASELINE=YES
 ```
+
+**A note on `FINAL_MAIN_SHA`, so it is not read as an error.** It names
+`44e2304`, the commit that carries the whole integration — the ledger, the
+guards, the corrected Phase-4 note and this report. The commit that *stamps this
+value into the block* necessarily sits one commit ahead of the SHA it records; a
+commit cannot contain its own hash. That stamping commit changes this report and
+nothing else, and `git diff 44e2304 <tip>` shows exactly that. Both are verified
+against `git`, not asserted.
 
 **READY_FOR_HADITH_REBASELINE = YES**, with one thing for the Master Architect to decide rather than assume: the candidate's five shared-file touches are DECLARED, not AUTHORISED — `CHANGELOG.md` among them, newly appearing at `fd8a8a2`. `app/js/version.js` carrying `08.29` is the one that merges silently: `git merge-tree` predicts no conflict there, so a merge takes the branch's number with no human decision. That is the mechanism that produced the real duplicate at 08.27.
 
