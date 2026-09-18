@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith Stage A/B integration — HALTED: BASELINE MOVED</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith Stage A/B integration — HALTED: BASELINE MOVED</h1>
+<p><strong>Date:</strong> 2026-09-18 · <strong>Type:</strong> Mandated halt under instruction 1 of the Integration-Preparation tranche. <strong>No integration was performed. No history was rewritten. No version was consumed. Nothing was merged, deployed or refactored.</strong></p>
+<p>The instruction is unconditional: <em>&quot;Confirm <code>origin/main</code> before doing anything. If it is no longer <code>7111e3c...</code>, STOP implementation and report BASELINE MOVED with the new SHA and diff summary.&quot;</em> The baseline check failed on the first command of the tranche, so implementation never began. This report is that mandated notice, plus everything the Master Architect needs to re-authorise in one step.</p>
+<hr>
+<h2>1. BASELINE MOVED</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>origin/main</code> <strong>authorised</strong></td><td><code>7111e3c975d3cf3fd0bf0c0d7814691edcd5299e</code></td></tr>
+<tr><td><code>origin/main</code> <strong>actual</strong></td><td><strong><code>5ea0d928b8f326e0164c988ef79e4d1d1c168eeb</code></strong></td></tr>
+<tr><td>Application version</td><td><strong><code>08.27</code> — UNCHANGED</strong></td></tr>
+<tr><td>Hadith branch HEAD</td><td><code>8b14eb18d58599446636da460442627cca395a68</code> (local = remote, tree clean)</td></tr>
+</tbody></table></div>
+<h3>The move, in full</h3>
+<p><strong>One commit, two files, both documentation.</strong></p>
+<div class='tw'><table><thead><tr><th>SHA</th><th>Subject</th></tr></thead><tbody>
+<tr><td><code>5ea0d928b8f326e0164c988ef79e4d1d1c168eeb</code></td><td><em>Quran Stream integration reconciliation: state, inventory, Hadith overlap, collision risks</em></td></tr>
+</tbody></table></div>
+<p>Diff <code>7111e3c → 5ea0d92</code>: <strong>2 files changed, 392 insertions, 0 deletions</strong> — <code>docs/reports/2026-09-18-quran-stream-integration-reconciliation.{md,html}</code>.</p>
+<p><strong>Materially benign, established rather than assumed:</strong> filtering the changed paths for anything outside <code>docs/reports/</code> returns <strong>nothing</strong>. No application code, no <code>app/js/version.js</code>, no shared file, no <code>firestore.rules</code>, no <code>firebase.json</code>. <code>main</code> remains <code>08.27</code>. <strong>D14 is still present and still unreachable</strong> in the new baseline — <code>timezone-contract.js</code> and <code>timezone-service.js</code> both exist and no page or module imports either.</p>
+<p><strong>Assessment, for the Master Architect&#x27;s decision and not a substitute for it:</strong> the move is documentation-only and changes nothing the integration depends on. Re-authorising against <code>5ea0d92</code> appears to be a formality. <strong>That judgement is the Master Architect&#x27;s to make, and implementation stays halted until it is made.</strong></p>
+<hr>
+<h2>2. Merge prediction against the NEW baseline — analysis only, nothing written</h2>
+<p>Run because it costs nothing and materially informs the re-authorisation. It is a read-only prediction: <code>git merge-tree --write-tree</code> writes no ref and touches no worktree, and HEAD and <code>git status</code> were re-verified unchanged immediately afterwards.</p>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>git merge-tree --write-tree origin/main HEAD</code></td><td><strong>exit 0 — NO CONFLICT</strong></td></tr>
+<tr><td>Predicted result tree</td><td><code>2732514ea2473831792e68029e430b345be0296b</code></td></tr>
+<tr><td>HEAD after</td><td><code>8b14eb18d58599446636da460442627cca395a68</code> — <strong>unchanged</strong></td></tr>
+<tr><td>Working tree after</td><td><strong>clean</strong></td></tr>
+</tbody></table></div>
+<p>The prediction is unchanged in substance from the previous baseline: the only file both streams have modified since the shared merge base (<code>6758490</code>) is <code>CLAUDE.md</code>, in non-adjacent regions.</p>
+<hr>
+<h2>3. The Quran stream&#x27;s reconciliation — read, and one figure corrected</h2>
+<p>The commit that moved the baseline is the Quran stream&#x27;s own reconciliation, and it addresses this stream directly. It <strong>corroborates</strong> the Hadith reconciliation on every material point: Stage A <code>7f61328</code> at 08.28 and Stage B <code>cd344f4</code> at 08.29 both present and unmerged; zero predicted textual conflicts; <code>CLAUDE.md</code> the only shared-file overlap.</p>
+<p><strong>Its three Hadith-branch findings are exactly the three this tranche&#x27;s task 4 asks to fix, and all three are confirmed true</strong> (§4).</p>
+<p><strong>One figure in it is overstated, reported factually:</strong> it records <code>tools/i18n-verify/behaviour.mjs</code> as <strong>+32 / −6</strong>. Measured three independent ways here — <code>git diff --numstat</code>, <code>--shortstat</code>, and a raw <code>grep -c</code> of added and removed lines — it is <strong>+27 / −5</strong>, identically whether measured over Stage B alone or over the whole branch from the merge base. The correct figure is <strong>+27 / −5</strong>.</p>
+<p><strong>Two figures that look like disagreements are not</strong>, and the difference is scope:</p>
+<div class='tw'><table><thead><tr><th>File</th><th>Stage B alone</th><th>Whole branch from merge base</th><th>Both correct?</th></tr></thead><tbody>
+<tr><td><code>app/js/i18n/bn.js</code></td><td>+21 / −0</td><td><strong>+68 / −0</strong></td><td><strong>Yes</strong> — +47 came from H2-A, +21 from Stage B</td></tr>
+<tr><td><code>app/hadith-study.html</code></td><td>+43 / −0</td><td>+43 / −0</td><td>Yes — identical</td></tr>
+</tbody></table></div>
+<p>For merge planning the <strong>whole-branch</strong> figures are the right ones; my earlier reconciliation quoted Stage-B scope, which was correct for its own question. Recorded so the two documents are not read as contradicting each other.</p>
+<hr>
+<h2>4. Task-4 governance drift — all three items CONFIRMED, none yet fixed</h2>
+<p>Verified against the repository, because a fix must not be planned from a report alone.</p>
+<div class='tw'><table><thead><tr><th>#</th><th>Item</th><th>Evidence</th><th>Status</th></tr></thead><tbody>
+<tr><td>1</td><td>Brief claims the wrong version</td><td><code>CLAUDE.md:29</code> reads <em>&quot;This branch carries app version <code>08.28</code>&quot;</em>; <code>app/js/version.js</code> reads <strong><code>08.29</code></strong></td><td><strong>CONFIRMED.</strong> Written at Stage A, never updated when Stage B bumped</td></tr>
+<tr><td>2</td><td>Non-canonical notation blinds the guard</td><td>The Hadith block contains <strong>4</strong> bare <code>08.28</code> and <strong>0</strong> <code>v08.28</code>/<code>v08.29</code>. <code>brief-integrity.mjs:165</code> scans <code>/\bv(0[78]\.\d{2})\b/g</code> — <strong>the <code>v</code> prefix is required</strong></td><td><strong>CONFIRMED</strong></td></tr>
+<tr><td>3</td><td>No changelog entries</td><td><code>CHANGELOG.md</code> contains <strong>0</strong> matches for <code>v08.28</code> or <code>v08.29</code></td><td><strong>CONFIRMED</strong></td></tr>
+</tbody></table></div>
+<p><strong>Items 2 and 3 are one defect, and this is the part worth stating plainly.</strong> Because the brief writes <code>08.28</code> rather than <code>v08.28</code>, the scanner never sees the version, so <code>brief-integrity</code>&#x27;s <em>&quot;every version the brief names is also in <code>CHANGELOG.md</code>&quot;</em> check <strong>passes vacuously</strong> for both Hadith versions. It is not detecting compliance; it is failing to look. Writing the canonical <code>v08.28</code> / <code>v08.29</code> will make the guard <strong>see</strong> them, and it will then correctly demand the changelog entries that task 4 also requires. <strong>The two halves of task 4 fit together, and the guard is not to be weakened</strong> — the notation is what is wrong, not the check.</p>
+<hr>
+<h2>5. Prepared execution plan — ready to run on re-authorisation</h2>
+<p>Held, not performed. Recorded so that re-authorisation needs no further design.</p>
+<ol><li><strong>Re-confirm</strong> <code>origin/main</code> immediately before acting, and halt again if it has moved.</li><li><strong>Integrate by merge, not rebase</strong> — <code>git merge origin/main</code> into <code>feature/hadith-study</code>, the same history-preserving method used at <code>aef6cf3</code> and <code>85c35cf</code>. <strong>No accepted Stage A/B commit is rewritten</strong>, so <code>7f61328</code> and <code>22526b2</code> keep their SHAs and their recorded versions. The Hadith branch is never merged into <code>main</code>.</li><li><strong>Preserve <code>08.29</code></strong> — <code>main</code> is <code>08.27</code> and does not touch <code>version.js</code>, so no conflict arises and the candidate keeps 08.29. <strong><code>08.30</code> is not allocated.</strong> Verify the resulting tree carries D14, Stage A and Stage B with no loss on either side.</li><li><strong>Governance, in the Hadith-owned block only</strong>: correct <code>08.28</code> → <code>08.29</code> as the branch&#x27;s <em>current</em> application version, while recording the historical truth (Stage A = v08.28, Stage B = v08.29), in canonical <code>v08.xx</code> notation. Add <code>CHANGELOG.md</code> entries for <strong>v08.28</strong> and <strong>v08.29</strong>, described explicitly as Hadith branch/integration milestones, with <strong>no claim that either was deployed or live</strong>.</li><li><strong><code>behaviour.mjs</code></strong>: no redesign. The Stage-B exclusion stays. Record <code>SHARED CHANGE REQUEST 01 — STATUS=ACCEPTED_ARCHITECTURAL_DEBT_DEFERRED</code>. The comment-only indentation defect may be corrected <strong>only if the behavioural diff is provably empty</strong>, which for a comment it is — to be demonstrated, not assumed.</li><li><strong>Full verification</strong> per task 7, with environmental failures separated from application failures by name.</li><li><strong>Merge prediction</strong> per task 8. <strong>No merge, no deployment, no further tranche.</strong></li></ol>
+<p><strong>Scope discipline:</strong> the five shared files (<code>version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>bn.js</code>, <code>behaviour.mjs</code>) would be touched <strong>only</strong> as tasks 3–5 require. <code>bn.js</code> and <code>behaviour.mjs</code> need <strong>no further change at all</strong> in that tranche — their Stage B state is already accepted.</p>
+<hr>
+<h2>6. Gates — all remain CLOSED</h2>
+<p>No real corpus, translation or commentary embedding · no permanent Hadith key adoption · no Approach ID allocation · no durable Track · no Notes/MMJ persistence · no Rules or index activation · no migration · no deployment · no merge · <strong>no version consumed — <code>08.29</code> stands and <code>08.30+</code> remains unallocated.</strong></p>
+<h2>7. Firestore Rules — the two facts, stated separately</h2>
+<p><strong>REPOSITORY:</strong> <code>firestore.rules</code> and <code>firebase.json</code> are <strong>byte-identical to <code>origin/main</code></strong>; <code>firestore.rules</code> contains <strong>0</strong> <code>hadith</code> collections; no <code>firestore.indexes.json</code> exists. This proves repository content and nothing else.</p>
+<p><strong>DEPLOYMENT: UNVERIFIED.</strong> No <code>firebase</code> CLI, no <code>gcloud</code>, no credentials; the Firebase Rules API returns <strong>HTTP 403 PERMISSION_DENIED</strong> to an unregistered caller. The deployed ruleset has not been inspected and cannot be inspected from this environment.</p>
+<hr>
+<h2>HADITH_INTEGRATION_CANDIDATE</h2>
+<p>The named deliverable is <strong>NOT PRODUCED</strong>: no candidate exists, because the tranche halted at its own first gate. Fields are reported against the actual state, and a field that would describe unperformed work says so rather than being filled in speculatively.</p>
+<p>STATUS=HALTED_BASELINE_MOVED</p>
+<p>MAIN_SHA=5ea0d928b8f326e0164c988ef79e4d1d1c168eeb</p>
+<p>MAIN_SHA_AUTHORISED=7111e3c975d3cf3fd0bf0c0d7814691edcd5299e</p>
+<p>MAIN_SHA_DELTA=1 commit, 2 files, +392/-0, docs/reports/ ONLY (the Quran stream&#x27;s own reconciliation). No app code, no version, no shared file, no Rules. Materially benign; re-authorisation is the Master Architect&#x27;s call</p>
+<p>MAIN_VERSION=08.27</p>
+<p>BRANCH=feature/hadith-study</p>
+<p>HEAD=8b14eb18d58599446636da460442627cca395a68</p>
+<p>MERGE_BASE=6758490cf957c646df4945ad52b0cf403cc3cf61</p>
+<p>STAGE_A_SHA=7f6132888bc02728e07e2214b5a8d6323708e00a</p>
+<p>STAGE_A_VERSION=08.28</p>
+<p>STAGE_B_VERSION=08.29</p>
+<p>CANDIDATE_VERSION=08.29 (unchanged; NOT consumed; 08.30+ unallocated)</p>
+<p>D14_PRESENT=YES in origin/main 5ea0d92 (timezone-contract.js and timezone-service.js both present, still unreachable — no importer). NOT YET in the Hadith branch: integration not performed</p>
+<p>GOVERNANCE_DRIFT_FIXED=NO — halted. All three items CONFIRMED and unfixed: CLAUDE.md:29 says 08.28 while version.js says 08.29; the brief uses bare 08.28 (4x) and no v08.xx, so brief-integrity.mjs:165 /\bv(0[78]\.\d{2})\b/ cannot see it and its CHANGELOG check passes VACUOUSLY; CHANGELOG.md has 0 entries for either version</p>
+<p>CHANGELOG_0828=ABSENT — not written (halted)</p>
+<p>CHANGELOG_0829=ABSENT — not written (halted)</p>
+<p>SHARED_FILES_CHANGED=NONE by this halt. Accepted Stage A/B state stands: app/js/version.js (08.29), CLAUDE.md (Hadith block), app/js/i18n/bn.js (+68/-0 whole-branch; +21/-0 Stage B), tools/i18n-verify/behaviour.mjs (+27/-5 — CORRECTING the Quran report&#x27;s +32/-6, measured three ways). CHANGELOG.md untouched</p>
+<p>BEHAVIOUR_DEFERRED_DEBT=SHARED CHANGE REQUEST 01 STATUS=ACCEPTED_ARCHITECTURAL_DEBT_DEFERRED. Stage-B exclusion remains. Future platform solution must distinguish intentionally multi-language/multi-script content from data-i18n-skip. Contract NOT invented here</p>
+<p>TEST_RESULT=NOT RUN for an integration candidate — none exists. Last full evidence at HEAD stands: 13 pure suites 243 passed / 0 failed, all exit 0; behaviour.mjs 978 passed / 4 failed across 56 sections</p>
+<p>ENVIRONMENTAL_FAILURES=4, all environmental, none application: archive.org screensaver caption / alt text / poster URL (x3, recorded as INTERMITTENT) and one sandbox TLS ERR_CERT_AUTHORITY_INVALID</p>
+<p>MERGE_PREDICTION=CLEAN against the NEW baseline. git merge-tree --write-tree origin/main HEAD exits 0 with result tree 2732514ea2473831792e68029e430b345be0296b and no conflicts. Read-only: HEAD and working tree re-verified unchanged. Only shared-file overlap is CLAUDE.md, in non-adjacent regions</p>
+<p>RULES_REPOSITORY_STATUS=UNCHANGED — firestore.rules and firebase.json byte-identical to origin/main; 0 hadith collections; no firestore.indexes.json</p>
+<p>RULES_DEPLOYMENT_STATUS=UNVERIFIED — no firebase CLI, no gcloud, no credentials; Rules API returns HTTP 403 PERMISSION_DENIED (unregistered caller). Deployed ruleset not inspected and not inspectable from this environment</p>
+<p>READY_FOR_MASTER_ARCHITECT_MERGE_REVIEW=NO — halted at the baseline gate before any work. Awaiting re-authorisation against 5ea0d928b8f326e0164c988ef79e4d1d1c168eeb (or a newer confirmed SHA). The execution plan is prepared and needs no further design</p>
+</main></body></html>
