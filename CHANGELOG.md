@@ -13738,3 +13738,78 @@ to fail is still only found by reading it — which is how the section-42
 excavation found twelve earlier the same day. And `layout.mjs`, `reading.mjs`,
 `panel.mjs` and `navcheck.mjs` were not swept: they report through their own
 mechanisms rather than a `check()` runner, and deserve the same pass.
+
+---
+
+## The four suites whose exit codes meant nothing (18 Sep 2026, v08.25, no version bump)
+
+**BR-0, tools only.** `git diff -- app/` is empty. Evidence:
+`docs/reports/2026-09-18-four-suites-whose-exit-codes-meant-nothing.md` /
+`.html`.
+
+The previous sweep closed the `check()` runners and said plainly that
+`layout.mjs`, `reading.mjs`, `panel.mjs` and `navcheck.mjs` "report through
+their own mechanisms … and deserve the same pass." They did, and it was worse
+than expected: **not one of the four had an exit code that carried
+information.**
+
+- **`layout.mjs` EXITED 1 ON UNMODIFIED `main`** (it counted the 22 pre-existing
+  missing `getElementById` targets once per viewport) **and EXITED 0 FOR A REAL
+  GEOMETRY CHANGE** — a changed `headingTop`, `wheelWidth` or `gapAboveDock` was
+  *printed* as `CHANGED:` and never counted. **Exactly backwards, in both
+  directions, on the suite this project's whole measure-before-and-after method
+  depends on.**
+- **`reading.mjs`** counted `problems` and **had no `process.exit` at all**.
+- **`panel.mjs`** had no counter and no exit code, while printing its own `!!`
+  warnings and a summary line with the word `REGRESSION` in capitals.
+- **`navcheck.mjs`** exited correctly but counted the pre-existing 320px English
+  truncation of "Operation"/"Bookmark", so it was permanently 1.
+
+**`layout.mjs` got three fixes, each measured rather than argued.** The shim
+trap is loud now — without `app/_prev-quranrevival.html` it **exits 2** with the
+fix spelled out instead of producing 16 meaningless regressions (this file's own
+standing lesson finally enforced rather than remembered). A CHANGED metric
+counts, because that is what the suite is FOR. And the 22 missing ids are a
+baseline by NAME, so a new one fails and a baselined one that comes back is
+reported. Proven: no shim → **2**; shim identical to the page → **0**; 23px of
+padding injected → **1**, naming 10 × `!! CHANGED`.
+
+**A REAL MEASUREMENT DEFECT IN `panel.mjs`.** Its select flag was
+`cut: need > w - 22`, and a HIDDEN select measures `w = 0`, so `need > -22` is
+always true — every off-screen select was reported as truncated
+(`unitNumSelect "1" 0px needs 8px`). Harmless while only printed; **a false
+failure the moment I counted it**, producing 48 problems that were all this.
+Fixed at the source so the printed line is honest too: a hidden control reads
+`not on screen`, and `cut` requires `w > 0`.
+
+**ONE PRE-EXISTING TRUNCATION WORTH THE OWNER'S ATTENTION.** With the artefact
+gone, three REAL select truncations remain, printed all along and never counted:
+**`tenantSelect` — "Madrasatul Muslimeen (Owner, Prime)", 224px of text in a
+145px cell, so a real tenant's name is CUT IN THE PICKER** — plus `surahSelect`
+and `unitTypeSelect`, both tight once the 22px arrow is allowed for. Baselined
+by id, **recorded rather than silently tolerated**; fixing the first is a layout
+decision on the most tightly measured screen in the app.
+
+**The environmental failures are SEPARATED, not suppressed.** `reading.mjs`
+reported 16 problems, every one `ERR_CERT_AUTHORITY_INVALID` — this sandbox's
+TLS proxy, which will not occur for the owner. A bare `process.exit(problems ?
+1 : 0)` would have made it permanently red for a reason that is not this
+project's. An error set that is ENTIRELY TLS artefacts is counted as
+environmental, printed, and does not fail the run; anything else does.
+`panel.mjs` got the same treatment. Nothing is hidden — the counts print either
+way.
+
+**Every fix mutation-proven**, each mutation asserting its occurrence count
+first — and **one did not apply** (`>Tajweed<` is not in the markup), which the
+assertion caught before anything false was concluded.
+
+**Verified:** `layout` EXIT 0 (22/22 baselined ids seen), `navcheck` EXIT 0
+(2 baselined truncations), `reading` EXIT 0 (16 environmental noted), `panel`
+EXIT 0 (34 baselined select truncations), `git status app/` clean with every
+mutation restored byte-identical, coverage **1,803 / 47** unchanged.
+
+**Flagged, not changed.** The `tenantSelect` truncation is real and
+user-visible. And **the baselines are honest but they are DEBT** — 22 missing
+ids, 2 nav truncations, 3 select truncations, each tolerated BY NAME, each list
+reporting when an entry stops occurring so none can quietly grow, but all of
+them a record of things nobody has fixed.

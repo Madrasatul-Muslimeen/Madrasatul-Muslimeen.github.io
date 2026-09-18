@@ -65,6 +65,25 @@ async function measure(ctx, path) {
 
 const browser = await chromium.launch(EXE ? { executablePath: EXE } : {});
 let regressions = 0;
+let shimChecked = false;
+
+// The 22 `getElementById` targets this app has been missing for as long as
+// this suite has recorded them (Asma's edit form and QCR's add row, both
+// rendered on demand). Counting them made `regressions` at least 16 -- one
+// per viewport -- so this suite exited 1 on unmodified `main` and its exit
+// code carried no signal at all. Baselined by NAME: a new missing id fails,
+// and a baselined one that comes back is reported rather than discovered by
+// accident.
+const KNOWN_MISSING_IDS = new Set([
+  "asmaXBackToGroupsBtn", "asmaXAddExistingBtn", "asmaXBackFromRefsBtn",
+  "asmaXEditThisNameBtn", "asmaXAttachRefThisNameBtn", "asmaXGroupsThisNameBtn",
+  "asmaXRefPosterBtn", "asmaXAddExistingSelect", "asmaXEditFileSelect",
+  "asmaXEditNewCollLabel", "asmaXEditTranslit", "asmaXEditMeaningEn",
+  "asmaXEditBnName", "asmaXEditBn", "asmaXEditRef", "asmaXEditWeak",
+  "asmaXEditIsPhrase", "asmaXEditNewColl", "qcrAddItemBtn", "qcrAddSurahSelect",
+  "qcrAddAyahInput", "qcrAddMsg",
+]);
+const baselineSeen = new Set();
 
 for (const banner of [true, false]) {
   console.log(`\n######## tenant banner ${banner ? "SET" : "CLEARED"} ########`);
@@ -75,6 +94,22 @@ for (const banner of [true, false]) {
     const after = await measure(ctx, "/app/quranrevival.html");
     await ctx.close();
 
+    // THE SHIM TRAP, made loud. Without app/_prev-quranrevival.html the whole
+    // "before" side measures null, every metric reads as CHANGED, and the run
+    // looks like a catastrophic regression while proving nothing. Build it
+    // from the comparison commit (`git show <sha>:app/quranrevival.html >
+    // app/_prev-quranrevival.html`) and DELETE it before reading coverage.
+    if (!shimChecked) {
+      shimChecked = true;
+      if (before.idTargets.total === 0 || before.headingTop === null) {
+        console.log("\n!! NO BASELINE: app/_prev-quranrevival.html did not render.");
+        console.log("   Every 'before' number below would be null and every metric would read as CHANGED.");
+        console.log("   Create the shim from the commit you are comparing against, then re-run.");
+        await browser.close();
+        process.exit(2);
+      }
+    }
+
     const same = (k) => before[k] === after[k];
     const flags = [];
     for (const k of ["headingTop", "wheelWidth", "approachRows", "gapAboveDock", "dockFullyVisible", "horizontalOverflow"]) {
@@ -83,8 +118,13 @@ for (const banner of [true, false]) {
     console.log(`${name}  heading ${before.headingTop}->${after.headingTop}px | wheel ${before.wheelWidth}->${after.wheelWidth}px | rows ${before.approachRows}->${after.approachRows} | gap ${before.gapAboveDock}->${after.gapAboveDock}px | dock visible ${after.dockFullyVisible} | overflow ${after.horizontalOverflow}`);
     console.log(`        getElementById targets: ${before.idTargets.total} -> ${after.idTargets.total}, missing after: ${JSON.stringify(after.idTargets.missing)}`);
     if (after.errors.length) console.log(`        PAGE ERRORS: ${after.errors.slice(0, 3).join(" | ")}`);
-    if (flags.length) { console.log(`        CHANGED: ${flags.join("; ")}`); }
-    if (after.idTargets.missing.length) { regressions++; console.log("        !! MISSING ID TARGETS"); }
+    // A CHANGED geometry metric is what this suite EXISTS to detect, and it was
+    // printed without being counted -- so the exit code said "no regressions"
+    // while the heading, the wheel width or the dock gap had moved. Counted now.
+    if (flags.length) { regressions++; console.log(`        !! CHANGED: ${flags.join("; ")}`); }
+    const newlyMissing = after.idTargets.missing.filter((id) => !KNOWN_MISSING_IDS.has(id));
+    for (const id of after.idTargets.missing) if (KNOWN_MISSING_IDS.has(id)) baselineSeen.add(id);
+    if (newlyMissing.length) { regressions++; console.log(`        !! NEWLY MISSING ID TARGETS: ${JSON.stringify(newlyMissing)}`); }
     if (after.horizontalOverflow) { regressions++; console.log("        !! HORIZONTAL OVERFLOW"); }
     if (!after.dockFullyVisible) { regressions++; console.log("        !! DOCK NOT FULLY VISIBLE"); }
     if (after.errors.length) regressions++;
@@ -93,5 +133,8 @@ for (const banner of [true, false]) {
 }
 
 await browser.close();
+const fixed = [...KNOWN_MISSING_IDS].filter((id) => !baselineSeen.has(id));
+console.log(`\n  (${baselineSeen.size} of ${KNOWN_MISSING_IDS.size} known-missing id targets seen, tolerated as pre-existing)`);
+if (fixed.length) console.log(`  !! a BASELINED missing id is now present: ${fixed.join(", ")} -- if that is a fix, drop it from KNOWN_MISSING_IDS`);
 console.log(`\n==== ${regressions === 0 ? "NO LAYOUT REGRESSIONS" : regressions + " REGRESSION(S)"} ====`);
 process.exit(regressions === 0 ? 0 : 1);

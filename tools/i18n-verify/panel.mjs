@@ -122,7 +122,14 @@ export async function measurePanel(ctx, path, unitType = "ayah") {
       const need = Math.ceil(span.getBoundingClientRect().width);
       span.remove();
       const w = Math.round(s.getBoundingClientRect().width);
-      return { id: s.id, text: span.textContent, w, need, cut: need > w - 22 };
+      // `need > w - 22` is true for ANY hidden select, because a hidden element
+      // measures 0 and `need > -22` always holds. This suite has therefore been
+      // printing "selects truncated: unitNumSelect \"1\" 0px needs 8px" for
+      // controls that are simply not on screen -- harmless as a printed line,
+      // and a false failure the moment it was counted. A hidden control is not
+      // a truncated one; `hidden` is reported separately so it is not silently
+      // dropped either.
+      return { id: s.id, text: span.textContent, w, need, hidden: w === 0, cut: w > 0 && need > w - 22 };
     });
 
     const summary = q("#optionsSummary");
@@ -155,6 +162,32 @@ export async function measurePanel(ctx, path, unitType = "ayah") {
   return { ...m, errors };
 }
 
+// This suite printed "!!" warnings and its own "-- REGRESSION" line and then
+// ALWAYS EXITED 0, so no caller could ever act on what it found. It counts now.
+// Page errors are counted separately: in this sandbox they are almost always
+// the proxy's own TLS interception, which will not happen on the owner's
+// machine, so they are reported without failing the run.
+let problems = 0;
+let environmental = 0;
+let baselined = 0;
+const baselineSeen = new Set();
+
+// Three select truncations this panel has carried for as long as this suite
+// has printed them, WITHOUT ever counting them -- so they are pre-existing,
+// not a regression this round introduced. Counting them now would make this
+// suite permanently red and its exit code meaningless, which is precisely the
+// state navcheck.mjs and layout.mjs were just brought out of. Baselined by id;
+// anything NEW fails.
+//
+//   tenantSelect   "Madrasatul Muslimeen (Owner, Prime)" -- 145px cell, 224px
+//                  of text. The most user-visible of the three and worth the
+//                  Owner's attention: a real tenant's name is cut in the
+//                  picker. Recorded, not silently tolerated.
+//   surahSelect    "1. Al-Faatiha" -- 74px of text in an 89px cell, tight once
+//                  the 22px dropdown arrow is allowed for.
+//   unitTypeSelect the Study Unit names, same shape.
+const KNOWN_TRUNCATED_SELECTS = new Set(["tenantSelect", "surahSelect", "unitTypeSelect"]);
+
 function report(name, m) {
   console.log(`\n--- ${name} (viewport height ${m.viewportH}) ---`);
   console.log(`  panel  ${m.panel.w}x${m.panel.h}px at y=${m.panel.y}   content ${m.panelScrollH}px in ${m.panelClientH}px  -> ${m.panelScrolls ? "SCROLLS" : "fits"}`);
@@ -163,11 +196,28 @@ function report(name, m) {
   const cutL = m.labels.filter((l) => l.cut);
   console.log(`  labels ${m.labels.length}, truncated: ${cutL.length ? cutL.map((l) => `"${l.text}" ${l.w}px needs ${l.need}px`).join("; ") : "none"}`);
   const cutS = m.selects.filter((s) => s.cut);
-  console.log(`  selects truncated: ${cutS.length ? cutS.map((s) => `${s.id} "${s.text}" ${s.w}px needs ${s.need}px`).join("; ") : "none"}`);
+  const hiddenS = m.selects.filter((s) => s.hidden);
+  console.log(`  selects truncated: ${cutS.length ? cutS.map((s) => `${s.id} "${s.text}" ${s.w}px needs ${s.need}px`).join("; ") : "none"}`
+    + (hiddenS.length ? ` (${hiddenS.length} not on screen: ${hiddenS.map((s) => s.id).join(", ")})` : ""));
   console.log(`  summary strip ${m.summaryPresent ? m.summaryH + "px" : "absent"} | Study screen in panel: ${m.studyHeadingOffset === null ? "no (round 17: it owns the stage)" : "YES at +" + m.studyHeadingOffset + "px -- REGRESSION"}`);
-  if (m.horizontalOverflow) console.log("  !! HORIZONTAL OVERFLOW (page)");
-  if (m.panelOverflowsX) console.log("  !! PANEL OVERFLOWS SIDEWAYS");
-  if (m.errors.length) console.log(`  !! PAGE ERRORS: ${m.errors.slice(0, 2).join(" | ")}`);
+  if (m.horizontalOverflow) { problems++; console.log("  !! HORIZONTAL OVERFLOW (page)"); }
+  if (m.panelOverflowsX) { problems++; console.log("  !! PANEL OVERFLOWS SIDEWAYS"); }
+  // The Study screen appearing inside the panel is the round-17 regression this
+  // suite's own summary line already called a REGRESSION in capitals -- and
+  // then did not count.
+  if (m.studyHeadingOffset !== null) { problems++; console.log("  !! STUDY SCREEN IS INSIDE THE PANEL (round 17 regression)"); }
+  // A truncated label or select is the thing this suite exists to measure.
+  const cutLabels = m.labels.filter((l) => l.cut);
+  const cutSelects = m.selects.filter((x) => x.cut);
+  for (const x of cutSelects) if (KNOWN_TRUNCATED_SELECTS.has(x.id)) { baselined++; baselineSeen.add(x.id); }
+  const newCuts = [...cutLabels.map((l) => `label "${l.text}"`),
+                   ...cutSelects.filter((x) => !KNOWN_TRUNCATED_SELECTS.has(x.id)).map((x) => `select #${x.id}`)];
+  if (newCuts.length) { problems++; console.log(`  !! NEWLY TRUNCATED: ${newCuts.join("; ")}`); }
+  if (m.errors.length) {
+    const envOnly = m.errors.every((e) => /ERR_CERT_AUTHORITY_INVALID/.test(e));
+    if (envOnly) environmental++; else problems++;
+    console.log(`  !! ${envOnly ? "ENVIRONMENTAL " : ""}PAGE ERRORS: ${m.errors.slice(0, 2).join(" | ")}`);
+  }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -187,4 +237,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
   }
   await browser.close();
+  if (environmental) {
+    console.log(`\n     (${environmental} measurement(s) also reported environmental page errors -- this sandbox's TLS proxy, not a defect)`);
+  }
+  const fixed = [...KNOWN_TRUNCATED_SELECTS].filter((id) => !baselineSeen.has(id));
+  if (baselined) console.log(`\n     (${baselined} known pre-existing select truncation(s) tolerated: ${[...baselineSeen].join(", ")})`);
+  if (fixed.length) console.log(`     !! a BASELINED truncation no longer occurs: ${fixed.join(", ")} -- if that is a fix, drop it from KNOWN_TRUNCATED_SELECTS`);
+  console.log(`\n==== ${problems === 0 ? "PANEL OK (apart from the known baseline)" : problems + " PROBLEM(S)"} ====`);
+  process.exit(problems === 0 ? 0 : 1);
 }

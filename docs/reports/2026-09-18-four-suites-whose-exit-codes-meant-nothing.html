@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The four suites whose exit codes meant nothing</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>The four suites whose exit codes meant nothing</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Task:</strong> finish the &quot;checks that could not fail&quot; sweep on the four suites that report through their own mechanisms rather than a <code>check()</code> runner</li><li><strong>Blast radius:</strong> <strong>BR-0, tools only.</strong> <code>git diff -- app/</code> is empty. No Rules, index or config file touched.</li><li><strong>Application version:</strong> <strong>08.25, unchanged.</strong></li><li><strong>Result:</strong> ACCEPT. All four now exit meaningfully, each proven in <strong>both</strong> directions. One real measurement defect fixed. One pre-existing, user-visible truncation recorded for the Owner.</li></ul>
+<hr>
+<h2>1. Why these four were left out, and why that was wrong</h2>
+<p>The previous sweep closed the <code>check()</code> runners and said plainly that <code>layout.mjs</code>, <code>reading.mjs</code>, <code>panel.mjs</code> and <code>navcheck.mjs</code> &quot;report through their own mechanisms … and deserve the same pass&quot;. They did, and it was worse than expected: <strong>not one of the four had an exit code that carried information.</strong></p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Before</th></tr></thead><tbody>
+<tr><td><code>layout.mjs</code></td><td><strong>Exited 1 on unmodified <code>main</code></strong> — it counted the 22 pre-existing missing <code>getElementById</code> targets once per viewport. And it <strong>exited 0 for a real geometry change</strong>: a changed <code>headingTop</code>, <code>wheelWidth</code> or <code>gapAboveDock</code> was <em>printed</em> as <code>CHANGED:</code> and never counted.</td></tr>
+<tr><td><code>reading.mjs</code></td><td>Counted <code>problems</code> and then <strong>had no <code>process.exit</code> at all</strong> — always 0, whatever it found.</td></tr>
+<tr><td><code>panel.mjs</code></td><td><strong>No counter and no exit code</strong>, while printing its own <code>!!</code> warnings and a summary line containing the word <code>REGRESSION</code> in capitals.</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>Exited correctly, but counted the <strong>pre-existing</strong> 320px English truncation of &quot;Operation&quot;/&quot;Bookmark&quot;, so it was permanently 1.</td></tr>
+</tbody></table></div>
+<p><strong>Two of them could not report a failure; two could not report a success.</strong> Either way no caller could act on the result, and the one measurement this project relies on most — &quot;measure before and after&quot; — was being read by eye every round because the number could not be trusted.</p>
+<h2>2. <code>layout.mjs</code>, the worst of the four</h2>
+<p>Three changes, each proven:</p>
+<ul><li><strong>The shim trap is loud now.</strong> Without <code>app/_prev-quranrevival.html</code> the whole &quot;before&quot; side measures <code>null</code>, every metric reads as CHANGED and the run looks catastrophic while proving nothing. It <strong>exits 2</strong> with the fix spelled out, instead of producing 16 meaningless regressions. This file&#x27;s own standing lesson finally enforced rather than remembered.</li><li><strong>A CHANGED metric counts.</strong> That is what the suite is <em>for</em>.</li><li><strong>The 22 missing ids are a baseline, by name.</strong> A <em>new</em> missing id fails; a baselined one that comes back is reported, so a fix is not discovered by accident.</li></ul>
+<div class='tw'><table><thead><tr><th>State</th><th>Exit</th></tr></thead><tbody>
+<tr><td>no shim</td><td><strong>2</strong>, with instructions</td></tr>
+<tr><td>shim identical to the page</td><td><strong>0</strong> — <code>NO LAYOUT REGRESSIONS</code></td></tr>
+<tr><td>a 23px shift injected into the page</td><td><strong>1</strong> — <code>10 × !! CHANGED</code></td></tr>
+</tbody></table></div>
+<p>All three measured, not argued. Before this round the middle row exited 1 and the bottom row exited 0 — <strong>exactly backwards.</strong></p>
+<h2>3. A real measurement defect in <code>panel.mjs</code></h2>
+<p>Its select-truncation flag was <code>cut: need &gt; w - 22</code> (the 22px allows for the dropdown arrow). A <strong>hidden</strong> select measures <code>w = 0</code>, and <code>need &gt; -22</code> is always true — so every off-screen select was reported as truncated:</p>
+<p>``<code> selects truncated: unitNumSelect &quot;1&quot; 0px needs 8px; ayahSelect &quot;1&quot; 0px needs 8px </code>``</p>
+<p>Harmless while it was only printed. <strong>A false failure the moment I counted it</strong> — my new clause reported 48 problems, all of them this. Fixed at the source, so the printed line is honest too: a hidden control is reported as <code>not on screen</code>, and <code>cut</code> requires <code>w &gt; 0</code>. This is the &quot;a measurement probe must carry the real element&#x27;s computed style&quot; family — a probe that measures something other than what it claims.</p>
+<h2>4. One pre-existing truncation worth the Owner&#x27;s attention</h2>
+<p>With the hidden-select artefact gone, three <strong>real</strong> select truncations remain, printed by this suite all along and never counted:</p>
+<ul><li><strong><code>tenantSelect</code> — &quot;Madrasatul Muslimeen (Owner, Prime)&quot;, 224px of text in a 145px cell.</strong> The most user-visible of the three: <strong>a real tenant&#x27;s name is cut in the picker.</strong></li><li><code>surahSelect</code> — &quot;1. Al-Faatiha&quot;, 74px in an 89px cell, tight once the arrow is allowed for.</li><li><code>unitTypeSelect</code> — the Study Unit names, same shape.</li></ul>
+<p><strong>Baselined by id, not silently tolerated</strong>, and recorded here because the first one is a genuine (if small) thing a person sees. Fixing it is a layout decision on the most tightly measured screen in the app, so it is flagged rather than attempted.</p>
+<h2>5. The environmental failures are separated, not suppressed</h2>
+<p><code>reading.mjs</code> reported <strong>16 problems, every one of them</strong> <code>ERR_CERT_AUTHORITY_INVALID</code> — the sandbox&#x27;s own TLS proxy, which will not occur on the Owner&#x27;s machine. Giving it a bare <code>process.exit(problems ? 1 : 0)</code> would have made it permanently red for a reason that is not this project&#x27;s.</p>
+<p>So page errors are classified: an error set that is <em>entirely</em> TLS artefacts is counted as environmental, printed, and does <strong>not</strong> fail the run; anything else is a real problem and does. <code>panel.mjs</code> got the same treatment. <strong>Nothing is hidden — the counts are printed either way.</strong></p>
+<h2>6. Every fix proven by mutation</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Mutation</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>layout.mjs</code></td><td>23px of body padding</td><td><code>1</code>, 10 × <code>!! CHANGED</code></td></tr>
+<tr><td><code>layout.mjs</code></td><td>delete the shim</td><td><code>2</code>, with instructions</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>rename a nav category to a long label</td><td><code>1</code>, names the new truncation, keeps tolerating the baseline</td></tr>
+<tr><td><code>panel.mjs</code></td><td>lengthen a study-options label</td><td><code>1</code>, <code>!! NEWLY TRUNCATED: label &quot;…&quot;</code></td></tr>
+</tbody></table></div>
+<p>Each mutation asserted its own occurrence count first — and <strong>one did not apply</strong> (<code>&gt;Tajweed&lt;</code> is not in the markup), which the assertion caught before anything false was concluded.</p>
+<h2>7. Verification</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>layout.mjs</code></td><td><strong>EXIT 0</strong> — <code>NO LAYOUT REGRESSIONS</code>, 22 of 22 baselined ids seen</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td><strong>EXIT 0</strong> — nav fits, 2 baselined truncations tolerated</td></tr>
+<tr><td><code>reading.mjs</code></td><td><strong>EXIT 0</strong> — <code>READING SCREEN OK</code>, 16 environmental errors noted</td></tr>
+<tr><td><code>panel.mjs</code></td><td><strong>EXIT 0</strong> — <code>PANEL OK</code>, 34 baselined select truncations tolerated</td></tr>
+<tr><td><code>git status app/</code></td><td><strong>clean</strong> — every mutation restored byte-identical</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 / 47</strong> — unchanged</td></tr>
+</tbody></table></div>
+<h2>8. Flagged, not changed</h2>
+<ul><li><strong>The <code>tenantSelect</code> truncation is real and user-visible</strong> (§4). An Owner decision about the most tightly measured screen in the app.</li><li><strong>The baselines are honest but they are debt.</strong> 22 missing ids, 2 nav truncations and 3 select truncations are now tolerated <em>by name</em>. Each list says what it holds and reports when an entry stops occurring, so none of them can quietly grow — but they are a record of things nobody has fixed.</li><li><strong><code>layout.mjs</code> measures English only</strong>, as it always has. The Bangla numbers still have to be measured separately, which the brief already records.</li></ul>
+<hr>
+<p><em>Master Architect audit: BR-0, tools only, no accepted decision changed, no Owner Control Gate crossed. Four suites that could not report their own result now can, and one of them had been reporting the opposite of the truth.</em></p>
+</main></body></html>

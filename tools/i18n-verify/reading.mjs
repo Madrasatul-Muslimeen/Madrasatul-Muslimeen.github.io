@@ -87,6 +87,7 @@ function readMetrics() {
 
 const browser = await chromium.launch({ executablePath: EXE });
 let problems = 0;
+let environmental = 0;
 
 for (const banner of [true, false]) {
   console.log(`\n######## tenant banner ${banner ? "SET" : "CLEARED"} · app language ${LANG} ########`);
@@ -141,8 +142,15 @@ for (const banner of [true, false]) {
     // Round 22's own regression: "edge to edge" must reach the CARD, not the
     // text -- a zero gutter puts the Arabic's diacritics on the glass.
     if (f.textGutter < 4) bad.push(`text gutter only ${f.textGutter}px in full screen`);
-    if (errors.length) bad.push("page errors: " + errors.join(" | "));
-    if (bad.length) problems++;
+    // A page error is a DIFFERENT KIND of problem from a layout one, and in this
+    // sandbox it is almost always the proxy's own TLS interception
+    // (ERR_CERT_AUTHORITY_INVALID), which will not happen on the owner's
+    // machine. Counted separately so the exit code below means "a REAL layout
+    // problem", and still printed so nothing is hidden.
+    const envOnly = errors.length > 0 && errors.every((e) => /ERR_CERT_AUTHORITY_INVALID/.test(e));
+    if (errors.length) bad.push((envOnly ? "environmental page errors: " : "page errors: ") + errors.join(" | "));
+    if (envOnly) environmental++;
+    if (bad.length > (errors.length ? 1 : 0) || (errors.length && !envOnly)) problems++;
 
     console.log(
       `  ${name.padEnd(9)} reading ${String(m.readScrollH).padStart(4)}px` +
@@ -157,3 +165,10 @@ for (const banner of [true, false]) {
 
 await browser.close();
 console.log(problems ? `\n==== ${problems} PROBLEM(S) ====` : "\n==== READING SCREEN OK ====");
+if (environmental) {
+  console.log(`     (${environmental} viewport(s) also reported environmental page errors -- this sandbox's TLS proxy, not a defect)`);
+}
+// This suite counted problems and then always exited 0, so no caller could ever
+// act on what it found. It exits on REAL problems now; the environmental ones
+// are reported and deliberately do not fail the run.
+process.exit(problems === 0 ? 0 : 1);

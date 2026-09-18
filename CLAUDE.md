@@ -1435,13 +1435,32 @@ inside `CHANGELOG.md`'s prose; they are here because they still bind.
   throw. **Check the exit code, read the real text, and prefer the emulator or
   the source as the tie-breaker.** A suite that fails loudly when run wrong is
   behaving correctly; what is nearly wrong is the finding.
-- **`layout.mjs` EXITS NON-ZERO ON `main` ITSELF.** Line 87 counts the 22-entry
-  pre-existing missing-ID list as a regression once per viewport, so it prints
-  "16 REGRESSION(S)" and exits 1 on unmodified `main`. **The signal is the
-  `CHANGED:` lines, not the exit code.** And with no
-  `app/_prev-quranrevival.html` shim the whole before side scores `null`, every
-  metric reads as CHANGED, and it looks like a catastrophic regression — build
-  the shim from the comparison commit, then DELETE it before reading coverage.
+- **ALL FOUR NON-`check()` SUITES NOW HAVE MEANINGFUL EXIT CODES** (18 Sep 2026).
+  Until then **not one of them did**: `layout.mjs` exited 1 on unmodified `main`
+  (counting the 22 pre-existing missing ids per viewport) **and exited 0 for a
+  real geometry change** — printed as `CHANGED:` and never counted, exactly
+  backwards in both directions; `reading.mjs` counted problems and had **no
+  `process.exit` at all**; `panel.mjs` had no counter or exit code while
+  printing `REGRESSION` in capitals; `navcheck.mjs` was permanently 1 on the
+  pre-existing 320px "Operation"/"Bookmark" truncation. Now: a CHANGED metric
+  counts, pre-existing findings are **baselined BY NAME** (and a baseline entry
+  that stops occurring is reported, so a fix is never discovered by accident),
+  and **`layout.mjs` exits 2 with instructions when the
+  `app/_prev-quranrevival.html` shim is missing** rather than scoring `null`
+  everywhere and looking catastrophic. Still build the shim from the comparison
+  commit and DELETE it before reading coverage.
+- **A HIDDEN CONTROL IS NOT A TRUNCATED ONE.** `panel.mjs` flagged
+  `cut: need > w - 22`, and a hidden select measures `w = 0`, so `need > -22` is
+  always true — it had been printing "selects truncated: unitNumSelect \"1\" 0px
+  needs 8px" for controls simply not on screen. Harmless as a printed line, a
+  false failure the moment it was counted. **Require `w > 0` before calling
+  anything truncated**, and report "not on screen" separately so the absence is
+  not dropped either.
+- **The baselines are honest but they are DEBT:** 22 missing `getElementById`
+  targets, 2 nav truncations, 3 select truncations. The most user-visible is
+  **`tenantSelect` — a real tenant's name is CUT in the picker** ("Madrasatul
+  Muslimeen (Owner, Prime)", 224px of text in a 145px cell). Recorded, not
+  fixed: it is a layout decision on the most tightly measured screen in the app.
 - **The sandbox's TLS interception trips every "no page errors" check on a page
   that fetches over HTTPS** — `net::ERR_CERT_AUTHORITY_INVALID`, currently 6
   checks across `behaviour.mjs`, `quran-word-card-rendered` and
