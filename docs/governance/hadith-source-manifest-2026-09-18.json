@@ -1,0 +1,194 @@
+{
+  "manifestVersion": "hadith-source-manifest:v1",
+  "date": "2026-09-18",
+  "gate": "H1",
+  "status": "PROPOSED — no source approved, no text authorised for import",
+  "rightsStates": [
+    "blocked",
+    "link-only",
+    "embed-cleared"
+  ],
+  "defaultRightsState": "blocked",
+  "failClosed": true,
+  "failClosedRationale": "A source with no recorded decision is 'blocked'. The Hadith Commentary Source Register v01 states it directly: 'The absence of a displayed license is NOT permission to copy the content.' So absence of a decision must deny, never permit. A source becomes 'embed-cleared' only by a recorded grant with a date and a citable term — never by a reviewer's impression that reuse is probably fine.",
+  "rightsStateMeanings": {
+    "blocked": "No text may be stored, displayed, indexed or redistributed, and the app may not fetch, link to or reference this source on any user-facing surface. Every permission flag is false. This is the default and the state every unreviewed source holds.",
+    "link-only": "The app may present a clearly attributed OUTBOUND link and may store the URL, the bibliographic citation and the locator. It may NOT store, display, cache or index the source's text.",
+    "embed-cleared": "Text may be stored and displayed, bounded by the recorded grant's own conditions. Requires a non-null rightsEvidence.grant."
+  },
+  "vocabularyReconciliation": {
+    "note": "The Master Plan v01 §3.3 names the states 'licensed', 'link-only' and 'blocked'. The Start Prompt v03 §6, which is one day newer, names them 'link-only', 'embed-cleared' and 'blocked'. This manifest uses the Start Prompt's three as canonical.",
+    "mapping": {
+      "licensed": "embed-cleared"
+    },
+    "reason": "'embed-cleared' states what the app is permitted to DO. 'licensed' states something about the source, and a source can carry a licence that still does not permit embedding in this app. The verb is the safer name."
+  },
+  "sources": [
+    {
+      "sourceId": "sunnah-com",
+      "displayName": "Sunnah.com",
+      "kind": "reference-site-and-api",
+      "url": "https://sunnah.com/developers",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "establishedFacts": [
+        "The API gives access to A PORTION of the site's data, not all of it.",
+        "An API key must be requested; access is not open.",
+        "The developer page states an offline dump is NOT available yet."
+      ],
+      "outstandingQuestions": [
+        "Written permission for storage, display, redistribution, standalone-app use, translations, attribution and offline use.",
+        "Whether API access alone conveys any reuse right (it does not, by default).",
+        "Rate limits and correction channel."
+      ],
+      "rightsStatus": "link-only",
+      "rightsEvidence": {
+        "grant": null,
+        "grantDate": null,
+        "grantedBy": null,
+        "conditions": null
+      },
+      "permissions": {
+        "mayStoreText": false,
+        "mayDisplayText": false,
+        "mayIndexText": false,
+        "mayRedistribute": false,
+        "mayUseOffline": false,
+        "mayStoreLocator": true,
+        "mayLinkOut": true
+      },
+      "attributionRequired": true,
+      "reviewStatus": "pending",
+      "reviewer": null,
+      "reviewDate": null,
+      "usedFor": "Reference comparison and mapping verification only. Not a production corpus."
+    },
+    {
+      "sourceId": "openiti-release",
+      "displayName": "OpenITI RELEASE",
+      "kind": "scholarly-corpus",
+      "url": "https://github.com/OpenITI/RELEASE",
+      "languages": [
+        "ar"
+      ],
+      "establishedFacts": [
+        "Publishes a versioned, machine-readable corpus of Islamicate texts with metadata."
+      ],
+      "outstandingQuestions": [
+        "Whether relevant Hadith or commentary editions exist in it at all.",
+        "Per-edition quality, completeness and segmentation.",
+        "Item-specific reuse terms — an open repository does not make every item reusable.",
+        "Whether stable Hadith numbering mappings are present."
+      ],
+      "rightsStatus": "blocked",
+      "rightsEvidence": {
+        "grant": null,
+        "grantDate": null,
+        "grantedBy": null,
+        "conditions": null
+      },
+      "permissions": {
+        "mayStoreText": false,
+        "mayDisplayText": false,
+        "mayIndexText": false,
+        "mayRedistribute": false,
+        "mayUseOffline": false,
+        "mayStoreLocator": false,
+        "mayLinkOut": false
+      },
+      "attributionRequired": true,
+      "reviewStatus": "not-started",
+      "reviewer": null,
+      "reviewDate": null,
+      "usedFor": "Candidate for a future audited import. Not an approved source."
+    },
+    {
+      "sourceId": "hadeethenc",
+      "displayName": "HadeethEnc",
+      "kind": "translation-and-explanation",
+      "url": "https://hadeethenc.com/",
+      "languages": [
+        "ar",
+        "en",
+        "bn"
+      ],
+      "establishedFacts": [
+        "Provides translated hadith and explanatory material."
+      ],
+      "outstandingQuestions": [
+        "Accessible reuse terms.",
+        "Coverage against the collections this project would pilot.",
+        "Whether it carries original-collection text or only selections — it is not a full original-collection corpus."
+      ],
+      "rightsStatus": "blocked",
+      "rightsEvidence": {
+        "grant": null,
+        "grantDate": null,
+        "grantedBy": null,
+        "conditions": null
+      },
+      "permissions": {
+        "mayStoreText": false,
+        "mayDisplayText": false,
+        "mayIndexText": false,
+        "mayRedistribute": false,
+        "mayUseOffline": false,
+        "mayStoreLocator": false,
+        "mayLinkOut": false
+      },
+      "attributionRequired": true,
+      "reviewStatus": "not-started",
+      "reviewer": null,
+      "reviewDate": null,
+      "usedFor": "Candidate supplementary translations and explanations, subject to terms and coverage checks."
+    },
+    {
+      "sourceId": "islamweb-library",
+      "displayName": "Islamweb — Arabic library",
+      "kind": "commentary-host",
+      "url": "https://www.islamweb.net/ar/library/",
+      "languages": [
+        "ar"
+      ],
+      "establishedFacts": [
+        "Two specific pages were checked and do display the stated Hadith alongside the attributed Arabic commentary (see the commentary manifest, HCM-0001 and HCM-0002)."
+      ],
+      "outstandingQuestions": [
+        "Edition metadata for each commentary work.",
+        "Digital transcription rights — distinct from the classical author's own authorship.",
+        "Bulk reuse, attribution and correction terms.",
+        "Site database rights."
+      ],
+      "rightsStatus": "link-only",
+      "rightsEvidence": {
+        "grant": null,
+        "grantDate": null,
+        "grantedBy": null,
+        "conditions": null
+      },
+      "permissions": {
+        "mayStoreText": false,
+        "mayDisplayText": false,
+        "mayIndexText": false,
+        "mayRedistribute": false,
+        "mayUseOffline": false,
+        "mayStoreLocator": true,
+        "mayLinkOut": true
+      },
+      "attributionRequired": true,
+      "reviewStatus": "partial",
+      "reviewer": "Master Architect",
+      "reviewDate": "2026-09-18",
+      "usedFor": "Verified outbound commentary links. Embed pending.",
+      "rightsNote": "Classical authorship and modern digital transcription, punctuation, editorial apparatus and site database rights are SEPARATE questions. Ibn Hajar and al-Nawawi being long out of copyright says nothing about this particular digital edition."
+    }
+  ],
+  "importAuthorisation": {
+    "textImportAuthorisedForAnySource": false,
+    "approvedCollections": [],
+    "approvedEditions": [],
+    "consequence": "Zero sources are cleared for text import. Every H2 pilot surface must therefore run on clearly-labelled SYNTHETIC FIXTURES. This is not a limitation to work around; it is the source approval gate holding, exactly as the Master Plan requires."
+  }
+}

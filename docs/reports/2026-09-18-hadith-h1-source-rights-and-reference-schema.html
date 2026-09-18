@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith Study — H1 source manifests, rights gate and reference schema</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith Study — H1 source manifests, rights gate and reference schema</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Gate:</strong> H1 (data and commentary source manifests, exact edition/permission status, stable reference and import schema)</li><li><strong>Branch:</strong> <code>feature/hadith-study</code>, cut from <code>origin/main</code> at <strong><code>d8f0492</code></strong>, in its own worktree at <code>/home/user/hadith-study</code></li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> No file under <code>app/</code> changed — <code>git diff -- app/ firestore.rules firebase.json</code> is empty. Four new files: three under <code>docs/governance/</code>, one under <code>tools/i18n-verify/</code>.</li><li><strong>Application version:</strong> <strong>08.25, unchanged.</strong> This tranche adds no application code and changes no behaviour. Deliberate — see §6.</li><li><strong>Result:</strong> H1 delivered. <strong>Zero sources are cleared for text import, and that fact is now enforced by a guard rather than asserted in prose.</strong> 14 checks pass; 7 deliberate mutations each fail the right check.</li></ul>
+<hr>
+<h2>1. Isolation, as instructed</h2>
+<p>The Start Prompt requires a separate worktree on a <code>feature/hadith-study</code> branch from a verified current base, on a different filesystem path from the Quran builder&#x27;s checkout. Done, and verified:</p>
+<p>``<code> /home/user/Madrasatul-Muslimeen.github.io   [claude/beautiful-darwin-faeim7]   ← Quran line /home/user/hadith-study                     [feature/hadith-study]             ← this work </code>``</p>
+<p>The base is <code>origin/main</code> at <code>d8f0492</code>, v08.25 — fetched and verified in this session, not assumed. The H0 report was carried across by cherry-pick so the Hadith branch holds its own record of the audit it came from.</p>
+<hr>
+<h2>2. What was delivered</h2>
+<div class='tw'><table><thead><tr><th>File</th><th>What it is</th></tr></thead><tbody>
+<tr><td><code>docs/governance/hadith-source-manifest-2026-09-18.json</code></td><td>Four candidate sources, each with established facts, outstanding questions, a rights state and an explicit permission set</td></tr>
+<tr><td><code>docs/governance/hadith-commentary-manifest-2026-09-18.json</code></td><td>The two verified commentary matches, <code>HCM-0001</code> and <code>HCM-0002</code>, in the Source Register&#x27;s own field names</td></tr>
+<tr><td><code>docs/governance/hadith-reference-and-import-schema-v1.md</code></td><td>The seven record types, the narration-occurrence identity proposal, the rights model, the two-view model, and the import manifest every import run must emit</td></tr>
+<tr><td><code>tools/i18n-verify/hadith-source-rights.mjs</code></td><td>The guard — 14 checks, run from the repository root</td></tr>
+</tbody></table></div>
+<p><strong>No source text of any kind was fetched, imported, cached or committed.</strong> No request was made to sunnah.com, islamweb.net, OpenITI or HadeethEnc in this session. The two islamweb URLs appear only as citations inside the commentary manifest, exactly as the Source Register records them.</p>
+<hr>
+<h2>3. The rights model — fail closed, and why that is the whole tranche</h2>
+<p>Three states, canonical per Start Prompt v03: <strong><code>blocked</code></strong> → <strong><code>link-only</code></strong> → <strong><code>embed-cleared</code></strong>.</p>
+<p><strong>The default is <code>blocked</code>.</strong> This is the load-bearing decision, and it comes straight out of the Source Register&#x27;s own sentence: <em>&quot;The absence of a displayed license is not permission to copy the content.&quot;</em> If that is true, then a source with no recorded decision must <strong>deny</strong>. Anything else quietly turns &quot;nobody has checked yet&quot; into &quot;probably fine&quot;.</p>
+<p>A source reaches <code>embed-cleared</code> only through a recorded grant carrying a date, a granting party and citable conditions. A reviewer&#x27;s confidence is not a grant, and the guard will not accept one.</p>
+<div class='tw'><table><thead><tr><th>Source</th><th>State</th><th>Why</th></tr></thead><tbody>
+<tr><td>Sunnah.com</td><td><code>link-only</code></td><td>API covers a portion of the data, needs a key, no offline dump. API access conveys no reuse right</td></tr>
+<tr><td>Islamweb library</td><td><code>link-only</code></td><td>Two pages verified to contain the stated Hadith and commentary. Edition, transcription rights and bulk reuse all unestablished</td></tr>
+<tr><td>OpenITI RELEASE</td><td><code>blocked</code></td><td>Never examined. Whether relevant editions even exist there is unknown</td></tr>
+<tr><td>HadeethEnc</td><td><code>blocked</code></td><td>Never examined. Not a full original-collection corpus</td></tr>
+</tbody></table></div>
+<p><strong>A <code>blocked</code> source denies every permission — including linking to it.</strong> The manifest first gave blocked sources <code>mayStoreLocator</code> and <code>mayLinkOut</code>, which contradicted the schema document&#x27;s own table. Caught while writing the guard, and resolved in the stricter direction: a source nobody has examined should not be referenced on a user-facing surface at all.</p>
+<h3>3.1 A vocabulary conflict between the two governing documents, resolved</h3>
+<p>Master Plan v01 §3.3 names the states <code>licensed</code>, <code>link-only</code>, <code>blocked</code>. Start Prompt v03 §6, one day newer, names them <code>link-only</code>, <code>embed-cleared</code>, <code>blocked</code>. <strong>The Start Prompt&#x27;s three are used as canonical</strong>, with <code>licensed → embed-cleared</code> recorded as the mapping.</p>
+<p>The reason is not just recency. <strong><code>embed-cleared</code> states what the app is permitted to DO; <code>licensed</code> states something about the source</strong> — and a source can carry a real licence that still does not permit embedding in this app. The verb is the safer name, because it is the one a builder has to satisfy.</p>
+<hr>
+<h2>4. The finding worth keeping: neither verified match can name a narration occurrence yet</h2>
+<p><code>HCM-0001</code> and <code>HCM-0002</code> both have <code>narration_occurrence_id: null</code>, and <strong>that is correct rather than unfinished.</strong></p>
+<p>An occurrence id is minted from an <strong>approved edition</strong>. No edition is approved. So there is no occurrence for a commentary to point at. What each match is genuinely bound to today is an <strong>external reference</strong> — a scheme (<code>sunnah.com</code>) plus a displayed number (<code>bukhari:1</code>) — which is precisely the distinction the Master Plan insists on:</p>
+<p>&gt; <em>&quot;never infer cross-edition equivalence from a number alone&quot;</em></p>
+<p>Writing <code>narration_occurrence_id: &quot;hadith:bukhari:1&quot;</code> would have felt like progress and would have committed that forbidden inference permanently into data. <strong>The plan&#x27;s identity rule showed up in the first two rows of real data, before any code existed to violate it.</strong> The guard now refuses a non-null occurrence id while <code>approvedEditions</code> is empty.</p>
+<hr>
+<h2>5. The narration-occurrence key — H0&#x27;s contradiction C2, resolved as a proposal</h2>
+<p>H0 reported that <code>buildUnitKey.hadith(collectionName, number)</code> keys a narration by the collection&#x27;s <strong>name</strong> (against I5) and by an <strong>edition-specific displayed number</strong> (against the plan). The schema document&#x27;s §2 proposes the fix:</p>
+<p>&gt; <strong>Keep the key&#x27;s shape exactly as it is. Change only what its two segments mean.</strong> &gt; &gt; <code>hadith:&lt;editionId&gt;:&lt;occurrenceOrdinal&gt;</code></p>
+<p>Measured, not assumed:</p>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><td>Matches the accepted shape regex in <code>study-note-binding.js</code>?</td><td><strong>Yes, unchanged</strong></td></tr>
+<tr><td>ADR-009 <code>sourceKind</code> derivation changes?</td><td><strong>No</strong></td></tr>
+<tr><td><code>records.js</code> / <code>claimStatus()</code> / <code>chunkKeyFor()</code> change?</td><td><strong>No</strong></td></tr>
+<tr><td>Study screens producing a <code>hadith:</code> key today?</td><td><strong>Zero</strong> — the only app call site is <code>records.html:279</code>, a manual admin form</td></tr>
+</tbody></table></div>
+<p>So the whole correction is: rename two parameters, document their meaning, and stand up the Edition and ExternalReference registries. <strong>No accepted contract, regex, ADR or shared function needs amending.</strong></p>
+<p><strong>It remains an Owner Control Gate and nothing was applied.</strong> <code>unit-keys.js</code> is byte-for-byte untouched. Two costs are stated rather than discovered later: any pre-existing <code>hadith:bukhari:1</code> record in production would become unresolvable (legible, never destroyed — I4), and the existing regex caps an edition at 999,999 occurrences.</p>
+<p><strong>Whether any such record exists cannot be checked from here.</strong> It needs a read of live Firestore. <strong>That is the first prerequisite of H2.</strong></p>
+<hr>
+<h2>6. Why the version did not move</h2>
+<p>The Start Prompt says to increment the application version in every tranche that changes app code or behaviour, and that documentation-only work may retain it. The repository&#x27;s own convention calls a tranche BR-0 — no bump — when nothing is reachable from a page.</p>
+<p>H1 was deliberately scoped so both rules agree: <strong>manifests and a schema document under <code>docs/governance/</code>, plus a guard under <code>tools/</code>. No <code>app/</code> code at all.</strong> Had a pure module landed in <code>app/js/</code>, the two authorities would have pointed different ways over a module no screen can reach. Application code lands in H2, with a version bump.</p>
+<hr>
+<h2>7. Evidence</h2>
+<p><code>node tools/i18n-verify/hadith-source-rights.mjs</code> — <strong>14 passed, 0 failed, exit 0</strong>, run from the repository root.</p>
+<p>Two of the fourteen are positive controls, because a guard whose loader silently read nothing passes every case vacuously: one asserts both manifests really loaded and carry rows; the other asserts the <code>rightsRefusal()</code> rule that does the real work can actually refuse — a sound source passes, an ungranted <code>embed-cleared</code> fails, a text-storing <code>link-only</code> fails, an invented state fails.</p>
+<p><strong>The guard also failed for real while being written</strong>, which is how its last check earned its keep: it asserted the schema document still states that the default denies, and the document said so inside a differently-emphasised sentence. Tightened to match the claim rather than the markdown.</p>
+<h3>7.1 Mutation testing — 7 of 7 caught, each by the right check</h3>
+<p>Run against copies in a scratch directory; the committed manifests were never modified.</p>
+<div class='tw'><table><thead><tr><th>#</th><th>Mutation</th><th>Caught by</th></tr></thead><tbody>
+<tr><td>M1</td><td>A source promoted to <code>embed-cleared</code> with no grant</td><td>every source is sound against the rights rule</td></tr>
+<tr><td>M2</td><td>A commentary row given a <code>narration_occurrence_id</code></td><td>no row claims an occurrence while no edition is approved</td></tr>
+<tr><td>M3</td><td>A link-only row given a <code>text_hash</code></td><td>no commentary text captured while nothing is embed-cleared</td></tr>
+<tr><td>M4</td><td>Ibn Ḥajar and al-Nawawī swapped between collections</td><td>the two matches stay DISTINCT records</td></tr>
+<tr><td>M5</td><td><code>defaultRightsState</code> changed to <code>link-only</code></td><td>the default denies</td></tr>
+<tr><td>M6</td><td>A link-only source given <code>mayStoreText</code></td><td>every source is sound against the rights rule</td></tr>
+<tr><td>M7</td><td>The display contract&#x27;s prohibitions gutted</td><td>an explanation never passes as the Hadith&#x27;s own words</td></tr>
+</tbody></table></div>
+<p>M4 is the one worth naming. Swapping the two scholars leaves a manifest that parses, validates and looks entirely plausible — and attributes each scholar&#x27;s commentary to the wrong collection. It is caught because the guard reads the pairing out of the Source Register rather than trusting the file.</p>
+<hr>
+<h2>8. What H1 did NOT do</h2>
+<ul><li><strong>No source, collection or edition was approved.</strong> That is the owner&#x27;s decision, and the Master Plan places it at exactly this gate. §9.</li><li><strong>No text was fetched or imported</strong> from any source.</li><li><strong><code>unit-keys.js</code> was not touched.</strong> §5 is a proposal behind an Owner Control Gate.</li><li><strong>No Hadith Approach ids were allocated.</strong> <code>APPROACH_TEMPLATES</code> is hardcoded to Quran (<code>catalogue.js:211</code>); the inventory is H2 work and must not borrow Quran numbers.</li><li><strong>No Note or MMJ surface was specified</strong>, because their Firestore Rules are undeployed and every write would be denied today (H0 §5, contradiction C4).</li><li><strong>Nothing was merged, deployed or published.</strong> <code>firestore.rules</code>, <code>firebase.json</code> and every Rules and index candidate are byte-for-byte untouched.</li></ul>
+<hr>
+<h2>9. What H2 needs before it can start</h2>
+<p>Three things, in order:</p>
+<ol><li><strong>A read of live Firestore for any existing <code>hadith:</code> unit key.</strong> Blocks §5&#x27;s proposal from being safe to apply. Needs access this gate does not have.</li><li><strong>The owner&#x27;s source and edition decision</strong> — which collection, which edition, which languages. Until then H2 runs entirely on clearly-labelled synthetic fixtures, which the Master Plan explicitly permits and which the guard now enforces.</li><li><strong>Acknowledgement that H2&#x27;s Note and MMJ half is blocked</strong> on the existing Firebase Console deployment gate, which Hadith cannot clear.</li></ol>
+<p><strong>H2 can begin without 1 and 2</strong> — on synthetic fixtures, building the collection browse, the Ṣalāh topic index, search, the Track adapter and the Classical Explanations panel with its two outbound links. That is what the Source Register&#x27;s own handoff anticipates: <em>&quot;Claude can implement the schema and two outbound links immediately with synthetic/local fixture records.&quot;</em></p>
+</main></body></html>
