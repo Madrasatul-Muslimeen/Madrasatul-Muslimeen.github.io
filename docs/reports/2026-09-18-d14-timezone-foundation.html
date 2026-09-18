@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>D14 timezone foundation, and measured layout options for three selects</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>D14 timezone foundation, and measured layout options for three selects</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Branch / base:</strong> <code>main</code> at <strong><code>6758490cf957c646df4945ad52b0cf403cc3cf61</code></strong> (v08.27), clean tree</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> Two NEW <code>app/js</code> modules, unreachable from any page; one NEW Rules candidate in its own file; four new tools files. <strong>No existing application file was modified</strong> — <code>git status -- app/</code> shows two untracked additions and nothing else.</li><li><strong>Application version:</strong> <strong>08.27, unchanged.</strong> Nothing a person can reach changed.</li><li><strong>Result:</strong> ACCEPT. D14 represented, tested and audited against the Rules it needs; three layout remedies measured and <strong>none chosen</strong>.</li></ul>
+<p>&gt; <strong>Held, as instructed:</strong> Phase 4 wiring <code>7e2931f</code> untouched. Nothing deployed. <code>firestore.rules</code>, <code>firebase.json</code> and the assembled Phase 4–6 deployment candidate all byte-identical — each asserted by a check, not by assertion in prose.</p>
+<hr>
+<h2>1. What D14 asks for, and why it needs new fields</h2>
+<p>&gt; <strong>D14:</strong> automatic capture is the DEFAULT, and a person may choose a LOCATION which determines their timezone until they change it or return to automatic detection.</p>
+<p>D14 recorded three findings and all three are load-bearing:</p>
+<ol><li><strong>The decision cannot be represented by the field that exists.</strong> <code>timezone</code> is one string, so auto-detected <code>Asia/Dhaka</code> and hand-chosen <code>Asia/Dhaka</code> are indistinguishable. Re-detecting at each login silently overwrites a deliberate choice; never re-detecting silently freezes an auto value when the person travels. <strong>A mode is the missing fact, not a second value.</strong></li><li><strong>The deployed Rules authorise <code>timezone</code> and <code>updatedAt</code> and nothing else.</strong></li><li><strong>A location is not a timezone</strong> — it <em>determines</em> one.</li></ol>
+<h2>2. The representation</h2>
+<p>Three fields on <code>tenantPeople</code>:</p>
+<div class='tw'><table><thead><tr><th>field</th><th>automatic</th><th>a chosen location</th></tr></thead><tbody>
+<tr><td><code>timezone</code></td><td>the detected IANA zone</td><td>the <strong>resolved</strong> IANA zone of the chosen location</td></tr>
+<tr><td><code>timezoneMode</code></td><td><code>&quot;auto&quot;</code> (or <strong>absent</strong> — every pre-D14 record)</td><td><code>&quot;manual&quot;</code></td></tr>
+<tr><td><code>timezoneLocation</code></td><td><strong><code>null</code>, written explicitly</strong></td><td>the chosen location label</td></tr>
+</tbody></table></div>
+<p><strong><code>timezone</code> keeps its existing name and meaning, and that is the point of the shape.</strong> It is the authoritative resolved zone in <em>both</em> modes, so anything that reads a person&#x27;s timezone reads one field and never needs to know the mode. <strong>The mode governs who may change it, not what it means.</strong></p>
+<p><strong>An absent mode reads as <code>auto</code>, and that is derived rather than chosen.</strong> Every record written before D14 carries a zone captured automatically at creation and no mode, and D14 says automatic capture is the default — so the existing corpus already <em>is</em> auto and <strong>nothing needs backfilling.</strong></p>
+<p><strong><code>timezoneLocation</code> is written <code>null</code>, never omitted.</strong> Omitting it would leave a previous choice&#x27;s label beside a mode that says auto — the stale-label state that makes &quot;return to automatic&quot; a lie. Writing null is what erases it.</p>
+<h3>The two behaviours the Owner named</h3>
+<p>Both are one function, <code>reconcileOnSignIn()</code>, seen from two sides:</p>
+<ul><li><strong>A manual choice survives every sign-in.</strong> Manual mode returns <code>keep</code> whatever the device reports — tested against five different device zones including nonsense and <code>null</code>.</li><li><strong>Automatic follows the device.</strong> Auto mode returns a write when the detected zone differs, so a person who travels is not frozen at the zone they signed up in.</li></ul>
+<p>Three further states fall out and are tested: a pre-D14 record gains its mode <strong>without its zone moving</strong>; a <code>migrate.html</code> record (<code>timezone: null</code>) adopts the detected zone; and an <strong>unreadable device zone writes nothing rather than guessing</strong> — a browser that will not report its zone is not evidence that the person moved.</p>
+<h2>3. The Rules audit, done with the data layer rather than after it</h2>
+<p><code>docs/governance/d14-timezone-tenantpeople-rules-candidate-2026-09-18.rules</code> — <strong>its own file, so nothing this tranche does can change what a Phase 4–6 deployment would apply.</strong> Every read clause, both create clauses and the two non-self update clauses are reproduced <strong>byte-for-byte</strong> from the deployed ruleset; a check diffs them.</p>
+<p>Two decisions worth stating:</p>
+<p><strong>The mode and the location must agree, and the server is where that is true.</strong> A client that sets <code>auto</code> while leaving a location behind produces a document whose own fields contradict each other. Enforced in the Rules <em>and</em> in the contract — neither side is the only guard.</p>
+<p><strong>The validator is applied to all three update clauses, but conditionally.</strong> The admin and guardian clauses have never validated any field of this document, and giving <code>tenantPeople</code> a full shape contract would risk denying existing legitimate writes this tranche cannot enumerate. So <code>timezoneWellFormed()</code> returns true when the write does not touch the timezone fields: those two clauses behave exactly as deployed, and a write that <em>does</em> touch them must be well-formed whoever makes it. <strong>Mutation-proven:</strong> removing it from the admin clause alone fails <code>TZ-16</code> and nothing else.</p>
+<h3>Tested against the ruleset activation would produce, not against the extract</h3>
+<p>The candidate calls <code>canAdminIdentity</code>, <code>isGuardianOf</code>, <code>myUid</code> and five other helpers that live in the deployed file. <strong>An extract tested alone proves only that a file parses.</strong> So the suite substitutes the candidate&#x27;s block into <code>firestore.rules</code> in memory and runs <em>that</em> — asserting the substitution happened, and asserting the assembled ruleset differs from the deployed one <strong>nowhere except that block</strong>.</p>
+<p><strong>26 assertions, 0 failures.</strong> Three mutations, each printing its occurrence count first:</p>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Killed</th></tr></thead><tbody>
+<tr><td>drop the <code>auto ⇒ no location</code> clause</td><td>TZ-04, TZ-16</td></tr>
+<tr><td>drop the <code>manual ⇒ location + zone</code> clause</td><td>TZ-05, TZ-06, TZ-20</td></tr>
+<tr><td>drop <code>timezoneWellFormed()</code> from the <strong>admin</strong> clause only</td><td>TZ-16</td></tr>
+</tbody></table></div>
+<h3>The two halves audited against each other, not merely side by side</h3>
+<p>Everything above writes payloads the <strong>suite</strong> composed, which proves the Rules are right about payloads the suite imagined. It does not prove the <strong>data layer&#x27;s</strong> payloads are ones the Rules accept — the exact defect <code>rules-authorisation-executable.mjs</code> exists for one collection over: <em>an emulator suite proves the Rules using its own fixtures and never proves the code&#x27;s payload matches them.</em></p>
+<p>So four further cases (<strong>TZ-23…26</strong>) write the <strong>contract&#x27;s own output, unmodified</strong> — its automatic payload, its manual payload, its return-to-automatic payload, and the reconciler&#x27;s decision for a travelled record — through the candidate Rules. All accepted. A fifth assertion binds the payload&#x27;s keys to <code>TIMEZONE_FIELDS</code>.</p>
+<p><strong>Mutation-proven:</strong> adding one field to the contract&#x27;s automatic payload that the Rules do not permit fails <strong>three</strong> emulator cases with a real <code>permission-denied</code>, <em>and</em> the field-set assertion. That is precisely the &quot;denied in production, and no pure suite would notice&quot; failure — noticed.</p>
+<h3>Two of my own test errors, found and corrected</h3>
+<ul><li><strong>TZ-12</strong> wrote <code>roles: [&quot;owner&quot;]</code> — the value the fixture already had. <code>diff().affectedKeys()</code> lists only keys whose value <strong>changed</strong>, so <code>hasOnly</code> never saw it and the case proved nothing. <strong>A smuggled field has to actually differ to be smuggled.</strong></li><li><strong>TZ-20</strong> asserted &quot;manual with no zone is refused&quot; against a record <strong>TZ-19 had just given a zone</strong>. A case whose premise an earlier case destroyed tests nothing. It has its own record now.</li></ul>
+<p>I also suspected a live defect in <code>isGuardianOf</code> — that <code>myPersonIdIn</code> returning <code>null</code> would match any person whose <code>managedByPersonId</code> is null. <strong>Reading it disproved that</strong>: it requires <code>isGuardianIn()</code>, which needs a membership document the fixture lacked. Recorded because the next person to see that shape will suspect the same thing.</p>
+<h2>4. Held unreachable, and proven so</h2>
+<p><code>app/js/timezone-contract.js</code> (pure, <strong>imports nothing at all</strong>) and <code>app/js/timezone-service.js</code> (the data layer). <strong>10 boundary checks, 0 failures</strong>, including a positive control so the walker cannot pass vacuously.</p>
+<p><strong>Week bucketing is untouched by construction, not by intention.</strong> D14 records that <code>weekKeyFor()</code> buckets by the <em>device&#x27;s</em> local calendar day and that honouring a stored zone there would change which week live records land in. The boundary walks the import graph <strong>forward</strong> from both modules and asserts <code>activity.js</code> is not in it at any depth, and that neither names <code>weekKeyFor</code>, <code>chunkKey</code>, <code>claimStatus</code> or <code>bulkConfirmWeek</code> outside a comment.</p>
+<p>Mutation-proven both ways: importing the service into <code>records.js</code> fails the unreachability check <strong>naming the chain</strong> (<code>app/admin-self-check.html -&gt; self-check.js -&gt; records.js -&gt; timezone-service.js</code>); importing <code>activity.js</code> into the service fails the week-bucketing check.</p>
+<p>Also asserted: the three live <code>timezone</code> write sites still write exactly what they wrote before, no page names either module or any of the new fields, and <strong>no reachable setting was added</strong>.</p>
+<hr>
+<h2>5. Measured layout options — for the Owner to choose</h2>
+<p>v08.27 named three remedies for <code>surahSelect</code>, <code>unitTypeSelect</code> and <code>tenantSelect</code> and <strong>costed none of them</strong>. <code>tools/i18n-verify/select-layout-options.mjs</code> applies each to a live copy of the page, measures, and reverts. <strong>It changes no file and picks no winner.</strong></p>
+<p>Method is v08.27&#x27;s corrected one: the dropdown arrow measured from a probe carrying the control&#x27;s own computed font, padding and border, and the requirement taken as the <strong>longest option</strong>.</p>
+<h3>As-is, English — what each control needs and gets (px)</h3>
+<div class='tw'><table><thead><tr><th>width</th><th><code>surahSelect</code></th><th><code>unitTypeSelect</code></th><th><code>tenantSelect</code></th></tr></thead><tbody>
+<tr><td>320</td><td><strong>46 short</strong></td><td><strong>26 short</strong></td><td><strong>129 short</strong></td></tr>
+<tr><td>360</td><td><strong>26 short</strong></td><td><strong>6 short</strong></td><td><strong>109 short</strong></td></tr>
+<tr><td>390</td><td><strong>11 short</strong></td><td>fits (−9)</td><td><strong>94 short</strong></td></tr>
+<tr><td>412</td><td>exactly 0</td><td>fits (−20)</td><td><strong>83 short</strong></td></tr>
+</tbody></table></div>
+<p>Longest options: <code>&quot;63. Al-Munaafiqoon&quot;</code> 113px, <code>&quot;Range of Ayahs&quot;</code> 93px, <code>&quot;Madrasatul Muslimeen (Owner, Prime)&quot;</code> 224px. Bangla is shorter throughout, so <strong>English at 320px is the governing case</strong>.</p>
+<h3>The candidates, shortfall after each (negative = fits)</h3>
+<p><strong>English, 320px</strong> — the hardest case:</p>
+<div class='tw'><table><thead><tr><th>candidate</th><th>surah</th><th>unitType</th><th>tenant</th><th>panel content</th><th>vertical cost</th></tr></thead><tbody>
+<tr><td>as-is</td><td>46</td><td>26</td><td>129</td><td>974px</td><td>—</td></tr>
+<tr><td><strong>B</strong> type −1px</td><td>38</td><td>19</td><td>112</td><td>974px</td><td>none</td></tr>
+<tr><td><strong>B</strong> type −2px</td><td>29</td><td>12</td><td>95</td><td>974px</td><td>none</td></tr>
+<tr><td><strong>A</strong> wrap the units row</td><td>18</td><td><strong>−2</strong></td><td>129</td><td>1026px</td><td><strong>+52px</strong></td></tr>
+<tr><td><strong>D</strong> tenant its own row</td><td>46</td><td>26</td><td><strong>−3</strong></td><td>1026px</td><td><strong>+52px</strong></td></tr>
+<tr><td><strong>A+D</strong></td><td>18</td><td><strong>−2</strong></td><td><strong>−3</strong></td><td>1077px</td><td><strong>+103px</strong></td></tr>
+<tr><td><strong>C</strong> shorten the text</td><td>25</td><td>9</td><td>37</td><td>974px</td><td>none (wording)</td></tr>
+<tr><td><strong>A+D+C</strong></td><td><strong>−3</strong></td><td><strong>−19</strong></td><td><strong>−95</strong></td><td>1077px</td><td><strong>+103px</strong> + wording</td></tr>
+</tbody></table></div>
+<p><strong>English, 360px:</strong> A+D fits unitType and tenant and leaves surah 2px short; A+D+C fits all three with room. <strong>Bangla, 320px:</strong> as-is is 28 / −2 / 61; A+D reaches 0 / −30 / −70; A+D+C reaches −23 / −43 / −139.</p>
+<h3>What the numbers say, without choosing</h3>
+<ul><li><strong>Shrinking the type cannot fix <code>tenantSelect</code>.</strong> Two pixels of type buys 34px against a 129px shortfall.</li><li><strong><code>tenantSelect</code> is a container problem, not a content one.</strong> Giving it its own row fixes it outright at every width and in both languages — and it already fits on <code>people.html</code>, where it gets 272px.</li><li><strong><code>surahSelect</code> is the stubborn one.</strong> Only the content remedy moves it enough at 320px; every layout remedy leaves it short there.</li><li><strong>No single remedy fits all three at 320px. Only A+D+C does</strong>, at +103px of panel height and a user-visible wording change in <strong>both</strong> languages (I11).</li><li>The panel <strong>does not scroll</strong> in any candidate, so the vertical cost is headroom spent, not content hidden.</li></ul>
+<p><strong>Three questions, and they are the Owner&#x27;s:</strong></p>
+<ol><li>Is +103px of Study-options height acceptable to make the panel fit at 320px?</li><li>May the tenant picker drop its role suffix — showing <code>Madrasatul Muslimeen</code> rather than <code>Madrasatul Muslimeen (Owner, Prime)</code>?</li><li>May <code>Range of Ayahs</code> become <code>Range</code>, and surah names lose their leading number, in <strong>both</strong> languages?</li></ol>
+<p><strong>Nothing was implemented. <code>app/</code> is untouched.</strong></p>
+<h3>Three defects in my own measurement script, found before any number was presented</h3>
+<p>Worth recording, because each would have produced a confident wrong table:</p>
+<ul><li><strong><code>font-size: calc(1em - 1px)</code> made the type BIGGER.</strong> <code>1em</code> resolves against the <em>parent</em>; these selects render at 13.1px inside a 16px parent, so every shortfall grew. The tell was a remedy making things worse. Now applied as absolute px derived from the measured computed size.</li><li><strong><code>D-tenant-own-row</code> did nothing</strong> — it used <code>flex-wrap</code>, and <code>.opt-bar</code> is a <strong>grid</strong> (<code>grid-template-columns: repeat(4, minmax(0,1fr))</code>). It reported 129px short at every width, identical to as-is, which is what gave it away. Now <code>grid-column: 1 / -1</code>.</li><li><strong><code>C</code> was measured on top of <code>A+D</code></strong> — the stylesheet was never removed before the content loop, so C appeared to fix all three partly on A+D&#x27;s credit. <strong>A candidate measured on top of another candidate is not a measurement of either.</strong></li></ul>
+<hr>
+<h2>6. Verification</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>d14-timezone-contract.mjs</code></td><td><strong>21 / 0</strong></td></tr>
+<tr><td><code>d14-timezone-boundary.mjs</code></td><td><strong>10 / 0</strong>, 2 / 2 mutations caught</td></tr>
+<tr><td><code>d14-timezone.rules.test.mjs</code> (emulator)</td><td><strong>26 / 0</strong>, 4 / 4 mutations caught</td></tr>
+<tr><td>Every other pure suite</td><td>unchanged and green</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 / 47</strong> — unchanged, no new user-visible string</td></tr>
+<tr><td><code>firestore.rules</code>, <code>firebase.json</code>, assembled Phase 4–6 candidate</td><td><strong>byte-identical</strong>, each asserted</td></tr>
+<tr><td><code>git status -- app/</code></td><td>two untracked additions, <strong>no modifications</strong></td></tr>
+</tbody></table></div>
+<p>The only non-zero exits in the whole sweep are <code>quran-word-card-rendered</code> (2) and <code>quran-word-progress-rendered</code> (3) — all five the sandbox&#x27;s <code>ERR_CERT_AUTHORITY_INVALID</code> TLS artefact, unchanged and environmental.</p>
+<h2>7. Remaining gates</h2>
+<div class='tw'><table><thead><tr><th>Gate</th><th>What it blocks</th></tr></thead><tbody>
+<tr><td><strong>Firebase execution access</strong></td><td>deploying the D14 tenantPeople candidate, and Phases 4–6</td></tr>
+<tr><td><strong>Owner: the three layout questions</strong> (§5)</td><td>any change to the three selects</td></tr>
+<tr><td><strong>Owner: where a person chooses a location</strong></td><td>a reachable timezone setting — deliberately not designed here</td></tr>
+<tr><td><strong>Owner: does anything HONOUR the stored zone?</strong></td><td>D14 stores an authoritative zone; <code>weekKeyFor()</code> still buckets by the device&#x27;s calendar day. Changing that alters which week live records land in — <strong>its own gate, untouched</strong></td></tr>
+<tr><td>Phase 4 wiring <code>7e2931f</code></td><td>unchanged, still held</td></tr>
+</tbody></table></div>
+<p><strong>A location → IANA zone resolver is deliberately absent.</strong> The contract accepts a resolved zone from its caller: resolving a place name needs a geographic database, which is exactly the dependency a pure contract must not acquire. Which resolver, and whether the location list is curated, is an Owner product question.</p>
+<hr>
+<p><em>Master Architect audit: BR-0, additive, no accepted decision changed, no Owner Control Gate crossed. D14 is represented and provable without being reachable, and the layout work presents numbers instead of a choice.</em></p>
+</main></body></html>

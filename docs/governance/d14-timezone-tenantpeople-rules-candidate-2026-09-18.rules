@@ -1,0 +1,107 @@
+// D14 TIMEZONE — tenantPeople Rules CANDIDATE, 18 Sep 2026.
+//
+// ███ THIS IS AN EXTRACT. NEVER PASTE THIS FILE INTO THE FIREBASE CONSOLE. ███
+//
+// It contains ONE match block. Pasting it would replace the entire live
+// ruleset with a file governing one collection — the exact hazard the standing
+// brief records for the `candidate-2026-09-15` extracts. It exists to be
+// reviewed and to be executed against the emulator. When D14 is activated, this
+// block REPLACES the corresponding block inside the production ruleset, and the
+// assembled Phase 4-6 deployment candidate is NOT touched by this tranche.
+//
+// NOT DEPLOYED. `firestore.rules` is untouched and stays untouched.
+//
+// ---------------------------------------------------------------------------
+// WHAT CHANGES, AND WHAT DELIBERATELY DOES NOT
+//
+// The ONLY edit to the deployed block is the self-update clause and one new
+// helper. Every read clause, both create clauses, the admin update clause and
+// the guardian update clause are reproduced BYTE-FOR-BYTE from the deployed
+// `firestore.rules`, so a reviewer can diff them and see that this candidate
+// widens exactly one capability.
+//
+// D14's finding (2): the deployed self-update clause is
+// `hasOnly(['timezone', 'updatedAt'])`, so `timezoneMode` and
+// `timezoneLocation` are denied in production today. That is why the timezone
+// foundation is a candidate and not a feature.
+//
+// THE MODE AND THE LOCATION MUST AGREE, AND THE SERVER IS WHERE THAT IS TRUE.
+// A client that sets mode `auto` while leaving a location behind produces a
+// record whose own fields contradict each other, and "return to automatic"
+// becomes unprovable from the data. The invariant is therefore enforced here
+// as well as in `app/js/timezone-contract.js` — neither side is the only guard.
+//
+// WHY THE HELPER IS APPLIED TO ALL THREE UPDATE CLAUSES, NOT ONLY THE NEW ONE.
+// The admin and guardian clauses have never validated any field of this
+// document, and giving `tenantPeople` a full shape contract would risk denying
+// existing legitimate writes this tranche cannot enumerate. So the helper is
+// CONDITIONAL: a write that does not touch the timezone fields is unaffected
+// and those two clauses behave exactly as deployed; a write that DOES touch
+// them must be well-formed whoever makes it. That closes the hole without
+// imposing a contract on the rest of the document.
+//
+// AUDITED TOGETHER WITH THE DATA LAYER: every field named here is one of
+// `TIMEZONE_FIELDS` in `app/js/timezone-contract.js`, and a check binds the two
+// lists so they cannot drift apart.
+// ---------------------------------------------------------------------------
+
+    match /tenantPeople/{personId} {
+
+      // --- D14, NEW ---------------------------------------------------------
+      // True when this write leaves the timezone fields well-formed, and true
+      // when it does not touch them at all.
+      function tzTouched() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+                 .hasAny(['timezone', 'timezoneMode', 'timezoneLocation']);
+      }
+      function tzMode() { return request.resource.data.get('timezoneMode', 'auto'); }
+      function tzLocation() { return request.resource.data.get('timezoneLocation', null); }
+      function tzZone() { return request.resource.data.get('timezone', null); }
+      function timezoneWellFormed() {
+        return !tzTouched()
+            || (
+                 // The mode vocabulary is closed. An absent mode reads as
+                 // 'auto', which is what every pre-D14 record already is.
+                 (tzMode() == 'auto' || tzMode() == 'manual')
+                 // A zone is a non-empty string, or null -- migrate.html
+                 // writes null and that record must stay representable.
+                 && (tzZone() == null || (tzZone() is string && tzZone().size() > 0))
+                 // auto has NO location: this is what makes "return to
+                 // automatic" erase the previous choice rather than leave a
+                 // stale label beside a mode that contradicts it.
+                 && (tzMode() != 'auto' || tzLocation() == null)
+                 // manual carries the location that determined the zone, and
+                 // a zone for it to have determined.
+                 && (tzMode() != 'manual' || (tzLocation() is string && tzLocation().size() > 0 && tzZone() != null))
+               );
+      }
+      // --- end D14 ----------------------------------------------------------
+
+      allow read: if isPlatformAdmin();
+      allow read: if canAdminIdentity(resource.data.tenantId);
+      allow read: if isTeacherIn(resource.data.tenantId) && isCoEnrolledTeacherOf(resource.data.tenantId, personId);
+      allow read: if signedIn() && resource.data.authUid == myUid();   // own record
+      allow read: if isGuardianOf(resource.data.tenantId, personId);
+
+      allow create: if canAdminIdentity(request.resource.data.tenantId);
+      allow create: if isGuardianIn(request.resource.data.tenantId)
+                    && request.resource.data.isMinor == true
+                    && request.resource.data.managedByPersonId == myPersonIdIn(request.resource.data.tenantId);
+      allow create: if signedIn()
+                    && request.resource.data.authUid == myUid()
+                    && request.resource.data.isMinor == false;
+
+      allow update: if canAdminIdentity(resource.data.tenantId)
+                    && timezoneWellFormed();
+      allow update: if isGuardianOf(resource.data.tenantId, personId)
+                    && request.resource.data.tenantId == resource.data.tenantId
+                    && timezoneWellFormed();
+      // D14: was hasOnly(['timezone', 'updatedAt']). The mode and the location
+      // join it, and nothing else does -- a person still cannot touch their own
+      // roles, tenant, authUid or managedByPersonId through this path.
+      allow update: if signedIn() && resource.data.authUid == myUid()
+                    && request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['timezone', 'timezoneMode', 'timezoneLocation', 'updatedAt'])
+                    && timezoneWellFormed();
+      // No delete (I4/D6).
+    }
