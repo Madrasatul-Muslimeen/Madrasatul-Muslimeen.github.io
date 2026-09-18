@@ -4,6 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="./css/shell.css" />
+<link rel="stylesheet" href="./css/hadith.css" />
 <title>QuranRevival — Hadith</title>
 <style>
   body { font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem 4rem; color: #222; }
@@ -131,6 +132,19 @@
     <div id="breadcrumbContainer"></div>
     <div id="listContainer"></div>
     <div id="detailContainer"></div>
+
+    <!-- H2-B: the Hadith corpus, mounted INSIDE the Hadith module rather than
+         replacing it. The Approach/Track surface above is the SHARED topic
+         renderer (topic-study.js), used by eight pages; it is deliberately
+         untouched, and this section sits beneath it as its own region. The
+         standalone route at hadith-collections.html still exists and mounts
+         the identical component -- one component, two routes, so the two
+         cannot silently diverge. -->
+    <section id="hadithCorpusSection" aria-labelledby="hadithCorpusHeading">
+      <h2 id="hadithCorpusHeading"></h2>
+      <p class="hadith-note" id="hadithCorpusNote"></p>
+      <div id="hadithCorpusRoot"></div>
+    </section>
   </div>
 
   <div id="wayModalOverlay"><div id="wayModalMount"></div></div>
@@ -144,6 +158,35 @@
     // else runs, so a Bangla reader never sees an English frame first.
     translateStatic();
     initTopicStudyPage({ moduleId: "hadith", trackableId: "studied_hadith", rootSubjectId: "hadith" });
+
+    // The corpus mounts independently of initTopicStudyPage. It reads only
+    // synthetic fixtures, writes nothing, and needs no sign-in, so a failure
+    // here must never take the shared Approach surface down with it.
+  </script>
+
+  <!-- The corpus mounts from its OWN module script, deliberately, and this is
+       not tidiness. The block above imports topic-study.js, which pulls the
+       Firebase SDK off the CDN; if that import fails -- offline, a blocked
+       CDN, a proxy -- the WHOLE module script fails and everything in it is
+       skipped. The corpus reads synthetic fixtures, needs no sign-in and
+       writes nothing, so it has no business dying with Firebase. Proven
+       rather than assumed: mounting it in the block above rendered nothing
+       at all in a browser that cannot reach gstatic, with no page error to
+       say so. Separate scripts, separate fates. -->
+  <script type="module">
+    import { mountHadithBrowser } from "./js/hadith-browser.js";
+    import { t } from "./js/i18n.js";
+
+    document.getElementById("hadithCorpusHeading").textContent = t("Hadith Corpus");
+    document.getElementById("hadithCorpusNote").textContent =
+      t("Browse the collections, books and chapters. Every narration below is invented for development and is not a hadith.");
+    try {
+      mountHadithBrowser(document.getElementById("hadithCorpusRoot"), { mount: "hadith-module" });
+    } catch (err) {
+      // I15: a failure reaches the reader rather than only the console.
+      const root = document.getElementById("hadithCorpusRoot");
+      if (root) root.textContent = String(err && err.message ? err.message : err);
+    }
   </script>
 </body>
 </html>

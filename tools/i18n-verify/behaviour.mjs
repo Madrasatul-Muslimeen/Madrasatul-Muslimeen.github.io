@@ -158,7 +158,18 @@ console.log("\n=== 1. English is untouched (nothing regressed for today's users)
         // purpose -- that is how a Bangla-only reader finds the setting at all.
         // (The Quran module's translation/word-by-word pickers have done this
         // since long before this round.) Excluded rather than counted as a leak.
-        clone.querySelectorAll("#navAppLangSelect, #trBnControl, #wbwLangSelect, script, style").forEach((el) => el.remove());
+        // #hadithContentLang is the corpus's CONTENT-language picker and
+      // belongs to exactly that group. #hadithSyntheticBanner joins for the
+      // same reason and a
+        // stronger one: it prints "these are not real narrations" in Arabic,
+        // English AND Bangla on every page, in every language, always. That is
+        // a SAFETY requirement, not a translation bug -- a reader in any one of
+        // the three must be able to tell the corpus is invented without first
+        // changing their language setting. It became visible to this check when
+        // H2-B mounted the corpus into app/hadith-study.html, which is in
+        // NAV_PAGES; the standalone page is not. Excluded by ELEMENT, never by
+        // page, so a genuine leak anywhere else on that page still fails.
+        clone.querySelectorAll("#navAppLangSelect, #trBnControl, #wbwLangSelect, #hadithContentLang, #hadithSyntheticBanner, script, style").forEach((el) => el.remove());
         return /[ঀ-৿]/.test(clone.innerText || clone.textContent || "");
       })(),
     }));
@@ -261,10 +272,21 @@ console.log("\n=== 3. Switching language works BOTH ways, in place ===");
     anyBangla: (() => {
       const clone = document.body.cloneNode(true);
       // Every LANGUAGE PICKER names Bangla in Bangla, in every language, on
-        // purpose -- that is how a Bangla-only reader finds the setting at all.
-        // (The Quran module's translation/word-by-word pickers have done this
-        // since long before this round.) Excluded rather than counted as a leak.
-        clone.querySelectorAll("#navAppLangSelect, #trBnControl, #wbwLangSelect, script, style").forEach((el) => el.remove());
+      // purpose -- that is how a Bangla-only reader finds the setting at all.
+      // (The Quran module's translation/word-by-word pickers have done this
+      // since long before this round.) Excluded rather than counted as a leak.
+      // #hadithContentLang is the corpus's CONTENT-language picker and
+      // belongs to exactly that group. #hadithSyntheticBanner joins for the
+      // same reason and a
+      // stronger one: it prints "these are not real narrations" in Arabic,
+      // English AND Bangla on every page, in every language, always. That is
+      // a SAFETY requirement, not a translation bug -- a reader in any one of
+      // the three must be able to tell the corpus is invented without first
+      // changing their language setting. It became visible to this check when
+      // H2-B mounted the corpus into app/hadith-study.html, which is in
+      // NAV_PAGES; the standalone page is not. Excluded by ELEMENT, never by
+      // page, so a genuine leak anywhere else on that page still fails.
+      clone.querySelectorAll("#navAppLangSelect, #trBnControl, #wbwLangSelect, #hadithContentLang, #hadithSyntheticBanner, script, style").forEach((el) => el.remove());
       return /[ঀ-৿]/.test(clone.innerText || clone.textContent || "");
     })(),
   }));

@@ -285,3 +285,93 @@ function occurrencesUnder(bookChapterId) {
 }
 
 export { occurrencesUnder, compareBySourcePosition };
+
+/**
+ * EXPLORE AGGREGATION -- demo only, over synthetic fixtures.
+ *
+ * H2-B. This counts the source hierarchy and the topic taxonomy and NOTHING
+ * else. It deliberately reports no progress, no completion and no claim:
+ *
+ *   - Track is a plain Map cleared by a reload (hadith-browser.js), so any
+ *     figure derived from it would be a number invented by the last few
+ *     clicks. Inferring completion from a temporary control is exactly the
+ *     misleading claim the instruction forbids, so `tracked` is reported as
+ *     UNAVAILABLE rather than as zero. I7's own principle: a thing that is
+ *     not applicable is excluded, never counted as nought.
+ *   - Nothing here reads `records`, `activity`, a `chunkKey` or a
+ *     `trackableId`, and no Approach is named. A Hadith Approach registry
+ *     does not exist yet; see the H2-B registry PROPOSAL.
+ *
+ * DISTINCT OCCURRENCES ARE NOT THE MAPPING COUNT, and the two are reported
+ * separately everywhere because they answer different questions. A topic may
+ * be mapped at chapter level AND at occurrence level, so one narration can be
+ * reached by more than one mapping; adding the mappings up would double-count
+ * it, and reporting only the distinct total would hide how much curation the
+ * index rests on. A repeat narration is its OWN occurrence (it has its own id
+ * and its own place in the source order), so it counts once per occurrence,
+ * never merged by text.
+ */
+export function exploreAggregate() {
+  const collections = listCollections().map((c) => {
+    const editions = EDITIONS.filter((e) => e.collectionId === c.collectionId).map((ed) => {
+      const books = booksOf(ed.editionId);
+      const occurrencesInEdition = OCCURRENCES.filter((o) => o.editionId === ed.editionId);
+      return {
+        editionId: ed.editionId,
+        hasChapterLevel: editionHasChapterLevel(ed.editionId),
+        books: books.length,
+        chapters: books.reduce((n, b) => n + chaptersOf(b.bookChapterId).length, 0),
+        occurrences: occurrencesInEdition.length,
+        // A repeat is a distinct occurrence. Reported separately so the
+        // source's own shape stays visible rather than being tidied away.
+        repeats: occurrencesInEdition.filter((o) => o.repeatOfOccurrenceId).length,
+      };
+    });
+    return {
+      collectionId: c.collectionId,
+      editions,
+      occurrences: editions.reduce((n, e) => n + e.occurrences, 0),
+    };
+  });
+
+  const topics = listTopics().map((t) => {
+    const idx = topicIndex(t.topicId);
+    const listed = idx ? idx.collections.reduce((n, g) => n + g.entries.length, 0) : 0;
+    return {
+      topicId: t.topicId,
+      taxonomyRevision: t.taxonomyRevision,
+      // The two totals, never collapsed into one.
+      distinctOccurrences: idx ? idx.distinctOccurrences : 0,
+      mappingCount: idx ? idx.mappingCount : 0,
+      // How many rows the index actually LISTS, and how many of those are the
+      // same narration reached twice. Measured, not inferred: the first draft
+      // of this computed "overlap" as mappingCount - distinctOccurrences,
+      // which is meaningless here and was the wrong way round. A mapping may
+      // target a whole book or chapter, so THREE mappings reach FIVE
+      // narrations -- mappings are usually FEWER than narrations, not more.
+      // Genuine double-reach (a chapter mapped, and a narration inside it
+      // mapped as well) is possible and is what this measures; in the current
+      // fixture it is zero, and saying so is better than implying otherwise.
+      listedEntries: listed,
+      duplicateReaches: listed - (idx ? idx.distinctOccurrences : 0),
+      allMappingsReviewed: idx ? idx.allMappingsReviewed : false,
+      spansCollections: idx ? idx.collections.length : 0,
+    };
+  });
+
+  return {
+    synthetic: true,
+    taxonomyRevision: TAXONOMY_REVISION,
+    collections,
+    totals: {
+      collections: collections.length,
+      editions: collections.reduce((n, c) => n + c.editions.length, 0),
+      occurrences: collections.reduce((n, c) => n + c.occurrences, 0),
+      repeats: collections.reduce((n, c) => n + c.editions.reduce((m, e) => m + e.repeats, 0), 0),
+      topics: topics.length,
+    },
+    topics,
+    // Not zero, and not a number at all: there is no durable progress to read.
+    progress: { available: false, reason: "no-durable-hadith-progress" },
+  };
+}

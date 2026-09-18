@@ -8,7 +8,7 @@ import process from "node:process";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
   occurrenceById, sourcePathOf, externalReferencesFor, resolveText, availableLanguages,
-  searchCorpus, topicIndex, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
+  searchCorpus, topicIndex, exploreAggregate, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
 } from "../../app/js/hadith-corpus.js";
 import {
   OCCURRENCES, SYNTHETIC_NOTICE, TAXONOMY_REVISION,
@@ -349,6 +349,60 @@ check("the topic index does not rewrite any book", () => {
 
 check("an unknown topic returns null rather than an empty index that looks real", () => {
   assert.equal(topicIndex("topic-nope"), null);
+});
+
+check("EXPLORE -- the aggregate counts the SOURCE, and never counts progress", () => {
+  const a = exploreAggregate();
+  assert.equal(a.synthetic, true, "an aggregate over synthetic fixtures must say so");
+  assert.equal(a.totals.collections, 2);
+  assert.equal(a.totals.editions, 2);
+  assert.equal(a.totals.occurrences, OCCURRENCES.length, "the total must be the real occurrence count");
+  // Progress is UNAVAILABLE, not zero. A zero would read as "nothing studied".
+  assert.equal(a.progress.available, false);
+  assert.equal(typeof a.progress.count, "undefined", "no progress number may be produced at all");
+});
+
+check("EXPLORE -- distinct narrations and topic mappings are reported SEPARATELY", () => {
+  const a = exploreAggregate();
+  const salah = a.topics.find((x) => x.topicId === "synthetic-topic-salah");
+  assert.ok(salah, "the synthetic topic is missing from the aggregate");
+  // The fixture is built so these genuinely differ -- one narration is reached
+  // by a chapter mapping AND by an occurrence mapping. If they were ever equal
+  // the distinction this check exists for would be untestable.
+  assert.notEqual(salah.distinctOccurrences, salah.mappingCount,
+    "the fixture must keep these two figures different, or the overlap cannot be demonstrated");
+  assert.equal(salah.distinctOccurrences, topicIndex("synthetic-topic-salah").distinctOccurrences);
+  assert.equal(salah.mappingCount, topicIndex("synthetic-topic-salah").mappingCount);
+  // MEASURED, not inferred. The first draft of this aggregate computed
+  // "overlap" as mappingCount - distinctOccurrences and had the relationship
+  // backwards: a mapping may target a whole book, so THREE mappings reach FIVE
+  // narrations. Mappings are normally FEWER than narrations here.
+  assert.ok(salah.mappingCount < salah.distinctOccurrences,
+    "a book/chapter mapping reaches many narrations, so mappings should be fewer than narrations in this fixture");
+  // Double-reach is what "distinct" actually guards against, and it is
+  // measured off the listed rows rather than guessed from the two totals.
+  assert.equal(salah.duplicateReaches, salah.listedEntries - salah.distinctOccurrences);
+  assert.equal(salah.listedEntries, salah.distinctOccurrences,
+    "no narration in this fixture is reached twice -- if that ever changes, the Explore wording must change with it");
+  assert.equal(salah.taxonomyRevision, TAXONOMY_REVISION, "the revision must travel with the count");
+  assert.equal(salah.allMappingsReviewed, false, "synthetic mappings must never aggregate as reviewed");
+});
+
+check("EXPLORE -- a repeat is counted as its own narration, never merged", () => {
+  const a = exploreAggregate();
+  assert.equal(a.totals.repeats, OCCURRENCES.filter((o) => o.repeatOfOccurrenceId).length);
+  assert.ok(a.totals.repeats > 0, "the fixture must contain a repeat or this proves nothing");
+  // The repeat is INSIDE the occurrence total, not additional to it.
+  const summed = a.collections.reduce((n, c) => n + c.occurrences, 0);
+  assert.equal(summed, a.totals.occurrences);
+});
+
+check("EXPLORE -- the aggregate reaches no progress store of any kind", () => {
+  const src = fs.readFileSync(path.join(appJs, "hadith-corpus.js"), "utf8");
+  const body = src.slice(src.indexOf("export function exploreAggregate"));
+  for (const forbidden of ["records", "activity", "chunkKey", "trackableId", "approach_", "claimStatus", "demoTrack"]) {
+    assert.ok(!body.includes(forbidden), `exploreAggregate reaches ${forbidden}`);
+  }
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith Study — Stage A correction and Stage B limited implementation</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith Study — Stage A correction and Stage B limited implementation</h1>
+<p><strong>Date:</strong> 2026-09-18 · <strong>Branch:</strong> <code>feature/hadith-study</code> <strong>Stage A commit:</strong> <code>7f6132888bc02728e07e2214b5a8d6323708e00a</code> (app version <strong>08.28</strong>) <strong>Stage B commit:</strong> <code>STAGEB_SHA</code> (app version <strong>08.29</strong>) <strong>Gate status:</strong> H2-A corrected; H2-B delivered in the limited scope authorised. <strong>No merge, no deploy, no Rules change, no durable write, no permanent Approach ID.</strong></p>
+<hr>
+<h2>1. State at the start — and a version collision that was real</h2>
+<p><code>git fetch origin --prune</code>, then the refs read rather than remembered:</p>
+<div class='tw'><table><thead><tr><th>Fact</th><th>Value</th></tr></thead><tbody>
+<tr><td><code>origin/main</code> <strong>had moved</strong></td><td><code>1cac2b8</code> → <strong><code>6758490cf957c646df4945ad52b0cf403cc3cf61</code></strong></td></tr>
+<tr><td>What landed on <code>main</code></td><td>v08.26 (the 320px nav fit) <strong>merged</strong>, then <strong>v08.27</strong> (the Study-options number pickers) shipped</td></tr>
+<tr><td><code>main</code>&#x27;s <code>APP_VERSION</code></td><td><strong><code>08.27</code></strong></td></tr>
+<tr><td>This branch&#x27;s <code>APP_VERSION</code></td><td><strong><code>08.27</code></strong> — <strong>the same number</strong></td></tr>
+<tr><td>Phase 4 wiring (<code>claude/phase4-wiring</code>)</td><td><code>7e2931f795af1cd97efc1167660cea93aa22b9ab</code>, still stamping <strong>08.26</strong>, now superseded by <code>main</code>&#x27;s own 08.26</td></tr>
+</tbody></table></div>
+<p><strong>The collision was real, not a reservation.</strong> This branch took 08.27 while <code>main</code> was on 08.25; <code>main</code> then took 08.26 <strong>and</strong> 08.27. For a period, two different builds carried one version number — exactly what a version number exists to prevent, and what the branch&#x27;s own <code>version.js</code> comment had warned about for the 08.26 case.</p>
+<p><strong>Resolved by measurement, not arithmetic.</strong> Every one of the <strong>59</strong> remote branches was read for its <code>APP_VERSION</code>; <strong>08.28</strong> and <strong>08.29</strong> were free. Stage A took 08.28, Stage B took 08.29, and 08.29 was re-checked for collisions immediately before the bump.</p>
+<div class='tw'><table><thead><tr><th>Version</th><th>Owner</th><th>Reason</th></tr></thead><tbody>
+<tr><td>08.26</td><td><code>main</code> (merged)</td><td>nav fit</td></tr>
+<tr><td>08.27</td><td><code>main</code> (shipped)</td><td>number pickers</td></tr>
+<tr><td><strong>08.28</strong></td><td><strong>this branch, Stage A</strong></td><td>the synthetic-namespace correction</td></tr>
+<tr><td><strong>08.29</strong></td><td><strong>this branch, Stage B</strong></td><td>the corpus integration and Explore</td></tr>
+</tbody></table></div>
+<p><strong>The branch was also seven commits behind <code>main</code></strong>, which would have made Stage B&#x27;s before/after layout measurement meaningless — <code>main</code>&#x27;s own changes were to selects and pickers. <code>origin/main</code> was merged into the branch as its <strong>own commit</strong> before any Stage A work, with one conflict in <code>version.js</code> resolved <strong>to <code>main</code>&#x27;s content</strong> (the branch side carried an obsolete reservation comment for an 08.26 that <code>main</code> had since merged). <code>CLAUDE.md</code> auto-merged; <code>main</code>&#x27;s milestone corrections and the Hadith block both survived.</p>
+<hr>
+<h2>2. Stage A — the synthetic namespace, enforced rather than described</h2>
+<h3>2.1 What was wrong</h3>
+<p><code>app/js/hadith-fixture-data.js</code> stated its own safety rule: <em>&quot;EVERY ID IS PREFIXED <code>synthetic-</code>.&quot;</em> <strong>The data did not satisfy it</strong>, and the guard suite had codified the prefixes <em>as built</em> rather than the rule <em>as stated</em>, so the gap could not fail a check.</p>
+<div class='tw'><table><thead><tr><th>Id family</th><th>Actual prefix</th><th>Matched the stated rule?</th></tr></thead><tbody>
+<tr><td>Collections, editions, books, chapters</td><td><code>synthetic-</code></td><td>Yes</td></tr>
+<tr><td>Occurrences</td><td><code>syn-occ-</code></td><td>No</td></tr>
+<tr><td>Topic mappings</td><td><code>syn-map-</code></td><td>No</td></tr>
+<tr><td><strong>Topic</strong> — <code>topic-salah</code></td><td><em>(none)</em></td><td><strong>No — no synthetic marker at all</strong></td></tr>
+</tbody></table></div>
+<p>Only the last one mattered. <code>syn-occ-</code> and <code>syn-map-</code> are visibly non-real; the discrepancy there was <strong>wording</strong>. <code>topic-salah</code> was a genuine hazard: a future reviewed Ṣalāh topic would very plausibly be minted under exactly that id, at which point three <code>reviewStatus: &quot;unreviewed&quot;</code> synthetic mappings would share a topic id with real ones.</p>
+<h3>2.2 What was done</h3>
+<p><strong>Renamed to <code>synthetic-topic-salah</code></strong> across the fixture, its three mappings, the browser&#x27;s topic call and the suite. <strong>Nothing stale survives it</strong>, established rather than assumed: no JSON artefact in the repository references a topic id, and the Hadith module performs <strong>no durable write of any kind</strong> — a grep of <code>app/js/hadith-*.js</code> for <code>setDoc</code>, <code>updateDoc</code>, <code>addDoc</code>, <code>runTransaction</code> and <code>writeBatch</code> returns nothing.</p>
+<p><strong>The comment was corrected</strong> to state the namespace as it really is: <code>synthetic-</code> for the hierarchy and the taxonomy, <code>syn-occ-</code> and <code>syn-map-</code> for the two row-level families, with the reason the old wording was wrong recorded in place.</p>
+<h3>2.3 Three new GATE checks, none asserting a literal value</h3>
+<ol><li><strong>The id sweep</strong> walks every fixture export and checks each id against <em>its own family&#x27;s</em> permitted prefix, so a new row joins the sweep automatically. It carries a <strong>positive control</strong> — at least 20 ids, and five named families must actually appear — because a sweep that gathered nothing would pass every case vacuously.</li><li><strong>The collision check</strong> refuses any id a real taxonomy or edition import would plausibly mint (<code>topic-salah</code> is in that list <em>because the fixture really did hold it</em>), plus the general rule that stripping a synthetic prefix must not yield another fixture id.</li><li><strong>The referential check</strong> refuses a half-done rename: every mapping must name a topic that exists, and every topic must resolve through <code>topicIndex()</code> to a non-empty index.</li></ol>
+<h3>2.4 Failing-then-passing, then mutation-proven</h3>
+<p><strong>Before the rename</strong>, with the checks already written: <strong>27 passed, 2 failed</strong>, the two naming <code>topicId=&quot;topic-salah&quot; (needs &quot;synthetic-&quot;)</code> and <code>a fixture id is also a plausible real id: topic-salah</code>. <strong>After the rename: 29 passed, 0 failed.</strong></p>
+<p>Then four mutations, because a check that has not been made to fail has earned nothing:</p>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Result</th></tr></thead><tbody>
+<tr><td>Revert one mapping to the old id (a half-done rename)</td><td><strong>All three GATE checks fail</strong></td></tr>
+<tr><td>Blind the id sweep (<code>walk([])</code>)</td><td><strong>Positive control fires</strong> — <em>&quot;the id sweep found only 0 ids&quot;</em></td></tr>
+<tr><td>Give the topic the wrong family&#x27;s prefix (<code>syn-</code> where <code>synthetic-</code> belongs)</td><td><strong>Sweep fails</strong></td></tr>
+<tr><td>Revert the topic id entirely</td><td><strong>Two checks fail</strong>, as in the failing state above</td></tr>
+</tbody></table></div>
+<hr>
+<h2>3. Stage B — the corpus inside the Hadith module</h2>
+<h3>3.1 The integration, and what it deliberately does not touch</h3>
+<p><code>app/hadith-study.html</code> gains a <code>#hadithCorpusSection</code> <strong>beneath</strong> the existing Approach/Track surface, mounting the same <code>mountHadithBrowser</code> component the standalone route uses. <strong><code>app/js/topic-study.js</code> — the shared renderer used by eight pages — is byte-for-byte untouched</strong>, as are <code>catalogue.js</code>, <code>catalogue-data.js</code>, <code>records.js</code>, <code>activity.js</code>, <code>firestore.rules</code> and <code>firebase.json</code>.</p>
+<p><strong>The standalone route is preserved.</strong> <code>hadith-collections.html</code> still mounts the identical component; one component, two routes, so the two cannot silently diverge.</p>
+<h3>3.2 A real coupling defect, found by probing rather than by reading</h3>
+<p>The first integration put the mount in the <strong>same module script</strong> as <code>import { initTopicStudyPage }</code>. That script also pulls the Firebase SDK from the CDN — and in a browser that cannot reach <code>gstatic</code>, <strong>the whole module script fails and everything in it is skipped</strong>. The corpus rendered <em>nothing at all</em>, <strong>with no page error to say so</strong>: <code>rootChildren: 0</code>, heading empty, <code>pageerror</code> list empty.</p>
+<p>The corpus reads synthetic fixtures, needs no sign-in and writes nothing, so it has no business dying with Firebase. <strong>It now mounts from its own <code>&lt;script type=&quot;module&quot;&gt;</code></strong>, and with Firebase still completely unreachable it renders correctly — <code>rootChildren: 3</code>, heading <code>Hadith Corpus</code>. Separate scripts, separate fates.</p>
+<h3>3.3 Two defects every assertion passed through, found by LOOKING at the screenshot</h3>
+<p>With 60 rendered checks green — mounted, sized, positioned below the shared surface, translated, no overflow, no errors — the screenshot showed the component <strong>wrong</strong>:</p>
+<ul><li>the not-Hadith notice had <strong>lost its red warning panel</strong> and rendered as plain text;</li><li>every collection row rendered as a <strong>dark navy block with the edition id run into the name</strong> (&quot;Sample Collection Alphasynthetic-alpha-ar-v1 · Synthetic&quot;).</li></ul>
+<p>The markup was perfectly correct. The <strong>styles were trapped inside <code>hadith-collections.html</code>&#x27;s inline <code>&lt;style&gt;</code> block</strong>, so the component only looked right on the one page that happened to carry them — <em>a palette belongs to a surface, and a component rendered on two surfaces must carry its own.</em></p>
+<p><strong>Fixed by extracting the component&#x27;s rules into <code>app/css/hadith.css</code></strong>, linked by both pages. The standalone page keeps only its own chrome (body width, heading sizes) inline — deliberately, because imposing those on the module page would restyle headings the corpus does not own. The standalone page is visually unchanged; the integrated page now renders identically to it. Both are asserted by <strong>computed style</strong>, not by element existence: the banner&#x27;s <code>border-top-width</code> is <code>2px</code> in its red, and <code>.hadith-row</code>&#x27;s background is <code>rgb(255, 255, 255)</code>.</p>
+<h3>3.4 A regression this tranche caused in a shared suite, and the narrow fix</h3>
+<p>Mounting the corpus into <code>hadith-study.html</code> — which <strong>is</strong> in <code>behaviour.mjs</code>&#x27;s <code>NAV_PAGES</code>, where the standalone page is not — turned <code>no Bangla leaked into an English page</code> <strong>red</strong>. It was a real failure caused by this tranche, not a stale check.</p>
+<p>It is also a genuine conflict between two correct requirements: the synthetic notice <strong>must</strong> print in Arabic, English and Bangla on every page in every language (a non-negotiable gate — a reader of any one of them must be able to tell the corpus is invented without first changing their language setting).</p>
+<p>The check already had an established pattern for exactly this: three language pickers are excluded by id, with the reason recorded in place. <strong><code>#hadithSyntheticBanner</code> and <code>#hadithContentLang</code> join that list</strong>, in both of the file&#x27;s two leak checks, with the reason recorded in the same style. <strong>Excluded by ELEMENT, never by page</strong>, so a genuine leak anywhere else on that page still fails.</p>
+<p><strong>The first attempt at this was insufficient, and a positive control is what caught it.</strong> After excluding the banner the clean page still reported a leak; rather than widen the exclusion, the source was located — the corpus&#x27;s own <strong>content-language picker</strong>, which names each language in its own script, the identical category as the three already excluded. Proven both ways afterwards: a deliberate Bangla paragraph seeded into the page <strong>is detected</strong>, and the clean page passes.</p>
+<p><strong>This is the one shared-file edit in this tranche</strong>, and it is flagged for the Quran/shared-file owner rather than assumed: <code>tools/i18n-verify/behaviour.mjs</code>, two lines plus their recorded reason, adding two Hadith-owned element ids to an exclusion list that already existed for this exact purpose.</p>
+<h3>3.5 Before/after measurement — 8 pages × 3 widths × 2 languages</h3>
+<p>48 measurements per run (overflow, body height, <code>#app</code> height, nav height, <code>h1</code> top, element count), taken before any Stage B change and again after all of them.</p>
+<div class='tw'><table><thead><tr><th>Result</th><th>Count</th></tr></thead><tbody>
+<tr><td><strong>Byte-identical</strong></td><td><strong>42 / 48</strong></td></tr>
+<tr><td>Changed — <strong><code>hadith-study</code> only</strong></td><td>6 (element count 34 → 66, this round&#x27;s own nodes)</td></tr>
+<tr><td>Changed — <strong>any of the seven sibling topic-study pages</strong></td><td><strong>0</strong></td></tr>
+</tbody></table></div>
+<p><code>arabic-study</code>, <code>deen-study</code>, <code>general-study</code>, <code>life-skill</code>, <code>naturelife-study</code>, <code>bookmarks</code> and <code>quranrevival</code> are unchanged on every measured metric at phone, tablet and desktop widths in both languages.</p>
+<hr>
+<h2>4. Stage B — the Approach registry audit, with NO ID allocated</h2>
+<p>Delivered as <code>docs/governance/hadith-approach-registry-PROPOSAL-2026-09-18.md</code>. <strong>No permanent Hadith Approach ID is allocated, no Quran number is reused or reserved, and <code>catalogue.js</code> and <code>catalogue-data.js</code> are not modified.</strong></p>
+<p><strong>What the audit found, read from the code:</strong></p>
+<ul><li><strong>30 Approaches</strong>, <code>approach_01</code>…<code>approach_30</code>, in 7 sections (<code>catalogue-data.js:222</code>).</li><li>They are <strong>bound to Quran at SEED time, not in the template</strong>: <code>catalogue.js:190-206</code> writes every one with <code>moduleId: &quot;quranrevival&quot;</code>, <code>subjectId: &quot;quran&quot;</code>, hardcoded. The template itself carries <strong>no <code>moduleId</code> and no <code>subjectId</code></strong> — measured, both sets empty.</li><li><strong>Hadith has exactly one trackable and it is not an Approach</strong>: <code>studied_hadith</code>, <code>moduleId: &quot;hadith&quot;</code>, <code>subjectId: null</code>, name <strong>&quot;Studied&quot;</strong> — one of nine generic module rows.</li><li><strong>The corpus component claims no Approach whatsoever</strong>: a grep of <code>hadith-browser.js</code> and <code>hadith-corpus.js</code> for <code>approach_</code>, <code>Approach</code> and <code>studied_hadith</code> returns nothing.</li></ul>
+<p><strong>Reusing <code>approach_NN</code> for Hadith is refused</strong>, on three facts about the code: a trackable id <strong>is</strong> a document id (<code>${tenantId}__${t.id}</code>); claims are keyed by <code>trackableId</code> (I5), so the same id would silently reinterpret existing Quran claims; and the seed hardcodes <code>subjectId: &quot;quran&quot;</code>. The proposal offers <code>hadith_approach_NN</code> in its own namespace and its own template list — <strong>for review, with no number assigned.</strong></p>
+<p>Eight candidate Approaches are listed <strong>unnumbered</strong>, each naming its Quran analogue or saying plainly there is none. Three have no Quran counterpart at all (understanding the chain, grading and authenticity, topic study), which is the clearest argument that Hadith needs its own set rather than a copy. <strong>The count is not a proposal either</strong> — Hadith is not obliged to have 30, and &quot;the 30 Approaches&quot; is Quran terminology.</p>
+<hr>
+<h2>5. Stage B — demo-only Explore aggregation</h2>
+<p><code>exploreAggregate()</code> counts the <strong>source hierarchy</strong> and the <strong>taxonomy</strong>, and deliberately counts <strong>no progress at all</strong>.</p>
+<p><strong>Progress is reported as UNAVAILABLE, never as zero.</strong> A zero would read as &quot;nothing studied yet&quot;; the truth is that nothing durable exists to count, because Track is a plain <code>Map</code> cleared by a reload. Inferring completion from a temporary control is exactly the misleading claim the instruction forbids. The surface says so in words, in the reader&#x27;s own language: <em>&quot;No progress is counted here. Track is a preview that a reload clears, so there is nothing durable to aggregate.&quot;</em></p>
+<h3>5.1 Distinct narrations versus topic mappings — and a model this round got wrong first</h3>
+<p>The Ṣalāh topic reports <strong>5 distinct narrations from 3 mappings</strong>.</p>
+<p><strong>The first implementation computed &quot;overlap&quot; as <code>mappingCount - distinctOccurrences</code> and had the relationship backwards.</strong> Two rendered checks failed; investigating showed the <em>model</em> was wrong, not the checks. Measured directly: the three mappings are one chapter, one whole book, and one single occurrence — so <strong>a mapping may cover many narrations, and mappings are normally FEWER than narrations, not more.</strong></p>
+<p>The aggregate now reports what was measured:</p>
+<div class='tw'><table><thead><tr><th>Field</th><th>Value</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>mappingCount</code></td><td>3</td><td>how many <strong>curatorial decisions</strong> were made</td></tr>
+<tr><td><code>distinctOccurrences</code></td><td>5</td><td>how many <strong>narrations</strong> those decisions reach</td></tr>
+<tr><td><code>listedEntries</code></td><td>5</td><td>how many rows the index actually lists</td></tr>
+<tr><td><code>duplicateReaches</code></td><td><strong>0</strong></td><td>narrations reached by more than one mapping</td></tr>
+</tbody></table></div>
+<p>Double-reach is <strong>possible</strong> (a chapter mapped, and a narration inside it mapped as well) and is what &quot;distinct&quot; guards against; in this fixture it is zero, and the surface <strong>says so either way</strong> rather than being silent — <em>&quot;No narration here is reached by more than one mapping.&quot;</em> The suite asserts <code>mappingCount &lt; distinctOccurrences</code> and <code>listedEntries == distinctOccurrences</code>, so if the fixture ever changes, the wording must change with it.</p>
+<p><strong>A repeat narration is its own narration</strong>, counted once per occurrence and never merged by text — reported as its own total and asserted against the fixture.</p>
+<h3>5.2 Four Explore checks, all mutation-proven</h3>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Caught by</th></tr></thead><tbody>
+<tr><td>Collapse the two counts into one</td><td><em>distinct narrations and topic mappings are reported SEPARATELY</em></td></tr>
+<tr><td>Report progress as <code>{available: true, count: 0}</code></td><td><em>the aggregate counts the SOURCE, and never counts progress</em></td></tr>
+<tr><td>Let the aggregate name <code>studied_hadith</code></td><td><em>the aggregate reaches no progress store of any kind</em></td></tr>
+</tbody></table></div>
+<p>The last check reads the function&#x27;s own source and refuses <code>records</code>, <code>activity</code>, <code>chunkKey</code>, <code>trackableId</code>, <code>approach_</code>, <code>claimStatus</code> and <code>demoTrack</code>.</p>
+<hr>
+<h2>6. Evidence</h2>
+<h3>6.1 Pure suites</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Stage A</th><th>Stage B</th></tr></thead><tbody>
+<tr><td><code>hadith-source-rights.mjs</code></td><td>14 / 0</td><td>14 / 0</td></tr>
+<tr><td><code>hadith-corpus.mjs</code></td><td><strong>29 / 0</strong> (was 26)</td><td><strong>33 / 0</strong></td></tr>
+<tr><td><code>hadith-commentary-binding.mjs</code></td><td>14 / 0</td><td>14 / 0</td></tr>
+<tr><td><code>quran-boundary</code> · <code>study-approach-contract-boundary</code> · <code>study-activity-evidence-boundary</code> · <code>note-foundation-boundary</code> · <code>study-note-boundary</code> · <code>journey-map-boundary</code></td><td>all 0 failures</td><td>all 0 failures</td></tr>
+<tr><td><code>firestore-index-requirements</code> · <code>rules-authorisation-executable</code> · <code>rules-deployment-candidate</code> · <code>stub-parity</code></td><td>8 / 38 / 10 / 3, all 0 failures</td><td>same</td></tr>
+</tbody></table></div>
+<h3>6.2 Rendered</h3>
+<p><strong>Stage A</strong> — 22 / 22 at 390×844 in English and Bangla on the standalone route: the renamed topic resolves on the served page, the bare id returns <code>null</code>, the index still spans both collections, the counts still differ, the taxonomy revision still travels, mappings still present as unreviewed, the not-Hadith notice is on screen in all three languages, <strong>zero Firestore requests</strong>, no page errors, no overflow.</p>
+<p><strong>Stage B</strong> — <strong>100 / 100</strong>: the integrated route at three widths in both languages (mounted, sized, below the shared surface which is still present, translated heading, <strong>red banner panel by computed style</strong>, <strong>white row background by computed style</strong>, Explore tab offered, both notices on screen, no overflow, no page errors), plus the standalone route and the Explore tab&#x27;s own content in both languages (the renamed topic named, progress reported unavailable, both figures shown, the difference explained in words, double-reach stated either way, taxonomy revision shown, repeats explained).</p>
+<p><strong>Screenshots were read, not merely captured</strong> — which is how §3.3&#x27;s two defects were found, and how a wrong assertion in the Stage A preview was identified as wrong (the page says <em>&quot;have not been reviewed&quot;</em>, not <em>&quot;unreviewed&quot;</em>).</p>
+<h3>6.3 <code>behaviour.mjs</code> — the scoped regression</h3>
+<p><strong>978 passed, 4 failed, 56 sections — 982 checks</strong>, identical to the Stage A run and to the same total <code>main</code> itself records (981 / 1 + the intermittent trio = 982). All four failures are the documented environmental classes:</p>
+<div class='tw'><table><thead><tr><th>Failure</th><th>Class</th></tr></thead><tbody>
+<tr><td><code>22g</code> screensaver caption / alt text / poster URL (×3)</td><td><strong>Environmental</strong> — this sandbox cannot reach <code>archive.org</code>. The brief records these as <strong>intermittent</strong>, not permanent</td></tr>
+<tr><td><code>31e</code> no page errors — <code>net::ERR_CERT_AUTHORITY_INVALID</code></td><td><strong>Environmental</strong> — the sandbox&#x27;s TLS interception</td></tr>
+</tbody></table></div>
+<p><strong>One new failure appeared mid-tranche and was fixed, not tolerated</strong> — the language-leak regression in §3.4. It is worth recording that the run which caught it was killed and re-run from scratch afterwards rather than being read around: a regression found at section 2 invalidates the other 54.</p>
+<h3>6.4 <code>brief-integrity</code> — the known branch-scoped failure, recorded not patched</h3>
+<p><strong>7 passed, 1 failed</strong> on this branch; <strong>8 / 0 on <code>main</code></strong>. The failure is the milestone line&#x27;s version against the working tree&#x27;s, which is right on <code>main</code> and wrong on any feature branch carrying a bump.</p>
+<p><code>main</code>&#x27;s upgraded guard now offers a legitimate route out — a milestone line naming the <strong>branch</strong> and also stating `<code> </code>main<code> is still vNN.NN </code><code> passes both halves. <strong>That line is the Quran/</code>main<code> side&#x27;s to write.</strong> Rewriting it from Hadith is exactly the silent shared-file edit the instruction forbids, so it is recorded. The <strong>Hadith-owned block</strong> in </code>CLAUDE.md` is updated to state the real current versions; <strong>the milestone line is untouched.</strong></p>
+<hr>
+<h2>7. Gates — reported against each</h2>
+<div class='tw'><table><thead><tr><th>Gate</th><th>Status</th></tr></thead><tbody>
+<tr><td>Synthetic text marked <strong>not Hadith</strong> in ar/en/bn</td><td><strong>HELD.</strong> All three on screen on both routes, in both UI languages, asserted on the rendered page. The Arabic source text still denies being a hadith in its own first clause</td></tr>
+<tr><td>Fixture ids never mixed with real edition ids</td><td><strong>HELD, and now ENFORCED</strong> — the §2.1 defect is closed and three checks refuse its return</td></tr>
+<tr><td>Source rights default <code>blocked</code>; link-only; no copied text</td><td><strong>HELD.</strong> <code>hadith-source-rights</code> 14 / 0. No corpus or commentary text fetched, cached or embedded; no request made to any source site</td></tr>
+<tr><td>Durable Hadith unit-key semantics unchanged</td><td><strong>HELD.</strong> No key applied, no record written, live read-only inventory still not obtainable</td></tr>
+<tr><td>Note/MMJ and live Track persistence closed</td><td><strong>HELD.</strong> Zero Firestore requests from either route, asserted on the rendered page. No durable write exists anywhere in the module</td></tr>
+<tr><td>Deployed Rules</td><td><strong>UNVERIFIED and untouched.</strong> <code>firestore.rules</code> and <code>firebase.json</code> byte-identical</td></tr>
+<tr><td><strong>No permanent Hadith Approach ID; no Quran number reused</strong></td><td><strong>HELD.</strong> Registry is a proposal; <code>catalogue.js</code> and <code>catalogue-data.js</code> unmodified</td></tr>
+<tr><td>Track clearly demo/in-memory, and <code>studied_hadith</code> not presented as an approved Approach</td><td><strong>HELD.</strong> The corpus names no trackable and no Approach at all, and says nothing is saved every time</td></tr>
+<tr><td>Version bumped per app-code tranche</td><td><strong>HELD.</strong> 08.27 → <strong>08.28</strong> (Stage A) → <strong>08.29</strong> (Stage B), each checked against all 59 branches</td></tr>
+<tr><td>No merge, deploy, migration or Rules deployment</td><td><strong>HELD</strong></td></tr>
+</tbody></table></div>
+<hr>
+<h2>8. What was NOT done, and why</h2>
+<ul><li><strong>The corpus sits inside <code>#app</code></strong>, so on the module page it appears once signed in, as the rest of that page does. The <strong>standalone route is the no-sign-in path</strong> and is preserved. Moving it outside <code>#app</code> would change the signed-out view of a live page and was not asked for.</li><li><strong>No Hadith Approach exists</strong>, by instruction. Track on the module page still uses the generic <code>studied_hadith</code> row, and nothing presents that as an Approach.</li><li><strong><code>CHANGELOG.md</code> is not updated.</strong> The project&#x27;s own rule is that a round reaches the changelog first, but <code>CHANGELOG.md</code> is a shared file owned by the Quran/<code>main</code> side and this work is unmerged. <strong>Flagged as a merge-time obligation</strong> rather than edited from here.</li><li><strong>The <code>hadith-collections.html</code> page chrome</strong> (body width, heading sizes) stayed inline rather than moving into the shared stylesheet — imposing it on the module page would restyle headings the corpus does not own.</li><li><strong>No real source text, translation or commentary</strong> was fetched, cached or embedded.</li></ul>
+<p><strong>Flagged, not caused, not fixed.</strong> On the Bangla integrated page the shared Approach surface prints its subject heading as the lowercase English <code>hadith</code>, above the translated corpus section. That comes from the <strong>shared topic renderer</strong>, which is <strong>byte-identical to <code>origin/main</code></strong> and untouched by this tranche — confirmed by <code>git diff --quiet origin/main -- app/js/topic-study.js</code>. It is pre-existing behaviour made visible by putting a translated section next to it, and it belongs to the shared renderer&#x27;s owner, not to Hadith.</p>
+<hr>
+<h2>9. For the Master Architect</h2>
+<ol><li><strong>Accept or direct the Stage A correction</strong> — the namespace is enforced, mutation-proven four ways.</li><li><strong>Accept or direct the Stage B integration</strong>, including the one shared-file edit in §3.4 (<code>behaviour.mjs</code>, two element ids added to an existing exclusion list, reason recorded).</li><li><strong>Decide the Approach registry questions</strong> in §4 of the proposal — whether Hadith gets its own set at all, the id scheme, which candidates survive, and whether an Approach may exist before a rights-cleared edition does. <strong>No ID may be minted until that is answered.</strong></li><li><strong>Note the version collision</strong> in §1: <code>main</code> shipped 08.27 while this branch held it. The branch now holds 08.28–08.29.</li><li><strong>Relay to the Quran/shared-file owner</strong>: the <code>brief-integrity</code> milestone item (§6.4), the <code>CHANGELOG.md</code> merge-time obligation (§8), and the <code>behaviour.mjs</code> exclusion (§3.4).</li></ol>
+</main></body></html>

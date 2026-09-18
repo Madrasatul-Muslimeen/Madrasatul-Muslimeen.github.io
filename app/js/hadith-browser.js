@@ -18,7 +18,7 @@ import { STATUSES, statusLabel } from "./unit-keys.js";
 import {
   listCollections, booksOf, chaptersOf, occurrencesIn, editionHasChapterLevel,
   occurrenceById, sourcePathOf, externalReferencesFor, resolveText,
-  availableLanguages, searchCorpus, topicIndex, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
+  availableLanguages, searchCorpus, topicIndex, exploreAggregate, CONTENT_LANGUAGES, SOURCE_LANGUAGE,
 } from "./hadith-corpus.js";
 import { SYNTHETIC_NOTICE, TAXONOMY_REVISION } from "./hadith-fixture-data.js";
 import { PANEL_TITLE, verifiedRegisterEntries, commentaryForOccurrence, renderPermission, NEVER_DO } from "./hadith-commentary.js";
@@ -59,6 +59,7 @@ export function mountHadithBrowser(root, { mount = "standalone" } = {}) {
       collections: () => renderCollections(body, state, render),
       topic: () => renderTopic(body, state, render),
       search: () => renderSearch(body, state, render),
+      explore: () => renderExplore(body),
       commentary: () => renderCommentary(body, state),
     })[state.view]();
   }
@@ -95,6 +96,7 @@ function controls(state, render) {
     ["collections", t("Collections")],
     ["topic", t("Topics")],
     ["search", t("Search")],
+    ["explore", t("Explore")],
     ["commentary", PANEL_TITLE[getAppLang()] ?? PANEL_TITLE.en],
   ]) {
     const b = el("button", `hadith-tab${state.view === view ? " active" : ""}`, label);
@@ -107,6 +109,10 @@ function controls(state, render) {
   const langWrap = el("label", "hadith-lang-wrap");
   langWrap.appendChild(el("span", "hadith-lang-label", t("Text language")));
   const sel = el("select", "hadith-lang-select");
+  // It already carries this id. Named here because a language-leak check
+  // excludes it BY NAME: like every other language picker in the app, it
+  // names each language in that language's own script, in every UI language,
+  // on purpose -- that is how a reader of one of them finds the setting.
   sel.id = "hadithContentLang";
   for (const l of CONTENT_LANGUAGES) {
     const o = el("option", null, CONTENT_LANG_LABELS[l]);
@@ -410,6 +416,70 @@ function renderSearch(body, state, render) {
     }
   }
   renderResults();
+}
+
+// ---------------------------------------------------------------------------
+// Explore -- demo aggregation over the synthetic corpus. It counts the SOURCE
+// and the TAXONOMY, and deliberately counts no progress at all.
+// ---------------------------------------------------------------------------
+
+function renderExplore(body) {
+  const agg = exploreAggregate();
+
+  const meta = el("div", "hadith-topic-meta");
+  meta.appendChild(el("p", "", t("Counts across the synthetic corpus. These describe the source and the topic index only.")));
+  meta.appendChild(el("p", "", `${t("Collections")}: ${agg.totals.collections} \u00b7 ${t("Editions")}: ${agg.totals.editions} \u00b7 ${t("Narrations")}: ${agg.totals.occurrences}`));
+  meta.appendChild(el("p", "", `${t("Of those, repeat occurrences")}: ${agg.totals.repeats} \u2014 ${t("a repeat is counted as its own narration, never merged by text.")}`));
+  meta.appendChild(el("p", "", `${t("Taxonomy revision")}: ${agg.taxonomyRevision}`));
+  body.appendChild(meta);
+
+  // The untracked state, stated in words rather than shown as a zero. A zero
+  // would read as "nothing studied yet"; the truth is that nothing durable
+  // exists to count.
+  const untracked = el("p", "hadith-unreviewed",
+    t("No progress is counted here. Track is a preview that a reload clears, so there is nothing durable to aggregate."));
+  untracked.dataset.hadithProgressAvailable = String(agg.progress.available);
+  body.appendChild(untracked);
+
+  body.appendChild(el("h3", "", t("Source hierarchy")));
+  for (const c of agg.collections) {
+    const row = el("div", "hadith-card");
+    row.appendChild(el("p", "hadith-row-name", c.collectionId));
+    for (const ed of c.editions) {
+      const detail = ed.hasChapterLevel
+        ? `${t("Books")}: ${ed.books} \u00b7 ${t("Chapters")}: ${ed.chapters} \u00b7 ${t("Narrations")}: ${ed.occurrences}`
+        : `${t("Books")}: ${ed.books} \u00b7 ${t("no chapter level")} \u00b7 ${t("Narrations")}: ${ed.occurrences}`;
+      row.appendChild(el("p", "hadith-card-head", `${ed.editionId} \u2014 ${detail}`));
+    }
+    body.appendChild(row);
+  }
+
+  body.appendChild(el("h3", "", t("Topics")));
+  for (const tp of agg.topics) {
+    const card = el("div", "hadith-card");
+    card.dataset.hadithExploreTopic = tp.topicId;
+    card.appendChild(el("p", "hadith-row-name", tp.topicId));
+    // The two figures side by side, each labelled, with the reason they differ
+    // in words -- a reader seeing 5 and 3 must not have to guess which is which.
+    card.appendChild(el("p", "", `${t("Distinct narrations")}: ${tp.distinctOccurrences}`));
+    card.appendChild(el("p", "", `${t("Topic mappings")}: ${tp.mappingCount}`));
+    // Why the two figures differ, in words. A mapping may target a whole book
+    // or chapter, so a few curatorial decisions reach many narrations --
+    // mappings are normally FEWER than narrations, not more.
+    card.appendChild(el("p", "hadith-topic-heading",
+      t("A mapping may cover a whole book or chapter, so a few mappings can reach many narrations. The two figures are kept apart because one counts curatorial decisions and the other counts narrations.")));
+    // And whether any narration was reached twice -- stated either way, so a
+    // clean index is visibly clean rather than merely silent.
+    card.appendChild(el("p", "hadith-topic-heading",
+      tp.duplicateReaches > 0
+        ? `${t("Narrations reached by more than one mapping")}: ${tp.duplicateReaches} \u2014 ${t("counted once, never twice.")}`
+        : t("No narration here is reached by more than one mapping.")));
+    card.appendChild(el("p", "", `${t("Spans collections")}: ${tp.spansCollections}`));
+    if (!tp.allMappingsReviewed) {
+      card.appendChild(el("p", "hadith-unreviewed", t("These mappings have not been reviewed by a scholar.")));
+    }
+    body.appendChild(card);
+  }
 }
 
 // ---------------------------------------------------------------------------

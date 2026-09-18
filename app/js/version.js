@@ -11,4 +11,4 @@
 // a while two different builds carried 08.27 -- exactly the thing a version
 // number exists to prevent. Read off `main` and every other branch at the
 // time of the bump, not assumed: 08.28 was free.
-export const APP_VERSION = "08.28";
+export const APP_VERSION = "08.29";
