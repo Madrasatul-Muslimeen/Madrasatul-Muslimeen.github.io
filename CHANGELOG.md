@@ -13954,3 +13954,45 @@ Phase 8".
 write made through `updateDocument()` stamps `updatedAt` (I17) and would
 therefore be denied. Moot today because nothing writes that collection, and
 noted so that a future round adding one does not lose a day to it.
+
+---
+
+## Session handover (18 Sep 2026, v08.25, no version bump)
+
+**BR-0, documentation only.** `docs/reports/2026-09-18-SESSION-HANDOVER.md` /
+`.html` — the deterministic handover for the session that ended at
+`d8f049207d80fdd58f31931d82a080ef7d4f6fe7`, clean tree, app version 08.25.
+
+It records the ten-tranche range `7d35bc0..d8f0492` with a one-line result each,
+the verification state **separated into PASS / intermittent 22g / TLS-sandbox /
+genuine unresolved (none)**, the ledger item by item, the deployment package's
+exact remaining dependency, the wiring candidate's relationship to `main` and
+why it is held, P5-D's status, the folder-cycle decision, and **the exact first
+execution task** under both branches (access supplied, or not).
+
+**Two classification corrections the session made to its own earlier framing,
+recorded so they are not re-litigated:**
+
+- **The Phase 4 evidence `request.query.limit` is NOT an Owner decision — it is
+  resolved technically, and the answer is DO NOT AMEND the candidate.** Phase
+  5/6 need `listIsBounded()` because their collections are TOP-LEVEL and a list
+  is scoped only by client-supplied `where` clauses. Phase 4 evidence is a
+  SUBCOLLECTION whose PATH is the scope — one tenant, one person, one week —
+  which is exactly the bound the load-speed contract specifies for Activity
+  ("One document per week"). Adding the check would spend expression budget in
+  a rule whose own header records a first draft **refused by budget exhaustion,
+  11 of 36 assertions**, to buy a constraint no accepted document requires.
+  Symmetry is not a reason. The client reader already caps itself at 200 and
+  asks for cap+1 to detect truncation.
+- **Timezone is ONE QUESTION, not a UI decision.** The field is written
+  automatically at person creation in three places from
+  `Intl.DateTimeFormat().resolvedOptions().timeZone`, and **read by nothing.**
+  It appears in NO accepted document — unlike `weekStartsOn`, which has D7 and a
+  real consumer. And `weekKeyFor()` buckets by the **device's local calendar
+  day**, so week boundaries do not depend on it. The smallest unresolved
+  decision is therefore: **is `timezone` authoritative for anything, or
+  captured-only provenance?** "Captured-only" closes it with no work. No UI was
+  invented.
+
+**Also recorded: the tenant-picker truncation IS a genuine bounded Owner UI
+decision** (widen / shorten / reveal), and no design choice was implemented.
