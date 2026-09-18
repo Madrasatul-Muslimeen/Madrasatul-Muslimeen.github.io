@@ -1,0 +1,433 @@
+{
+  "$comment": [
+    "PROGRAMME INTEGRATION LEDGER -- the repository's own record of who owns what,",
+    "which global application versions are spoken for, and which integration",
+    "baselines are current.",
+    "",
+    "WHY IT EXISTS. Until 18 Sep 2026 every one of these facts lived only in prose",
+    "that a session had to read and remember. It failed in practice, twice in one",
+    "day and in opposite directions: the Quran stream claimed v08.26 was on `main`",
+    "while it was on a branch, and two independent builds simultaneously carried",
+    "08.27 -- exactly the thing a version number exists to prevent. Neither was",
+    "caught by any guard; both were caught by a person reading carefully.",
+    "",
+    "HOW TO USE IT. This file is DATA, not authority. It records decisions the",
+    "Master Architect has made; it does not make them. `tools/i18n-verify/",
+    "programme-ledger.mjs` reads it and fails when the repository and this record",
+    "disagree. Editing this file to silence a guard, without the decision behind",
+    "it, is the one way it can do harm.",
+    "",
+    "VERSION FORM. Every version in a DATA field is canonical bare `NN.NN` -- the",
+    "form `app/js/version.js` itself stores. Prose refers to them as `vNN.NN`.",
+    "Guard D exists because a version named in the brief ONLY in bare form is",
+    "invisible to every v-prefixed scanner in the repository, which is how",
+    "`CLAUDE.md`'s own forward allocation of 08.28 went unseen while another",
+    "stream consumed it."
+  ],
+  "schemaVersion": 1,
+  "recordedOn": "2026-09-18",
+  "status": "ACTIVE",
+  "main": {
+    "ref": "origin/main",
+    "baselineSha": "5ea0d928b8f326e0164c988ef79e4d1d1c168eeb",
+    "baselineRecordedOn": "2026-09-18",
+    "version": "08.27",
+    "$comment": [
+      "baselineSha is the tip `main` stood at when this record was last written.",
+      "`main` moves forward constantly and that is not drift, so the guard asserts",
+      "baselineSha is an ANCESTOR of origin/main rather than equal to it, and",
+      "reports the distance. A baselineSha that is NOT an ancestor means history",
+      "was rewritten or the record names a commit from somewhere else -- that is a",
+      "hard failure."
+    ]
+  },
+  "versionAllocations": [
+    {
+      "version": "08.27",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "Study-options number pickers. Shipped and served from main."
+    },
+    {
+      "version": "08.26",
+      "owner": "quran",
+      "status": "RELEASED",
+      "note": "320px nav fit. Merged to main at 49f37c9, superseded by 08.27."
+    },
+    {
+      "version": "08.26",
+      "owner": "quran-phase4-wiring",
+      "status": "HISTORICAL",
+      "historicalStamp": true,
+      "forwardAllocation": false,
+      "commit": "7e2931f795af1cd97efc1167660cea93aa22b9ab",
+      "note": [
+        "The held Phase 4 wiring stamps 08.26 in its own version.js. That stamp was",
+        "chosen when main was on 08.25 and names a version that now means something",
+        "else entirely (the nav fit). It is a HISTORICAL artefact of a held branch",
+        "and is NOT a claim on any future merge number. At merge its version.js",
+        "conflicts and resolves to whatever is unallocated AT THAT TIME -- a number",
+        "the Master Architect allocates, not one this ledger or the brief predicts."
+      ]
+    },
+    {
+      "version": "08.28",
+      "owner": "hadith",
+      "status": "RESERVED",
+      "stampedAt": "7f61328",
+      "note": "Stage A -- accepted development milestone, stamped on feature/hadith-study. Unmerged."
+    },
+    {
+      "version": "08.29",
+      "owner": "hadith",
+      "status": "RESERVED",
+      "stampedAt": "cd344f4",
+      "note": "Stage B -- reserved integration version, stamped on feature/hadith-study and carried at the branch tip. Unmerged."
+    }
+  ],
+  "nextUnallocated": "08.30",
+  "nextUnallocatedNote": [
+    "08.30 and every number above it are NOT ALLOCATED. Allocation is the Master",
+    "Architect's; no stream may stamp at or beyond this number without one.",
+    "Guard B enforces that against every declared branch."
+  ],
+  "streams": [
+    {
+      "id": "quran",
+      "name": "Quran / QuranRevival application stream",
+      "activeBranch": null,
+      "integrationState": "MERGED_TO_MAIN",
+      "declaredVersion": "08.27",
+      "baselineSha": "5ea0d928b8f326e0164c988ef79e4d1d1c168eeb",
+      "baselineStatus": "CURRENT",
+      "ownedPaths": [
+        "app/quranrevival.html",
+        "app/js/quran-*.js",
+        "app/js/ayah-*.js",
+        "app/js/qcr*.js",
+        "app/js/mastery-wheel.js",
+        "app/js/study-approach-contract.js",
+        "app/js/study-activity-evidence*.js",
+        "app/js/study-note-*.js",
+        "app/js/note-foundation*.js",
+        "app/js/journey-map-*.js",
+        "app/js/timezone-*.js",
+        "tools/i18n-verify/quran-*.mjs",
+        "tools/i18n-verify/study-*.mjs",
+        "tools/i18n-verify/note-*.mjs",
+        "tools/i18n-verify/journey-map-*.mjs",
+        "tools/i18n-verify/d14-*.mjs"
+      ]
+    },
+    {
+      "id": "quran-phase4-wiring",
+      "name": "Quran MAP Phase 4 Study-event wiring (held)",
+      "activeBranch": "claude/phase4-wiring",
+      "branchTip": "7e2931f795af1cd97efc1167660cea93aa22b9ab",
+      "integrationState": "HELD",
+      "declaredVersion": "08.26",
+      "declaredVersionIsHistorical": true,
+      "baselineSha": null,
+      "baselineStatus": "NOT_APPLICABLE_WHILE_HELD",
+      "heldOn": "Firestore Rules and index deployment -- an Owner Control Gate on external Firebase Console access (E1).",
+      "standingInstruction": "Hold 7e2931f exactly as it is. Do not re-cut, do not re-stamp, do not merge, do not activate.",
+      "ownedPaths": [
+        "app/js/study-event-wiring.js",
+        "app/quranrevival.html",
+        "tools/i18n-verify/study-event-wiring.mjs",
+        "tools/i18n-verify/study-activity-evidence-boundary.mjs",
+        "docs/governance/phase4-production-package-2026-09-14.*",
+        "docs/reports/2026-09-14-map-phase4d-study-event-wiring.*"
+      ],
+      "declaredSharedTouches": [
+        {
+          "path": "CHANGELOG.md",
+          "status": "DECLARED",
+          "note": "+91/-0. Its own round entry, appended."
+        },
+        {
+          "path": "CLAUDE.md",
+          "status": "DECLARED",
+          "note": "+20/-0. Its own round entry, appended."
+        },
+        {
+          "path": "app/js/i18n/bn.js",
+          "status": "DECLARED",
+          "note": "+5/-0 -- additive keys only."
+        },
+        {
+          "path": "app/js/version.js",
+          "status": "DECLARED",
+          "note": "+1/-1, the historical 08.26 stamp. This is the line that CONFLICTS at merge and must be resolved to a number the Master Architect allocates at that time."
+        },
+        {
+          "path": "tools/firestore-emulator/activity-evidence-v1.rules.test.mjs",
+          "status": "DECLARED",
+          "note": "+43/-2 -- emulator assertions for the Phase 4 evidence candidate."
+        },
+        {
+          "path": "tools/firestore-emulator/baseline-diagnostic.firebase.json",
+          "status": "DECLARED",
+          "note": "+1/-0."
+        },
+        {
+          "path": "tools/firestore-emulator/baseline-diagnostic.test.mjs",
+          "status": "DECLARED",
+          "note": "+36/-0."
+        }
+      ],
+      "sharedTouchesNote": "Declared retrospectively on 2026-09-18 by reading the branch, not by re-cutting it. 7e2931f is held exactly as it is. This inventory is what the merge will touch, recorded so the Master Architect sees it before authorising rather than after."
+    },
+    {
+      "id": "hadith",
+      "name": "Hadith Study module stream",
+      "activeBranch": "feature/hadith-study",
+      "branchTip": "808539c83d418d77afed96600fb3ab50249f8b0d",
+      "integrationState": "HALTED_AWAITING_REAUTHORISATION",
+      "declaredVersion": "08.29",
+      "baselineSha": "7111e3c975d3cf3fd0bf0c0d7814691edcd5299e",
+      "baselineStatus": "MOVED_ACKNOWLEDGED",
+      "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-baseline-moved-halt.md",
+      "ownedPaths": [
+        "app/hadith-*.html",
+        "app/css/hadith.css",
+        "app/js/hadith-*.js",
+        "tools/hadith-data-pull/*",
+        "tools/i18n-verify/hadith-*.mjs",
+        "docs/governance/hadith-*",
+        "docs/reports/*-hadith-*"
+      ],
+      "declaredSharedTouches": [
+        {
+          "path": "CLAUDE.md",
+          "status": "DECLARED",
+          "note": "Hadith appended its own region; +42/-0 from the merge base. No Quran region rewritten."
+        },
+        {
+          "path": "app/js/i18n/bn.js",
+          "status": "DECLARED",
+          "note": "+68/-0 from the merge base -- additive keys only. Shared catalogue: an append, but into a file both streams write."
+        },
+        {
+          "path": "tools/i18n-verify/behaviour.mjs",
+          "status": "DECLARED",
+          "note": "+27/-5 from the merge base. Measured three ways; the Quran stream's earlier figure of +32/-6 was wrong and is corrected here."
+        },
+        {
+          "path": "app/js/version.js",
+          "status": "DECLARED",
+          "note": "+7/-1 -- the 08.28/08.29 stamps and their collision-resolution comment. version.js is Master Architect authority; the touch is disclosed, the allocation is not this stream's to make."
+        }
+      ]
+    }
+  ],
+  "platformSharedPaths": [
+    {
+      "path": "app/js/version.js",
+      "owner": "master-architect",
+      "note": "Global application version. Master Architect authority. No stream allocates a number for itself."
+    },
+    {
+      "path": "CLAUDE.md",
+      "owner": "platform",
+      "note": "Standing brief -- platform governance. Shared by every stream; append in your own region, never rewrite another's."
+    },
+    {
+      "path": "CHANGELOG.md",
+      "owner": "platform",
+      "note": "Release history -- platform. A round leaving the brief is appended here first."
+    },
+    {
+      "path": "app/js/i18n/bn.js",
+      "owner": "platform",
+      "note": "Shared translation catalogue. Every module adds keys to the same file."
+    },
+    {
+      "path": "tools/i18n-verify/behaviour.mjs",
+      "owner": "platform",
+      "note": "Shared verification infrastructure. See sharedChangeRequests SCR-01."
+    },
+    {
+      "path": "app/js/nav.js",
+      "owner": "platform",
+      "note": "Navigation contract. Also duplicated as static pre-JS markup across 22 pages."
+    },
+    {
+      "path": "app/js/unit-keys.js",
+      "owner": "platform",
+      "note": "Permanent Study Unit keys (I5). Changing one is an Owner Control Gate."
+    },
+    {
+      "path": "app/js/records.js",
+      "owner": "platform"
+    },
+    {
+      "path": "app/js/activity.js",
+      "owner": "platform"
+    },
+    {
+      "path": "app/js/catalogue-data.js",
+      "owner": "platform"
+    },
+    {
+      "path": "app/css/shell.css",
+      "owner": "platform",
+      "note": "Common shell and navigation styling."
+    },
+    {
+      "path": "tools/i18n-verify/harness.mjs",
+      "owner": "platform"
+    },
+    {
+      "path": "tools/i18n-verify/firebase-stub.mjs",
+      "owner": "platform"
+    },
+    {
+      "path": "tools/i18n-verify/brief-integrity.mjs",
+      "owner": "platform"
+    },
+    {
+      "path": "docs/governance/programme-integration-ledger.json",
+      "owner": "platform",
+      "note": "This file."
+    }
+  ],
+  "moduleContentSurfaces": [
+    {
+      "path": "app/hadith-study.html",
+      "owner": "hadith",
+      "platformContract": "The common navigation and page shell inside this file remain PLATFORM-owned. Hadith owns the content surface; it does not own the nav block, the shell markup or the version badge.",
+      "$comment": "A module-owned file with a platform-owned region inside it. Recorded so the distinction is not lost the first time the shell changes."
+    }
+  ],
+  "deploymentSecuritySharedPaths": [
+    {
+      "path": "firestore.rules",
+      "note": "DEPLOYED production Rules. Byte-for-byte untouched. Modification is an Owner Control Gate."
+    },
+    {
+      "path": "firebase.json",
+      "note": "No `indexes` key today. Adding one is part of the same gated deployment."
+    },
+    {
+      "path": "docs/governance/*.rules",
+      "note": "Rules candidates -- Phase 4/5/6, D14. Not deployed."
+    },
+    {
+      "path": "docs/governance/*-indexes-candidate-*.json",
+      "note": "Composite index candidates. Indexes deploy BEFORE rules."
+    },
+    {
+      "path": "tests/firestore/*",
+      "note": "Proposed rules under test."
+    },
+    {
+      "path": "tools/firestore-emulator/*",
+      "note": "Emulator suites proving the candidates."
+    }
+  ],
+  "sharedChangeRequests": [
+    {
+      "id": "SCR-01",
+      "status": "ACCEPTED_ARCHITECTURAL_DEBT_DEFERRED",
+      "raisedOn": "2026-09-18",
+      "file": "tools/i18n-verify/behaviour.mjs",
+      "currentOwnerUse": "Platform/shared behaviour verification for every module and page.",
+      "requiredChange": [
+        "behaviour.mjs accumulates module-specific exclusions for elements that are",
+        "intentionally multilingual or multiscript (Arabic source text, transliteration,",
+        "narrator names). Each module adds its own exclusion, so the shared file grows a",
+        "module-shaped list that no module owns."
+      ],
+      "reason": [
+        "The replacement is a SEMANTIC DECLARATIVE CONTRACT -- an element declares what it",
+        "IS (source scripture, transliteration, proper name) and the suite derives whether",
+        "it should be translated. That is distinct from `data-i18n-skip`, which declares",
+        "only that a check should not look, and carries no meaning a second consumer",
+        "could reuse."
+      ],
+      "expectedBlastRadius": "BR-1 or above -- it touches markup across every module's pages and the shared suite.",
+      "otherModulesAffected": [
+        "quran",
+        "hadith",
+        "deen-study",
+        "arabic",
+        "general-study",
+        "nature-life",
+        "health",
+        "asma"
+      ],
+      "decision": "DEFERRED. Recorded as accepted architectural debt. NOT authorised for implementation.",
+      "notImplemented": true
+    }
+  ],
+  "designRecords": [
+    {
+      "id": "DR-01",
+      "status": "DESIGN_RECORD_ONLY",
+      "subject": "Cross-module behaviour verification structure",
+      "record": [
+        "behaviour.mjs is one monolithic file, now 56 sections and 982 checks, verifying",
+        "every module. Each new module grows it. The longer-term candidate direction is",
+        "module-specific behaviour suites plus a thin aggregate runner that composes them",
+        "and reports one total -- rather than unlimited growth of one file.",
+        "",
+        "This is a DIRECTION, not a decision, and nothing in this tranche implements it.",
+        "It is recorded so the next platform round does not rediscover the problem, and",
+        "so no module round quietly splits the file on its own authority."
+      ]
+    }
+  ],
+  "closedIntegrationGates": [
+    {
+      "id": "G-NAV-320",
+      "closedOn": "2026-09-18",
+      "closedBy": "08.26",
+      "note": "320px nav truncation. Was a tolerated named baseline for the life of navcheck.mjs; measured, the space was present and misallocated. KNOWN_TRUNCATIONS is now {}."
+    },
+    {
+      "id": "G-GETELEMENTBYID-22",
+      "closedOn": "2026-09-18",
+      "closedBy": "investigation",
+      "note": "The 22 'missing' getElementById targets. 22 deferred renders, 0 dangling, 0 missing controls. layout.mjs tells the two apart and fails on a dangling id; the baseline is empty."
+    },
+    {
+      "id": "G-NUMBER-PICKERS",
+      "closedOn": "2026-09-18",
+      "closedBy": "08.27",
+      "note": "Five Study-options number pickers cut three-digit values at every viewport in both languages."
+    }
+  ],
+  "openOwnerDecisions": [
+    {
+      "id": "O3",
+      "subject": "tenantSelect presentation in the Study-options panel",
+      "state": "OPEN -- Owner UI decision. 224px of text in a 145px cell; widen, shorten or reveal are materially different choices."
+    },
+    {
+      "id": "O3b",
+      "subject": "surahSelect / unitTypeSelect at 320px",
+      "state": "OPEN -- the row is genuinely short of space (-63.9px at 320px in Range). No redistribution reaches it."
+    },
+    {
+      "id": "E1",
+      "subject": "Firestore Rules and index deployment (Phases 4-6, D14)",
+      "state": "OPEN -- external Firebase Console access. Seven ledger items depend on it."
+    },
+    {
+      "id": "D14-WIRING",
+      "subject": "D14 timezone activation",
+      "state": "OPEN -- the modules are on main and unreachable by construction. Activation needs a Rules change and rides E1."
+    }
+  ],
+  "d14": {
+    "state": "ON_MAIN_UNREACHABLE",
+    "version": "08.27",
+    "versionUnchangedBy": true,
+    "modules": [
+      "app/js/timezone-contract.js",
+      "app/js/timezone-service.js"
+    ],
+    "note": "Built as an unreachable candidate. No page or module imports either file. No version bump, nothing deployed."
+  }
+}

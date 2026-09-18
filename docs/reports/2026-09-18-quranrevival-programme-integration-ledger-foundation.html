@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Programme Integration Ledger — foundation</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Programme Integration Ledger — foundation</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Instruction:</strong> Programme Coordination Foundation. Repository-level programme coordination safeguards only. <strong>Not another Quran application tranche.</strong></li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> <code>git diff origin/main -- app/ tests/ firestore.rules firebase.json</code> is <strong>empty</strong>. Nothing under <code>app/</code> imports either new file.</li><li><strong>Application version:</strong> <strong>08.27 before, 08.27 after — unchanged.</strong></li><li><strong>Result:</strong> Delivered. One ledger, two guard files, six guards, <strong>25 mutations all caught</strong>, and <strong>one real defect in <code>CLAUDE.md</code> found and corrected by the guards&#x27; own first run</strong>.</li></ul>
+<hr>
+<h2>0. State was re-read, and it had moved — twice</h2>
+<p>The instruction says: <em>&quot;Do not hard-code a false main SHA if main moves during this work. Re-read actual state first.&quot;</em> It had moved, in both places the instruction quoted.</p>
+<div class='tw'><table><thead><tr><th>Fact</th><th>Value the instruction implied</th><th><strong>Measured, 18 Sep 2026</strong></th></tr></thead><tbody>
+<tr><td><code>origin/main</code></td><td><code>7111e3c975d3cf3fd0bf0c0d7814691edcd5299e</code></td><td><strong><code>5ea0d928b8f326e0164c988ef79e4d1d1c168eeb</code></strong></td></tr>
+<tr><td><code>main</code> version</td><td>08.27</td><td><strong>08.27 — confirmed unchanged</strong></td></tr>
+<tr><td>Hadith branch tip</td><td><code>cd344f4</code> (Stage B)</td><td><strong><code>808539c83d418d77afed96600fb3ab50249f8b0d</code></strong></td></tr>
+<tr><td>Hadith Stage A <code>7f61328</code> version</td><td>v08.28</td><td><strong>08.28 — confirmed, read from <code>git show 7f61328:app/js/version.js</code></strong></td></tr>
+<tr><td>Hadith Stage B <code>cd344f4</code> version</td><td>v08.29</td><td><strong>08.29 — confirmed</strong></td></tr>
+<tr><td>Phase 4 wiring <code>7e2931f</code></td><td>HELD, historical 08.26 stamp</td><td><strong><code>7e2931f795af1cd97efc1167660cea93aa22b9ab</code>, stamped 08.26 — confirmed</strong></td></tr>
+</tbody></table></div>
+<p><strong>The <code>main</code> move is my own</strong> — the Quran Stream reconciliation report from the previous tranche, two documentation files, 392 insertions, nothing outside <code>docs/reports/</code>.</p>
+<p><strong>The Hadith branch advanced by two commits, both documentation</strong>, and the second is worth reading: <code>808539c</code>, <em>&quot;Hadith integration: HALTED at the baseline gate — BASELINE MOVED&quot;</em>. That stream ran the same baseline check this instruction mandates, found <code>main</code> had moved past its authorisation, and <strong>stopped rather than proceeding</strong>. Guard F exists to make that behaviour mechanical rather than dependent on a session remembering to check.</p>
+<p><strong>One figure of mine was wrong and the Hadith stream corrected it.</strong> My reconciliation recorded <code>behaviour.mjs</code> as +32/−6 on their branch. Measured here three ways, it is <strong>+27/−5</strong>. Their figure is right; the ledger carries the corrected one.</p>
+<hr>
+<h2>1. The problem this exists to retire</h2>
+<p>Three coordination facts were got wrong by careful sessions within one day, and <strong>not one of them was caught by a guard</strong>:</p>
+<ol><li><strong>v08.26 was reported as being on <code>main</code></strong> while it was only on a branch. Caught by the Owner reading.</li><li><strong>Two independent builds simultaneously carried 08.27</strong> — <code>main</code> (the number pickers) and <code>feature/hadith-study</code>. That is precisely the thing a version number exists to prevent. Caught by the Hadith stream reading every branch before stamping, and resolved by them to 08.28 / 08.29.</li><li><strong><code>CLAUDE.md</code> forward-allocated 08.28 to the held Phase 4 wiring</strong> — a held branch predicting its own merge number, in a number another stream had already taken — <strong>and it was written bare, without the <code>v</code></strong>, so every v-prefixed scanner in this repository was blind to it. <code>grep -c &#x27;v08\.28&#x27; CLAUDE.md</code> returned <strong>0</strong> while the number sat in the paragraph. Caught by nobody until guards C and D, independently, on their first run.</li></ol>
+<p>Every safeguard was prose that a session had to read and remember. It failed in both directions on the same day.</p>
+<hr>
+<h2>2. What was built</h2>
+<div class='tw'><table><thead><tr><th>File</th><th>Lines</th><th>Role</th></tr></thead><tbody>
+<tr><td><code>docs/governance/programme-integration-ledger.json</code></td><td>433</td><td>The machine-readable record. <strong>Data, not authority.</strong></td></tr>
+<tr><td><code>tools/i18n-verify/programme-ledger.mjs</code></td><td>409</td><td>Six guards, as a pure function of (ledger, measured repository).</td></tr>
+<tr><td><code>tools/i18n-verify/programme-ledger-mutations.mjs</code></td><td>205</td><td>25 mutations + 2 positive controls proving each guard can fail.</td></tr>
+</tbody></table></div>
+<p>Plus a governance registration and ownership table in <code>docs/governance/README.md</code>, and the round entry, three standing lessons and the line-70 correction in <code>CLAUDE.md</code>.</p>
+<p><strong>The guards are a pure function</strong> — <code>runGuards(ledger, facts)</code> — precisely so the mutation suite can hand them a corrupted ledger and a stubbed repository. A guard bolted to <code>execFileSync</code> cannot be mutation-tested, and this project&#x27;s own lesson is that a guard which cannot fail is worse than no guard, because it is believed.</p>
+<h3>2.1 What the ledger encodes</h3>
+<div class='tw'><table><thead><tr><th>Field family</th><th>Content</th></tr></thead><tbody>
+<tr><td><code>main</code></td><td><code>baselineSha</code> <code>5ea0d92…</code>, <code>version</code> <code>08.27</code>, <code>ref</code> <code>origin/main</code></td></tr>
+<tr><td><code>versionAllocations</code></td><td>08.26 RELEASED (quran) · 08.26 <strong>HISTORICAL</strong> (quran-phase4-wiring, <code>forwardAllocation:false</code>) · 08.27 <strong>LIVE</strong> (quran) · 08.28 <strong>RESERVED</strong> (hadith, Stage A) · 08.29 <strong>RESERVED</strong> (hadith, Stage B)</td></tr>
+<tr><td><code>nextUnallocated</code></td><td><strong>08.30 — NOT ALLOCATED.</strong> Allocation is the Master Architect&#x27;s</td></tr>
+<tr><td><code>streams</code></td><td><code>quran</code> (merged), <code>quran-phase4-wiring</code> (<strong>HELD</strong>), <code>hadith</code> (<strong>HALTED_AWAITING_REAUTHORISATION</strong>), each with owned path families, branch tip, baseline SHA and baseline status</td></tr>
+<tr><td><code>platformSharedPaths</code></td><td>14 entries, each with an owner — <code>version.js</code> = <strong>master-architect</strong>, the rest platform</td></tr>
+<tr><td><code>moduleContentSurfaces</code></td><td><code>app/hadith-study.html</code> = hadith-owned, <strong>with the navigation and shell contract explicitly platform-owned</strong></td></tr>
+<tr><td><code>deploymentSecuritySharedPaths</code></td><td><code>firestore.rules</code>, <code>firebase.json</code>, the Rules and index candidates, <code>tests/firestore/<em></code>, <code>tools/firestore-emulator/</em></code></td></tr>
+<tr><td><code>sharedChangeRequests</code></td><td><strong>SCR-01</strong>, <code>ACCEPTED_ARCHITECTURAL_DEBT_DEFERRED</code></td></tr>
+<tr><td><code>designRecords</code></td><td><strong>DR-01</strong>, design record only</td></tr>
+<tr><td><code>closedIntegrationGates</code></td><td>G-NAV-320 (v08.26), G-GETELEMENTBYID-22 (investigation), G-NUMBER-PICKERS (v08.27)</td></tr>
+<tr><td><code>openOwnerDecisions</code></td><td>O3, O3b, E1, D14-WIRING</td></tr>
+<tr><td><code>d14</code></td><td><code>ON_MAIN_UNREACHABLE</code>, version 08.27 unchanged, both modules named</td></tr>
+</tbody></table></div>
+<p><strong>The held wiring&#x27;s 08.26 is recorded as <code>HISTORICAL</code> with <code>forwardAllocation: false</code></strong> and a note saying in words that it is not a claim on any future merge number — exactly as the instruction requires.</p>
+<p><strong><code>main.baselineSha</code> is checked as an ANCESTOR of <code>origin/main</code>, never as equal.</strong> <code>main</code> moves forward constantly and that is not drift; a baseline that is <em>not</em> an ancestor means history was rewritten, and that is a hard failure. This is what stops the ledger going stale the instant its own commit lands.</p>
+<h3>2.2 The six guards</h3>
+<div class='tw'><table><thead><tr><th></th><th>Guard</th><th>Fails when</th></tr></thead><tbody>
+<tr><td><strong>A</strong></td><td>Version collision</td><td>Two streams hold a CLAIMING allocation (LIVE/RESERVED/RELEASED) on one version — <strong>or</strong> a branch&#x27;s real stamp disagrees with what the ledger says that stream declares</td></tr>
+<tr><td><strong>B</strong></td><td>Unreserved version</td><td>A branch is stamped a version the ledger reserves for nobody under that stream, or at/beyond <code>nextUnallocated</code></td></tr>
+<tr><td><strong>C</strong></td><td>Held stamp read as allocation</td><td>A historical stamp fails to declare <code>forwardAllocation:false</code>, carries a claiming status, or does not match what the held branch really carries — <strong>or the brief names a version ahead of <code>main</code> in the same paragraph as a held commit</strong></td></tr>
+<tr><td><strong>D</strong></td><td>Non-canonical version reference</td><td>A ledger data field is not canonical <code>NN.NN</code> — <strong>or a ledger-declared version appears in the brief only in bare form</strong>, invisible to every v-prefixed scanner</td></tr>
+<tr><td><strong>E</strong></td><td>Undeclared shared-file change</td><td>A declared stream modifies a platform/shared or deployment/security path with no declaration and no authorisation</td></tr>
+<tr><td><strong>F</strong></td><td>Stale integration baseline</td><td>A stream&#x27;s baseline is not an ancestor of <code>origin/main</code>, or has moved without <code>MOVED_ACKNOWLEDGED</code> and a real acknowledgement file, or the ledger&#x27;s record of <code>main</code>&#x27;s version disagrees with <code>version.js</code></td></tr>
+</tbody></table></div>
+<p><strong>Guard E&#x27;s three-way outcome is deliberate.</strong> A shared-file touch is <code>AUTHORISED</code>, <code>DECLARED</code> (disclosed, awaiting decision — reported every run, does not fail) or <code>UNDECLARED</code> (<strong>fails</strong>). The guard&#x27;s job is that nothing reaches a shared file undisclosed; it is not to approve what is disclosed, which is the Master Architect&#x27;s. A guard that failed on every existing disclosed touch would be permanently red and therefore ignored — which is the failure mode this whole tranche exists to prevent.</p>
+<hr>
+<h2>3. The first run — four findings, and three of them were the guard&#x27;s fault</h2>
+<p><strong>A guard&#x27;s first run is where its own false-positive rate is measured.</strong> This project&#x27;s own standing lesson, and it earned its keep again.</p>
+<div class='tw'><table><thead><tr><th>#</th><th>Finding</th><th>Verdict</th></tr></thead><tbody>
+<tr><td>1</td><td>Guard C flagged <strong>three</strong> correct sentences in the held-wiring paragraph (08.25, 08.26, 08.27)</td><td><strong>GUARD DEFECT.</strong> A held branch&#x27;s paragraph properly recounts history. Narrowed to numbers <strong>ahead of <code>main</code>&#x27;s current version</strong> — a forward number is the defect, a backward one is narration</td></tr>
+<tr><td>2</td><td>Guard C flagged <code>08.28</code> in the same paragraph</td><td><strong>REAL. The defect this tranche existed to find</strong></td></tr>
+<tr><td>3</td><td>Guard D flagged <code>08.28</code> named only in bare form</td><td><strong>REAL — the same defect, from the other direction, by an independent guard</strong></td></tr>
+<tr><td>4</td><td>Guard F reported the Hadith acknowledgement file as missing</td><td><strong>GUARD DEFECT.</strong> It looked on <code>main</code> for a file that legitimately lives on the stream&#x27;s own branch. <code>fileExists</code> now tries the branch first</td></tr>
+<tr><td>5</td><td>Guard E reported seven undeclared shared touches on <code>claude/phase4-wiring</code></td><td><strong>REAL, and closed by declaring them.</strong> The branch&#x27;s owned paths and its seven shared touches were read off the branch and recorded. <strong><code>7e2931f</code> was NOT re-cut, re-stamped or touched</strong> — the inventory was taken by reading</td></tr>
+</tbody></table></div>
+<p>Findings 2 and 3 are one defect in <code>CLAUDE.md</code> line 70, caught by two guards that share no code path. The paragraph now says the 08.26 stamp is historical, that the merge number is whatever the Master Architect allocates at that time, and carries a dated note recording both halves of what was wrong.</p>
+<p><strong>Declaring the held branch&#x27;s shared touches is real information, not bookkeeping.</strong> It is exactly what the merge will touch, visible before authorisation rather than after: <code>CHANGELOG.md</code> +91, <code>CLAUDE.md</code> +20, <code>bn.js</code> +5, <code>version.js</code> +1/−1 (<strong>the line that conflicts at merge</strong>), and three <code>tools/firestore-emulator/</code> files.</p>
+<hr>
+<h2>4. The mutation that went UNPROVEN, and the defect it found</h2>
+<p>One mutation — <em>&quot;a forward version is caught even when it belongs to nobody yet&quot;</em> — did <strong>not</strong> produce the expected failure. Chasing it rather than deleting it found a real defect in both new guards:</p>
+<p><strong>The trailing guard <code>(?![\d.])</code> refuses a version that ends a sentence</strong>, because the full stop matches the class. So <code>The branch is stamped 08.29.</code> was <strong>invisible to the guard written to find invisible references</strong>. It is <code>(?!\.?\d)</code> now — still rejecting <code>08.295</code> and <code>08.29.3</code>, and seeing a version at a full stop.</p>
+<p>This is the <strong>second</strong> time the trailing-full-stop trap has appeared here; the first was <code>brief-integrity.mjs</code>&#x27;s own first run, where <code>v([\d.]+)</code> swallowed a full stop and produced <code>&quot;08.25.&quot;</code>. It is now a standing lesson. A second mutation pins the fix.</p>
+<p><strong>A related subtlety, also found by that mutation:</strong> <code>/\bv?(\d{2}\.\d{2})/</code> cannot match <code>v08.44</code> at all — there is no word boundary between <code>v</code> and <code>0</code>, and <code>\b</code> before <code>0</code> fails. The two forms are matched with one lookbehind-based pattern rather than a clever optional <code>v</code>.</p>
+<hr>
+<h2>5. Test results</h2>
+<p>``` node tools/i18n-verify/programme-ledger.mjs   ==== Programme integration ledger: 7 passed, 12 noted, 0 failed ====        main 5ea0d928b8 at v08.27   EXIT 0</p>
+<p>node tools/i18n-verify/programme-ledger-mutations.mjs   ==== Programme ledger guard mutations: 25 passed, 0 failed ====   EXIT 0 ```</p>
+<p>The 12 NOTEs are the declared shared-file touches (11) and the acknowledged Hadith baseline move (1). They are printed every run on purpose: an open coordination item should be visible, not silent.</p>
+<p><strong>Mutations, by guard:</strong> A×2, B×2, C×4, D×4, E×3, F×5, CONTROL×2, plus two positive controls (the unmutated ledger has zero failures; the guards really ran and really read the repository). <strong>The unmutated baseline check is what makes the other 25 mean anything</strong> — without it a guard that failed on everything would pass every mutation.</p>
+<p><strong>Regression:</strong> <code>brief-integrity.mjs</code> 8/8 after this report exists (7/8 before it, correctly naming this file as a brief path that did not yet exist — the guard working as designed).</p>
+<hr>
+<h2>6. Recorded and deliberately NOT implemented</h2>
+<h3>SHARED CHANGE REQUEST 01 — <code>STATUS = ACCEPTED_ARCHITECTURAL_DEBT_DEFERRED</code></h3>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>File</strong></td><td><code>tools/i18n-verify/behaviour.mjs</code></td></tr>
+<tr><td><strong>Current owner-use</strong></td><td>Platform/shared behaviour verification for every module and page</td></tr>
+<tr><td><strong>Required change</strong></td><td>The file accumulates module-specific exclusions for elements that are intentionally multilingual or multiscript (source scripture, transliteration, narrator names). Each module adds its own, so the shared file grows a module-shaped list no module owns</td></tr>
+<tr><td><strong>Reason</strong></td><td>The replacement is a <strong>semantic declarative contract</strong> — an element declares what it <em>is</em>, and the suite derives whether it should be translated. <strong>Distinct from <code>data-i18n-skip</code></strong>, which declares only that a check should not look and carries no meaning a second consumer could reuse</td></tr>
+<tr><td><strong>Expected blast radius</strong></td><td>BR-1 or above — markup across every module&#x27;s pages, plus the shared suite</td></tr>
+<tr><td><strong>Other modules affected</strong></td><td>quran, hadith, deen-study, arabic, general-study, nature-life, health, asma</td></tr>
+<tr><td><strong>Decision</strong></td><td><strong>DEFERRED. Accepted architectural debt. NOT authorised for implementation.</strong> Nothing in this tranche implements it</td></tr>
+</tbody></table></div>
+<h3>DR-01 — design record only</h3>
+<p><code>behaviour.mjs</code> is one monolithic file at 56 sections and 982 checks, and every new module grows it. The longer-term candidate direction is <strong>module-specific behaviour suites plus a thin aggregate runner</strong> that composes them and reports one total, rather than unlimited growth of one file. <strong>A direction, not a decision.</strong> It is recorded so the next platform round does not rediscover the problem, and so no module round quietly splits the file on its own authority.</p>
+<hr>
+<h2>7. Governance ownership, as established</h2>
+<div class='tw'><table><thead><tr><th>File</th><th>Owner</th></tr></thead><tbody>
+<tr><td><code>app/js/version.js</code></td><td><strong>Master Architect — global authority.</strong> No stream allocates a number for itself</td></tr>
+<tr><td><code>CLAUDE.md</code></td><td>Platform — governance, shared</td></tr>
+<tr><td><code>CHANGELOG.md</code></td><td>Platform — release history, shared</td></tr>
+<tr><td><code>app/js/i18n/bn.js</code></td><td>Platform — shared translation catalogue</td></tr>
+<tr><td><code>tools/i18n-verify/behaviour.mjs</code></td><td>Platform — shared verification infrastructure</td></tr>
+<tr><td><code>app/hadith-study.html</code></td><td>Hadith — module content surface. <strong>The common navigation and page shell inside it remain platform-owned</strong></td></tr>
+</tbody></table></div>
+<p><strong>The SHARED CHANGE RULE</strong>, now mechanical via guard E: if a module&#x27;s work requires modifying a declared shared or platform file and no shared-change authorisation exists, STOP that portion and raise a SHARED CHANGE REQUEST — file, current owner-use, required change, reason, expected blast radius, other modules potentially affected. <strong>Do not silently take ownership.</strong></p>
+<hr>
+<h2>8. What this tranche did NOT do</h2>
+<p>Every prohibition in the instruction, confirmed by measurement rather than intent:</p>
+<ul><li><strong>No reachable application change.</strong> <code>git diff origin/main -- app/ tests/ firestore.rules firebase.json</code> is empty.</li><li><strong><code>app/js/version.js</code> untouched — 08.27 before, 08.27 after.</strong></li><li><strong>08.30 not allocated.</strong> The ledger names it as the unallocated boundary and guard B fails anything claiming it.</li><li><strong>D14 not wired, D14 Rules not activated.</strong> Recorded as <code>ON_MAIN_UNREACHABLE</code>.</li><li><strong>Phase 4 wiring not modified.</strong> <code>7e2931f</code> read only; not re-cut, not re-stamped, not merged.</li><li><strong>Hadith not merged.</strong> Its branch was read; nothing was fetched into <code>main</code>.</li><li><strong>Nothing deployed.</strong></li><li><strong>The measured Study-select layout options were not implemented</strong> — O3 and O3b remain Owner decisions.</li><li><strong>The build system was not redesigned.</strong> Three files, one of them data.</li></ul>
+<hr>
+<h2>PROGRAMME_COORDINATION_STATE</h2>
+<p>``<code> MAIN_SHA=5ea0d928b8f326e0164c988ef79e4d1d1c168eeb MAIN_VERSION=08.27 LEDGER_FILE=docs/governance/programme-integration-ledger.json GUARD_FILES=tools/i18n-verify/programme-ledger.mjs,tools/i18n-verify/programme-ledger-mutations.mjs VERSION_COLLISION_GUARD=A_IMPLEMENTED_PASS UNRESERVED_VERSION_GUARD=B_IMPLEMENTED_PASS CANONICAL_VERSION_GUARD=D_IMPLEMENTED_PASS_FOUND_AND_FIXED_0828_BARE_IN_CLAUDE_MD SHARED_FILE_GUARD=E_IMPLEMENTED_PASS_11_DECLARED_0_UNDECLARED STALE_BASELINE_GUARD=F_IMPLEMENTED_PASS_HADITH_MOVED_ACKNOWLEDGED HELD_STAMP_GUARD=C_IMPLEMENTED_PASS_FOUND_AND_FIXED_FORWARD_ALLOCATION_IN_CLAUDE_MD MUTATION_TESTS=25_PASSED_0_FAILED_PLUS_2_POSITIVE_CONTROLS REACHABLE_APP_CHANGE=NO APP_VERSION_BEFORE=08.27 APP_VERSION_AFTER=08.27 HADITH_0828=RESERVED_STAGE_A_ACCEPTED_MILESTONE_7f61328_VERIFIED HADITH_0829=RESERVED_STAGE_B_INTEGRATION_cd344f4_VERIFIED_BRANCH_TIP_808539c NEXT_UNALLOCATED=08.30+ PHASE4_STATUS=HELD_7e2931f_STAMP_0826_HISTORICAL_NOT_A_FORWARD_ALLOCATION D14_STATUS=ON_MAIN_UNREACHABLE_VERSION_UNCHANGED_NOT_WIRED_RULES_NOT_ACTIVATED SHARED_CHANGE_01=DEFERRED_ACCEPTED_ARCHITECTURAL_DEBT TEST_RESULT=LEDGER_GUARD_7_PASS_12_NOTE_0_FAIL_EXIT_0;MUTATIONS_25_PASS_0_FAIL_EXIT_0;BRIEF_INTEGRITY_8_PASS_0_FAIL </code>``</p>
+<hr>
+<h2>9. Held for Master Architect audit</h2>
+<p>Delivery ends here. <strong>No further development tranche has been started.</strong> Three items are the Master Architect&#x27;s, and the guards report them every run rather than deciding them:</p>
+<ol><li><strong>Hadith re-authorisation</strong> against <code>5ea0d92</code>. Its stream halted on the moved baseline itself; the move is documentation-only.</li><li><strong>The 11 declared shared-file touches</strong> across the two unmerged branches — disclosed, awaiting decision.</li><li><strong>The held wiring&#x27;s merge number</strong>, to be allocated at merge time. <code>08.30+</code> is unallocated and no stream may take it.</li></ol>
+</main></body></html>
