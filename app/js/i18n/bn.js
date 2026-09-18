@@ -2395,4 +2395,72 @@ export const BN = {
     "QuranRevival ব্যাকআপ · ফরম্যাট {n} · সম্পূর্ণ তথ্য এই ফাইলেই আছে, এই লাইনের নিচের ব্লকে।",
   "To restore from it, keep this file — the \"Save the data file (JSON)\" button above extracts the machine-readable copy.":
     "এটি থেকে পুনরুদ্ধার করতে ফাইলটি রেখে দিন — উপরের \"ডেটা ফাইল সংরক্ষণ করুন (JSON)\" বোতামটি মেশিন-পাঠযোগ্য অনুলিপিটি বের করে দেয়।",
+
+  // ---------------------------------------------------------------------
+  // Hadith Study -- the synthetic corpus pilot (H2). Real characters only,
+  // never an HTML entity: translateStatic() swaps a TEXT NODE, so an entity
+  // written here would print literally on a Bangla page while the English
+  // side -- real markup -- decoded correctly.
+  // ---------------------------------------------------------------------
+  "QuranRevival — Hadith Collections (synthetic pilot)": "কুরআনরিভাইভাল — হাদিস সংকলনসমূহ (কৃত্রিম পরীক্ষামূলক)",
+  "Hadith Collections": "হাদিস সংকলনসমূহ",
+  "Hadith Corpus": "হাদিস ভাণ্ডার",
+  "Explore": "অন্বেষণ",
+  "Counts across the synthetic corpus. These describe the source and the topic index only.": "কৃত্রিম ভাণ্ডারের গণনা। এগুলি কেবল উৎস ও বিষয়-সূচি বর্ণনা করে।",
+  "Editions": "সংস্করণ",
+  "Narrations": "বর্ণনা",
+  "Of those, repeat occurrences": "এর মধ্যে পুনরাবৃত্ত বর্ণনা",
+  "a repeat is counted as its own narration, never merged by text.": "পুনরাবৃত্ত বর্ণনা নিজস্ব বর্ণনা হিসেবে গণনা করা হয়, লেখা দেখে একত্র করা হয় না।",
+  "Taxonomy revision": "বিষয়-সূচির সংস্করণ",
+  "No progress is counted here. Track is a preview that a reload clears, so there is nothing durable to aggregate.": "এখানে কোনো অগ্রগতি গণনা করা হয় না। ট্র্যাক কেবল একটি প্রিভিউ যা পৃষ্ঠা রিলোড করলে মুছে যায়, তাই স্থায়ীভাবে যোগ করার মতো কিছু নেই।",
+  "Source hierarchy": "উৎসের স্তরবিন্যাস",
+  "Books": "কিতাব",
+  "Chapters": "অধ্যায়",
+  "no chapter level": "অধ্যায় স্তর নেই",
+  "Distinct narrations": "স্বতন্ত্র বর্ণনা",
+  "Topic mappings": "বিষয় সংযোগ",
+  "A mapping may cover a whole book or chapter, so a few mappings can reach many narrations. The two figures are kept apart because one counts curatorial decisions and the other counts narrations.": "একটি সংযোগ পুরো কিতাব বা অধ্যায় জুড়ে হতে পারে, তাই অল্প কয়েকটি সংযোগ অনেক বর্ণনায় পৌঁছাতে পারে। সংখ্যা দুটি আলাদা রাখা হয়েছে কারণ একটি সম্পাদকীয় সিদ্ধান্ত গণনা করে, অন্যটি বর্ণনা গণনা করে।",
+  "Narrations reached by more than one mapping": "একাধিক সংযোগে পৌঁছানো বর্ণনা",
+  "counted once, never twice.": "একবারই গণনা করা হয়, দুইবার নয়।",
+  "No narration here is reached by more than one mapping.": "এখানে কোনো বর্ণনায় একাধিক সংযোগে পৌঁছানো হয়নি।",
+  "Spans collections": "সংকলন জুড়ে বিস্তৃত",
+  "Browse the collections, books and chapters. Every narration below is invented for development and is not a hadith.": "সংকলন, কিতাব ও অধ্যায় ঘুরে দেখুন। নিচের প্রতিটি বর্ণনা ডেভেলপমেন্টের জন্য তৈরি করা, এগুলি হাদিস নয়।",
+  "A pilot of the Hadith corpus browser. Every narration below is invented for development.":
+    "হাদিস কর্পাস ব্রাউজারের একটি পরীক্ষামূলক সংস্করণ। নিচের প্রতিটি বর্ণনা ডেভেলপমেন্টের জন্য তৈরি করা হয়েছে।",
+  "Mounted inside QuranRevival — the same component as the standalone page.":
+    "QuranRevival-এর ভিতরে যুক্ত — স্বতন্ত্র পৃষ্ঠার সঙ্গে একই উপাদান।",
+  "Topics": "বিষয়সমূহ",
+  "Not tracked": "চিহ্নিত করা হয়নি",
+  "Text language": "পাঠের ভাষা",
+  "Synthetic": "কৃত্রিম",
+  "This edition has no chapter level.": "এই সংস্করণে কোনো পরিচ্ছেদ স্তর নেই।",
+  "Nothing here yet.": "এখানে এখনো কিছু নেই।",
+  "Repeat occurrence of {id}": "{id}-এর পুনরাবৃত্ত সংঘটন",
+  "No {lang} translation for this narration. Showing the Arabic source.":
+    "এই বর্ণনার জন্য {lang} অনুবাদ নেই। আরবি মূল পাঠ দেখানো হচ্ছে।",
+  "Translation: {who}": "অনুবাদ: {who}",
+  "unattributed": "সূত্রবিহীন",
+  "Available languages: {langs}": "উপলব্ধ ভাষা: {langs}",
+  "Preview only — nothing is saved. Hadith storage is not enabled yet.":
+    "শুধুমাত্র প্রাকদর্শন — কিছুই সংরক্ষিত হচ্ছে না। হাদিস সংরক্ষণ এখনো চালু হয়নি।",
+  "No classical explanation is linked to this narration, because it is synthetic.":
+    "এই বর্ণনার সঙ্গে কোনো ধ্রুপদী ব্যাখ্যা যুক্ত নেই, কারণ এটি কৃত্রিম।",
+  "This is an index across collections. It does not change any book.":
+    "এটি সংকলনগুলির উপর একটি সূচি। এটি কোনো কিতাব পরিবর্তন করে না।",
+  "{n} distinct narrations, from {m} mappings.": "{m}টি সংযোগ থেকে {n}টি স্বতন্ত্র বর্ণনা।",
+  "Taxonomy revision: {rev}": "শ্রেণিবিন্যাস সংস্করণ: {rev}",
+  "These mappings have not been reviewed by a scholar.":
+    "এই সংযোগগুলি কোনো আলিম দ্বারা পর্যালোচিত হয়নি।",
+  "Search in Arabic, English or Bangla": "আরবি, ইংরেজি বা বাংলায় অনুসন্ধান করুন",
+  "{n} results": "{n}টি ফলাফল",
+  "Showing the first results only.": "শুধুমাত্র প্রথম ফলাফলগুলি দেখানো হচ্ছে।",
+  "in the text ({langs})": "পাঠে ({langs})",
+  "in the source heading ({langs})": "মূল শিরোনামে ({langs})",
+  "These are verified links to real narrations. They are NOT linked to the synthetic narrations above, which are not real.":
+    "এগুলি প্রকৃত বর্ণনার যাচাইকৃত লিঙ্ক। উপরের কৃত্রিম বর্ণনাগুলির সঙ্গে এগুলির কোনো সংযোগ নেই, কারণ সেগুলি প্রকৃত নয়।",
+  "Open the commentary at the source ↗": "মূল সূত্রে ব্যাখ্যাটি খুলুন ↗",
+  "Link only — the commentary text is not reproduced here.":
+    "শুধু লিঙ্ক — ব্যাখ্যার পাঠ এখানে পুনরুৎপাদন করা হয়নি।",
+  "Matched by reference ({scheme} {ref}). No occurrence ID until an edition is approved.":
+    "সূত্র অনুযায়ী মিলিত ({scheme} {ref})। কোনো সংস্করণ অনুমোদিত না হওয়া পর্যন্ত কোনো সংঘটন আইডি নেই।",
 };

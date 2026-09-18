@@ -24,6 +24,72 @@
 
 Read this first, every session. It is the standing brief.
 
+> ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
+>
+> **This branch's final application version is `v08.29`, and it is now MERGED TO `main`.** The
+> `Current milestone` line below names **v08.29 on `main`**, which is true from
+> the moment this integration landed. **Neither v08.28 nor v08.29 has been
+> DEPLOYED or proven served to anyone** — merging to `main` is not deployment,
+> and no deployment was performed or verified. v08.28 is Hadith Stage A, carried
+> into `main` as history by this integration rather than merged on its own.
+>
+> **The two milestones, and the history is kept rather than flattened:**
+> **v08.28 = Stage A** (`7f61328`), the synthetic-namespace correction.
+> **v08.29 = Stage B** (`22526b2`), the corpus mounted in the Hadith module,
+> the Approach registry proposal and demo-only Explore. Stage B is the final
+> candidate version. **This block previously said the branch "carries app
+> version 08.28"** — true when Stage A landed, stale the moment Stage B bumped,
+> and it also wrote the version without its `v`, which is the notation
+> `brief-integrity.mjs` scans for (`/\bv(0[78]\.\d{2})\b/`). Corrected
+> 18 Sep 2026: a version this brief names must be written `v08.xx` or the guard
+> cannot see it, and a version the guard cannot see is one it cannot check
+> against `CHANGELOG.md`.
+>
+> **v08.27 was a REAL COLLISION, not a reservation.** This branch took v08.27
+> while `main` was on v08.25; `main` then merged v08.26 and shipped its own
+> v08.27, so for a while two different builds carried one number. Resolved
+> 18 Sep 2026 by moving this branch to v08.28 and then v08.29, read off `main`
+> and every remote branch rather than assumed. **Read the next free number off
+> `main` at the time of a bump; do not trust this sentence's arithmetic.**
+>
+> **`tools/i18n-verify/brief-integrity.mjs` fails one check on this branch, by
+> design**: it compares the milestone line's version against the working tree's
+> `version.js`, which is right on `main` and wrong on any feature branch
+> carrying a bump. The guard offers a legitimate route out — a milestone line
+> naming the BRANCH and also stating `` `main` is still vNN.NN `` passes — but
+> **that line is the Quran/`main` side's to write**, and rewriting it from here
+> is the silent shared-file edit the Hadith instruction forbids. So the failure
+> is RECORDED, not patched, and **the guard is never weakened to accommodate
+> it.**
+>
+> Gates H0 and H1 are accepted; **H2-A is accepted as corrected** (18 Sep 2026)
+> and H2-B is delivered in its authorised limited scope. H2 remains authorised
+> on **synthetic fixtures only**.
+> See `docs/reports/2026-09-18-hadith-h0-contract-and-file-ownership.md`,
+> `...-h1-source-rights-and-reference-schema.md`, the H2-A report, the
+> reconciliation, the Stage A/B report and the integration candidate report.
+> **Zero editions are rights-cleared**, so every Hadith narration in the
+> repository is invented for development and says so in its own Arabic.
+>
+> **THE SYNTHETIC NAMESPACE IS TWO PREFIXES, AND IT IS ENFORCED.** Collection,
+> edition, book, chapter and **topic** ids carry `synthetic-`; occurrence ids
+> carry `syn-occ-` and topic-mapping ids `syn-map-`. The topic id was
+> `topic-salah` — no synthetic marker at all, and a future reviewed Salah topic
+> would plausibly be minted under exactly that id. It is
+> **`synthetic-topic-salah`** now, and three GATE checks in
+> `tools/i18n-verify/hadith-corpus.mjs` sweep every id family, refuse a
+> plausible real id and refuse a half-done rename. **Do not add a fixture id
+> outside that namespace** — the sweep is derived from the data, so a new row
+> joins it automatically.
+>
+> **SHARED_CHANGE_REQUEST_01 = ACCEPTED_ARCHITECTURAL_DEBT_DEFERRED.** The
+> language-leak check in `behaviour.mjs` excludes deliberately multi-script
+> elements by a hand-maintained id list, now five entries across three modules.
+> The future platform solution must distinguish **intentionally
+> multi-language/multi-script content** from `[data-i18n-skip]`, which means
+> "do not translate" and is a different contract. **That contract is NOT
+> invented here**; the Stage B exclusion stands for this candidate.
+
 > ## ⇢ SESSION HANDOVER, 18 Sep 2026 — READ THIS SECOND
 >
 > **`docs/reports/2026-09-18-SESSION-HANDOVER.md`** (and `.html`) is the
@@ -44,9 +110,12 @@ Read this first, every session. It is the standing brief.
 > timezone item is **one question, not a UI decision** (§11.B).
 
 
-**Current milestone: v08.27 on `main`** (18 Sep 2026 — the number-picker fix
-below. v08.26, the 320px nav fit correction, merged earlier the same day at
-`49f37c9`, fast-forward. `main`'s own `app/js/version.js` is the single source
+**Current milestone: v08.29 on `main`** (18 Sep 2026 — the Hadith Stage A/B
+integration, merged under explicit Master Architect authorisation. v08.27, the
+Study-options number pickers, was the previous version on `main`; v08.28 is
+Hadith Stage A, carried into `main` as history by this integration and never
+independently merged. **Merged is not deployed** — no deployment was performed
+or proven by that round. `main`'s own `app/js/version.js` is the single source
 of truth and is what GitHub Pages serves.)
 
 > **This line was WRONG for part of 18 Sep, and the episode is the lesson.** It

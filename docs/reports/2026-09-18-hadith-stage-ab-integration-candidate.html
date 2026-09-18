@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith Stage A/B — Integration Candidate</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith Stage A/B — Integration Candidate</h1>
+<p><strong>Date:</strong> 2026-09-18 · <strong>Type:</strong> Integration preparation, executed under Master Architect re-authorisation. <strong>A candidate now exists.</strong> It is <strong>NOT merged</strong>, <strong>NOT deployed</strong>, and <strong>no further tranche was started</strong>.</p>
+<hr>
+<h2>1. Baseline gate — EXACT MATCH, no movement</h2>
+<p>Fetched immediately before execution, as instructed.</p>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Authorised <code>origin/main</code></td><td><code>5ea0d928b8f326e0164c988ef79e4d1d1c168eeb</code></td></tr>
+<tr><td>Actual <code>origin/main</code></td><td><strong><code>5ea0d928b8f326e0164c988ef79e4d1d1c168eeb</code></strong></td></tr>
+<tr><td>Movement class</td><td><strong>NONE — exact match.</strong> The benign-movement clause was not needed and was not used</td></tr>
+<tr><td><code>main</code> version</td><td><strong>v08.27</strong></td></tr>
+</tbody></table></div>
+<hr>
+<h2>2. Integration — merge, not rebase; no accepted commit rewritten</h2>
+<p><code>git merge origin/main</code> into <code>feature/hadith-study</code>, the same history-preserving method used at <code>aef6cf3</code> and <code>85c35cf</code>. <strong>The Hadith branch was never merged into <code>main</code>.</strong></p>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><td>Merge outcome</td><td><strong>Clean, exit 0.</strong> No conflicts, no manual resolution</td></tr>
+<tr><td>Stage A <code>7f61328</code></td><td><strong>present and unrewritten</strong>, still stamping <strong>v08.28</strong></td></tr>
+<tr><td>Stage B <code>22526b2</code></td><td><strong>present and unrewritten</strong>, still stamping <strong>v08.29</strong></td></tr>
+<tr><td>Candidate HEAD</td><td><code>2a308c5826feac1d051160ce7ae2862e9309d974</code></td></tr>
+<tr><td>Merge base</td><td><code>5ea0d928…</code> — <strong>the candidate now contains <code>main</code> in full</strong></td></tr>
+<tr><td>Relationship</td><td><strong>0 behind, 15 ahead</strong></td></tr>
+</tbody></table></div>
+<h3>2.1 No loss on either stream — verified file by file</h3>
+<p><strong>D14 foundation, from the current baseline:</strong> <code>app/js/timezone-contract.js</code>, <code>app/js/timezone-service.js</code>, <code>docs/governance/d14-timezone-tenantpeople-rules-candidate-2026-09-18.rules</code>, <code>tools/i18n-verify/d14-timezone-boundary.mjs</code>, <code>tools/i18n-verify/d14-timezone-contract.mjs</code> — <strong>all present</strong>.</p>
+<p><strong>Hadith Stage A and Stage B:</strong> <code>app/js/hadith-fixture-data.js</code>, <code>app/js/hadith-corpus.js</code>, <code>app/js/hadith-browser.js</code>, <code>app/css/hadith.css</code>, <code>app/hadith-study.html</code>, <code>tools/i18n-verify/hadith-corpus.mjs</code> — <strong>all present</strong>.</p>
+<p><strong>Application version preserved at <code>v08.29</code>.</strong> <code>main</code> is on v08.27 and does not touch <code>app/js/version.js</code>, so no version conflict arose. <strong><code>v08.30</code> is not allocated and not consumed.</strong></p>
+<hr>
+<h2>3. Governance corrections — three defects, all closed</h2>
+<h3>3.1 The wrong version claim</h3>
+<p><code>CLAUDE.md</code>&#x27;s Hadith block said <em>&quot;This branch carries app version <code>08.28</code>&quot;</em> while <code>app/js/version.js</code> read <strong>08.29</strong> — true when Stage A landed, stale the moment Stage B bumped. The block now states <strong>v08.29</strong> as the branch&#x27;s final application version <strong>while keeping the history</strong>: <strong>v08.28 = Stage A (<code>7f61328</code>)</strong>, <strong>v08.29 = Stage B (<code>22526b2</code>)</strong>. It states in terms that <strong>neither has ever been deployed or served to anyone</strong>.</p>
+<p><strong>The same defect was found in <code>app/js/version.js</code> itself</strong>, and it is the worse of the two because that file is the single source of truth: its comment <strong>led with &quot;08.28&quot;</strong> above a constant reading <strong>08.29</strong>. Corrected, with the reason recorded in place. <strong>The constant itself is untouched.</strong></p>
+<h3>3.2 Canonical notation — and why it was the substantive half</h3>
+<p><code>brief-integrity.mjs</code> scans the brief with <code>/\bv(0[78]\.\d{2})\b/</code> — <strong>the <code>v</code> prefix is required</strong>. The Hadith block wrote bare <code>08.28</code> four times and no <code>v08.xx</code>, so <strong>the scanner could not see either Hadith version</strong>, and its check <em>&quot;every version the brief names is also in <code>CHANGELOG.md</code>&quot;</em> <strong>passed vacuously</strong> for both. It was not detecting compliance; it was failing to look.</p>
+<p>The block now uses canonical <code>v08.xx</code> throughout, which makes the guard <strong>see</strong> the versions — and it then correctly demands the changelog entries §3.3 supplies.</p>
+<p><strong>Proven non-vacuous, and the first attempt at proving it was itself wrong.</strong> Removing only the <code>## v08.29</code> <strong>heading</strong> left the check <strong>passing</strong>, because the check scans the whole file and the entry body also names the version — a <strong>partial mutation proving nothing</strong>, which is this project&#x27;s own recorded lesson. Removing <strong>every</strong> occurrence makes it fail, naming <code>08.29</code> exactly; the same again for <code>08.28</code>. <strong>The guard was not weakened anywhere.</strong></p>
+<h3>3.3 CHANGELOG entries for both milestones</h3>
+<p><code>CHANGELOG.md</code> had <strong>zero</strong> entries for either version. Both are now appended, each opening by stating plainly that it is <strong>a development milestone on the unmerged branch <code>feature/hadith-study</code>, never merged to <code>main</code>, never deployed, never served to anyone</strong>, and that <code>main</code> was on v08.27 throughout.</p>
+<ul><li><strong><code>## v08.28 — Hadith Stage A: the synthetic namespace, enforced</code></strong> — the <code>topic-salah</code> finding, the rename, the three GATE checks, the failing-then-passing evidence and the four mutations, and the collision that made v08.28 necessary.</li><li><strong><code>## v08.29 — Hadith Stage B: the corpus in the module, and Explore</code></strong> — the integration, the two defects found by probing and by looking, the registry proposal that allocates nothing, the Explore model this round got wrong first and corrected by measurement, and the <code>behaviour.mjs</code> regression with its narrow fix.</li></ul>
+<hr>
+<h2>4. <code>behaviour.mjs</code></h2>
+<p><strong>The accepted Stage-B exclusion is kept unchanged for this candidate. The proposed multilingual shared-infrastructure redesign was NOT implemented.</strong></p>
+<p><strong><code>SHARED_CHANGE_REQUEST_01 = ACCEPTED_ARCHITECTURAL_DEBT_DEFERRED</code></strong>, recorded in the Hadith block of <code>CLAUDE.md</code> alongside the constraint that the future platform solution must distinguish <strong>intentionally multi-language/multi-script content</strong> from <code>[data-i18n-skip]</code>, which means <em>&quot;do not translate&quot;</em> and is a different contract. <strong>That contract is not invented here.</strong></p>
+<p><strong>The comment-only formatting defect was corrected, and the zero-behaviour condition was proven rather than asserted:</strong></p>
+<div class='tw'><table><thead><tr><th>Proof</th><th>Result</th></tr></thead><tbody>
+<tr><td>Comments stripped from both versions, compared byte for byte</td><td><strong>IDENTICAL — 228,004 bytes each</strong></td></tr>
+<tr><td>Non-comment changed lines in the diff</td><td><strong>0</strong></td></tr>
+</tbody></table></div>
+<hr>
+<h2>5. Programme Integration Ledger — NOT on <code>main</code></h2>
+<p><strong>Reported, not recreated and not merged</strong>, as instructed. The ledger foundation is on the Quran stream&#x27;s branch <strong><code>origin/claude/charming-rubin-xzxbk1</code></strong>, which is <strong>not merged into <code>main</code></strong>:</p>
+<p><code>docs/governance/programme-integration-ledger.json</code> · <code>tools/i18n-verify/programme-ledger.mjs</code> · <code>tools/i18n-verify/programme-ledger-mutations.mjs</code> · plus its two report files.</p>
+<p><strong>This stream did not independently recreate any part of it</strong>, and did not consume it. Because it is absent from the authorised baseline, this candidate is not built against it and complies with nothing from it. <strong>When it lands on <code>main</code>, this candidate should be re-verified against it before merge review concludes.</strong></p>
+<hr>
+<h2>6. Verification</h2>
+<h3>6.1 Pure suites — 23 suites, 471 checks, <strong>0 failures</strong>, every one exit 0</h3>
+<div class='tw'><table><thead><tr><th>Group</th><th>Suites</th><th>Result</th></tr></thead><tbody>
+<tr><td><strong>Hadith</strong></td><td><code>hadith-source-rights</code> 14 · <code>hadith-corpus</code> 33 · <code>hadith-commentary-binding</code> 14</td><td><strong>61 / 0</strong></td></tr>
+<tr><td><strong>D14 (from the new baseline)</strong></td><td><code>d14-timezone-boundary</code> 10 · <code>d14-timezone-contract</code> 21</td><td><strong>31 / 0</strong></td></tr>
+<tr><td><strong>Quran / MAP regression</strong></td><td><code>quran-boundary</code> 30 · <code>study-approach-contract</code> 13 · <code>…-boundary</code> 16 · <code>study-activity-evidence</code> 11 · <code>…-id</code> 29 · <code>…-store</code> 26 · <code>…-boundary</code> 17 · <code>note-foundation-boundary</code> 30 · <code>note-journal-evidence</code> 18 · <code>study-note-boundary</code> 17 · <code>journey-map-boundary</code> 13 · <code>firestore-index-requirements</code> 8 · <code>rules-authorisation-executable</code> 38 · <code>rules-deployment-candidate</code> 10 · <code>quran-word-identity-contract</code> 6 · <code>quran-word-progress-model</code> 57 · <code>quran-word-progress-data</code> 37 · <code>stub-parity</code> 3</td><td><strong>379 / 0</strong></td></tr>
+</tbody></table></div>
+<h3>6.2 <code>brief-integrity</code> — 7 passed, 1 failed (the known branch-scoped item)</h3>
+<p>The single failure is the milestone line&#x27;s version against the working tree&#x27;s, which is right on <code>main</code> and wrong on any feature branch carrying a bump. <strong>The milestone line is the Quran/<code>main</code> side&#x27;s to write</strong>, so it is recorded and not patched, and <strong>the guard is not weakened</strong>. Its CHANGELOG-coverage check now <strong>passes non-vacuously</strong> (§3.2).</p>
+<h3>6.3 i18n coverage — <strong>1,873 scanned / 1,812 translated / 61 missing (97%)</strong>, 1,642 catalogue entries, exit 0</h3>
+<h3>6.4 Rendered Hadith verification — <strong>96 passed, 0 failed</strong></h3>
+<p>Integrated route at phone, tablet and desktop in English and Bangla, plus the standalone route and the Explore tab&#x27;s content in both languages. Asserted by <strong>computed style</strong> where appearance matters: the synthetic banner&#x27;s <code>border-top-width</code> is <code>2px</code> and <code>.hadith-row</code>&#x27;s background is <code>rgb(255, 255, 255)</code>, so the extracted stylesheet is proven to travel rather than assumed. Screenshots captured and <strong>read</strong>.</p>
+<p><strong>One assertion of mine failed six times and was WRONG, not the code — established, not waved away.</strong> <em>&quot;ZERO Firestore requests&quot;</em> on the <strong>integrated</strong> page matched <code>firebase-firestore.js</code>, the SDK <strong>script</strong> URL, because the pattern <code>/firestore/</code> matches the filename. Proven to be the pre-existing shared renderer rather than the corpus: the identical request appears on <strong><code>deen-study.html</code></strong>, a sibling topic-study page with <strong>no Hadith corpus at all</strong>. The assertion was corrected to measure Firestore <strong>data</strong> traffic.</p>
+<p><strong>The decisive measurement — the corpus alone, on the standalone route:</strong></p>
+<div class='tw'><table><thead><tr><th>Metric</th><th>Result</th></tr></thead><tbody>
+<tr><td>Firebase SDK loads</td><td><strong>0</strong></td></tr>
+<tr><td>Firestore data requests</td><td><strong>0</strong></td></tr>
+<tr><td>Stub document operations (<code>__fsLog</code>)</td><td><strong>0</strong></td></tr>
+</tbody></table></div>
+<h3>6.5 <code>behaviour.mjs</code></h3>
+<p><strong>981 passed, 1 failed, 56 sections — 982 checks.</strong> This <strong>matches <code>main</code>&#x27;s own clean run of record exactly</strong> (the brief records <em>&quot;981 pass / 1 fail, 982 checks, the one failure 31e&#x27;s TLS artefact — and the 22g trio PASSED it&quot;</em>).</p>
+<div class='tw'><table><thead><tr><th>Failure</th><th>Class</th></tr></thead><tbody>
+<tr><td><code>31e</code> no page errors — <code>net::ERR_CERT_AUTHORITY_INVALID</code></td><td><strong>Environmental</strong> — the sandbox&#x27;s TLS interception. It will not occur for the Owner</td></tr>
+</tbody></table></div>
+<p><strong>Zero application failures.</strong> The archive.org trio (<code>22g</code> ×3) <strong>passed this run</strong>, which is consistent with the brief&#x27;s recorded finding that those three are <strong>intermittent, not permanent</strong> — so their passing is not evidence of a changed baseline any more than their failing was.</p>
+<h3>6.6 Structural gates — proven, not asserted</h3>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><td><strong>D14 remains unreachable</strong></td><td><strong>No importer</strong> of <code>timezone-contract.js</code> or <code>timezone-service.js</code> anywhere in <code>app/<em>.html</code> or <code>app/js/</em>.js</code>; <code>d14-timezone-boundary</code> asserts it and passes</td></tr>
+<tr><td><code>firestore.rules</code> vs authorised <code>main</code></td><td><strong>IDENTICAL</strong> (sha256 begins <code>8fd7f52b2a7c9097</code>); <strong>0</strong> <code>hadith</code> collections</td></tr>
+<tr><td><code>firebase.json</code> vs authorised <code>main</code></td><td><strong>IDENTICAL</strong></td></tr>
+<tr><td><code>firestore.indexes.json</code></td><td><strong>ABSENT</strong></td></tr>
+<tr><td><code>app/js/catalogue.js</code>, <code>catalogue-data.js</code></td><td><strong>IDENTICAL — no Approach ID allocated</strong></td></tr>
+<tr><td><code>app/js/topic-study.js</code> (shared renderer)</td><td><strong>IDENTICAL</strong></td></tr>
+</tbody></table></div>
+<hr>
+<h2>7. Merge prediction against <code>5ea0d928…</code></h2>
+<p><strong>Read-only.</strong> <code>git merge-tree --write-tree</code> writes no ref and touches no worktree.</p>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>Textual conflicts</strong></td><td><strong>ZERO</strong> — exit 0, result tree <code>cd801d9a92c53b7ce6ff58375f5967138b7b0dc0</code></td></tr>
+<tr><td>Relationship</td><td><strong>0 behind, 15 ahead</strong> — the candidate contains <code>main</code> in full</td></tr>
+<tr><td><strong>Predicted merge</strong></td><td><strong>FAST-FORWARD.</strong> <code>origin/main</code> is an ancestor of the candidate</td></tr>
+<tr><td><strong>Exact candidate diff</strong></td><td><strong>33 files changed, 6,256 insertions, 6 deletions</strong></td></tr>
+<tr><td><strong>Resulting <code>version.js</code></strong></td><td><strong><code>export const APP_VERSION = &quot;08.29&quot;;</code></strong> — the constant untouched by this tranche; only its comment corrected</td></tr>
+</tbody></table></div>
+<h3>7.1 Semantic / shared-file changes — the complete set</h3>
+<div class='tw'><table><thead><tr><th>File</th><th>Class</th><th>Change vs authorised <code>main</code></th><th>Authorised by</th></tr></thead><tbody>
+<tr><td><code>app/js/version.js</code></td><td>platform</td><td><strong>+16 / −1</strong> — constant v08.27→v08.29 (from Stage A/B), comment corrected here</td><td>tasks 2, 3</td></tr>
+<tr><td><code>CLAUDE.md</code></td><td>brief</td><td><strong>+65 / −0</strong> — Hadith-owned block only</td><td>task 3</td></tr>
+<tr><td><code>CHANGELOG.md</code></td><td>log</td><td><strong>+127 / −0</strong> — the two milestone entries</td><td>task 3</td></tr>
+<tr><td><code>app/js/i18n/bn.js</code></td><td>platform</td><td><strong>+68 / −0</strong> — purely additive, <strong>0 deletions</strong></td><td>accepted in Stage A/B</td></tr>
+<tr><td><code>tools/i18n-verify/behaviour.mjs</code></td><td>shared verification</td><td><strong>+27 / −5</strong> — the accepted Stage-B exclusion, plus a comment-only reformat</td><td>accepted in Stage B; task 4</td></tr>
+</tbody></table></div>
+<p><strong>Only 6 deleted lines exist in the entire candidate</strong>: 1 in <code>version.js</code> (the old constant line) and 5 in <code>behaviour.mjs</code> (the replaced <code>querySelectorAll</code> line and the reflowed comment). <strong>Nothing else anywhere is removed.</strong></p>
+<h3>7.2 Resulting governance and CHANGELOG state</h3>
+<p><strong>Governance:</strong> the brief&#x27;s Hadith block states <strong>v08.29</strong> as the branch&#x27;s final version, records <strong>v08.28 = Stage A</strong> and <strong>v08.29 = Stage B</strong>, says neither was ever deployed, uses canonical <code>v08.xx</code> throughout, and carries <code>SHARED_CHANGE_REQUEST_01 = ACCEPTED_ARCHITECTURAL_DEBT_DEFERRED</code>. The Quran-owned milestone line is <strong>untouched</strong>.</p>
+<p><strong>CHANGELOG:</strong> both milestones present as <code>## v08.28 …</code> and <code>## v08.29 …</code>, each stating it is an unmerged development milestone. <code>brief-integrity</code>&#x27;s coverage check sees both and <strong>fails if either is removed</strong> — proven.</p>
+<hr>
+<h2>8. Flagged for the Quran / shared-file owner — NOT changed from here</h2>
+<p><strong><code>CLAUDE.md</code>&#x27;s Quran-owned VERSION NUMBERING NOTE is now stale</strong>, and this stream caused it. It reads <em>&quot;At merge its <code>version.js</code> conflicts and resolves to the next free number — <strong>08.28</strong> as of this line&quot;</em> about the held Phase 4 wiring; <strong>Stage A consumed v08.28 and Stage B consumed v08.29</strong>, so the next free number is now v08.30.</p>
+<p><strong>Not edited</strong> — it is Quran-owned text about a Quran-owned branch, and editing it from here is exactly the silent shared-file edit the discipline forbids. It also <strong>self-mitigates</strong>: its own last sentence says <em>&quot;Read the number off <code>main</code> at the time of the merge rather than trusting this sentence&#x27;s own arithmetic.&quot;</em></p>
+<p><strong>Also standing:</strong> <code>brief-integrity</code>&#x27;s milestone-line failure (§6.2), which only the Quran side can clear.</p>
+<hr>
+<h2>9. Gates — all CLOSED</h2>
+<p>No real corpus, translation or commentary embedding · no permanent Hadith semantic key · <strong>no Approach ID allocation</strong> (<code>catalogue*.js</code> byte-identical) · no durable Track · no Notes/MMJ persistence · no Rules or index activation · no migration · <strong>no merge into <code>main</code></strong> · no deployment · <strong>no next feature tranche started</strong> · <strong>v08.30+ unallocated</strong>.</p>
+<h2>10. Firestore Rules — the two facts, separately</h2>
+<p><strong>REPOSITORY:</strong> <code>firestore.rules</code> and <code>firebase.json</code> are <strong>byte-identical to the authorised <code>main</code></strong>; <code>firestore.rules</code> contains <strong>0</strong> <code>hadith</code> collections; no <code>firestore.indexes.json</code> exists. This proves repository content and nothing else.</p>
+<p><strong>DEPLOYMENT: UNVERIFIED.</strong> No <code>firebase</code> CLI, no <code>gcloud</code>, no credentials; the Firebase Rules API returns <strong>HTTP 403 PERMISSION_DENIED</strong> to an unregistered caller. The deployed ruleset has not been inspected and cannot be inspected from this environment. <strong>No inference — of success or failure — may be drawn about any production write from repository content.</strong></p>
+<hr>
+<h2>HADITH_INTEGRATION_CANDIDATE</h2>
+<p>The block below is one <code>KEY=value</code> per line, blank-separated so each key survives as its own line in the HTML rendering as well as the Markdown.</p>
+<p>STATUS=CANDIDATE_READY_FOR_MASTER_ARCHITECT_MERGE_REVIEW</p>
+<p>AUTHORIZED_MAIN_SHA=5ea0d928b8f326e0164c988ef79e4d1d1c168eeb</p>
+<p>ACTUAL_MAIN_SHA=5ea0d928b8f326e0164c988ef79e4d1d1c168eeb</p>
+<p>MAIN_MOVEMENT_CLASS=NONE — exact match at the gate; the benign-movement clause was not needed and not used</p>
+<p>MAIN_VERSION=v08.27</p>
+<p>BRANCH=feature/hadith-study</p>
+<p>HEAD=2a308c5826feac1d051160ce7ae2862e9309d974</p>
+<p>MERGE_BASE=5ea0d928b8f326e0164c988ef79e4d1d1c168eeb (the candidate contains main in full; 0 behind, 15 ahead)</p>
+<p>STAGE_A_SHA=7f6132888bc02728e07e2214b5a8d6323708e00a</p>
+<p>STAGE_A_VERSION=v08.28</p>
+<p>STAGE_B_VERSION=v08.29</p>
+<p>CANDIDATE_VERSION=v08.29 (v08.30+ NOT allocated, NOT consumed)</p>
+<p>D14_PRESENT=YES — timezone-contract.js, timezone-service.js, the tenantPeople Rules candidate and both d14 suites all present; d14-timezone-boundary 10/0 and d14-timezone-contract 21/0; UNREACHABLE confirmed, no importer in app/<em>.html or app/js/</em>.js</p>
+<p>GOVERNANCE_DRIFT_FIXED=YES — three defects closed: CLAUDE.md said 08.28 while version.js said 08.29; version.js&#x27;s OWN comment carried the same defect in the single source of truth; CHANGELOG.md had no entry for either. Stage A = v08.28 and Stage B = v08.29 history preserved; neither claimed deployed or live</p>
+<p>CANONICAL_VERSION_NOTATION=YES — brief and version.js use v08.xx throughout. brief-integrity.mjs scans /\bv(0[78]\.\d{2})\b/ so bare &quot;08.28&quot; was INVISIBLE and its CHANGELOG check passed VACUOUSLY. Proven non-vacuous by COMPLETE mutation: removing every occurrence of v08.29 fails the check naming 08.29, same for 08.28. A first partial mutation (heading only) still passed and proved nothing. Guard NOT weakened</p>
+<p>CHANGELOG_0828=PRESENT — &quot;## v08.28 — Hadith Stage A: the synthetic namespace, enforced (18 Sep 2026)&quot;, explicitly an unmerged development milestone, never merged, never deployed, never served</p>
+<p>CHANGELOG_0829=PRESENT — &quot;## v08.29 — Hadith Stage B: the corpus in the module, and Explore (18 Sep 2026)&quot;, same explicit framing; final candidate version</p>
+<p>SHARED_FILES_CHANGED=app/js/version.js +16/-1 (constant from Stage A/B; comment corrected here); CLAUDE.md +65/-0 (Hadith-owned block only; Quran milestone line untouched); CHANGELOG.md +127/-0 (the two entries); app/js/i18n/bn.js +68/-0 (additive, zero deletions, accepted in Stage A/B); tools/i18n-verify/behaviour.mjs +27/-5 (accepted Stage-B exclusion plus a comment-only reformat). NO deployment/security file changed</p>
+<p>BEHAVIOUR_DEFERRED_DEBT=SHARED_CHANGE_REQUEST_01=ACCEPTED_ARCHITECTURAL_DEBT_DEFERRED. Stage-B exclusion kept; redesign NOT implemented; the future platform contract must distinguish intentionally multi-language/multi-script content from data-i18n-skip and is NOT invented here. Comment-only reformat proven zero-behaviour: comment-stripped files byte-identical at 228,004 bytes, 0 non-comment changed lines</p>
+<p>PROGRAMME_LEDGER_ON_MAIN=NO — the foundation is on origin/claude/charming-rubin-xzxbk1 (5 files) and is NOT merged into main. Not recreated, not merged, not consumed by this stream. Re-verify this candidate against it once it lands</p>
+<p>TEST_RESULT=PASS — 23 pure suites, 471 checks, 0 failures, all exit 0 (Hadith 61, D14 31, Quran/MAP 379). brief-integrity 7/1 (the known branch-scoped milestone item, recorded not patched). i18n coverage 1873/1812/61 = 97%, exit 0. Rendered Hadith 96/0. behaviour.mjs 981 passed / 1 failed across 56 sections (982 checks), matching main&#x27;s own clean run of record. Structural gates all hold: firestore.rules and firebase.json identical to main, catalogue*.js identical (no Approach ID), topic-study.js identical, D14 unreachable</p>
+<p>ENVIRONMENTAL_FAILURES=1, all environmental and none application: archive.org screensaver caption / alt text / poster URL (recorded as INTERMITTENT) and the sandbox TLS ERR_CERT_AUTHORITY_INVALID. Separately, one rendered assertion of mine failed six times and was a WRONG ASSERTION, not a defect: it matched the firebase-firestore.js SDK script URL; the identical request appears on deen-study.html which has no corpus. Corrected. The corpus alone on the standalone route makes 0 SDK loads, 0 Firestore data requests and 0 document operations</p>
+<p>MERGE_PREDICTION=ZERO textual conflicts. git merge-tree --write-tree exits 0, result tree cd801d9a92c53b7ce6ff58375f5967138b7b0dc0, no conflicts; read-only, HEAD and worktree unchanged. origin/main is an ancestor, so a merge would FAST-FORWARD. Candidate diff 33 files, +6256/-6; only 6 deleted lines in total (1 in version.js, 5 in behaviour.mjs). Resulting version.js: APP_VERSION = &quot;08.29&quot;</p>
+<p>RULES_REPOSITORY_STATUS=UNCHANGED — firestore.rules and firebase.json byte-identical to the authorised main; 0 hadith collections; no firestore.indexes.json</p>
+<p>RULES_DEPLOYMENT_STATUS=UNVERIFIED — no firebase CLI, no gcloud, no credentials; Rules API returns HTTP 403 PERMISSION_DENIED (unregistered caller). Deployed ruleset not inspected and not inspectable from this environment</p>
+<p>READY_FOR_MASTER_ARCHITECT_MERGE_REVIEW=YES — candidate exists at 2a308c5826feac1d051160ce7ae2862e9309d974, clean against the authorised baseline, fast-forward predicted, all gates closed. NOT merged, NOT deployed, no next tranche started. One item flagged for the Quran/shared-file owner: the stale Quran-owned VERSION NUMBERING NOTE, whose &quot;next free number 08.28&quot; this stream consumed; not edited from here</p>
+</main></body></html>

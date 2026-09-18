@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="stylesheet" href="./css/shell.css" />
+<link rel="stylesheet" href="./css/hadith.css" />
+<title>QuranRevival — Hadith Collections (synthetic pilot)</title>
+<style>
+  /* This page's OWN chrome only. The corpus component's styles live in
+     ./css/hadith.css, linked above, so the component looks the same
+     wherever it is mounted. */
+  body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 0 auto; padding: 1rem 1rem 4rem; color: var(--hadith-ink); }
+  h1 { font-size: 1.35rem; margin: 0.6rem 0; }
+  h2 { font-size: 1.1rem; margin: 1.4rem 0 0.6rem; }
+  h3 { font-size: 0.98rem; margin: 1.1rem 0 0.4rem; color: var(--hadith-muted); }
+</style>
+</head>
+<body>
+  <div id="qrShell">
+    <div class="qr-shell-title">
+      <span class="qr-shell-name">QuranRevival</span>
+      <span class="qr-badge" id="qrVersionBadge"></span>
+      <span class="qr-shell-name">› <span data-i18n>Hadith</span></span>
+    </div>
+    <p class="qr-mount-note" id="qrMountNote"></p>
+  </div>
+
+  <h1 id="hadithPageTitle"></h1>
+  <p class="hadith-note" id="hadithPilotNote"></p>
+
+  <main id="hadithRoot"></main>
+
+  <script type="module">
+    import { mountHadithBrowser } from "./js/hadith-browser.js";
+    import { translateStatic, t } from "./js/i18n.js";
+    import { APP_VERSION } from "./js/version.js";
+
+    const params = new URLSearchParams(location.search);
+    const mount = params.get("mount") === "quranrevival" ? "quranrevival" : "standalone";
+    document.body.dataset.mount = mount;
+
+    document.getElementById("qrVersionBadge").textContent = `v${APP_VERSION}`;
+    document.getElementById("hadithPageTitle").textContent = t("Hadith Collections");
+    document.getElementById("hadithPilotNote").textContent =
+      t("A pilot of the Hadith corpus browser. Every narration below is invented for development.");
+    document.getElementById("qrMountNote").textContent =
+      t("Mounted inside QuranRevival — the same component as the standalone page.");
+
+    translateStatic();
+    mountHadithBrowser(document.getElementById("hadithRoot"), { mount });
+  </script>
+</body>
+</html>

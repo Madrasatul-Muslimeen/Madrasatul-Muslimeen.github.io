@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith Study — H2-A reconciliation, before H2-B</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith Study — H2-A reconciliation, before H2-B</h1>
+<p><strong>Date:</strong> 2026-09-18 <strong>Branch:</strong> <code>feature/hadith-study</code> <strong>Branch HEAD at reconciliation:</strong> <code>8051c85c8db5d00a0fd8d54ae2ff4215b9d66e4e</code> <strong>Status:</strong> H2-A remains <strong>awaiting Master Architect audit</strong>. No H2-B work started. No merge, no deploy, no Rules change, no Firestore write of any kind.</p>
+<p>This report answers the five reconciliation items in the Owner&#x27;s handover of 2026-09-18, with the exact commands and their real output. It corrects <strong>three</strong> statements in the H2-A report, records <strong>one new finding</strong> in H2-A&#x27;s own code, and flags <strong>one stale figure</strong> in the standing brief that belongs to the Quran/<code>main</code> side.</p>
+<hr>
+<h2>1. Verified state — commits, branches, worktrees, version</h2>
+<p>Commands: <code>git fetch origin --prune</code> · <code>git rev-parse origin/main feature/hadith-study c7ee03e 8051c85</code> · <code>git worktree list</code> · <code>git status --short</code>.</p>
+<div class='tw'><table><thead><tr><th>Fact</th><th>Value</th></tr></thead><tbody>
+<tr><td><code>origin/main</code></td><td><code>1cac2b8ea8ca2e5bac8ab5a10fa01a332b226cd8</code></td></tr>
+<tr><td><code>origin/feature/hadith-study</code> = local HEAD</td><td><code>8051c85c8db5d00a0fd8d54ae2ff4215b9d66e4e</code></td></tr>
+<tr><td><strong>Last app-code commit</strong></td><td><code>c7ee03ef957a191ae195977623972e32f6a366a5</code></td></tr>
+<tr><td><strong>Report commit</strong></td><td><code>8051c85c8db5d00a0fd8d54ae2ff4215b9d66e4e</code></td></tr>
+<tr><td>Merge base with <code>main</code></td><td><code>1cac2b8…</code> — <strong>the branch contains all of <code>main</code></strong>; 0 behind, 6 ahead</td></tr>
+<tr><td>Working tree</td><td><strong>clean</strong>, no uncommitted change</td></tr>
+<tr><td><code>APP_VERSION</code> on branch</td><td><strong><code>08.27</code></strong></td></tr>
+<tr><td><code>APP_VERSION</code> on <code>main</code></td><td><strong><code>08.25</code></strong></td></tr>
+<tr><td><code>claude/phase4-wiring</code></td><td><code>7e2931f795af1cd97efc1167660cea93aa22b9ab</code> (still holds <code>08.26</code>)</td></tr>
+</tbody></table></div>
+<p><strong>Worktrees.</strong> The handover&#x27;s <code>/home/user/hadith-study</code> worktree did <strong>not exist</strong> in this session&#x27;s container — a fresh container carries only the clone. It was re-created from the existing branch (<code>git worktree add /home/user/hadith-study feature/hadith-study</code>); <strong>no new branch and no new repository was made</strong>.</p>
+<div class='tw'><table><thead><tr><th>Path</th><th>Branch</th><th>HEAD</th></tr></thead><tbody>
+<tr><td><code>/home/user/Madrasatul-Muslimeen.github.io</code></td><td><code>claude/vibrant-dijkstra-s1s8kl</code></td><td><code>1cac2b8</code> (identical to <code>main</code>)</td></tr>
+<tr><td><code>/home/user/hadith-study</code></td><td><code>feature/hadith-study</code></td><td><code>8051c85</code></td></tr>
+</tbody></table></div>
+<p><strong>Diff against <code>main</code></strong> — 20 paths: <strong>17 added, 3 modified, 0 deleted</strong>. <code>firestore.rules</code>, <code>firebase.json</code> and every Rules/index candidate are <strong>untouched</strong>. <code>app/quranrevival.html</code>, <code>app/hadith-study.html</code> and <code>app/index.html</code> are <strong>byte-identical to <code>origin/main</code></strong> (verified by <code>git diff --quiet</code>, not by reading). The three modified files are <code>CLAUDE.md</code> (additive block at top, milestone line untouched), <code>app/js/i18n/bn.js</code> (<strong>47 insertions, 0 deletions</strong>) and <code>app/js/version.js</code>.</p>
+<hr>
+<h2>2. <code>8051c85</code> versus <code>c7ee03e</code> — resolved, not chosen</h2>
+<p>The handover required that this be explained rather than silently resolved. It is a parent/child pair two minutes apart, and <strong>the distinction has no consequence for the tested application</strong>:</p>
+<ul><li><code>git diff --stat c7ee03e 8051c85 -- app/ tools/ firestore.rules</code> → <strong>empty output</strong></li><li><code>git diff --name-status c7ee03e 8051c85</code> → exactly two lines, both <code>A</code> (added): the H2-A report&#x27;s <code>.html</code> and <code>.md</code></li></ul>
+<div class='tw'><table><thead><tr><th>Commit</th><th>Time (UTC)</th><th>Contents</th></tr></thead><tbody>
+<tr><td><code>c7ee03e</code></td><td>05:08:08</td><td><strong>The application.</strong> 10 files, 1,742 insertions — the five new <code>app/</code> files, two new suites, <code>version.js</code>, <code>bn.js</code>, <code>CLAUDE.md</code></td></tr>
+<tr><td><code>8051c85</code></td><td>05:10:06</td><td><strong>The report only.</strong> 2 files, 438 insertions — the H2-A <code>.md</code> and <code>.html</code>. <strong>No application code</strong></td></tr>
+</tbody></table></div>
+<p><strong>Conclusion.</strong> <code>c7ee03e</code> is the last app-code commit and the tested tree; <code>8051c85</code> is that same tree plus its report. <strong>Both trees contain identical application code</strong>, so the delivery message (<code>8051c85</code>) and the report (<code>c7ee03e</code>) do not conflict — the report was written at the code commit and committed as the next one. <strong>No amendment to the tested-commit record is required</strong>; the accurate statement, now recorded here, is:</p>
+<p>&gt; <strong>Tested application code: <code>c7ee03e</code>. Audit the branch at <code>8051c85</code>, which is that code plus its report.</strong></p>
+<hr>
+<h2>3. Deployed Rules — terminology corrected, status <strong>UNVERIFIED</strong></h2>
+<p>The H2-A report §1.4 is headed <em>&quot;checked in the repository rather than inferred&quot;</em>, which is right, but its table then labels two rows <strong>&quot;deployed rules&quot;</strong> while reading the repository file <code>firestore.rules</code>. <strong>Those are separate facts and the wording conflated them.</strong> Corrected here:</p>
+<div class='tw'><table><thead><tr><th>Reading</th><th>What it is</th><th>Status</th></tr></thead><tbody>
+<tr><td><code>firestore.rules</code> <strong>in this repository</strong> at <code>8051c85</code></td><td>Repository Rules <strong>content</strong></td><td><strong>Verified.</strong> 0 occurrences of <code>notes</code>/<code>noteRevisions</code>/<code>noteSources</code>/<code>noteFolders</code>/<code>notePlacements</code>; 0 occurrences of any <code>hadith</code> collection; no <code>indexes</code> key in <code>firebase.json</code>; no <code>firestore.indexes.json</code></td></tr>
+<tr><td>Rules <strong>actually deployed</strong> to <code>study-monitoring</code></td><td>Production <strong>deployment</strong></td><td><strong>UNVERIFIED — not inspected</strong></td></tr>
+</tbody></table></div>
+<p><strong>Independent inspection was attempted and failed, with evidence rather than assertion:</strong></p>
+<div class='tw'><table><thead><tr><th>Probe</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>command -v firebase</code></td><td><strong>not installed</strong></td></tr>
+<tr><td><code>command -v gcloud</code></td><td><strong>not installed</strong></td></tr>
+<tr><td><code>env</code> scanned for Google/Firebase/gcloud credential variables</td><td><strong>none set</strong>; no <code>~/.config/firebase</code>, no <code>~/.config/gcloud</code></td></tr>
+<tr><td><code>curl https://firebaserules.googleapis.com/v1/projects/study-monitoring/releases</code></td><td><strong>HTTP 403 — PERMISSION_DENIED</strong>, <em>&quot;Method doesn&#x27;t allow unregistered callers (callers without established identity).&quot;</em></td></tr>
+</tbody></table></div>
+<p>So this session <strong>cannot</strong> read the deployed ruleset. Every statement about production Rules in the H2-A report should be read as a statement about the repository file.</p>
+<p><strong>This does not weaken the persistence gate — it strengthens the reason for it.</strong> Because deployment status is unverified, no Hadith, Note or MMJ write may be attempted, which is exactly what this tranche does: <strong>zero writes, in-memory Track only</strong>. The standing brief&#x27;s own parity note (production and repository Rules content-identical, verified 2026-09-10, repository copy has one extra terminal newline) is a governance record dated eight days earlier, <strong>not</strong> an inspection performed now, and is not treated here as evidence of current deployment.</p>
+<p><strong>No Hadith/Note/MMJ write was made in this session.</strong></p>
+<hr>
+<h2>4. Checks re-run at the exact branch HEAD (<code>8051c85</code>)</h2>
+<p>All suites run from the <strong>repository root</strong> of the <code>feature/hadith-study</code> worktree.</p>
+<h3>4.1 Hadith suites — H1 and H2-A</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th><th>Exit</th></tr></thead><tbody>
+<tr><td><code>hadith-source-rights.mjs</code></td><td><strong>14 passed, 0 failed</strong></td><td>0</td></tr>
+<tr><td><code>hadith-corpus.mjs</code></td><td><strong>26 passed, 0 failed</strong></td><td>0</td></tr>
+<tr><td><code>hadith-commentary-binding.mjs</code></td><td><strong>14 passed, 0 failed</strong></td><td>0</td></tr>
+</tbody></table></div>
+<p><strong>54 passed, 0 failed</strong> — reproducing the H2-A report&#x27;s §7.2 figures exactly.</p>
+<h3>4.2 Pure regression — 24 suites, all green</h3>
+<p><code>quran-boundary</code> 30/0 · <code>study-approach-contract</code> 13/0 · <code>study-approach-contract-boundary</code> 16/0 · <code>study-activity-evidence</code> 11/0 · <code>study-activity-evidence-id</code> 29/0 · <code>study-activity-evidence-store</code> 26/0 · <code>study-activity-evidence-boundary</code> 17/0 · <code>note-foundation-boundary</code> 30/0 · <code>note-journal-evidence</code> 18/0 · <code>study-note-boundary</code> 17/0 · <code>journey-map-boundary</code> 13/0 · <code>firestore-index-requirements</code> 8/0 · <code>rules-authorisation-executable</code> 38/0 · <code>rules-deployment-candidate</code> 10/0 · <code>quran-word-identity-contract</code> 6/0 · <code>quran-word-progress-model</code> 57/0 · <code>quran-word-progress-data</code> 37/0 · <code>stub-parity</code> 3/0 — plus <code>note-foundation-data-layer</code>, <code>note-foundation-transaction</code>, <code>study-note-binding</code>, <code>study-note-service</code>, <code>journey-map-contract</code>, <code>journey-map-service</code> (own summary format), <strong>every one exit 0</strong>.</p>
+<h3>4.3 <code>behaviour.mjs</code> — the full browser regression</h3>
+<p><strong>Both sides were run in this same container, rather than comparing against a number quoted from the brief</strong> — which is the only way this comparison means anything.</p>
+<div class='tw'><table><thead><tr><th>Tree</th><th>Result</th><th>Sections</th></tr></thead><tbody>
+<tr><td><code>feature/hadith-study</code> @ <code>8051c85</code></td><td><strong>975 passed, 4 failed</strong></td><td>56</td></tr>
+<tr><td><code>origin/main</code> @ <code>1cac2b8</code></td><td><strong>975 passed, 4 failed</strong></td><td>56</td></tr>
+</tbody></table></div>
+<p><strong>Identical on both sides — the branch causes zero behaviour regression</strong>, and the four failures are the same four, in the same places, on <code>main</code> too:</p>
+<div class='tw'><table><thead><tr><th>Failure</th><th>Class</th></tr></thead><tbody>
+<tr><td><code>22g</code> the screensaver caption is Bangla</td><td><strong>Environmental</strong> — this sandbox cannot reach <code>archive.org</code></td></tr>
+<tr><td><code>22g</code> its alt text is translated too</td><td><strong>Environmental</strong> — same</td></tr>
+<tr><td><code>22g</code> the poster URL is untouched</td><td><strong>Environmental</strong> — same</td></tr>
+<tr><td><code>31e</code> no page errors — <code>net::ERR_CERT_AUTHORITY_INVALID</code></td><td><strong>Environmental</strong> — the sandbox&#x27;s TLS interception</td></tr>
+</tbody></table></div>
+<p>All four are the documented baseline classes, and none is a defect that will occur for the Owner.</p>
+<p><strong>One figure in the standing brief is now stale, and it is a <code>main</code>-side number, not a branch one.</strong> The brief records the post-excavation baseline as <strong>973 pass / 4 fail / 56 sections</strong>; measured here, <code>main</code> itself is <strong>975 / 4 / 56</strong>. <code>main</code> has moved since that measurement was taken on 17 Sep. <strong>Not patched</strong> — <code>CLAUDE.md</code> is a shared file owned by the Quran/<code>main</code> side, and this is exactly the kind of number that should be re-measured by its owner rather than edited from a feature branch. Recorded for that owner.</p>
+<h3>4.4 The <code>brief-integrity</code> failure — recorded honestly, <strong>and one half of it does not reproduce</strong></h3>
+<p>The H2-A report §7.4 states <strong>6 passed, 2 failed</strong>. At this HEAD it is <strong>7 passed, 1 failed</strong>.</p>
+<div class='tw'><table><thead><tr><th>Reported failure</th><th>Reproduces?</th></tr></thead><tbody>
+<tr><td>The <strong>version drift</strong> — brief says <code>v08.25 on main</code>, local <code>version.js</code> says <code>08.27</code></td><td><strong>YES. Real, and correctly characterised.</strong> The brief&#x27;s line is true <em>of <code>main</code></em> and must not be &quot;fixed&quot; to 08.27</td></tr>
+<tr><td><strong><code>origin/claude/pensive-knuth-2pu3jj</code> unresolvable</strong>, attributed to <em>&quot;a narrow fetch refspec&quot;</em></td><td><strong>NO — and the diagnosis was wrong</strong></td></tr>
+</tbody></table></div>
+<p><strong>Correction.</strong> The clone&#x27;s refspec is the standard wildcard, and the branch resolves:</p>
+<ul><li><code>git config --get-all remote.origin.fetch</code> → <code>+refs/heads/<em>:refs/remotes/origin/</em></code> — <strong>the standard wildcard, not a narrow refspec</strong></li><li><code>git rev-parse origin/claude/pensive-knuth-2pu3jj</code> → <code>b0221ce4a4d1291e5392f50ffb11949be07a1b39</code> — <strong>resolves</strong></li></ul>
+<p>The refs simply <strong>had not been fetched yet</strong> in that session&#x27;s container; a plain <code>git fetch origin</code> brings all 59 remote branches down. <strong>There is nothing for a shared-file owner to fix here</strong> — the item should be struck from the ledger rather than handed on. It was an unfetched clone, not a misconfigured one.</p>
+<p><strong>Confirming the remaining failure is branch-scoped, not rot on <code>main</code>:</strong> the same guard run in the <code>main</code> worktree is <strong>8 passed, 0 failed, exit 0</strong>. So <code>brief-integrity</code> is healthy on <code>main</code> and fails on this branch <strong>only</strong> because the branch carries a version bump that <code>main</code>&#x27;s milestone line correctly does not claim.</p>
+<p><strong>Handed to the shared-file owner, not patched here.</strong> <code>brief-integrity.mjs</code> and <code>CLAUDE.md</code>&#x27;s milestone line belong to the Quran/<code>main</code> side. H2-A&#x27;s proposed one-line fix — compare against <code>git show origin/main:app/js/version.js</code> when <code>HEAD</code> is not <code>main</code> — is <strong>sound and still not applied</strong>, which was the right call. <strong>No shared code was patched in this session.</strong></p>
+<h3>4.5 Environment note — the browser suites needed repair before they could run at all</h3>
+<p>Worth recording because it will recur in every fresh container: <code>playwright</code> is <strong>not installed</strong>, and there is no <code>package.json</code> at the repository root, so <strong>every browser-driven suite</strong> (<code>behaviour</code>, <code>layout</code>, <code>reading</code>, <code>panel</code>, <code>navcheck</code>, <code>tagline-cost</code>, all <code>*-rendered</code>) dies at import with <code>ERR_MODULE_NOT_FOUND</code> — on <code>main</code> identically, so it is <strong>environmental, not branch-caused</strong> (<code>tagline-cost.mjs</code> was confirmed failing the same way on <code>main</code>).</p>
+<p>Two things had to be true to run them: the package installed <strong>outside the repository</strong> (<code>/home/user/node_modules</code>, a symlink into the session scratchpad — the worktree stayed <code>git status</code> clean throughout), and the version matched to the pre-installed browser. <code>PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers</code> carries <strong>chromium 1194</strong>; the current release (1.63.0) expects revision 1243 and fails to launch. Probing the releases gives the match:</p>
+<div class='tw'><table><thead><tr><th>playwright</th><th>chromium revision</th></tr></thead><tbody>
+<tr><td>1.55.0</td><td>1187</td></tr>
+<tr><td><strong>1.56.0</strong></td><td><strong>1194 ← matches the pre-installed browser</strong></td></tr>
+<tr><td>1.57.0</td><td>1200</td></tr>
+</tbody></table></div>
+<p><code>playwright@1.56.0</code> launches. The suites also require the local server (<code>node serve.js</code>, port 8080) to be running, or they fail with <code>ERR_CONNECTION_REFUSED</code> and no checks at all.</p>
+<hr>
+<h2>5. One new finding in H2-A&#x27;s own code — the id-prefix invariant is not true, and cannot fail a check</h2>
+<p><code>app/js/hadith-fixture-data.js</code> states its own safety invariant:</p>
+<p>&gt; <em>&quot;2. <strong>EVERY ID IS PREFIXED <code>synthetic-</code>.</strong> A fixture id cannot collide with a real collection or edition id, so a fixture can never be mistaken for an approved edition by any lookup, and a real import can never silently overwrite one.&quot;</em></p>
+<p><strong>The data does not satisfy it.</strong> Three id families depart from the stated rule:</p>
+<div class='tw'><table><thead><tr><th>Id family</th><th>Actual prefix</th><th>Matches stated invariant?</th></tr></thead><tbody>
+<tr><td>Collections, editions, books, chapters</td><td><code>synthetic-</code></td><td>Yes</td></tr>
+<tr><td>Occurrences</td><td><code>syn-occ-</code></td><td><strong>No</strong></td></tr>
+<tr><td>Topic mappings</td><td><code>syn-map-</code></td><td><strong>No</strong></td></tr>
+<tr><td><strong>Topic</strong> — <code>topic-salah</code></td><td><em>(none)</em></td><td><strong>No — no synthetic marker at all</strong></td></tr>
+</tbody></table></div>
+<p><strong>And the guard codifies the data rather than the invariant</strong>, so the gap cannot fail a check. <code>hadith-corpus.mjs:70-73</code> asserts <code>occurrenceId.startsWith(&quot;syn-&quot;)</code> and <code>editionId.startsWith(&quot;synthetic-&quot;)</code> — the shapes as built — while <strong><code>topicId</code> is never prefix-asserted anywhere</strong> (<code>grep -n &quot;topicId&quot; tools/i18n-verify/hadith-corpus.mjs</code> returns nothing). This is the standing-lesson shape: <em>a locked distinction that cannot fail a check is not locked</em>.</p>
+<p><strong>Severity is not uniform, and only one part matters.</strong> <code>syn-occ-</code> and <code>syn-map-</code> are visibly non-real and will not collide with anything; the discrepancy there is <strong>wording</strong>, and the honest fix is to correct the comment to state the two prefixes actually used. <strong><code>topic-salah</code> is the real one:</strong> it carries no synthetic marker, and a future reviewed Ṣalāh topic would very plausibly be minted under exactly that id — at which point three <code>reviewStatus: &quot;unreviewed&quot;</code> synthetic mappings would share a topic id with reviewed real ones. That is precisely the collision the invariant exists to prevent, and the one place the file&#x27;s own defence-in-depth argument (<em>&quot;a <code>synthetic: true</code> flag a renderer might forget to show would not survive that journey&quot;</em>) does not hold, because the flag is all there is.</p>
+<p><strong>Not fixed, deliberately.</strong> H2-A is under audit; changing its code now would move the tree the Master Architect is auditing. Recorded for the audit to direct. The suggested resolution, for whenever it is authorised, is small and fixture-only: rename <code>topic-salah</code> → <code>synthetic-topic-salah</code>, correct the comment to name the real prefixes, and add the missing <code>topicId</code>/<code>topicMappingId</code> prefix assertions so the rule is enforced rather than described.</p>
+<hr>
+<h2>6. Corrections this report makes to the H2-A report</h2>
+<div class='tw'><table><thead><tr><th>#</th><th>H2-A said</th><th>Corrected to</th></tr></thead><tbody>
+<tr><td>1</td><td>§1.4 table rows headed <strong>&quot;deployed rules&quot;</strong></td><td><strong>Repository Rules content.</strong> Deployed Rules are <strong>UNVERIFIED</strong> — 403, no identity available (§3)</td></tr>
+<tr><td>2</td><td>§7.4 — <code>pensive-knuth-2pu3jj</code> unresolvable because of a <strong>&quot;narrow fetch refspec&quot;</strong></td><td><strong>Does not reproduce.</strong> Standard wildcard refspec; the refs were merely unfetched. <code>brief-integrity</code> is <strong>7/1</strong>, not 6/2. Strike the item (§4.4)</td></tr>
+<tr><td>3</td><td>§11 — <code>APPROACH_TEMPLATES</code> hardcoded to Quran, cited <code>catalogue.js:211</code></td><td>Substantively <strong>correct</strong>; the citation points at the <em>comment</em> stating it. The <strong>definition</strong> is <code>catalogue-data.js:222</code>. Precision only</td></tr>
+</tbody></table></div>
+<p><strong>Verified as accurate, not merely accepted:</strong> the unit-key proposal&#x27;s two mechanical claims were tested rather than read. Against the accepted regex <code>/^hadith:[A-Za-z0-9_-]+:\d{1,6}$/</code> in <code>study-note-binding.js:58</code>, <code>hadith:bk1422h:999999</code> matches and <code>hadith:bk1422h:1000000</code> is rejected — <strong>the 6-digit bound is exactly as stated</strong> — and <code>parseUnitKey(&quot;hadith:bk1422h:00001&quot;)</code> returns <code>{unitType:&quot;hadith&quot;, parts:[&quot;bk1422h&quot;,&quot;00001&quot;]}</code> while the legacy <code>hadith:bukhari:1</code> still matches and still parses. <strong>Parser compatibility and numeric bound confirmed.</strong></p>
+<hr>
+<h2>7. Gates — reported against each</h2>
+<div class='tw'><table><thead><tr><th>Gate</th><th>Status this session</th></tr></thead><tbody>
+<tr><td>Synthetic text marked <strong>not Hadith</strong> in ar/en/bn</td><td><strong>HELD.</strong> <code>SYNTHETIC_NOTICE</code> carries all three; the Arabic source text denies being a hadith in its own first clause</td></tr>
+<tr><td>Fixture ids never mixed with real edition ids</td><td><strong>HELD in substance, with one defect recorded</strong> — §5. No real edition id exists anywhere in the tree</td></tr>
+<tr><td>Source rights default <code>blocked</code>; link-only; no copied text</td><td><strong>HELD.</strong> <code>hadith-source-rights.mjs</code> 14/0. No corpus or commentary text fetched, cached or embedded; no request made to any source site this session</td></tr>
+<tr><td>Durable Hadith unit-key semantics unchanged</td><td><strong>HELD.</strong> Proposal only. No key applied, no record written. Live read-only inventory still not obtainable</td></tr>
+<tr><td>Note/MMJ and live Track persistence closed</td><td><strong>HELD.</strong> No write attempted. Deployed-Rules status now explicitly <strong>unverified</strong>, which tightens rather than relaxes this gate</td></tr>
+<tr><td>Version bump on app-code change</td><td><strong>N/A — this tranche is documentation-only.</strong> <code>08.27</code> retained, nothing under <code>app/</code> touched</td></tr>
+<tr><td>No merge, deploy, migration or Rules deployment</td><td><strong>HELD.</strong> None performed or prepared</td></tr>
+</tbody></table></div>
+<hr>
+<h2>8. H2-B — inspected, scoped, <strong>not started</strong></h2>
+<p>Non-mutating inspection only, as the handover permits. <strong>No file was created or modified for H2-B.</strong> The three items H2-A deferred, with what inspection now adds:</p>
+<ol><li><strong>The QuranRevival mount into <code>app/hadith-study.html</code>.</strong> Confirmed by reading: the page is 149 lines and its whole body is <code>initTopicStudyPage({ moduleId: &quot;hadith&quot;, trackableId: &quot;studied_hadith&quot;, rootSubjectId: &quot;hadith&quot; })</code> — the <strong>shared</strong> topic renderer, used by <strong>8 pages</strong> (<code>arabic-study</code>, <code>bookmarks</code>, <code>deen-study</code>, <code>general-study</code>, <code>hadith-study</code>, <code>life-skill</code>, <code>naturelife-study</code>, <code>quranrevival</code>). So the H0 cost stands and is now measured: a corpus view needs its own renderer behind the same module id, and the edit is a real layout change on a shared surface requiring before-and-after measurement at every viewport in both languages.</li><li><strong>Hadith Approach ids.</strong> Confirmed: Track today carries <code>trackableId: &quot;studied_hadith&quot;</code> — the generic module &quot;Studied&quot; row, <strong>not</strong> an Approach. No Quran Approach number is assigned to Hadith. The registry audit and the recorded decision remain required first, and assigning one is a catalogue decision, not an implementation detail.</li><li><strong>Explore aggregation.</strong> The topic index already provides the counting model; the surface is unbuilt.</li></ol>
+<p><strong>Blocked on the audit.</strong> No H2-B code will be written until the Master Architect audits H2-A and issues the next instruction.</p>
+<hr>
+<h2>9. What the Master Architect is asked to decide</h2>
+<ol><li><strong>Accept the tested-commit record</strong> in §2 — tested code <code>c7ee03e</code>, audit the branch at <code>8051c85</code> — or direct an amendment.</li><li><strong>Accept the deployed-Rules correction</strong> in §3, and note that production deployment status is <strong>unverified and not obtainable in this environment</strong>.</li><li><strong>Direct the <code>topic-salah</code> finding</strong> in §5 — fix inside H2-A, fold into H2-B, or record and defer.</li><li><strong>Settle the shared-owner ledger</strong> (§4.4, §4.3). <strong>Strike</strong> the &quot;narrow fetch refspec&quot; item — it was a wrong diagnosis. <strong>Keep</strong> the version-drift item with the Quran/<code>main</code> side, unpatched. <strong>Add</strong> one new item for that side: the brief&#x27;s <code>behaviour.mjs</code> baseline reads 973/4 and <code>main</code> now measures <strong>975/4</strong>.</li><li><strong>Issue the H2-B instruction</strong>, or hold it.</li></ol>
+<hr>
+<h2>10. Reproduction</h2>
+<p><strong>Set up:</strong> <code>git fetch origin --prune</code>, then <code>git worktree add /home/user/hadith-study feature/hadith-study</code>, then <code>cd /home/user/hadith-study &amp;&amp; git rev-parse HEAD</code> (expect <code>8051c85…</code>).</p>
+<p><strong>Pure suites</strong> — run from the repository root, because they resolve paths from <code>process.cwd()</code>: <code>node tools/i18n-verify/hadith-source-rights.mjs</code> · <code>node tools/i18n-verify/hadith-corpus.mjs</code> · <code>node tools/i18n-verify/hadith-commentary-binding.mjs</code> · <code>node tools/i18n-verify/brief-integrity.mjs</code> (<strong>7/1, exit 1 — expected on this branch</strong>).</p>
+<p><strong>Browser suites</strong> need two things first, or they produce no checks at all: <code>npm install playwright@1.56.0</code> <strong>outside the repository</strong> (1.56 is the release matching the pre-installed chromium 1194), and <code>node serve.js</code> running on port 8080. Then <code>node tools/i18n-verify/behaviour.mjs</code>.</p>
+</main></body></html>

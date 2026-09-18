@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith Stream — Integration Reconciliation</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith Stream — Integration Reconciliation</h1>
+<p><strong>Date:</strong> 2026-09-18 · <strong>Type:</strong> Coordination / reconciliation only. <strong>No implementation tranche was begun. No application version was consumed. Nothing was merged, deployed or refactored.</strong></p>
+<p>This answers the six reconciliation tasks. Where the Master Architect&#x27;s stated baseline no longer matches the repository, the repository is reported and the difference named.</p>
+<hr>
+<h2>1. Actual repository state</h2>
+<p>Commands: <code>git fetch origin --prune</code> · <code>git rev-parse</code> · <code>git status --porcelain</code> · <code>git rev-list --left-right --count</code> · <code>git merge-tree</code> (non-mutating).</p>
+<div class='tw'><table><thead><tr><th>Fact</th><th>Value</th></tr></thead><tbody>
+<tr><td><strong><code>origin/main</code> SHA</strong></td><td><strong><code>7111e3c975d3cf3fd0bf0c0d7814691edcd5299e</code></strong></td></tr>
+<tr><td><code>origin/main</code> app version</td><td><strong><code>08.27</code></strong></td></tr>
+<tr><td>Branch</td><td><code>feature/hadith-study</code></td></tr>
+<tr><td><strong>HEAD</strong></td><td><strong><code>cd344f44b729d11ca2634ac0b3d40b39d7ccb1a5</code></strong></td></tr>
+<tr><td><code>origin/feature/hadith-study</code></td><td><strong>same SHA — local and remote in sync</strong></td></tr>
+<tr><td>Branch app version</td><td><strong><code>08.29</code></strong></td></tr>
+<tr><td>Working tree</td><td><strong>CLEAN</strong> (<code>git status --porcelain</code> empty)</td></tr>
+<tr><td>Relationship to <code>origin/main</code></td><td><strong>2 behind, 11 ahead</strong></td></tr>
+<tr><td>Merge base</td><td><code>6758490cf957c646df4945ad52b0cf403cc3cf61</code></td></tr>
+</tbody></table></div>
+<h3>1.1 <code>main</code> HAS MOVED since the stated baseline</h3>
+<p>The instruction&#x27;s baseline records <code>main</code> at <code>6758490</code> / <code>08.27</code>. <strong><code>main</code> is now <code>7111e3c</code>, still <code>08.27</code>.</strong> Two commits landed, and they are the D14 timezone line:</p>
+<div class='tw'><table><thead><tr><th>SHA</th><th>Subject</th></tr></thead><tbody>
+<tr><td><code>ff1ae1b546437df3a365cc37b62aaa4bda6eac8b</code></td><td>D14: the timezone foundation as an unreachable candidate, and measured layout options</td></tr>
+<tr><td><code>7111e3c975d3cf3fd0bf0c0d7814691edcd5299e</code></td><td>D14: write the contract&#x27;s own payloads through the candidate Rules</td></tr>
+</tbody></table></div>
+<p><strong>Verified against the stated Quran baseline, and it holds:</strong> D14 <strong>did not bump the version</strong> (<code>git diff 6758490 origin/main -- app/js/version.js</code> is empty, so <code>main</code> remains 08.27); it <strong>did not touch</strong> <code>firestore.rules</code> or <code>firebase.json</code>; and it is <strong>unreachable</strong> — no page or module imports <code>timezone-contract.js</code> or <code>timezone-service.js</code>. Phase 4 wiring <code>7e2931f</code> remains unmerged and untouched.</p>
+<h3>1.2 Commit graph — all 11 branch commits, each identified</h3>
+<p>Listed oldest first. <code>%p</code> shows parents, so the two merges are visible as such.</p>
+<div class='tw'><table><thead><tr><th>#</th><th>SHA</th><th>Parent(s)</th><th>Role</th></tr></thead><tbody>
+<tr><td>1</td><td><code>c6368ce</code></td><td><code>d8f0492</code> (main)</td><td>H0 — read-only contract and file-ownership audit</td></tr>
+<tr><td>2</td><td><code>ec0da4c</code></td><td><code>c6368ce</code></td><td>H0 — stale-ref correction, Owner decisions recorded</td></tr>
+<tr><td>3</td><td><code>ad31759</code></td><td><code>ec0da4c</code></td><td>H1 — source manifests, fail-closed rights gate, reference schema</td></tr>
+<tr><td>4</td><td><code>aef6cf3</code></td><td><code>ad31759</code>, <code>1cac2b8</code></td><td><strong>Merge</strong> of <code>origin/main</code> (first base refresh)</td></tr>
+<tr><td>5</td><td><strong><code>c7ee03e</code></strong></td><td><code>aef6cf3</code></td><td><strong>H2-A — the application.</strong> The synthetic corpus pilot, fixtures only</td></tr>
+<tr><td>6</td><td><strong><code>8051c85</code></strong></td><td><code>c7ee03e</code></td><td><strong>H2-A — the report only.</strong> Two <code>docs/reports/</code> files, no app code</td></tr>
+<tr><td>7</td><td><code>70edba3</code></td><td><code>8051c85</code></td><td>H2-A reconciliation report (documentation only)</td></tr>
+<tr><td>8</td><td><code>85c35cf</code></td><td><code>70edba3</code>, <code>6758490</code></td><td><strong>Merge</strong> of <code>origin/main</code> before Stage A</td></tr>
+<tr><td>9</td><td><strong><code>7f61328</code></strong></td><td><code>85c35cf</code></td><td><strong>Stage A</strong> — synthetic-namespace correction</td></tr>
+<tr><td>10</td><td><strong><code>22526b2</code></strong></td><td><code>7f61328</code></td><td><strong>Stage B</strong> — corpus integration, registry proposal, Explore</td></tr>
+<tr><td>11</td><td><strong><code>cd344f4</code></strong></td><td><code>22526b2</code></td><td>Stage B report SHA fill-in (report <code>.md</code>/<code>.html</code> only)</td></tr>
+</tbody></table></div>
+<p><strong>No unidentified commit remains.</strong> The two merges are base refreshes onto <code>main</code>, never merges <em>to</em> <code>main</code>.</p>
+<p><strong>The <code>c7ee03e</code> / <code>8051c85</code> relationship, as previously reconciled and re-verified:</strong> parent and child, two minutes apart; <code>git diff c7ee03e 8051c85 -- app/ tools/ firestore.rules</code> is <strong>empty</strong>. The tested application is <code>c7ee03e</code>; <code>8051c85</code> is that same code plus its report.</p>
+<h3>1.3 Which commits carry which version — read from each tree</h3>
+<div class='tw'><table><thead><tr><th>Version</th><th>Carried by</th><th>Note</th></tr></thead><tbody>
+<tr><td><code>08.25</code></td><td><code>c6368ce</code>, <code>ec0da4c</code>, <code>ad31759</code>, <code>aef6cf3</code></td><td>pre-H2-A</td></tr>
+<tr><td><strong><code>08.27</code></strong></td><td><code>c7ee03e</code>, <code>8051c85</code>, <code>70edba3</code>, <code>85c35cf</code></td><td><strong>the collision period</strong> — <code>main</code> later took 08.27 as well</td></tr>
+<tr><td><strong><code>08.28</code></strong></td><td><strong><code>7f61328</code> only</strong></td><td><strong>Stage A</strong></td></tr>
+<tr><td><strong><code>08.29</code></strong></td><td><strong><code>22526b2</code> and <code>cd344f4</code></strong> (current HEAD)</td><td><strong>Stage B</strong></td></tr>
+</tbody></table></div>
+<p><strong>The 08.27 collision is a matter of record, not a claim.</strong> The H2-A commits reserved 08.27 while <code>main</code> was on 08.25; <code>main</code> then merged 08.26 and shipped its own 08.27. Stage A moved the branch to 08.28 and Stage B to 08.29, each checked free across all remote branches at the time of the bump. <strong><code>08.30</code> onward is untouched by this stream.</strong></p>
+<hr>
+<h2>2. Hadith stream integration inventory</h2>
+<p>Fourteen files changed across Stage A and Stage B (<code>git diff --name-status 85c35cf cd344f4</code>). Classification is evidenced by who consumes each file, not asserted.</p>
+<h3>A — Hadith-domain-owned (9)</h3>
+<div class='tw'><table><thead><tr><th>File</th><th>Stage</th><th>Evidence of sole ownership</th></tr></thead><tbody>
+<tr><td><code>app/js/hadith-fixture-data.js</code></td><td>A</td><td>Imported only by Hadith modules</td></tr>
+<tr><td><code>app/js/hadith-corpus.js</code></td><td>B</td><td>Imported only by Hadith modules</td></tr>
+<tr><td><code>app/js/hadith-browser.js</code></td><td>A, B</td><td>Imported only by <code>hadith-collections.html</code> and <code>hadith-study.html</code></td></tr>
+<tr><td><code>app/js/hadith-commentary.js</code></td><td><em>(unchanged this round)</em></td><td>Listed for completeness; Hadith-only</td></tr>
+<tr><td><code>app/css/hadith.css</code></td><td>B (<strong>new</strong>)</td><td>Linked by exactly two pages, both Hadith</td></tr>
+<tr><td><code>app/hadith-collections.html</code></td><td>B</td><td>The standalone Hadith route</td></tr>
+<tr><td><code>app/hadith-study.html</code></td><td>B</td><td>The Hadith module page</td></tr>
+<tr><td><code>docs/governance/hadith-approach-registry-PROPOSAL-2026-09-18.md</code></td><td>B (new)</td><td>Hadith governance</td></tr>
+<tr><td><code>docs/reports/2026-09-18-hadith-stageA-…-implementation.{md,html}</code></td><td>B (new)</td><td>Hadith reports (counted as one row)</td></tr>
+</tbody></table></div>
+<p><strong><code>app/hadith-study.html</code> is Hadith-domain-owned but platform-adjacent</strong>, and this is the one worth stating plainly: it <em>consumes</em> the shared renderer (<code>import { initTopicStudyPage } from &quot;./js/topic-study.js&quot;</code>) and now also mounts the Hadith corpus. <strong><code>topic-study.js</code> itself is byte-identical to <code>origin/main</code></strong> and was not modified.</p>
+<h3>B — QuranRevival platform / shared (3)</h3>
+<div class='tw'><table><thead><tr><th>File</th><th>Stage</th><th>Change</th><th>Shared with</th></tr></thead><tbody>
+<tr><td><code>app/js/version.js</code></td><td>A, B</td><td>08.27 → 08.28 → 08.29</td><td><strong>The whole platform.</strong> Single source of truth; four surfaces import it</td></tr>
+<tr><td><code>app/js/i18n/bn.js</code></td><td>B</td><td><strong>21 insertions, 0 deletions</strong> — purely additive</td><td>The platform Bangla catalogue</td></tr>
+<tr><td><code>CLAUDE.md</code></td><td>A</td><td>The <strong>Hadith-owned block</strong> updated; the Quran-owned milestone line untouched</td><td>The standing brief</td></tr>
+</tbody></table></div>
+<h3>C — Deployment / security shared (0)</h3>
+<p><strong>Nothing in this class was touched.</strong> <code>firestore.rules</code>, <code>firebase.json</code>, every Rules and index candidate, <code>catalogue.js</code> and <code>catalogue-data.js</code> are <strong>byte-identical to <code>origin/main</code></strong>, verified by <code>git diff --quiet</code>.</p>
+<h3>D — Test / verification shared (2)</h3>
+<div class='tw'><table><thead><tr><th>File</th><th>Stage</th><th>Change</th><th>Shared with</th></tr></thead><tbody>
+<tr><td><code>tools/i18n-verify/hadith-corpus.mjs</code></td><td>A, B</td><td>+7 checks (26 → 33)</td><td><strong>Hadith-only suite</strong>; shared <em>location</em>, not shared <em>subject</em></td></tr>
+<tr><td><strong><code>tools/i18n-verify/behaviour.mjs</code></strong></td><td>B</td><td><strong>+27 / −5</strong></td><td><strong>ALL modules</strong> — 20 pages in <code>NAV_PAGES</code>. Re-audited in §4</td></tr>
+</tbody></table></div>
+<h3>2.1 The coupling direction, measured</h3>
+<p><strong>Zero platform files import any Hadith module.</strong> A grep for <code>(import|from) … hadith-(browser|corpus|fixture-data|commentary)</code> outside <code>app/hadith-*</code> returns nothing. Six platform files mention the string <code>hadith-</code>, and none is an import: <code>nav.js</code>, <code>topic-study.js</code> and <code>continue-strip.js</code> reference the <strong>URL</strong> <code>hadith-study.html</code>; <code>study-note-binding.js</code> carries the ADR-009 <code>hadith-unit</code> <code>sourceKind</code>; <code>asma-renderer.js</code> and <code>asma-ref-parser.js</code> use an unrelated <code>hadith-text</code> token.</p>
+<p><strong>The Hadith stream&#x27;s runtime dependency on the platform is one-way</strong> — Hadith imports platform (<code>topic-study.js</code>, <code>i18n.js</code>), and the platform does not import Hadith. That is what makes the stream independently removable today.</p>
+<hr>
+<h2>3. Reconciliation against current Quran work</h2>
+<p><strong>Method:</strong> the merge base is <code>6758490</code>. Files changed on each side since then were compared, and the merge was tested <strong>without performing it</strong> (<code>git merge-tree --write-tree</code>, which writes no ref and leaves HEAD and the working tree untouched — re-verified clean afterwards).</p>
+<p><strong>Files changed on <code>main</code> since the merge base:</strong> <code>CHANGELOG.md</code>, <code>CLAUDE.md</code>, <code>app/js/timezone-contract.js</code>, <code>app/js/timezone-service.js</code>, <code>docs/governance/d14-timezone-tenantpeople-rules-candidate-2026-09-18.rules</code>, three <code>docs/reports/</code> files, <code>tools/firestore-emulator/d14-timezone.{firebase.json,rules.test.mjs}</code>, <code>tools/i18n-verify/d14-timezone-{boundary,contract}.mjs</code>, <code>tools/i18n-verify/select-layout-options.mjs</code>.</p>
+<p><strong>Intersection with the Hadith stream&#x27;s 14 files: exactly one — <code>CLAUDE.md</code>.</strong></p>
+<div class='tw'><table><thead><tr><th>FILE</th><th>HADITH CHANGE</th><th>QURAN USE / CHANGE</th><th>COLLISION TYPE</th><th>STAGE B SAFELY ISOLATED?</th><th>REQUIRED INTEGRATION ACTION</th></tr></thead><tbody>
+<tr><td><code>CLAUDE.md</code></td><td>Hadith-owned block rewritten (versions, namespace rule, gate status). Milestone line <strong>untouched</strong></td><td>D14 entry added, milestone/brief text edited by the Quran side</td><td><strong>Same file, disjoint regions</strong></td><td><strong>YES</strong> — <code>git merge-tree</code> reports <strong>no conflict</strong></td><td>At merge: take both. Re-run <code>brief-integrity</code> on the merged result</td></tr>
+<tr><td><code>app/js/version.js</code></td><td>08.28 → 08.29</td><td><code>main</code> stays 08.27; D14 did <strong>not</strong> bump</td><td><strong>Sequence, not conflict</strong> — resolved before it landed</td><td><strong>YES</strong></td><td>At merge: branch version wins (08.29). <code>08.30+</code> stays unallocated</td></tr>
+<tr><td><code>app/js/i18n/bn.js</code></td><td>+21 keys, 0 deletions</td><td><strong>Not changed by D14</strong></td><td><strong>None today.</strong> Latent append-point collision if both sides add keys</td><td><strong>YES</strong></td><td>At merge: additive union. Assert 0 deletions and no duplicate keys</td></tr>
+<tr><td><code>tools/i18n-verify/behaviour.mjs</code></td><td>+27 / −5, two exclusion lists</td><td><strong>Not changed by D14</strong></td><td><strong>None today.</strong> Shared infrastructure, so a latent collision class</td><td><strong>YES</strong></td><td>§4 decision; re-run the suite on the merged result</td></tr>
+<tr><td><code>firestore.rules</code>, <code>firebase.json</code></td><td><strong>Untouched</strong></td><td><strong>Untouched by D14</strong> (candidate is a separate file)</td><td><strong>None</strong></td><td>YES</td><td>None</td></tr>
+<tr><td><code>app/js/topic-study.js</code></td><td><strong>Untouched</strong></td><td>Not changed by D14</td><td><strong>None</strong></td><td>YES</td><td>None</td></tr>
+<tr><td><code>app/js/catalogue.js</code>, <code>catalogue-data.js</code></td><td><strong>Untouched</strong> (no Approach ID minted)</td><td>Not changed by D14</td><td><strong>None</strong></td><td>YES</td><td>None</td></tr>
+<tr><td><code>app/js/timezone-{contract,service}.js</code></td><td><strong>Not referenced by Hadith</strong></td><td>New, <strong>unreachable</strong> on <code>main</code></td><td><strong>None</strong></td><td>YES</td><td>None while D14 stays unreachable</td></tr>
+<tr><td><code>CHANGELOG.md</code></td><td><strong>Not edited from Hadith</strong>, deliberately</td><td>D14 entry added</td><td><strong>None today</strong></td><td>YES</td><td><strong>Merge-time obligation:</strong> the Hadith rounds owe changelog entries, written by their owner</td></tr>
+<tr><td><code>app/js/study-note-binding.js</code> — the <code>hadith:</code> unit-key regex</td><td><strong>Untouched</strong></td><td>Platform-owned contract naming <code>hadith</code></td><td><strong>None</strong></td><td>YES</td><td>None until a permanent Hadith key is adopted — a closed gate</td></tr>
+</tbody></table></div>
+<p><strong>Overall:</strong> <strong>Stage B can remain isolated safely.</strong> One shared file overlaps, in disjoint regions, and a non-mutating merge test reports no conflict. Nothing was merged.</p>
+<p><strong>UNAVAILABLE:</strong> the <em>deployed</em> Firebase state for either stream (§6), and any Quran work that exists outside this repository or on unfetched refs.</p>
+<hr>
+<h2>4. Re-audit — the Stage B shared edit to <code>tools/i18n-verify/behaviour.mjs</code></h2>
+<h3>4.1 Exact diff</h3>
+<p><strong>+27 / −5 lines</strong>, in two places, both inside the <code>anyBangla</code> helper of a language-leak check. The functional change is <strong>one token added to each of two <code>querySelectorAll</code> arguments</strong>; everything else is comment.</p>
+<p>Before (both sites): <code>clone.querySelectorAll(&quot;#navAppLangSelect, #trBnControl, #wbwLangSelect, script, style&quot;)</code></p>
+<p>After (both sites): <code>clone.querySelectorAll(&quot;#navAppLangSelect, #trBnControl, #wbwLangSelect, #hadithContentLang, #hadithSyntheticBanner, script, style&quot;)</code></p>
+<p>The two sites are the check at section 1 (<code>no Bangla leaked into an English page</code>, run over every page in <code>NAV_PAGES</code>) and at section 3 (<code>3b no Bangla left anywhere</code>, the language round-trip).</p>
+<h3>4.2 Why the exclusion is necessary</h3>
+<p><code>app/hadith-study.html</code> <strong>is</strong> in <code>NAV_PAGES</code>; the standalone <code>hadith-collections.html</code> is not. Mounting the corpus therefore brought it under a check it had never faced.</p>
+<p>The failure is a genuine clash between two correct requirements, not a stale assertion: the synthetic notice <strong>must</strong> print &quot;these are not real narrations&quot; in Arabic, English <strong>and</strong> Bangla, on every page, in every UI language, always — a reader of any one of the three must be able to tell the corpus is invented without first changing their language setting. That is a <strong>non-negotiable safety gate</strong>, so the Bangla text is required, and a check reading it as a translation leak is reading it wrongly.</p>
+<p><code>#hadithContentLang</code> is the corpus&#x27;s <strong>content-language picker</strong>; it names each language in that language&#x27;s own script, exactly as the three already-excluded pickers do.</p>
+<h3>4.3 Hadith-specific, or a reusable cross-module rule?</h3>
+<p><strong>Neither cleanly, and that is the honest answer.</strong> The <em>rule</em> is general — &quot;an element that deliberately carries more than one script is not a translation leak&quot; — and it is already general in practice: <code>#navAppLangSelect</code> is platform, <code>#trBnControl</code> and <code>#wbwLangSelect</code> are Quran, and now two are Hadith. <strong>The mechanism, however, is module-specific accumulation</strong>: a hand-maintained id list that has grown 3 → 5 and will grow again with the next module.</p>
+<p>So this edit <strong>does not establish</strong> a reusable rule; it <strong>extends an existing module-specific list</strong>, following the precedent already set in that file, with the reason recorded in place.</p>
+<h3>4.4 Can the same result be achieved without module-specific accumulation?</h3>
+<p><strong>Yes in principle, and the shape is clear — but not with the convention that exists.</strong></p>
+<p>The codebase already has a declarative i18n opt-out, <code>[data-i18n-skip]</code>, honoured by <code>translateStatic()</code> in <code>app/js/i18n.js</code>. <strong>It is the wrong contract for this</strong>, and reusing it would conflate two different meanings: <code>data-i18n-skip</code> means <em>&quot;do not translate this&quot;</em> (its own comment says it is for tenant-authored text or scripture), whereas what this check needs is <em>&quot;this deliberately carries several scripts&quot;</em>. An element can need one without the other. <strong>None of the five excluded elements carries <code>data-i18n-skip</code> today</strong>, so the alternative is not already available.</p>
+<p>The clean form would be a <strong>new declarative attribute</strong> — say <code>data-i18n-multilingual</code> — set by each module on its own element, with the shared check excluding <code>[data-i18n-multilingual]</code> and holding <strong>no module ids at all</strong>. That is strictly better and removes the accumulation permanently.</p>
+<p><strong>It is also itself a shared-infrastructure change</strong>, touching <code>behaviour.mjs</code> plus five elements across three modules (platform, Quran, Hadith) — so it is <strong>not</strong> something the Hadith stream may take unilaterally. <strong>Raised, not done</strong>, and a SHARED CHANGE REQUEST is filed in §7.</p>
+<h3>4.5 A cosmetic defect in the edit, reported and NOT fixed</h3>
+<p>At the <strong>first</strong> of the two sites, three comment lines sit at 6-space indentation among 8-space neighbours, and one sentence is split awkwardly (&quot;joins for the / same reason and a / stronger one:&quot;). It is <strong>comment-only, with zero behavioural effect</strong> — the second site is correctly indented — and it came from a scripted edit. <strong>Left in place</strong>, because the instruction is not to refactor this file without separate authorisation. Listed so it is not discovered later as an unexplained oddity.</p>
+<h3>4.6 Regression evidence</h3>
+<p><strong>Fresh at HEAD, this session:</strong> 13 pure suites, <strong>243 passed / 0 failed, every one exit 0</strong> — <code>hadith-source-rights</code> 14, <code>hadith-corpus</code> 33, <code>hadith-commentary-binding</code> 14, <code>quran-boundary</code> 30, <code>study-approach-contract-boundary</code> 16, <code>study-activity-evidence-boundary</code> 17, <code>note-foundation-boundary</code> 30, <code>study-note-boundary</code> 17, <code>journey-map-boundary</code> 13, <code>firestore-index-requirements</code> 8, <code>rules-authorisation-executable</code> 38, <code>rules-deployment-candidate</code> 10, <code>stub-parity</code> 3.</p>
+<p><strong><code>behaviour.mjs</code>: 978 passed / 4 failed / 56 sections = 982 checks</strong>, the same total <code>main</code> itself records, all four failures environmental (archive.org ×3, which the brief records as <em>intermittent</em>; and one sandbox TLS artefact). Measured on the tree of <code>22526b2</code>; <strong><code>git diff --stat 22526b2 cd344f4 -- app/ tools/</code> is empty</strong>, so that evidence applies exactly to current HEAD. It has <strong>not</strong> been re-run in this container — the restart removed the browser tooling, and the tree is unchanged, so a re-run would re-measure an identical tree.</p>
+<p><strong>The exclusion was proven not to blind the check</strong>, both ways: a deliberate Bangla paragraph seeded into <code>app/hadith-study.html</code> <strong>is still detected</strong>, and the clean page passes. A first, narrower attempt (banner only) was <strong>insufficient</strong> — the clean page still reported a leak — and rather than widening the exclusion the second source was located and named. Excluded <strong>by element, never by page</strong>.</p>
+<hr>
+<h2>5. Gate status — every Hadith gate CLOSED</h2>
+<div class='tw'><table><thead><tr><th>Gate</th><th>Status</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>Real corpus / translation / commentary embedding</td><td><strong>CLOSED</strong></td><td><code>hadith-source-rights</code> 14/0; zero editions rights-cleared; nothing fetched, cached or embedded</td></tr>
+<tr><td>Permanent Hadith semantic key adoption</td><td><strong>CLOSED</strong></td><td><code>study-note-binding.js</code> byte-identical to <code>origin/main</code>; proposal only; live inventory still unobtainable</td></tr>
+<tr><td>Approach ID allocation</td><td><strong>CLOSED</strong></td><td><code>catalogue.js</code> and <code>catalogue-data.js</code> byte-identical to <code>origin/main</code>; registry is a proposal with no id minted</td></tr>
+<tr><td>Durable Track</td><td><strong>CLOSED</strong></td><td>No <code>setDoc</code>/<code>updateDoc</code>/<code>addDoc</code>/<code>runTransaction</code>/<code>writeBatch</code> anywhere in <code>app/js/hadith-*.js</code></td></tr>
+<tr><td>Notes / MMJ persistence</td><td><strong>CLOSED</strong></td><td>Not built; collections unruled</td></tr>
+<tr><td>Rules / index deployment</td><td><strong>CLOSED</strong></td><td><code>firestore.rules</code>, <code>firebase.json</code> untouched; no <code>firestore.indexes.json</code></td></tr>
+<tr><td>Migration</td><td><strong>CLOSED</strong></td><td>None attempted</td></tr>
+<tr><td>Merge</td><td><strong>CLOSED</strong></td><td>Branch 2 behind / 11 ahead; nothing merged to <code>main</code></td></tr>
+<tr><td>Deployment</td><td><strong>CLOSED</strong></td><td>Nothing deployed</td></tr>
+<tr><td>Application version consumption</td><td><strong>CLOSED</strong></td><td>No version consumed by this reconciliation; <code>08.30+</code> unallocated</td></tr>
+</tbody></table></div>
+<hr>
+<h2>6. Firestore Rules — repository evidence and deployment evidence, stated separately</h2>
+<h3>6.1 REPOSITORY evidence — what inspecting the file proves</h3>
+<p><code>firestore.rules</code> in this branch is <strong>byte-identical to <code>origin/main</code></strong> (<code>git diff --quiet</code> passes); sha256 begins <code>8fd7f52b2a7c9097</code>; it contains <strong>0</strong> occurrences of any <code>hadith</code> collection; <code>firebase.json</code> is likewise identical and carries no <code>indexes</code> key; <strong>no <code>firestore.indexes.json</code> exists.</strong></p>
+<p><strong>This proves repository Rules content, and nothing more.</strong></p>
+<h3>6.2 DEPLOYMENT evidence — separately, and it is absent</h3>
+<div class='tw'><table><thead><tr><th>Probe</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>firebase</code> CLI</td><td><strong>not installed</strong></td></tr>
+<tr><td><code>gcloud</code></td><td><strong>not installed</strong></td></tr>
+<tr><td>Credential environment variables</td><td><strong>none set</strong></td></tr>
+<tr><td>Firebase Rules API, unauthenticated</td><td><strong>HTTP 403 — PERMISSION_DENIED</strong>, <em>&quot;Method doesn&#x27;t allow unregistered callers (callers without established identity)&quot;</em></td></tr>
+</tbody></table></div>
+<h3><strong>DEPLOYMENT STATUS UNVERIFIED.</strong></h3>
+<p>The currently deployed ruleset for <code>study-monitoring</code> <strong>has not been inspected and cannot be inspected from this environment.</strong> No statement in any Hadith report should be read as evidence about deployed Rules. <strong>No inference — of success or of failure — may be drawn about a production write from repository content.</strong> This tightens the persistence gates rather than relaxing them: because deployment is unverified, no Hadith, Note, MMJ or Track production write is attempted, and none exists.</p>
+<hr>
+<h2>7. SHARED CHANGE REQUEST — raised, not taken</h2>
+<p>Filed under the new Shared Change Rule. <strong>Nothing has been done to these files.</strong></p>
+<p><strong>SHARED CHANGE REQUEST 01 — retire the module-id accumulation in the language-leak check</strong></p>
+<ul><li><strong>File:</strong> <code>tools/i18n-verify/behaviour.mjs</code>, plus one attribute on five elements across <code>app/js/nav.js</code> / the app-language control, the Quran translation and word-by-word pickers, and the two Hadith elements.</li><li><strong>Current owner / use:</strong> shared verification infrastructure; the check runs over 20 pages spanning every module.</li><li><strong>Required change:</strong> replace the hand-maintained id list with a declarative <code>data-i18n-multilingual</code> attribute (name for the Master Architect to settle), each module marking its own element; the shared check then holds no module ids.</li><li><strong>Reason:</strong> the list has grown 3 → 5 and will grow with every module that ships a language picker or a multi-script notice. <code>[data-i18n-skip]</code> already exists but means <em>&quot;do not translate&quot;</em>, a different contract, so it cannot be reused without conflating the two.</li><li><strong>Expected blast radius:</strong> BR-1/BR-2 — one shared test file, five markup/DOM sites, no application behaviour. Needs the full <code>behaviour.mjs</code> suite plus a positive control proving a real leak is still caught.</li><li><strong>Other module potentially affected:</strong> <strong>platform</strong> (app-language control), <strong>Quran</strong> (translation and word-by-word pickers), <strong>Hadith</strong> (banner and content-language picker). Requires the Quran stream&#x27;s agreement.</li></ul>
+<p><strong>SHARED CHANGE REQUEST 02 — <code>CHANGELOG.md</code> entries for the Hadith rounds</strong></p>
+<ul><li><strong>File:</strong> <code>CHANGELOG.md</code>.</li><li><strong>Current owner / use:</strong> Quran / <code>main</code> side; the project rule is that a round reaching the brief is appended here first.</li><li><strong>Required change:</strong> entries for v08.28 and v08.29.</li><li><strong>Reason:</strong> the rule exists so a round cannot live only in the brief; these two do.</li><li><strong>Expected blast radius:</strong> BR-0, documentation only.</li><li><strong>Other module potentially affected:</strong> none. Deliberately <strong>not</strong> written from Hadith.</li></ul>
+<p><strong>Also standing, for the Quran / shared-file owner:</strong> <code>brief-integrity</code> is <strong>7 passed / 1 failed</strong> on this branch and <strong>8 / 0 on <code>main</code></strong>. The failure is the milestone line&#x27;s version against the working tree&#x27;s. <code>main</code>&#x27;s upgraded guard accepts a milestone line that names the branch <em>and</em> states main&#x27;s own version — <strong>that line is the Quran side&#x27;s to write</strong>, and it has deliberately not been rewritten from here.</p>
+<hr>
+<h2>8. Next safe Hadith work</h2>
+<p><strong>None is begun, and none should be until the Master Architect rules.</strong> What is <em>available</em> without crossing a gate or a shared file, for the Master Architect to select from rather than for this stream to choose:</p>
+<ol><li><strong>Nothing at all</strong> — hold pending audit of Stage A/B. This is the default.</li><li><strong>Documentation / governance only</strong> (BR-0, no version bump): expanding the Approach registry proposal&#x27;s decision set, or a Hadith-only rights-register review.</li><li><strong>Hadith-domain-only code</strong> touching no shared file and consuming no version beyond a Master-Architect-allocated one.</li></ol>
+<p><strong>Blockers, unchanged:</strong> rights clearance for any real edition; a live read-only inventory of existing <code>hadith:</code> records before any permanent key; an Approach-registry decision before any id; authenticated Firebase access before any Rules or index deployment; and Master Architect acceptance of Stage A/B before the next tranche.</p>
+<hr>
+<h2>HADITH_STREAM_STATE</h2>
+<p>The block below is one <code>KEY=value</code> per line, blank-separated so that each key survives as its own line in the HTML rendering as well as the Markdown.</p>
+<p>MAIN_SHA=7111e3c975d3cf3fd0bf0c0d7814691edcd5299e</p>
+<p>MAIN_VERSION=08.27</p>
+<p>BRANCH=feature/hadith-study</p>
+<p>HEAD=cd344f44b729d11ca2634ac0b3d40b39d7ccb1a5</p>
+<p>AHEAD_BEHIND=ahead 11, behind 2 (merge base 6758490cf957c646df4945ad52b0cf403cc3cf61; git merge-tree reports NO CONFLICT)</p>
+<p>H2A_SHA_CHAIN=c7ee03ef957a191ae195977623972e32f6a366a5 (app code, tested) -&gt; 8051c85c8db5d00a0fd8d54ae2ff4215b9d66e4e (report only; app/ tools/ firestore.rules diff EMPTY) -&gt; 70edba3 (reconciliation report) -&gt; 85c35cf (merge origin/main) -&gt; 7f61328 -&gt; 22526b2 -&gt; cd344f4</p>
+<p>STAGE_A_SHA=7f6132888bc02728e07e2214b5a8d6323708e00a</p>
+<p>STAGE_A_VERSION=08.28</p>
+<p>STAGE_B_SHA=22526b20da1e1fe950992957aa2862e65b3cf925</p>
+<p>STAGE_B_VERSION=08.29</p>
+<p>SHARED_FILES=app/js/version.js (B: platform); app/js/i18n/bn.js (B: platform, +21/-0 additive); CLAUDE.md (B: brief, Hadith-owned block only); tools/i18n-verify/behaviour.mjs (D: shared verification, +27/-5, two element ids added to an existing exclusion list). NONE in class C (deployment/security) — firestore.rules, firebase.json, catalogue.js, catalogue-data.js, topic-study.js, study-note-binding.js all byte-identical to origin/main</p>
+<p>QURAN_OVERLAPS=CLAUDE.md ONLY (disjoint regions, merge-tree clean). D14 (ff1ae1b, 7111e3c) is all-new files, unreachable, no version bump, no Rules change. Zero platform files import any Hadith module; coupling is one-way</p>
+<p>RULES_REPOSITORY_STATUS=UNCHANGED — firestore.rules byte-identical to origin/main (sha256 8fd7f52b2a7c9097...), 0 hadith collections, firebase.json has no indexes key, no firestore.indexes.json</p>
+<p>RULES_DEPLOYMENT_STATUS=UNVERIFIED — no firebase CLI, no gcloud, no credentials, Rules API returns HTTP 403 PERMISSION_DENIED (unregistered caller). Deployed ruleset not inspected and not inspectable from this environment</p>
+<p>NEXT_SAFE_HADITH_WORK=NONE BEGUN. Awaiting Master Architect ruling on Stage A/B. Available without crossing a gate: hold (default); documentation/governance only (BR-0, no version bump); or Hadith-domain-only code on a Master-Architect-allocated version. 08.30+ remains UNALLOCATED and unconsumed</p>
+<p>BLOCKERS=Master Architect acceptance of Stage A/B; rights clearance for any real edition; live read-only inventory of existing hadith: records before any permanent key; Approach-registry decision before any ID; authenticated Firebase access before any Rules/index deployment; SHARED CHANGE REQUEST 01 (behaviour.mjs id accumulation) and 02 (CHANGELOG.md entries) both require owner agreement</p>
+</main></body></html>

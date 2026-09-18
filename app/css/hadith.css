@@ -1,0 +1,116 @@
+/* The Hadith corpus component's own styles.
+ *
+ * These lived inside hadith-collections.html's <style> block, which meant the
+ * component only looked right on the one page that happened to carry them.
+ * Mounting it into app/hadith-study.html proved the cost: the not-Hadith
+ * notice lost its red panel and every collection row rendered as a dark navy
+ * block with the edition id run into the name -- and EVERY rect and text
+ * assertion passed, because the markup was perfectly correct. It was found by
+ * looking at the screenshot.
+ *
+ * A palette belongs to a SURFACE, not to a feature, and a component rendered
+ * on two surfaces must carry its own. So the component's rules live here and
+ * both pages link this file. Page chrome -- the standalone page's body width
+ * and heading sizes -- deliberately stays behind in that page, because
+ * imposing it on the module page would restyle headings the corpus does not
+ * own.
+ */
+:root { --hadith-ink:#1B2A41; --hadith-gold:#B8862F; --hadith-rule:#e2ddcd; --hadith-muted:#5f6470; }
+
+  /* ---- The notice that is never conditional ---- */
+  .hadith-synthetic-banner {
+    border: 2px solid #b4302f; background: #fdf2f2; border-radius: 0.5rem;
+    padding: 0.7rem 0.9rem; margin: 0.8rem 0 1rem;
+  }
+  .hadith-synthetic-banner p { margin: 0.15rem 0; font-size: 0.9rem; font-weight: 600; color: #7d1f1e; }
+  .hadith-synth-ar { font-size: 1.5rem !important; direction: rtl; text-align: right; font-weight: 700 !important; }
+
+  /* ---- Controls ---- */
+  .hadith-controls { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; justify-content: space-between; margin-bottom: 0.8rem; }
+  .hadith-tabs { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+  .hadith-tab {
+    min-height: 40px; padding: 0.4rem 0.8rem; border: 1px solid var(--hadith-rule); background: #fff;
+    color: var(--hadith-ink); border-radius: 0.4rem; cursor: pointer; font-size: 0.9rem;
+  }
+  .hadith-tab.active { background: var(--hadith-ink); color: #fff; border-color: var(--hadith-ink); }
+  .hadith-lang-wrap { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; min-width: 0; }
+  .hadith-lang-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+
+  /* ---- Lists ---- */
+  .hadith-list { display: flex; flex-direction: column; gap: 0.4rem; }
+  .hadith-row {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem; text-align: left; width: 100%;
+    min-height: 44px; padding: 0.6rem 0.8rem; border: 1px solid var(--hadith-rule); border-radius: 0.5rem;
+    background: #fff; color: var(--hadith-ink); cursor: pointer;
+  }
+  .hadith-row:hover { border-color: var(--hadith-ink); }
+  .hadith-row-name { font-weight: 600; }
+  .hadith-row-meta, .hadith-row-heading { font-size: 0.82rem; color: var(--hadith-muted); }
+  .hadith-row-heading { direction: rtl; }
+  .hadith-crumbs { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; font-size: 0.85rem; margin: 0.6rem 0; }
+  .hadith-crumb { background: none; border: none; color: var(--hadith-ink); text-decoration: underline; cursor: pointer; font: inherit; padding: 0.2rem; }
+  .hadith-crumb-current { font-weight: 600; }
+
+  /* ---- Occurrence card ---- */
+  .hadith-card { border: 1px solid var(--hadith-rule); border-radius: 0.6rem; padding: 0.9rem; margin: 0.7rem 0; background: #fffdf8; }
+  .hadith-card-head { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: baseline; font-size: 0.8rem; color: var(--hadith-muted); }
+  .hadith-card-id { background: #f2efe4; padding: 0.05em 0.4em; border-radius: 0.3em; font-size: 0.78rem; }
+  .hadith-card-repeat { color: #7d1f1e; font-weight: 600; }
+
+  /* Arabic source text at about twice the English size (Start Prompt §3). */
+  .hadith-arabic {
+    font-size: 2em; line-height: 1.9; direction: rtl; text-align: right;
+    margin: 0.5rem 0; color: var(--hadith-ink);
+  }
+  .hadith-isnad { font-size: 0.88rem; color: var(--hadith-muted); margin: 0.3rem 0; }
+  .hadith-translation-text { margin: 0.4rem 0 0.2rem; }
+  .hadith-attribution, .hadith-availability { font-size: 0.8rem; color: var(--hadith-muted); margin: 0.15rem 0; }
+  .hadith-fallback {
+    font-size: 0.85rem; color: #7d5a00; background: #fdf6e3; border: 1px solid #e8d9a8;
+    border-radius: 0.35rem; padding: 0.4rem 0.6rem; margin: 0.4rem 0;
+  }
+
+  /* ---- Track (demo only) ---- */
+  .hadith-track { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.7rem; padding-top: 0.6rem; border-top: 1px dashed var(--hadith-rule); }
+  .hadith-track-label { font-size: 0.85rem; font-weight: 600; }
+  .hadith-track-select { min-height: 40px; min-width: 0; padding: 0.3rem 0.5rem; border-radius: 0.35rem; border: 1px solid var(--hadith-rule); }
+  .hadith-not-saved { flex-basis: 100%; font-size: 0.8rem; color: #7d1f1e; margin: 0.2rem 0 0; font-weight: 600; }
+
+  /* ---- Topic ---- */
+  .hadith-topic-meta { background: #f6f7fa; border: 1px solid var(--hadith-rule); border-radius: 0.5rem; padding: 0.7rem 0.9rem; font-size: 0.87rem; }
+  .hadith-topic-meta p { margin: 0.18rem 0; }
+  .hadith-unreviewed { color: #7d1f1e; font-weight: 600; }
+  .hadith-topic-heading { font-size: 0.85rem; color: var(--hadith-muted); margin: 0.6rem 0 0; }
+
+  /* ---- Search ---- */
+  .hadith-search-input { width: 100%; min-height: 44px; padding: 0.5rem 0.7rem; border: 1px solid var(--hadith-rule); border-radius: 0.45rem; font-size: 1rem; }
+  .hadith-match-where { font-size: 0.8rem; color: var(--hadith-gold); font-weight: 600; margin: 0.6rem 0 0; }
+
+  /* ---- Commentary ---- */
+  .hadith-commentary-card { border: 1px solid var(--hadith-rule); border-left: 4px solid var(--hadith-gold); border-radius: 0.5rem; padding: 0.8rem; margin: 0.7rem 0; background: #fff; }
+  .hadith-commentary-card p { margin: 0.2rem 0; font-size: 0.9rem; }
+  .hadith-commentary-source { font-weight: 700; }
+  .hadith-commentary-author { color: var(--hadith-ink); font-weight: 600; }
+  .hadith-work-ar { font-size: 1.8em; direction: rtl; margin-inline-start: 0.5rem; display: inline-block; vertical-align: middle; }
+  .hadith-panel-title-ar { font-size: 2em; direction: rtl; text-align: right; margin: 0.2rem 0 0.6rem; }
+  .hadith-commentary-review, .hadith-commentary-rights, .hadith-commentary-binding { font-size: 0.82rem !important; color: var(--hadith-muted); }
+  .hadith-commentary-rights { color: #7d1f1e !important; font-weight: 600; }
+  /* Sized to the card's own text, not to body size: at 16px the label needs
+     345px and the card's CONTENT box is 327px, so it wrapped and orphaned the
+     arrow. Tap target comes from padding, never from a 40px line-height. */
+  .hadith-commentary-link { display: inline-block; padding: 0.6rem 0; font-size: 0.9rem; line-height: 1.45; color: var(--hadith-gold); font-weight: 600; overflow-wrap: break-word; }
+  .hadith-never-do { font-size: 0.82rem; color: var(--hadith-muted); background: #f6f7fa; border-radius: 0.5rem; padding: 0.7rem 0.9rem 0.7rem 1.8rem; }
+  .hadith-note { font-size: 0.87rem; color: var(--hadith-muted); }
+
+  /* ---- The QuranRevival mount preview ---- */
+  #qrShell { display: none; }
+  body[data-mount="quranrevival"] #qrShell { display: block; border-bottom: 2px solid var(--hadith-gold); margin-bottom: 0.8rem; padding-bottom: 0.6rem; }
+  .qr-shell-title { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+  .qr-shell-name { font-weight: 700; color: var(--hadith-ink); }
+  .qr-badge { font-size: 0.75rem; background: var(--hadith-ink); color: #fff; padding: 0.1rem 0.45rem; border-radius: 0.6rem; }
+  .qr-mount-note { font-size: 0.8rem; color: var(--hadith-muted); margin: 0.3rem 0 0; }
+
+  @media (max-width: 380px) {
+    .hadith-tab { padding: 0.4rem 0.6rem; font-size: 0.84rem; }
+    .hadith-arabic { font-size: 1.7em; }
+  }

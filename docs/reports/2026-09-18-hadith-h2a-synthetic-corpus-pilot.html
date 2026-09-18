@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith Study — H2-A: the synthetic corpus pilot</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith Study — H2-A: the synthetic corpus pilot</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Gate:</strong> H2, first reviewable tranche, under <em>Hadith H2 Implementation Instruction v01</em></li><li><strong>Branch:</strong> <code>feature/hadith-study</code> at <strong><code>c7ee03e</code></strong>, worktree <code>/home/user/hadith-study</code></li><li><strong>Application version:</strong> <strong>08.25 → 08.27</strong> (08.26 skipped deliberately — §1.3)</li><li><strong>Blast radius:</strong> BR-2. Five new files under <code>app/</code>, two new suites under <code>tools/</code>, three existing files edited (<code>version.js</code>, <code>i18n/bn.js</code>, <code>CLAUDE.md</code>). <strong>No existing page changed</strong> — <code>quranrevival.html</code>, <code>hadith-study.html</code> and <code>index.html</code> are byte-identical to <code>origin/main</code>. <code>firestore.rules</code>, <code>firebase.json</code> and every Rules and index candidate untouched.</li><li><strong>Result:</strong> delivered. <strong>58 rendered checks, 0 failures</strong>, in both languages and on both routes. Pure suites 14 + 26 + 14, all exit 0. <strong>Three real defects found and fixed</strong> — two by looking at screenshots, one by a test.</li></ul>
+<hr>
+<h2>1. Step 1 — verified state, not remembered state</h2>
+<h3>1.1 Commits and isolation</h3>
+<div class='tw'><table><thead><tr><th>Fact</th><th>Verified value</th></tr></thead><tbody>
+<tr><td><code>origin/main</code> at session start</td><td><code>d8f0492</code></td></tr>
+<tr><td><code>origin/main</code> now</td><td><strong><code>1cac2b8</code></strong> — <em>&quot;Session handover: deterministic continuity for the next session&quot;</em></td></tr>
+<tr><td>What moved on <code>main</code></td><td><strong>Documentation only</strong>: <code>CHANGELOG.md</code>, <code>CLAUDE.md</code>, two handover report files. <strong>No <code>app/</code>, <code>tools/</code>, <code>firestore.rules</code> or candidate change</strong></td></tr>
+<tr><td>Merged into this branch</td><td>Yes, cleanly, as <code>aef6cf3</code></td></tr>
+<tr><td>Branch HEAD</td><td><strong><code>c7ee03e</code></strong></td></tr>
+<tr><td>Worktrees</td><td><code>/home/user/Madrasatul-Muslimeen.github.io</code> <em>(Quran line)</em> · <code>/home/user/hadith-study</code> <em>(this work)</em> — <strong>different filesystem paths, confirmed</strong></td></tr>
+<tr><td>Version before → after</td><td><strong><code>08.25</code> → <code>08.27</code></strong></td></tr>
+</tbody></table></div>
+<p><strong>No shared-interface coordination was required.</strong> <code>main</code> moved by documentation alone, and the handover records that the Quran session ended with its single blocking dependency being Firebase access. Nothing this tranche touches is a shared Study, Note, Track, Explore, MMJ, authentication or Rules file.</p>
+<h3>1.2 The H1 rights guard, re-run — actual output</h3>
+<p>``` node tools/i18n-verify/hadith-source-rights.mjs   PASS  POSITIVE CONTROL -- both manifests really loaded and carry rows   PASS  POSITIVE CONTROL -- rightsRefusal() can actually refuse   PASS  the canonical rights states are exactly the Start Prompt&#x27;s three, and the default denies   PASS  every source is sound against the rights rule   PASS  no text import is authorised for any source   PASS  every source records what is still unknown about it   PASS  every commentary row carries the Source Register&#x27;s field names verbatim   PASS  no commentary row claims a narration occurrence while no edition is approved   PASS  no commentary text has been captured while nothing is embed-cleared   PASS  a commentary row never outranks the source it came from   PASS  the two matches stay DISTINCT records, never merged into one report   PASS  the display contract never lets an explanation pass as the Hadith&#x27;s own words   PASS  no Hadith corpus has appeared in the tree while no edition is approved   PASS  the schema document and the manifests still agree on the vocabulary</p>
+<p>14 passed, 0 failed          (exit 0) ```</p>
+<h3>1.3 Why the version is 08.27 and not 08.26</h3>
+<p><strong><code>08.26</code> is already claimed</strong> by the unmerged Phase 4 Study-event wiring branch. Established by reading that branch, not by trusting the brief:</p>
+<p>``<code> git show origin/claude/phase4-wiring:app/js/version.js  →  APP_VERSION = &quot;08.26&quot; git rev-parse origin/claude/phase4-wiring               →  7e2931f795af1cd97efc1167660cea93aa22b9ab </code>``</p>
+<p>Two different builds carrying one version number is the kind of collision nobody notices until a bug report names a version that means two things. Recorded in <code>version.js</code> itself.</p>
+<h3>1.4 The persistence gate, checked in the repository rather than inferred</h3>
+<p>The instruction says not to infer deployment status from a document. Read directly from <code>firestore.rules</code> at this commit:</p>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>notes</code>, <code>noteRevisions</code>, <code>noteSources</code>, <code>noteFolders</code>, <code>notePlacements</code> in deployed rules</td><td><strong>0 occurrences</strong></td></tr>
+<tr><td>Any <code>hadith</code> collection in deployed rules</td><td><strong>0 occurrences</strong></td></tr>
+<tr><td><code>firebase.json</code> <code>indexes</code> key</td><td><strong>absent</strong></td></tr>
+<tr><td><code>firestore.indexes.json</code></td><td><strong>does not exist</strong></td></tr>
+</tbody></table></div>
+<p><strong>A further finding the H0 report did not have:</strong> it is not only Note and MMJ that are closed. <strong>No Hadith collection is ruled either</strong>, so <em>any</em> Hadith Firestore write is denied by default too. The gate is therefore doubly closed for this module, and this tranche persists nothing anywhere — which is not a workaround but the only honest behaviour available.</p>
+<hr>
+<h2>2. What was built</h2>
+<div class='tw'><table><thead><tr><th>File</th><th>What it is</th></tr></thead><tbody>
+<tr><td><code>app/js/hadith-fixture-data.js</code></td><td>The synthetic corpus — 2 collections, 2 editions, 6 books/chapters, 8 narration occurrences, 8 external references, 1 topic, 3 topic mappings</td></tr>
+<tr><td><code>app/js/hadith-corpus.js</code></td><td>The pure read model — browse, language resolution, search, topic index. No DOM, no network</td></tr>
+<tr><td><code>app/js/hadith-commentary.js</code></td><td>Classical Explanations — the two verified register entries, outbound links only</td></tr>
+<tr><td><code>app/js/hadith-browser.js</code></td><td>The rendering component <strong>both routes share</strong></td></tr>
+<tr><td><code>app/hadith-collections.html</code></td><td><code>?</code> standalone · <code>?mount=quranrevival</code> mounted — same component, separate routing</td></tr>
+<tr><td><code>tools/i18n-verify/hadith-corpus.mjs</code></td><td>26 checks, including the closed-gate guards</td></tr>
+<tr><td><code>tools/i18n-verify/hadith-commentary-binding.mjs</code></td><td>14 checks binding the module to the manifest</td></tr>
+</tbody></table></div>
+<p><strong>Preview:</strong> <code>node serve.js</code>, then <code>http://localhost:8080/app/hadith-collections.html</code> (add <code>?mount=quranrevival</code> for the mounted route).</p>
+<hr>
+<h2>3. What makes the fixtures safe — beyond a flag a renderer could forget</h2>
+<p>The instruction requires that fixtures never be represented as real narrations, never be published as authentic Hadith, and never accidentally enter a production corpus. A <code>synthetic: true</code> flag satisfies none of that on its own: a flag lives in the data, and the danger is text leaving the data — copied, screenshotted, scraped.</p>
+<p><strong>So the Arabic source text itself denies being a hadith.</strong> Every synthetic narration opens:</p>
+<p>&gt; <strong>هذا نص تجريبي وليس حديثاً</strong> — &quot;this is a test text and is not a hadith&quot;</p>
+<p>A fragment that escapes this repository carries its own denial, in the language a reader of the source text would be reading. The same denial is in the English and Bangla slots. A guard asserts it for all eight occurrences, so a future fixture cannot be added without it.</p>
+<p>Three further safeguards, each asserted:</p>
+<ul><li><strong>Every id is prefixed</strong> <code>synthetic-</code> / <code>syn-</code>, so a fixture cannot collide with a real collection or edition id, and a real import cannot silently overwrite one.</li><li><strong>No fixture carries a grade, a real narrator or a source URL.</strong> A grade is an attributed claim and a fixture has no scholar to attribute it to; <code>auditStatus</code> is <code>synthetic-unreviewed</code> throughout.</li><li><strong>The banner is never conditional and never dismissible</strong>, and renders in all three languages at once — a reader in any one of them can tell this is not real without first changing their language setting.</li></ul>
+<h3>3.1 The fixture&#x27;s shape is deliberate — each property proves a requirement</h3>
+<div class='tw'><table><thead><tr><th>Property</th><th>What it demonstrates</th></tr></thead><tbody>
+<tr><td><strong>Two</strong> collections</td><td>The Ṣalāh index is genuinely <strong>cross-collection</strong>, not a single book relabelled</td></tr>
+<tr><td>Collection Beta has <strong>no chapter level</strong></td><td>The plan requires supporting an edition whose hierarchy has none; the UI says so rather than rendering an empty list</td></tr>
+<tr><td><code>syn-occ-0006</code> repeats <code>syn-occ-0005</code>&#x27;s text</td><td><strong>A repeat is its own occurrence</strong> and is never merged by text</td></tr>
+<tr><td><code>syn-occ-0008</code> has <strong>no Bangla</strong></td><td>The language fallback label has a real case, not a hypothetical one</td></tr>
+</tbody></table></div>
+<hr>
+<h2>4. The Classical Explanations gate, built as an inability</h2>
+<p>The instruction is explicit: <em>&quot;Do not attach these links to arbitrary synthetic narration records as if they were the verified reports.&quot;</em></p>
+<p>The two register entries are matched to <strong>real</strong> narrations — Bukhārī 1 and Muslim 1907a — by an <strong>external reference</strong>, a scheme plus a displayed number. They are matched to no occurrence in this repository, because no edition is approved and so no real occurrence exists here.</p>
+<p><code>commentaryForOccurrence()</code> therefore returns nothing for every synthetic occurrence, <strong>by construction rather than by discipline</strong>, and the register entries live on their own labelled surface beside the corpus rather than inside it. Attaching Ibn Ḥajar&#x27;s commentary to a narration this project invented last week is a screen the code cannot draw.</p>
+<p>Verified on the rendered page and in a pure suite:</p>
+<ul><li>Both entries shown, with scholar, work (English <strong>and</strong> Arabic), location, edition-location and review status.</li><li>Outbound links are the exact URLs the register verified, <code>rel=&quot;noopener noreferrer&quot;</code>.</li><li><code>narration_occurrence_id</code> is <strong><code>null</code></strong> on both, on screen.</li><li><code>mayShowText</code> is <strong><code>false</code></strong> on both — citation and link, no commentary text.</li><li>Ibn Ḥajar pairs with Bukhārī and al-Nawawī with Muslim; a swap fails the suite.</li><li>The four prohibitions are rendered on the page, read out of code.</li></ul>
+<p><strong>No commentary text was fetched, cached, embedded or stored.</strong> No request was made to islamweb.net, sunnah.com, OpenITI or HadeethEnc in this session.</p>
+<hr>
+<h2>5. Three real defects, found three different ways</h2>
+<h3>5.1 Track defaulted to &quot;Not Applicable&quot; — found by looking at a screenshot</h3>
+<p><code>STATUSES</code> begins with <code>not_applicable</code>, so an untracked narration&#x27;s <code>&lt;select&gt;</code> displayed <strong>&quot;Not Applicable&quot;</strong> — which under <strong>I7</strong> means <em>excluded from totals</em>, a real claim about the unit. Every assertion passed: the control existed, was the right height, carried its warning.</p>
+<p>A placeholder option (<code>&quot;Not tracked&quot;</code> / <code>&quot;চিহ্নিত করা হয়নি&quot;</code>, value <code>&quot;&quot;</code>) is selected when nothing is tracked, and choosing it clears the entry. Two checks now assert the default is the placeholder and that it never reads &quot;Not Applicable&quot;.</p>
+<h3>5.2 The commentary link orphaned its arrow — found by looking, diagnosed by probing</h3>
+<p>At 390px the link wrapped, leaving &quot;↗&quot; alone on a second line. The first fix attempt was going to be guesswork, so it was measured instead: the label needs <strong>345px</strong>, and <code>parentElement.clientWidth</code> reported <strong>353px</strong> — apparently enough.</p>
+<p><strong><code>clientWidth</code> includes padding.</strong> The real content box was <strong>327px</strong>. The text genuinely did not fit.</p>
+<p>Fixed properly: the link is sized to the card&#x27;s own text (0.9rem, needing ~310px), its tap target comes from padding rather than a 40px <code>line-height</code>, and a non-breaking space glues the arrow to the last word in both languages. Two checks now measure the rendered height and the glue.</p>
+<h3>5.3 Search interleaved the two collections — found by a test</h3>
+<p><code>searchCorpus</code> ordered a cross-edition list by <code>sourceOrder</code>. <strong><code>sourceOrder</code> is scoped to its own parent</strong>, so both editions start at 1 and collection Beta&#x27;s first narration sorted between Alpha&#x27;s first and second.</p>
+<p>Now a named <code>compareBySourcePosition</code> orders by <code>(edition, sourceOrder)</code>. The test was tightened from a lexicographic sort — which could not have caught this — to asserting the editions do not interleave and each runs in its own source order.</p>
+<hr>
+<h2>6. The three languages</h2>
+<p><strong>Arabic is the source text; English and Bangla are attributed translations.</strong> That distinction is in the data (<code>text.{ar,en,bn}</code> with <code>translationAttribution</code>), not just in the UI.</p>
+<ul><li><strong>Arabic renders at twice the body text, measured on the rendered page: 32px against 16px</strong>, right-to-left, with its own line height.</li><li><strong>A missing translation is never fabricated.</strong> <code>resolveText()</code> falls back to the <strong>source</strong> language and returns <code>isFallback</code>, the requested language and whether even the source is missing. The UI renders a labelled notice naming both languages. It never substitutes another translation dressed as the one asked for, and never an empty string a renderer would print as a blank line.</li><li><strong>Every occurrence states which languages it actually has.</strong></li><li><strong>Search covers all three</strong>, and reports <strong>where</strong> it matched — narration text or source heading. A reader searching &quot;prayer&quot; and landing on a narration whose own text never says &quot;prayer&quot; is told it matched the chapter heading; conflating the two would make a heading look like narration content.</li><li><strong>The UI is English and Bangla</strong>, through the app&#x27;s own <code>t()</code>. 32 new strings, all translated; the browser tab title too.</li></ul>
+<p><strong>Bangla is not optional in the architecture</strong>: it is one of three first-class content slots, with its own attribution field, and the one deliberate gap exists precisely so the fallback path is exercised rather than assumed.</p>
+<hr>
+<h2>7. Evidence</h2>
+<h3>7.1 Rendered — 58 checks, 0 failures</h3>
+<p>Playwright against the real served page at 390×844, both languages, both routes, screenshotted and <strong>read</strong>. Covering: boot with no page errors; the three-language notice; browse through collection → book → chapter → occurrence with source order preserved; the no-chapter-level edition; the repeat occurrence listed separately and labelled; the Bangla fallback; Track&#x27;s placeholder and not-saved warning; <strong>zero Firestore requests of any kind</strong>; no synthetic card carrying commentary; the cross-collection topic index with separate distinct/mapping counts, taxonomy revision and unreviewed warning; search in all three languages with match location; both commentary entries with URLs, <code>rel</code>, <code>mayShowText=false</code> and null occurrence ids; the scholar-collection pairing; no horizontal overflow; every control ≥40px; the Bangla UI including the tab title; and the mounted route showing the shell and badge <strong>v08.27</strong> while the standalone route hides it.</p>
+<h3>7.2 Pure suites</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>hadith-source-rights.mjs</code></td><td><strong>14 passed, 0 failed</strong> (exit 0)</td></tr>
+<tr><td><code>hadith-corpus.mjs</code></td><td><strong>26 passed, 0 failed</strong> (exit 0)</td></tr>
+<tr><td><code>hadith-commentary-binding.mjs</code></td><td><strong>14 passed, 0 failed</strong> (exit 0)</td></tr>
+</tbody></table></div>
+<p>Each carries a positive control, because a guard whose loader silently read nothing passes every case vacuously.</p>
+<h3>7.3 Regression — nothing else moved</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>stub-parity.mjs</code></td><td>3 / 0</td></tr>
+<tr><td><code>study-approach-contract-boundary.mjs</code></td><td>16 / 0</td></tr>
+<tr><td><code>journey-map-boundary.mjs</code></td><td>13 / 0</td></tr>
+<tr><td><code>note-foundation-boundary.mjs</code></td><td>30 / 0</td></tr>
+<tr><td><code>study-note-boundary.mjs</code></td><td>17 / 0</td></tr>
+</tbody></table></div>
+<p><code>app/quranrevival.html</code>, <code>app/hadith-study.html</code> and <code>app/index.html</code> are <strong>byte-identical to <code>origin/main</code></strong> — stronger and cheaper than a <code>layout.mjs</code> shim comparison, because the landing page did not change at all.</p>
+<p><strong>Coverage 1,803 / 47 → 1,852 / 61</strong>, measured against the sibling worktree rather than quoted from the brief. All 14 added &quot;missing&quot; strings were read and classified: <strong>13 are fixture CONTENT</strong> carrying their own <code>{ar, en, bn}</code> maps (collection names, book and chapter titles, the topic label) — the same class of false positive as surah names — and <strong>one was a genuine gap</strong>, the page title, now translated. <code>&quot;Classical Explanations&quot;</code> is translated through <code>PANEL_TITLE</code>, not <code>bn.js</code>.</p>
+<h3>7.4 One expected failure, stated rather than hidden</h3>
+<p><code>brief-integrity.mjs</code> reports <strong>6 passed, 2 failed</strong>:</p>
+<ul><li><strong><code>origin/claude/pensive-knuth-2pu3jj</code> unresolvable</strong> — environmental. <code>git ls-remote</code> confirms the branch exists on the remote; this sandbox&#x27;s clone has a narrow fetch refspec. Same class as the H0 report&#x27;s §8.1 finding.</li><li><strong>The version check fires, correctly.</strong> It compares the brief&#x27;s <code>Current milestone: v08.25 on \</code>main\`<code> line against the local </code>version.js<code>, which now reads </code>08.27<code>. <strong>The brief&#x27;s line is true and was deliberately not altered</strong> — claiming v08.27 is on </code>main<code> would be false. Recorded in </code>CLAUDE.md<code> with a proposed one-line fix (compare against </code>git show origin/main:app/js/version.js<code> when </code>HEAD<code> is not </code>main`), <strong>not applied</strong>, because that guard belongs to the Quran side of the ownership map.</li></ul>
+<hr>
+<h2>8. Inventory — what is synthetic, and what is not</h2>
+<div class='tw'><table><thead><tr><th>Surface</th><th>Status</th></tr></thead><tbody>
+<tr><td>Every narration, chain, translation, heading, collection and edition in the browser</td><td><strong>SYNTHETIC.</strong> Invented for development; the Arabic says so</td></tr>
+<tr><td>The Ṣalāh topic and all three of its mappings</td><td><strong>SYNTHETIC and UNREVIEWED.</strong> No scholar has seen them</td></tr>
+<tr><td>External reference numbers</td><td><strong>SYNTHETIC scheme</strong> (<code>synthetic-sequential</code>) naming synthetic editions</td></tr>
+<tr><td>The two Classical Explanations entries</td><td><strong>REAL and verified</strong> — Bukhārī 1 → Ibn Ḥajar, Muslim 1907a → al-Nawawī. Outbound links only, bound to external references, <strong>not</strong> to anything in this repository</td></tr>
+<tr><td>Track state</td><td><strong>In memory only.</strong> Cleared by a reload. Nothing is written anywhere</td></tr>
+<tr><td>Notes and Mapping My Journey</td><td><strong>Not built.</strong> Their collections are unruled; every write would be denied</td></tr>
+</tbody></table></div>
+<hr>
+<h2>9. Gates — reported against each</h2>
+<div class='tw'><table><thead><tr><th>Gate</th><th>Status</th></tr></thead><tbody>
+<tr><td><strong>Permanent Hadith unit key</strong></td><td><strong>HELD CLOSED.</strong> No <code>buildUnitKey</code> reference and no <code>hadith:</code> key literal exists in any Hadith module — asserted by a guard, not by discipline. Occurrences are keyed by an opaque internal <code>occurrenceId</code>. The proposal the instruction asked for is §10</td></tr>
+<tr><td><strong>Real source text and translations</strong></td><td><strong>HELD CLOSED.</strong> Zero editions approved; the rights model still fails closed; nothing fetched, cached or embedded. No API availability, web visibility or confidence was treated as a grant</td></tr>
+<tr><td><strong>Note/MMJ persistence and Rules</strong></td><td><strong>HELD CLOSED</strong>, and verified in the repository (§1.4) rather than inferred. Nothing persists. Track is demo state and says so on screen, in the reader&#x27;s language, every time</td></tr>
+<tr><td><strong>Integration and release</strong></td><td><strong>HELD CLOSED.</strong> No merge, no deployment, no migration, no Rules or index change</td></tr>
+</tbody></table></div>
+<hr>
+<h2>10. The unit-key proposal the instruction required</h2>
+<p>Requested before any application of the key change: immutable edition ID, occurrence ordinal, legacy mapping, parser compatibility, numeric bound and collision handling.</p>
+<p><strong>Proposed form</strong> (unchanged from H1 §5): <code>hadith:&lt;editionId&gt;:&lt;occurrenceOrdinal&gt;</code>.</p>
+<div class='tw'><table><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody>
+<tr><td><strong>Immutable edition ID</strong></td><td>Minted once when an edition is approved, from a registry, never derived from a name. Lowercase <code>[a-z0-9-]</code>, 3–24 chars, e.g. <code>bk1422h</code>. <strong>Immutable by rule</strong>: a corrected reprint is a NEW edition id, never an edit to an existing one, because occurrences are numbered within it</td></tr>
+<tr><td><strong>Occurrence ordinal</strong></td><td>The occurrence&#x27;s 1-based position in that edition&#x27;s own source order, zero-padded to 5 digits. Assigned by the import run and frozen by its manifest&#x27;s <code>rowCounts</code> and <code>sourceChecksum</code>. <strong>Distinct for every repeat</strong>, which is what makes a repeat representable</td></tr>
+<tr><td><strong>Legacy mapping</strong></td><td>Existing <code>hadith:&lt;name&gt;:&lt;number&gt;</code> keys are <strong>never rewritten</strong> (I4). A <code>legacyHadithKeyMap</code> record maps an old key to an occurrence id once a reviewer confirms the edition it meant. Unmapped legacy keys stay readable and render with their raw key and a &quot;not resolved to an edition&quot; label — legible, never destroyed, never silently reinterpreted</td></tr>
+<tr><td><strong>Parser compatibility</strong></td><td><code>parseUnitKey</code> is untouched: it splits on the first colon and returns the rest. The shape still matches the accepted <code>/^hadith:[A-Za-z0-9_-]+:\d{1,6}$/</code> in <code>study-note-binding.js</code>, so ADR-009&#x27;s <code>sourceKind</code> derivation, <code>records.js</code>, <code>claimStatus()</code> and <code>chunkKeyFor()</code> all need no change</td></tr>
+<tr><td><strong>Numeric bound</strong></td><td>The accepted regex caps the ordinal at <strong>6 digits — 999,999 occurrences per edition</strong>, far beyond any real collection. A 5-digit pad leaves headroom inside that bound. An import exceeding it must fail loudly rather than truncate</td></tr>
+<tr><td><strong>Collision handling</strong></td><td>A key is unique by construction: one ordinal per position per edition. The import manifest asserts <code>rowCounts</code> against distinct ordinals and reports <code>duplicateIds</code>; a collision fails the import. Cross-edition collision is impossible because the edition id is in the key — which is the whole point, since two editions&#x27; &quot;number 1&quot; are different narrations</td></tr>
+</tbody></table></div>
+<p><strong>Still required before any of this is applied, and not obtainable in this environment:</strong> a live read-only inventory of existing <code>hadith:</code> records in production Firestore. <strong>The gate stays closed</strong>, and fixture-only work continues as authorised.</p>
+<hr>
+<h2>11. What this tranche deliberately did not do</h2>
+<ul><li><strong>The QuranRevival mount into <code>app/hadith-study.html</code> itself.</strong> The owner&#x27;s H0 decision was to EXTEND that module, and the cost recorded there binds: its renderer is shared with Deen Study, Arabic, General Study and Nature-Life, so the corpus view needs its own renderer behind the same module id, and editing a live page is a real layout change needing before-and-after measurement. <strong><code>?mount=quranrevival</code> demonstrates the shared component inside the QuranRevival shell today</strong>, touching no existing page. The live-page edit is H2-B.</li><li><strong>Hadith Approach ids.</strong> <code>APPROACH_TEMPLATES</code> is hardcoded to Quran (<code>catalogue.js:211</code>). The registry audit and the recorded decision are H2-B; <strong>no Quran Approach number has been assigned to Hadith</strong>, and Track currently carries no Approach at all.</li><li><strong>Explore aggregation.</strong> The topic index provides the counting model it needs; the Explore surface is H2-B.</li><li><strong>Notes and MMJ, even as demo state.</strong> Their collections are unruled and the Note editor is already held behind the same deployment gate on the Quran side. Adding a demo Note surface would invite the exact &quot;successful-save claim&quot; the instruction forbids.</li><li><strong><code>tools/i18n-verify/brief-integrity.mjs</code>.</strong> A one-line improvement is proposed, not applied — §7.4.</li></ul>
+</main></body></html>

@@ -1,0 +1,97 @@
+{
+  "manifestVersion": "hadith-commentary-manifest:v1",
+  "date": "2026-09-18",
+  "gate": "H1",
+  "derivedFrom": "QuranRevival — Hadith Commentary Source Register v01, 2026-09-18",
+
+  "schemaNote": "Field names are taken VERBATIM from the Source Register's 'Required commentary attachment schema' section, in its own snake_case, rather than restyled to this codebase's camelCase. A vocabulary that drifts from the document that records it is a second spelling with extra steps; the H1 guard reads these names out of this manifest and fails if one is missing.",
+
+  "occurrenceBindingFinding": {
+    "finding": "NEITHER verified match can be bound to a narration_occurrence_id yet, and this is correct rather than incomplete.",
+    "why": "An occurrence id is minted from an APPROVED EDITION (see the reference schema, §2). No edition is approved, so no occurrence exists to bind to. What each match is genuinely bound to today is an EXTERNAL REFERENCE — a scheme plus a displayed number — which is precisely the distinction the Master Plan insists on: 'never infer cross-edition equivalence from a number alone.'",
+    "consequence": "narration_occurrence_id is null on both rows and MUST stay null until an edition is approved and its occurrences are minted. The guard enforces that a non-null occurrence id requires an approved edition.",
+    "value": "This is the plan's identity rule showing up in the very first two rows of real data, before any code was written to violate it."
+  },
+
+  "matches": [
+    {
+      "commentary_match_id": "HCM-0001",
+      "subject": "hadith",
+      "collection_id": "bukhari",
+      "narration_occurrence_id": null,
+      "source_reference_scheme": "sunnah.com",
+      "source_reference": "bukhari:1",
+      "source_reference_display": "Ṣaḥīḥ al-Bukhārī 1 — Book of Revelation",
+      "narration_gloss": "Narrated from ʿUmar; the opening narration on intentions.",
+      "commentary_work_id": "fath-al-bari",
+      "commentary_work_title_ar": "فتح الباري",
+      "commentary_work_title_en": "Fatḥ al-Bārī",
+      "author_id": "ibn-hajar-al-asqalani",
+      "author_display": "Ibn Ḥajar al-ʿAsqalānī",
+      "digital_edition_id": null,
+      "commentary_location": "Book of Revelation, opening narration",
+      "source_url": "https://www.islamweb.net/ar/library/content/52/1/%D8%A8%D8%A7%D8%A8-%D8%A8%D8%AF%D8%A1-%D8%A7%D9%84%D9%88%D8%AD%D9%8A",
+      "source_id": "islamweb-library",
+      "language": "ar",
+      "passage_scope": "unreviewed",
+      "match_type": "direct",
+      "mapping_evidence": "The page was checked and contains Bukhārī 1 together with Ibn Ḥajar's Arabic explanation.",
+      "reviewer": "Master Architect",
+      "review_date": "2026-09-18",
+      "review_status": "link verified; passage boundaries and edition pagination NOT reviewed",
+      "rights_status": "link-only",
+      "content_revision": null,
+      "text_hash": null
+    },
+    {
+      "commentary_match_id": "HCM-0002",
+      "subject": "hadith",
+      "collection_id": "muslim",
+      "narration_occurrence_id": null,
+      "source_reference_scheme": "sunnah.com",
+      "source_reference": "muslim:1907a",
+      "source_reference_display": "Ṣaḥīḥ Muslim 1907a — Book of Government",
+      "narration_gloss": "The ʿUmar intentions narration.",
+      "commentary_work_id": "al-minhaj-sharh-sahih-muslim",
+      "commentary_work_title_ar": "المنهاج شرح صحيح مسلم",
+      "commentary_work_title_en": "al-Minhāj Sharḥ Ṣaḥīḥ Muslim",
+      "author_id": "al-nawawi",
+      "author_display": "Al-Nawawī",
+      "digital_edition_id": null,
+      "commentary_location": "Book of Government, chapter on intentions",
+      "source_url": "https://www.islamweb.net/ar/library/content/53/5758/",
+      "source_id": "islamweb-library",
+      "language": "ar",
+      "passage_scope": "unreviewed",
+      "match_type": "direct",
+      "mapping_evidence": "The page was checked and contains Muslim 1907 together with the Arabic explanation.",
+      "reviewer": "Master Architect",
+      "review_date": "2026-09-18",
+      "review_status": "link verified; WHICH 1907 sub-narrations the commentary discusses is NOT established",
+      "rights_status": "link-only",
+      "content_revision": null,
+      "text_hash": null
+    }
+  ],
+
+  "distinctnessRule": {
+    "rule": "HCM-0001 and HCM-0002 are two SEPARATELY CITED SOURCE OCCURRENCES of a related report. They keep their own collection, edition and source ids, and their own commentary records.",
+    "authorship": "The Bukhārī commentary is by Ibn Ḥajar. The Muslim commentary is by al-Nawawī. Neither explanation may ever be labelled as the Hadith's own words.",
+    "relation": "A shared conceptual 'related report' relation MAY be added after review. It does not replace or merge either original record.",
+    "guardEnforced": true
+  },
+
+  "displayContract": {
+    "panelTitleEn": "Classical Explanations",
+    "panelTitleAr": "شروح الحديث",
+    "perEntryFields": ["author_display", "commentary_work_title_en", "commentary_work_title_ar", "language", "commentary_location", "source_url"],
+    "arabicTypeScale": "Arabic renders at about twice the English text size.",
+    "whileLinkOnly": "Render the attributed citation and an outbound link. Render NO commentary text.",
+    "whenEmbedCleared": "Render the Arabic commentary in its own panel, preserving a direct citation alongside it.",
+    "neverDo": [
+      "Present an AI summary as the scholar's own words.",
+      "Auto-translate a scholar's legal conclusion as if it were their exact wording.",
+      "Label a commentary as the Hadith's own text."
+    ]
+  }
+}

@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith Study — H0 contract and file-ownership audit</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith Study — H0 contract and file-ownership audit</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Gate:</strong> H0 (read-only repository and contract audit), per <em>QuranRevival — Hadith Claude Start Prompt v03, 2026-09-18</em> and <em>Hadith Study Master Plan v01, 2026-09-17</em></li><li><strong>Blast radius:</strong> <strong>BR-0, documentation only.</strong> No file under <code>app/</code>, <code>tools/</code>, <code>tests/</code>, <code>firestore.rules</code>, <code>firebase.json</code> or any Rules/index candidate was modified. <code>git diff -- app/ tools/ tests/ firestore.rules firebase.json</code> is empty.</li><li><strong>Application version:</strong> <strong>08.25, unchanged.</strong> Documentation-only work retains the version, per the Start Prompt and the repository&#x27;s own convention.</li><li><strong>Result:</strong> H0 delivered. <strong>Five contradictions between the plan and the repository are reported below; two of them are Owner Control Gates and block H1/H2 from proceeding as written.</strong></li></ul>
+<hr>
+<h2>1. Verified repository state</h2>
+<p>Every value here was read from Git and the working tree in this session. Nothing is carried over from a document.</p>
+<div class='tw'><table><thead><tr><th>Fact</th><th>Verified value</th></tr></thead><tbody>
+<tr><td>Remote</td><td><code>https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io</code></td></tr>
+<tr><td>Default branch</td><td><code>main</code></td></tr>
+<tr><td>Checked-out branch</td><td><code>claude/beautiful-darwin-faeim7</code></td></tr>
+<tr><td>HEAD commit</td><td><code>d8f049207d80fdd58f31931d82a080ef7d4f6fe7</code></td></tr>
+<tr><td>HEAD subject</td><td><em>Audit the deployed rules for the same gap: clean, with one finding</em></td></tr>
+<tr><td>Application version</td><td><strong><code>08.25</code></strong> — <code>app/js/version.js</code>, <code>APP_VERSION = &quot;08.25&quot;</code></td></tr>
+<tr><td>Version on <code>main</code></td><td><strong><code>08.25</code></strong> — identical</td></tr>
+<tr><td><code>origin/main</code> tip</td><td><strong><code>d8f0492</code></strong> (18 Sep 2026, 00:30 UTC) — see the correction in §1.1</td></tr>
+<tr><td>Worktrees</td><td><strong>Exactly one:</strong> <code>/home/user/Madrasatul-Muslimeen.github.io</code></td></tr>
+<tr><td>Working tree</td><td>Clean (<code>git status --short</code> empty)</td></tr>
+<tr><td>Served from</td><td>GitHub Pages. Root <code>index.html</code> is a <strong>redirect stub</strong> to <code>/app/index.html</code>; the application itself lives in <code>app/</code></td></tr>
+<tr><td>Firebase project</td><td><code>study-monitoring</code> (<code>.firebaserc</code>), single project (D1)</td></tr>
+<tr><td><code>firebase.json</code></td><td><code>firestore.rules</code> only. <strong>No <code>indexes</code> key.</strong> No <code>firestore.indexes.json</code> exists</td></tr>
+<tr><td>App modules</td><td>85 files in <code>app/js/</code>, 28 pages in <code>app/*.html</code></td></tr>
+<tr><td>Deployed Rules</td><td><code>firestore.rules</code>, 1,122 lines, 39 collections</td></tr>
+<tr><td>Test harness</td><td>45 <code>.mjs</code> suites in <code>tools/i18n-verify/</code>, plus <code>tools/firestore-emulator/</code>. <strong>No <code>package.json</code></strong> — Playwright is installed ad hoc</td></tr>
+</tbody></table></div>
+<p><strong>Correction to the Start Prompt:</strong> it states <em>&quot;the application is served from the repository root.&quot;</em> It is not. The repository root serves a 20-line redirect stub; the application is served from <code>/app/</code>. Two frozen archives also serve from this repository and <strong>write real data to the same Firestore</strong>: <code>/legacy-v07/</code> (v07.139) and <code>/legacy/index.html</code> (v06.30). Both are marked <strong>REFERENCE ONLY — NEVER EDIT</strong>. Any Hadith standalone entry point must not be confused with these.</p>
+<h3>1.1 CORRECTED — the branch <em>is</em> a clean base, and my first measurement was wrong</h3>
+<p><strong>This section originally reported that the checked-out branch carried 21 unmerged Quran commits and was therefore not a verified base. That was wrong, and the error was mine.</strong></p>
+<p>I compared <code>HEAD</code> against the <strong>local</strong> <code>main</code> ref without fetching first. That ref was stale — it sat at <code>4b6bd60</code> (14 Sep 2026), four days behind. Fetching <code>origin/main</code> moved it <code>4b6bd60..d8f0492</code>, a <strong>fast-forward with no merge commit</strong>.</p>
+<p>The verified position:</p>
+<div class='tw'><table><thead><tr><th>Ref</th><th>Commit</th></tr></thead><tbody>
+<tr><td><code>origin/main</code></td><td><code>d8f0492</code> (18 Sep 2026, 00:30 UTC)</td></tr>
+<tr><td><code>claude/beautiful-darwin-faeim7</code> before this report</td><td><code>d8f0492</code> — <strong>identical to <code>origin/main</code></strong></td></tr>
+<tr><td><code>claude/beautiful-darwin-faeim7</code> after this report</td><td><code>d8f0492</code> + one documentation commit</td></tr>
+</tbody></table></div>
+<p>So all 21 commits — MAP Phase 4 P4-E, Phase 5 P5-F, Phase 6 P6-C and P6-D, and the test-harness excavation — <strong>are already on <code>main</code>.</strong> Nothing is unmerged. The branch was never entangled with in-flight Quran work.</p>
+<p><strong>What this changes, and it is all in Hadith&#x27;s favour:</strong></p>
+<ul><li><code>note-foundation.js</code> and <code>journey-map-service.js</code> are <strong>on <code>main</code> and stable</strong>, not moving underneath a Hadith adapter. They are a solid base to mount on, not a hazard to work around.</li><li>Cutting <code>feature/hadith-study</code> from <code>origin/main</code> gives a base that already contains the full Note Foundation and Mapping My Journey implementation.</li><li>C3 remains a real decision — the branch this session was pinned to is still the Quran line&#x27;s branch, and Hadith should have its own — but its <em>justification</em> is ordinary hygiene, not the entanglement I first reported.</li></ul>
+<p><strong>The lesson, recorded because it is the exact class of error this project&#x27;s own brief warns about:</strong> a local <code>main</code> ref is a cached value, not a measurement. <code>git fetch origin main</code> before comparing anything against it. I reported a divergence that a fetch would have shown did not exist.</p>
+<hr>
+<h2>2. THE FINDING THAT CHANGES THE TASK — a Hadith module already exists</h2>
+<p><strong>Neither the Master Plan nor the Start Prompt mentions it.</strong> It is live, in production, and shipped as part of Phase 12.</p>
+<div class='tw'><table><thead><tr><th>Evidence</th><th>Value</th></tr></thead><tbody>
+<tr><td>Page</td><td><code>app/hadith-study.html</code> (149 lines), live and linked</td></tr>
+<tr><td>Navigation</td><td><code>app/js/nav.js:63</code> — <code>{ href: &quot;hadith-study.html&quot;, label: &quot;Hadith&quot; }</code></td></tr>
+<tr><td>Renderer</td><td><code>app/js/topic-study.js</code> → <code>initTopicStudyPage({ moduleId: &quot;hadith&quot;, ... })</code> — the <strong>generic topic renderer</strong>, shared with Deen Study, Arabic, General Study and Nature-Life</td></tr>
+<tr><td>Module</td><td><code>catalogue-data.js:56</code> — <code>{ id: &quot;hadith&quot;, name: &quot;Hadith&quot;, icon: &quot;📜&quot;, renderer: &quot;topic&quot;, order: 7 }</code></td></tr>
+<tr><td>Subjects</td><td>Five, all <code>moduleIds: [&quot;hadith&quot;]</code> — Adab Al-Mufrad, Shamayyl Muhammadiya, Hadith — Al-Ghayb, Hadith Reading, Hadith — Stories</td></tr>
+<tr><td>Tracking</td><td><strong>One</strong> module-wide trackable, <code>studied_hadith</code>, from <code>studiedTemplate()</code> — name &quot;Studied&quot;, a single claim ramp per topic</td></tr>
+<tr><td>Unit keys written</td><td><strong><code>topic:&lt;subjectId&gt;</code></strong> — <em>not</em> <code>hadith:…</code></td></tr>
+<tr><td>Records chunk</td><td><code>subject_&lt;subjectId&gt;</code> (D12)</td></tr>
+</tbody></table></div>
+<p><strong>What this module is:</strong> a topic browser. A reader picks one of five Hadith topics, opens its resource, and claims one status (&quot;Studied&quot;) against it. There is <strong>no collection, no book, no chapter, no narration, no isnād, no matn, no edition, no grading, no commentary and no Arabic source text anywhere in it.</strong></p>
+<p>So the plan is not contradicted in its <em>goal</em> — nothing resembling the plan&#x27;s corpus model exists. It is contradicted in its <em>premise</em>: the plan reads as though Hadith is greenfield, and it is not. A new narration-level Hadith module and this topic module would both be called &quot;Hadith&quot;, both appear in the same navigation, and both write claims for the same people.</p>
+<p><strong>This is an Owner Control Gate</strong> — &quot;choose among materially different product behaviours.&quot; It must be decided before H1, because the answer changes the data model, the navigation, the catalogue seed and every record already claimed. The three options and their real costs are in §6.</p>
+<hr>
+<h2>3. The permanent unit key for Hadith already exists, and it conflicts with the plan</h2>
+<p><code>app/js/unit-keys.js</code> has carried a Hadith unit type since Phase 3:</p>
+<p>``<code> hadith: (collectionName, number) =&gt; </code>hadith:${collectionName}:${number}<code> </code>``</p>
+<p>The file&#x27;s own header offers <code>&quot;hadith:bukhari:5678&quot;</code> as its worked example. The shape is pinned a second time, independently, in <code>app/js/study-note-binding.js</code> as <code>/^hadith:[A-Za-z0-9_-]+:\d{1,6}$/</code>, where it maps to <code>sourceKind: &quot;hadith-unit&quot;</code>.</p>
+<p><strong>Three problems, all real:</strong></p>
+<ol><li>**It keys by collection <em>name</em>.** I5 is <em>&quot;units are keyed by permanent ID, never by name&quot;</em> — and <code>unit-keys.js</code> says so in its own opening comment. <code>bukhari</code> is a name-derived slug, not a permanent ID. The rest of the file obeys I5 strictly; this one entry does not.</li><li><strong>It keys by an edition-specific display number.</strong> The Master Plan requires an opaque internal narration ID plus a separate <code>ExternalReference</code> record, and states explicitly: <em>&quot;never infer cross-edition equivalence from a number alone.&quot;</em> A key of <code>hadith:bukhari:1</code> <strong>is</strong> that inference, baked permanently into the record. The Source Register makes the same point from the other side — <code>HCM-0001</code> and <code>HCM-0002</code> are two distinct source occurrences of one report and &quot;must retain their own collection, edition and source IDs.&quot;</li><li><strong>It cannot express a repeat occurrence.</strong> The plan requires repeated narrations to be kept as separate source occurrences. Two occurrences of the same numbered narration collapse to one key.</li></ol>
+<p><strong>How much does changing it cost? Measured, not assumed — and the answer is: almost nothing.</strong></p>
+<p><code>buildUnitKey.hadith</code> has <strong>no producer in any study screen.</strong> Searched across <code>app/</code>, <code>tools/</code> and <code>tests/</code>, the only application call site is <code>app/records.html:279</code>, inside a manual unit-key builder form where an administrator types a reference by hand. The remaining five hits are test fixtures. The live Hadith module writes <code>topic:</code> keys, not <code>hadith:</code> keys.</p>
+<p>So no study surface has ever produced a <code>hadith:</code> unit key. Whether any exists in production data is the one thing this session cannot verify — it requires reading live Firestore, which H0 does not authorise. <strong>That check is a prerequisite to H1.</strong></p>
+<p><strong>Changing a permanent Study Unit key is an Owner Control Gate</strong> and is not proposed here. Recorded, with the cost measured, for the Master Architect&#x27;s decision.</p>
+<hr>
+<h2>4. The shared contracts a Hadith adapter must mount on</h2>
+<p>Inventoried against the plan&#x27;s four pillars. <strong>Good news first: three of the four are already subject-neutral</strong>, so a Hadith adapter needs far less new shared surface than the plan anticipates.</p>
+<div class='tw'><table><thead><tr><th>Pillar</th><th>Current contract</th><th>Hadith fit</th></tr></thead><tbody>
+<tr><td><strong>Approach</strong></td><td>30 Approaches, seeded from <code>APPROACH_TEMPLATES</code> into each tenant&#x27;s <code>trackables</code> collection; the Firestore documents are the source of truth, not the constant. Owner-editable since v08.01–v08.02 (name, section, position, Guide).</td><td><strong>Hardcoded to Quran.</strong> <code>catalogue.js:211</code> states it plainly: <em>&quot;APPROACH_TEMPLATES&#x27; moduleId/subjectId are hardcoded to Quran.&quot;</em> Hadith Approaches need their own template set and ids. <strong>The plan&#x27;s instruction not to borrow Quran Approach numbers is correct and confirmed by the code.</strong> The mechanism already exists and needs no new authority: <code>studiedTemplate()</code> / <code>practisedTemplate()</code> are the precedent for module-scoped trackables (<code>subjectId: null</code>).</td></tr>
+<tr><td><strong>Study (Read/Note)</strong></td><td><code>claimStatus()</code> in <code>records.js</code> takes <code>{ tenantId, personId, subjectId, unitKey, trackableId, statusId, … }</code>. <strong>Entirely unit-type agnostic</strong> — it parses <code>unitType</code> out of the key and stores it.</td><td><strong>Mounts unchanged.</strong> No shared-code change required to record a Hadith claim, given a valid unit key and a trackable.</td></tr>
+<tr><td><strong>Record &amp; Track</strong></td><td>Six statuses (<code>not_applicable</code>, <code>not_started</code>, <code>learning</code>, <code>practising</code>, <code>achieved</code>, <code>mastered</code>); claim → confirm ramp with <code>confirmState</code>; I6 freezing; I7 exclusion. <code>computeConfirmationRequired()</code> derives who confirms from the person&#x27;s own teacher/guardian/prime links — <strong>not configured per subject except by an explicit <code>subjects.confirmationRequired</code> override</strong>.</td><td><strong>Mounts unchanged.</strong> Note the plan&#x27;s wording <em>&quot;Learning → Practicing → Achieved → Mastered&quot;</em> — the repository spells it <strong><code>practising</code></strong> and carries <strong>six</strong> statuses, not four. Use the stored ids verbatim.</td></tr>
+<tr><td><strong>Explore</strong></td><td>Per-Approach / per-unit aggregation reading <code>records</code> chunks.</td><td>Mounts, but its pooling is Quran-shaped (surah/juz/page). A Hadith hierarchy (collection → book → chapter) needs its own aggregation. New Hadith-owned code, not a shared change.</td></tr>
+<tr><td><strong>Mapping My Journey</strong></td><td><code>journey-map-contract.js</code> — pure, <strong>imports nothing at all</strong>, and a boundary check asserts that absence. Folder tree acyclic, own-owner, depth-bounded at 8. <code>journey-map-service.js</code> provides <code>folderContents</code>, <code>noteFilings</code>, <code>ownerFolderTree</code>, <code>moveNoteToFolder</code>.</td><td><strong>Fully subject-neutral — the best news in this audit.</strong> MMJ can carry Hadith notes with no change to shared code. <strong>One catch, see below.</strong></td></tr>
+<tr><td><strong>Note identity</strong></td><td>ADR-004: a Note has permanent identity; origin and placement are relationships, not identity. <code>note-foundation.js</code> provides the full lifecycle (create, revise, retire, folders, placements, source links). <code>study-note-binding.js</code> (ADR-009) binds a Note to a unit key and <strong>already accepts <code>hadith:</code> keys</strong>, deriving <code>sourceKind: &quot;hadith-unit&quot;</code>.</td><td><strong>Already anticipates Hadith.</strong> Permanent Note IDs are already distinct from Study Unit keys, and multiple notes per source are already supported. This satisfies the Start Prompt&#x27;s item 4 requirement without new design.</td></tr>
+<tr><td><strong>Roles / tenancy</strong></td><td><code>hasRoleIn()</code>, <code>canRecordFor()</code>, <code>isSelfPerson()</code>, <code>personInTenant()</code>, <code>isCoEnrolledTeacherOf()</code> in <code>firestore.rules</code>; tenant isolation enforced in rules (I13), not only in queries.</td><td><strong>Mounts unchanged</strong>, subject to §5&#x27;s deployment gate. <strong>Open, pre-existing:</strong> teacher scoping is by <em>student</em>, not by <em>subject</em> — a co-enrolled teacher has record authority across every subject. A Hadith-only external teacher is therefore <strong>not</strong> enforceable today. This is a known open item, not a Hadith defect.</td></tr>
+</tbody></table></div>
+<h3>4.1 The MMJ catch — &quot;Hadith Reflection auto-folder&quot; may cross an accepted gate</h3>
+<p>The Start Prompt asks for a <em>&quot;Hadith Reflection auto-folder by collection and source order.&quot;</em> ADR-010 closes folder <code>semanticRole</code> at exactly three values — <code>journey-map</code>, <code>reflection-archive</code>, <code>user</code> — and records that <strong>a fourth semantic role is an Owner Control Gate.</strong></p>
+<p>Three ways to satisfy the request, only one of which crosses that gate:</p>
+<ol><li>A <code>user</code> folder auto-created and ordered — <strong>no gate</strong>, and the ordering the plan asks for is already supported (<code>notePlacements.order</code>, with a composite index already specified for it).</li><li>Hadith notes filed under the existing <code>reflection-archive</code> system folder — <strong>no gate</strong>.</li><li>A new <code>hadith-reflection</code> system role — <strong>crosses ADR-010&#x27;s gate.</strong></li></ol>
+<p>Recommendation: option 1 or 2. <strong>Not decided here.</strong></p>
+<hr>
+<h2>5. The gate that blocks H2 as written: the Note Foundation is not deployed</h2>
+<p>This is the single most consequential constraint on the plan&#x27;s schedule, and the plan does not account for it.</p>
+<p><strong>The Note Foundation and Mapping My Journey collections have no deployed Firestore Rules.</strong> Searched <code>firestore.rules</code>: zero occurrences of <code>notes</code>, <code>noteRevisions</code>, <code>noteSources</code>, <code>noteFolders</code> or <code>notePlacements</code>. They exist only in <code>docs/governance/phase4-6-DEPLOYMENT-candidate-2026-09-17.rules</code>, which is a <strong>candidate awaiting Owner deployment through the Firebase Console.</strong></p>
+<p>An unruled collection is <strong>denied by default</strong>. So today, for every client:</p>
+<ul><li>A Hadith Note cannot be created.</li><li>A Hadith note cannot be filed into any MMJ folder.</li><li>The Phase 4 Study-event evidence writer cannot write.</li></ul>
+<p>Additionally, <strong>no composite index has ever been declared in this project</strong> — <code>firebase.json</code> has no <code>indexes</code> key. The Note Foundation&#x27;s queries need them, and deploying Rules without indexes would leave collections authorising queries they cannot execute. Rules and indexes must deploy together, indexes first.</p>
+<p><strong>Consequence for the plan:</strong> the Start Prompt&#x27;s H2 deliverable bundles <em>&quot;Study/Track/Explore/MMJ adapter&quot;</em> into one gate. <strong>Track mounts today. Note and MMJ cannot.</strong> H2 should be split, or its Note/MMJ half declared blocked on the same Owner Control Gate that already holds seven pending items. Building a Hadith Note surface before that deployment produces a screen whose every write is denied.</p>
+<p>This is not a Hadith problem and Hadith cannot fix it. It is reported so the tranche is planned around it rather than discovering it at test time.</p>
+<hr>
+<h2>6. Contradictions between the plan and the repository — the complete list</h2>
+<div class='tw'><table><thead><tr><th>#</th><th>Plan says</th><th>Repository says</th><th>Severity</th></tr></thead><tbody>
+<tr><td>C1</td><td>Hadith is to be built</td><td><strong>A Hadith module already exists and is live</strong> (topic-based, 5 subjects, one &quot;Studied&quot; trackable)</td><td><strong>Owner Control Gate</strong> — decide before H1</td></tr>
+<tr><td>C2</td><td>Narration identity is an opaque internal ID with separate <code>ExternalReference</code>; never infer cross-edition equivalence from a number</td><td><code>buildUnitKey.hadith(collectionName, number)</code> → <code>hadith:bukhari:1</code> — keys by <strong>name</strong> and by an <strong>edition-specific number</strong></td><td><strong>Owner Control Gate</strong> — permanent Study Unit key</td></tr>
+<tr><td>C3</td><td>Create a separate worktree and <code>feature/hadith-study</code> branch from a verified current base; do not use the Quran builder&#x27;s checkout</td><td><strong>One worktree exists</strong>, and this session is pinned to the Quran line&#x27;s own branch. <em>(Corrected: that branch is identical to <code>origin/main</code>, not 21 commits ahead of it — see §1.1)</em></td><td><strong>Blocks isolation</strong> — decide before H1</td></tr>
+<tr><td>C4</td><td>H2 delivers a Study/Track/Explore/<strong>MMJ</strong> adapter</td><td>Note Foundation and MMJ collections have <strong>no deployed Rules</strong> and <strong>no declared indexes</strong>; every write is denied by default</td><td><strong>Blocks half of H2</strong></td></tr>
+<tr><td>C5</td><td>&quot;the application is served from the repository root&quot;</td><td>Root is a redirect stub; the app is at <code>/app/</code>. Two frozen archives also serve from this repository and write to the same live Firestore</td><td>Factual correction</td></tr>
+<tr><td>C6</td><td>Record &amp; Track states <code>Learning → Practicing → Achieved → Mastered</code></td><td>Six statuses, spelled <code>practising</code>, plus <code>not_applicable</code> (I7) and <code>not_started</code></td><td>Use stored ids verbatim</td></tr>
+<tr><td>C7</td><td>Hadith Approaches need an inventory decision</td><td>Confirmed by code — <code>APPROACH_TEMPLATES</code> moduleId/subjectId are hardcoded to Quran</td><td>Plan is correct; mechanism exists</td></tr>
+</tbody></table></div>
+<h3>The C1 decision, with costs attached</h3>
+<div class='tw'><table><thead><tr><th>Option</th><th>What it means</th><th>Cost</th></tr></thead><tbody>
+<tr><td><strong>A — Extend</strong> the existing <code>hadith</code> module with a narration corpus alongside its five topics</td><td>One module, one nav entry, one module id. Topic claims keep working untouched</td><td>The topic renderer is <strong>shared with four other modules</strong>; a Hadith-only corpus view must not leak into them. Needs a second renderer behind the same module id</td></tr>
+<tr><td><strong>B — A second, separate module</strong> (e.g. <code>hadith-corpus</code>)</td><td>Full isolation. The existing module is untouched, additive only (I4)</td><td>Two &quot;Hadith&quot; entries in the same navigation. Confusing to a reader unless named and placed deliberately</td></tr>
+<tr><td><strong>C — Supersede</strong>: the new module replaces the existing one; the five topics migrate into it</td><td>One coherent Hadith surface</td><td><strong>Touches live records.</strong> Existing <code>topic:</code> claims would need re-keying or dual-reading. Destructive-migration territory, against I4</td></tr>
+</tbody></table></div>
+<p><strong>My recommendation: B now, A later if the owner wants them merged.</strong> It is the only option that is purely additive, needs no migration, and lets the corpus module be built and reviewed in isolation. The naming question (&quot;Hadith&quot; vs &quot;Hadith Study&quot; vs &quot;Hadith Collections&quot; in the nav) is small and reversible; the data question is not.</p>
+<hr>
+<h2>7. Proposed file-ownership map</h2>
+<p>Offered for agreement, not applied. No file below has been created.</p>
+<div class='tw'><table><thead><tr><th>Owner</th><th>Paths</th></tr></thead><tbody>
+<tr><td><strong>Hadith branch — exclusive</strong></td><td><code>app/hadith-<em>.html</code> (new corpus pages), <code>app/js/hadith-</em>.js</code>, <code>tools/hadith-data-pull/</code>, <code>tools/i18n-verify/hadith-<em>.mjs</code>, <code>docs/governance/hadith-</em></code>, <code>docs/reports/<em>-hadith-</em></code></td></tr>
+<tr><td><strong>Quran branch — exclusive, Hadith must not touch</strong></td><td><code>app/quranrevival.html</code>, <code>app/js/quran-<em>.js</code>, <code>app/js/mastery-wheel.js</code>, <code>app/js/ayah-</em>.js</code>, <code>app/js/qcr<em>.js</code>, <code>app/js/study-approach-contract.js</code>, <code>app/js/study-activity-evidence</em>.js</code></td></tr>
+<tr><td><strong>Shared — frozen; change only by agreed contract amendment</strong></td><td><code>app/js/unit-keys.js</code>, <code>app/js/records.js</code>, <code>app/js/activity.js</code>, <code>app/js/note-foundation.js</code>, <code>app/js/study-note-binding.js</code>, <code>app/js/journey-map-contract.js</code>, <code>app/js/journey-map-service.js</code>, <code>app/js/catalogue-data.js</code>, <code>app/js/nav.js</code>, <code>app/js/version.js</code>, <code>firestore.rules</code>, <code>firebase.json</code>, all Rules and index candidates</td></tr>
+<tr><td><strong>Never edited by anyone</strong></td><td><code>legacy/index.html</code>, <code>legacy-v07/</code></td></tr>
+</tbody></table></div>
+<p><strong>Shared interfaces needing agreement with the Quran builder, in priority order:</strong></p>
+<ol><li><code>unit-keys.js</code> — whether a narration-occurrence key is added, and in what shape (C2). Highest risk: it is the one file both lines of work would change for different reasons.</li><li><code>catalogue-data.js</code> — adding Hadith Approach templates and any new module/subject rows.</li><li><code>nav.js</code> — one line, but it is duplicated as static markup across 22 pages.</li><li><code>note-foundation.js</code> / <code>journey-map-service.js</code> — currently being actively extended on the Quran branch. <strong>Hadith should treat both as read-only until that work merges to <code>main</code>.</strong></li></ol>
+<hr>
+<h2>8. What H0 did not do, and why</h2>
+<ul><li><strong>No production data was read.</strong> Whether any <code>hadith:</code> unit key exists in live Firestore is unverified; verifying it needs Firestore access this gate does not authorise. <strong>Prerequisite to H1.</strong></li><li><strong>One suite was run, as a baseline: <code>brief-integrity.mjs</code>, 6 passed / 2 failed.</strong> No other suite was run — H0 changed no code, so there is nothing to regress. The harness&#x27;s own rule, that suites must be run from the repository root, was followed and is recorded for the first tranche that does change code.</li></ul>
+<h3>8.1 The two <code>brief-integrity</code> failures are a sandbox artefact, and the fact they test is true</h3>
+<p>Both failures read <code>Command failed: git rev-parse origin/claude/phase4-wiring</code>. Taken at face value this says the standing brief names an unmerged branch that no longer exists — which would be a real finding worth reporting.</p>
+<p><strong>It is not.</strong> Checked against the remote directly:</p>
+<p>``<code> git ls-remote --heads origin claude/phase4-wiring 7e2931f795af1cd97efc1167660cea93aa22b9ab    refs/heads/claude/phase4-wiring </code>``</p>
+<p>The branch exists, at <strong>exactly the commit <code>7e2931f</code> the brief names.</strong> This sandbox&#x27;s clone simply has a narrow fetch refspec, so no local <code>origin/claude/phase4-wiring</code> ref exists for <code>rev-parse</code> to resolve. The guard is checking a true fact and failing on how this environment fetched the repository.</p>
+<p><strong>Flagged, not fixed:</strong> <code>brief-integrity.mjs</code> could fall back to <code>git ls-remote</code> when a ref is not fetched locally, and would then be correct in both environments. It is a shared <code>tools/</code> file on the Quran side of the ownership map in §7, so it is reported rather than changed. Whoever picks it up should know the failure is environmental and the brief itself is accurate.</p>
+<ul><li><strong>No branch or worktree was created.</strong> Blocked on C3 (§9).</li><li><strong>No shared file was modified.</strong> Per the Start Prompt: <em>&quot;No shared mutation yet.&quot;</em></li><li><strong>No source text was fetched, imported or cached.</strong> No request was made to sunnah.com, islamweb.net, OpenITI or HadeethEnc. Per the Source Register, no corpus is approved and the absence of a displayed licence is not permission.</li><li><strong>Nothing was deployed, merged or published.</strong></li></ul>
+<hr>
+<h2>9. Blocking decisions</h2>
+<p><strong>C3 — branch and isolation.</strong> This session is pinned by its harness to <code>claude/beautiful-darwin-faeim7</code> and instructed never to push to another branch without explicit permission. The Start Prompt requires <code>feature/hadith-study</code> from a verified base. These cannot both be satisfied. <em>(My first reading of this section claimed the pinned branch also carried 21 unmerged Quran commits. It does not — see the correction in §1.1. The branch is identical to <code>origin/main</code>. The isolation case stands on its own without that claim.)</em></p>
+<p>Recommended: cut <code>feature/hadith-study</code> from <strong><code>origin/main</code></strong> (<code>d8f0492</code>, v08.25 — the verified current base) in its own worktree, and authorise pushing to it. This keeps the two lines of work reviewable and mergeable independently, which is what the Master Plan&#x27;s isolation rules are for.</p>
+<p><strong>C1 — the existing Hadith module.</strong> Extend, run alongside, or supersede (§6). This changes the data model, the catalogue seed and the navigation, so it must be settled before H1 begins.</p>
+<p><strong>C2 — the Hadith unit key.</strong> Whether <code>buildUnitKey.hadith</code> is amended, superseded by a new narration-occurrence key type, or left alone with the corpus keyed some other way. A permanent Study Unit key is an Owner Control Gate; no change is proposed here.</p>
+<p>Everything else in H1 — the source, edition, permission and commentary manifests, the reference and import schema, the synthetic fixtures — can proceed once C3 is answered, and does not depend on C1 or C2 being settled first.</p>
+<hr>
+<h2>10. Owner decisions — recorded 18 September 2026</h2>
+<p>Both blocking decisions in §9 were put to the owner with their costs attached, and both were answered.</p>
+<div class='tw'><table><thead><tr><th>#</th><th>Decision</th><th>Owner&#x27;s choice</th></tr></thead><tbody>
+<tr><td><strong>C1</strong></td><td>The existing Hadith module</td><td><strong>EXTEND IT.</strong> One module, one module id (<code>hadith</code>), one navigation entry — holding both the existing five topics and the new narration corpus</td></tr>
+<tr><td><strong>C3</strong></td><td>Branch and isolation</td><td><strong>Cut <code>feature/hadith-study</code> from <code>main</code>.</strong> Pushing to that branch is explicitly authorised</td></tr>
+</tbody></table></div>
+<p><strong>C2</strong> (the Hadith unit key) and <strong>C4</strong> (the undeployed Note Foundation and MMJ Rules) were <em>reported</em>, not decided. Both remain open. C2 is a permanent Study Unit key and stays an Owner Control Gate; C4 is the existing Firebase Console deployment gate, which Hadith cannot clear.</p>
+<h3>10.1 What &quot;extend it&quot; binds the next tranche to</h3>
+<p>The owner chose the option whose cost §6 named plainly, so that cost is now a <strong>constraint on H2, not a surprise to be discovered in it</strong>:</p>
+<p>&gt; The topic renderer is <strong>shared with four other modules</strong> — Deen Study, Arabic, General Study and Nature-Life. <code>app/hadith-study.html</code> calls <code>initTopicStudyPage({ moduleId: &quot;hadith&quot;, … })</code>, the same entry point those four use.</p>
+<p>So the corpus view <strong>must not be added to <code>topic-study.js</code> or <code>topic-renderer.js</code>.</strong> Anything put there reaches Deen Study, Arabic, General Study and Nature-Life as well, whether or not it is meant to. The binding shape:</p>
+<ol><li><strong>The corpus gets its own renderer</strong>, in Hadith-owned files, mounted behind the same <code>moduleId: &quot;hadith&quot;</code>.</li><li><strong><code>topic-study.js</code> and <code>topic-renderer.js</code> stay frozen to Hadith</strong> — they are shared files under §7&#x27;s ownership map and change only by agreed contract amendment.</li><li><strong>The existing five topics keep their <code>topic:</code> unit keys and their <code>studied_hadith</code> trackable, untouched.</strong> Extending is additive (I4); no claim already recorded is re-keyed, moved or rewritten.</li><li><strong>One module id, two views.</strong> A reader entering Hadith chooses between the topics they already have and the collections being built. How that choice is presented is a layout question for H2, and this project measures layout changes before and after.</li></ol>
+<p>Because the five existing topics are untouched, &quot;extend&quot; costs no migration. The distinction between it and the &quot;build alongside&quot; option is presentational — one menu entry rather than two — and it is reversible.</p>
+</main></body></html>

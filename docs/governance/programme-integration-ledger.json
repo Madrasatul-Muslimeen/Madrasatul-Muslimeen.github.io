@@ -29,7 +29,7 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "5ea0d928b8f326e0164c988ef79e4d1d1c168eeb",
+    "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
     "baselineRecordedOn": "2026-09-18",
     "version": "08.27",
     "$comment": [
@@ -75,14 +75,14 @@
       "owner": "hadith",
       "status": "RESERVED",
       "stampedAt": "7f61328",
-      "note": "Stage A -- accepted development milestone, stamped on feature/hadith-study. Unmerged."
+      "note": "Hadith Stage A -- accepted development milestone, stamped at 7f61328 on feature/hadith-study. The branch tip carries 08.29; this number is superseded INSIDE accepted history and is not a claim on any future merge number. Never independently merged, never deployed. Becomes HISTORICAL once v08.29 lands on main."
     },
     {
       "version": "08.29",
       "owner": "hadith",
       "status": "RESERVED",
-      "stampedAt": "cd344f4",
-      "note": "Stage B -- reserved integration version. Carried at the integration candidate tip fd8a8a2 (first stamped at cd344f4). Unmerged; Master Architect reports it has passed technical review and is held pending rebaseline onto the main that carries this ledger."
+      "stampedAt": "22526b20da1e1fe950992957aa2862e65b3cf925",
+      "note": "Hadith Stage B and the final integration candidate; the branch tip's stamp. AUTHORISED for merge to main by the Master Architect, 18 Sep 2026. Still RESERVED until that merge lands; this record is updated to RELEASED by the post-merge stamping commit."
     }
   ],
   "nextUnallocated": "08.30",
@@ -98,8 +98,8 @@
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
       "declaredVersion": "08.27",
-      "baselineSha": "5ea0d928b8f326e0164c988ef79e4d1d1c168eeb",
-      "baselineStatus": "CURRENT",
+      "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
+      "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
         "app/quranrevival.html",
         "app/js/quran-*.js",
@@ -117,7 +117,9 @@
         "tools/i18n-verify/note-*.mjs",
         "tools/i18n-verify/journey-map-*.mjs",
         "tools/i18n-verify/d14-*.mjs"
-      ]
+      ],
+      "baselineNote": "Its recorded baseline went stale when the ledger's own commits moved main past 5ea0d92; re-pointed at cfee898, which is main. Forward movement, not drift.",
+      "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md"
     },
     {
       "id": "quran-phase4-wiring",
@@ -183,11 +185,10 @@
       "name": "Hadith Study module stream",
       "activeBranch": "feature/hadith-study",
       "branchTip": "fd8a8a240cfff1875c3f7696652daa18c47ced1e",
-      "integrationState": "CANDIDATE_REVIEWED_HELD_PENDING_REBASELINE",
+      "integrationState": "CANDIDATE_AUTHORISED_FOR_MAIN_MERGE",
       "declaredVersion": "08.29",
-      "baselineSha": "5ea0d928b8f326e0164c988ef79e4d1d1c168eeb",
+      "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
-      "baselineAcknowledgement": "docs/reports/2026-09-18-programme-ledger-main-integration.md",
       "ownedPaths": [
         "app/hadith-*.html",
         "app/css/hadith.css",
@@ -200,31 +201,37 @@
       "declaredSharedTouches": [
         {
           "path": "CHANGELOG.md",
-          "status": "DECLARED",
-          "note": "+127/-0 from the merge base -- its own round entries, appended. NEW at fd8a8a2; guard E caught it as undeclared on the run that preceded this record."
+          "status": "AUTHORIZED",
+          "note": "+127/-0 from the merge base -- its own round entries, appended. NEW at fd8a8a2; guard E caught it as undeclared on the run that preceded this record.",
+          "authorisedBy": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
         },
         {
           "path": "CLAUDE.md",
-          "status": "DECLARED",
-          "note": "+65/-0 -- Hadith appended its own region. No Quran region rewritten."
+          "status": "AUTHORIZED",
+          "note": "+65/-0 -- Hadith appended its own region. No Quran region rewritten.",
+          "authorisedBy": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
         },
         {
           "path": "app/js/i18n/bn.js",
-          "status": "DECLARED",
-          "note": "+68/-0 -- additive keys only, into a catalogue both streams write."
+          "status": "AUTHORIZED",
+          "note": "+68/-0 -- additive keys only, into a catalogue both streams write.",
+          "authorisedBy": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
         },
         {
           "path": "tools/i18n-verify/behaviour.mjs",
-          "status": "DECLARED",
-          "note": "+27/-5. Measured three ways; the Quran stream's earlier figure of +32/-6 was wrong and is corrected here."
+          "status": "AUTHORIZED",
+          "note": "+27/-5. Measured three ways; the Quran stream's earlier figure of +32/-6 was wrong and is corrected here.",
+          "authorisedBy": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
         },
         {
           "path": "app/js/version.js",
-          "status": "DECLARED",
-          "note": "+16/-1 -- the 08.29 stamp and its collision-resolution comment. version.js is Master Architect authority; the touch is disclosed, the allocation is not this stream's to make."
+          "status": "AUTHORIZED",
+          "note": "+16/-1 -- the 08.29 stamp and its collision-resolution comment. version.js is Master Architect authority; the touch is disclosed, the allocation is not this stream's to make.",
+          "authorisedBy": "Master Architect, 2026-09-18 -- Hadith v08.29 Final Integration"
         }
       ],
-      "baselineNote": "The candidate merged origin/main 5ea0d92 into itself at e863c62, so it was CURRENT when built. Integrating this ledger moves main past 5ea0d92, which makes the candidate stale BY THIS COMMIT and by nothing else. The move is governance/verification only -- no application code, no version, no Rules, no Firebase configuration -- and the rebaseline is expected rather than a defect. Recorded here so guard F reports it as a known open item instead of a surprise."
+      "baselineNote": "Rebaselined onto cfee898 -- the Programme Ledger foundation -- by merge, so the candidate is CURRENT again. Stage A 7f61328 and Stage B 22526b2 were not rewritten. Merge to main is authorised by the Master Architect, 18 Sep 2026.",
+      "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md"
     }
   ],
   "platformSharedPaths": [
