@@ -24,6 +24,25 @@
 
 Read this first, every session. It is the standing brief.
 
+> ## ⇢ SESSION HANDOVER, 18 Sep 2026 — READ THIS SECOND
+>
+> **`docs/reports/2026-09-18-SESSION-HANDOVER.md`** (and `.html`) is the
+> deterministic handover for the session that stopped at
+> **`d8f049207d80fdd58f31931d82a080ef7d4f6fe7`**, app version **08.25**, clean
+> tree. It carries the exact verification state, the ledger item by item, the
+> three lists kept separate (**Owner decisions** / **technical work** /
+> **environment & access**), and **the exact first execution task**.
+>
+> **The single blocking dependency is ACCESS, not design:** authenticated
+> Firebase access to `study-monitoring`. With it, the first task is deploy
+> **four indexes, then the assembled Rules, in that order**. Without it, the
+> first task is the one timezone question in §11.B.
+>
+> Two classification corrections that session made to its own earlier framing,
+> so they are not re-litigated: the Phase 4 evidence `request.query.limit` is
+> **resolved technically — do NOT amend the candidate** (§11.C), and the
+> timezone item is **one question, not a UI decision** (§11.B).
+
 
 **Current milestone: v08.25 on `main`** (17 Sep 2026 — the version has not moved
 since 15 Sep because every round since has been BR-0: contracts, Rules and index

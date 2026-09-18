@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuranRevival — deterministic session handover</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>QuranRevival — deterministic session handover</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Purpose:</strong> hand this session&#x27;s state to the next Claude session without reconstruction</li><li><strong>Authority:</strong> Master Architect, session transition authorised. <strong>SESSION CHANGE ≠ PROJECT STOP.</strong></li></ul>
+<p>&gt; <strong>Read <code>CLAUDE.md</code> first, as always.</strong> This document does not replace the standing brief; it records exactly where this session stopped and what the next one may do without re-deriving anything. &gt; &gt; <strong>Do NOT redesign or reconstruct QuranRevival.</strong> Every item below is either done, gated, or has its next step stated.</p>
+<hr>
+<h2>1. Authoritative state</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><strong><code>main</code> SHA</strong></td><td><strong><code>d8f049207d80fdd58f31931d82a080ef7d4f6fe7</code></strong></td></tr>
+<tr><td><code>origin/main</code></td><td>identical — <code>d8f0492</code></td></tr>
+<tr><td><code>origin/claude/dreamy-tesla-0clj36</code></td><td>identical — <code>d8f0492</code> (fast-forwarded; it held nothing unique)</td></tr>
+<tr><td><strong>Working tree</strong></td><td><strong>clean</strong> — <code>git status --porcelain</code> empty</td></tr>
+<tr><td><strong>App version</strong></td><td><strong><code>08.25</code></strong> — <code>app/js/version.js</code>, unchanged all session</td></tr>
+<tr><td><code>firestore.rules</code></td><td><strong>byte-identical</strong> — nothing deployed</td></tr>
+<tr><td><code>firebase.json</code></td><td><strong>byte-identical</strong> — still declares no indexes</td></tr>
+<tr><td>All 3 Rules candidates + 4 index candidates</td><td><strong>byte-identical</strong></td></tr>
+</tbody></table></div>
+<p><strong>Nothing about how the app works changed this session.</strong> Ten tranches, zero application behaviour changes, no version bump — deliberately.</p>
+<h2>2. The ten tranches</h2>
+<p>Range: <strong><code>7d35bc0..d8f0492</code></strong> (ten commits, oldest first).</p>
+<div class='tw'><table><thead><tr><th>#</th><th>Commit</th><th>Purpose</th><th>Result</th></tr></thead><tbody>
+<tr><td>1</td><td><code>9a4bcb8</code></td><td>Fix the <code>behaviour.mjs</code> section-42 crash carried since v07.69</td><td><strong>802 → 973 passing</strong>, suite runs to completion; <strong>zero application defects</strong> in ten newly-reachable sections</td></tr>
+<tr><td>2</td><td><code>20972df</code></td><td><strong>P6-D</strong> — the <code>noteFolders</code> editing side the accepted Rules already authorise</td><td>4 functions added; <strong>two real defects in accepted P6-A/P6-B code</strong> found and mutation-proven</td></tr>
+<tr><td>3</td><td><code>2895573</code></td><td><strong>P5-F / P6-E</strong> — <code>noteSources</code> retire, <code>notePlacements</code> reorder</td><td>2 functions; two user-facing gaps closed</td></tr>
+<tr><td>4</td><td><code>6ea0c04</code></td><td><code>rules-authorisation-executable.mjs</code> — make the comparison mechanical</td><td>17 checks, 7/7 mutations, 3 reproducing the historical gaps</td></tr>
+<tr><td>5</td><td><code>be28d6f</code></td><td><strong>P4-E</strong> — the Activity evidence read side</td><td>7 tests; <strong>no new index</strong></td></tr>
+<tr><td>6</td><td><code>65ca32b</code></td><td>Extend that guard to <code>create</code> payloads</td><td><strong>17 → 38 checks</strong>, 11/11 mutations</td></tr>
+<tr><td>7</td><td><code>805737d</code></td><td>Sweep every <code>check()</code> runner for cannot-fail shapes</td><td>14 runners hardened; <strong>a check that had never run</strong> found and fixed</td></tr>
+<tr><td>8</td><td><code>98cae2c</code></td><td>Give the four non-<code>check()</code> suites meaningful exit codes</td><td>all four fixed; one real measurement defect in <code>panel.mjs</code></td></tr>
+<tr><td>9</td><td><code>8351247</code></td><td><code>brief-integrity.mjs</code></td><td><strong>v08.03 and v08.04 found missing from <code>CHANGELOG.md</code></strong>, recorded</td></tr>
+<tr><td>10</td><td><code>d8f0492</code></td><td>Audit the <strong>deployed</strong> rules for the same class</td><td><strong>clean</strong>; one flag (§10.2)</td></tr>
+</tbody></table></div>
+<p>Per-tranche evidence: <code>docs/reports/2026-09-17-<em></code> and <code>2026-09-18-</em></code>, each as <code>.md</code> and <code>.html</code>.</p>
+<h2>3. Exact final verification state</h2>
+<h3>3a. PASS — genuine</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>behaviour.mjs</code></td><td><strong>978 pass / 1 fail</strong> (979 checks, 56 sections, runs to the end)</td></tr>
+<tr><td><code>journey-map-contract</code></td><td>34</td></tr>
+<tr><td><code>journey-map-service</code></td><td>18</td></tr>
+<tr><td><code>note-foundation-data-layer</code></td><td><strong>95</strong> (47 + 30 P6-D + 18 P5-F/P6-E)</td></tr>
+<tr><td><code>study-note-service</code></td><td>32</td></tr>
+<tr><td><code>study-activity-evidence-store</code></td><td>26</td></tr>
+<tr><td><code>study-activity-evidence-boundary</code></td><td>17</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td><strong>38 / 0</strong></td></tr>
+<tr><td><code>brief-integrity</code></td><td><strong>8 / 0</strong></td></tr>
+<tr><td><code>journey-map-boundary</code> / <code>study-note-boundary</code> / <code>note-foundation-boundary</code></td><td>13 / 17 / 30</td></tr>
+<tr><td><code>firestore-index-requirements</code></td><td>8 / 0 — <strong>no new index all session</strong></td></tr>
+<tr><td><code>rules-deployment-candidate</code></td><td>10 / 0</td></tr>
+<tr><td>Phase 4 emulator</td><td><strong>53</strong></td></tr>
+<tr><td>Phase 5 emulator</td><td><strong>60</strong></td></tr>
+<tr><td>Phase 6 emulator</td><td><strong>58 → 60</strong>, and <strong>60/60 against the assembled deployment file</strong></td></tr>
+<tr><td><code>layout.mjs</code></td><td>EXIT 0 — <code>NO LAYOUT REGRESSIONS</code>, <code>CHANGED: 0</code> at all 16 configurations</td></tr>
+<tr><td><code>navcheck.mjs</code> / <code>reading.mjs</code> / <code>panel.mjs</code></td><td>EXIT 0 each</td></tr>
+<tr><td>Translation coverage</td><td><strong>1,803 scanned / 47 missing</strong> — unchanged</td></tr>
+</tbody></table></div>
+<h3>3b. Intermittent (22g, archive.org)</h3>
+<p><strong>3 checks — <code>22g</code> screensaver caption / alt text / poster URL.</strong> This sandbox&#x27;s proxy blocks <code>archive.org</code>. <strong>Proven intermittent inside this session alone:</strong> passed in runs 1, 3, 5, 9, 10, 12, 14; failed in 2, 4, 6, 7, 8, 11, 13 — on identical code. <strong>A green 22g is not evidence either.</strong> Will not occur for the Owner.</p>
+<h3>3c. TLS / sandbox environment</h3>
+<p><strong>6 checks across 3 suites</strong>, all one cause: <code>net::ERR_CERT_AUTHORITY_INVALID</code>, the sandbox&#x27;s own TLS interception, tripping every &quot;no page errors&quot; assertion on a page that fetches over HTTPS.</p>
+<ul><li><code>behaviour.mjs</code> 31e — 1</li><li><code>quran-word-card-rendered</code> — 2</li><li><code>quran-word-progress-rendered</code> — 3</li></ul>
+<p><strong>Recorded, not worked around.</strong> <code>--ignore-certificate-errors</code> was deliberately not used: it would also hide a real certificate problem. Will not occur for the Owner.</p>
+<h3>3d. Genuine unresolved failures</h3>
+<p><strong>NONE.</strong> Every failing check in the final state is 3b or 3c.</p>
+<h2>4. MAP / pending-dependency ledger, item by item</h2>
+<div class='tw'><table><thead><tr><th>#</th><th>Item</th><th>State</th><th>Blocked by</th></tr></thead><tbody>
+<tr><td>1</td><td>Phase 4 Activity-evidence Rules</td><td>READY — VERIFIED</td><td><strong>execution access</strong> (§6)</td></tr>
+<tr><td>2</td><td>Phase 5 Note Foundation Rules</td><td>READY — VERIFIED</td><td><strong>execution access</strong></td></tr>
+<tr><td>3</td><td>Phase 5 Note Foundation <strong>indexes</strong></td><td>READY — VERIFIED</td><td><strong>execution access</strong></td></tr>
+<tr><td>4</td><td><strong>P5-D</strong>, the Note editor surface</td><td>NOT BUILT, deliberately</td><td>items 2+3, and §8</td></tr>
+<tr><td>5</td><td>Guardian approval window</td><td>NOT IMPLEMENTED, deliberately</td><td><strong>Owner decision</strong></td></tr>
+<tr><td>6</td><td>Phase 6 folders/placements Rules</td><td>READY — VERIFIED</td><td><strong>execution access</strong></td></tr>
+<tr><td>7</td><td>Server-side folder-cycle prevention</td><td>RECORDED, not adopted</td><td><strong>Owner decision</strong> (§9)</td></tr>
+</tbody></table></div>
+<p><strong>Unchanged by this session.</strong> Items 1, 2, 3 and 6 are the <em>same</em> external dependency.</p>
+<p><strong>The write-only sweep is now complete</strong> across all six MAP collections and the deployed rules, and <code>rules-authorisation-executable.mjs</code> holds it complete mechanically.</p>
+<h2>5. Phase 4–6 deployment package</h2>
+<ul><li><strong>Owner-facing instructions:</strong> <code>docs/governance/phase4-6-production-deployment-package-2026-09-17.md</code></li><li><strong>The only file to paste:</strong> <code>docs/governance/phase4-6-DEPLOYMENT-candidate-2026-09-17.rules</code> — production + all three phases, <strong>625 added, 0 removed</strong></li><li><strong>NEVER paste a <code>candidate-2026-09-15</code> file</strong> — those two are self-contained test <em>extracts</em>; pasting one replaces the entire live ruleset with a file governing three collections</li><li><strong>Indexes go BEFORE rules</strong> — rules first would let the new screens ask questions the database then refuses</li><li><strong>Four indexes</strong>, in two candidate files (3 Phase 5, 1 Phase 6); <code>firebase.json</code> untouched and a check asserts it stays that way</li></ul>
+<p><strong>Status: READY — VERIFIED — PENDING EXECUTION ACCESS.</strong></p>
+<p><strong>The exact remaining dependency:</strong> authenticated Firebase access to the <code>study-monitoring</code> project. This sandbox has none — <code>firebase</code> reports &quot;Failed to authenticate&quot; and the Rules API returns 403. <strong>Deployment is an Owner Control Gate and is performed through the Firebase Console</strong>, not by a session. This is a bounded technical/access dependency, <strong>not</strong> a design question.</p>
+<h2>6. Phase 4 wiring candidate <code>7e2931f</code></h2>
+<ul><li><strong>Branch:</strong> <code>claude/phase4-wiring</code>, at <strong><code>7e2931f</code></strong> (v08.26)</li><li><strong>Relationship to <code>main</code>:</strong> refreshed against <code>main</code> on 17 Sep, <strong>three conflicts already resolved</strong>. It differs from <code>main</code> by <strong>exactly the wiring</strong>. Every Rules and index artefact on it is byte-identical to <code>main</code>.</li><li><strong>Do NOT re-cut it from an older base.</strong></li><li><strong>Why held:</strong> it wires live Study surfaces to the evidence writer. Until the Phase 4 Rules are deployed, the subcollection has <strong>no rule and is closed to every client</strong>, so every write it makes would be denied — and <strong>I15 requires that denial to reach the user.</strong> Merging it before deployment ships a feature that cannot function and surfaces errors to real readers.</li><li><strong>Activation condition:</strong> ledger item 1 deployed. Then merge, then verify.</li></ul>
+<h2>7. P5-D (Note editor surface)</h2>
+<p><strong>Deliberately NOT built, and that is unchanged.</strong></p>
+<p>Three independent reasons: (a) every write it makes is denied until items 2 <strong>and</strong> 3 are deployed — Rules without indexes leaves the collections authorising queries they cannot execute; (b) it is a real behaviour change requiring a version bump and full layout measurement; (c) ADR-004 defers the exact Note schema/editor.</p>
+<p><strong>The foundation beneath it is complete and verified</strong> — data layer, contracts, services, read and write sides, 95 data-layer assertions, 60 emulator assertions. P5-D is a surface on a finished foundation, not unfinished plumbing.</p>
+<h2>8. Folder-cycle / server-side protection</h2>
+<p><strong>THE ONE THING FIRESTORE RULES CANNOT DO HERE:</strong> they cannot prevent a cycle of length two or more. <code>A → B → A</code> satisfies every one-hop check, and Rules cannot walk an ancestor chain of unknown length.</p>
+<ul><li><strong>Enforcement is client-side only.</strong> A determined client can corrupt <strong>its own owner&#x27;s</strong> tree — never anyone else&#x27;s; every rule is owner-scoped.</li><li><strong>Therefore ANY walk of the folder tree must be bounded regardless of what the rules guarantee.</strong> <code>buildFolderTree()</code> is the one bounded walk; what makes it cycle-safe is the <strong>direction</strong> of the walk, not its <code>reached</code> guard.</li><li><strong>P6-D strengthened this</strong>: <code>folderTreeRefusal()</code> now counts the height of a moved subtree, and <code>tooDeep</code> is reported separately from <code>cyclic</code>.</li><li><strong>The server-side fix</strong> (<code>ancestorIds[]</code> + <code>depth</code>, the shape I12 uses) is <strong>RECORDED, NOT ADOPTED</strong>. Its cost: re-parenting becomes either forbidden or a multi-document rewrite Rules cannot verify.</li></ul>
+<p><strong>Status: Owner decision, unchanged.</strong> The decision is whether to forbid folder moves in exchange for server-enforced acyclicity.</p>
+<h2>9. Newly discovered issues, with evidence</h2>
+<h3>9.1 — Two real defects in accepted Phase 6 code <em>(FIXED, tranche 2)</em></h3>
+<ol><li><strong><code>folderTreeRefusal()</code> allowed a depth-bound breach on re-parent.</strong> It opened <code>let depth = 2</code> — correct for a create, which places a leaf; wrong for a move, which carries a subtree. <strong>Evidence:</strong> probe — a folder three levels tall moved under a parent six deep put its deepest descendant at <strong>nine</strong> and the function returned <code>null</code>. <strong>Mutation:</strong> reverting the fix kills check J32.</li><li><strong>A merely too-deep folder was reported to its author as CYCLIC.</strong> <code>cyclic</code> was &quot;not reached and not orphaned&quot;, and the walk stops at the cap, so everything below fell in. <strong>Mutation:</strong> dropping the <code>beyondCap</code> term kills J29.</li></ol>
+<p>These compound: (1) produced the over-deep tree, (2) mislabelled it. Neither was visible from the create path, the only path that existed.</p>
+<h3>9.2 — Deployed-rules audit: one gap <em>(RECORDED — see §11.B)</em></h3>
+<p><code>tenantPeople</code>&#x27;s third <code>allow update</code> permits a signed-in person to change <strong>their own <code>timezone</code></strong> and nothing else. Full analysis in §11.B.</p>
+<p>Two things from that audit worth not rediscovering:</p>
+<ul><li><strong><code>self-check.js</code> writing <code>{ platformAdmin: true }</code> to <code>userIndex</code> is the I10 NEGATIVE PROBE</strong>, designed to be refused; the screen reports a success as <em>&quot;URGENT&quot;</em>. A field-set comparison that does not read the surrounding code will call it a defect.</li><li><strong><code>users</code>&#x27;s <code>hasOnly([&#x27;studentIds&#x27;])</code> omits <code>updatedAt</code></strong>, which <code>updateDocument()</code> always stamps (I17). Moot while nothing writes that collection — a lost day for whoever first does.</li></ul>
+<h3>9.3 — Harness: a check that had never run <em>(FIXED, tranche 7)</em></h3>
+<p><code>quran-word-progress-model.mjs</code>&#x27;s <em>&quot;the module exposes NO event-to-state projection&quot;</em> had an <code>async</code> body in a synchronous runner: the assertion threw into an uncaught promise and the case printed PASS every time. It asserts one of <strong>MAP Phase 3&#x27;s locked distinctions</strong>. Fixed, then mutation-proven before being believed.</p>
+<h3>9.4 — A broken check hiding a real behaviour <em>(RECONCILED, tranche 7)</em></h3>
+<p><code>behaviour.mjs</code>&#x27;s <em>&quot;3a page did NOT reload&quot;</em> read <code>marker === undefined || marker === &quot;kept&quot;</code>, and the marker is set <strong>before</strong> the switch — so a reload is exactly what makes it <code>undefined</code>. It passed precisely in the case it was written to catch. <strong>Evidence:</strong> probe — the marker is set, survives opening the Home menu, and is wiped by the switch with <strong>one main-frame navigation to the same URL</strong>. <code>prefs.js</code> documents the reload as deliberate. <strong>Stale assertion, not a defect;</strong> inverted rather than deleted.</p>
+<h3>9.5 — Four suites whose exit codes meant nothing <em>(FIXED, tranche 8)</em></h3>
+<p><code>layout.mjs</code> exited <strong>1 on unmodified <code>main</code></strong> and <strong>0 for a real geometry change</strong>. <code>reading.mjs</code> counted problems and had no <code>process.exit</code>. <code>panel.mjs</code> had neither counter nor exit code. <code>navcheck.mjs</code> was permanently 1 on a pre-existing truncation. All fixed and proven in both directions.</p>
+<p><strong>Plus a real measurement defect:</strong> <code>panel.mjs</code>&#x27;s <code>cut: need &gt; w - 22</code> is true for <strong>any hidden select</strong> (<code>w = 0</code>), so off-screen controls were reported as truncated. Fixed at the source.</p>
+<h3>9.6 — Two rounds missing from <code>CHANGELOG.md</code> <em>(RECORDED, tranche 9)</em></h3>
+<p><strong>v08.03</strong> (<code>f5c15a9</code>, Note Foundation transaction gateway) and <strong>v08.04</strong> (<code>4833b19</code>, the uninvoked Note Foundation data layer, <code>app/js/note-foundation.js</code>) both shipped and both bumped <code>version.js</code>. <strong>Every Phase 5/6 round since has extended that file.</strong> Nothing was lost; the log implied they did not happen. The rule written after v07.124–128 did not hold and nothing checked it. <strong>It is checked now.</strong></p>
+<h3>9.7 — The baselines are honest but they are DEBT</h3>
+<p>Tolerated <strong>by name</strong>, each list reporting if an entry stops occurring so none can quietly grow: <strong>22</strong> missing <code>getElementById</code> targets; <strong>2</strong> nav truncations (English &quot;Operation&quot;/&quot;Bookmark&quot; at 320px); <strong>3</strong> select truncations (§11.A).</p>
+<hr>
+<h2>10. Preserved findings — must not regress</h2>
+<ol><li><strong><code>behaviour.mjs</code> executes through completion.</strong> 978/1, 979 checks, 56 sections. The ten previously-unreachable sections and every stale-test reconciliation in them are load-bearing. <strong>If it stops early again, the debt is everything downstream, not the one failing line — fix it that day.</strong></li><li><strong><code>rules-authorisation-executable.mjs</code></strong> — 38 checks. No authorisation may sit unexecutable; no data-layer write may sit unauthorised. Both directions, <code>update</code> and <code>create</code>, derived from the Rules text so a newly authorised field fails the day it is authorised.</li><li><strong><code>brief-integrity.mjs</code></strong> — 8 checks. The brief&#x27;s three &quot;check every session&quot; instructions are mechanical now.</li><li><strong>Every <code>check()</code> runner refuses a promise.</strong> All four non-<code>check()</code> suites have meaningful exit codes with named baselines.</li><li><strong>The crash hid the rot it created</strong> — a region a suite cannot reach is <strong>unverified</strong>, not passing.</li><li><strong>Read the failure text and the exit code, never a grep of them.</strong> Four near-misses in one session, each about to become a false finding.</li></ol>
+<hr>
+<h2>11. Classification corrections</h2>
+<h3>A. Tenant-picker truncation — <strong>genuine bounded Owner UI decision</strong></h3>
+<p><strong>Recorded as an Owner decision. No design choice implemented.</strong></p>
+<p><strong>Evidence:</strong> <code>panel.mjs</code>, every viewport — <code>tenantSelect &quot;Madrasatul Muslimeen (Owner, Prime)&quot; 145px needs 224px</code>. A real tenant&#x27;s name is <strong>cut in the picker</strong>. Pre-existing: printed by this suite all along, never counted, and outside the recorded pass claim (which says &quot;no truncated <strong>label</strong>&quot;; labels are clean).</p>
+<p>Two smaller ones ride with it: <code>surahSelect</code> (&quot;1. Al-Faatiha&quot;, 74px in an 89px cell) and <code>unitTypeSelect</code>, both tight once the 22px dropdown arrow is allowed for.</p>
+<p><strong>The decision is the Owner&#x27;s and is bounded</strong>: widen the cell, shorten the option text, or make the full value available without widening. Each has a different cost on the most tightly measured screen in the app. <strong>Nothing was implemented.</strong></p>
+<h3>B. Timezone — <strong>NOT an Owner decision yet; here is what it actually is</strong></h3>
+<p>My earlier framing (&quot;where does a timezone control live&quot;) was over-reach. The facts:</p>
+<p><strong>Why it exists in the Rules/data contract.</strong> <code>timezone</code> is <strong>written automatically at person creation</strong>, in three places, from <code>Intl.DateTimeFormat().resolvedOptions().timeZone</code>:</p>
+<ul><li><code>app/js/identity.js:102</code></li><li><code>app/js/invites.js:174</code></li><li><code>app/js/people.js:82</code></li></ul>
+<p>So it is real, populated data on every person. The deployed rule&#x27;s self-update clause exists so a person could <strong>correct</strong> an auto-detected value.</p>
+<p><strong>What consumes it: NOTHING.</strong> Zero reads anywhere in <code>app/js</code>. Written on create, read never.</p>
+<p><strong>Does accepted architecture determine a required capability? NO.</strong> <code>timezone</code> appears in <strong>no</strong> accepted document — not D1–D13, not any ADR, not the catalogue. Contrast <code>weekStartsOn</code>, which has <strong>D7</strong>, sits on the tenant document, and has a <strong>real consumer</strong>: <code>weekKeyFor()</code>.</p>
+<p><strong>Does anything need it today? NO — and this is the decisive technical fact.</strong> <code>weekKeyFor()</code> buckets by <code>date.getFullYear()/getMonth()/getDate()</code> — the <strong>device&#x27;s local calendar day</strong> — then normalises into UTC for the arithmetic. Week boundaries therefore do <strong>not</strong> depend on the stored field. The Activity week a study event lands in is the calendar day the person is actually living in.</p>
+<p><strong>The smallest unresolved decision — and it is smaller than a UI question:</strong></p>
+<p>&gt; <strong>Is <code>timezone</code> intended to be authoritative for anything (week bucketing, or scheduling in Phases 7–8), or is it captured-only provenance?</strong></p>
+<ul><li>If <strong>captured-only</strong>: nothing is required, the rule&#x27;s self-update clause is simply unused, that is harmless, <strong>and this flag closes with no work.</strong></li><li>If <strong>authoritative</strong>: then a correction path is needed <em>and</em> <code>weekKeyFor()</code>&#x27;s device-local behaviour becomes a separate question in its own right.</li></ul>
+<p><strong>No UI invented. No capability proposed.</strong> The next session should put exactly that one question, and not a design.</p>
+<h3>C. Phase 4 evidence <code>request.query.limit</code> — <strong>NOT an Owner decision; technically derivable, and the answer is: do not amend</strong></h3>
+<p><strong>Audited against Phase 4–6 Rules architecture and the Phase 5/6 bounds.</strong></p>
+<p><strong>What Phase 5/6 do:</strong> <code>listIsBounded()</code> is <code>request.query.limit &lt;= 100</code>, applied to <code>notes</code>, <code>noteRevisions</code>, <code>noteSources</code>, <code>noteFolders</code>, <code>notePlacements</code>.</p>
+<p><strong>Why they need it:</strong> those are <strong>top-level collections</strong>. A <code>list</code> is scoped only by the <code>where</code> clauses the client supplies, and the rules authorise per document — so without a query bound a client could ask for <strong>every document it is allowed to read</strong>, i.e. a person&#x27;s entire Note corpus in one request. The bound is what makes the read cost knowable.</p>
+<p><strong>Why Phase 4 is structurally different:</strong> evidence is a <strong>subcollection</strong> at <code>activity/{tenantId}__{personId}__{weekKey}/evidence</code>. <strong>The path IS the scope</strong> — one tenant, one person, one week. A client cannot widen it without naming a different parent document, and <code>allow read</code> already requires <code>canRecordFor(tenantId, personId)</code> per document.</p>
+<p><strong>What accepted architecture actually specifies.</strong> The load-speed contract (Architecture Part 8) says for Activity: <strong>&quot;One document per week&quot; / never &quot;A year at once.&quot;</strong> <strong>That bound is already enforced structurally by the subcollection path — it is the bound the architecture specifies.</strong> No accepted document states a per-document cardinality bound <em>within</em> a week.</p>
+<p><strong>The cost argument, which is decisive.</strong> The Phase 4 candidate&#x27;s own header records that a first draft was <strong>refused by expression-budget exhaustion — 11 of 36 assertions</strong> — the identical defect that rejected the earlier Activity candidate, and that three deliberate cost reductions removed it entirely. <code>allow read</code> is evaluated <strong>per document</strong> on a list. Adding <code>listIsBounded()</code> spends budget in a rule documented as having been engineered down to fit, to buy a constraint no accepted document requires.</p>
+<p><strong>Recommendation for the next Master Architect session: DO NOT amend the deployment candidate.</strong></p>
+<ol><li>The scope bound the architecture specifies is already enforced by the path.</li><li>Symmetry with Phase 5/6 is <strong>not</strong> a reason — the two are structurally different, and copying a solution across a boundary where the problem differs is a mistake this project has recorded before.</li><li>The client reader already caps itself: <code>MAX_EVIDENCE_PER_READ = 200</code>, asking for cap+1 to detect truncation rather than guess.</li><li><strong>If</strong> a future round demonstrates a real worst-case week size, the cheaper correct fix is <strong>client-side</strong> (lower the cap), not a Rules amendment to a candidate already in the Owner&#x27;s package.</li></ol>
+<p><strong>No Owner decision is required. This flag is resolved technically and downgraded from the decision list.</strong></p>
+<hr>
+<h2>12. The three lists, kept separate</h2>
+<h3>12a. Genuine Owner decisions</h3>
+<div class='tw'><table><thead><tr><th>#</th><th>Decision</th><th>Notes</th></tr></thead><tbody>
+<tr><td><strong>O1</strong></td><td><strong>Guardian approval window</strong> (ledger 5)</td><td>30-minute server-expiring, Note-specific approval. Matrix cases GUARD-05/06/07 describe it; no such mechanism exists. Every guardian content edit is denied outright instead — <strong>safer than the accepted design, and recorded rather than faked.</strong> An Owner storage decision.</td></tr>
+<tr><td><strong>O2</strong></td><td><strong>Server-side folder-cycle prevention</strong> (ledger 7)</td><td><code>ancestorIds[]</code> + <code>depth</code>. Costs the ability to move a folder, or a multi-document rewrite Rules cannot verify.</td></tr>
+<tr><td><strong>O3</strong></td><td><strong>Tenant-picker truncation</strong> (§11.A)</td><td>Bounded UI decision. Widen / shorten / reveal.</td></tr>
+<tr><td><strong>O4</strong></td><td><strong>Is <code>timezone</code> authoritative, or captured-only?</strong> (§11.B)</td><td>One question, not a design. &quot;Captured-only&quot; closes it with no work.</td></tr>
+<tr><td><strong>O5</strong></td><td><strong>A fourth folder <code>semanticRole</code></strong>, and what a Journey Map is <em>for</em></td><td>ADR-010 decides the minimum and says so explicitly.</td></tr>
+<tr><td><strong>O6</strong></td><td><strong>P5-D&#x27;s editor shape</strong></td><td>ADR-004 defers the exact Note schema/editor. Behind O-gates <em>and</em> the deployment dependency.</td></tr>
+</tbody></table></div>
+<p><strong>Not decisions:</strong> the Phase 4 <code>request.query.limit</code> (§11.C — resolved technically) and the restore path for retired links/placements (the Rules permit it; nothing asks for it; no work pending).</p>
+<h3>12b. Technical work — available with no new authority</h3>
+<p>The write-only/unexecutable sweep is <strong>complete</strong> and now mechanically held. Remaining known technical work:</p>
+<div class='tw'><table><thead><tr><th></th><th>Item</th></tr></thead><tbody>
+<tr><td>T1</td><td>Translate the refusal reason strings (<code>folderTreeRefusal()</code> returns reasons, not sentences, precisely so a surface can) — <strong>only when a Phase 6 surface exists</strong>. <code>too-deep</code> is new. I11.</td></tr>
+<tr><td>T2</td><td>Pay down §9.7&#x27;s baselines (22 ids, 2 nav, 3 select truncations) — each is a real small defect nobody has fixed.</td></tr>
+<tr><td>T3</td><td>Read <code>behaviour.mjs</code>&#x27;s newly-reachable sections for checks <em>wrong about their subject</em> (as opposed to unable to fail — that class is closed). Unbounded; do it opportunistically.</td></tr>
+</tbody></table></div>
+<h3>12c. Environment / access dependencies</h3>
+<div class='tw'><table><thead><tr><th></th><th>Item</th></tr></thead><tbody>
+<tr><td>E1</td><td><strong>Authenticated Firebase access</strong> to <code>study-monitoring</code> — gates ledger items 1, 2, 3, 6, and transitively 4 and the wiring merge. <strong>The single biggest unblocker.</strong></td></tr>
+<tr><td>E2</td><td><code>archive.org</code> unreachable (§3b) — intermittent, Owner-side fine.</td></tr>
+<tr><td>E3</td><td>Sandbox TLS interception (§3c) — Owner-side fine.</td></tr>
+<tr><td>E4</td><td>After any container restart: <code>npm i playwright@1.56.0</code> (matches Chromium build 1194 at <code>/opt/pw-browsers</code> — do <strong>not</strong> run <code>playwright install</code>) and restart <code>node serve.js</code> on :8080.</td></tr>
+</tbody></table></div>
+<h3>12d. Held deployment / activation actions</h3>
+<div class='tw'><table><thead><tr><th></th><th>Action</th><th>Released by</th></tr></thead><tbody>
+<tr><td>H1</td><td>Deploy <strong>4 indexes</strong>, then the assembled Rules — in that order</td><td>E1</td></tr>
+<tr><td>H2</td><td>Merge <code>claude/phase4-wiring</code> <code>7e2931f</code></td><td>H1 (Phase 4 portion)</td></tr>
+<tr><td>H3</td><td>Build P5-D</td><td>H1 + O6</td></tr>
+<tr><td>H4</td><td>Build the Journey Map surface</td><td>H1 + O5</td></tr>
+</tbody></table></div>
+<hr>
+<h2>13. EXACT first execution task for the next session</h2>
+<p><strong>If E1 (Firebase access) is supplied — do this, in this order, and nothing else first:</strong></p>
+<ol><li>Confirm <code>main</code> is at <code>d8f0492</code> and the tree is clean.</li><li>Re-run the three emulator suites against the <strong>assembled deployment file</strong>, not the extracts: <code>RULES_FILE=docs/governance/phase4-6-DEPLOYMENT-candidate-2026-09-17.rules</code> — expect <strong>53 / 60 / 60</strong>, zero failures.</li><li><strong>Deploy the four INDEXES first</strong> (3 from the Phase 5 candidate, 1 from the Phase 6 candidate), per <code>docs/governance/phase4-6-production-deployment-package-2026-09-17.md</code>. <strong>Indexes before rules — rules first would let the new screens ask questions the database then refuses.</strong></li><li><strong>Then paste <code>phase4-6-DEPLOYMENT-candidate-2026-09-17.rules</code></strong> — that file only. <strong>Never a <code>candidate-2026-09-15</code> file.</strong></li><li>Copy the current live rules out <strong>before</strong> pasting.</li><li>Verify deployment, then <strong>merge <code>claude/phase4-wiring</code> at <code>7e2931f</code></strong> — do not re-cut it from an older base.</li><li>Re-run the full suite set and record the result.</li></ol>
+<p><strong>If E1 is NOT supplied, the first task is instead O4</strong> — put the single timezone question from §11.B to the Owner. It is the cheapest open item, it needs no access, and one of its two answers closes it with no work at all.</p>
+<p><strong>Do not begin any surface (P5-D, Journey Map) before H1.</strong> Every write would be denied, and I15 requires that denial to reach the user.</p>
+<hr>
+<p><em>Master Architect note: this session&#x27;s ten tranches changed no application behaviour and left the version at 08.25 deliberately. The value delivered is that a suite which had silently stopped running for 70 rounds now runs to completion, four classes of unexecutable accepted decision are closed and mechanically held, and three of the brief&#x27;s &quot;remember to check this&quot; instructions are now checked by programs. The project&#x27;s blocking dependency is unchanged and is access, not design.</em></p>
+</main></body></html>
