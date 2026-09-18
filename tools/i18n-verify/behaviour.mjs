@@ -159,9 +159,9 @@ console.log("\n=== 1. English is untouched (nothing regressed for today's users)
         // (The Quran module's translation/word-by-word pickers have done this
         // since long before this round.) Excluded rather than counted as a leak.
         // #hadithContentLang is the corpus's CONTENT-language picker and
-      // belongs to exactly that group. #hadithSyntheticBanner joins for the
-      // same reason and a
-        // stronger one: it prints "these are not real narrations" in Arabic,
+        // belongs to exactly that group. #hadithSyntheticBanner joins for the
+        // same reason and a stronger one: it prints "these are not real
+        // narrations" in Arabic,
         // English AND Bangla on every page, in every language, always. That is
         // a SAFETY requirement, not a translation bug -- a reader in any one of
         // the three must be able to tell the corpus is invented without first

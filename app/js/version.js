@@ -5,10 +5,19 @@
 // last two digits bump on every new feature within it.
 // Single source of truth -- every place that shows the version imports
 // this, never retypes the string.
-// 08.28, and the jump past 08.27 is a COLLISION RESOLVED rather than a gap.
-// This branch reserved 08.27 while `main` was on 08.25; `main` has since
-// merged 08.26 (the nav fit) and shipped 08.27 (the number pickers), so for
-// a while two different builds carried 08.27 -- exactly the thing a version
-// number exists to prevent. Read off `main` and every other branch at the
-// time of the bump, not assumed: 08.28 was free.
+// v08.29 on the unmerged Hadith branch `feature/hadith-study`; `main` is on
+// v08.27. NEITHER v08.28 NOR v08.29 HAS EVER BEEN DEPLOYED -- both are
+// development milestones: v08.28 is Hadith Stage A, v08.29 is Hadith Stage B
+// and the final integration-candidate version.
+//
+// The jump past v08.27 is a COLLISION RESOLVED rather than a gap. This branch
+// reserved v08.27 while `main` was on v08.25; `main` then merged v08.26 (the
+// nav fit) and shipped its own v08.27 (the number pickers), so for a while two
+// different builds carried one number -- exactly the thing a version number
+// exists to prevent. Resolved by moving to v08.28 and then v08.29, each read
+// off `main` and every other branch at the time of the bump rather than
+// assumed. This comment led with "08.28" after Stage B had already moved the
+// constant to 08.29: a stale comment on the single source of truth is how the
+// next reader is misled, so read the constant, and read the next free number
+// off `main` at the time of a bump.
 export const APP_VERSION = "08.29";

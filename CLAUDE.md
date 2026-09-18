@@ -26,32 +26,47 @@ Read this first, every session. It is the standing brief.
 
 > ## ⇢ HADITH STUDY is being built on `feature/hadith-study` — READ IF YOU TOUCH HADITH
 >
-> **This branch carries app version `08.28`; `main` is `08.27`.** The
+> **This branch's final application version is `v08.29`; `main` is `v08.27`.** The
 > `Current milestone: v08.27 on \`main\`` line below is about `main` and is
-> **correct** — do not "fix" it to 08.28, which would claim an unmerged
-> version is live.
+> **correct** — do not "fix" it to v08.29, which would claim an unmerged version
+> is live. **Neither v08.28 nor v08.29 has ever been deployed or served to
+> anyone**; both are development milestones on this unmerged branch.
 >
-> **08.27 was a REAL COLLISION, not a reservation.** This branch took 08.27
-> while `main` was on 08.25; `main` then merged 08.26 and shipped its own
-> 08.27, so for a while two different builds carried one number. Resolved
-> 18 Sep 2026 by moving this branch to **08.28**, read off `main` and all 59
-> branches rather than assumed. **Read the next free number off `main` at the
-> time of a bump; do not trust this sentence's arithmetic.**
+> **The two milestones, and the history is kept rather than flattened:**
+> **v08.28 = Stage A** (`7f61328`), the synthetic-namespace correction.
+> **v08.29 = Stage B** (`22526b2`), the corpus mounted in the Hadith module,
+> the Approach registry proposal and demo-only Explore. Stage B is the final
+> candidate version. **This block previously said the branch "carries app
+> version 08.28"** — true when Stage A landed, stale the moment Stage B bumped,
+> and it also wrote the version without its `v`, which is the notation
+> `brief-integrity.mjs` scans for (`/\bv(0[78]\.\d{2})\b/`). Corrected
+> 18 Sep 2026: a version this brief names must be written `v08.xx` or the guard
+> cannot see it, and a version the guard cannot see is one it cannot check
+> against `CHANGELOG.md`.
+>
+> **v08.27 was a REAL COLLISION, not a reservation.** This branch took v08.27
+> while `main` was on v08.25; `main` then merged v08.26 and shipped its own
+> v08.27, so for a while two different builds carried one number. Resolved
+> 18 Sep 2026 by moving this branch to v08.28 and then v08.29, read off `main`
+> and every remote branch rather than assumed. **Read the next free number off
+> `main` at the time of a bump; do not trust this sentence's arithmetic.**
 >
 > **`tools/i18n-verify/brief-integrity.mjs` fails one check on this branch, by
 > design**: it compares the milestone line's version against the working tree's
 > `version.js`, which is right on `main` and wrong on any feature branch
 > carrying a bump. The guard offers a legitimate route out — a milestone line
 > naming the BRANCH and also stating `` `main` is still vNN.NN `` passes — but
-> **that line is the Quran/`main` side's to write, and rewriting it from here
-> is exactly the silent shared-file edit the Hadith instruction forbids.** So
-> the failure is RECORDED, not patched. Nothing else in the suite fails.
+> **that line is the Quran/`main` side's to write**, and rewriting it from here
+> is the silent shared-file edit the Hadith instruction forbids. So the failure
+> is RECORDED, not patched, and **the guard is never weakened to accommodate
+> it.**
 >
-> Gates H0 and H1 are accepted; **H2-A is accepted as corrected** (18 Sep 2026).
-> H2 is authorised on **synthetic fixtures only**.
+> Gates H0 and H1 are accepted; **H2-A is accepted as corrected** (18 Sep 2026)
+> and H2-B is delivered in its authorised limited scope. H2 remains authorised
+> on **synthetic fixtures only**.
 > See `docs/reports/2026-09-18-hadith-h0-contract-and-file-ownership.md`,
 > `...-h1-source-rights-and-reference-schema.md`, the H2-A report, the
-> reconciliation and the Stage A correction report.
+> reconciliation, the Stage A/B report and the integration candidate report.
 > **Zero editions are rights-cleared**, so every Hadith narration in the
 > repository is invented for development and says so in its own Arabic.
 >
@@ -65,6 +80,14 @@ Read this first, every session. It is the standing brief.
 > plausible real id and refuse a half-done rename. **Do not add a fixture id
 > outside that namespace** — the sweep is derived from the data, so a new row
 > joins it automatically.
+>
+> **SHARED_CHANGE_REQUEST_01 = ACCEPTED_ARCHITECTURAL_DEBT_DEFERRED.** The
+> language-leak check in `behaviour.mjs` excludes deliberately multi-script
+> elements by a hand-maintained id list, now five entries across three modules.
+> The future platform solution must distinguish **intentionally
+> multi-language/multi-script content** from `[data-i18n-skip]`, which means
+> "do not translate" and is a different contract. **That contract is NOT
+> invented here**; the Stage B exclusion stands for this candidate.
 
 > ## ⇢ SESSION HANDOVER, 18 Sep 2026 — READ THIS SECOND
 >

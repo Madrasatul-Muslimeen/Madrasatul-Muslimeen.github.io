@@ -14385,3 +14385,130 @@ adding one field to the contract's automatic payload that the Rules do not
 permit fails **three** emulator cases with a real `permission-denied` and the
 field-set assertion — the "denied in production, and no pure suite would notice"
 failure, noticed.
+
+---
+
+## v08.28 — Hadith Stage A: the synthetic namespace, enforced (18 Sep 2026)
+
+**A Hadith DEVELOPMENT milestone on the unmerged branch `feature/hadith-study`,
+commit `7f61328`. It has never been merged to `main`, never deployed, and never
+served to anyone.** `main` was on v08.27 throughout and still is. Recorded here
+because the project's own rule is that a version named in the brief is named in
+this log — not because anything shipped.
+
+The H2-A audit withheld acceptance on one finding. `app/js/hadith-fixture-data.js`
+stated its own safety rule — *"EVERY ID IS PREFIXED `synthetic-`"* — and **the data
+did not satisfy it**. Occurrences carried `syn-occ-`, topic mappings `syn-map-`,
+and the topic id was the bare **`topic-salah`**, with no synthetic marker at all.
+Only the last mattered: a future reviewed Ṣalāh topic would very plausibly be
+minted under exactly that id, and three `reviewStatus: "unreviewed"` synthetic
+mappings would then share a topic id with real ones.
+
+Renamed to **`synthetic-topic-salah`** across the fixture, its three mappings, the
+browser's topic call and the suite. Nothing stale survived it, established rather
+than assumed: no JSON artefact in the repository references a topic id, and the
+module performs **no durable write of any kind**.
+
+**The guard had codified the prefixes as built rather than the rule as stated**, so
+the gap could not fail a check. Three GATE checks now enforce it, none asserting a
+literal value: a sweep that walks every fixture export and checks each id against
+its own family's permitted prefix (carrying a positive control, because a sweep
+that gathered nothing would pass every case vacuously); a collision check that
+refuses any id a real taxonomy or import would plausibly mint — `topic-salah` is
+in that list *because the fixture really did hold it*; and a referential check that
+refuses a half-done rename.
+
+**Failing-then-passing, then mutation-proven four ways.** Before the rename, with
+the checks already written: 27 passed / 2 failed, naming the defect exactly. After:
+29 / 0. Reverting one mapping to the old id fails all three checks; blinding the
+sweep trips its positive control; giving the topic the wrong family's prefix fails
+the sweep.
+
+The fixture comment was corrected to state the namespace as it really is —
+`synthetic-` for the hierarchy and taxonomy, `syn-occ-` and `syn-map-` for the two
+row-level families — with the reason the old wording was wrong recorded in place.
+
+**Version.** v08.27 → v08.28. This resolved a **real collision, not a gap**: the
+branch had taken v08.27 while `main` was on v08.25, and `main` then merged v08.26
+and shipped its own v08.27, so two builds briefly carried one number. v08.28 was
+verified free across every remote branch before the bump.
+
+**Evidence.** Hadith suites 57 / 0. Eleven focused regression suites all exit 0.
+Rendered preview 22 / 22 at 390×844 in English and Bangla. `behaviour.mjs`
+978 / 4 across 56 sections, all four failures environmental. No `firestore.rules`
+or `firebase.json` change. No merge, no deploy, no durable write.
+
+## v08.29 — Hadith Stage B: the corpus in the module, and Explore (18 Sep 2026)
+
+**A Hadith DEVELOPMENT milestone on the unmerged branch `feature/hadith-study`,
+commit `22526b2`. Never merged to `main`, never deployed, never served to anyone.**
+It is the final application version of the Stage A/B integration candidate.
+
+**The corpus mounted inside `app/hadith-study.html`**, beneath the existing
+Approach/Track surface, using the same component the standalone
+`hadith-collections.html` route uses — one component, two routes, so the two
+cannot silently diverge. **`app/js/topic-study.js`, the shared renderer used by
+eight pages, is byte-for-byte untouched**, as are `catalogue.js`,
+`catalogue-data.js`, `records.js`, `activity.js`, `firestore.rules` and
+`firebase.json`. Measured before and after across 8 pages × 3 widths × 2 languages:
+42 of 48 metrics byte-identical, and **zero of the seven sibling topic-study pages
+moved on any metric**.
+
+**Two real defects found on the way, both by looking rather than by asserting.**
+The mount was first placed in the *same* module script as the `topic-study` import,
+which pulls the Firebase SDK from the CDN; in a browser that cannot reach it the
+whole script fails and everything in it is skipped — the corpus rendered **nothing
+at all, with no page error to say so**. It reads synthetic fixtures and needs no
+sign-in, so it has no business dying with Firebase: it mounts from its own script
+block now, proven to render with Firebase entirely unreachable. Then, with 60
+rendered checks green, the screenshot showed the not-Hadith notice **stripped of
+its red panel** and every collection row as a **dark navy block with the edition id
+run into the name**. The markup was correct; the styles were trapped in one page's
+inline `<style>`. Extracted to **`app/css/hadith.css`**, linked by both pages, and
+asserted by **computed style** thereafter rather than by element existence.
+
+**The Approach registry is a PROPOSAL and allocates nothing.**
+`docs/governance/hadith-approach-registry-PROPOSAL-2026-09-18.md`. The audit found
+30 Approaches bound to Quran **at seed time** (`catalogue.js` hardcodes
+`moduleId`/`subjectId`; the templates carry neither), and that Hadith has exactly
+one trackable — `studied_hadith`, a generic module "Studied" row, **not an
+Approach**. Reusing `approach_NN` is refused on three facts: a trackable id *is* a
+document id; claims are keyed by `trackableId` (I5), so the same id would
+reinterpret existing Quran claims; and the seed hardcodes `subjectId: "quran"`.
+**No id is minted and `catalogue*.js` is unmodified.**
+
+**Explore counts the source and the taxonomy, and no progress at all.** Progress is
+reported **UNAVAILABLE, never zero** — a zero would read as "nothing studied yet"
+when the truth is that nothing durable exists to count. **The first model was wrong
+and two rendered checks caught it**: it computed overlap as
+`mappingCount − distinctOccurrences`, backwards. Measured, the three mappings are
+one chapter, one whole book and one occurrence, so a mapping covers *many*
+narrations and mappings are normally **fewer** than narrations. It now reports what
+was measured — 3 curatorial decisions reaching 5 narrations — with double-reach
+computed off the listed rows and stated either way rather than left silent.
+
+**A regression this round caused in shared verification, and the narrow fix.**
+Mounting the corpus turned `behaviour.mjs`'s *"no Bangla leaked into an English
+page"* red, because `app/hadith-study.html` is in `NAV_PAGES` and the standalone
+page is not. It is a genuine clash between two correct requirements: the
+not-Hadith notice **must** print in Arabic, English and Bangla on every page in
+every language. The check already excluded three language pickers by id for exactly
+this reason; `#hadithSyntheticBanner` and `#hadithContentLang` joined that list, in
+both of the file's leak checks, reason recorded in place, **excluded by element and
+never by page**. A first, narrower attempt was insufficient and a positive control
+caught it. Proven both ways: a seeded Bangla paragraph is still detected, and the
+clean page passes. **`SHARED_CHANGE_REQUEST_01` — replacing that id list with a
+declarative contract — is ACCEPTED ARCHITECTURAL DEBT, DEFERRED.**
+
+**Version.** v08.28 → v08.29, re-checked free across every remote branch
+immediately before the bump.
+
+**Evidence.** Hadith suites 61 / 0. Thirteen regression suites all exit 0. Rendered
+100 / 100 across both routes, three widths and both languages. `behaviour.mjs`
+978 / 4 across 56 sections, the same 982 total `main` itself records, all four
+failures environmental.
+
+**Gates closed throughout both milestones:** no real corpus, translation or
+commentary embedding; no permanent Hadith semantic key; no Approach ID allocation;
+no durable Track; no Notes/MMJ persistence; no Rules or index activation; no
+migration; no deployment.
