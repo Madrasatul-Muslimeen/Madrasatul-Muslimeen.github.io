@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA automation pilot — STEP 2: wiring the Claude GitHub Action</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  pre { background:var(--code); padding:.85rem 1rem; border-radius:.5rem; overflow-x:auto;
+    border:1px solid var(--rule); margin:1rem 0 }
+  pre code { background:none; padding:0; font-size:.85rem; word-break:normal }
+  blockquote { margin:1.1rem 0; padding:.1rem 0 .1rem 1rem; border-left:3px solid var(--accent);
+    color:var(--muted) }
+  blockquote strong { color:var(--fg) }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA automation pilot — STEP 2: wiring the Claude GitHub Action</h1>
+<p><strong>Date:</strong> 19 September 2026 <strong>Branch:</strong> <code>claude/pilot-claude-app-wiring</code> <strong>Pull request:</strong> <strong>[#89](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/89)</strong> — <strong>OPEN, NOT MERGED</strong> <strong>Base:</strong> <code>main</code> at <strong><code>fa0621794cb970f4e7e31696410ad2c8686fdd3e</code></strong> — verified by fetch, <strong>unchanged by this work</strong> <strong>Result:</strong> <strong>Stopped at a reviewable configuration, as instructed.</strong> The identity mechanism is verified from the Action's own source; the wiring is inert until the Owner adds a Claude API credential.</p>
+<p><strong>Scope held:</strong> one file added, <code>.github/workflows/claude.yml</code> (125 lines). <code>verify.yml</code> untouched. No app code, no version change (<code>version.js</code> still <code>08.31</code>), no Firestore Rules, no repository settings, <strong>no credential added, no secret printed.</strong></p>
+<hr>
+<h2>1. The new remote tip, verified</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td><code>origin/main</code></td><td><strong><code>fa0621794cb970f4e7e31696410ad2c8686fdd3e</code></strong></td></tr><tr><td>Tip subject</td><td><em>Merge pull request #88 from …/claude/pilot-ci-verify-workflow</em></td></tr><tr><td>Merge shape</td><td><strong>A real merge commit</strong> — <code>fa06217</code> has <code>2661a52</code> and <code>b700e3f</code> as parents; not a fast-forward or squash</td></tr><tr><td><code>.github/workflows/verify.yml</code></td><td><strong>Now present on <code>main</code></strong> (it was absent at <code>b700e3f</code>)</td></tr><tr><td>Application version</td><td><strong><code>08.31</code></strong> — unchanged</td></tr></tbody></table></div>
+<p><strong>PR #88's merge is confirmed at the SHA the Owner reported.</strong></p>
+<hr>
+<h2>2. THE VERIFIED IDENTITY MECHANISM</h2>
+<p>Read from <code>anthropics/claude-code-action</code> at commit <strong><code>cfc3eb22bfed5c26ef66e3223c982af27e4524de</code></strong>, cloned and read directly — <strong>not recalled, and not inferred from the README.</strong></p>
+<blockquote><p><strong>The instruction not to assume the installed App's token is available inside a workflow was the right one to give. It is NOT ambient.</strong> A workflow does not automatically hold the installed App's credentials; there is no implicit App token in the runner environment. It has to be <em>fetched</em>, and fetching it has preconditions that are easy to break by accident.</p></blockquote>
+<h3>2.1 How the App token is actually obtained — <code>src/github/token.ts</code></h3>
+<p><code>setupGitHubToken()</code> does this, in order:</p>
+<ol><li><strong>If <code>github_token</code> is supplied, it is used verbatim and nothing else happens</strong> (<code>OVERRIDE_GITHUB_TOKEN</code>).</li><li>Otherwise it mints a <strong>GitHub Actions OIDC token</strong> with audience <code>claude-code-github-action</code> via <code>core.getIDToken(...)</code>. The error text is explicit about the precondition: &gt; <em>"Could not fetch an OIDC token. Did you remember to add <code>id-token: write</code> to your workflow permissions?"</em></li><li>It <code>POST</code>s that token to <strong><code>https://api.anthropic.com/api/github/github-app-token-exchange</code></strong>.</li><li>The response carries an <strong>installation token for the Claude GitHub App</strong> — the App already installed on this repository, id <code>1236702</code>. It is masked with <code>core.setSecret(appToken)</code>.</li></ol>
+<p>Default permissions requested in the exchange (<code>DEFAULT_PERMISSIONS</code>): <code>contents: write</code>, <code>pull_requests: write</code>, <code>issues: write</code>.</p>
+<p><strong>So the answer is: the App's token IS obtainable inside a workflow, but only via this exchange, and only when two conditions both hold — <code>id-token: write</code> is granted, AND <code>github_token</code> is left unset.</strong> The permission is load-bearing, not boilerplate.</p>
+<h3>2.2 The bot identity is a declared constant — <code>src/github/constants.ts</code></h3>
+<pre><code>export const CLAUDE_APP_BOT_ID = 41898282;
+export const CLAUDE_BOT_LOGIN = "claude[bot]";</code></pre>
+<p>Confirmed as the defaults of the <code>bot_id</code> / <code>bot_name</code> inputs in <code>action.yml</code>, and used for git identity in <code>src/github/context.ts</code>.</p>
+<div class='tw'><table><thead><tr><th>Identity</th><th>id</th><th>Type</th></tr></thead><tbody><tr><td><strong><code>claude[bot]</code></strong></td><td><strong>41898282</strong></td><td>App bot</td></tr><tr><td><code>AAAsapp</code></td><td>293311955</td><td>User</td></tr></tbody></table></div>
+<p><strong>Distinct.</strong> A PR authored by <code>claude[bot]</code> is a PR <code>AAAsapp</code> did not author, so GitHub's self-approval block would not apply to it.</p>
+<h3>2.3 Why <code>github_token</code> is deliberately omitted — it would break BOTH goals</h3>
+<p>Passing <code>github_token: ${{ secrets.GITHUB_TOKEN }}</code> is the single most tempting mistake here, and it fails twice:</p>
+<ol><li><strong>Identity</strong> — the author becomes <code>github-actions[bot]</code>, not <code>claude[bot]</code>.</li><li><strong>Triggering</strong> — the Action's own FAQ states the rule plainly: &gt; <em>"The <code>github-actions</code> user cannot trigger subsequent GitHub Actions workflows. This is a GitHub security feature to prevent infinite loops. To make this work, you need to use a Personal Access Token (PAT) instead, which will act as a regular user, <strong>or use a separate app token of your own</strong>."</em></li></ol>
+<p>The Claude App installation token <strong>is</strong> a separate app token, so a PR opened with it is expected to trigger <code>verify</code>. <strong>Expected — see §5, U2. This is the one link in the chain that is reasoned rather than observed.</strong></p>
+<p>The workflow file carries this reasoning in its own header, so the next reader does not have to rediscover it.</p>
+<hr>
+<h2>3. WHY THIS STOPS AT A CONFIGURATION</h2>
+<p>Two independent reasons. The second is not a choice.</p>
+<h3>3.1 The Claude API credential is the Owner's</h3>
+<p>The App token authenticates to <strong>GitHub</strong>. It does <strong>not</strong> authenticate to the <strong>Claude API</strong> — that is a separate credential the App does not supply. Nothing here creates, stores or prints one.</p>
+<h3>3.2 The token exchange refuses a workflow that is not on the default branch</h3>
+<p><code>src/github/token.ts</code> carries the error code <code>workflow_not_found_on_default_branch</code>, and the Action's own message is unambiguous:</p>
+<blockquote><p><em>"Action skipped due to workflow validation error. This is expected when adding Claude Code workflows to new repositories or on PRs with workflow changes. If you're seeing this, your workflow will begin working once you merge your PR."</em></p></blockquote>
+<p><code>src/entrypoints/run.ts</code> catches it, sets the output <code>skipped_due_to_workflow_validation_mismatch</code>, and <strong>returns cleanly</strong> — so such a run is <strong>green-but-skipped, not red</strong>.</p>
+<p><strong>Therefore the Claude path cannot be exercised on the PR that introduces it.</strong> This is the Action's design, not a gap in this PR, and it is why "open a PR, do not merge" is the correct stopping point rather than a cautious one.</p>
+<hr>
+<h2>4. What the workflow contains</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>File</td><td><code>.github/workflows/claude.yml</code> — the only file in the PR</td></tr><tr><td>Trigger</td><td><code>issue_comment</code> (created), gated on the body containing <code>@claude</code></td></tr><tr><td>Permissions</td><td><code>contents: write</code>, <code>pull-requests: write</code>, <code>issues: write</code>, <code>id-token: write</code></td></tr><tr><td>Deliberately absent</td><td><strong><code>workflows</code></strong>, <code>actions</code>, <code>checks</code>, <code>packages</code>, <code>deployments</code>, <code>security-events</code></td></tr><tr><td><code>github_token</code></td><td><strong>Not set</strong> — this is what selects the bot identity (§2.3)</td></tr><tr><td>Model</td><td><code>claude-opus-5</code></td></tr><tr><td>Tools</td><td>Restricted via <code>--allowedTools</code> to the <code>tools/i18n-verify</code> suites and ordinary git</td></tr></tbody></table></div>
+<p><strong>No <code>workflows: write</code></strong> is the deliberate one: <strong>this job must not be able to rewrite the gate that checks it.</strong> The Claude App <em>declares</em> <code>workflows: write</code> at the App level, so withholding it at the workflow level is the meaningful restriction.</p>
+<p>Two access controls come from the Action itself and were not weakened: it refuses any actor <strong>without write access</strong> to the repository, and its <code>allowed_bots</code> default is <strong>empty</strong>, so no bot can invoke it.</p>
+<h3>Inert by construction, and tested</h3>
+<p>A preflight step establishes only <strong>whether</strong> a credential exists. It prints a boolean, never a value, and the secret is passed via <code>env:</code> rather than interpolated into the script so it cannot be echoed by accident. With no credential the job stops there with an explanatory step summary and never reaches Claude.</p>
+<p><strong>Both paths were executed locally</strong>, including a sentinel check confirming the value appears in <strong>neither</strong> stdout, <strong>nor</strong> the step output, <strong>nor</strong> the step summary.</p>
+<h3>Observed on PR #89</h3>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody><tr><td><strong><code>Deterministic governance suites</code></strong></td><td><strong>success</strong></td></tr><tr><td><code>Claude Code</code> workflow</td><td><strong>did not fire</strong> — correct: it triggers on <code>issue_comment</code> only, and is not yet on <code>main</code></td></tr></tbody></table></div>
+<p><strong>That green check is itself a result worth recording:</strong> it is the gate merged in #88 running on a second, unrelated pull request, unprompted.</p>
+<hr>
+<h2>5. WHAT REMAINS UNTESTED</h2>
+<p>Stated as unknowns rather than glossed, because none of them can be settled from this side.</p>
+<div class='tw'><table><thead><tr><th>#</th><th>Unknown</th><th>Why it cannot be settled yet</th></tr></thead><tbody><tr><td><strong>U1</strong></td><td><strong>That the OIDC exchange actually returns a token for this repository.</strong></td><td>Needs the workflow on <code>main</code> (§3.2) <strong>and</strong> a Claude API credential. The mechanism is verified in source; <em>this installation's</em> exchange succeeding is not.</td></tr><tr><td><strong>U2</strong></td><td><strong>That a <code>claude[bot]</code> PR triggers the <code>verify</code> workflow.</strong></td><td>The strongest remaining inference. <code>GITHUB_TOKEN</code> does not trigger workflows; an App installation token is not <code>GITHUB_TOKEN</code>, and the Action's FAQ says a separate app token is the fix. <strong>Expected, not observed.</strong> This was <strong>T1</strong> in the preflight and remains open.</td></tr><tr><td><strong>U3</strong></td><td><strong>That <code>AAAsapp</code> can approve a <code>claude[bot]</code> PR.</strong></td><td>Requires a real bot-authored PR. Unchanged since the identity report: zero reviews have ever been submitted in this repository.</td></tr><tr><td><strong>U4</strong></td><td><strong>The bot login as it actually renders.</strong></td><td><code>claude[bot]</code> is the Action's own constant, so this is near-certain — but it has still never been observed in this repository.</td></tr><tr><td><strong>U5</strong></td><td><strong>Whether the four permissions are truly minimal.</strong></td><td>Since the App token carries its own permissions, the workflow's <code>GITHUB_TOKEN</code> grants may be narrowable. <strong>Not narrowed speculatively</strong> — the documented configuration was followed because no run can be observed to confirm a narrower one. Revisit after the first successful run.</td></tr><tr><td><strong>U6</strong></td><td><strong>Which Claude API auth option the Owner wants.</strong></td><td>A decision, not a test. §6.</td></tr><tr><td><strong>U7</strong></td><td><strong>Whether the <code>--allowedTools</code> allowlist is sufficient</strong> for the 22g fix.</td><td>Too narrow blocks legitimate work; too wide defeats the point. Observable only on the first real run.</td></tr></tbody></table></div>
+<hr>
+<h2>6. EXACT SETUP INSTRUCTIONS — the Owner's part</h2>
+<p><strong>Step A — choose one Claude API auth route.</strong></p>
+<div class='tw'><table><thead><tr><th>Option</th><th>What to add</th><th>Stored secret?</th><th>Notes</th></tr></thead><tbody><tr><td><strong>(a)</strong> <code>ANTHROPIC_API_KEY</code></td><td>Settings → Secrets and variables → Actions → New repository secret</td><td><strong>Yes</strong></td><td>Simplest. The workflow already references it; nothing in the file changes.</td></tr><tr><td><strong>(b)</strong> <code>CLAUDE_CODE_OAUTH_TOKEN</code></td><td>Same place; generate with <code>claude setup-token</code> locally (Pro/Max)</td><td><strong>Yes</strong></td><td>Swap the <code>anthropic_api_key:</code> input for <code>claude_code_oauth_token:</code>.</td></tr><tr><td><strong>(c)</strong> <strong>Workload Identity Federation</strong></td><td>Three identifiers, <strong>in the workflow file</strong></td><td><strong>No</strong></td><td><strong>No static credential is stored anywhere.</strong> Needs an Anthropic Console admin: register issuer <code>https://token.actions.githubusercontent.com</code> (JWKS <code>discovery</code>), create a service account, create a federation rule matched to <code>repo:Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io:</code>. Then replace the <code>anthropic_api_key</code> line with <code>anthropic_federation_rule_id</code>, <code>anthropic_organization_id</code> and <code>anthropic_service_account_id</code>.</td></tr></tbody></table></div>
+<p><strong>For a governance pilot, (c) is the strongest posture</strong> — nothing static to leak or rotate, and the three values are identifiers rather than credentials, so they can live in the file in plain sight. It costs one-time Anthropic Console setup. <strong>(a) is the fastest.</strong> This is a judgement for the Owner; the workflow is written so either is a small edit.</p>
+<p><strong>Step B — confirm the App installation still grants what the exchange needs.</strong> Settings → GitHub Apps → Claude → Configure: the repository is in scope, with <code>contents</code>, <code>pull requests</code> and <code>issues</code> write. (This was preflight item <strong>W6</strong>; it has still not been read from this side — <code>/repos/.../installation</code> requires a JWT and returns 401 here.)</p>
+<p><strong>Step C — merge #89.</strong> Nothing works before this, by §3.2.</p>
+<p><strong>Step D — the real test.</strong> Open an issue and comment <code>@claude</code> asking for the <strong>22g harness fix</strong>, which is the pilot's actual subject. Then read, in order:</p>
+<ol><li>Does the <code>Claude Code</code> workflow run at all?</li><li>Does the log show <em>"App token successfully obtained"</em>?</li><li><strong>Who authored the resulting PR?</strong> Expect <code>claude[bot]</code>. <em>(settles U1, U4)</em></li><li><strong>Did <code>Deterministic governance suites</code> run on that PR?</strong> <em>(settles <strong>U2</strong> — the one that matters most)</em></li><li><strong>Is Approve selectable for <code>AAAsapp</code>?</strong> <em>(settles <strong>U3</strong>)</em></li></ol>
+<p><strong>Step E — only after Step D passes</strong>, enable the ruleset (preflight Step 7): required context <strong><code>Deterministic governance suites</code></strong>, require a pull request, 1 approval, <strong>bypass list empty</strong>.</p>
+<blockquote><p><strong>If Step D item 4 fails</strong> — the PR appears but no <code>verify</code> check runs — <strong>do not weaken the gate to get past it.</strong> That would be T1 materialising, and the remedy is a different token (a custom GitHub App via <code>actions/create-github-app-token</code>, which needs an App id and private key the Owner creates), not a relaxed check.</p></blockquote>
+<hr>
+<h2>7. State block</h2>
+<pre><code>MMSA_PILOT_STEP2_CLAUDE_APP_WIRING
+ISSUED=2026-09-19
+BRANCH=claude/pilot-claude-app-wiring
+PR=89 OPEN NOT MERGED https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/89
+PR_HEAD=a1b676b | PR_AUTHOR=AAAsapp | mergeable_state=clean | changed_files=1 (+125/-0)
+MAIN=fa0621794cb970f4e7e31696410ad2c8686fdd3e (PR #88 merged as a real merge commit; verify.yml now ON main)
+MAIN_VERSION=08.31 UNCHANGED | verify.yml UNTOUCHED by this PR
+FILE_ADDED=.github/workflows/claude.yml (125 lines) -- the only file
+ACTION_SOURCE_READ=anthropics/claude-code-action @ cfc3eb22bfed5c26ef66e3223c982af27e4524de (cloned and read, not recalled)
+APP_TOKEN_IS_NOT_AMBIENT=TRUE -- no implicit App credential exists in a workflow; it must be fetched
+IDENTITY_MECHANISM=src/github/token.ts: GitHub OIDC (audience claude-code-github-action) -&gt; POST api.anthropic.com/api/github/github-app-token-exchange -&gt; Claude App INSTALLATION TOKEN, core.setSecret masked
+PRECONDITIONS=id-token: write granted AND github_token left unset (both required)
+EXCHANGE_DEFAULT_PERMISSIONS=contents:write pull_requests:write issues:write
+BOT_IDENTITY=claude[bot] id 41898282 (src/github/constants.ts) vs AAAsapp id 293311955 -- DISTINCT
+GITHUB_TOKEN_OMITTED=DELIBERATE -- it would make the author github-actions[bot] AND stop the PR triggering verify
+WORKFLOW_PERMISSIONS=contents:write pull-requests:write issues:write id-token:write; NO workflows/actions/checks/packages/deployments/security-events
+NO_WORKFLOWS_WRITE=deliberate -- the job must not be able to rewrite the gate that checks it
+INERT=TRUE -- preflight step prints a boolean only; secret passed via env, never interpolated; sentinel-tested for leakage in stdout, step output and step summary
+CREDENTIAL_ADDED=NO | SECRET_PRINTED=NO
+BLOCKER_1=Claude API credential is the Owner's to add (options a/b/c)
+BLOCKER_2=token exchange refuses workflow_not_found_on_default_branch, so the Claude path CANNOT be exercised before merge; run.ts returns cleanly so such a run is GREEN-BUT-SKIPPED, not red
+OBSERVED_ON_PR89=Deterministic governance suites SUCCESS (the #88 gate running on a second, unrelated PR); Claude Code workflow correctly did NOT fire
+UNTESTED=U1 exchange succeeds for this install | U2 claude[bot] PR triggers verify (the old T1, EXPECTED NOT OBSERVED) | U3 AAAsapp can approve it | U4 bot login as rendered | U5 whether 4 permissions are minimal | U6 which auth route | U7 allowedTools sufficiency
+NEXT=Owner picks auth route, confirms App install scope, merges 89, then comments @claude on a 22g issue and reads author + verify trigger + Approve
+DO_NOT=weaken the gate if verify fails to trigger -- that is T1 and the remedy is a different token, not a relaxed check
+RULESET=still NOT enabled; required context will be "Deterministic governance suites", bypass list EMPTY</code></pre>
+</main></body></html>
