@@ -29,9 +29,9 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "7a619037d4de3ecb88df1a013262aaa4f51d1eeb",
+    "baselineSha": "a20892f1e4cbf4e86498fe371232466141ca95df",
     "baselineRecordedOn": "2026-09-19",
-    "version": "08.30",
+    "version": "08.31",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -89,8 +89,8 @@
     {
       "version": "08.30",
       "owner": "quran",
-      "status": "LIVE",
-      "note": "QuranRevival MAP Phase 4 D1 Reading / D2 Listening / D4 WbW -- the ADR-008 evidence wiring. CODE-ACCEPTED by the Master Architect on 2026-09-19 at 8ea445fb376784fb8452cb2042e4eaa8e017f41b, with a governance correction: APP_DEPLOYED=NO was incomplete because GitHub Pages serves main. LIVE means main carries it, and main is what Pages serves. NOT accepted for deployment or production use: E1 is closed, the evidence Rules are not deployed, and the subcollection is denied to every client. v08.31 gates the control it shipped and supersedes it on integration.",
+      "status": "RELEASED",
+      "note": "QuranRevival MAP Phase 4 D1 Reading / D2 Listening / D4 WbW -- the ADR-008 evidence wiring. Code-accepted 2026-09-19 at 8ea445fb376784fb8452cb2042e4eaa8e017f41b and what main carried until the v08.31 release-gating integration. RELEASED: a prior main milestone, superseded by 08.31, kept as fact rather than withdrawn. It was never a deployment claim and is not one now.",
       "integration": {
         "acceptedBuildSha": "7a619037d4de3ecb88df1a013262aaa4f51d1eeb",
         "method": "ALREADY_ON_MAIN_AT_ACCEPTANCE — fast-forward, performed during the build tranche's own authorised push",
@@ -101,11 +101,17 @@
     {
       "version": "08.31",
       "owner": "quran",
-      "status": "RESERVED",
-      "note": "QuranRevival release-gating repair. RESERVED AND AUTHORIZED by the Master Architect on 2026-09-19 for a narrow scope: an explicit persistence-readiness gate defaulting to false, so that while E1 is closed the Phase 4 completion control is not actionable and no evidence write is attempted. RESERVED, not LIVE: it is stamped on claude/charming-rubin-xzxbk1 and `main` still carries 08.30. It becomes LIVE when, and only when, an integration the Master Architect instructs puts it on main. It is NOT a deployment claim and it does not make the feature operational -- it makes the app honest about the fact that it is not.",
+      "status": "LIVE",
+      "note": "QuranRevival release-gating repair -- the Study-evidence persistence-readiness gate. LIVE: main carries it, and main is what GitHub Pages serves. Integrated 2026-09-19 as a FAST-FORWARD from db6cb24b807d77630914e076d413bec6982cc3d7; the accepted application change is unmodified. It is NOT a deployment claim and it does not make the feature operational -- it makes the app honest about the fact that it is not. E1 stays CLOSED.",
       "integration": {
         "authorizedOn": "2026-09-19",
-        "reference": "docs/reports/2026-09-19-quranrevival-v0831-release-gating.md"
+        "integratedOn": "2026-09-19",
+        "preIntegrationMainSha": "db6cb24b807d77630914e076d413bec6982cc3d7",
+        "acceptedApplicationSha": "e63cb8d69e5813faf57251a7f15fef33a4bae191",
+        "applicationSourceCommit": "65ef3c5896ce13227fa53632966c7ff4d22db9f5",
+        "integratedMainSha": "a20892f1e4cbf4e86498fe371232466141ca95df",
+        "method": "FAST_FORWARD -- linear descent from db6cb24, no merge commit, no conflict",
+        "reference": "docs/reports/2026-09-19-quranrevival-v0831-main-integration.md"
       }
     }
   ],
@@ -126,7 +132,7 @@
       "role": "The umbrella: shared runtime, shared verification, governance, version allocation and module integration. It owns the platform/shared paths below; it is not a subject module.",
       "activeBranch": null,
       "integrationState": "ON_MAIN",
-      "declaredVersion": "08.30",
+      "declaredVersion": "08.31",
       "baselineSha": null,
       "baselineStatus": "NOT_APPLICABLE_IS_MAIN",
       "ownedPaths": [
@@ -149,7 +155,7 @@
       "id": "quran",
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
-      "integrationState": "AWAITING_INTEGRATION",
+      "integrationState": "MERGED_TO_MAIN",
       "declaredVersion": "08.31",
       "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
@@ -260,7 +266,7 @@
           }
         }
       ],
-      "integrationNote": "v08.30 is MERGED_TO_MAIN and accepted (8ea445fb). v08.31 is stamped on claude/charming-rubin-xzxbk1 at 710f182e049a2471629823ab5a7c2d15ccf594c5 and is NOT merged: integration is the Master Architect's instruction to give and it has not been given. Reading this as MERGED_TO_MAIN -- which it said until 19 Sep 2026 -- is the exact class of claim guard A exists to refuse, so the allocation's own status is RESERVED, not LIVE."
+      "integrationNote": "v08.31 fast-forwarded onto main on 2026-09-19 from claude/charming-rubin-xzxbk1. See docs/reports/2026-09-19-quranrevival-v0831-main-integration.md."
     },
     {
       "id": "quran-phase4-wiring",
@@ -668,7 +674,7 @@
     "applicationCodeIntegrated": {
       "state": "YES",
       "means": "The application code is merged into `main`.",
-      "evidence": "main carries v08.31; v08.30 accepted at 8ea445fb376784fb8452cb2042e4eaa8e017f41b."
+      "evidence": "main carries v08.31 at a20892f1e4cbf4e86498fe371232466141ca95df; the accepted v08.31 application change is 65ef3c58 (reported at e63cb8d6), fast-forwarded from db6cb24b8. v08.30 was accepted at 8ea445fb."
     },
     "githubPagesServing": {
       "state": "PRESUMED_FROM_MAIN",

@@ -126,12 +126,19 @@ Read this first, every session. It is the standing brief.
 > in the repository is blocked on a design question — everything outstanding is
 > either E1 or an Owner UI decision.
 
-**Current milestone: v08.31 on `claude/charming-rubin-xzxbk1`, and `main` is
-still v08.30** (19 Sep 2026 — the QuranRevival Study-evidence
-persistence-readiness gate. v08.31 is RESERVED AND AUTHORIZED and is stamped on
-that branch; **integration into `main` is the Master Architect's instruction to
-give and has not been given**, so `main` still carries v08.30, the Phase 4 D1/D2/D4
-evidence wiring. `main`'s own `app/js/version.js` is the single source of truth.)
+**Current milestone: v08.31 on `main`** (19 Sep 2026 — the QuranRevival
+Study-evidence persistence-readiness gate, fast-forwarded onto `main` from
+`claude/charming-rubin-xzxbk1` under the Master Architect's guarded-integration
+ruling. The accepted application change is unmodified: `git diff 65ef3c5
+<main> -- app/` is empty. v08.30, the Phase 4 D1/D2/D4 evidence wiring, is the
+previous version on `main` and is now RELEASED. **MERGED IS NOT DEPLOYED** —
+E1 is still CLOSED, the evidence Rules are not deployed, evidence recording is
+NOT operational, and nothing was deployed by this integration. What changed for
+a real reader is that the ✓ on `#readBar` no longer invites a press that could
+only error: it is not actionable, it says why in English and Bangla, and it
+attempts no write at all. `main`'s own `app/js/version.js` is the single source
+of truth. **v08.32 remains UNALLOCATED.** See
+`docs/reports/2026-09-19-quranrevival-v0831-main-integration.md`.)
 
 **FOUR STATES, NOT ONE, AND THIS IS THE CORRECTION THAT PRODUCED v08.31.** The
 v08.30 integration reported `APP_DEPLOYED=NO`, and the Master Architect ruled
