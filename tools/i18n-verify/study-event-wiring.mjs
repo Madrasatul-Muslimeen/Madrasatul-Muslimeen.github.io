@@ -2,9 +2,22 @@
 // database and without a browser: is this interaction a completion, and which
 // Approach does it credit.
 //
-// Tests the REAL app/js/study-event-wiring.js, with its two app imports
-// rewritten to injected globals -- the technique quran-word-progress-data.mjs
+// Tests the REAL app/js/study-event-wiring.js, with its app imports rewritten
+// to injected globals -- the technique quran-word-progress-data.mjs
 // established, so the file under test is the file that ships.
+//
+// REPAIRED 2026-09-19. This suite had been DEAD since v08.31's 65ef3c5. That
+// commit added a third import to study-event-wiring.js --
+// ./study-evidence-readiness.js -- and this file rewrote only two, so the
+// remaining relative specifier reached a `data:` module that cannot resolve
+// one: `ERR_INVALID_URL`, thrown at module load, before a single check ran.
+// The suite exited 1 with a stack trace and no FAIL line, which is exactly the
+// shape this repository's own lesson warns about -- a grep for failures sees
+// nothing, and a check that has never run has earned nothing.
+//
+// The third rewrite is below, and so is the LEFTOVER ASSERTION that would have
+// caught it on the day. study-note-service.mjs has carried that assertion all
+// along, which is why the same edit did not kill that suite silently.
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
@@ -15,7 +28,17 @@ let source = fs.readFileSync(path.join(root, "app/js/study-event-wiring.js"), "u
 source = source
   .replace(/import \{ weekKeyFor \} from "\.\/activity\.js";/, "const { weekKeyFor } = globalThis.__sewActivity;")
   .replace(/import \{ writeStudyActivityEvidence \} from "\.\/study-activity-evidence-store\.js";/,
-           "const { writeStudyActivityEvidence } = globalThis.__sewStore;");
+           "const { writeStudyActivityEvidence } = globalThis.__sewStore;")
+  .replace(/import \{[^}]*\} from "\.\/study-evidence-readiness\.js";/,
+           "const { isStudyEvidencePersistenceReady, studyEvidenceUnavailableReason } = globalThis.__sewReadiness;");
+
+// AN UNREWRITTEN IMPORT IS A DEAD SUITE, NOT A FAILING ONE. A relative
+// specifier inside a `data:` module throws ERR_INVALID_URL at load, so every
+// check below would simply never run while the file still looked present.
+// Fail here instead, by name, the moment a new import appears.
+for (const leftover of [/from "\.\//, /gstatic\.com/]) {
+  assert.ok(!leftover.test(source), `an import was not rewritten: ${leftover} -- add it above, or this suite runs nothing`);
+}
 
 // The real weekKeyFor, copied from activity.js so the week maths under test is
 // the app's own and not an approximation.
@@ -30,6 +53,17 @@ globalThis.__sewActivity = {
 const writes = [];
 globalThis.__sewStore = {
   writeStudyActivityEvidence: async (_db, args) => { writes.push(args); return { eventId: "x", written: true }; },
+};
+// The readiness answer is INJECTED while the gate's logic stays real. The
+// shipped declaration is `ready: false` and cannot be argued out of it, so with
+// it in place every write path here would be unreachable and this suite would
+// test the gate instead of the contract. What the shipped declaration actually
+// says is pinned at its source by study-activity-evidence-boundary.mjs ("the
+// readiness declaration DEFAULTS TO FALSE, as a literal").
+let persistenceReady = true;
+globalThis.__sewReadiness = {
+  isStudyEvidencePersistenceReady: () => persistenceReady,
+  studyEvidenceUnavailableReason: () => (persistenceReady ? null : "evidence-rules-not-deployed"),
 };
 const mod = await import(`data:text/javascript,${encodeURIComponent(source)}`);
 const { readingApproachId, readingCompletionArgs, recordStudyEvidence, unitTypeRecordsEvidence, utcDay,
@@ -124,6 +158,46 @@ await check("an eligible completion reaches the store exactly once", async () =>
   assert.equal(writes.length, 1);
   assert.equal(writes[0].eventType, "reading.completed");
   assert.equal(writes[0].uid, "uid-p1");
+});
+await check("A SHUT GATE STOPS THE WRITE HERE -- nothing is composed and nothing is sent", async () => {
+  // v08.31's chokepoint, exercised at its own module rather than inferred from
+  // the structure of the source. This case could not run at all between
+  // 65ef3c5 and this repair: the suite threw at module load, so the gate the
+  // tranche was built for had no behavioural test anywhere.
+  writes.length = 0;
+  persistenceReady = false;
+  try {
+    const args = readingCompletionArgs({ ...base, translationLangs: [] });
+    assert.ok(args, "the fixture stopped producing eligible arguments -- this case would pass vacuously");
+    const result = await recordStudyEvidence({}, args, { uid: "uid-p1" });
+    assert.equal(writes.length, 0, "THE STORE WAS REACHED THROUGH A SHUT GATE");
+    assert.equal(result.blocked, true, "a refusal is not reported as a refusal");
+    assert.equal(result.written, false);
+    assert.equal(result.reason, "evidence-rules-not-deployed", "the reason key does not reach the caller");
+  } finally { persistenceReady = true; }
+});
+await check("a refusal and an already-recorded no-op are TELLABLE APART", async () => {
+  // Both carry `written: false`. If that were all either carried, a gated press
+  // would report itself as a duplicate -- the exact lie v08.31 exists to remove.
+  writes.length = 0;
+  const args = readingCompletionArgs({ ...base, translationLangs: [] });
+  globalThis.__sewStore = {
+    writeStudyActivityEvidence: async (_db, a) => { writes.push(a); return { eventId: "x", written: false }; },
+  };
+  const duplicate = await import(`data:text/javascript,${encodeURIComponent(source + "\n// duplicate-store variant\n")}`);
+  const retried = await duplicate.recordStudyEvidence({}, args, { uid: "u" });
+  assert.equal(writes.length, 1, "a retry must still reach the store -- the database is what deduplicates");
+  assert.equal(retried.written, false);
+  assert.ok(!retried.blocked, "an already-recorded event is being reported as a refusal");
+  persistenceReady = false;
+  const blocked = await duplicate.recordStudyEvidence({}, args, { uid: "u" });
+  persistenceReady = true;
+  assert.equal(writes.length, 1, "a refused write reached the store");
+  assert.equal(blocked.blocked, true);
+  assert.notDeepEqual({ w: blocked.written, b: blocked.blocked }, { w: retried.written, b: retried.blocked });
+  globalThis.__sewStore = {
+    writeStudyActivityEvidence: async (_db, a) => { writes.push(a); return { eventId: "x", written: true }; },
+  };
 });
 await check("this module never swallows a failure -- I15 stays the caller's job", async () => {
   // The module destructures globalThis.__sewStore ONCE at evaluation, so

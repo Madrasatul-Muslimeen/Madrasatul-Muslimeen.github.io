@@ -37,7 +37,7 @@ import {
 } from "./note-foundation.js";
 import { journalEvidenceArgs } from "./note-journal-evidence.js";
 import { bindableUnitType, studyNoteSource } from "./study-note-binding.js";
-import { writeStudyActivityEvidence } from "./study-activity-evidence-store.js";
+import { recordStudyEvidence } from "./study-event-wiring.js";
 
 /** ADR-009 §4 — a Note composed in a Study/Note surface. */
 export const PROVENANCE_STUDY_NOTE = "study-note";
@@ -125,6 +125,9 @@ export async function retireStudyNote(db, { tenantId, noteId, expectedRevisionId
   return { commit: null, evidence: null };
 }
 
+/** The shape every outcome of recordJournalEvidence() has. Four facts, each independently readable, and never inferred from the absence of another. */
+const NOTHING_RECORDED = Object.freeze({ eventId: null, written: false, blocked: false, skipped: true, reason: null });
+
 /**
  * Records one set of Journaling evidence arguments, or does nothing at all when
  * handed `null`.
@@ -132,11 +135,53 @@ export async function retireStudyNote(db, { tenantId, noteId, expectedRevisionId
  * NOT wrapped in safeWrite, deliberately and for the same reason P4-D's own
  * bridge is not: a denial must reach the reader (I15), and it is the calling
  * surface that knows where to put the message.
+ *
+ * IT GOES THROUGH THE CHOKEPOINT, AND THAT IS THE POINT OF THIS FUNCTION.
+ *
+ * Until now it called `writeStudyActivityEvidence()` directly, around
+ * v08.31's persistence-readiness gate. That was never a live bypass -- this
+ * module is page-unreachable, D3 Journaling has no producer and P5-D is not
+ * built -- so "recordStudyEvidence() is the ONE chokepoint" was true only
+ * because nothing could reach the second door, not because the door was shut.
+ * A claim that rests on unreachability expires the moment somebody wires the
+ * surface, and it expires silently. It goes through `recordStudyEvidence()`
+ * now, so the claim rests on the code instead, and the boundary suite asserts
+ * that `study-event-wiring.js` is the store's only caller at all.
+ *
+ * FOUR OUTCOMES, KEPT DISTINCT. Collapsing any two of them would make a
+ * Journaling save report something that did not happen:
+ *
+ *   skipped  there was nothing to record (no evidence arguments).
+ *   blocked  the gate is shut: persistence is not ready, nothing was even
+ *            composed or sent. NOT a success, and emphatically not a duplicate.
+ *   written: false, blocked: false  the event was ALREADY recorded -- a retry,
+ *            which is a successful no-op (the database deduplicates by document
+ *            id, so a second create on the same identity always fails).
+ *   written: true  a new evidence document exists.
+ *
+ * `written: false` therefore carries no meaning on its own. It is read with
+ * `blocked` and `skipped` beside it, or not at all.
  */
 export async function recordJournalEvidence(db, evidence, uid) {
-  if (!evidence) return { eventId: null, written: false, skipped: true };
-  const outcome = await writeStudyActivityEvidence(db, { ...evidence, uid });
-  return { ...outcome, skipped: false };
+  if (!evidence) return { ...NOTHING_RECORDED };
+  const outcome = await recordStudyEvidence(db, evidence, { uid });
+  // THE NULL CHECK IS ABOUT MEANING, NOT ABOUT A THROW. recordStudyEvidence()
+  // returns null for a falsy argument -- unreachable here, because `evidence`
+  // was just proven truthy, and checked anyway. Spreading null does NOT throw
+  // in JavaScript: `{ ...null }` is a silent no-op, so the old shape would have
+  // produced an object with NO `written` field at all, and a missing field
+  // reads as falsy -- which is exactly the "already recorded" case. An absent
+  // outcome must never be able to wear the face of a successful no-op.
+  if (!outcome || typeof outcome !== "object") return { ...NOTHING_RECORDED };
+  // Normalised rather than spread, so a future field added upstream cannot
+  // arrive here unread and a missing one cannot arrive here as `undefined`.
+  return {
+    eventId: typeof outcome.eventId === "string" ? outcome.eventId : null,
+    written: outcome.written === true,
+    blocked: outcome.blocked === true,
+    skipped: false,
+    reason: typeof outcome.reason === "string" ? outcome.reason : null,
+  };
 }
 
 // ---------------------------------------------------------------------------

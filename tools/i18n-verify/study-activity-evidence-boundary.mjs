@@ -49,6 +49,24 @@ function codeOf(name) {
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .split("\n").filter((line) => !/^\s*(?:\/\/|\*)/.test(line)).join("\n");
 }
+/**
+ * ONE exported function's body, bounded at the next top-level export.
+ *
+ * ADDED because a mutation proved it was needed. The two call sites below used
+ * `slice(indexOf(fn))` -- to END OF FILE -- and `study-event-wiring.js` has two
+ * helpers BELOW recordStudyEvidence() that re-export the readiness predicate.
+ * So deleting the gate from inside the function left the symbol in the slice
+ * anyway: the assertion written to catch a missing gate could not fail, and the
+ * suite only refused the mutation because a DIFFERENT assertion fired, naming
+ * the wrong fault. A guard that reports the wrong reason is one nobody can act
+ * on. Bounded, these assertions read the function and nothing else.
+ */
+function functionBody(code, signature) {
+  const start = code.indexOf(signature);
+  assert.ok(start > -1, `${signature} is gone`);
+  const after = code.indexOf("\nexport ", start + 1);
+  return after === -1 ? code.slice(start) : code.slice(start, after);
+}
 /** One element's own markup, from its opening tag to its MATCHING close -- `<div>`s balanced, so a nested element cannot end the slice early and a later sibling cannot be swept into it. */
 function elementSlice(html, openTag) {
   const start = html.indexOf(openTag);
@@ -184,17 +202,20 @@ check("every page-reachable path to the writer passes THROUGH the wiring module"
   assert.deepEqual(unaudited, [],
     `a page reaches the writer WITHOUT going through ${WIRING}: ${unaudited.join(" | ")}`);
 });
-check("the importer set is exactly the wiring module plus the queued, unreachable one", () => {
-  // Still pinned, not merely permitted: a NEW importer is a fact a later
-  // session must audit deliberately. study-note-service.js is P5-C's, still
-  // queued behind the Rules deployment and still unreachable.
+check("the importer set is EXACTLY the wiring module -- nothing else imports the store", () => {
+  // NARROWED, and the narrowing is the whole of this tranche. Until now this
+  // read `[WIRING, "study-note-service.js"]`: P5-C's service imported the
+  // store directly and was tolerated because it is page-unreachable. That made
+  // "recordStudyEvidence() is the ONE chokepoint" a claim about REACHABILITY,
+  // which expires silently the day somebody wires D3 Journaling. The service
+  // goes through recordStudyEvidence() now, so the list is a list of one and
+  // the claim rests on the code.
+  //
+  // A tolerated exception is how a list of one becomes a list of ten. There is
+  // no exception left to add to.
   const importers = directImportersOf();
-  assert.deepEqual(importers, [WIRING, "study-note-service.js"].sort(),
-    `the set of modules importing the writer has changed -- re-audit before updating this list: ${importers.join(", ")}`);
-  for (const importer of importers) {
-    if (importer === WIRING) continue;   // live on purpose; covered by the case above
-    assert.deepEqual(chainsToTarget(importer), [], `${importer} is now loaded by a page`);
-  }
+  assert.deepEqual(importers, [WIRING],
+    `the set of modules importing the evidence store has changed -- route it through ${WIRING} instead of widening this list: ${importers.join(", ")}`);
 });
 check("no PAGE-REACHABLE source but the wiring module names a Study event writer", () => {
   const offenders = [];
@@ -411,29 +432,67 @@ check("the WRITE CHOKEPOINT refuses before the store is reached", () => {
   // is the single funnel -- so this asserts both halves: that the funnel is
   // gated, and that nothing page-reachable calls the store around it.
   const w = codeOf("study-event-wiring.js");
-  const body = w.slice(w.indexOf("export async function recordStudyEvidence"));
+  const body = functionBody(w, "export async function recordStudyEvidence");
+  // The positive control the bound itself needs: a slice that silently ran past
+  // its own function would put all three assertions back where they started.
+  assert.ok(!/export function studyEvidencePersistenceReady/.test(body),
+    "the chokepoint slice runs past its own function -- it is reading the helpers below it");
   const gate = body.indexOf("isStudyEvidencePersistenceReady");
   const store = body.indexOf("writeStudyActivityEvidence(db");
   assert.ok(gate > -1, "recordStudyEvidence() no longer consults readiness");
   assert.ok(store > -1, "recordStudyEvidence() no longer calls the store");
   assert.ok(gate < store, "the readiness gate is not ahead of the store call");
   assert.ok(/blocked:\s*true/.test(body), "a refusal is not distinguishable from the store's own written:false");
-  // THIS CHECK'S OWN FIRST RUN FOUND A SECOND CALLER, and it is recorded
-  // rather than excluded by name. P5-C's `study-note-service.js` imports the
-  // store directly, for D3 Journaling -- which has no reachable producer and
-  // is not built (P5-D is held behind the same E1 deployment). So it is not a
-  // live bypass today, and it WOULD be one the day P5-D wires it. Pinning it
-  // as unreachable turns that into a loud failure at exactly the moment it
-  // matters: wire it, and this check fails until it goes through the gate.
-  const KNOWN_UNREACHABLE_CALLER = "study-note-service.js";
+  // THIS CHECK'S OWN FIRST RUN FOUND A SECOND CALLER -- P5-C's
+  // `study-note-service.js`, which called the store directly for D3
+  // Journaling. It was recorded rather than excluded by name, and pinned as
+  // unreachable so that wiring it would fail loudly. This tranche closed it at
+  // the source instead: the service calls recordStudyEvidence(), so the
+  // exception is GONE rather than tolerated, and the assertion below is the
+  // strictly stronger one it was always standing in for.
+  //
+  // COMMENTS ARE STRIPPED FIRST, and that is not fussiness: the service's own
+  // doc comment now names `writeStudyActivityEvidence()` in order to explain
+  // that it no longer calls it. Scanning raw text would fail against correct
+  // code -- this repository's own recorded trap.
+  const callers = [];
   for (const { file, text } of appSources()) {
-    if (file.endsWith("study-event-wiring.js") || file.endsWith("study-activity-evidence-store.js")) continue;
-    if (!/writeStudyActivityEvidence\s*\(/.test(text)) continue;
-    const base = file.split("/").pop();
-    assert.equal(base, KNOWN_UNREACHABLE_CALLER, `${file} calls the evidence store around the gate`);
-    assert.deepEqual(chainsToTarget(base), [],
-      `${file} calls the store around the gate AND is now page-reachable -- route it through recordStudyEvidence()`);
+    if (file.endsWith("study-activity-evidence-store.js")) continue;
+    const code = text
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .split("\n").filter((line) => !/^\s*(?:\/\/|\*)/.test(line)).join("\n");
+    if (/writeStudyActivityEvidence\s*\(/.test(code)) callers.push(file);
   }
+  assert.deepEqual(callers, [`app/js/${WIRING}`],
+    `the evidence store is called from outside ${WIRING}: ${callers.join(", ")} -- route it through recordStudyEvidence()`);
+});
+
+check("D3 Journaling goes through the gate, and its outcomes stay distinguishable", () => {
+  // The service is still unreachable, so this is a claim about the SOURCE, and
+  // the source is where it has to hold: whoever builds P5-D inherits a gated
+  // path rather than a bypass they must remember to close.
+  const svc = codeOf("study-note-service.js");
+  assert.ok(/import \{ recordStudyEvidence \} from "\.\/study-event-wiring\.js";/.test(svc),
+    "study-note-service.js no longer imports the chokepoint");
+  assert.ok(!/writeStudyActivityEvidence/.test(svc),
+    "study-note-service.js still names the evidence store in code");
+  const body = functionBody(svc, "export async function recordJournalEvidence");
+  assert.ok(/recordStudyEvidence\(db, evidence, \{ uid \}\)/.test(body),
+    "recordJournalEvidence() does not call recordStudyEvidence()");
+  // The null return is CHECKED, not spread. `{ ...null }` is a silent no-op in
+  // JavaScript, so spreading would yield a shape with no `written` field -- and
+  // a missing field reads as falsy, which is exactly "already recorded".
+  assert.ok(/if \(!outcome \|\| typeof outcome !== "object"\)/.test(body),
+    "the null outcome is not checked before it is read");
+  assert.ok(body.indexOf("if (!outcome") < body.indexOf("outcome.written"),
+    "the outcome is read before it is checked");
+  // Four outcomes, each its own field. `written: false` must never be the only
+  // thing standing between "the gate refused" and "this was already recorded".
+  for (const field of ["written:", "blocked:", "skipped:", "reason:"]) {
+    assert.ok(body.includes(field), `recordJournalEvidence() no longer reports ${field.replace(":", "")}`);
+  }
+  assert.ok(/blocked: outcome\.blocked === true/.test(body),
+    "a refusal is not carried through as its own fact");
 });
 
 check("the writer still FAILS CLOSED underneath the gate -- defence in depth", () => {

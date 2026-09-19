@@ -27,8 +27,8 @@ source = source
   .replace(/import \{ weekKeyFor \} from "\.\/activity\.js";/, "const { weekKeyFor } = globalThis.__snsActivity;")
   .replace(/import \{[\s\S]*?\} from "\.\/note-foundation\.js";/,
     "const { NOTE_STATUS, createPermanentNote, getNotesByIds, listNoteSourcesForUnit, retireNoteSource, retirePermanentNote, updatePermanentNoteContent } = globalThis.__snsNoteFoundation;")
-  .replace(/import \{ writeStudyActivityEvidence \} from "\.\/study-activity-evidence-store\.js";/,
-    "const { writeStudyActivityEvidence } = globalThis.__snsStore;")
+  .replace(/import \{ recordStudyEvidence \} from "\.\/study-event-wiring\.js";/,
+    "const { recordStudyEvidence } = globalThis.__snsWiring;")
   .replace(/from "\.\/note-journal-evidence\.js"/, `from "${appUrl("note-journal-evidence.js")}"`)
   .replace(/from "\.\/study-note-binding\.js"/, `from "${appUrl("study-note-binding.js")}"`);
 
@@ -77,9 +77,46 @@ globalThis.__snsNoteFoundation = {
 globalThis.__snsStore = {
   writeStudyActivityEvidence: async (_db, args) => {
     calls.evidence.push(args);
+    if (alreadyRecorded) return { eventId: `${args.eventType}__${args.trackableId}__${args.unitKey}__${args.noteId}`, written: false };
     return { eventId: `${args.eventType}__${args.trackableId}__${args.unitKey}__${args.noteId}`, written: true };
   },
 };
+
+// --- the REAL chokepoint, not a reproduction of it --------------------------
+//
+// v08.31 routed D3 Journaling through `recordStudyEvidence()`, so this suite
+// cannot test the service without it. Reproducing the gate here would be the
+// thing this repository has been bitten by before -- a helper "reproduced
+// unchanged" that quietly stops matching the original. So the REAL
+// study-event-wiring.js source is loaded, with only its two database imports
+// rewritten, exactly the way the service under test is.
+//
+// Its readiness import is rewritten to a SWITCH rather than to the real
+// declaration, and deliberately: the real declaration is `ready: false` and
+// cannot be argued out of it, so with it in place the open-gate outcomes
+// would be untestable. What the real declaration says is pinned separately
+// and at its source, by study-activity-evidence-boundary.mjs ("the readiness
+// declaration DEFAULTS TO FALSE, as a literal"). Here the gate's LOGIC is
+// real and only the answer it is given is injected.
+let persistenceReady = true;
+let alreadyRecorded = false;
+globalThis.__snsReadiness = {
+  isStudyEvidencePersistenceReady: () => persistenceReady,
+  studyEvidenceUnavailableReason: () => (persistenceReady ? null : "evidence-rules-not-deployed"),
+};
+let wiringSource = fs.readFileSync(path.join(root, "app/js/study-event-wiring.js"), "utf8");
+wiringSource = wiringSource
+  .replace(/import \{ weekKeyFor \} from "\.\/activity\.js";/, "const { weekKeyFor } = globalThis.__snsActivity;")
+  .replace(/import \{ writeStudyActivityEvidence \} from "\.\/study-activity-evidence-store\.js";/,
+    "const { writeStudyActivityEvidence } = globalThis.__snsStore;")
+  .replace(/import \{[^}]*\} from "\.\/study-evidence-readiness\.js";/,
+    "const { isStudyEvidencePersistenceReady, studyEvidenceUnavailableReason } = globalThis.__snsReadiness;");
+for (const leftover of [/from "\.\//, /gstatic\.com/]) {
+  assert.ok(!leftover.test(wiringSource), `a wiring import was not rewritten: ${leftover}`);
+}
+globalThis.__snsWiring = await import(`data:text/javascript,${encodeURIComponent(wiringSource)}`);
+assert.equal(typeof globalThis.__snsWiring.recordStudyEvidence, "function",
+  "the real recordStudyEvidence() did not load -- this suite would be testing nothing");
 function reset(ids = []) {
   // Clears EVERY key rather than a hand-written list. The list silently forgot
   // `unbind` the moment P5-F added it, so calls accumulated across cases and a
@@ -88,6 +125,9 @@ function reset(ids = []) {
   for (const key of Object.keys(calls)) calls[key].length = 0;
   sourceRows = []; noteRows = [];
   nextIds = ids; failNext = null;
+  // The two gate switches are state like any other: a case that opens or shuts
+  // the gate must not leak that into the next one.
+  persistenceReady = true; alreadyRecorded = false;
 }
 
 const mod = await import(`data:text/javascript,${encodeURIComponent(source)}`);
@@ -126,12 +166,77 @@ await check("S3 recordJournalEvidence is the ONLY thing that writes, and null is
   reset([[NOTE_A, REV_1]]);
   const { evidence } = await createStudyNote(db, { ...base, unitKey: "ayah:2:255" });
   const skipped = await recordJournalEvidence(db, null, "uid-p1");
-  assert.deepEqual(skipped, { eventId: null, written: false, skipped: true });
-  assert.equal(calls.evidence.length, 0);
+  assert.deepEqual(skipped, { eventId: null, written: false, blocked: false, skipped: true, reason: null });
+  assert.equal(calls.evidence.length, 0, "a null argument reached the store");
   const written = await recordJournalEvidence(db, evidence, "uid-p1");
   assert.equal(calls.evidence.length, 1);
   assert.equal(written.written, true);
+  assert.equal(written.blocked, false);
+  assert.equal(written.skipped, false);
   assert.equal(calls.evidence[0].uid, "uid-p1", "the actor uid reaches the writer");
+});
+await check("S3b the GATE is real: a shut gate records nothing and reaches the store not at all", async () => {
+  // The whole of this tranche, in one case. D3 Journaling used to call the
+  // store directly, around v08.31's persistence-readiness gate. It goes
+  // through recordStudyEvidence() now, so a shut gate stops it HERE -- before
+  // anything is composed, before anything is sent, and with no
+  // permission-denied generated for errors.js to surface.
+  reset([[NOTE_A, REV_1]]);
+  const { evidence } = await createStudyNote(db, { ...base, unitKey: "ayah:2:255" });
+  persistenceReady = false;
+  const blocked = await recordJournalEvidence(db, evidence, "uid-p1");
+  assert.equal(calls.evidence.length, 0, "THE STORE WAS REACHED THROUGH A SHUT GATE -- the bypass is back");
+  assert.equal(blocked.blocked, true, "a refusal is not reported as a refusal");
+  assert.equal(blocked.written, false);
+  assert.equal(blocked.skipped, false, "a refusal is not the same fact as nothing to record");
+  assert.equal(blocked.eventId, null);
+  assert.equal(blocked.reason, "evidence-rules-not-deployed", "the reason key does not reach the caller");
+});
+await check("S3c the four outcomes are mutually distinguishable -- none can wear another's face", async () => {
+  // `written: false` carries no meaning alone: it is true of a refusal AND of
+  // a retry. Collapsing them is how a Journaling save would report something
+  // that did not happen, so each outcome is asserted against all three others.
+  reset([[NOTE_A, REV_1]]);
+  const { evidence } = await createStudyNote(db, { ...base, unitKey: "ayah:2:255" });
+
+  const written = await recordJournalEvidence(db, evidence, "uid-p1");
+  alreadyRecorded = true;
+  const retried = await recordJournalEvidence(db, evidence, "uid-p1");
+  persistenceReady = false;
+  const blocked = await recordJournalEvidence(db, evidence, "uid-p1");
+  const skipped = await recordJournalEvidence(db, null, "uid-p1");
+
+  // A retry IS a successful no-op and must not look like a refusal.
+  assert.equal(retried.written, false);
+  assert.equal(retried.blocked, false, "a retry is being reported as a refusal");
+  assert.equal(retried.skipped, false);
+  assert.ok(retried.eventId, "a retry loses the event identity it deduplicated against");
+  // ...and a refusal must not look like a retry.
+  assert.notDeepEqual(
+    { written: blocked.written, blocked: blocked.blocked, skipped: blocked.skipped },
+    { written: retried.written, blocked: retried.blocked, skipped: retried.skipped },
+    "a refused write and an already-recorded one are indistinguishable");
+  // Every outcome carries the same five fields, so a reader never has to infer
+  // one fact from the ABSENCE of another.
+  const KEYS = ["eventId", "written", "blocked", "skipped", "reason"];
+  for (const [name, outcome] of [["written", written], ["retried", retried], ["blocked", blocked], ["skipped", skipped]]) {
+    assert.deepEqual(Object.keys(outcome).sort(), [...KEYS].sort(), `${name} has a different shape from the others`);
+  }
+  // Exactly one of the four is a new document.
+  assert.deepEqual([written.written, retried.written, blocked.written, skipped.written], [true, false, false, false]);
+  assert.deepEqual([written.blocked, retried.blocked, blocked.blocked, skipped.blocked], [false, false, true, false]);
+  assert.deepEqual([written.skipped, retried.skipped, blocked.skipped, skipped.skipped], [false, false, false, true]);
+});
+await check("S3d the service does not import the evidence store at all", async () => {
+  // Source-level, because this is the claim the tranche makes: the chokepoint
+  // is the only door, and that is now true of the CODE rather than of the fact
+  // that nothing can reach the second one.
+  const raw = fs.readFileSync(path.join(root, "app/js/study-note-service.js"), "utf8");
+  const code = raw.replace(/\/\*[\s\S]*?\*\//g, "")
+                  .split("\n").filter((l) => !l.trim().startsWith("//")).join("\n");
+  assert.ok(!/study-activity-evidence-store/.test(code), "the service still imports the evidence store");
+  assert.ok(!/writeStudyActivityEvidence/.test(code), "the service still names the evidence store writer");
+  assert.ok(/from "\.\/study-event-wiring\.js"/.test(code), "the service does not import the chokepoint");
 });
 
 // --- 2. THE PROMOTION LEAVES THE QUICK NOTE ALONE ---------------------------
