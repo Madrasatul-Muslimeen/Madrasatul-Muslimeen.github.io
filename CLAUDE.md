@@ -123,13 +123,14 @@ Read this first, every session. It is the standing brief.
 > timezone item is **one question, not a UI decision** (§11.B).
 
 
-**Current milestone: v08.29 on `main`** (18 Sep 2026 — the Hadith Stage A/B
-integration, merged under explicit Master Architect authorisation. v08.27, the
-Study-options number pickers, was the previous version on `main`; v08.28 is
-Hadith Stage A, carried into `main` as history by this integration and never
-independently merged. **Merged is not deployed** — no deployment was performed
-or proven by that round. `main`'s own `app/js/version.js` is the single source
-of truth and is what GitHub Pages serves.)
+**Current milestone: v08.30 on `main`** (18 Sep 2026 — the QuranRevival MAP
+Phase 4 Study-event wiring: D1 Reading, D2 Listening, D4 WbW reaching ADR-008
+Activity evidence. **BUILT, NOT SHIPPED** — the evidence Rules are not deployed
+(E1), so the subcollection is closed to every client and the feature cannot
+function for anyone yet. v08.29, the Hadith Stage A/B integration, was the
+previous version on `main`. **Merged is not deployed, and neither is this** —
+no deployment has been performed or proven for any v08.2x or v08.30 milestone.
+`main`'s own `app/js/version.js` is the single source of truth.)
 
 > **This line was WRONG for part of 18 Sep, and the episode is the lesson.** It
 > read "**v08.26 on `main`**" the moment the nav round was committed to a
@@ -190,6 +191,80 @@ the single source of truth and the badge beside the app name says so on screen.
 **This line has drifted twice already — it read `v08.02` while `main` was on
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
+
+**v08.30 (18 Sep 2026) — MAP PHASE 4 STUDY EVENTS REACH ACTIVITY, and it is
+BUILT rather than SHIPPED.** D1 Reading (an explicit ✓ on `#readBar` — ADR-008
+requires an explicit completion "so intent is auditable", so there is no passive
+trigger anywhere), D2 Listening (≥80% of the selected unit, with preload,
+buffering, looping, backward seeks and failure all excluded **by construction**
+rather than by special cases) and D4 Word-by-Word (āyah + day, on the LEARNER's
+own state action only — a supervisor approving a word records nothing). Each is
+one create-only document in `activity/{tenant}__{person}__{week}/evidence/`,
+deduplicated by the database because the identity IS the document id.
+**D3 Journaling is out of scope**: P5-B resolved its contract, but
+`note-journal-evidence.js` has no reachable producer and P5-D is not built.
+
+**THE E1 GATE IS REAL AND THE IMPLEMENTATION FAILS CLOSED, which is correct.**
+`firestore.rules` contains the word "evidence" **zero** times, so the
+subcollection has no rule and is denied to every client. The writer **rethrows**
+and `safeWrite()` surfaces it (I15), so until the Rules are deployed a reader
+pressing ✓ sees an error. **I15 was NOT weakened to make the UI look
+successful** — that was explicitly forbidden and would have been the easy wrong
+answer. Nothing was deployed; **built is not shipped.**
+
+**RE-DERIVED on current main, NOT merged.** `7e2931f` was read and is untouched
+— not re-cut, not re-stamped, not merged — and its `v08.26` stamp stays
+HISTORICAL. Two areas were rebuilt rather than ported, and both mattered.
+**(1) The `#readBar` measurement**: the old numbers predate the rewrites of
+`panel.mjs`, `layout.mjs` and `navcheck.mjs`, and re-measuring found a real cost
+the historical branch had reported clean (below). **(2) The boundary
+invariant**: `main` gained P4-E's reader guards after the branch was cut, and
+**a conflict-free merge prediction is not proof of semantic compatibility** —
+the two invariants had to be reconciled, not stacked.
+
+**THE BOUNDARY INVARIANT IS INVERTED, NOT DROPPED, and that is the shape to
+remember.** It used to assert that NO PAGE may reach the evidence writer, which
+was the whole safety case while nothing was wired. Asserting it now would be
+asserting that the wiring does not work. So main's **reachability walker** is
+kept — the stronger mechanism, catching a wiring wherever in the chain it
+happens — and pointed at the new invariant: **every page-reachable path to the
+writer must pass THROUGH `study-event-wiring.js`**, with a positive control
+(zero chains means the wiring is broken, not safe). Mutation-proven three ways:
+remove the page's import → the positive control fires; give a second
+page-reachable module the writer → two checks fire; let the wiring module import
+`records.js` → the Mastery guard fires.
+
+**A REAL COST, MEASURED AND REPORTED RATHER THAN BURIED.** The ✓ adds 37.4px to
+the app's densest row. Measured before and after at seven widths in both
+languages: `#readBar` **already wrapped** at 320/340/360 on `main`, and the new
+button takes it over at **390px (+14.8 → −22.6)** and **412px (+36.8 → −0.6)**
+too — costing **33px of reading area** at the two commonest phone widths
+(`reading.mjs`: 546 → 513px at 390x844). **The screenshot shows it is tidy** —
+the ⋮ drops to its own right-aligned line, the same shape the bar already had at
+320–360 — but tidy is not free. `layout.mjs` is **byte-identical** on the
+landing page with `getElementById` 250 → 252 and **0 dangling**; `panel.mjs`,
+`navcheck.mjs` and `reading.mjs` all exit 0. **No remedy was chosen**: the
+options all cost something else (tightening the bar's gap recovers ~21.6px and
+still leaves Bangla 1.3px short; trimming icon padding would push the 26.8px tap
+target below what this brief already calls too small), so it joins the Owner UI
+list with numbers attached.
+
+**Five `behaviour.mjs` checks were UPDATED IN PLACE with the reason, never
+deleted** — four enumerate `#readBar` and went stale the moment an authorised
+tranche added a control (30j, 30l, 33a, 37a). **The fifth was a genuine TEST
+DEFECT this tranche exposed**: 37a counted the out-of-flow `aria-live` announcer
+as a control in the row and reported a 42px "gap" and two negative ones. An
+element that is `position:absolute` precisely so it takes no width on the
+densest row is not a control; the check measures in-flow children now, which is
+correct for any future announcer too.
+
+**Two PROVISIONAL BUILD DEFAULTS are held for Owner review, not re-decided
+here** (`OWNER_REVIEW_AFTER_BUILD`): the Reading Approach inferred from
+translation visibility (`approach_01` vs `approach_03`), and a juz/hizb/ruku/
+page recording **no** evidence and saying so in words. **No evidence was
+invented to complete tracking** — that was forbidden and it is also the right
+answer. See
+`docs/reports/2026-09-18-quranrevival-phase4-v0830-build.md`.
 
 **18 Sep 2026 — POST-HADITH PROGRAMME-CONTROL REPAIR, and all three defects
 were the ledger describing a programme that had moved on.** The Hadith v08.29

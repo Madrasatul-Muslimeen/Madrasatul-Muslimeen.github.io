@@ -1878,8 +1878,12 @@ console.log("\n=== 30. Shell round 18: unit numbers, transport, reading view ===
     // reciter Play would use, which Study options -> Listening already says.
     noReciter: !document.getElementById("readReciterName"),
   }));
-  check("30j prev unit, prev āyah, next āyah, next unit, play, stop, full screen and bookmark are on the reading screen",
-        transport.visible && JSON.stringify(transport.buttons) === '["prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn","readBookmarkBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
+  // v08.30 -- MAP Phase 4 (P4-D1) added #readCompleteBtn, the explicit Reading
+  // completion, directly after Bookmark. UPDATED IN PLACE with the reason
+  // rather than deleted or worked around: this list is the record of what the
+  // row holds, and a round that adds a control owes it an update.
+  check("30j prev unit, prev āyah, next āyah, next unit, play, stop, full screen, bookmark and reading-complete are on the reading screen",
+        transport.visible && JSON.stringify(transport.buttons) === '["prevUnitBtn","prevAyahBtn","nextAyahBtn","nextUnitBtn","readPlayBtn","readStopBtn","hideChromeBtn","readBookmarkBtn","readCompleteBtn","readAttachAsmaBtn"]', JSON.stringify(transport));
   check("30j the separate 'Whole surah' button is gone (Play follows the unit)", transport.noWholeSurah);
   check("30j the merged button is named Play while nothing is playing",
         /Play|চালান/.test(transport.playLabel) && !/Pause|থামান/.test(transport.playLabel), transport.playLabel);
@@ -1920,8 +1924,10 @@ console.log("\n=== 30l. Round 18's own controls in Bangla ===");
   // (eight now -- prevAyahBtn/nextAyahBtn joined this row, and the
   // multi-student round's own readBookmarkBtn joined it too).
   const t18 = await page.evaluate(() => [...document.querySelectorAll("#readBar > button")].map((b) => b.getAttribute("aria-label") || ""));
+  // v08.30 -- ten now: #readCompleteBtn joined the row. Its own Bangla name is
+  // the I11 evidence for this tranche's four new keys.
   check("30l every reading-screen control is NAMED in Bangla",
-        t18.length === 9 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
+        t18.length === 10 && t18.every((x) => BANGLA.test(x)), JSON.stringify(t18));
   await page.close();
   await ctx.close();
 }
@@ -2467,8 +2473,10 @@ const readRef = readingRef; // round 22: #readRef is retired, see readingRef abo
   // joined the row in v07.92 and #readAttachAsmaBtn in v07.107, and neither
   // round updated them. Brought in line rather than left permanently red --
   // a red check in the very row this round edits would mask a real regression.
-  check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · ⋮ slot",
-        bar.ids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readAttachAsmaBtn,readQuickMenuSlot",
+  // v08.30 -- #readCompleteBtn and its out-of-flow announcer #readCompleteMsg
+  // joined the row after Bookmark (MAP Phase 4 P4-D1).
+  check("33a the read bar is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
+        bar.ids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot",
         JSON.stringify(bar.ids));
   check("33a the '◂ Mastery Wheel' button is gone (the Read tab does it)", bar.noBack);
   check("33a the separate Pause button is gone", bar.noSeparatePause);
@@ -3176,12 +3184,19 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
     // group and moves its own start point, so a start-position threshold
     // tuned for five items breaks the moment a sixth is added even though
     // the row is still flush right with no `space-between`-style gaps.
-    const gaps = visibleKids.slice(1).map((el, i) => Math.round(el.getBoundingClientRect().left - visibleKids[i].getBoundingClientRect().right));
+    // v08.30 -- an OUT-OF-FLOW child is not a control in this row, and counting
+    // one as though it were produced nonsense: P4-D1's aria-live announcer
+    // #readCompleteMsg is `position:absolute` with a 1px clip precisely so it
+    // takes no width on the app's densest row, and including it reported a
+    // 42px "gap" and two negative ones. The question this check asks is whether
+    // the CONTROLS are packed together; measure the ones that occupy the row.
+    const inFlowKids = visibleKids.filter((el) => getComputedStyle(el).position !== "absolute");
+    const gaps = inFlowKids.slice(1).map((el, i) => Math.round(el.getBoundingClientRect().left - inFlowKids[i].getBoundingClientRect().right));
     return {
       barKids: kids.map((e) => e.id),
       noReciter: !document.getElementById("readReciterName"),
       gaps,
-      lastRight: Math.round(visibleKids[visibleKids.length - 1].getBoundingClientRect().right),
+      lastRight: Math.round(inFlowKids[inFlowKids.length - 1].getBoundingClientRect().right),
       barLeft: Math.round(barBox.left), barRight: Math.round(barBox.right),
       posCount: derivRows.length,
       latinPos: derivRows.map((r) => r.querySelector(".root-pos")?.textContent || "").filter((x) => /[A-Za-z]/.test(x)).length,
@@ -3196,8 +3211,9 @@ console.log("\n=== 37. Shell round 25: grammar labels, and the control row ===")
   // Next unit, Play, Stop, Full screen, ⋮ slot, whether or not the inner
   // pair happens to be visible for the current unit type. The multi-student
   // round added Bookmark right before the ⋮ slot.
-  check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · ⋮ slot",
-        m.barKids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
+  // v08.30 -- see the 33a note: Reading complete and its announcer joined.
+  check("37a the row is Prev unit · Prev āyah · Next āyah · Next unit · Play · Stop · Full screen · Bookmark · Reading complete · ⋮ slot",
+        m.barKids.join() === "prevUnitBtn,prevAyahBtn,nextAyahBtn,nextUnitBtn,readPlayBtn,readStopBtn,hideChromeBtn,readTextSizeSlot,readBookmarkBtn,readCompleteBtn,readCompleteMsg,readAttachAsmaBtn,readQuickMenuSlot", JSON.stringify(m.barKids));
   // `space-between` would leave large, uneven gaps between controls, which
   // is exactly how a stale `space-between` survived this round's first
   // attempt -- checking the gaps directly catches that regardless of how

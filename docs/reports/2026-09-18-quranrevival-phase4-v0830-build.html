@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuranRevival MAP Phase 4 — v08.30 current-baseline build</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>QuranRevival MAP Phase 4 — v08.30 current-baseline build</h1>
+<ul><li><strong>Date:</strong> 2026-09-18</li><li><strong>Instruction:</strong> Implement D1 Reading, D2 Listening and D4 WbW on current MMSA main using the accepted ADR-008 evidence-subcollection architecture. <strong>Build and verification authorised; production deployment and shipping are not.</strong></li><li><strong>Base:</strong> <code>030216ba501a1e469d0c4de36b853d1ec48ee393</code>, v08.29 → <strong>v08.30</strong></li><li><strong>Historical branch <code>7e2931f</code>:</strong> read only. <strong>Not re-cut, not re-stamped, not merged.</strong> Its <code>v08.26</code> stamp stays HISTORICAL.</li><li><strong>Result:</strong> Delivered. <strong>Two real findings the historical branch could not have reported</strong>, both from re-deriving rather than porting.</li></ul>
+<hr>
+<h2>1. What was built</h2>
+<p>Three of ADR-008&#x27;s five Study events now reach Activity. Each is <strong>one create-only document</strong> in <code>activity/{tenantId}__{personId}__{weekKey}/evidence/{eventId}</code>, deduplicated by the database because the identity <strong>is</strong> the document id — a retry is a <code>create</code> on an existing document and always fails, which the store treats as a successful no-op.</p>
+<div class='tw'><table><thead><tr><th></th><th>Trigger</th><th>Credits</th></tr></thead><tbody>
+<tr><td><strong>D1 Reading</strong></td><td>An <strong>explicit</strong> ✓ on <code>#readBar</code>. ADR-008: <em>&quot;merely opening or scrolling a passage does not complete Reading… v1 requires an explicit completion action so intent is auditable.&quot;</em> There is <strong>no passive trigger anywhere</strong></td><td><code>approach_01</code> (Arabic only) / <code>approach_03</code> (a translation on screen)</td></tr>
+<tr><td><strong>D2 Listening</strong></td><td>A playback session covering <strong>≥80%</strong> of the selected unit</td><td><code>approach_07</code> / <code>approach_08</code></td></tr>
+<tr><td><strong>D4 Word-by-Word</strong></td><td>The <strong>learner&#x27;s own</strong> word-state action, at <strong>āyah + day</strong> grain</td><td><code>approach_04</code></td></tr>
+</tbody></table></div>
+<p><strong>D2&#x27;s exclusions are properties of the shape, not special cases</strong> — preload cannot create a session (only the Play button can); buffering does not advance the āyah so adds no coverage; heard āyahs are a <strong>set</strong>, so a loop adds nothing twice; an āyah is credited only on <strong>forward</strong> motion, so a backward seek credits nothing and a forward jump credits only the āyah actually left behind; and <code>failed()</code> ends the session permanently.</p>
+<p><strong>D4 fires on the learner only.</strong> A supervisor&#x27;s approval is the <code>else</code> branch and records no Activity: a teacher approving a word has not themselves studied it.</p>
+<p><strong>D3 Journaling is out of scope.</strong> Its historical blocker was resolved at contract level by P5-B, but <code>note-journal-evidence.js</code> has <strong>no reachable producer</strong> and the Note editor (P5-D) is not built.</p>
+<h3>Activity is not Mastery — enforced by inability</h3>
+<p>The wiring module cannot reach <code>records.js</code>, <code>claimStatus</code>, <code>confirmEntry</code>, <code>arrayUnion</code>, <code>achieved</code>, <code>mastered</code> or <code>entries[]</code>; a guard asserts that by reading its source. <code>bulkConfirmWeek()</code> still builds its confirm set from <code>entries[]</code> alone, so evidence can never enlarge what one supervisor click confirms.</p>
+<hr>
+<h2>2. The E1 gate, recorded truthfully</h2>
+<p><strong>The implementation fails closed, and that is correct.</strong></p>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><code>firestore.rules</code> mentions &quot;evidence&quot;</td><td><strong>0 times</strong> — the subcollection has no rule and is denied to every client</td></tr>
+<tr><td>The assembled candidate mentions it</td><td>6 times — undeployed</td></tr>
+<tr><td>Rules / Firebase config changed by this tranche</td><td><strong>0 files</strong></td></tr>
+</tbody></table></div>
+<p><strong>Exact runtime consequence:</strong> a reader presses ✓, <code>recordStudyEvidence()</code> reaches the store, the write is denied, the store re-reads, finds the document still absent, and <strong>rethrows</strong>. <code>safeWrite()</code> surfaces the failure to the user (I15) and the D1 handler deliberately adds no second message and does <strong>not</strong> mark the button done. Listening and WbW behave the same way without a button to disable.</p>
+<p><strong>I15 was not weakened and the error is not swallowed.</strong> Making the UI appear successful would have been the easy wrong answer and was explicitly forbidden. <strong>Nothing was deployed.</strong></p>
+<hr>
+<h2>3. Re-derived, not ported — and both re-derivations found something</h2>
+<h3>3.1 The boundary invariant</h3>
+<p>The suite on <code>main</code> asserted <em>&quot;NO PAGE can reach the evidence writer, by any chain&quot;</em> — the whole safety case while nothing was wired. Wiring makes that deliberately false, and asserting it would be asserting that the wiring does not work.</p>
+<p><strong>Main&#x27;s reachability walker is kept</strong> — the stronger mechanism, catching a wiring wherever in the chain it happens — and pointed at the new invariant: <strong>every page-reachable path to the writer must pass THROUGH <code>study-event-wiring.js</code></strong>, the one audited entry point. It carries the positive control a negative assertion needs: <strong>zero chains means the wiring is broken, not safe.</strong></p>
+<p><strong>This could not be ported.</strong> <code>main</code> gained <strong>+24 lines of P4-E reader guards</strong> after the branch was cut. <code>git merge-tree</code> predicts no textual conflict there — and <strong>a conflict-free merge prediction is not proof of semantic compatibility.</strong> A clean auto-merge would have placed two invariants side by side without reconciling them.</p>
+<p><strong>Mutation-proven three ways</strong>, each restored afterwards and the restoration verified by an empty <code>git diff</code>:</p>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Guard fired</th></tr></thead><tbody>
+<tr><td>Remove the page&#x27;s import of the wiring module</td><td><em>&quot;no page reaches the writer at all — the v08.30 Study wiring is live, so that means it is broken&quot;</em></td></tr>
+<tr><td>Give a second page-reachable module the writer</td><td>the pinned importer set <strong>and</strong> the page-reachable-names check</td></tr>
+<tr><td>Let the wiring module import <code>records.js</code></td><td><em>&quot;study-event-wiring.js can reach records.js — Activity is one step from Mastery&quot;</em></td></tr>
+</tbody></table></div>
+<p><strong><code>study-approach-contract-boundary.mjs</code> was measured, not assumed, and is correctly unaffected</strong> (16/0): it guards <code>study-approach-contract.js</code> and <code>study-activity-evidence.js</code>, while the wiring imports the <strong>store</strong>. The two similarly-named suites guard different module sets.</p>
+<h3>3.2 The <code>#readBar</code> measurement — a real cost the old numbers hid</h3>
+<p>The historical branch reported this row clean. Against current instruments it is not, and <strong>that is exactly why re-derivation was required.</strong></p>
+<p>Measured before and after, at seven widths in both languages:</p>
+<div class='tw'><table><thead><tr><th></th><th>320</th><th>340</th><th>360</th><th><strong>390</strong></th><th><strong>412</strong></th><th>768</th><th>1100</th></tr></thead><tbody>
+<tr><td><strong>en before</strong> (slack)</td><td>−55.2</td><td>−35.2</td><td>−15.2</td><td><strong>+14.8</strong></td><td><strong>+36.8</strong></td><td>+392.8</td><td>+636.8</td></tr>
+<tr><td><strong>en after</strong></td><td>−92.6</td><td>−72.6</td><td>−52.6</td><td><strong>−22.6</strong></td><td><strong>−0.6</strong></td><td>+355.4</td><td>+599.4</td></tr>
+<tr><td><strong>bn before</strong></td><td>−64.8</td><td>−44.8</td><td>−24.8</td><td><strong>+5.2</strong></td><td><strong>+27.2</strong></td><td>+383.2</td><td>+627.2</td></tr>
+<tr><td><strong>bn after</strong></td><td>−101.9</td><td>−81.9</td><td>−61.9</td><td><strong>−31.9</strong></td><td><strong>−9.9</strong></td><td>+346.1</td><td>+590.1</td></tr>
+</tbody></table></div>
+<p><strong>Two things are true and both are reported.</strong> <code>#readBar</code> <strong>already wrapped</strong> at 320/340/360 on <code>main</code> — a pre-existing baseline nobody had measured, because <code>reading.mjs</code> measures the reading area, not the bar. And the ✓ adds <strong>37.4px</strong> (31 button + 6.4 gap), which takes the row over at <strong>390 and 412 too</strong> — the two commonest phone widths. <code>reading.mjs</code> measures the cost: <strong>546 → 513px of reading area at 390x844, 617 → 584px at 412x915</strong>, the ayah starting 283 → 317px down.</p>
+<p><strong>The screenshot was looked at, and it changes the reading of the number.</strong> The &quot;wrap&quot; is the ⋮ dropping to its own right-aligned line — tidy, and the identical shape the bar already had at 320–360. It is not the ragged stack the v07.129 lesson warns about. <strong>Tidy is not free, but it is not broken either.</strong></p>
+<p><strong>No remedy was chosen, because each costs something else</strong> — measured, not asserted:</p>
+<ul><li><strong>Tighten the bar&#x27;s own <code>gap</code></strong> (6.4px, nine gaps): recovers ~21.6px, enough for English at 390 (−22.6 → −1.0, still short) and <strong>1.3px short in Bangla</strong>. A half-fix that works in one language is worse than an honest report.</li><li><strong>Trim <code>.qr-ico</code> horizontal padding</strong> (8px each side): would take the tap target from ~31px toward ~25px, <strong>below the 26px this brief already calls too small</strong>. Trading a layout defect for an ergonomics one is what v08.27 refused to do.</li><li><strong>Move the ✓ into the ⋮ menu</strong>: zero width cost, one more tap — and a materially different product choice the branch&#x27;s own reasoning argues against.</li></ul>
+<p><strong>It joins <code>tenantSelect</code> / <code>surahSelect</code> / <code>unitTypeSelect</code> as an Owner UI item, with numbers attached.</strong></p>
+<hr>
+<h2>4. Files changed</h2>
+<div class='tw'><table><thead><tr><th>File</th><th>Ownership</th><th>Change</th></tr></thead><tbody>
+<tr><td><code>app/js/study-event-wiring.js</code></td><td>QURAN_OWNED</td><td><strong>New</strong>, 222 lines. Pure decisions, verified against current dependencies</td></tr>
+<tr><td><code>app/quranrevival.html</code></td><td>QURAN_OWNED</td><td>The ✓, its out-of-flow announcer, and eight call sites re-applied to current markup</td></tr>
+<tr><td><code>tools/i18n-verify/study-event-wiring.mjs</code></td><td>QURAN_OWNED</td><td><strong>New</strong>, 39 assertions</td></tr>
+<tr><td><code>tools/i18n-verify/study-activity-evidence-boundary.mjs</code></td><td>QURAN_OWNED</td><td>Invariant inverted over P4-E&#x27;s guards; a fourth check added</td></tr>
+<tr><td><code>app/js/i18n/bn.js</code></td><td><strong>MMSA_SHARED — authorised</strong></td><td>4 appended keys, each <strong>proven absent first</strong>, zero Hadith collision</td></tr>
+<tr><td><code>app/js/version.js</code></td><td><strong>MMSA_SHARED — authorised</strong></td><td>08.29 → <strong>08.30</strong></td></tr>
+<tr><td><code>CLAUDE.md</code>, <code>CHANGELOG.md</code></td><td><strong>MMSA_SHARED — authorised</strong></td><td>Milestone and round entry. <strong>No deployed/served/live claim</strong></td></tr>
+<tr><td><code>tools/i18n-verify/behaviour.mjs</code></td><td><strong>MMSA_SHARED — declared, see §4.1</strong></td><td>5 checks re-derived</td></tr>
+<tr><td><code>docs/governance/programme-integration-ledger.json</code></td><td>platform</td><td>v08.30 allocated LIVE, <code>nextUnallocated</code> → 08.31, authorisations recorded</td></tr>
+</tbody></table></div>
+<p><strong>No unauthorised shared-file expansion.</strong> The three historical emulator/diagnostic touches were <strong>not</strong> ported, as instructed.</p>
+<h3>4.1 <code>behaviour.mjs</code> — declared, not done quietly</h3>
+<p>Five checks failed, all in the row this authorised tranche deliberately changed. <strong>Four are stale enumerations</strong> (30j, 30l, 33a, 37a) — and 30l&#x27;s own output is the proof the i18n landed: its Bangla list already contained <em>&quot;এই তিলাওয়াত সম্পন্ন হিসেবে চিহ্নিত করুন&quot;</em>, so the check was failing on a count, not a missing translation.</p>
+<p><strong>The fifth was a genuine TEST DEFECT this tranche exposed.</strong> 37a computed gaps over every visible child and reported <code>gaps:[6,6,6,6,6,6,6,42,-37,-30]</code> — a 42px gap and two negative ones. The cause: it counted the <code>aria-live</code> announcer, which is <code>position:absolute</code> with a 1px clip <strong>precisely so it takes no width on the densest row</strong>. An out-of-flow element is not a control in a row. It measures in-flow children now, which is correct for any future announcer.</p>
+<p>All five were <strong>updated in place with the reason</strong>, per this repository&#x27;s own rule, under the instruction&#x27;s <em>&quot;tests may be re-derived for current architecture where required.&quot;</em> <code>behaviour.mjs</code> is platform-shared, so the touch is <strong>declared in the ledger with authorisation metadata</strong> rather than made silently.</p>
+<hr>
+<h2>5. Verification</h2>
+<h3>Application</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>study-event-wiring.mjs</code> (D1/D2/D4 pure)</td><td><strong>39 passed, 0 failed</strong></td></tr>
+<tr><td><code>study-activity-evidence-boundary.mjs</code></td><td><strong>18 passed, 0 failed</strong> · 3 mutations, 3 caught</td></tr>
+<tr><td><code>study-activity-evidence-id.mjs</code></td><td>29 / 0</td></tr>
+<tr><td><code>study-activity-evidence-store.mjs</code></td><td>26 / 0</td></tr>
+<tr><td><code>study-activity-evidence.mjs</code> · <code>study-approach-contract.mjs</code></td><td>11 / 0 · 13 / 0</td></tr>
+<tr><td><code>study-approach-contract-boundary.mjs</code></td><td>16 / 0 — correctly unaffected</td></tr>
+<tr><td><strong>Emulator: <code>activity-evidence-v1.rules.test.mjs</code></strong></td><td><strong>53 assertions, 0 failures</strong></td></tr>
+</tbody></table></div>
+<h3>Regression</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>behaviour.mjs</code></td><td><strong>978 passed, 4 failed</strong> — all four environmental (§5.1)</td></tr>
+<tr><td><code>layout.mjs</code></td><td><strong>NO LAYOUT REGRESSIONS</strong> — every landing-page metric byte-identical, <code>getElementById</code> <strong>250 → 252</strong> (this tranche&#x27;s two new elements, both found), <strong>0 dangling</strong></td></tr>
+<tr><td><code>reading.mjs</code></td><td><strong>READING SCREEN OK</strong>, exit 0</td></tr>
+<tr><td><code>panel.mjs</code></td><td><strong>PANEL OK</strong>, exit 0, same known baseline</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>exit 0</td></tr>
+<tr><td><code>programme-ledger.mjs</code> · mutations</td><td>0 failed · <strong>37 / 0</strong></td></tr>
+<tr><td><code>brief-integrity.mjs</code> · <code>stub-parity.mjs</code></td><td>8 / 0 · 3 / 0</td></tr>
+<tr><td><code>rules-authorisation-executable.mjs</code></td><td>38 / 0</td></tr>
+<tr><td><code>rules-deployment-candidate.mjs</code> · <code>firestore-index-requirements.mjs</code></td><td>10 / 0 · 8 / 0</td></tr>
+<tr><td><code>note-foundation-boundary</code> · <code>journey-map-boundary</code> · <code>study-note-boundary</code></td><td>30 / 0 · 13 / 0 · 17 / 0</td></tr>
+<tr><td><code>d14-timezone-boundary</code> · <code>d14-timezone-contract</code></td><td><strong>10 / 0</strong> · 21 / 0 — D14 unreachable</td></tr>
+</tbody></table></div>
+<h3>5.1 Failure classification</h3>
+<div class='tw'><table><thead><tr><th>Class</th><th>Count</th><th>Detail</th></tr></thead><tbody>
+<tr><td><strong>APPLICATION FAILURE</strong></td><td><strong>0</strong></td><td>—</td></tr>
+<tr><td><strong>TEST DEFECT</strong></td><td><strong>5</strong></td><td><code>behaviour.mjs</code> 30j / 30l / 33a / 37a-list (stale enumerations) and 37a-gaps (counted an out-of-flow announcer). All fixed, §4.1</td></tr>
+<tr><td><strong>ENVIRONMENTAL</strong></td><td>4</td><td>22g × 3 (archive.org, intermittent) and 31e (the sandbox&#x27;s TLS interception). Neither happens for the Owner</td></tr>
+<tr><td><strong>EXPECTED E1 BLOCK</strong></td><td>1</td><td>The evidence write is denied in production. <strong>The implementation fails closed, which is correct, and is NOT an implementation failure</strong></td></tr>
+</tbody></table></div>
+<p><strong>One environmental failure was mine and is written down rather than quietly re-run:</strong> the first attempt at the emulator suite reported <code>fetch failed</code> and 0 pass / 1 fail, which reads like a broken suite. The emulator was simply not running — it needs <code>firebase emulators:exec</code>. Launched properly it is 53 / 0.</p>
+<p><strong>A probe failure was also mine.</strong> My first <code>#readBar</code> probe reported <code>bar=0 kids=0 btn=0x0</code> at every viewport — which would have been a catastrophic finding had I believed it. It was hand-rolling the boot instead of using <code>harness.mjs</code>, and the Read screen never opened. <strong>A probe that finds nothing is a claim about the probe until proven otherwise.</strong></p>
+<h3>Protections</h3>
+<p><code>git diff</code> against the base proves: Hadith untouched (zero Hadith files, zero i18n key collisions, its own behaviour sections passing); <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/</code> and every Rules/index candidate <strong>byte-for-byte unchanged</strong>; <code>nav.js</code> and <code>shell.css</code> untouched; MMJ/Notes contracts untouched; D14 present and unreachable; the ledger&#x27;s vocabulary and guards intact; <code>7e2931f</code> at its original SHA.</p>
+<hr>
+<h2>6. D14 coupling — recorded, not wired</h2>
+<p>The writer takes its <code>weekKey</code> from <strong><code>weekKeyFor()</code>, which reads the DEVICE&#x27;s local calendar day</strong> (<code>getFullYear/getMonth/getDate</code>, then formats UTC), while <code>dateIso</code> is <strong>pure UTC</strong>. Near midnight the two can name different days.</p>
+<p><strong>This tranche does not change that and does not touch D14.</strong> But Phase 4 evidence now consumes exactly the function D14 would change, so <strong>if D14 is ever activated, evidence written before it keeps week keys computed under the old rule.</strong> No backfill is proposed and none should be assumed. Temporal semantics were not silently changed.</p>
+<hr>
+<h2>QURANREVIVAL_PHASE4_V0830</h2>
+<p>``<code> BASE_MAIN_SHA=030216ba501a1e469d0c4de36b853d1ec48ee393 FINAL_HEAD=__FINAL__ APP_VERSION=v08.30 D1_READING=IMPLEMENTED;EXPLICIT_COMPLETION_ONLY;NO_PASSIVE_TRIGGER D2_LISTENING=IMPLEMENTED;80_PERCENT_OF_SELECTED_UNIT;PRELOAD_BUFFER_LOOP_SEEK_FAILURE_EXCLUDED_BY_CONSTRUCTION D3=OUT_OF_SCOPE_NOT_IMPLEMENTED D4_WBW=IMPLEMENTED;AYAH_PLUS_DAY;LEARNER_ACTION_ONLY;NO_OCCURRENCE_STORED ADR008_WRITER=CREATE_ONLY_SUBCOLLECTION;DB_ENFORCED_DEDUPE;ENTRIES_ARRAY_UNTOUCHED;ACTIVITY_CANNOT_REACH_MASTERY SHARED_FILES_CHANGED=5 (bn.js, version.js, CLAUDE.md, CHANGELOG.md, behaviour.mjs) UNAUTHORIZED_SHARED_TOUCHES=0 (the 3 historical emulator/diagnostic touches were NOT ported) READBAR_VERIFICATION=RE_DERIVED;7_WIDTHS_x_2_LANGUAGES;SCREENSHOTS_INSPECTED;NEW_WRAP_AT_390_AND_412_COSTING_33px_READING_AREA;OWNER_UI_ITEM_WITH_COSTED_OPTIONS;layout.mjs_NO_REGRESSIONS_250-&gt;252_ids_0_dangling BOUNDARY_VERIFICATION=RE_DERIVED_OVER_P4E_GUARDS;INVERTED_TO_THROUGH_THE_WIRING;POSITIVE_CONTROL;3_MUTATIONS_3_CAUGHT QURAN_REGRESSIONS=0_APPLICATION;layout/reading/panel/navcheck_ALL_EXIT_0 HADITH_REGRESSIONS=0;ZERO_HADITH_FILES_TOUCHED;ZERO_I18N_COLLISIONS PROGRAMME_GUARDS=PASS MUTATIONS=LEDGER_37_PASS_0_FAIL;BOUNDARY_3_OF_3_CAUGHT I18N=4_ADDITIVE_BANGLA_KEYS;PROVEN_ABSENT_BEFORE_ADDING;VERIFIED_ON_THE_RENDERED_BANGLA_PAGE D14_STATUS=PRESENT_UNREACHABLE_UNCHANGED_10_0 D14_COUPLING=weekKeyFor_IS_DEVICE_LOCAL_DAY_WHILE_dateIso_IS_UTC;RECORDED_NOT_CHANGED;NO_BACKFILL_PROPOSED E1_STATUS=CLOSED;firestore.rules_CONTAINS_ZERO_EVIDENCE_RULES;WRITE_DENIED_AND_RETHROWN;I15_NOT_WEAKENED;FAILS_CLOSED_CORRECTLY RULES_DEPLOYED=NO APP_DEPLOYED=NO OWNER_REVIEW_AFTER_BUILD=3 (1: Reading Approach inferred from translation visibility; 2: juz/hizb/ruku/page record no evidence and say so; 3: NEW -- the readBar costs 33px of reading area at 390/412) READY_FOR_MASTER_ARCHITECT_CODE_ACCEPTANCE=YES READY_TO_SHIP=NO </code>``</p>
+<p><strong>READY_TO_SHIP = NO, and not because the build is incomplete.</strong> E1 is closed: the Rules are not deployed, the subcollection is denied to every client, and the feature cannot function for anyone. The implementation fails closed rather than pretending otherwise, which is the correct behaviour and the reason shipping is gated rather than the reason the build is.</p>
+<hr>
+<p>Returning to the Master Architect. No further tranche started; <strong>v08.31 not allocated.</strong></p>
+</main></body></html>

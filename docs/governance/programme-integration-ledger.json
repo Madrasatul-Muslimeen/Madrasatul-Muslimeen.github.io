@@ -31,7 +31,7 @@
     "ref": "origin/main",
     "baselineSha": "a4b9be3b65dce57a3fd44c3ab6cb2aa94699d99e",
     "baselineRecordedOn": "2026-09-18",
-    "version": "08.29",
+    "version": "08.30",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -82,16 +82,20 @@
     {
       "version": "08.29",
       "owner": "hadith",
-      "status": "LIVE",
+      "status": "RELEASED",
       "stampedAt": "22526b20da1e1fe950992957aa2862e65b3cf925",
-      "note": "Hadith Stage A/B. Merged to main at 43dd96f and is what main carries now. LIVE means exactly that: the version in main's app/js/version.js. It is NOT a claim about Firestore deployment, which is separate and NOT DONE."
+      "note": "Hadith Stage A/B. Merged to main at 43dd96f; what main carried until the QuranRevival Phase 4 tranche took 08.30. Shipped to main; superseded, not withdrawn. NOT a deployment claim."
+    },
+    {
+      "version": "08.30",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "QuranRevival MAP Phase 4 D1 Reading / D2 Listening / D4 WbW -- the ADR-008 evidence wiring, re-derived on current main rather than ported from 7e2931f. Allocated by the Master Architect. LIVE means main carries it. BUILT, NOT SHIPPED: the evidence Rules are not deployed (E1), so the subcollection is closed to every client."
     }
   ],
-  "nextUnallocated": "08.30",
+  "nextUnallocated": "08.31",
   "nextUnallocatedNote": [
-    "08.30 and every number above it are NOT ALLOCATED. Allocation is the Master",
-    "Architect's; no stream may stamp at or beyond this number without one.",
-    "Guard B enforces that against every declared branch."
+    "08.31 and every number above it are NOT ALLOCATED. Allocation is the Master Architect's; no stream may stamp at or beyond this number without one."
   ],
   "streams": [
     {
@@ -100,7 +104,7 @@
       "role": "The umbrella: shared runtime, shared verification, governance, version allocation and module integration. It owns the platform/shared paths below; it is not a subject module.",
       "activeBranch": null,
       "integrationState": "ON_MAIN",
-      "declaredVersion": "08.29",
+      "declaredVersion": "08.30",
       "baselineSha": null,
       "baselineStatus": "NOT_APPLICABLE_IS_MAIN",
       "ownedPaths": [
@@ -124,7 +128,7 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.27",
+      "declaredVersion": "08.30",
       "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
@@ -147,14 +151,71 @@
       ],
       "baselineNote": "Its recorded baseline went stale when the ledger's own commits moved main past 5ea0d92; re-pointed at cfee898, which is main. Forward movement, not drift.",
       "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
-      "role": "Subject module (Quran). NOT the umbrella; the umbrella is MMSA."
+      "role": "Subject module (Quran). NOT the umbrella; the umbrella is MMSA.",
+      "declaredSharedTouches": [
+        {
+          "path": "app/js/i18n/bn.js",
+          "status": "AUTHORIZED",
+          "note": "+4 keys for P4-D1's button and its three status messages. Each proven absent before adding; zero collision with Hadith's keys.",
+          "authorization": {
+            "by": "master-architect",
+            "on": "2026-09-18",
+            "reference": "docs/reports/2026-09-18-quranrevival-phase4-v0830-build.md",
+            "title": "QuranRevival Phase 4 current-baseline build, v08.30"
+          }
+        },
+        {
+          "path": "app/js/version.js",
+          "status": "AUTHORIZED",
+          "note": "08.29 -> 08.30, the number the Master Architect allocated for this tranche.",
+          "authorization": {
+            "by": "master-architect",
+            "on": "2026-09-18",
+            "reference": "docs/reports/2026-09-18-quranrevival-phase4-v0830-build.md",
+            "title": "QuranRevival Phase 4 current-baseline build, v08.30"
+          }
+        },
+        {
+          "path": "CLAUDE.md",
+          "status": "AUTHORIZED",
+          "note": "The v08.30 round entry and the milestone line.",
+          "authorization": {
+            "by": "master-architect",
+            "on": "2026-09-18",
+            "reference": "docs/reports/2026-09-18-quranrevival-phase4-v0830-build.md",
+            "title": "QuranRevival Phase 4 current-baseline build, v08.30"
+          }
+        },
+        {
+          "path": "CHANGELOG.md",
+          "status": "AUTHORIZED",
+          "note": "The v08.30 development milestone. Explicitly NOT a deployed/served claim.",
+          "authorization": {
+            "by": "master-architect",
+            "on": "2026-09-18",
+            "reference": "docs/reports/2026-09-18-quranrevival-phase4-v0830-build.md",
+            "title": "QuranRevival Phase 4 current-baseline build, v08.30"
+          }
+        },
+        {
+          "path": "tools/i18n-verify/behaviour.mjs",
+          "status": "AUTHORIZED",
+          "note": "5 checks re-derived, not ported: four enumerate #readBar and went stale the moment this authorised tranche added a control (30j, 30l, 33a, 37a); the fifth was a real TEST DEFECT this tranche exposed -- 37a counted an out-of-flow aria-live announcer as a control in the row and reported a 42px gap and two negative ones. Under the instruction's own 'tests may be re-derived for current architecture where required'. Declared rather than done quietly.",
+          "authorization": {
+            "by": "master-architect",
+            "on": "2026-09-18",
+            "reference": "docs/reports/2026-09-18-quranrevival-phase4-v0830-build.md",
+            "title": "QuranRevival Phase 4 current-baseline build, v08.30"
+          }
+        }
+      ]
     },
     {
       "id": "quran-phase4-wiring",
       "name": "QuranRevival MAP Phase 4 Study-event wiring (held)",
       "activeBranch": "claude/phase4-wiring",
       "branchTip": "7e2931f795af1cd97efc1167660cea93aa22b9ab",
-      "integrationState": "HELD",
+      "integrationState": "SUPERSEDED_BY_v08.30_REDERIVATION",
       "declaredVersion": "08.26",
       "declaredVersionIsHistorical": true,
       "baselineSha": null,
@@ -206,7 +267,8 @@
           "note": "+36/-0."
         }
       ],
-      "sharedTouchesNote": "Declared retrospectively on 2026-09-18 by reading the branch, not by re-cutting it. 7e2931f is held exactly as it is. This inventory is what the merge will touch, recorded so the Master Architect sees it before authorising rather than after."
+      "sharedTouchesNote": "Declared retrospectively on 2026-09-18 by reading the branch, not by re-cutting it. 7e2931f is held exactly as it is. This inventory is what the merge will touch, recorded so the Master Architect sees it before authorising rather than after.",
+      "supersededNote": "The capability was RE-DERIVED on current main as v08.30, not merged. 7e2931f is untouched -- not re-cut, not re-stamped, not merged -- and is kept as the historical record of the original P4-D work. Its v08.26 stamp stays HISTORICAL."
     },
     {
       "id": "hadith",

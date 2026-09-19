@@ -3144,6 +3144,23 @@
                two are independent, same as a Note can exist on both an
                āyah and a wider unit ("Also noted at:"). -->
           <button type="button" class="secondary qr-ico" id="readBookmarkBtn" aria-label="Bookmark this āyah" title="Bookmark this āyah" hidden>🔖</button>
+          <!-- MAP Phase 4 (P4-D1) -- the EXPLICIT Reading completion ADR-008
+               requires. "Merely opening or scrolling a passage does not
+               complete Reading. v1 requires an explicit completion action so
+               intent is auditable" -- so this is a deliberate press and there
+               is no passive trigger anywhere. It records ACTIVITY only; the
+               Mastery claim remains the Note view's own Track card, untouched.
+               Direct on the bar rather than inside the ⋮ menu, matching the
+               bookmark button's own precedent, because it applies to every
+               unit type and to flow views as well as a single āyah. -->
+          <button type="button" class="secondary qr-ico" id="readCompleteBtn" aria-label="Mark this reading complete" title="Mark this reading complete">✓</button>
+          <!-- Announcement only. `position:absolute` with a 1px clip keeps it
+               OUT of the layout entirely -- #readBar is this app's densest row
+               and a message that took width could wrap it -- while still being
+               announced by a screen reader. The sighted confirmation is the
+               button's own state, which persists rather than flashing past. -->
+          <span id="readCompleteMsg" role="status" aria-live="polite"
+                style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap"></span>
           <!-- 30 Aug 2026 round -- "enable adding/attaching an Ayah... to
                an existing GROUP, LIST, DUAL AH" -- owner/prime only (it
                writes to asmaCollections/{tenantId}, the same Manage-mode
@@ -4006,6 +4023,14 @@
     import { buildUnitKey, parseUnitKey, STATUSES, rukuIndexInSurah, statusLabelsById, statusLabel } from "./js/unit-keys.js";
     import { chunkKeyFor, getRecordsChunk, claimStatus, getSubjectConfirmationOverride, computeConfirmationRequired } from "./js/records.js";
     import { weekKeyFor, logActivity } from "./js/activity.js";
+    // MAP Phase 4 (P4-D) -- Study interactions to ADR-008 Activity evidence.
+    // Evidence goes to its own subcollection; nothing here touches the legacy
+    // activity.entries[] array, and nothing here can reach Mastery.
+    import {
+      readingCompletionArgs, recordStudyEvidence,
+      createListeningSession, listeningCompletionArgs,
+      wbwEngagementArgs,
+    } from "./js/study-event-wiring.js";
     import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree } from "./js/bookmarks.js";
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
     import { getAyahNotes, ayahNoteHtml, ayahHasNote, saveAyahNote, ensureAyahNotesWritable } from "./js/ayah-notes.js";
@@ -4120,7 +4145,14 @@
     // Async playback failures (network drop mid-file, a source that turns
     // out not to exist, etc.) never reject play()'s own promise -- without
     // this they'd fail silently. Registered once; not tied to auth state.
-    setPlaybackErrorHandler((message) => alert(message));
+    setPlaybackErrorHandler((message) => {
+      // P4-D2 -- the player surfaces some failures through this channel without
+      // rejecting the promise playCurrentSelection() is awaiting, so the listen
+      // is failed here too. Both paths are idempotent: whichever runs first
+      // settles the session and the other finds nothing.
+      settleListeningSession("failed");
+      alert(message);
+    });
 
     // Phase 5 fix (owner round-2 click-through, 6 Aug 2026): "on a whole
     // Surah choice, only first Ayah appears" / "text shows something
@@ -4132,6 +4164,9 @@
     setAyahChangeHandler((surahNum, ayahNum) => {
       if (surahNum !== currentSurahNum || !currentSurahData) return;
       currentAyahNum = ayahNum;
+      // P4-D2 -- coverage of the listened unit. Counts only forward motion, so
+      // a loop or a backward seek adds nothing (see createListeningSession()).
+      if (listeningSession) listeningSession.ayahStarted(ayahNum);
       // Phase 5 round 7 -- in Mushaf page-view mode, a full renderStudyScreen()
       // on every ayah tick would re-fetch fonts/re-justify the whole page and
       // visibly jank during a fast drill. setActiveAyah() is a cheap class
@@ -9751,6 +9786,31 @@
       if (action.kind === "state") {
         await safeWrite(() => setWordState(db, { ...common, state: action.state }),
           { what: "record Arabic word progress", occurrenceId: common.occurrenceId });
+        // MAP Phase 4 (P4-D4) -- wbw.engaged.
+        //
+        // ACTIVITY ONLY, and deliberately at ĀYAH + DAY grain: the word state
+        // just written is the learning truth and lives in quranWordProgress;
+        // this records only that word-by-word study HAPPENED on this āyah
+        // today. The occurrence is NOT carried across -- see
+        // wbwEngagementArgs() for why storing one would mislead.
+        //
+        // It fires on the LEARNER's own state action only. A supervisor's
+        // approval is the `else` branch below and records no Activity: a
+        // teacher approving a word has not themselves studied it.
+        //
+        // A hundred taps in one āyah on one day all derive the same event id,
+        // so the first writes the document and every later one is refused as a
+        // duplicate by the database -- the store treats that as a successful
+        // no-op, which is why this is not rate-limited here.
+        const wbwRef = parseQuranWordOccurrenceId(common.occurrenceId);
+        await safeWrite(
+          () => recordStudyEvidence(db, wbwEngagementArgs({
+            tenantId, personId: subjectPersonId,
+            surah: wbwRef.surah, ayah: wbwRef.ayah,
+            at: new Date(), weekStartsOn: tenantWeekStartsOn,
+          }), { uid: auth.currentUser?.uid }),
+          { collection: "activity", action: "wbwEngaged" }
+        );
       } else {
         const note = action.review === "returned" ? (window.prompt(t("What should they look at again?")) ?? null) : null;
         await safeWrite(() => decideWordApproval(db, { ...common, review: action.review, note }),
@@ -12285,6 +12345,13 @@
       // them all for "reopen where I was". Debounced inside, so the several
       // renders one gesture triggers still cost a single write.
       rememberLastSession();
+      // MAP Phase 4 (P4-D1) -- "recorded" belongs to a UNIT and a day, not to
+      // the screen, so moving to another ayah/range/surah clears the tick.
+      // Leaving it set would tell a reader they had recorded a passage they had
+      // not. It is not restored on return: doing that would need a read on the
+      // reading path, which the load-speed contract does not allow (I9), and
+      // re-pressing is a harmless no-op anyway.
+      resetReadingCompleteButton();
       if (!currentSurahData) return;
       // Shell round 20: an ayah-attached tagline ("an article about this
       // Ayah") is about whatever is open right now, so the strip is
@@ -12633,6 +12700,12 @@
       // ayah someone deliberately paused is the wrong answer to the same tap.
       if (isPaused()) { await resumeAudio(); renderReadTransport(); return; }
       stopDrill();
+      // P4-D2 -- a person pressed Play. This is the ONLY place a listening
+      // session is created, which is what keeps preload from ever completing a
+      // listen. It sits after the pause/resume branches above on purpose:
+      // resuming continues the listen already in progress rather than starting
+      // a second one that would have to re-earn its 80%.
+      beginListeningSession();
       const [fromAyah, toAyah] = currentUnitAyahBounds();
       const reciterIds = playbackReciterIds();
       try {
@@ -12707,7 +12780,12 @@
     // buttons now call.
     readPlayBtn.addEventListener("click", () => playCurrentSelection());
 
-    readStopBtn.addEventListener("click", () => { stopDrill(); stopAudio(); renderReadTransport(); });
+    readStopBtn.addEventListener("click", () => {
+      stopDrill(); stopAudio(); renderReadTransport();
+      // Stopping by hand is not failing: whatever was genuinely heard still
+      // counts towards the 80%.
+      settleListeningSession("stopped");
+    });
 
     // Multi-student round -- the Read screen's own direct Bookmark button
     // (see #readBookmarkBtn's own markup comment). Reads currentUnitInfo()
@@ -12730,6 +12808,137 @@
     // Study Unit is selected (the same currentAyahNum a flow view's own
     // active-ayah highlight already tracks) -- so the Read screen's own
     // attach button always means "this exact āyah," never a wider unit.
+    // MAP Phase 4 (P4-D1) -- reading.completed.
+    //
+    // ACTIVITY ONLY. This writes one ADR-008 evidence document and nothing
+    // else: no claimStatus(), no confirmEntry(), no records write, no
+    // logActivity() entry. A reader marking a passage read has not claimed to
+    // have mastered it, and the Mastery workflow is deliberately untouched.
+    //
+    // The Approach is read off what is actually on screen -- a translation
+    // showing means Reading (with Meaning), approach_03; none means Reading
+    // (with Tajweed), approach_01 -- rather than from a mode the reader would
+    // have to remember to set. PROVISIONAL BUILD DEFAULT, carried over
+    // unchanged: the Master Architect holds it for Owner review after the
+    // build (OWNER_REVIEW_AFTER_BUILD), and no new inference policy is
+    // introduced here.
+    //
+    // I15: a failed write is SURFACED, never swallowed. ADR-008's amendment is
+    // explicit that evidence writes are not best-effort. Until the Activity
+    // evidence Rules are deployed (E1) the subcollection has no rule, so this
+    // write is DENIED in production and the reader sees safeWrite()'s own
+    // error. That is the implementation failing CLOSED, which is correct, and
+    // it is why this tranche is built but not shipped.
+    const readCompleteBtn = document.getElementById("readCompleteBtn");
+    const readCompleteMsg = document.getElementById("readCompleteMsg");
+
+    /** Clears the recorded tick -- called on every unit change. Guards on the element because init order puts the first render before this block on some paths. */
+    function resetReadingCompleteButton() {
+      const btn = document.getElementById("readCompleteBtn");
+      const msg = document.getElementById("readCompleteMsg");
+      if (!btn) return;
+      btn.setAttribute("aria-pressed", "false");
+      btn.title = t("Mark this reading complete");
+      if (msg) msg.textContent = "";
+    }
+
+    /** Announces the outcome, and marks the button done when it really is. The button's own state is the sighted confirmation, and it PERSISTS for the unit rather than flashing past. */
+    function announceReadingResult(message, done) {
+      readCompleteMsg.textContent = message;
+      readCompleteBtn.setAttribute("aria-pressed", done ? "true" : "false");
+      readCompleteBtn.title = done ? message : t("Mark this reading complete");
+    }
+    readCompleteBtn.addEventListener("click", async () => {
+      const info = currentUnitInfo();
+      const args = readingCompletionArgs({
+        tenantId: activeTenantId,
+        personId: currentActingPersonId(),
+        unitKey: info.unitKey,
+        unitType: info.unitType,
+        translationLangs: getQuranTranslationLangs(),
+        at: new Date(),
+        weekStartsOn: tenantWeekStartsOn,
+      });
+      if (!args) {
+        // A Juz, Ruku', Hizb or Page reading is real study, but ADR-008 v1 has
+        // no evidence shape for it. Say so plainly rather than failing silently
+        // or INVENTING a unit key the contract would refuse. PROVISIONAL BUILD
+        // DEFAULT, held for Owner review after the build.
+        announceReadingResult(t("Reading is recorded for an āyah, a range or a whole surah."), false);
+        return;
+      }
+      readCompleteBtn.disabled = true;
+      const r = await safeWrite(
+        () => recordStudyEvidence(db, args, { uid: auth.currentUser.uid }),
+        { collection: "activity", action: "readingCompleted" }
+      );
+      readCompleteBtn.disabled = false;
+      if (r.ok) {
+        // written:false means the event was already recorded -- a retry is a
+        // successful no-op, not a failure, so it reads as done either way.
+        announceReadingResult(
+          r.result && r.result.written === false ? t("Already recorded for today.") : t("Reading recorded."),
+          true);
+      }
+      // A genuine failure needs nothing here: safeWrite() has already surfaced
+      // it to the user (I15). Adding a second message would double-report it,
+      // and marking the button done would be a lie.
+    });
+
+    // MAP Phase 4 (P4-D2) -- listening.completed.
+    //
+    // ACTIVITY ONLY, exactly like Reading: one evidence document and nothing
+    // else. No claim, no confirmation, no records write.
+    //
+    // The session only exists while a PERSON is listening. It is created by the
+    // Play button and by nothing else, which is how ADR-008's "background
+    // preload does not complete Listening" is honoured -- preload cannot make
+    // one. Buffering, looping, seeking and failure are handled inside
+    // createListeningSession(); see its own docstring for why each is a
+    // property of the shape rather than a special case.
+    let listeningSession = null;
+    let listeningUnit = null;
+
+    /** Starts tracking a listen of whatever unit is on screen. Called ONLY from the Play button's own path. */
+    function beginListeningSession() {
+      const info = currentUnitInfo();
+      const [from, to] = currentUnitAyahBounds();
+      listeningUnit = info;
+      listeningSession = createListeningSession({
+        ayahsInUnit: Math.max(0, (to - from) + 1),
+        startedByUser: true,
+      });
+    }
+
+    async function settleListeningSession(how) {
+      const session = listeningSession;
+      const info = listeningUnit;
+      listeningSession = null;
+      listeningUnit = null;
+      if (!session || !info) return;
+      if (how === "failed") session.failed();
+      else if (how === "stopped") session.stopped();
+      else session.ended();
+      const args = listeningCompletionArgs({
+        tenantId: activeTenantId,
+        personId: currentActingPersonId(),
+        unitKey: info.unitKey,
+        unitType: info.unitType,
+        translationLangs: getQuranTranslationLangs(),
+        session,
+        at: new Date(),
+        weekStartsOn: tenantWeekStartsOn,
+      });
+      if (!args) return; // did not reach 80%, failed, or a unit v1 cannot record
+      // I15: safeWrite surfaces a real failure to the user. Listening completes
+      // without anyone pressing anything, so there is no button to disable and
+      // no success message to show -- the evidence is the record.
+      await safeWrite(
+        () => recordStudyEvidence(db, args, { uid: auth.currentUser.uid }),
+        { collection: "activity", action: "listeningCompleted" }
+      );
+    }
+
     readAttachAsmaBtn.addEventListener("click", () => {
       openAsmaXAttachPopover({ prefillRef: asmaRefTextFor(currentSurahNum, currentAyahNum) });
     });

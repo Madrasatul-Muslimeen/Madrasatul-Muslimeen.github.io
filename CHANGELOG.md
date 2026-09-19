@@ -14512,3 +14512,59 @@ failures environmental.
 commentary embedding; no permanent Hadith semantic key; no Approach ID allocation;
 no durable Track; no Notes/MMJ persistence; no Rules or index activation; no
 migration; no deployment.
+
+## v08.30 — QuranRevival MAP Phase 4: Study events reach Activity (18 Sep 2026)
+
+**BUILT AND VERIFIED. NOT DEPLOYED, NOT SHIPPED, NOT SERVED.** `main` carries
+v08.30; nothing was released. The Activity evidence Rules are **not deployed**
+(E1), so the evidence subcollection has no rule and is closed to every client —
+`firestore.rules` contains the word "evidence" **zero** times. Until that gate
+opens, a reader pressing the new ✓ gets `safeWrite()`'s own error. That is the
+implementation **failing closed**, which is correct, and it is why this is a
+development milestone rather than a release.
+
+**What it delivers.** Three of ADR-008's five Study events now reach Activity,
+each as one create-only document in
+`activity/{tenant}__{person}__{week}/evidence/`, deduplicated by the database
+because the identity IS the document id:
+
+- **D1 Reading** — an explicit ✓ on `#readBar`. ADR-008 requires an explicit
+  completion "so intent is auditable", so there is no passive trigger anywhere.
+- **D2 Listening** — ≥80% of the selected unit. Preload, buffering, looping,
+  backward seeks and failure cannot complete it, each by construction rather
+  than by a special case.
+- **D4 Word-by-Word** — āyah + day grain, on the **learner's own** state action
+  only; a supervisor approving a word records nothing.
+
+**D3 Journaling is out of scope.** Its old blocker was resolved at contract
+level by P5-B, but `note-journal-evidence.js` has no reachable producer and the
+Note editor (P5-D) is not built.
+
+**RE-DERIVED on current main, not merged.** The historical branch `7e2931f` was
+read and is untouched — not re-cut, not re-stamped, not merged — and its
+`v08.26` stamp stays HISTORICAL. Two areas were deliberately rebuilt rather than
+ported: the `#readBar` measurement (the old numbers predate the rewrites of
+`panel.mjs`, `layout.mjs` and `navcheck.mjs`) and the boundary invariant, where
+`main` had gained P4-E's reader guards after the branch was cut. **A
+conflict-free merge prediction is not proof of semantic compatibility.**
+
+**The boundary invariant is INVERTED, not dropped.** It used to say no page may
+reach the evidence writer, which was the safety case while nothing was wired.
+Now every page-reachable path to the writer must pass **through** the one
+audited entry point, `study-event-wiring.js` — strictly stronger, and it catches
+a second module quietly learning to write evidence. Mutation-proven three ways.
+
+**Activity is not Mastery**, enforced by inability: the wiring module cannot
+reach `records.js`, `claimStatus`, `confirmEntry`, `arrayUnion`, `achieved`,
+`mastered` or `entries[]`, and `bulkConfirmWeek()` still reads `entries[]` alone.
+
+**Measured cost, reported rather than buried:** the ✓ adds 37.4px to the app's
+densest row, which takes the ⋮ onto its own line at **390px and 412px** — 33px
+less reading area than main had. The row already wrapped that way at 320–360px.
+Costed options are in the report; none was chosen.
+
+**Two provisional build defaults** are held for Owner review rather than
+re-decided: the Reading Approach inferred from translation visibility, and a
+juz/hizb/ruku/page recording no evidence and saying so.
+
+Full account: `docs/reports/2026-09-18-quranrevival-phase4-v0830-build.md`.

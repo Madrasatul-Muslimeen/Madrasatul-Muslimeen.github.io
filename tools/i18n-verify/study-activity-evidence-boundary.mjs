@@ -133,32 +133,69 @@ check("POSITIVE CONTROL: the reachability walker really does find a wired module
   assert.ok(control.length > 0, "the walker found no page importing records.js -- it is not working");
   assert.ok(control.some((c) => c.includes("quranrevival.html")), `unexpected control result: ${control[0]}`);
 });
-check("NO PAGE can reach the evidence writer or its identity module, by any chain", () => {
-  const reachable = GUARDED.flatMap((guarded) => chainsToTarget(guarded));
-  assert.deepEqual(reachable, [], `the writer is wired in: ${reachable.join(" | ")}`);
+// v08.30 INVERTS THESE THREE, and the reason is worth keeping: two true
+// invariants met here and neither survives alone.
+//
+//   Before v08.30 this suite said NO PAGE may reach the writer, because through
+//   P5/P6 nothing was wired and that was the whole safety case.
+//   From v08.30 the Study surfaces are wired ON PURPOSE, so "unreachable" is
+//   simply false -- and asserting it would be asserting that the wiring does
+//   not work.
+//
+// What is kept is main's REACHABILITY WALKER, which is the stronger mechanism:
+// it catches a wiring wherever in the chain it happens. What changes is the
+// invariant it serves -- every page-reachable path to the writer must pass
+// THROUGH the one audited entry point. A second module quietly learning to
+// write evidence is what that catches, and it is a real risk now that one
+// legitimate path exists.
+//
+// RE-DERIVED on current main, not ported: main gained P4-E's reader guards
+// (below) after the historical branch was cut, and a conflict-free merge would
+// have placed two invariants side by side without reconciling them.
+const WIRING = "study-event-wiring.js";
+
+check("every page-reachable path to the writer passes THROUGH the wiring module", () => {
+  const chains = GUARDED.flatMap((guarded) => chainsToTarget(guarded));
+  // The positive control a negative assertion needs: zero chains would satisfy
+  // a naive "no unaudited path" test while meaning the wiring is broken.
+  assert.ok(chains.length > 0,
+    "no page reaches the writer at all -- the v08.30 Study wiring is live, so that means it is broken");
+  const unaudited = chains.filter((chain) => !chain.includes(`-> ${WIRING} ->`));
+  assert.deepEqual(unaudited, [],
+    `a page reaches the writer WITHOUT going through ${WIRING}: ${unaudited.join(" | ")}`);
 });
-check("every module that imports the writer is itself unreachable from any page", () => {
-  // The expected list is pinned, not merely permitted: a NEW importer appearing
-  // here is a fact a later session must audit deliberately, even while it is
-  // still unreachable. It is also the list of what is queued behind the Rules
-  // deployment.
+check("the importer set is exactly the wiring module plus the queued, unreachable one", () => {
+  // Still pinned, not merely permitted: a NEW importer is a fact a later
+  // session must audit deliberately. study-note-service.js is P5-C's, still
+  // queued behind the Rules deployment and still unreachable.
   const importers = directImportersOf();
-  assert.deepEqual(importers, ["study-note-service.js"],
+  assert.deepEqual(importers, [WIRING, "study-note-service.js"].sort(),
     `the set of modules importing the writer has changed -- re-audit before updating this list: ${importers.join(", ")}`);
   for (const importer of importers) {
+    if (importer === WIRING) continue;   // live on purpose; covered by the case above
     assert.deepEqual(chainsToTarget(importer), [], `${importer} is now loaded by a page`);
   }
 });
-check("no PAGE-REACHABLE source names a Study event writer", () => {
+check("no PAGE-REACHABLE source but the wiring module names a Study event writer", () => {
   const offenders = [];
   for (const { file, text } of appSources()) {
     const base = path.basename(file);
     if (GUARDED.includes(base)) continue;
+    if (base === WIRING) continue;                                          // the audited entry point
     if (!/writeStudyActivityEvidence|studyEvidenceId|buildStudyEvidenceDocument/.test(text)) continue;
     if (file.endsWith(".js") && chainsToTarget(base).length === 0) continue; // queued, not wired
     offenders.push(file);
   }
   assert.deepEqual(offenders, []);
+});
+check("the wiring module is the ONLY thing the page imports for evidence, and it cannot reach Mastery", () => {
+  // The whole point of routing through one module: that module must itself be
+  // unable to do the thing the boundary forbids.
+  const text = fs.readFileSync(path.join(appJs, WIRING), "utf8");
+  const code = text.replace(/\/\*[\s\S]*?\*\//g, "").split("\n").filter((l) => !/^\s*\/\//.test(l)).join("\n");
+  for (const forbidden of ["records.js", "claimStatus", "confirmEntry", "arrayUnion", "achieved", "mastered", "entries["]) {
+    assert.ok(!code.includes(forbidden), `${WIRING} can reach ${forbidden} -- Activity is one step from Mastery`);
+  }
 });
 
 

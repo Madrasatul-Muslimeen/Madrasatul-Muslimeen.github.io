@@ -20,4 +20,12 @@
 // constant to 08.29: a stale comment on the single source of truth is how the
 // next reader is misled, so read the constant, and read the next free number
 // off `main` at the time of a bump.
-export const APP_VERSION = "08.29";
+// 08.30, allocated by the Master Architect for the QuranRevival MAP Phase 4
+// tranche (D1 Reading, D2 Listening, D4 WbW). Read off `main` at the time of
+// the bump, not assumed, and allocated centrally rather than chosen here --
+// two independent builds carried 08.27 on 18 Sep 2026, which is exactly what a
+// version number exists to prevent.
+//
+// BUILT, NOT SHIPPED. The Activity evidence Rules are not deployed (E1), so the
+// subcollection is closed to every client and the tranche must not be released.
+export const APP_VERSION = "08.30";
