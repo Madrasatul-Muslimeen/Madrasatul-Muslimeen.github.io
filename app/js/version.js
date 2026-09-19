@@ -28,4 +28,4 @@
 //
 // BUILT, NOT SHIPPED. The Activity evidence Rules are not deployed (E1), so the
 // subcollection is closed to every client and the tranche must not be released.
-export const APP_VERSION = "08.30";
+export const APP_VERSION = "08.31";
