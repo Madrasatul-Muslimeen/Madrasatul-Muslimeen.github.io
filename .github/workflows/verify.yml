@@ -4,8 +4,16 @@
 # before any branch ruleset makes a check mandatory. Requiring a check whose
 # behaviour nobody has measured is how a pilot deadlocks on day one.
 #
-# Scope is deliberately narrow: it runs SIX deterministic governance suites
-# and nothing else. It does not touch app code, the version, Firestore Rules,
+# Scope is deliberately narrow: it runs SEVEN deterministic governance suites
+# and nothing else.
+#
+# THE SEVENTH WAS ADDED BECAUSE A GUARD WITHOUT ITS MUTATION HARNESS IS A GUARD
+# NOBODY HAS PROVEN CAN FAIL. study-activity-evidence-boundary.mjs was gated
+# from the first step; study-activity-evidence-boundary-mutations.mjs, which
+# proves that guard actually refuses the bypasses it exists to refuse, was not.
+# That is the exact shape of the study-event-wiring.mjs defect -- a suite that
+# asserted nothing for a whole version while reporting success -- so the
+# harness is gated alongside the guard it proves. It does not touch app code, the version, Firestore Rules,
 # repository settings, or the 22g harness defect.
 #
 # DELIBERATELY EXCLUDED, and the reason matters:
@@ -89,17 +97,17 @@ jobs:
           echo "All required refs present."
 
       # Every suite runs, then the job fails if ANY of them failed. Running
-      # all six gives the whole picture in one go instead of hiding suites 2-6
+      # all seven gives the whole picture in one go instead of hiding suites 2-7
       # behind the first failure. It does not soften the outcome: one failure
       # still fails the job.
       #
       # The suites resolve paths from process.cwd(), so they MUST be run from
       # the repository root.
-      - name: Run the six deterministic governance suites
+      - name: Run the seven deterministic governance suites
         id: suites
         run: |
           set -uo pipefail
-          suites="programme-ledger programme-ledger-mutations brief-integrity study-activity-evidence-boundary study-event-wiring rules-authorisation-executable"
+          suites="programme-ledger programme-ledger-mutations brief-integrity study-activity-evidence-boundary study-activity-evidence-boundary-mutations study-event-wiring rules-authorisation-executable"
           failed=0
           recap="$(mktemp)"
           {
@@ -128,9 +136,9 @@ jobs:
           # A consolidated recap at the very END of the log, deliberately.
           # Raw job logs are served from blob storage that a restricted network
           # may refuse, leaving only a tail-limited API read -- and a per-suite
-          # line buried mid-log is then unreachable. Putting all six in the
+          # line buried mid-log is then unreachable. Putting all seven in the
           # last lines keeps the run auditable under that constraint.
-          echo "===== RECAP: all six suites ====="
+          echo "===== RECAP: all seven suites ====="
           cat "$recap"
           echo "===== END RECAP (the job fails below if any exit was non-zero) ====="
           exit "$failed"
