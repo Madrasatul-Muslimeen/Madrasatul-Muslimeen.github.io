@@ -16,7 +16,7 @@ brief is the standing law.
 | `main` application version | **v08.30** |
 | Accepted v08.30 build | `8ea445fb376784fb8452cb2042e4eaa8e017f41b` (one behind `db6cb24`; `app/` byte-identical — `db6cb24` is a report-stamp commit) |
 | Development branch | **`claude/charming-rubin-xzxbk1`** |
-| Branch tip | **`710f182e049a2471629823ab5a7c2d15ccf594c5`** |
+| Branch tip | **`bfa2dad705e1a92ebb46cf142760f7a3b6861d2e`** — `710f182` is the v08.31 application and governance tip; `bfa2dad` adds this package, records O3c and repoints the brief's handover block, and changes **no** application file (`git diff 710f182 bfa2dad -- app/` is empty) |
 | Branch application version | **v08.31** — RESERVED and AUTHORIZED, **NOT integrated** |
 | Working tree | clean |
 | Held Phase 4 wiring | `claude/phase4-wiring` at `7e2931f795af1cd97efc1167660cea93aa22b9ab` — **SUPERSEDED** by v08.30's re-derivation; its `v08.26` stamp stays HISTORICAL |
@@ -195,7 +195,8 @@ SUPERSEDES=docs/reports/2026-09-18-SESSION-HANDOVER.md
 MAIN_SHA=db6cb24b807d77630914e076d413bec6982cc3d7
 MAIN_VERSION=v08.30
 DEV_BRANCH=claude/charming-rubin-xzxbk1
-DEV_BRANCH_TIP=710f182e049a2471629823ab5a7c2d15ccf594c5
+DEV_BRANCH_TIP=bfa2dad705e1a92ebb46cf142760f7a3b6861d2e
+V0831_APPLICATION_TIP=710f182e049a2471629823ab5a7c2d15ccf594c5
 DEV_BRANCH_VERSION=v08.31
 V0831_STATE=RESERVED_AND_AUTHORIZED_NOT_INTEGRATED
 V0832_STATUS=UNALLOCATED
