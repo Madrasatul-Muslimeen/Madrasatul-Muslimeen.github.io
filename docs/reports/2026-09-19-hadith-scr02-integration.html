@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SCR-HADITH-02 integrated into `main`</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>SCR-HADITH-02 integrated into <code>main</code></h1>
+<p><strong>19 September 2026 · Hadith Study stream · integration report · BR-0 · no application change</strong></p>
+<p>Under the Master Architect&#x27;s instruction to integrate SCR-HADITH-02 from <code>feature/hadith-study</code> into <code>main</code>, with the scope confirmed first, three gates required, and a stop on any movement of <code>main</code> or any gate failure.</p>
+<p><strong><code>main</code> did not move and no gate failed.</strong> The integration is a <strong>fast-forward</strong> — <code>main</code> was already an ancestor of the branch, so no merge commit was created and no tree was rewritten.</p>
+<hr>
+<h2>SHAs, reported separately as required</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>Branch tip, confirmed before integrating</strong></td><td><code>35d51e6eabb3d01fd5046760cb2d9f3c1886f80c</code></td></tr>
+<tr><td><strong><code>main</code> before integration</strong></td><td><code>b295ea87ace8fbea565fe7b0d9dda0ca4ab1ac32</code></td></tr>
+<tr><td><strong><code>main</code> re-checked immediately before the push</strong></td><td><code>b295ea87ace8fbea565fe7b0d9dda0ca4ab1ac32</code> — <strong>UNMOVED</strong></td></tr>
+<tr><td><strong>INTEGRATION SHA</strong> (the commit <code>main</code> was advanced to)</td><td><strong><code>35d51e6eabb3d01fd5046760cb2d9f3c1886f80c</code></strong></td></tr>
+<tr><td><strong>FINAL <code>origin/main</code>, read back after the push</strong></td><td><strong><code>35d51e6eabb3d01fd5046760cb2d9f3c1886f80c</code></strong></td></tr>
+<tr><td><strong>FINAL <code>origin/feature/hadith-study</code></strong></td><td><code>35d51e6eabb3d01fd5046760cb2d9f3c1886f80c</code> — branch and <code>main</code> are now the same commit</td></tr>
+<tr><td><strong>Method</strong></td><td>fast-forward, <code>b295ea8..35d51e6</code>; <strong>no merge commit</strong></td></tr>
+</tbody></table></div>
+<p>The integration SHA and the final <code>main</code> SHA are identical here <strong>because the integration was a fast-forward and nothing has landed on <code>main</code> since.</strong> They are reported as two separate facts rather than one, because they are two separate facts: the first is what this session advanced <code>main</code> to, the second is what <code>origin/main</code> actually reads now.</p>
+<hr>
+<h2>Scope, confirmed BEFORE integrating</h2>
+<p>The diff between <code>origin/main</code> and the branch tip is <strong>four files, 336 insertions, 3 deletions</strong>, and every one of them is inside the authorised scope:</p>
+<div class='tw'><table><thead><tr><th>File</th><th>What</th><th>Authorised as</th></tr></thead><tbody>
+<tr><td><code>tools/i18n-verify/programme-ledger-mutations.mjs</code></td><td><strong>+10/−2</strong> — the guard-A mutation derives its subject stream from the ledger instead of hard-coding <code>&quot;hadith&quot;</code>. Two lines of fix, eight of comment</td><td>The authorised mutation fix</td></tr>
+<tr><td><code>docs/governance/programme-integration-ledger.json</code></td><td><strong>+13/−1</strong> — the Hadith stream record only</td><td>Its Hadith ledger record</td></tr>
+<tr><td><code>docs/reports/2026-09-19-hadith-scr02-mutation-fix.md</code></td><td>+207, new</td><td>Its dated report</td></tr>
+<tr><td><code>docs/reports/2026-09-19-hadith-scr02-mutation-fix.html</code></td><td>+106, new</td><td>Its dated report</td></tr>
+</tbody></table></div>
+<p><strong>Nothing else, proven rather than asserted.</strong> <code>git diff</code> across <code>app/</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/</code>, <code>legacy/</code>, <code>legacy-v07/</code>, <code>CLAUDE.md</code> and <code>CHANGELOG.md</code> is <strong>empty</strong>.</p>
+<p><strong>The ledger change was confirmed at FIELD level, not by reading the diff.</strong> Both ledger hunks fall inside the <code>hadith</code> record, whose bounds on <code>main</code> are file lines 332–417; the changed lines are 335 and an insert after 400. A structural comparison then parsed both versions and compared every top-level key and every stream:</p>
+<ul><li><strong>All 22 top-level keys UNCHANGED</strong> — including <code>versionAllocations</code> (so the Quran <strong>v08.31 LIVE</strong> allocation and both Hadith allocations are untouched), <code>deployment</code> (all four states), <code>nextUnallocated</code>, <code>deploymentSecuritySharedPaths</code>, <code>sharedChangeRequests</code>, <code>versionVocabulary</code> and <code>d14</code>.</li><li><strong>All five streams present; four byte-identical</strong> (<code>mmsa-platform</code>, <code>quran</code>, <code>quran-phase4-wiring</code>, <code>health</code>). <strong>Only <code>hadith</code> changed</strong>, and within it only two things: <code>activeBranchNote</code> (its sentence saying the fix was <em>not</em> applied was false once it was) and a <strong>sixth <code>declaredSharedTouches</code> record</strong> carrying the Master Architect provenance for the mutation-file touch.</li></ul>
+<hr>
+<h2>The three required gates</h2>
+<p>Run on the integration candidate <strong>before</strong> the push, and again against the <strong>pushed remote</strong> afterwards. Identical results at both points:</p>
+<div class='tw'><table><thead><tr><th>Gate</th><th>Required</th><th>Measured, before</th><th>Measured, after push</th></tr></thead><tbody>
+<tr><td><code>programme-ledger-mutations.mjs</code></td><td><strong>49/0</strong></td><td><strong>49 passed, 0 failed</strong> — exit 0</td><td><strong>49 passed, 0 failed</strong></td></tr>
+<tr><td><code>programme-ledger.mjs</code></td><td><strong>zero failures</strong></td><td><strong>8 passed, 23 noted, 0 failed</strong> — exit 0</td><td><strong>8 passed, 23 noted, 0 failed</strong></td></tr>
+<tr><td><code>brief-integrity.mjs</code></td><td><strong>zero failures</strong></td><td><strong>8 passed, 0 failed</strong> — exit 0</td><td><strong>8 passed, 0 failed</strong></td></tr>
+</tbody></table></div>
+<p><strong>What <code>main</code> gains by this, stated plainly:</strong> until this integration, <code>main</code> carried the stale hard-coded mutation, so <strong>its own mutation suite exited 1</strong> — guard A&#x27;s fourth failure mode was unproven on the branch the site is served from. It is proven there now.</p>
+<hr>
+<h2>Verification of the pushed remote</h2>
+<p>Read back <strong>out of <code>origin/main</code> itself</strong>, not out of the working tree:</p>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result on <code>origin/main</code></th></tr></thead><tbody>
+<tr><td>The mutation&#x27;s subject line</td><td><code>const s = l.streams.find((x) =&gt; x.activeBranch &amp;&amp; f.branches[x.activeBranch]);</code></td></tr>
+<tr><td>Hadith stream record</td><td>6 shared-file touch records; <code>activeBranch</code> <strong>null</strong>; <code>declaredVersion</code> <strong>null</strong></td></tr>
+<tr><td>The dated report</td><td>present, 207 lines</td></tr>
+<tr><td><code>app/js/version.js</code></td><td><code>export const APP_VERSION = &quot;08.31&quot;;</code> — <strong>unchanged</strong></td></tr>
+<tr><td><code>nextUnallocated</code></td><td><strong><code>08.32</code></strong> — still unallocated</td></tr>
+</tbody></table></div>
+<hr>
+<h2>What was NOT done</h2>
+<ul><li><strong>No application code changed.</strong> <code>app/</code>, <code>firestore.rules</code>, <code>firebase.json</code> and <code>tests/</code> are byte-identical across the integration.</li><li><strong>v08.32 was NOT allocated.</strong> The version stays <strong>08.31</strong>, owned by the Quran stream and marked LIVE; <code>nextUnallocated</code> still names 08.32 only to record that it belongs to nobody.</li><li><strong>Nothing was deployed.</strong> Repository <code>firestore.rules</code> evidence and the DEPLOYED Firebase Rules state are separate facts: the file is readable here and is untouched, and the deployed state cannot be inspected from this sandbox. <strong>FIREBASE_RULES_DEPLOYED: UNVERIFIED.</strong></li><li><strong><code>study-event-wiring.mjs</code> was NOT touched</strong> — its <code>data:</code>-URL import failure is a pre-existing test-harness defect that MMSA/QR has repaired on its D3 branch, and duplicating that repair would produce two independent fixes of one shared file and a conflict at its merge.</li><li><strong>All Hadith Owner Control Gates remain CLOSED</strong>: C2 not applied, no Hadith Approach id allocated, no corpus/translation/commentary imported, no durable Track, no Notes/MMJ persistence, no Rules or index activation, no migration.</li></ul>
+<hr>
+<h2>Machine-readable status</h2>
+<p>BRANCH_TIP_CONFIRMED=35d51e6eabb3d01fd5046760cb2d9f3c1886f80c</p>
+<p>PRE_MAIN_SHA=b295ea87ace8fbea565fe7b0d9dda0ca4ab1ac32 (re-checked immediately before the push; UNMOVED)</p>
+<p>INTEGRATION_SHA=35d51e6eabb3d01fd5046760cb2d9f3c1886f80c</p>
+<p>FINAL_MAIN_SHA=35d51e6eabb3d01fd5046760cb2d9f3c1886f80c (read back from origin/main after the push)</p>
+<p>METHOD=fast-forward b295ea8..35d51e6; no merge commit</p>
+<p>SCOPE=4 files, +336/-3: the authorized mutation fix (+10/-2), the Hadith ledger record only (+13/-1), and the dated report .md + .html</p>
+<p>SCOPE_PROVEN=all 22 top-level ledger keys UNCHANGED; 4 of 5 stream records byte-identical; only streams[hadith] changed; app/, firestore.rules, firebase.json, tests/, CLAUDE.md, CHANGELOG.md all empty diffs</p>
+<p>MUTATIONS=49 passed, 0 failed (required 49/0) - before and after the push</p>
+<p>PROGRAMME_LEDGER=8 passed, 23 noted, 0 failed (required zero) - before and after the push</p>
+<p>BRIEF_INTEGRITY=8 passed, 0 failed (required zero) - before and after the push</p>
+<p>APP_VERSION=08.31 unchanged; v08.32 NOT allocated</p>
+<p>OWNER_CONTROL_GATES=ALL CLOSED</p>
+<p>FIREBASE_RULES_DEPLOYED=UNVERIFIED - nothing deployed by this integration</p>
+<p>SESSION_STATUS=INTEGRATED. origin/main = 35d51e6, gates green on the pushed remote. This report&#x27;s own commit is the only thing that follows it, and it changes no code.</p>
+</main></body></html>
