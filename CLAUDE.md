@@ -123,14 +123,32 @@ Read this first, every session. It is the standing brief.
 > timezone item is **one question, not a UI decision** (§11.B).
 
 
-**Current milestone: v08.30 on `main`** (18 Sep 2026 — the QuranRevival MAP
-Phase 4 Study-event wiring: D1 Reading, D2 Listening, D4 WbW reaching ADR-008
-Activity evidence. **BUILT, NOT SHIPPED** — the evidence Rules are not deployed
-(E1), so the subcollection is closed to every client and the feature cannot
-function for anyone yet. v08.29, the Hadith Stage A/B integration, was the
-previous version on `main`. **Merged is not deployed, and neither is this** —
-no deployment has been performed or proven for any v08.2x or v08.30 milestone.
-`main`'s own `app/js/version.js` is the single source of truth.)
+**Current milestone: v08.31 on `claude/charming-rubin-xzxbk1`, and `main` is
+still v08.30** (19 Sep 2026 — the QuranRevival Study-evidence
+persistence-readiness gate. v08.31 is RESERVED AND AUTHORIZED and is stamped on
+that branch; **integration into `main` is the Master Architect's instruction to
+give and has not been given**, so `main` still carries v08.30, the Phase 4 D1/D2/D4
+evidence wiring. `main`'s own `app/js/version.js` is the single source of truth.)
+
+**FOUR STATES, NOT ONE, AND THIS IS THE CORRECTION THAT PRODUCED v08.31.** The
+v08.30 integration reported `APP_DEPLOYED=NO`, and the Master Architect ruled
+that incomplete: **GitHub Pages serves `main`**, so code merged to main IS
+served from the live URL even while the feature cannot function. One boolean
+cannot carry both facts, and collapsing them recorded a control the Owner can
+actually see and press as "not deployed". The four states are recorded
+separately from now on, in `docs/governance/programme-integration-ledger.json`
+and enforced by guard G:
+
+| State | Value |
+|---|---|
+| `APPLICATION_CODE_INTEGRATED` | **YES** (v08.30 on `main`) |
+| `GITHUB_PAGES_SERVING` | **PRESUMED_FROM_MAIN** — presumed, `verified: false`; the sandbox proxy refuses `github.io`, so this rests on this file's own record, not a measurement |
+| `FIREBASE_RULES_DEPLOYED` | **NO** |
+| `EVIDENCE_RECORDING_OPERATIONAL` | **NO** |
+| `E1` | **CLOSED** |
+
+**Merged is not deployed, served is not operational, and neither has been
+proven for any v08.2x, v08.30 or v08.31 milestone.**
 
 > **This line was WRONG for part of 18 Sep, and the episode is the lesson.** It
 > read "**v08.26 on `main`**" the moment the nav round was committed to a
@@ -191,6 +209,78 @@ the single source of truth and the badge beside the app name says so on screen.
 **This line has drifted twice already — it read `v08.02` while `main` was on
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
+
+**v08.31 (19 Sep 2026) — A CONTROL THAT CANNOT SUCCEED MUST NOT INVITE A
+PRESS, and the reason this is a version of its own is that v08.30 is already on
+the branch GitHub Pages serves.** v08.30's ✓ fails closed at the DATABASE —
+correct, deliberate, and untouched here — but failing closed at the database
+means the Owner's own live app shows a control whose only possible outcome is an
+error. `app/js/study-evidence-readiness.js` is the gate: **`ready: false` as a
+literal**, and **it never infers readiness from `firestore.rules`, because it
+CANNOT** — the module imports nothing at all, the same enforcement-by-inability
+ADR-010 uses for Origin/Destination, and a check reads its import list to prove
+it. The distinction is real and not pedantry: the repository's rules file is a
+FILE, readiness is a fact about a LIVE Firebase project, and no checkout can
+observe a Console deployment.
+
+**ENABLING IT IS A GOVERNED DECISION, NOT AN EDIT, and that is enforced twice.**
+Flipping `ready` to true on its own returns false — the predicate also requires
+a decision naming an authority from a closed set, a real date and a record that
+exists. And **ledger guard G** cross-checks the source literal against the
+ledger's own `deployment.firebaseRulesDeployed`, so enabling the code while the
+Rules are recorded NOT_DONE fails by name. Eleven mutations plus a positive
+control proving guard G is a check and not a blanket refusal (37 → **49**, 0
+failed).
+
+**TWO GATES, AND THE WRITER'S RETHROW STAYS UNDERNEATH.**
+`recordStudyEvidence()` is the single chokepoint every D1/D2/D4 write goes
+through and refuses **before** the store is called: nothing composed, nothing
+sent, no `permission-denied`, `errors.js` never fires. Its refusal is a distinct
+`{ blocked: true }` shape, because conflating it with the store's own
+`written: false` ("already recorded today") would make a gated press report
+itself as done. **I15 was not weakened and the store was not touched** — a check
+asserts the two layers stay independent, and the store must still contain a
+`throw`.
+
+**`aria-disabled`, NOT `disabled`, and it is this file's own lesson applied.** A
+`disabled` button cannot be focused or pressed, so a reader gets no way to learn
+why it is off — *"a control that opens and explains itself beats a control that
+is not there."* It is dimmed exactly as a disabled control is, at an **unchanged
+tap target**, and pressing it says in words what is missing, in both languages.
+**Playwright refuses to click it** ("element is not enabled"), which is
+independent confirmation that it reads as non-actionable; a real finger still
+fires the handler, which is what makes the explanation reachable.
+
+**`#readBar` IS BYTE-IDENTICAL, MEASURED RATHER THAN ASSUMED.** Seven widths ×
+two languages against the accepted v08.30 build (`8ea445fb`): **0 changed
+metrics across all 14 configurations** — same bar width and height, same natural
+need, same slack (−92.6 / −72.6 / −52.6 / **−22.6** / **−0.6** English; −101.9 /
+−81.9 / −61.9 / −31.9 / −9.9 Bangla), same **31.0 × 26.8px** tap target, same
+document scroll width. **The comparison could have failed**: the two sides
+differ on `aria-disabled` (absent → "true") and opacity (1 → 0.45). The notice
+is `position: fixed` and lives **outside** `#readBar` precisely so
+`O4-READBAR-WRAP` is not made worse. Pressed for real: **`__fsLog` 11 → 11**, no
+write-failure banner, `aria-pressed` still false.
+
+**D2 and D4 are gated SILENTLY, deliberately.** Neither invites a press, and
+D4's learning truth is already saved by `setWordState()` — only the Activity
+evidence is withheld. Telling a reader their word tap failed would be false.
+
+**Its own checks found two things, and both are recorded rather than smoothed
+over.** A **second direct caller of the evidence store** — P5-C's
+`study-note-service.js`, for D3 Journaling, with no reachable producer and P5-D
+unbuilt. Not a live bypass; it would be one the day P5-D wires it, so it is
+**pinned as unreachable rather than excluded by name**: wire it and the check
+fails until it goes through the gate. And a **vacuous assertion of my own**: the
+notice-placement check sliced from `#readBar` to `#readPickers`, which comes
+EARLIER in the document, so the slice was the empty string and the assertion was
+true whatever the markup did. **Found by a mutation coming back UNPROVEN**, not
+by re-reading it.
+
+**Nothing was deployed.** `firestore.rules` is untouched and still contains
+"evidence" **zero** times. **v08.32 is NOT allocated**; the ledger's
+`nextUnallocated` names it only to record that it belongs to nobody. See
+`docs/reports/2026-09-19-quranrevival-v0831-release-gating.md`.
 
 **19 Sep 2026 — v08.30 IS CODE-ACCEPTED AND INTEGRATED, and the integration
 gate found that `main` had already moved — TO THE ACCEPTED BUILD ITSELF.** The
