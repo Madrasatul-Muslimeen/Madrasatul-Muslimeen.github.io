@@ -25,7 +25,7 @@
     "stream consumed it."
   ],
   "schemaVersion": 1,
-  "recordedOn": "2026-09-18",
+  "recordedOn": "2026-09-19",
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
@@ -90,18 +90,34 @@
       "version": "08.30",
       "owner": "quran",
       "status": "LIVE",
-      "note": "QuranRevival MAP Phase 4 D1 Reading / D2 Listening / D4 WbW -- the ADR-008 evidence wiring, re-derived on current main rather than ported from 7e2931f. CODE-ACCEPTED by the Master Architect on 2026-09-19. LIVE means main carries it. NOT accepted for deployment or production use: E1 is closed, the evidence Rules are not deployed, and the subcollection is denied to every client.",
+      "note": "QuranRevival MAP Phase 4 D1 Reading / D2 Listening / D4 WbW -- the ADR-008 evidence wiring. CODE-ACCEPTED by the Master Architect on 2026-09-19 at 8ea445fb376784fb8452cb2042e4eaa8e017f41b, with a governance correction: APP_DEPLOYED=NO was incomplete because GitHub Pages serves main. LIVE means main carries it, and main is what Pages serves. NOT accepted for deployment or production use: E1 is closed, the evidence Rules are not deployed, and the subcollection is denied to every client. v08.31 gates the control it shipped and supersedes it on integration.",
       "integration": {
         "acceptedBuildSha": "7a619037d4de3ecb88df1a013262aaa4f51d1eeb",
         "method": "ALREADY_ON_MAIN_AT_ACCEPTANCE — fast-forward, performed during the build tranche's own authorised push",
         "codeAcceptedOn": "2026-09-19",
         "reference": "docs/reports/2026-09-19-quranrevival-phase4-v0830-integration.md"
       }
+    },
+    {
+      "version": "08.31",
+      "owner": "quran",
+      "status": "RESERVED",
+      "note": "QuranRevival release-gating repair. RESERVED AND AUTHORIZED by the Master Architect on 2026-09-19 for a narrow scope: an explicit persistence-readiness gate defaulting to false, so that while E1 is closed the Phase 4 completion control is not actionable and no evidence write is attempted. RESERVED, not LIVE: it is stamped on claude/charming-rubin-xzxbk1 and `main` still carries 08.30. It becomes LIVE when, and only when, an integration the Master Architect instructs puts it on main. It is NOT a deployment claim and it does not make the feature operational -- it makes the app honest about the fact that it is not.",
+      "integration": {
+        "authorizedOn": "2026-09-19",
+        "reference": "docs/reports/2026-09-19-quranrevival-v0831-release-gating.md"
+      }
     }
   ],
-  "nextUnallocated": "08.31",
+  "nextUnallocated": "08.32",
   "nextUnallocatedNote": [
-    "08.31 and every number above it are NOT ALLOCATED. Allocation is the Master Architect's; no stream may stamp at or beyond this number without one."
+    "08.32 and every number above it are NOT ALLOCATED. Allocation is the Master Architect's;",
+    "no stream may stamp at or beyond this number without one.",
+    "READ THIS FIELD CORRECTLY: it is the UNALLOCATED BOUNDARY, not an allocation.",
+    "Naming 08.32 here is what lets guard B REFUSE anyone who stamps it. The v08.31",
+    "authorisation says 'do not allocate v08.32', and this records exactly that: 08.32",
+    "belongs to nobody. It is not a prediction of the next merge number either -- see",
+    "the four durable rules in CLAUDE.md's VERSION NUMBERING NOTE."
   ],
   "streams": [
     {
@@ -134,7 +150,7 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.30",
+      "declaredVersion": "08.31",
       "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
@@ -594,10 +610,44 @@
     "$deploymentNote": "NONE of these say anything about Firestore deployment. Deployment is tracked in `deployment` below and is NOT DONE."
   },
   "deployment": {
+    "$comment": [
+      "FOUR STATES, RECORDED SEPARATELY, and the separation is the correction.",
+      "v08.30's integration reported APP_DEPLOYED=NO, which was incomplete: this",
+      "repository's GitHub Pages site serves `main`, so code merged to main IS",
+      "served from the live URL even while the feature cannot function. One",
+      "boolean cannot carry both facts, and collapsing them is how a control the",
+      "Owner can actually see gets recorded as 'not deployed'. Master Architect",
+      "correction, 2026-09-19."
+    ],
+    "applicationCodeIntegrated": {
+      "state": "YES",
+      "means": "The application code is merged into `main`.",
+      "evidence": "main carries v08.31; v08.30 accepted at 8ea445fb376784fb8452cb2042e4eaa8e017f41b."
+    },
+    "githubPagesServing": {
+      "state": "PRESUMED_FROM_MAIN",
+      "means": "GitHub Pages serves `main` for this repository, so integrated code is presumed to be served from the live URL.",
+      "verified": false,
+      "whyNotVerified": "PRESUMED, not measured. This sandbox's proxy refuses CONNECT to github.io, so serving cannot be observed from here. The presumption rests on this repository's own standing brief, not on a measurement."
+    },
+    "firebaseRulesDeployed": {
+      "state": "NO",
+      "means": "The ADR-008 Activity-evidence Rules (and the Phase 4-6 indexes) have not been deployed to the study-monitoring Firebase project.",
+      "blockedOn": "E1 -- authenticated Firebase Console access to study-monitoring. A sandbox has no credentials.",
+      "firestoreRules": "NOT_DONE",
+      "firestoreIndexes": "NOT_DONE"
+    },
+    "evidenceRecordingOperational": {
+      "state": "NO",
+      "means": "The Phase 4 feature cannot record anything for anyone. The evidence subcollection has no rule, so every write would be denied.",
+      "dependsOn": "firebaseRulesDeployed",
+      "surfacedBy": "v08.31 -- the persistence-readiness gate. While this is NO the completion control is not actionable and no write is attempted; app/js/study-evidence-readiness.js declares ready:false."
+    },
+    "e1": "CLOSED",
     "firestoreRules": "NOT_DONE",
     "firestoreIndexes": "NOT_DONE",
     "blockedOn": "E1 -- authenticated Firebase Console access to study-monitoring. A sandbox has no credentials.",
-    "note": "Recorded as NOT DONE because it has not been proven done. E1 remains CLOSED. NOTE, recorded rather than left implicit: this repository's own brief states GitHub Pages serves `main`, so code merged to main is served from the live URL. That is NOT Firestore deployment and does not make the Phase 4 feature function -- the evidence subcollection has no rule and every write is denied -- but it does mean the v08.30 control is visible to the Owner and will show an error if pressed. Serving was not verified from this sandbox (the proxy refuses github.io)."
+    "note": "Recorded as NOT DONE because it has not been proven done. The two flat keys above are retained for readers of the pre-v08.31 shape; the four states above them are authoritative."
   },
   "programme": {
     "name": "MMSA -- Madrasatul Muslimeen's Study App",
@@ -653,5 +703,24 @@
       "whyItIsTheOwners": "Accept the gap with that message, hide the control for those units, or extend the contract (an ADR-008 amendment) are materially different choices.",
       "status": "PROVISIONAL — preserved unchanged. NO EVIDENCE WAS INVENTED to complete tracking."
     }
-  ]
+  ],
+  "evidencePersistenceReadiness": {
+    "$comment": [
+      "The governed deployment-readiness decision for ADR-008 Activity evidence.",
+      "app/js/study-evidence-readiness.js holds the runtime declaration; this is",
+      "the governance record it must agree with. Guard G fails if the code",
+      "declares ready while firebaseRulesDeployed is not YES, or if the code is",
+      "enabled with no decision recorded here -- so enablement cannot happen as a",
+      "one-word source edit."
+    ],
+    "declarationPath": "app/js/study-evidence-readiness.js",
+    "ready": false,
+    "decision": null,
+    "gate": "E1",
+    "requiredToEnable": [
+      "docs/governance/programme-integration-ledger.json: deployment.firebaseRulesDeployed.state = YES, proven by an actual deployment",
+      "this block: ready=true and decision={by,on,reference} from the closed authority set",
+      "app/js/study-evidence-readiness.js: EVIDENCE_PERSISTENCE_DECLARATION.ready=true with the same decision"
+    ]
+  }
 }
