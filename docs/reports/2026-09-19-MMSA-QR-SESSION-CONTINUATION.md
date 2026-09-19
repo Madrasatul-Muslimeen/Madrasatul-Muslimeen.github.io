@@ -10,7 +10,8 @@
 
 | | |
 |---|---|
-| **`origin/main`** | **`e551c23467ce8eda0e2dafa9dfb474a12bffc690`** — fetched and read back, not quoted from an earlier report |
+| **`origin/main` when this file's state was measured** | **`e551c23467ce8eda0e2dafa9dfb474a12bffc690`** — fetched and read back, not quoted from an earlier report |
+| **`origin/main` now** | **`972596d906eab6b65d41ad7b3b338630c499bc9a`** — the commit carrying this continuation. Per this repository's convention the stamping commit sits one ahead of the SHA it records, because a commit cannot contain its own hash. **Nothing in §1–§9 changed**: that commit adds these two report files and nothing else |
 | `main` tip subject | *Stamp FINAL_REMOTE_MAIN into the D3 integration report* |
 | **Application version** | **v08.31** — `app/js/version.js` on the remote reads `export const APP_VERSION = "08.31";` |
 | **Next unallocated version** | **08.32 — UNALLOCATED.** A boundary marker, not an allocation. Guard B refuses anyone who stamps it |
@@ -272,7 +273,8 @@ Playwright is not installed by default. `npm install playwright --no-save`, then
 MMSA_QR_SESSION_CONTINUATION
 ISSUED=2026-09-19
 SUPERSEDES=docs/reports/2026-09-19-MMSA-QR-CONTINUATION-PACKAGE.md
-MAIN_SHA=e551c23467ce8eda0e2dafa9dfb474a12bffc690
+MAIN_SHA_AT_MEASUREMENT=e551c23467ce8eda0e2dafa9dfb474a12bffc690
+MAIN_SHA=972596d906eab6b65d41ad7b3b338630c499bc9a (the commit carrying this continuation; docs-only above e551c23)
 MAIN_VERSION=08.31
 D3_INTEGRATION=DONE -- fast-forward at 22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8
 D3_WORK_COMMIT=57a73a8b7664c9818c3814e495e4abdeebaf608f
