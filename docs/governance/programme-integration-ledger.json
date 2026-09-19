@@ -331,10 +331,13 @@
     {
       "id": "hadith",
       "name": "Hadith Study module",
-      "activeBranch": "feature/hadith-study",
-      "branchTip": "c1a4f19a70ec824372fa1fda49e4e7dbc38bc40c",
+      "activeBranch": null,
+      "activeBranchNote": "NULL DELIBERATELY -- the repair of 19 Sep 2026, and the reason is recorded here rather than left to be rediscovered. `feature/hadith-study` still exists and is still where Hadith test/documentation work is prepared, but it TRACKS main: it carries no version stamp of its own, and its app/js/version.js is whatever main's is. An `activeBranch` in this ledger means 'a branch this stream stamps, whose stamp the guards cross-check against declaredVersion'. Naming it while it tracked main made guard A read main's own stamp as a Hadith disagreement and guard B read it as an invented version -- both artefacts of the record, not of the branch. Positive and negative tests against the real guard established that `declaredVersion: null` ALONE does NOT clear A and B, that declaring main's number would falsely claim the Quran stream's allocation, and that a null activeBranch is the only truthful representation this schema supports. COST, reported rather than discovered later: guards A, B and guard E's live branch-diff sweep all skip a stream with no activeBranch, so an undeclared shared-file modification on this branch would not be caught by that sweep. Mitigated, not ignored: this stream is MERGED_TO_MAIN with nothing unmerged left to oversee, and guard E still validates and reports all five of its authorization RECORDS, which it reads from the records themselves rather than from a branch diff. Set this field again, with a declaredVersion the Master Architect has allocated, on the day this stream next stamps a version. SECOND COST, measured rather than predicted: programme-ledger-mutations.mjs's guard-A mutation \"the ledger and the branch disagree about what the branch is stamped\" hard-codes the stream id \"hadith\", so with no activeBranch here guard A skips it and the mutation is a no-op -- it reports UNPROVEN, and the suite exits 1. Guard A's three other failure modes are still proven. The fix is one line, deriving the subject from the ledger exactly as guard B's two mutations already do (l.streams.find(x => x.activeBranch && f.branches[x.activeBranch])), and it was NOT applied: programme-ledger-mutations.mjs is a platform/shared file and the Hadith stream's authorization of 19 Sep 2026 covers this ledger record and nothing else. Raised as a SHARED CHANGE REQUEST in docs/reports/2026-09-19-hadith-ledger-repair-integration.md.",
+      "branchTip": "43dd96f58eeee5ad33dc82bb4e260660e3c290c9",
+      "branchTipNote": "The commit at which this stream's work reached `main` -- not a moving branch tip. branchTip is read by guard C only for an integrationState of HELD, so for a merged stream it is descriptive. Re-stamping it with the branch's own newest commit would name the very commit that wrote the stamp, and would move again every time the branch merged main: an endless self-reference. This commit never moves. The branch's pre-repair tip was c1a4f19a70ec824372fa1fda49e4e7dbc38bc40c.",
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.29",
+      "declaredVersion": null,
+      "declaredVersionNote": "NULL: this stream carries NO independently allocated application version. 08.28 (HISTORICAL, stamped at 7f61328) and 08.29 (RELEASED, stamped at 22526b2) stay in versionAllocations as facts about what it shipped -- nothing was withdrawn and nothing was re-allocated. The version the branch's version.js now reads is main's own, and belongs to whichever stream the ledger says owns it. 08.32 is NOT allocated, to this stream or to any other.",
       "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
@@ -410,7 +413,7 @@
       ],
       "baselineNote": "Merged to main at 43dd96f. Stage A 7f61328 and Stage B 22526b2 were not rewritten. The recorded baseline is the pre-merge tip because main moved forward by this very merge.",
       "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
-      "branchNote": "Merged to main at 43dd96f. The branch is retained, still stamped 08.29, so the ledger can keep cross-checking the declared version against a real ref.",
+      "branchNote": "Merged to main at 43dd96f. The branch is retained and now TRACKS main rather than carrying a stamp of its own -- it is refreshed by merging origin/main into it, so its version.js reads main's version. This sentence previously said the branch was 'still stamped 08.29, so the ledger can keep cross-checking the declared version against a real ref'; that stopped being true the moment the branch took main's newer stamp, and the cross-check it described is what guards A and B were failing on. See activeBranchNote.",
       "role": "Subject module (Hadith). Integrated into MMSA at 43dd96f."
     },
     {
