@@ -14642,3 +14642,57 @@ Nothing deployed. `firestore.rules` untouched and still contains "evidence"
 zero times. 49 ledger mutations, 17 boundary mutations, 0 unproven.
 
 Full account: `docs/reports/2026-09-19-quranrevival-v0831-release-gating.md`.
+
+---
+
+## D3 Journaling routed through the evidence chokepoint — NO VERSION BUMP (19 Sep 2026)
+
+**Not a version.** `app/js/version.js` is untouched at `08.31`, and the next
+number stays unallocated. This entry exists because the round changed a file
+under `app/`, and a round that touches the application belongs in the log even
+when it ships no behaviour.
+
+**What it closed.** `app/js/study-note-service.js` imported the Activity
+evidence store and called `writeStudyActivityEvidence()` **directly, around
+v08.31's persistence-readiness gate**. Never a live bypass — the module is
+page-unreachable, D3 Journaling has no producer and P5-D is not built — but it
+meant *"`recordStudyEvidence()` is the ONE chokepoint"* was a claim about
+REACHABILITY rather than about the code, and such a claim expires silently the
+day somebody wires the surface. `recordJournalEvidence()` calls
+`recordStudyEvidence()` now, and the boundary suite's `KNOWN_UNREACHABLE_CALLER`
+exception is **removed rather than widened**: the importer set is asserted to
+be exactly `[study-event-wiring.js]`, which is also the only module that calls
+the store at all. Comments are stripped before that scan, because the service's
+own doc comment names the store in order to say it no longer calls it.
+
+**Four outcomes, kept distinguishable.** `written: false` is true of a refusal
+AND of a retry, so alone it means nothing. Every outcome returns the same five
+fields — `skipped` / `blocked` / `written` / `eventId` / `reason` — so no fact
+is ever inferred from another's absence. The null return is checked before it is
+read, and the reason is meaning rather than a throw: `{ ...null }` is a silent
+no-op in JavaScript, so the old spread would have produced a shape with **no
+`written` field**, and a missing field reads as falsy — which is exactly
+"already recorded".
+
+**The round's real find: a suite dead since v08.31's own accepted commit.**
+`tools/i18n-verify/study-event-wiring.mjs` loads the real wiring module as a
+`data:` module. `65ef3c5` added a third import and the suite rewrote two, so the
+surviving relative specifier threw `ERR_INVALID_URL` **at load, before any check
+ran** — exit 1, stack trace, **no `FAIL` line**. The chokepoint's own unit suite
+had asserted nothing for its whole existence. **0 executing checks → 41**, plus
+the leftover assertion that would have caught it the same day.
+
+**And a second defect, found by a mutation coming back UNPROVEN.** The accepted
+boundary guard sliced the chokepoint's body to end of file, where two helpers
+re-export the readiness predicate — so *"no longer consults readiness"* could
+not fail, and the mutation was refused only because a different assertion fired,
+naming the wrong fault. Bounded at the next top-level `export`, with a positive
+control.
+
+**Verified.** Service reachable from 0 of 29 pages (controls: `records.js` 16,
+`study-event-wiring.js` 1); 0 import cycles across 96 modules; `git diff main --
+app/` names one page-unreachable file; `#readBar` identical to `main` at 14/14
+measurement rows; no shared application file touched. **Nothing was deployed** —
+`firestore.rules` still names `evidence` zero times and E1 stays CLOSED.
+
+Full account: `docs/reports/2026-09-19-quranrevival-d3-journaling-chokepoint.md`.

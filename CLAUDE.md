@@ -160,6 +160,51 @@ and enforced by guard G:
 **Merged is not deployed, served is not operational, and neither has been
 proven for any v08.2x, v08.30 or v08.31 milestone.**
 
+**19 Sep 2026 — D3 JOURNALING NOW GOES THROUGH THE EVIDENCE CHOKEPOINT.
+DOCUMENTATION-ONLY ENTRY: no application behaviour changed, no version
+changed, nothing was deployed.** `app/js/study-note-service.js` imported the
+evidence store and called `writeStudyActivityEvidence()` **directly, around
+v08.31's persistence-readiness gate**. It was never a live bypass — the module
+is page-unreachable — but it meant *"`recordStudyEvidence()` is the ONE
+chokepoint"* was a claim about REACHABILITY rather than about the code, and a
+claim resting on unreachability expires silently the day somebody wires the
+surface. **The direct caller is removed**: `recordJournalEvidence()` calls
+`recordStudyEvidence()`, and the boundary suite's `KNOWN_UNREACHABLE_CALLER`
+exception is **gone rather than widened** — the importer set is asserted to be
+exactly `[study-event-wiring.js]`, and that module is the only one that calls
+the store at all. **The service remains page-unreachable**: 0 of 29 pages
+reach it, with `records.js` (16) and `study-event-wiring.js` (1) as the
+positive controls that stop the walk passing vacuously, and 0 import cycles
+across 96 modules. `app/js/version.js` is untouched and **v08.32 stays
+UNALLOCATED.**
+
+**THE ROUND'S REAL FIND WAS A SUITE THAT HAD BEEN DEAD SINCE v08.31's OWN
+ACCEPTED COMMIT.** `tools/i18n-verify/study-event-wiring.mjs` loads the real
+wiring module as a `data:` module with its app imports rewritten. `65ef3c5`
+added a THIRD import — `./study-evidence-readiness.js` — and the suite rewrote
+two, so the surviving relative specifier threw `ERR_INVALID_URL` **at module
+load, before a single check ran**. It exited 1 with a stack trace and **no
+`FAIL` line**, so a grep for failures saw nothing. **The chokepoint's own unit
+suite therefore asserted NOTHING for the whole of its existence** — including
+its cases *"an eligible completion reaches the store exactly once"* and *"this
+module never swallows a failure"*. Repaired: **0 executing checks → 41**, plus
+the **leftover assertion** that would have caught it the same day
+(`study-note-service.mjs` has carried that assertion all along, which is
+exactly why the same edit did not kill THAT suite silently). **A suite that
+dies at import is not a failing suite, it is an absent one — assert that every
+import was rewritten.**
+
+**A MUTATION CAME BACK UNPROVEN AND FOUND A SECOND DEFECT, in the accepted
+boundary guard.** It sliced the chokepoint's body as
+`slice(indexOf(signature))` — **to end of file** — and two helpers BELOW
+`recordStudyEvidence()` re-export the readiness predicate, so deleting the gate
+left the symbol in the slice anyway and *"no longer consults readiness"*
+**could not fail**. The suite refused the mutation only because a DIFFERENT
+assertion fired, naming a fault nobody could act on. Bounded at the next
+top-level `export` now, with a positive control. **An unproven mutation is a
+finding about the guard, and chasing it is what found this.** See
+`docs/reports/2026-09-19-quranrevival-d3-journaling-chokepoint.md`.
+
 > **This line was WRONG for part of 18 Sep, and the episode is the lesson.** It
 > read "**v08.26 on `main`**" the moment the nav round was committed to a
 > BRANCH — the identical drift this paragraph has recorded twice before, made a
