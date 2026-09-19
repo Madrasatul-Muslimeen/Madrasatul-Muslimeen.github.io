@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA pilot — can the Claude App open a PR that AAAsapp can approve?</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  pre { background:var(--code); padding:.85rem 1rem; border-radius:.5rem; overflow-x:auto;
+    border:1px solid var(--rule); margin:1rem 0 }
+  pre code { background:none; padding:0; font-size:.85rem; word-break:normal }
+  blockquote { margin:1.1rem 0; padding:.1rem 0 .1rem 1rem; border-left:3px solid var(--accent);
+    color:var(--muted) }
+  blockquote strong { color:var(--fg) }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA pilot — can the Claude App open a PR that AAAsapp can approve?</h1>
+<p><strong>Date:</strong> 19 September 2026 <strong>Question put by the Owner:</strong> <code>AAAsapp</code> is the only human GitHub login; <code>Madrasatul-Muslimeen</code> and <code>Siyagah</code> are organizations. Can the installed <strong>Claude GitHub App</strong> open a pull request under a <strong>bot identity distinct from <code>AAAsapp</code></strong>, and could <strong><code>AAAsapp</code> approve</strong> that PR? <strong>Mode:</strong> read-only. No PR created, no setting changed, nothing installed, no repository edit. <strong>Relation to the preflight:</strong> this resolves <strong>R3 / W3</strong> of <code>2026-09-19-mmsa-automation-pilot-preflight.md</code>, which named a single-account repository as the pilot's highest risk.</p>
+<hr>
+<h2>0. The answer in two lines</h2>
+<blockquote><p><strong>Q1 — Almost certainly yes, and the capability is verified.</strong> The App is installed and holds <strong><code>pull_requests: write</code></strong> and <strong><code>contents: write</code></strong>, which is exactly what opening a PR requires. A GitHub App acting on its own installation token authors PRs as its <strong>bot user</strong>, not as the person who triggered it. <strong>But the App has never executed anything in this repository, so the resulting login is not yet an observed fact.</strong></p><p><strong>Q2 — Yes, on the evidence available, and one caveat matters.</strong> <code>AAAsapp</code> holds <code>admin</code> on the repository and would <strong>not</strong> be the PR author, so GitHub's "you cannot approve your own pull request" rule would not bite. <strong>However: no review has ever been submitted in this repository by anyone</strong>, so this has literally never been exercised here.</p></blockquote>
+<p><strong>R3 is therefore resolved in principle but not in practice.</strong> The pilot is <em>not</em> blocked on acquiring a second human account — which was the worry — but it <strong>is</strong> blocked on one throwaway test PR (§4).</p>
+<hr>
+<h2>1. VERIFIED — measured this session</h2>
+<h3>1.1 The App is real, installed, and permitted to open PRs</h3>
+<p>Read from the <code>app</code> object GitHub returns on this repository's check suites:</p>
+<div class='tw'><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>App id</td><td><strong><code>1236702</code></strong></td></tr><tr><td>Slug</td><td><strong><code>claude</code></strong></td></tr><tr><td>Name</td><td><code>Claude</code></td></tr><tr><td>Owner</td><td><strong><code>anthropics</code></strong> (Organization)</td></tr><tr><td>Listing</td><td><code>https://github.com/apps/claude</code></td></tr><tr><td>Installed here</td><td><strong>Yes</strong> — a <code>claude</code> check suite exists on every commit inspected</td></tr></tbody></table></div>
+<p><strong>Declared permissions:</strong></p>
+<pre><code>actions: write        checks: write         contents: write
+discussions: write    issues: write         members: read
+metadata: read        pull_requests: write  repository_hooks: write
+statuses: read        workflows: write</code></pre>
+<p><strong><code>contents: write</code> + <code>pull_requests: write</code> is precisely the pair needed to create a branch and open a pull request.</strong> The capability is not in doubt.</p>
+<h3>1.2 The App has never actually run here</h3>
+<div class='tw'><table><thead><tr><th>Commit</th><th><code>claude</code> check suite</th></tr></thead><tbody><tr><td><code>b700e3f</code> (main tip)</td><td><code>latest_check_runs_count: 0</code>, <code>status: queued</code>, <code>conclusion: null</code></td></tr><tr><td><code>22777fc</code> (D3 integration)</td><td><code>latest_check_runs_count: 0</code>, <code>status: queued</code>, <code>conclusion: null</code></td></tr><tr><td><code>43dd96f</code> (Hadith v08.29)</td><td><code>latest_check_runs_count: 0</code>, <code>status: queued</code>, <code>conclusion: null</code></td></tr></tbody></table></div>
+<p><strong>Zero check runs on every commit, perpetually <code>queued</code>.</strong> This is the signature of an App that is installed and subscribed but has <strong>no workflow to invoke it</strong> — consistent with the preflight's finding that no <code>.github/</code> directory exists. Searching <code>is:pr author:app/claude</code> returns <strong><code>total_count: 0</code></strong>: the App has never opened a pull request here.</p>
+<h3>1.3 Commit authorship is ALREADY distinct from AAAsapp — but this is a decoy</h3>
+<p>This is the finding most likely to be misread, so it is stated precisely.</p>
+<div class='tw'><table><thead><tr><th></th><th>git metadata</th><th>GitHub-resolved account</th></tr></thead><tbody><tr><td>Author of <code>b700e3f</code></td><td><code>Claude &lt;noreply@anthropic.com&gt;</code></td><td>login <strong><code>claude</code></strong>, type <strong><code>User</code></strong>, id <strong><code>81847</code></strong></td></tr><tr><td>Committer</td><td><code>Claude &lt;noreply@anthropic.com&gt;</code></td><td>login <strong><code>claude</code></strong>, type <strong><code>User</code></strong>, id <strong><code>81847</code></strong></td></tr><tr><td>Signature</td><td>—</td><td><strong><code>verified: true</code>, reason <code>valid</code></strong></td></tr><tr><td><strong>Pusher</strong> (Actions <code>actor</code>) on the last four pushes</td><td>—</td><td><strong><code>AAAsapp</code></strong>, id <strong><code>293311955</code></strong></td></tr></tbody></table></div>
+<p>So every commit on <code>main</code> is <em>authored</em> by an identity (<code>claude</code>, id <code>81847</code>) that is <strong>already distinct from <code>AAAsapp</code></strong> (id <code>293311955</code>), and the commits are <strong>signed and verified</strong>.</p>
+<p><strong>This does not help, and must not be mistaken for a solution. Three reasons:</strong></p>
+<ol><li><strong>Commit authorship is not PR authorship.</strong> GitHub's self-approval restriction keys on <strong>who opened the pull request</strong>, not who wrote the commits. Every PR in this repository's history was opened by <code>AAAsapp</code> (§1.4).</li><li><strong><code>claude</code> id <code>81847</code> is <code>type: User</code>, not a bot, and is not the App.</strong> It is whatever account has registered <code>noreply@anthropic.com</code> — an <em>email-based attribution</em> produced by this session's local <code>git config user.email</code>. It is <strong>not</strong> the App's bot user, and it is not an account this automation can authenticate as or open a PR from.</li><li><strong>It is cosmetic, not authoritative.</strong> Any git client can set that author string. The push identity — <code>AAAsapp</code> — is the one GitHub actually authenticated.</li></ol>
+<h3>1.4 No precedent exists in this repository, in either direction</h3>
+<div class='tw'><table><thead><tr><th>Search</th><th>Result</th></tr></thead><tbody><tr><td><code>is:pr -author:AAAsapp</code></td><td><strong><code>total_count: 0</code></strong> — <strong>every</strong> PR ever opened here was authored by <code>AAAsapp</code></td></tr><tr><td><code>is:pr reviewed-by:AAAsapp</code></td><td><strong><code>total_count: 0</code></strong> — <strong><code>AAAsapp</code> has never submitted a review on any PR</strong></td></tr><tr><td><code>is:pr author:app/claude</code></td><td><strong><code>total_count: 0</code></strong></td></tr></tbody></table></div>
+<p><strong>No pull request in this repository has ever received a review from anyone.</strong> That is why §2 cannot be closed by inspection.</p>
+<h3>1.5 AAAsapp's standing</h3>
+<p><code>AAAsapp</code> (id <code>293311955</code>) reports repository permissions <strong><code>admin: true</code>, <code>maintain: true</code>, <code>push: true</code>, <code>triage: true</code>, <code>pull: true</code></strong> — comfortably enough to submit an approving review.</p>
+<hr>
+<h2>2. REQUIRES A TEST PR — cannot be established by inspection</h2>
+<div class='tw'><table><thead><tr><th>#</th><th>Unknown</th><th>Why inspection cannot settle it</th></tr></thead><tbody><tr><td><strong>U1</strong></td><td><strong>The exact login that opens the PR.</strong> Expected <code>claude[bot]</code>, by GitHub's documented convention that an App's bot user is <code>&lt;slug&gt;[bot]</code> — and the slug <strong>is</strong> verified as <code>claude</code>.</td><td>The App has never opened a PR here (§1.2), so the login has never been observed. The <code>/users/...</code> endpoint is refused by the session proxy, so the account cannot be resolved directly either.</td></tr><tr><td><strong>U2</strong></td><td><strong>Whether the PR author is the App at all.</strong> It depends entirely on which token the workflow authenticates with: the <strong>App installation token</strong> → <code>claude[bot]</code>; the default <strong><code>GITHUB_TOKEN</code></strong> → <code>github-actions[bot]</code>.</td><td>No workflow exists yet, so there is nothing to read. <strong>Both are distinct from <code>AAAsapp</code> and both would be approvable — but only one of them works (see T1).</strong></td></tr><tr><td><strong>U3</strong></td><td><strong>Whether <code>AAAsapp</code>'s Approve button is actually live</strong> on such a PR.</td><td>Never exercised — zero reviews in repository history (§1.4).</td></tr><tr><td><strong>U4</strong></td><td><strong>Whether CI triggers</strong> on a PR opened by that identity.</td><td>Decides whether required status checks can ever report. This is the failure mode that would silently deadlock the pilot (T1).</td></tr><tr><td><strong>U5</strong></td><td><strong>What the installation actually granted.</strong> §1.1 lists the App's <strong>declared</strong> permissions.</td><td><code>GET /repos/.../installation</code> requires a JWT and returned <strong>401</strong> here. The per-installation grant is visible only to the Owner — preflight item <strong>W6</strong>.</td></tr></tbody></table></div>
+<hr>
+<h2>3. Traps to settle before the pilot, in priority order</h2>
+<p><strong>T1 — The <code>GITHUB_TOKEN</code> route is a dead end, and it fails silently.</strong> If the PR is opened using the workflow's default <code>GITHUB_TOKEN</code>, the author is <code>github-actions[bot]</code> — distinct from <code>AAAsapp</code>, so <em>approvable</em>. <strong>But GitHub deliberately does not trigger workflows from events raised by <code>GITHUB_TOKEN</code></strong> (its loop-prevention rule). Required status checks would therefore <strong>never run</strong>, and the PR would sit permanently unmergeable with no error message explaining why. <strong>The PR must be opened with the Claude App's installation token</strong>, which is a separate App and does trigger workflows. This single choice decides whether the pilot functions.</p>
+<p><strong>T2 — "Allow GitHub Actions to create and approve pull requests" must stay OFF.</strong> Preflight <strong>W5</strong>. If it is on, automation can approve its own work and the entire gate is void.</p>
+<p><strong>T3 — Keep <code>AAAsapp</code> off the PR branch.</strong> If the ruleset enables <em>"Require approval of the most recent reviewable push"</em>, then whoever pushed last cannot supply the approval. If <code>AAAsapp</code> pushes even a one-line fixup to the bot's branch, <strong><code>AAAsapp</code> can no longer approve that PR.</strong> Fixes must be asked of the App, not pushed by hand.</p>
+<p><strong>T4 — The App holds <code>workflows: write</code>.</strong> It can modify the CI that gates it. Consider having <code>CODEOWNERS</code> cover <code>.github/workflows/</code> so changes to the cage need the Owner's approval like anything else.</p>
+<p><strong>T5 — Organization scope.</strong> This session is bound to the two configured repositories; all <code>/orgs/...</code> endpoints are refused. <strong>Nothing about <code>Siyagah</code> was checked and nothing is claimed about it.</strong></p>
+<hr>
+<h2>4. THE EXACT NEXT STEP</h2>
+<p><strong>One throwaway test pull request, opened by the App, before any ruleset is enabled.</strong></p>
+<p>Ordering matters: this slots into the preflight's plan as <strong>a new step between Step 6 (wire the App) and Step 7 (enable the ruleset)</strong>. Running it <em>before</em> protection means a surprise costs a closed PR rather than a locked repository.</p>
+<ol><li>Complete preflight <strong>Step 3</strong> (CI workflow, <strong>not</strong> required) and <strong>Step 6</strong> (wire the App, secret from <strong>W7</strong>).</li><li>Ask the App — via an issue comment or <code>workflow_dispatch</code> — to open a PR making one trivial, reversible change on a throwaway branch (a line in a scratch file under <code>docs/reports/</code>). <strong>Nothing under <code>app/</code>, <code>tools/</code>, <code>firestore.rules</code> or <code>docs/governance/</code>.</strong></li><li><strong>Configure it to authenticate with the App installation token, not <code>GITHUB_TOKEN</code></strong> (T1).</li><li>Then read four things off the resulting PR:</li><li><strong>U1/U2</strong> — the author login shown on the PR. Expect <code>claude[bot]</code>. If it reads <code>github-actions[bot]</code>, the token wiring is wrong; fix it before going further.</li><li><strong>U4</strong> — did the CI check from Step 3 actually run? <strong>If no check appears, T1 has occurred.</strong></li><li><strong>U3</strong> — open the PR as <code>AAAsapp</code> and confirm <strong>Approve</strong> is selectable and submits. <em>Do not merge.</em></li><li>Confirm the App's commits on the branch are attributed to the bot, not to <code>AAAsapp</code>.</li><li><strong>Close the PR without merging</strong> and delete the branch.</li><li>Record the observed author login in the ledger, then proceed to preflight <strong>Step 7</strong> (enable the ruleset, <strong>bypass list empty</strong>).</li></ol>
+<p><strong>If U3 fails</strong> — if <code>AAAsapp</code> cannot approve a <code>claude[bot]</code> PR — then, and only then, a second GitHub account becomes a genuine prerequisite, and the Owner should decide between adding one and running the pilot with the ledger as the approval record while GitHub enforces only <em>"a PR exists and CI is green"</em>.</p>
+<hr>
+<h2>5. State block</h2>
+<pre><code>MMSA_BOT_IDENTITY_AND_APPROVAL_CHECK
+ISSUED=2026-09-19
+MODE=READ_ONLY -- no PR created, no setting changed, nothing installed, no repository edit
+RESOLVES=R3/W3 of 2026-09-19-mmsa-automation-pilot-preflight
+CLAUDE_APP=id 1236702, slug `claude`, owner anthropics (Org), INSTALLED on this repo
+APP_DECLARED_PERMISSIONS=contents:write pull_requests:write workflows:write actions:write checks:write issues:write discussions:write repository_hooks:write members:read metadata:read statuses:read
+CAN_APP_OPEN_PR=YES by permission (contents:write + pull_requests:write); NEVER EXERCISED here
+APP_EXECUTION_HISTORY=NONE -- every claude check suite has 0 runs, status queued, on every commit inspected
+APP_PR_HISTORY=0 (is:pr author:app/claude -&gt; total_count 0)
+COMMIT_AUTHOR_ALREADY_DISTINCT=YES but DECOY -- git author Claude &lt;noreply@anthropic.com&gt; resolves to login `claude`, type User, id 81847; AAAsapp is id 293311955
+COMMITS_SIGNED=YES (verified:true, reason valid)
+PUSH_ACTOR=AAAsapp (id 293311955) on all four most recent main pushes
+WHY_DECOY=commit authorship is not PR authorship; id 81847 is type User not the App bot, is email-derived, and is not an account this automation can authenticate as
+PR_HISTORY=100% authored by AAAsapp (is:pr -author:AAAsapp -&gt; total_count 0)
+REVIEW_HISTORY=ZERO reviews ever submitted in this repository (is:pr reviewed-by:AAAsapp -&gt; total_count 0)
+AAASAPP_REPO_PERMISSIONS=admin,maintain,push,triage,pull all true
+CAN_AAASAPP_APPROVE=YES on available evidence -- admin, and would not be the PR author; UNPROVEN, never exercised
+EXPECTED_BOT_LOGIN=claude[bot] -- GitHub convention &lt;slug&gt;[bot], slug verified as `claude`; login itself NOT observed
+UNVERIFIABLE_HERE=/users/* and /orgs/* refused by session proxy; /repos/../installation needs JWT (401)
+SIYAGAH=OUT OF SESSION SCOPE -- not checked, nothing claimed
+TOP_TRAP=T1 -- a PR opened with GITHUB_TOKEN does not trigger workflows, so required checks never report and the PR deadlocks silently; use the App installation token
+OTHER_TRAPS=T2 Actions must not be allowed to approve PRs; T3 if AAAsapp pushes to the branch it may forfeit its own approval; T4 App holds workflows:write so CODEOWNERS should cover .github/workflows/
+NEXT_STEP=one throwaway App-opened test PR, using the installation token, BEFORE enabling the ruleset; read author login, CI trigger, and AAAsapp Approve; close without merging
+R3_STATUS=RESOLVED IN PRINCIPLE, UNPROVEN IN PRACTICE -- a second human account is probably NOT required
+NOTHING_CHANGED=TRUE</code></pre>
+</main></body></html>
