@@ -49,6 +49,21 @@ function codeOf(name) {
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .split("\n").filter((line) => !/^\s*(?:\/\/|\*)/.test(line)).join("\n");
 }
+/** One element's own markup, from its opening tag to its MATCHING close -- `<div>`s balanced, so a nested element cannot end the slice early and a later sibling cannot be swept into it. */
+function elementSlice(html, openTag) {
+  const start = html.indexOf(openTag);
+  if (start === -1) return "";
+  let depth = 0, i = start;
+  const re = /<div\b|<\/div>/g;
+  re.lastIndex = start;
+  let m;
+  while ((m = re.exec(html))) {
+    depth += m[0] === "</div>" ? -1 : 1;
+    i = m.index + m[0].length;
+    if (depth === 0) break;
+  }
+  return html.slice(start, i);
+}
 function appSources() {
   const out = [];
   for (const entry of fs.readdirSync(appJs)) {
@@ -446,7 +461,17 @@ check("the ✓ is not actionable while the gate is shut, and keeps its tap targe
     "the gated state changes the control's size");
   // The notice must live OUTSIDE #readBar -- inside it, it would take width on
   // the app's densest row and worsen the accepted O4-READBAR-WRAP debt.
-  const bar = page.slice(page.indexOf('<div id="readBar"'), page.indexOf('id="readPickers"'));
+  //
+  // THIS PAIR WAS VACUOUS IN ITS FIRST FORM, and the mutation suite is what
+  // said so. It sliced from `<div id="readBar"` to `id="readPickers"` -- and
+  // #readPickers comes EARLIER in the document, so the slice was the empty
+  // string and `!"".includes(...)` was true whatever the markup did. The
+  // mutation that moves the notice into the bar came back UNPROVEN, which is a
+  // finding about the guard, not about the code. Balance the element's own
+  // <div>s instead, and assert the slice is real before reading it.
+  const bar = elementSlice(page, '<div id="readBar">');
+  assert.ok(bar.length > 200 && bar.includes("readCompleteBtn"),
+    "the #readBar slice did not come back -- this check would pass vacuously");
   assert.ok(!bar.includes("qrStudyNotice"), "the notice is inside #readBar and will cost the row width");
   assert.ok(/#qrStudyNotice \{[\s\S]{0,200}?position: fixed/.test(page), "the notice is in flow");
 });
