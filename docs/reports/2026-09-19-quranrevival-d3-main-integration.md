@@ -14,7 +14,8 @@
 | **D3 work commit** | **`57a73a8b7664c9818c3814e495e4abdeebaf608f`** |
 | **Reconciled candidate** | **`22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8`** |
 | **Integration commit** | **`22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8`** — the integration was a **fast-forward**, so the candidate *is* the integration commit. No merge commit was created, and none is invented here to make the table look fuller |
-| **Final remote `main`** | **`22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8`** — re-fetched and read back after the push |
+| **`main` immediately after the D3 fast-forward** | **`22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8`** — re-fetched and read back after that push |
+| **Final remote `main`** | **`66e6e6b383de4a54c369aab624beb26bcf29ac21`** — the commit carrying this report. Per this repository's own convention the stamping commit sits one ahead of the SHA it records, because a commit cannot contain its own hash |
 
 Supporting commits, so the chain is readable rather than implied: the D3 tip as first accepted was `3adc853`; `d46bed0` and `22777fc` are the two reconciliation merges (against `b295ea8` and against `c26c711`); `c69ccf7` is the authorised documentation-only entry; `65b7620` is the integration-candidate report.
 
@@ -226,7 +227,8 @@ D3_WORK_COMMIT=57a73a8b7664c9818c3814e495e4abdeebaf608f
 D3_TIP_AS_FIRST_ACCEPTED=3adc853b2432acd04e1800fb8e278ac6a76311e1
 RECONCILIATION_MERGES=d46bed0 (vs b295ea8), 22777fc (vs c26c711)
 INTEGRATION_COMMIT=22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8
-FINAL_REMOTE_MAIN=22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8
+MAIN_AFTER_D3_FAST_FORWARD=22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8
+FINAL_REMOTE_MAIN=66e6e6b383de4a54c369aab624beb26bcf29ac21 (the commit carrying this report)
 MAIN_MOVED_DURING_VERIFICATION=NO
 INTEGRATION_DIFF=11 files -- 1 page-unreachable app module, 4 tooling, 2 authorised shared documents, 4 reports
 HADITH_FIX_AND_LEDGER_PRESERVED=YES -- 0 files differ across programme-ledger-mutations.mjs and docs/governance/
