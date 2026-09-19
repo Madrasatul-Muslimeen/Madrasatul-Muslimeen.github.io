@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA automation pilot — STEP 1: non-required CI for the governance suites</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  pre { background:var(--code); padding:.85rem 1rem; border-radius:.5rem; overflow-x:auto;
+    border:1px solid var(--rule); margin:1rem 0 }
+  pre code { background:none; padding:0; font-size:.85rem; word-break:normal }
+  blockquote { margin:1.1rem 0; padding:.1rem 0 .1rem 1rem; border-left:3px solid var(--accent);
+    color:var(--muted) }
+  blockquote strong { color:var(--fg) }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA automation pilot — STEP 1: non-required CI for the governance suites</h1>
+<p><strong>Date:</strong> 19 September 2026 <strong>Branch:</strong> <code>claude/pilot-ci-verify-workflow</code> <strong>Pull request:</strong> <strong>[#88](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/88)</strong> — <strong>OPEN, NOT MERGED</strong> <strong>Base:</strong> <code>main</code> at <code>b700e3f4b0a8004d4fe2701013e053a3c7a25770</code>, v08.31 — <strong>unchanged by this work</strong> <strong>Result:</strong> <strong>CI ran and passed. All six suites green in GitHub Actions, matching the documented baseline exactly.</strong></p>
+<p><strong>Scope held:</strong> one file added, <code>.github/workflows/verify.yml</code> (136 lines). No app code, no version change, no Firestore Rules, no repository settings, no change to the 22g harness defect. <code>git diff origin/main...HEAD</code> is that one file.</p>
+<hr>
+<h2>1. What was added</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>File</td><td><code>.github/workflows/verify.yml</code> — <strong>the only file in the PR</strong></td></tr><tr><td>Trigger</td><td><code>pull_request</code> into <code>main</code></td></tr><tr><td>Permissions</td><td><strong><code>contents: read</code></strong> — the job never writes to the repository</td></tr><tr><td>Job name</td><td><strong><code>Deterministic governance suites</code></strong></td></tr><tr><td>Suites</td><td><code>programme-ledger</code>, <code>programme-ledger-mutations</code>, <code>brief-integrity</code>, <code>study-activity-evidence-boundary</code>, <code>study-event-wiring</code>, <code>rules-authorisation-executable</code></td></tr><tr><td>Required?</td><td><strong>No — non-required by design</strong></td></tr></tbody></table></div>
+<p><strong>Non-required is the whole point of this step.</strong> A check whose behaviour nobody has measured must not be made mandatory; that is how a pilot deadlocks on day one. Making it required is <strong>Step 7</strong>, after the Owner has watched it behave.</p>
+<hr>
+<h2>2. THE FINDING — two suites failed on pristine <code>main</code>, before any edit</h2>
+<p>This is what Step 1 exists to catch, and it appeared on the very first run.</p>
+<p>On a <strong>clean checkout of <code>origin/main</code> <code>b700e3f</code> with a clean working tree</strong>, before a single file was written:</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Shallow clone</th><th>Full history</th><th>Continuation §9 baseline</th></tr></thead><tbody><tr><td><code>brief-integrity</code></td><td><strong>6 passed / 2 failed</strong></td><td><strong>8 / 0</strong></td><td>8 / 0</td></tr><tr><td><code>programme-ledger-mutations</code></td><td><strong>42 passed / 7 failed</strong></td><td><strong>49 / 0</strong></td><td>49 / 0</td></tr></tbody></table></div>
+<p><strong>All nine failures named BRANCHES:</strong></p>
+<pre><code>FAIL  ...and the ones the brief says are held on a branch really are on it
+FAIL  the unmerged wiring candidate the brief names still exists at the commit it names
+FAIL  MUTATION [A] the ledger and the branch disagree about what the branch is stamped
+FAIL  MUTATION [C] the recorded historical stamp is not what the held branch carries
+      guard C did NOT fail ... -- it is UNPROVEN and must not be trusted
+FAIL  MUTATION [E] a stream's shared-file touch loses its declaration
+      (+ 4 more, all branch-derived)</code></pre>
+<p><strong>Diagnosis, measured rather than guessed.</strong> <code>git rev-parse --is-shallow-repository</code> returned <strong><code>true</code></strong>, and <code>git branch -r</code> showed <strong>2</strong> remote refs. Meanwhile <code>brief-integrity.mjs</code> reads <code>origin/main:app/js/version.js</code>, and the ledger guards resolve the commits and version stamps of the branches the ledger names — including <code>claude/phase4-wiring</code>, which was not fetched.</p>
+<p>After <code>git fetch --unshallow</code> and fetching all heads (<strong>61</strong> refs), <strong>both suites returned to the documented baseline</strong>.</p>
+<p><strong>So the failures were an artefact of the clone and said nothing about any change.</strong> And <code>actions/checkout</code> defaults to exactly that shallow, single-branch fetch — this would have been the pilot's first false red, on a PR that changed nothing relevant.</p>
+<h3>How it was fixed — and how it was NOT fixed</h3>
+<p><strong>Not fixed by dropping a suite, excluding a check, or tolerating a failure.</strong> Fixed by giving CI what the suites legitimately need:</p>
+<ol><li><strong><code>fetch-depth: 0</code></strong> on <code>actions/checkout</code>.</li><li><strong>A preflight assertion step</strong> that refuses a shallow clone and asserts each required ref <strong>by name</strong>, failing with <code>::error::</code> rather than letting the absence surface as a suite failure.</li><li><strong>The branch list is DERIVED from the ledger, not hardcoded</strong> — so a new stream is covered automatically and a renamed branch fails loudly. In CI it resolved <code>origin/claude/phase4-wiring -&gt; 7e2931f</code>, exactly the held commit the standing brief names.</li></ol>
+<blockquote><p><strong>The lesson, in the repository's own idiom: a false red is worse than no check, because it teaches people to ignore the gate.</strong> The preflight step exists so that a missing ref can never again be mistaken for a governance failure.</p></blockquote>
+<hr>
+<h2>3. ACTUAL CI RESULTS — read from the GitHub Actions log</h2>
+<p><strong>Run #2</strong>, [<code>35433943509</code>](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/actions/runs/35433943509), head <code>2661a52</code>, event <code>pull_request</code>, conclusion <strong><code>success</code></strong>.</p>
+<p>Job <strong><code>Deterministic governance suites</code></strong> (<code>105873323545</code>) — every step succeeded:</p>
+<div class='tw'><table><thead><tr><th>#</th><th>Step</th><th>Conclusion</th></tr></thead><tbody><tr><td>2</td><td>Check out the full history and all branches</td><td>success</td></tr><tr><td>3</td><td>Set up Node</td><td>success</td></tr><tr><td>4</td><td>Assert the git refs the suites need are present</td><td>success</td></tr><tr><td>5</td><td>Run the six deterministic governance suites</td><td>success</td></tr></tbody></table></div>
+<p><strong>The six results, quoted verbatim from the Actions log:</strong></p>
+<pre><code>===== RECAP: all six suites =====
+programme-ledger                       exit 0  ==== Programme integration ledger: 8 passed, 23 noted, 0 failed ====
+programme-ledger-mutations             exit 0  ==== Programme ledger guard mutations: 49 passed, 0 failed ====
+brief-integrity                        exit 0  ==== Standing brief integrity: 8 passed, 0 failed ====
+study-activity-evidence-boundary       exit 0  ==== Study Activity evidence boundary: 27 passed, 0 failed ====
+study-event-wiring                     exit 0  ==== Study event wiring (P4-D1 Reading, D2 Listening, D4 WbW): 41 passed, 0 failed ====
+rules-authorisation-executable         exit 0  ==== Rules authorisation executable: 38 passed, 0 failed ====
+===== END RECAP (the job fails below if any exit was non-zero) =====</code></pre>
+<p><strong>These are identical to the local run and to the continuation package's §9 baseline.</strong> CI and the sandbox agree exactly.</p>
+<h3>The check on the PR</h3>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>Check run name — <strong>this is the context string a required check would use</strong></td><td><strong><code>Deterministic governance suites</code></strong></td></tr><tr><td>Conclusion</td><td><code>success</code></td></tr><tr><td>App</td><td><code>github-actions</code></td></tr></tbody></table></div>
+<blockquote><p><strong>Note for Step 7:</strong> the required-check context is the <strong>job</strong> name, not the workflow name. Selecting <code>verify</code> would match nothing.</p></blockquote>
+<h3>Positive control — the gate can actually fail</h3>
+<p>A check that cannot fail is worse than no check. The step's script was extracted from the parsed YAML and <strong>executed verbatim</strong> with one unrunnable suite prepended: <strong>exit <code>1</code></strong>, with the real suites after it still running. So a failure is neither masked nor softened, and one failure does not hide the other five.</p>
+<hr>
+<h2>4. Workflow limitations — recorded, not worked around</h2>
+<div class='tw'><table><thead><tr><th>#</th><th>Limitation</th><th>Status</th></tr></thead><tbody><tr><td><strong>L1</strong></td><td><strong><code>actions/checkout</code> defaults to a shallow, single-branch fetch</strong>, which makes two suites fail for reasons unrelated to the PR.</td><td><strong>Handled</strong> — <code>fetch-depth: 0</code> plus a named-ref assertion. Do not remove either; the suites will start lying if you do.</td></tr><tr><td><strong>L2</strong></td><td><strong>Raw job logs are served from blob storage a restricted network can refuse</strong> — measured here as <code>curl: (56) CONNECT tunnel failed, response 403</code>, leaving only a tail-limited API read. Five of six per-suite lines sat too far up a 526-line log to reach.</td><td><strong>Handled</strong> — a consolidated recap at the very end of the log. All six are now readable from a 29-line tail.</td></tr><tr><td><strong>L3</strong></td><td><strong><code>actions/checkout@v4</code> and <code>actions/setup-node@v4</code> target Node.js 20</strong>, which GitHub is deprecating; the runner forces them onto Node 24 and emits a warning each run.</td><td><strong>Not fixed</strong> — cosmetic today. Moving to <code>@v5</code> is a separate, trivial change; it was <strong>not</strong> bundled into this PR.</td></tr><tr><td><strong>L4</strong></td><td><strong>Actions are pinned by major tag (<code>@v4</code>), not by commit SHA.</strong> A tag can be repointed.</td><td><strong>Recorded.</strong> SHA-pinning is the stricter posture for a governance gate and is the Owner's call.</td></tr><tr><td><strong>L5</strong></td><td><strong><code>behaviour.mjs</code> is excluded</strong>, and deliberately: it cannot exit 0 under TLS interception (<code>31e</code>), and <code>22g</code> flips on identical code.</td><td><strong>Out of scope by design.</strong> It must be measured in Actions <strong>on its own</strong> before anyone considers gating with it. Nothing about it was weakened or changed.</td></tr><tr><td><strong>L6</strong></td><td><strong>Playwright suites</strong> (<code>layout</code>, <code>panel</code>, <code>reading</code>, <code>navcheck</code>) and the <strong>Firestore emulator suites</strong> are excluded — they need a served app or the emulator.</td><td>Out of scope for Step 1.</td></tr><tr><td><strong>L7</strong></td><td><strong><code>study-activity-evidence-boundary-mutations.mjs</code> exists but was not among the six named.</strong></td><td><strong>Flagged, not added.</strong> The D3 work repaired it to 11/0 and the continuation lists it separately. <strong>The Owner may want it in the set</strong> — it is the mutation control for a suite that <em>is</em> included.</td></tr><tr><td><strong>L8</strong></td><td>The workflow triggers only on <code>pull_request</code> into <code>main</code>. There is no <code>push</code> or <code>workflow_dispatch</code> trigger.</td><td>Deliberate — narrow scope. A <code>workflow_dispatch</code> would help measure <code>behaviour.mjs</code> later without opening a PR.</td></tr></tbody></table></div>
+<p><strong>One limitation resolved rather than assumed:</strong> the earlier preflight flagged (as <strong>T1</strong>) that a PR opened with <code>GITHUB_TOKEN</code> would not trigger workflows. <strong>That did not occur here</strong> — this PR was opened by <code>AAAsapp</code> via git push plus the REST API, and the workflow fired normally (<code>event: pull_request</code>). <strong>T1 remains untested for an App-opened PR</strong>, which is still the next pilot step.</p>
+<hr>
+<h2>5. A note on process — an error I made and caught before pushing</h2>
+<p>The first attempt at the log recap (L2) accumulated results in a shell variable containing an embedded newline. That put a closing quote at <strong>column 1</strong>, which escaped the YAML block scalar: <code>could not find expected ':'</code>, line 127. <strong>A broken workflow would have been pushed had the YAML not been parsed before committing.</strong></p>
+<p>It was reverted and redone with a <code>mktemp</code> file, which keeps every line indented inside the scalar — then verified by <strong>extracting the step's <code>run</code> script from the parsed YAML and executing it verbatim</strong>, rather than re-typing an approximation of it. Both the green path and the failure path were re-proven on that exact script.</p>
+<hr>
+<h2>6. What the Owner should check, and the next step</h2>
+<p><strong>On [PR #88](https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/88) — do not merge yet:</strong></p>
+<ol><li>The check <strong><code>Deterministic governance suites</code></strong> is present and <strong>green</strong>. ✅ (verified above)</li><li>Open the run and read the job summary table — six rows, all ✅.</li><li><strong>Confirm whether the Approve button is selectable for you.</strong> The PR was opened by <code>AAAsapp</code>, so GitHub will refuse self-approval — <strong>that refusal is expected and is itself the confirmation that the self-approval block is real.</strong> It is <em>not</em> a defect, and it is exactly why the next step matters.</li></ol>
+<p><strong>Next step, unchanged from the preflight plan:</strong> wire the Claude App (preflight <strong>Step 6</strong>) and run the <strong>App-opened test PR</strong> — which settles the bot login, the <code>GITHUB_TOKEN</code> trigger question (T1) for an App-opened PR, and whether <code>AAAsapp</code> can approve a PR it did not open. <strong>Only after that</strong> should the ruleset be enabled (<strong>Step 7</strong>), with the required context <code>Deterministic governance suites</code> and <strong>an empty bypass list</strong>.</p>
+<p><strong>Merging #88 is the Owner's call.</strong> It changes no application behaviour and adds no required check; its only effect is that the verify check begins appearing on future pull requests.</p>
+<hr>
+<h2>7. State block</h2>
+<pre><code>MMSA_PILOT_STEP1_CI_VERIFY
+ISSUED=2026-09-19
+BRANCH=claude/pilot-ci-verify-workflow
+PR=88 OPEN NOT MERGED https://github.com/Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io/pull/88
+PR_HEAD=2661a52 | PR_AUTHOR=AAAsapp | mergeable_state=clean | changed_files=1 (+136/-0)
+BASE_MAIN=b700e3f4b0a8004d4fe2701013e053a3c7a25770 at v08.31 -- UNCHANGED; .github still absent on main
+FILE_ADDED=.github/workflows/verify.yml (136 lines) -- the only file
+TRIGGER=pull_request into main | PERMISSIONS=contents: read | REQUIRED=NO (by design)
+JOB_NAME=Deterministic governance suites  &lt;-- the context string for a future required check
+CI_RUN=35433943509 run #2 event=pull_request conclusion=SUCCESS; all steps success
+CI_RESULTS=ledger 8/23/0 | ledger-mutations 49/0 | brief-integrity 8/0 | evidence-boundary 27/0 | study-event-wiring 41/0 | rules-authorisation 38/0
+CI_MATCHES_LOCAL=YES | CI_MATCHES_CONTINUATION_SECTION9=YES
+FINDING=on pristine main, shallow clone gave brief-integrity 6/2 and ledger-mutations 42/7; all 9 failures branch-derived; full history restored 8/0 and 49/0
+FIX=fetch-depth 0 + preflight ref assertion, branch list DERIVED from the ledger; resolved origin/claude/phase4-wiring -&gt; 7e2931f
+NO_GATE_WEAKENED=TRUE -- no suite dropped, excluded or tolerated; failure path proven to exit 1 on the verbatim YAML script
+POSITIVE_CONTROL=PASS -- one unrunnable suite =&gt; exit 1, later suites still run
+T1_GITHUB_TOKEN_TRIGGER=DID NOT OCCUR for this human-opened PR; still UNTESTED for an App-opened PR
+LIMITATIONS=L1 shallow checkout (handled) L2 blob-storage logs (handled by end-of-log recap) L3 checkout/setup-node target deprecated Node 20 (not fixed) L4 actions pinned by tag not SHA L5 behaviour.mjs excluded by design L6 Playwright+emulator excluded L7 study-activity-evidence-boundary-mutations NOT among the six -- flagged for Owner L8 no workflow_dispatch
+OUT_OF_SCOPE_UNTOUCHED=app/ tools/ firestore.rules firebase.json docs/governance/ CLAUDE.md CHANGELOG.md .claude/ version.js 22g
+NEXT_STEP=wire the Claude App, then the App-opened test PR; enable the ruleset only after that, required context "Deterministic governance suites", bypass list EMPTY
+MERGE_DECISION=OWNER'S -- not merged by this session</code></pre>
+</main></body></html>
