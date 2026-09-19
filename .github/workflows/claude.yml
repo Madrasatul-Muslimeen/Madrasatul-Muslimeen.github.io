@@ -57,12 +57,56 @@
 #   defaults already give Claude file operations, committing, and read-only
 #   git, and it manages the branch and the pull request itself.
 #
-#   AND THE GLOB WENT TOO, WHICH THE FINDING DID NOT ASK FOR.
-#   `Bash(node tools/i18n-verify/*)` would have re-opened the same hole by
-#   another door: Claude can write files by default, so it could author a new
-#   script INTO that directory and execute it, and that script could push
-#   anywhere. The seven suites are therefore listed as seven EXACT commands
-#   with no wildcard. Adding a suite is a deliberate edit here, by design.
+#   AND THE GLOB WENT TOO. `Bash(node tools/i18n-verify/*)` would have
+#   re-opened the same hole by another door: Claude can write files, so it
+#   could author a script INTO that directory and execute it.
+#
+# [P1, SECOND ROUND] EXACT SCRIPT PATHS WERE STILL NOT ENOUGH. THIS IS THE
+# FINDING THIS REVISION EXISTS FOR.
+#   Naming the seven suites as exact `node tools/i18n-verify/<suite>.mjs`
+#   commands narrowed WHICH file runs but not WHAT IS IN IT. File editing is
+#   deliberately still enabled, so Claude could edit an allowlisted `.mjs` and
+#   the next exact `node` invocation would execute the edited JavaScript --
+#   which can spawn any child process at all. AN ALLOWLIST OF PATHS IS NOT AN
+#   ALLOWLIST OF BEHAVIOUR WHILE THOSE PATHS ARE MODEL-EDITABLE.
+#   FIXED BY DELETING THE PERMISSION ENTIRELY: there is no `--allowedTools`
+#   here any more, so Claude gets NO extra Bash surface of any kind. Nothing
+#   is lost -- `verify.yml` already runs all seven suites against every pull
+#   request, on a clean checkout Claude never touches. Verification belongs to
+#   CI, not to the thing being verified.
+#
+# ---------------------------------------------------------------------------
+# WHAT THE ACTION GRANTS BY DEFAULT -- audited from source, because removing
+# our own allowlist only matters if the defaults are not worse.
+#
+#   src/modes/tag/index.ts builds its tool list as:
+#     Glob, Grep, LS, Read,
+#     mcp__github_comment__update_claude_comment,
+#     mcp__github_ci__{get_ci_status,get_workflow_run_details,download_job_log}
+#   None of those can execute a command. THERE IS NO GENERIC `Bash` TOOL AND
+#   NO ARBITRARY-COMMAND ROUTE IN THE DEFAULTS.
+#
+#   It then branches. WITHOUT commit signing it appends four Bash entries:
+#     Bash(git add:*), Bash(git commit:*), Bash(git rm:*),
+#     Bash(${GITHUB_ACTION_PATH}/scripts/git-push.sh:*)
+#   That push wrapper is genuinely defensive -- it refuses EVERY flag, so
+#   `--force` and `--receive-pack` are impossible -- but it validates only
+#   that the ref is well formed. IT DOES NOT BLOCK A BRANCH NAME, so a
+#   default configuration can fast-forward `main`.
+#
+#   WITH commit signing it appends instead:
+#     mcp__github_file_ops__commit_files, mcp__github_file_ops__delete_files
+#   -- API calls, not shell. So `use_commit_signing: true` below leaves the
+#   allowlist with ZERO Bash tools. That is why it is set.
+#   It is also why `persist-credentials` on checkout is LEFT ALONE: with no
+#   Bash tool there is nothing that could read the credential out of
+#   .git/config, so changing it would add an untested variable and no
+#   protection.
+#
+#   NOT TESTED, and it cannot be from here: nothing about Claude running can
+#   execute until this is on the default branch AND a credential exists. It is
+#   one line, and reverting it restores the documented default.
+# ---------------------------------------------------------------------------
 #
 #   RESIDUAL RISK, STATED PLAINLY RATHER THAN IMPLIED AWAY: any job holding a
 #   `contents: write` token can in principle reach `main`. Narrowing tools
@@ -265,11 +309,18 @@ jobs:
           # `claude[bot]` identity that makes the PR reviewable by AAAsapp and
           # able to trigger the `verify` workflow.
 
-          # NO GIT WRITE VERBS, AND NO WILDCARD. These seven exact commands are
-          # the whole of the extra Bash surface: the governance gate's own
-          # suites, so Claude can prove its work before opening a pull request.
-          # Committing, editing and read-only git are already the Action's
-          # documented defaults and need no entry here.
+          # Commits are created through the GitHub API rather than the git
+          # CLI. The reason is not signing, it is THE TOOL LIST: this is what
+          # makes the Action swap its four default Bash(git ...) entries for
+          # two MCP file-operation tools, leaving no Bash tool at all. See the
+          # audit in the header.
+          use_commit_signing: true
+
+          # THERE IS DELIBERATELY NO `--allowedTools` LINE.
+          # Claude gets no extra Bash surface whatsoever. An allowlist of
+          # script paths is not an allowlist of behaviour while those scripts
+          # are editable, so the seven suites are NOT run here: `verify.yml`
+          # already runs all seven against every pull request, on a clean
+          # checkout Claude never touches.
           claude_args: |
             --model "claude-opus-5"
-            --allowedTools "Bash(node tools/i18n-verify/programme-ledger.mjs),Bash(node tools/i18n-verify/programme-ledger-mutations.mjs),Bash(node tools/i18n-verify/brief-integrity.mjs),Bash(node tools/i18n-verify/study-activity-evidence-boundary.mjs),Bash(node tools/i18n-verify/study-activity-evidence-boundary-mutations.mjs),Bash(node tools/i18n-verify/study-event-wiring.mjs),Bash(node tools/i18n-verify/rules-authorisation-executable.mjs)"
