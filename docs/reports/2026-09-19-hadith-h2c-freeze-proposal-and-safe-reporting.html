@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith H2-C, the proposed claim freeze, and C2 reporting without personal content</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith H2-C, the proposed claim freeze, and C2 reporting without personal content</h1>
+<p><strong>19 September 2026 · Hadith Study stream · BR-0 · no live write, no shared-file change, no version, not merged, nothing deployed</strong></p>
+<hr>
+<h2>1. SHAs</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><strong><code>origin/main</code></strong></td><td><code>b87133461680d3c2837f7bd75fc5c824e10090d3</code> — unchanged by this round</td></tr>
+<tr><td><strong>Branch</strong></td><td><code>feature/hadith-study</code></td></tr>
+<tr><td><strong>Base at session start</strong></td><td><code>16dd3bc5203c953c0856d2edace83bff45f5cd6b</code></td></tr>
+<tr><td><strong>WORK COMMIT (everything below)</strong></td><td><strong><code>f35432f47121036fe343e2ee636a68599e0cdeca</code></strong></td></tr>
+<tr><td><strong>Branch tip</strong></td><td>the commit that adds this report, which is the last on the branch. <strong>A report cannot name the commit that contains it</strong> — this stream corrected exactly that defect in the S5 report, so the work commit is named instead and the tip is read with <code>git rev-parse origin/feature/hadith-study</code></td></tr>
+<tr><td><code>git diff</code> over <code>app/records.html</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/</code>, <code>version.js</code></td><td><strong>empty</strong></td></tr>
+</tbody></table></div>
+<p>The one new file under <code>app/</code> is <code>app/js/hadith-approach-contract.js</code>, which <strong>no page can reach</strong> — asserted by an import-graph walk with a positive control. Delete it and the application is unchanged.</p>
+<hr>
+<h2>2. H2-C — the Approach contract as pure symbolic policy</h2>
+<p><code>app/js/hadith-approach-contract.js</code> + <code>tools/i18n-verify/hadith-approach-contract.mjs</code> (<strong>21 checks</strong>).</p>
+<p>Three slots — <strong><code>READ_ARABIC</code></strong>, <strong><code>READ_WITH_MEANING</code></strong>, <strong><code>MEMORISE</code></strong> — and <code>HADITH_APPROACH_IDS = Object.freeze({})</code>, <strong>empty</strong>. When the ids are allocated, one table is filled in and nothing else changes.</p>
+<p><strong>Four design choices worth keeping:</strong></p>
+<p><strong>The empty table is guarded three ways.</strong> It must be empty and frozen; every slot must report <code>null</code>; and <strong>no lowercase <code>approach_</code>-shaped id may appear anywhere in the file, comments included</strong> — so a placeholder cannot be smuggled in as a note.</p>
+<p><strong>A known slot returns <code>null</code>; an unknown slot THROWS.</strong> Collapsing those two would let a typo (<code>MEMORIZE</code>) read as a pending decision forever. <code>null</code> means <em>not decided</em>; a throw means <em>not a thing</em>.</p>
+<p><strong>The Quran analogues are recorded as SYMBOLS, never ids.</strong> Writing <code>approach_01</code> here would read as a binding to it — and the H2-B audit&#x27;s central finding is that a trackable id <strong>is</strong> a document id, so one id meaning two things in two modules is exactly what I5 forbids.</p>
+<p><strong>It imports nothing, by inability rather than restraint.</strong> A module that cannot see <code>buildUnitKey</code>, <code>APPROACH_TEMPLATES</code> or the records layer cannot quietly grow a claim path. Checks assert the absence of every import, of every Firestore symbol, and of every evidence-shaped field (<code>eventType</code>, <code>unitKey</code>, <code>weekKey</code>, <code>chunkKey</code>…): it returns a <strong>slot</strong> and stops.</p>
+<p><code>blockersFor(slot)</code> names <strong>both</strong> open gates — no allocated id, and C2 — for every slot, so a future surface can say which thing is missing rather than failing blank. A check asserts C2 stays named even for a slot that later gets an id: allocating an Approach does not decide the unit key.</p>
+<hr>
+<h2>3. The proposed claim freeze — prepared, and deliberately NOT applied</h2>
+<p><code>app/records.html</code> is a <strong>platform</strong> surface, so the change exists only as:</p>
+<div class='tw'><table><thead><tr><th>File</th><th>What</th></tr></thead><tbody>
+<tr><td><code>docs/governance/hadith-c2-claim-freeze-PROPOSAL-2026-09-19.md</code> (+ <code>.html</code>)</td><td>the proposal, for MMSA platform review</td></tr>
+<tr><td><code>docs/governance/hadith-c2-claim-freeze-records-html-2026-09-19.patch</code></td><td>the exact change, <strong>unapplied</strong>, proven to apply with <code>git apply --check</code></td></tr>
+<tr><td><code>tools/i18n-verify/hadith-c2-freeze-proposal.mjs</code></td><td><strong>12 checks</strong>, including that the live file is <strong>not</strong> patched</td></tr>
+</tbody></table></div>
+<p><strong>What it does:</strong> withholds <code>hadith</code> from the Records unit-type picker while C2 is open, so <strong>no new name-keyed Hadith record can be created</strong>. It does not decide C2; it stops the reconciliation problem growing while C2 is decided.</p>
+<p><strong>What it preserves — established by reading the code, not asserted:</strong></p>
+<div class='tw'><table><thead><tr><th>Preserved</th><th>Why</th></tr></thead><tbody>
+<tr><td>Every stored record</td><td>One <code>&lt;option&gt;</code> list changes. No document, field or key is written, moved or removed</td></tr>
+<tr><td>Display of existing Hadith records</td><td><code>renderEntries()</code> reads <code>chunk.entries</code> and prints the <strong>stored</strong> key; a check asserts it never reads the picker</td></tr>
+<tr><td>Confirm and Return (<strong>I6</strong>)</td><td>Both act on the stored <code>chunkKey</code>/<code>entryKey</code> from the rendered row</td></tr>
+<tr><td>Reachability of the chunk</td><td>Hadith lands in <code>subject_{subjectId}</code>, and <strong>every</strong> non-surah-chunked type opens the same document — read out of <code>SURAH_CHUNKED_TYPES</code> in <code>records.js</code> source, so the check fails if the <strong>rule</strong> changes</td></tr>
+<tr><td>Reversibility</td><td><code>buildUnitKeyFromInput</code> keeps <code>case &quot;hadith&quot;</code>; reversing is deleting one <code>.filter(...)</code> line</td></tr>
+</tbody></table></div>
+<p><strong>The patch adds only — it deletes no live line</strong>, and a check asserts that.</p>
+<p><strong>Two variants are offered</strong>, and the recommended one is the <em>explaining</em> form: a control that simply vanishes is a dead end with nothing on screen to say why. That costs <strong>one new English sentence</strong>, whose Bangla key belongs in <code>app/js/i18n/bn.js</code> — <strong>a shared file this stream must not touch</strong>, so adding it is part of the platform review. A check records that the key is currently absent.</p>
+<hr>
+<h2>4. Export coverage — verified, and it found the hazard that matters</h2>
+<div class='tw'><table><thead><tr><th>Question</th><th>Answer, read out of the code</th></tr></thead><tbody>
+<tr><td>Does an Owner export cover the whole tenant?</td><td><strong>Yes.</strong> <code>backup.html</code> builds its roster as <code>canAdmin ? all : self + managed</code>, and <code>collectBackup</code> records <code>scope: canAdmin ? &quot;tenant&quot; : &quot;account&quot;</code></td></tr>
+<tr><td>Does it cover every records chunk?</td><td><strong>Yes.</strong> <code>listAllRecordsForPerson</code> is two equality filters and <strong>no chunk filter</strong></td></tr>
+<tr><td>Does a refused read look like an empty one?</td><td><strong>YES — and this is the hazard.</strong> <code>attempt()</code> records a note and substitutes <code>[]</code>, so a person whose records were refused prints as <strong>&quot;0 claims&quot;</strong>, identical to a person with none</td></tr>
+<tr><td>Is the gap auditable from the file?</td><td><strong>Yes.</strong> The export prints a <code>div class=&quot;warn&quot;</code> list of <em>label — reason</em></td></tr>
+</tbody></table></div>
+<p><strong>So a &quot;no legacy Hadith keys&quot; verdict read off a file with refusals would be false.</strong> The analyser now parses that block and <strong>downgrades</strong> a clean verdict to <strong><code>NO_LEGACY_KEYS_BUT_INCOMPLETE</code></strong>, naming how many reads were refused. Four checks cover it, including one asserting the exporter still prints refusals at all — because the day it stops, the gap becomes invisible rather than merely unparsed.</p>
+<hr>
+<h2>5. Reporting C2 without names or personal record content</h2>
+<p><code>--safe</code> emits a digest that <strong>keeps</strong> what the decision needs and <strong>drops</strong> everything personal:</p>
+<div class='tw'><table><thead><tr><th>Kept</th><th>Dropped</th></tr></thead><tbody>
+<tr><td>collection tokens <strong>with their spelling variants</strong> (the migration&#x27;s real surface)</td><td>every person name</td></tr>
+<tr><td>ordinal statistics, chunk names, Approach ids seen</td><td>every <code>claimedBy</code> person id</td></tr>
+<tr><td>counts: entries, persons, confirmed, refused reads</td><td>every timestamp</td></tr>
+<tr><td>the verdict</td><td>the tenant id, and <strong>every per-entry row</strong></td></tr>
+</tbody></table></div>
+<p><strong>By construction, not redaction.</strong> A per-entry row pairs a narration with the person whose section it was printed under — that pairing <em>is</em> the personal content, and no amount of column-dropping makes a row list safe, so rows are not carried at all. The confirmed <strong>count</strong> is kept because I6 needs the number; the confirmed <strong>rows</strong> are not.</p>
+<p><strong>Each omission check carries its own positive control</strong> — the suite asserts the names, dates and ids really are present in the fixture and in the full inventory, so &quot;absent from the digest&quot; means something rather than passing vacuously.</p>
+<hr>
+<h2>6. Tests</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>hadith-approach-contract.mjs</code> (new)</td><td><strong>21 passed, 0 failed</strong></td></tr>
+<tr><td><code>hadith-c2-freeze-proposal.mjs</code> (new)</td><td><strong>12 passed, 0 failed</strong></td></tr>
+<tr><td><code>hadith-records-inventory.mjs</code> (28 → <strong>36</strong>)</td><td>36 passed, 0 failed</td></tr>
+<tr><td><code>hadith-gate-contracts.mjs</code></td><td>11 passed, 0 failed</td></tr>
+<tr><td><code>hadith-governing-contracts.mjs</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-corpus.mjs</code></td><td>33 passed, 0 failed</td></tr>
+<tr><td><code>hadith-source-rights.mjs</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-commentary-binding.mjs</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><strong>Hadith total</strong></td><td><strong>155 checks, 0 failures, across eight suites</strong></td></tr>
+<tr><td><code>quran-boundary.mjs</code></td><td>30 passed, 0 failed</td></tr>
+<tr><td><code>study-approach-contract-boundary.mjs</code></td><td>16 passed, 0 failed</td></tr>
+<tr><td><code>programme-ledger.mjs</code></td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td><code>brief-integrity.mjs</code></td><td>8 passed, 0 failed</td></tr>
+</tbody></table></div>
+<h3>Mutations — 12 applied, 12 caught, all reverted</h3>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Caught by</th></tr></thead><tbody>
+<tr><td>An id is allocated in the contract</td><td>the empty-table check</td></tr>
+<tr><td>An interaction with no slot is given one</td><td>the &quot;records nothing, quietly&quot; check</td></tr>
+<tr><td>The pure contract imports <code>unit-keys.js</code></td><td>the import boundary</td></tr>
+<tr><td>The C2 blocker stops being named</td><td>both blocker checks</td></tr>
+<tr><td>The freeze is <strong>applied</strong> to the live platform surface</td><td>the not-applied status check</td></tr>
+<tr><td>The display path starts reading the picker</td><td>the preservation check</td></tr>
+<tr><td>The patch grows to touch a shared file</td><td>the applies-cleanly check</td></tr>
+<tr><td>The <code>hadith</code> case is removed from the key builder</td><td>the reversibility check</td></tr>
+<tr><td>A refused read stops downgrading a clean verdict</td><td>the coverage check</td></tr>
+<tr><td>The digest starts listing person names</td><td>the privacy check</td></tr>
+<tr><td>The digest starts carrying confirmed <strong>rows</strong></td><td>the privacy check</td></tr>
+<tr><td>Gap parsing silently returns nothing</td><td>the refusal-parsing check</td></tr>
+</tbody></table></div>
+<h3>Three findings about my own checks, recorded rather than smoothed over</h3>
+<p><strong>A case-insensitive <code>approach_</code> sweep flagged the module&#x27;s own <code>HADITH_APPROACH_SLOTS</code> — and I reintroduced the identical defect in the same check&#x27;s very next assertion.</strong> Ids in this codebase are lowercase; SCREAMING_CASE symbol names share the word. All three assertions are case-sensitive now. Had I &quot;fixed&quot; the module instead of the check, I would have weakened correct code to satisfy a broken guard.</p>
+<p>**A chunk-filter grep read a <em>derived</em> <code>chunkKey</code> as a filter.<strong> Narrowed to the query expression, it now asserts the records query is </strong>exactly** two equality filters with no chunk, ordering or limit constraint.</p>
+<p><strong>One mutation was caught by a different check than it aimed at</strong>, leaving the patch file-scan unproven. It now carries its own positive control: given a two-file patch it must see two files, so asserting &quot;only one&quot; is not passing because the scan finds nothing.</p>
+<hr>
+<h2>7. What was NOT done</h2>
+<p>No permanent id assigned; <strong>no Approach id allocated</strong> (the table is empty and guarded); no live key changed; <strong>the freeze is not applied</strong>; no real corpus, translation or commentary; <strong>no durable write</strong> and no database reachable from anything added; <strong>no shared file touched</strong> — <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>bn.js</code>, <code>behaviour.mjs</code>, <code>version.js</code>, the ledger and <code>app/records.html</code> are all untouched; <strong>no version allocated</strong> (v08.32 remains unallocated); <strong>not merged</strong>; <strong>nothing deployed</strong> — repository <code>firestore.rules</code> is untouched and the DEPLOYED Firebase Rules state cannot be inspected from here, <strong>UNVERIFIED</strong>.</p>
+<hr>
+<h2>8. The exact next decision</h2>
+<p><strong>Decide A1 and A2 from the decision package — the Approach id namespace, and which candidates are in v1 — and rule on the claim freeze.</strong> All three are product decisions that need no inventory and no new access.</p>
+<p>Concretely, three answers unblock the next build:</p>
+<ol><li><strong>A1 — namespace.</strong> Recommended: <code>hadith_approach_NN</code>, never <code>approach_NN</code>.</li><li><strong>A2 — v1 set.</strong> Recommended: the three slots already named symbolically. <strong>The moment these two are answered, H2-C&#x27;s empty table is filled in and nothing else changes.</strong></li><li><strong>The freeze</strong> — apply variant B (with the <code>bn.js</code> key), apply variant A, or decline. This is the MMSA platform side&#x27;s call, not this stream&#x27;s.</li></ol>
+<p><strong>Still gated behind the Owner, separately:</strong> C2 itself, which needs the inventory — and the inventory now needs only an export, not Console access.</p>
+<h2>Machine-readable status</h2>
+<p>MAIN_SHA=b87133461680d3c2837f7bd75fc5c824e10090d3 (unchanged this round)</p>
+<p>BRANCH=feature/hadith-study</p>
+<p>WORK_COMMIT=f35432f47121036fe343e2ee636a68599e0cdeca</p>
+<p>BASE_AT_START=16dd3bc5203c953c0856d2edace83bff45f5cd6b</p>
+<p>H2C=BUILT — 3 symbolic slots, permanent-id table EMPTY and guarded, unreachable from every page</p>
+<p>FREEZE=PREPARED, NOT APPLIED — patch verified with git apply --check; live app/records.html byte-identical</p>
+<p>EXPORT_COVERAGE=owner/prime export is tenant-wide and covers every chunk; a REFUSED read prints as empty, so refusals now downgrade a clean verdict</p>
+<p>SAFE_REPORTING=--safe digest: counts, tokens and spelling variants only; no names, ids, dates, tenant id or per-entry rows</p>
+<p>HADITH_SUITES=155 checks, 0 failures, across eight suites</p>
+<p>MUTATIONS=12 applied, 12 caught, all reverted</p>
+<p>APPLICATION_CHANGE=NONE reachable — one new unreachable module under app/js</p>
+<p>SHARED_FILES_TOUCHED=NONE</p>
+<p>OWNER_CONTROL_GATES=ALL CLOSED</p>
+<p>APP_VERSION=unchanged; v08.32 NOT allocated</p>
+<p>FIREBASE_RULES_DEPLOYED=UNVERIFIED — nothing deployed</p>
+<p>MERGED=NO</p>
+<p>NEXT_DECISION=A1 (id namespace), A2 (v1 slot set), and the freeze variant — none needs the inventory</p>
+</main></body></html>
