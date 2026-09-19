@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith S5 — governing contracts pinned, and the live C2 Records path documented</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith S5 — governing contracts pinned, and the live C2 Records path documented</h1>
+<p><strong>Date:</strong> 2026-09-19 · <strong>Type:</strong> Hadith-owned, test and documentation only. <strong>No reachable application behaviour, shared platform file, Rules, corpus content or version changed.</strong></p>
+<hr>
+<h2>1. Exact position</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Branch</td><td><code>feature/hadith-study</code></td></tr>
+<tr><td><strong>Branch tip (pushed)</strong></td><td><strong><code>873af4078c1641f5da33f7c87acaccdec34742da</code></strong></td></tr>
+<tr><td>S5 work commit</td><td><code>873af40</code> (this report is the commit after it)</td></tr>
+<tr><td>Branch base</td><td><code>db6cb24</code> — <code>main</code> as it stood when this tranche began</td></tr>
+<tr><td><strong><code>origin/main</code> now</strong></td><td><strong><code>a64e2a1c97f397aba26bdfa281fdf4f2b5486547</code>, v08.31</strong></td></tr>
+<tr><td>Branch vs current main</td><td><strong>10 behind, 4 ahead</strong></td></tr>
+<tr><td>Branch <code>version.js</code></td><td><strong>08.30</strong> — adopted from the base, <strong>not stamped by this stream</strong></td></tr>
+<tr><td><code>nextUnallocated</code></td><td><strong>08.32</strong></td></tr>
+</tbody></table></div>
+<p><strong><code>main</code> moved from v08.30 to v08.31 during this tranche</strong> — the QuranRevival integration the ruling described as pending has landed. The Hadith branch was <strong>not merged into <code>main</code></strong>, per the ruling, and <code>main</code> was <strong>not merged into the branch</strong> either: doing so mid-delivery would have changed the tip and the version under the numbers reported here without resolving anything in §6. It is the first action of the next tranche.</p>
+<p><strong>A correction to my previous report.</strong> It recorded <code>nextUnallocated: 08.31</code>, true when written. <code>main</code> has since taken v08.31 and the ledger now reads <strong>08.32</strong> — which is what the authorising instruction said. <strong>Nothing was allocated by this tranche either way.</strong></p>
+<hr>
+<h2>2. Changed files — the complete set</h2>
+<p>Measured against the branch&#x27;s own base, <code>db6cb24</code>. Measuring against <em>current</em> <code>main</code> would be misleading: <code>main</code> is 10 commits ahead, so its own work shows up as differences.</p>
+<div class='tw'><table><thead><tr><th>File</th><th>Kind</th></tr></thead><tbody>
+<tr><td><code>tools/i18n-verify/hadith-governing-contracts.mjs</code></td><td><strong>added</strong> — the S5 guard, 14 checks</td></tr>
+<tr><td><code>tools/i18n-verify/hadith-gate-contracts.mjs</code></td><td>added — the accepted <code>a03081a</code> guard</td></tr>
+<tr><td><code>docs/governance/hadith-c2-live-records-path-2026-09-19.md</code></td><td><strong>added</strong> — the C2 documentation</td></tr>
+<tr><td><code>docs/reports/2026-09-19-hadith-gate-contract-guard.{md,html}</code></td><td>added — the previous report</td></tr>
+</tbody></table></div>
+<p><strong>Five added files. Nothing modified, nothing deleted.</strong> Verified untouched against that base: <code>app/</code> entirely, <code>firestore.rules</code>, <code>firebase.json</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>app/js/version.js</code>, <code>app/js/i18n/bn.js</code>, <code>tools/i18n-verify/behaviour.mjs</code> and <code>docs/governance/programme-integration-ledger.json</code>. <strong>BR-0.</strong></p>
+<hr>
+<h2>3. S5 — the two contracts bound to their documents</h2>
+<p>Both were already asserted — <strong>against literals retyped into the suites.</strong> <code>hadith-commentary-binding.mjs</code> retypes the Arabic panel title and four <em>lowercase fragments</em> of the prohibitions; <code>hadith-source-rights.mjs</code> retypes the three rights states. A retyped copy agrees with itself while the document moves underneath it — the drift ADR-009 closed for <code>noteSources</code> by reading the vocabulary out of its document at both ends.</p>
+<p>Three parts of the governing documents were bound to <strong>nothing at all</strong>: the commentary manifest&#x27;s <code>displayContract</code>, the source manifest&#x27;s <code>rightsStateMeanings</code>, and <code>vocabularyReconciliation</code>.</p>
+<p><code>tools/i18n-verify/hadith-governing-contracts.mjs</code> — <strong>14 checks, 14 passed, 0 failed.</strong></p>
+<p><strong>Display contract</strong> — panel titles read from <code>displayContract</code> rather than retyped; every prohibition carried <strong>verbatim</strong>, not by fragment, because a fragment match accepts a rule softened around the words it happens to contain; the six <code>perEntryFields</code> present and non-empty on every verified entry; the document&#x27;s prose rules asserted against <code>renderPermission()</code>&#x27;s real output for <code>link-only</code> and <code>embed-cleared</code>; and the claimed &quot;about twice the English size&quot; Arabic scale checked against the Hadith-owned stylesheet.</p>
+<p><strong>The direction of divergence is what is asserted, not equality.</strong> The module carries one prohibition the register does not — <em>attaching a verified match to a synthetic narration</em>, added by H2. Stricter is allowed and must be traceable; <strong>looser or replaced is not.</strong></p>
+<p><strong>Rights vocabulary</strong> — the three states read from <code>rightsStateMeanings</code> rather than retyped; <code>blocked</code> proven to refuse <strong>even the outbound link</strong>, with a legible reason (I15); <code>link-only</code> proven to grant link and citation while refusing text; an <strong>unknown or missing</strong> <code>rights_status</code> proven to fail closed exactly as <code>blocked</code> does; and the <strong>retired term <code>licensed</code></strong> proven absent from every Hadith module.</p>
+<h3>3.1 Mutation results — six, each caught by the intended check</h3>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Caught by</th></tr></thead><tbody>
+<tr><td><strong>The register revises its Arabic panel title</strong> <em>(mutates the GOVERNING DOCUMENT)</em></td><td><em>the panel titles are the document&#x27;s own</em></td></tr>
+<tr><td>A prohibition softened in code</td><td><em>every prohibition … carried VERBATIM</em> (+ the direction check)</td></tr>
+<tr><td><code>renderPermission</code> leaks text at <code>link-only</code></td><td><em>&#x27;while link-only: render NO commentary text&#x27;</em> (+ the rights check)</td></tr>
+<tr><td><code>blocked</code> gains an outbound link</td><td><em>&#x27;blocked&#x27; means every permission is false</em> (+ fail-closed)</td></tr>
+<tr><td>The retired term <code>licensed</code> returns</td><td><em>the RETIRED term never reappears</em> (+ fail-closed)</td></tr>
+<tr><td>The Arabic scale dropped to body size</td><td><em>the Arabic type scale … is real in the stylesheet</em></td></tr>
+</tbody></table></div>
+<p><strong>The first mutation is the one that matters</strong>: changing the <em>document</em> breaks the binding. That is the whole purpose of reading the contract from there rather than retyping it.</p>
+<hr>
+<h2>4. The live C2 Records path — documented, nothing changed</h2>
+<p><code>docs/governance/hadith-c2-live-records-path-2026-09-19.md</code>.</p>
+<div class='tw'><table><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody>
+<tr><td><strong>Entry point</strong></td><td><code>app/records.html</code> — the <strong>platform</strong> Records surface. <code>#unitTypeSelect</code> is populated from <code>UNIT_TYPES</code>, which contains <code>hadith</code>, so <strong>&quot;Hadith&quot; is offered in the picker</strong>. <code>#unitRef</code> is free text. <code>buildUnitKeyFromInput()</code> ≈ line 262; the <code>case &quot;hadith&quot;</code> branch ≈ line 279; the save path ≈ line 529 into <code>claimStatus()</code></td></tr>
+<tr><td><strong>Key produced</strong></td><td><code>hadith:${collectionName}:${number}</code> — e.g. <strong><code>hadith:bukhari:5678</code></strong>. The reference is split on <code>:</code> and <strong>neither segment is validated against any registry</strong>. <code>hadith:bukhari:1</code>, <code>hadith:Bukhari:1</code> and <code>hadith:al-bukhari:1</code> are three different permanent keys for one narration. That is C2, live</td></tr>
+<tr><td><strong>Where it may persist</strong></td><td><code>hadith</code> is not in <code>SURAH_CHUNKED_TYPES</code>, so <code>chunkKeyFor</code> returns <code>subject_${subjectId}</code>. Document <strong><code>records/{tenantId}__{personId}__subject_{subjectId}</code></strong>, field <strong><code>entries.{unitKey}::{trackableId}</code></strong> — e.g. <code>entries.hadith:bukhari:5678::studied_hadith</code></td></tr>
+<tr><td><strong>Inventory needed</strong></td><td>A <strong>read-only</strong> scan of <strong>every</strong> <code>records</code> document for entry keys beginning <code>hadith:</code>, collecting the distinct collection-name spellings and counts, the numeric range against the 6-digit bound, and whether any entry is <strong>confirmed</strong> (I6)</td></tr>
+</tbody></table></div>
+<p><strong>The subtlety that decides the inventory&#x27;s shape:</strong> <code>chunkKeyFor</code> takes the <strong>selected subject</strong>, not the unit type. A <code>hadith:</code> key lands in whatever subject chunk was open, so <strong>an inventory querying only <code>subject_hadith</code> can miss real records.</strong> It must scan every chunk.</p>
+<p><strong>One brake exists and is not a guarantee:</strong> the form refuses to save without a <code>trackableId</code>, and the only Hadith-side trackable is the generic <code>studied_hadith</code> row. That limits volume; it does not prevent the key.</p>
+<p><strong>Nothing was changed.</strong> No key generation altered, no record migrated, no unit key applied. <code>unit-keys.js</code>, <code>study-note-binding.js</code> and <code>records.html</code> are untouched.</p>
+<hr>
+<h2>5. Test results</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><strong><code>hadith-governing-contracts</code> (new)</strong></td><td><strong>14 / 0</strong>, mutation-proven 6 ways</td></tr>
+<tr><td><code>hadith-gate-contracts</code></td><td>11 / 0</td></tr>
+<tr><td><code>hadith-source-rights</code> · <code>hadith-corpus</code> · <code>hadith-commentary-binding</code></td><td>14 / 33 / 14 — <strong>61 / 0</strong></td></tr>
+<tr><td><code>stub-parity</code> · <code>quran-boundary</code></td><td>3 / 0 · 30 / 0</td></tr>
+<tr><td><code>study-event-wiring</code> · <code>rules-authorisation-executable</code></td><td>39 / 0 · 38 / 0</td></tr>
+<tr><td><code>brief-integrity</code></td><td><strong>7 / 1</strong> — §6</td></tr>
+<tr><td><code>programme-ledger</code> · its mutations</td><td><strong>4 / 20 / 3</strong> and <strong>36 / 1</strong> — §6</td></tr>
+</tbody></table></div>
+<p><code>app/</code> is byte-identical to the base, so no rendered or <code>behaviour.mjs</code> run is warranted — there is nothing reachable to re-measure.</p>
+<hr>
+<h2>6. The red guards — diagnosed, and one is mine</h2>
+<p><strong>All three failures are about versions and baselines. None is caused by this tranche&#x27;s five added files</strong>, proven by removing them: the ledger still failed identically.</p>
+<h3>6.1 Two are staleness — the branch is 10 behind a <code>main</code> that moved mid-tranche</h3>
+<ul><li><strong><code>brief-integrity</code></strong>: the brief in my tree says <em>&quot;v08.30 on <code>main</code>&quot;</em>; <code>main</code> now reads <strong>08.31</strong>. My copy of <code>CLAUDE.md</code> is simply the one from <code>db6cb24</code>.</li><li><strong><code>programme-ledger</code> [F]</strong>: my tree&#x27;s ledger records <code>main</code> at 08.30; <code>main</code> reads 08.31. <strong><code>main</code>&#x27;s own ledger already says 08.31</strong> — only my stale copy disagrees.</li></ul>
+<p><strong>Both resolve by merging current <code>main</code> into the branch</strong>, and neither is a defect in anything this tranche produced.</p>
+<h3>6.2 One is a real drift this stream caused — and a lesson worth keeping</h3>
+<p><strong><code>programme-ledger</code> [A] and [B]:</strong> the ledger records the Hadith stream&#x27;s <code>declaredVersion: 08.29</code> and <code>branchTip: c1a4f19</code>, while <code>origin/feature/hadith-study</code> is now stamped <strong>08.30</strong>. Guard A calls it a disagreement; guard B calls 08.30 &quot;an invented version&quot; under stream <code>hadith</code>, because 08.30 belongs to <code>quran</code>.</p>
+<p><strong>The cause is mine.</strong> The previous tranche fast-forwarded the branch onto <code>main</code>, so it adopted <code>main</code>&#x27;s stamp; its own v08.29 is merged and it carries no version of its own any more. <strong><code>main</code>&#x27;s current ledger still has the stale record</strong> — <code>declaredVersion: 08.29</code>, <code>branchTip: c1a4f19</code>.</p>
+<p>&gt; <strong>THE LESSON: <code>programme-ledger.mjs</code> reads <code>origin/&lt;activeBranch&gt;</code>, so it validates the &gt; REMOTE, not the working tree.</strong> In the previous tranche I ran it <strong>before pushing</strong> — it &gt; read <code>c1a4f19</code> (stamped 08.29), agreed, and passed. The push then made the remote something &gt; the guard had never seen. <strong>A guard that reads the remote must be re-run after the push.</strong> &gt; This tranche did exactly that, which is how all three failures surfaced at all.</p>
+<p><strong>Not repaired here.</strong> The fix is a field on the Hadith stream&#x27;s record inside <code>docs/governance/programme-integration-ledger.json</code> — a <strong>shared platform file</strong> this tranche is forbidden to change, and the ruling says to pause at a shared integration boundary.</p>
+<p><strong>The exact minimal repair, for whoever owns the ledger:</strong> the Hadith stream&#x27;s branch tracks <code>main</code> and no longer carries a version of its own, so <code>declaredVersion: &quot;08.29&quot;</code> and a main-tracking <code>activeBranch</code> cannot both be true. Either <strong><code>declaredVersion: null</code></strong> (the stream carries no independent stamp) <strong>or <code>activeBranch: null</code></strong> (accepting that it stops cross-checking the branch) resolves A and B. <code>branchTip</code> should also move from <code>c1a4f19</code> to the current tip. <strong>The first option is the truer one</strong> and keeps the branch cross-check alive.</p>
+<hr>
+<h2>7. Dependencies and remaining gates</h2>
+<div class='tw'><table><thead><tr><th>Dependency</th><th>Status</th></tr></thead><tbody>
+<tr><td><strong>MMSA / Quran contracts</strong></td><td><strong>None consumed.</strong> This tranche only observes <code>hadith-commentary.js</code>, the two manifests and <code>app/css/hadith.css</code>, all Hadith-owned</td></tr>
+<tr><td><strong>Version allocation</strong></td><td><strong>None required, none taken.</strong> <code>nextUnallocated</code> is <strong>08.32</strong></td></tr>
+<tr><td><strong>Source rights</strong></td><td>Unchanged, still fail-closed. Zero editions cleared, nothing fetched. The <code>embed-cleared</code> branch of the display contract is <strong>unreachable today</strong>, and the suite says so rather than implying it has been proven</td></tr>
+<tr><td><strong>Owner decisions</strong></td><td><strong>C2</strong> (the permanent key) — better evidenced by §4, still open. <strong>The Approach registry</strong> — still open</td></tr>
+<tr><td><strong>Shared integration boundary</strong></td><td><strong>§6.2 — reached and paused at</strong>, as the ruling directs</td></tr>
+</tbody></table></div>
+<p><strong>Gates all remain CLOSED:</strong> no real corpus, translation or commentary embedding · no permanent Hadith semantic key applied · no Approach ID allocated · no durable Track · no Notes/MMJ persistence · no Rules or index activation · no migration · <strong>no deployment</strong> · <strong>no merge into <code>main</code></strong> · no version consumed.</p>
+<p><strong>Firestore Rules — REPOSITORY:</strong> <code>firestore.rules</code> and <code>firebase.json</code> untouched; 0 <code>hadith</code> collections. <strong>DEPLOYMENT: UNVERIFIED</strong> — not inspectable from this environment.</p>
+<hr>
+<h2>8. Session-change assessment</h2>
+<div class='tw'><table><thead><tr><th>Question</th><th>Assessment</th></tr></thead><tbody>
+<tr><td>Reachable application behaviour</td><td><strong>None changed.</strong> <code>app/</code> byte-identical to the branch base</td></tr>
+<tr><td>Shared platform files</td><td><strong>None changed.</strong> All nine checked individually</td></tr>
+<tr><td>Rules / Firebase config</td><td><strong>Untouched</strong></td></tr>
+<tr><td>Corpus content</td><td><strong>Untouched.</strong> No source fetched, cached or embedded in this session</td></tr>
+<tr><td>Version</td><td><strong>Not changed and not allocated.</strong> Branch carries the base&#x27;s 08.30, which this stream did not stamp</td></tr>
+<tr><td>Risk introduced</td><td><strong>None reachable.</strong> Two new test files and one governance document. Deleting all five returns the branch to its base exactly</td></tr>
+<tr><td>Risk <em>discovered</em></td><td><strong>Two, both reported not acted on:</strong> C2 is live in the Records surface (§4), and the ledger&#x27;s Hadith record is stale (§6.2)</td></tr>
+<tr><td>Merge readiness</td><td><strong>Not proposed.</strong> The branch is 10 behind <code>main</code> and the ruling forbids merging while the v08.31 integration settles</td></tr>
+</tbody></table></div>
+<hr>
+<h2>HADITH_S5</h2>
+<p>One <code>KEY=value</code> per line, blank-separated so each survives as its own line in the HTML.</p>
+<p>STATUS=COMPLETE_AWAITING_MASTER_ARCHITECT</p>
+<p>BRANCH=feature/hadith-study</p>
+<p>BRANCH_TIP=873af4078c1641f5da33f7c87acaccdec34742da (S5 work commit; this report is the commit after it)</p>
+<p>BRANCH_BASE=db6cb24b807d77630914e076d413bec6982cc3d7</p>
+<p>ORIGIN_MAIN=a64e2a1c97f397aba26bdfa281fdf4f2b5486547 at v08.31 -- main moved from v08.30 during this tranche</p>
+<p>BRANCH_VS_MAIN=10 behind, 4 ahead. NOT merged either way, per the ruling</p>
+<p>BRANCH_VERSION=08.30 -- adopted from the base, not stamped by this stream</p>
+<p>VERSION_ALLOCATED=NONE -- nextUnallocated is 08.32, which matches the instruction; my previous report said 08.31, true when written and since taken by main</p>
+<p>CHANGED_FILES=5 ADDED, 0 modified, 0 deleted, measured against the branch base: hadith-governing-contracts.mjs, hadith-gate-contracts.mjs, hadith-c2-live-records-path-2026-09-19.md, and the previous report .md/.html</p>
+<p>PLATFORM_FILES_CHANGED=NONE -- app/, firestore.rules, firebase.json, CLAUDE.md, CHANGELOG.md, version.js, i18n/bn.js, behaviour.mjs and the programme ledger all verified untouched against the base</p>
+<p>S5_RESULT=PASS -- hadith-governing-contracts 14/0, mutation-proven 6 ways including one that mutates the GOVERNING DOCUMENT rather than the code</p>
+<p>C2_DOCUMENTED=YES -- entry point (records.html unit-type picker offering Hadith from UNIT_TYPES, buildUnitKeyFromInput hadith branch), key (hadith:&lt;collectionName&gt;:&lt;number&gt;, both segments unvalidated free text), persistence (records/{tenant}__{person}__subject_{subjectId}, entries.&lt;unitKey&gt;::&lt;trackableId&gt;), and the read-only inventory. Key generation NOT changed, no record migrated</p>
+<p>C2_INVENTORY_SUBTLETY=chunkKeyFor takes the SELECTED SUBJECT, not the unit type, so an inventory querying only subject_hadith can miss real records; it must scan every records chunk</p>
+<p>TEST_RESULT=Hadith suites 75/0 across four (governing-contracts 14, gate-contracts 11, source-rights 14, corpus 33, commentary-binding 14 = 86 total checks, 0 failures); stub-parity 3/0; quran-boundary 30/0; study-event-wiring 39/0; rules-authorisation-executable 38/0</p>
+<p>RED_GUARDS=3, none caused by this tranche&#x27;s files (proven by removing them). brief-integrity 7/1 and programme-ledger [F] are STALENESS -- the branch is 10 behind a main that moved to v08.31 mid-tranche. programme-ledger [A][B] is a REAL drift this stream caused: the ledger records hadith declaredVersion 08.29 and branchTip c1a4f19 while the branch now carries main&#x27;s 08.30</p>
+<p>LESSON=programme-ledger.mjs reads origin/&lt;activeBranch&gt;, so it validates the REMOTE. The previous tranche ran it BEFORE pushing, so it agreed with a remote that the push then replaced. A guard reading the remote must be re-run AFTER the push -- done here, which is how all three failures surfaced</p>
+<p>SHARED_BOUNDARY=REACHED AND PAUSED AT -- repairing [A][B] needs a field in docs/governance/programme-integration-ledger.json, a shared platform file this tranche may not change. Minimal repair: set the hadith stream&#x27;s declaredVersion to null (truer, keeps the branch cross-check) or activeBranch to null, and move branchTip off c1a4f19</p>
+<p>REMAINING_GATES=real corpus (rights); permanent Hadith key C2 (Owner + read-only production inventory); Approach registry (Owner); durable Track, Notes and MMJ (Rules deployment); no merge to main while v08.31 settles</p>
+<p>RULES_REPOSITORY_STATUS=UNCHANGED -- firestore.rules and firebase.json untouched, 0 hadith collections</p>
+<p>RULES_DEPLOYMENT_STATUS=UNVERIFIED -- not inspectable from this environment</p>
+<p>SESSION_CHANGE_ASSESSMENT=BR-0. No reachable behaviour, no shared file, no Rules, no corpus, no version. Two new test files and one governance document; deleting all five returns the branch to its base exactly. Two risks DISCOVERED and reported rather than acted on: C2 live in Records, and the stale ledger record</p>
+<p>NEXT_ACTION=RETURN_TO_MASTER_ARCHITECT</p>
+</main></body></html>

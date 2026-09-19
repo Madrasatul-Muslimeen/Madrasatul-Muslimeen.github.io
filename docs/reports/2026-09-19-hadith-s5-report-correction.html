@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith S5 report — dated superseding correction</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith S5 report — dated superseding correction</h1>
+<p><strong>19 September 2026 · Hadith Study stream · corrections only, no new work</strong></p>
+<p>This note corrects three statements in <code>docs/reports/2026-09-19-hadith-s5-governing-contracts.md</code>. <strong>That report is kept exactly as written and is not edited</strong> — it is the record of what the S5 session said at the time, and rewriting it would destroy the evidence that it said something else. Where the two disagree, this note wins.</p>
+<p>The substance of S5 is <strong>unaffected</strong>: the two guards it added, the contracts they bind, and the C2 live-records documentation all stand and all still pass. What was wrong was the report&#x27;s own bookkeeping about itself.</p>
+<hr>
+<h2>Correction 1 — the branch tip named is the WORK commit, not the tip</h2>
+<p>The S5 report states, in its header table and again in its machine-readable block:</p>
+<div class='tw'><table><thead><tr><th>Where</th><th>What it says</th></tr></thead><tbody>
+<tr><td>Header table</td><td><strong>Branch tip (pushed)</strong> — <code>873af4078c1641f5da33f7c87acaccdec34742da</code></td></tr>
+<tr><td>Status block</td><td><code>BRANCH_TIP=873af4078c1641f5da33f7c87acaccdec34742da (S5 work commit; this report is the commit after it)</code></td></tr>
+</tbody></table></div>
+<p><strong><code>873af40</code> was never the tip of the pushed branch.</strong> It is the S5 work commit. The report itself was then committed on top of it as <strong><code>b7e0dab</code> — &quot;Hadith S5 report: contracts bound, C2 documented, three red guards diagnosed&quot;</strong> — and <code>b7e0dab</code> is what <code>origin/feature/hadith-study</code> actually pointed at.</p>
+<p>The parenthesis shows the session knew the report would become a later commit and recorded the earlier SHA anyway, so a reader taking <code>BRANCH_TIP</code> at its word would fetch a branch state that does not contain the report naming it. Verified here by <code>git log --oneline -3 origin/feature/hadith-study</code>, which reads <code>b7e0dab</code>, then <code>873af40</code>, then <code>22e946a</code>.</p>
+<p><strong>Correct values:</strong></p>
+<p>BRANCH_TIP_AT_S5=b7e0dab (the S5 report commit, and the pushed tip)</p>
+<p>S5_WORK_COMMIT=873af4078c1641f5da33f7c87acaccdec34742da (the guard itself)</p>
+<hr>
+<h2>Correction 2 — &quot;75/0 across four&quot; contradicts its own list</h2>
+<p>The S5 status block reads:</p>
+<p><code>TEST_RESULT=Hadith suites 75/0 across four (governing-contracts 14, gate-contracts 11, source-rights 14, corpus 33, commentary-binding 14 = 86 total checks, 0 failures)</code></p>
+<p>It says <strong>four</strong> suites and lists <strong>five</strong>; it says <strong>75</strong> and its own arithmetic gives <strong>86</strong>. Neither figure was ever right for the set named. Re-run today on the current candidate, every one of the five passes:</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Checks</th><th>Failed</th></tr></thead><tbody>
+<tr><td><code>hadith-governing-contracts.mjs</code></td><td>14</td><td>0</td></tr>
+<tr><td><code>hadith-gate-contracts.mjs</code></td><td>11</td><td>0</td></tr>
+<tr><td><code>hadith-source-rights.mjs</code></td><td>14</td><td>0</td></tr>
+<tr><td><code>hadith-corpus.mjs</code></td><td>33</td><td>0</td></tr>
+<tr><td><code>hadith-commentary-binding.mjs</code></td><td>14</td><td>0</td></tr>
+<tr><td><strong>Five suites</strong></td><td><strong>86</strong></td><td><strong>0</strong></td></tr>
+</tbody></table></div>
+<p><strong>Correct value:</strong></p>
+<p>HADITH_SUITES=86/0 across FIVE suites (governing-contracts 14, gate-contracts 11, source-rights 14, corpus 33, commentary-binding 14)</p>
+<hr>
+<h2>Correction 3 — <code>study-event-wiring</code> does not pass here, and does not pass on <code>main</code> either</h2>
+<p>The S5 block records <code>study-event-wiring 39/0</code>. Re-run today it <strong>exits 1</strong>, raising <code>ERR_UNSUPPORTED_RESOLVE_REQUEST</code> (×3) and <code>ERR_INVALID_URL</code>: the suite loads the module under test as a <code>data:</code> URL, and a relative import (<code>./study-evidence-readiness.js</code>) cannot be resolved from a <code>data:</code> URL on this Node.</p>
+<p><strong>It is not this stream&#x27;s doing, and that was proven rather than assumed.</strong> A detached worktree was created at unmodified <code>origin/main</code> (<code>a64e2a1c97f397aba26bdfa281fdf4f2b5486547</code>) and the same suite run there produced the <strong>identical</strong> error set and the identical exit code. The suite also reads no ledger file at all (<code>grep -c ledger</code> → 0), so the ledger repair in this candidate cannot have touched it.</p>
+<p><strong>Correct value:</strong></p>
+<p>STUDY_EVENT_WIRING=exit 1, ERR_UNSUPPORTED_RESOLVE_REQUEST x3 + ERR_INVALID_URL — ENVIRONMENTAL, reproduced identically on unmodified origin/main. Belongs to the Quran stream&#x27;s own file; recorded, not fixed here.</p>
+<hr>
+<h2>What is NOT corrected, because it was right</h2>
+<ul><li>The two new guards and their 14 + 11 checks, and everything they assert.</li><li>The C2 live-records documentation (<code>docs/governance/hadith-c2-live-records-path-2026-09-19.md</code>).</li><li>The diagnosis of the three red guards. Two of them (ledger A and B) are what the Master Architect then authorised the repair for, and that repair is in <code>docs/reports/2026-09-19-hadith-ledger-repair-integration.md</code>.</li><li>Every Owner Control Gate the S5 report lists as closed is still closed.</li></ul>
+<h2>The standing lesson this earned</h2>
+<p><strong>A report that names its own commit is naming a commit that does not exist yet.</strong> The S5 session recorded the work commit as the branch tip because, at the moment of writing, the report was not committed. The honest forms are either to name the work commit AS the work commit and leave the tip to be stamped after the fact, or to amend the SHA in a follow-up commit — never to print a tip that the very next commit falsifies. The same applies to a check total copied from memory rather than from the run: <code>75/0 across four</code> beside a list of five suites summing to 86 is a line nobody re-read against its own contents.</p>
+</main></body></html>

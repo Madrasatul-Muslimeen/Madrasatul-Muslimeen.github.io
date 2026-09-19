@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith — Owner Control Gate contracts pinned (safe tranche)</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith — Owner Control Gate contracts pinned (safe tranche)</h1>
+<p><strong>Date:</strong> 2026-09-19 · <strong>Type:</strong> Hadith-owned test work, resumed independently of the Quran stream. <strong>No reachable application behaviour changed. No shared file changed. No version allocated.</strong></p>
+<hr>
+<h2>1. Current position</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Branch</td><td><code>feature/hadith-study</code></td></tr>
+<tr><td><strong>Work commit</strong></td><td><strong><code>a03081a</code></strong> — the guard. This report is the commit after it, so the branch tip is one ahead of the SHA a report can name</td></tr>
+<tr><td>Branch before this work</td><td><code>c1a4f19</code> — fully merged into <code>main</code>, 11 behind</td></tr>
+<tr><td><code>origin/main</code></td><td><code>db6cb24b807d77630914e076d413bec6982cc3d7</code></td></tr>
+<tr><td><code>main</code> application version</td><td><strong>v08.30</strong> (MAP Phase 4, the Quran stream)</td></tr>
+<tr><td>This branch&#x27;s version</td><td><strong>v08.30 — main&#x27;s own.</strong> Not bumped, not stamped</td></tr>
+<tr><td><code>nextUnallocated</code> (ledger)</td><td><strong>v08.31</strong></td></tr>
+</tbody></table></div>
+<p>The branch was <strong>fast-forwarded onto current <code>main</code></strong> before any work, so everything below was measured against the guards that actually exist rather than the ones that existed when v08.29 merged. It had nothing of its own ahead: the Hadith v08.29 integration is in <code>main</code>.</p>
+<p><strong>One correction to the instruction, stated because a version number must never be guessed:</strong> the instruction says <em>&quot;v08.32 has not been allocated&quot;</em>. The ledger records <strong><code>nextUnallocated: 08.31</code></strong> — v08.31 is also free. Either way <strong>nothing was allocated or consumed here</strong>, and <code>app/js/version.js</code> is byte-identical to <code>main</code>.</p>
+<hr>
+<h2>2. The roadmap&#x27;s next tranche, and why it is not buildable</h2>
+<p><strong>There is no <code>H2-C</code> or <code>H3</code> defined anywhere</strong> — a grep across every Hadith report and governance file returns nothing. The roadmap&#x27;s own statement of what comes next is <strong>H1 §9, &quot;What H2 needs before it can start&quot;</strong>, plus the H2-B registry proposal&#x27;s §4. Read against today&#x27;s repository, every remaining item is gated:</p>
+<div class='tw'><table><thead><tr><th>Roadmap item</th><th>Original source</th><th>Gate</th></tr></thead><tbody>
+<tr><td>Real corpus / edition approval</td><td>H1 §9.2; Source Register</td><td><strong>Owner decision + rights.</strong> Zero editions cleared</td></tr>
+<tr><td>Permanent Hadith unit key</td><td>H1 §5; H0 contradiction <strong>C2</strong></td><td><strong>Owner Control Gate</strong> + a live read of production <code>hadith:</code> records, which this environment cannot perform</td></tr>
+<tr><td>Hadith Approach registry</td><td>H2-B proposal §4</td><td><strong>Owner decision.</strong> No id may be minted first</td></tr>
+<tr><td>Durable Track</td><td>H0 §5 / C4</td><td><strong>Firestore Rules deployment</strong>, which Hadith cannot clear</td></tr>
+<tr><td>Notes / MMJ surfaces</td><td>H0 §5 / C4</td><td>Same deployment gate</td></tr>
+<tr><td>Rules / index activation</td><td>H1 §8</td><td>Same</td></tr>
+</tbody></table></div>
+<p><strong>So the roadmap authorises no feature tranche today, and none was invented.</strong> What it does authorise — and what the instruction names — is <em>documentation, source-rights verification and tests</em>. This tranche is the third.</p>
+<hr>
+<h2>3. What was done: the two gates made checkable</h2>
+<p>Both Hadith decisions held behind Owner Control Gates are <strong>proposals that rest on facts about code the Hadith stream does not own</strong>. Every one of those facts lived only in prose. The Quran side could tighten a regex, renumber the Approaches, or tidy the key builder, and the recorded proposals would quietly become wrong with <strong>nothing failing anywhere</strong>.</p>
+<p><code>tools/i18n-verify/hadith-gate-contracts.mjs</code> — <strong>11 checks, one new Hadith-owned file.</strong> It asserts what <em>is</em>, so that changing any of it becomes a deliberate decision.</p>
+<h3>3.1 Gate C2 — the permanent Hadith unit key</h3>
+<ul><li><code>buildUnitKey.hadith</code> still produces the <strong>name-keyed</strong> <code>hadith:&lt;collectionName&gt;:&lt;number&gt;</code>, which is H0&#x27;s recorded contradiction with <strong>I5</strong> (<em>units are keyed by permanent ID, never by name</em>). Built through <code>buildUnitKey</code>, not typed as a literal.</li><li>The <strong>accepted regex</strong> in <code>study-note-binding.js</code> still admits the <strong>proposed</strong> <code>hadith:&lt;editionId&gt;:&lt;ordinal&gt;</code> form — without which H1 §5 is unimplementable.</li><li>…and still admits the <strong>legacy</strong> name-keyed form, so applying the proposal would orphan no existing record (<strong>I4 / I16</strong>).</li><li>The <strong>6-digit bound is exact</strong>: <code>999999</code> accepted, <code>1000000</code> rejected, empty edition and empty ordinal both rejected.</li><li>The regex is <strong>read out of the app</strong>, not retyped, with a positive control — a retyped copy would agree with itself while the app disagreed.</li></ul>
+<h3>3.2 Gate APPROACH — the Hadith Approach registry</h3>
+<ul><li>The 30 Quran Approaches intact, <code>approach_01</code>…<code>approach_30</code>, no duplicates.</li><li><strong>No Hadith Approach id exists</strong> anywhere in the catalogue.</li><li><code>studied_hadith</code> is still a <strong>generic module row</strong> — <code>moduleId: &quot;hadith&quot;</code>, <code>subjectId: null</code>, named <code>&quot;Studied&quot;</code> — and not describing itself as an Approach.</li><li>The seed still hardcodes <code>moduleId: &quot;quranrevival&quot;</code> and <code>subjectId: &quot;quran&quot;</code>, <strong>which is the registry proposal&#x27;s own stated reason</strong> for refusing to reuse <code>approach_NN</code>.</li><li>No <code>app/js/hadith-*.js</code> names <code>approach_</code>, <code>studied_hadith</code>, <code>trackableId</code> or <code>APPROACH_TEMPLATES</code>.</li></ul>
+<hr>
+<h2>4. The finding — C2 is LIVE, not latent, and my own check is what found it</h2>
+<p>The check first asserted that <strong>nothing</strong> builds a Hadith unit key. <strong>It failed</strong>, and the failure is the most useful thing in this tranche:</p>
+<p>&gt; <code>app/records.html</code> carries a generic unit-key switch covering every unit type, <code>hadith</code> &gt; included (<code>case &quot;hadith&quot;: … buildUnitKey.hadith(c, n)</code>), and it <strong>predates the Hadith &gt; stream entirely</strong>.</p>
+<p>So the C2 contradiction is not a latent conflict waiting on a decision — **a permanent Study Unit key built from a collection <em>name</em> is reachable in the live Records surface today.** Anyone recording a Hadith claim there creates a name-keyed permanent key, against I5.</p>
+<p><strong>My assertion was wrong, not the application</strong>, and the check was corrected to pin reality rather than the assumption: the one pre-existing <strong>platform</strong> caller is recorded by name, and the check now fails if <strong>any Hadith-owned file</strong> starts applying the undecided key — which would be this stream pre-empting an Owner Control Gate.</p>
+<p><strong>This materially strengthens the case for deciding C2</strong>, and it is reported rather than acted on: <code>unit-keys.js</code>, <code>study-note-binding.js</code> and <code>records.html</code> are all untouched.</p>
+<hr>
+<h2>5. Test results</h2>
+<p><strong>The new suite: 11 passed, 0 failed.</strong> Mutation-proven <strong>six ways</strong>, each caught by the intended check:</p>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Caught by</th></tr></thead><tbody>
+<tr><td>The builder made edition-keyed</td><td><em>the LIVE builder is still NAME-keyed</em></td></tr>
+<tr><td>Regex tightened to the proposal alone</td><td><em>…still admits the LEGACY form</em> (+ the positive control)</td></tr>
+<tr><td>Bound widened to 7 digits</td><td><em>the 6-digit bound is EXACT</em></td></tr>
+<tr><td>A Hadith Approach id allocated</td><td><em>NO Hadith Approach id has been allocated</em></td></tr>
+<tr><td><code>studied_hadith</code> given a <code>subjectId</code></td><td><em>studied_hadith is still a GENERIC module row</em></td></tr>
+<tr><td>Seed stops hardcoding the Quran subject</td><td><em>the seed still binds every Approach to Quran</em></td></tr>
+</tbody></table></div>
+<p><strong>Two of those mutations silently failed to apply on the first attempt</strong> and were redone against the real shape — the trackable templates come from a <code>studiedTemplate()</code> factory, not a literal, so the <code>sed</code> matched nothing. Read naively that would have said two checks were blind; the checks were fine and <strong>the mutations were the defect</strong>. Recorded because a partial mutation proves nothing.</p>
+<p><strong>Regression — 12 suites, all exit 0:</strong></p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>hadith-gate-contracts</code> (new)</td><td><strong>11 / 0</strong></td></tr>
+<tr><td><code>hadith-source-rights</code> · <code>hadith-corpus</code> · <code>hadith-commentary-binding</code></td><td>14 / 33 / 14, <strong>61 / 0</strong></td></tr>
+<tr><td><code>programme-ledger</code></td><td><strong>7 passed, 20 noted, 0 failed</strong></td></tr>
+<tr><td><code>programme-ledger-mutations</code></td><td><strong>37 / 0</strong></td></tr>
+<tr><td><code>brief-integrity</code></td><td><strong>8 / 0</strong></td></tr>
+<tr><td><code>stub-parity</code> · <code>quran-boundary</code></td><td>3 / 0 · 30 / 0</td></tr>
+<tr><td><code>study-event-wiring</code> (the Quran stream&#x27;s new v08.30 guard)</td><td><strong>39 / 0</strong></td></tr>
+<tr><td><code>d14-timezone-boundary</code> · <code>d14-timezone-contract</code></td><td>10 / 0 · 21 / 0</td></tr>
+</tbody></table></div>
+<p><strong>Blast radius: BR-0.</strong> <code>git status</code> shows exactly one added file. <code>app/</code> is untouched, so no rendered or <code>behaviour.mjs</code> run is warranted — there is nothing reachable to re-measure.</p>
+<hr>
+<h2>6. Dependencies</h2>
+<div class='tw'><table><thead><tr><th>Dependency</th><th>Status</th></tr></thead><tbody>
+<tr><td><strong>MMSA / Quran contracts</strong></td><td><strong>None consumed, none needed.</strong> This tranche only <em>observes</em> <code>unit-keys.js</code>, <code>study-note-binding.js</code> and <code>catalogue<em>.js</code>; it changes none of them. The new file sits under <code>tools/i18n-verify/hadith-</em>.mjs</code>, already the Hadith stream&#x27;s owned path in the ledger, so it is <strong>not</strong> a shared touch — the ledger guard confirms 0 undeclared</td></tr>
+<tr><td><strong>Version allocation</strong></td><td><strong>None required.</strong> No reachable behaviour changed, so no bump is owed. v08.31 stays <code>nextUnallocated</code></td></tr>
+<tr><td><strong>Source rights</strong></td><td><strong>Unchanged and still fail-closed.</strong> Zero editions cleared; nothing fetched, cached or embedded in this session; <code>hadith-source-rights</code> 14 / 0</td></tr>
+<tr><td><strong>Owner decision</strong></td><td><strong>Two are now better evidenced but still open</strong> — C2 (the permanent key, §4) and the Approach registry. Neither was pre-empted</td></tr>
+<tr><td><strong>Firestore Rules deployment</strong></td><td>Untouched and still <strong>UNVERIFIED</strong>; <code>firestore.rules</code> and <code>firebase.json</code> byte-identical to <code>main</code></td></tr>
+</tbody></table></div>
+<hr>
+<h2>7. Scope ready for Master Architect authorisation</h2>
+<p>Presented as scope, <strong>not started</strong>. Each is Hadith-owned and needs one decision.</p>
+<p><strong>S1 — Apply the C2 permanent unit key.</strong> Needs: the Owner&#x27;s decision on <code>hadith:&lt;editionId&gt;:&lt;occurrenceOrdinal&gt;</code>, <strong>and</strong> a live read-only inventory of existing <code>hadith:</code> records in production. §4 changes the weighting: the name-keyed form is already reachable, so records may already exist. Touches <code>unit-keys.js</code> — a shared file and a permanent Study Unit key. <strong>BR-4.</strong></p>
+<p><strong>S2 — Allocate the Hadith Approach registry.</strong> Needs: the Owner to answer the four questions in the registry proposal §4 (whether Hadith gets its own set at all; the id scheme; which candidates survive; whether an Approach may exist before a cleared edition). Touches <code>catalogue-data.js</code> and <code>catalogue.js</code>. <strong>BR-3</strong>, plus a version.</p>
+<p><strong>S3 — Real corpus import.</strong> Needs: a rights-cleared edition. Nothing else unblocks it.</p>
+<p><strong>S4 — Hadith Note / MMJ / durable Track.</strong> Needs: the Firestore Rules deployment gate, which Hadith cannot clear.</p>
+<p><strong>S5 (no new authority needed, and the natural next safe tranche)</strong> — extend the same &quot;pin the accepted decision&quot; treatment to the <strong>commentary display contract</strong> and the <strong>H1 rights vocabulary</strong>, both of which are today asserted only within the Hadith suites&#x27; own fixtures rather than against the governing documents. It changes no behaviour, needs no version, and crosses no gate.</p>
+<hr>
+<h2>8. Gates — all remain CLOSED</h2>
+<p>No real corpus, translation or commentary embedding · no permanent Hadith semantic key applied · no Approach ID allocated · no durable Track · no Notes/MMJ persistence · no Rules or index activation · no migration · <strong>no deployment</strong> · no version consumed · no shared file changed · no next feature tranche started.</p>
+<h2>9. Firestore Rules — the two facts, separately</h2>
+<p><strong>REPOSITORY:</strong> <code>firestore.rules</code> and <code>firebase.json</code> are <strong>byte-identical to <code>origin/main</code></strong>; <strong>0</strong> <code>hadith</code> collections; no <code>firestore.indexes.json</code>. Repository content only.</p>
+<p><strong>DEPLOYMENT: UNVERIFIED.</strong> Not inspected and not inspectable from this environment.</p>
+<hr>
+<h2>HADITH_SAFE_TRANCHE</h2>
+<p>One <code>KEY=value</code> per line, blank-separated so each survives as its own line in the HTML.</p>
+<p>STATUS=COMPLETE_AWAITING_MASTER_ARCHITECT</p>
+<p>BRANCH=feature/hadith-study</p>
+<p>HEAD=a03081a (the guard commit; the branch tip is the following commit, which adds this report -- a report cannot carry its own SHA)</p>
+<p>BASE_MAIN_SHA=db6cb24b807d77630914e076d413bec6982cc3d7</p>
+<p>MAIN_VERSION=v08.30</p>
+<p>BRANCH_VERSION=v08.30 (main&#x27;s own; NOT bumped)</p>
+<p>VERSION_ALLOCATED=NONE -- ledger nextUnallocated is v08.31; the instruction said v08.32, and neither was taken</p>
+<p>ROADMAP_NEXT_TRANCHE=No H2-C or H3 is defined anywhere. The roadmap&#x27;s own next statement is H1 section 9 plus the H2-B registry proposal section 4, and every item there is gated on rights, an Owner decision, a live production read, or Rules deployment</p>
+<p>WORK_DONE=tools/i18n-verify/hadith-gate-contracts.mjs -- 11 checks pinning the two Owner Control Gates (C2 permanent unit key; Hadith Approach registry) to the code facts their proposals rest on</p>
+<p>FINDING=C2 is LIVE, not latent. app/records.html builds name-keyed hadith unit keys today via a generic switch that predates this stream, so a permanent Study Unit key from a collection NAME is reachable in the Records surface. Found because my own check asserted the opposite and failed. Reported, not acted on</p>
+<p>TEST_RESULT=PASS -- new suite 11/0, mutation-proven 6 ways; 12 regression suites all exit 0 (hadith 61/0, programme-ledger 7/0/0, its mutations 37/0, brief-integrity 8/0, study-event-wiring 39/0)</p>
+<p>BLAST_RADIUS=BR-0 -- one added file, zero app/ change, zero shared-file change</p>
+<p>SHARED_FILES_CHANGED=NONE</p>
+<p>DEPENDENCIES=No MMSA contract consumed; no version needed; source rights unchanged and fail-closed; two Owner decisions (C2, Approach registry) better evidenced but still open; Rules deployment still UNVERIFIED</p>
+<p>READY_FOR_AUTHORIZATION=S1 apply the C2 key (Owner decision + live inventory, BR-4); S2 allocate the Approach registry (Owner decision, BR-3 + a version); S3 real corpus (rights); S4 Note/MMJ/durable Track (Rules deployment); S5 pin the commentary display contract and H1 rights vocabulary the same way (no new authority, no version, no gate)</p>
+<p>NEXT_ACTION=RETURN_TO_MASTER_ARCHITECT</p>
+</main></body></html>
