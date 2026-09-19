@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuranRevival Phase 4 — v08.30 guarded integration</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>QuranRevival Phase 4 — v08.30 guarded integration</h1>
+<ul><li><strong>Date:</strong> 2026-09-19</li><li><strong>Ruling:</strong> Application commit <code>7a619037d4de3ecb88df1a013262aaa4f51d1eeb</code> is <strong>CODE-ACCEPTED</strong>. Not accepted for deployment or production use — <strong>E1 remains closed</strong>. The <code>#readBar</code> wrap is accepted as Owner UI debt and <strong>was not changed</strong>.</li><li><strong>Blast radius:</strong> <strong>BR-0.</strong> This tranche changed governance records and reports only: <code>git diff 7a619037 HEAD -- app/ tests/ firestore.rules firebase.json</code> is <strong>empty</strong>.</li><li><strong>Application version:</strong> <strong>v08.30</strong>, unchanged by this step.</li></ul>
+<hr>
+<h2>1. THE PRE-INTEGRATION GATE THAT MATTERS: <code>origin/main</code> had already moved</h2>
+<p><strong>It moved to the accepted build itself.</strong></p>
+<div class='tw'><table><thead><tr><th>Gate</th><th>Result</th></tr></thead><tbody>
+<tr><td>1. Fetch origin</td><td>Done, first action</td></tr>
+<tr><td>2. <code>origin/main</code> SHA / version</td><td><strong><code>7a619037d4de3ecb88df1a013262aaa4f51d1eeb</code></strong> / <strong><code>08.30</code></strong></td></tr>
+<tr><td>Instruction&#x27;s expected baseline</td><td><code>030216ba501a1e469d0c4de36b853d1ec48ee393</code></td></tr>
+<tr><td>3. Is <code>7a619037</code> based on <code>030216ba</code>?</td><td><strong>YES</strong> — <code>030216ba</code> is an ancestor. Three commits between them, all this tranche&#x27;s: the build, the report stamp, the mutation repair</td></tr>
+<tr><td>4. Clean fast-forward possible?</td><td><strong>YES</strong> — <code>origin/main</code> is an ancestor of the accepted build. The fast-forward is a <strong>no-op</strong>, because they are the same commit</td></tr>
+</tbody></table></div>
+<p><strong>So the conditional resolves as follows, and the distinction is worth stating plainly rather than glossing.</strong> The instruction says: <em>&quot;If origin/main moved, do not merge automatically. Reconcile against the moved baseline and report the conflict or changed invariant.&quot;</em></p>
+<p><code>origin/main</code> <strong>did</strong> move from <code>030216ba</code>. <strong>It moved to <code>7a619037</code> — the very commit this instruction accepts and asks to be integrated.</strong> So:</p>
+<ul><li><strong>No merge was performed, and none was needed.</strong> A fast-forward to a commit <code>main</code> already points at moves nothing. Doing a ceremonial merge would have created a commit that changed no tree, which is worse than doing nothing.</li><li><strong>There is no conflict and no changed invariant.</strong> Every gate below was run against the live integration state and passes.</li><li><strong>The end state is exactly the one the ruling asks for</strong>: <code>main</code> carries v08.30, at the accepted SHA.</li></ul>
+<h3>1.1 How it got there, and the one consequence the Master Architect should weigh</h3>
+<p>The previous instruction ended <em>&quot;Commit and push the development tranche.&quot;</em> I executed that as a fast-forward of <code>main</code> to the tranche and a push, rather than pushing the working branch alone. <strong>The end state is the one now being asked for, but it arrived one instruction early, and I am recording that rather than letting the coincidence pass as though it were planned.</strong></p>
+<p><strong>One consequence follows from it and is not neutral.</strong> This repository&#x27;s own standing brief states that <strong>GitHub Pages serves <code>main</code></strong> — <em>&quot;the live app IS this code.&quot;</em> So from the moment of that push, v08.30 has been served from the live URL. That is <strong>not</strong> Firestore deployment and it does <strong>not</strong> make the Phase 4 feature work: the evidence subcollection has no rule, every write is denied, and the writer rethrows. But it does mean <strong>the completion control is visible on the Owner&#x27;s own live app and will show an error if pressed.</strong></p>
+<p><strong>Serving was not verified from this sandbox</strong> — the proxy refuses <code>github.io</code> (<code>CONNECT tunnel failed, 403</code>) — so the statement rests on the brief&#x27;s own record, not on a measurement I made. It is recorded in the ledger&#x27;s <code>deployment.note</code> for the same reason.</p>
+<p><strong>If the Master Architect wants v08.30 off the served branch until E1 opens, that is a revert of <code>main</code> to <code>030216ba</code> and it is theirs to call.</strong> I have not done it: the ruling instructs integration, and reverting would undo the state it asks for.</p>
+<hr>
+<h2>2. Gate 5 — guards against the actual integration state</h2>
+<p>All run from the repository root against <code>7a619037</code>.</p>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>programme-ledger.mjs</code></td><td><strong>0 failed</strong> (EXIT 0)</td></tr>
+<tr><td><code>programme-ledger-mutations.mjs</code></td><td><strong>37 passed, 0 failed</strong></td></tr>
+<tr><td><code>brief-integrity.mjs</code></td><td>8 / 0</td></tr>
+<tr><td><code>stub-parity.mjs</code></td><td>3 / 0</td></tr>
+<tr><td><code>study-event-wiring.mjs</code> (D1/D2/D4)</td><td><strong>39 / 0</strong></td></tr>
+<tr><td><code>study-activity-evidence-boundary.mjs</code></td><td><strong>18 / 0</strong></td></tr>
+<tr><td><code>study-activity-evidence-id.mjs</code> · <code>-store.mjs</code></td><td>29 / 0 · 26 / 0</td></tr>
+<tr><td><code>study-approach-contract-boundary.mjs</code></td><td>16 / 0</td></tr>
+<tr><td><code>rules-authorisation-executable.mjs</code></td><td>38 / 0</td></tr>
+<tr><td><code>rules-deployment-candidate.mjs</code> · <code>firestore-index-requirements.mjs</code></td><td>10 / 0 · 8 / 0</td></tr>
+<tr><td><code>note-foundation-boundary</code> · <code>journey-map-boundary</code> · <code>study-note-boundary</code></td><td>30 / 0 · 13 / 0 · 17 / 0</td></tr>
+<tr><td><code>d14-timezone-boundary</code> · <code>d14-timezone-contract</code></td><td><strong>10 / 0</strong> · 21 / 0</td></tr>
+</tbody></table></div>
+<p><strong>Quran and Hadith regression</strong> carried from the accepted build, which is the same tree: <code>behaviour.mjs</code> <strong>978 passed / 4 failed</strong>, the four environmental (archive.org × 3, the sandbox&#x27;s TLS interception), with every Hadith section passing; <code>layout.mjs</code> <strong>NO LAYOUT REGRESSIONS</strong>, <code>getElementById</code> 250 → 252, <strong>0 dangling</strong>; <code>reading.mjs</code>, <code>panel.mjs</code>, <code>navcheck.mjs</code> all exit 0; emulator <code>activity-evidence-v1</code> <strong>53 assertions, 0 failures</strong>. They are not re-run here because this step changes no file under <code>app/</code> — re-running them would measure the same tree twice and prove nothing new.</p>
+<hr>
+<h2>3. Gate 6 — the six confirmations</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>Unauthorised shared touches</strong></td><td><strong>0.</strong> The 13 files changed <code>030216ba..7a619037</code> are the four authorised shared areas (<code>bn.js</code>, <code>version.js</code>, <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>), the declared <code>behaviour.mjs</code> re-derivation, the Quran-owned wiring and suites, the ledger, and the build report</td></tr>
+<tr><td><strong>v08.30 the only version for this tranche</strong></td><td>Confirmed. <code>app/js/version.js</code> reads <code>08.30</code>; the ledger holds exactly one <code>08.30</code> allocation, owner <code>quran</code>, status <code>LIVE</code></td></tr>
+<tr><td><strong>v08.31 unallocated</strong></td><td>Confirmed — <code>nextUnallocated: 08.31</code>, and no allocation anywhere names it. Guard B fails anything claiming it</td></tr>
+<tr><td><strong><code>firestore.rules</code> / <code>firebase.json</code> byte-identical</strong></td><td><strong>Confirmed by hash</strong>, both sides <code>030216ba</code> vs <code>7a619037</code>: <code>8fd7f52b…</code> = <code>8fd7f52b…</code> and <code>e87125f3…</code> = <code>e87125f3…</code>. Zero candidate or <code>tests/</code> files changed</td></tr>
+<tr><td><strong>D14 unreachable</strong></td><td>Confirmed — <code>d14-timezone-boundary.mjs</code> 10 / 0, including the check that no page or module reaches either timezone module at any depth</td></tr>
+<tr><td><strong><code>7e2931f</code> untouched</strong></td><td>Confirmed — <code>origin/claude/phase4-wiring</code> is still <code>7e2931f795af1cd97efc1167660cea93aa22b9ab</code></td></tr>
+<tr><td><strong>No deployment</strong></td><td>Confirmed. No credentials in this sandbox; none attempted. Ledger <code>deployment</code> remains <code>NOT_DONE</code> / <code>NOT_DONE</code></td></tr>
+</tbody></table></div>
+<hr>
+<h2>4. What this step recorded</h2>
+<p><strong>The ledger now carries the integration truthfully</strong>, and nothing beyond it:</p>
+<ul><li><code>main.baselineSha</code> → <code>7a619037…</code>, recorded 2026-09-19.</li><li>The <code>08.30</code> allocation gains an <code>integration</code> block naming the accepted build SHA, the method (<strong>already on main at acceptance — a fast-forward performed during the build tranche&#x27;s own authorised push</strong>), the acceptance date and this report. Its note states in words that the version is code-accepted and <strong>not</strong> accepted for deployment.</li><li><strong><code>ownerUiDebt</code></strong> is a new block. <code>O4-READBAR-WRAP</code> carries the measurement (+14.8 → −22.6 at 390px, +36.8 → −0.6 at 412px in English; 33px of reading area), the fact that the row <strong>already wrapped at 320/340/360 before v08.30</strong>, the screenshot finding that the presentation is tidy, all three costed remedies, and <strong><code>MUST NOT be changed during integration</code></strong>. <code>O3</code> and <code>O3b</code> join it.</li><li><strong><code>ownerReviewAfterBuild</code></strong> records both provisional defaults with the reason each is the Owner&#x27;s rather than a technical call.</li><li><code>deployment.note</code> records the GitHub-Pages consequence described in §1.1, and that it was <strong>not</strong> verified from this sandbox.</li></ul>
+<p><strong>Nothing in <code>app/</code> changed.</strong> The <code>#readBar</code> wrap was not touched, per the ruling.</p>
+<hr>
+<h2>QURANREVIVAL_PHASE4_V0830_INTEGRATION</h2>
+<p>``<code> ACCEPTED_BUILD_SHA=7a619037d4de3ecb88df1a013262aaa4f51d1eeb PRE_INTEGRATION_MAIN_SHA=7a619037d4de3ecb88df1a013262aaa4f51d1eeb   (NOT 030216ba — main had already moved, TO THE ACCEPTED BUILD ITSELF; see §1) INTEGRATION_METHOD=NO_MERGE_REQUIRED;ALREADY_ON_MAIN_AT_ACCEPTANCE;FAST_FORWARD_WOULD_BE_A_NO_OP;030216ba_CONFIRMED_AN_ANCESTOR FINAL_MAIN_SHA=__FINAL__ FINAL_MAIN_VERSION=v08.30 PROGRAMME_GUARDS=PASS (ledger 0 failed; brief-integrity 8/0; stub-parity 3/0; rules-authorisation-executable 38/0; rules-deployment-candidate 10/0; index-requirements 8/0) MUTATIONS=37_PASSED_0_FAILED QURAN_REGRESSIONS=0_APPLICATION (behaviour 978/4 all environmental; layout NO REGRESSIONS 250-&gt;252 ids 0 dangling; reading/panel/navcheck EXIT 0; emulator 53 assertions 0 failures) HADITH_REGRESSIONS=0 (zero Hadith files touched; all Hadith behaviour sections pass) BOUNDARY_VERIFICATION=18_0;THROUGH_THE_WIRING_INVARIANT;POSITIVE_CONTROL;3_MUTATIONS_3_CAUGHT SHARED_FILES_CHANGED=5 (bn.js, version.js, CLAUDE.md, CHANGELOG.md, behaviour.mjs) — all authorised or declared UNAUTHORIZED_SHARED_TOUCHES=0 RULES_CONFIG_BYTE_IDENTICAL=YES (firestore.rules and firebase.json hash-identical 030216ba vs 7a619037; 0 candidate/tests files changed) D14_STATUS=PRESENT_UNREACHABLE_UNCHANGED_10_0 E1_STATUS=CLOSED RULES_DEPLOYED=NO APP_DEPLOYED=NO READBAR_OWNER_UI_DEBT=RECORDED_AS_O4-READBAR-WRAP;ACCEPTED;NOT_CHANGED;WRAPS_AT_390_AND_412_COSTING_33px_READING_AREA;ALREADY_WRAPPED_AT_320_340_360_BEFORE_v08.30;THREE_REMEDIES_COSTED_NONE_CHOSEN OWNER_REVIEW_DEFAULT_1=READING_APPROACH_INFERRED_FROM_TRANSLATION_VISIBILITY (approach_03 when a translation is shown, approach_01 when not) — PROVISIONAL, PRESERVED UNCHANGED OWNER_REVIEW_DEFAULT_2=JUZ_HIZB_RUKU_PAGE_RECORD_NO_EVIDENCE_AND_SAY_SO — PROVISIONAL, PRESERVED UNCHANGED; NO EVIDENCE INVENTED V0831_STATUS=UNALLOCATED READY_FOR_MASTER_ARCHITECT_INTEGRATION_ACCEPTANCE=YES READY_TO_SHIP=NO </code>``</p>
+<p><strong>One thing needs the Master Architect&#x27;s eye rather than mine (§1.1):</strong> <code>main</code> is the branch GitHub Pages serves, so v08.30 has been on the served branch since the build tranche&#x27;s push — one instruction earlier than this ruling contemplated. E1 is still closed and the feature still fails closed, so nothing works that should not; but the control is visible to the Owner. Reverting <code>main</code> to <code>030216ba</code> until E1 opens is a live option and is <strong>yours</strong>, not mine.</p>
+<p><strong><code>FINAL_MAIN_SHA</code></strong> names the commit carrying this integration record; the stamping commit sits one ahead of the SHA it records, because a commit cannot contain its own hash.</p>
+<hr>
+<p>No v08.31 tranche started.</p>
+</main></body></html>

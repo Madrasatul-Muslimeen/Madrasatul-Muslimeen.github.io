@@ -192,6 +192,41 @@ the single source of truth and the badge beside the app name says so on screen.
 08.04 (12 Sep 2026), and `v08.19` while `main` was on 08.21 (14 Sep 2026).
 Check it against `app/js/version.js` every session.**
 
+**19 Sep 2026 — v08.30 IS CODE-ACCEPTED AND INTEGRATED, and the integration
+gate found that `main` had already moved — TO THE ACCEPTED BUILD ITSELF.** The
+Master Architect accepted `7a619037` and asked for a guarded integration from
+`030216ba`. `origin/main` was already `7a619037`: the build tranche's own
+authorised push had fast-forwarded `main`, so **no merge was needed and none was
+performed** — a fast-forward to a commit `main` already points at moves nothing,
+and a ceremonial merge would have been a commit that changed no tree. No
+conflict, no changed invariant; every gate passes against the live state.
+
+**ONE CONSEQUENCE IS RECORDED RATHER THAN LET PASS.** *"Commit and push the
+development tranche"* was executed as a fast-forward of `main` plus a push,
+rather than pushing the branch alone — so the end state is the one this ruling
+asks for, but it arrived **one instruction early**. And this brief's own text
+says **GitHub Pages serves `main`**, so v08.30 has been on the served branch
+since that push. **E1 is still closed and the feature still fails closed** — the
+evidence subcollection has no rule, every write is denied, the writer rethrows —
+so nothing works that should not; but **the ✓ is visible on the Owner's own live
+app and will show an error if pressed.** Serving was NOT verified from this
+sandbox (the proxy refuses `github.io`), so that rests on this file's own record
+rather than a measurement. **Reverting `main` to `030216ba` until E1 opens is a
+live option and is the Master Architect's call, not a session's.**
+
+**The `#readBar` wrap is now ACCEPTED OWNER UI DEBT and MUST NOT be changed
+during integration** — `O4-READBAR-WRAP` in the ledger, carrying the measurement
+(+14.8 → −22.6 at 390px, +36.8 → −0.6 at 412px in English; 33px of reading
+area), the fact that the row **already wrapped at 320/340/360 before v08.30**,
+the screenshot finding that the presentation is tidy, and all three costed
+remedies with none chosen. `app/` is byte-identical across this step.
+
+**Both provisional reader-behaviour defaults are recorded for later Owner
+review** in the ledger's `ownerReviewAfterBuild`: the Reading Approach inferred
+from translation visibility, and juz/hizb/ruku/page recording no evidence and
+saying so. Neither was re-decided. **v08.31 stays UNALLOCATED.** See
+`docs/reports/2026-09-19-quranrevival-phase4-v0830-integration.md`.
+
 **v08.30 (18 Sep 2026) — MAP PHASE 4 STUDY EVENTS REACH ACTIVITY, and it is
 BUILT rather than SHIPPED.** D1 Reading (an explicit ✓ on `#readBar` — ADR-008
 requires an explicit completion "so intent is auditable", so there is no passive

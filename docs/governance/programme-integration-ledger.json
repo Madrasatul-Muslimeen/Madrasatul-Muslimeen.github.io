@@ -29,8 +29,8 @@
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "a4b9be3b65dce57a3fd44c3ab6cb2aa94699d99e",
-    "baselineRecordedOn": "2026-09-18",
+    "baselineSha": "7a619037d4de3ecb88df1a013262aaa4f51d1eeb",
+    "baselineRecordedOn": "2026-09-19",
     "version": "08.30",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
@@ -90,7 +90,13 @@
       "version": "08.30",
       "owner": "quran",
       "status": "LIVE",
-      "note": "QuranRevival MAP Phase 4 D1 Reading / D2 Listening / D4 WbW -- the ADR-008 evidence wiring, re-derived on current main rather than ported from 7e2931f. Allocated by the Master Architect. LIVE means main carries it. BUILT, NOT SHIPPED: the evidence Rules are not deployed (E1), so the subcollection is closed to every client."
+      "note": "QuranRevival MAP Phase 4 D1 Reading / D2 Listening / D4 WbW -- the ADR-008 evidence wiring, re-derived on current main rather than ported from 7e2931f. CODE-ACCEPTED by the Master Architect on 2026-09-19. LIVE means main carries it. NOT accepted for deployment or production use: E1 is closed, the evidence Rules are not deployed, and the subcollection is denied to every client.",
+      "integration": {
+        "acceptedBuildSha": "7a619037d4de3ecb88df1a013262aaa4f51d1eeb",
+        "method": "ALREADY_ON_MAIN_AT_ACCEPTANCE — fast-forward, performed during the build tranche's own authorised push",
+        "codeAcceptedOn": "2026-09-19",
+        "reference": "docs/reports/2026-09-19-quranrevival-phase4-v0830-integration.md"
+      }
     }
   ],
   "nextUnallocated": "08.31",
@@ -591,7 +597,7 @@
     "firestoreRules": "NOT_DONE",
     "firestoreIndexes": "NOT_DONE",
     "blockedOn": "E1 -- authenticated Firebase Console access to study-monitoring. A sandbox has no credentials.",
-    "note": "Recorded as NOT DONE because it has not been proven done. GitHub Pages serving main is a separate thing from deploying Rules, and nothing here claims either beyond what was measured."
+    "note": "Recorded as NOT DONE because it has not been proven done. E1 remains CLOSED. NOTE, recorded rather than left implicit: this repository's own brief states GitHub Pages serves `main`, so code merged to main is served from the live URL. That is NOT Firestore deployment and does not make the Phase 4 feature function -- the evidence subcollection has no rule and every write is denied -- but it does mean the v08.30 control is visible to the Owner and will show an error if pressed. Serving was not verified from this sandbox (the proxy refuses github.io)."
   },
   "programme": {
     "name": "MMSA -- Madrasatul Muslimeen's Study App",
@@ -604,5 +610,48 @@
       "future subjects": "Separate subject modules integrated into MMSA."
     },
     "terminologyScope": "Governance and coordination terminology, adopted 18 Sep 2026. Historical reports are NOT rewritten to apply it -- they record what was said when it was said. No application file, route or product branding was renamed; this is vocabulary, not a rename."
-  }
+  },
+  "ownerUiDebt": [
+    {
+      "id": "O4-READBAR-WRAP",
+      "raisedOn": "2026-09-18",
+      "acceptedOn": "2026-09-19",
+      "status": "ACCEPTED_OWNER_UI_DEBT — MUST NOT be changed during integration",
+      "subject": "#readBar wraps at 390px and 412px since v08.30",
+      "measured": "The P4-D1 completion button adds 37.4px to the app's densest row. Slack goes +14.8 -> -22.6 at 390px and +36.8 -> -0.6 at 412px in English (+5.2 -> -31.9 and +27.2 -> -9.9 in Bangla), which takes the menu button onto its own line and costs 33px of reading area (546 -> 513px at 390x844). The row ALREADY wrapped that way at 320/340/360 before v08.30.",
+      "presentation": "Tidy: the menu button drops to its own right-aligned line, the same shape the bar already had at 320-360. Verified by screenshot in both languages.",
+      "remediesCosted": [
+        "Tighten the bar's own gap: recovers ~21.6px; still 1.3px short in Bangla",
+        "Trim .qr-ico horizontal padding: takes the tap target from ~31px toward ~25px, below the 26px the brief already calls too small",
+        "Move the completion control into the menu: zero width cost, one more tap, a materially different product choice"
+      ],
+      "decision": "NONE CHOSEN. Owner decision."
+    },
+    {
+      "id": "O3",
+      "subject": "tenantSelect truncation in the Study-options panel",
+      "status": "OPEN — Owner UI decision"
+    },
+    {
+      "id": "O3b",
+      "subject": "surahSelect / unitTypeSelect at 320px",
+      "status": "OPEN — the row is genuinely short of space (-63.9px)"
+    }
+  ],
+  "ownerReviewAfterBuild": [
+    {
+      "id": "OWNER_REVIEW_DEFAULT_1",
+      "subject": "The Reading Approach is inferred from translation visibility",
+      "provisionalBuildDefault": "A translation on screen credits approach_03 (Reading with Meaning); none credits approach_01 (Reading with Tajweed). Inferred silently from the reader's own translation toggles rather than from a mode they must set.",
+      "whyItIsTheOwners": "It decides which Approach a person's own record credits, from a control they may not connect to it.",
+      "status": "PROVISIONAL — preserved unchanged in v08.30. No new inference policy was introduced."
+    },
+    {
+      "id": "OWNER_REVIEW_DEFAULT_2",
+      "subject": "A juz, hizb, ruku' or page records NO evidence",
+      "provisionalBuildDefault": "ADR-008 v1 accepts ayah, range and surah only. Pressing the completion control on any other unit records nothing and says so in words: \"Reading is recorded for an ayah, a range or a whole surah.\"",
+      "whyItIsTheOwners": "Accept the gap with that message, hide the control for those units, or extend the contract (an ADR-008 amendment) are materially different choices.",
+      "status": "PROVISIONAL — preserved unchanged. NO EVIDENCE WAS INVENTED to complete tracking."
+    }
+  ]
 }
