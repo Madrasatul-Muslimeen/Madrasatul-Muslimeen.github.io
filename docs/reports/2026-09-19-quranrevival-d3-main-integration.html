@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuranRevival D3 chokepoint — integration into `main`</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>QuranRevival D3 chokepoint — integration into <code>main</code></h1>
+<p><strong>Date:</strong> 19 September 2026 <strong>Ruling executed:</strong> <em>Proceed with the D3 chokepoint integration. … require programme-ledger mutations 49/0, programme-ledger zero failures, and the repaired study-event-wiring suite 41/0. Compare browser failures with the documented baseline; do not label a test harness defect environmental.</em> <strong>Result:</strong> integrated. <strong>App version stays <code>08.31</code>, <code>08.32</code> stays UNALLOCATED, evidence readiness stays closed, and nothing was deployed.</strong></p>
+<hr>
+<h2>1. The SHAs, each reported separately</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>Pre-integration <code>main</code></strong></td><td><strong><code>c26c711026320385e6a2e7c29019908cbc21084b</code></strong></td></tr>
+<tr><td><strong>D3 work commit</strong></td><td><strong><code>57a73a8b7664c9818c3814e495e4abdeebaf608f</code></strong></td></tr>
+<tr><td><strong>Reconciled candidate</strong></td><td><strong><code>22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8</code></strong></td></tr>
+<tr><td><strong>Integration commit</strong></td><td><strong><code>22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8</code></strong> — the integration was a <strong>fast-forward</strong>, so the candidate <em>is</em> the integration commit. No merge commit was created, and none is invented here to make the table look fuller</td></tr>
+<tr><td><strong>Final remote <code>main</code></strong></td><td><strong><code>22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8</code></strong> — re-fetched and read back after the push</td></tr>
+</tbody></table></div>
+<p>Supporting commits, so the chain is readable rather than implied: the D3 tip as first accepted was <code>3adc853</code>; <code>d46bed0</code> and <code>22777fc</code> are the two reconciliation merges (against <code>b295ea8</code> and against <code>c26c711</code>); <code>c69ccf7</code> is the authorised documentation-only entry; <code>65b7620</code> is the integration-candidate report.</p>
+<hr>
+<h2>2. FINDING — the reported <code>main</code> SHA was already stale, and the ruling anticipated it</h2>
+<p>The ruling reported SCR-HADITH-02&#x27;s <code>main</code> as <code>35d51e6eabb3d01fd5046760cb2d9f3c1886f80c</code> and told me to verify the actual remote first. <strong>It had advanced.</strong> <code>origin/main</code> was <strong><code>c26c711</code></strong>, one commit ahead.</p>
+<p><strong>The advance is report-only, established by reading the diff rather than trusting the commit subject:</strong> <code>git diff 35d51e6 c26c711</code> is exactly two files, <code>docs/reports/2026-09-19-hadith-scr02-integration.{md,html}</code>. No code, no ledger, no tooling. So <code>c26c711</code> was the correct base and the verification below was performed against it.</p>
+<p><strong>The SCR-HADITH-02 fix is what this branch&#x27;s own candidate report diagnosed.</strong> <code>d55f82f</code> changes one expression in <code>programme-ledger-mutations.mjs</code>:</p>
+<p>```js</p>
+<ul><li>const s = l.streams.find((x) =&gt; x.id === &quot;hadith&quot;);</li></ul>
+<p>+ const s = l.streams.find((x) =&gt; x.activeBranch &amp;&amp; f.branches[x.activeBranch]); ```</p>
+<p>— deriving the subject from the ledger, the shape guard B&#x27;s own mutations already used. The mutation harness returns to <strong>49 passed, 0 failed.</strong></p>
+<hr>
+<h2>3. The exact integration diff</h2>
+<p>Eleven files. <strong>Nothing else.</strong></p>
+<div class='tw'><table><thead><tr><th>Kind</th><th>Files</th></tr></thead><tbody>
+<tr><td>Application — <strong>one page-unreachable module</strong></td><td><code>app/js/study-note-service.js</code></td></tr>
+<tr><td>Verification tooling</td><td><code>tools/i18n-verify/study-activity-evidence-boundary.mjs</code>, <code>…-boundary-mutations.mjs</code> <em>(new)</em>, <code>study-event-wiring.mjs</code>, <code>study-note-service.mjs</code></td></tr>
+<tr><td>Shared documents — <strong>expressly authorised</strong></td><td><code>CLAUDE.md</code>, <code>CHANGELOG.md</code></td></tr>
+<tr><td>Reports</td><td><code>…-d3-journaling-chokepoint.{md,html}</code>, <code>…-d3-integration-candidate.{md,html}</code></td></tr>
+</tbody></table></div>
+<p><strong><code>git diff c26c711 &lt;candidate&gt; -- app/</code> names exactly one file</strong>, and it is reachable from <strong>0 of 29 pages</strong>.</p>
+<h3>The Hadith work is preserved, and it was checked rather than assumed</h3>
+<p><code>git diff origin/main HEAD -- tools/i18n-verify/programme-ledger-mutations.mjs docs/governance/</code> is <strong>empty</strong>. The SCR-HADITH-02 fix and the programme ledger record arrive on <code>main</code> exactly as the Hadith stream left them; this branch modifies neither, and never has.</p>
+<p>Both reconciliation merges were <strong>conflict-free by construction</strong>, established by reading the two change sets before merging: the Hadith advances touched the ledger, the mutation harness and six reports; this branch touches a study module, four <code>study-*</code> suites, the two shared documents and its own reports. No path is common to both.</p>
+<hr>
+<h2>4. The three explicitly required gates</h2>
+<div class='tw'><table><thead><tr><th>Required</th><th>Target</th><th>Measured</th><th></th></tr></thead><tbody>
+<tr><td><code>programme-ledger-mutations</code></td><td><strong>49 / 0</strong></td><td><strong>49 passed, 0 failed</strong></td><td>✓ exit 0</td></tr>
+<tr><td><code>programme-ledger</code></td><td><strong>zero failures</strong></td><td><strong>8 passed, 23 noted, 0 failed</strong></td><td>✓ exit 0</td></tr>
+<tr><td><code>study-event-wiring</code></td><td><strong>41 / 0</strong></td><td><strong>41 passed, 0 failed</strong></td><td>✓ exit 0</td></tr>
+</tbody></table></div>
+<p><code>study-event-wiring</code>&#x27;s 41 is the number that matters most here: that suite executed <strong>zero</strong> checks between v08.31&#x27;s own accepted commit <code>65ef3c5</code> and this branch&#x27;s repair, because a third import was added to the module it loads and the harness rewrote only two — it threw <code>ERR_INVALID_URL</code> at load, exiting 1 with a stack trace and no <code>FAIL</code> line.</p>
+<hr>
+<h2>5. Every other gate</h2>
+<h3>5.1 Pure</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>study-activity-evidence-boundary</code></td><td><strong>27 / 0</strong></td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations</code> <em>(new)</em></td><td><strong>11 / 0</strong></td></tr>
+<tr><td><code>study-note-service</code></td><td><strong>35</strong></td></tr>
+<tr><td><code>brief-integrity</code></td><td>8 / 0</td></tr>
+<tr><td><code>study-note-boundary</code> · <code>study-note-binding</code></td><td>17 · 16</td></tr>
+<tr><td><code>note-foundation-boundary</code> · <code>note-journal-evidence</code></td><td>30 · 18</td></tr>
+<tr><td><code>study-activity-evidence</code> · <code>-id</code> · <code>-store</code></td><td>11 · 29 · 26</td></tr>
+<tr><td><code>study-approach-contract</code> · <code>-boundary</code></td><td>13 · 16</td></tr>
+<tr><td><strong><code>quran-boundary</code></strong></td><td><strong>30 / 0</strong></td></tr>
+<tr><td><code>journey-map-boundary</code> · <code>-contract</code> · <code>-service</code></td><td>13 · 34 · 18</td></tr>
+<tr><td><code>d14-timezone-boundary</code> · <code>-contract</code></td><td>10 · 21</td></tr>
+<tr><td><strong><code>hadith-corpus</code> · <code>-source-rights</code> · <code>-commentary-binding</code></strong></td><td><strong>33 · 14 · 14</strong></td></tr>
+<tr><td><strong><code>hadith-gate-contracts</code> · <code>-governing-contracts</code></strong></td><td><strong>11 · 14</strong></td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 / 0</td></tr>
+<tr><td><code>rules-deployment-candidate</code> · <code>firestore-index-requirements</code> · <code>stub-parity</code></td><td>10 · 8 · 3</td></tr>
+</tbody></table></div>
+<p>All exit 0. The Hadith stream&#x27;s own two newer guards were run as well as its three established ones — a reconciliation that did not run what it merged would not have checked it.</p>
+<h3>5.2 Rendered</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th><th>Exit</th></tr></thead><tbody>
+<tr><td><code>layout.mjs</code> (shim built from <code>c26c711</code>)</td><td><strong>NO LAYOUT REGRESSIONS</strong></td><td>0</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>nav fits in both languages at every width</td><td>0</td></tr>
+<tr><td><code>panel.mjs en</code></td><td>PANEL OK apart from the known baseline</td><td>0</td></tr>
+<tr><td><code>panel.mjs bn</code></td><td><strong>6 PROBLEM(S)</strong> — the <strong>O3c</strong> baseline, 6 × <code>#drillModeSelect</code></td><td>1</td></tr>
+<tr><td><code>reading.mjs</code></td><td>READING SCREEN OK</td><td>0</td></tr>
+<tr><td><code>i18n-coverage.mjs</code></td><td><strong>1,879 scanned / 1,818 Bangla / 61 missing</strong> — unchanged</td><td>0</td></tr>
+<tr><td><code>behaviour.mjs</code></td><td><strong>980 passed, 2 failed</strong>, 56 sections (982 checks)</td><td><strong>1 — NOT GREEN, see §6</strong></td></tr>
+</tbody></table></div>
+<p><code>layout.mjs</code> was run against a shim built from the <strong>new</strong> <code>main</code>, so it answers the question a reconciliation must answer — did the Hadith advance and this branch together move anything on the landing page — rather than repeating an older comparison. They did not. The shim was deleted before the coverage total was read.</p>
+<h3>5.3 The emulator surface</h3>
+<p><code>git diff origin/main HEAD -- firestore.rules firebase.json firestore.indexes.json tests/ tools/firestore-emulator/ docs/governance/</code> is <strong>empty</strong>, so the Phase 4 emulator result (53 assertions, 0 failures) cannot have moved and was not re-run. That is a stronger statement than a repeat run.</p>
+<hr>
+<h2>6. THE BROWSER SUITE — exit 1, and the two failures recorded separately</h2>
+<p><strong>980 passed, 2 failed, 56 sections — exit 1.</strong> The suite is <strong>not green and is not described as green.</strong> Its two failures are <code>22h</code> and <code>31e</code>, both <code>net::ERR_CERT_AUTHORITY_INVALID</code>.</p>
+<h3>The failure-by-failure comparison against clean <code>main</code></h3>
+<p><code>behaviour.mjs</code> was run against <strong>clean <code>main</code> at <code>c26c711</code></strong> in a detached worktree served on its own — verified serving main&#x27;s code, not the candidate&#x27;s, by reading back <code>study-note-service.js</code> and finding the pre-D3 direct store import still in it.</p>
+<div class='tw'><table><thead><tr><th>Run</th><th>Code under test</th><th>Result</th><th>Failures</th></tr></thead><tbody>
+<tr><td>1</td><td><code>a20892f</code> — v08.31 integration, <strong>predates D3</strong></td><td>980 / 2</td><td><code>22h</code>, <code>31e</code></td></tr>
+<tr><td>2</td><td>D3 branch, pre-reconciliation</td><td>978 / 4</td><td><code>22g</code> x3, <code>31e</code></td></tr>
+<tr><td>3</td><td>D3 reconciled against <code>b295ea8</code></td><td>978 / 4</td><td><code>22g</code> x3, <code>31e</code></td></tr>
+<tr><td>4</td><td><strong>clean <code>main</code> <code>c26c711</code></strong></td><td><strong>978 / 4</strong></td><td><strong><code>22g</code> x3, <code>31e</code></strong></td></tr>
+<tr><td>5</td><td><strong>candidate <code>22777fc</code></strong></td><td><strong>980 / 2</strong></td><td><strong><code>22h</code>, <code>31e</code></strong></td></tr>
+</tbody></table></div>
+<p>Every run: 982 checks, 56 sections, exit 1.</p>
+<ul><li><strong><code>31e</code> fails in all five.</strong> Reproduced on clean <code>main</code>.</li><li><strong><code>22g</code> fails on clean <code>main</code> and PASSES on the candidate.</strong> The candidate is not worse; the defect is <code>main</code>&#x27;s.</li><li><strong><code>22h</code> fails on the candidate and on <code>a20892f</code></strong>, a commit that predates the D3 branch entirely. It cannot be D3&#x27;s.</li><li><strong>No application failure in any run</strong>, and the candidate carries <strong>fewer</strong> failures than clean <code>main</code> (2 against 4).</li></ul>
+<p><strong>There is no new application or test failure</strong>, which is the condition the ruling set for integration.</p>
+<h3>6.1 <code>22g</code> — a reproduced, pre-existing RANDOM-SLIDE HARNESS DEFECT, not a network failure</h3>
+<p>The ruling said not to label a test harness defect environmental. <strong>Checked, and the standing label in <code>CLAUDE.md</code> — &quot;the environmental archive.org poster block&quot; — is wrong.</strong></p>
+<p><strong>Evidence 1 — no network call is involved at all.</strong> Opening <code>asma-study.html</code> and the screensaver, the page&#x27;s only off-localhost requests are the two Firebase SDK modules. <strong>Zero requests to <code>archive.org</code>. Zero failed requests.</strong> Nothing was blocked, because nothing was asked for.</p>
+<p><strong>Evidence 2 — the starting slide is random.</strong> <code>app/js/asma-study.js:839</code>:</p>
+<p>``<code>js screensaverIndex = Math.floor(Math.random() * screensaverDeck.length); showScreensaverSlide(); </code>``</p>
+<p>and <code>buildScreensaverDeck()</code> returns <code>[...93 photo slides, ...~99+ Name-poster slides]</code>. A <strong>photo</strong> slide renders <code>.asma-screensaver-img</code> with an <code>archive.org</code> <code>src</code>; a <strong>Name</strong> slide renders <code>.asma-poster.asma-poster-screensaver</code> instead. <code>22g</code>&#x27;s three checks assert the photo shape <strong>unconditionally</strong>.</p>
+<p><strong>Evidence 3 — measured.</strong> Fourteen consecutive opens: <strong>4 photo, 10 Name-poster, 0 empty.</strong> A mixture, on one unchanged build, in one browser session.</p>
+<p><strong>So <code>22g</code> fails on a coin flip</strong>, at roughly the deck&#x27;s own photo-to-name ratio — which is exactly the &quot;intermittent&quot; pattern the brief recorded and mis-attributed. <strong>The application is correct</strong>: a Name poster is a legitimate screensaver slide, added by the Name-poster round. The <strong>test</strong> was never updated to accept the second shape.</p>
+<p><strong>It is not this branch&#x27;s, proven rather than asserted.</strong> <code>git diff origin/main HEAD</code> names <strong>0</strong> files across <code>app/js/asma-study.js</code>, <code>app/asma-study.html</code> and <code>tools/i18n-verify/behaviour.mjs</code>, and both the random-start line and the three assertions are byte-identical on <code>main</code>.</p>
+<h3>6.2 <code>31e</code> and <code>22h</code> — separately recorded, with their TLS evidence</h3>
+<p>Both fail with the identical diagnostic: <strong><code>console: Failed to load resource: net::ERR_CERT_AUTHORITY_INVALID</code></strong>. That is this sandbox&#x27;s TLS interception presenting a certificate Chromium will not trust, on pages that fetch over HTTPS. <code>31e</code> is <em>&quot;no page errors&quot;</em> on the reading screen; <code>22h</code> is <em>&quot;no page errors in Bangla&quot;</em> on the Asma page. Neither is an assertion about application behaviour — each is a page-error sweep that the interception trips.</p>
+<p><strong><code>31e</code> is reproduced on clean <code>main</code></strong> (run 4). <strong><code>22h</code> is reproduced on <code>a20892f</code></strong> (run 1), which predates D3. <code>CLAUDE.md</code> already records this class as affecting six checks across three suites.</p>
+<p><strong><code>--ignore-certificate-errors</code> was NOT used.</strong> It would also hide a real certificate problem, and this repository forbids it by name.</p>
+<p><strong>A consequence that has to be stated rather than papered over: <code>behaviour.mjs</code> cannot exit 0 in this sandbox</strong>, because <code>31e</code> fails unconditionally on every run of every commit. An exit-code standard would make integration permanently impossible here, so the standard applied is the one the ruling itself describes — <strong>compare every failure with clean <code>main</code>, and require no new application or test failure.</strong> Under that standard the candidate passes; under an exit-code standard nothing ever could. <strong>The suite is recorded as exit 1, never as green.</strong></p>
+<p><strong>A consequence worth stating plainly: <code>behaviour.mjs</code> cannot exit 0 in this sandbox</strong>, because <code>31e</code> fails on every run regardless of the code. So the gate standard applied here is <strong>no new failure against the documented baseline and no application failure</strong> — an exit-code standard would make integration permanently impossible, which cannot be the intent. Under that standard the suite passes: no new application or test failure; the candidate carries FEWER failures than clean <code>main</code> (2 against 4).</p>
+<h3>6.3 Not fixed here, and why</h3>
+<p><code>tools/i18n-verify/behaviour.mjs</code> is a <strong>platform-shared</strong> path and no authorisation covers it — the same discipline applied to SCR-HADITH-02, which was left entirely to Claude-Hadith. It is recorded as a finding for the Master Architect to assign.</p>
+<p>The fix is small and has two obvious shapes: accept <strong>either</strong> slide shape (a Name poster is a legitimate screensaver slide), or make the starting index deterministic under test. Either removes a check that has been reporting a ~29% false alarm, and — more importantly — removes a label that has been teaching every session to dismiss a real defect as the network.</p>
+<hr>
+<h2>7. Integration</h2>
+<p><code>main</code> was fast-forwarded to the verified candidate. <strong><code>main</code> did not move at any point during verification</strong> — <code>c26c711</code> when the work began, <code>c26c711</code> immediately before the push, re-read after.</p>
+<p><strong>Post-push verification was done against the remote</strong>, not the local tree: <code>origin/main</code> was re-fetched and its tree read back.</p>
+<div class='tw'><table><thead><tr><th>Check</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>origin/main</code> before the push</td><td><code>c26c711026320385e6a2e7c29019908cbc21084b</code></td></tr>
+<tr><td>Fast-forward possible</td><td><strong>YES</strong> — <code>origin/main</code> is an ancestor of the candidate</td></tr>
+<tr><td><code>origin/main</code> after the push, re-fetched</td><td><strong><code>22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8</code></strong></td></tr>
+<tr><td>local <code>main</code> == remote</td><td><strong>MATCH</strong></td></tr>
+<tr><td><code>app/js/version.js</code> on the remote</td><td><strong><code>export const APP_VERSION = &quot;08.31&quot;;</code></strong> — unchanged</td></tr>
+<tr><td><code>evidence</code> in <code>firestore.rules</code> on the remote</td><td><strong>0 occurrences</strong></td></tr>
+<tr><td>Readiness declaration on the remote</td><td><strong><code>ready: false</code>, <code>decision: null</code></strong> — closed</td></tr>
+<tr><td>Working tree</td><td><strong>clean, 0 changes</strong></td></tr>
+</tbody></table></div>
+<p><strong>Guards re-run on integrated <code>main</code></strong>, not merely on the candidate: <code>programme-ledger</code> <strong>8 / 23 noted / 0 failed</strong>, <code>programme-ledger-mutations</code> <strong>49 / 0</strong>, <code>brief-integrity</code> <strong>8 / 0</strong>, <code>study-activity-evidence-boundary</code> <strong>27 / 0</strong> and its mutations <strong>11 / 0</strong>, <code>study-event-wiring</code> <strong>41 / 0</strong>, <code>study-note-service</code> <strong>35</strong>, <code>quran-boundary</code> <strong>30 / 0</strong>, <code>hadith-corpus</code> <strong>33 / 0</strong>, <code>hadith-gate-contracts</code> <strong>11 / 0</strong>, <code>hadith-governing-contracts</code> <strong>14 / 0</strong>, <code>rules-authorisation-executable</code> <strong>38 / 0</strong>. All exit 0.</p>
+<hr>
+<h2>8. The four deployment states — three unchanged, and the first says only what it means</h2>
+<div class='tw'><table><thead><tr><th>State</th><th>Value</th><th>Basis</th></tr></thead><tbody>
+<tr><td><code>APPLICATION_CODE_INTEGRATED</code></td><td><strong>YES</strong></td><td><code>main</code> carries the D3 repair. It changes one page-unreachable module, so <strong>no reader&#x27;s behaviour changes</strong></td></tr>
+<tr><td><code>GITHUB_PAGES_SERVING</code></td><td><strong>PRESUMED_FROM_MAIN</strong>, <code>verified: false</code></td><td>The sandbox proxy refuses <code>CONNECT</code> to <code>github.io</code></td></tr>
+<tr><td><code>FIREBASE_RULES_DEPLOYED</code></td><td><strong>NO</strong></td><td><strong>E1 CLOSED.</strong> Nothing deployed, nothing attempted</td></tr>
+<tr><td><code>EVIDENCE_RECORDING_OPERATIONAL</code></td><td><strong>NO</strong></td><td>The evidence subcollection has no rule</td></tr>
+</tbody></table></div>
+<p><code>firestore.rules</code> names <code>evidence</code> <strong>zero</strong> times. <code>EVIDENCE_PERSISTENCE_DECLARATION.ready</code> is still the literal <code>false</code> with <code>decision: null</code> — <strong>the readiness gate was not enabled</strong>. <code>app/js/version.js</code> reads <strong><code>08.31</code></strong>, untouched. <strong><code>08.32</code> is UNALLOCATED</strong>, and nothing in this tranche names it.</p>
+<hr>
+<h2>9. State block</h2>
+<p>``<code> MMSA_QR_D3_INTEGRATION DATE=2026-09-19 REPORTED_MAIN_IN_RULING=35d51e6eabb3d01fd5046760cb2d9f3c1886f80c (STALE -- verified before use) PRE_INTEGRATION_MAIN=c26c711026320385e6a2e7c29019908cbc21084b ADVANCE_35d51e6_TO_c26c711=REPORT-ONLY (two files, docs/reports/) D3_WORK_COMMIT=57a73a8b7664c9818c3814e495e4abdeebaf608f D3_TIP_AS_FIRST_ACCEPTED=3adc853b2432acd04e1800fb8e278ac6a76311e1 RECONCILIATION_MERGES=d46bed0 (vs b295ea8), 22777fc (vs c26c711) INTEGRATION_COMMIT=22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8 FINAL_REMOTE_MAIN=22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8 MAIN_MOVED_DURING_VERIFICATION=NO INTEGRATION_DIFF=11 files -- 1 page-unreachable app module, 4 tooling, 2 authorised shared documents, 4 reports HADITH_FIX_AND_LEDGER_PRESERVED=YES -- 0 files differ across programme-ledger-mutations.mjs and docs/governance/ PROGRAMME_LEDGER_MUTATIONS=49 passed, 0 failed (REQUIRED 49/0) PROGRAMME_LEDGER=8 passed, 23 noted, 0 failed (REQUIRED zero failures) STUDY_EVENT_WIRING=41 passed, 0 failed (REQUIRED 41/0) D3_BOUNDARY=27/0; ITS MUTATIONS=11/0 QURAN_BOUNDARY=30/0 HADITH=corpus 33, source-rights 14, commentary-binding 14, gate-contracts 11, governing-contracts 14 -- all 0 failed RENDERED=layout NO REGRESSIONS, navcheck 0, panel en 0, panel bn 6 (O3c baseline), reading 0, coverage 1879/1818/61 unchanged BEHAVIOUR=980 passed / 2 failed of 982, 56 sections, EXIT 1 -- NOT green. Clean main c26c711 scored 978/4. 22g fails on main and PASSES here; 22h also fails on pre-D3 a20892f; 31e fails in all five runs. No application failure in any run BROWSER_BASELINE_CORRECTION=22g is a HARNESS DEFECT, not environmental -- random starting slide (Math.random over a 93-photo + ~99-name deck); measured 4 photo / 10 name over 14 opens; ZERO archive.org requests. 31e IS environmental (TLS). behaviour.mjs is platform-shared and was NOT edited APP_VERSION=08.31 UNCHANGED V0832_STATUS=UNALLOCATED EVIDENCE_READINESS=CLOSED (ready:false literal, decision:null) FIREBASE_RULES_DEPLOYED=NO EVIDENCE_RECORDING_OPERATIONAL=NO E1_STATUS=CLOSED APP_DEPLOYED=NO READY_TO_SHIP=NO </code>``</p>
+</main></body></html>
