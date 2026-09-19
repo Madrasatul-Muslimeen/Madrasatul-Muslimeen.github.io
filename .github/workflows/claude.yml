@@ -1,8 +1,9 @@
 # Claude Code — MMSA governance-automation pilot, STEP 2 (the builder stage).
 #
-# REVIEWABLE CONFIGURATION. This workflow is INERT until the Owner adds a
-# Claude API credential (see "Owner setup" below). Without it the job stops at
-# a preflight step with an explanatory message and does NOT run Claude.
+# REVIEWABLE CONFIGURATION. This workflow is INERT until the Owner configures a
+# Claude authentication mode (see "Owner setup" below). Without one the job
+# stops at the preflight step with an explanatory message and does NOT run
+# Claude.
 #
 # ---------------------------------------------------------------------------
 # HOW THE BOT IDENTITY WORKS — verified from the Action's own source, not
@@ -24,26 +25,79 @@
 #         trigger the `verify` workflow at all. Do not add it.
 #
 #   2. CLAUDE API identity. Separate and NOT supplied by the App. It needs one
-#      of: an ANTHROPIC_API_KEY secret, a CLAUDE_CODE_OAUTH_TOKEN secret, or
-#      Workload Identity Federation. This is the Owner's to add; nothing here
+#      of the three modes below. This is the Owner's to add; nothing here
 #      creates, stores or prints one.
 # ---------------------------------------------------------------------------
 #
-# Owner setup, exactly one of:
-#   (a) Add repository secret ANTHROPIC_API_KEY, or
-#   (b) Add repository secret CLAUDE_CODE_OAUTH_TOKEN and swap the input
-#       below, or
-#   (c) Workload Identity Federation — no stored secret at all. Replace the
-#       anthropic_api_key line with anthropic_federation_rule_id /
-#       anthropic_organization_id / anthropic_service_account_id. Those are
-#       identifiers, not credentials, and may live in the workflow file.
+# ===========================================================================
+# TWO REVIEW FINDINGS WERE RAISED ON THE FIRST REVISION OF THIS FILE. BOTH
+# WERE CORRECT AND BOTH ARE RESOLVED HERE. Recorded rather than silently
+# patched, because the reasoning is what stops them coming back.
+#
+# [P2] THE PREFLIGHT ONLY MATCHED ONE OF THE THREE ADVERTISED AUTH MODES.
+#   It tested `ANTHROPIC_API_KEY` alone while the setup notes offered three
+#   modes and told the Owner to "swap the input". An Owner who chose OAuth or
+#   Workload Identity Federation would have got `present=false` for ever: both
+#   checkout and Claude skipped, the workflow permanently inert, and NOTHING
+#   on screen saying why.
+#   FIXED AT THE ROOT, not by widening one test: all three modes are passed to
+#   the Action unconditionally (empty inputs are treated as unset, confirmed
+#   from action.yml's own `inputs.x || env.X` fallbacks), so THERE IS NO INPUT
+#   TO SWAP ANY MORE -- the instruction that caused the defect is gone. The
+#   preflight now reports which mode is configured, and a HALF-configured
+#   federation FAILS BY NAME rather than reading as "none".
+#
+# [P1] CLAUDE COULD HAVE PUSHED STRAIGHT TO `main`.
+#   `Bash(git push:*)` pre-approved every form of push, including
+#   `git push --force origin HEAD:main`. The job holds `contents: write` and a
+#   real App token, and `verify.yml` only runs on `pull_request` -- so that
+#   single pattern bypassed BOTH pull-request review and the seven-suite gate.
+#   FIXED: every git WRITE verb is gone -- no push, no commit, no add, no
+#   checkout. Nothing is lost by removing them: the Action's own documented
+#   defaults already give Claude file operations, committing, and read-only
+#   git, and it manages the branch and the pull request itself.
+#
+#   AND THE GLOB WENT TOO, WHICH THE FINDING DID NOT ASK FOR.
+#   `Bash(node tools/i18n-verify/*)` would have re-opened the same hole by
+#   another door: Claude can write files by default, so it could author a new
+#   script INTO that directory and execute it, and that script could push
+#   anywhere. The seven suites are therefore listed as seven EXACT commands
+#   with no wildcard. Adding a suite is a deliberate edit here, by design.
+#
+#   RESIDUAL RISK, STATED PLAINLY RATHER THAN IMPLIED AWAY: any job holding a
+#   `contents: write` token can in principle reach `main`. Narrowing tools
+#   makes that hard; only a SERVER-SIDE rule makes it impossible. The backstop
+#   is a branch rule on `main` set to "Require a pull request before merging"
+#   with **Required approvals = 0**. That blocks direct pushes outright WITHOUT
+#   demanding an approval -- which matters here, because AAAsapp authors every
+#   pull request today and GitHub forbids approving your own, so requiring an
+#   approval would deadlock the repository. That setting is the Owner's to
+#   make; this file cannot and does not change repository settings.
+# ===========================================================================
+#
+# Owner setup, exactly one of -- and NO edit to this file is needed for any of
+# them:
+#   (a) Add repository SECRET  ANTHROPIC_API_KEY
+#   (b) Add repository SECRET  CLAUDE_CODE_OAUTH_TOKEN
+#   (c) Workload Identity Federation -- no stored credential at all. Add three
+#       repository VARIABLES (Settings > Secrets and variables > Actions >
+#       Variables), which are identifiers rather than secrets:
+#         ANTHROPIC_FEDERATION_RULE_ID
+#         ANTHROPIC_ORGANIZATION_ID
+#         ANTHROPIC_SERVICE_ACCOUNT_ID
+#       All three, or the preflight fails and names the missing ones.
+#
+# If (a) and (b) are both set the Action's own precedence applies; the
+# preflight says so rather than choosing silently.
 #
 # KNOWN AND EXPECTED: the App token exchange validates that this workflow
 # exists on the DEFAULT BRANCH. On the pull request that first adds this file
 # the exchange is refused with `workflow_not_found_on_default_branch`; the
 # Action logs a warning, sets the output
 # `skipped_due_to_workflow_validation_mismatch`, and EXITS CLEANLY (green, not
-# red). It begins working only once this file is on `main`.
+# red). Separately, `issue_comment` workflows ALWAYS run from the default
+# branch. Both mean the same thing: this begins working only once it is on
+# `main`.
 
 name: Claude Code
 
@@ -53,11 +107,34 @@ on:
 
 jobs:
   claude:
-    # Narrow on purpose: only a comment that actually mentions @claude, and
-    # only on an issue or PR conversation. The Action additionally refuses any
-    # actor without write access to this repository, and its `allowed_bots`
-    # default is empty, so no bot can invoke it.
-    if: contains(github.event.comment.body, '@claude')
+    # TWO GATES, AND THE OUTER ONE IS NEW.
+    #
+    # This repository is PUBLIC, so anyone on GitHub can comment on an issue or
+    # a pull request. The Action itself refuses an actor without write access
+    # -- src/github/validation/permissions.ts calls
+    # getCollaboratorPermissionLevel() and accepts only "admin" or "write", and
+    # src/entrypoints/prepare.ts runs that check BEFORE the trigger check and
+    # calls core.setFailed() otherwise. THAT CHECK IS REAL AND IS KEPT; nothing
+    # here replaces or weakens it.
+    #
+    # But it runs INSIDE the Action, so a stranger's comment would still start
+    # a runner and check out the repository before being refused -- billable
+    # minutes available to anyone, on demand. The association test below moves
+    # the refusal EARLIER, to before the job starts at all. Defence in depth:
+    # the outer gate is cheap and coarse, the Action's is authoritative.
+    #
+    # OWNER / MEMBER / COLLABORATOR is deliberately all three. On an
+    # organisation-owned repository an administrator may present as any of
+    # them depending on how their access is granted, and AAAsapp is the sole
+    # collaborator with role_name "admin". Listing one would risk locking out
+    # the only human who can drive this.
+    #
+    # DIAGNOSTIC, because a job-level `if` that fails leaves NO run to look at:
+    # if an authorised "@claude" comment produces no workflow run whatsoever,
+    # this condition is the first place to look, not the Action.
+    if: >-
+      contains(github.event.comment.body, '@claude') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -73,53 +150,126 @@ jobs:
                             # Claude App installation token (the bot identity)
 
     steps:
-      # Establishes ONLY whether a credential exists. It prints a boolean and
-      # never the value, and the secret is passed via env rather than
-      # interpolated into the script so it cannot be echoed by accident.
-      - name: Check whether a Claude API credential is configured
-        id: cred
+      # Establishes ONLY which mode is configured. It prints a mode name and
+      # booleans, NEVER a value: every secret arrives through `env:` and is
+      # tested with [ -n ... ], so no credential is ever interpolated into the
+      # script text where it could be echoed by accident.
+      - name: Establish which Claude authentication mode is configured
+        id: auth
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          FED_RULE_ID: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          FED_ORG_ID: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          FED_SA_ID: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-            echo "A Claude API credential is configured."
+
+          # Explicit if/fi rather than `[ ... ] && x=1`: under `set -e` a
+          # trailing failed test would terminate the step.
+          have_api=0
+          if [ -n "${ANTHROPIC_API_KEY:-}" ]; then have_api=1; fi
+          have_oauth=0
+          if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then have_oauth=1; fi
+
+          fed_present=0
+          fed_missing=""
+          for pair in "ANTHROPIC_FEDERATION_RULE_ID=${FED_RULE_ID:-}" \
+                      "ANTHROPIC_ORGANIZATION_ID=${FED_ORG_ID:-}" \
+                      "ANTHROPIC_SERVICE_ACCOUNT_ID=${FED_SA_ID:-}"; do
+            name="${pair%%=*}"
+            value="${pair#*=}"
+            if [ -n "$value" ]; then
+              fed_present=$((fed_present + 1))
+            else
+              fed_missing="$fed_missing $name"
+            fi
+          done
+
+          if [ "$have_api" -eq 1 ] && [ "$have_oauth" -eq 1 ]; then
+            echo "::warning::Both ANTHROPIC_API_KEY and CLAUDE_CODE_OAUTH_TOKEN are set; the Action's own precedence decides. Remove one to make the choice explicit."
+          fi
+
+          mode=none
+          ready=false
+          if [ "$have_api" -eq 1 ]; then
+            mode=api_key; ready=true
+          elif [ "$have_oauth" -eq 1 ]; then
+            mode=oauth; ready=true
+          elif [ "$fed_present" -eq 3 ]; then
+            mode=federation; ready=true
+          elif [ "$fed_present" -gt 0 ]; then
+            # A PARTIAL federation setup must never read as "not configured".
+            # Silently falling through to inert is exactly how a half-done
+            # setup looks identical to no setup at all.
+            mode=federation_incomplete
+          fi
+
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+
+          if [ "$mode" = "federation_incomplete" ]; then
+            echo "::error::Workload Identity Federation is partially configured ($fed_present of 3). Missing:$fed_missing"
+            {
+              echo "## Claude Code — federation setup incomplete"
+              echo ""
+              echo "$fed_present of 3 federation variables are set. Missing:"
+              echo ""
+              for m in $fed_missing; do echo "- \`$m\`"; done
+              echo ""
+              echo "Add them under **Settings → Secrets and variables → Actions → Variables**."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          if [ "$ready" = "true" ]; then
+            echo "A Claude authentication mode is configured: $mode"
           else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::No Claude API credential configured, so Claude will not run."
+            echo "::notice::No Claude authentication mode configured, so Claude will not run."
             {
               echo "## Claude Code — not configured yet"
               echo ""
-              echo "This workflow is wired but **inert**. The Owner must add one of:"
+              echo "This workflow is wired but **inert**. The Owner must add exactly one of:"
               echo ""
-              echo "- repository secret \`ANTHROPIC_API_KEY\`, or"
-              echo "- repository secret \`CLAUDE_CODE_OAUTH_TOKEN\` (swap the input), or"
-              echo "- Workload Identity Federation identifiers (no stored secret)."
+              echo "- repository **secret** \`ANTHROPIC_API_KEY\`, or"
+              echo "- repository **secret** \`CLAUDE_CODE_OAUTH_TOKEN\`, or"
+              echo "- all three repository **variables** \`ANTHROPIC_FEDERATION_RULE_ID\`, \`ANTHROPIC_ORGANIZATION_ID\`, \`ANTHROPIC_SERVICE_ACCOUNT_ID\` (no stored credential)."
               echo ""
+              echo "No edit to \`claude.yml\` is required for any of them."
               echo "No credential is created by this workflow, and none is printed."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Check out the repository
-        if: steps.cred.outputs.present == 'true'
+        if: steps.auth.outputs.ready == 'true'
         uses: actions/checkout@v6
         with:
           fetch-depth: 1
 
       - name: Run Claude Code
-        if: steps.cred.outputs.present == 'true'
+        if: steps.auth.outputs.ready == 'true'
         uses: anthropics/claude-code-action@v1
         with:
-          # Claude API auth. Swap for claude_code_oauth_token, or for the
-          # three federation identifiers, per "Owner setup" above.
+          # ALL THREE MODES ARE PASSED, ALWAYS. An empty input is treated as
+          # unset (action.yml resolves `inputs.x || env.X`), so whichever mode
+          # the Owner configured is the one that takes effect -- and there is
+          # no "swap the input" step left to get wrong.
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          anthropic_federation_rule_id: ${{ vars.ANTHROPIC_FEDERATION_RULE_ID }}
+          anthropic_organization_id: ${{ vars.ANTHROPIC_ORGANIZATION_ID }}
+          anthropic_service_account_id: ${{ vars.ANTHROPIC_SERVICE_ACCOUNT_ID }}
 
           # github_token is INTENTIONALLY OMITTED. See the header: omitting it
           # is what selects the Claude App installation token, and with it the
           # `claude[bot]` identity that makes the PR reviewable by AAAsapp and
           # able to trigger the `verify` workflow.
 
+          # NO GIT WRITE VERBS, AND NO WILDCARD. These seven exact commands are
+          # the whole of the extra Bash surface: the governance gate's own
+          # suites, so Claude can prove its work before opening a pull request.
+          # Committing, editing and read-only git are already the Action's
+          # documented defaults and need no entry here.
           claude_args: |
             --model "claude-opus-5"
-            --allowedTools "Bash(node tools/i18n-verify/*),Bash(git status),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git checkout:*),Bash(git push:*)"
+            --allowedTools "Bash(node tools/i18n-verify/programme-ledger.mjs),Bash(node tools/i18n-verify/programme-ledger-mutations.mjs),Bash(node tools/i18n-verify/brief-integrity.mjs),Bash(node tools/i18n-verify/study-activity-evidence-boundary.mjs),Bash(node tools/i18n-verify/study-activity-evidence-boundary-mutations.mjs),Bash(node tools/i18n-verify/study-event-wiring.mjs),Bash(node tools/i18n-verify/rules-authorisation-executable.mjs)"
