@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuranRevival v08.31 — Study-evidence persistence-readiness gate</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>QuranRevival v08.31 — Study-evidence persistence-readiness gate</h1>
+<p><strong>MMSA — Madrasatul Muslimeen&#x27;s Study App</strong> <strong>Date:</strong> 19 September 2026 <strong>Stream:</strong> <code>quran</code> (QuranRevival — the Quran Study module) <strong>Branch:</strong> <code>claude/charming-rubin-xzxbk1</code> <strong>Baseline:</strong> <code>origin/main</code> at <code>db6cb24b807d77630914e076d413bec6982cc3d7</code>, application <strong>v08.30</strong> (<code>db6cb24</code> is the report-stamp commit one ahead of the accepted <code>8ea445fb376784fb8452cb2042e4eaa8e017f41b</code>; <code>app/</code> is byte-identical between the two, so the accepted build is what was measured against.) <strong>Authorisation:</strong> Master Architect ruling, 19 Sep 2026 — v08.30 integration ACCEPTED WITH A GOVERNANCE CORRECTION; <strong>v08.31 RESERVED AND AUTHORIZED</strong> for a narrow release-gating repair. <strong>Blast radius:</strong> BR-2 — reachable application behaviour changes on one control, on one screen, in one module. No schema change, no Firestore Rules change, no deployment.</p>
+<hr>
+<h2>1. The problem, stated exactly</h2>
+<p>v08.30 wired D1 Reading, D2 Listening and D4 Word-by-Word to ADR-008&#x27;s Activity evidence subcollection, and it fails <strong>closed</strong>: <code>firestore.rules</code> contains the word <code>evidence</code> <strong>zero</strong> times, so the subcollection has no rule, every write is denied, the store rethrows and <code>safeWrite()</code> surfaces the error to the reader (I15). That is correct, it was deliberate, and <strong>none of it is weakened here.</strong></p>
+<p>What was missing is the consequence of where that code lives. <strong>GitHub Pages serves <code>main</code></strong>, so the moment v08.30 reached <code>main</code> the ✓ became visible on the Owner&#x27;s own live app — a control whose only possible outcome is an error message. Failing closed at the <em>database</em> is not the same as being honest at the <em>surface</em>.</p>
+<p>The Master Architect&#x27;s ruling put it in one line: <em>while E1 is closed, the Phase 4 completion control must not invite an action that cannot succeed.</em></p>
+<h3>1.1 The governance correction that produced this tranche</h3>
+<p>The v08.30 integration report stated <code>APP_DEPLOYED=NO</code>. That was <strong>incomplete</strong>, and the incompleteness mattered: one boolean cannot carry four independent facts, and collapsing them recorded a control the Owner can see and press as &quot;not deployed&quot;. The four are now recorded separately, and this report and the programme ledger both carry them.</p>
+<div class='tw'><table><thead><tr><th>State</th><th>Value</th><th>Basis</th></tr></thead><tbody>
+<tr><td><code>APPLICATION_CODE_INTEGRATED</code></td><td><strong>YES</strong></td><td>v08.30 is on <code>main</code></td></tr>
+<tr><td><code>GITHUB_PAGES_SERVING</code></td><td><strong>PRESUMED_FROM_MAIN</strong></td><td><strong>Presumed, not measured</strong> (<code>verified: false</code>). This sandbox&#x27;s proxy refuses <code>CONNECT</code> to <code>github.io</code>, so serving cannot be observed here. The presumption rests on this repository&#x27;s own standing brief.</td></tr>
+<tr><td><code>FIREBASE_RULES_DEPLOYED</code></td><td><strong>NO</strong></td><td>E1 closed; no Console access from a sandbox</td></tr>
+<tr><td><code>EVIDENCE_RECORDING_OPERATIONAL</code></td><td><strong>NO</strong></td><td>Depends on the above; the subcollection has no rule</td></tr>
+<tr><td><code>E1</code></td><td><strong>CLOSED</strong></td><td>Unchanged</td></tr>
+</tbody></table></div>
+<hr>
+<h2>2. What was built</h2>
+<h3>2.1 <code>app/js/study-evidence-readiness.js</code> — the declaration</h3>
+<p>A new Quran-owned module holding one frozen declaration and one predicate.</p>
+<p>``<code>js export const EVIDENCE_PERSISTENCE_DECLARATION = Object.freeze({   ready: false,   decision: null,   gate: &quot;E1&quot;,   note: &quot;ADR-008 Activity evidence Rules are NOT deployed to study-monitoring. ...&quot;, }); </code>``</p>
+<p><strong>Requirement 1 — defaults to false.</strong> <code>ready: false</code> is a <strong>literal</strong>, not a computed default. A check reads it as a literal and fails if it ever becomes an expression, because a computed default is not a default: it is a guess with a better disguise.</p>
+<p><strong>Requirement 2 — readiness is never inferred from <code>firestore.rules</code>, and CANNOT be.</strong> The module <strong>imports nothing at all</strong>. This is enforcement by <em>inability</em>, the same shape ADR-010 uses to forbid deriving a Note&#x27;s Destination from its Origin: a module with no imports cannot read the rules text, cannot fetch, and cannot reach a module that does. A boundary check counts its imports and asserts zero, and separately asserts the module still <em>names</em> <code>firestore.rules</code> in its prose — because the prose has to say why it does not read it, and without that second half the check would pass just as happily on a module that never mentioned the subject.</p>
+<p>The distinction is real rather than pedantic. The repository&#x27;s rules file is a <strong>file</strong>. Readiness is a fact about a <strong>live Firebase project</strong>. A repository file mentioning <code>evidence</code> would prove only that somebody wrote it down; deployment is E1, performed through the Firebase Console against <code>study-monitoring</code>, and nothing in a checkout can observe it.</p>
+<p><strong>Requirement 5 — enablement is a governed decision, not an edit.</strong> Flipping <code>ready</code> to <code>true</code> on its own returns <strong>false</strong>. <code>isStudyEvidencePersistenceReady()</code> additionally requires a <code>decision</code> naming an authority from a closed set (<code>master-architect</code>), a real ISO date, and a non-empty reference. Every other shape — no declaration, no decision, an empty decision, an unknown authority, a malformed date — returns false. There is no path through the function that says &quot;probably&quot;.</p>
+<p><code>studyEvidenceUnavailableReason()</code> returns a <strong>stable key</strong>, not a sentence, because the caller is the only thing that knows the reader&#x27;s language (I11). It returns <code>null</code> when persistence <em>is</em> ready, so a caller cannot accidentally print an unavailability reason for a working feature. It distinguishes <code>evidence-rules-not-deployed</code> (the standing state) from <code>evidence-readiness-decision-incomplete</code> (a half-made enablement), so the second is never read as the first.</p>
+<h3>2.2 Gate one — the write chokepoint</h3>
+<p>``<code>js export async function recordStudyEvidence(db, args, { uid } = {}) {   if (!args) return null;   if (!isStudyEvidencePersistenceReady()) {     return { written: false, blocked: true, reason: studyEvidenceUnavailableReason() };   }   return writeStudyActivityEvidence(db, { ...args, uid }); } </code>``</p>
+<p><strong>Requirement 3 — no evidence write may be attempted.</strong> That is a claim about every D1/D2/D4 call site at once, and it is provable in one place because <code>recordStudyEvidence()</code> is the single funnel all three go through. It returns before the store is called: nothing is composed, nothing is sent, no <code>permission-denied</code> is generated, and <code>errors.js</code> never fires.</p>
+<p><code>blocked: true</code> is a <strong>distinct shape</strong> from the store&#x27;s own <code>written: false</code>, which means &quot;already recorded today&quot; and is a <em>success</em>. Conflating them would make a gated press report itself as done — the exact lie this tranche exists to remove. The D1 handler branches on <code>blocked</code> before the success branch, even though the surface gate means it cannot be reached, because defence in depth means the unreachable branch has to be right too.</p>
+<h3>2.3 Gate two — the surface</h3>
+<p>The ✓ carries <strong><code>aria-disabled=&quot;true&quot;</code>, not <code>disabled</code></strong>, and the difference is the design.</p>
+<p>A <code>disabled</code> button cannot be focused or pressed, so a reader gets no route to learning <em>why</em> it is off — they meet a dimmed icon and nothing else. This project&#x27;s own standing lesson is explicit: <em>&quot;A control that opens and explains itself beats a control that is not there,&quot;</em> and <em>&quot;where a gate is correct, say so in words where the control would have been.&quot;</em></p>
+<p>So the control:</p>
+<ul><li>is <strong>not actionable</strong> — its handler returns before any argument is built;</li><li>is <strong>dimmed identically</strong> to a disabled control (<code>opacity: 0.45</code>, the rule <code>#readBar button[disabled]</code> already used);</li><li>keeps its <strong>resting tooltip honest</strong> — while gated, the title is the unavailability sentence rather than &quot;Mark this reading complete&quot;, because a control that cannot act must not keep offering the action;</li><li><strong>explains itself on a press</strong>, in the reader&#x27;s own language.</li></ul>
+<p><strong>Independent confirmation that it reads as non-actionable:</strong> Playwright refuses to click it, reporting <em>&quot;element is not enabled&quot;</em> — its actionability check honours <code>aria-disabled</code>. A real finger still fires a click on an aria-disabled button, which is what keeps the explanation reachable for a person.</p>
+<h3>2.4 The unavailability surface</h3>
+<p>Two sentences, both translated (I11):</p>
+<div class='tw'><table><thead><tr><th>English</th><th>Bangla</th></tr></thead><tbody>
+<tr><td>Recording study activity is not available yet.</td><td>স্টাডি কার্যক্রম রেকর্ড করা এখনও চালু হয়নি।</td></tr>
+<tr><td>Recording study activity is not available yet. Nothing was saved and nothing was lost — this will be switched on once the database is ready.</td><td>স্টাডি কার্যক্রম রেকর্ড করা এখনও চালু হয়নি। কিছুই সংরক্ষণ করা হয়নি এবং কিছুই হারায়নি — ডেটাবেস প্রস্তুত হলে এটি চালু করা হবে।</td></tr>
+</tbody></table></div>
+<p>The short one is the tooltip and the <code>aria-live</code> announcement; the long one is the notice, which has room to say that nothing was lost. Real em dashes on both sides — never an HTML entity in a translation value.</p>
+<p><code>#qrStudyNotice</code> is <strong><code>position: fixed</code> and lives OUTSIDE <code>#readBar</code></strong>, both deliberately. <code>#readBar</code> is the app&#x27;s densest row and v08.30 already pushed it to wrap at 390px and 412px (accepted Owner UI debt <code>O4-READBAR-WRAP</code>); a message inside it would take width and make that worse. A boundary check asserts the notice is not inside the bar.</p>
+<p>It is also <strong>not</strong> <code>errors.js</code>&#x27;s red write-failure banner. Nothing failed, and saying <em>&quot;that save did not go through&quot;</em> about a write that was never attempted would be untrue.</p>
+<h3>2.5 Requirement 4 — the writer still fails closed</h3>
+<p><code>app/js/study-activity-evidence-store.js</code> is <strong>untouched</strong>. It still rethrows, <code>safeWrite()</code> still surfaces the failure, I15 still holds. A boundary check asserts the store contains a <code>throw</code> <strong>and</strong> that it does <strong>not</strong> import the readiness module — because if the store consulted the gate, the two layers would collapse into one and there would be no defence in depth left to speak of.</p>
+<h3>2.6 D2 and D4 — gated silently, deliberately</h3>
+<p>Both are gated (by the chokepoint, and again by an early return at each call site so nothing is even composed), and neither says anything.</p>
+<ul><li><strong>D2 Listening</strong> completes without anyone pressing anything. There is no invitation to withdraw, and a notice fired by the audio reaching 80% would be an interruption the reader did not ask for.</li><li><strong>D4 Word-by-Word</strong>: the learning truth was <strong>already saved</strong> by <code>setWordState()</code> — only the Activity evidence is withheld. Telling the reader their word tap failed would be false; telling them Activity is off on every single word tap would be noise.</li></ul>
+<p>The ✓ is the one surface that says it, because it is the one that invites a press.</p>
+<hr>
+<h2>3. Measurement — requirements 8, 9, 10</h2>
+<p>Seven established widths × two languages, against the <strong>accepted v08.30 build</strong> (<code>8ea445fb</code>) served through the documented <code>app/_prev-quranrevival.html</code> shim, so both sides ran through one probe.</p>
+<div class='tw'><table><thead><tr><th>Case</th><th>bar W×H</th><th>in-flow kids</th><th>need</th><th>avail</th><th>slack</th><th>✓ tap target</th><th>changed?</th></tr></thead><tbody>
+<tr><td>en 320</td><td>288×75.0</td><td>10</td><td>380.6</td><td>288</td><td><strong>−92.6</strong></td><td>31.0×26.8</td><td><strong>none</strong></td></tr>
+<tr><td>en 340</td><td>308×75.0</td><td>10</td><td>380.6</td><td>308</td><td><strong>−72.6</strong></td><td>31.0×26.8</td><td><strong>none</strong></td></tr>
+<tr><td>en 360</td><td>328×75.0</td><td>10</td><td>380.6</td><td>328</td><td><strong>−52.6</strong></td><td>31.0×26.8</td><td><strong>none</strong></td></tr>
+<tr><td>en 390</td><td>358×75.0</td><td>10</td><td>380.6</td><td>358</td><td><strong>−22.6</strong></td><td>31.0×26.8</td><td><strong>none</strong></td></tr>
+<tr><td>en 412</td><td>380×75.0</td><td>10</td><td>380.6</td><td>380</td><td><strong>−0.6</strong></td><td>31.0×26.8</td><td><strong>none</strong></td></tr>
+<tr><td>en 768</td><td>736×41.8</td><td>10</td><td>380.6</td><td>736</td><td><strong>+355.4</strong></td><td>31.0×26.8</td><td><strong>none</strong></td></tr>
+<tr><td>en 1100</td><td>980×41.8</td><td>10</td><td>380.6</td><td>980</td><td><strong>+599.4</strong></td><td>31.0×26.8</td><td><strong>none</strong></td></tr>
+<tr><td>bn 320</td><td>288×75.0</td><td>10</td><td>389.9</td><td>288</td><td><strong>−101.9</strong></td><td>30.7×26.8</td><td><strong>none</strong></td></tr>
+<tr><td>bn 340</td><td>308×75.0</td><td>10</td><td>389.9</td><td>308</td><td><strong>−81.9</strong></td><td>30.7×26.8</td><td><strong>none</strong></td></tr>
+<tr><td>bn 360</td><td>328×75.0</td><td>10</td><td>389.9</td><td>328</td><td><strong>−61.9</strong></td><td>30.7×26.8</td><td><strong>none</strong></td></tr>
+<tr><td>bn 390</td><td>358×75.0</td><td>10</td><td>389.9</td><td>358</td><td><strong>−31.9</strong></td><td>30.7×26.8</td><td><strong>none</strong></td></tr>
+<tr><td>bn 412</td><td>380×75.0</td><td>10</td><td>389.9</td><td>380</td><td><strong>−9.9</strong></td><td>30.7×26.8</td><td><strong>none</strong></td></tr>
+<tr><td>bn 768</td><td>736×41.8</td><td>10</td><td>389.9</td><td>736</td><td><strong>+346.1</strong></td><td>30.7×26.8</td><td><strong>none</strong></td></tr>
+<tr><td>bn 1100</td><td>980×41.8</td><td>10</td><td>389.9</td><td>980</td><td><strong>+590.1</strong></td><td>30.7×26.8</td><td><strong>none</strong></td></tr>
+</tbody></table></div>
+<p><strong>0 changed metrics across all 14 configurations.</strong> Bar width, bar height, in-flow child count, natural need, available width, slack, tap target and <code>document.scrollWidth</code> are identical on both sides everywhere.</p>
+<p><strong>Requirement 10 — no additional wrapping.</strong> Bar height is the wrap signal: 75.0px (wrapped, the ⋮ on its own right-aligned line) at 320–412 in both languages, 41.8px (one line) at 768 and 1100. Identical before and after. The v08.30 wrap is preserved exactly as accepted Owner UI debt and not made worse.</p>
+<p><strong>Requirement 8 — tap target not reduced.</strong> 31.0 × 26.8px English, 30.7 × 26.8px Bangla, identical on both sides. A boundary check pins <code>#readBar .qr-ico</code>&#x27;s own sizing rule and refuses any <code>[aria-disabled]</code> rule that sets <code>font-size</code>, <code>padding</code>, <code>width</code> or <code>height</code>.</p>
+<p><strong>The comparison could have failed.</strong> The two sides differ where they should: <code>aria-disabled</code> absent → <code>&quot;true&quot;</code>, opacity <code>1</code> → <code>0.45</code>. Without a real difference the run would have proved nothing — the same positive-control discipline the <code>layout.mjs</code> shim needs.</p>
+<h3>3.1 Pressed for real, and looked at</h3>
+<p>At 390×844 in both languages, the gated ✓ dispatched a real click:</p>
+<div class='tw'><table><thead><tr><th></th><th>English</th><th>Bangla</th></tr></thead><tbody>
+<tr><td><code>__fsLog</code> writes before → after</td><td><strong>11 → 11</strong></td><td><strong>11 → 11</strong></td></tr>
+<tr><td>write-failure banner</td><td><strong>absent</strong></td><td><strong>absent</strong></td></tr>
+<tr><td><code>aria-pressed</code> after press</td><td><code>false</code></td><td><code>false</code></td></tr>
+<tr><td>live region</td><td>the short sentence</td><td>the short sentence, in Bangla</td></tr>
+<tr><td>notice</td><td>the long sentence</td><td>the long sentence, in Bangla</td></tr>
+<tr><td><code>#readBar</code> height</td><td>74.97px</td><td>74.97px</td></tr>
+<tr><td>notice box</td><td>370.8 × 76.2, bottom 770.4 of 844</td><td>370.8 × 57.9, bottom 770.4 of 844</td></tr>
+</tbody></table></div>
+<p><strong>No write was attempted</strong> — proven by the write log, not by reading the code. <strong>No error surface fired</strong> — because nothing failed. <strong><code>aria-pressed</code> stayed false</strong> — it does not falsely report done.</p>
+<p>Screenshots were taken and <strong>looked at</strong> in both languages: the ✓ is visibly dimmed beside its full-opacity neighbours, the notice is legible and neutral, fully on screen and clear of the dock, and the ⋮ sits on its own right-aligned line exactly as v08.30 left it. The badge reads <strong>v08.31</strong>.</p>
+<hr>
+<h2>4. Verification</h2>
+<h3>4.1 Suites</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>study-activity-evidence-boundary.mjs</code></td><td>18 → <strong>26 passed, 0 failed</strong></td></tr>
+<tr><td><code>programme-ledger.mjs</code></td><td><strong>8 passed, 20 noted, 0 failed</strong> (guard G is new)</td></tr>
+<tr><td><code>programme-ledger-mutations.mjs</code></td><td>37 → <strong>49 passed, 0 failed</strong></td></tr>
+<tr><td><code>brief-integrity.mjs</code></td><td><strong>8 passed, 0 failed</strong></td></tr>
+<tr><td><code>stub-parity.mjs</code></td><td>3 passed, 0 failed</td></tr>
+<tr><td><code>firestore-index-requirements.mjs</code></td><td>8 passed, 0 failed</td></tr>
+<tr><td><code>rules-authorisation-executable.mjs</code></td><td>38 passed, 0 failed</td></tr>
+<tr><td><code>quran-boundary.mjs</code></td><td>30 passed, 0 failed</td></tr>
+<tr><td><code>note-foundation-boundary.mjs</code></td><td>30 passed, 0 failed</td></tr>
+<tr><td><code>journey-map-boundary.mjs</code></td><td>13 passed, 0 failed</td></tr>
+<tr><td><code>d14-timezone-boundary.mjs</code></td><td>10 passed, 0 failed</td></tr>
+<tr><td><code>study-approach-contract-boundary.mjs</code></td><td>16 passed, 0 failed</td></tr>
+<tr><td><code>hadith-corpus / -source-rights / -commentary-binding</code></td><td>exit 0, all three</td></tr>
+<tr><td><code>i18n-coverage</code></td><td>1,877 → <strong>1,879</strong> scanned, 1,816 → <strong>1,818</strong> Bangla; <strong>missing UNCHANGED at 61</strong>. The +2 is exactly this tranche&#x27;s two strings, both translated</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>exit 0 — NAV FITS IN BOTH LANGUAGES AT EVERY WIDTH</td></tr>
+<tr><td><code>panel.mjs</code> (en)</td><td>exit 0 — PANEL OK</td></tr>
+<tr><td><code>panel.mjs</code> (bn)</td><td>exit 1 — 6 × <code>#drillModeSelect</code> newly truncated. <strong>PRE-EXISTING</strong>: see §5.4</td></tr>
+<tr><td><code>reading.mjs</code></td><td>exit 0 — READING SCREEN OK (16 viewports also report the sandbox TLS artefact)</td></tr>
+<tr><td><code>behaviour.mjs</code></td><td><strong>981 passed, 1 failed</strong> — the one failure is 31e&#x27;s <code>ERR_CERT_AUTHORITY_INVALID</code>, the sandbox TLS artefact. This is exactly the brief&#x27;s recorded clean run, and the archive.org 22g trio passed</td></tr>
+<tr><td><code>layout.mjs</code></td><td>exit 0 — <strong>NO LAYOUT REGRESSIONS</strong> at all 16 configurations. <code>getElementById</code> 252 → 253 (exactly <code>#qrStudyNotice</code>), <strong>0 dangling</strong>, 22 deferred unchanged</td></tr>
+</tbody></table></div>
+<p>Requirement 7 is what the middle block of that table is for: Hadith, D14, MMJ, Notes, Tracking and the Quran boundaries all still hold.</p>
+<h3>4.2 Mutations — every new guard proven able to fail</h3>
+<p><strong>Guard G, 11 mutations + a positive control</strong>, all caught:</p>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Refused with</th></tr></thead><tbody>
+<tr><td>the four deployment states collapse back into one</td><td><code>deployment.githubPagesServing is not recorded</code></td></tr>
+<tr><td>a state takes a word from outside its own vocabulary</td><td>`not one of YES \</td><td>NO`</td></tr>
+<tr><td>a presumption is recorded without saying it is one</td><td><code>must say it is one</code></td></tr>
+<tr><td>serving claimed verified with nothing verified</td><td><code>claims SERVING_VERIFIED without verified:true</code></td></tr>
+<tr><td>the feature recorded operational while its Rules are not deployed</td><td><code>the evidence subcollection has no rule</code></td></tr>
+<tr><td>the gate flipped in code and nowhere else</td><td><code>the code and the governance record disagree</code></td></tr>
+<tr><td>flipped in code AND ledger, Rules still not deployed</td><td><code>readiness may not run ahead of the deployment it depends on</code></td></tr>
+<tr><td>everything flipped, no governed decision</td><td><code>enablement is a decision, not an edit</code></td></tr>
+<tr><td>a module authorises its own enablement</td><td><code>not in the closed set</code></td></tr>
+<tr><td>the decision points at a record that does not exist</td><td><code>which does not exist</code></td></tr>
+<tr><td>the declaration stops being a readable literal</td><td><code>guard G cannot read it, so it cannot vouch for it</code></td></tr>
+<tr><td><strong>POSITIVE CONTROL:</strong> a fully governed enablement</td><td><strong>ALLOWED</strong></td></tr>
+</tbody></table></div>
+<p>That last row is the one that matters: without it, a guard G that simply refused every enablement would have passed all eleven mutations and proved nothing about the case that will one day be real.</p>
+<p><strong>The gate&#x27;s structural checks, 17 mutations, all caught:</strong> the declaration defaults to true; the module acquires an import; the module stops explaining why it ignores the rules file; the decision requirement is dropped; the gate moves behind the store call; a refusal becomes indistinguishable from <code>written:false</code>; the control stops reporting <code>aria-disabled</code>; the control stops being visually distinguishable; the gated state shrinks the icon; the notice moves inside <code>#readBar</code>; a Bangla key is dropped; a Bangla value is left in English; D2 builds its args before asking; D4&#x27;s write leaves the gate; the store consults the gate; the store stops rethrowing; the unreachable store caller becomes page-reachable.</p>
+<p><strong>17 proven, 0 unproven</strong> — after the two findings in §5.</p>
+<hr>
+<h2>5. Findings — two of my own, recorded rather than smoothed over</h2>
+<h3>5.1 A second direct caller of the evidence store</h3>
+<p>The chokepoint check&#x27;s <strong>own first run</strong> found that <code>study-event-wiring.js</code> is not the only module calling <code>writeStudyActivityEvidence()</code>. P5-C&#x27;s <code>app/js/study-note-service.js</code> calls it directly, for D3 Journaling.</p>
+<p>It is <strong>not a live bypass</strong>: D3 has no reachable producer, P5-D (the Note editor) is not built, and the reachability walker confirms the module is unreachable from every page by any chain of any length. It <strong>would</strong> be a bypass the day P5-D wires it.</p>
+<p>Excluding it by name would have been the wrong fix — the tenth such exclusion is a live wiring nobody noticed. It is <strong>pinned as unreachable</strong> instead: the check asserts that the only non-wiring caller is that exact file <em>and</em> that it has zero page-reachable chains. Wire it, and the check fails until it goes through the gate. Mutation-proven by making it page-reachable.</p>
+<h3>5.2 A vacuous assertion of mine, found by an UNPROVEN mutation</h3>
+<p>The notice-placement check first read:</p>
+<p>``<code>js const bar = page.slice(page.indexOf(&#x27;&lt;div id=&quot;readBar&quot;&#x27;), page.indexOf(&#x27;id=&quot;readPickers&quot;&#x27;)); assert.ok(!bar.includes(&quot;qrStudyNotice&quot;), ...); </code>``</p>
+<p><strong><code>#readPickers</code> comes EARLIER in the document than <code>#readBar</code></strong>, so the slice was the empty string and <code>!&quot;&quot;.includes(...)</code> was true whatever the markup did. A check that could not fail.</p>
+<p>It was found because the mutation that moves the notice into the bar came back <strong>UNPROVEN</strong> — and an unproven mutation is a finding about the guard, to be chased rather than deleted. It balances the element&#x27;s own <code>&lt;div&gt;</code>s now, and asserts the slice came back non-empty and contains <code>readCompleteBtn</code> before reading it, so it cannot go vacuous again.</p>
+<h3>5.3 A process failure of mine, recorded because it cost real time</h3>
+<p>An earlier version of my mutation harness restored the tree with <code>git checkout -- app tools</code>. That destroyed the <strong>uncommitted</strong> guard work it was supposed to be testing — guard G and eight boundary checks, gone in one line. It was rebuilt, and the harness was rewritten to back the touched files up <strong>in memory</strong> and restore from that. <strong>A mutation harness must never reach for git,</strong> and the work should have been committed before any mutation run. Both are now true.</p>
+<p>A second harness defect in the same hour: the first version judged a mutation by grepping the output for <code>FAIL</code>. A mutation that made the suite <strong>throw</strong> at import time produced no such line, and was reported as UNPROVEN — this repository&#x27;s own standing lesson (<em>&quot;a grep cannot see an uncaught throw; check the exit code&quot;</em>), met again in a harness written after reading it.</p>
+<hr>
+<h2>6. Blast radius and what was deliberately NOT done</h2>
+<p><strong>Files changed</strong></p>
+<div class='tw'><table><thead><tr><th>File</th><th>Change</th></tr></thead><tbody>
+<tr><td><code>app/js/study-evidence-readiness.js</code></td><td><strong>new</strong> — the declaration and predicate. Imports nothing</td></tr>
+<tr><td><code>app/js/study-event-wiring.js</code></td><td>the chokepoint gate; two re-exports</td></tr>
+<tr><td><code>app/quranrevival.html</code></td><td>the surface gate, the notice element, its CSS, D2/D4 early returns</td></tr>
+<tr><td><code>app/js/i18n/bn.js</code></td><td>two additive keys</td></tr>
+<tr><td><code>app/js/version.js</code></td><td><code>08.30</code> → <code>08.31</code></td></tr>
+<tr><td><code>docs/governance/programme-integration-ledger.json</code></td><td>four deployment states; readiness record; v08.31 RESERVED</td></tr>
+<tr><td><code>tools/i18n-verify/programme-ledger.mjs</code></td><td>guard G</td></tr>
+<tr><td><code>tools/i18n-verify/programme-ledger-mutations.mjs</code></td><td>12 cases</td></tr>
+<tr><td><code>tools/i18n-verify/study-activity-evidence-boundary.mjs</code></td><td>8 checks + the vacuity fix</td></tr>
+<tr><td><code>CLAUDE.md</code>, <code>CHANGELOG.md</code></td><td>the round entry and the four-state correction</td></tr>
+</tbody></table></div>
+<p><strong>NOT done, each for a stated reason</strong></p>
+<ul><li><strong>Requirement 13 — no Firebase Rules deployed.</strong> <code>firestore.rules</code> is byte-for-byte untouched and still contains <code>evidence</code> <strong>zero</strong> times. No <code>firestore.indexes.json</code> exists.</li><li><strong>Requirement 14 — v08.32 is NOT allocated.</strong> The ledger&#x27;s <code>nextUnallocated</code> names <code>08.32</code> only as the <em>unallocated boundary</em>, which is what lets guard B refuse anyone who stamps it. It is not an allocation and not a prediction.</li><li><strong>v08.31 is RESERVED, not LIVE.</strong> It is stamped on this branch; <code>main</code> still carries v08.30. Integration is the Master Architect&#x27;s instruction to give, and it has not been given. Guard A enforces that LIVE must equal <code>main.version</code>.</li><li><strong>The store was not touched</strong>, so the fail-closed rethrow is exactly as accepted.</li><li><strong>The <code>#readBar</code> wrap was not changed</strong> — accepted Owner UI debt <code>O4-READBAR-WRAP</code>, and the measurement above proves it is untouched.</li><li><strong>The two provisional reader-behaviour defaults were not re-decided</strong> — the Reading Approach inferred from translation visibility, and juz/hizb/ruku/page recording no evidence. Both remain in the ledger&#x27;s <code>ownerReviewAfterBuild</code>.</li><li><strong>D3 Journaling remains out of scope.</strong></li><li><strong>GitHub Pages serving was not verified.</strong> The sandbox proxy refuses <code>github.io</code>, so it is recorded as PRESUMED with <code>verified: false</code> rather than claimed.</li></ul>
+<hr>
+<h2>7. What the Owner should check</h2>
+<p>Two things, both on the live app once this is integrated:</p>
+<ol><li>Open <strong>QuranRevival → Study → Read</strong>. The <strong>✓</strong> beside the bookmark should look <strong>faded</strong>. Press it: a pale blue message should appear near the bottom saying <em>&quot;Recording study activity is not available yet. Nothing was saved and nothing was lost…&quot;</em> — and <strong>no red error bar</strong> should appear.</li><li>Switch the app to <strong>Bangla</strong> and do the same. The same message should appear in Bangla.</li></ol>
+<p>If a red error bar appears instead, the gate is not working and it should be reported.</p>
+<hr>
+<h3>5.4 A Bangla-only truncation that is NOT this tranche&#x27;s, established rather than assumed</h3>
+<p><code>panel.mjs bn</code> exits 1 with six findings — <code>#drillModeSelect</code> newly truncated at six viewports — and <code>panel.mjs en</code> exits 0. That is not in the brief&#x27;s recorded baseline, which names <code>tenantSelect</code>, <code>surahSelect</code> and <code>unitTypeSelect</code> only.</p>
+<p>It is <strong>pre-existing</strong>. Established by reverting <code>app/</code> to the accepted v08.30 build (<code>8ea445fb</code>) and re-running the same suite: <strong>the identical six findings</strong>. v08.31 touches nothing in the Study-options drill bar, and the English run is clean, so this is a Bangla label longer than its cell — the silent <code>nowrap</code> + <code>ellipsis</code> failure this project has met before.</p>
+<p>It is <strong>reported, not fixed</strong>: fixing it is a Study-options layout change on the most tightly measured screen in the app, with the same materially-different remedies (widen, shrink, reword in both languages) the three existing Owner UI decisions carry. <strong>It joins them as an Owner UI decision rather than being absorbed into a release-gating tranche.</strong></p>
+<p>It is also a gap in routine verification worth naming: <code>panel.mjs</code> takes a language argument and the routine habit has been to run it in English. A suite that only ever runs in one language is measuring one language.</p>
+<hr>
+<h2>8. State block</h2>
+<p>``` QURANREVIVAL_V0831_RELEASE_GATING BASE_MAIN_SHA=db6cb24b807d77630914e076d413bec6982cc3d7 FINAL_APPLICATION_SHA=e63cb8d69e5813faf57251a7f15fef33a4bae191</p>
+<h1>^ the commit carrying the complete v08.31 application and governance change.</h1>
+<h1>One stamp commit follows it, changing ONLY this line and the .html rendering.</h1>
+<p>FINAL_MAIN_SHA=db6cb24b807d77630914e076d413bec6982cc3d7 APP_VERSION_BEFORE=v08.30 APP_VERSION_AFTER=v08.31 CHANGED_FILES=11 READINESS_GATE=PRESENT — app/js/study-evidence-readiness.js (declaration + predicate, imports nothing) + chokepoint in recordStudyEvidence() + surface gate on #readCompleteBtn DEFAULT_READINESS=FALSE CONTROL_WHEN_UNAVAILABLE=NOT_ACTIONABLE — aria-disabled=&quot;true&quot;, dimmed to opacity 0.45, handler returns before any argument is built; explains itself on press; tap target UNCHANGED at 31.0x26.8px WRITE_ATTEMPT_WHEN_UNAVAILABLE=NO ENGLISH_UI_TEXT=Recording study activity is not available yet. | Recording study activity is not available yet. Nothing was saved and nothing was lost — this will be switched on once the database is ready. BANGLA_UI_TEXT=স্টাডি কার্যক্রম রেকর্ড করা এখনও চালু হয়নি। | স্টাডি কার্যক্রম রেকর্ড করা এখনও চালু হয়নি। কিছুই সংরক্ষণ করা হয়নি এবং কিছুই হারায়নি — ডেটাবেস প্রস্তুত হলে এটি চালু করা হবে। WRITER_FAIL_CLOSED=PRESERVED — study-activity-evidence-store.js byte-for-byte untouched; still rethrows; asserted NOT to consult the gate, so the two layers stay independent READBAR_SEVEN_WIDTH_RESULTS=14/14 IDENTICAL to accepted v08.30 (8ea445fb), 0 changed metrics. 320/340/360/390/412/768/1100 x en/bn. Bar height 75.0px at 320-412 (wrapped, unchanged) and 41.8px at 768/1100 (one line). Slack en -92.6/-72.6/-52.6/-22.6/-0.6/+355.4/+599.4; bn -101.9/-81.9/-61.9/-31.9/-9.9/+346.1/+590.1. NO ADDITIONAL WRAPPING. QURAN_REGRESSIONS=NONE — behaviour.mjs 981 passed / 1 failed (the single failure is the sandbox TLS artefact 31e, environmental); layout.mjs NO LAYOUT REGRESSIONS, 0 dangling; navcheck.mjs exit 0; panel.mjs en exit 0; reading.mjs exit 0; quran-boundary 30/0 HADITH_REGRESSIONS=NONE — hadith-corpus, hadith-source-rights, hadith-commentary-binding all exit 0 PROGRAMME_GUARDS=A-G, 8 passed / 22 noted / 0 failed. Guard G is new (four deployment states + readiness cross-check). Guard E: 19 touch records, 12 AUTHORIZED, 7 DECLARED, 0 undeclared MUTATIONS=66 total, 0 unproven — 49 programme-ledger (37 + 11 guard-G + 1 positive control) and 17 v08.31 boundary. One came back UNPROVEN and was chased to a real vacuous assertion (§5.2) BOUNDARY_VERIFICATION=study-activity-evidence-boundary 18 -&gt; 26 passed / 0 failed; study-approach-contract-boundary 16/0; note-foundation-boundary 30/0; journey-map-boundary 13/0; d14-timezone-boundary 10/0; rules-authorisation-executable 38/0; firestore-index-requirements 8/0; stub-parity 3/0; brief-integrity 8/0 SHARED_FILES_CHANGED=7 — app/js/version.js, docs/governance/programme-integration-ledger.json, app/js/i18n/bn.js, tools/i18n-verify/programme-ledger.mjs, tools/i18n-verify/programme-ledger-mutations.mjs, CLAUDE.md, CHANGELOG.md UNAUTHORIZED_SHARED_TOUCHES=NONE — all 7 declared and recorded AUTHORIZED in the ledger, guard E reports 0 undeclared. CLAUDE.md and CHANGELOG.md are not named in the v08.31 ruling and are recorded with an explicit derivation field (entailed by requirement 12; brief-integrity.mjs fails a version bump they have not followed) D14_STATUS=UNCHANGED — d14-timezone-boundary 10/0; the two contract modules remain imported by nothing and cannot reach activity.js; no timezone field, mode or location was added, read or written E1_STATUS=CLOSED APPLICATION_CODE_INTEGRATED=YES (v08.30 on main; v08.31 is on claude/charming-rubin-xzxbk1 and NOT integrated — integration is the Master Architect&#x27;s instruction to give) GITHUB_PAGES_SERVING=PRESUMED_FROM_MAIN (verified:false — the sandbox proxy refuses github.io, so this is presumed from this repository&#x27;s own record, not measured) FIREBASE_RULES_DEPLOYED=NO EVIDENCE_RECORDING_OPERATIONAL=NO V0832_STATUS=UNALLOCATED READY_FOR_MASTER_ARCHITECT_ACCEPTANCE=YES READY_TO_SHIP=NO ```</p>
+</main></body></html>

@@ -477,7 +477,9 @@ that only ever runs in one language is measuring one language.
 ```
 QURANREVIVAL_V0831_RELEASE_GATING
 BASE_MAIN_SHA=db6cb24b807d77630914e076d413bec6982cc3d7
-FINAL_APPLICATION_SHA=__FINAL_SHA__
+FINAL_APPLICATION_SHA=e63cb8d69e5813faf57251a7f15fef33a4bae191
+# ^ the commit carrying the complete v08.31 application and governance change.
+#   One stamp commit follows it, changing ONLY this line and the .html rendering.
 FINAL_MAIN_SHA=db6cb24b807d77630914e076d413bec6982cc3d7
 APP_VERSION_BEFORE=v08.30
 APP_VERSION_AFTER=v08.31
