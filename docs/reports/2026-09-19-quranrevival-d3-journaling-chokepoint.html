@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA / QuranRevival — D3 foundation repair: Journaling routed through the evidence chokepoint</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA / QuranRevival — D3 foundation repair: Journaling routed through the evidence chokepoint</h1>
+<p><strong>Date:</strong> 19 September 2026 <strong>Ruling executed:</strong> <em>Accept the v08.31 integration. E1 remains CLOSED; do not deploy Rules or enable evidence recording. Proceed immediately with the proposed D3 foundation repair on the actual current main.</em> <strong>Blast radius:</strong> BR-0. One page-unreachable module, three verification suites, one new mutation harness. <strong>No shared file. No UI change. No version bump. Nothing deployed.</strong></p>
+<hr>
+<h2>1. The state this was built on</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Remote <code>origin/main</code>, fetched at the start of this tranche</td><td><strong><code>a64e2a1c97f397aba26bdfa281fdf4f2b5486547</code></strong></td></tr>
+<tr><td>— which is</td><td><strong><code>Stamp FINAL_MAIN_SHA into the v08.31 integration report</code></strong> — the final integration report-stamp commit itself</td></tr>
+<tr><td>One behind it</td><td><code>877bca0190ae25a2ad6e13d1822946390514829e</code> — the v08.31 post-integration governance stamp</td></tr>
+<tr><td>Two behind it</td><td><code>a20892f1e4cbf4e86498fe371232466141ca95df</code> — the v08.31 application tip</td></tr>
+<tr><td><code>main</code> application version</td><td><strong>v08.31</strong>, unchanged by this tranche</td></tr>
+<tr><td>Working branch</td><td><code>claude/busy-hawking-5p8ck8</code>, cut from <code>origin/main</code></td></tr>
+</tbody></table></div>
+<p>The three-commit shape is the one the integration report records: the accepted application tip, the governance stamp that the fast-forward&#x27;s own facts required, and the report stamp that could not contain its own hash.</p>
+<hr>
+<h2>2. What changed</h2>
+<h3>2.1 <code>app/js/study-note-service.js</code> — the repair itself</h3>
+<p><code>recordJournalEvidence()</code> imported <code>writeStudyActivityEvidence</code> from the evidence store and called it directly, around v08.31&#x27;s persistence-readiness gate. That was never a live bypass — the module is page-unreachable, D3 Journaling has no producer and P5-D is not built — but it meant <strong>&quot;<code>recordStudyEvidence()</code> is the ONE chokepoint&quot; was a claim about reachability, not about the code.</strong> A claim resting on unreachability expires the moment somebody wires the surface, and it expires silently.</p>
+<p>It now imports <code>recordStudyEvidence</code> from <code>study-event-wiring.js</code> and calls it. The direct store import is gone.</p>
+<h3>2.2 The four outcomes, kept distinct</h3>
+<p><code>written: false</code> is true of <strong>both</strong> a refusal and a retry, so on its own it carries no meaning. Every outcome now returns the same five fields, so no fact is ever inferred from the absence of another:</p>
+<div class='tw'><table><thead><tr><th>Outcome</th><th><code>skipped</code></th><th><code>blocked</code></th><th><code>written</code></th><th><code>eventId</code></th><th><code>reason</code></th></tr></thead><tbody>
+<tr><td>Nothing to record</td><td><strong>true</strong></td><td>false</td><td>false</td><td><code>null</code></td><td><code>null</code></td></tr>
+<tr><td>Gate shut — nothing composed, nothing sent</td><td>false</td><td><strong>true</strong></td><td>false</td><td><code>null</code></td><td><code>evidence-rules-not-deployed</code></td></tr>
+<tr><td>Already recorded (a retry is a successful no-op)</td><td>false</td><td>false</td><td><strong>false</strong></td><td>the id it deduplicated against</td><td><code>null</code></td></tr>
+<tr><td>Recorded</td><td>false</td><td>false</td><td><strong>true</strong></td><td>the new id</td><td><code>null</code></td></tr>
+</tbody></table></div>
+<p><strong>The null return is checked before it is read, and the reason is about meaning rather than about a throw.</strong> <code>recordStudyEvidence()</code> returns <code>null</code> for a falsy argument. Spreading <code>null</code> does <em>not</em> throw in JavaScript — <code>{ ...null }</code> is a silent no-op — so the old <code>{ ...outcome, skipped: false }</code> would have produced an object with <strong>no <code>written</code> field at all</strong>, and a missing field reads as falsy, which is exactly the already-recorded case. An absent outcome must never be able to wear the face of a successful no-op. The outcome is normalised field by field rather than spread, so a field added upstream cannot arrive here unread and a missing one cannot arrive as <code>undefined</code>.</p>
+<h3>2.3 The boundary guard, narrowed</h3>
+<p><code>study-activity-evidence-boundary.mjs</code> used to tolerate a second caller <strong>by name</strong>:</p>
+<p>``<code>js const KNOWN_UNREACHABLE_CALLER = &quot;study-note-service.js&quot;; </code>``</p>
+<p>That exception is <strong>gone</strong>, not widened. Two assertions replace it:</p>
+<ul><li>the importer set is <strong>exactly</strong> <code>[study-event-wiring.js]</code>;</li><li>scanning every source under <code>app/</code>, the only module that <em>calls</em> <code>writeStudyActivityEvidence(</code> is <code>study-event-wiring.js</code>.</li></ul>
+<p>A tolerated exception is how a list of one becomes a list of ten. There is no exception left to add to.</p>
+<p><strong>Comments are stripped before that scan, and that is not fussiness.</strong> The service&#x27;s own doc comment now names <code>writeStudyActivityEvidence()</code> in order to explain that it no longer calls it. Scanning raw text would fail against perfectly correct source — this repository&#x27;s own recorded trap. A negative control in the mutation harness pins it.</p>
+<p>A new case, <code>D3 Journaling goes through the gate, and its outcomes stay distinguishable</code>, reads the service&#x27;s source and asserts the import, the call, the null check <em>before</em> the first read of the outcome, and all four outcome fields.</p>
+<h3>2.4 A new, checked-in mutation harness</h3>
+<p><code>tools/i18n-verify/study-activity-evidence-boundary-mutations.mjs</code>. A narrowing is exactly the kind of change that can be made vacuously, so the guard is fed the old bypass and must refuse it by name.</p>
+<p><strong>It never reaches for <code>git</code>.</strong> Every file it touches is read into memory first and written back from memory in a <code>finally</code>. The continuation package records why: a mutation harness in this repository once restored with <code>git checkout -- app tools</code> and destroyed an hour of uncommitted work.</p>
+<hr>
+<h2>3. Findings</h2>
+<h3>3.1 FINDING A — <code>study-event-wiring.mjs</code> had been DEAD since v08.31&#x27;s own accepted commit</h3>
+<p>Running the gates turned up <code>study-event-wiring.mjs</code> exiting <strong>1</strong> with a stack trace and <strong>no FAIL line</strong>.</p>
+<p>It was not my change. <code>git stash</code> and a run against unmodified <code>origin/main</code> reproduced it exactly.</p>
+<p><strong>Root cause, pinned to a commit.</strong> The suite loads the real <code>app/js/study-event-wiring.js</code> as a <code>data:</code> module with its app imports rewritten to injected globals. v08.31&#x27;s <strong><code>65ef3c5</code></strong> — the accepted application change — added a <em>third</em> import, <code>./study-evidence-readiness.js</code>. The suite rewrote two. A relative specifier inside a <code>data:</code> module cannot resolve, so the module threw <code>ERR_INVALID_URL</code> <strong>at load, before a single check ran.</strong></p>
+<p>So from <code>65ef3c5</code> until this repair, <strong>the chokepoint&#x27;s own unit suite asserted nothing at all</strong> — including its cases <code>an eligible completion reaches the store exactly once</code> and <code>this module never swallows a failure — I15 stays the caller&#x27;s job</code>. This is the repository&#x27;s own standing lesson in a new costume: <em>a check that has never run has earned nothing</em>, and <em>a grep cannot see an uncaught throw</em>.</p>
+<p><strong>Repaired</strong>, in a quran-owned file:</p>
+<ul><li>the third import is rewritten, with the readiness <strong>answer</strong> injected while the gate&#x27;s <strong>logic</strong> stays the real source (the shipped declaration is <code>ready: false</code> and cannot be argued out of it, so leaving it in place would make every write path unreachable and the suite would test the gate instead of the contract — what the shipped declaration actually says is pinned at its source by the boundary suite);</li><li><strong>the missing leftover assertion is added</strong> — <code>study-note-service.mjs</code> has carried that assertion all along, which is exactly why the same edit did not kill <em>that</em> suite silently. A new import now fails by name instead of killing the suite.</li></ul>
+<p><strong>0 executing checks → 41</strong>, 0 failed. Two of those 41 are new and cover the gate behaviourally at its own module: a shut gate reaches the store not at all, and a refusal is tellable apart from an already-recorded no-op.</p>
+<h3>3.2 FINDING B — an assertion in the accepted boundary guard could not fail, found by a mutation</h3>
+<p>The mutation <em>&quot;the chokepoint stops consulting readiness&quot;</em> came back <strong>UNPROVEN</strong>: the guard failed, but naming the wrong fault. An unproven mutation is a finding about the guard, so it was chased rather than deleted.</p>
+<p><code>study-activity-evidence-boundary.mjs</code> sliced the chokepoint&#x27;s body as <code>w.slice(w.indexOf(&quot;export async function recordStudyEvidence&quot;))</code> — <strong>to end of file</strong>. <code>study-event-wiring.js</code> has two helpers <em>below</em> that function which re-export the readiness predicate. So deleting the gate from inside the function left the symbol in the slice anyway: <code>assert.ok(gate &gt; -1, &quot;recordStudyEvidence() no longer consults readiness&quot;)</code> <strong>could not fail.</strong> The suite refused the mutation only because a <em>different</em> assertion — the ordering one — fired instead, reporting a fault nobody could act on.</p>
+<p>Fixed with a shared <code>functionBody(code, signature)</code> bounded at the next top-level <code>export</code>, applied to both call sites, with a positive control asserting the slice does not run past its own function. The mutation now passes for the right reason.</p>
+<h3>3.3 FINDING C — <code>feature/hadith-study</code> and the ledger disagree, and it is not this tranche&#x27;s to fix</h3>
+<p><code>programme-ledger.mjs</code> fails <strong>two guards on current <code>main</code></strong>:</p>
+<p>``<code> FAIL [A] stream hadith declares 08.29 but feature/hadith-study is stamped 08.30 -- the ledger and the branch disagree FAIL [B] feature/hadith-study is stamped 08.30, which the ledger reserves for nobody under stream hadith </code>``</p>
+<p><strong>It is not caused by this tranche</strong> — proven by running the guard against an unmodified <code>origin/main</code> working tree, where it fails identically. It was also green earlier today, before the Hadith stream pushed.</p>
+<p>What actually happened, measured rather than assumed:</p>
+<ul><li><code>origin/feature/hadith-study</code> is now <strong><code>b7e0dab</code></strong>, carrying <strong>five new Hadith S5 commits timestamped 04:08–04:23 UTC today</strong> — during this session.</li><li>The branch was re-cut from <strong><code>db6cb24</code></strong>, which was <code>main</code> at v08.31&#x27;s base. <code>git diff db6cb24 origin/feature/hadith-study -- app/js/version.js</code> is <strong>empty</strong>: the branch&#x27;s <code>version.js</code> reads <code>08.30</code> because it <strong>inherited</strong> it from <code>main</code>, not because the stream stamped it.</li><li>The ledger still records hadith as <code>declaredVersion: 08.29</code>, <code>integrationState: MERGED_TO_MAIN</code>, <code>branchTip: c1a4f19a</code> — all true when written, all stale now. The recorded tip is still an ancestor, so <strong>no history was rewritten</strong>.</li><li><code>08.30</code> is recorded as <strong><code>quran</code> / RELEASED</strong> — superseded by v08.31 on <code>main</code>.</li><li>The branch is now <strong>three commits behind <code>main</code></strong> and will need re-basing onto v08.31.</li></ul>
+<p><strong>Guard A&#x27;s wording is exactly right. Guard B&#x27;s says &quot;an invented version&quot;, and in this case that is misleading</strong> — nothing was invented; the number was inherited by re-cutting from <code>main</code>. The <em>conclusion</em> holds (hadith holds no claim on <code>08.30</code>), but the wording would send a reader hunting for a stamp that was never made. Offered as an observation, not a change: <code>programme-ledger.mjs</code> is platform-shared and not mine to edit.</p>
+<p><strong>This needs the Master Architect</strong>, on two counts that are explicitly theirs: the hadith stream&#x27;s ledger record needs updating to reflect that it has resumed work, and its eventual integration needs a version allocated. <strong><code>08.32</code> remains UNALLOCATED and this session did not allocate it.</strong></p>
+<p><code>programme-ledger-mutations.mjs</code> reports <code>48 passed, 1 failed</code> for the same reason and says so itself: <em>&quot;the unmutated ledger already fails; the mutations below would prove nothing.&quot;</em> Its positive control is behaving correctly.</p>
+<h3>3.4 A correction of my own, and a probe defect of my own</h3>
+<p>Two things in this session&#x27;s own working, recorded rather than quietly fixed:</p>
+<ul><li>I read <code>app/js/version.js</code> with a grep that took the <strong>first quoted number in the file</strong> and reported <code>08.28</code>. That number sits in a <em>comment</em>; the export reads <code>08.31</code> and is untouched. The correct read is <code>grep APP_VERSION</code>.</li><li>The diagnostic probe in §4 counts wrapped lines from raw <code>top</code> values, and reported <code>lines 2</code> for a row that is measurably one line high. Icons of differing heights on an <code>align-items: center</code> row have different <code>top</code>s while sharing a line — this repository&#x27;s own v08.23 lesson. <strong>The bar&#x27;s measured height is the ground truth</strong>; the comparison probe, which buckets by vertical <em>centre</em>, agrees with the height at every width.</li></ul>
+<hr>
+<h2>4. The 412px <code>#readBar</code> disagreement, resolved</h2>
+<p>The two v08.31 reports disagree at exactly one of fourteen measurement points.</p>
+<div class='tw'><table><thead><tr><th></th><th>bar</th><th>children</th><th>need</th><th>avail</th><th>slack</th><th>height</th><th>verdict</th></tr></thead><tbody>
+<tr><td>v08.31 <strong>build</strong> report, en 412</td><td>380×75.0</td><td>10</td><td><strong>380.6</strong></td><td>380</td><td><strong>−0.6</strong></td><td>75.0</td><td>wrapped</td></tr>
+<tr><td>v08.31 <strong>integration</strong> report, en 412</td><td>380×41.78</td><td>10</td><td><strong>379.51</strong></td><td>380</td><td><strong>+0.49</strong></td><td>41.78</td><td>one line</td></tr>
+</tbody></table></div>
+<p><strong>They agree on everything that could indicate a defect</strong> — same bar width, same child count, same behaviour at the other six widths, and both report v08.30 and v08.31 as byte-identical. The whole disagreement is <strong>1.09px of <code>need</code> on a 380px row</strong>.</p>
+<p><strong>Re-measured to attribute it rather than guess.</strong> The same page was measured at three moments — as soon as <code>#readBar</code> attaches, after <code>document.fonts.ready</code>, and after a 900ms settle:</p>
+<p>``<code> en 412   early 380x41.78 need 379.51 slack +0.49   fonts=loaded          fonts.ready ... identical          settled     ... identical      (stable across all three moments) </code>``</p>
+<p>So it is <strong>not</strong> font loading, and not a settle-time artefact — the measurement does not move.</p>
+<p>Per-child widths at en 412 sum to 321.91, plus nine 6.4px gaps and zero padding: <strong>379.51</strong>. The build report&#x27;s own table gives the ⋮ as <strong>31.0px</strong> where this run measures <code>readQuickMenuSlot</code> at <strong>30.39px</strong> — 0.61px, with the remaining ~0.5px spread across the other nine controls.</p>
+<p><strong>The cause is the renderer, and the case is a boundary case.</strong> This session measured with the only Chromium this sandbox has, <strong>Chromium 141.0.7390.37</strong> at <code>/opt/pw-browsers/chromium-1194</code> (the Playwright version installed here expects build 1243, which is not present, so <code>CHROMIUM_PATH</code> was used). The build tranche recorded no renderer. Sub-pixel glyph metrics differ between Chromium builds, and <strong>English at 412px fits by 0.49px — 0.129% of the row.</strong> Any renderer difference above roughly one eighth of one percent flips it.</p>
+<p>Everything else agrees in direction, and Bangla at 412 agrees in magnitude too: <strong>−9.34 measured here against −9.9 in the build report</strong>, 0.56px apart and unambiguously wrapped in both.</p>
+<p><strong>Resolution.</strong></p>
+<ol><li><strong>Neither report is wrong.</strong> Each measured its own renderer honestly. The build report&#x27;s <code>−0.6</code> and this session&#x27;s <code>+0.49</code> are the same row measured 1.09px apart, either side of a boundary it sits on.</li><li><strong>The disagreement says nothing about the code.</strong> At English 412px, <code>#readBar</code> is within half a pixel of wrapping, and whether it does is decided by the device, not by v08.30 or v08.31.</li><li><strong>The governing fact for <code>O4-READBAR-WRAP</code> is untouched by all of this, and both reports state it independently:</strong> v08.31 introduces <strong>no additional wrapping</strong>. This tranche re-confirmed it against <code>origin/main</code>: <strong>14/14 measurement rows identical, 0 changed.</strong></li><li><strong>Recorded for <code>O4-READBAR-WRAP</code>:</strong> English at 412px is a knife-edge, not a clearance. Any future measurement claiming it fits, or that it wraps, should name the renderer it used. The honest statement is <em>&quot;at 412px in English the bar is at its boundary; in Bangla it wraps by ~9.5px.&quot;</em></li></ol>
+<p><strong>No UI change was made.</strong> <code>git diff origin/main -- app/</code> names exactly one file, and it is page-unreachable.</p>
+<hr>
+<h2>5. Verification</h2>
+<h3>5.1 Reachability — the claim item 4 asks for</h3>
+<p>Walked from <strong>all 29 pages</strong> under <code>app/</code>, following local imports to any depth:</p>
+<div class='tw'><table><thead><tr><th>Module</th><th>Pages that can reach it</th></tr></thead><tbody>
+<tr><td><code>study-note-service.js</code></td><td><strong>0</strong></td></tr>
+<tr><td><code>note-foundation.js</code></td><td>0</td></tr>
+<tr><td><code>journey-map-service.js</code></td><td>0</td></tr>
+<tr><td><code>study-note-binding.js</code></td><td>0</td></tr>
+<tr><td><code>note-journal-evidence.js</code></td><td>0</td></tr>
+<tr><td><strong>CONTROL</strong> <code>records.js</code></td><td><strong>16</strong></td></tr>
+<tr><td><strong>CONTROL</strong> <code>study-event-wiring.js</code></td><td><strong>1</strong></td></tr>
+</tbody></table></div>
+<p>The two controls are what stop this passing vacuously: a broken walker would report zero for everything.</p>
+<p><strong>No reachable behaviour changed.</strong> <code>git diff origin/main -- app/</code> names exactly <code>app/js/study-note-service.js</code>, and nothing else under <code>app/</code> differs by a byte — so every page, every stylesheet and every reachable module is identical to <code>main</code>. <code>app/js/version.js</code> is untouched and reads <strong><code>08.31</code></strong>; the proof above is what entitles it to stay there.</p>
+<h3>5.2 Import cycles — item 5</h3>
+<p>All <strong>96</strong> modules under <code>app/js</code> were walked: <strong>0 cycles</strong>. <code>study-note-service.js</code>&#x27;s transitive closure is 18 modules and <strong>does not contain itself</strong>, so the new edge to <code>study-event-wiring.js</code> introduces none.</p>
+<h3>5.3 Gates</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Before</th><th>After</th><th>Exit</th></tr></thead><tbody>
+<tr><td><code>study-activity-evidence-boundary</code></td><td>26 / 0</td><td><strong>27 / 0</strong></td><td>0</td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations</code></td><td><em>(new)</em></td><td><strong>11 / 0</strong></td><td>0</td></tr>
+<tr><td><strong><code>study-event-wiring</code></strong></td><td><strong>DEAD — 0 checks, exit 1</strong></td><td><strong>41 / 0</strong></td><td>0</td></tr>
+<tr><td><code>study-note-service</code></td><td>32</td><td><strong>35</strong></td><td>0</td></tr>
+<tr><td><code>study-note-boundary</code></td><td>17 / 0</td><td>17 / 0</td><td>0</td></tr>
+<tr><td><code>study-note-binding</code></td><td>16</td><td>16</td><td>0</td></tr>
+<tr><td><code>note-foundation-boundary</code></td><td>30 / 0</td><td>30 / 0</td><td>0</td></tr>
+<tr><td><code>note-journal-evidence</code></td><td>18 / 0</td><td>18 / 0</td><td>0</td></tr>
+<tr><td><code>study-activity-evidence</code></td><td>11 / 0</td><td>11 / 0</td><td>0</td></tr>
+<tr><td><code>study-activity-evidence-id</code></td><td>29 / 0</td><td>29 / 0</td><td>0</td></tr>
+<tr><td><code>study-activity-evidence-store</code></td><td>26 / 0</td><td>26 / 0</td><td>0</td></tr>
+<tr><td><code>study-approach-contract</code></td><td>13 / 0</td><td>13 / 0</td><td>0</td></tr>
+<tr><td><code>study-approach-contract-boundary</code></td><td>16 / 0</td><td>16 / 0</td><td>0</td></tr>
+<tr><td><code>quran-boundary</code></td><td>30 / 0</td><td>30 / 0</td><td>0</td></tr>
+<tr><td><code>journey-map-boundary</code> / <code>-contract</code> / <code>-service</code></td><td>13 / 34 / 18</td><td>13 / 34 / 18</td><td>0</td></tr>
+<tr><td><code>d14-timezone-boundary</code> / <code>-contract</code></td><td>10 / 21</td><td>10 / 21</td><td>0</td></tr>
+<tr><td><code>hadith-corpus</code> / <code>-source-rights</code> / <code>-commentary-binding</code></td><td>33 / 14 / 14</td><td>33 / 14 / 14</td><td>0</td></tr>
+<tr><td><code>brief-integrity</code></td><td>8 / 0</td><td>8 / 0</td><td>0</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 / 0</td><td>38 / 0</td><td>0</td></tr>
+<tr><td><code>rules-deployment-candidate</code></td><td>10 / 0</td><td>10 / 0</td><td>0</td></tr>
+<tr><td><code>firestore-index-requirements</code> / <code>stub-parity</code></td><td>8 / 3</td><td>8 / 3</td><td>0</td></tr>
+<tr><td><strong><code>programme-ledger</code></strong></td><td><strong>6 / 22 noted / 2 failed</strong></td><td>same</td><td><strong>1 — FINDING C, pre-existing, not this tranche</strong></td></tr>
+<tr><td><strong><code>programme-ledger-mutations</code></strong></td><td><strong>48 / 1</strong></td><td>same</td><td><strong>1 — the same cause, reported by its own positive control</strong></td></tr>
+</tbody></table></div>
+<h3>5.4 Rendered gates</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th><th>Exit</th></tr></thead><tbody>
+<tr><td><code>layout.mjs</code> (shim built from <code>origin/main</code>)</td><td><strong>NO LAYOUT REGRESSIONS</strong> — every landing-page metric byte-identical at all 8 viewports in both banner states</td><td>0</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>nav fits in both languages at every width</td><td>0</td></tr>
+<tr><td><code>panel.mjs en</code></td><td>PANEL OK apart from the known baseline</td><td>0</td></tr>
+<tr><td><code>panel.mjs bn</code></td><td><strong>6 PROBLEM(S) — 6 x <code>!! NEWLY TRUNCATED: select #drillModeSelect</code>, the </strong>O3c<strong> baseline. Bangla “প্রতিটি আয়াত”, </strong>48px usable against 54px needed<strong> — 6px short, at six viewport/unit combinations. <code>tenantSelect</code>, <code>surahSelect</code> and <code>unitTypeSelect</code> are the separately tolerated O3/O3b baseline</strong></td><td><strong>1 — pre-existing</strong></td></tr>
+<tr><td><code>reading.mjs</code></td><td>READING SCREEN OK</td><td>0</td></tr>
+<tr><td><code>behaviour.mjs</code></td><td><strong>978 passed, 4 failed, 56 sections — 982 checks, the baseline total</strong></td><td><strong>1 — all four environmental</strong></td></tr>
+</tbody></table></div>
+<p><code>layout.mjs</code> was run with the comparison shim built from <code>origin/main</code>, so it answers the question this tranche has to answer — <em>did anything on the landing page move</em> — rather than merely &quot;is it the same as last time&quot;. It did not. The shim was deleted before any coverage figure was read.</p>
+<p><strong>The two non-zero exits, both pre-existing and both named.</strong></p>
+<ul><li><strong><code>panel.mjs bn</code> is O3c</strong>, recorded in the continuation package as found on 19 Sep and proven pre-existing there by reverting <code>app/</code> to the accepted v08.30 build and getting the identical six. <code>panel.mjs en</code> exits 0, and this tranche touches no panel code.</li><li><strong><code>behaviour.mjs</code>&#x27;s four failures are the documented environmental set</strong>: <code>22g × 3</code> — the archive.org poster block, which <code>CLAUDE.md</code> records as <strong>intermittent</strong> (<em>&quot;inside one tranche on identical code they passed in runs 1/3/5/9/10 and failed in 2/4/6/7/8/11&quot;</em>), so a green <code>22g</code> is not evidence either way — and <code>31e</code>, the sandbox TLS artefact. <strong>982 checks against the baseline&#x27;s 982.</strong> <code>--ignore-certificate-errors</code> was not used; it would also hide a real certificate problem.</li></ul>
+<p><strong>The emulator suite was not re-run, and the reason is stronger than a re-run would be.</strong> <code>git diff origin/main -- firestore.rules firebase.json firestore.indexes.json tests/ tools/firestore-emulator/ docs/governance/</code> is <strong>empty</strong> — not one byte of the security or emulator surface differs from <code>main</code>, so the Phase 4 result (53 assertions, 0 failures, re-run during the v08.31 integration earlier today) cannot have moved.</p>
+<h3>5.5 The mutations, in full</h3>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Guard must refuse it</th></tr></thead><tbody>
+<tr><td>POSITIVE CONTROL — the guard passes on the real, unmutated repository</td><td>passes</td></tr>
+<tr><td>POSITIVE CONTROL — the harness restored every file it touched</td><td>passes</td></tr>
+<tr><td><strong>the direct D3 call is restored, exactly as it was before this tranche</strong></td><td><strong>refused</strong></td></tr>
+<tr><td>the service imports the store again without calling it</td><td>refused</td></tr>
+<tr><td>a module that has never touched evidence starts calling the store</td><td>refused</td></tr>
+<tr><td>the chokepoint stops consulting readiness</td><td>refused <em>(this one found FINDING B)</em></td></tr>
+<tr><td>the null outcome is spread instead of checked</td><td>refused</td></tr>
+<tr><td>a refusal collapses into <code>written: false</code></td><td>refused</td></tr>
+<tr><td>the service loses the chokepoint import</td><td>refused</td></tr>
+<tr><td>NEGATIVE CONTROL — a comment naming the store does <strong>not</strong> trip the guard</td><td>stays green</td></tr>
+<tr><td>POSITIVE CONTROL — every mutated file is byte-identical to how it started</td><td>passes</td></tr>
+</tbody></table></div>
+<p><strong>11 passed, 0 failed, 0 unproven.</strong> The third is the one the ruling asks for by name.</p>
+<hr>
+<h2>6. What was deliberately not done</h2>
+<ul><li><strong>No shared file was touched.</strong> All five files are <code>quran</code>-owned under the ledger&#x27;s own path families. In particular <code>CLAUDE.md</code> and <code>CHANGELOG.md</code> were <strong>not</strong> updated, because both are platform-shared and the ruling says to stop rather than take one. <strong>This is a real consequence worth naming:</strong> this repository&#x27;s standing rule is that a round leaving the brief is appended to <code>CHANGELOG.md</code> first. This tranche leaves no brief entry, so the record lives in this report until the Master Architect authorises the two-line brief and changelog note.</li><li><strong>No version bump.</strong> <code>app/js/version.js</code> stays <code>08.31</code>, which §5.1&#x27;s unreachability proof is what entitles it to do. <strong><code>08.32</code> was not allocated.</strong></li><li><strong>Nothing was deployed.</strong> <code>firestore.rules</code>, <code>firebase.json</code>, <code>firestore.indexes.json</code> and <code>tests/firestore/</code> are byte-for-byte unchanged; <code>firestore.rules</code> still contains the word <code>evidence</code> <strong>zero</strong> times.</li><li><strong>The readiness gate was not enabled.</strong> <code>EVIDENCE_PERSISTENCE_DECLARATION.ready</code> is still the literal <code>false</code> with <code>decision: null</code>. E1 is <strong>CLOSED</strong>.</li><li><strong><code>feature/hadith-study</code> was not touched</strong>, and neither was the ledger that describes it. Both are other people&#x27;s to move.</li></ul>
+<hr>
+<h2>7. The four deployment states — unchanged by this tranche</h2>
+<div class='tw'><table><thead><tr><th>State</th><th>Value</th><th>Basis</th></tr></thead><tbody>
+<tr><td><code>APPLICATION_CODE_INTEGRATED</code></td><td><strong>YES</strong></td><td><code>main</code> carries v08.31; this tranche adds a BR-0 repair to it</td></tr>
+<tr><td><code>GITHUB_PAGES_SERVING</code></td><td><strong>PRESUMED_FROM_MAIN</strong>, <code>verified: false</code></td><td>The sandbox proxy refuses <code>CONNECT</code> to <code>github.io</code> — re-confirmed today: <code>curl: (56) CONNECT tunnel failed, response 403</code></td></tr>
+<tr><td><code>FIREBASE_RULES_DEPLOYED</code></td><td><strong>NO</strong></td><td>E1 CLOSED</td></tr>
+<tr><td><code>EVIDENCE_RECORDING_OPERATIONAL</code></td><td><strong>NO</strong></td><td>The evidence subcollection has no rule</td></tr>
+</tbody></table></div>
+<hr>
+<h2>8. State block</h2>
+<p>``<code> MMSA_QR_D3_FOUNDATION_REPAIR DATE=2026-09-19 BASE_MAIN_SHA=a64e2a1c97f397aba26bdfa281fdf4f2b5486547 BASE_MAIN_SHA_IS=the final v08.31 integration report-stamp commit MAIN_VERSION=08.31 (UNCHANGED) BRANCH=claude/busy-hawking-5p8ck8 BRANCH_HEAD=57a73a8b7664c9818c3814e495e4abdeebaf608f (the work; this report sits one commit ahead) BLAST_RADIUS=BR-0 APP_FILES_CHANGED=1 (app/js/study-note-service.js, page-unreachable) SHARED_FILES_CHANGED=0 VERSION_BUMP=NONE V0832_STATUS=UNALLOCATED REACHABILITY=study-note-service.js reachable from 0 of 29 pages; controls records.js=16, study-event-wiring.js=1 IMPORT_CYCLES=0 of 96 modules CHOKEPOINT_CALLERS=1 (study-event-wiring.js) -- KNOWN_UNREACHABLE_CALLER exception REMOVED MUTATIONS=11 passed, 0 failed, 0 unproven FINDING_A=study-event-wiring.mjs DEAD since 65ef3c5 (v08.31&#x27;s accepted commit); repaired, 0 -&gt; 41 checks FINDING_B=boundary guard&#x27;s unbounded function slice made an assertion unable to fail; found by mutation; fixed FINDING_C=feature/hadith-study (b7e0dab) vs ledger -- guards A and B fail on main, PRE-EXISTING, needs Master Architect READBAR_412_RESOLUTION=boundary case, 1.09px apart, renderer-dependent; Chromium 141.0.7390.37; both reports honest; no code difference READBAR_VS_MAIN=14/14 IDENTICAL, 0 changed -- no UI change FIRESTORE_RULES_DEPLOYED=NO EVIDENCE_RECORDING_OPERATIONAL=NO E1_STATUS=CLOSED READY_TO_SHIP=NO </code>``</p>
+</main></body></html>
