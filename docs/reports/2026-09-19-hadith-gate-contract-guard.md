@@ -10,7 +10,7 @@
 | | |
 |---|---|
 | Branch | `feature/hadith-study` |
-| **SHA at delivery** | **`a03081a`** |
+| **Work commit** | **`a03081a`** — the guard. This report is the commit after it, so the branch tip is one ahead of the SHA a report can name |
 | Branch before this work | `c1a4f19` — fully merged into `main`, 11 behind |
 | `origin/main` | `db6cb24b807d77630914e076d413bec6982cc3d7` |
 | `main` application version | **v08.30** (MAP Phase 4, the Quran stream) |
@@ -212,7 +212,7 @@ STATUS=COMPLETE_AWAITING_MASTER_ARCHITECT
 
 BRANCH=feature/hadith-study
 
-HEAD=a03081a
+HEAD=a03081a (the guard commit; the branch tip is the following commit, which adds this report -- a report cannot carry its own SHA)
 
 BASE_MAIN_SHA=db6cb24b807d77630914e076d413bec6982cc3d7
 
