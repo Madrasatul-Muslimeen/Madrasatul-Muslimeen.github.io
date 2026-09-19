@@ -616,6 +616,14 @@ export const BN = {
   "Reading recorded.": "তিলাওয়াত রেকর্ড করা হয়েছে।",
   "Already recorded for today.": "আজকের জন্য ইতিমধ্যে রেকর্ড করা হয়েছে।",
   "Reading is recorded for an āyah, a range or a whole surah.": "তিলাওয়াত রেকর্ড হয় একটি আয়াত, একটি পরিসর বা একটি পূর্ণ সূরার জন্য।",
+  // v08.31 -- the persistence-readiness gate's own words. I11: an
+  // unavailability message is user-visible text like any other, and a
+  // Bangla-only reader meeting a dimmed control with an English tooltip has
+  // been told nothing. Two lengths, deliberately: the short one is the
+  // control's resting tooltip and its live-region announcement, the long one
+  // is the notice, which has room to say that nothing was lost.
+  "Recording study activity is not available yet.": "স্টাডি কার্যক্রম রেকর্ড করা এখনও চালু হয়নি।",
+  "Recording study activity is not available yet. Nothing was saved and nothing was lost — this will be switched on once the database is ready.": "স্টাডি কার্যক্রম রেকর্ড করা এখনও চালু হয়নি। কিছুই সংরক্ষণ করা হয়নি এবং কিছুই হারায়নি — ডেটাবেস প্রস্তুত হলে এটি চালু করা হবে।",
   "Remove bookmark": "বুকমার্ক সরান",
   // Bookmark creation/update round -- the ⋯ menu's own action, only shown
   // once a bookmark opened this session is the one still open here.

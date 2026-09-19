@@ -15,7 +15,7 @@
 //
 // It reads `docs/governance/programme-integration-ledger.json` and compares it
 // against the repository as it actually is. The ledger is DATA, not authority:
-// it records decisions, it does not make them. Six guards:
+// it records decisions, it does not make them. Seven guards:
 //
 //   A  two active or reserved streams claiming the same global version
 //   B  a branch inventing a version the ledger has not reserved for it
@@ -23,6 +23,7 @@
 //   D  malformed or non-canonical version references that blind the scanners
 //   E  a module modifying a declared shared/platform file undeclared
 //   F  a stale integration baseline -- a candidate based on a main SHA that moved
+//   G  a deployment/readiness state recorded as something it has not been proven to be
 //
 // The guards are a pure function of (ledger, facts) so the mutation suite in
 // `programme-ledger-mutations.mjs` can feed them a corrupted ledger and a
@@ -69,6 +70,22 @@ export const TOUCH_AUTHORIZED = "AUTHORIZED";
 const TOUCH_STATUSES = new Set([TOUCH_DECLARED, TOUCH_AUTHORIZED]);
 /** Who may authorise a shared-file change. Closed: a module cannot authorise itself. */
 const AUTHORITIES = new Set(["master-architect"]);
+
+/**
+ * The FOUR deployment states, recorded separately (Master Architect correction,
+ * 19 Sep 2026). v08.30's integration reported `APP_DEPLOYED=NO`, which was
+ * incomplete: GitHub Pages serves `main`, so integrated code IS served even
+ * while the feature cannot function. One boolean cannot carry both facts, and
+ * collapsing them recorded a control the Owner can actually see as "not
+ * deployed". Each state has its OWN closed vocabulary, so a state cannot be
+ * upgraded by borrowing a word that means something else.
+ */
+export const DEPLOYMENT_STATES = Object.freeze({
+  applicationCodeIntegrated: ["YES", "NO"],
+  githubPagesServing: ["SERVING_VERIFIED", "PRESUMED_FROM_MAIN", "NO"],
+  firebaseRulesDeployed: ["YES", "NO"],
+  evidenceRecordingOperational: ["YES", "NO"],
+});
 
 /** Statuses that CLAIM a version. A claimed version is not available to anyone else. */
 const CLAIMING = new Set(["LIVE", "RESERVED", "RELEASED"]);
@@ -426,6 +443,87 @@ export function runGuards(ledger, facts) {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // G  A DEPLOYMENT STATE RECORDED AS SOMETHING IT HAS NOT BEEN PROVEN TO BE,
+  //    and the Phase 4 readiness declaration disagreeing with it.
+  //
+  //    Two failures this guard exists for. (1) `APP_DEPLOYED=NO` collapsed four
+  //    independent facts into one boolean and got the interesting one wrong --
+  //    code merged to `main` is SERVED, because Pages serves main, even while
+  //    the feature cannot function. (2) v08.31's persistence gate is a literal
+  //    in a source file, and a literal can be flipped in one keystroke. Guard G
+  //    is what makes enablement a governed decision rather than an edit: the
+  //    code, this ledger and the recorded Rules deployment must agree, or the
+  //    check fails by name.
+  {
+    const dep = ledger.deployment || {};
+    for (const [key, allowed] of Object.entries(DEPLOYMENT_STATES)) {
+      const block = dep[key];
+      if (!block || typeof block !== "object") {
+        fail("G", `deployment.${key} is not recorded; the four states must each be recorded separately`);
+        continue;
+      }
+      if (!allowed.includes(block.state)) {
+        fail("G", `deployment.${key}.state is "${block.state}" -- not one of ${allowed.join(" | ")}`);
+      }
+    }
+    // A PRESUMPTION MUST SAY IT IS ONE. The Pages state is the one fact in this
+    // block nothing in a sandbox can measure, so recording it as verified
+    // without evidence is exactly the drift guard G is for.
+    const pages = dep.githubPagesServing;
+    if (pages && pages.state === "PRESUMED_FROM_MAIN" && pages.verified !== false) {
+      fail("G", "deployment.githubPagesServing is PRESUMED_FROM_MAIN but does not record verified:false -- a presumption must say it is one");
+    }
+    if (pages && pages.state === "SERVING_VERIFIED" && pages.verified !== true) {
+      fail("G", "deployment.githubPagesServing claims SERVING_VERIFIED without verified:true");
+    }
+    // The feature cannot be operational while the Rules it needs are not deployed.
+    const rulesYes = dep.firebaseRulesDeployed?.state === "YES";
+    if (dep.evidenceRecordingOperational?.state === "YES" && !rulesYes) {
+      fail("G", "deployment.evidenceRecordingOperational is YES while firebaseRulesDeployed is not -- the evidence subcollection has no rule, so nothing can be recorded");
+    }
+
+    const r = ledger.evidencePersistenceReadiness;
+    if (!r) {
+      fail("G", "the ledger records no evidencePersistenceReadiness block; the v08.31 gate has no governance record to agree with");
+    } else {
+      const src = facts.readinessSource;
+      if (typeof src !== "string" || src === "") {
+        fail("G", `the readiness declaration ${r.declarationPath} could not be read`);
+      } else {
+        // Read the LITERAL out of the source. A regex, deliberately: importing
+        // the module would run it, and what matters here is what the file SAYS.
+        const m = src.match(/EVIDENCE_PERSISTENCE_DECLARATION\s*=\s*Object\.freeze\(\{[\s\S]*?ready:\s*(true|false)/);
+        if (!m) {
+          fail("G", `${r.declarationPath} does not declare EVIDENCE_PERSISTENCE_DECLARATION.ready as a literal true/false -- guard G cannot read it, so it cannot vouch for it`);
+        } else {
+          const codeReady = m[1] === "true";
+          if (codeReady !== (r.ready === true)) {
+            fail("G", `${r.declarationPath} declares ready:${codeReady} while the ledger records ready:${r.ready === true} -- the code and the governance record disagree`);
+          }
+          if (codeReady && !rulesYes) {
+            fail("G", `${r.declarationPath} declares evidence persistence READY while deployment.firebaseRulesDeployed is "${dep.firebaseRulesDeployed?.state}" -- readiness may not run ahead of the deployment it depends on`);
+          }
+          if (codeReady) {
+            const d = r.decision;
+            if (!d || typeof d !== "object") {
+              fail("G", "evidence persistence is enabled with no governed decision recorded -- enablement is a decision, not an edit");
+            } else {
+              if (!AUTHORITIES.has(d.by)) fail("G", `the readiness decision names authority "${d.by}", which is not in the closed set`);
+              if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.on))) fail("G", `the readiness decision carries no real date ("${d.on}")`);
+              if (!d.reference || (facts.fileExists && !facts.fileExists(d.reference))) {
+                fail("G", `the readiness decision points at ${d.reference}, which does not exist`);
+              }
+            }
+          }
+        }
+      }
+    }
+    if (!findings.some((f) => f.guard === "G" && f.level === "FAIL")) {
+      pass("G", `four deployment states recorded separately (code ${dep.applicationCodeIntegrated?.state}, Pages ${dep.githubPagesServing?.state}, Rules ${dep.firebaseRulesDeployed?.state}, operational ${dep.evidenceRecordingOperational?.state}); the readiness declaration agrees with them`);
+    }
+  }
+
   return findings;
 }
 
@@ -480,6 +578,14 @@ export function measure(root) {
       mainSha,
       mainVersion: versionOf(ledger.main?.ref || "origin/main"),
       briefText: fs.readFileSync(path.join(root, "CLAUDE.md"), "utf8"),
+      // The v08.31 readiness declaration, read as TEXT. Guard G asks what the
+      // file says, not what it evaluates to -- importing it would run it.
+      readinessSource: (() => {
+        const rel = ledger.evidencePersistenceReadiness?.declarationPath;
+        if (!rel) return null;
+        const abs = path.join(root, rel);
+        return fs.existsSync(abs) ? fs.readFileSync(abs, "utf8") : null;
+      })(),
       branches,
       versionAt,
       ancestorOfMain,

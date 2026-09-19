@@ -1604,6 +1604,16 @@
      always has one thing that reads as words. */
   #readBar .qr-ico { font-size: 0.95rem; line-height: 1; padding: 0.3rem 0.5rem; flex: 0 0 auto; }
   #readBar button[disabled] { opacity: 0.45; }
+  /* v08.31 -- the Phase 4 ✓ while evidence persistence is NOT ready (E1 closed).
+     `aria-disabled`, NOT `disabled`, and the difference is the whole point: a
+     `disabled` button cannot be focused or pressed, so a reader gets no way to
+     find out WHY it is off -- and this file's own standing lesson is that "a
+     control that opens and explains itself beats a control that is not there".
+     It is not actionable (the handler refuses before any argument is built and
+     no write is attempted), it is dimmed exactly as a disabled control is, and
+     pressing it says in words what is missing. Same 26.8px box either way: the
+     tap target is NOT reduced. */
+  #readBar button[aria-disabled="true"] { opacity: 0.45; }
   /* Round 31 -- the ⋮ quick menu, mounted here for a single āyah instead of
      sitting over the text. Empty (flow views clear it) collapses to nothing
      rather than leaving a dead gap in the row. */
@@ -2064,6 +2074,17 @@
 
   /* ---------- Way modal ---------- */
   #wayModalOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 50; }
+  /* v08.31 -- see the element's own comment for why it is out of flow. Sits
+     above the dock (z-index 60) so it is never hidden behind it, and reads as
+     information rather than as an error: nothing went wrong. */
+  #qrStudyNotice {
+    position: fixed; left: 0.6rem; right: 0.6rem; bottom: 4.6rem; z-index: 70;
+    background: #eef3fb; color: #1B2A41; border: 1px solid #b9c9e2;
+    border-radius: 0.45rem; padding: 0.6rem 0.8rem; font-size: 0.85rem;
+    line-height: 1.35; box-shadow: 0 2px 10px rgba(0,0,0,0.18); cursor: pointer;
+  }
+  #qrStudyNotice[hidden] { display: none; }
+  @media (min-width: 700px) { #qrStudyNotice { left: auto; right: 1rem; max-width: 26rem; } }
   #wayModalOverlay.open { display: flex; }
   .way-modal { background: white; border-radius: 0.6rem; max-width: 34rem; width: 92%; max-height: 85vh; overflow-y: auto; padding: 1rem 1.2rem; }
   .way-modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.4rem; }
@@ -3919,6 +3940,15 @@
   </div><!-- /#app -->
 
   <div id="wayModalOverlay"><div id="wayModalMount"></div></div>
+  <!-- v08.31 -- the Study-evidence unavailability notice.
+       DELIBERATELY NOT A CHILD OF #readBar. That row is the densest in the app
+       and v08.30 already pushed it to wrap at 390px and 412px (accepted Owner
+       UI debt, O4-READBAR-WRAP); a message living inside it would take width
+       and make that worse. `position: fixed` here means it is out of flow
+       entirely, so #readBar measures byte-identically with the gate on.
+       It is also NOT the red write-failure banner from errors.js: nothing
+       failed. This is a deliberate gate saying so before anything is tried. -->
+  <div id="qrStudyNotice" role="status" aria-live="polite" hidden></div>
 
   <!-- Asma-in-Explore round -- the same live-rendered A4 poster
        (renderAsmaPosterHtml, Round 3) reachable from Explore's References
@@ -4030,6 +4060,7 @@
       readingCompletionArgs, recordStudyEvidence,
       createListeningSession, listeningCompletionArgs,
       wbwEngagementArgs,
+      studyEvidencePersistenceReady, studyEvidencePersistenceReason,
     } from "./js/study-event-wiring.js";
     import { getBookmarks, saveBookmark, removeSavedBookmark, updateSavedBookmarkFields, findSavedBookmark, createFolder, flattenFolderTree } from "./js/bookmarks.js";
     import { openBookmarkNamePopover } from "./js/bookmark-popover.js";
@@ -9802,15 +9833,23 @@
         // so the first writes the document and every later one is refused as a
         // duplicate by the database -- the store treats that as a successful
         // no-op, which is why this is not rate-limited here.
-        const wbwRef = parseQuranWordOccurrenceId(common.occurrenceId);
-        await safeWrite(
-          () => recordStudyEvidence(db, wbwEngagementArgs({
-            tenantId, personId: subjectPersonId,
-            surah: wbwRef.surah, ayah: wbwRef.ayah,
-            at: new Date(), weekStartsOn: tenantWeekStartsOn,
-          }), { uid: auth.currentUser?.uid }),
-          { collection: "activity", action: "wbwEngaged" }
-        );
+        // v08.31 -- gated, and silently. The learning truth was ALREADY saved
+        // by setWordState() above; only the Activity evidence is withheld.
+        // Telling the reader their word tap failed would be false, and telling
+        // them Activity is off on every single word tap would be noise. The ✓
+        // on #readBar is the one surface that says it, because it is the one
+        // that invites a press.
+        if (studyEvidencePersistenceReady()) {
+          const wbwRef = parseQuranWordOccurrenceId(common.occurrenceId);
+          await safeWrite(
+            () => recordStudyEvidence(db, wbwEngagementArgs({
+              tenantId, personId: subjectPersonId,
+              surah: wbwRef.surah, ayah: wbwRef.ayah,
+              at: new Date(), weekStartsOn: tenantWeekStartsOn,
+            }), { uid: auth.currentUser?.uid }),
+            { collection: "activity", action: "wbwEngaged" }
+          );
+        }
       } else {
         const note = action.review === "returned" ? (window.prompt(t("What should they look at again?")) ?? null) : null;
         await safeWrite(() => decideWordApproval(db, { ...common, review: action.review, note }),
@@ -12832,23 +12871,76 @@
     const readCompleteBtn = document.getElementById("readCompleteBtn");
     const readCompleteMsg = document.getElementById("readCompleteMsg");
 
+    // v08.31 -- THE PERSISTENCE-READINESS GATE, on the surface.
+    //
+    // studyEvidencePersistenceReady() defaults to FALSE and is a governed
+    // declaration, never an inference: it does not read `firestore.rules`, and
+    // could not -- study-evidence-readiness.js imports nothing at all. A
+    // repository file mentioning `evidence` would prove only that somebody
+    // wrote it down; what matters is whether the rule is DEPLOYED to
+    // study-monitoring, which is E1 and cannot be observed from here.
+    //
+    // While it is false the ✓ is not actionable and NO WRITE IS ATTEMPTED.
+    // recordStudyEvidence() refuses independently (see its own comment), so
+    // this is the second of two gates, not the only one.
+    /** Concise, translated, and the same sentence for every surface that has to say it. */
+    function studyEvidenceUnavailableText(long) {
+      return long
+        ? t("Recording study activity is not available yet. Nothing was saved and nothing was lost — this will be switched on once the database is ready.")
+        : t("Recording study activity is not available yet.");
+    }
+
+    /** Shows a neutral, dismissable notice. NOT errors.js's red banner: nothing failed, and saying "that save did not go through" about a write that was never attempted would be untrue. */
+    let qrStudyNoticeTimer = null;
+    function showStudyNotice(text) {
+      const el = document.getElementById("qrStudyNotice");
+      if (!el) return;
+      el.textContent = text;
+      el.hidden = false;
+      if (qrStudyNoticeTimer) clearTimeout(qrStudyNoticeTimer);
+      qrStudyNoticeTimer = setTimeout(() => { el.hidden = true; }, 9000);
+    }
+
     /** Clears the recorded tick -- called on every unit change. Guards on the element because init order puts the first render before this block on some paths. */
     function resetReadingCompleteButton() {
       const btn = document.getElementById("readCompleteBtn");
       const msg = document.getElementById("readCompleteMsg");
       if (!btn) return;
       btn.setAttribute("aria-pressed", "false");
-      btn.title = t("Mark this reading complete");
+      const ready = studyEvidencePersistenceReady();
+      // `aria-disabled`, not `disabled`: the control must not be actionable,
+      // and it must also be able to explain itself when pressed. A `disabled`
+      // button can do neither -- it cannot even be focused, so a screen-reader
+      // reader would find a dimmed icon with no way to learn why. The tap
+      // target is identical in both states; nothing shrinks.
+      btn.setAttribute("aria-disabled", ready ? "false" : "true");
+      btn.title = ready ? t("Mark this reading complete") : studyEvidenceUnavailableText(false);
       if (msg) msg.textContent = "";
+      const notice = document.getElementById("qrStudyNotice");
+      if (notice) notice.hidden = true;
     }
 
     /** Announces the outcome, and marks the button done when it really is. The button's own state is the sighted confirmation, and it PERSISTS for the unit rather than flashing past. */
     function announceReadingResult(message, done) {
       readCompleteMsg.textContent = message;
       readCompleteBtn.setAttribute("aria-pressed", done ? "true" : "false");
-      readCompleteBtn.title = done ? message : t("Mark this reading complete");
+      // v08.31 -- when the gate is shut the resting title is the unavailability
+      // sentence, not "Mark this reading complete": a control that cannot act
+      // must not keep offering the action in its own tooltip.
+      readCompleteBtn.title = done
+        ? message
+        : (studyEvidencePersistenceReady() ? t("Mark this reading complete") : studyEvidenceUnavailableText(false));
     }
     readCompleteBtn.addEventListener("click", async () => {
+      // v08.31 -- the gate, and it returns BEFORE any argument is built. No
+      // evidence document is composed, no store call is made, no
+      // permission-denied is generated and errors.js never fires. The reader
+      // is told in their own language what is missing.
+      if (!studyEvidencePersistenceReady()) {
+        announceReadingResult(studyEvidenceUnavailableText(false), false);
+        showStudyNotice(studyEvidenceUnavailableText(true));
+        return;
+      }
       const info = currentUnitInfo();
       const args = readingCompletionArgs({
         tenantId: activeTenantId,
@@ -12873,7 +12965,14 @@
         { collection: "activity", action: "readingCompleted" }
       );
       readCompleteBtn.disabled = false;
-      if (r.ok) {
+      if (r.ok && r.result && r.result.blocked) {
+        // v08.31 defence in depth. Unreachable while the gate above holds, and
+        // deliberately handled anyway: `blocked` and `written:false` are
+        // different facts, and reading a refused write as "already recorded"
+        // would be the exact lie this tranche exists to remove.
+        announceReadingResult(studyEvidenceUnavailableText(false), false);
+        showStudyNotice(studyEvidenceUnavailableText(true));
+      } else if (r.ok) {
         // written:false means the event was already recorded -- a retry is a
         // successful no-op, not a failure, so it reads as done either way.
         announceReadingResult(
@@ -12916,6 +13015,13 @@
       listeningSession = null;
       listeningUnit = null;
       if (!session || !info) return;
+      // v08.31 -- gated like D1, and SILENTLY, which is the deliberate part.
+      // Listening completes without anyone pressing anything, so there is no
+      // invitation to withdraw and no press to answer; a notice fired by the
+      // audio reaching 80% would be an interruption the reader did not ask
+      // for. recordStudyEvidence() would refuse anyway -- this returns earlier
+      // so nothing is even composed.
+      if (!studyEvidencePersistenceReady()) return;
       if (how === "failed") session.failed();
       else if (how === "stopped") session.stopped();
       else session.ended();

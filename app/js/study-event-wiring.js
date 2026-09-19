@@ -14,6 +14,7 @@
 
 import { weekKeyFor } from "./activity.js";
 import { writeStudyActivityEvidence } from "./study-activity-evidence-store.js";
+import { isStudyEvidencePersistenceReady, studyEvidenceUnavailableReason } from "./study-evidence-readiness.js";
 
 /** The unit types ADR-008's evidence contract accepts (I5). A juz, ruku, hizb or page reading is real study, but v1 has no evidence shape for it, so it records nothing rather than guessing. */
 export const EVIDENCE_UNIT_TYPES = Object.freeze(["ayah", "range", "surah"]);
@@ -218,5 +219,32 @@ export function wbwEngagementArgs({
  */
 export async function recordStudyEvidence(db, args, { uid } = {}) {
   if (!args) return null;
+  // v08.31 -- THE ONE CHOKEPOINT. Every D1/D2/D4 evidence write in the app goes
+  // through this function, so gating it here makes "no evidence write may be
+  // attempted while persistence is not ready" a fact provable by reading ONE
+  // function, rather than a promise about three call sites. It returns before
+  // the store is called at all: nothing is built, nothing is sent, no
+  // permission-denied is generated and no error surface fires.
+  //
+  // `blocked: true` is a DISTINCT shape from the store's own `written: false`,
+  // which means "already recorded today" and is a success. Conflating the two
+  // would make a gated press report itself as done.
+  //
+  // The store's own rethrow stays exactly as it is underneath -- defence in
+  // depth. If this gate were ever wrong, the write still fails closed and
+  // safeWrite() still reaches the user (I15).
+  if (!isStudyEvidencePersistenceReady()) {
+    return { written: false, blocked: true, reason: studyEvidenceUnavailableReason() };
+  }
   return writeStudyActivityEvidence(db, { ...args, uid });
+}
+
+/** Whether Study evidence can be persisted at all right now. Re-exported so a surface can ask one question of one module instead of importing the declaration itself. */
+export function studyEvidencePersistenceReady() {
+  return isStudyEvidencePersistenceReady();
+}
+
+/** The stable reason key when it cannot, or null when it can. */
+export function studyEvidencePersistenceReason() {
+  return studyEvidenceUnavailableReason();
 }

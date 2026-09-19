@@ -25,13 +25,13 @@
     "stream consumed it."
   ],
   "schemaVersion": 1,
-  "recordedOn": "2026-09-18",
+  "recordedOn": "2026-09-19",
   "status": "ACTIVE",
   "main": {
     "ref": "origin/main",
-    "baselineSha": "7a619037d4de3ecb88df1a013262aaa4f51d1eeb",
+    "baselineSha": "a20892f1e4cbf4e86498fe371232466141ca95df",
     "baselineRecordedOn": "2026-09-19",
-    "version": "08.30",
+    "version": "08.31",
     "$comment": [
       "baselineSha is the tip `main` stood at when this record was last written.",
       "`main` moves forward constantly and that is not drift, so the guard asserts",
@@ -89,19 +89,41 @@
     {
       "version": "08.30",
       "owner": "quran",
-      "status": "LIVE",
-      "note": "QuranRevival MAP Phase 4 D1 Reading / D2 Listening / D4 WbW -- the ADR-008 evidence wiring, re-derived on current main rather than ported from 7e2931f. CODE-ACCEPTED by the Master Architect on 2026-09-19. LIVE means main carries it. NOT accepted for deployment or production use: E1 is closed, the evidence Rules are not deployed, and the subcollection is denied to every client.",
+      "status": "RELEASED",
+      "note": "QuranRevival MAP Phase 4 D1 Reading / D2 Listening / D4 WbW -- the ADR-008 evidence wiring. Code-accepted 2026-09-19 at 8ea445fb376784fb8452cb2042e4eaa8e017f41b and what main carried until the v08.31 release-gating integration. RELEASED: a prior main milestone, superseded by 08.31, kept as fact rather than withdrawn. It was never a deployment claim and is not one now.",
       "integration": {
         "acceptedBuildSha": "7a619037d4de3ecb88df1a013262aaa4f51d1eeb",
         "method": "ALREADY_ON_MAIN_AT_ACCEPTANCE — fast-forward, performed during the build tranche's own authorised push",
         "codeAcceptedOn": "2026-09-19",
         "reference": "docs/reports/2026-09-19-quranrevival-phase4-v0830-integration.md"
       }
+    },
+    {
+      "version": "08.31",
+      "owner": "quran",
+      "status": "LIVE",
+      "note": "QuranRevival release-gating repair -- the Study-evidence persistence-readiness gate. LIVE: main carries it, and main is what GitHub Pages serves. Integrated 2026-09-19 as a FAST-FORWARD from db6cb24b807d77630914e076d413bec6982cc3d7; the accepted application change is unmodified. It is NOT a deployment claim and it does not make the feature operational -- it makes the app honest about the fact that it is not. E1 stays CLOSED.",
+      "integration": {
+        "authorizedOn": "2026-09-19",
+        "integratedOn": "2026-09-19",
+        "preIntegrationMainSha": "db6cb24b807d77630914e076d413bec6982cc3d7",
+        "acceptedApplicationSha": "e63cb8d69e5813faf57251a7f15fef33a4bae191",
+        "applicationSourceCommit": "65ef3c5896ce13227fa53632966c7ff4d22db9f5",
+        "integratedMainSha": "a20892f1e4cbf4e86498fe371232466141ca95df",
+        "method": "FAST_FORWARD -- linear descent from db6cb24, no merge commit, no conflict",
+        "reference": "docs/reports/2026-09-19-quranrevival-v0831-main-integration.md"
+      }
     }
   ],
-  "nextUnallocated": "08.31",
+  "nextUnallocated": "08.32",
   "nextUnallocatedNote": [
-    "08.31 and every number above it are NOT ALLOCATED. Allocation is the Master Architect's; no stream may stamp at or beyond this number without one."
+    "08.32 and every number above it are NOT ALLOCATED. Allocation is the Master Architect's;",
+    "no stream may stamp at or beyond this number without one.",
+    "READ THIS FIELD CORRECTLY: it is the UNALLOCATED BOUNDARY, not an allocation.",
+    "Naming 08.32 here is what lets guard B REFUSE anyone who stamps it. The v08.31",
+    "authorisation says 'do not allocate v08.32', and this records exactly that: 08.32",
+    "belongs to nobody. It is not a prediction of the next merge number either -- see",
+    "the four durable rules in CLAUDE.md's VERSION NUMBERING NOTE."
   ],
   "streams": [
     {
@@ -110,7 +132,7 @@
       "role": "The umbrella: shared runtime, shared verification, governance, version allocation and module integration. It owns the platform/shared paths below; it is not a subject module.",
       "activeBranch": null,
       "integrationState": "ON_MAIN",
-      "declaredVersion": "08.30",
+      "declaredVersion": "08.31",
       "baselineSha": null,
       "baselineStatus": "NOT_APPLICABLE_IS_MAIN",
       "ownedPaths": [
@@ -134,7 +156,7 @@
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
       "integrationState": "MERGED_TO_MAIN",
-      "declaredVersion": "08.30",
+      "declaredVersion": "08.31",
       "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
       "ownedPaths": [
@@ -153,68 +175,98 @@
         "tools/i18n-verify/study-*.mjs",
         "tools/i18n-verify/note-*.mjs",
         "tools/i18n-verify/journey-map-*.mjs",
-        "tools/i18n-verify/d14-*.mjs"
+        "tools/i18n-verify/d14-*.mjs",
+        "app/js/study-event-wiring.js",
+        "app/js/study-evidence-readiness.js"
       ],
       "baselineNote": "Its recorded baseline went stale when the ledger's own commits moved main past 5ea0d92; re-pointed at cfee898, which is main. Forward movement, not drift.",
       "baselineAcknowledgement": "docs/reports/2026-09-18-hadith-v0829-main-integration.md",
       "role": "Subject module (Quran). NOT the umbrella; the umbrella is MMSA.",
       "declaredSharedTouches": [
         {
-          "path": "app/js/i18n/bn.js",
+          "path": "app/js/version.js",
           "status": "AUTHORIZED",
-          "note": "+4 keys for P4-D1's button and its three status messages. Each proven absent before adding; zero collision with Hadith's keys.",
+          "note": "08.30 -> 08.31. Requirement 12 of the v08.31 ruling names this in terms: 'Update app version to v08.31 in the same tranche.'",
           "authorization": {
             "by": "master-architect",
-            "on": "2026-09-18",
-            "reference": "docs/reports/2026-09-18-quranrevival-phase4-v0830-build.md",
-            "title": "QuranRevival Phase 4 current-baseline build, v08.30"
+            "on": "2026-09-19",
+            "reference": "docs/reports/2026-09-19-quranrevival-v0831-release-gating.md",
+            "title": "QuranRevival v08.31 release-gating repair -- RESERVED AND AUTHORIZED"
           }
         },
         {
-          "path": "app/js/version.js",
+          "path": "docs/governance/programme-integration-ledger.json",
           "status": "AUTHORIZED",
-          "note": "08.29 -> 08.30, the number the Master Architect allocated for this tranche.",
+          "note": "The four deployment states recorded separately, the evidencePersistenceReadiness record, the v08.31 allocation, and these touch records. Requirement 11 names this in terms.",
           "authorization": {
             "by": "master-architect",
-            "on": "2026-09-18",
-            "reference": "docs/reports/2026-09-18-quranrevival-phase4-v0830-build.md",
-            "title": "QuranRevival Phase 4 current-baseline build, v08.30"
+            "on": "2026-09-19",
+            "reference": "docs/reports/2026-09-19-quranrevival-v0831-release-gating.md",
+            "title": "QuranRevival v08.31 release-gating repair -- RESERVED AND AUTHORIZED"
+          }
+        },
+        {
+          "path": "app/js/i18n/bn.js",
+          "status": "AUTHORIZED",
+          "note": "+2 additive keys: the short and long Study-evidence unavailability sentences. Both proven absent before adding; zero collision with Hadith's keys.",
+          "authorization": {
+            "by": "master-architect",
+            "on": "2026-09-19",
+            "reference": "docs/reports/2026-09-19-quranrevival-v0831-release-gating.md",
+            "title": "QuranRevival v08.31 release-gating repair -- RESERVED AND AUTHORIZED",
+            "derivation": "Requirement 3 requires 'concise English and Bangla unavailability information'. Bangla cannot be delivered without the shared catalogue, so the touch is entailed by the requirement rather than chosen."
+          }
+        },
+        {
+          "path": "tools/i18n-verify/programme-ledger.mjs",
+          "status": "AUTHORIZED",
+          "note": "Guard G added: the four deployment states, their closed vocabularies, and the cross-check between the readiness declaration in source and the recorded Rules-deployment state.",
+          "authorization": {
+            "by": "master-architect",
+            "on": "2026-09-19",
+            "reference": "docs/reports/2026-09-19-quranrevival-v0831-release-gating.md",
+            "title": "QuranRevival v08.31 release-gating repair -- RESERVED AND AUTHORIZED",
+            "derivation": "Requirement 11 asks the ledger to DISTINGUISH four states. A distinction nothing enforces is a description; guard G is what makes the correction hold."
+          }
+        },
+        {
+          "path": "tools/i18n-verify/programme-ledger-mutations.mjs",
+          "status": "AUTHORIZED",
+          "note": "11 guard-G mutations plus a positive control proving guard G is a check and not a blanket refusal. 37 -> 49, 0 failed. No existing mutation was weakened or removed.",
+          "authorization": {
+            "by": "master-architect",
+            "on": "2026-09-19",
+            "reference": "docs/reports/2026-09-19-quranrevival-v0831-release-gating.md",
+            "title": "QuranRevival v08.31 release-gating repair -- RESERVED AND AUTHORIZED",
+            "derivation": "Entailed by the guard-G touch: this repository does not accept a guard that has not been proven able to fail."
           }
         },
         {
           "path": "CLAUDE.md",
           "status": "AUTHORIZED",
-          "note": "The v08.30 round entry and the milestone line.",
+          "note": "The v08.31 round entry, the milestone line naming the branch and main's own version, and the four-state table replacing APP_DEPLOYED=NO in the brief itself.",
           "authorization": {
             "by": "master-architect",
-            "on": "2026-09-18",
-            "reference": "docs/reports/2026-09-18-quranrevival-phase4-v0830-build.md",
-            "title": "QuranRevival Phase 4 current-baseline build, v08.30"
+            "on": "2026-09-19",
+            "reference": "docs/reports/2026-09-19-quranrevival-v0831-release-gating.md",
+            "title": "QuranRevival v08.31 release-gating repair -- RESERVED AND AUTHORIZED",
+            "derivation": "NOT named in the v08.31 ruling. Entailed by requirement 12: brief-integrity.mjs fails a version bump whose milestone line has not followed, and a failing safety gate is not a deliverable. Recorded this way so the derivation is visible rather than assumed."
           }
         },
         {
           "path": "CHANGELOG.md",
           "status": "AUTHORIZED",
-          "note": "The v08.30 development milestone. Explicitly NOT a deployed/served claim.",
+          "note": "The v08.31 round entry. Explicitly not a deployed or served claim.",
           "authorization": {
             "by": "master-architect",
-            "on": "2026-09-18",
-            "reference": "docs/reports/2026-09-18-quranrevival-phase4-v0830-build.md",
-            "title": "QuranRevival Phase 4 current-baseline build, v08.30"
-          }
-        },
-        {
-          "path": "tools/i18n-verify/behaviour.mjs",
-          "status": "AUTHORIZED",
-          "note": "5 checks re-derived, not ported: four enumerate #readBar and went stale the moment this authorised tranche added a control (30j, 30l, 33a, 37a); the fifth was a real TEST DEFECT this tranche exposed -- 37a counted an out-of-flow aria-live announcer as a control in the row and reported a 42px gap and two negative ones. Under the instruction's own 'tests may be re-derived for current architecture where required'. Declared rather than done quietly.",
-          "authorization": {
-            "by": "master-architect",
-            "on": "2026-09-18",
-            "reference": "docs/reports/2026-09-18-quranrevival-phase4-v0830-build.md",
-            "title": "QuranRevival Phase 4 current-baseline build, v08.30"
+            "on": "2026-09-19",
+            "reference": "docs/reports/2026-09-19-quranrevival-v0831-release-gating.md",
+            "title": "QuranRevival v08.31 release-gating repair -- RESERVED AND AUTHORIZED",
+            "derivation": "NOT named in the v08.31 ruling. Entailed by requirement 12 and by this repository's standing rule that a round leaving the brief is appended here first -- which brief-integrity.mjs also enforces."
           }
         }
-      ]
+      ],
+      "integrationNote": "v08.31 fast-forwarded onto main on 2026-09-19 from claude/charming-rubin-xzxbk1. See docs/reports/2026-09-19-quranrevival-v0831-main-integration.md."
     },
     {
       "id": "quran-phase4-wiring",
@@ -445,6 +497,16 @@
       "path": "docs/governance/programme-integration-ledger.json",
       "owner": "platform",
       "note": "This file."
+    },
+    {
+      "path": "tools/i18n-verify/programme-ledger.mjs",
+      "owner": "platform",
+      "note": "The programme guards themselves. Platform-owned; it was in mmsa-platform.ownedPaths but NOT in this shared list, so a module stream could modify the guard that judges it without declaring the touch. Added 19 Sep 2026."
+    },
+    {
+      "path": "tools/i18n-verify/programme-ledger-mutations.mjs",
+      "owner": "platform",
+      "note": "The proof that the guards can fail. Same reasoning as the guard itself: weakening a mutation is how a guard quietly stops being believed."
     }
   ],
   "moduleContentSurfaces": [
@@ -573,6 +635,12 @@
       "id": "D14-WIRING",
       "subject": "D14 timezone activation",
       "state": "OPEN -- the modules are on main and unreachable by construction. Activation needs a Rules change and rides E1."
+    },
+    {
+      "id": "O3c",
+      "subject": "#drillModeSelect truncated in BANGLA at six viewports in the Study-options panel",
+      "state": "OPEN -- Owner UI decision. Found 19 Sep 2026 by running panel.mjs in Bangla; PROVEN pre-existing by reverting app/ to the accepted v08.30 build (8ea445fb) and getting the identical six findings. English is clean. Reported rather than absorbed into a release-gating tranche: the remedies (widen, shrink the type, reword in both languages) are the same materially-different choices O3 and O3b carry.",
+      "processNote": "panel.mjs takes a language argument and routine verification had only ever run it in English. A suite that only ever runs in one language is measuring one language."
     }
   ],
   "d14": {
@@ -594,10 +662,44 @@
     "$deploymentNote": "NONE of these say anything about Firestore deployment. Deployment is tracked in `deployment` below and is NOT DONE."
   },
   "deployment": {
+    "$comment": [
+      "FOUR STATES, RECORDED SEPARATELY, and the separation is the correction.",
+      "v08.30's integration reported APP_DEPLOYED=NO, which was incomplete: this",
+      "repository's GitHub Pages site serves `main`, so code merged to main IS",
+      "served from the live URL even while the feature cannot function. One",
+      "boolean cannot carry both facts, and collapsing them is how a control the",
+      "Owner can actually see gets recorded as 'not deployed'. Master Architect",
+      "correction, 2026-09-19."
+    ],
+    "applicationCodeIntegrated": {
+      "state": "YES",
+      "means": "The application code is merged into `main`.",
+      "evidence": "main carries v08.31 at a20892f1e4cbf4e86498fe371232466141ca95df; the accepted v08.31 application change is 65ef3c58 (reported at e63cb8d6), fast-forwarded from db6cb24b8. v08.30 was accepted at 8ea445fb."
+    },
+    "githubPagesServing": {
+      "state": "PRESUMED_FROM_MAIN",
+      "means": "GitHub Pages serves `main` for this repository, so integrated code is presumed to be served from the live URL.",
+      "verified": false,
+      "whyNotVerified": "PRESUMED, not measured. This sandbox's proxy refuses CONNECT to github.io, so serving cannot be observed from here. The presumption rests on this repository's own standing brief, not on a measurement."
+    },
+    "firebaseRulesDeployed": {
+      "state": "NO",
+      "means": "The ADR-008 Activity-evidence Rules (and the Phase 4-6 indexes) have not been deployed to the study-monitoring Firebase project.",
+      "blockedOn": "E1 -- authenticated Firebase Console access to study-monitoring. A sandbox has no credentials.",
+      "firestoreRules": "NOT_DONE",
+      "firestoreIndexes": "NOT_DONE"
+    },
+    "evidenceRecordingOperational": {
+      "state": "NO",
+      "means": "The Phase 4 feature cannot record anything for anyone. The evidence subcollection has no rule, so every write would be denied.",
+      "dependsOn": "firebaseRulesDeployed",
+      "surfacedBy": "v08.31 -- the persistence-readiness gate. While this is NO the completion control is not actionable and no write is attempted; app/js/study-evidence-readiness.js declares ready:false."
+    },
+    "e1": "CLOSED",
     "firestoreRules": "NOT_DONE",
     "firestoreIndexes": "NOT_DONE",
     "blockedOn": "E1 -- authenticated Firebase Console access to study-monitoring. A sandbox has no credentials.",
-    "note": "Recorded as NOT DONE because it has not been proven done. E1 remains CLOSED. NOTE, recorded rather than left implicit: this repository's own brief states GitHub Pages serves `main`, so code merged to main is served from the live URL. That is NOT Firestore deployment and does not make the Phase 4 feature function -- the evidence subcollection has no rule and every write is denied -- but it does mean the v08.30 control is visible to the Owner and will show an error if pressed. Serving was not verified from this sandbox (the proxy refuses github.io)."
+    "note": "Recorded as NOT DONE because it has not been proven done. The two flat keys above are retained for readers of the pre-v08.31 shape; the four states above them are authoritative."
   },
   "programme": {
     "name": "MMSA -- Madrasatul Muslimeen's Study App",
@@ -636,6 +738,11 @@
       "id": "O3b",
       "subject": "surahSelect / unitTypeSelect at 320px",
       "status": "OPEN — the row is genuinely short of space (-63.9px)"
+    },
+    {
+      "id": "O3c",
+      "subject": "#drillModeSelect truncation, Bangla only",
+      "status": "OPEN — Owner UI decision, pre-existing before v08.31"
     }
   ],
   "ownerReviewAfterBuild": [
@@ -653,5 +760,24 @@
       "whyItIsTheOwners": "Accept the gap with that message, hide the control for those units, or extend the contract (an ADR-008 amendment) are materially different choices.",
       "status": "PROVISIONAL — preserved unchanged. NO EVIDENCE WAS INVENTED to complete tracking."
     }
-  ]
+  ],
+  "evidencePersistenceReadiness": {
+    "$comment": [
+      "The governed deployment-readiness decision for ADR-008 Activity evidence.",
+      "app/js/study-evidence-readiness.js holds the runtime declaration; this is",
+      "the governance record it must agree with. Guard G fails if the code",
+      "declares ready while firebaseRulesDeployed is not YES, or if the code is",
+      "enabled with no decision recorded here -- so enablement cannot happen as a",
+      "one-word source edit."
+    ],
+    "declarationPath": "app/js/study-evidence-readiness.js",
+    "ready": false,
+    "decision": null,
+    "gate": "E1",
+    "requiredToEnable": [
+      "docs/governance/programme-integration-ledger.json: deployment.firebaseRulesDeployed.state = YES, proven by an actual deployment",
+      "this block: ready=true and decision={by,on,reference} from the closed authority set",
+      "app/js/study-evidence-readiness.js: EVIDENCE_PERSISTENCE_DECLARATION.ready=true with the same decision"
+    ]
+  }
 }

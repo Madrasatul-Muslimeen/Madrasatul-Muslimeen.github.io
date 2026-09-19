@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QuranRevival v08.31 — guarded integration into `main`</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>QuranRevival v08.31 — guarded integration into <code>main</code></h1>
+<p><strong>Date:</strong> 19 September 2026 <strong>Ruling executed:</strong> <em>QuranRevival v08.31 release-gating implementation is ACCEPTED FOR GUARDED INTEGRATION. E1 remains CLOSED. Do not deploy Firebase Rules or claim evidence recording is operational.</em> <strong>Continuation package restored:</strong> <code>docs/reports/2026-09-19-MMSA-QR-CONTINUATION-PACKAGE.md</code>, which supersedes <code>docs/reports/2026-09-18-SESSION-HANDOVER.md</code>.</p>
+<hr>
+<h2>1. The headline, in four lines</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td>Pre-integration <code>origin/main</code></td><td><strong><code>db6cb24b807d77630914e076d413bec6982cc3d7</code></strong> — unmoved, exactly as the package recorded it</td></tr>
+<tr><td>Method</td><td><strong>FAST-FORWARD.</strong> Linear descent, no merge commit, no conflict, no application file altered by the integration itself</td></tr>
+<tr><td>Integrated <code>main</code>, application</td><td><strong><code>a20892f1e4cbf4e86498fe371232466141ca95df</code></strong> — pushed as <code>db6cb24..a20892f</code></td></tr>
+<tr><td>Integrated <code>main</code>, final</td><td><strong><code>877bca0190ae25a2ad6e13d1822946390514829e</code></strong> — the governance stamp of §7, zero <code>app/</code> bytes</td></tr>
+<tr><td><code>main</code> application version</td><td><strong>v08.30 → v08.31</strong></td></tr>
+</tbody></table></div>
+<p><strong>Nothing was deployed.</strong> E1 is CLOSED, <code>firestore.rules</code> is byte-for-byte unchanged and still contains the word <code>evidence</code> <strong>zero</strong> times, and <strong>v08.32 remains UNALLOCATED</strong>.</p>
+<hr>
+<h2>2. The commit sequence, resolved</h2>
+<p><code>origin/main</code> was fetched and every SHA in the instruction was resolved against the real object store rather than trusted from the package.</p>
+<p>``<code> db6cb24  main (v08.30)  ── the package&#x27;s MAIN_SHA, still origin/main   │   ├─ 65ef3c5  v08.31 — Study evidence persistence-readiness gate (E1 closed)   ← THE APPLICATION CHANGE   ├─ fb767a3  v08.31 — ledger four deployment states, guard G, gate&#x27;s structural checks   ├─ 582a603  fix a vacuous assertion the mutation suite exposed (empty #readBar slice)   ├─ 7a1c3d3  v08.31 — brief milestone, four deployment states, CHANGELOG round entry   ├─ e63cb8d  v08.31 — ledger ownership/touch records, and the release-gating report   ← package&#x27;s &quot;report application SHA&quot;   ├─ 710f182  v08.31 report stamp — fill FINAL_APPLICATION_SHA and render the .html    ← package&#x27;s &quot;continuation application tip&quot;   ├─ bfa2dad  MMSA/QR continuation package, and the Bangla-only truncation recorded as O3c  ← package&#x27;s &quot;continuation branch tip&quot;   └─ a20892f  continuation package stamp — name the tip its own commit created          ← ACTUAL branch tip </code>``</p>
+<p>Every link was asserted, not read off the graph by eye:</p>
+<div class='tw'><table><thead><tr><th>Assertion</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>db6cb24</code> is an ancestor of <code>e63cb8d</code></td><td><strong>YES</strong></td></tr>
+<tr><td><code>e63cb8d</code> is an ancestor of <code>710f182</code></td><td><strong>YES</strong></td></tr>
+<tr><td><code>710f182</code> is an ancestor of <code>bfa2dad</code></td><td><strong>YES</strong></td></tr>
+<tr><td><code>bfa2dad</code> is an ancestor of <code>a20892f</code></td><td><strong>YES</strong></td></tr>
+<tr><td><code>merge-base(origin/main, branch)</code></td><td><strong><code>db6cb24…</code></strong> — the branch descends from <code>main</code> with nothing in between</td></tr>
+<tr><td>Fast-forward possible</td><td><strong>YES</strong></td></tr>
+</tbody></table></div>
+<hr>
+<h2>3. FINDING 1 — the branch tip is one commit past the package, and the variance is benign</h2>
+<p>The instruction named <code>bfa2dad</code> as the continuation branch tip. <strong><code>origin/claude/charming-rubin-xzxbk1</code> is <code>a20892f</code>.</strong></p>
+<p>This is not drift and it is not an unreviewed change. <code>a20892f</code> is the <strong>self-referential stamp</strong>: a file cannot name the commit that will contain it, so the package was committed as <code>bfa2dad</code> and then one further commit corrected the package&#x27;s own <code>Branch tip</code> row and <code>DEV_BRANCH_TIP</code> field to say <code>bfa2dad</code>. The whole of <code>bfa2dad → a20892f</code> is:</p>
+<ul><li><code>docs/reports/2026-09-19-MMSA-QR-CONTINUATION-PACKAGE.md</code> — two lines: the <code>Branch tip</code> table row, and <code>DEV_BRANCH_TIP</code> plus a new <code>V0831_APPLICATION_TIP</code> field</li><li>the rendered <code>.html</code> of the same file — the same two lines</li></ul>
+<p><strong>The attached package text is <code>a20892f</code>&#x27;s version, not <code>bfa2dad</code>&#x27;s</strong> — it carries the corrected <code>Branch tip</code> row and the <code>V0831_APPLICATION_TIP</code> field that only <code>a20892f</code> introduced. So the package issued to this session is the content of the commit it could not name. <code>main</code> is the same repository&#x27;s precedent for exactly this shape: <code>db6cb24</code>, the pre-integration <code>main</code>, is itself a report-stamp commit sitting on the accepted v08.30 build <code>8ea445fb</code>.</p>
+<p><strong>Decision:</strong> the integration target is <strong><code>a20892f</code></strong>, the verified tip. <code>app/</code> is byte-identical between <code>bfa2dad</code> and <code>a20892f</code>, so this choice changes no application behaviour whatsoever; it only avoids leaving <code>main</code> carrying a package that misstates its own tip. The variance is recorded here rather than passed over.</p>
+<hr>
+<h2>4. FINDING 2 — the accepted application change is one commit, and everything after it is governance</h2>
+<p>The instruction asks for confirmation that commits after the accepted application change introduce <strong>no unreviewed application behaviour</strong>. They do not, and the evidence is stronger than the question assumes.</p>
+<p>The package names <code>e63cb8d</code> as the &quot;report application SHA&quot;. <strong><code>e63cb8d</code> changes no file under <code>app/</code>.</strong> The entire v08.31 application source change lands in the <em>first</em> commit after <code>main</code>:</p>
+<div class='tw'><table><thead><tr><th>Step</th><th><code>app/</code> files changed</th><th>Other files</th></tr></thead><tbody>
+<tr><td><code>db6cb24 → 65ef3c5</code></td><td><strong>5</strong> — <code>js/study-evidence-readiness.js</code> (new, 112 lines), <code>js/study-event-wiring.js</code> (+28), <code>quranrevival.html</code> (+118/−12), <code>js/i18n/bn.js</code> (+8), <code>js/version.js</code> (1 line)</td><td>—</td></tr>
+<tr><td><code>65ef3c5 → fb767a3</code></td><td><strong>0</strong></td><td>ledger, <code>programme-ledger.mjs</code>, <code>programme-ledger-mutations.mjs</code>, <code>study-activity-evidence-boundary.mjs</code></td></tr>
+<tr><td><code>fb767a3 → 582a603</code></td><td><strong>0</strong></td><td><code>study-activity-evidence-boundary.mjs</code></td></tr>
+<tr><td><code>582a603 → 7a1c3d3</code></td><td><strong>0</strong></td><td><code>CHANGELOG.md</code>, <code>CLAUDE.md</code></td></tr>
+<tr><td><code>7a1c3d3 → e63cb8d</code></td><td><strong>0</strong></td><td>ledger, the v08.31 release-gating report <code>.md</code></td></tr>
+<tr><td><code>e63cb8d → 710f182</code></td><td><strong>0</strong></td><td>the same report <code>.md</code> + rendered <code>.html</code></td></tr>
+<tr><td><code>710f182 → bfa2dad</code></td><td><strong>0</strong></td><td><code>CLAUDE.md</code>, ledger, continuation package <code>.md</code> + <code>.html</code></td></tr>
+<tr><td><code>bfa2dad → a20892f</code></td><td><strong>0</strong></td><td>continuation package <code>.md</code> + <code>.html</code></td></tr>
+</tbody></table></div>
+<p><code>git diff 65ef3c5 a20892f -- app/</code> is <strong>empty</strong>, and so is every intermediate form of it. The application surface has been frozen since the accepted change; the seven commits after it are verification tooling, the programme ledger, the brief, the changelog and two reports.</p>
+<p><strong><code>e63cb8d</code> is therefore the tranche&#x27;s report SHA, not its application SHA.</strong> Both are recorded so the distinction cannot be lost: <code>FINAL_APPLICATION_SHA=e63cb8d69e58…</code> as the accepted report states it, and <strong><code>65ef3c58…</code> as the commit that actually carries the source</strong>.</p>
+<hr>
+<h2>5. Gate results</h2>
+<p>Every suite was run from the repository root, against the verified tip <code>a20892f</code>, with the project&#x27;s own local server and a system Chromium. A result is reported here only if its text and exit code were both read.</p>
+<h3>5.1 Pure and governance gates</h3>
+<div class='tw'><table><thead><tr><th>Gate</th><th>Result</th><th>Exit</th></tr></thead><tbody>
+<tr><td><code>programme-ledger.mjs</code> (guards A–G)</td><td><strong>8 passed / 22 noted / 0 failed</strong> — guard G: four deployment states recorded separately, the readiness declaration agrees with them</td><td>0</td></tr>
+<tr><td><code>programme-ledger-mutations.mjs</code></td><td><strong>49 passed, 0 failed</strong> — every guard proven able to fail, guard G&#x27;s seven shapes included</td><td>0</td></tr>
+<tr><td><code>study-activity-evidence-boundary.mjs</code></td><td><strong>26 passed, 0 failed</strong></td><td>0</td></tr>
+<tr><td><code>brief-integrity.mjs</code></td><td><strong>8 passed, 0 failed</strong></td><td>0</td></tr>
+<tr><td><code>rules-authorisation-executable.mjs</code></td><td><strong>38 passed, 0 failed</strong></td><td>0</td></tr>
+<tr><td><code>rules-deployment-candidate.mjs</code></td><td>10 passed, 0 failed</td><td>0</td></tr>
+<tr><td><code>firestore-index-requirements.mjs</code></td><td>8 passed, 0 failed — <code>firebase.json</code> still declares no indexes</td><td>0</td></tr>
+<tr><td><code>stub-parity.mjs</code></td><td>3 passed, 0 failed</td><td>0</td></tr>
+<tr><td><code>quran-boundary.mjs</code></td><td><strong>30 passed, 0 failed</strong></td><td>0</td></tr>
+<tr><td><code>note-foundation-boundary.mjs</code></td><td>30 passed, 0 failed</td><td>0</td></tr>
+<tr><td><code>journey-map-boundary.mjs</code></td><td>13 passed, 0 failed</td><td>0</td></tr>
+<tr><td><code>d14-timezone-boundary.mjs</code></td><td><strong>10 passed, 0 failed</strong> — no page offers a timezone control</td><td>0</td></tr>
+<tr><td><code>study-approach-contract-boundary.mjs</code></td><td>16 passed, 0 failed</td><td>0</td></tr>
+<tr><td><code>study-note-boundary.mjs</code></td><td>17 passed, 0 failed</td><td>0</td></tr>
+<tr><td><code>hadith-corpus.mjs</code></td><td><strong>33 passed, 0 failed</strong></td><td>0</td></tr>
+<tr><td><code>hadith-source-rights.mjs</code></td><td><strong>14 passed, 0 failed</strong></td><td>0</td></tr>
+<tr><td><code>hadith-commentary-binding.mjs</code></td><td><strong>14 passed, 0 failed</strong></td><td>0</td></tr>
+</tbody></table></div>
+<h3>5.2 Rendered gates</h3>
+<div class='tw'><table><thead><tr><th>Gate</th><th>Result</th><th>Exit</th></tr></thead><tbody>
+<tr><td><code>layout.mjs</code></td><td><strong>NO LAYOUT REGRESSIONS.</strong> Every landing-page metric byte-identical v08.30 → v08.31 at all 8 viewports in both banner states. <code>getElementById</code> <strong>252 → 253</strong>, <strong>0 dangling</strong>, 22 deferred</td><td>0</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>Nav fits in both languages at every width</td><td>0</td></tr>
+<tr><td><code>panel.mjs en</code></td><td>PANEL OK apart from the known baseline</td><td>0</td></tr>
+<tr><td><code>panel.mjs bn</code></td><td><strong>6 PROBLEM(S) — the O3c baseline, PRE-EXISTING</strong> (see §5.4)</td><td>1</td></tr>
+<tr><td><code>reading.mjs</code></td><td>READING SCREEN OK; 16 viewports also reported the sandbox TLS artefact</td><td>0</td></tr>
+<tr><td><code>behaviour.mjs</code></td><td><strong>980 passed, 2 failed, 56 sections — 982 checks, the baseline total.</strong> Both failures are the sandbox TLS artefact (§5.4)</td><td>1</td></tr>
+<tr><td><code>i18n-coverage.mjs</code></td><td><strong>1,879 scanned, 1,818 Bangla, 61 missing</strong> — identical to the baseline</td><td>0</td></tr>
+</tbody></table></div>
+<h3>5.3 Emulator — re-run, not inherited</h3>
+<p><code>firebase emulators:exec --only firestore</code> against the Phase 4 candidate:</p>
+<p>&gt; <strong>Phase 4 Activity evidence candidate Rules: 53 assertions, all as specified.</strong> 1 test, 1 pass, 0 fail.</p>
+<p>This tranche changes <strong>no</strong> <code>.rules</code> file and no file under <code>tools/firestore-emulator/</code>, so the result was expected to be unchanged — it was re-run rather than assumed, and it is unchanged.</p>
+<h3>5.4 The two non-zero exits, both pre-existing and both named</h3>
+<ul><li><strong><code>panel.mjs bn</code> exits 1 with 6 problems.</strong> This is <strong>O3c</strong>, recorded in the continuation package as NEW on 19 Sep 2026 and proven pre-existing there by reverting <code>app/</code> to the accepted v08.30 build and getting the identical six. <code>panel.mjs en</code> exits 0. Nothing in v08.31 touches the Study-options panel.</li><li><strong><code>behaviour.mjs</code>&#x27;s failure is the sandbox TLS artefact</strong> — <code>net::ERR_CERT_AUTHORITY_INVALID</code>, environmental, and it will not happen for the Owner. <code>--ignore-certificate-errors</code> was <strong>not</strong> used; it would also hide a real certificate problem.</li></ul>
+<p>Neither is a finding about v08.31, and neither blocks the integration. <code>behaviour.mjs</code> totals <strong>982 checks against the baseline&#x27;s 982</strong>; the baseline records 981/1 and this run is 980/2, the extra failure being <code>22h</code>, which sits in the archive.org band this repository already documents as <strong>intermittent</strong> — so a green <code>22g</code>/<code>22h</code> is not evidence either way, and a red one is not a regression.</p>
+<p><strong>One environment note worth keeping.</strong> Running the emulator suite requires <code>npm install</code> in <code>tools/firestore-emulator/</code>, and that <strong>prunes one <code>extraneous</code> entry (<code>google-logging-utils</code>) from <code>package-lock.json</code></strong> — a tracked file, deliberately not gitignored. It is an artefact of the run, not of the tranche, and it was reverted rather than carried into <code>main</code>. Restore it before committing.</p>
+<hr>
+<h2>6. The specific verifications the ruling asked for</h2>
+<h3>6.1 Version and ledger, together</h3>
+<p><code>app/js/version.js</code> on the branch reads <strong><code>08.31</code></strong>; the ledger declares <code>quran</code> at <code>08.31</code> and guard A confirms exactly one allocation is LIVE and that it matches <code>main</code>. Pre-integration that was <code>08.30</code> LIVE / <code>08.31</code> RESERVED, which is correct <strong>for a branch that is not yet merged</strong> — and it is exactly why §7 exists.</p>
+<p><code>nextUnallocated</code> is <strong><code>08.32</code></strong>, recorded as the <em>unallocated boundary and not an allocation</em>, which is what lets guard B refuse anyone who stamps it. <strong>v08.32 was not allocated by this session and no application change for it was started.</strong></p>
+<h3>6.2 Shared-file authorizations</h3>
+<p>Seven shared files are touched by <code>db6cb24 → a20892f</code>, and <strong>all seven carry an <code>AUTHORIZED</code> touch record</strong> naming <code>master-architect</code>, the date <code>2026-09-19</code> and a reference that exists on disk:</p>
+<p><code>app/js/version.js</code> · <code>app/js/i18n/bn.js</code> · <code>docs/governance/programme-integration-ledger.json</code> · <code>tools/i18n-verify/programme-ledger.mjs</code> · <code>tools/i18n-verify/programme-ledger-mutations.mjs</code> · <code>CLAUDE.md</code> · <code>CHANGELOG.md</code></p>
+<p>The last four carry an explicit <code>derivation</code> field saying <em>why</em> a file the ruling did not name is entailed by a requirement — the honest shape, rather than a silent touch. Guard E reports <strong>19 touch records: 12 AUTHORIZED, 7 DECLARED</strong>, with <strong>0 undeclared</strong> live modifications across every declared branch. <code>tools/i18n-verify/study-activity-evidence-boundary.mjs</code> is module-owned, not platform-shared, so it needs no record.</p>
+<h3>6.3 Quran and Hadith regressions</h3>
+<p>No Hadith file is touched by this tranche. All three Hadith gates were run anyway and all three exit 0 — corpus <strong>33/0</strong>, source-rights <strong>14/0</strong>, commentary-binding <strong>14/0</strong>. The Quran boundary suite is <strong>30/0</strong>. <code>i18n-coverage</code> is unchanged at 61 missing, so no translation regressed.</p>
+<h3>6.4 Readiness and boundary guards</h3>
+<p>The readiness gate does what the ruling requires, proven by reading the source and by the boundary suite:</p>
+<ul><li><code>app/js/study-evidence-readiness.js</code> <strong>imports nothing at all</strong> — the inability to consult <code>firestore.rules</code> <em>is</em> the enforcement, the same shape ADR-010 uses to forbid deriving a Note&#x27;s Destination from its Origin.</li><li><code>EVIDENCE_PERSISTENCE_DECLARATION.ready</code> is <strong><code>false</code> as a literal</strong>, with <code>decision: null</code>.</li><li><strong>A bare flip of <code>ready</code> to <code>true</code> does not enable persistence</strong> — <code>isStudyEvidencePersistenceReady()</code> also requires <code>decision.by</code> from a closed authority set, an ISO date, and a non-empty reference.</li><li><strong>The write chokepoint refuses before the store is reached.</strong> <code>recordStudyEvidence()</code> returns <code>{ written: false, blocked: true, reason }</code> ahead of the <code>writeStudyActivityEvidence(db, …)</code> call — nothing is built, nothing is sent, no <code>permission-denied</code> is generated.</li><li><strong><code>blocked: true</code> is a distinct shape from <code>written: false</code></strong>, so a gated press can never report itself as &quot;already recorded&quot;.</li><li><strong>The store still rethrows</strong> and does not consult the gate — two independent layers, defence in depth, and I15 is untouched.</li></ul>
+<h3>6.5 Mutations</h3>
+<p><code>programme-ledger-mutations.mjs</code>: <strong>49 passed, 0 failed</strong>, including guard G&#x27;s seven negative shapes (a module authorising its own enablement, a decision pointing at a record that does not exist, a declaration that stops being a literal the guard can read) and <strong>two positive controls</strong> — a fully governed enablement is ALLOWED, and the ledger reader / brief reader each fail loudly when starved.</p>
+<h3>6.6 Bilingual notice</h3>
+<p>Two sentences, both in <code>app/js/i18n/bn.js</code>, and the boundary suite asserts both are translated (I11):</p>
+<ul><li><em>&quot;Recording study activity is not available yet.&quot;</em> → <em>&quot;স্টাডি কার্যক্রম রেকর্ড করা এখনও চালু হয়নি।&quot;</em> — the control&#x27;s resting tooltip and its live-region announcement.</li><li><em>&quot;Recording study activity is not available yet. Nothing was saved and nothing was lost — this will be switched on once the database is ready.&quot;</em> → the notice, which has room to say that nothing was lost.</li></ul>
+<p>The ✓ uses <strong><code>aria-disabled</code>, not <code>disabled</code></strong>, so the control is not actionable yet can still be focused and can still explain itself — a <code>disabled</code> button would leave a screen-reader user with a dimmed icon and no way to learn why.</p>
+<h3>6.7 Rules and config unchanged</h3>
+<p><code>git diff db6cb24 a20892f -- firestore.rules firebase.json firestore.indexes.json tests/firestore/</code> is <strong>empty</strong>. <code>firestore.rules</code> contains the word <code>evidence</code> <strong>zero</strong> times, so the subcollection has no rule and is denied to every client. <code>firebase.json</code> still declares no <code>indexes</code> key.</p>
+<h3>6.8 D14 unreachable</h3>
+<p><code>d14-timezone-boundary.mjs</code>: <strong>10 passed, 0 failed</strong> — the contract modules are on <code>main</code>, import nothing that reaches <code>activity.js</code>, and <strong>no page offers a timezone control</strong>. D14 activation still needs a Rules change and rides E1.</p>
+<h3>6.9 No extra <code>#readBar</code> wrapping — measured independently</h3>
+<p><code>O4-READBAR-WRAP</code> is accepted Owner UI debt and <strong>must not be changed during integration</strong>. Rather than take the candidate report&#x27;s own figure, <code>#readBar</code> was re-measured side by side: the accepted v08.30 build and the v08.31 candidate served simultaneously from the same host, opened on the Read screen at <strong>seven widths × two languages</strong>, comparing bar height, in-flow child count, required width, slack and line count.</p>
+<p>&gt; <strong>14/14 measurement rows IDENTICAL, 0 changed. NO ADDITIONAL <code>#readBar</code> WRAPPING INTRODUCED BY v08.31.</strong></p>
+<p>English: 10 children needing 379.5px at every width; wrapped at 320/340/360/390, one line at 412/768/1100. Bangla: 10 children needing 389.3px; the same wrap pattern. <strong>Every single figure is identical on both sides.</strong> The out-of-flow <code>aria-live</code> announcer was excluded from the in-flow count, which is the 37a correction v08.30 made and which a naive probe would get wrong.</p>
+<hr>
+<h2>7. What was pushed, in two steps, and why there are two</h2>
+<p><strong>Step 1 — the fast-forward.</strong> <code>main</code> was fast-forwarded from <code>db6cb24</code> to <strong>a20892f1e4cbf4e86498fe371232466141ca95df</strong>. No merge commit, no conflict, and the accepted application change is bit-for-bit as accepted.</p>
+<p><strong>Step 2 — the post-integration governance stamp, 877bca0190ae25a2ad6e13d1822946390514829e.</strong> This is necessary, not decorative, and the reason is a gate: the ledger and the brief were written <em>on a branch that had not yet merged</em>, so both correctly said <code>main</code> carries <code>08.30</code>. The moment the fast-forward lands, that stops being true and <strong><code>programme-ledger.mjs</code> guard F fails by name</strong> — <em>&quot;the ledger records main at 08.30; <code>app/js/version.js</code> on main reads 08.31&quot;</em> — and <code>brief-integrity.mjs</code>&#x27;s milestone check fails alongside it. A guarded integration that leaves two safety gates red on <code>main</code> is not a guarded integration. The stamp is <strong>governance-only</strong>:</p>
+<ul><li><code>docs/governance/programme-integration-ledger.json</code> — <code>main.version</code> → <code>08.31</code>, <code>main.baselineSha</code> → the integrated SHA, <code>08.30</code> <strong>LIVE → RELEASED</strong>, <code>08.31</code> <strong>RESERVED → LIVE</strong> with its integration record, the <code>quran</code> stream → <code>MERGED_TO_MAIN</code>.</li><li><code>CLAUDE.md</code> — the <code>Current milestone</code> line moves from naming the branch to naming <strong>v08.31 on <code>main</code></strong>.</li><li>this report, <code>.md</code> and <code>.html</code>.</li></ul>
+<p><strong><code>INTEGRATED_MAIN_SHA_FINAL</code> is stamped by a following commit</strong>, because a commit cannot contain its own hash — the same shape <code>db6cb24</code> used for the v08.30 record, and the reason that report says <em>&quot;the stamping commit sits one ahead of the SHA it records&quot;</em>.</p>
+<p><strong><code>git diff a20892f1e4cbf4e86498fe371232466141ca95df 877bca0190ae25a2ad6e13d1822946390514829e -- app/ firestore.rules firebase.json</code> is empty.</strong> Not one application byte changed after the fast-forward. The three deployment states other than <code>applicationCodeIntegrated</code> were <strong>deliberately left alone</strong>: an integration moves exactly one of them.</p>
+<p>This is the same shape as the v08.30 integration, whose own pre-integration <code>main</code> (<code>db6cb24</code>) was a report-stamp commit sitting on the accepted build.</p>
+<hr>
+<h2>8. The four deployment states — recorded separately, as required</h2>
+<p>Collapsing these into one boolean is the specific mistake the 19 Sep governance correction exists to prevent, and guard G now enforces the separation.</p>
+<div class='tw'><table><thead><tr><th>State</th><th>Value</th><th>Basis</th></tr></thead><tbody>
+<tr><td><code>APPLICATION_CODE_INTEGRATED</code></td><td><strong>YES</strong></td><td><code>main</code> carries v08.31 — application at <code>a20892f1e4</code>, governance stamp at <code>877bca0190ae25a2ad6e13d1822946390514829e</code></td></tr>
+<tr><td><code>GITHUB_PAGES_SERVING</code></td><td><strong>PRESUMED_FROM_MAIN</strong> — <code>verified: false</code></td><td><strong>PRESUMED, NOT MEASURED, and the limitation was confirmed first-hand today</strong>: <code>curl https://madrasatul-muslimeen.github.io/app/js/version.js</code> returns <code>curl: (56) CONNECT tunnel failed, response 403</code>. Serving cannot be observed from here, so this rests on this repository&#x27;s own standing brief</td></tr>
+<tr><td><code>FIREBASE_RULES_DEPLOYED</code></td><td><strong>NO</strong></td><td>E1 CLOSED. No authenticated access to <code>study-monitoring</code>; <code>firestore.rules</code> is byte-for-byte unchanged and names <code>evidence</code> zero times</td></tr>
+<tr><td><code>EVIDENCE_RECORDING_OPERATIONAL</code></td><td><strong>NO</strong></td><td>The evidence subcollection has no rule. Nothing can be recorded for anyone</td></tr>
+</tbody></table></div>
+<p><strong>Firebase Rules deployed = NO. Evidence recording operational = NO. Nothing was deployed and no deployment was attempted.</strong></p>
+<p><strong>What the integration does change for a real reader:</strong> on <code>main</code>, which Pages serves, the ✓ on <code>#readBar</code> previously invited a press that could only produce an error. It is now not actionable, says why in English and Bangla, and <strong>attempts no write at all</strong>. The feature is no closer to working; the app is closer to honest about that.</p>
+<hr>
+<h2>9. Roadmap — the next independently buildable tranche</h2>
+<p>This is a <strong>proposal</strong>, not an allocation. <strong>v08.32 is not allocated by this session</strong> and no application change for it was begun.</p>
+<h3>9.1 Recommended: route D3 Journaling&#x27;s evidence write through the v08.31 chokepoint</h3>
+<p><strong>The finding.</strong> v08.31&#x27;s own boundary check found it, recorded it honestly rather than excluding it by name, and the continuation package carries it in §4.2. <code>app/js/study-note-service.js</code> line 40 imports <code>writeStudyActivityEvidence</code> <strong>directly from the store</strong>, and <code>recordJournalEvidence()</code> calls it at line 138 — <strong>around</strong> the gate. So the &quot;ONE CHOKEPOINT&quot; claim is true today only because that module is page-unreachable, not because it is gated. The check pins the unreachability, so the day P5-D wires D3 Journaling the check fails loudly — which is the right alarm, but leaves the repair to be done under the pressure of a larger tranche.</p>
+<p><strong>Exact scope.</strong></p>
+<ol><li><code>app/js/study-note-service.js</code> — <code>recordJournalEvidence()</code> calls <code>recordStudyEvidence(db, evidence, { uid })</code> from <code>study-event-wiring.js</code>; the direct <code>study-activity-evidence-store.js</code> import is dropped.</li><li>Handle the two return shapes the swap introduces: <code>recordStudyEvidence()</code> returns <code>null</code> for falsy args (spreading <code>null</code> throws) and <code>{ written: false, blocked: true, reason }</code> when gated. <code>recordJournalEvidence()</code> must keep <code>skipped</code> and <code>blocked</code> distinguishable from <code>written: false</code>, for the same reason the ✓ must.</li><li><code>tools/i18n-verify/study-activity-evidence-boundary.mjs</code> — delete <code>KNOWN_UNREACHABLE_CALLER</code> and assert the strictly stronger invariant: <strong>no module but <code>study-event-wiring.js</code> calls the store at all.</strong> Mutation-prove it by restoring the direct call and confirming the check exits non-zero.</li><li>Re-run the boundary, note and approach suites plus <code>layout.mjs</code>.</li></ol>
+<p><strong>Ownership:</strong> <code>quran</code> stream / MAP Phase 5. Files are module-owned; <strong>no platform-shared file is touched</strong> except <code>app/js/version.js</code>, and only if a version is allocated.</p>
+<p><strong>Dependencies: none.</strong> It does not need E1, a Rules change, an index, an Owner UI decision, or the Note editor. It is pure client refactoring behind an unreachable surface.</p>
+<p><strong>Blast radius: BR-0.</strong> <code>study-note-service.js</code> is unreachable from every page, and a boundary check already proves that by walking the import graph — so no reachable behaviour changes. On this repository&#x27;s own precedent (v08.24, v08.25, P5-E, P6-C/D) a BR-0 tranche lands with <strong>no version bump</strong>.</p>
+<p><strong>Version request:</strong> <strong>none — BR-0, <code>app/js/version.js</code> unchanged.</strong> If the Master Architect judges that touching <code>app/</code> warrants a stamp regardless, the number is theirs to allocate at authorisation time and is <strong>not</strong> predicted here.</p>
+<p><strong>Why this one first:</strong> it closes a latent hole in an invariant that was accepted <em>today</em>, it is the smallest such tranche available, it removes a named exception from a guard rather than adding one, and it is explicitly the thing §4.2 of the continuation package says whoever builds P5-D must otherwise do under load.</p>
+<h3>9.2 Second candidate: make every rendered suite run both languages</h3>
+<p>O3c existed unrecorded because <code>panel.mjs</code> had only ever been run in English. The lesson is written down; the tooling still does not enforce it. A tranche making the rendered suites iterate both languages by default (or fail if invoked without a language) is tooling-only, touches no <code>app/</code> file, needs no authority and no version — but it is <strong>shared verification infrastructure</strong>, so its touches need declaring, and it overlaps DR-01, which is <strong>not authorised to build</strong>. Lower value than §9.1 and it should not pre-empt it.</p>
+<h3>9.3 Not available, and why</h3>
+<div class='tw'><table><thead><tr><th>Item</th><th>Blocked on</th></tr></thead><tbody>
+<tr><td>Deploy Phase 4–6 Rules + 4 indexes</td><td><strong>E1</strong> — indexes first, then <code>phase4-6-DEPLOYMENT-candidate-2026-09-17.rules</code>. <strong>Never paste a <code>candidate-2026-09-15</code> file</strong></td></tr>
+<tr><td>Enable the readiness gate</td><td>The governed decision of §6.4, which requires the Rules to be deployed first</td></tr>
+<tr><td>P5-D, the Note editor</td><td>E1 — its writes need the Note Foundation Rules <strong>and</strong> indexes</td></tr>
+<tr><td>D14 timezone wiring</td><td>E1 — activation needs a Rules change</td></tr>
+<tr><td>O3 / O3b / O3c / O4-READBAR-WRAP</td><td><strong>Owner UI decisions.</strong> Materially different choices with costs attached; none is Claude&#x27;s to settle</td></tr>
+<tr><td><code>OWNER_REVIEW_DEFAULT_1</code> / <code>_2</code></td><td>Owner review. Preserved unchanged; <strong>no evidence was invented to complete tracking</strong></td></tr>
+<tr><td>SCR-01, DR-01</td><td>Recorded, <strong>not authorised for implementation</strong></td></tr>
+<tr><td>Guardian approval window; server-side cycle prevention</td><td>Owner decisions, recorded rather than faked</td></tr>
+</tbody></table></div>
+<hr>
+<h2>10. State block</h2>
+<p>``<code> MMSA_QR_V0831_INTEGRATION DATE=2026-09-19 RULING=ACCEPTED_FOR_GUARDED_INTEGRATION PRE_INTEGRATION_MAIN_SHA=db6cb24b807d77630914e076d413bec6982cc3d7 ACCEPTED_APPLICATION_REPORT_SHA=e63cb8d69e5813faf57251a7f15fef33a4bae191 APPLICATION_SOURCE_COMMIT=65ef3c5896ce13227fa53632966c7ff4d22db9f5 CONTINUATION_APPLICATION_TIP=710f182e049a2471629823ab5a7c2d15ccf594c5 PACKAGE_RECORDED_BRANCH_TIP=bfa2dad705e1a92ebb46cf142760f7a3b6861d2e VERIFIED_BRANCH_TIP=a20892f1e4cbf4e86498fe371232466141ca95df INTEGRATION_METHOD=FAST_FORWARD INTEGRATED_MAIN_SHA_APPLICATION=a20892f1e4cbf4e86498fe371232466141ca95df INTEGRATED_MAIN_SHA_FINAL=877bca0190ae25a2ad6e13d1822946390514829e MAIN_VERSION=v08.31 APP_DIFF_AFTER_ACCEPTED_CHANGE=EMPTY (65ef3c5..a20892f -- app/) RULES_CONFIG_DIFF=EMPTY (firestore.rules, firebase.json, firestore.indexes.json, tests/firestore/) READBAR_SEVEN_WIDTH_RESULTS=14/14 IDENTICAL, 0 changed, NO ADDITIONAL WRAPPING APPLICATION_CODE_INTEGRATED=YES GITHUB_PAGES_SERVING=PRESUMED_FROM_MAIN (verified: false -- sandbox proxy refuses github.io) FIREBASE_RULES_DEPLOYED=NO EVIDENCE_RECORDING_OPERATIONAL=NO E1_STATUS=CLOSED V0832_STATUS=UNALLOCATED NEXT_TRANCHE_PROPOSAL=route study-note-service.js recordJournalEvidence() through recordStudyEvidence() NEXT_TRANCHE_VERSION_REQUEST=NONE (BR-0); allocation remains the Master Architect&#x27;s READY_TO_SHIP=NO </code>``</p>
+</main></body></html>

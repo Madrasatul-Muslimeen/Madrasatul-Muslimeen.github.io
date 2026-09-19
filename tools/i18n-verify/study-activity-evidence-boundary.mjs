@@ -19,6 +19,11 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { APPROACH_TEMPLATES } from "../../app/js/catalogue-data.js";
+// Statically imported for the same reason APPROACH_TEMPLATES is: check() is
+// synchronous, and a dynamic import() would make the body async -- which this
+// suite refuses by name. See the approach-binding check's own comment for the
+// round where an async body counted a real failure as a pass.
+import * as readiness from "../../app/js/study-evidence-readiness.js";
 
 const root = path.resolve(process.argv[2] || process.cwd());
 const appJs = path.join(root, "app", "js");
@@ -43,6 +48,21 @@ function codeOf(name) {
   return fs.readFileSync(path.join(appJs, name), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "")
     .split("\n").filter((line) => !/^\s*(?:\/\/|\*)/.test(line)).join("\n");
+}
+/** One element's own markup, from its opening tag to its MATCHING close -- `<div>`s balanced, so a nested element cannot end the slice early and a later sibling cannot be swept into it. */
+function elementSlice(html, openTag) {
+  const start = html.indexOf(openTag);
+  if (start === -1) return "";
+  let depth = 0, i = start;
+  const re = /<div\b|<\/div>/g;
+  re.lastIndex = start;
+  let m;
+  while ((m = re.exec(html))) {
+    depth += m[0] === "</div>" ? -1 : 1;
+    i = m.index + m[0].length;
+    if (depth === 0) break;
+  }
+  return html.slice(start, i);
 }
 function appSources() {
   const out = [];
@@ -330,6 +350,159 @@ check("the candidate Rules are a candidate, not the deployed file", () => {
   assert.ok(text.includes("NOT DEPLOYED"), "the candidate does not declare itself undeployed");
   const blocks = [...new Set([...text.matchAll(/match \/(\w+)\//g)].map((m) => m[1]))].filter((n) => n !== "databases");
   assert.deepEqual(blocks, ["activity"], `the candidate must govern one collection, saw: ${blocks}`);
+});
+
+// --- 6. v08.31 -- THE PERSISTENCE-READINESS GATE --------------------------
+//
+// Structural, because every one of these facts is invisible to a functional
+// test. The gate could return exactly the right answer today while importing
+// the rules text, while being bypassable at a call site, or while the ✓ kept
+// offering an action it cannot perform.
+const READINESS = "study-evidence-readiness.js";
+
+check("the readiness declaration DEFAULTS TO FALSE, as a literal", () => {
+  const src = fs.readFileSync(path.join(appJs, READINESS), "utf8");
+  const m = src.match(/EVIDENCE_PERSISTENCE_DECLARATION\s*=\s*Object\.freeze\(\{[\s\S]*?ready:\s*(true|false)/);
+  assert.ok(m, "ready is not a plain literal -- a computed default is not a default");
+  assert.equal(m[1], "false", "the standing declaration is not false; E1 is CLOSED");
+});
+
+check("readiness CANNOT be inferred from firestore.rules -- the module imports nothing at all", () => {
+  // Requirement 2, enforced by INABILITY rather than restraint, the same shape
+  // ADR-010 uses for Origin/Destination. A module with no imports cannot read
+  // the rules text, cannot fetch, and cannot reach a module that does -- so
+  // "it does not infer readiness from the repository's rules file" is provable
+  // by reading its import list rather than trusted.
+  const raw = fs.readFileSync(path.join(appJs, READINESS), "utf8");
+  const code = codeOf(READINESS);
+  const imports = [...code.matchAll(/^\s*import\s/gm)].length + [...code.matchAll(/\bimport\s*\(/g)].length;
+  assert.equal(imports, 0, "the readiness module has acquired an import; it must be unable to see anything");
+  for (const forbidden of ["firestore.rules", "fetch(", "XMLHttpRequest", "require(", "readFileSync"]) {
+    assert.ok(!code.includes(forbidden), `the readiness module reaches ${forbidden}`);
+  }
+  // The PROSE may name firestore.rules -- it has to, in order to say it does
+  // not read it -- so this pair is what tells the two apart. Without it the
+  // check above would pass just as happily on a module that never mentioned
+  // the subject at all, and would prove nothing about intent.
+  assert.ok(raw.includes("firestore.rules"), "the module no longer explains why it does not read the rules file");
+});
+
+check("a bare flip of `ready` does NOT enable persistence", () => {
+  // Enablement is a governed decision (requirement 5). Asserted against the
+  // real predicate rather than the source, because this is the one fact here
+  // a regex genuinely cannot see.
+  const m = readiness;
+  assert.equal(m.isStudyEvidencePersistenceReady(), false, "the standing declaration reads ready");
+  assert.equal(m.isStudyEvidencePersistenceReady({ ready: true }), false, "a bare flip enabled it");
+  assert.equal(m.isStudyEvidencePersistenceReady({ ready: true, decision: {} }), false, "an empty decision enabled it");
+  assert.equal(m.isStudyEvidencePersistenceReady({ ready: true, decision: { by: "quran", on: "2026-09-19", reference: "x" } }), false,
+    "a module authorised its own enablement");
+  assert.equal(m.isStudyEvidencePersistenceReady({ ready: true, decision: { by: "master-architect", on: "soon", reference: "x" } }), false,
+    "a decision with no real date enabled it");
+  // POSITIVE CONTROL: a predicate that simply returned false would satisfy
+  // every assertion above and prove nothing.
+  assert.equal(m.isStudyEvidencePersistenceReady({ ready: true, decision: { by: "master-architect", on: "2026-09-19", reference: "docs/x.md" } }), true,
+    "a fully governed decision is refused -- this is a blanket refusal, not a gate");
+});
+
+check("the WRITE CHOKEPOINT refuses before the store is reached", () => {
+  // "No evidence write may be attempted" is a claim about every D1/D2/D4 call
+  // site at once. It is provable in one place only because recordStudyEvidence()
+  // is the single funnel -- so this asserts both halves: that the funnel is
+  // gated, and that nothing page-reachable calls the store around it.
+  const w = codeOf("study-event-wiring.js");
+  const body = w.slice(w.indexOf("export async function recordStudyEvidence"));
+  const gate = body.indexOf("isStudyEvidencePersistenceReady");
+  const store = body.indexOf("writeStudyActivityEvidence(db");
+  assert.ok(gate > -1, "recordStudyEvidence() no longer consults readiness");
+  assert.ok(store > -1, "recordStudyEvidence() no longer calls the store");
+  assert.ok(gate < store, "the readiness gate is not ahead of the store call");
+  assert.ok(/blocked:\s*true/.test(body), "a refusal is not distinguishable from the store's own written:false");
+  // THIS CHECK'S OWN FIRST RUN FOUND A SECOND CALLER, and it is recorded
+  // rather than excluded by name. P5-C's `study-note-service.js` imports the
+  // store directly, for D3 Journaling -- which has no reachable producer and
+  // is not built (P5-D is held behind the same E1 deployment). So it is not a
+  // live bypass today, and it WOULD be one the day P5-D wires it. Pinning it
+  // as unreachable turns that into a loud failure at exactly the moment it
+  // matters: wire it, and this check fails until it goes through the gate.
+  const KNOWN_UNREACHABLE_CALLER = "study-note-service.js";
+  for (const { file, text } of appSources()) {
+    if (file.endsWith("study-event-wiring.js") || file.endsWith("study-activity-evidence-store.js")) continue;
+    if (!/writeStudyActivityEvidence\s*\(/.test(text)) continue;
+    const base = file.split("/").pop();
+    assert.equal(base, KNOWN_UNREACHABLE_CALLER, `${file} calls the evidence store around the gate`);
+    assert.deepEqual(chainsToTarget(base), [],
+      `${file} calls the store around the gate AND is now page-reachable -- route it through recordStudyEvidence()`);
+  }
+});
+
+check("the writer still FAILS CLOSED underneath the gate -- defence in depth", () => {
+  // Requirement 4. The gate is a UI-honesty fix, not a replacement for the
+  // store's own refusal: if the gate were ever wrong, the write must still
+  // fail and still reach the user (I15). Weakening this to make the UI look
+  // successful was explicitly forbidden in v08.30 and stays forbidden.
+  const store = codeOf("study-activity-evidence-store.js");
+  assert.ok(/\bthrow\b/.test(store), "the evidence store no longer rethrows");
+  assert.ok(!store.includes("isStudyEvidencePersistenceReady"),
+    "the store now consults the gate -- the two layers must be independent, or there is only one layer");
+});
+
+check("the ✓ is not actionable while the gate is shut, and keeps its tap target", () => {
+  const page = fs.readFileSync(path.join(root, "app", "quranrevival.html"), "utf8");
+  assert.ok(page.includes('btn.setAttribute("aria-disabled", ready ? "false" : "true")'),
+    "the completion control no longer reports itself disabled while gated");
+  assert.ok(/#readBar button\[aria-disabled="true"\] \{ opacity: 0\.45; \}/.test(page),
+    "a gated control is not visually distinguishable from a live one");
+  // Requirement 8. The gate must change no geometry: #readBar .qr-ico's own
+  // padding rule is what sets the box, and no gated variant may shrink it.
+  assert.ok(/#readBar \.qr-ico \{ font-size: 0\.95rem; line-height: 1; padding: 0\.3rem 0\.5rem; flex: 0 0 auto; \}/.test(page),
+    "the icon control's own sizing rule changed -- the tap target must not be reduced");
+  assert.ok(!/\[aria-disabled="true"\][^{]*\{[^}]*(font-size|padding|width|height)/.test(page),
+    "the gated state changes the control's size");
+  // The notice must live OUTSIDE #readBar -- inside it, it would take width on
+  // the app's densest row and worsen the accepted O4-READBAR-WRAP debt.
+  //
+  // THIS PAIR WAS VACUOUS IN ITS FIRST FORM, and the mutation suite is what
+  // said so. It sliced from `<div id="readBar"` to `id="readPickers"` -- and
+  // #readPickers comes EARLIER in the document, so the slice was the empty
+  // string and `!"".includes(...)` was true whatever the markup did. The
+  // mutation that moves the notice into the bar came back UNPROVEN, which is a
+  // finding about the guard, not about the code. Balance the element's own
+  // <div>s instead, and assert the slice is real before reading it.
+  const bar = elementSlice(page, '<div id="readBar">');
+  assert.ok(bar.length > 200 && bar.includes("readCompleteBtn"),
+    "the #readBar slice did not come back -- this check would pass vacuously");
+  assert.ok(!bar.includes("qrStudyNotice"), "the notice is inside #readBar and will cost the row width");
+  assert.ok(/#qrStudyNotice \{[\s\S]{0,200}?position: fixed/.test(page), "the notice is in flow");
+});
+
+check("both unavailability sentences are translated (I11)", () => {
+  const page = fs.readFileSync(path.join(root, "app", "quranrevival.html"), "utf8");
+  const bn = fs.readFileSync(path.join(appJs, "i18n", "bn.js"), "utf8");
+  const keys = [...page.matchAll(/t\("(Recording study activity[^"]*)"\)/g)].map((m) => m[1]);
+  assert.equal(keys.length, 2, `expected the short and long unavailability sentences, saw ${keys.length}`);
+  for (const k of keys) {
+    const at = bn.indexOf(`"${k}":`);
+    assert.ok(at > -1, `bn.js has no key for: ${k}`);
+    const value = bn.slice(at + k.length + 3).match(/"([^"]*)"/)[1];
+    assert.ok(/[\u0980-\u09FF]/.test(value), `the Bangla for "${k}" is not Bangla`);
+    assert.ok(!/&\w+;/.test(value), `the Bangla for "${k}" carries an HTML entity`);
+  }
+});
+
+check("D2 Listening and D4 WbW are gated too", () => {
+  const page = fs.readFileSync(path.join(root, "app", "quranrevival.html"), "utf8");
+  // Both are silent by design -- neither invites a press -- so what is asserted
+  // is that each asks before doing anything, not that each says something.
+  const settle = page.slice(page.indexOf("async function settleListeningSession"));
+  const settleHead = settle.slice(0, settle.indexOf("listeningCompletionArgs"));
+  assert.ok(settleHead.includes("if (!studyEvidencePersistenceReady()) return;"),
+    "D2 builds its evidence arguments before asking whether anything can be written");
+  const at = page.indexOf("const wbwRef = parseQuranWordOccurrenceId");
+  assert.ok(at > -1, "D4's evidence write is gone");
+  const before = page.slice(0, at);
+  assert.ok(before.lastIndexOf("if (studyEvidencePersistenceReady()) {") > before.lastIndexOf("setWordState"),
+    "D4's evidence write is not inside the readiness gate");
 });
 
 console.log(`\n==== Study Activity evidence boundary: ${passed} passed, ${failed} failed ====`);

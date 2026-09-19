@@ -334,6 +334,93 @@ mutation("the acknowledgement points at a file that does not exist", "F", (l, f)
   moveMainPast(l, f, "hadith").baselineAcknowledgement = "docs/reports/not-a-real-file.md";
 }, /which does not exist/);
 
+// ---------------------------------------------------------------------------
+// G  the four deployment states, and the v08.31 readiness declaration.
+//
+// The point of these eleven is that the readiness gate is a LITERAL in a source
+// file, and a literal is one keystroke from being flipped. Guard G is what
+// makes that keystroke insufficient -- so each way of making it sufficient is
+// tried here and must be refused.
+// ---------------------------------------------------------------------------
+
+/** Rewrites the readiness source as guard G will read it. `ready` is the only thing that matters to the regex. */
+const readinessSrc = (ready) =>
+  `export const EVIDENCE_PERSISTENCE_DECLARATION = Object.freeze({\n  ready: ${ready},\n  decision: null,\n});\n`;
+
+mutation("the four deployment states collapse back into one", "G", (l) => {
+  delete l.deployment.githubPagesServing;
+}, /deployment\.githubPagesServing is not recorded/);
+
+mutation("a deployment state takes a word from outside its own vocabulary", "G", (l) => {
+  l.deployment.firebaseRulesDeployed.state = "PRESUMED_FROM_MAIN";
+}, /firebaseRulesDeployed\.state is "PRESUMED_FROM_MAIN"/);
+
+mutation("a presumption is recorded without saying it is one", "G", (l) => {
+  l.deployment.githubPagesServing.verified = true;
+}, /must say it is one/);
+
+mutation("serving is claimed as verified with nothing verified", "G", (l) => {
+  l.deployment.githubPagesServing.state = "SERVING_VERIFIED";
+  l.deployment.githubPagesServing.verified = false;
+}, /claims SERVING_VERIFIED without verified:true/);
+
+mutation("the feature is recorded operational while its Rules are not deployed", "G", (l) => {
+  l.deployment.evidenceRecordingOperational.state = "YES";
+}, /the evidence subcollection has no rule/);
+
+mutation("the readiness gate is flipped in code and nowhere else", "G", (l, f) => {
+  f.readinessSource = readinessSrc(true);
+}, /the code and the governance record disagree/);
+
+mutation("the gate is flipped in code AND in the ledger, but the Rules are still not deployed", "G", (l, f) => {
+  f.readinessSource = readinessSrc(true);
+  l.evidencePersistenceReadiness.ready = true;
+}, /readiness may not run ahead of the deployment it depends on/);
+
+mutation("everything is flipped, with no governed decision recorded", "G", (l, f) => {
+  f.readinessSource = readinessSrc(true);
+  l.evidencePersistenceReadiness.ready = true;
+  l.deployment.firebaseRulesDeployed.state = "YES";
+}, /enablement is a decision, not an edit/);
+
+mutation("a module authorises its own enablement", "G", (l, f) => {
+  f.readinessSource = readinessSrc(true);
+  l.evidencePersistenceReadiness.ready = true;
+  l.evidencePersistenceReadiness.decision = { by: "quran", on: "2026-09-19", reference: "CLAUDE.md" };
+  l.deployment.firebaseRulesDeployed.state = "YES";
+}, /not in the closed set/);
+
+mutation("the enabling decision points at a record that does not exist", "G", (l, f) => {
+  f.readinessSource = readinessSrc(true);
+  l.evidencePersistenceReadiness.ready = true;
+  l.evidencePersistenceReadiness.decision = { by: "master-architect", on: "2026-09-19", reference: "docs/reports/not-a-real-file.md" };
+  l.deployment.firebaseRulesDeployed.state = "YES";
+}, /which does not exist/);
+
+mutation("the declaration stops being a literal guard G can read", "G", (l, f) => {
+  f.readinessSource = "export const EVIDENCE_PERSISTENCE_DECLARATION = Object.freeze({ ready: computeReady() });";
+}, /guard G cannot read it, so it cannot vouch for it/);
+
+// POSITIVE CONTROL for the family above: with the Rules genuinely deployed and
+// a well-formed decision naming a record that exists, guard G must ALLOW it.
+// Without this, a guard G that simply failed on every enablement would pass
+// all eleven mutations above and prove nothing about the case that matters.
+check("POSITIVE CONTROL [G]: a fully governed enablement is ALLOWED", () => {
+  const l = clone(realLedger);
+  const f = cloneFacts(realFacts);
+  f.readinessSource = readinessSrc(true);
+  l.evidencePersistenceReadiness.ready = true;
+  l.evidencePersistenceReadiness.decision = {
+    by: "master-architect", on: "2026-09-19",
+    reference: "docs/governance/programme-integration-ledger.json",
+  };
+  l.deployment.firebaseRulesDeployed.state = "YES";
+  l.deployment.evidenceRecordingOperational.state = "YES";
+  const found = runGuards(l, f).filter((x) => x.level === "FAIL" && x.guard === "G");
+  assert.deepEqual(found.map((x) => x.message), [],
+    "guard G refuses a properly governed enablement -- it is a blanket refusal, not a check");
+});
+
 // ---- the internal positive controls must themselves be able to fail -------
 mutation("the ledger reader returns nothing", "CONTROL", (l) => {
   l.versionAllocations = [];

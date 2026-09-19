@@ -14568,3 +14568,77 @@ re-decided: the Reading Approach inferred from translation visibility, and a
 juz/hizb/ruku/page recording no evidence and saying so.
 
 Full account: `docs/reports/2026-09-18-quranrevival-phase4-v0830-build.md`.
+
+---
+
+## v08.31 — the Study-evidence persistence-readiness gate (19 Sep 2026)
+
+**A control must not invite an action that cannot succeed.** v08.30 shipped the
+Phase 4 ✓ to `main`, and `main` is what GitHub Pages serves — so a control the
+Owner can see and press has been on the live app, able only to produce an
+error, because the ADR-008 evidence Rules are not deployed (E1 is closed). The
+implementation was failing closed at the DATABASE, which is correct and is
+untouched; what was missing was the app saying so before anything is tried.
+
+**`app/js/study-evidence-readiness.js` is the declaration, and it defaults to
+`false`** — a literal, not a computed guess. **It never infers readiness from
+`firestore.rules`, and cannot**: the module imports nothing at all, so it is
+unable to read the rules text, the same enforcement-by-inability shape ADR-010
+uses for Origin/Destination. That matters because the repository's copy of the
+rules is a FILE; readiness is a fact about a LIVE Firebase project, and no
+checkout can observe a Console deployment.
+
+**Enabling it is a governed decision, not an edit.** Flipping `ready` to true
+on its own returns false: the predicate also requires a decision naming an
+authority from a closed set, a real date and a record that exists. Ledger guard
+G cross-checks the source literal against the ledger's own recorded deployment
+state, so enabling the code while the Rules are recorded NOT_DONE fails by name.
+
+**Two gates, not one.** `recordStudyEvidence()` is the single chokepoint every
+D1/D2/D4 write goes through and refuses before the store is called — nothing is
+composed, nothing is sent, no `permission-denied` is generated. Its refusal is
+a distinct `{ blocked: true }` shape, because conflating it with the store's own
+`written: false` ("already recorded today") would make a gated press report
+itself as done. The surface gates again. **The writer's rethrow stays exactly as
+it was underneath — defence in depth, and a check asserts the two layers stay
+independent.**
+
+**The ✓ carries `aria-disabled`, not `disabled`, and that is deliberate.** A
+`disabled` button cannot be focused or pressed, so a reader gets no way to learn
+why it is off — and this project's own standing lesson is that a control which
+explains itself beats one that is not there. It is dimmed exactly as a disabled
+control is, at an unchanged tap target, and pressing it says in words what is
+missing. Playwright's actionability check independently refuses to click it
+("element is not enabled"), which is the confirmation that it reads as
+non-actionable.
+
+**MEASURED, NOT ASSUMED: `#readBar` is byte-identical.** Seven widths × two
+languages against the accepted v08.30 build (`8ea445fb`), **0 changed metrics**
+across all 14 configurations — same bar width and height, same natural need,
+same slack (−92.6 / −72.6 / −52.6 / −22.6 / −0.6 English), same 31.0 × 26.8px
+tap target, same document scroll width. The comparison could have failed: the
+two sides differ on `aria-disabled` (absent → "true") and opacity (1 → 0.45).
+The notice is `position: fixed` and lives OUTSIDE `#readBar` precisely so the
+accepted O4-READBAR-WRAP debt is not made worse. **Proven by pressing it:
+`__fsLog` 11 → 11 writes, no write-failure banner, `aria-pressed` still false.**
+
+**D2 Listening and D4 WbW are gated silently**, deliberately: neither invites a
+press, and D4's learning truth is already saved by `setWordState()` — only the
+Activity evidence is withheld.
+
+**The ledger records four deployment states separately** (requirement 11):
+application code integrated YES, GitHub Pages serving PRESUMED_FROM_MAIN with
+`verified: false`, Firebase Rules deployed NO, evidence recording operational
+NO. `APP_DEPLOYED=NO` collapsed all four and got the interesting one wrong.
+
+**Its own checks found two things.** A second direct caller of the evidence
+store — P5-C's `study-note-service.js`, unreachable and unbuilt — now pinned as
+unreachable rather than excluded by name, so wiring it fails a check until it
+goes through the gate. And a **vacuous assertion**: the notice-placement check
+sliced from `#readBar` to `#readPickers`, which comes EARLIER in the document,
+so the slice was the empty string. Found by a mutation coming back UNPROVEN.
+
+Nothing deployed. `firestore.rules` untouched and still contains "evidence"
+zero times. 49 ledger mutations, 17 boundary mutations, 0 unproven.
+
+Full account: `docs/reports/2026-09-19-quranrevival-v0831-release-gating.md`.
