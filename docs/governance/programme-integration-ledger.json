@@ -149,7 +149,7 @@
       "id": "quran",
       "name": "QuranRevival -- Quran Study module",
       "activeBranch": null,
-      "integrationState": "MERGED_TO_MAIN",
+      "integrationState": "AWAITING_INTEGRATION",
       "declaredVersion": "08.31",
       "baselineSha": "cfee898be15abff09882996cf22410e499130acb",
       "baselineStatus": "MOVED_ACKNOWLEDGED",
@@ -259,7 +259,8 @@
             "derivation": "NOT named in the v08.31 ruling. Entailed by requirement 12 and by this repository's standing rule that a round leaving the brief is appended here first -- which brief-integrity.mjs also enforces."
           }
         }
-      ]
+      ],
+      "integrationNote": "v08.30 is MERGED_TO_MAIN and accepted (8ea445fb). v08.31 is stamped on claude/charming-rubin-xzxbk1 at 710f182e049a2471629823ab5a7c2d15ccf594c5 and is NOT merged: integration is the Master Architect's instruction to give and it has not been given. Reading this as MERGED_TO_MAIN -- which it said until 19 Sep 2026 -- is the exact class of claim guard A exists to refuse, so the allocation's own status is RESERVED, not LIVE."
     },
     {
       "id": "quran-phase4-wiring",
@@ -628,6 +629,12 @@
       "id": "D14-WIRING",
       "subject": "D14 timezone activation",
       "state": "OPEN -- the modules are on main and unreachable by construction. Activation needs a Rules change and rides E1."
+    },
+    {
+      "id": "O3c",
+      "subject": "#drillModeSelect truncated in BANGLA at six viewports in the Study-options panel",
+      "state": "OPEN -- Owner UI decision. Found 19 Sep 2026 by running panel.mjs in Bangla; PROVEN pre-existing by reverting app/ to the accepted v08.30 build (8ea445fb) and getting the identical six findings. English is clean. Reported rather than absorbed into a release-gating tranche: the remedies (widen, shrink the type, reword in both languages) are the same materially-different choices O3 and O3b carry.",
+      "processNote": "panel.mjs takes a language argument and routine verification had only ever run it in English. A suite that only ever runs in one language is measuring one language."
     }
   ],
   "d14": {
@@ -725,6 +732,11 @@
       "id": "O3b",
       "subject": "surahSelect / unitTypeSelect at 320px",
       "status": "OPEN — the row is genuinely short of space (-63.9px)"
+    },
+    {
+      "id": "O3c",
+      "subject": "#drillModeSelect truncation, Bangla only",
+      "status": "OPEN — Owner UI decision, pre-existing before v08.31"
     }
   ],
   "ownerReviewAfterBuild": [

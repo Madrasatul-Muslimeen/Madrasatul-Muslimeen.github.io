@@ -103,25 +103,28 @@ Read this first, every session. It is the standing brief.
 > "do not translate" and is a different contract. **That contract is NOT
 > invented here**; the Stage B exclusion stands for this candidate.
 
-> ## ⇢ SESSION HANDOVER, 18 Sep 2026 — READ THIS SECOND
+> ## ⇢ CONTINUATION PACKAGE, 19 Sep 2026 — READ THIS SECOND
 >
-> **`docs/reports/2026-09-18-SESSION-HANDOVER.md`** (and `.html`) is the
-> deterministic handover for the session that stopped at
-> **`d8f049207d80fdd58f31931d82a080ef7d4f6fe7`**, app version **08.25**, clean
-> tree. It carries the exact verification state, the ledger item by item, the
-> three lists kept separate (**Owner decisions** / **technical work** /
-> **environment & access**), and **the exact first execution task**.
+> **`docs/reports/2026-09-19-MMSA-QR-CONTINUATION-PACKAGE.md`** (and `.html`) is
+> the authoritative deterministic state for the next session: `main` at
+> `db6cb24` / v08.30, the development branch at `710f182` / v08.31 RESERVED and
+> **not integrated**, the **four deployment states**, the exact first execution
+> task, and the three lists kept separate (**Owner decisions** / **technical
+> work** / **environment & access**).
 >
-> **The single blocking dependency is ACCESS, not design:** authenticated
-> Firebase access to `study-monitoring`. With it, the first task is deploy
-> **four indexes, then the assembled Rules, in that order**. Without it, the
-> first task is the one timezone question in §11.B.
+> **It SUPERSEDES `docs/reports/2026-09-18-SESSION-HANDOVER.md`**, which stopped
+> at `d8f0492` / v08.25. That file is kept as history — do not work from it, and
+> where the two disagree the newer one wins. Its two classification corrections
+> still stand and are carried forward: the Phase 4 evidence
+> `request.query.limit` is **resolved technically — do NOT amend the
+> candidate**, and the timezone item was **one question, not a UI decision**,
+> now answered as D14.
 >
-> Two classification corrections that session made to its own earlier framing,
-> so they are not re-litigated: the Phase 4 evidence `request.query.limit` is
-> **resolved technically — do NOT amend the candidate** (§11.C), and the
-> timezone item is **one question, not a UI decision** (§11.B).
-
+> **The single blocking dependency is still ACCESS, not design:** authenticated
+> Firebase access to `study-monitoring` (E1). With it, the first task is deploy
+> **four indexes, then the assembled Rules, in that order**. Without it, nothing
+> in the repository is blocked on a design question — everything outstanding is
+> either E1 or an Owner UI decision.
 
 **Current milestone: v08.31 on `claude/charming-rubin-xzxbk1`, and `main` is
 still v08.30** (19 Sep 2026 — the QuranRevival Study-evidence
