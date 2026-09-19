@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA / QuranRevival — D3 chokepoint branch: reconciliation against the Hadith ledger repair</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA / QuranRevival — D3 chokepoint branch: reconciliation against the Hadith ledger repair</h1>
+<p><strong>Date:</strong> 19 September 2026 <strong>Ruling executed:</strong> <em>Accept the D3 chokepoint foundation repair on its branch. Keep v08.31; v08.32 remains unallocated. Do not integrate this branch while programme-ledger guards A and B fail on main. Claude-Hadith is handling the authorized Hadith ledger repair.</em> <strong>Outcome in one line:</strong> the Hadith repair <strong>has landed</strong>, guards A and B are <strong>green</strong>, the branch is reconciled, verified and pushed — and it is <strong>NOT integrated</strong>, because one required gate is red on <code>main</code> itself and clearing it is outside this session&#x27;s authority.</p>
+<hr>
+<h2>1. The SHAs, reported separately as instructed</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><strong>D3 work commit</strong></td><td><strong><code>57a73a8b7664c9818c3814e495e4abdeebaf608f</code></strong> — the repair itself: <code>study-note-service.js</code> and four suites</td></tr>
+<tr><td><strong>D3 branch tip as accepted</strong></td><td><strong><code>3adc853b2432acd04e1800fb8e278ac6a76311e1</code></strong> — the work <strong>plus</strong> the dated report in <code>.md</code> and <code>.html</code>. Verified pushed: local <code>HEAD</code> and <code>origin/claude/busy-hawking-5p8ck8</code> were byte-identical before any reconciliation began</td></tr>
+<tr><td><code>main</code> when the last round ended</td><td><code>a64e2a1c97f397aba26bdfa281fdf4f2b5486547</code></td></tr>
+<tr><td><strong><code>origin/main</code> now</strong></td><td><strong><code>b295ea87ace8fbea565fe7b0d9dda0ca4ab1ac32</code></strong> — <em>Hadith: stamp the post-integration SHAs and remote guard results into the report</em></td></tr>
+<tr><td>Reconciliation merge</td><td><code>d46bed0c5e7b76f62606859a2f559a9eae2f91a7</code></td></tr>
+<tr><td>Documentation-only entry</td><td><code>c69ccf7017430b6a5fd397d3601a2bbb977128c6</code></td></tr>
+<tr><td><strong>D3 branch tip now, pushed and verified</strong></td><td><strong><code>c69ccf7017430b6a5fd397d3601a2bbb977128c6</code></strong></td></tr>
+</tbody></table></div>
+<p><code>3adc853</code> is stated separately from <code>57a73a8</code> because the ruling asked for exactly that distinction: the work commit changes code, and the tip that was accepted also carries the report. <code>git diff 57a73a8 3adc853</code> is two files, both of them the report.</p>
+<hr>
+<h2>2. The Hadith ledger repair has landed</h2>
+<p><code>origin/main</code> moved <code>a64e2a1 → b295ea8</code>, carrying three commits:</p>
+<p>``<code> e207296  Merge origin/main (a64e2a1, v08.31) into feature/hadith-study bde0f8e  Hadith: the authorised ledger repair, and the S5 report corrected in a superseding note b295ea8  Hadith: stamp the post-integration SHAs and remote guard results into the report </code>``</p>
+<p><strong>It changed twelve files and not one of them is a D3 file:</strong> <code>docs/governance/programme-integration-ledger.json</code>, one new governance note, four reports in both formats, and two new guards (<code>hadith-gate-contracts.mjs</code>, <code>hadith-governing-contracts.mjs</code>). <strong><code>CLAUDE.md</code> and <code>CHANGELOG.md</code> were not touched by it</strong>, which is why §4&#x27;s entry appends cleanly rather than competing with anything. <code>app/js/version.js</code> on the new <code>main</code> still reads <strong><code>08.31</code></strong>.</p>
+<p><strong>The Hadith ledger record was not modified by this session, in any way.</strong> The reconciliation is a merge; <code>git diff origin/main HEAD -- docs/governance/programme-integration-ledger.json</code> is <strong>empty</strong>.</p>
+<h3>The named blocker is cleared</h3>
+<div class='tw'><table><thead><tr><th>Guard</th><th>Before the Hadith repair</th><th>Now</th></tr></thead><tbody>
+<tr><td><strong>A</strong> — no version claimed twice</td><td><strong>FAIL</strong> — <em>stream hadith declares 08.29 but feature/hadith-study is stamped 08.30</em></td><td><strong>PASS</strong> — <em>08.31 is LIVE and matches main</em></td></tr>
+<tr><td><strong>B</strong> — nothing stamps an unreserved number</td><td><strong>FAIL</strong> — <em>…which the ledger reserves for nobody under stream hadith</em></td><td><strong>PASS</strong> — <em>1 declared branch stamp is reserved, and nothing claims 08.32 or beyond</em></td></tr>
+</tbody></table></div>
+<p><code>programme-ledger.mjs</code> is <strong>8 passed / 22 noted / 0 failed</strong>, exit 0.</p>
+<hr>
+<h2>3. Reconciliation</h2>
+<p><code>origin/main</code> was merged into the branch. <strong>Conflict-free, and verified rather than predicted</strong> — the two change sets share no file, established by reading the diff before merging rather than by watching git succeed.</p>
+<p>After the merge, <code>git diff origin/main HEAD -- app/</code> names <strong>exactly one file</strong>: <code>app/js/study-note-service.js</code>, which is page-unreachable. Nothing else under <code>app/</code> differs from <code>main</code> by a byte, and <code>app/js/version.js</code> is untouched.</p>
+<hr>
+<h2>4. The authorised documentation-only entry</h2>
+<p>Added after checking current <code>main</code>, as instructed, in the two shared documents and nowhere else. <code>git diff HEAD~1 HEAD</code> is <strong><code>CLAUDE.md</code> and <code>CHANGELOG.md</code>, nothing more.</strong></p>
+<p>It records the three facts the ruling names:</p>
+<ol><li><strong>The service remains page-unreachable</strong> — 0 of 29 pages, with <code>records.js</code> (16) and <code>study-event-wiring.js</code> (1) as the positive controls that stop the walk passing vacuously, and 0 import cycles across 96 modules.</li><li><strong>The direct store caller was removed</strong> — <code>recordJournalEvidence()</code> calls <code>recordStudyEvidence()</code>, and the boundary suite&#x27;s <code>KNOWN_UNREACHABLE_CALLER</code> exception is <strong>gone rather than widened</strong>.</li><li><strong><code>study-event-wiring.mjs</code> was repaired from 0 executing checks to 41</strong> — it had thrown <code>ERR_INVALID_URL</code> at module load since v08.31&#x27;s own accepted commit <code>65ef3c5</code>, exiting 1 with a stack trace and <strong>no <code>FAIL</code> line</strong>, so the chokepoint&#x27;s own unit suite asserted nothing for the whole of its existence.</li></ol>
+<p><strong>The CHANGELOG entry is deliberately not a version heading.</strong> It reads <code>NO VERSION BUMP</code> and names no new number, so no v-prefixed scanner in this repository can read it as an allocation. <strong><code>08.32</code> stays UNALLOCATED</strong>, and <code>app/js/version.js</code> stays <code>08.31</code>.</p>
+<p><code>brief-integrity.mjs</code> is <strong>8 passed / 0 failed</strong> after the edit — including its check that the milestone line matches <code>origin/main</code>&#x27;s own <code>version.js</code>.</p>
+<hr>
+<h2>5. Verification</h2>
+<h3>5.1 Pure gates, on the reconciled tree</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th><th>Exit</th></tr></thead><tbody>
+<tr><td><code>programme-ledger</code> (A–G)</td><td><strong>8 / 22 noted / 0 failed</strong> — <strong>A and B now PASS</strong></td><td>0</td></tr>
+<tr><td><code>programme-ledger-mutations</code></td><td><strong>48 / 1</strong> — §6, pre-existing on <code>main</code></td><td><strong>1</strong></td></tr>
+<tr><td><code>brief-integrity</code></td><td>8 / 0</td><td>0</td></tr>
+<tr><td><code>study-activity-evidence-boundary</code></td><td><strong>27 / 0</strong></td><td>0</td></tr>
+<tr><td><code>study-activity-evidence-boundary-mutations</code></td><td><strong>11 / 0</strong></td><td>0</td></tr>
+<tr><td><code>study-event-wiring</code></td><td><strong>41 / 0</strong></td><td>0</td></tr>
+<tr><td><code>study-note-service</code></td><td><strong>35</strong></td><td>0</td></tr>
+<tr><td><code>study-note-boundary</code> / <code>study-note-binding</code></td><td>17 / 16</td><td>0</td></tr>
+<tr><td><code>note-foundation-boundary</code> / <code>note-journal-evidence</code></td><td>30 / 18</td><td>0</td></tr>
+<tr><td><code>study-activity-evidence</code> / <code>-id</code> / <code>-store</code></td><td>11 / 29 / 26</td><td>0</td></tr>
+<tr><td><code>study-approach-contract</code> / <code>-boundary</code></td><td>13 / 16</td><td>0</td></tr>
+<tr><td><strong><code>quran-boundary</code></strong></td><td><strong>30 / 0</strong></td><td>0</td></tr>
+<tr><td><code>journey-map-boundary</code> / <code>-contract</code> / <code>-service</code></td><td>13 / 34 / 18</td><td>0</td></tr>
+<tr><td><code>d14-timezone-boundary</code> / <code>-contract</code></td><td>10 / 21</td><td>0</td></tr>
+<tr><td><strong><code>hadith-corpus</code></strong></td><td><strong>33 / 0</strong></td><td>0</td></tr>
+<tr><td><strong><code>hadith-source-rights</code></strong></td><td><strong>14 / 0</strong></td><td>0</td></tr>
+<tr><td><strong><code>hadith-commentary-binding</code></strong></td><td><strong>14 / 0</strong></td><td>0</td></tr>
+<tr><td><strong><code>hadith-gate-contracts</code></strong> <em>(new, from the repair)</em></td><td><strong>11 / 0</strong></td><td>0</td></tr>
+<tr><td><strong><code>hadith-governing-contracts</code></strong> <em>(new, from the repair)</em></td><td><strong>14 / 0</strong></td><td>0</td></tr>
+<tr><td><code>rules-authorisation-executable</code></td><td>38 / 0</td><td>0</td></tr>
+<tr><td><code>rules-deployment-candidate</code> / <code>firestore-index-requirements</code> / <code>stub-parity</code></td><td>10 / 8 / 3</td><td>0</td></tr>
+</tbody></table></div>
+<p>The two guards the Hadith repair introduced were run as well as the three existing Hadith suites — a stream&#x27;s new guards are part of the base this branch now sits on, and a reconciliation that did not run them would not have checked what it merged.</p>
+<h3>5.2 Post-push remote checks</h3>
+<p>The branch was pushed, then <strong>a fresh detached worktree was checked out from <code>origin/claude/busy-hawking-5p8ck8</code> and the gates re-run there</strong> — so the results above are proven of <em>what is on the remote</em>, not merely of a local tree that happens to resemble it.</p>
+<ul><li>Remote tip <code>c69ccf7017</code> == local <code>HEAD</code>: <strong>identical</strong>.</li><li>Every deliverable present in the remote tree: the five work files, the report in both formats, and both shared documents.</li><li><strong>Every gate result reproduced exactly</strong>, including the single pre-existing failure of §6.</li><li><code>origin/main</code> re-read after the push: <strong><code>b295ea8</code>, unmoved.</strong></li></ul>
+<h3>5.3 Rendered gates</h3>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th><th>Exit</th></tr></thead><tbody>
+<tr><td><code>layout.mjs</code> (shim built from the NEW <code>main</code>, <code>b295ea8</code>)</td><td><strong>NO LAYOUT REGRESSIONS</strong></td><td>0</td></tr>
+<tr><td><code>navcheck.mjs</code></td><td>nav fits in both languages at every width</td><td>0</td></tr>
+<tr><td><code>panel.mjs en</code></td><td>PANEL OK apart from the known baseline</td><td>0</td></tr>
+<tr><td><code>panel.mjs bn</code></td><td><strong>6 PROBLEM(S)</strong> — the <strong>O3c</strong> baseline: 6 x <code>#drillModeSelect</code>, Bangla, 48px usable against 54px needed</td><td><strong>1 — pre-existing</strong></td></tr>
+<tr><td><code>reading.mjs</code></td><td>READING SCREEN OK</td><td>0</td></tr>
+<tr><td><code>i18n-coverage.mjs</code></td><td><strong>1,879 scanned, 1,818 Bangla, 61 missing</strong> — identical to baseline</td><td>0</td></tr>
+<tr><td><code>behaviour.mjs</code></td><td><strong>978 passed, 4 failed, 56 sections — 982 checks, the baseline total</strong></td><td><strong>1 — all four environmental</strong></td></tr>
+</tbody></table></div>
+<p><strong><code>layout.mjs</code> was run with its comparison shim built from the new <code>main</code></strong>, so it answers the question a reconciliation has to answer — <em>did the Hadith repair and this branch together move anything on the landing page</em> — rather than merely repeating an older comparison. They did not. The shim was deleted before the coverage total was read, which is this repository&#x27;s own recorded trap: it is a second copy of a page in <code>app/</code>, and counting it corrupts the number.</p>
+<h3>5.4 <code>behaviour.mjs</code></h3>
+<p><strong>978 passed, 4 failed, 56 sections — 982 checks against the baseline&#x27;s 982.</strong> All four failures are the documented environmental set and not one is an application failure:</p>
+<ul><li><strong><code>22g</code> x 3</strong> — the archive.org poster block. <code>CLAUDE.md</code> records it as <strong>intermittent</strong> (<em>&quot;inside one tranche on identical code they passed in runs 1/3/5/9/10 and failed in 2/4/6/7/8/11&quot;</em>), so neither a red nor a green <code>22g</code> is evidence either way.</li><li><strong><code>31e</code></strong> — the sandbox TLS artefact, <code>ERR_CERT_AUTHORITY_INVALID</code>. <code>--ignore-certificate-errors</code> was <strong>not</strong> used; it would also hide a real certificate problem.</li></ul>
+<p>This is <strong>identical to the run on the pre-reconciliation branch</strong> — same total, same four, same sections — which is what a reconciliation that changes one page-unreachable file should produce, and it was measured rather than assumed.</p>
+<h3>5.5 The emulator suite was not re-run, and the reason is stronger than a re-run</h3>
+<p><code>git diff origin/main HEAD -- firestore.rules firebase.json firestore.indexes.json tests/ tools/firestore-emulator/ docs/governance/</code> is <strong>empty</strong>. Not one byte of the security, index, emulator or governance surface differs from <code>main</code> — so the Phase 4 result (53 assertions, 0 failures, re-run during this morning&#x27;s v08.31 integration) cannot have moved. <strong>The Hadith repair changed the ledger; this branch changed none of it.</strong></p>
+<hr>
+<h2>6. THE ONE RED GATE, AND WHY THIS BRANCH IS NOT INTEGRATED</h2>
+<p><code>programme-ledger-mutations.mjs</code> exits <strong>1</strong>: <code>48 passed, 1 failed</code>.</p>
+<p><strong>It is not this branch&#x27;s.</strong> Proven, not argued: a detached worktree was checked out at clean <code>origin/main</code> (<code>b295ea8</code>) and the harness run there. It fails <strong>identically</strong>, with the same single case. The branch reproduces <code>main</code>&#x27;s result and adds nothing to it.</p>
+<p><strong>The failing case, diagnosed.</strong></p>
+<p>``<code> FAIL  MUTATION [A] the ledger and the branch disagree about what the branch is stamped       guard A did NOT fail -- it is UNPROVEN and must not be trusted </code>``</p>
+<p>The mutation <strong>hardcodes the hadith stream</strong>:</p>
+<p>``<code>js const s = l.streams.find((x) =&gt; x.id === &quot;hadith&quot;); s.declaredVersion = &quot;08.28&quot;; </code>``</p>
+<p>The Hadith repair — correctly — set <code>hadith.activeBranch</code> to <code>null</code>, because the stream is <code>MERGED_TO_MAIN</code> and has no live branch. Guard A&#x27;s branch-versus-ledger comparison only runs for streams that <em>have</em> an active branch, so with <code>activeBranch: null</code> the loop body never reaches hadith and the mutation provokes nothing.</p>
+<p><strong>Its own sibling shows the intended shape.</strong> Mutation <code>[B]</code>, three lines below, <strong>derives</strong> its target instead of naming a stream:</p>
+<p>``<code>js const s = l.streams.find((x) =&gt; x.activeBranch &amp;&amp; f.branches[x.activeBranch]); </code>``</p>
+<p>That is precisely the correction this repository already made on 18 September — <em>&quot;both DERIVE their target from the ledger now … so they model the general programme state rather than one day&#x27;s arithmetic.&quot;</em> <strong>Mutation <code>[A]</code> was left hardcoded when its siblings were fixed</strong>, and the Hadith repair is simply what exposed it. <code>quran-phase4-wiring</code> still carries <code>activeBranch: claude/phase4-wiring</code>, so a derived target exists and the mutation would be provable again.</p>
+<p><strong>Guard A itself is sound and is not in doubt.</strong> It fired correctly on the real divergence earlier today, naming it exactly. What is unproven is the <em>mutation&#x27;s ability to reach it</em>, which is debt in the harness rather than a hole in the guard — a materially smaller problem than an unproven guard usually is, and still worth closing.</p>
+<p><strong>Why it was not fixed here.</strong> <code>tools/i18n-verify/programme-ledger-mutations.mjs</code> is a <strong>platform-shared</strong> path. The ruling authorised exactly two shared files, <code>CLAUDE.md</code> and <code>CHANGELOG.md</code>, and this is neither. It is a one-line change and it is not this session&#x27;s to make.</p>
+<h3>The integration decision</h3>
+<p>The ruling says: <strong>&quot;Integrate only if all required gates are green and main has not moved during verification.&quot;</strong></p>
+<p><code>main</code> has <strong>not</strong> moved — <code>b295ea8</code> before and after. But one gate is <strong>not green</strong>, and it cannot be made green from inside this session&#x27;s authority. So <strong>the branch was not integrated</strong>, and no ceremonial merge was made.</p>
+<p>This is deliberately the literal reading. The specific blocker the ruling named — guards A and B — <strong>is cleared</strong>, and it would have been easy to treat that as the whole condition. It is not what the sentence says, and the previous round already carried one judgement call of that shape; a second would be a habit. <strong>The branch is ready: <code>main</code> is merged in, every other gate is green on the pushed remote tip, and integration is one fast-forward whenever the Master Architect rules.</strong></p>
+<p>Two routes are open, and both are the Master Architect&#x27;s:</p>
+<ol><li>Authorise the one-line fix to mutation <code>[A]</code> — derive the stream the way <code>[B]</code> does — then integrate.</li><li>Rule the harness failure out of scope for this integration, and integrate as-is.</li></ol>
+<hr>
+<h2>7. The four deployment states — unchanged</h2>
+<div class='tw'><table><thead><tr><th>State</th><th>Value</th><th>Basis</th></tr></thead><tbody>
+<tr><td><code>APPLICATION_CODE_INTEGRATED</code></td><td><strong>YES</strong> for v08.31</td><td><code>main</code> carries v08.31; <strong>this branch is NOT integrated</strong></td></tr>
+<tr><td><code>GITHUB_PAGES_SERVING</code></td><td><strong>PRESUMED_FROM_MAIN</strong>, <code>verified: false</code></td><td>The sandbox proxy refuses <code>CONNECT</code> to <code>github.io</code></td></tr>
+<tr><td><code>FIREBASE_RULES_DEPLOYED</code></td><td><strong>NO</strong></td><td><strong>E1 CLOSED.</strong> Nothing was deployed and nothing was attempted</td></tr>
+<tr><td><code>EVIDENCE_RECORDING_OPERATIONAL</code></td><td><strong>NO</strong></td><td>The evidence subcollection has no rule</td></tr>
+</tbody></table></div>
+<p><code>firestore.rules</code> contains the word <code>evidence</code> <strong>zero</strong> times, and the readiness declaration is still the literal <code>false</code> with <code>decision: null</code>. <strong>The gate was not enabled.</strong></p>
+<hr>
+<h2>8. State block</h2>
+<p>``<code> MMSA_QR_D3_RECONCILIATION DATE=2026-09-19 D3_WORK_COMMIT=57a73a8b7664c9818c3814e495e4abdeebaf608f D3_BRANCH_TIP_AS_ACCEPTED=3adc853b2432acd04e1800fb8e278ac6a76311e1 PREVIOUS_MAIN=a64e2a1c97f397aba26bdfa281fdf4f2b5486547 CURRENT_MAIN=b295ea87ace8fbea565fe7b0d9dda0ca4ab1ac32 HADITH_LEDGER_REPAIR=LANDED (bde0f8e, stamped b295ea8) RECONCILIATION_MERGE=d46bed0c5e7b76f62606859a2f559a9eae2f91a7 DOCUMENTATION_COMMIT=c69ccf7017430b6a5fd397d3601a2bbb977128c6 D3_BRANCH_TIP_NOW=c69ccf7017430b6a5fd397d3601a2bbb977128c6 BRANCH_PUSHED=YES, remote tip == local HEAD, gates re-run from a fresh remote checkout GUARD_A=PASS GUARD_B=PASS PROGRAMME_LEDGER=8 passed / 22 noted / 0 failed PROGRAMME_LEDGER_MUTATIONS=48 passed / 1 failed -- PRE-EXISTING ON MAIN, proven in a clean worktree MUTATION_A_DIAGNOSIS=hardcodes the hadith stream; the repair correctly set hadith.activeBranch=null; sibling [B] derives its target and is the intended shape; platform-shared file, NOT fixed here INTEGRATED=NO -- &quot;integrate only if ALL required gates are green&quot; is not satisfied MAIN_MOVED_DURING_VERIFICATION=NO CEREMONIAL_MERGE=NONE LEDGER_MODIFIED_BY_THIS_SESSION=NO SHARED_FILES_TOUCHED=CLAUDE.md, CHANGELOG.md (both expressly authorised) APP_FILES_CHANGED=1 (app/js/study-note-service.js, page-unreachable) VERSION=08.31 UNCHANGED V0832_STATUS=UNALLOCATED FIREBASE_RULES_DEPLOYED=NO EVIDENCE_RECORDING_OPERATIONAL=NO E1_STATUS=CLOSED BEHAVIOUR=978 passed / 4 failed of 982, 56 sections -- all four environmental (22g x3 archive.org intermittent, 31e TLS), 0 application failures READY_TO_SHIP=NO </code>``</p>
+</main></body></html>
