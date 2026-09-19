@@ -20,11 +20,11 @@ no records are migrated, and **v08.32 remains UNALLOCATED**.
 | | |
 |---|---|
 | **`origin/main` before** | `a64e2a1c97f397aba26bdfa281fdf4f2b5486547` (v08.31) |
-| **`origin/main` after** | *stamped below* |
+| **`origin/main` after** | **`bde0f8e19a6f97c5b15ca68e21f972b501da25af`** — fast-forwarded, still **v08.31** |
 | **Branch** | `feature/hadith-study` |
 | **Branch tip before** | `b7e0dab` (the S5 report commit — see the correction note) |
 | **Candidate base** | `e207296` — `origin/main` merged into the branch, so it tracks `main` |
-| **Branch tip after** | *stamped below* |
+| **Branch tip after** | **`bde0f8e19a6f97c5b15ca68e21f972b501da25af`** — branch and `main` are the same commit |
 | **App version** | **08.31 throughout, unchanged** — the branch reads `main`'s own stamp |
 | **`git diff` over `app/`** | **empty** |
 
@@ -117,7 +117,7 @@ the records themselves rather than from a branch diff.
 | Gate | Result |
 |---|---|
 | `programme-ledger.mjs` (working tree) | **8 passed, 22 noted, 0 failed** — A, B, C, CONTROL, D, E, F, G all PASS |
-| `programme-ledger.mjs` (**after push, against the remote**) | *stamped below* |
+| `programme-ledger.mjs` (**after push, against the remote**) | **8 passed, 22 noted, 0 failed** — re-run against `origin/feature/hadith-study` at `bde0f8e`, and again against integrated `origin/main`. `brief-integrity.mjs` 8/0 at both points |
 | `programme-ledger-mutations.mjs` | **48 passed, 1 failed** — the UNPROVEN guard-A mutation above. Fix proven at 49/0 and held for authorisation |
 | `brief-integrity.mjs` | **8 passed, 0 failed** |
 | `hadith-gate-contracts.mjs` | 11 passed, 0 failed |
@@ -191,11 +191,11 @@ PRE_BRANCH_TIP=b7e0dab (S5 report commit)
 
 CANDIDATE_BASE=e207296 (origin/main merged into feature/hadith-study)
 
-POST_BRANCH_TIP=STAMPED_BELOW
+POST_BRANCH_TIP=bde0f8e19a6f97c5b15ca68e21f972b501da25af
 
-POST_MAIN_SHA=STAMPED_BELOW
+POST_MAIN_SHA=bde0f8e19a6f97c5b15ca68e21f972b501da25af (fast-forward from a64e2a1c; no merge commit, because the candidate already contained main)
 
-REMOTE_GUARD_RESULT=STAMPED_BELOW
+REMOTE_GUARD_RESULT=8 passed, 22 noted, 0 failed against the PUSHED remote branch, and the same against integrated origin/main; brief-integrity 8/0 at both. Before this repair, origin/main itself was 6 passed / 2 FAILED (guards A and B), measured in a detached worktree
 
 PROGRAMME_GUARDS=8 passed, 22 noted, 0 failed
 
@@ -213,4 +213,4 @@ FIRESTORE_RULES_REPOSITORY=untouched by this candidate
 
 FIREBASE_RULES_DEPLOYED=UNVERIFIED — no credentials in this sandbox; nothing deployed
 
-SESSION_STATUS=STAMPED_BELOW
+SESSION_STATUS=INTEGRATED. The authorised ledger repair and the Hadith test/documentation work are on main at bde0f8e. Outstanding and awaiting Master Architect decision: SCR-HADITH-02, the one-line guard-A mutation fix (proven 49/0, not applied). All Hadith Owner Control Gates remain closed; v08.32 remains unallocated; nothing was deployed and deployment status is UNVERIFIED

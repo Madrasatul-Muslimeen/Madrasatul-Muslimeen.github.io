@@ -36,11 +36,11 @@
 <h2>State, before and after</h2>
 <div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
 <tr><td><strong><code>origin/main</code> before</strong></td><td><code>a64e2a1c97f397aba26bdfa281fdf4f2b5486547</code> (v08.31)</td></tr>
-<tr><td><strong><code>origin/main</code> after</strong></td><td><em>stamped below</em></td></tr>
+<tr><td><strong><code>origin/main</code> after</strong></td><td><strong><code>bde0f8e19a6f97c5b15ca68e21f972b501da25af</code></strong> — fast-forwarded, still <strong>v08.31</strong></td></tr>
 <tr><td><strong>Branch</strong></td><td><code>feature/hadith-study</code></td></tr>
 <tr><td><strong>Branch tip before</strong></td><td><code>b7e0dab</code> (the S5 report commit — see the correction note)</td></tr>
 <tr><td><strong>Candidate base</strong></td><td><code>e207296</code> — <code>origin/main</code> merged into the branch, so it tracks <code>main</code></td></tr>
-<tr><td><strong>Branch tip after</strong></td><td><em>stamped below</em></td></tr>
+<tr><td><strong>Branch tip after</strong></td><td><strong><code>bde0f8e19a6f97c5b15ca68e21f972b501da25af</code></strong> — branch and <code>main</code> are the same commit</td></tr>
 <tr><td><strong>App version</strong></td><td><strong>08.31 throughout, unchanged</strong> — the branch reads <code>main</code>&#x27;s own stamp</td></tr>
 <tr><td><strong><code>git diff</code> over <code>app/</code></strong></td><td><strong>empty</strong></td></tr>
 </tbody></table></div>
@@ -69,7 +69,7 @@
 <h2>Gate results</h2>
 <div class='tw'><table><thead><tr><th>Gate</th><th>Result</th></tr></thead><tbody>
 <tr><td><code>programme-ledger.mjs</code> (working tree)</td><td><strong>8 passed, 22 noted, 0 failed</strong> — A, B, C, CONTROL, D, E, F, G all PASS</td></tr>
-<tr><td><code>programme-ledger.mjs</code> (<strong>after push, against the remote</strong>)</td><td><em>stamped below</em></td></tr>
+<tr><td><code>programme-ledger.mjs</code> (<strong>after push, against the remote</strong>)</td><td><strong>8 passed, 22 noted, 0 failed</strong> — re-run against <code>origin/feature/hadith-study</code> at <code>bde0f8e</code>, and again against integrated <code>origin/main</code>. <code>brief-integrity.mjs</code> 8/0 at both points</td></tr>
 <tr><td><code>programme-ledger-mutations.mjs</code></td><td><strong>48 passed, 1 failed</strong> — the UNPROVEN guard-A mutation above. Fix proven at 49/0 and held for authorisation</td></tr>
 <tr><td><code>brief-integrity.mjs</code></td><td><strong>8 passed, 0 failed</strong></td></tr>
 <tr><td><code>hadith-gate-contracts.mjs</code></td><td>11 passed, 0 failed</td></tr>
@@ -100,9 +100,9 @@
 <p>PRE_MAIN_SHA=a64e2a1c97f397aba26bdfa281fdf4f2b5486547</p>
 <p>PRE_BRANCH_TIP=b7e0dab (S5 report commit)</p>
 <p>CANDIDATE_BASE=e207296 (origin/main merged into feature/hadith-study)</p>
-<p>POST_BRANCH_TIP=STAMPED_BELOW</p>
-<p>POST_MAIN_SHA=STAMPED_BELOW</p>
-<p>REMOTE_GUARD_RESULT=STAMPED_BELOW</p>
+<p>POST_BRANCH_TIP=bde0f8e19a6f97c5b15ca68e21f972b501da25af</p>
+<p>POST_MAIN_SHA=bde0f8e19a6f97c5b15ca68e21f972b501da25af (fast-forward from a64e2a1c; no merge commit, because the candidate already contained main)</p>
+<p>REMOTE_GUARD_RESULT=8 passed, 22 noted, 0 failed against the PUSHED remote branch, and the same against integrated origin/main; brief-integrity 8/0 at both. Before this repair, origin/main itself was 6 passed / 2 FAILED (guards A and B), measured in a detached worktree</p>
 <p>PROGRAMME_GUARDS=8 passed, 22 noted, 0 failed</p>
 <p>MUTATION_SUITE=48 passed, 1 failed (guard-A mutation UNPROVEN; fix proven 49/0 and held as SCR-HADITH-02)</p>
 <p>BRIEF_INTEGRITY=8 passed, 0 failed</p>
@@ -111,5 +111,5 @@
 <p>OWNER_CONTROL_GATES=ALL CLOSED (C2 not applied, no Approach allocated, no corpus imported, no Rules deployed, no records migrated)</p>
 <p>FIRESTORE_RULES_REPOSITORY=untouched by this candidate</p>
 <p>FIREBASE_RULES_DEPLOYED=UNVERIFIED — no credentials in this sandbox; nothing deployed</p>
-<p>SESSION_STATUS=STAMPED_BELOW</p>
+<p>SESSION_STATUS=INTEGRATED. The authorised ledger repair and the Hadith test/documentation work are on main at bde0f8e. Outstanding and awaiting Master Architect decision: SCR-HADITH-02, the one-line guard-A mutation fix (proven 49/0, not applied). All Hadith Owner Control Gates remain closed; v08.32 remains unallocated; nothing was deployed and deployment status is UNVERIFIED</p>
 </main></body></html>
