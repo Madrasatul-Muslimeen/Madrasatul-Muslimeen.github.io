@@ -1,0 +1,125 @@
+# Claude Code — MMSA governance-automation pilot, STEP 2 (the builder stage).
+#
+# REVIEWABLE CONFIGURATION. This workflow is INERT until the Owner adds a
+# Claude API credential (see "Owner setup" below). Without it the job stops at
+# a preflight step with an explanatory message and does NOT run Claude.
+#
+# ---------------------------------------------------------------------------
+# HOW THE BOT IDENTITY WORKS — verified from the Action's own source, not
+# assumed. Two separate credentials are in play and they are easy to conflate:
+#
+#   1. GITHUB identity. `github_token` is deliberately NOT set below. The
+#      Action then mints a GitHub Actions OIDC token (audience
+#      "claude-code-github-action"), POSTs it to Anthropic's
+#      github-app-token-exchange endpoint, and receives a short-lived
+#      INSTALLATION TOKEN for the Claude GitHub App already installed on this
+#      repository. Git operations use bot id 41898282 / `claude[bot]`
+#      (src/github/constants.ts). That identity is distinct from AAAsapp, so a
+#      PR it opens is one AAAsapp is not the author of.
+#      => THIS IS WHY `id-token: write` IS REQUIRED. Without it there is no
+#         OIDC token, no App token, and no bot identity.
+#      => Passing `github_token: ${{ secrets.GITHUB_TOKEN }}` would DEFEAT the
+#         whole purpose twice over: the author becomes `github-actions[bot]`
+#         AND, per GitHub's loop-prevention rule, the resulting PR would not
+#         trigger the `verify` workflow at all. Do not add it.
+#
+#   2. CLAUDE API identity. Separate and NOT supplied by the App. It needs one
+#      of: an ANTHROPIC_API_KEY secret, a CLAUDE_CODE_OAUTH_TOKEN secret, or
+#      Workload Identity Federation. This is the Owner's to add; nothing here
+#      creates, stores or prints one.
+# ---------------------------------------------------------------------------
+#
+# Owner setup, exactly one of:
+#   (a) Add repository secret ANTHROPIC_API_KEY, or
+#   (b) Add repository secret CLAUDE_CODE_OAUTH_TOKEN and swap the input
+#       below, or
+#   (c) Workload Identity Federation — no stored secret at all. Replace the
+#       anthropic_api_key line with anthropic_federation_rule_id /
+#       anthropic_organization_id / anthropic_service_account_id. Those are
+#       identifiers, not credentials, and may live in the workflow file.
+#
+# KNOWN AND EXPECTED: the App token exchange validates that this workflow
+# exists on the DEFAULT BRANCH. On the pull request that first adds this file
+# the exchange is refused with `workflow_not_found_on_default_branch`; the
+# Action logs a warning, sets the output
+# `skipped_due_to_workflow_validation_mismatch`, and EXITS CLEANLY (green, not
+# red). It begins working only once this file is on `main`.
+
+name: Claude Code
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  claude:
+    # Narrow on purpose: only a comment that actually mentions @claude, and
+    # only on an issue or PR conversation. The Action additionally refuses any
+    # actor without write access to this repository, and its `allowed_bots`
+    # default is empty, so no bot can invoke it.
+    if: contains(github.event.comment.body, '@claude')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # Each permission is here for a stated reason; nothing is granted "just in
+    # case". Deliberately ABSENT: actions, workflows, checks, packages,
+    # deployments, security-events. In particular NO `workflows: write` — this
+    # job must not be able to rewrite the gate that checks it.
+    permissions:
+      contents: write       # create the branch and commit the change
+      pull-requests: write  # open the PR and comment on it
+      issues: write         # reply in the issue thread that invoked it
+      id-token: write       # REQUIRED: mint the OIDC token exchanged for the
+                            # Claude App installation token (the bot identity)
+
+    steps:
+      # Establishes ONLY whether a credential exists. It prints a boolean and
+      # never the value, and the secret is passed via env rather than
+      # interpolated into the script so it cannot be echoed by accident.
+      - name: Check whether a Claude API credential is configured
+        id: cred
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            echo "A Claude API credential is configured."
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No Claude API credential configured, so Claude will not run."
+            {
+              echo "## Claude Code — not configured yet"
+              echo ""
+              echo "This workflow is wired but **inert**. The Owner must add one of:"
+              echo ""
+              echo "- repository secret \`ANTHROPIC_API_KEY\`, or"
+              echo "- repository secret \`CLAUDE_CODE_OAUTH_TOKEN\` (swap the input), or"
+              echo "- Workload Identity Federation identifiers (no stored secret)."
+              echo ""
+              echo "No credential is created by this workflow, and none is printed."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Check out the repository
+        if: steps.cred.outputs.present == 'true'
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code
+        if: steps.cred.outputs.present == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          # Claude API auth. Swap for claude_code_oauth_token, or for the
+          # three federation identifiers, per "Owner setup" above.
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          # github_token is INTENTIONALLY OMITTED. See the header: omitting it
+          # is what selects the Claude App installation token, and with it the
+          # `claude[bot]` identity that makes the PR reviewable by AAAsapp and
+          # able to trigger the `verify` workflow.
+
+          claude_args: |
+            --model "claude-opus-5"
+            --allowedTools "Bash(node tools/i18n-verify/*),Bash(git status),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git checkout:*),Bash(git push:*)"
