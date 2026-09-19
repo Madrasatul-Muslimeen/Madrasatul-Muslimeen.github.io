@@ -13,7 +13,7 @@
 | Pre-integration `origin/main` | **`db6cb24b807d77630914e076d413bec6982cc3d7`** — unmoved, exactly as the package recorded it |
 | Method | **FAST-FORWARD.** Linear descent, no merge commit, no conflict, no application file altered by the integration itself |
 | Integrated `main`, application | **`a20892f1e4cbf4e86498fe371232466141ca95df`** — pushed as `db6cb24..a20892f` |
-| Integrated `main`, final | **`PENDING_STAMP`** — the governance stamp of §7, zero `app/` bytes |
+| Integrated `main`, final | **`877bca0190ae25a2ad6e13d1822946390514829e`** — the governance stamp of §7, zero `app/` bytes |
 | `main` application version | **v08.30 → v08.31** |
 
 **Nothing was deployed.** E1 is CLOSED, `firestore.rules` is byte-for-byte unchanged and still contains the word `evidence` **zero** times, and **v08.32 remains UNALLOCATED**.
@@ -211,7 +211,7 @@ English: 10 children needing 379.5px at every width; wrapped at 320/340/360/390,
 
 **Step 1 — the fast-forward.** `main` was fast-forwarded from `db6cb24` to **a20892f1e4cbf4e86498fe371232466141ca95df**. No merge commit, no conflict, and the accepted application change is bit-for-bit as accepted.
 
-**Step 2 — the post-integration governance stamp, PENDING_STAMP.** This is necessary, not decorative, and the reason is a gate: the ledger and the brief were written *on a branch that had not yet merged*, so both correctly said `main` carries `08.30`. The moment the fast-forward lands, that stops being true and **`programme-ledger.mjs` guard F fails by name** — *"the ledger records main at 08.30; `app/js/version.js` on main reads 08.31"* — and `brief-integrity.mjs`'s milestone check fails alongside it. A guarded integration that leaves two safety gates red on `main` is not a guarded integration. The stamp is **governance-only**:
+**Step 2 — the post-integration governance stamp, 877bca0190ae25a2ad6e13d1822946390514829e.** This is necessary, not decorative, and the reason is a gate: the ledger and the brief were written *on a branch that had not yet merged*, so both correctly said `main` carries `08.30`. The moment the fast-forward lands, that stops being true and **`programme-ledger.mjs` guard F fails by name** — *"the ledger records main at 08.30; `app/js/version.js` on main reads 08.31"* — and `brief-integrity.mjs`'s milestone check fails alongside it. A guarded integration that leaves two safety gates red on `main` is not a guarded integration. The stamp is **governance-only**:
 
 - `docs/governance/programme-integration-ledger.json` — `main.version` → `08.31`, `main.baselineSha` → the integrated SHA, `08.30` **LIVE → RELEASED**, `08.31` **RESERVED → LIVE** with its integration record, the `quran` stream → `MERGED_TO_MAIN`.
 - `CLAUDE.md` — the `Current milestone` line moves from naming the branch to naming **v08.31 on `main`**.
@@ -219,7 +219,7 @@ English: 10 children needing 379.5px at every width; wrapped at 320/340/360/390,
 
 **`INTEGRATED_MAIN_SHA_FINAL` is stamped by a following commit**, because a commit cannot contain its own hash — the same shape `db6cb24` used for the v08.30 record, and the reason that report says *"the stamping commit sits one ahead of the SHA it records"*.
 
-**`git diff a20892f1e4cbf4e86498fe371232466141ca95df PENDING_STAMP -- app/ firestore.rules firebase.json` is empty.** Not one application byte changed after the fast-forward. The three deployment states other than `applicationCodeIntegrated` were **deliberately left alone**: an integration moves exactly one of them.
+**`git diff a20892f1e4cbf4e86498fe371232466141ca95df 877bca0190ae25a2ad6e13d1822946390514829e -- app/ firestore.rules firebase.json` is empty.** Not one application byte changed after the fast-forward. The three deployment states other than `applicationCodeIntegrated` were **deliberately left alone**: an integration moves exactly one of them.
 
 This is the same shape as the v08.30 integration, whose own pre-integration `main` (`db6cb24`) was a report-stamp commit sitting on the accepted build.
 
@@ -231,7 +231,7 @@ Collapsing these into one boolean is the specific mistake the 19 Sep governance 
 
 | State | Value | Basis |
 |---|---|---|
-| `APPLICATION_CODE_INTEGRATED` | **YES** | `main` carries v08.31 — application at `a20892f1e4`, governance stamp at `PENDING_STAMP` |
+| `APPLICATION_CODE_INTEGRATED` | **YES** | `main` carries v08.31 — application at `a20892f1e4`, governance stamp at `877bca0190ae25a2ad6e13d1822946390514829e` |
 | `GITHUB_PAGES_SERVING` | **PRESUMED_FROM_MAIN** — `verified: false` | **PRESUMED, NOT MEASURED, and the limitation was confirmed first-hand today**: `curl https://madrasatul-muslimeen.github.io/app/js/version.js` returns `curl: (56) CONNECT tunnel failed, response 403`. Serving cannot be observed from here, so this rests on this repository's own standing brief |
 | `FIREBASE_RULES_DEPLOYED` | **NO** | E1 CLOSED. No authenticated access to `study-monitoring`; `firestore.rules` is byte-for-byte unchanged and names `evidence` zero times |
 | `EVIDENCE_RECORDING_OPERATIONAL` | **NO** | The evidence subcollection has no rule. Nothing can be recorded for anyone |
@@ -299,7 +299,7 @@ PACKAGE_RECORDED_BRANCH_TIP=bfa2dad705e1a92ebb46cf142760f7a3b6861d2e
 VERIFIED_BRANCH_TIP=a20892f1e4cbf4e86498fe371232466141ca95df
 INTEGRATION_METHOD=FAST_FORWARD
 INTEGRATED_MAIN_SHA_APPLICATION=a20892f1e4cbf4e86498fe371232466141ca95df
-INTEGRATED_MAIN_SHA_FINAL=PENDING_STAMP
+INTEGRATED_MAIN_SHA_FINAL=877bca0190ae25a2ad6e13d1822946390514829e
 MAIN_VERSION=v08.31
 APP_DIFF_AFTER_ACCEPTED_CHANGE=EMPTY (65ef3c5..a20892f -- app/)
 RULES_CONFIG_DIFF=EMPTY (firestore.rules, firebase.json, firestore.indexes.json, tests/firestore/)
