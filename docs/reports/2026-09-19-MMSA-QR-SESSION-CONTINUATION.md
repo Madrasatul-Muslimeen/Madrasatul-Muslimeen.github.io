@@ -11,7 +11,10 @@
 | | |
 |---|---|
 | **`origin/main` when this file's state was measured** | **`e551c23467ce8eda0e2dafa9dfb474a12bffc690`** — fetched and read back, not quoted from an earlier report |
-| **`origin/main` now** | **`972596d906eab6b65d41ad7b3b338630c499bc9a`** — the commit carrying this continuation. Per this repository's convention the stamping commit sits one ahead of the SHA it records, because a commit cannot contain its own hash. **Nothing in §1–§9 changed**: that commit adds these two report files and nothing else |
+| **`origin/main` when this continuation was first stamped** | **`972596d906eab6b65d41ad7b3b338630c499bc9a`** — the commit that added these two report files, and nothing else |
+| **`origin/main` at the time of this correction** | **`fa0621794cb970f4e7e31696410ad2c8686fdd3e`** — the correction itself is carried by the commit immediately above it, because a commit cannot contain its own hash |
+
+**`main` MOVED between the stamp and this correction, and the advance is CI-ONLY.** `972596d..fa06217` is three commits from another stream's non-required CI pilot for the six deterministic governance suites, and they add **exactly one file**: `.github/workflows/verify.yml`. **Zero `app/` files, zero D3 files, zero Rules or config.** So **nothing in §2–§9 is affected** — the version, the four deployment states, the readiness declaration, the D3 integration and every finding below were re-read off `fa06217` and are unchanged. This row is the one thing that needed correcting, which is exactly what §8 lesson 11 exists for: **verify a reported SHA before using it.**
 | `main` tip subject | *Stamp FINAL_REMOTE_MAIN into the D3 integration report* |
 | **Application version** | **v08.31** — `app/js/version.js` on the remote reads `export const APP_VERSION = "08.31";` |
 | **Next unallocated version** | **08.32 — UNALLOCATED.** A boundary marker, not an allocation. Guard B refuses anyone who stamps it |
@@ -274,7 +277,8 @@ MMSA_QR_SESSION_CONTINUATION
 ISSUED=2026-09-19
 SUPERSEDES=docs/reports/2026-09-19-MMSA-QR-CONTINUATION-PACKAGE.md
 MAIN_SHA_AT_MEASUREMENT=e551c23467ce8eda0e2dafa9dfb474a12bffc690
-MAIN_SHA=972596d906eab6b65d41ad7b3b338630c499bc9a (the commit carrying this continuation; docs-only above e551c23)
+MAIN_SHA_AT_FIRST_STAMP=972596d906eab6b65d41ad7b3b338630c499bc9a (docs-only above e551c23)
+MAIN_SHA=fa0621794cb970f4e7e31696410ad2c8686fdd3e (at the time of the correction; 972596d..fa06217 is CI-ONLY -- one new file, .github/workflows/verify.yml, zero app/ and zero D3 files)
 MAIN_VERSION=08.31
 D3_INTEGRATION=DONE -- fast-forward at 22777fc0c0c4bb93944d7e4eea72ad00db9dcfd8
 D3_WORK_COMMIT=57a73a8b7664c9818c3814e495e4abdeebaf608f

@@ -103,22 +103,36 @@ Read this first, every session. It is the standing brief.
 > "do not translate" and is a different contract. **That contract is NOT
 > invented here**; the Stage B exclusion stands for this candidate.
 
-> ## ⇢ CONTINUATION PACKAGE, 19 Sep 2026 — READ THIS SECOND
+> ## ⇢ SESSION CONTINUATION, 19 Sep 2026 — READ THIS SECOND
 >
-> **`docs/reports/2026-09-19-MMSA-QR-CONTINUATION-PACKAGE.md`** (and `.html`) is
-> the authoritative deterministic state for the next session: `main` at
-> `db6cb24` / v08.30, the development branch at `710f182` / v08.31 RESERVED and
-> **not integrated**, the **four deployment states**, the exact first execution
-> task, and the three lists kept separate (**Owner decisions** / **technical
-> work** / **environment & access**).
+> **`docs/reports/2026-09-19-MMSA-QR-SESSION-CONTINUATION.md`** (and `.html`) is
+> the authoritative deterministic state for the next session: `main` and its
+> version read off the remote rather than quoted, the **D3 chokepoint
+> integration** (done, fast-forward, work commit `57a73a8`), **v08.32
+> UNALLOCATED**, evidence readiness **CLOSED**, **E1 CLOSED**, the **four
+> deployment states** recorded separately, the remaining D3 product work, the
+> shared-file ownership map, and **the exact next recommended task** with what
+> it would make usable for students and what would still block release.
 >
-> **It SUPERSEDES `docs/reports/2026-09-18-SESSION-HANDOVER.md`**, which stopped
-> at `d8f0492` / v08.25. That file is kept as history — do not work from it, and
-> where the two disagree the newer one wins. Its two classification corrections
+> **It SUPERSEDES `docs/reports/2026-09-19-MMSA-QR-CONTINUATION-PACKAGE.md`**,
+> which stopped at `main` `db6cb24` / v08.30 with v08.31 still RESERVED and
+> unintegrated — four integrations ago. That package in turn superseded
+> `docs/reports/2026-09-18-SESSION-HANDOVER.md` (`d8f0492` / v08.25). **Both
+> are kept as history — do not work from either**, and where any two disagree
+> the newest wins. The two classification corrections from the 18 Sep handover
 > still stand and are carried forward: the Phase 4 evidence
 > `request.query.limit` is **resolved technically — do NOT amend the
 > candidate**, and the timezone item was **one question, not a UI decision**,
 > now answered as D14.
+>
+> **This pointer was itself STALE, and the episode is the lesson.** It went on
+> naming the `db6cb24` / v08.30 package through the v08.31 integration, the D3
+> integration and a new continuation — so a session reading this brief top-down
+> was sent to a file describing a `main` four integrations behind, while the
+> newer one sat unreferenced beside it. **A superseded handover is not retired
+> by writing a new one; it is retired by repointing whatever names it.** Fixed
+> 19 Sep 2026 under explicit Master Architect authorisation, `CLAUDE.md` being
+> platform-shared.
 >
 > **The single blocking dependency is still ACCESS, not design:** authenticated
 > Firebase access to `study-monitoring` (E1). With it, the first task is deploy
