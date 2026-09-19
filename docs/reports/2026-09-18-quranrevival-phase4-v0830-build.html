@@ -117,7 +117,7 @@
 <tr><td><code>reading.mjs</code></td><td><strong>READING SCREEN OK</strong>, exit 0</td></tr>
 <tr><td><code>panel.mjs</code></td><td><strong>PANEL OK</strong>, exit 0, same known baseline</td></tr>
 <tr><td><code>navcheck.mjs</code></td><td>exit 0</td></tr>
-<tr><td><code>programme-ledger.mjs</code> · mutations</td><td>0 failed · <strong>37 / 0</strong></td></tr>
+<tr><td><code>programme-ledger.mjs</code> · mutations</td><td>0 failed · <strong>37 / 0</strong> — three mutations went stale on this tranche&#x27;s own ledger change and were repaired, not weakened: v08.30 left <strong>no stream HELD</strong> (the Phase 4 wiring moved to SUPERSEDED once its capability was re-derived), so both guard-C mutations crashed on <code>undefined</code>; and guard E&#x27;s un-declare mutation picked the now-branchless <code>quran</code> stream, where the per-branch arm has no diff to read. Each builds its own precondition now. <strong>Same fixture-drift family as the stale-baseline pair, one tranche later.</strong></td></tr>
 <tr><td><code>brief-integrity.mjs</code> · <code>stub-parity.mjs</code></td><td>8 / 0 · 3 / 0</td></tr>
 <tr><td><code>rules-authorisation-executable.mjs</code></td><td>38 / 0</td></tr>
 <tr><td><code>rules-deployment-candidate.mjs</code> · <code>firestore-index-requirements.mjs</code></td><td>10 / 0 · 8 / 0</td></tr>

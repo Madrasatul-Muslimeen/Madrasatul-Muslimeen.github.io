@@ -126,6 +126,23 @@ mutation("a branch stamps at or beyond the unallocated boundary", "B", (l, f) =>
   l.versionAllocations.push({ version: l.nextUnallocated, owner: s.id, status: "RESERVED" });
 }, /at or beyond the unallocated boundary/);
 
+// Guard C only looks at HELD streams, and v08.30 left none: the Phase 4 wiring
+// moved to SUPERSEDED once its capability was re-derived on main. Both C
+// mutations then crashed on `undefined` instead of proving anything -- the same
+// fixture drift as the stale-baseline pair, one tranche later. A mutation
+// BUILDS the state its guard is for rather than hoping a stream is in it, and
+// this also keeps guard C exercised on a repository that currently holds
+// nothing HELD.
+const heldStream = (l) => {
+  const existing = l.streams.find((x) => x.integrationState === "HELD" && x.branchTip);
+  if (existing) return existing;
+  const s = l.streams.find((x) => x.branchTip) || l.streams[0];
+  assert.ok(s, "fixture drift: the ledger declares no stream at all");
+  s.integrationState = "HELD";
+  s.branchTip = s.branchTip || "7e2931f795af1cd97efc1167660cea93aa22b9ab";
+  return s;
+};
+
 // ---- C: a held historical stamp read as a future allocation ---------------
 mutation("the historical stamp stops declaring itself non-forward", "C", (l) => {
   l.versionAllocations.find((a) => a.historicalStamp).forwardAllocation = true;
@@ -149,7 +166,7 @@ mutation("the recorded historical stamp is not what the held branch carries", "C
 // stream claims, and move main's recorded version BELOW it so the ledger models
 // the situation the guard is for -- a held branch naming a number still ahead.
 mutation("the brief predicts a merge number for the held branch", "C", (l, f) => {
-  const held = l.streams.find((x) => x.integrationState === "HELD");
+  const held = heldStream(l);
   const rival = l.versionAllocations.find((a) => CLAIMING_STATUSES.has(a.status) && a.owner !== held.id);
   assert.ok(rival, "fixture drift: no other stream holds a claiming allocation");
   const [maj, min] = rival.version.split(".").map(Number);
@@ -158,7 +175,7 @@ mutation("the brief predicts a merge number for the held branch", "C", (l, f) =>
 }, /is ahead of main .* claimed by stream/);
 
 mutation("...and it is caught even when the number belongs to nobody yet", "C", (l, f) => {
-  const s = l.streams.find((x) => x.integrationState === "HELD");
+  const s = heldStream(l);
   f.briefText += `\n\nAt merge \`${s.branchTip.slice(0, 7)}\` will take v08.44.\n`;
 }, /08\.44, ahead of main .* that is a forward allocation/);
 
@@ -191,8 +208,15 @@ mutation("a bare version at the END OF A SENTENCE is still seen", "D", (l, f) =>
 }, /only in BARE form; every v-prefixed scanner/);
 
 // ---- E: undeclared modification of a shared/platform file -----------------
-mutation("a stream's shared-file touch loses its declaration", "E", (l) => {
-  const s = l.streams.find((x) => (x.declaredSharedTouches || []).length);
+// The stream must have BOTH a declared touch AND a branch whose diff still
+// shows that file being modified -- guard E's undeclared-touch arm reads the
+// branch diff. Picking the first stream with touches silently stopped working
+// when v08.30 gave the merged `quran` stream its own (branchless) touches.
+mutation("a stream's shared-file touch loses its declaration", "E", (l, f) => {
+  const s = l.streams.find((x) =>
+    (x.declaredSharedTouches || []).some((t) => t.path === "app/js/version.js") &&
+    x.activeBranch && (f.branches?.[x.activeBranch]?.changedPaths || []).includes("app/js/version.js"));
+  assert.ok(s, "fixture drift: no stream both declares app/js/version.js and still shows it changed on a branch");
   s.declaredSharedTouches = s.declaredSharedTouches.filter((t) => t.path !== "app/js/version.js");
 }, /modifies shared\/platform file app\/js\/version\.js .* with no declaration/);
 

@@ -142,7 +142,7 @@ All five were **updated in place with the reason**, per this repository's own ru
 | `reading.mjs` | **READING SCREEN OK**, exit 0 |
 | `panel.mjs` | **PANEL OK**, exit 0, same known baseline |
 | `navcheck.mjs` | exit 0 |
-| `programme-ledger.mjs` · mutations | 0 failed · **37 / 0** |
+| `programme-ledger.mjs` · mutations | 0 failed · **37 / 0** — three mutations went stale on this tranche's own ledger change and were repaired, not weakened: v08.30 left **no stream HELD** (the Phase 4 wiring moved to SUPERSEDED once its capability was re-derived), so both guard-C mutations crashed on `undefined`; and guard E's un-declare mutation picked the now-branchless `quran` stream, where the per-branch arm has no diff to read. Each builds its own precondition now. **Same fixture-drift family as the stale-baseline pair, one tranche later.** |
 | `brief-integrity.mjs` · `stub-parity.mjs` | 8 / 0 · 3 / 0 |
 | `rules-authorisation-executable.mjs` | 38 / 0 |
 | `rules-deployment-candidate.mjs` · `firestore-index-requirements.mjs` | 10 / 0 · 8 / 0 |
