@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROPOSAL — a temporary freeze on NEW name-keyed Hadith claims</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>PROPOSAL — a temporary freeze on NEW name-keyed Hadith claims</h1>
+<p><strong>19 September 2026 · Hadith Study stream · FOR MMSA PLATFORM REVIEW · NOT APPLIED</strong></p>
+<p><code>app/records.html</code> is a <strong>platform</strong> surface. This proposal is prepared, proven to apply, and <strong>deliberately left unapplied</strong>. The patch is <code>docs/governance/hadith-c2-claim-freeze-records-html-2026-09-19.patch</code>.</p>
+<hr>
+<h2>1. What it does, in one sentence</h2>
+<p>While gate <strong>C2</strong> is open, the Records form stops offering <strong>Hadith</strong> as a unit type, so <strong>no new name-keyed Hadith record can be created</strong> — and everything already recorded stays exactly where it is, still visible, still confirmable.</p>
+<h2>2. Why</h2>
+<p><code>buildUnitKey.hadith</code> builds <code>hadith:&lt;collectionName&gt;:&lt;number&gt;</code> from a name a person types. <code>hadith:bukhari:1</code>, <code>hadith:Bukhari:1</code> and <code>hadith:al-bukhari:1</code> are three different <strong>permanent</strong> keys for one narration, which contradicts <strong>I5</strong>. The key is undecided, and every day it stays undecided the set of keys that a future decision must reconcile grows. <strong>The freeze does not decide C2. It stops the problem growing while C2 is decided.</strong></p>
+<h2>3. What is preserved — established by reading the code, not asserted</h2>
+<div class='tw'><table><thead><tr><th>Preserved</th><th>Why it cannot be affected</th></tr></thead><tbody>
+<tr><td><strong>Every stored record</strong></td><td>The freeze touches one <code>&lt;option&gt;</code> list. No document, field or key is written, moved or removed</td></tr>
+<tr><td><strong>Display of existing Hadith records</strong></td><td><code>renderEntries()</code> reads <code>chunk.entries</code> and prints <code>unitKeyLabel(entryKey.split(&quot;::&quot;)[0])</code> — the <strong>stored</strong> key. It never reads the picker</td></tr>
+<tr><td><strong>Confirm and Return</strong></td><td>Both act on the stored <code>chunkKey</code>/<code>entryKey</code> from the rendered row. Untouched, so <strong>I6</strong> is untouched</td></tr>
+<tr><td><strong>Reachability of the chunk</strong></td><td>Hadith entries live in <code>subject_{subjectId}</code>, and <code>chunkKeyFor()</code> sends <strong>every</strong> non-surah-chunked unit type there. Selecting Topic (or Juz, Hizb, Rub, Manzil, Page) with the same subject opens the same document — so the rows remain reachable in the UI</td></tr>
+<tr><td><strong>The ability to reverse it</strong></td><td><code>buildUnitKeyFromInput()</code> keeps <code>case &quot;hadith&quot;</code>, and <code>UNIT_HINTS.hadith</code> and the placeholder stay. Reversing is deleting one <code>.filter(...)</code> line</td></tr>
+<tr><td><strong>Other modules</strong></td><td>The filter names exactly one unit type. Every other type is offered exactly as before</td></tr>
+</tbody></table></div>
+<p><strong>Nothing is deleted, nothing is migrated, nothing is re-keyed.</strong> I4 is not engaged, because nothing is removed.</p>
+<h2>4. What it costs</h2>
+<ul><li>A reader who used to record Hadith claims <strong>can no longer do so</strong> until C2 is decided. That is the intended effect.</li><li>The patch adds <strong>one new English sentence</strong>, so the control explains itself rather than vanishing — this codebase&#x27;s own standing lesson, <em>a control that opens and explains itself beats a control that is not there.</em></li><li><strong>That sentence needs its Bangla key in <code>app/js/i18n/bn.js</code></strong>, which is a <strong>shared platform file the Hadith stream must not touch</strong>. Adding it is part of this review, not of this proposal.</li></ul>
+<h2>5. Two variants</h2>
+<div class='tw'><table><thead><tr><th>Variant</th><th>Change</th><th>Note</th></tr></thead><tbody>
+<tr><td><strong>A — silent</strong></td><td>the <code>.filter(...)</code> line only</td><td>Smallest possible diff; no new string, no <code>bn.js</code> work. <strong>But the option simply disappears with nothing on screen to say why</strong></td></tr>
+<tr><td><strong>B — explaining (recommended, and what the patch contains)</strong></td><td>the filter <strong>plus</strong> one translated sentence under the reference hint</td><td>Costs one string in two languages</td></tr>
+</tbody></table></div>
+<p>Reverting either is deleting the added lines.</p>
+<h2>6. Verification already performed</h2>
+<ul><li>The patch <strong>applies cleanly</strong> to the current <code>app/records.html</code> (<code>git apply --check</code>), and the live file is <strong>byte-identical</strong> afterwards because it was never applied.</li><li><code>unitRefHint</code> is declared at line 210, <strong>before</strong> the insertion point at ~248, so variant B&#x27;s <code>insertAdjacentHTML</code> cannot fail on an undefined element.</li><li><code>tools/i18n-verify/hadith-c2-freeze-proposal.mjs</code> holds all of the above as checks, including that the live file is <strong>not</strong> patched.</li></ul>
+<h2>7. What this proposal does NOT do</h2>
+<p>It does not decide C2, adopt any key form, allocate any Approach id, migrate or re-key any record, change any Rules, or touch <code>app/js/i18n/bn.js</code>. <strong>It is not applied.</strong> Applying it is the MMSA platform side&#x27;s decision.</p>
+</main></body></html>

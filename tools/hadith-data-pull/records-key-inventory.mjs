@@ -84,6 +84,35 @@ export function parseBackupHtml(html) {
   return { people, rows: people.flatMap((p) => p.rows), tenantId };
 }
 
+/**
+ * What the export could NOT read, and why.
+ *
+ * THE COMPLETENESS HAZARD, AND IT DECIDES WHETHER A VERDICT MEANS ANYTHING.
+ * collectBackup() wraps every read in attempt(), which on refusal records a
+ * note and substitutes an EMPTY list. So a person whose records were refused
+ * prints as "0 claims" -- identical to a person who genuinely has none. A
+ * "no legacy hadith keys" verdict read off such a file would be false.
+ *
+ * The export does print the refusals, in a `div class="warn"` list of
+ * `label — reason`, so the gap is auditable from the file itself. This parses
+ * that block STRUCTURALLY (the label text is translated) and the inventory
+ * refuses to report a clean verdict while any records read was refused.
+ */
+export function parseGaps(html) {
+  const block = html.match(/<div class="warn">([\s\S]*?)<\/div>/);
+  if (!block) return [];
+  return [...block[1].matchAll(/<li>([\s\S]*?)<\/li>/g)].map((m) => {
+    const txt = unesc(m[1]).replace(/<[^>]*>/g, "").trim();
+    const i = txt.indexOf("—");
+    return i === -1 ? { label: txt, reason: "" } : { label: txt.slice(0, i).trim(), reason: txt.slice(i + 1).trim() };
+  });
+}
+
+/** A gap that hides records is the only kind that can falsify this inventory. `Records for X` is the label collectBackup uses; matching `record` case-insensitively keeps it working for a translated one only when the word survives, so the SAFE default is that ANY gap downgrades the verdict. */
+export function gapsAffectRecords(gaps) {
+  return gaps.length > 0;
+}
+
 /** The same rows out of a raw listAllRecordsForPerson() dump, if one is ever available instead. */
 export function parseJsonDump(text) {
   const data = JSON.parse(text);
@@ -119,7 +148,7 @@ export const HADITH_PREFIX = "hadith:";
 /** The accepted form, per the H1 schema: hadith:<token>:<1-6 digits>. Kept as data so the suite can compare it against the app's own regex rather than trusting this line. */
 export const ACCEPTED_SHAPE = /^hadith:[A-Za-z0-9_-]+:\d{1,6}$/;
 
-export function inventory(rows) {
+export function inventory(rows, gaps = []) {
   const hadith = [];
   for (const row of rows) {
     const { unitKey, trackableFromKey } = splitUnit(row.unit);
@@ -179,7 +208,8 @@ export function inventory(rows) {
     unaccepted: hadith.filter((h) => !h.accepted),
     confirmed: confirmedRows,
     outsideHadithSubject: hadith.filter((h) => !h.inHadithSubjectChunk),
-    verdict: verdictFor(hadith, confirmedRows),
+    verdict: verdictFor(hadith, confirmedRows, gaps),
+    gaps,
   };
 }
 
@@ -198,7 +228,11 @@ export function isConfirmed(cell) {
 }
 
 /** The C2 §5 outcome table, applied to what was measured. It names a consequence; it does not choose one. */
-export function verdictFor(hadith, confirmed) {
+export function verdictFor(hadith, confirmed, gaps = []) {
+  if (!hadith.length && gapsAffectRecords(gaps)) {
+    return { code: "NO_LEGACY_KEYS_BUT_INCOMPLETE",
+      text: `No hadith: entries were found, but ${gaps.length} read(s) were REFUSED and print as empty rather than as missing. This file cannot support a "no legacy keys" conclusion. Re-export from an account that can read everything, or resolve the refusals first.` };
+  }
   if (!hadith.length) {
     return { code: "NO_LEGACY_KEYS",
       text: "Zero hadith: entries were found in this export. If every tenant reports the same, H1 §5 may be applied with NO legacy mapping at all -- the cheapest outcome, and the one to establish first." };
@@ -209,6 +243,53 @@ export function verdictFor(hadith, confirmed) {
   }
   return { code: "LEGACY_KEYS_PRESENT",
     text: `${hadith.length} hadith: entries exist and none is confirmed. A reviewer-confirmed legacyHadithKeyMap is needed per H1 §5; old keys are never rewritten (I4).` };
+}
+
+// ---------------------------------------------------------------------------
+// THE SHAREABLE DIGEST -- counts and spellings, no person, no record content
+// ---------------------------------------------------------------------------
+
+/**
+ * What C2 needs to be decided, with everything personal removed.
+ *
+ * WHAT IT KEEPS, and why each is not personal: the COLLECTION TOKENS and their
+ * spellings (they name books of hadith, not people, and the spelling variance
+ * IS the decision); the ORDINAL statistics; the CHUNK names (`subject_hadith`,
+ * `subject_deen` -- a schema fact); and counts.
+ *
+ * WHAT IT DROPS, deliberately and by construction rather than by redaction:
+ * every person name, every claimedBy person id, every timestamp, the tenant id,
+ * and every per-entry row. A per-entry row pairs a narration with the person
+ * whose section it was printed under -- that pairing is the personal content,
+ * and no amount of column-dropping makes a row list safe, so the rows are not
+ * carried at all. An ordinal is kept only as an AGGREGATE (how many, what
+ * range), never as "this person studied narration N".
+ *
+ * A check asserts no fixture person name, no date and no claimedBy value
+ * survives into this output.
+ */
+export function shareableDigest(inv) {
+  return {
+    purpose: "Hadith C2 decision input -- counts and spelling variants only",
+    hadithEntries: inv.counts.hadithEntries,
+    totalRowsRead: inv.counts.totalRowsRead,
+    distinctPersons: inv.counts.distinctPersons,          // a COUNT, never a name
+    chunksSeen: [...new Set(inv.entries.map((e) => e.chunkKey))].sort(),
+    approachesSeen: [...new Set(inv.entries.map((e) => e.trackableId))].sort(),
+    collectionTokens: inv.collections.map((c) => ({
+      folded: c.folded,
+      count: c.count,
+      spellings: c.spellings.map(([spelling, n]) => ({ spelling, count: n })),
+      variantSpellings: c.spellings.length,
+    })),
+    ordinals: inv.ordinals,
+    outsideAcceptedShape: inv.unaccepted.length,
+    outsideHadithSubjectChunk: inv.outsideHadithSubject.length,
+    confirmedEntries: inv.confirmed.length,               // a COUNT -- I6 needs the number, not the rows
+    readsRefused: inv.gaps.length,
+    verdict: inv.verdict,
+    omitted: "person names, person ids, claim timestamps, tenant id, and all per-entry rows",
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -244,6 +325,8 @@ export function render(inv, { source, tenantId, scopeNote }) {
   L.push(`hadith keys NOT in subject_hadith (the §4 subtlety): ${inv.outsideHadithSubject.length}`);
   for (const o of [...new Set(inv.outsideHadithSubject.map((o) => o.chunkKey))]) L.push(`  ${o}`);
   L.push(`CONFIRMED entries (I6 -- frozen, never recomputed): ${inv.confirmed.length}`);
+  L.push(`reads the export could NOT make (these print as EMPTY, not as missing): ${inv.gaps.length}`);
+  for (const g of inv.gaps) L.push(`  ${g.label} -- ${g.reason}`);
   L.push("");
   L.push(`VERDICT [${inv.verdict.code}]`);
   L.push(`  ${inv.verdict.text}`);
@@ -263,16 +346,18 @@ const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].split
 if (isMain) {
   const file = process.argv[2];
   if (!file) {
-    console.error("usage: node tools/hadith-data-pull/records-key-inventory.mjs <backup.html|records.json> [--json]");
+    console.error("usage: node tools/hadith-data-pull/records-key-inventory.mjs <backup.html|records.json> [--json|--safe]\n  --safe  counts and spelling variants only: no names, no ids, no dates, no per-entry rows");
     process.exit(2);
   }
   const fs = await import("node:fs");
   const text = fs.readFileSync(file, "utf8");
   const parsed = file.endsWith(".json") ? parseJsonDump(text) : parseBackupHtml(text);
-  const inv = inventory(parsed.rows);
+  const gaps = file.endsWith(".json") ? [] : parseGaps(text);
+  const inv = inventory(parsed.rows, gaps);
   const scopeNote = /class="person"/.test(text)
     ? `${parsed.people.length} person section(s) read from a backup export.`
     : "A raw records dump was read; person and tenant coverage are whatever produced it.";
-  if (process.argv.includes("--json")) console.log(JSON.stringify({ tenantId: parsed.tenantId, ...inv }, null, 2));
+  if (process.argv.includes("--safe")) console.log(JSON.stringify(shareableDigest(inv), null, 2));
+  else if (process.argv.includes("--json")) console.log(JSON.stringify({ tenantId: parsed.tenantId, ...inv }, null, 2));
   else console.log(render(inv, { source: file, tenantId: parsed.tenantId, scopeNote }));
 }

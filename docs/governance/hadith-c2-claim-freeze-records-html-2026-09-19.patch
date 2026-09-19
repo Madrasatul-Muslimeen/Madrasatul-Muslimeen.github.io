@@ -1,0 +1,29 @@
+diff --git a/app/records.html b/app/records.html
+index aaeb8d0..ddd5113 100644
+--- a/app/records.html
++++ b/app/records.html
+@@ -245,9 +245,24 @@ import { mountBookmarkMenu } from "./js/bookmark-nav.js";
+ 
+     // The option TEXT is translated; the option VALUE stays the bare
+     // identifier, because every handler below reads it back as one.
++    // C2 TEMPORARY FREEZE (proposed, not yet accepted). `hadith` is withheld
++    // from the picker so that no NEW name-keyed Hadith record can be created
++    // while the permanent Hadith unit key is undecided. Nothing else changes:
++    // buildUnitKeyFromInput still handles "hadith", every stored entry still
++    // renders, and Confirm/Return still work, because all of those read the
++    // STORED entry key and never this list. Reverse the freeze by deleting the
++    // one filter line.
++    const FROZEN_UNIT_TYPES = new Set(["hadith"]);
+     unitTypeSelect.innerHTML = UNIT_TYPES
++      .filter((u) => !FROZEN_UNIT_TYPES.has(u))
+       .map((u) => `<option value="${u}">${unitTypeLabel(u)}</option>`)
+       .join("");
++    // A control that is simply gone is a dead end with nothing on screen to say
++    // why -- this codebase's own standing lesson. One sentence says it instead.
++    unitRefHint.insertAdjacentHTML("afterend",
++      `<p class="freeze-note" style="font-size:0.82rem; color:#9c3b2e; margin:0.2rem 0 0;">${
++        t("Hadith records are paused while the permanent Hadith reference is being decided. Everything already recorded is safe and still shown.")
++      }</p>`);
+     // ...and the status picker goes through the shared translated helper
+     // rather than STATUSES' own English `label`, which is the stored value.
+     // It was reading the raw label, so this picker stayed English in Bangla

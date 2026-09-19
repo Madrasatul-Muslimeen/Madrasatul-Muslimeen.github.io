@@ -20,6 +20,7 @@ import path from "node:path";
 import process from "node:process";
 import {
   parseBackupHtml, parseJsonDump, inventory, splitUnit, unesc, isConfirmed, ACCEPTED_SHAPE,
+  parseGaps, shareableDigest,
 } from "../hadith-data-pull/records-key-inventory.mjs";
 
 const root = path.resolve(process.argv[2] || process.cwd());
@@ -296,6 +297,91 @@ check("ACCEPTED_SHAPE bounds are exact -- 6 digits in, 7 out, empty segments out
   assert.ok(!ACCEPTED_SHAPE.test("hadith:x:1234567"));
   assert.ok(!ACCEPTED_SHAPE.test("hadith::1"));
   assert.ok(!ACCEPTED_SHAPE.test("hadith:x:"));
+});
+
+// ---------------------------------------------------------------------------
+// COVERAGE -- a refused read prints as EMPTY, not as missing
+// ---------------------------------------------------------------------------
+
+/** The export's own refusal block, as buildBackupHtml() emits it. */
+const WARN = `<div class="warn"><b>Not everything could be read into this file.</b> That is usually correct rather than a fault.
+  <ul><li>Records for Synthetic Person Three — You do not have permission to read this.</li><li>Activity for Synthetic Person Three — You do not have permission to read this.</li></ul></div>`;
+
+check("COVERAGE -- the exporter still PRINTS what it could not read, which is what makes a gap auditable", () => {
+  const src = read("app/js/backup-file.js");
+  assert.ok(/data\.couldNotRead/.test(src), "the export no longer prints its refusals; a gap would be invisible in the file");
+  assert.ok(/class="warn"/.test(src), "the refusal block's class changed, and parseGaps() keys on it");
+  const collector = read("app/js/backup.js");
+  assert.ok(/couldNotRead: notes/.test(collector), "collectBackup no longer returns the refusal list");
+  assert.ok(/scope: canAdmin \? "tenant" : "account"/.test(collector),
+    "the export's scope rule changed -- an owner/prime export is what makes this inventory tenant-wide");
+});
+
+check("COVERAGE -- refusals are parsed out of the file, label and reason", () => {
+  const gaps = parseGaps(WARN);
+  assert.equal(gaps.length, 2);
+  assert.equal(gaps[0].label, "Records for Synthetic Person Three");
+  assert.ok(/permission/.test(gaps[0].reason));
+  assert.deepEqual(parseGaps("<html>no warnings here</html>"), []);
+});
+
+check("COVERAGE -- a refused read DOWNGRADES a clean verdict, because empty and refused look identical", () => {
+  const noHadith = parseBackupHtml(fixture).rows.filter((r) => !r.unit.startsWith("hadith:"));
+  assert.equal(inventory(noHadith, []).verdict.code, "NO_LEGACY_KEYS");
+  const withGap = inventory(noHadith, parseGaps(WARN));
+  assert.equal(withGap.verdict.code, "NO_LEGACY_KEYS_BUT_INCOMPLETE",
+    "a file with refused reads must not be allowed to support a 'no legacy keys' conclusion");
+  assert.ok(/REFUSED/.test(withGap.verdict.text));
+});
+
+check("COVERAGE -- the fixture itself has no refusals, so the clean verdict it produces is honest", () => {
+  assert.deepEqual(parseGaps(fixture), []);
+  assert.equal(inv.gaps.length, 0);
+});
+
+// ---------------------------------------------------------------------------
+// THE SHAREABLE DIGEST -- counts and spellings, nothing personal
+// ---------------------------------------------------------------------------
+
+check("DIGEST -- it answers C2: counts, spelling variants, ordinals, verdict", () => {
+  const d = shareableDigest(inv);
+  assert.equal(d.hadithEntries, 7);
+  assert.equal(d.collectionTokens.find((c) => c.folded === "synthetic-collection-a").variantSpellings, 2,
+    "the spelling variance is the decision, and it must survive into the shareable form");
+  assert.equal(d.confirmedEntries, 1);
+  assert.equal(d.verdict.code, "CONFIRMED_PRESENT");
+  assert.deepEqual(d.chunksSeen, ["subject_deen", "subject_hadith"]);
+});
+
+check("DIGEST -- NO person name survives, from the fixture or anywhere", () => {
+  const text = JSON.stringify(shareableDigest(inv));
+  for (const name of ["Synthetic Person One", "Synthetic Person Two", "Person One", "Person Two"]) {
+    assert.ok(!text.includes(name), `the digest leaks a person name: ${name}`);
+  }
+  // and prove the control: those names ARE in the source data, so the absence means something
+  assert.ok(fixture.includes("Synthetic Person One"), "the fixture stopped carrying person names, so the check above proves nothing");
+  assert.ok(inv.entries.some((e) => e.person === "Synthetic Person One"), "the inventory stopped carrying the person, so the digest's omission is vacuous");
+});
+
+check("DIGEST -- no timestamp, no claimedBy, and no per-entry row", () => {
+  const d = shareableDigest(inv);
+  const text = JSON.stringify(d);
+  assert.ok(!/\d{4}-\d{2}-\d{2}/.test(text), "the digest leaks a claim date");
+  for (const by of ["p1", "p2"]) {
+    assert.ok(!new RegExp(`"${by}"`).test(text), `the digest leaks a claimedBy person id: ${by}`);
+  }
+  assert.equal(d.entries, undefined, "per-entry rows are carried: a row pairs a narration with the person it was printed under");
+  assert.equal(d.confirmed, undefined, "the confirmed ROWS are carried; I6 needs the count, not the rows");
+  assert.ok(!text.includes("::"), "an entry key survived into the digest");
+  // the controls: all of those ARE present in the full inventory
+  assert.ok(inv.entries.length && inv.confirmed.length && inv.entries[0].claimedAt,
+    "the full inventory no longer carries what the digest is supposed to be dropping");
+});
+
+check("DIGEST -- it says what it omitted, rather than looking complete", () => {
+  const d = shareableDigest(inv);
+  assert.ok(/person names/.test(d.omitted) && /rows/.test(d.omitted));
+  assert.equal(typeof d.readsRefused, "number", "a digest that hides the refusal count could be read as complete when it is not");
 });
 
 console.log(`\n${passed} passed, ${failed} failed\n`);
