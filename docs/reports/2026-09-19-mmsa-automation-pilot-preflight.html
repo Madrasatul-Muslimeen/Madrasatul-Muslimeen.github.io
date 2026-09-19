@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMSA governance-automation pilot — read-only preflight</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  pre { background:var(--code); padding:.85rem 1rem; border-radius:.5rem; overflow-x:auto;
+    border:1px solid var(--rule); margin:1rem 0 }
+  pre code { background:none; padding:0; font-size:.85rem; word-break:normal }
+  blockquote { margin:1.1rem 0; padding:.1rem 0 .1rem 1rem; border-left:3px solid var(--accent);
+    color:var(--muted) }
+  blockquote strong { color:var(--fg) }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>MMSA governance-automation pilot — read-only PREFLIGHT</h1>
+<p><strong>Date:</strong> 19 September 2026 <strong>Scope:</strong> read-only reconnaissance of <code>Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io</code>, to establish what exists today before any automation of the <strong>Master Architect → Claude builder → auditor → Owner decision</strong> workflow, with a small <strong>22g test-defect pilot</strong> as the first subject. <strong>Nothing was installed, added, enabled, configured, edited or deployed.</strong> No app, no secret, no setting, no workflow, no rule, no code. The 22g fix was <strong>not</strong> started. <strong>Deliverable:</strong> this file and its <code>.html</code> twin.</p>
+<hr>
+<h2>0. The one-sentence finding</h2>
+<blockquote><p><strong>Today there is no gate of any kind between a commit and the live site.</strong> <code>main</code> is unprotected, no ruleset applies to it, there are no pull-request checks, no CI workflow exists, and GitHub Pages rebuilds and redeploys <code>main</code> automatically on every push — so on this repository <strong>merging <em>is</em> deploying</strong>, and both happen with a single unreviewed <code>git push</code>. The Claude GitHub App <strong>is already installed</strong> but is inert, because there is no workflow for it to run.</p></blockquote>
+<p>The consequence for the pilot's design is direct: <em>"cannot merge or deploy without Owner approval"</em> is, on this repository, <strong>one control, not two</strong> — protect <code>main</code> and you have protected production. But it must be protected with <strong>no bypass actors</strong>, because the identity this automation runs as reports <code>admin: true</code>.</p>
+<hr>
+<h2>1. VERIFIED — measured in this session</h2>
+<p>Everything in this section was read back from the live GitHub API or from <code>origin/main</code> itself. Where an endpoint answered, the answer is quoted.</p>
+<h3>1.1 Repository identity and current state</h3>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td>Repository</td><td><code>Madrasatul-Muslimeen/Madrasatul-Muslimeen.github.io</code> (id <code>1297404783</code>)</td></tr><tr><td>Owner type</td><td><strong>Organization</strong> — <code>Madrasatul-Muslimeen</code></td></tr><tr><td>Visibility</td><td><strong>public</strong> (<code>private: false</code>)</td></tr><tr><td>Default branch</td><td><code>main</code></td></tr><tr><td>Archived</td><td><code>false</code> · Issues enabled: <code>true</code> · Forking allowed: <code>true</code></td></tr><tr><td><strong><code>origin/main</code></strong></td><td><strong><code>b700e3f4b0a8004d4fe2701013e053a3c7a25770</code></strong> — fetched, not quoted</td></tr><tr><td><code>main</code> tip subject</td><td><em>Stamp the continuation's own main SHA</em></td></tr><tr><td><strong>Application version on <code>main</code></strong></td><td><strong><code>08.31</code></strong> — <code>app/js/version.js</code> reads <code>export const APP_VERSION = "08.31";</code></td></tr><tr><td>Signed-off commits required</td><td><code>false</code></td></tr></tbody></table></div>
+<p><strong>This confirms the continuation package's own state block, one commit forward.</strong> The continuation records <code>MAIN_SHA=972596d…</code>; <code>b700e3f</code> is the stamping commit that sits one ahead of it, exactly as this repository's convention describes. <code>git diff 972596d b700e3f</code> is documentation only.</p>
+<blockquote><p><strong>Note on the local checkout.</strong> The working copy's <code>main</code> was stale at <code>4b6bd60</code> (v08.27-era) until fetched; <code>git fetch</code> reported <code>+ 4b6bd60...b700e3f main -&gt; origin/main (forced update)</code>. <strong>A session that read <code>app/js/version.js</code> from the local tree without fetching would have reported v08.27 and been four versions wrong.</strong> Fetch before reading state.</p></blockquote>
+<h3>1.2 GitHub Actions — one workflow, and it is not ours</h3>
+<p><code>GET /actions/workflows</code> returns <strong><code>total_count: 1</code></strong>:</p>
+<div class='tw'><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td>Name</td><td><code>pages-build-deployment</code></td></tr><tr><td><strong>Path</strong></td><td><strong><code>dynamic/pages/pages-build-deployment</code></strong></td></tr><tr><td>State</td><td><code>active</code></td></tr><tr><td>Runs to date</td><td><strong>348</strong></td></tr></tbody></table></div>
+<p>The <code>dynamic/</code> path prefix is the signature of <strong>GitHub's own auto-generated Pages builder</strong>, not a workflow authored in this repository.</p>
+<p><strong>There is no <code>.github/</code> directory at all on <code>origin/main</code>.</strong> <code>git ls-tree -r origin/main --name-only | grep '^\.github'</code> returns nothing. Therefore, verified absent:</p>
+<ul><li>❌ No <code>.github/workflows/</code> — <strong>zero repository-authored CI</strong></li><li>❌ No <code>CODEOWNERS</code> (searched the whole tree)</li><li>❌ No pull-request template, no issue template</li><li>❌ No Dependabot or Renovate configuration</li></ul>
+<h3>1.3 Branch protection on <code>main</code> — NONE</h3>
+<p><code>GET /repos/…/branches/main</code>:</p>
+<pre><code>"protected": false,
+"protection": {
+  "enabled": false,
+  "required_status_checks": { "enforcement_level": "off", "contexts": [], "checks": [] }
+}</code></pre>
+<p><code>GET /branches/main/protection</code> itself returned <strong>403 <code>Resource not accessible by integration</code></strong> — the session token lacks that scope. <strong>So the detailed protection object is not directly readable by me.</strong> The <code>protected: false</code> / <code>enabled: false</code> fields above are, however, returned by an endpoint that <em>did</em> answer, and they are consistent across two independent calls (<code>list_branches</code> and <code>get branch</code>).</p>
+<h3>1.4 Rulesets — NONE APPLY TO <code>main</code></h3>
+<p>Two endpoints, both answered <code>200</code>:</p>
+<div class='tw'><table><thead><tr><th>Call</th><th>Result</th></tr></thead><tbody><tr><td><code>GET /repos/…/rulesets</code></td><td><strong><code>[]</code></strong> — no repository ruleset exists</td></tr><tr><td><strong><code>GET /repos/…/rules/branches/main</code></strong></td><td><strong><code>[]</code></strong> — <strong>no rule of any origin is in force on <code>main</code></strong></td></tr></tbody></table></div>
+<p><strong>The second call is the decisive one.</strong> <code>/rules/branches/{branch}</code> returns the <em>effective</em> rules for a branch, aggregating <strong>repository <em>and</em> organization</strong> rulesets. The organization endpoint <code>GET /orgs/…/rulesets</code> was refused by the session proxy (<em>"sessions are bound to their configured repositories"</em>), so I could not enumerate org rulesets directly — <strong>but an empty effective-rules array for <code>main</code> establishes that none of them reaches <code>main</code>.</strong> That is the fact the pilot actually depends on.</p>
+<h3>1.5 Pull-request checks — NONE</h3>
+<p><code>GET /commits/b700e3f…/check-runs</code> → <code>total_count: 3</code>, and every one belongs to the <code>github-actions</code> app as part of the Pages build:</p>
+<div class='tw'><table><thead><tr><th>Check run</th><th>Conclusion</th><th>App</th></tr></thead><tbody><tr><td><code>build</code></td><td>success</td><td><code>github-actions</code></td></tr><tr><td><code>deploy</code></td><td>success</td><td><code>github-actions</code></td></tr><tr><td><code>report-build-status</code></td><td>success</td><td><code>github-actions</code></td></tr></tbody></table></div>
+<p><strong>None of these tests the application.</strong> They report whether Jekyll/Pages built the site. There are <strong>no required status checks</strong> (<code>contexts: []</code>, <code>enforcement_level: "off"</code>), so even these could not block anything.</p>
+<h3>1.6 Claude integration — INSTALLED BUT INERT</h3>
+<p><code>GET /commits/b700e3f…/check-suites</code> → <code>total_count: 3</code>, across three apps:</p>
+<div class='tw'><table><thead><tr><th>App slug</th><th>App id</th><th>Suite conclusion</th></tr></thead><tbody><tr><td><code>github-actions</code></td><td>15368</td><td><code>success</code></td></tr><tr><td><code>github-pages</code></td><td>34598</td><td><code>null</code></td></tr><tr><td><strong><code>claude</code></strong></td><td><strong>1236702</strong></td><td><strong><code>null</code></strong></td></tr></tbody></table></div>
+<p><strong>This is a significant and encouraging finding.</strong> GitHub creates a check suite for an installed App that subscribes to check-suite events. The <code>claude</code> App therefore <strong>is installed on this repository already</strong> — but its suite has <strong>no check runs and a <code>null</code> conclusion</strong>, which is exactly what an installed App looks like when <strong>there is no workflow for it to be invoked by</strong>. Consistent with §1.2: no <code>.github/workflows/</code> exists.</p>
+<p><strong>So the App does not need installing. It needs wiring.</strong> That materially shortens the setup.</p>
+<blockquote><p>Separately, and not to be confused with the above: the commits on <code>main</code> are authored <code>Claude &lt;noreply@anthropic.com&gt;</code> by <strong>Claude Code sessions pushing over git</strong>, which is a different mechanism from the GitHub App. Both are in play.</p></blockquote>
+<h3>1.7 Does pushing to <code>main</code> currently bypass review? — YES, COMPLETELY</h3>
+<p>Three independent lines of evidence, all measured:</p>
+<ol><li><strong>Nothing forbids it.</strong> <code>protected: false</code>, effective rules <code>[]</code>, required checks <code>[]</code> (§1.3, §1.4).</li><li><strong>It is the established practice.</strong> The most recent pull request is <strong>#87, dated 11 September 2026</strong>. Since that date <code>main</code> has received <strong>84 commits</strong>, none of them through a pull request. The v08.28 → v08.31 milestones, the Hadith v08.29 integration and the D3 integration all reached <code>main</code> by direct push or local merge-then-push.</li><li><strong>Even the historic PRs were not reviewed.</strong> Sampling the ten most recent: every one was opened by <code>AAAsapp</code> and closed <strong>20–30 seconds later</strong> by the same account (#87 created <code>05:06:49Z</code>, resolved <code>05:07:15Z</code> — 26 seconds). No reviewer, no approval, no check.</li></ol>
+<blockquote><p><strong>One measurement caveat, stated rather than glossed.</strong> The PR-list endpoint does not return the <code>merged</code> field, so the <code>"merged": false</code> in those rows is the tool's default, not evidence that the branches went in unmerged. The <code>merged_at</code> timestamps are real. The 20–30 second interval is the finding; the merge mechanism is not established and does not need to be.</p></blockquote>
+<h3>1.8 GitHub Pages — deploying <code>main</code> automatically, and this UPGRADES the continuation's record</h3>
+<p>The continuation package records <code>GITHUB_PAGES_SERVING = PRESUMED_FROM_MAIN (verified: false)</code>. <strong>That can now be partly upgraded from presumption to measurement</strong>, though not all the way.</p>
+<p>Workflow run <strong>#348</strong> of <code>pages-build-deployment</code>:</p>
+<div class='tw'><table><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody><tr><td><code>head_branch</code></td><td><strong><code>main</code></strong></td></tr><tr><td><code>head_sha</code></td><td><strong><code>b700e3f4b0a8004d4fe2701013e053a3c7a25770</code></strong></td></tr><tr><td><code>event</code></td><td><code>dynamic</code></td></tr><tr><td><code>status</code> / <code>conclusion</code></td><td><code>completed</code> / <strong><code>success</code></strong></td></tr><tr><td>Finished</td><td><strong>2026-09-19T08:26:36Z</strong></td></tr><tr><td>Triggering actor</td><td><code>AAAsapp</code></td></tr></tbody></table></div>
+<p>And its <code>deploy</code> check run concluded <strong><code>success</code></strong> (§1.5).</p>
+<p><strong>What this proves:</strong> GitHub Pages <strong>built and deployed the exact current <code>main</code> commit</strong>, successfully, automatically, within roughly a minute of the push. Run #347 on the preceding commit <code>972596d</code> shows <code>cancelled</code> — the signature of a superseding push, i.e. continuous auto-deployment of <code>main</code>.</p>
+<p><strong>What it still does not prove:</strong> that the site <em>serves</em> that build over HTTPS. I confirmed first-hand that this sandbox cannot check — <code>curl https://madrasatul-muslimeen.github.io/app/</code> returns <code>curl: (56) CONNECT tunnel failed, response 403</code>. And <code>GET /repos/…/pages</code>, which would name the configured Pages source, is <strong>blocked by the session proxy</strong>.</p>
+<p><strong>Bottom line for the pilot: a push to <code>main</code> triggers an automatic production deployment.</strong> This is the single most important fact in this preflight, and it means the merge gate and the deploy gate are the same gate.</p>
+<h3>1.9 Authentication available to this session</h3>
+<div class='tw'><table><thead><tr><th>Mechanism</th><th>State</th></tr></thead><tbody><tr><td><code>GITHUB_TOKEN</code> / <code>GH_TOKEN</code></td><td>Present, <strong>proxy-mediated</strong> (values begin <code>proxy-</code>), not raw PATs</td></tr><tr><td>Identity</td><td><strong><code>AAAsapp</code></strong> (id <code>293311955</code>, account created 13 Jun 2026)</td></tr><tr><td>Reported repo permissions</td><td><code>admin: true</code>, <code>maintain: true</code>, <code>push: true</code>, <code>triage: true</code>, <code>pull: true</code></td></tr><tr><td><code>gh</code> CLI</td><td><strong>Not installed</strong></td></tr><tr><td><code>firebase</code> CLI</td><td><strong>Not installed</strong></td></tr><tr><td><code>git</code> over HTTPS to origin</td><td>Working (fetch verified)</td></tr><tr><td><code>node</code> / <code>npm</code></td><td>Present (<code>node22</code>)</td></tr></tbody></table></div>
+<p><strong>Endpoints the Anthropic session proxy refuses</strong>, so they are unavailable to any Claude session here regardless of token scope:</p>
+<ul><li><code>GET /repos/…/pages</code> — <em>"Access to this GitHub API path is not permitted through this proxy"</em></li><li><code>GET /repos/…/environments</code></li><li><code>GET /repos/…/collaborators</code></li><li><code>GET /repos/…/actions/permissions</code></li><li><code>GET /orgs/…/*</code> — <em>"sessions are bound to their configured repositories"</em></li></ul>
+<p><strong>And one refused by GitHub itself:</strong> <code>GET /branches/main/protection</code> → 403 <code>Resource not accessible by integration</code>.</p>
+<blockquote><p><strong>This asymmetry is itself a design input.</strong> The automation will be able to <em>read</em> rulesets and effective branch rules (both answered <code>200</code>), but will <strong>never</strong> be able to read or alter Environments, collaborators or Actions permissions. Those are permanently the Owner's, which is a good property for a governance gate — but it also means <strong>the automation cannot verify its own cage</strong>, and the Owner must confirm §2 by eye.</p></blockquote>
+<h3>1.10 A governance finding in the repository itself — <code>.claude/settings.json</code></h3>
+<p>Checked into the repository at <code>.claude/settings.json</code>, and therefore applied to <strong>any</strong> Claude Code session that opens this repository:</p>
+<pre><code>{
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": [
+      "Bash(node --check *)", "Bash(node serve.js)",
+      "Bash(git add *)", "Bash(git commit *)",
+      "Bash(git status *)", "Bash(git log *)", "Bash(git diff *)",
+      "Bash(firebase deploy *)",
+      "mcp__Claude_Browser__navigate", "mcp__Claude_Browser__get_page_text",
+      "mcp__Claude_Browser__read_console_messages", "mcp__Claude_Browser__read_page"
+    ]
+  }
+}</code></pre>
+<p>Two entries deserve the Owner's attention before any automation is enabled:</p>
+<ol><li><strong><code>"defaultMode": "bypassPermissions"</code></strong> — every tool call is pre-approved by default. The allowlist below it is then largely decorative.</li><li><strong><code>"Bash(firebase deploy *)"</code></strong> — <strong>a Firestore Rules deployment is pre-authorised at the harness level.</strong> This directly contradicts the standing brief, which makes Rules deployment an <strong>Owner Control Gate</strong>, and the continuation package, which records <code>FIREBASE_RULES_DEPLOYED = NO</code> and E1 as closed.</li></ol>
+<p><strong>This has not caused harm, and the reason is luck rather than design:</strong> E1 is closed, so no session has held <code>study-monitoring</code> credentials, and the <code>firebase</code> CLI is not even installed in this sandbox. <strong>The moment E1 opens, that line becomes live.</strong> It is recorded here, not changed — changing it is a repository edit and outside a read-only preflight.</p>
+<h3>1.11 The 22g pilot subject — confirmed in the code, and correctly diagnosed</h3>
+<p>The continuation package's §5.1 diagnosis is <strong>accurate</strong>, and I verified both halves independently.</p>
+<p><strong>The trigger</strong> — <code>app/js/asma-study.js</code>, <code>openScreensaver()</code>:</p>
+<pre><code>screensaverDeck = buildScreensaverDeck();
+screensaverIndex = Math.floor(Math.random() * screensaverDeck.length);
+showScreensaverSlide();</code></pre>
+<p><strong>The assertion</strong> — <code>tools/i18n-verify/behaviour.mjs</code>, lines <strong>994–996</strong>, reading a shape that is only <em>sometimes</em> rendered:</p>
+<pre><code>const saver = await page.evaluate(() =&gt; ({
+  caption: document.querySelector(".asma-screensaver-caption")?.textContent?.trim(),
+  alt:     document.querySelector(".asma-screensaver-img")?.getAttribute("alt"),
+  src:     document.querySelector(".asma-screensaver-img")?.getAttribute("src"),
+}));
+check("22g the screensaver caption is Bangla", BANGLA.test(saver.caption || ""), saver.caption);
+check("22g its alt text is translated too (a Bangla screen reader)", BANGLA.test(saver.alt || ""), saver.alt);
+check("22g the poster URL is untouched", (saver.src || "").startsWith("https://archive.org/download/"), saver.src);</code></pre>
+<p>A Name-poster slide renders <code>.asma-poster</code>, <strong>not</strong> <code>.asma-screensaver-img</code>. On such a slide both <code>?.getAttribute(...)</code> calls yield <code>null</code>, <code>(null || "")</code> is <code>""</code>, and all three assertions fail — <strong>with no network request having been made at all.</strong> The label <em>"the environmental archive.org poster block"</em> is therefore wrong, exactly as the continuation states, and the failure is a <strong>harness defect</strong>, deterministically reproducible by controlling the seed.</p>
+<p><strong>Ownership is confirmed from the ledger</strong>, which is what makes this the right pilot: <code>docs/governance/programme-integration-ledger.json</code> lists <code>tools/i18n-verify/behaviour.mjs</code> under <strong><code>platformSharedPaths</code></strong>. So the fix is:</p>
+<ul><li><strong>small</strong> — bounded to three assertions in one file;</li><li><strong>genuinely blocked</strong> on authority, not on difficulty;</li><li><strong>already mechanically policed</strong> — ledger <strong>guard E</strong> fails an <em>undeclared</em> shared-file touch, and requires an <code>AUTHORIZED</code> record to carry <code>{ by, on, reference }</code> with <code>by</code> drawn from a <strong>closed authority set</strong> and <code>reference</code> pointing at a record that <strong>exists</strong>.</li></ul>
+<p><strong>That last point is the most valuable thing in this preflight.</strong> The Owner-decision half of the workflow is <strong>already built and already enforced in CI-able code</strong>. The pilot does not need to invent an approval record format; it needs to connect GitHub's approval to the one the ledger already demands.</p>
+<hr>
+<h2>2. REQUIRES THE OWNER — must be checked in GitHub's web settings</h2>
+<p>I could not read any of the following. Each is blocked either by the Anthropic session proxy or by token scope (§1.9). <strong>Please confirm each before the pilot is enabled.</strong> Nothing here is a suspicion of a problem; these are simply facts the automation is structurally unable to establish about itself.</p>
+<div class='tw'><table><thead><tr><th>#</th><th>What to check</th><th>Where</th><th>Why it matters</th></tr></thead><tbody><tr><td><strong>W1</strong></td><td><strong>Pages source</strong> — is it <em>Deploy from a branch</em> (<code>main</code>) or <em>GitHub Actions</em>?</td><td>Settings → Pages</td><td>Decides whether the deploy gate is a branch rule (§1.8) or an Environment. If it is Actions-sourced, a <code>github-pages</code> Environment already exists and is the natural place for the Owner-approval gate.</td></tr><tr><td><strong>W2</strong></td><td><strong>Environments and their protection rules</strong> — do any exist? any required reviewers?</td><td>Settings → Environments</td><td>This is the <strong>only</strong> GitHub primitive that can pause a deployment for a named human. It is the intended home of the Owner deploy gate.</td></tr><tr><td><strong>W3</strong></td><td><strong>Collaborators and org roles</strong> — who holds <code>admin</code> besides <code>AAAsapp</code>? Is the Owner a distinct GitHub account?</td><td>Settings → Collaborators; Org → People</td><td><strong>A one-account repository cannot have a real review gate.</strong> GitHub forbids approving your own PR, so if Owner and builder are the same login, "requires 1 approval" is unsatisfiable. See <strong>R3</strong> — this is the pilot's biggest open risk.</td></tr><tr><td><strong>W4</strong></td><td><strong>Organization rulesets</strong> — any targeting this repo?</td><td>Org → Rules → Rulesets</td><td>Effective rules on <code>main</code> are <code>[]</code> (§1.4), so none currently <em>reaches</em> <code>main</code>. Worth confirming none is in <em>Evaluate</em> mode about to be enforced.</td></tr><tr><td><strong>W5</strong></td><td><strong>Actions permissions</strong> — allowed actions; default <code>GITHUB_TOKEN</code> permissions (read vs write); <strong>"Allow GitHub Actions to create and approve pull requests"</strong></td><td>Settings → Actions → General</td><td>If that last box is <strong>ticked, the automation can approve its own pull requests</strong> and the entire gate is void. It must be <strong>unticked</strong>.</td></tr><tr><td><strong>W6</strong></td><td><strong>Claude App installation scope</strong> — which repositories; what permissions was it granted?</td><td>Settings → GitHub Apps → Claude → Configure</td><td>App id <code>1236702</code> is installed (§1.6). Confirm it covers this repo and note whether it holds <code>contents: write</code>.</td></tr><tr><td><strong>W7</strong></td><td><strong>Existing repository / org secrets and variables</strong></td><td>Settings → Secrets and variables → Actions</td><td>Determines whether <code>ANTHROPIC_API_KEY</code> (or an OAuth token) already exists, or must be added, before any Claude workflow can run.</td></tr><tr><td><strong>W8</strong></td><td><strong>Firebase Console access to <code>study-monitoring</code></strong> — E1</td><td>Firebase Console</td><td>Still recorded <strong>CLOSED</strong>. Unchanged by this preflight, and <strong>not required for the 22g pilot</strong>, which is why 22g is the right first subject.</td></tr></tbody></table></div>
+<hr>
+<h2>3. The minimum setup for a pilot that cannot merge or deploy without Owner approval</h2>
+<h3>3.1 The two escape routes that must both close</h3>
+<p>Any gate that does not close <strong>both</strong> of these is decorative.</p>
+<div class='tw'><table><thead><tr><th>#</th><th>Route</th><th>Status today</th><th>What closes it</th></tr></thead><tbody><tr><td><strong>E-a</strong></td><td><strong>Direct push to <code>main</code></strong></td><td><strong>Wide open</strong> — unprotected, no rules, and 84 consecutive commits arrived this way</td><td>A ruleset on <code>main</code> requiring a pull request, <strong>with no bypass actors</strong></td></tr><tr><td><strong>E-b</strong></td><td><strong>Automatic Pages deploy of <code>main</code></strong></td><td><strong>Wide open</strong> — proven by run #348 deploying <code>b700e3f</code> within a minute</td><td>Closing <strong>E-a</strong> closes this too, <em>because Pages deploys <code>main</code></em>. Belt-and-braces: an Environment with a required reviewer (<strong>W1/W2</strong>)</td></tr></tbody></table></div>
+<p><strong>There is also a third, quieter route: <code>.claude/settings.json</code> pre-approves <code>Bash(firebase deploy *)</code> (§1.10).</strong> It is dormant only because E1 is closed. It must be closed <strong>before</strong> E1 opens, not after.</p>
+<h3>3.2 The minimum control set</h3>
+<p>Six items. Anything less leaves a hole; anything more is not needed for a pilot.</p>
+<p><strong>M1 — A repository ruleset on <code>main</code>.</strong> Target <code>main</code>; enforcement <strong>Active</strong>:</p>
+<ul><li>Require a pull request before merging — <strong>1 required approval</strong></li><li><strong>Dismiss stale approvals when new commits are pushed</strong></li><li>Require review of the most recent push</li><li>Block force pushes; restrict deletions</li><li><strong>Required status checks:</strong> the CI check from <strong>M3</strong> — <em>but only after <strong>M4</strong></em></li><li><strong>🔴 Bypass list: EMPTY.</strong> This is the item that decides whether the pilot is real. The automation identity reports <code>admin: true</code> (§1.9), so <strong>any</strong> "admins can bypass" allowance hands it the key to its own cage.</li></ul>
+<p><strong>M2 — A <code>CODEOWNERS</code> file</strong> naming the Owner's GitHub account for <code>/docs/governance/</code>, <code>/firestore.rules</code>, <code>/app/js/version.js</code>, <code>CLAUDE.md</code>, and the platform-shared paths the ledger already enumerates — plus <strong>"Require review from Code Owners"</strong> in M1. This is what makes the approval <em>the Owner's specifically</em>, rather than anyone's.</p>
+<p><strong>M3 — One CI workflow</strong> (<code>.github/workflows/verify.yml</code>) running the deterministic <code>tools/i18n-verify</code> suites from the <strong>repository root</strong> and publishing one status check. Start with the suites that are pure and already green — <code>programme-ledger</code> (A–G), <code>programme-ledger-mutations</code> (49/0), <code>brief-integrity</code> (8/0), <code>study-activity-evidence-boundary</code> (27/0), <code>study-event-wiring</code> (41/0), <code>rules-authorisation-executable</code> (38/0). <strong>Leave <code>behaviour.mjs</code> out of the required check at first</strong> — see <strong>R1</strong>.</p>
+<p><strong>M4 — Establish the CI baseline before requiring anything.</strong> Merge M3 as a <strong>non-required</strong> check and let it run on several pull requests first. Only once its green/red behaviour is understood should it be added to M1's required list. Requiring a check whose baseline nobody has measured is how a pilot deadlocks on day one.</p>
+<p><strong>M5 — Wire the already-installed Claude App</strong> (<code>.github/workflows/claude.yml</code>, plus the secret from <strong>W7</strong>) so the <em>auditor</em> stage runs as a PR review rather than as a human reading a report. <strong>Its permissions must be <code>contents: read</code>, <code>pull-requests: write</code> — never <code>contents: write</code></strong>, so the auditor can speak but cannot merge.</p>
+<p><strong>M6 — Move the Firebase deploy behind an Environment</strong> with the Owner as required reviewer (<strong>W2</strong>), and <strong>remove <code>Bash(firebase deploy *)</code> and <code>"defaultMode": "bypassPermissions"</code> from <code>.claude/settings.json</code></strong> (§1.10). Not needed to <em>start</em> the 22g pilot; needed before E1 opens.</p>
+<h3>3.3 How the four roles map onto these controls</h3>
+<div class='tw'><table><thead><tr><th>Workflow stage</th><th>GitHub mechanism</th><th>Depends on</th></tr></thead><tbody><tr><td><strong>Master Architect</strong> issues a bounded task</td><td>An Issue, labelled; or the ledger's authorisation record</td><td>Issues already enabled (§1.1)</td></tr><tr><td><strong>Claude builder</strong> implements</td><td>A session pushing to a <code>claude/…</code> branch and opening a PR — <strong>never to <code>main</code></strong></td><td><strong>M1</strong></td></tr><tr><td><strong>Auditor</strong> verifies</td><td><strong>M3</strong> status check (mechanical) + <strong>M5</strong> Claude review (judgement)</td><td><strong>M3</strong>, <strong>M4</strong>, <strong>M5</strong></td></tr><tr><td><strong>Owner decision</strong></td><td>The <strong>required approving review</strong> on the PR, recorded afterwards as the ledger's <code>AUTHORIZED { by, on, reference }</code></td><td><strong>M1</strong>, <strong>M2</strong>, <strong>W3</strong></td></tr></tbody></table></div>
+<p><strong>The ledger is the asset here.</strong> Guard E already refuses an undeclared shared-file touch and already validates the authorisation record's shape against a closed authority set. The pilot does not design an approval record — it makes GitHub's approval <em>produce</em> the one the repository already insists on.</p>
+<h3>3.4 Why 22g is the right pilot, stated plainly</h3>
+<p>It exercises <strong>every stage</strong> and <strong>risks nothing</strong>: it touches a <strong>platform-shared</strong> file (so it genuinely needs Master Architect authorisation and genuinely trips guard E), it is <strong>three assertions in one file</strong>, it <strong>cannot affect application behaviour</strong> — <code>behaviour.mjs</code> is test tooling, not shipped code — and it is <strong>independent of E1</strong>. A pilot that fails teaches you about the gate, not about the Qur'an app.</p>
+<hr>
+<h2>4. Risks and cautions to settle before starting</h2>
+<div class='tw'><table><thead><tr><th>#</th><th>Risk</th><th>Note</th></tr></thead><tbody><tr><td><strong>R1</strong></td><td><strong><code>behaviour.mjs</code> cannot exit 0 in this sandbox.</strong> <code>31e</code> fails unconditionally on TLS interception (<code>net::ERR_CERT_AUTHORITY_INVALID</code>) on every commit.</td><td><strong>Do not make it a required status check until it has been run inside GitHub Actions</strong>, where there may be no TLS interception and the result may differ. If it still cannot reach 0, the required check must encode the repository's own standard — <em>no <strong>new</strong> failure against clean <code>main</code></em> — not a bare exit code. <strong>Unmeasured either way: I did not run it, and the runner's TLS behaviour is not knowable from here.</strong></td></tr><tr><td><strong>R2</strong></td><td><strong><code>22g</code> is random.</strong> It flips on identical code — the continuation measured 4 photo / 10 Name over 14 opens, and clean <code>main</code> scored 978/4 while the D3 candidate scored 980/2.</td><td>A randomly-failing check in a <strong>required</strong> list will block merges arbitrarily. Either fix 22g <strong>first</strong> (the pilot) or keep <code>behaviour.mjs</code> advisory until it is fixed. These two risks point the same way.</td></tr><tr><td><strong>R3</strong></td><td><strong>A single-account repository cannot have a review gate.</strong></td><td>Every recent PR was opened and closed by <code>AAAsapp</code> within ~26 seconds. GitHub will not let an account approve its own pull request, so if the Owner and the builder are the same login, <strong>"1 required approval" is unsatisfiable and the pilot cannot start.</strong> <strong>This is the highest-priority item to resolve — it is <code>W3</code>, and it is a prerequisite, not a detail.</strong></td></tr><tr><td><strong>R4</strong></td><td><strong>Admin bypass voids everything.</strong> The automation identity reports <code>admin: true</code>.</td><td>M1's bypass list must be <strong>empty</strong>.</td></tr><tr><td><strong>R5</strong></td><td><strong>Actions approving PRs.</strong> If <strong>W5</strong>'s setting is on, automation can self-approve.</td><td>Must be off.</td></tr><tr><td><strong>R6</strong></td><td><strong>Turning on protection changes how every existing session works.</strong> 84 consecutive commits reached <code>main</code> directly; that stops working the moment M1 is Active.</td><td>Expect the habit, and the standing brief's own <em>"Push it always, don't need permission"</em> instruction, to need restating. <strong>That is a governance change and the Owner's call, not Claude's.</strong></td></tr><tr><td><strong>R7</strong></td><td><strong>The automation cannot audit its own cage.</strong> Environments, collaborators and Actions permissions are proxy-blocked (§1.9).</td><td>§2 must be re-checked by the Owner by eye, and after any change.</td></tr></tbody></table></div>
+<hr>
+<h2>5. Exact next setup steps, in order</h2>
+<p><strong>Do these in this order. Steps 1–2 are the Owner's alone and gate everything after them.</strong></p>
+<p><strong>Step 1 — Owner answers <code>W1</code>–<code>W7</code> in the web UI (§2).</strong> Fifteen minutes of reading settings pages. Nothing is changed yet.</p>
+<p><strong>Step 2 — Owner resolves <code>R3</code> / <code>W3</code>: confirm there are two distinct GitHub accounts</strong>, one that approves and one that builds. If there is only one, decide which of these to adopt <em>before</em> anything else, because the pilot's shape depends on it:</p>
+<ul><li>add a second account as the Owner-approver (<strong>recommended</strong> — it is the only option that makes "Owner approval" a real GitHub object); or</li><li>run the pilot with approval recorded in the <strong>ledger</strong> only, with GitHub enforcing <em>"a PR must exist and CI must be green"</em> but not <em>"a human approved"</em>; or</li><li>have the Owner approve from their own account and the automation build from <code>AAAsapp</code>.</li></ul>
+<p><strong>Step 3 — Add the CI workflow (<code>M3</code>), NOT required.</strong> One PR from a <code>claude/…</code> branch adding <code>.github/workflows/verify.yml</code>. Deterministic pure suites only, run from the repository root. <code>permissions: contents: read</code>.</p>
+<p><strong>Step 4 — Measure the baseline (<code>M4</code>).</strong> Let it run on two or three PRs. Record what green looks like. <strong>Separately, run <code>behaviour.mjs</code> once in Actions</strong> to settle <code>R1</code> with a measurement instead of an assumption.</p>
+<p><strong>Step 5 — Add <code>CODEOWNERS</code> (<code>M2</code>)</strong>, naming the Owner account confirmed in Step 2.</p>
+<p><strong>Step 6 — Wire the Claude App (<code>M5</code>).</strong> Add the secret from <code>W7</code> and <code>.github/workflows/claude.yml</code>. <strong><code>contents: read</code>, <code>pull-requests: write</code>.</strong> Confirm the App posts a review on a throwaway PR.</p>
+<p><strong>Step 7 — Enable the ruleset (<code>M1</code>).</strong> Only now. Target <code>main</code>, Active, require PR + 1 approval + Code Owner review, dismiss stale approvals, block force push, required check = Step 3's, <strong>bypass list empty</strong>. Confirm <code>GET /repos/…/rules/branches/main</code> <strong>no longer returns <code>[]</code></strong> — that single call is the proof the gate is live, and it is one the automation <em>can</em> make.</p>
+<p><strong>Step 8 — Run the 22g pilot end to end.</strong> Master Architect authorises the shared-file touch → builder branches and fixes <code>behaviour.mjs:994–996</code> to accept <strong>both</strong> slide shapes (or to seed the index deterministically under test) → CI runs → Claude audits → <strong>Owner approves</strong> → merge. Then record the <code>AUTHORIZED { by, on, reference }</code> entry in the ledger and confirm <strong>guard E</strong> passes.</p>
+<p><strong>Step 9 — Only after the pilot: close the Firebase route (<code>M6</code>)</strong> — Environment with required reviewer, and clean <code>.claude/settings.json</code>. <strong>Must precede E1 opening.</strong></p>
+<hr>
+<h2>6. State block</h2>
+<pre><code>MMSA_AUTOMATION_PILOT_PREFLIGHT
+ISSUED=2026-09-19
+MODE=READ_ONLY -- nothing installed, added, enabled, configured, edited or deployed
+MAIN_SHA=b700e3f4b0a8004d4fe2701013e053a3c7a25770
+MAIN_VERSION=08.31
+REPO_VISIBILITY=public
+REPO_OWNER_TYPE=Organization
+GITHUB_ACTIONS_WORKFLOWS=1 (pages-build-deployment, path dynamic/pages -- GitHub-generated, not repo-authored)
+DOT_GITHUB_DIRECTORY=ABSENT (no workflows, no CODEOWNERS, no PR/issue templates)
+BRANCH_PROTECTION_MAIN=NONE (protected:false, enabled:false, required_status_checks enforcement_level:off)
+REPO_RULESETS=[] (empty)
+EFFECTIVE_RULES_ON_MAIN=[] (empty -- covers repo AND org rulesets)
+REQUIRED_STATUS_CHECKS=NONE
+PR_CHECKS=3, all github-actions Pages build/deploy; none tests the application
+CLAUDE_APP=INSTALLED (app id 1236702, slug `claude`) but INERT -- empty check suite, no workflow to invoke it
+PUSH_TO_MAIN_BYPASSES_REVIEW=YES -- 84 commits since last PR (#87, 11 Sep); historic PRs self-closed in 20-30s
+PAGES_AUTO_DEPLOY=YES -- run #348 built AND deployed head_sha b700e3f from main, success, 2026-09-19T08:26:36Z
+PAGES_SERVING_VERIFIED=NO -- sandbox proxy refuses github.io (CONNECT 403); /repos/../pages blocked by proxy
+MERGE_EQUALS_DEPLOY=TRUE -- protecting main protects production
+AUTH_AVAILABLE=proxy-mediated GITHUB_TOKEN as AAAsapp (admin:true reported); no gh CLI; no firebase CLI
+PROXY_BLOCKED=/pages /environments /collaborators /actions/permissions /orgs/*
+TOKEN_BLOCKED=/branches/main/protection (403 Resource not accessible by integration)
+REPO_SETTINGS_FINDING=.claude/settings.json has defaultMode bypassPermissions AND pre-approves Bash(firebase deploy *)
+FIREBASE_DEPLOY_PREAPPROVED=YES in .claude/settings.json -- dormant only because E1 is closed and firebase CLI absent
+E1_STATUS=CLOSED (unchanged; NOT required for the 22g pilot)
+PILOT_22g_CONFIRMED=behaviour.mjs:994-996 read .asma-screensaver-img unconditionally; asma-study.js openScreensaver() starts at Math.random()
+PILOT_22g_OWNERSHIP=tools/i18n-verify/behaviour.mjs is in ledger platformSharedPaths -- needs Master Architect authorisation
+LEDGER_GUARD_E=already enforces declared shared touches + AUTHORIZED {by,on,reference} from a closed authority set
+MINIMUM_CONTROLS=M1 ruleset(no bypass) M2 CODEOWNERS M3 CI M4 baseline-first M5 Claude App wiring M6 Firebase Environment
+TOP_RISK=R3 -- a single GitHub account cannot satisfy a required approving review; resolve BEFORE anything else
+BLOCKING_PREREQUISITES=W3 (two distinct accounts), W5 (Actions must not be allowed to approve PRs)
+NEXT_STEP=Owner answers W1-W7, then resolves R3; no repository change until both are done
+NOTHING_CHANGED=TRUE
+22g_FIX_STARTED=NO</code></pre>
+</main></body></html>
