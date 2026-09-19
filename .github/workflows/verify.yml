@@ -1,0 +1,126 @@
+# MMSA governance verification — automation pilot, STEP 1.
+#
+# NON-REQUIRED BY DESIGN. This workflow exists to establish a CI baseline
+# before any branch ruleset makes a check mandatory. Requiring a check whose
+# behaviour nobody has measured is how a pilot deadlocks on day one.
+#
+# Scope is deliberately narrow: it runs SIX deterministic governance suites
+# and nothing else. It does not touch app code, the version, Firestore Rules,
+# repository settings, or the 22g harness defect.
+#
+# DELIBERATELY EXCLUDED, and the reason matters:
+#   behaviour.mjs  -- cannot exit 0 in a TLS-intercepting sandbox (31e), and
+#                     22g flips on identical code. Both make it unfit to gate
+#                     anything until measured in Actions on its own.
+#   layout/panel/reading/navcheck -- need Playwright and a served app.
+#   The Firestore emulator suites -- need the emulator and network.
+# None of these is weakened or skipped to make this job green; they are simply
+# out of this step's scope and stay as separate future work.
+
+name: verify
+
+on:
+  pull_request:
+    branches: [main]
+
+# Read-only. This job never writes to the repository, and it must never need to.
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  governance-suites:
+    name: Deterministic governance suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # fetch-depth: 0 IS LOAD-BEARING, NOT A PRECAUTION.
+      # brief-integrity.mjs reads `origin/main:app/js/version.js`, and the
+      # ledger guards resolve the commits and version stamps of the branches
+      # the ledger names. Under checkout's default shallow single-branch
+      # fetch, brief-integrity reports 6/2 and programme-ledger-mutations
+      # reports 42/7 -- measured, on an unmodified tree. Those failures say
+      # nothing about the pull request; they are an artefact of the clone.
+      - name: Check out the full history and all branches
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # A false red is worse than no check, because it teaches people to
+      # ignore the gate. If the refs the suites legitimately need are absent,
+      # say so by name and stop -- never let it surface as a suite failure.
+      - name: Assert the git refs the suites need are present
+        run: |
+          set -euo pipefail
+          echo "Repository is shallow: $(git rev-parse --is-shallow-repository)"
+          if [ "$(git rev-parse --is-shallow-repository)" != "false" ]; then
+            echo "::error::Shallow clone. The ledger and brief guards need full history (fetch-depth: 0)."
+            exit 1
+          fi
+          missing=0
+          if ! git rev-parse --verify --quiet origin/main >/dev/null; then
+            echo "::error::origin/main is missing; brief-integrity.mjs reads origin/main:app/js/version.js"
+            missing=1
+          fi
+          # Derived from the ledger rather than hardcoded, so a new stream is
+          # covered automatically and a renamed branch fails loudly.
+          branches=$(node -e "
+            const l = require('./docs/governance/programme-integration-ledger.json');
+            for (const s of (l.streams || [])) if (s.activeBranch) console.log(s.activeBranch);
+          ")
+          for b in $branches; do
+            if git rev-parse --verify --quiet "origin/$b" >/dev/null; then
+              echo "  ok  origin/$b -> $(git rev-parse --short "origin/$b")"
+            else
+              echo "::error::Ledger names branch '$b' but origin/$b was not fetched."
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ] || exit 1
+          echo "All required refs present."
+
+      # Every suite runs, then the job fails if ANY of them failed. Running
+      # all six gives the whole picture in one go instead of hiding suites 2-6
+      # behind the first failure. It does not soften the outcome: one failure
+      # still fails the job.
+      #
+      # The suites resolve paths from process.cwd(), so they MUST be run from
+      # the repository root.
+      - name: Run the six deterministic governance suites
+        id: suites
+        run: |
+          set -uo pipefail
+          suites="programme-ledger programme-ledger-mutations brief-integrity study-activity-evidence-boundary study-event-wiring rules-authorisation-executable"
+          failed=0
+          {
+            echo "## Governance suites"
+            echo ""
+            echo "| Suite | Exit | Result |"
+            echo "|---|---|---|"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for s in $suites; do
+            echo "::group::$s"
+            out=$(node "tools/i18n-verify/$s.mjs" 2>&1); rc=$?
+            echo "$out"
+            echo "::endgroup::"
+            line=$(echo "$out" | grep -oE '====.*====' | tail -1)
+            [ -n "$line" ] || line='(no summary line emitted)'
+            if [ "$rc" -eq 0 ]; then
+              echo "| \`$s\` | 0 | ✅ $line |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "| \`$s\` | $rc | ❌ $line |" >> "$GITHUB_STEP_SUMMARY"
+              echo "::error::$s exited $rc"
+              failed=1
+            fi
+            printf '%-38s exit %s  %s\n' "$s" "$rc" "$line"
+          done
+          exit "$failed"
