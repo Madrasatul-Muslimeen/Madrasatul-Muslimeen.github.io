@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith — Master Architect decision package: C2 keys and the Approach registry</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith — Master Architect decision package: C2 keys and the Approach registry</h1>
+<p><strong>19 September 2026 · Hadith Study stream · DECISION PACKAGE · nothing here is applied</strong></p>
+<p>Two Owner Control Gates are ready to be decided. This package states what is true, what must be chosen, and what each choice costs. It <strong>allocates no id, changes no key, and proposes no code change</strong>. Sources: the S5 investigation (<code>hadith-c2-live-records-path-2026-09-19.md</code>) and the H2-B proposal (<code>hadith-approach-registry-PROPOSAL-2026-09-18.md</code>), both re-verified against the code today by <code>tools/i18n-verify/hadith-gate-contracts.mjs</code> (11/0).</p>
+<hr>
+<h2>GATE C2 — the permanent Hadith record key</h2>
+<h3>What is true today</h3>
+<div class='tw'><table><thead><tr><th>Fact</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>The live builder is <strong>name-keyed</strong>: <code>hadith:${collectionName}:${number}</code></td><td><code>app/js/unit-keys.js</code></td></tr>
+<tr><td>So <code>hadith:bukhari:1</code>, <code>hadith:Bukhari:1</code> and <code>hadith:al-bukhari:1</code> are <strong>three different permanent keys for one narration</strong></td><td>same builder, person-supplied first segment</td></tr>
+<tr><td>That contradicts <strong>I5</strong> — <em>units are keyed by permanent ID, never by name</em></td><td>H0 contradiction C2</td></tr>
+<tr><td>It is <strong>LIVE</strong>: one platform surface applies it, <code>app/records.html</code></td><td>pinned by a guard as the ONLY caller</td></tr>
+<tr><td>The accepted regex admits <strong>both</strong> the name-keyed form and the proposed <code>hadith:&lt;editionId&gt;:&lt;ordinal&gt;</code></td><td><code>app/js/study-note-binding.js</code></td></tr>
+<tr><td>A <code>hadith:</code> key lands in <strong>whichever subject chunk was open</strong>, not necessarily <code>subject_hadith</code></td><td><code>chunkKeyFor()</code> returns <code>subject_${subjectId}</code> from the reader&#x27;s selection</td></tr>
+<tr><td><strong>Zero editions are rights-cleared</strong></td><td>H1</td></tr>
+</tbody></table></div>
+<h3>The decision</h3>
+<div class='tw'><table><thead><tr><th>Option</th><th>What it means</th><th>Cost</th></tr></thead><tbody>
+<tr><td><strong>C2-A — adopt <code>hadith:&lt;editionId&gt;:&lt;occurrenceOrdinal&gt;</code></strong></td><td>A permanent internal edition id replaces the typed name. Existing keys are <strong>kept and never rewritten</strong> (I4); a reviewer-confirmed <code>legacyHadithKeyMap</code> resolves old → new <strong>for display only</strong></td><td>Needs an edition registry. <strong>An edition ID is an identifier, not content — it can be minted before any text is licensed</strong>, so this is <em>not</em> blocked by the rights gate. Needs the inventory to size the legacy mapping</td></tr>
+<tr><td><strong>C2-B — keep names, normalise them</strong> (case-fold / slug going forward)</td><td>Cheaper-looking</td><td><strong>Still names, so still I5.</strong> And normalising <em>changes the key</em>, so it is the same migration in a smaller coat — with no permanent id at the end of it</td></tr>
+<tr><td><strong>C2-C — freeze new Hadith claims</strong> until C2-A lands</td><td>Remove <code>hadith</code> from the <code>records.html</code> unit picker; existing records untouched and still readable</td><td>Stops undecided keys accumulating at <strong>zero cost to existing data</strong>. It is itself a change to a <strong>platform</strong> surface, so it needs its own authority</td></tr>
+</tbody></table></div>
+<p><strong>Recommendation: C2-A as the target, with C2-C applied now as an interim.</strong> The only thing that grows while this is open is the size of the legacy mapping.</p>
+<p><strong>What is NOT recommended:</strong> changing <code>buildUnitKey.hadith</code> in place. It would silently re-key every future record and orphan every past one.</p>
+<hr>
+<h2>GATE APPROACH — the Hadith Approach registry and its ids</h2>
+<h3>What is true today</h3>
+<div class='tw'><table><thead><tr><th>Fact</th><th>Evidence</th></tr></thead><tbody>
+<tr><td>30 Approaches exist, <code>approach_01</code>…<code>approach_30</code>, in 7 sections</td><td><code>APPROACH_TEMPLATES</code></td></tr>
+<tr><td>The templates carry <strong>no <code>moduleId</code> and no <code>subjectId</code></strong>; the <strong>seed</strong> hardcodes <code>quranrevival</code> / <code>quran</code></td><td><code>catalogue.js</code></td></tr>
+<tr><td>Hadith has <strong>exactly one trackable and it is not an Approach</strong>: <code>studied_hadith</code>, name <strong>&quot;Studied&quot;</strong></td><td><code>TOPIC_TRACKABLE_TEMPLATES</code></td></tr>
+<tr><td><code>app/hadith-study.html</code> tracks against that generic row</td><td>its <code>initTopicStudyPage({ trackableId: &quot;studied_hadith&quot; })</code></td></tr>
+<tr><td>The corpus component claims <strong>no Approach at all</strong></td><td>grep of <code>hadith-browser.js</code> / <code>hadith-corpus.js</code></td></tr>
+<tr><td><strong>No Hadith Approach id has been allocated anywhere</strong></td><td>guarded</td></tr>
+</tbody></table></div>
+<h3>The five decisions, smallest first</h3>
+<div class='tw'><table><thead><tr><th>#</th><th>Decision</th><th>Options</th><th>Recommendation</th></tr></thead><tbody>
+<tr><td><strong>A1</strong></td><td><strong>ID namespace</strong></td><td>reuse <code>approach_NN</code> · <code>approach_h01</code> · <code>hadith_approach_01</code></td><td><strong>A new namespace, never <code>approach_NN</code>.</strong> A trackable id <strong>is</strong> a document id and claims are keyed by <code>trackableId</code> (I5): reusing a number would make one id mean two things in two modules, and no screen would show it</td></tr>
+<tr><td><strong>A2</strong></td><td><strong>Which candidates are in v1</strong></td><td>the 8 in H2-B</td><td><strong>Three</strong>: <em>Reading the Arabic</em>, <em>Reading with meaning</em>, <em>Memorising</em> — all direct analogues needing <strong>no new data</strong>. Defer <em>Understanding the chain</em>, <em>Grading and authenticity</em>, <em>Classical explanation</em> (they need corpus, isnād data or rights), <em>Acting on it</em> (needs the Quran pairing confirmed) and <em>Topic study</em></td></tr>
+<tr><td><strong>A3</strong></td><td><strong>What happens to <code>studied_hadith</code></strong></td><td>keep · retire · repurpose</td><td><strong>Keep, unchanged and never repurposed.</strong> Real claims are already keyed to it (I4/I6). A new Approach set sits beside it</td></tr>
+<tr><td><strong>A4</strong></td><td><strong>Sections</strong></td><td>own sections · none · borrow the Quran&#x27;s 7</td><td>Hadith&#x27;s own, or none in v1. The tenant-editable <code>approachSections</code> list lives on the tenant document and is Quran-shaped</td></tr>
+<tr><td><strong>A5</strong></td><td><strong>Who allocates the numbers, and when</strong></td><td>—</td><td><strong>The Master Architect, at authorisation.</strong> Not a session, and not in advance</td></tr>
+</tbody></table></div>
+<p><strong>This decision needs no inventory.</strong> It is a product choice and can be taken today. What it <em>does</em> need before implementation: seeding trackables is a <strong>live write to the <code>trackables</code> collection</strong>, which is its own gate.</p>
+<hr>
+<h2>The read-only inventory C2 needs — and it does NOT need Console access</h2>
+<p><strong>This corrects the S5 record.</strong> <code>hadith-c2-live-records-path-2026-09-19.md</code> §5 says the inventory needs authenticated access to <code>study-monitoring</code> and that this environment cannot perform it. The second half is true; <strong>the first half is not.</strong> The app already ships the read:</p>
+<p><code>backup.html</code> → <code>collectBackup()</code> → <code>listAllRecordsForPerson(db, tenantId, personId)</code> = <code>query(records, tenantId ==, personId ==)</code> — <strong>no chunk filter</strong>, so it returns <strong>every</strong> chunk for that person, run for <strong>every</strong> person in the active tenant. The export prints Unit, Chunk, Subject, Approach, Status, Confirmed, Claimed at and By — every item §5 asks for.</p>
+<h3>Access required</h3>
+<div class='tw'><table><thead><tr><th>Path</th><th>What it needs</th><th>Coverage</th></tr></thead><tbody>
+<tr><td><strong>A — the Owner&#x27;s own export (recommended)</strong></td><td>The Owner signs into the live app as they already do, opens <code>/app/backup.html</code>, presses Export, and hands over the file. <strong>No credentials, no Firebase Console, no CLI, no Rules change, no new app code</strong></td><td>Every person and <strong>every records chunk</strong> in <strong>one</strong> tenant, bounded by what that account may read under the deployed Rules. One export per tenant</td></tr>
+<tr><td><strong>B — direct Firestore read</strong></td><td>Authenticated read access to <code>study-monitoring</code> — the same <strong>E1</strong> dependency the Rules deployment waits on</td><td>Every tenant in one pass. <strong>Only needed if cross-tenant-in-one-shot is required</strong></td></tr>
+</tbody></table></div>
+<h3>What it produces</h3>
+<p><code>tools/hadith-data-pull/records-key-inventory.mjs</code> — built this round, offline, read-only, imports nothing — reports exactly §5&#x27;s items 1–6: every <code>hadith:</code> entry with its chunk/person/subject/Approach, the <strong>distinct collection tokens with their spellings</strong> (the migration&#x27;s real surface), the ordinal range against the 6-digit bound, keys outside the accepted shape, keys filed outside <code>subject_hadith</code>, and <strong>every confirmed entry</strong> (I6). It ends in one of three verdicts and <strong>decides nothing</strong>:</p>
+<div class='tw'><table><thead><tr><th>Verdict</th><th>Consequence</th></tr></thead><tbody>
+<tr><td><code>NO_LEGACY_KEYS</code></td><td>H1 §5 may be applied with <strong>no legacy mapping at all</strong> — the cheapest outcome, and the one to establish first</td></tr>
+<tr><td><code>LEGACY_KEYS_PRESENT</code></td><td>A reviewer-confirmed <code>legacyHadithKeyMap</code> is needed; old keys are never rewritten (I4)</td></tr>
+<tr><td><code>CONFIRMED_PRESENT</code></td><td><strong>I6 binds</strong> — a frozen confirmation may never be recalculated, edited or destroyed by a migration</td></tr>
+</tbody></table></div>
+<h3>Stated limits</h3>
+<ul><li>One tenant per export; &quot;every tenant&quot; means one export per tenant.</li><li>Coverage is bounded by the deployed Rules for the signed-in account. The export prints a <strong>translated</strong> &quot;Covers&quot; sentence that the tool does <strong>not</strong> parse, so <strong>the Owner should state which export mode was used</strong> — a <code>NO_LEGACY_KEYS</code> verdict is only as strong as the export&#x27;s scope.</li><li>The person column is a <strong>display name</strong>, not a <code>personId</code>.</li></ul>
+<hr>
+<h2>What can proceed before the inventory, and what cannot</h2>
+<div class='tw'><table><thead><tr><th>Can proceed now</th><th>Cannot, until decided</th></tr></thead><tbody>
+<tr><td>The <strong>Approach registry decision</strong> (A1–A5) — it needs no inventory</td><td>Allocating any Hadith Approach id</td></tr>
+<tr><td>Offline, synthetic, read-only Hadith tooling and guards</td><td>Seeding any Hadith trackable (a live write)</td></tr>
+<tr><td>Pinning more gate facts against drift</td><td>Changing <code>buildUnitKey.hadith</code>, or any live key</td></tr>
+<tr><td>Drafting the edition-registry <strong>shape</strong> (ids only, no text)</td><td>Importing real corpus, translation or commentary</td></tr>
+<tr><td>Running the inventory <strong>the moment an export exists</strong></td><td>Any migration, any Rules change, any deployment</td></tr>
+</tbody></table></div>
+<h2>Status</h2>
+<p><strong>Both gates remain CLOSED.</strong> Nothing in this package has been applied. It proposes; the Master Architect decides.</p>
+</main></body></html>

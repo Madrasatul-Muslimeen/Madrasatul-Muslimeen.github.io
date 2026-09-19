@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hadith — the C2/Approach decision package, and the inventory made runnable</title>
+<style>
+  :root { color-scheme: light dark;
+    --bg:#fbfaf6; --fg:#1c1c1c; --muted:#5a5a5a; --rule:#e2ddcd;
+    --card:#fffdf6; --accent:#1F3A6E; --code:#f2efe4; }
+  @media (prefers-color-scheme: dark) { :root {
+    --bg:#14161a; --fg:#e9e6df; --muted:#a2a09a; --rule:#2c3138;
+    --card:#1a1d22; --accent:#9db8ea; --code:#22262c; } }
+  * { box-sizing:border-box }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",sans-serif; }
+  main { max-width:56rem; margin:0 auto; padding:2.5rem 1.1rem 4rem; }
+  h1 { font-size:1.85rem; line-height:1.25; margin:0 0 1rem; color:var(--accent); letter-spacing:-.01em }
+  h2 { font-size:1.22rem; margin:2.4rem 0 .7rem; padding-top:1.1rem; border-top:1px solid var(--rule) }
+  h3 { font-size:1.02rem; margin:1.5rem 0 .4rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em }
+  li { margin:.32rem 0 }
+  code { background:var(--code); padding:.1em .38em; border-radius:.3em;
+    font:0.86em ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; word-break:break-word }
+  hr { border:0; border-top:1px solid var(--rule); margin:2rem 0 }
+  .tw { overflow-x:auto; margin:1rem 0; border:1px solid var(--rule); border-radius:.55rem; background:var(--card) }
+  table { border-collapse:collapse; width:100%; min-width:30rem; font-size:.93rem }
+  th, td { text-align:left; padding:.62rem .8rem; border-bottom:1px solid var(--rule); vertical-align:top }
+  th { background:rgba(31,58,110,.07); font-weight:700; white-space:nowrap }
+  @media (prefers-color-scheme: dark) { th { background:rgba(157,184,234,.1) } }
+  tr:last-child td { border-bottom:0 }
+  @media (max-width:480px){ main{padding:1.6rem .9rem 3rem} h1{font-size:1.45rem} table{min-width:22rem} }
+</style></head><body><main>
+<h1>Hadith — the C2/Approach decision package, and the inventory made runnable</h1>
+<p><strong>19 September 2026 · Hadith Study stream · BR-0 · no application change, nothing shared touched, not merged</strong></p>
+<p>Continuing Hadith Study independently of the MMSA automation pilot.</p>
+<hr>
+<h2>1. Current tips, fetched at the start of this round</h2>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
+<tr><td><strong><code>origin/main</code></strong></td><td><strong><code>b87133461680d3c2837f7bd75fc5c824e10090d3</code></strong></td></tr>
+<tr><td><strong><code>origin/feature/hadith-study</code></strong> (at session start)</td><td><strong><code>c26c711026320385e6a2e7c29019908cbc21084b</code></strong></td></tr>
+<tr><td>Relationship</td><td><code>main</code> has moved <strong>ahead</strong> — the automation pilot&#x27;s CI work (<code>#88</code>, <code>verify.yml</code>) and a Quran-side D3 repair</td></tr>
+<tr><td>This round&#x27;s base</td><td><code>c26c711</code>. <strong>The branch was deliberately NOT refreshed against <code>main</code></strong>: nothing in this round depends on the pilot&#x27;s changes, and the instruction is to work independently and not merge</td></tr>
+</tbody></table></div>
+<p>Every earlier SHA in this stream&#x27;s reports is historical and is not repeated here as if current.</p>
+<p><strong>One thing this makes visible, and it is not this round&#x27;s doing:</strong> <code>git diff origin/main -- app/</code> is non-empty, naming <code>app/js/study-note-service.js</code>. That is the Quran side&#x27;s commit <strong><code>57a73a8</code> &quot;D3 foundation repair&quot;</strong>, landed on <code>main</code> after this branch&#x27;s base. <strong>This branch changes no application file at all</strong> — <code>git diff c26c711 HEAD -- app/ firestore.rules firebase.json tests/</code> is <strong>empty</strong>. Attributing that diff to the wrong side would have been the easy mistake.</p>
+<hr>
+<h2>2. Delivered: the decision package</h2>
+<p><code>docs/governance/hadith-c2-approach-decision-package-2026-09-19.md</code> (+ <code>.html</code>) — one concise package covering both gates, built from the S5 investigation and the H2-B proposal, with every fact re-verified against the code today.</p>
+<p><strong>GATE C2 — the permanent record key.</strong> Three options with their real costs: <strong>C2-A</strong> adopt <code>hadith:&lt;editionId&gt;:&lt;occurrenceOrdinal&gt;</code>, keeping old keys and never rewriting them (I4), with a reviewer-confirmed map for display only; <strong>C2-B</strong> keep names and normalise them — which is still names, still I5, and still a migration; <strong>C2-C</strong> freeze new Hadith claims until C2-A lands. Recommended: <strong>C2-A as the target, C2-C now as an interim</strong>, because the only thing that grows while this is open is the size of the legacy mapping.</p>
+<p><strong>One correction inside the package that changes the sequencing.</strong> C2-A has been treated as waiting on the rights gate. It is not: <strong>an edition ID is an identifier, not content.</strong> The registry of edition ids can be defined before any narration text is licensed. What stays blocked is the text.</p>
+<p><strong>GATE APPROACH — five decisions, smallest first.</strong> ID namespace (<strong>never</strong> <code>approach_NN</code> — a trackable id <em>is</em> a document id and claims are keyed by <code>trackableId</code>, I5); which of the eight candidates are in v1 (<strong>recommended three</strong>: Reading the Arabic, Reading with meaning, Memorising — all analogues needing no new data); what happens to <code>studied_hadith</code> (<strong>keep, never repurposed</strong> — real claims are already keyed to it, I4/I6); sections; and who allocates the numbers (<strong>the Master Architect, at authorisation</strong>).</p>
+<p><strong>This gate needs no inventory and can be decided today.</strong></p>
+<hr>
+<h2>3. THE FINDING: the inventory does not need Firebase Console access</h2>
+<p>The S5 record says the C2 inventory needs authenticated access to <code>study-monitoring</code> and that this environment cannot perform it. <strong>The second half is true. The first half is not, and this corrects it.</strong></p>
+<p>The app already ships the exact read:</p>
+<div class='tw'><table><thead><tr><th>Step</th><th>What it does</th></tr></thead><tbody>
+<tr><td><code>backup.html</code> → <code>collectBackup()</code></td><td>runs for <strong>every person</strong> in the active tenant</td></tr>
+<tr><td>→ <code>listAllRecordsForPerson()</code></td><td><code>query(records, tenantId ==, personId ==)</code> — <strong>no chunk filter</strong>, so every chunk comes back</td></tr>
+<tr><td>→ <code>buildBackupHtml()</code></td><td>prints <strong>Unit, Chunk, Subject, Approach, Status, Confirmed, Claimed at, By</strong></td></tr>
+</tbody></table></div>
+<p>That is items 1–6 of C2 §5, including the §4 requirement that the scan must not be limited to <code>subject_hadith</code>.</p>
+<p><strong>So the access required is: the Owner presses Export in the app they already use, and hands over the file.</strong> No credentials, no Console, no CLI, no Rules change, no new application code. A direct Firestore read is needed <strong>only</strong> if cross-tenant-in-one-pass is required — that remains the E1 dependency.</p>
+<p><strong>Stated limits, not smoothed over:</strong> one tenant per export; coverage bounded by the deployed Rules for the signed-in account; the export&#x27;s &quot;Covers&quot; sentence is translated prose the tool does <strong>not</strong> parse, so the Owner should say which export mode was used — a &quot;no legacy keys&quot; verdict is only as strong as the export&#x27;s scope; and the person column is a display name, not a <code>personId</code>.</p>
+<hr>
+<h2>4. Built: the offline inventory analyser (Hadith-owned, read-only, synthetic)</h2>
+<div class='tw'><table><thead><tr><th>File</th><th>What</th></tr></thead><tbody>
+<tr><td><code>tools/hadith-data-pull/records-key-inventory.mjs</code></td><td>The analyser. <strong>Imports nothing</strong>, reaches no database, writes nothing. Reads one local file — a backup export or a raw JSON dump — and prints</td></tr>
+<tr><td><code>tools/hadith-data-pull/synthetic-backup-sample.html</code></td><td>A synthetic fixture. Invented people, <code>synthetic-</code> collection tokens only, and a check that refuses any real collection name</td></tr>
+<tr><td><code>tools/i18n-verify/hadith-records-inventory.mjs</code></td><td><strong>28 checks</strong>, binding the tool to the facts it rests on</td></tr>
+</tbody></table></div>
+<p>It reports §5&#x27;s items 1–6 and ends in one of three verdicts — <code>NO_LEGACY_KEYS</code> / <code>LEGACY_KEYS_PRESENT</code> / <code>CONFIRMED_PRESENT</code> — each naming a consequence from the accepted outcome table. <strong>It decides nothing</strong>, and a check asserts the verdict function has not grown an action.</p>
+<p><strong>Three design choices worth keeping:</strong></p>
+<p><strong>It imports nothing, and a check proves the absence.</strong> A tool that measures a key contract must not become a consumer of it. The binding runs the other way: the <em>suite</em> reads the accepted regex out of <code>app/js/study-note-binding.js</code> and asserts the tool agrees. The check drifts loudly; the tool cannot drift silently.</p>
+<p><strong>It parses by SHAPE, never by English.</strong> The export is fully translated, so keying on &quot;Claims and confirmations&quot; would return nothing from a Bangla export — and the tool would then report a clean inventory of a file it could not read, which is the worst possible failure for a decision this feeds. Claims rows are identified as eight cells inside a person block with a records-shaped chunk key; bookmarks (7), the activity log (6) and folders (4) cannot collide. A Bangla export is parsed in a check and yields identical results.</p>
+<p><strong>I6 decides the safe direction.</strong> A confirmation state is printed through a translator, so <code>isConfirmed()</code> treats any unrecognised non-empty word as confirmed. Over-reporting a frozen confirmation is recoverable; missing one is not.</p>
+<h3>Run against the synthetic fixture</h3>
+<p>11 rows read, <strong>7 <code>hadith:</code> entries</strong> found, and every hazard surfaced: one collection name in <strong>two spellings</strong> reported as one token and two keys; ordinals 1..12345678 with <strong>two past the 6-digit bound</strong>; one <strong>non-numeric</strong> ordinal; <strong>three keys outside the accepted shape</strong>; one key filed in <strong><code>subject_deen</code></strong>, not <code>subject_hadith</code> — the §4 case the whole full-scan requirement exists for — and <strong>one confirmed entry</strong>, producing <code>CONFIRMED_PRESENT</code> and the I6 warning.</p>
+<hr>
+<h2>5. Test results</h2>
+<div class='tw'><table><thead><tr><th>Suite</th><th>Result</th></tr></thead><tbody>
+<tr><td><code>hadith-records-inventory.mjs</code> (new)</td><td><strong>28 passed, 0 failed</strong></td></tr>
+<tr><td><code>hadith-gate-contracts.mjs</code></td><td>11 passed, 0 failed</td></tr>
+<tr><td><code>hadith-governing-contracts.mjs</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-corpus.mjs</code></td><td>33 passed, 0 failed</td></tr>
+<tr><td><code>hadith-source-rights.mjs</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><code>hadith-commentary-binding.mjs</code></td><td>14 passed, 0 failed</td></tr>
+<tr><td><strong>Hadith total</strong></td><td><strong>114 checks, 0 failures, across six suites</strong></td></tr>
+<tr><td><code>quran-boundary.mjs</code></td><td>30 passed, 0 failed</td></tr>
+<tr><td><code>programme-ledger.mjs</code></td><td>8 passed, 23 noted, 0 failed</td></tr>
+<tr><td><code>brief-integrity.mjs</code></td><td>8 passed, 0 failed</td></tr>
+</tbody></table></div>
+<h3>Mutation proofs — seven applied, seven caught, every one reverted</h3>
+<div class='tw'><table><thead><tr><th>Mutation</th><th>Caught by</th></tr></thead><tbody>
+<tr><td>The parser stops recognising the 8-cell claims row</td><td>10 checks, the positive control first</td></tr>
+<tr><td>The tool&#x27;s accepted shape drifts from the app&#x27;s regex (7 digits)</td><td>the app-binding check + 2</td></tr>
+<tr><td>Spelling variants stop being folded into one token</td><td>§5.3</td></tr>
+<tr><td><code>isConfirmed()</code> keys on the English word</td><td>the Bangla check and the I6 check</td></tr>
+<tr><td>A real collection name appears in the fixture</td><td>the synthetic-namespace boundary</td></tr>
+<tr><td>The offline tool acquires a static import</td><td>the import boundary</td></tr>
+<tr><td><strong>The app&#x27;s records query grows a chunk filter</strong></td><td>the access check — the export would stop covering every chunk</td></tr>
+</tbody></table></div>
+<p><strong>A failing check was investigated before anything was &quot;fixed&quot;, and it was the assertion that was wrong.</strong> The access check first grepped the whole of <code>listAllRecordsForPerson</code> for <code>chunkKey</code> and called it a chunk filter — but that name appears on the line which <em>derives</em> the chunk from the document id, a result, not a filter. Narrowed to the query expression, it asserts the query is <strong>exactly</strong> the two equality filters and has grown no chunk, ordering or limit constraint. Wrong assertion, not a defect.</p>
+<p><strong>And a mutation that was caught for the wrong reason was chased.</strong> The accepted-shape drift (6 → 7 digits) was caught only by the bounds check, not by the check that binds the tool to the app&#x27;s regex — because the fixture had no <strong>7-digit</strong> ordinal, the exact boundary. One row was added; the app-binding check now fails on a one-digit drift, 1 failing → 3.</p>
+<hr>
+<h2>6. What was NOT done</h2>
+<ul><li><strong>No permanent id assigned</strong>, no Approach id allocated, no live key changed.</li><li><strong>No real corpus, translation or commentary.</strong> Every token in the new fixture carries the <code>synthetic-</code> namespace and a check refuses a real collection name.</li><li><strong>No durable write anywhere</strong>; the analyser cannot reach a database and a check asserts it names no Firestore symbol.</li><li><strong>No shared file touched.</strong> Everything added is Hadith-owned: <code>tools/hadith-data-pull/<em></code>, <code>tools/i18n-verify/hadith-</em>.mjs</code>, <code>docs/governance/hadith-<em></code>, <code>docs/reports/</em>-hadith-<em></code>. <code>CLAUDE.md</code>, <code>CHANGELOG.md</code>, <code>bn.js</code>, <code>behaviour.mjs</code>, <code>version.js</code> and the ledger are untouched. </em>(The app&#x27;s <code>records.js</code> was mutated locally for one mutation proof and restored; <code>git status</code> shows a clean tracked tree.)*</li><li><strong>Not merged and not deployed.</strong> <code>main</code> stands where it stood. Repository <code>firestore.rules</code> is untouched; the DEPLOYED Firebase Rules state cannot be inspected from here — <strong>UNVERIFIED</strong>.</li><li><strong>v08.32 is not allocated</strong>; no version was changed.</li></ul>
+<hr>
+<h2>7. The next independent build task</h2>
+<p><strong>H2-C — the Hadith Approach contract as pure, uninvoked, SYMBOLIC policy.</strong></p>
+<p>A module in the shape the Quran side used for P4-A (<code>study-approach-contract.js</code> — pure, imported by nothing, removable by deleting the file) that maps a Hadith study interaction to a <strong>symbolic slot</strong> — <code>READ_ARABIC</code>, <code>READ_WITH_MEANING</code>, <code>MEMORISE</code> — and <strong>not to an id</strong>. The id table stays empty, with a check asserting it is empty and that no <code>approach_</code>-shaped string appears anywhere in it.</p>
+<p><strong>Why this one:</strong> it makes the Approach decision a table lookup at authorisation time instead of a build, it allocates nothing, it touches no shared file and no live write, and it is useful whichever way A1 and A2 are decided. It needs no inventory and no new access.</p>
+<p><strong>Ready the moment an export exists:</strong> run <code>node tools/hadith-data-pull/records-key-inventory.mjs &lt;export.html&gt;</code> and the C2 inventory is answered in one command.</p>
+<hr>
+<h2>Machine-readable status</h2>
+<p>MAIN_SHA=b87133461680d3c2837f7bd75fc5c824e10090d3 (moved ahead; the automation pilot and a Quran D3 repair)</p>
+<p>BRANCH_TIP_AT_START=c26c711026320385e6a2e7c29019908cbc21084b</p>
+<p>BRANCH_REFRESHED_AGAINST_MAIN=NO — deliberate; nothing this round depends on it and the instruction is not to merge</p>
+<p>DELIVERED=decision package (C2 + Approach registry, .md and .html), offline inventory analyser, synthetic fixture, 28-check guard suite</p>
+<p>HADITH_SUITES=114 checks, 0 failures, across six suites</p>
+<p>MUTATIONS=7 applied, 7 caught, all reverted</p>
+<p>APPLICATION_CHANGE=NONE — git diff c26c711 HEAD -- app/ firestore.rules firebase.json tests/ is empty</p>
+<p>SHARED_FILES_TOUCHED=NONE</p>
+<p>INVENTORY_ACCESS_REQUIRED=an Owner-produced backup export per tenant; NO Firebase Console, CLI or credentials. Direct Firestore read (E1) only if cross-tenant-in-one-pass is required</p>
+<p>PROCEEDS_WITHOUT_INVENTORY=the Approach registry decision (A1-A5); offline synthetic tooling; the edition-registry SHAPE (ids only, no text)</p>
+<p>OWNER_CONTROL_GATES=ALL CLOSED — C2 not applied, no Approach allocated, no corpus imported, no durable write, no Rules change</p>
+<p>APP_VERSION=unchanged; v08.32 NOT allocated</p>
+<p>FIREBASE_RULES_DEPLOYED=UNVERIFIED — nothing deployed</p>
+<p>MERGED=NO</p>
+<p>NEXT_TASK=H2-C, the Hadith Approach contract as pure symbolic policy with an empty id table</p>
+</main></body></html>
