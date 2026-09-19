@@ -78,9 +78,10 @@
 <h2>5. Final state</h2>
 <div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody>
 <tr><td><strong><code>origin/main</code> before this repair</strong></td><td><code>b295ea87ace8fbea565fe7b0d9dda0ca4ab1ac32</code> (v08.31) — confirmed unmoved before editing</td></tr>
-<tr><td><strong><code>origin/main</code> after</strong></td><td><em>stamped below</em></td></tr>
+<tr><td><strong><code>origin/main</code> after</strong></td><td><strong><code>b295ea87ace8fbea565fe7b0d9dda0ca4ab1ac32</code> — UNMOVED.</strong> This session did not advance <code>main</code>: the ruling authorised the fix, a commit and a push, and said nothing about integration. Integrating it is the Master Architect&#x27;s word to give, and after the conditional acceptance above it is not a call this session makes unasked</td></tr>
 <tr><td><strong>Branch</strong></td><td><code>feature/hadith-study</code></td></tr>
-<tr><td><strong>App version</strong></td><td><strong>08.31, unchanged.</strong> `v08.32 remains UNALLOCATED**</td></tr>
+<tr><td><strong>Branch tip (pushed)</strong></td><td><strong><code>d55f82f34b6d47adeaafe3ae8e8508877761a9ae</code></strong> — where this fix now sits</td></tr>
+<tr><td><strong>App version</strong></td><td><strong>08.31, unchanged. v08.32 remains UNALLOCATED</strong></td></tr>
 <tr><td><strong><code>git diff</code> over <code>app/</code>, <code>firestore.rules</code>, <code>firebase.json</code>, <code>tests/</code></strong></td><td><strong>empty</strong></td></tr>
 </tbody></table></div>
 <h3>Standing constraints, restated because they do not expire</h3>
@@ -96,9 +97,9 @@
 <p>APPLICATION_CHANGE=NONE — app/, firestore.rules, firebase.json, tests/ and app/js/version.js all byte-identical</p>
 <p>APP_VERSION=08.31 unchanged; v08.32 NOT allocated</p>
 <p>PRE_MAIN_SHA=b295ea87ace8fbea565fe7b0d9dda0ca4ab1ac32</p>
-<p>POST_MAIN_SHA=STAMPED_BELOW</p>
-<p>POST_PUSH_GATES=STAMPED_BELOW</p>
+<p>POST_MAIN_SHA=b295ea87ace8fbea565fe7b0d9dda0ca4ab1ac32 (UNMOVED — this session did not integrate; the ruling authorised the fix, a commit and a push, not a merge to main)</p>
+<p>POST_PUSH_GATES=fetched, then re-run against the pushed remote at d55f82f: programme-ledger-mutations 49 passed / 0 failed (exit 0); programme-ledger 8 passed, 23 noted, 0 failed (exit 0); brief-integrity 8 passed / 0 failed. Guard E now reads 20 touch records, 13 AUTHORIZED, and reports the new one with its Master Architect provenance</p>
 <p>OWNER_CONTROL_GATES=ALL CLOSED</p>
 <p>FIREBASE_RULES_DEPLOYED=UNVERIFIED — no credentials in this sandbox; nothing deployed</p>
-<p>SESSION_STATUS=STAMPED_BELOW</p>
+<p>SESSION_STATUS=FIX APPLIED AND PUSHED TO feature/hadith-study AT d55f82f; NOT INTEGRATED. main stands at b295ea8 and still carries the stale hard-coded mutation, so the mutation suite on main still exits 1 until this is merged — awaiting Master Architect authorization to integrate. All Hadith Owner Control Gates closed; v08.32 unallocated; nothing deployed; FIREBASE_RULES_DEPLOYED UNVERIFIED</p>
 </main></body></html>

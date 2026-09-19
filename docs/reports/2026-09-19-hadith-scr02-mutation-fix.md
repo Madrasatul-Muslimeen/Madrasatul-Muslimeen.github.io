@@ -153,9 +153,10 @@ unchanged.
 | | |
 |---|---|
 | **`origin/main` before this repair** | `b295ea87ace8fbea565fe7b0d9dda0ca4ab1ac32` (v08.31) — confirmed unmoved before editing |
-| **`origin/main` after** | *stamped below* |
+| **`origin/main` after** | **`b295ea87ace8fbea565fe7b0d9dda0ca4ab1ac32` — UNMOVED.** This session did not advance `main`: the ruling authorised the fix, a commit and a push, and said nothing about integration. Integrating it is the Master Architect's word to give, and after the conditional acceptance above it is not a call this session makes unasked |
 | **Branch** | `feature/hadith-study` |
-| **App version** | **08.31, unchanged.** `v08.32 remains UNALLOCATED** |
+| **Branch tip (pushed)** | **`d55f82f34b6d47adeaafe3ae8e8508877761a9ae`** — where this fix now sits |
+| **App version** | **08.31, unchanged. v08.32 remains UNALLOCATED** |
 | **`git diff` over `app/`, `firestore.rules`, `firebase.json`, `tests/`** | **empty** |
 
 ### Standing constraints, restated because they do not expire
@@ -194,12 +195,12 @@ APP_VERSION=08.31 unchanged; v08.32 NOT allocated
 
 PRE_MAIN_SHA=b295ea87ace8fbea565fe7b0d9dda0ca4ab1ac32
 
-POST_MAIN_SHA=STAMPED_BELOW
+POST_MAIN_SHA=b295ea87ace8fbea565fe7b0d9dda0ca4ab1ac32 (UNMOVED — this session did not integrate; the ruling authorised the fix, a commit and a push, not a merge to main)
 
-POST_PUSH_GATES=STAMPED_BELOW
+POST_PUSH_GATES=fetched, then re-run against the pushed remote at d55f82f: programme-ledger-mutations 49 passed / 0 failed (exit 0); programme-ledger 8 passed, 23 noted, 0 failed (exit 0); brief-integrity 8 passed / 0 failed. Guard E now reads 20 touch records, 13 AUTHORIZED, and reports the new one with its Master Architect provenance
 
 OWNER_CONTROL_GATES=ALL CLOSED
 
 FIREBASE_RULES_DEPLOYED=UNVERIFIED — no credentials in this sandbox; nothing deployed
 
-SESSION_STATUS=STAMPED_BELOW
+SESSION_STATUS=FIX APPLIED AND PUSHED TO feature/hadith-study AT d55f82f; NOT INTEGRATED. main stands at b295ea8 and still carries the stale hard-coded mutation, so the mutation suite on main still exits 1 until this is merged — awaiting Master Architect authorization to integrate. All Hadith Owner Control Gates closed; v08.32 unallocated; nothing deployed; FIREBASE_RULES_DEPLOYED UNVERIFIED
