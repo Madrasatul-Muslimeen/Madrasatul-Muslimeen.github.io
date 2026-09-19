@@ -106,8 +106,16 @@ mutation("two allocations are LIVE at once", "A", (l) => {
   l.versionAllocations.find((a) => a.status === "RELEASED" && a !== live).status = "LIVE";
 }, /allocations are LIVE; exactly one may be/);
 
-mutation("the ledger and the branch disagree about what the branch is stamped", "A", (l) => {
-  const s = l.streams.find((x) => x.id === "hadith");
+// Derive the subject from the ledger, exactly as guard B's two mutations below
+// already do. Hard-coding "hadith" was correct while that stream named an active
+// branch and became a NO-OP on 19 Sep 2026, when the Hadith stream's authorised
+// ledger repair set activeBranch to null (the branch tracks main and carries no
+// version of its own, so naming it made guard A read main's stamp as a Hadith
+// claim). Guard A skips a stream with no activeBranch, so the mutation stopped
+// mutating anything and reported itself UNPROVEN -- the second time a hard-coded
+// stream id in this file has gone stale on a real programme event.
+mutation("the ledger and the branch disagree about what the branch is stamped", "A", (l, f) => {
+  const s = l.streams.find((x) => x.activeBranch && f.branches[x.activeBranch]);
   s.declaredVersion = "08.28";
 }, /declares 08\.28 but .* is stamped/);
 
