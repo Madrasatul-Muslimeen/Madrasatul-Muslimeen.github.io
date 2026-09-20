@@ -53,8 +53,8 @@ Then check **all six** of the following against the fetched comment:
    using the `issue_number` from the payload — so the comment really belongs to
    the issue and the repository this prompt names, not merely to a comment id
    someone supplied
-6. The conversation is an **issue, not a pull request**. Fetch
-   the already fetched `issue_json` and confirm it has **no** `pull_request` field. GitHub models a pull request
+6. The conversation is an **issue, not a pull request**. Inspect the already
+   fetched `issue_json` and confirm it has **no** `pull_request` field. GitHub models a pull request
    as an issue, so a comment id alone cannot tell them apart. Pull-request
    comments are out of scope for this bridge
 
